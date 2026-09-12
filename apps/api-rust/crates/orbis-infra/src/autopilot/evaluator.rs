@@ -158,7 +158,7 @@ impl AcademicEvaluator {
             }
 
             // Enrollment Window
-            if let Some(enroll_start) = period.enrollment_start {
+            if let Some(enroll_start) = period.enrollment_starts_at {
                 if !period.is_enrollment_open && enroll_start <= now && period.status == "active_teaching" {
                     tasks.push(ProposedTask::new(
                         "enrollment.open",
@@ -169,7 +169,7 @@ impl AcademicEvaluator {
                     ));
                 }
             }
-            if let Some(enroll_end) = period.enrollment_end {
+            if let Some(enroll_end) = period.enrollment_ends_at {
                 if period.is_enrollment_open && enroll_end < now {
                     tasks.push(ProposedTask::new(
                         "enrollment.close",
@@ -182,7 +182,7 @@ impl AcademicEvaluator {
             }
 
             // Grade Entry Window
-            if let Some(grade_start) = period.grade_entry_start {
+            if let Some(grade_start) = period.grade_entry_starts_at {
                 if !period.is_grade_entry_open && grade_start <= now && (period.status == "active_teaching" || period.status == "grade_submission") {
                     tasks.push(ProposedTask::new(
                         "grade_entry.open",
@@ -193,7 +193,7 @@ impl AcademicEvaluator {
                     ));
                 }
             }
-            if let Some(grade_end) = period.grade_entry_end {
+            if let Some(grade_end) = period.grade_entry_ends_at {
                 if period.is_grade_entry_open && grade_end < now {
                     tasks.push(ProposedTask::new(
                         "grade_entry.close",

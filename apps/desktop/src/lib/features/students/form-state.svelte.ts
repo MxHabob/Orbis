@@ -315,7 +315,7 @@ export class StudentFormState {
         const enrollment = await api.enrollStudent({
           student_id: targetStudentId,
           class_id: this.personal.classId,
-          enrollment_type: "new",
+          study_mode: "full_time",
           period_id: this.orgId,
           student_number: this.personal.studentNumber || String(Date.now()),
         });
@@ -364,6 +364,7 @@ export class StudentFormState {
               student_id: targetStudentId,
               enrollment_id: targetEnrollmentId,
               fee_template_id: key,
+              period_id: this.orgId,
               due_date: today,
             });
           } catch (feeErr) {

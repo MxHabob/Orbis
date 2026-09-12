@@ -44,6 +44,8 @@ impl From<StudentDetail> for StudentDto {
     fn from(d: StudentDetail) -> Self {
         let s = d.student;
         let p = d.person;
+        let full_name = p.full_name();
+        let full_name_ar = p.full_name_ar();
         Self {
             id: s.id,
             org_id: s.org_id,
@@ -54,10 +56,10 @@ impl From<StudentDetail> for StudentDto {
             passport_number: p.passport_number,
             first_name: p.first_name,
             last_name: p.last_name,
-            full_name: p.full_name.unwrap_or_default(),
-            name_ar: p.name_ar,
+            full_name,
+            name_ar: full_name_ar,
             gender: p.gender.unwrap_or_else(|| "male".into()),
-            date_of_birth: p.date_of_birth,
+            date_of_birth: p.birth_date,
             nationality: p.nationality,
             blood_type: p.blood_type,
             medical_notes: p.medical_notes,
@@ -121,8 +123,8 @@ impl From<Enrollment> for EnrollmentDto {
             status: e.status.to_string(),
             is_attendance_exempt: e.is_attendance_exempt,
             is_grade_exempt: e.is_grade_exempt,
-            enrollment_date: e.enrollment_date,
-            withdrawal_date: e.withdrawal_date,
+            enrollment_date: e.enrolled_at,
+            withdrawal_date: e.withdrawn_at,
             withdrawal_reason: e.withdrawal_reason,
         }
     }
@@ -145,19 +147,8 @@ pub struct ChangeStudyModeRequest {
 
 #[derive(Deserialize, ToSchema)]
 pub struct UpdateStudentStatusRequest {
-    pub new_status: String,
+    pub status: String,
     pub reason: Option<String>,
-}
-
-#[derive(Serialize, ToSchema)]
-pub struct GuardianDto {
-    pub id: Uuid,
-    pub student_id: Uuid,
-    pub guardian_id: Uuid,
-    pub relationship: String,
-    pub is_primary: bool,
-    pub is_emergency: bool,
-    pub can_pickup: bool,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -165,9 +156,24 @@ pub struct AssignGuardianRequest {
     pub student_id: Uuid,
     pub guardian_id: Uuid,
     pub relationship: String,
+    pub relationship_ar: Option<String>,
     pub is_primary: Option<bool>,
-    pub is_emergency: Option<bool>,
-    pub can_pickup: Option<bool>,
+    pub is_emergency_contact: Option<bool>,
+    pub is_authorized_pickup: Option<bool>,
+    pub is_payer: Option<bool>,
+    pub payment_share_percent: Option<f64>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct GuardianDto {
+    pub id: Uuid,
+    pub student_id: Uuid,
+    pub guardian_id: Uuid,
+    pub relationship: String,
+    pub is_primary: bool,
+    pub is_emergency_contact: bool,
+    pub is_authorized_pickup: bool,
+    pub is_payer: bool,
 }
 
 #[derive(Deserialize)]
@@ -196,13 +202,16 @@ pub async fn register_student(
         user_id: p.user_id,
         student_number: p.student_number,
         first_name: p.first_name,
+        middle_name: None,
         last_name: p.last_name,
-        full_name: None,
-        name_ar: p.name_ar,
+        first_name_ar: p.name_ar,
+        middle_name_ar: None,
+        last_name_ar: None,
+        display_name: None,
         national_id: p.national_id,
         passport_number: p.passport_number,
         gender: Some(p.gender),
-        date_of_birth: p.date_of_birth,
+        birth_date: p.date_of_birth,
         place_of_birth: p.place_of_birth,
         nationality: p.nationality,
         blood_type: p.blood_type,
@@ -255,7 +264,7 @@ pub async fn update_student_status(
     Path(id): Path<Uuid>,
     Json(p): Json<UpdateStudentStatusRequest>,
 ) -> Result<Json<ApiResponse<StudentDto>>, ApiError> {
-    let new_status = match p.new_status.as_str() {
+    let new_status = match p.status.as_str() {
         "on_leave" => StudentStatus::OnLeave,
         "suspended" => StudentStatus::Suspended,
         "withdrawn" => StudentStatus::Withdrawn,
@@ -383,8 +392,9 @@ pub async fn assign_guardian(
         guardian_id: g.guardian_id,
         relationship: g.relationship,
         is_primary: g.is_primary,
-        is_emergency: g.is_emergency_contact,
-        can_pickup: g.is_authorized_pickup,
+        is_emergency_contact: g.is_emergency_contact,
+        is_authorized_pickup: g.is_authorized_pickup,
+        is_payer: g.is_payer,
     }))
 }
 
@@ -404,8 +414,9 @@ pub async fn list_guardians(
         guardian_id: g.guardian_id,
         relationship: g.relationship,
         is_primary: g.is_primary,
-        is_emergency: g.is_emergency_contact,
-        can_pickup: g.is_authorized_pickup,
+        is_emergency_contact: g.is_emergency_contact,
+        is_authorized_pickup: g.is_authorized_pickup,
+        is_payer: g.is_payer,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }

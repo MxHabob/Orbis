@@ -29,19 +29,16 @@ impl ToString for Role {
 pub struct User {
     pub id: Uuid,
     pub person_id: Uuid,
-    
     pub org_id: Uuid,
     pub email: Option<String>,
-    pub email_verified: bool,
+    pub is_email_verified: bool,
     pub phone: Option<String>,
-    pub phone_verified: bool,
+    pub is_phone_verified: bool,
     pub password_hash: Option<String>,
-    pub mfa_enabled: bool,
-    pub full_name: String,
-    
+    pub is_mfa_enabled: bool,
     pub status: String,
     pub login_count: i32,
-    pub failed_logins: i32,
+    pub failed_login_attempts: i32,
     pub locked_until: Option<DateTime<Utc>>,
     pub is_deleted: bool,
     pub created_at: DateTime<Utc>,

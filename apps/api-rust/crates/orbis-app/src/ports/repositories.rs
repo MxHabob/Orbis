@@ -194,7 +194,9 @@ pub trait EnrollmentRepository: Send + Sync {
 #[async_trait]
 pub trait StudentGuardianRepository: Send + Sync {
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<StudentGuardian>, DomainError>;
+    async fn find_by_guardian(&self, guardian_id: Uuid) -> Result<Vec<StudentGuardian>, DomainError>;
     async fn save(&self, guardian: &StudentGuardian) -> Result<(), DomainError>;
+    async fn delete(&self, student_id: Uuid, guardian_id: Uuid) -> Result<(), DomainError>;
 }
 
 pub use StudentGuardianRepository as GuardianRepository;

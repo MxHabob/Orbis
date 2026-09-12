@@ -2,8 +2,9 @@
 // Svelte 5 Runes-based authentication state.
 
 import { api } from "$lib/api/client";
-import type { UserDto } from "$lib/api/types";
+import type { UserDto, EffectiveContextDto } from "$lib/api/types";
 import { extractErrorMessage } from "$lib/api";
+import { effectiveContext } from "./effective-context.svelte";
 
 class AuthStore {
   user = $state<UserDto | null>(null);
@@ -29,6 +30,9 @@ class AuthStore {
       this.restorePromise = null;
       localStorage.setItem("orbis_token", res.token);
       localStorage.setItem("orbis_user", JSON.stringify(res.user));
+      if (res.effective_context) {
+        effectiveContext.setEffectiveContext(res.effective_context);
+      }
       await this.checkSetupStatus();
     } catch (e) {
       this.error = extractErrorMessage(e);
@@ -38,13 +42,20 @@ class AuthStore {
     }
   }
 
-  async setSession(res: { token: string; user: UserDto }) {
+  async setSession(res: {
+    token: string;
+    user: UserDto;
+    effective_context?: EffectiveContextDto | null;
+  }) {
     this.user = res.user;
     this.token = res.token;
     this.error = null;
     this.restorePromise = null;
     localStorage.setItem("orbis_token", res.token);
     localStorage.setItem("orbis_user", JSON.stringify(res.user));
+    if (res.effective_context) {
+      effectiveContext.setEffectiveContext(res.effective_context);
+    }
     await this.checkSetupStatus();
   }
 
@@ -58,6 +69,7 @@ class AuthStore {
     this.token = null;
     this.isSetupComplete = null;
     this.restorePromise = null;
+    effectiveContext.reset();
     localStorage.removeItem("orbis_token");
     localStorage.removeItem("orbis_user");
     localStorage.removeItem("orbis_is_setup_complete");
@@ -92,6 +104,9 @@ class AuthStore {
           if (res?.user) {
             this.user = res.user;
             localStorage.setItem("orbis_user", JSON.stringify(res.user));
+            if (res.effective_context) {
+              effectiveContext.setEffectiveContext(res.effective_context);
+            }
           }
         } catch (e) {
           console.warn("Session revalidation notice:", e);

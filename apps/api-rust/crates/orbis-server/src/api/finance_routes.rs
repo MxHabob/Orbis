@@ -167,7 +167,7 @@ pub async fn create_account(
         name: a.name,
         account_type: a.account_type.to_string(),
         parent_id: a.parent_id,
-        currency: a.currency,
+        currency: a.currency_code,
         is_active: a.is_active,
         balances: a.balances,
     }))
@@ -186,7 +186,7 @@ pub async fn list_accounts(
         name: a.name,
         account_type: a.account_type.to_string(),
         parent_id: a.parent_id,
-        currency: a.currency,
+        currency: a.currency_code,
         is_active: a.is_active,
         balances: a.balances,
     }).collect();
@@ -198,13 +198,13 @@ pub async fn list_accounts(
 pub async fn create_fee_template(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateFeeTemplateRequest>,
 ) -> Result<Json<ApiResponse<FeeTemplateDto>>, ApiError> {
-    let currency = p.currency.unwrap_or_else(|| "SAR".to_string());
+    let currency_code = p.currency.unwrap_or_else(|| "SAR".to_string());
     let t = state.finance_service.create_fee_template(
         &ctx,
         ctx.tenant_id,
         p.name,
         p.default_amount,
-        currency,
+        currency_code,
         p.receivable_account_id,
         p.revenue_account_id,
     ).await?;
@@ -217,7 +217,7 @@ pub async fn create_fee_template(
         name_ar: t.name_ar,
         category: t.category,
         default_amount: t.default_amount,
-        currency: t.currency,
+        currency: t.currency_code,
         revenue_account_id: t.revenue_account_id,
         receivable_account_id: t.receivable_account_id,
         is_mandatory: t.is_mandatory,
@@ -238,7 +238,7 @@ pub async fn list_fee_templates(
         name_ar: t.name_ar,
         category: t.category,
         default_amount: t.default_amount,
-        currency: t.currency,
+        currency: t.currency_code,
         revenue_account_id: t.revenue_account_id,
         receivable_account_id: t.receivable_account_id,
         is_mandatory: t.is_mandatory,

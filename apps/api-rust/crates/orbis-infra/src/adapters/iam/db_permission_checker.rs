@@ -77,4 +77,42 @@ impl PermissionCheckerPort for DbPermissionChecker {
 
         Ok(!role_permissions.is_empty())
     }
+
+    async fn get_user_permissions(&self, user_id: uuid::Uuid, _org_id: uuid::Uuid) -> Result<Vec<String>, DomainError> {
+        let user_roles = user_role_assignment::Entity::find()
+            .filter(user_role_assignment::Column::UserId.eq(user_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        if user_roles.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let role_ids: Vec<String> = user_roles.into_iter().map(|ur| ur.role_id).collect();
+
+        let role_permissions = role_permission::Entity::find()
+            .filter(role_permission::Column::RoleId.is_in(role_ids))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        let mut perms: Vec<String> = role_permissions.into_iter().map(|rp| rp.resource).collect();
+        perms.sort();
+        perms.dedup();
+        Ok(perms)
+    }
+
+    async fn get_user_roles(&self, user_id: uuid::Uuid, _org_id: uuid::Uuid) -> Result<Vec<String>, DomainError> {
+        let user_roles = user_role_assignment::Entity::find()
+            .filter(user_role_assignment::Column::UserId.eq(user_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        let mut roles: Vec<String> = user_roles.into_iter().map(|ur| ur.role_id).collect();
+        roles.sort();
+        roles.dedup();
+        Ok(roles)
+    }
 }

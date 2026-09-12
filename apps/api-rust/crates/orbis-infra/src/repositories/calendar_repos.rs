@@ -96,60 +96,54 @@ fn str_to_period_state(s: &str) -> AcademicPeriodState {
     }
 }
 
+fn map_period_model_to_domain(m: academic_period::Model) -> DomainPeriod {
+    DomainPeriod {
+        id: m.id,
+        org_id: m.org_id,
+        year_id: m.year_id,
+        parent_id: m.parent_id,
+        name: m.name,
+        name_ar: m.name_ar,
+        code: m.code,
+        period_type: m.period_type,
+        state: str_to_period_state(&m.status),
+        start_date: m.start_date,
+        end_date: m.end_date,
+        hijri_start: m.hijri_start,
+        hijri_end: m.hijri_end,
+        enrollment_starts_at: m.enrollment_starts_at,
+        enrollment_ends_at: m.enrollment_ends_at,
+        is_enrollment_open: m.is_enrollment_open,
+        grade_entry_starts_at: m.grade_entry_starts_at,
+        grade_entry_ends_at: m.grade_entry_ends_at,
+        is_grade_entry_open: m.is_grade_entry_open,
+        exam_starts_at: m.exam_starts_at,
+        exam_ends_at: m.exam_ends_at,
+        is_locked: m.is_locked,
+        locked_at: m.locked_at,
+        locked_by: m.locked_by,
+        sort_order: m.sort_order,
+        metadata: m.metadata,
+        created_at: m.created_at,
+        updated_at: m.updated_at,
+    }
+}
+
 #[async_trait]
 impl AcademicPeriodRepository for CalendarRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainPeriod>, DomainError> {
         let model = PeriodEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(model.map(|m| DomainPeriod {
-            id: m.id, org_id: m.org_id, year_id: m.year_id, parent_id: m.parent_id,
-            name: m.name, name_ar: m.name_ar, code: m.code, period_type: m.period_type,
-            state: str_to_period_state(&m.status),
-            start_date: m.start_date, end_date: m.end_date, hijri_start: m.hijri_start,
-            hijri_end: m.hijri_end, enrollment_start: m.enrollment_start,
-            enrollment_end: m.enrollment_end, is_enrollment_open: m.is_enrollment_open,
-            grade_entry_start: m.grade_entry_start, grade_entry_end: m.grade_entry_end,
-            is_grade_entry_open: m.is_grade_entry_open, exam_start: m.exam_start,
-            exam_end: m.exam_end, 
-            is_locked: m.is_locked, locked_at: m.locked_at,
-            locked_by: m.locked_by, sort_order: m.sort_order, metadata: m.metadata,
-            created_at: m.created_at, updated_at: m.updated_at
-        }))
+        Ok(model.map(map_period_model_to_domain))
     }
 
     async fn find_by_year(&self, year_id: Uuid) -> Result<Vec<DomainPeriod>, DomainError> {
         let models = PeriodEntity::find().filter(academic_period::Column::YearId.eq(year_id)).all(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| DomainPeriod {
-            id: m.id, org_id: m.org_id, year_id: m.year_id, parent_id: m.parent_id,
-            name: m.name, name_ar: m.name_ar, code: m.code, period_type: m.period_type,
-            state: str_to_period_state(&m.status),
-            start_date: m.start_date, end_date: m.end_date, hijri_start: m.hijri_start,
-            hijri_end: m.hijri_end, enrollment_start: m.enrollment_start,
-            enrollment_end: m.enrollment_end, is_enrollment_open: m.is_enrollment_open,
-            grade_entry_start: m.grade_entry_start, grade_entry_end: m.grade_entry_end,
-            is_grade_entry_open: m.is_grade_entry_open, exam_start: m.exam_start,
-            exam_end: m.exam_end, 
-            is_locked: m.is_locked, locked_at: m.locked_at,
-            locked_by: m.locked_by, sort_order: m.sort_order, metadata: m.metadata,
-            created_at: m.created_at, updated_at: m.updated_at
-        }).collect())
+        Ok(models.into_iter().map(map_period_model_to_domain).collect())
     }
 
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainPeriod>, DomainError> {
         let models = PeriodEntity::find().filter(academic_period::Column::OrgId.eq(org_id)).all(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| DomainPeriod {
-            id: m.id, org_id: m.org_id, year_id: m.year_id, parent_id: m.parent_id,
-            name: m.name, name_ar: m.name_ar, code: m.code, period_type: m.period_type,
-            state: str_to_period_state(&m.status),
-            start_date: m.start_date, end_date: m.end_date, hijri_start: m.hijri_start,
-            hijri_end: m.hijri_end, enrollment_start: m.enrollment_start,
-            enrollment_end: m.enrollment_end, is_enrollment_open: m.is_enrollment_open,
-            grade_entry_start: m.grade_entry_start, grade_entry_end: m.grade_entry_end,
-            is_grade_entry_open: m.is_grade_entry_open, exam_start: m.exam_start,
-            exam_end: m.exam_end, 
-            is_locked: m.is_locked, locked_at: m.locked_at,
-            locked_by: m.locked_by, sort_order: m.sort_order, metadata: m.metadata,
-            created_at: m.created_at, updated_at: m.updated_at
-        }).collect())
+        Ok(models.into_iter().map(map_period_model_to_domain).collect())
     }
 
     async fn find_current(&self, org_id: Uuid) -> Result<Option<DomainPeriod>, DomainError> {
@@ -159,37 +153,38 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(model.map(|m| DomainPeriod {
-            id: m.id, org_id: m.org_id, year_id: m.year_id, parent_id: m.parent_id,
-            name: m.name, name_ar: m.name_ar, code: m.code, period_type: m.period_type,
-            state: str_to_period_state(&m.status),
-            start_date: m.start_date, end_date: m.end_date, hijri_start: m.hijri_start,
-            hijri_end: m.hijri_end, enrollment_start: m.enrollment_start,
-            enrollment_end: m.enrollment_end, is_enrollment_open: m.is_enrollment_open,
-            grade_entry_start: m.grade_entry_start, grade_entry_end: m.grade_entry_end,
-            is_grade_entry_open: m.is_grade_entry_open, exam_start: m.exam_start,
-            exam_end: m.exam_end, 
-            is_locked: m.is_locked, locked_at: m.locked_at,
-            locked_by: m.locked_by, sort_order: m.sort_order, metadata: m.metadata,
-            created_at: m.created_at, updated_at: m.updated_at
-        }))
+        Ok(model.map(map_period_model_to_domain))
     }
 
     async fn save(&self, period: &DomainPeriod) -> Result<(), DomainError> {
         let active = academic_period::ActiveModel {
-            id: Set(period.id), org_id: Set(period.org_id), year_id: Set(period.year_id),
-            parent_id: Set(period.parent_id), name: Set(period.name.clone()),
-            name_ar: Set(period.name_ar.clone()), code: Set(period.code.clone()),
-            period_type: Set(period.period_type.clone()), start_date: Set(period.start_date),
-            end_date: Set(period.end_date), hijri_start: Set(period.hijri_start.clone()),
-            hijri_end: Set(period.hijri_end.clone()), enrollment_start: Set(period.enrollment_start),
-            enrollment_end: Set(period.enrollment_end), is_enrollment_open: Set(period.is_enrollment_open),
-            grade_entry_start: Set(period.grade_entry_start), grade_entry_end: Set(period.grade_entry_end),
-            is_grade_entry_open: Set(period.is_grade_entry_open), exam_start: Set(period.exam_start),
-            exam_end: Set(period.exam_end),  status: Set(period.state.to_string()),
-            is_locked: Set(period.is_locked), locked_at: Set(period.locked_at),
-            locked_by: Set(period.locked_by), sort_order: Set(period.sort_order),
-            metadata: Set(period.metadata.clone()), created_at: Set(period.created_at),
+            id: Set(period.id),
+            org_id: Set(period.org_id),
+            year_id: Set(period.year_id),
+            parent_id: Set(period.parent_id),
+            name: Set(period.name.clone()),
+            name_ar: Set(period.name_ar.clone()),
+            code: Set(period.code.clone()),
+            period_type: Set(period.period_type.clone()),
+            start_date: Set(period.start_date),
+            end_date: Set(period.end_date),
+            hijri_start: Set(period.hijri_start.clone()),
+            hijri_end: Set(period.hijri_end.clone()),
+            enrollment_starts_at: Set(period.enrollment_starts_at),
+            enrollment_ends_at: Set(period.enrollment_ends_at),
+            is_enrollment_open: Set(period.is_enrollment_open),
+            grade_entry_starts_at: Set(period.grade_entry_starts_at),
+            grade_entry_ends_at: Set(period.grade_entry_ends_at),
+            is_grade_entry_open: Set(period.is_grade_entry_open),
+            exam_starts_at: Set(period.exam_starts_at),
+            exam_ends_at: Set(period.exam_ends_at),
+            status: Set(period.state.to_string()),
+            is_locked: Set(period.is_locked),
+            locked_at: Set(period.locked_at),
+            locked_by: Set(period.locked_by),
+            sort_order: Set(period.sort_order),
+            metadata: Set(period.metadata.clone()),
+            created_at: Set(period.created_at),
             updated_at: Set(period.updated_at),
         };
 

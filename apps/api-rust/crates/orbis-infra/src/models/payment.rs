@@ -11,7 +11,7 @@ pub struct Model {
     pub student_id: Option<Uuid>,
     pub account_id: Uuid,
     pub amount: Decimal,
-    pub currency: Option<String>,
+    pub currency_code: Option<String>,
     pub exchange_rate: Option<Decimal>,
     pub base_amount: Option<Decimal>,
     pub method: String,

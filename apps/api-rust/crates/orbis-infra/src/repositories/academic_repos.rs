@@ -21,56 +21,12 @@ pub struct AcademicRepoImpl {
 impl SubjectRepository for AcademicRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainSubject>, DomainError> {
         let model = SubjectEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(model.map(|m| DomainSubject {
-            id: m.id,
-            org_id: m.org_id,
-            unit_id: m.unit_id,
-            code: m.code,
-            name: m.name,
-            name_ar: m.name_ar,
-            name_en: m.name_en,
-            description: m.description,
-            is_core: m.is_core,
-            is_elective: m.is_elective,
-            credit_hours: m.credit_hours,
-            theory_hours: m.theory_hours,
-            practical_hours: m.practical_hours,
-            requires_lab: m.requires_lab,
-            max_students_per_class: m.max_students_per_class.map(|v| v as u32),
-            color: m.color,
-            icon: m.icon,
-            sort_order: m.sort_order,
-            is_active: m.is_active,
-            created_at: m.created_at,
-            updated_at: m.updated_at,
-        }))
+        Ok(model.map(map_subject_model_to_domain))
     }
 
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainSubject>, DomainError> {
         let models = SubjectEntity::find().filter(subject::Column::OrgId.eq(org_id)).all(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| DomainSubject {
-            id: m.id,
-            org_id: m.org_id,
-            unit_id: m.unit_id,
-            code: m.code,
-            name: m.name,
-            name_ar: m.name_ar,
-            name_en: m.name_en,
-            description: m.description,
-            is_core: m.is_core,
-            is_elective: m.is_elective,
-            credit_hours: m.credit_hours,
-            theory_hours: m.theory_hours,
-            practical_hours: m.practical_hours,
-            requires_lab: m.requires_lab,
-            max_students_per_class: m.max_students_per_class.map(|v| v as u32),
-            color: m.color,
-            icon: m.icon,
-            sort_order: m.sort_order,
-            is_active: m.is_active,
-            created_at: m.created_at,
-            updated_at: m.updated_at,
-        }).collect())
+        Ok(models.into_iter().map(map_subject_model_to_domain).collect())
     }
 
     async fn list(&self, org_id: Uuid, filter: orbis_domain::queries::filters::SubjectFilter) -> Result<orbis_domain::queries::filters::PaginatedList<DomainSubject>, DomainError> {
@@ -102,14 +58,13 @@ impl SubjectRepository for AcademicRepoImpl {
             code: Set(subject.code.clone()),
             name: Set(subject.name.clone()),
             name_ar: Set(subject.name_ar.clone()),
-            name_en: Set(subject.name_en.clone()),
             description: Set(subject.description.clone()),
             is_core: Set(subject.is_core),
             is_elective: Set(subject.is_elective),
             credit_hours: Set(subject.credit_hours),
             theory_hours: Set(subject.theory_hours),
             practical_hours: Set(subject.practical_hours),
-            requires_lab: Set(subject.requires_lab),
+            is_lab_required: Set(subject.is_lab_required),
             max_students_per_class: Set(subject.max_students_per_class.map(|v| v as i32)),
             color: Set(subject.color.clone()),
             icon: Set(subject.icon.clone()),
@@ -285,14 +240,13 @@ fn map_subject_model_to_domain(m: subject::Model) -> DomainSubject {
         code: m.code,
         name: m.name,
         name_ar: m.name_ar,
-        name_en: m.name_en,
         description: m.description,
         is_core: m.is_core,
         is_elective: m.is_elective,
         credit_hours: m.credit_hours,
         theory_hours: m.theory_hours,
         practical_hours: m.practical_hours,
-        requires_lab: m.requires_lab,
+        is_lab_required: m.is_lab_required,
         max_students_per_class: m.max_students_per_class.map(|v| v as u32),
         color: m.color,
         icon: m.icon,

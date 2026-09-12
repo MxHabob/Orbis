@@ -27,8 +27,8 @@ impl std::fmt::Display for JournalPostingStatus {
 pub struct JournalEntryLine {
     pub id: Uuid,
     pub account_id: Uuid,
-    pub debit: Decimal,
-    pub credit: Decimal,
+    pub debit_amount: Decimal,
+    pub credit_amount: Decimal,
     pub description: Option<String>,
     pub entity_type: Option<String>,
     pub entity_id: Option<Uuid>,
@@ -38,10 +38,10 @@ pub struct JournalEntryLine {
 pub struct JournalEntry {
     pub id: Uuid,
     pub org_id: Uuid,
-    pub transaction_ref: String,
+    pub reference_number: String,
     pub accounting_date: NaiveDate,
     pub amount: Decimal,
-    pub currency_id: String,
+    pub currency_code: String,
     pub exchange_rate: Decimal,
     pub base_amount: Decimal,
     pub debit_account_id: Uuid,
@@ -65,8 +65,8 @@ impl JournalEntry {
             // Simple 2-legged entry
             return self.amount > Decimal::ZERO;
         }
-        let total_debit: Decimal = self.lines.iter().map(|l| l.debit).sum();
-        let total_credit: Decimal = self.lines.iter().map(|l| l.credit).sum();
+        let total_debit: Decimal = self.lines.iter().map(|l| l.debit_amount).sum();
+        let total_credit: Decimal = self.lines.iter().map(|l| l.credit_amount).sum();
         total_debit == total_credit && total_debit > Decimal::ZERO
     }
 
@@ -77,8 +77,8 @@ impl JournalEntry {
             }
             return Ok(());
         }
-        let total_debit: Decimal = self.lines.iter().map(|l| l.debit).sum();
-        let total_credit: Decimal = self.lines.iter().map(|l| l.credit).sum();
+        let total_debit: Decimal = self.lines.iter().map(|l| l.debit_amount).sum();
+        let total_credit: Decimal = self.lines.iter().map(|l| l.credit_amount).sum();
         if total_debit != total_credit {
             return Err(format!(
                 "Unbalanced journal entry: Total Debit ({}) != Total Credit ({})",

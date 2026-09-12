@@ -227,7 +227,7 @@ impl SchedulingService {
         let session = ExamSession {
             id: session_id,
             org_id,
-            academic_period_id: period_id,
+            period_id,
             name,
             start_date,
             end_date,

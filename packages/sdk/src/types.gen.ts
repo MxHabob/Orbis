@@ -74,10 +74,12 @@ export type AssignClassSubjectRequest = {
 };
 
 export type AssignGuardianRequest = {
-  can_pickup?: boolean | null;
   guardian_id: string;
-  is_emergency?: boolean | null;
+  is_authorized_pickup?: boolean | null;
+  is_emergency_contact?: boolean | null;
+  is_payer?: boolean | null;
   is_primary?: boolean | null;
+  payment_share_percent?: number | null;
   relationship: string;
   student_id: string;
 };
@@ -456,11 +458,36 @@ export type GradeDto = {
   student_id: string;
 };
 
+export type LinkedDependentDto = {
+  current_class_id?: string | null;
+  display_name?: string | null;
+  first_name: string;
+  first_name_ar?: string | null;
+  is_authorized_pickup: boolean;
+  is_emergency_contact: boolean;
+  is_payer: boolean;
+  is_primary: boolean;
+  last_name: string;
+  last_name_ar?: string | null;
+  relationship: string;
+  student_id: string;
+  student_number: string;
+};
+
+export type EffectiveContextDto = {
+  active_period_id?: string | null;
+  dependents: Array<LinkedDependentDto>;
+  effective_role: string;
+  permissions: Array<string>;
+  roles: Array<string>;
+};
+
 export type GuardianDto = {
-  can_pickup: boolean;
   guardian_id: string;
   id: string;
-  is_emergency: boolean;
+  is_authorized_pickup: boolean;
+  is_emergency_contact: boolean;
+  is_payer: boolean;
   is_primary: boolean;
   relationship: string;
   student_id: string;
@@ -488,6 +515,7 @@ export type LoginRequest = {
 };
 
 export type LoginResponse = {
+  effective_context?: EffectiveContextDto | null;
   refresh_token: string;
   token: string;
   user: UserDto;
@@ -654,13 +682,17 @@ export type RecordGradeRequest = {
 };
 
 export type RegisterStudentRequest = {
+  birth_date?: string | null;
   blood_type?: string | null;
   date_of_birth?: string | null;
   first_name: string;
+  first_name_ar?: string | null;
   gender: string;
   last_name: string;
+  last_name_ar?: string | null;
   medical_notes?: string | null;
-  name_ar?: string | null;
+  middle_name?: string | null;
+  middle_name_ar?: string | null;
   national_id?: string | null;
   nationality?: string | null;
   passport_number?: string | null;
@@ -755,6 +787,7 @@ export type SecretDto = {
 };
 
 export type SessionResponse = {
+  effective_context?: EffectiveContextDto | null;
   org_id: string;
   user: UserDto;
 };
@@ -765,13 +798,17 @@ export type StudentDto = {
   created_at: string;
   date_of_birth?: string | null;
   first_name: string;
+  first_name_ar?: string | null;
   full_name: string;
+  full_name_ar?: string | null;
   gender: string;
   graduated_at?: string | null;
   id: string;
   last_name: string;
+  last_name_ar?: string | null;
   medical_notes?: string | null;
-  name_ar?: string | null;
+  middle_name?: string | null;
+  middle_name_ar?: string | null;
   national_id?: string | null;
   nationality?: string | null;
   org_id: string;
@@ -905,7 +942,14 @@ export type UpdateTemplateRequest = {
 };
 
 export type UpdateUserRequest = {
+  first_name?: string | null;
+  first_name_ar?: string | null;
   full_name?: string | null;
+  full_name_ar?: string | null;
+  last_name?: string | null;
+  last_name_ar?: string | null;
+  middle_name?: string | null;
+  middle_name_ar?: string | null;
 };
 
 export type UploadDocumentRequest = {
@@ -943,9 +987,14 @@ export type UserDeviceDto = {
 export type UserDto = {
   email?: string | null;
   full_name: string;
+  full_name_ar?: string | null;
   id: string;
+  is_email_verified?: boolean;
+  is_mfa_enabled?: boolean | null;
+  is_phone_verified?: boolean;
   mfa_enabled?: boolean | null;
   org_id: string;
+  person_id?: string | null;
   status: string;
 };
 

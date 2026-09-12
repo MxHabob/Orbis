@@ -94,7 +94,7 @@ impl FinanceService {
         // 2. Fetch target account to determine transaction currency
         let account = self.account_repo.find_by_id(account_id).await?
             .ok_or_else(|| DomainError::Validation(format!("Account {} not found", account_id)))?;
-        let transaction_currency = account.currency;
+        let transaction_currency = account.currency_code;
 
         let mut exchange_rate_value = Decimal::from(1);
         if transaction_currency != base_currency {
@@ -146,8 +146,8 @@ impl FinanceService {
             JournalEntryLine {
                 id: Uuid::new_v4(),
                 account_id, // Debit Cash/Bank
-                debit: amount,
-                credit: Decimal::ZERO,
+                debit_amount: amount,
+                credit_amount: Decimal::ZERO,
                 description: Some("Payment received for student fee".into()),
                 entity_type: Some("student".into()),
                 entity_id: student_resolved_id,
@@ -155,8 +155,8 @@ impl FinanceService {
             JournalEntryLine {
                 id: Uuid::new_v4(),
                 account_id: receivable_acct, // Credit Accounts Receivable / Revenue
-                debit: Decimal::ZERO,
-                credit: amount,
+                debit_amount: Decimal::ZERO,
+                credit_amount: amount,
                 description: Some("AR settlement".into()),
                 entity_type: Some("student".into()),
                 entity_id: student_resolved_id,
@@ -166,10 +166,10 @@ impl FinanceService {
         let entry = JournalEntry {
             id: journal_entry_id,
             org_id,
-            transaction_ref: format!("PAY-{}", payment_id.to_string().chars().take(8).collect::<String>()),
+            reference_number: format!("PAY-{}", payment_id.to_string().chars().take(8).collect::<String>()),
             accounting_date,
             amount,
-            currency_id: transaction_currency.clone(),
+            currency_code: transaction_currency.clone(),
             exchange_rate: exchange_rate_value,
             base_amount,
             debit_account_id: account_id,
@@ -202,7 +202,7 @@ impl FinanceService {
             student_id: student_resolved_id,
             account_id,
             amount,
-            currency: transaction_currency,
+            currency_code: transaction_currency,
             exchange_rate: exchange_rate_value,
             base_amount,
             method,
@@ -302,7 +302,7 @@ impl FinanceService {
         org_id: Uuid,
         name: String,
         amount: Decimal,
-        currency: String,
+        currency_code: String,
         receivable_account_id: Uuid,
         revenue_account_id: Uuid,
     ) -> Result<FeeTemplate, DomainError> {
@@ -319,7 +319,7 @@ impl FinanceService {
             name_ar: None,
             category: "tuition".into(),
             default_amount: amount,
-            currency,
+            currency_code,
             frequency: orbis_domain::entities::fee_template::FeeFrequency::PerTerm,
             receivable_account_id,
             revenue_account_id,
@@ -348,7 +348,7 @@ impl FinanceService {
         code: String,
         name: String,
         account_type: orbis_domain::entities::account::AccountType,
-        currency: String,
+        currency_code: String,
         parent_id: Option<Uuid>,
     ) -> Result<Account, DomainError> {
         self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
@@ -366,7 +366,7 @@ impl FinanceService {
             parent_id,
             path,
             depth: 1,
-            currency,
+            currency_code,
             entity_type: None,
             entity_id: None,
             is_control_account: false,

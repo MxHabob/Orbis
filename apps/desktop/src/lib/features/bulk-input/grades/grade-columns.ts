@@ -65,9 +65,9 @@ export function buildGradeColumns(
       size: 120,
       editor: "combo",
       options: [
-        { id: "final", label: "Final" },
-        { id: "midterm", label: "Midterm" },
-        { id: "quiz", label: "Quiz" },
+        { value: "final", label: "Final" },
+        { value: "midterm", label: "Midterm" },
+        { value: "quiz", label: "Quiz" },
       ],
     },
     {
@@ -76,8 +76,8 @@ export function buildGradeColumns(
       size: 120,
       editor: "combo",
       options: [
-        { id: "semester_1", label: "Semester 1" },
-        { id: "semester_2", label: "Semester 2" },
+        { value: "semester_1", label: "Semester 1" },
+        { value: "semester_2", label: "Semester 2" },
       ],
       cellProperties: errorCellProps("semester"),
     },

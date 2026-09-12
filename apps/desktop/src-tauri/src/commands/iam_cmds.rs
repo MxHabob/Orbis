@@ -14,10 +14,36 @@ fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 pub struct UserDto {
     pub id: String,
     pub org_id: String,
+    pub person_id: String,
     pub email: Option<String>,
     pub full_name: String,
+    pub full_name_ar: Option<String>,
     pub status: String,
-    pub mfa_enabled: bool,
+    pub is_email_verified: bool,
+    pub is_phone_verified: bool,
+    pub is_mfa_enabled: bool,
+}
+
+#[derive(Serialize)]
+pub struct LinkedDependentDto {
+    pub student_id: String,
+    pub full_name: String,
+    pub full_name_ar: Option<String>,
+    pub relationship: String,
+    pub is_primary_contact: bool,
+    pub is_emergency_contact: bool,
+    pub is_fee_payer: bool,
+    pub current_grade_level: Option<String>,
+    pub current_section_name: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct EffectiveContextDto {
+    pub effective_role: String,
+    pub roles: Vec<String>,
+    pub permissions: Vec<String>,
+    pub active_period_id: Option<String>,
+    pub dependents: Vec<LinkedDependentDto>,
 }
 
 #[derive(Serialize)]
@@ -25,22 +51,52 @@ pub struct LoginResponse {
     pub token: String,
     pub refresh_token: String,
     pub user: UserDto,
+    pub effective_context: EffectiveContextDto,
 }
 
 #[derive(Serialize)]
 pub struct SessionResponse {
     pub user: UserDto,
     pub org_id: String,
+    pub effective_context: EffectiveContextDto,
 }
 
-fn user_to_dto(u: orbis_domain::entities::user::User) -> UserDto {
+fn user_to_dto(u: orbis_domain::entities::user::User, p: Option<&orbis_domain::entities::person::Person>) -> UserDto {
+    let (full_name, full_name_ar) = match p {
+        Some(person) => (person.full_name(), person.full_name_ar()),
+        None => (String::new(), None),
+    };
     UserDto {
         id: u.id.to_string(),
         org_id: u.org_id.to_string(),
+        person_id: u.person_id.to_string(),
         email: u.email,
-        full_name: u.full_name,
+        full_name,
+        full_name_ar,
         status: u.status,
-        mfa_enabled: u.mfa_enabled,
+        is_email_verified: u.is_email_verified,
+        is_phone_verified: u.is_phone_verified,
+        is_mfa_enabled: u.is_mfa_enabled,
+    }
+}
+
+fn map_effective_context(ctx: orbis_app::services::auth_service::EffectiveContextDto) -> EffectiveContextDto {
+    EffectiveContextDto {
+        effective_role: ctx.effective_role,
+        roles: ctx.roles,
+        permissions: ctx.permissions,
+        active_period_id: ctx.active_period_id.map(|id| id.to_string()),
+        dependents: ctx.dependents.into_iter().map(|d| LinkedDependentDto {
+            student_id: d.student_id.to_string(),
+            full_name: d.full_name,
+            full_name_ar: d.full_name_ar,
+            relationship: d.relationship,
+            is_primary_contact: d.is_primary_contact,
+            is_emergency_contact: d.is_emergency_contact,
+            is_fee_payer: d.is_fee_payer,
+            current_grade_level: d.current_grade_level,
+            current_section_name: d.current_section_name,
+        }).collect(),
     }
 }
 
@@ -58,10 +114,14 @@ pub async fn auth_login(request: serde_json::Value, state: State<'_, AppState>) 
         token: res.token.clone(),
     });
 
+    let user_dto = user_to_dto(res.user, res.person.as_ref());
+    let effective_context = map_effective_context(res.effective_context);
+
     Ok(ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
-        user: user_to_dto(res.user),
+        user: user_dto,
+        effective_context,
     }))
 }
 
@@ -70,7 +130,13 @@ pub async fn auth_get_session(request: Option<serde_json::Value>, state: State<'
     // 1. Check in-memory active session
     if let Some(session) = state.get_active_session() {
         if let Ok(Some(user)) = state.auth_service.get_user(session.user_id).await {
-            return Ok(ok(SessionResponse { org_id: session.org_id.to_string(), user: user_to_dto(user) }));
+            let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
+            let eff = state.auth_service.build_effective_context(&user, person.as_ref()).await.map_err(|e| e.to_string())?;
+            return Ok(ok(SessionResponse {
+                org_id: session.org_id.to_string(),
+                user: user_to_dto(user, person.as_ref()),
+                effective_context: map_effective_context(eff),
+            }));
         }
     }
 
@@ -90,7 +156,13 @@ pub async fn auth_get_session(request: Option<serde_json::Value>, state: State<'
                             active_unit_id: None,
                             token: token_str.to_string(),
                         });
-                        return Ok(ok(SessionResponse { org_id: user.org_id.to_string(), user: user_to_dto(user) }));
+                        let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
+                        let eff = state.auth_service.build_effective_context(&user, person.as_ref()).await.map_err(|e| e.to_string())?;
+                        return Ok(ok(SessionResponse {
+                            org_id: user.org_id.to_string(),
+                            user: user_to_dto(user, person.as_ref()),
+                            effective_context: map_effective_context(eff),
+                        }));
                     }
                 }
             }
@@ -103,7 +175,13 @@ pub async fn auth_get_session(request: Option<serde_json::Value>, state: State<'
                             active_unit_id: None,
                             token: token_str.to_string(),
                         });
-                        return Ok(ok(SessionResponse { org_id: oid.to_string(), user: user_to_dto(user) }));
+                        let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
+                        let eff = state.auth_service.build_effective_context(&user, person.as_ref()).await.map_err(|e| e.to_string())?;
+                        return Ok(ok(SessionResponse {
+                            org_id: oid.to_string(),
+                            user: user_to_dto(user, person.as_ref()),
+                            effective_context: map_effective_context(eff),
+                        }));
                     }
                 }
             }
@@ -121,7 +199,13 @@ pub async fn auth_get_session(request: Option<serde_json::Value>, state: State<'
                     active_unit_id: None,
                     token: "desktop-local-token".to_string(),
                 });
-                return Ok(ok(SessionResponse { org_id: org.id.to_string(), user: user_to_dto(u.clone()) }));
+                let person = state.person_repo.find_by_id(u.person_id).await.unwrap_or(None);
+                let eff = state.auth_service.build_effective_context(u, person.as_ref()).await.map_err(|e| e.to_string())?;
+                return Ok(ok(SessionResponse {
+                    org_id: org.id.to_string(),
+                    user: user_to_dto(u.clone(), person.as_ref()),
+                    effective_context: map_effective_context(eff),
+                }));
             }
         }
     }
@@ -141,7 +225,7 @@ pub async fn auth_logout(state: State<'_, AppState>) -> Result<(), String> {
 #[tauri::command]
 pub async fn iam_register_user(request: serde_json::Value, state: State<'_, AppState>) -> Result<ApiResponse<UserDto>, String> {
     let ctx = make_ctx(&state);
-    let full_name = request["fullName"].as_str().unwrap_or_default().to_string();
+    let full_name = request["fullName"].as_str().or(request["full_name"].as_str()).unwrap_or_default().to_string();
     let email = request["email"].as_str().map(|s| s.to_string());
     let password = request["password"].as_str().map(|s| s.to_string());
     let role_str = request["role"].as_str().unwrap_or("Student");
@@ -154,14 +238,20 @@ pub async fn iam_register_user(request: serde_json::Value, state: State<'_, AppS
         r => DomainRole::Custom(r.to_string()),
     };
     let user = state.auth_service.register_user(&ctx, full_name, email, password, role, Some(ctx.tenant_id)).await.map_err(|e| e.to_string())?;
-    Ok(ok(user_to_dto(user)))
+    let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
+    Ok(ok(user_to_dto(user, person.as_ref())))
 }
 
 #[tauri::command]
 pub async fn iam_list_users(state: State<'_, AppState>) -> Result<ApiResponse<Vec<UserDto>>, String> {
     let ctx = make_ctx(&state);
     let users = state.auth_service.list_users(ctx.tenant_id).await.map_err(|e| e.to_string())?;
-    Ok(ok(users.into_iter().map(user_to_dto).collect()))
+    let mut dtos = Vec::new();
+    for u in users {
+        let p = state.person_repo.find_by_id(u.person_id).await.unwrap_or(None);
+        dtos.push(user_to_dto(u, p.as_ref()));
+    }
+    Ok(ok(dtos))
 }
 
 #[tauri::command]
@@ -169,7 +259,8 @@ pub async fn iam_get_user(id: String, state: State<'_, AppState>) -> Result<ApiR
     let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
     let user = state.auth_service.get_user(uid).await.map_err(|e| e.to_string())?
         .ok_or_else(|| "User not found".to_string())?;
-    Ok(ok(user_to_dto(user)))
+    let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
+    Ok(ok(user_to_dto(user, person.as_ref())))
 }
 
 #[tauri::command]
@@ -178,7 +269,8 @@ pub async fn iam_update_user(id: String, request: serde_json::Value, state: Stat
     let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
     let full_name = request.get("fullName").or(request.get("full_name")).and_then(|v| v.as_str()).map(|s| s.to_string());
     let user = state.auth_service.update_user(&ctx, uid, full_name).await.map_err(|e| e.to_string())?;
-    Ok(ok(user_to_dto(user)))
+    let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
+    Ok(ok(user_to_dto(user, person.as_ref())))
 }
 
 #[derive(Serialize)]
@@ -252,10 +344,14 @@ pub async fn auth_mfa_challenge(request: serde_json::Value, state: State<'_, App
         token: res.token.clone(),
     });
 
+    let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
+    let eff = state.auth_service.build_effective_context(&user, person.as_ref()).await.map_err(|e| e.to_string())?;
+
     Ok(ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
-        user: user_to_dto(user),
+        user: user_to_dto(user, person.as_ref()),
+        effective_context: map_effective_context(eff),
     }))
 }
 
@@ -287,10 +383,14 @@ pub async fn auth_login_google(request: serde_json::Value, state: State<'_, AppS
         token: res.token.clone(),
     });
 
+    let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
+    let eff = state.auth_service.build_effective_context(&user, person.as_ref()).await.map_err(|e| e.to_string())?;
+
     Ok(ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
-        user: user_to_dto(user),
+        user: user_to_dto(user, person.as_ref()),
+        effective_context: map_effective_context(eff),
     }))
 }
 

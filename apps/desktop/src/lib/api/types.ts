@@ -13,6 +13,7 @@ import type {
   LoginResponse,
   SessionResponse,
   RegisterUserRequest,
+  UpdateUserRequest,
   UserDto,
   OrgDto,
   UpdateOrgRequest,
@@ -304,7 +305,7 @@ export interface OrbisApiClient {
   registerUser(req: RegisterUserRequest): Promise<UserDto>;
   listUsers(): Promise<UserDto[]>;
   getUser(id: string): Promise<UserDto>;
-  updateUser(id: string, req: { full_name?: string }): Promise<UserDto>;
+  updateUser(id: string, req: UpdateUserRequest): Promise<UserDto>;
 
   // ── Organization ────────────────────────────────────────────
   getCurrentOrg(): Promise<OrgDto>;

@@ -10,7 +10,7 @@ pub struct Model {
     pub class_id: Option<Uuid>,
     pub class_subject_id: Option<Uuid>,
     pub scheduled_lesson_id: Option<Uuid>,
-    pub date: NaiveDate,
+    pub attendance_date: NaiveDate,
     pub status: String,
     pub notes: Option<String>,
     pub created_at: DateTime<Utc>,

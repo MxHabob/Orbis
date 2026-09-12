@@ -9,7 +9,12 @@
 
 import { authStore } from "./auth.svelte";
 import { academicContext } from "./academic-context.svelte";
-import type { UserDto, OrgUnitDto } from "$lib/api/types";
+import type {
+  UserDto,
+  OrgUnitDto,
+  EffectiveContextDto,
+  LinkedDependentDto,
+} from "$lib/api/types";
 
 export type ScopeLevel = "organization" | "branch" | "class" | "self";
 
@@ -28,6 +33,12 @@ class EffectiveContextStore {
   activeClassId = $state<string | null>(
     localStorage.getItem("orbis_active_class_id") || null,
   );
+  effectiveRole = $state<string>("student");
+  roles = $state<string[]>([]);
+  dependents = $state<LinkedDependentDto[]>([]);
+  selectedDependentId = $state<string | null>(
+    localStorage.getItem("orbis_selected_dependent_id") || null,
+  );
   userPermissions = $state<Set<string>>(new Set());
 
   // ── Derived ─────────────────────────────────────────────────
@@ -35,6 +46,12 @@ class EffectiveContextStore {
   currentOrgId = $derived<string>(authStore.orgId);
   currentPeriodId = $derived<string>(academicContext.effectivePeriodId);
   currentYearId = $derived<string>(academicContext.currentYear?.id || "");
+
+  selectedDependent = $derived<LinkedDependentDto | null>(
+    this.dependents.find((d) => d.student_id === this.selectedDependentId) ||
+      this.dependents[0] ||
+      null,
+  );
 
   /** Computes the active scope level */
   scopeLevel = $derived.by<ScopeLevel>(() => {
@@ -52,6 +69,41 @@ class EffectiveContextStore {
   }));
 
   // ── Methods ─────────────────────────────────────────────────
+  setEffectiveContext(ctx?: EffectiveContextDto | null) {
+    if (!ctx) return;
+    if (ctx.effective_role) {
+      this.effectiveRole = ctx.effective_role;
+    }
+    if (ctx.roles) {
+      this.roles = ctx.roles;
+    }
+    if (ctx.permissions) {
+      this.setPermissions(ctx.permissions);
+    }
+    if (ctx.dependents) {
+      this.dependents = ctx.dependents;
+      if (
+        !this.selectedDependentId &&
+        ctx.dependents.length > 0 &&
+        ctx.dependents[0]?.student_id
+      ) {
+        this.setSelectedDependent(ctx.dependents[0].student_id);
+      }
+    }
+    if (ctx.active_period_id) {
+      academicContext.selectedPeriodId = ctx.active_period_id;
+    }
+  }
+
+  setSelectedDependent(dependentId: string | null) {
+    this.selectedDependentId = dependentId;
+    if (dependentId) {
+      localStorage.setItem("orbis_selected_dependent_id", dependentId);
+    } else {
+      localStorage.removeItem("orbis_selected_dependent_id");
+    }
+  }
+
   setOrgUnit(unitId: string | null) {
     this.activeOrgUnitId = unitId;
     if (unitId) {
@@ -111,9 +163,14 @@ class EffectiveContextStore {
   reset() {
     this.activeOrgUnitId = null;
     this.activeClassId = null;
+    this.effectiveRole = "student";
+    this.roles = [];
+    this.dependents = [];
+    this.selectedDependentId = null;
     this.userPermissions = new Set();
     localStorage.removeItem("orbis_active_org_unit_id");
     localStorage.removeItem("orbis_active_class_id");
+    localStorage.removeItem("orbis_selected_dependent_id");
   }
 }
 

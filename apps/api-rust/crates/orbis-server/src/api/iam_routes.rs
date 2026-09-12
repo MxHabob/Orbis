@@ -9,6 +9,7 @@ use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
 use orbis_domain::entities::user::Role as DomainRole;
+use orbis_app::services::auth_service::EffectiveContextDto;
 
 // ── DTOs ────────────────────────────────────────────────────────
 
@@ -23,6 +24,7 @@ pub struct LoginResponse {
     pub token: String,
     pub refresh_token: String,
     pub user: UserDto,
+    pub effective_context: EffectiveContextDto,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -37,20 +39,32 @@ pub struct RegisterUserRequest {
 pub struct UserDto {
     pub id: Uuid,
     pub org_id: Uuid,
+    pub person_id: Uuid,
     pub email: Option<String>,
     pub full_name: String,
+    pub full_name_ar: Option<String>,
     pub status: String,
-    pub mfa_enabled: Option<bool>,
+    pub is_email_verified: bool,
+    pub is_phone_verified: bool,
+    pub is_mfa_enabled: bool,
 }
 
-pub fn user_to_dto(u: orbis_domain::entities::user::User) -> UserDto {
+pub fn user_to_dto(u: orbis_domain::entities::user::User, p: Option<&orbis_domain::entities::person::Person>) -> UserDto {
+    let (full_name, full_name_ar) = match p {
+        Some(person) => (person.full_name(), person.full_name_ar()),
+        None => (String::new(), None),
+    };
     UserDto {
         id: u.id,
         org_id: u.org_id,
+        person_id: u.person_id,
         email: u.email,
-        full_name: u.full_name,
+        full_name,
+        full_name_ar,
         status: u.status,
-        mfa_enabled: Some(u.mfa_enabled),
+        is_email_verified: u.is_email_verified,
+        is_phone_verified: u.is_phone_verified,
+        is_mfa_enabled: u.is_mfa_enabled,
     }
 }
 
@@ -58,6 +72,7 @@ pub fn user_to_dto(u: orbis_domain::entities::user::User) -> UserDto {
 pub struct SessionResponse {
     pub user: UserDto,
     pub org_id: Uuid,
+    pub effective_context: EffectiveContextDto,
 }
 
 // ── Handlers ────────────────────────────────────────────────────
@@ -83,11 +98,13 @@ async fn login(
     };
 
     let res = state.auth_service.login(&ctx, &payload.email, &payload.password).await?;
+    let user_dto = user_to_dto(res.user, res.person.as_ref());
 
     Ok(ApiResponse::ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
-        user: user_to_dto(res.user),
+        user: user_dto,
+        effective_context: res.effective_context,
     }))
 }
 
@@ -111,9 +128,14 @@ async fn get_session(
     let user = state.auth_service.get_user(user_id).await?
         .ok_or_else(|| ApiError::not_found("User not found"))?;
 
+    let person = state.person_repo.find_by_id(user.person_id).await?;
+    let effective_context = state.auth_service.build_effective_context(&user, person.as_ref()).await?;
+    let user_dto = user_to_dto(user, person.as_ref());
+
     Ok(ApiResponse::ok(SessionResponse {
         org_id: ctx.tenant_id,
-        user: user_to_dto(user),
+        user: user_dto,
+        effective_context,
     }))
 }
 
@@ -143,8 +165,9 @@ async fn register_user(
     };
 
     let user = state.auth_service.register_user(&ctx, payload.full_name, Some(payload.email), payload.password, role, Some(ctx.tenant_id)).await?;
+    let person = state.person_repo.find_by_id(user.person_id).await?;
 
-    Ok(ApiResponse::ok(user_to_dto(user)))
+    Ok(ApiResponse::ok(user_to_dto(user, person.as_ref())))
 }
 
 #[utoipa::path(
@@ -161,7 +184,11 @@ async fn list_users(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<UserDto>>>, ApiError> {
     let users = state.user_repo.find_by_org(ctx.tenant_id).await?;
-    let dtos: Vec<UserDto> = users.into_iter().map(user_to_dto).collect();
+    let mut dtos = Vec::new();
+    for u in users {
+        let p = state.person_repo.find_by_id(u.person_id).await.unwrap_or(None);
+        dtos.push(user_to_dto(u, p.as_ref()));
+    }
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -189,7 +216,8 @@ async fn get_user(
         return Err(ApiError::forbidden("Access denied to this user"));
     }
 
-    Ok(ApiResponse::ok(user_to_dto(user)))
+    let person = state.person_repo.find_by_id(user.person_id).await?;
+    Ok(ApiResponse::ok(user_to_dto(user, person.as_ref())))
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -223,12 +251,21 @@ pub async fn update_user(
     }
 
     if let Some(name) = p.full_name {
-        user.full_name = name;
+        if let Ok(Some(mut person)) = state.person_repo.find_by_id(user.person_id).await {
+            let parts: Vec<&str> = name.split_whitespace().collect();
+            person.first_name = parts.first().unwrap_or(&"").to_string();
+            if parts.len() > 1 {
+                person.last_name = parts[1..].join(" ");
+            }
+            person.updated_at = chrono::Utc::now();
+            let _ = state.person_repo.save(&person).await;
+        }
     }
     user.updated_at = chrono::Utc::now();
     state.user_repo.save(&user).await?;
 
-    Ok(ApiResponse::ok(user_to_dto(user)))
+    let person = state.person_repo.find_by_id(user.person_id).await?;
+    Ok(ApiResponse::ok(user_to_dto(user, person.as_ref())))
 }
 
 // ── MFA & Identity DTOs ─────────────────────────────────────────
@@ -347,11 +384,14 @@ async fn mfa_challenge(
 
     let user = state.user_repo.find_by_id(payload.user_id).await?
         .ok_or_else(|| ApiError::not_found("User not found"))?;
+    let person = state.person_repo.find_by_id(user.person_id).await?;
+    let effective_context = state.auth_service.build_effective_context(&user, person.as_ref()).await?;
 
     Ok(ApiResponse::ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
-        user: user_to_dto(user),
+        user: user_to_dto(user, person.as_ref()),
+        effective_context,
     }))
 }
 
@@ -392,11 +432,14 @@ async fn google_login(
     let res = state.auth_service.login_google(&payload.id_token).await?;
     let user = state.user_repo.find_by_id(res.user_id).await?
         .ok_or_else(|| ApiError::not_found("User not found"))?;
+    let person = state.person_repo.find_by_id(user.person_id).await?;
+    let effective_context = state.auth_service.build_effective_context(&user, person.as_ref()).await?;
 
     Ok(ApiResponse::ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
-        user: user_to_dto(user),
+        user: user_to_dto(user, person.as_ref()),
+        effective_context,
     }))
 }
 
@@ -458,4 +501,3 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/iam/users", post(register_user).get(list_users))
         .route("/api/v1/iam/users/:id", get(get_user).put(update_user))
 }
-

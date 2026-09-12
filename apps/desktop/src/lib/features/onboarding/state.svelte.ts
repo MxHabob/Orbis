@@ -307,8 +307,8 @@ class OnboardingState {
       const currencies = await api.listCurrencies().catch(() => []);
       if (currencies && currencies.length > 0) {
         const mainCurr = currencies[0];
-        if (mainCurr && mainCurr.id) {
-          this.profile.currency = mainCurr.id;
+        if (mainCurr && mainCurr.code) {
+          this.profile.currency = mainCurr.code;
         }
       }
     } catch (e) {

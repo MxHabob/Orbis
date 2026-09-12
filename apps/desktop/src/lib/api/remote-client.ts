@@ -12,6 +12,7 @@ import type {
   LoginResponse,
   SessionResponse,
   RegisterUserRequest,
+  UpdateUserRequest,
   UserDto,
   OrgDto,
   UpdateOrgRequest,
@@ -71,6 +72,7 @@ import type {
   DocumentDto,
   UploadDocumentRequest,
   IntegrationDto,
+  IntegrationStatusResponse,
   ConnectAppRequest,
   TemplateDto,
   CreateTemplateRequest,
@@ -221,7 +223,7 @@ export class RemoteClient implements OrbisApiClient {
   async getUser(id: string): Promise<UserDto> {
     return this.get(`/api/v1/iam/users/${id}`);
   }
-  async updateUser(id: string, req: { full_name?: string }): Promise<UserDto> {
+  async updateUser(id: string, req: UpdateUserRequest): Promise<UserDto> {
     return this.put(`/api/v1/iam/users/${id}`, req);
   }
 

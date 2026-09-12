@@ -237,7 +237,7 @@ pub async fn assessment_mark_attendance(request: MarkAttendanceInput, state: Sta
         class_id: a.class_id.map(|c| c.to_string()),
         class_subject_id: a.class_subject_id.map(|c| c.to_string()),
         scheduled_lesson_id: a.scheduled_lesson_id.map(|s| s.to_string()),
-        date: a.date.to_string(),
+        date: a.attendance_date.to_string(),
         status: a.status,
         note: a.notes,
     }))
@@ -254,7 +254,7 @@ pub async fn assessment_list_attendance(class_id: String, date: String, state: S
         class_id: a.class_id.map(|c| c.to_string()),
         class_subject_id: a.class_subject_id.map(|c| c.to_string()),
         scheduled_lesson_id: a.scheduled_lesson_id.map(|s| s.to_string()),
-        date: a.date.to_string(),
+        date: a.attendance_date.to_string(),
         status: a.status,
         note: a.notes,
     }).collect()))

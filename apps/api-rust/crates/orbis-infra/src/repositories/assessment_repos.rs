@@ -231,33 +231,36 @@ impl GradeRepository for AssessmentRepoImpl {
     }
 }
 
+fn map_attendance_model_to_domain(m: attendance::Model) -> DomainAttendance {
+    DomainAttendance {
+        id: m.id,
+        student_id: m.student_id,
+        class_id: m.class_id,
+        class_subject_id: m.class_subject_id,
+        scheduled_lesson_id: m.scheduled_lesson_id,
+        attendance_date: m.attendance_date,
+        status: m.status,
+        notes: m.notes,
+        created_at: m.created_at,
+        updated_at: m.updated_at,
+    }
+}
+
 #[async_trait]
 impl AttendanceRepository for AssessmentRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainAttendance>, DomainError> {
         let model = AttendanceEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(model.map(|m| DomainAttendance {
-            id: m.id, student_id: m.student_id, class_id: m.class_id,
-            class_subject_id: m.class_subject_id,
-            scheduled_lesson_id: m.scheduled_lesson_id,
-            date: m.date, status: m.status, notes: m.notes,
-            created_at: m.created_at, updated_at: m.updated_at
-        }))
+        Ok(model.map(map_attendance_model_to_domain))
     }
 
     async fn find_by_class_and_date(&self, class_id: Uuid, date: chrono::NaiveDate) -> Result<Vec<DomainAttendance>, DomainError> {
         let models = AttendanceEntity::find()
             .filter(attendance::Column::ClassId.eq(class_id))
-            .filter(attendance::Column::Date.eq(date))
+            .filter(attendance::Column::AttendanceDate.eq(date))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| DomainAttendance {
-            id: m.id, student_id: m.student_id, class_id: m.class_id,
-            class_subject_id: m.class_subject_id,
-            scheduled_lesson_id: m.scheduled_lesson_id,
-            date: m.date, status: m.status, notes: m.notes,
-            created_at: m.created_at, updated_at: m.updated_at
-        }).collect())
+        Ok(models.into_iter().map(map_attendance_model_to_domain).collect())
     }
 
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<DomainAttendance>, DomainError> {
@@ -266,13 +269,7 @@ impl AttendanceRepository for AssessmentRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| DomainAttendance {
-            id: m.id, student_id: m.student_id, class_id: m.class_id,
-            class_subject_id: m.class_subject_id,
-            scheduled_lesson_id: m.scheduled_lesson_id,
-            date: m.date, status: m.status, notes: m.notes,
-            created_at: m.created_at, updated_at: m.updated_at
-        }).collect())
+        Ok(models.into_iter().map(map_attendance_model_to_domain).collect())
     }
 
     async fn list(&self, _org_id: Uuid, filter: orbis_domain::queries::filters::AttendanceFilter) -> Result<orbis_domain::queries::filters::PaginatedList<DomainAttendance>, DomainError> {
@@ -284,7 +281,7 @@ impl AttendanceRepository for AssessmentRepoImpl {
             query = query.filter(attendance::Column::ClassId.eq(class_id));
         }
         if let Some(date) = filter.date {
-            query = query.filter(attendance::Column::Date.eq(date));
+            query = query.filter(attendance::Column::AttendanceDate.eq(date));
         }
         let pagination = filter.pagination.unwrap_or_default();
         let page = pagination.page();
@@ -292,24 +289,22 @@ impl AttendanceRepository for AssessmentRepoImpl {
         let paginator = query.paginate(&self.db, page_size);
         let total_count = paginator.num_items().await.map_err(|e| DomainError::Internal(e.to_string()))?;
         let rows = paginator.fetch_page(page - 1).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        let items = rows.into_iter().map(|m| DomainAttendance {
-            id: m.id, student_id: m.student_id, class_id: m.class_id,
-            class_subject_id: m.class_subject_id,
-            scheduled_lesson_id: m.scheduled_lesson_id,
-            date: m.date, status: m.status, notes: m.notes,
-            created_at: m.created_at, updated_at: m.updated_at
-        }).collect();
+        let items = rows.into_iter().map(map_attendance_model_to_domain).collect();
         Ok(orbis_domain::queries::filters::PaginatedList::new(items, total_count, page, page_size))
     }
 
     async fn save(&self, attendance: &DomainAttendance) -> Result<(), DomainError> {
         let active = attendance::ActiveModel {
-            id: Set(attendance.id), student_id: Set(attendance.student_id),
+            id: Set(attendance.id),
+            student_id: Set(attendance.student_id),
             class_id: Set(attendance.class_id),
             class_subject_id: Set(attendance.class_subject_id),
-            scheduled_lesson_id: Set(attendance.scheduled_lesson_id), date: Set(attendance.date),
-            status: Set(attendance.status.clone()), notes: Set(attendance.notes.clone()),
-            created_at: Set(attendance.created_at), updated_at: Set(attendance.updated_at),
+            scheduled_lesson_id: Set(attendance.scheduled_lesson_id),
+            attendance_date: Set(attendance.attendance_date),
+            status: Set(attendance.status.clone()),
+            notes: Set(attendance.notes.clone()),
+            created_at: Set(attendance.created_at),
+            updated_at: Set(attendance.updated_at),
         };
 
         if AttendanceEntity::find_by_id(attendance.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {

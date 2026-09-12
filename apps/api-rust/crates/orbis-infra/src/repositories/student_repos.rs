@@ -97,13 +97,16 @@ impl StudentRepository for StudentRepoImpl {
                 id: sm.person_id,
                 org_id: Some(sm.org_id),
                 first_name: sm.first_name.clone(),
+                middle_name: None,
                 last_name: sm.last_name.clone(),
-                full_name: Some(sm.full_name.clone()),
-                name_ar: sm.name_ar.clone(),
+                first_name_ar: None,
+                middle_name_ar: None,
+                last_name_ar: None,
+                display_name: None,
                 national_id: sm.national_id.clone(),
                 passport_number: sm.passport_number.clone(),
                 gender: Some(sm.gender.clone()),
-                date_of_birth: sm.date_of_birth.map(|d| d.to_string()),
+                birth_date: sm.date_of_birth.map(|d| d.to_string()),
                 place_of_birth: sm.place_of_birth.clone(),
                 nationality: sm.nationality.clone(),
                 blood_type: sm.blood_type.clone(),
@@ -251,13 +254,16 @@ fn map_person_model_to_domain(m: person::Model) -> DomainPerson {
         id: m.id,
         org_id: m.org_id,
         first_name: m.first_name,
+        middle_name: m.middle_name,
         last_name: m.last_name,
-        full_name: m.full_name,
-        name_ar: m.name_ar,
+        first_name_ar: m.first_name_ar,
+        middle_name_ar: m.middle_name_ar,
+        last_name_ar: m.last_name_ar,
+        display_name: m.display_name,
         national_id: m.national_id,
         passport_number: m.passport_number,
         gender: m.gender,
-        date_of_birth: m.date_of_birth.and_then(|d| chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
+        birth_date: m.birth_date.and_then(|d| chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
         place_of_birth: m.place_of_birth,
         nationality: m.nationality,
         blood_type: m.blood_type,
@@ -305,7 +311,7 @@ impl EnrollmentRepository for StudentRepoImpl {
             query = query.filter(enrollment::Column::StudyMode.eq(study_mode.to_string()));
         }
 
-        query = query.order_by_desc(enrollment::Column::EnrollmentDate);
+        query = query.order_by_desc(enrollment::Column::EnrolledAt);
 
         let pagination = filter.pagination.unwrap_or_default();
         let page = pagination.page();
@@ -358,9 +364,9 @@ impl EnrollmentRepository for StudentRepoImpl {
             study_mode: Set(Some(e.study_mode.to_string())),
             is_attendance_exempt: Set(Some(e.is_attendance_exempt)),
             is_grade_exempt: Set(Some(e.is_grade_exempt)),
-            enrollment_date: Set(e.enrollment_date.into()),
+            enrolled_at: Set(e.enrolled_at.into()),
             enrollment_type: Set(Some(e.study_mode.to_string())),
-            withdrawal_date: Set(e.withdrawal_date.map(Into::into)),
+            withdrawn_at: Set(e.withdrawn_at.map(Into::into)),
             withdrawal_reason: Set(e.withdrawal_reason.clone()),
             meta: Set(Some(e.meta.clone())),
             created_at: Set(e.created_at.into()),
@@ -423,12 +429,33 @@ fn map_enrollment_model_to_domain(m: enrollment::Model) -> DomainEnrollment {
         },
         is_attendance_exempt: m.is_attendance_exempt.unwrap_or(false),
         is_grade_exempt: m.is_grade_exempt.unwrap_or(false),
-        enrollment_date: m.enrollment_date.into(),
-        withdrawal_date: m.withdrawal_date.map(Into::into),
+        enrolled_at: m.enrolled_at.into(),
+        withdrawn_at: m.withdrawn_at.map(Into::into),
         withdrawal_reason: m.withdrawal_reason,
         meta: m.meta.unwrap_or_default(),
         created_at: m.created_at.into(),
         updated_at: m.updated_at.into(),
+    }
+}
+
+fn map_guardian_model_to_domain(m: student_guardian::Model) -> DomainStudentGuardian {
+    DomainStudentGuardian {
+        id: m.id,
+        student_id: m.student_id,
+        guardian_id: m.guardian_id,
+        relationship: m.relationship,
+        relationship_ar: m.relationship_ar,
+        is_primary: m.is_primary,
+        is_emergency_contact: m.is_emergency_contact,
+        is_authorized_pickup: m.is_authorized_pickup,
+        is_payer: m.is_payer,
+        payment_share_percent: m.payment_share_percent,
+        occupation: m.occupation,
+        employer: m.employer,
+        work_phone: m.work_phone,
+        notes: m.notes,
+        created_at: m.created_at,
+        updated_at: m.updated_at,
     }
 }
 
@@ -440,30 +467,16 @@ impl StudentGuardianRepository for StudentRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| DomainStudentGuardian {
-            id: m.id,
-            student_id: m.student_id,
-            guardian_id: m.guardian_id,
-            relationship: m.relationship,
-            relationship_ar: m.relationship_ar,
-            is_primary: m.is_primary,
-            is_emergency_contact: m.is_emergency_contact,
-            is_authorized_pickup: m.is_authorized_pickup,
-            can_view_grades: m.can_view_grades,
-            can_view_attendance: m.can_view_attendance,
-            can_view_behavior: m.can_view_behavior,
-            can_view_finance: m.can_view_finance,
-            can_view_schedule: m.can_view_schedule,
-            can_receive_notifications: m.can_receive_notifications,
-            is_payer: m.is_payer,
-            payment_share_percent: m.payment_share_percent,
-            occupation: m.occupation,
-            employer: m.employer,
-            work_phone: m.work_phone,
-            notes: m.notes,
-            created_at: m.created_at,
-            updated_at: m.updated_at,
-        }).collect())
+        Ok(models.into_iter().map(map_guardian_model_to_domain).collect())
+    }
+
+    async fn find_by_guardian(&self, guardian_id: Uuid) -> Result<Vec<DomainStudentGuardian>, DomainError> {
+        let models = StudentGuardianEntity::find()
+            .filter(student_guardian::Column::GuardianId.eq(guardian_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(map_guardian_model_to_domain).collect())
     }
 
     async fn save(&self, g: &DomainStudentGuardian) -> Result<(), DomainError> {
@@ -476,12 +489,6 @@ impl StudentGuardianRepository for StudentRepoImpl {
             is_primary: Set(g.is_primary),
             is_emergency_contact: Set(g.is_emergency_contact),
             is_authorized_pickup: Set(g.is_authorized_pickup),
-            can_view_grades: Set(g.can_view_grades),
-            can_view_attendance: Set(g.can_view_attendance),
-            can_view_behavior: Set(g.can_view_behavior),
-            can_view_finance: Set(g.can_view_finance),
-            can_view_schedule: Set(g.can_view_schedule),
-            can_receive_notifications: Set(g.can_receive_notifications),
             is_payer: Set(g.is_payer),
             payment_share_percent: Set(g.payment_share_percent),
             occupation: Set(g.occupation.clone()),
@@ -497,6 +504,16 @@ impl StudentGuardianRepository for StudentRepoImpl {
         } else {
             active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         }
+        Ok(())
+    }
+
+    async fn delete(&self, student_id: Uuid, guardian_id: Uuid) -> Result<(), DomainError> {
+        student_guardian::Entity::delete_many()
+            .filter(student_guardian::Column::StudentId.eq(student_id))
+            .filter(student_guardian::Column::GuardianId.eq(guardian_id))
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
     }
 }

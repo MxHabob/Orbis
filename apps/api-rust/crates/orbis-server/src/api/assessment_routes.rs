@@ -233,7 +233,7 @@ pub async fn mark_attendance(
     Ok(ApiResponse::ok(AttendanceDto {
         id: a.id, student_id: a.student_id, class_id: a.class_id,
         class_subject_id: a.class_subject_id, scheduled_lesson_id: a.scheduled_lesson_id,
-        date: a.date, status: a.status, notes: a.notes,
+        date: a.attendance_date, status: a.status, notes: a.notes,
     }))
 }
 
@@ -246,7 +246,7 @@ pub async fn list_attendance(
     let dtos = list.into_iter().map(|a| AttendanceDto {
         id: a.id, student_id: a.student_id, class_id: a.class_id,
         class_subject_id: a.class_subject_id, scheduled_lesson_id: a.scheduled_lesson_id,
-        date: a.date, status: a.status, notes: a.notes,
+        date: a.attendance_date, status: a.status, notes: a.notes,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }

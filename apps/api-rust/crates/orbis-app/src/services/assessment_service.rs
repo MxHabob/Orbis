@@ -276,7 +276,7 @@ impl AssessmentService {
             class_id,
             class_subject_id,
             scheduled_lesson_id: None,
-            date,
+            attendance_date: date,
             status: status.clone(),
             notes,
             created_at: now,

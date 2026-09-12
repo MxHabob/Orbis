@@ -77,7 +77,7 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     // ── 1. Organization ────────────────────────────────────────
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO organizations (id, name, name_ar, slug, timezone, locale, base_currency_id, is_active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, $8, $9)",
+        "INSERT INTO organizations (id, name, name_ar, slug, timezone, locale, base_currency_code, is_active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, $8, $9)",
         vec![
             org_id_uuid.into(),
             payload.org_name.clone().into(),
@@ -99,7 +99,7 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
 
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO persons (id, org_id, first_name, last_name, full_name, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO persons (id, org_id, first_name, last_name, display_name, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
         vec![
             person_id_uuid.into(),
             org_id_uuid.into(),
@@ -114,13 +114,12 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     // ── 2. Admin User ──────────────────────────────────────────
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO users (id, person_id, org_id, email, full_name, password_hash, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $8)",
+        "INSERT INTO users (id, person_id, org_id, email, password_hash, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, 'active', $6, $7)",
         vec![
             admin_id_uuid.into(),
             person_id_uuid.into(),
             org_id_uuid.into(),
             payload.admin_username.clone().into(),
-            payload.admin_name.clone().into(),
             payload.admin_password_hash.clone().into(),
             now.clone().into(),
             now.clone().into(),
@@ -521,7 +520,7 @@ async fn seed_chart_of_accounts<C: ConnectionTrait>(
     for (id, oid, code, _name, name_ar, db_type, parent_id, _path, _depth, curr, timestamp) in rows {
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
-            "INSERT INTO accounts (id, org_id, code, name, account_type, parent_id, currency, is_active, balances, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, '{}', $8, $9)",
+            "INSERT INTO accounts (id, org_id, code, name, account_type, parent_id, currency_code, is_active, balances, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, '{}', $8, $9)",
             vec![
                 id.into(), oid.into(), code.clone().into(), name_ar.into(),
                 db_type.into(),

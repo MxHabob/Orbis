@@ -29,31 +29,47 @@ impl ExamSessionRepository for ExamRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainExamSession>, DomainError> {
         let model = ExamSessionEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(|m| DomainExamSession {
-            id: m.id, org_id: m.org_id, academic_period_id: m.academic_period_id,
-            name: m.name, start_date: m.start_date, end_date: m.end_date,
-            status: m.status, created_at: m.created_at, updated_at: m.updated_at
+            id: m.id,
+            org_id: m.org_id,
+            period_id: m.period_id,
+            name: m.name,
+            start_date: m.start_date,
+            end_date: m.end_date,
+            status: m.status,
+            created_at: m.created_at,
+            updated_at: m.updated_at,
         }))
     }
 
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<DomainExamSession>, DomainError> {
         let models = ExamSessionEntity::find()
-            .filter(exam_session::Column::AcademicPeriodId.eq(period_id))
+            .filter(exam_session::Column::PeriodId.eq(period_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(models.into_iter().map(|m| DomainExamSession {
-            id: m.id, org_id: m.org_id, academic_period_id: m.academic_period_id,
-            name: m.name, start_date: m.start_date, end_date: m.end_date,
-            status: m.status, created_at: m.created_at, updated_at: m.updated_at
+            id: m.id,
+            org_id: m.org_id,
+            period_id: m.period_id,
+            name: m.name,
+            start_date: m.start_date,
+            end_date: m.end_date,
+            status: m.status,
+            created_at: m.created_at,
+            updated_at: m.updated_at,
         }).collect())
     }
 
     async fn save(&self, session: &DomainExamSession) -> Result<(), DomainError> {
         let active = exam_session::ActiveModel {
-            id: Set(session.id), org_id: Set(session.org_id),
-            academic_period_id: Set(session.academic_period_id), name: Set(session.name.clone()),
-            start_date: Set(session.start_date), end_date: Set(session.end_date),
-            status: Set(session.status.clone()), created_at: Set(session.created_at),
+            id: Set(session.id),
+            org_id: Set(session.org_id),
+            period_id: Set(session.period_id),
+            name: Set(session.name.clone()),
+            start_date: Set(session.start_date),
+            end_date: Set(session.end_date),
+            status: Set(session.status.clone()),
+            created_at: Set(session.created_at),
             updated_at: Set(session.updated_at),
         };
 

@@ -101,7 +101,7 @@ pub async fn exam_create_session(request: CreateExamSessionInput, state: State<'
         .map_err(|e| e.to_string())?;
 
     Ok(ok(ExamSessionDto {
-        id: s.id.to_string(), org_id: s.org_id.to_string(), academic_period_id: s.academic_period_id.to_string(),
+        id: s.id.to_string(), org_id: s.org_id.to_string(), academic_period_id: s.period_id.to_string(),
         name: s.name,
         start_date: s.start_date.to_string(), end_date: s.end_date.to_string(),
         status: s.status,
@@ -113,7 +113,7 @@ pub async fn exam_list_sessions(period_id: String, state: State<'_, AppState>) -
     let pid = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
     let items = state.scheduling_service.list_exam_sessions(pid).await.map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(|s| ExamSessionDto {
-        id: s.id.to_string(), org_id: s.org_id.to_string(), academic_period_id: s.academic_period_id.to_string(),
+        id: s.id.to_string(), org_id: s.org_id.to_string(), academic_period_id: s.period_id.to_string(),
         name: s.name,
         start_date: s.start_date.to_string(), end_date: s.end_date.to_string(),
         status: s.status,
@@ -125,7 +125,7 @@ pub async fn exam_get_session(id: String, state: State<'_, AppState>) -> Result<
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
     let s = state.scheduling_service.get_exam_session(uid).await.map_err(|e| e.to_string())?.ok_or("Session not found")?;
     Ok(ok(ExamSessionDto {
-        id: s.id.to_string(), org_id: s.org_id.to_string(), academic_period_id: s.academic_period_id.to_string(),
+        id: s.id.to_string(), org_id: s.org_id.to_string(), academic_period_id: s.period_id.to_string(),
         name: s.name,
         start_date: s.start_date.to_string(), end_date: s.end_date.to_string(),
         status: s.status,

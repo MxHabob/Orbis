@@ -145,7 +145,9 @@ export function buildStudentColumns(
     name: labels.class ?? "Class",
     size: 160,
     editor: classOptions && classOptions.length > 0 ? "combo" : "text",
-    options: classOptions?.map((c) => ({ id: c.id, label: c.name })) || [],
+    options:
+      classOptions?.map((c) => ({ value: c.id, label: c.name })) ||
+      [],
     cellProperties: errorCellProps("class_id"),
   });
 
@@ -157,8 +159,11 @@ export function buildStudentColumns(
       size: 110,
       editor: "combo",
       options: [
-        { id: "active", label: m.common_phase_active() },
-        { id: "withdrawn", label: m.common_status_withdrawn() },
+        { value: "active", label: m.common_phase_active() },
+        {
+          value: "withdrawn",
+          label: m.common_status_withdrawn(),
+        },
       ],
     });
   }
@@ -226,15 +231,15 @@ export function buildStudentColumns(
       editor: "combo",
       options: [
         {
-          id: "father",
+          value: "father",
           label: m.common_guardians_relationship_father?.() || "Father",
         },
         {
-          id: "mother",
+          value: "mother",
           label: m.common_guardians_relationship_mother?.() || "Mother",
         },
         {
-          id: "other",
+          value: "other",
           label: m.common_guardians_relationship_other?.() || "Other",
         },
       ],
@@ -248,7 +253,7 @@ export function buildStudentColumns(
       size: 100,
       editor: "combo",
       options: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bt) => ({
-        id: bt,
+        value: bt,
         label: bt,
       })),
     });

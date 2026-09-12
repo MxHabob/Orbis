@@ -43,14 +43,14 @@ pub struct AcademicPeriod {
     pub end_date: DateTime<Utc>,
     pub hijri_start: Option<String>,
     pub hijri_end: Option<String>,
-    pub enrollment_start: Option<DateTime<Utc>>,
-    pub enrollment_end: Option<DateTime<Utc>>,
+    pub enrollment_starts_at: Option<DateTime<Utc>>,
+    pub enrollment_ends_at: Option<DateTime<Utc>>,
     pub is_enrollment_open: bool,
-    pub grade_entry_start: Option<DateTime<Utc>>,
-    pub grade_entry_end: Option<DateTime<Utc>>,
+    pub grade_entry_starts_at: Option<DateTime<Utc>>,
+    pub grade_entry_ends_at: Option<DateTime<Utc>>,
     pub is_grade_entry_open: bool,
-    pub exam_start: Option<DateTime<Utc>>,
-    pub exam_end: Option<DateTime<Utc>>,
+    pub exam_starts_at: Option<DateTime<Utc>>,
+    pub exam_ends_at: Option<DateTime<Utc>>,
     pub is_locked: bool,
     pub locked_at: Option<DateTime<Utc>>,
     pub locked_by: Option<Uuid>,
@@ -67,8 +67,8 @@ impl AcademicPeriod {
         }
         if matches!(self.state, AcademicPeriodState::GradeSubmission | AcademicPeriodState::ActiveTeaching | AcademicPeriodState::FinalExams) {
             let now = Utc::now();
-            let after_start = self.grade_entry_start.map(|s| now >= s).unwrap_or(true);
-            let before_end = self.grade_entry_end.map(|e| now <= e).unwrap_or(true);
+            let after_start = self.grade_entry_starts_at.map(|s| now >= s).unwrap_or(true);
+            let before_end = self.grade_entry_ends_at.map(|e| now <= e).unwrap_or(true);
             self.is_grade_entry_open || (after_start && before_end)
         } else {
             false
@@ -80,8 +80,8 @@ impl AcademicPeriod {
             return false;
         }
         let now = Utc::now();
-        let after_start = self.enrollment_start.map(|s| now >= s).unwrap_or(true);
-        let before_end = self.enrollment_end.map(|e| now <= e).unwrap_or(true);
+        let after_start = self.enrollment_starts_at.map(|s| now >= s).unwrap_or(true);
+        let before_end = self.enrollment_ends_at.map(|e| now <= e).unwrap_or(true);
         self.is_enrollment_open || (after_start && before_end)
     }
 }

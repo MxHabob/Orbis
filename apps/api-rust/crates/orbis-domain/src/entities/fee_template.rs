@@ -32,7 +32,7 @@ pub struct FeeTemplate {
     pub name_ar: Option<String>,
     pub category: String,
     pub default_amount: Decimal,
-    pub currency: String,
+    pub currency_code: String,
     pub revenue_account_id: Uuid,
     pub receivable_account_id: Uuid,
     pub applicable_levels: Option<Vec<String>>,

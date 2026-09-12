@@ -13,8 +13,19 @@ pub trait PermissionCheckerPort: Send + Sync {
     /// Checks if a specific user has a named permission in an org.
     /// Returns false if the user lacks the permission or if there is an error.
     async fn has_permission(&self, user_id: Uuid, org_id: Uuid, permission: &str) -> Result<bool, DomainError> {
-        // Default implementation — subclasses can override for efficiency.
         let _ = (user_id, org_id, permission);
         Ok(false)
+    }
+
+    /// Retrieves all effective permission names for a user in an organization.
+    async fn get_user_permissions(&self, user_id: Uuid, org_id: Uuid) -> Result<Vec<String>, DomainError> {
+        let _ = (user_id, org_id);
+        Ok(vec![])
+    }
+
+    /// Retrieves all assigned role IDs for a user in an organization.
+    async fn get_user_roles(&self, user_id: Uuid, org_id: Uuid) -> Result<Vec<String>, DomainError> {
+        let _ = (user_id, org_id);
+        Ok(vec![])
     }
 }

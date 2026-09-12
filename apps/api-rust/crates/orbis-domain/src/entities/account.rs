@@ -36,7 +36,7 @@ pub struct Account {
     pub parent_id: Option<Uuid>,
     pub path: String,
     pub depth: u32,
-    pub currency: String,
+    pub currency_code: String,
     pub entity_type: Option<String>,
     pub entity_id: Option<Uuid>,
     pub is_control_account: bool,

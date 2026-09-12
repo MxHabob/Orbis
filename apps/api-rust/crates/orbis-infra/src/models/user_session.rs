@@ -15,7 +15,7 @@ pub struct Model {
     pub is_revoked: bool,
     pub is_current: bool,
     pub is_trusted: bool,
-    pub mfa_verified: bool,
+    pub is_mfa_verified: bool,
     pub expires_at: DateTime<Utc>,
     pub refresh_expires_at: Option<DateTime<Utc>>,
     pub last_active_at: Option<DateTime<Utc>>,

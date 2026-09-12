@@ -11,7 +11,7 @@ pub struct Model {
     pub name_ar: Option<String>,
     pub category: Option<String>,
     pub default_amount: Decimal,
-    pub currency: Option<String>,
+    pub currency_code: Option<String>,
     pub revenue_account_id: Uuid,
     pub receivable_account_id: Uuid,
     pub applicable_levels: Option<Json>,

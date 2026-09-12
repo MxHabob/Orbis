@@ -14,7 +14,8 @@ use crate::state::AppState;
 pub struct ExamSessionDto {
     pub id: Uuid,
     pub org_id: Uuid,
-    pub academic_period_id: Uuid,
+    #[serde(alias = "academic_period_id")]
+    pub period_id: Uuid,
     pub name: String,
     pub start_date: NaiveDate,
     pub end_date: NaiveDate,
@@ -23,7 +24,8 @@ pub struct ExamSessionDto {
 
 #[derive(Deserialize, ToSchema)]
 pub struct CreateExamSessionRequest {
-    pub academic_period_id: Uuid,
+    #[serde(alias = "academic_period_id")]
+    pub period_id: Uuid,
     pub name: String,
     pub start_date: NaiveDate,
     pub end_date: NaiveDate,
@@ -53,16 +55,16 @@ pub struct SeatingDto {
     pub id: Uuid,
     pub exam_session_id: Uuid,
     pub student_id: Uuid,
-    pub seating_number: String,
     pub room_id: Option<Uuid>,
+    pub seating_number: String,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct AssignSeatingRequest {
     pub exam_session_id: Uuid,
     pub student_id: Uuid,
-    pub seating_number: String,
     pub room_id: Option<Uuid>,
+    pub seating_number: String,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -110,9 +112,9 @@ pub struct ScheduleQuery { pub session_id: Uuid }
 async fn create_session(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateExamSessionRequest>,
 ) -> Result<Json<ApiResponse<ExamSessionDto>>, ApiError> {
-    let s = state.scheduling_service.create_exam_session(&ctx, ctx.tenant_id, p.academic_period_id, p.name, p.start_date, p.end_date).await?;
+    let s = state.scheduling_service.create_exam_session(&ctx, ctx.tenant_id, p.period_id, p.name, p.start_date, p.end_date).await?;
     Ok(ApiResponse::ok(ExamSessionDto {
-        id: s.id, org_id: s.org_id, academic_period_id: s.academic_period_id,
+        id: s.id, org_id: s.org_id, period_id: s.period_id,
         name: s.name, start_date: s.start_date, end_date: s.end_date, status: s.status,
     }))
 }
@@ -127,7 +129,7 @@ async fn list_sessions(
         None => vec![],
     };
     let dtos = sessions.into_iter().map(|s| ExamSessionDto {
-        id: s.id, org_id: s.org_id, academic_period_id: s.academic_period_id,
+        id: s.id, org_id: s.org_id, period_id: s.period_id,
         name: s.name, start_date: s.start_date, end_date: s.end_date, status: s.status,
     }).collect();
     Ok(ApiResponse::ok(dtos))
@@ -140,7 +142,7 @@ async fn get_session(
 ) -> Result<Json<ApiResponse<ExamSessionDto>>, ApiError> {
     let s = state.scheduling_service.get_exam_session(id).await?.ok_or_else(|| ApiError::not_found("Exam session not found"))?;
     Ok(ApiResponse::ok(ExamSessionDto {
-        id: s.id, org_id: s.org_id, academic_period_id: s.academic_period_id,
+        id: s.id, org_id: s.org_id, period_id: s.period_id,
         name: s.name, start_date: s.start_date, end_date: s.end_date, status: s.status,
     }))
 }
@@ -218,4 +220,3 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/exam-secrets", post(assign_secret))
         .route("/api/v1/exam-proctors", post(assign_proctor))
 }
-

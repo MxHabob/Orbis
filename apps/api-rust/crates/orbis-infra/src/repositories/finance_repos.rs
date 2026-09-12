@@ -65,7 +65,7 @@ impl AccountRepository for FinanceRepoImpl {
             name: Set(a.name.clone()),
             account_type: Set(a.account_type.to_string()),
             parent_id: Set(a.parent_id),
-            currency: Set(a.currency.clone()),
+            currency_code: Set(a.currency_code.clone()),
             is_active: Set(a.is_active),
             balances: Set(a.balances.clone()),
             created_at: Set(a.created_at.into()),
@@ -99,7 +99,7 @@ fn map_account_model_to_domain(m: account::Model) -> DomainAccount {
         parent_id: m.parent_id,
         path: "/".to_string(),
         depth: 0,
-        currency: m.currency,
+        currency_code: m.currency_code,
         entity_type: None,
         entity_id: None,
         is_control_account: false,
@@ -111,38 +111,42 @@ fn map_account_model_to_domain(m: account::Model) -> DomainAccount {
     }
 }
 
+fn map_journal_entry_model_to_domain(m: journal_entry::Model) -> DomainJournalEntry {
+    DomainJournalEntry {
+        id: m.id,
+        org_id: m.org_id,
+        reference_number: m.reference_number,
+        accounting_date: m.accounting_date,
+        amount: m.amount,
+        base_amount: m.base_amount,
+        currency_code: m.currency_code,
+        exchange_rate: m.exchange_rate,
+        debit_account_id: m.debit_account_id,
+        credit_account_id: m.credit_account_id,
+        description: m.description,
+        description_ar: m.description_ar,
+        source_type: m.source_type.unwrap_or_else(|| "manual".into()),
+        source_id: m.source_id,
+        status: match m.status.as_deref().unwrap_or("posted") {
+            "draft" => JournalPostingStatus::Draft,
+            "reconciled" => JournalPostingStatus::Reconciled,
+            "reversed" => JournalPostingStatus::Reversed,
+            _ => JournalPostingStatus::Posted,
+        },
+        lines: Vec::new(),
+        is_reversed: m.is_reversed.unwrap_or(false),
+        reversed_by: m.reversed_by,
+        reversal_reason: m.reversal_reason,
+        created_by: m.created_by,
+        created_at: m.created_at.into(),
+    }
+}
+
 #[async_trait]
 impl JournalEntryRepository for FinanceRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainJournalEntry>, DomainError> {
         let model = JournalEntryEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(model.map(|m| DomainJournalEntry {
-            id: m.id,
-            org_id: m.org_id,
-            transaction_ref: m.transaction_ref,
-            accounting_date: m.accounting_date,
-            amount: m.amount,
-            base_amount: m.base_amount,
-            currency_id: m.currency_id,
-            exchange_rate: m.exchange_rate,
-            debit_account_id: m.debit_account_id,
-            credit_account_id: m.credit_account_id,
-            description: m.description,
-            description_ar: m.description_ar,
-            source_type: m.source_type.unwrap_or_else(|| "manual".into()),
-            source_id: m.source_id,
-            status: match m.status.as_deref().unwrap_or("posted") {
-                "draft" => JournalPostingStatus::Draft,
-                "reconciled" => JournalPostingStatus::Reconciled,
-                "reversed" => JournalPostingStatus::Reversed,
-                _ => JournalPostingStatus::Posted,
-            },
-            lines: Vec::new(),
-            is_reversed: m.is_reversed.unwrap_or(false),
-            reversed_by: m.reversed_by,
-            reversal_reason: m.reversal_reason,
-            created_by: m.created_by,
-            created_at: m.created_at.into(),
-        }))
+        Ok(model.map(map_journal_entry_model_to_domain))
     }
 
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainJournalEntry>, DomainError> {
@@ -151,45 +155,18 @@ impl JournalEntryRepository for FinanceRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| DomainJournalEntry {
-            id: m.id,
-            org_id: m.org_id,
-            transaction_ref: m.transaction_ref,
-            accounting_date: m.accounting_date,
-            amount: m.amount,
-            base_amount: m.base_amount,
-            currency_id: m.currency_id,
-            exchange_rate: m.exchange_rate,
-            debit_account_id: m.debit_account_id,
-            credit_account_id: m.credit_account_id,
-            description: m.description,
-            description_ar: m.description_ar,
-            source_type: m.source_type.unwrap_or_else(|| "manual".into()),
-            source_id: m.source_id,
-            status: match m.status.as_deref().unwrap_or("posted") {
-                "draft" => JournalPostingStatus::Draft,
-                "reconciled" => JournalPostingStatus::Reconciled,
-                "reversed" => JournalPostingStatus::Reversed,
-                _ => JournalPostingStatus::Posted,
-            },
-            lines: Vec::new(),
-            is_reversed: m.is_reversed.unwrap_or(false),
-            reversed_by: m.reversed_by,
-            reversal_reason: m.reversal_reason,
-            created_by: m.created_by,
-            created_at: m.created_at.into(),
-        }).collect())
+        Ok(models.into_iter().map(map_journal_entry_model_to_domain).collect())
     }
 
     async fn save(&self, entry: &DomainJournalEntry) -> Result<(), DomainError> {
         let active = journal_entry::ActiveModel {
             id: Set(entry.id),
             org_id: Set(entry.org_id),
-            transaction_ref: Set(entry.transaction_ref.clone()),
+            reference_number: Set(entry.reference_number.clone()),
             accounting_date: Set(entry.accounting_date),
             amount: Set(entry.amount),
             base_amount: Set(entry.base_amount),
-            currency_id: Set(entry.currency_id.clone()),
+            currency_code: Set(entry.currency_code.clone()),
             exchange_rate: Set(entry.exchange_rate),
             debit_account_id: Set(entry.debit_account_id),
             credit_account_id: Set(entry.credit_account_id),
@@ -214,34 +191,39 @@ impl JournalEntryRepository for FinanceRepoImpl {
     }
 }
 
+
+fn map_fee_template_model_to_domain(m: fee_template::Model) -> DomainFeeTemplate {
+    DomainFeeTemplate {
+        id: m.id,
+        org_id: m.org_id,
+        code: m.code.unwrap_or_default(),
+        name: m.name,
+        name_ar: m.name_ar,
+        category: m.category.unwrap_or_else(|| "tuition".into()),
+        default_amount: m.default_amount,
+        currency_code: m.currency_code.unwrap_or_else(|| "SAR".into()),
+        revenue_account_id: m.revenue_account_id,
+        receivable_account_id: m.receivable_account_id,
+        applicable_levels: m.applicable_levels.and_then(|v| serde_json::from_value(v).ok()),
+        applicable_study_modes: m.applicable_study_modes.and_then(|v| serde_json::from_value(v).ok()),
+        frequency: match m.frequency.as_deref().unwrap_or("per_term") {
+            "once" => FeeFrequency::Once,
+            "monthly" => FeeFrequency::Monthly,
+            "annual" => FeeFrequency::Annual,
+            _ => FeeFrequency::PerTerm,
+        },
+        is_mandatory: m.is_mandatory,
+        is_active: m.is_active.unwrap_or(true),
+        created_at: m.created_at.into(),
+        updated_at: m.updated_at.into(),
+    }
+}
+
 #[async_trait]
 impl FeeTemplateRepository for FinanceRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainFeeTemplate>, DomainError> {
         let model = FeeTemplateEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(model.map(|m| DomainFeeTemplate {
-            id: m.id,
-            org_id: m.org_id,
-            code: m.code.unwrap_or_default(),
-            name: m.name,
-            name_ar: m.name_ar,
-            category: m.category.unwrap_or_else(|| "tuition".into()),
-            default_amount: m.default_amount,
-            currency: m.currency.unwrap_or_else(|| "SAR".into()),
-            revenue_account_id: m.revenue_account_id,
-            receivable_account_id: m.receivable_account_id,
-            applicable_levels: m.applicable_levels.and_then(|v| serde_json::from_value(v).ok()),
-            applicable_study_modes: m.applicable_study_modes.and_then(|v| serde_json::from_value(v).ok()),
-            frequency: match m.frequency.as_deref().unwrap_or("per_term") {
-                "once" => FeeFrequency::Once,
-                "monthly" => FeeFrequency::Monthly,
-                "annual" => FeeFrequency::Annual,
-                _ => FeeFrequency::PerTerm,
-            },
-            is_mandatory: m.is_mandatory,
-            is_active: m.is_active.unwrap_or(true),
-            created_at: m.created_at.into(),
-            updated_at: m.updated_at.into(),
-        }))
+        Ok(model.map(map_fee_template_model_to_domain))
     }
 
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainFeeTemplate>, DomainError> {
@@ -250,30 +232,7 @@ impl FeeTemplateRepository for FinanceRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| DomainFeeTemplate {
-            id: m.id,
-            org_id: m.org_id,
-            code: m.code.unwrap_or_default(),
-            name: m.name,
-            name_ar: m.name_ar,
-            category: m.category.unwrap_or_else(|| "tuition".into()),
-            default_amount: m.default_amount,
-            currency: m.currency.unwrap_or_else(|| "SAR".into()),
-            revenue_account_id: m.revenue_account_id,
-            receivable_account_id: m.receivable_account_id,
-            applicable_levels: m.applicable_levels.and_then(|v| serde_json::from_value(v).ok()),
-            applicable_study_modes: m.applicable_study_modes.and_then(|v| serde_json::from_value(v).ok()),
-            frequency: match m.frequency.as_deref().unwrap_or("per_term") {
-                "once" => FeeFrequency::Once,
-                "monthly" => FeeFrequency::Monthly,
-                "annual" => FeeFrequency::Annual,
-                _ => FeeFrequency::PerTerm,
-            },
-            is_mandatory: m.is_mandatory,
-            is_active: m.is_active.unwrap_or(true),
-            created_at: m.created_at.into(),
-            updated_at: m.updated_at.into(),
-        }).collect())
+        Ok(models.into_iter().map(map_fee_template_model_to_domain).collect())
     }
 
     async fn save(&self, template: &DomainFeeTemplate) -> Result<(), DomainError> {
@@ -285,7 +244,7 @@ impl FeeTemplateRepository for FinanceRepoImpl {
             name_ar: Set(template.name_ar.clone()),
             category: Set(Some(template.category.clone())),
             default_amount: Set(template.default_amount),
-            currency: Set(Some(template.currency.clone())),
+            currency_code: Set(Some(template.currency_code.clone())),
             revenue_account_id: Set(template.revenue_account_id),
             receivable_account_id: Set(template.receivable_account_id),
             applicable_levels: Set(template.applicable_levels.as_ref().and_then(|v| serde_json::to_value(v).ok())),
@@ -306,30 +265,34 @@ impl FeeTemplateRepository for FinanceRepoImpl {
     }
 }
 
+fn map_discount_template_model_to_domain(m: discount_template::Model) -> DomainDiscountTemplate {
+    DomainDiscountTemplate {
+        id: m.id,
+        org_id: m.org_id,
+        code: m.code,
+        name: m.name,
+        name_ar: m.name_ar,
+        discount_type: match m.discount_type.as_str() {
+            "fixed_amount" => DiscountType::FixedAmount,
+            _ => DiscountType::Percentage,
+        },
+        value: m.value,
+        eligibility_rules: m.eligibility_rules,
+        is_approval_required: m.is_approval_required,
+        is_auto_apply: m.is_auto_apply,
+        is_stackable: m.is_stackable,
+        priority: m.priority as u32,
+        is_active: m.is_active,
+        created_at: m.created_at.into(),
+        updated_at: m.updated_at.into(),
+    }
+}
+
 #[async_trait]
 impl DiscountTemplateRepository for FinanceRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainDiscountTemplate>, DomainError> {
         let model = DiscountTemplateEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(model.map(|m| DomainDiscountTemplate {
-            id: m.id,
-            org_id: m.org_id,
-            code: m.code,
-            name: m.name,
-            name_ar: m.name_ar,
-            discount_type: match m.discount_type.as_str() {
-                "fixed_amount" => DiscountType::FixedAmount,
-                _ => DiscountType::Percentage,
-            },
-            value: m.value,
-            eligibility_rules: m.eligibility_rules,
-            requires_approval: m.requires_approval,
-            is_auto_apply: m.is_auto_apply,
-            is_stackable: m.is_stackable,
-            priority: m.priority as u32,
-            is_active: m.is_active,
-            created_at: m.created_at.into(),
-            updated_at: m.updated_at.into(),
-        }))
+        Ok(model.map(map_discount_template_model_to_domain))
     }
 
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainDiscountTemplate>, DomainError> {
@@ -338,26 +301,7 @@ impl DiscountTemplateRepository for FinanceRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| DomainDiscountTemplate {
-            id: m.id,
-            org_id: m.org_id,
-            code: m.code,
-            name: m.name,
-            name_ar: m.name_ar,
-            discount_type: match m.discount_type.as_str() {
-                "fixed_amount" => DiscountType::FixedAmount,
-                _ => DiscountType::Percentage,
-            },
-            value: m.value,
-            eligibility_rules: m.eligibility_rules,
-            requires_approval: m.requires_approval,
-            is_auto_apply: m.is_auto_apply,
-            is_stackable: m.is_stackable,
-            priority: m.priority as u32,
-            is_active: m.is_active,
-            created_at: m.created_at.into(),
-            updated_at: m.updated_at.into(),
-        }).collect())
+        Ok(models.into_iter().map(map_discount_template_model_to_domain).collect())
     }
 
     async fn save(&self, d: &DomainDiscountTemplate) -> Result<(), DomainError> {
@@ -373,7 +317,7 @@ impl DiscountTemplateRepository for FinanceRepoImpl {
             }),
             value: Set(d.value),
             eligibility_rules: Set(d.eligibility_rules.clone()),
-            requires_approval: Set(d.requires_approval),
+            is_approval_required: Set(d.is_approval_required),
             is_auto_apply: Set(d.is_auto_apply),
             is_stackable: Set(d.is_stackable),
             priority: Set(d.priority as i32),
@@ -543,7 +487,7 @@ impl PaymentRepository for FinanceRepoImpl {
             student_id: Set(p.student_id),
             account_id: Set(p.account_id),
             amount: Set(p.amount),
-            currency: Set(Some(p.currency.clone())),
+            currency_code: Set(Some(p.currency_code.clone())),
             exchange_rate: Set(Some(p.exchange_rate)),
             base_amount: Set(Some(p.base_amount)),
             method: Set(p.method.to_string()),
@@ -720,7 +664,7 @@ fn map_payment_model_to_domain(m: payment::Model) -> DomainPayment {
         student_id: m.student_id,
         account_id: m.account_id,
         amount: m.amount,
-        currency: m.currency.unwrap_or_else(|| "SAR".into()),
+        currency_code: m.currency_code.unwrap_or_else(|| "SAR".into()),
         exchange_rate: m.exchange_rate.unwrap_or(Decimal::ONE),
         base_amount: m.base_amount.unwrap_or(m.amount),
         method: match m.method.to_lowercase().as_str() {

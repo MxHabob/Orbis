@@ -20,7 +20,7 @@ pub struct DiscountTemplate {
     pub discount_type: DiscountType,
     pub value: Decimal,
     pub eligibility_rules: Option<serde_json::Value>,
-    pub requires_approval: bool,
+    pub is_approval_required: bool,
     pub is_auto_apply: bool,
     pub is_stackable: bool,
     pub priority: u32,

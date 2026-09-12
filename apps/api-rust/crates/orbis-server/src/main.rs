@@ -168,6 +168,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(integration_repo.clone()),
         event_bus.clone(),
         permission_checker.clone(),
+    ).with_context_repos(
+        Some(calendar_repo.clone()),
+        Some(student_repo.clone()),
+        Some(student_repo.clone()),
+        Some(student_repo.clone()),
     ));
 
     let organization_service = Arc::new(orbis_app::services::OrganizationService::new(

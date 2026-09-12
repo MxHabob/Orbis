@@ -12,6 +12,7 @@ import type {
   LoginResponse,
   SessionResponse,
   RegisterUserRequest,
+  UpdateUserRequest,
   UserDto,
   OrgDto,
   UpdateOrgRequest,
@@ -71,6 +72,7 @@ import type {
   DocumentDto,
   UploadDocumentRequest,
   IntegrationDto,
+  IntegrationStatusResponse,
   ConnectAppRequest,
   TemplateDto,
   CreateTemplateRequest,
@@ -145,7 +147,7 @@ export class LocalClient implements OrbisApiClient {
   async getUser(id: string): Promise<UserDto> {
     return unwrap(await invoke("iam_get_user", { id }));
   }
-  async updateUser(id: string, req: { full_name?: string }): Promise<UserDto> {
+  async updateUser(id: string, req: UpdateUserRequest): Promise<UserDto> {
     return unwrap(await invoke("iam_update_user", { id, request: req }));
   }
 

@@ -95,7 +95,7 @@ pub async fn student_enroll_student(request: EnrollStudentInput, state: State<'_
         student_number: e.student_number,
         study_mode: e.study_mode.to_string(),
         status: e.status.to_string(),
-        enrollment_date: e.enrollment_date.to_rfc3339(),
+        enrollment_date: e.enrolled_at.to_rfc3339(),
     }))
 }
 
@@ -119,7 +119,7 @@ pub async fn student_list_enrollments(filter: Option<EnrollmentFilter>, state: S
         student_number: e.student_number,
         study_mode: e.study_mode.to_string(),
         status: e.status.to_string(),
-        enrollment_date: e.enrollment_date.to_rfc3339(),
+        enrollment_date: e.enrolled_at.to_rfc3339(),
     }).collect()))
 }
 
@@ -136,7 +136,7 @@ pub async fn student_get_enrollment(id: String, state: State<'_, AppState>) -> R
         student_number: e.student_number,
         study_mode: e.study_mode.to_string(),
         status: e.status.to_string(),
-        enrollment_date: e.enrollment_date.to_rfc3339(),
+        enrollment_date: e.enrolled_at.to_rfc3339(),
     }))
 }
 

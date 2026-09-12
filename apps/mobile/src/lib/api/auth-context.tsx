@@ -23,6 +23,7 @@ import {
 import {
   type UserDto,
   type LoginResponse,
+  type EffectiveContextDto,
   type MfaChallengeRequest,
   type MfaVerifyEnrollmentRequest,
   OrbisError,
@@ -31,6 +32,7 @@ import {
 
 export interface AuthState {
   user: UserDto | null;
+  effectiveContext: EffectiveContextDto | null;
   token: string | null;
   isLoading: boolean;
   error: string | null;
@@ -46,7 +48,11 @@ export interface AuthContextType extends AuthState {
   loginWithGoogle: (idToken: string) => Promise<LoginResponse>;
   mfaChallenge: (req: MfaChallengeRequest) => Promise<LoginResponse>;
   mfaVerifyEnrollment: (req: MfaVerifyEnrollmentRequest) => Promise<boolean>;
-  setSession: (session: { token: string; user: UserDto }) => Promise<void>;
+  setSession: (session: {
+    token: string;
+    user: UserDto;
+    effective_context?: EffectiveContextDto | null;
+  }) => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
   checkSetupStatus: () => Promise<boolean>;
@@ -57,6 +63,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserDto | null>(null);
+  const [effectiveContext, setEffectiveContext] =
+    useState<EffectiveContextDto | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,17 +99,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setSession = useCallback(
-    async (res: { token: string; user: UserDto }) => {
+    async (res: {
+      token: string;
+      user: UserDto;
+      effective_context?: EffectiveContextDto | null;
+    }) => {
       setToken(res.token);
       setUser(res.user);
+      if (res.effective_context) {
+        setEffectiveContext(res.effective_context);
+      }
       api.setToken(res.token);
       setError(null);
 
-      await Promise.all([
+      const writes: Promise<void>[] = [
         setSecureItem(STORAGE_KEYS.TOKEN, res.token),
         setSecureItem(STORAGE_KEYS.USER, JSON.stringify(res.user)),
-      ]);
+      ];
 
+      if (res.effective_context) {
+        writes.push(
+          setSecureItem(
+            STORAGE_KEYS.EFFECTIVE_CONTEXT,
+            JSON.stringify(res.effective_context),
+          ),
+        );
+      }
+
+      await Promise.all(writes);
       await checkSetupStatus();
     },
     [checkSetupStatus],
@@ -114,7 +139,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const res = await api.login({ email, password });
         if (res.token && res.user) {
-          await setSession({ token: res.token, user: res.user });
+          await setSession({
+            token: res.token,
+            user: res.user,
+            effective_context: res.effective_context,
+          });
         }
         return res;
       } catch (err) {
@@ -135,7 +164,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const res = await api.loginWithGoogle({ id_token: idToken });
         if (res.token && res.user) {
-          await setSession({ token: res.token, user: res.user });
+          await setSession({
+            token: res.token,
+            user: res.user,
+            effective_context: res.effective_context,
+          });
         }
         return res;
       } catch (err) {
@@ -156,7 +189,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const res = await api.mfaChallenge(req);
         if (res.token && res.user) {
-          await setSession({ token: res.token, user: res.user });
+          await setSession({
+            token: res.token,
+            user: res.user,
+            effective_context: res.effective_context,
+          });
         }
         return res;
       } catch (err) {
@@ -184,6 +221,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore network errors on logout
     } finally {
       setUser(null);
+      setEffectiveContext(null);
       setToken(null);
       setIsSetupComplete(null);
       api.clearToken();
@@ -191,6 +229,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await Promise.all([
         deleteSecureItem(STORAGE_KEYS.TOKEN),
         deleteSecureItem(STORAGE_KEYS.USER),
+        deleteSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT),
         deleteSecureItem(STORAGE_KEYS.SETUP_COMPLETE),
       ]);
     }
@@ -199,17 +238,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const restoreSession = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [savedToken, savedUserStr, savedSetup] = await Promise.all([
-        getSecureItem(STORAGE_KEYS.TOKEN),
-        getSecureItem(STORAGE_KEYS.USER),
-        getSecureItem(STORAGE_KEYS.SETUP_COMPLETE),
-      ]);
+      const [savedToken, savedUserStr, savedCtxStr, savedSetup] =
+        await Promise.all([
+          getSecureItem(STORAGE_KEYS.TOKEN),
+          getSecureItem(STORAGE_KEYS.USER),
+          getSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT),
+          getSecureItem(STORAGE_KEYS.SETUP_COMPLETE),
+        ]);
 
       if (savedToken && savedUserStr) {
         try {
           const parsedUser = JSON.parse(savedUserStr) as UserDto;
           setToken(savedToken);
           setUser(parsedUser);
+          if (savedCtxStr) {
+            try {
+              const parsedCtx = JSON.parse(savedCtxStr) as EffectiveContextDto;
+              setEffectiveContext(parsedCtx);
+            } catch {}
+          }
           api.setToken(savedToken);
 
           if (savedSetup !== null) {
@@ -223,6 +270,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await setSecureItem(
               STORAGE_KEYS.USER,
               JSON.stringify(session.user),
+            );
+          }
+          if (session?.effective_context) {
+            setEffectiveContext(session.effective_context);
+            await setSecureItem(
+              STORAGE_KEYS.EFFECTIVE_CONTEXT,
+              JSON.stringify(session.effective_context),
             );
           }
         } catch (sessionErr) {
@@ -256,6 +310,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const contextValue = useMemo<AuthContextType>(
     () => ({
       user,
+      effectiveContext,
       token,
       isLoading,
       error,
@@ -276,6 +331,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       user,
+      effectiveContext,
       token,
       isLoading,
       error,

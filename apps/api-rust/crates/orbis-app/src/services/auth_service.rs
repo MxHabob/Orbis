@@ -16,17 +16,50 @@ use crate::context::RequestContext;
 use crate::ports::repositories::{
     UserRepository, PersonRepository, SessionRepository, MfaFactorRepository,
     MfaRecoveryCodeRepository, UserDeviceRepository, UserIdentityRepository,
-    IntegrationRepository,
+    IntegrationRepository, AcademicPeriodRepository, StudentGuardianRepository,
+    StudentRepository, EnrollmentRepository,
 };
 use crate::ports::event_bus::EventBus;
 use crate::ports::security::{TokenService, PasswordHasher, TotpService, OidcService};
 use crate::ports::iam::PermissionCheckerPort;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LinkedDependentDto {
+    pub student_id: Uuid,
+    pub full_name: String,
+    pub full_name_ar: Option<String>,
+    pub relationship: String,
+    pub is_primary_contact: bool,
+    pub is_emergency_contact: bool,
+    pub is_fee_payer: bool,
+    pub current_grade_level: Option<String>,
+    pub current_section_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EffectiveContextDto {
+    pub effective_role: String,
+    pub roles: Vec<String>,
+    pub permissions: Vec<String>,
+    pub active_period_id: Option<Uuid>,
+    pub dependents: Vec<LinkedDependentDto>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoginResponse {
     pub token: String,
     pub refresh_token: String,
     pub user: User,
+    pub person: Option<Person>,
+    pub effective_context: EffectiveContextDto,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionResponse {
+    pub token: String,
+    pub user: User,
+    pub person: Option<Person>,
+    pub effective_context: EffectiveContextDto,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -56,6 +89,10 @@ pub struct AuthService {
     pub totp_service: Arc<dyn TotpService>,
     pub oidc_service: Arc<dyn OidcService>,
     pub integration_repo: Option<Arc<dyn IntegrationRepository>>,
+    pub academic_period_repo: Option<Arc<dyn AcademicPeriodRepository>>,
+    pub student_guardian_repo: Option<Arc<dyn StudentGuardianRepository>>,
+    pub student_repo: Option<Arc<dyn StudentRepository>>,
+    pub enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
 }
@@ -90,9 +127,104 @@ impl AuthService {
             totp_service,
             oidc_service,
             integration_repo,
+            academic_period_repo: None,
+            student_guardian_repo: None,
+            student_repo: None,
+            enrollment_repo: None,
             event_bus,
             permission_checker,
         }
+    }
+
+    pub fn with_context_repos(
+        mut self,
+        academic_period_repo: Option<Arc<dyn AcademicPeriodRepository>>,
+        student_guardian_repo: Option<Arc<dyn StudentGuardianRepository>>,
+        student_repo: Option<Arc<dyn StudentRepository>>,
+        enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
+    ) -> Self {
+        self.academic_period_repo = academic_period_repo;
+        self.student_guardian_repo = student_guardian_repo;
+        self.student_repo = student_repo;
+        self.enrollment_repo = enrollment_repo;
+        self
+    }
+
+    /// Build effective context (roles, permissions, active period, linked dependents)
+    pub async fn build_effective_context(
+        &self,
+        user: &User,
+        person: Option<&Person>,
+    ) -> Result<EffectiveContextDto, DomainError> {
+        let permissions = self.permission_checker.get_user_permissions(user.id, user.org_id).await.unwrap_or_default();
+        let roles = self.permission_checker.get_user_roles(user.id, user.org_id).await.unwrap_or_default();
+
+        let effective_role = if roles.contains(&"super_admin".to_string()) {
+            "super_admin".to_string()
+        } else if roles.contains(&"org_admin".to_string()) {
+            "org_admin".to_string()
+        } else if roles.contains(&"principal".to_string()) {
+            "principal".to_string()
+        } else if roles.contains(&"teacher".to_string()) {
+            "teacher".to_string()
+        } else if roles.contains(&"guardian".to_string()) {
+            "guardian".to_string()
+        } else if roles.contains(&"student".to_string()) {
+            "student".to_string()
+        } else if let Some(first) = roles.first() {
+            first.clone()
+        } else {
+            "org_admin".to_string()
+        };
+
+        let active_period_id = if let Some(ref pr) = self.academic_period_repo {
+            pr.find_by_org(user.org_id).await.ok().and_then(|periods| {
+                periods.into_iter().find(|p| {
+                    matches!(
+                        p.state,
+                        orbis_domain::entities::academic_period::AcademicPeriodState::ActiveTeaching
+                            | orbis_domain::entities::academic_period::AcademicPeriodState::EnrollmentOpen
+                    )
+                }).map(|p| p.id)
+            })
+        } else {
+            None
+        };
+
+        let mut dependents = Vec::new();
+        if let (Some(person), Some(gr), Some(sr)) = (person, self.student_guardian_repo.as_ref(), self.student_repo.as_ref()) {
+            if let Ok(guardianships) = gr.find_by_guardian(person.id).await {
+                for g in guardianships {
+                    if let Ok(Some(student)) = sr.find_by_id(g.student_id).await {
+                        let (full_name, full_name_ar) = if let Ok(Some(st_person)) = self.person_repo.find_by_id(student.person_id).await {
+                            (st_person.full_name(), st_person.full_name_ar())
+                        } else {
+                            (format!("Student {}", student.student_number), None)
+                        };
+
+                        dependents.push(LinkedDependentDto {
+                            student_id: student.id,
+                            full_name,
+                            full_name_ar,
+                            relationship: g.relationship,
+                            is_primary_contact: g.is_primary,
+                            is_emergency_contact: g.is_emergency_contact,
+                            is_fee_payer: g.is_payer,
+                            current_grade_level: None,
+                            current_section_name: None,
+                        });
+                    }
+                }
+            }
+        }
+
+        Ok(EffectiveContextDto {
+            effective_role,
+            roles,
+            permissions,
+            active_period_id,
+            dependents,
+        })
     }
 
     /// Authenticate user via email and password, creating session and JWT tokens
@@ -113,9 +245,12 @@ impl AuthService {
             return Err(DomainError::Unauthorized("Invalid email or password".into()));
         }
 
+        let person = self.person_repo.find_by_id(user.person_id).await?;
+        let effective_context = self.build_effective_context(&user, person.as_ref()).await?;
+
         let user_id_str = user.id.to_string();
         let org_id_str = user.org_id.to_string();
-        let role_str = "org_admin".to_string();
+        let role_str = effective_context.effective_role.clone();
 
         let access_token = self.token_service.generate_access_token(&user_id_str, &org_id_str, &role_str).await?;
         let refresh_token = self.token_service.generate_refresh_token(&user_id_str, &org_id_str, &role_str).await?;
@@ -133,7 +268,7 @@ impl AuthService {
             is_revoked: false,
             is_current: true,
             is_trusted: false,
-            mfa_verified: false,
+            is_mfa_verified: false,
             expires_at: now + chrono::Duration::hours(2),
             refresh_expires_at: Some(now + chrono::Duration::days(7)),
             last_active_at: Some(now),
@@ -154,6 +289,8 @@ impl AuthService {
             token: access_token,
             refresh_token,
             user,
+            person,
+            effective_context,
         })
     }
 
@@ -190,13 +327,16 @@ impl AuthService {
             id: person_id,
             org_id: Some(actual_org_id),
             first_name,
+            middle_name: None,
             last_name,
-            full_name: Some(full_name.clone()),
-            name_ar: None,
+            first_name_ar: None,
+            middle_name_ar: None,
+            last_name_ar: None,
+            display_name: None,
             national_id: None,
             passport_number: None,
             gender: None,
-            date_of_birth: None,
+            birth_date: None,
             place_of_birth: None,
             nationality: None,
             blood_type: None,
@@ -221,15 +361,14 @@ impl AuthService {
             person_id,
             org_id: actual_org_id,
             email,
-            email_verified: false,
+            is_email_verified: false,
             phone: None,
-            phone_verified: false,
+            is_phone_verified: false,
             password_hash,
-            mfa_enabled: false,
-            full_name,
+            is_mfa_enabled: false,
             status: "active".to_string(),
             login_count: 0,
-            failed_logins: 0,
+            failed_login_attempts: 0,
             locked_until: None,
             is_deleted: false,
             created_at: now,
@@ -272,7 +411,15 @@ impl AuthService {
             .ok_or_else(|| DomainError::NotFound(format!("User {} not found", user_id)))?;
 
         if let Some(name) = full_name {
-            user.full_name = name;
+            if let Ok(Some(mut person)) = self.person_repo.find_by_id(user.person_id).await {
+                let parts: Vec<&str> = name.split_whitespace().collect();
+                person.first_name = parts.first().unwrap_or(&"").to_string();
+                if parts.len() > 1 {
+                    person.last_name = parts[1..].join(" ");
+                }
+                person.updated_at = Utc::now();
+                self.person_repo.save(&person).await?;
+            }
         }
         user.updated_at = Utc::now();
         self.user_repo.save(&user).await?;
@@ -296,8 +443,9 @@ impl AuthService {
             .ok_or_else(|| DomainError::NotFound("User not found".into()))?;
 
         let secret = self.totp_service.generate_secret();
-        let account_name = user.email.unwrap_or_else(|| user.full_name.clone());
+        let account_name = user.email.clone().unwrap_or_else(|| user.id.to_string());
         let qr_code_uri = self.totp_service.generate_qr_uri("Orbis", &account_name, &secret);
+
         let raw_recovery_codes = self.totp_service.generate_recovery_codes(8);
 
         let factor_id = Uuid::new_v4();
@@ -364,7 +512,7 @@ impl AuthService {
         self.mfa_factor_repo.save(&updated_factor).await?;
 
         if let Some(mut user) = self.user_repo.find_by_id(user_id).await? {
-            user.mfa_enabled = true;
+            user.is_mfa_enabled = true;
             user.updated_at = Utc::now();
             self.user_repo.save(&user).await?;
         }
@@ -396,7 +544,6 @@ impl AuthService {
             }
         }
 
-        // If TOTP didn't match, check recovery codes
         if !authenticated {
             let active_codes = self.mfa_recovery_code_repo.find_active_by_user(user_id).await?;
             for rc in active_codes {
@@ -412,7 +559,6 @@ impl AuthService {
             return Err(DomainError::Unauthorized("Invalid authentication code or recovery code".into()));
         }
 
-        // If remember_device is requested, update/create device trust
         if let Some(dev_id) = device_id {
             if remember_device {
                 if let Ok(Some(mut dev)) = self.user_device_repo.find_by_device_id(user_id, &dev_id).await {
@@ -426,7 +572,7 @@ impl AuthService {
 
         let user_id_str = user.id.to_string();
         let org_id_str = user.org_id.to_string();
-        let role_str = "super_admin".to_string();
+        let role_str = "org_admin".to_string();
 
         let access_token = self.token_service.generate_access_token(&user_id_str, &org_id_str, &role_str).await?;
         let refresh_token = self.token_service.generate_refresh_token(&user_id_str, &org_id_str, &role_str).await?;
@@ -442,7 +588,7 @@ impl AuthService {
             is_current: true,
             is_trusted: remember_device,
             is_revoked: false,
-            mfa_verified: true,
+            is_mfa_verified: true,
             expires_at: now + chrono::Duration::hours(24),
             refresh_expires_at: Some(now + chrono::Duration::days(30)),
             last_active_at: Some(now),
@@ -535,7 +681,7 @@ impl AuthService {
 
         let user_id_str = user.id.to_string();
         let org_id_str = user.org_id.to_string();
-        let role_str = "super_admin".to_string();
+        let role_str = "org_admin".to_string();
 
         let access_token = self.token_service.generate_access_token(&user_id_str, &org_id_str, &role_str).await?;
         let refresh_token = self.token_service.generate_refresh_token(&user_id_str, &org_id_str, &role_str).await?;
@@ -551,7 +697,7 @@ impl AuthService {
             is_current: true,
             is_trusted: true,
             is_revoked: false,
-            mfa_verified: true,
+            is_mfa_verified: true,
             expires_at: now + chrono::Duration::hours(24),
             refresh_expires_at: Some(now + chrono::Duration::days(30)),
             last_active_at: Some(now),

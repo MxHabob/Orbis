@@ -13,7 +13,7 @@ pub struct Model {
     pub discount_type: String,
     pub value: Decimal,
     pub eligibility_rules: Option<Json>,
-    pub requires_approval: bool,
+    pub is_approval_required: bool,
     pub is_auto_apply: bool,
     pub is_stackable: bool,
     pub priority: i32,

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct ExamSession {
     pub id: Uuid,
     pub org_id: Uuid,
-    pub academic_period_id: Uuid,
+    pub period_id: Uuid,
     pub name: String,
     pub start_date: NaiveDate,
     pub end_date: NaiveDate,

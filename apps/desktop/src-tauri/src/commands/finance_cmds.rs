@@ -163,7 +163,7 @@ pub async fn finance_create_account(request: CreateAccountInput, state: State<'_
         name: a.name,
         account_type: a.account_type.to_string(),
         parent_id: a.parent_id.map(|p| p.to_string()),
-        currency: a.currency,
+        currency: a.currency_code,
         is_active: a.is_active,
         balances: a.balances,
     }))
@@ -180,7 +180,7 @@ pub async fn finance_list_accounts(state: State<'_, AppState>) -> Result<ApiResp
         name: a.name,
         account_type: a.account_type.to_string(),
         parent_id: a.parent_id.map(|p| p.to_string()),
-        currency: a.currency,
+        currency: a.currency_code,
         is_active: a.is_active,
         balances: a.balances,
     }).collect()))

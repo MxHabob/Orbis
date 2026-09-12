@@ -6,10 +6,10 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     pub org_id: Uuid,
-    pub transaction_ref: String,
+    pub reference_number: String,
     pub accounting_date: Date,
     pub amount: Decimal,
-    pub currency_id: String,
+    pub currency_code: String,
     pub exchange_rate: Decimal,
     pub base_amount: Decimal,
     pub debit_account_id: Uuid,

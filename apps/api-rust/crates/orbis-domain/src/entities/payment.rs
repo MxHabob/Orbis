@@ -38,7 +38,7 @@ pub struct Payment {
     pub student_id: Option<Uuid>,
     pub account_id: Uuid,
     pub amount: Decimal,
-    pub currency: String,
+    pub currency_code: String,
     pub exchange_rate: Decimal,
     pub base_amount: Decimal,
     pub method: PaymentMethod,

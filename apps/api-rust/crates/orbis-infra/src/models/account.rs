@@ -10,7 +10,7 @@ pub struct Model {
     pub name: String,
     pub account_type: String,
     pub parent_id: Option<Uuid>,
-    pub currency: String,
+    pub currency_code: String,
     pub is_active: bool,
     pub balances: Json,
     pub created_at: DateTimeWithTimeZone,
