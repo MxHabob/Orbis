@@ -198,9 +198,10 @@ async function handlePaymentSubmit(e: SubmitEvent) {
   isSubmitting = true;
   try {
     const createdBy = authStore.userId || authStore.user?.id || "unknown";
-    const request = {
+    await api.processPayment({
       fee_id: selectedFeeId,
       amount: Number(amount),
+      paid_at: new Date().toISOString(),
       method:
         paymentMethod === "Cash"
           ? "cash"
@@ -208,12 +209,7 @@ async function handlePaymentSubmit(e: SubmitEvent) {
             ? "bank_transfer"
             : "card",
       reference: referenceNumber || undefined,
-      notes: notes || undefined,
-      cash_account_id: selectedTreasuryId,
-      currency: currency.trim().toUpperCase(),
-    };
-
-    await api.finance.record({ ...request, exchange_rate: undefined });
+    });
     toast.success(m.common_payment_toast_success());
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["payments", data.orgId] }),

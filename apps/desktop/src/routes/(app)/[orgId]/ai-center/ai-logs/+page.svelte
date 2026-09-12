@@ -13,6 +13,7 @@ import SearchField from "$lib/shared/components/search-field.svelte";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
 import { Zap, Bot, Play, AlertCircle } from "@lucide/svelte";
 import { toast } from "@orbis/ui";
+import { formatDate } from "$lib/core/i18n";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -146,19 +147,9 @@ const filteredLogs = $derived.by(() => {
 });
 
 function formatTime(dtStr: string): string {
-  try {
-    const d = new Date(dtStr);
-    if (isNaN(d.getTime())) return dtStr;
-    return d.toLocaleString("ar-SA", {
-      month: "numeric",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return dtStr;
-  }
+  return formatDate(dtStr, "datetime") || dtStr;
 }
+
 </script>
 
 <div class="h-full w-full overflow-y-auto font-sans p-6 scrollbar-hide space-y-6 text-start">

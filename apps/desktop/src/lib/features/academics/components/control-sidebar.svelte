@@ -15,7 +15,7 @@ import {
 } from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
-import { formatNumber } from "$lib/core/i18n";
+import { formatNumber, formatDate } from "$lib/core/i18n";
 
 interface Props {
   selectedPeriod: any;
@@ -88,13 +88,13 @@ let {
         {#if selectedPeriod.grade_entry_start}
           <div class="flex items-center justify-between">
             <span class="text-muted-foreground">{m.common_control_grade_entry_start()}</span>
-            <span class="font-mono text-[10px]">{new Date(selectedPeriod.grade_entry_start).toLocaleDateString(getLocale())}</span>
+            <span class="font-mono text-[10px]">{formatDate(selectedPeriod.grade_entry_start)}</span>
           </div>
         {/if}
         {#if selectedPeriod.grade_entry_end}
           <div class="flex items-center justify-between">
             <span class="text-muted-foreground">{m.common_control_grade_entry_end()}</span>
-            <span class="font-mono text-[10px]">{new Date(selectedPeriod.grade_entry_end).toLocaleDateString(getLocale())}</span>
+            <span class="font-mono text-[10px]">{formatDate(selectedPeriod.grade_entry_end)}</span>
           </div>
         {/if}
         {#if selectedPeriod.locked_by}

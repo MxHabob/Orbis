@@ -17,8 +17,51 @@ fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
 #[derive(Serialize)]
 pub struct OrgDto {
-    pub id: String, pub name: String, pub slug: String,
-    pub timezone: String, pub locale: String, pub primary_color: Option<String>,
+    pub id: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub slug: String,
+    pub code: Option<String>,
+    pub timezone: String,
+    pub locale: String,
+    pub date_format: Option<String>,
+    pub is_hijri_enabled: bool,
+    pub base_currency_code: Option<String>,
+    pub primary_color: Option<String>,
+    pub logo: Option<String>,
+    pub favicon: Option<String>,
+    pub settings: Option<serde_json::Value>,
+    pub features: Option<serde_json::Value>,
+    pub current_period_id: Option<String>,
+    pub is_active: bool,
+    pub is_verified: bool,
+    pub max_users: i32,
+    pub max_students: i32,
+}
+
+fn org_to_dto(org: orbis_domain::entities::organization::Organization) -> OrgDto {
+    OrgDto {
+        id: org.id.to_string(),
+        name: org.name,
+        name_ar: org.name_ar,
+        slug: org.slug,
+        code: org.code,
+        timezone: org.timezone,
+        locale: org.locale,
+        date_format: org.date_format,
+        is_hijri_enabled: org.is_hijri_enabled,
+        base_currency_code: org.base_currency_code,
+        primary_color: org.primary_color,
+        logo: org.logo,
+        favicon: org.favicon,
+        settings: org.settings,
+        features: org.features,
+        current_period_id: org.current_period_id,
+        is_active: org.is_active,
+        is_verified: org.is_verified,
+        max_users: org.max_users,
+        max_students: org.max_students,
+    }
 }
 
 #[tauri::command]
@@ -30,10 +73,7 @@ pub async fn org_get_current(state: State<'_, AppState>) -> Result<ApiResponse<O
         state.org_repo.find_first().await.map_err(|e| e.to_string())?
     };
     let org = org.ok_or_else(|| "Organization not found".to_string())?;
-    Ok(ok(OrgDto {
-        id: org.id.to_string(), name: org.name, slug: org.slug,
-        timezone: org.timezone, locale: org.locale, primary_color: org.primary_color,
-    }))
+    Ok(ok(org_to_dto(org)))
 }
 
 #[tauri::command]
@@ -44,10 +84,7 @@ pub async fn org_update_current(request: serde_json::Value, state: State<'_, App
     let locale = request.get("locale").and_then(|v| v.as_str()).map(|s| s.to_string());
     let color = request.get("primaryColor").and_then(|v| v.as_str()).map(|s| s.to_string());
     let org = state.organization_service.update_organization(&ctx, ctx.tenant_id, name, tz, locale, color).await.map_err(|e| e.to_string())?;
-    Ok(ok(OrgDto {
-        id: org.id.to_string(), name: org.name, slug: org.slug,
-        timezone: org.timezone, locale: org.locale, primary_color: org.primary_color,
-    }))
+    Ok(ok(org_to_dto(org)))
 }
 
 // ── Settings ────────────────────────────────────────────────────

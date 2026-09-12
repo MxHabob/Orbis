@@ -14,6 +14,7 @@ import {
 } from "@orbis/ui/select";
 import { History } from "@lucide/svelte";
 import { l, isAr } from "$lib/core/i18n";
+import { formatDate as fmtDate } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import AuditDetailsDialog from "$lib/features/settings/components/audit-details-dialog.svelte";
 
@@ -75,13 +76,7 @@ function getUserEmail(userId: string | null): string {
 }
 
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString(isAr() ? "ar-EG" : "en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return fmtDate(dateStr, "datetime", { month: "short", day: "numeric" });
 }
 
 // ── Filtering ───────────────────────────────────────────────────────────

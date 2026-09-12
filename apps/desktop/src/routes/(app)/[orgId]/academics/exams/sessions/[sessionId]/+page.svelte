@@ -6,6 +6,7 @@ Session detail page with tabs: Subjects, Schedule, Seating, Halls, Proctors.
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { onMount } from "svelte";
+import { formatDate } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
@@ -168,20 +169,11 @@ function getSubjectColor(subjectId: string) {
 }
 
 function formatDateWithDay(dateStr: string): string {
-  try {
-    const date = new Date(dateStr);
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: "long",
-      day: "numeric",
-      month: "short",
-    };
-    return date.toLocaleDateString(
-      m.academics_exams_sessions_sessionId_en_us(),
-      options,
-    );
-  } catch (e) {
-    return dateStr;
-  }
+  return formatDate(dateStr, "date", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+  }) || dateStr;
 }
 
 function getExamsInCell(date: string, period: string) {

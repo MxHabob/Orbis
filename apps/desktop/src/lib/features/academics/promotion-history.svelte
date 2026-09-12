@@ -7,6 +7,7 @@ import * as m from "$lib/paraglide/messages";
 
 import { extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
+import { formatDate } from "$lib/core/i18n";
 import {
   createPromotionJobsQuery,
   createRollbackMutation,
@@ -153,7 +154,7 @@ function statusLabel(status: string) {
                   </Badge>
                 </div>
                 <div class="text-[11px] text-muted-foreground mt-1 font-sans">
-                  {new Date(job.created_at).toLocaleDateString()}
+                  {formatDate(job.created_at)}
                   {#if job.total_students}
                     &middot; {job.total_students} {m.common_promo_total().toLowerCase()}
                   {/if}

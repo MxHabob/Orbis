@@ -258,17 +258,42 @@ async function handlePrintAction() {
   }
 
   if (entityIds.length <= multiUpLayout.itemsPerSheet) {
-    // Single sheet — just generate preview
+    // Single sheet — generate preview
     await generatePreview();
     toast.success(m.common_print_multi_up_complete());
   } else {
-    // Generate preview directly
+    // Batch multi-up printing
     isBatchProcessing = true;
-    batchProgress = 50;
+    batchProgress = 30;
     batchStatusText = m.common_print_multi_up_processing();
 
     try {
-      await generatePreview();
+      const html = await api.batchPrint({
+        reportCode: selectedTemplateId,
+        parameters: {
+          entity_ids: entityIds,
+          entity_type: entityType,
+        },
+        gridColumns: multiUpLayout.columns,
+        gridRows: multiUpLayout.rows,
+        marginMm: multiUpConfig.outerMarginMm,
+        cutMarks: multiUpConfig.showCropMarks,
+      }).catch(() => null);
+
+      batchProgress = 80;
+
+      if (html) {
+        const printWin = window.open("", "_blank");
+        if (printWin) {
+          printWin.document.write(html);
+          printWin.document.close();
+          printWin.focus();
+          printWin.print();
+        }
+      } else {
+        await generatePreview();
+      }
+
       batchProgress = 100;
       toast.success(
         m.common_print_multi_up_complete_detail({

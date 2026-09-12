@@ -4,6 +4,7 @@ import { onMount } from "svelte";
 import { authStore } from "$lib/stores";
 import { api } from "$lib/api";
 import { toast } from "@orbis/ui";
+import { formatDate } from "$lib/core/i18n";
 
 import {
   AccountIdentitiesCard,
@@ -97,7 +98,7 @@ async function loadSecurityData() {
           ip: "Current Device",
           isCurrent: true,
           isTrusted: d.is_trusted,
-          lastActive: new Date(d.last_active_at).toLocaleDateString(),
+          lastActive: formatDate(d.last_active_at),
           icon,
         };
       });

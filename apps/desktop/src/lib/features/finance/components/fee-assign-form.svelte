@@ -81,7 +81,13 @@ $effect(() => {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (payload) => {
-    await api.finance.assign(payload);
+    await api.generateStudentFee({
+      enrollment_id: payload.enrollment_id,
+      template_id: payload.fee_template_id,
+      due_date: dueDate,
+      amount_override: payload.amount_override ?? undefined,
+      notes: description || undefined,
+    });
     toast.success(m.common_fee_toast_success());
     form.reset();
     description = "";

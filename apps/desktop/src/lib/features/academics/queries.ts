@@ -116,3 +116,17 @@ export function createTeacherScheduleQuery(
     staleTime: 2 * 60 * 1000,
   }));
 }
+
+/** Check student prerequisites for a subject */
+export function createPrerequisitesQuery(
+  studentId: () => string,
+  subjectId: () => string,
+) {
+  return createQuery(() => ({
+    queryKey: queryKeys.academic.prerequisites(studentId(), subjectId()),
+    queryFn: () => api.checkPrerequisites(studentId(), subjectId()),
+    enabled: !!studentId() && !!subjectId(),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+

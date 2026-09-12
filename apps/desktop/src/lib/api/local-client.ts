@@ -81,6 +81,22 @@ import type {
   TemplateBindingDto,
   ValidationResult,
   ReportDefinitionDto,
+  StudentDto,
+  StudentDetailDto,
+  RegisterStudentInput,
+  StudentFilterParams,
+  EnrollmentFilterParams,
+  UpdateStudentStatusInput,
+  ChangeStudyModeInput,
+  PaginatedList,
+  ReportJobStatusDto,
+  BatchPrintParams,
+  JournalEntryDto,
+  DiscountTemplateDto,
+  CreateDiscountTemplateRequest,
+  StudentFeeFilterParams,
+  PaymentFilterParams,
+  PrerequisiteCheckResultDto,
 } from "./types";
 
 function unwrap<T>(response: { data: T } | T): T {
@@ -249,15 +265,35 @@ export class LocalClient implements OrbisApiClient {
       await invoke("academic_list_class_subjects", { classId, periodId }),
     );
   }
+  async checkPrerequisites(
+    studentId: string,
+    subjectId: string,
+  ): Promise<PrerequisiteCheckResultDto[]> {
+    return unwrap(
+      await invoke("academic_check_prerequisites", { studentId, subjectId }),
+    );
+  }
 
   // ── Student ─────────────────────────────────────────────────
+  async registerStudent(req: RegisterStudentInput): Promise<StudentDetailDto> {
+    return unwrap(await invoke("student_register_student", { request: req }));
+  }
+  async listStudents(filter?: StudentFilterParams): Promise<PaginatedList<StudentDetailDto>> {
+    return unwrap(await invoke("student_list_students", { filter: filter ?? {} }));
+  }
+  async getStudent(id: string): Promise<StudentDetailDto> {
+    return unwrap(await invoke("student_get_student", { id }));
+  }
+  async updateStudentStatus(req: UpdateStudentStatusInput): Promise<StudentDto> {
+    return unwrap(await invoke("student_update_student_status", { request: req }));
+  }
+  async changeStudyMode(req: ChangeStudyModeInput): Promise<EnrollmentDto> {
+    return unwrap(await invoke("student_change_study_mode", { request: req }));
+  }
   async enrollStudent(req: EnrollStudentRequest): Promise<EnrollmentDto> {
     return unwrap(await invoke("student_enroll_student", { request: req }));
   }
-  async listEnrollments(filter?: {
-    classId?: string;
-    studentId?: string;
-  }): Promise<EnrollmentDto[]> {
+  async listEnrollments(filter?: EnrollmentFilterParams): Promise<EnrollmentDto[]> {
     return unwrap(
       await invoke("student_list_enrollments", { filter: filter ?? {} }),
     );
@@ -394,10 +430,9 @@ export class LocalClient implements OrbisApiClient {
   async generateStudentFee(req: GenerateFeeRequest): Promise<StudentFeeDto> {
     return unwrap(await invoke("finance_generate_fee", { request: req }));
   }
-  async listStudentFees(filter?: {
-    enrollmentId?: string;
-    studentId?: string;
-  }): Promise<StudentFeeDto[]> {
+  async listStudentFees(
+    filter?: StudentFeeFilterParams,
+  ): Promise<StudentFeeDto[]> {
     return unwrap(
       await invoke("finance_list_student_fees", { filter: filter ?? {} }),
     );
@@ -405,13 +440,31 @@ export class LocalClient implements OrbisApiClient {
   async processPayment(req: ProcessPaymentRequest): Promise<PaymentDto> {
     return unwrap(await invoke("finance_process_payment", { request: req }));
   }
-  async listPayments(filter?: { feeId?: string }): Promise<PaymentDto[]> {
+  async listPayments(
+    filter?: PaymentFilterParams,
+  ): Promise<PaymentDto[]> {
     return unwrap(
       await invoke("finance_list_payments", { filter: filter ?? {} }),
     );
   }
   async listCurrencies(): Promise<CurrencyDto[]> {
     return unwrap(await invoke("finance_list_currencies"));
+  }
+  async listJournalEntries(): Promise<JournalEntryDto[]> {
+    return unwrap(await invoke("finance_list_journal_entries"));
+  }
+  async getJournalEntry(id: string): Promise<JournalEntryDto> {
+    return unwrap(await invoke("finance_get_journal_entry", { id }));
+  }
+  async listDiscountTemplates(): Promise<DiscountTemplateDto[]> {
+    return unwrap(await invoke("finance_list_discount_templates"));
+  }
+  async createDiscountTemplate(
+    req: CreateDiscountTemplateRequest,
+  ): Promise<DiscountTemplateDto> {
+    return unwrap(
+      await invoke("finance_create_discount_template", { request: req }),
+    );
   }
 
   // ── Document ────────────────────────────────────────────────
@@ -541,5 +594,32 @@ export class LocalClient implements OrbisApiClient {
   }
   async getReportDefinition(code: string): Promise<ReportDefinitionDto> {
     return unwrap(await invoke("report_get_definition", { code }));
+  }
+
+  // ── Report Execution & Printing ─────────────────────────────
+  async generateReport(
+    templateId: string,
+    format: string,
+    parameters: Record<string, unknown>,
+  ): Promise<string> {
+    return unwrap(
+      await invoke("generate_report", {
+        templateId,
+        format,
+        parameters,
+      }),
+    );
+  }
+  async getReportJobStatus(jobId: string): Promise<ReportJobStatusDto> {
+    return unwrap(await invoke("get_report_job_status", { jobId }));
+  }
+  async downloadReportFile(jobId: string): Promise<Uint8Array> {
+    const bytes: number[] = unwrap(
+      await invoke("download_report_file", { jobId }),
+    );
+    return new Uint8Array(bytes);
+  }
+  async batchPrint(req: BatchPrintParams): Promise<string> {
+    return unwrap(await invoke("batch_print", { ...req }));
   }
 }

@@ -7,6 +7,7 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api, dedup, extractErrorMessage } from "$lib/api";
+import { formatCurrency } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -87,10 +88,10 @@ async function loadData() {
   try {
     const [entriesList, ledgersList] = await Promise.all([
       dedup(`journal_entries:${data.orgId}`, () =>
-        api.finance.listJournalEntries(),
+        api.listJournalEntries(),
       ),
       dedup(`accounts:${data.orgId}`, () =>
-        api.finance.listTransactionAccounts(),
+        api.listAccounts(),
       ),
     ]);
 
@@ -161,16 +162,9 @@ function getAccountLabel(accountId: string): string {
 }
 
 function localFormatCurrency(val: number, currCode: string) {
-  try {
-    return new Intl.NumberFormat("ar-YE", {
-      style: "currency",
-      currency: currCode || "YER",
-      maximumFractionDigits: 0,
-    }).format(val);
-  } catch (e) {
-    return `${val} ${currCode}`;
-  }
+  return formatCurrency(val, currCode);
 }
+
 
 function selectRow(entry: any) {
   selectedEntry = entry;

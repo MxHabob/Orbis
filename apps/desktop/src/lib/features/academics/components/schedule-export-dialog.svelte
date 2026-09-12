@@ -7,6 +7,7 @@ import {
   DialogFooter,
 } from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui/button";
+import { formatDate } from "$lib/core/i18n";
 import { Label } from "@orbis/ui/label";
 import {
   Select,
@@ -214,7 +215,7 @@ function handlePrint() {
           </div>
           <div class="text-end">
             <span class="text-xs font-semibold text-primary">ORBIS SCHEDULING</span>
-            <p class="text-[10px] text-muted-foreground">{new Date().toLocaleDateString()}</p>
+            <p class="text-[10px] text-muted-foreground">{formatDate(new Date())}</p>
           </div>
         </div>
 

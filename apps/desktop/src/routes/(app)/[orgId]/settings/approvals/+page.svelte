@@ -10,6 +10,7 @@ import * as m from "$lib/paraglide/messages";
 import { api, extractErrorMessage } from "$lib/api";
 import { authStore, workflowInbox } from "$lib/stores";
 import { toast } from "@orbis/ui";
+import { formatDate } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import {
   createPendingApprovalsQuery,
@@ -248,7 +249,7 @@ function parseApprovalChain(
                         </Badge>
                       </div>
                       <span class="text-[10px] text-muted-foreground">
-                        {new Date(request.created_at).toLocaleDateString()}
+                        {formatDate(request.created_at)}
                       </span>
                     </div>
 
@@ -373,7 +374,7 @@ function parseApprovalChain(
                     </div>
                     <div class="flex items-center gap-2">
                       <span class="text-[10px] text-muted-foreground">
-                        {new Date(request.created_at).toLocaleDateString()}
+                        {formatDate(request.created_at)}
                       </span>
                       {#if request.status === "pending"}
                         <Button
@@ -430,7 +431,7 @@ function parseApprovalChain(
                   {request.requested_by_name ?? request.requested_by}
                 </span>
                 <span class="text-[10px] text-muted-foreground shrink-0">
-                  {new Date(request.created_at).toLocaleDateString()}
+                  {formatDate(request.created_at)}
                 </span>
               </div>
             {/each}

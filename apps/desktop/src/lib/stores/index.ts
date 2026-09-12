@@ -8,6 +8,9 @@ export { confirmStore } from "./confirm.svelte";
 // ── Academic Context (unified store — single source of truth)
 export { academicContext } from "./academic-context.svelte";
 
+// ── Organization Context (org configuration — locale, timezone, currency, branding)
+export { orgContext } from "./org-context.svelte";
+
 // ── AI Context (unified store — single source of truth)
 export { aiContext } from "./ai-context.svelte";
 

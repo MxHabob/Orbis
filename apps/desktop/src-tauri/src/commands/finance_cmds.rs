@@ -1,4 +1,4 @@
-//! Tauri IPC commands — Finance (Accounts, FeeTemplates, StudentFees, Payments, Currencies).
+//! Tauri IPC commands — Finance (Accounts, FeeTemplates, StudentFees, Payments, Currencies, JournalEntries, DiscountTemplates).
 
 use tauri::State;
 use serde::{Deserialize, Serialize};
@@ -6,18 +6,27 @@ use crate::state::AppState;
 use uuid::Uuid;
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use orbis_domain::entities::account::AccountType;
-use orbis_domain::entities::payment::PaymentMethod;
+use orbis_domain::entities::account::{Account, AccountType};
+use orbis_domain::entities::payment::{Payment, PaymentMethod};
+use orbis_domain::entities::fee_template::FeeTemplate;
+use orbis_domain::entities::student_fee::StudentFee;
+use orbis_domain::entities::discount_template::{DiscountTemplate, DiscountType};
+use orbis_domain::entities::journal_entry::JournalEntry;
+use orbis_domain::queries::filters::{PaymentFilter, StudentFeeFilter, PaginationParams};
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
+
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
-#[derive(Serialize)]
+// ── DTOs ─────────────────────────────────────────────────────────
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AccountDto {
     pub id: String,
     pub org_id: String,
     pub code: String,
     pub name: String,
+    pub name_ar: Option<String>,
     pub account_type: String,
     pub parent_id: Option<String>,
     pub currency: String,
@@ -25,41 +34,59 @@ pub struct AccountDto {
     pub balances: serde_json::Value,
 }
 
-#[derive(Deserialize)]
-pub struct CreateAccountInput {
-    pub code: String,
-    pub name: String,
-    pub account_type: String,
-    pub parent_id: Option<String>,
-    pub currency: Option<String>,
+pub fn account_to_dto(a: Account) -> AccountDto {
+    AccountDto {
+        id: a.id.to_string(),
+        org_id: a.org_id.to_string(),
+        code: a.code,
+        name: a.name,
+        name_ar: a.name_ar,
+        account_type: a.account_type.to_string(),
+        parent_id: a.parent_id.map(|p| p.to_string()),
+        currency: a.currency_code,
+        is_active: a.is_active,
+        balances: a.balances,
+    }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FeeTemplateDto {
     pub id: String,
     pub org_id: String,
     pub code: String,
     pub name: String,
+    pub name_ar: Option<String>,
+    pub category: String,
     pub default_amount: Decimal,
+    pub currency: String,
     pub revenue_account_id: String,
     pub receivable_account_id: String,
     pub is_mandatory: bool,
+    pub is_active: bool,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
-#[derive(Deserialize)]
-pub struct CreateFeeTemplateInput {
-    pub code: Option<String>,
-    pub name: String,
-    pub name_ar: Option<String>,
-    pub category: Option<String>,
-    pub default_amount: Decimal,
-    pub currency: Option<String>,
-    pub revenue_account_id: String,
-    pub receivable_account_id: String,
-    pub is_mandatory: Option<bool>,
+pub fn fee_template_to_dto(t: FeeTemplate) -> FeeTemplateDto {
+    FeeTemplateDto {
+        id: t.id.to_string(),
+        org_id: t.org_id.to_string(),
+        code: t.code,
+        name: t.name,
+        name_ar: t.name_ar,
+        category: t.category,
+        default_amount: t.default_amount,
+        currency: t.currency_code,
+        revenue_account_id: t.revenue_account_id.to_string(),
+        receivable_account_id: t.receivable_account_id.to_string(),
+        is_mandatory: t.is_mandatory,
+        is_active: t.is_active,
+        created_at: t.created_at.to_rfc3339(),
+        updated_at: t.updated_at.to_rfc3339(),
+    }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct StudentFeeDto {
     pub id: String,
     pub org_id: String,
@@ -74,67 +101,341 @@ pub struct StudentFeeDto {
     pub balance_due: Decimal,
     pub status: String,
     pub due_date: String,
+    pub notes: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
-#[derive(Deserialize)]
-pub struct GenerateFeeInput {
-    pub period_id: String,
-    pub student_id: String,
-    pub enrollment_id: Option<String>,
-    pub fee_template_id: String,
-    pub discount_amount: Option<Decimal>,
-    pub due_date: String,
+pub fn student_fee_to_dto(f: StudentFee) -> StudentFeeDto {
+    StudentFeeDto {
+        id: f.id.to_string(),
+        org_id: f.org_id.to_string(),
+        period_id: f.period_id.to_string(),
+        student_id: f.student_id.to_string(),
+        enrollment_id: f.enrollment_id.map(|e| e.to_string()),
+        fee_template_id: f.fee_template_id.to_string(),
+        original_amount: f.original_amount,
+        discount_amount: f.discount_amount,
+        net_amount: f.net_amount,
+        paid_amount: f.paid_amount,
+        balance_due: f.balance_due,
+        status: f.status.to_string(),
+        due_date: f.due_date.to_string(),
+        notes: f.notes,
+        created_at: f.created_at.to_rfc3339(),
+        updated_at: f.updated_at.to_rfc3339(),
+    }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PaymentDto {
     pub id: String,
     pub org_id: String,
     pub fee_id: Option<String>,
     pub student_id: Option<String>,
-    pub account_id: String,
-    pub amount: Decimal,
-    pub method: String,
-    pub reference: Option<String>,
-    pub journal_entry_id: Option<String>,
-    pub paid_at: String,
-}
-
-#[derive(Deserialize)]
-pub struct ProcessPaymentInput {
-    pub fee_id: Option<String>,
-    pub student_id: Option<String>,
     pub enrollment_id: Option<String>,
     pub account_id: String,
     pub amount: Decimal,
+    pub currency: String,
+    pub exchange_rate: Decimal,
+    pub base_amount: Decimal,
     pub method: String,
+    pub reference: Option<String>,
+    pub receipt_number: Option<String>,
+    pub journal_entry_id: Option<String>,
     pub payer_name: Option<String>,
+    pub payer_phone: Option<String>,
+    pub notes: Option<String>,
+    pub paid_at: String,
+    pub created_by: Option<String>,
+    pub created_at: String,
+}
+
+pub fn payment_to_dto(p: Payment) -> PaymentDto {
+    PaymentDto {
+        id: p.id.to_string(),
+        org_id: p.org_id.to_string(),
+        fee_id: p.fee_id.map(|f| f.to_string()),
+        student_id: p.student_id.map(|s| s.to_string()),
+        enrollment_id: p.enrollment_id.map(|e| e.to_string()),
+        account_id: p.account_id.to_string(),
+        amount: p.amount,
+        currency: p.currency_code,
+        exchange_rate: p.exchange_rate,
+        base_amount: p.base_amount,
+        method: p.method.to_string(),
+        reference: p.reference,
+        receipt_number: p.receipt_number,
+        journal_entry_id: p.journal_entry_id.map(|j| j.to_string()),
+        payer_name: p.payer_name,
+        payer_phone: p.payer_phone,
+        notes: p.notes,
+        paid_at: p.paid_at.to_rfc3339(),
+        created_by: p.created_by.map(|c| c.to_string()),
+        created_at: p.created_at.to_rfc3339(),
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct JournalEntryLineDto {
+    pub id: String,
+    pub account_id: String,
+    pub debit_amount: Decimal,
+    pub credit_amount: Decimal,
+    pub description: Option<String>,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct JournalEntryDto {
+    pub id: String,
+    pub org_id: String,
+    pub reference_number: String,
+    pub accounting_date: String,
+    pub amount: Decimal,
+    pub currency: String,
+    pub exchange_rate: Decimal,
+    pub base_amount: Decimal,
+    pub debit_account_id: String,
+    pub credit_account_id: String,
+    pub description: String,
+    pub description_ar: Option<String>,
+    pub source_type: String,
+    pub source_id: Option<String>,
+    pub status: String,
+    pub lines: Vec<JournalEntryLineDto>,
+    pub is_reversed: bool,
+    pub reversed_by: Option<String>,
+    pub reversal_reason: Option<String>,
+    pub created_by: Option<String>,
+    pub created_at: String,
+}
+
+pub fn journal_entry_to_dto(j: JournalEntry) -> JournalEntryDto {
+    JournalEntryDto {
+        id: j.id.to_string(),
+        org_id: j.org_id.to_string(),
+        reference_number: j.reference_number,
+        accounting_date: j.accounting_date.to_string(),
+        amount: j.amount,
+        currency: j.currency_code,
+        exchange_rate: j.exchange_rate,
+        base_amount: j.base_amount,
+        debit_account_id: j.debit_account_id.to_string(),
+        credit_account_id: j.credit_account_id.to_string(),
+        description: j.description,
+        description_ar: j.description_ar,
+        source_type: j.source_type,
+        source_id: j.source_id.map(|s| s.to_string()),
+        status: j.status.to_string(),
+        lines: j.lines.into_iter().map(|l| JournalEntryLineDto {
+            id: l.id.to_string(),
+            account_id: l.account_id.to_string(),
+            debit_amount: l.debit_amount,
+            credit_amount: l.credit_amount,
+            description: l.description,
+            entity_type: l.entity_type,
+            entity_id: l.entity_id.map(|e| e.to_string()),
+        }).collect(),
+        is_reversed: j.is_reversed,
+        reversed_by: j.reversed_by.map(|r| r.to_string()),
+        reversal_reason: j.reversal_reason,
+        created_by: j.created_by.map(|c| c.to_string()),
+        created_at: j.created_at.to_rfc3339(),
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DiscountTemplateDto {
+    pub id: String,
+    pub org_id: String,
+    pub code: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub discount_type: String,
+    pub value: Decimal,
+    pub eligibility_rules: Option<serde_json::Value>,
+    pub is_approval_required: bool,
+    pub is_auto_apply: bool,
+    pub is_stackable: bool,
+    pub priority: u32,
+    pub is_active: bool,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+pub fn discount_template_to_dto(d: DiscountTemplate) -> DiscountTemplateDto {
+    DiscountTemplateDto {
+        id: d.id.to_string(),
+        org_id: d.org_id.to_string(),
+        code: d.code,
+        name: d.name,
+        name_ar: d.name_ar,
+        discount_type: match d.discount_type {
+            DiscountType::Percentage => "percentage".into(),
+            DiscountType::FixedAmount => "fixed_amount".into(),
+        },
+        value: d.value,
+        eligibility_rules: d.eligibility_rules,
+        is_approval_required: d.is_approval_required,
+        is_auto_apply: d.is_auto_apply,
+        is_stackable: d.is_stackable,
+        priority: d.priority,
+        is_active: d.is_active,
+        created_at: d.created_at.to_rfc3339(),
+        updated_at: d.updated_at.to_rfc3339(),
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct CurrencyDto {
+    pub code: String,
+    pub name: String,
+    pub symbol: String,
+}
+
+// ── Request Inputs ───────────────────────────────────────────────
+
+#[derive(Deserialize, Debug)]
+pub struct CreateAccountInput {
+    pub code: String,
+    pub name: String,
+    #[serde(rename = "nameAr")]
+    pub name_ar: Option<String>,
+    #[serde(rename = "accountType")]
+    pub account_type: String,
+    #[serde(rename = "parentId")]
+    pub parent_id: Option<String>,
+    pub currency: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct CreateFeeTemplateInput {
+    pub code: Option<String>,
+    pub name: String,
+    #[serde(rename = "nameAr")]
+    pub name_ar: Option<String>,
+    pub category: Option<String>,
+    #[serde(rename = "defaultAmount")]
+    pub default_amount: Decimal,
+    pub currency: Option<String>,
+    #[serde(rename = "revenueAccountId")]
+    pub revenue_account_id: String,
+    #[serde(rename = "receivableAccountId")]
+    pub receivable_account_id: String,
+    #[serde(rename = "isMandatory")]
+    pub is_mandatory: Option<bool>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct GenerateFeeInput {
+    #[serde(rename = "periodId")]
+    pub period_id: String,
+    #[serde(rename = "studentId")]
+    pub student_id: String,
+    #[serde(rename = "enrollmentId")]
+    pub enrollment_id: Option<String>,
+    #[serde(rename = "feeTemplateId")]
+    pub fee_template_id: String,
+    #[serde(rename = "discountAmount")]
+    pub discount_amount: Option<Decimal>,
+    #[serde(rename = "dueDate")]
+    pub due_date: String,
+}
+
+#[derive(Deserialize, Default, Debug)]
+pub struct FeeFilterInput {
+    #[serde(rename = "periodId")]
+    pub period_id: Option<String>,
+    #[serde(rename = "studentId")]
+    pub student_id: Option<String>,
+    #[serde(rename = "enrollmentId")]
+    pub enrollment_id: Option<String>,
+    #[serde(rename = "feeTemplateId")]
+    pub fee_template_id: Option<String>,
+    pub status: Option<String>,
+    #[serde(rename = "isOverdue")]
+    pub is_overdue: Option<bool>,
+    pub page: Option<u64>,
+    #[serde(rename = "pageSize")]
+    pub page_size: Option<u64>,
+    #[serde(rename = "sortBy")]
+    pub sort_by: Option<String>,
+    #[serde(rename = "sortDir")]
+    pub sort_dir: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct ProcessPaymentInput {
+    #[serde(rename = "feeId")]
+    pub fee_id: Option<String>,
+    #[serde(rename = "studentId")]
+    pub student_id: Option<String>,
+    #[serde(rename = "enrollmentId")]
+    pub enrollment_id: Option<String>,
+    #[serde(rename = "accountId")]
+    pub account_id: String,
+    pub amount: Decimal,
+    pub method: String,
+    #[serde(rename = "payerName")]
+    pub payer_name: Option<String>,
+    #[serde(rename = "payerPhone")]
     pub payer_phone: Option<String>,
     pub reference: Option<String>,
     pub source: Option<String>,
 }
 
-#[derive(Serialize)]
-pub struct CurrencyDto { pub code: String, pub name: String, pub symbol: String }
-
-#[derive(Deserialize, Default)]
-pub struct FeeFilter {
-    #[serde(rename = "enrollmentId")]
-    pub enrollment_id: Option<String>,
-    #[serde(rename = "studentId")]
-    pub student_id: Option<String>,
-}
-
-#[derive(Deserialize, Default)]
-pub struct PaymentFilter {
+#[derive(Deserialize, Default, Debug)]
+pub struct PaymentFilterInput {
     #[serde(rename = "feeId")]
     pub fee_id: Option<String>,
     #[serde(rename = "studentId")]
     pub student_id: Option<String>,
+    #[serde(rename = "enrollmentId")]
+    pub enrollment_id: Option<String>,
+    pub method: Option<String>,
+    #[serde(rename = "fromDate")]
+    pub from_date: Option<String>,
+    #[serde(rename = "toDate")]
+    pub to_date: Option<String>,
+    pub page: Option<u64>,
+    #[serde(rename = "pageSize")]
+    pub page_size: Option<u64>,
+    #[serde(rename = "sortBy")]
+    pub sort_by: Option<String>,
+    #[serde(rename = "sortDir")]
+    pub sort_dir: Option<String>,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct CreateDiscountTemplateInput {
+    pub code: Option<String>,
+    pub name: String,
+    #[serde(rename = "nameAr")]
+    pub name_ar: Option<String>,
+    #[serde(rename = "discountType")]
+    pub discount_type: String,
+    pub value: Decimal,
+    #[serde(rename = "eligibilityRules")]
+    pub eligibility_rules: Option<serde_json::Value>,
+    #[serde(rename = "isApprovalRequired", default)]
+    pub is_approval_required: bool,
+    #[serde(rename = "isAutoApply", default)]
+    pub is_auto_apply: bool,
+    #[serde(rename = "isStackable", default)]
+    pub is_stackable: bool,
+    #[serde(default)]
+    pub priority: u32,
+}
+
+// ── Commands ─────────────────────────────────────────────────────
+
 #[tauri::command]
-pub async fn finance_create_account(request: CreateAccountInput, state: State<'_, AppState>) -> Result<ApiResponse<AccountDto>, String> {
+pub async fn finance_create_account(
+    request: CreateAccountInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AccountDto>, String> {
     let ctx = make_ctx(&state);
     let parent_id = request.parent_id.and_then(|p| Uuid::parse_str(&p).ok());
     let account_type = match request.account_type.to_lowercase().as_str() {
@@ -156,38 +457,23 @@ pub async fn finance_create_account(request: CreateAccountInput, state: State<'_
         parent_id,
     ).await.map_err(|e| e.to_string())?;
 
-    Ok(ok(AccountDto {
-        id: a.id.to_string(),
-        org_id: a.org_id.to_string(),
-        code: a.code,
-        name: a.name,
-        account_type: a.account_type.to_string(),
-        parent_id: a.parent_id.map(|p| p.to_string()),
-        currency: a.currency_code,
-        is_active: a.is_active,
-        balances: a.balances,
-    }))
+    Ok(ok(account_to_dto(a)))
 }
 
 #[tauri::command]
-pub async fn finance_list_accounts(state: State<'_, AppState>) -> Result<ApiResponse<Vec<AccountDto>>, String> {
+pub async fn finance_list_accounts(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<AccountDto>>, String> {
     let ctx = make_ctx(&state);
     let items = state.finance_service.list_accounts(ctx.tenant_id).await.map_err(|e| e.to_string())?;
-    Ok(ok(items.into_iter().map(|a| AccountDto {
-        id: a.id.to_string(),
-        org_id: a.org_id.to_string(),
-        code: a.code,
-        name: a.name,
-        account_type: a.account_type.to_string(),
-        parent_id: a.parent_id.map(|p| p.to_string()),
-        currency: a.currency_code,
-        is_active: a.is_active,
-        balances: a.balances,
-    }).collect()))
+    Ok(ok(items.into_iter().map(account_to_dto).collect()))
 }
 
 #[tauri::command]
-pub async fn finance_create_fee_template(request: CreateFeeTemplateInput, state: State<'_, AppState>) -> Result<ApiResponse<FeeTemplateDto>, String> {
+pub async fn finance_create_fee_template(
+    request: CreateFeeTemplateInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<FeeTemplateDto>, String> {
     let ctx = make_ctx(&state);
     let rev_id = Uuid::parse_str(&request.revenue_account_id).map_err(|_| "Invalid revenue_account_id")?;
     let rec_id = Uuid::parse_str(&request.receivable_account_id).map_err(|_| "Invalid receivable_account_id")?;
@@ -203,36 +489,23 @@ pub async fn finance_create_fee_template(request: CreateFeeTemplateInput, state:
         rev_id,
     ).await.map_err(|e| e.to_string())?;
 
-    Ok(ok(FeeTemplateDto {
-        id: t.id.to_string(),
-        org_id: t.org_id.to_string(),
-        code: t.code,
-        name: t.name,
-        default_amount: t.default_amount,
-        revenue_account_id: t.revenue_account_id.to_string(),
-        receivable_account_id: t.receivable_account_id.to_string(),
-        is_mandatory: t.is_mandatory,
-    }))
+    Ok(ok(fee_template_to_dto(t)))
 }
 
 #[tauri::command]
-pub async fn finance_list_fee_templates(state: State<'_, AppState>) -> Result<ApiResponse<Vec<FeeTemplateDto>>, String> {
+pub async fn finance_list_fee_templates(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<FeeTemplateDto>>, String> {
     let ctx = make_ctx(&state);
     let items = state.finance_service.list_fee_templates(ctx.tenant_id).await.map_err(|e| e.to_string())?;
-    Ok(ok(items.into_iter().map(|t| FeeTemplateDto {
-        id: t.id.to_string(),
-        org_id: t.org_id.to_string(),
-        code: t.code,
-        name: t.name,
-        default_amount: t.default_amount,
-        revenue_account_id: t.revenue_account_id.to_string(),
-        receivable_account_id: t.receivable_account_id.to_string(),
-        is_mandatory: t.is_mandatory,
-    }).collect()))
+    Ok(ok(items.into_iter().map(fee_template_to_dto).collect()))
 }
 
 #[tauri::command]
-pub async fn finance_generate_fee(request: GenerateFeeInput, state: State<'_, AppState>) -> Result<ApiResponse<StudentFeeDto>, String> {
+pub async fn finance_generate_fee(
+    request: GenerateFeeInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<StudentFeeDto>, String> {
     let ctx = make_ctx(&state);
     let period_id = Uuid::parse_str(&request.period_id).map_err(|_| "Invalid period_id")?;
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid student_id")?;
@@ -251,55 +524,43 @@ pub async fn finance_generate_fee(request: GenerateFeeInput, state: State<'_, Ap
         Some(due_date),
     ).await.map_err(|e| e.to_string())?;
 
-    Ok(ok(StudentFeeDto {
-        id: f.id.to_string(),
-        org_id: f.org_id.to_string(),
-        period_id: f.period_id.to_string(),
-        student_id: f.student_id.to_string(),
-        enrollment_id: f.enrollment_id.map(|e| e.to_string()),
-        fee_template_id: f.fee_template_id.to_string(),
-        original_amount: f.original_amount,
-        discount_amount: f.discount_amount,
-        net_amount: f.net_amount,
-        paid_amount: f.paid_amount,
-        balance_due: f.balance_due,
-        status: f.status.to_string(),
-        due_date: f.due_date.to_string(),
-    }))
+    Ok(ok(student_fee_to_dto(f)))
 }
 
 #[tauri::command]
-pub async fn finance_list_student_fees(filter: Option<FeeFilter>, state: State<'_, AppState>) -> Result<ApiResponse<Vec<StudentFeeDto>>, String> {
+pub async fn finance_list_student_fees(
+    filter: Option<FeeFilterInput>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<StudentFeeDto>>, String> {
     let ctx = make_ctx(&state);
     let f = filter.unwrap_or_default();
-    let query_filter = orbis_domain::queries::filters::StudentFeeFilter {
+    let query_filter = StudentFeeFilter {
         student_id: f.student_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
         enrollment_id: f.enrollment_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
-        fee_template_id: None,
-        status: None,
-        is_overdue: None,
-        pagination: None,
+        fee_template_id: f.fee_template_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
+        status: f.status,
+        is_overdue: f.is_overdue,
+        pagination: Some(PaginationParams {
+            page: f.page.or(Some(1)),
+            page_size: f.page_size.or(Some(1000)),
+            sort_by: f.sort_by,
+            sort_dir: f.sort_dir,
+        }),
     };
-    let items = state.finance_service.list_student_fees(ctx.tenant_id, query_filter).await.map_err(|e| e.to_string())?.items;
-    Ok(ok(items.into_iter().map(|f| StudentFeeDto {
-        id: f.id.to_string(),
-        org_id: f.org_id.to_string(),
-        period_id: f.period_id.to_string(),
-        student_id: f.student_id.to_string(),
-        enrollment_id: f.enrollment_id.map(|e| e.to_string()),
-        fee_template_id: f.fee_template_id.to_string(),
-        original_amount: f.original_amount,
-        discount_amount: f.discount_amount,
-        net_amount: f.net_amount,
-        paid_amount: f.paid_amount,
-        balance_due: f.balance_due,
-        status: f.status.to_string(),
-        due_date: f.due_date.to_string(),
-    }).collect()))
+
+    let paginated = state.finance_service
+        .list_student_fees(ctx.tenant_id, query_filter)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(paginated.items.into_iter().map(student_fee_to_dto).collect()))
 }
 
 #[tauri::command]
-pub async fn finance_process_payment(request: ProcessPaymentInput, state: State<'_, AppState>) -> Result<ApiResponse<PaymentDto>, String> {
+pub async fn finance_process_payment(
+    request: ProcessPaymentInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<PaymentDto>, String> {
     let ctx = make_ctx(&state);
     let fee_id = request.fee_id.and_then(|f| Uuid::parse_str(&f).ok());
     let student_id = request.student_id.and_then(|s| Uuid::parse_str(&s).ok());
@@ -331,52 +592,141 @@ pub async fn finance_process_payment(request: ProcessPaymentInput, state: State<
         request.source,
     ).await.map_err(|e| e.to_string())?;
 
-    Ok(ok(PaymentDto {
-        id: pay.id.to_string(),
-        org_id: pay.org_id.to_string(),
-        fee_id: pay.fee_id.map(|f| f.to_string()),
-        student_id: pay.student_id.map(|s| s.to_string()),
-        account_id: pay.account_id.to_string(),
-        amount: pay.amount,
-        method: pay.method.to_string(),
-        reference: pay.reference,
-        journal_entry_id: pay.journal_entry_id.map(|j| j.to_string()),
-        paid_at: pay.paid_at.to_rfc3339(),
-    }))
+    Ok(ok(payment_to_dto(pay)))
 }
 
 #[tauri::command]
-pub async fn finance_list_payments(filter: Option<PaymentFilter>, state: State<'_, AppState>) -> Result<ApiResponse<Vec<PaymentDto>>, String> {
+pub async fn finance_list_payments(
+    filter: Option<PaymentFilterInput>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<PaymentDto>>, String> {
     let ctx = make_ctx(&state);
     let f = filter.unwrap_or_default();
-    let query_filter = orbis_domain::queries::filters::PaymentFilter {
-        student_id: f.student_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
-        enrollment_id: None,
-        fee_id: f.fee_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
-        method: None,
-        from_date: None,
-        to_date: None,
-        pagination: None,
+    let from_date = f.from_date
+        .as_deref()
+        .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
+        .and_then(|nd| nd.and_hms_opt(0, 0, 0))
+        .map(|dt| chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(dt, chrono::Utc));
+    let to_date = f.to_date
+        .as_deref()
+        .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
+        .and_then(|nd| nd.and_hms_opt(23, 59, 59))
+        .map(|dt| chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(dt, chrono::Utc));
+    let method = match f.method.as_deref() {
+        Some("cash") => Some(PaymentMethod::Cash),
+        Some("bank_transfer") | Some("bank") => Some(PaymentMethod::BankTransfer),
+        Some("check") | Some("cheque") => Some(PaymentMethod::Check),
+        Some("credit_card") | Some("card") => Some(PaymentMethod::CreditCard),
+        Some("mada") => Some(PaymentMethod::Mada),
+        Some("apple_pay") => Some(PaymentMethod::ApplePay),
+        _ => None,
     };
-    let items = state.payment_repo.list(ctx.tenant_id, query_filter).await.map_err(|e| e.to_string())?.items;
 
-    Ok(ok(items.into_iter().map(|p| PaymentDto {
-        id: p.id.to_string(),
-        org_id: p.org_id.to_string(),
-        fee_id: p.fee_id.map(|f| f.to_string()),
-        student_id: p.student_id.map(|s| s.to_string()),
-        account_id: p.account_id.to_string(),
-        amount: p.amount,
-        method: p.method.to_string(),
-        reference: p.reference,
-        journal_entry_id: p.journal_entry_id.map(|j| j.to_string()),
-        paid_at: p.paid_at.to_rfc3339(),
-    }).collect()))
+    let query_filter = PaymentFilter {
+        student_id: f.student_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
+        enrollment_id: f.enrollment_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
+        fee_id: f.fee_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
+        method,
+        from_date,
+        to_date,
+        pagination: Some(PaginationParams {
+            page: f.page.or(Some(1)),
+            page_size: f.page_size.or(Some(1000)),
+            sort_by: f.sort_by,
+            sort_dir: f.sort_dir,
+        }),
+    };
+
+    let paginated = state.finance_service
+        .list_payments(ctx.tenant_id, query_filter)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(paginated.items.into_iter().map(payment_to_dto).collect()))
 }
 
 #[tauri::command]
-pub async fn finance_list_currencies(state: State<'_, AppState>) -> Result<ApiResponse<Vec<CurrencyDto>>, String> {
+pub async fn finance_list_currencies(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<CurrencyDto>>, String> {
     let ctx = make_ctx(&state);
     let items = state.currency_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(|c| CurrencyDto { code: c.code, name: c.name, symbol: c.symbol }).collect()))
+}
+
+#[tauri::command]
+pub async fn finance_list_journal_entries(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<JournalEntryDto>>, String> {
+    let ctx = make_ctx(&state);
+    let items = state.journal_entry_repo
+        .find_by_org(ctx.tenant_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(items.into_iter().map(journal_entry_to_dto).collect()))
+}
+
+#[tauri::command]
+pub async fn finance_get_journal_entry(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<JournalEntryDto>, String> {
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
+    let entry = state.journal_entry_repo
+        .find_by_id(uid)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Journal entry not found".to_string())?;
+
+    Ok(ok(journal_entry_to_dto(entry)))
+}
+
+#[tauri::command]
+pub async fn finance_list_discount_templates(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<DiscountTemplateDto>>, String> {
+    let ctx = make_ctx(&state);
+    let items = state.discount_template_repo
+        .find_by_org(ctx.tenant_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(items.into_iter().map(discount_template_to_dto).collect()))
+}
+
+#[tauri::command]
+pub async fn finance_create_discount_template(
+    request: CreateDiscountTemplateInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<DiscountTemplateDto>, String> {
+    let ctx = make_ctx(&state);
+    let now = chrono::Utc::now();
+    let tmpl_id = Uuid::new_v4();
+
+    let discount_type = match request.discount_type.to_lowercase().as_str() {
+        "percentage" | "percent" => DiscountType::Percentage,
+        _ => DiscountType::FixedAmount,
+    };
+
+    let tmpl = DiscountTemplate {
+        id: tmpl_id,
+        org_id: ctx.tenant_id,
+        code: request.code.unwrap_or_else(|| format!("DISC-{}", tmpl_id.to_string().chars().take(6).collect::<String>())),
+        name: request.name,
+        name_ar: request.name_ar,
+        discount_type,
+        value: request.value,
+        eligibility_rules: request.eligibility_rules,
+        is_approval_required: request.is_approval_required,
+        is_auto_apply: request.is_auto_apply,
+        is_stackable: request.is_stackable,
+        priority: request.priority,
+        is_active: true,
+        created_at: now,
+        updated_at: now,
+    };
+
+    state.discount_template_repo.save(&tmpl).await.map_err(|e| e.to_string())?;
+    Ok(ok(discount_template_to_dto(tmpl)))
 }

@@ -73,7 +73,7 @@ async function loadDropdownData() {
   try {
     const [studentList, treasuryList, currencyList] = await Promise.all([
       api.listEnrollments(),
-      api.finance
+      api
         .listAccounts()
         .then((accounts) =>
           accounts.filter((account: any) =>
@@ -104,7 +104,7 @@ async function loadStudentFees(enrollId: string) {
   if (!enrollId || !orgId) return;
   isLoadingFees = true;
   try {
-    const list = await api.listStudentFees(enrollId);
+    const list = await api.listStudentFees({ enrollmentId: enrollId });
     fees = list.filter((f) => f.status !== "paid");
     if (fees.length > 0) {
       selectedFeeId = String(fees[0].id);
@@ -166,7 +166,13 @@ async function handleSubmit(e: SubmitEvent) {
     currency: currency.trim().toUpperCase(),
   };
   const submitted = await form.submit(async (payload) => {
-    await api.finance.record({ ...payload, exchange_rate: undefined });
+    await api.processPayment({
+      fee_id: payload.fee_id,
+      amount: payload.amount,
+      paid_at: new Date().toISOString(),
+      method: payload.method,
+      reference: payload.reference,
+    });
     toast.success(m.common_payment_toast_success());
   });
   if (submitted) {

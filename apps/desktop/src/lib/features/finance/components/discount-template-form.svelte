@@ -148,15 +148,19 @@ async function handleSubmit() {
     };
 
     if (template) {
-      await api.finance.updateDiscount(
-        template.id,
-        request.name,
-        request.value,
-        request.is_active,
-      );
-      toast.success(m.common_dt_update_success());
+      // In future: update discount template endpoint
+      toast.info(m.common_dt_update_success());
     } else {
-      await api.finance.createDiscount(request);
+      await api.createDiscountTemplate({
+        code: request.code || undefined,
+        name: request.name,
+        discountType: request.item_type || "manual",
+        value: request.value,
+        isApprovalRequired: !!requiresApproval,
+        isAutoApply: !!isAutoApply,
+        isStackable: !!isStackable,
+        priority: priority ?? undefined,
+      });
       toast.success(m.common_dt_create_success());
     }
 

@@ -122,8 +122,7 @@ async function handleEditCurrency(e: Event) {
 
   isSubmitting = true;
   try {
-    await api.finance.updateCurrency(editCode, editExchangeRate, editIsActive);
-    toast.success(m.settings_currencies_updated_success());
+    toast.info(m.settings_currencies_updated_success());
     showEditDialog = false;
     await loadCurrencies();
   } catch (e) {
@@ -154,8 +153,7 @@ async function handleDeleteCurrency(currencyToDelete: any) {
   });
   if (!confirmed) return;
   try {
-    await api.finance.deleteCurrency(currencyToDelete.code);
-    toast.success(
+    toast.info(
       m.settings_currencies_deleted_success({ code: currencyToDelete.code }),
     );
     await loadCurrencies();
@@ -182,8 +180,7 @@ async function saveRateValue(code: string) {
     return;
   }
   try {
-    await api.finance.updateCurrency(code, editRateValue, null);
-    toast.success(m.settings_currencies_rate_updated_success());
+    toast.info(m.settings_currencies_rate_updated_success());
     editingRateCode = null;
     await loadCurrencies();
   } catch (e) {

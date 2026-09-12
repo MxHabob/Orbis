@@ -30,8 +30,14 @@ pub async fn generate_report(
         OutputFormat::from_str(&format)
     };
 
-    // Default locale for now
-    let report_locale = ReportLocale::Ar;
+    // Resolve locale from organization
+    let org = state.org_repo.find_by_id(ctx.tenant_id).await.ok().flatten();
+    let report_locale = match org.as_ref().map(|o| o.locale.as_str()) {
+        Some("en") | Some("en-US") | Some("en_US") => ReportLocale::En,
+        Some("ar-en") | Some("ar_en") => ReportLocale::ArEn,
+        Some("en-ar") | Some("en_ar") => ReportLocale::EnAr,
+        _ => ReportLocale::Ar,
+    };
 
     let input = orbis_app::services::GenerateReportInput {
         report_code,
@@ -129,8 +135,14 @@ pub async fn batch_print(
         .await
         .map_err(|e| e.to_string())?;
 
-    // 3. Fetch data
-    let locale = ReportLocale::Ar;
+    // 3. Fetch data with org locale
+    let org = state.org_repo.find_by_id(ctx.tenant_id).await.ok().flatten();
+    let locale = match org.as_ref().map(|o| o.locale.as_str()) {
+        Some("en") | Some("en-US") | Some("en_US") => ReportLocale::En,
+        Some("ar-en") | Some("ar_en") => ReportLocale::ArEn,
+        Some("en-ar") | Some("en_ar") => ReportLocale::EnAr,
+        _ => ReportLocale::Ar,
+    };
 
     let provider = state.report_provider_registry
         .get_provider(&definition.data_provider_key)

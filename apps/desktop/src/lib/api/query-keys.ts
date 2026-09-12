@@ -51,12 +51,22 @@ export const queryKeys = {
         "classSubjects",
         { classId, periodId },
       ] as const,
+    prerequisites: (studentId: string, subjectId: string) =>
+      [
+        ...queryKeys.academic.all,
+        "prerequisites",
+        { studentId, subjectId },
+      ] as const,
   },
 
   // ── Student ─────────────────────────────────────────────────
   student: {
     all: ["student"] as const,
-    enrollments: (filter?: { classId?: string; studentId?: string }) =>
+    list: (filter?: Record<string, unknown>) =>
+      [...queryKeys.student.all, "list", filter ?? {}] as const,
+    detail: (id: string) =>
+      [...queryKeys.student.all, "detail", id] as const,
+    enrollments: (filter?: Record<string, unknown>) =>
       [...queryKeys.student.all, "enrollments", filter ?? {}] as const,
     enrollment: (id: string) =>
       [...queryKeys.student.all, "enrollment", id] as const,
@@ -102,11 +112,24 @@ export const queryKeys = {
     all: ["finance"] as const,
     accounts: () => [...queryKeys.finance.all, "accounts"] as const,
     feeTemplates: () => [...queryKeys.finance.all, "feeTemplates"] as const,
-    studentFees: (filter?: { enrollmentId?: string; studentId?: string }) =>
-      [...queryKeys.finance.all, "studentFees", filter ?? {}] as const,
-    payments: (filter?: { feeId?: string }) =>
-      [...queryKeys.finance.all, "payments", filter ?? {}] as const,
+    studentFees: (filter?: {
+      enrollmentId?: string;
+      studentId?: string;
+      status?: string;
+    }) => [...queryKeys.finance.all, "studentFees", filter ?? {}] as const,
+    payments: (filter?: {
+      feeId?: string;
+      studentId?: string;
+      fromDate?: string;
+      toDate?: string;
+    }) => [...queryKeys.finance.all, "payments", filter ?? {}] as const,
     currencies: () => [...queryKeys.finance.all, "currencies"] as const,
+    journalEntries: () =>
+      [...queryKeys.finance.all, "journalEntries"] as const,
+    journalEntry: (id: string) =>
+      [...queryKeys.finance.all, "journalEntry", id] as const,
+    discountTemplates: () =>
+      [...queryKeys.finance.all, "discountTemplates"] as const,
   },
 
   // ── Document ────────────────────────────────────────────────

@@ -1,9 +1,10 @@
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
-import { api } from "$lib/api";
+import { api, queryKeys } from "$lib/api";
 import { toast } from "@orbis/ui";
 
 import { l } from "$lib/core/i18n";
+import { formatDate } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { studentRegistrationSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
@@ -299,28 +300,43 @@ export class StudentFormState {
 
     try {
       if (!this.isEditMode) {
-        // 1. Create Student User
-        const user = await api.registerUser({
-          email:
-            this.personal.email.trim() || `student.${Date.now()}@orbis.local`,
-          full_name:
-            this.personal.nameAr.trim() ||
-            this.personal.nameEn.trim() ||
-            "طالب جديد",
-          role: "student",
-        });
-        targetStudentId = user.id;
+        // 1. Register Student & initial enrollment atomically via StudentService
+        const namePartsAr = (this.personal.nameAr || "").trim().split(/\s+/);
+        const namePartsEn = (this.personal.nameEn || "").trim().split(/\s+/);
 
-        // 2. Enroll Student
-        const enrollment = await api.enrollStudent({
-          student_id: targetStudentId,
-          class_id: this.personal.classId,
-          study_mode: "full_time",
-          period_id: this.orgId,
-          student_number: this.personal.studentNumber || String(Date.now()),
-        });
-        targetEnrollmentId = enrollment.id;
+        const firstName = namePartsEn[0] || namePartsAr[0] || "طالب";
+        const lastName = namePartsEn.length > 1 ? namePartsEn[namePartsEn.length - 1] : (namePartsAr.length > 1 ? namePartsAr[namePartsAr.length - 1] : "جديد");
+        const middleName = namePartsEn.length > 2 ? namePartsEn.slice(1, -1).join(" ") : undefined;
 
+        const firstNameAr = namePartsAr[0] || undefined;
+        const lastNameAr = namePartsAr.length > 1 ? namePartsAr[namePartsAr.length - 1] : undefined;
+        const middleNameAr = namePartsAr.length > 2 ? namePartsAr.slice(1, -1).join(" ") : undefined;
+
+        const detail = await api.registerStudent({
+          studentNumber: this.personal.studentNumber || `STU-${Date.now()}`,
+          firstName,
+          middleName,
+          lastName,
+          firstNameAr,
+          middleNameAr,
+          lastNameAr,
+          displayName: this.personal.nameAr.trim() || this.personal.nameEn.trim(),
+          nationalId: this.personal.nationalId || undefined,
+          passportNumber: this.personal.passportNumber || undefined,
+          gender: this.personal.sex || "male",
+          birthDate: this.personal.birthDate || undefined,
+          placeOfBirth: this.personal.placeOfBirth || undefined,
+          nationality: this.personal.nationality || undefined,
+          bloodType: this.personal.bloodType || undefined,
+          medicalNotes: this.personal.medicalNotes || undefined,
+          phone: this.personal.phone || undefined,
+          email: this.personal.email.trim() || undefined,
+          initialPeriodId: this.orgId,
+          initialClassId: this.personal.classId || undefined,
+          studyMode: "regular",
+        });
+
+        targetStudentId = detail.student.id;
         toast.success(m.common_form_success_create());
       } else {
         targetEnrollmentId = this.studentId!;
@@ -374,7 +390,7 @@ export class StudentFormState {
       }
 
       if (queryClient) {
-        queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
       }
 
       goto(localizeHref(`/${this.orgId}/students`));
@@ -421,7 +437,7 @@ export class StudentFormState {
         phone: this.personal.phone,
         address: this.personal.address,
         documents: this.document.submittedDocs.join(", "),
-        current_date: new Date().toLocaleDateString("ar-YE"),
+        current_date: formatDate(new Date()),
         mandatory_fees: this.mandatoryTotal.toString(),
         optional_fees: this.optionalTotal.toString(),
         discount_fees: this.discountTotal.toString(),

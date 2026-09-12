@@ -82,6 +82,22 @@ import type {
   ValidationResult,
   ReportDefinitionDto,
   OrbisError,
+  StudentDto,
+  StudentDetailDto,
+  RegisterStudentInput,
+  StudentFilterParams,
+  EnrollmentFilterParams,
+  UpdateStudentStatusInput,
+  ChangeStudyModeInput,
+  PaginatedList,
+  BatchPrintParams,
+  ReportJobStatusDto,
+  JournalEntryDto,
+  DiscountTemplateDto,
+  CreateDiscountTemplateRequest,
+  StudentFeeFilterParams,
+  PaymentFilterParams,
+  PrerequisiteCheckResultDto,
 } from "./types";
 
 export class ApiRequestError extends Error {
@@ -110,12 +126,12 @@ export class RemoteClient implements OrbisApiClient {
     method: string,
     path: string,
     body?: unknown,
-    query?: Record<string, string | undefined>,
+    query?: Record<string, unknown>,
   ): Promise<T> {
     const url = new URL(`${this.baseUrl}${path}`);
     if (query) {
       Object.entries(query).forEach(([k, v]) => {
-        if (v !== undefined) url.searchParams.set(k, v);
+        if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
       });
     }
 
@@ -145,7 +161,7 @@ export class RemoteClient implements OrbisApiClient {
 
   private get<T>(
     path: string,
-    query?: Record<string, string | undefined>,
+    query?: Record<string, unknown>,
   ): Promise<T> {
     return this.request<T>("GET", path, undefined, query);
   }
@@ -324,18 +340,69 @@ export class RemoteClient implements OrbisApiClient {
       period_id: periodId,
     });
   }
+  async checkPrerequisites(
+    studentId: string,
+    subjectId: string,
+  ): Promise<PrerequisiteCheckResultDto[]> {
+    return this.get(
+      `/api/v1/academic/students/${studentId}/prerequisites/${subjectId}`,
+    );
+  }
 
   // ── Student ─────────────────────────────────────────────────
+  async registerStudent(
+    req: RegisterStudentInput,
+  ): Promise<StudentDetailDto> {
+    return this.post("/api/v1/students", req);
+  }
+  async listStudents(
+    filter?: StudentFilterParams,
+  ): Promise<PaginatedList<StudentDetailDto>> {
+    return this.get("/api/v1/students", {
+      period_id: filter?.periodId,
+      class_id: filter?.classId,
+      status: filter?.status,
+      standing: filter?.standing,
+      search: filter?.search,
+      page: filter?.page,
+      page_size: filter?.pageSize,
+      sort_by: filter?.sortBy,
+      sort_dir: filter?.sortDir,
+    });
+  }
+  async getStudent(id: string): Promise<StudentDetailDto> {
+    return this.get(`/api/v1/students/${id}`);
+  }
+  async updateStudentStatus(
+    req: UpdateStudentStatusInput,
+  ): Promise<StudentDto> {
+    return this.post(`/api/v1/students/${req.studentId}/status`, {
+      status: req.status,
+      reason: req.reason,
+    });
+  }
+  async changeStudyMode(
+    req: ChangeStudyModeInput,
+  ): Promise<EnrollmentDto> {
+    return this.post(`/api/v1/enrollments/${req.enrollmentId}/study-mode`, {
+      study_mode: req.studyMode,
+      reason: req.reason,
+    });
+  }
   async enrollStudent(req: EnrollStudentRequest): Promise<EnrollmentDto> {
     return this.post("/api/v1/enrollments", req);
   }
-  async listEnrollments(filter?: {
-    classId?: string;
-    studentId?: string;
-  }): Promise<EnrollmentDto[]> {
+  async listEnrollments(
+    filter?: EnrollmentFilterParams,
+  ): Promise<EnrollmentDto[]> {
     return this.get("/api/v1/enrollments", {
       class_id: filter?.classId,
       student_id: filter?.studentId,
+      period_id: filter?.periodId,
+      study_mode: filter?.studyMode,
+      status: filter?.status,
+      page: filter?.page,
+      page_size: filter?.pageSize,
     });
   }
   async getEnrollment(id: string): Promise<EnrollmentDto> {
@@ -464,23 +531,42 @@ export class RemoteClient implements OrbisApiClient {
   async generateStudentFee(req: GenerateFeeRequest): Promise<StudentFeeDto> {
     return this.post("/api/v1/student-fees", req);
   }
-  async listStudentFees(filter?: {
-    enrollmentId?: string;
-    studentId?: string;
-  }): Promise<StudentFeeDto[]> {
+  async listStudentFees(
+    filter?: StudentFeeFilterParams,
+  ): Promise<StudentFeeDto[]> {
     return this.get("/api/v1/student-fees", {
       enrollment_id: filter?.enrollmentId,
       student_id: filter?.studentId,
+      status: filter?.status,
     });
   }
   async processPayment(req: ProcessPaymentRequest): Promise<PaymentDto> {
     return this.post("/api/v1/payments", req);
   }
-  async listPayments(filter?: { feeId?: string }): Promise<PaymentDto[]> {
-    return this.get("/api/v1/payments", { fee_id: filter?.feeId });
+  async listPayments(filter?: PaymentFilterParams): Promise<PaymentDto[]> {
+    return this.get("/api/v1/payments", {
+      fee_id: filter?.feeId,
+      student_id: filter?.studentId,
+      from_date: filter?.fromDate,
+      to_date: filter?.toDate,
+    });
   }
   async listCurrencies(): Promise<CurrencyDto[]> {
     return this.get("/api/v1/currencies");
+  }
+  async listJournalEntries(): Promise<JournalEntryDto[]> {
+    return this.get("/api/v1/finance/journal-entries");
+  }
+  async getJournalEntry(id: string): Promise<JournalEntryDto> {
+    return this.get(`/api/v1/finance/journal-entries/${id}`);
+  }
+  async listDiscountTemplates(): Promise<DiscountTemplateDto[]> {
+    return this.get("/api/v1/finance/discount-templates");
+  }
+  async createDiscountTemplate(
+    req: CreateDiscountTemplateRequest,
+  ): Promise<DiscountTemplateDto> {
+    return this.post("/api/v1/finance/discount-templates", req);
   }
 
   // ── Document ────────────────────────────────────────────────
@@ -602,7 +688,6 @@ export class RemoteClient implements OrbisApiClient {
     });
   }
 
-  // ── Report Definitions ──────────────────────────────────────
   async listReportDefinitions(
     domain?: string,
     category?: string,
@@ -611,5 +696,30 @@ export class RemoteClient implements OrbisApiClient {
   }
   async getReportDefinition(code: string): Promise<ReportDefinitionDto> {
     return this.get(`/api/v1/report-definitions/${code}`);
+  }
+
+  // ── Report Execution & Printing ─────────────────────────────
+  async generateReport(
+    templateId: string,
+    format: string,
+    parameters: Record<string, unknown>,
+  ): Promise<string> {
+    const res = await this.post<{ job_id: string }>("/api/v1/reports/generate", {
+      template_id: templateId,
+      format,
+      parameters,
+    });
+    return res.job_id;
+  }
+  async getReportJobStatus(jobId: string): Promise<ReportJobStatusDto> {
+    return this.get(`/api/v1/reports/jobs/${jobId}`);
+  }
+  async downloadReportFile(jobId: string): Promise<Uint8Array> {
+    const blob: Blob = await this.get(`/api/v1/reports/jobs/${jobId}/download`);
+    const buffer = await blob.arrayBuffer();
+    return new Uint8Array(buffer);
+  }
+  async batchPrint(req: BatchPrintParams): Promise<string> {
+    return this.post("/api/v1/reports/batch-print", req);
   }
 }

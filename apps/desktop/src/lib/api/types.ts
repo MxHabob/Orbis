@@ -35,6 +35,7 @@ import type {
   AssignClassSubjectRequest,
   EnrollmentDto,
   GuardianDto,
+  StudentDto,
   EnrollStudentRequest,
   AssignGuardianRequest,
   RoomDto,
@@ -136,6 +137,225 @@ export interface PaginatedResponse<T> {
   count: number;
   nextCursor?: string | null;
   hasMore: boolean;
+}
+
+export interface PaginatedList<T> {
+  items: T[];
+  total_count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface PersonDto {
+  id: string;
+  org_id?: string | null;
+  first_name: string;
+  middle_name?: string | null;
+  last_name: string;
+  first_name_ar?: string | null;
+  middle_name_ar?: string | null;
+  last_name_ar?: string | null;
+  display_name?: string | null;
+  full_name: string;
+  full_name_ar?: string | null;
+  national_id?: string | null;
+  passport_number?: string | null;
+  gender?: string | null;
+  birth_date?: string | null;
+  place_of_birth?: string | null;
+  nationality?: string | null;
+  blood_type?: string | null;
+  medical_notes?: string | null;
+  special_needs_notes?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StudentDetailDto {
+  student: StudentDto;
+  person: PersonDto;
+}
+
+export interface StudentFilterParams {
+  periodId?: string;
+  classId?: string;
+  status?: string;
+  standing?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDir?: string;
+}
+
+export interface EnrollmentFilterParams {
+  periodId?: string;
+  classId?: string;
+  studentId?: string;
+  studyMode?: string;
+  status?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDir?: string;
+}
+
+export interface RegisterStudentInput {
+  personId?: string;
+  userId?: string;
+  studentNumber: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  firstNameAr?: string;
+  middleNameAr?: string;
+  lastNameAr?: string;
+  displayName?: string;
+  nationalId?: string;
+  passportNumber?: string;
+  gender?: string;
+  birthDate?: string;
+  placeOfBirth?: string;
+  nationality?: string;
+  bloodType?: string;
+  medicalNotes?: string;
+  specialNeedsNotes?: string;
+  phone?: string;
+  email?: string;
+  initialPeriodId?: string;
+  initialClassId?: string;
+  studyMode?: string;
+}
+
+export interface UpdateStudentStatusInput {
+  studentId: string;
+  status: string;
+  reason?: string;
+}
+
+export interface ChangeStudyModeInput {
+  enrollmentId: string;
+  studyMode: string;
+  reason?: string;
+}
+
+export interface ReportJobStatusDto {
+  job_id: string;
+  status: string;
+}
+
+export interface BatchPrintParams {
+  reportCode: string;
+  parameters: Record<string, unknown>;
+  gridColumns?: number;
+  gridRows?: number;
+  marginMm?: number;
+  cutMarks?: boolean;
+}
+
+export interface JournalEntryLineDto {
+  id: string;
+  account_id: string;
+  debit_amount: string | number;
+  credit_amount: string | number;
+  description?: string | null;
+  entity_type?: string | null;
+  entity_id?: string | null;
+}
+
+export interface JournalEntryDto {
+  id: string;
+  org_id: string;
+  reference_number: string;
+  accounting_date: string;
+  amount: string | number;
+  currency: string;
+  exchange_rate: string | number;
+  base_amount: string | number;
+  debit_account_id: string;
+  credit_account_id: string;
+  description: string;
+  description_ar?: string | null;
+  source_type: string;
+  source_id?: string | null;
+  status: string;
+  lines: JournalEntryLineDto[];
+  is_reversed: boolean;
+  reversed_by?: string | null;
+  reversal_reason?: string | null;
+  created_by?: string | null;
+  created_at: string;
+}
+
+export interface DiscountTemplateDto {
+  id: string;
+  org_id: string;
+  code: string;
+  name: string;
+  name_ar?: string | null;
+  discount_type: string;
+  value: string | number;
+  eligibility_rules?: Record<string, unknown> | null;
+  is_approval_required: boolean;
+  is_auto_apply: boolean;
+  is_stackable: boolean;
+  priority: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateDiscountTemplateRequest {
+  code?: string;
+  name: string;
+  nameAr?: string;
+  discountType: string;
+  value: number | string;
+  eligibilityRules?: Record<string, unknown>;
+  isApprovalRequired?: boolean;
+  isAutoApply?: boolean;
+  isStackable?: boolean;
+  priority?: number;
+}
+
+export interface StudentFeeFilterParams {
+  periodId?: string;
+  studentId?: string;
+  enrollmentId?: string;
+  feeTemplateId?: string;
+  status?: string;
+  isOverdue?: boolean;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDir?: string;
+}
+
+export interface PaymentFilterParams {
+  feeId?: string;
+  studentId?: string;
+  enrollmentId?: string;
+  method?: string;
+  fromDate?: string;
+  toDate?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDir?: string;
+}
+
+export interface PrerequisiteCheckResultDto {
+  subject_id: string;
+  prerequisite_subject_id: string;
+  requirement_type: string;
+  is_satisfied: boolean;
+  min_score_required?: number | null;
+  current_score?: number | null;
+  failure_reason?: string | null;
 }
 
 export class OrbisError extends Error {
@@ -345,13 +565,19 @@ export interface OrbisApiClient {
     classId: string,
     periodId: string,
   ): Promise<ClassSubjectDto[]>;
+  checkPrerequisites(
+    studentId: string,
+    subjectId: string,
+  ): Promise<PrerequisiteCheckResultDto[]>;
 
   // ── Student ─────────────────────────────────────────────────
+  registerStudent(req: RegisterStudentInput): Promise<StudentDetailDto>;
+  listStudents(filter?: StudentFilterParams): Promise<PaginatedList<StudentDetailDto>>;
+  getStudent(id: string): Promise<StudentDetailDto>;
+  updateStudentStatus(req: UpdateStudentStatusInput): Promise<StudentDto>;
+  changeStudyMode(req: ChangeStudyModeInput): Promise<EnrollmentDto>;
   enrollStudent(req: EnrollStudentRequest): Promise<EnrollmentDto>;
-  listEnrollments(filter?: {
-    classId?: string;
-    studentId?: string;
-  }): Promise<EnrollmentDto[]>;
+  listEnrollments(filter?: EnrollmentFilterParams): Promise<EnrollmentDto[]>;
   getEnrollment(id: string): Promise<EnrollmentDto>;
   assignGuardian(req: AssignGuardianRequest): Promise<GuardianDto>;
   listGuardians(studentId: string): Promise<GuardianDto[]>;
@@ -399,13 +625,16 @@ export interface OrbisApiClient {
   createFeeTemplate(req: CreateFeeTemplateRequest): Promise<FeeTemplateDto>;
   listFeeTemplates(): Promise<FeeTemplateDto[]>;
   generateStudentFee(req: GenerateFeeRequest): Promise<StudentFeeDto>;
-  listStudentFees(filter?: {
-    enrollmentId?: string;
-    studentId?: string;
-  }): Promise<StudentFeeDto[]>;
+  listStudentFees(filter?: StudentFeeFilterParams): Promise<StudentFeeDto[]>;
   processPayment(req: ProcessPaymentRequest): Promise<PaymentDto>;
-  listPayments(filter?: { feeId?: string }): Promise<PaymentDto[]>;
+  listPayments(filter?: PaymentFilterParams): Promise<PaymentDto[]>;
   listCurrencies(): Promise<CurrencyDto[]>;
+  listJournalEntries(): Promise<JournalEntryDto[]>;
+  getJournalEntry(id: string): Promise<JournalEntryDto>;
+  listDiscountTemplates(): Promise<DiscountTemplateDto[]>;
+  createDiscountTemplate(
+    req: CreateDiscountTemplateRequest,
+  ): Promise<DiscountTemplateDto>;
 
   // ── Document ────────────────────────────────────────────────
   uploadDocument(req: UploadDocumentRequest): Promise<DocumentDto>;
@@ -461,4 +690,14 @@ export interface OrbisApiClient {
     category?: string,
   ): Promise<ReportDefinitionDto[]>;
   getReportDefinition(code: string): Promise<ReportDefinitionDto>;
+
+  // ── Report Execution & Printing ─────────────────────────────
+  generateReport(
+    templateId: string,
+    format: string,
+    parameters: Record<string, unknown>,
+  ): Promise<string>;
+  getReportJobStatus(jobId: string): Promise<ReportJobStatusDto>;
+  downloadReportFile(jobId: string): Promise<Uint8Array>;
+  batchPrint(req: BatchPrintParams): Promise<string>;
 }

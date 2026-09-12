@@ -456,9 +456,10 @@ async function handleAdd() {
         const feeAmount = row.feeAmounts[feeId];
         const fee = row.availableFees.find((f) => String(f.id) === feeId);
 
-        const request = {
+        await api.processPayment({
           fee_id: feeId,
           amount: Number(feeAmount),
+          paid_at: new Date().toISOString(),
           method:
             paymentMethod === "Cash"
               ? "cash"
@@ -466,13 +467,7 @@ async function handleAdd() {
                 ? "bank_transfer"
                 : "card",
           reference: newRefNum,
-          notes:
-            row.notes ||
-            `سداد رسوم الطالب ${getStudentName(row.studentEnrollmentId)} - ${fee?.notes || m.finance_payments_tuition_fees()}`,
-          cash_account_id: treasuryId,
-          currency: currency.trim().toUpperCase(),
-        };
-        await api.finance.record({ ...request, exchange_rate: undefined });
+        });
       }
     }
 

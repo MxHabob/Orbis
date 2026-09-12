@@ -38,7 +38,7 @@ let activeFilter = $state<UniversalFilter>({
 async function loadTemplates() {
   isLoading = true;
   try {
-    templates = await api.finance.listDiscounts();
+    templates = await api.listDiscountTemplates();
   } catch (e) {
     toast.error((e as any)?.message || "Failed to load discount templates");
   } finally {
