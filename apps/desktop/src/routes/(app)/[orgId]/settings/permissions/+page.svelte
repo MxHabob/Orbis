@@ -371,7 +371,7 @@ function handleSelectUserForPermissions(userId: string) {
 </script>
 
 <svelte:head>
-  <title>{m.settings_permissions_title()} | Orbis</title>
+  <title>{m.settings_permissions_window_title?.() || "الصلاحيات"} | Orbis</title>
 </svelte:head>
 
 <div class="p-6 max-w-7xl mx-auto space-y-6">
@@ -384,7 +384,7 @@ function handleSelectUserForPermissions(userId: string) {
         </div>
         <div>
           <h1 class="text-xl font-bold text-foreground tracking-tight">
-            {m.settings_permissions_title()}
+            {m.settings_permissions_window_title?.() || "صلاحيات الأدوار"}
           </h1>
           <p class="text-xs text-muted-foreground mt-0.5">
             إدارة الأدوار المؤسسية، مصفوفة الصلاحيات الدقيقة، والتحكم بالوصول (IAM & Access Control)
@@ -600,7 +600,7 @@ function handleSelectUserForPermissions(userId: string) {
               <TableHead class="text-xs font-bold w-36">{m.settings_permissions_label_role()}</TableHead>
               <TableHead class="text-xs font-bold w-24 text-center">المستوى</TableHead>
               <TableHead class="text-xs font-bold w-36">القيود</TableHead>
-              <TableHead class="text-xs font-bold">{m.settings_permissions_col_actions()}</TableHead>
+              <TableHead class="text-xs font-bold">{m.settings_permissions_col_permissions()}</TableHead>
               <TableHead class="w-16 text-end"></TableHead>
             </TableRow>
           </TableHeader>
