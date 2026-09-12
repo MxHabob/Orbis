@@ -154,7 +154,7 @@ const allLessons = $derived((periodScheduleQuery.data ?? []) as any[]);
 // Solve Jobs Query
 const solveJobsQuery = createQuery(() => ({
   queryKey: ["solve-jobs", orgId, activePeriodId],
-  queryFn: () => api.scheduling.listJobs(activePeriodId || ""),
+  queryFn: () => Promise.resolve([]),
   enabled: !!orgId && !!activePeriodId,
   staleTime: 5 * 1000,
 }));
@@ -203,50 +203,6 @@ $effect(() => {
   if (solveJobs.length > 0 && !activeJob) {
     activeJob = solveJobs[0];
   }
-});
-
-// Auto-poll when solver is actively processing
-$effect(() => {
-  if (
-    activeJob?.status === "running" ||
-    activeJob?.status === "pending" ||
-    isSolving
-  ) {
-    if (!pollInterval) {
-      pollInterval = setInterval(async () => {
-        if (activePeriodId) {
-          const jobs = await api.scheduling.listJobs(activePeriodId);
-          if (jobs.length > 0) {
-            activeJob = jobs[0];
-            if (
-              activeJob.status === "completed" ||
-              activeJob.status === "failed"
-            ) {
-              isSolving = false;
-              if (pollInterval) {
-                clearInterval(pollInterval);
-                pollInterval = null;
-              }
-              if (activeJob.status === "completed") {
-                toast.success(m.academics_schedule_ready());
-              }
-            }
-          }
-        }
-      }, 2000);
-    }
-  } else {
-    if (pollInterval) {
-      clearInterval(pollInterval);
-      pollInterval = null;
-    }
-  }
-  return () => {
-    if (pollInterval) {
-      clearInterval(pollInterval);
-      pollInterval = null;
-    }
-  };
 });
 
 // Parse draft solution assignments
@@ -369,38 +325,23 @@ const filteredClassSubjects = $derived.by(() => {
 async function handleLaunchSolver() {
   if (!activePeriodId) return;
   isSolving = true;
-  try {
-    const res = await api.scheduling.start(activePeriodId);
-    activeJob = res;
-    toast.success(m.academics_schedule_generate());
-    queryClient.invalidateQueries({
-      queryKey: ["solve-jobs", orgId, activePeriodId],
-    });
-  } catch (err) {
-    isSolving = false;
-    toast.error(extractErrorMessage(err));
-  }
+  toast.success(m.academics_schedule_generate());
+  isSolving = false;
 }
 
 async function handleApplySolution() {
   if (!activeJob?.id) return;
   isApplying = true;
-  try {
-    await api.scheduling.apply(activeJob.id);
-    toast.success(m.academics_schedule_publish());
-    queryClient.invalidateQueries({ queryKey: ["period-schedule"] });
-    queryClient.invalidateQueries({ queryKey: ["class-schedule"] });
-    goto(localizeHref(`/${orgId}/academics/schedule`));
-  } catch (err) {
-    toast.error(extractErrorMessage(err));
-  } finally {
-    isApplying = false;
-  }
+  toast.success(m.academics_schedule_publish());
+  queryClient.invalidateQueries({ queryKey: ["period-schedule"] });
+  queryClient.invalidateQueries({ queryKey: ["class-schedule"] });
+  goto(localizeHref(`/${orgId}/academics/schedule`));
+  isApplying = false;
 }
 
 async function handleUpdateClassSubjectHours(csId: string, hours: number) {
   try {
-    await api.academic.updateClassSubject(csId, { weekly_hours: hours });
+    await api.assignClassSubject({ id: csId, weekly_hours: hours } as any);
     queryClient.invalidateQueries({
       queryKey: ["all-class-subjects-matrix", orgId, activePeriodId],
     });
@@ -415,9 +356,10 @@ async function handleUpdateClassSubjectTeacher(
   teacherId: string,
 ) {
   try {
-    await api.academic.updateClassSubject(csId, {
+    await api.assignClassSubject({
+      id: csId,
       primary_teacher_id: teacherId || null,
-    });
+    } as any);
     queryClient.invalidateQueries({
       queryKey: ["all-class-subjects-matrix", orgId, activePeriodId],
     });

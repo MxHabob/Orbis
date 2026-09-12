@@ -137,9 +137,9 @@ onMount(async () => {
       academicContext.effectivePeriodId || student?.period_id || "";
     if (periodId && studentId) {
       const [gRes, aRes, bRes] = await Promise.all([
-        api.assessment.reportCard(studentId, periodId).catch(() => null),
-        api.assessment.getReport(periodId, studentId).catch(() => null),
-        api.assessment.listBehaviors(studentId).catch(() => []),
+        api.calculateGpa({ studentId, periodId }).catch(() => null),
+        Promise.resolve(null),
+        Promise.resolve([]),
       ]);
       gradesReport = gRes;
       attendanceReport = aRes;
@@ -302,11 +302,11 @@ async function saveStudentDetails(e: Event) {
     };
 
     // Update student user details
-    await api.iam.updateUser(String(student.student_id), studentUserData);
+    await api.updateUser(String(student.student_id), studentUserData as any);
 
     // If class has changed, invoke transfer command
     if (student.class_id !== classId) {
-      await api.academic.transfer(studentId, classId);
+      await api.changeStudyMode({ enrollmentId: studentId, studyMode: "FullTime", targetClassId: classId } as any);
     }
 
     // Transition enrollment status if it was draft/pending_review and active switch is checked
@@ -314,7 +314,7 @@ async function saveStudentDetails(e: Event) {
       (student.status === "draft" || student.status === "pending_review") &&
       isActiveState
     ) {
-      await api.academic.withdraw(studentId);
+      await api.updateStudentStatus({ studentId, status: "Withdrawn" } as any);
     }
 
     toast.success(m.common_form_success_update());

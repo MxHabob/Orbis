@@ -127,7 +127,7 @@ async function handleSubmit(e: SubmitEvent) {
       head_id: values.head_id || undefined,
     };
     if (isEdit && unit) {
-      await api.organization.updateOrgUnit(unit.id, payload);
+      await api.createOrgUnit(payload);
       toast.success(m.common_org_unit_update_success());
     } else {
       await api.createOrgUnit(payload);

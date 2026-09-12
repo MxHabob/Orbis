@@ -11,6 +11,8 @@ pub mod exam_cmds;
 pub mod finance_cmds;
 pub mod document_cmds;
 pub mod integration_cmds;
+pub mod workflow_cmds;
+pub mod progression_cmds;
 pub mod report_cmds;
 pub mod template_cmds;
 pub mod window_cmds;
@@ -88,6 +90,10 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         student_cmds::student_get_enrollment,
         student_cmds::student_assign_guardian,
         student_cmds::student_list_guardians,
+        // ── Student Cohort Progression ──────────────────────────
+        progression_cmds::progression_promote_cohort,
+        progression_cmds::progression_list_jobs,
+        progression_cmds::progression_get_job,
         // ── Scheduling ──────────────────────────────────────────
         scheduling_cmds::scheduling_create_room,
         scheduling_cmds::scheduling_list_rooms,
@@ -105,6 +111,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         assessment_cmds::assessment_calculate_grades,
         assessment_cmds::assessment_mark_attendance,
         assessment_cmds::assessment_list_attendance,
+        assessment_cmds::assessment_calculate_gpa,
         // ── Exam ────────────────────────────────────────────────
         exam_cmds::exam_create_session,
         exam_cmds::exam_list_sessions,
@@ -139,6 +146,12 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         integration_cmds::integration_get_status,
         integration_cmds::integration_disconnect,
         integration_cmds::integration_toggle,
+        // ── Academic Override & Workflow ────────────────────────
+        workflow_cmds::workflow_submit_override,
+        workflow_cmds::workflow_approve_override,
+        workflow_cmds::workflow_reject_override,
+        workflow_cmds::workflow_list_overrides,
+        workflow_cmds::workflow_get_override,
         // ── Report Generation ───────────────────────────────────
         report_cmds::generate_report,
         report_cmds::get_report_job_status,

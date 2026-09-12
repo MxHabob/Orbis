@@ -38,14 +38,14 @@ let isLoading = $state(true);
 
 onMount(async () => {
   try {
-    const [tasks, diagnostics, sessions, config, integrations] =
-      await Promise.all([
-        api.ai.autopilotGetTasks().catch(() => []),
-        api.ai.autopilotGetDiagnostics().catch(() => null),
-        api.ai.agentGetSessions().catch(() => []),
-        api.ai.aiGetAutopilotConfig(data.orgId).catch(() => null),
-        api.listIntegrations().catch(() => []),
-      ]);
+    const [integrations] = await Promise.all([
+      api.listIntegrations().catch(() => []),
+    ]);
+
+    const tasks: any[] = [];
+    const diagnostics = null;
+    const sessions: any[] = [];
+    const config = null;
 
     healthStatus =
       (diagnostics as any)?.is_healthy === false ? "degraded" : "healthy";

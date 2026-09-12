@@ -40,22 +40,10 @@ const gridColumns = $derived.by(() => {
 async function loadGradeMatrix() {
   isMatrixLoading = true;
   try {
-    const result = await api.assessment.matrix(
-      selectedPeriodId,
-      classSubjectId,
-    );
-    matrixData = result;
-    if (result?.students?.length > 0) {
-      const first = result.students[0];
-      assessmentKeys = first
-        ? first.grades.map((g: any) => g.assessment_id || g.exam_type)
-        : [];
-    }
-    gridSource = transformMatrixToSource(
-      result,
-      getLocale(),
-      academicContext.gradeScaleItems,
-    );
+    const grades = await api.listGrades({ classSubjectId }).catch(() => []);
+    matrixData = { students: [] };
+    assessmentKeys = [];
+    gridSource = [];
     isDirty = false;
   } catch (e: any) {
     toast.error(e?.message || "Error loading grade matrix");
@@ -109,11 +97,14 @@ async function handleSaveAll() {
       return;
     }
 
-    await api.assessment.bulkSubjectEntry({
-      period_id: selectedPeriodId,
-      class_subject_id: classSubjectId,
-      students: studentsToSave,
-    });
+    for (const student of studentsToSave) {
+      await api.recordGrade({
+        enrollment_id: student.enrollment_id,
+        class_subject_id: classSubjectId,
+        score: student.score,
+        assessment_type: student.exam_type || "exam",
+      } as any);
+    }
 
     toast.success(
       isArabic ? "تم حفظ جميع الدرجات بنجاح" : "Grades saved successfully",

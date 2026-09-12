@@ -85,9 +85,7 @@ const gradingLabels = $derived({
 async function loadParentOptions() {
   if (!orgId) return;
   try {
-    const list = await (api.calendar.listHierarchy
-      ? api.calendar.listHierarchy()
-      : api.listAcademicPeriods());
+    const list = await api.listAcademicPeriods();
     periodsList = (list || []).filter(
       (p: any) => !isEdit || String(p.id) !== String(period?.id),
     );
@@ -115,7 +113,7 @@ async function handleSubmit(e: SubmitEvent) {
           : undefined,
     };
     if (isEdit && period) {
-      await api.calendar.updateAcademicPeriod(period.id, request);
+      await api.createAcademicPeriod(request);
       toast.success(m.common_action_save());
     } else {
       await api.createAcademicPeriod(request);

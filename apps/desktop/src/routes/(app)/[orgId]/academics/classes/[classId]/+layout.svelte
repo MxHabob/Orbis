@@ -28,10 +28,17 @@ const classQuery = createQuery(() => ({
   enabled: !!classId,
 }));
 
-// Students Count Query
 const studentsQuery = createQuery(() => ({
   queryKey: ["class-students-count-master-layout", classId, periodId],
-  queryFn: () => api.academic.listEnrichedStudents(classId),
+  queryFn: () =>
+    api
+      .listStudents()
+      .then((res) =>
+        (res.items || []).filter(
+          (s: any) => String(s.current_class_id) === String(classId),
+        ),
+      )
+      .catch(() => []),
   enabled: !!classId,
 }));
 

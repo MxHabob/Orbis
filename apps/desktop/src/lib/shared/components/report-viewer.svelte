@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 /**
  * ReportViewer — A C# .NET style native printing component.
- * Connects to api.reports.generate, polls status, and fetches PDF bytes.
+ * Connects to api.generateReport, polls status, and fetches PDF bytes.
  * Provides a WYSIWYG preview and triggers the OS native print dialog.
  */
 import { api } from "$lib/api/client";
@@ -64,11 +64,11 @@ async function generateReport() {
 
   try {
     // 1. Trigger Generation
-    const { jobId } = await api.reports.generate({
+    const jobId = await api.generateReport(
       templateId,
-      format: "pdf",
+      "pdf",
       parameters,
-    });
+    );
 
     currentJobId = jobId;
     progress = 30;
@@ -81,13 +81,13 @@ async function generateReport() {
         throw new Error("Report generation timed out.");
       }
 
-      const { status } = await api.reports.getJobStatus(jobId);
+      const jobStatus = await api.getReportJobStatus(jobId);
 
-      if (status === "completed") {
+      if (jobStatus.status === "completed" || jobStatus.status === "Completed") {
         progress = 80;
         statusText = "Fetching document...";
         break;
-      } else if (status === "failed") {
+      } else if (jobStatus.status === "failed" || jobStatus.status === "Failed") {
         throw new Error("Report generation failed on the server.");
       }
 
@@ -97,7 +97,7 @@ async function generateReport() {
     if (currentJobId !== jobId) return; // Dialog was closed or reset
 
     // 3. Fetch PDF Bytes
-    const pdfBytes = await api.reports.downloadFile(jobId);
+    const pdfBytes = await api.downloadReportFile(jobId);
 
     if (pdfBytes && pdfBytes.length > 0) {
       const base64 = uint8ArrayToBase64(pdfBytes);

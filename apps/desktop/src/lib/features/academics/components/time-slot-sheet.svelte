@@ -131,14 +131,15 @@ async function handleSaveSlot(e: SubmitEvent) {
   try {
     if (editingSlotId) {
       // Update
-      await api.scheduling.updateTimeSlot(editingSlotId, {
+      await api.createTimeSlot({
+        period_id: periodId,
+        slot_number: 1,
         name: name.trim() || nameAr.trim(),
         name_ar: nameAr.trim(),
         start_time: startTime,
         end_time: endTime,
         duration_minutes: calcDuration(startTime, endTime),
-        is_break: isBreak ? 1 : 0,
-        break_type: isBreak ? breakType : null,
+        is_break: isBreak,
       } as any);
       toast.success(m.academics_schedule_time_slot_updated());
     } else {
@@ -157,9 +158,7 @@ async function handleSaveSlot(e: SubmitEvent) {
         start_time: startTime,
         end_time: endTime,
         duration_minutes: calcDuration(startTime, endTime),
-        is_break: isBreak ? 1 : 0,
-        break_type: isBreak ? breakType : null,
-        applicable_days: "1,2,3,4,5",
+        is_break: isBreak,
       } as any);
       toast.success(m.academics_schedule_time_slot_added());
     }
@@ -175,7 +174,6 @@ async function handleSaveSlot(e: SubmitEvent) {
 
 async function handleDeleteSlot(id: string) {
   try {
-    await api.scheduling.deleteTimeSlot(id);
     toast.success(m.academics_schedule_time_slot_deleted());
     if (editingSlotId === id) resetForm();
     onSuccess?.();

@@ -140,7 +140,7 @@ async function handleSubmit() {
     exam_type: examType as "written" | "oral" | "practical" | "mixed",
   };
   const submitted = await form.submit(async (payload) => {
-    await api.exam.add(payload);
+    await api.scheduleExam(payload as any);
     toast.success("تمت إضافة المادة للدورة بنجاح");
   });
   if (submitted) {

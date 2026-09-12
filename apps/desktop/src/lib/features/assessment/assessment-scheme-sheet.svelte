@@ -18,8 +18,7 @@ const isArabic = $derived(getLocale() === "ar");
 
 const componentsQuery = createQuery(() => ({
   queryKey: ["assessment-components", classSubjectId, periodId],
-  queryFn: () =>
-    api.assessment.listComponentsForClassSubject(classSubjectId, periodId),
+  queryFn: () => api.listAssessmentSchemes(),
   enabled: !!classSubjectId && !!periodId && open,
 }));
 

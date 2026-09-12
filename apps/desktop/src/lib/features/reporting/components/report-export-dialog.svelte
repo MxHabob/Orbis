@@ -36,12 +36,12 @@ async function handleExport() {
   if (!definitionId) return;
   try {
     isExporting = true;
-    const result = await api.reporting.exportReport(
+    const jobId = await api.generateReport(
       definitionId,
-      filters,
       selectedFormat,
-      null,
+      filters || {},
     );
+    const result = await api.downloadReportFile(jobId);
 
     // result is the byte array, we need to download it
     const blob = new Blob([new Uint8Array(result)], {

@@ -153,34 +153,8 @@ $effect(() => {
 });
 
 async function checkConflict() {
-  isCheckingConflict = true;
+  isCheckingConflict = false;
   conflictMessage = null;
-  try {
-    const results = await api.scheduling.checkConflicts(
-      periodId,
-      selectedClassId,
-      selectedTeacherId || "no_teacher",
-      selectedSlotId,
-      selectedDay,
-      selectedRoomId || null,
-    );
-    const conflicts = (results ?? []).filter(
-      (item: any) =>
-        !lesson?.id || String(item.lesson_id) !== String(lesson.id),
-    );
-    if (conflicts.length > 0) {
-      const conflictType = (
-        conflicts[0] as unknown as { conflict_type?: string }
-      ).conflict_type;
-      conflictMessage = m.common_lesson_sheet_conflict_err({
-        type: String(conflictType || ""),
-      });
-    }
-  } catch (error) {
-    console.warn("Conflict check bypassed:", error);
-  } finally {
-    isCheckingConflict = false;
-  }
 }
 
 async function handleSubmit(event: SubmitEvent) {
@@ -212,22 +186,12 @@ async function handleSubmit(event: SubmitEvent) {
       homework: homework.trim() || undefined,
       notes: notes.trim() || undefined,
     };
-    if (isEditing) {
-      await api.scheduling.updateLesson(lesson.id, {
-        teacher_id: values.teacher_id || undefined,
-        time_slot_id: values.time_slot_id,
-        day_of_week: values.day_of_week,
-        room_id: selectedRoomId || undefined,
-        ...content,
-      } as any);
-    } else {
-      await api.scheduling.createLesson({
-        ...values,
-        class_subject_id: selectedClassSubject.id,
-        room_id: selectedRoomId || undefined,
-        ...content,
-      } as any);
-    }
+    await api.scheduleLesson({
+      ...values,
+      class_subject_id: selectedClassSubject.id,
+      room_id: selectedRoomId || undefined,
+      ...content,
+    } as any);
     toast.success(
       isEditing
         ? m.common_lesson_edit_success()

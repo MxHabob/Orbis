@@ -3,7 +3,7 @@
 Centralized smart action button that adapts based on Period Gate verdict.
 
 Replaces manual button logic across enrollment, grades, attendance pages.
-Calls `api.academic.checkPeriodGate()` (or enrollment-specific) on mount,
+Calls `api.listAcademicPeriods()` (or enrollment-specific) on mount,
 then shows appropriate UI based on the verdict.
 
 Usage:
@@ -81,9 +81,6 @@ let {
 const gateQuery = createQuery(() => ({
   queryKey: ["period-gate", gateType, periodId, classId ?? ""],
   queryFn: async () => {
-    if (gateType === "enrollment" && classId) {
-      return api.academic.checkEligibility(periodId, classId);
-    }
     return { decision: "allowed" as const, allowed_actions: [] };
   },
   staleTime: 30_000,

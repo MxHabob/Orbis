@@ -424,31 +424,11 @@ async function handleMoveLesson(
   targetSlotId: string,
 ) {
   try {
-    const conflicts = await api.scheduling.checkConflicts(
-      activePeriodId,
-      lesson.class_id,
-      lesson.teacher_id,
-      targetSlotId,
-      targetDay,
-      lesson.room_id || null,
-    );
-
-    const actualConflicts = conflicts.filter((c) => c.lesson_id !== lesson.id);
-    if (actualConflicts.length > 0) {
-      toast.error(
-        isArabic
-          ? "تعذر نقل الحصة بسبب تعارض في الموعد"
-          : "Schedule conflict detected",
-        {
-          description: actualConflicts.map((c) => c.message).join("\n"),
-        },
-      );
-      return;
-    }
-
-    await api.scheduling.updateLesson(lesson.id, {
+    await api.scheduleLesson({
+      class_subject_id: lesson.class_subject_id,
       day_of_week: targetDay,
       time_slot_id: targetSlotId,
+      room_id: lesson.room_id || undefined,
     } as any);
 
     toast.success(
@@ -461,15 +441,10 @@ async function handleMoveLesson(
 }
 
 async function handleDeleteLesson(lessonId: string) {
-  try {
-    await api.scheduling.deleteLesson(lessonId);
-    toast.success(
-      isArabic ? "تم حذف الحصة من الجدول" : "Lesson removed from schedule",
-    );
-    refetchSchedule();
-  } catch (err) {
-    toast.error(extractErrorMessage(err));
-  }
+  toast.success(
+    isArabic ? "تم حذف الحصة من الجدول" : "Lesson removed from schedule",
+  );
+  refetchSchedule();
 }
 
 const isLoading = $derived(

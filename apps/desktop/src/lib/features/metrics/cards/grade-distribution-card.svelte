@@ -38,7 +38,7 @@ async function loadData() {
       return;
     }
 
-    const scores = await api.assessment.listPeriodScores(periodId, null);
+    const scores = (await api.listGrades().catch(() => [])) as any[];
     const gradeDistribution: Record<string, number> = {};
     for (const score of scores) {
       const label = String(score.grade_label || "").toUpperCase();

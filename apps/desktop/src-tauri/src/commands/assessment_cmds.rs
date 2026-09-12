@@ -273,3 +273,62 @@ pub async fn assessment_calculate_grades(request: CalculateGradesInput, state: S
 
     Ok(ok(CalculationResultDto { final_score }))
 }
+
+#[derive(Serialize)]
+pub struct CumulativeGpaRecordDto {
+    pub id: String,
+    pub org_id: String,
+    pub student_id: String,
+    pub period_id: String,
+    pub term_attempted_credits: Decimal,
+    pub term_earned_credits: Decimal,
+    pub term_points: Decimal,
+    pub term_gpa: Decimal,
+    pub cumulative_attempted_credits: Decimal,
+    pub cumulative_earned_credits: Decimal,
+    pub cumulative_points: Decimal,
+    pub cumulative_gpa: Decimal,
+    pub standing: String,
+    pub calculated_at: String,
+}
+
+#[derive(Deserialize)]
+pub struct CalculateGpaInput {
+    #[serde(rename = "studentId")]
+    pub student_id: String,
+    #[serde(rename = "periodId")]
+    pub period_id: String,
+}
+
+#[tauri::command]
+pub async fn assessment_calculate_gpa(
+    request: CalculateGpaInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<CumulativeGpaRecordDto>, String> {
+    let ctx = make_ctx(&state);
+    let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
+    let period_id = Uuid::parse_str(&request.period_id).map_err(|_| "Invalid periodId")?;
+
+    let record = state.assessment_service
+        .calculate_gpa(&ctx, ctx.tenant_id, period_id, student_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(CumulativeGpaRecordDto {
+        id: record.id.to_string(),
+        org_id: record.org_id.to_string(),
+        student_id: record.student_id.to_string(),
+        period_id: record.period_id.to_string(),
+        term_attempted_credits: record.term_attempted_credits,
+        term_earned_credits: record.term_earned_credits,
+        term_points: record.term_points,
+        term_gpa: record.term_gpa,
+        cumulative_attempted_credits: record.cumulative_attempted_credits,
+        cumulative_earned_credits: record.cumulative_earned_credits,
+        cumulative_points: record.cumulative_points,
+        cumulative_gpa: record.cumulative_gpa,
+        standing: format!("{:?}", record.standing),
+        calculated_at: record.calculated_at.to_rfc3339(),
+    }))
+}
+

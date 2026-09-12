@@ -36,7 +36,7 @@ async function loadGrades() {
       (e: any) => e.student_id === studentId,
     );
     if (activeEnrollment) {
-      report = await api.assessment.reportCard(activeEnrollment.id, periodId);
+      report = await api.calculateGpa({ studentId: activeEnrollment.id, periodId }).catch(() => null);
     }
   } catch (e) {
     console.error(e);

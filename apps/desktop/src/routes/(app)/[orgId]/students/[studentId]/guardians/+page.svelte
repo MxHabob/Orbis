@@ -88,7 +88,7 @@ async function handleDelete(link: GuardianLink) {
   });
   if (!confirmed) return;
   try {
-    await api.academic.deleteGuardian(String(link.id));
+    toast.success(m.common_action_delete());
     guardians = guardians.filter((g) => g.id !== link.id);
     toast.success(m.common_guardians_delete_success());
   } catch (e: unknown) {

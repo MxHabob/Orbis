@@ -1,7 +1,7 @@
 <!--
 @component LivePage
 AI Center Live Monitoring — Camera grid feeds and live events timeline.
-Wired to SDK: api.aiCenter.getIntegrationStatus('hikvision-camera')
+Wired to: api.getIntegrationStatus('hikvision-camera')
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";

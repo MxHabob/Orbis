@@ -94,24 +94,13 @@ async function handleSubmit() {
     period_id: periodId,
   };
   const submitted = await form.submit(async (payload) => {
-    if (isEdit && session) {
-      await api.exam.updateSession(
-        session.id,
-        payload.name || payload.name_ar,
-        session.status || null,
-        payload.start_date,
-        payload.end_date,
-      );
-    } else {
-      await api.exam.createSession({
-        name: payload.name || payload.name_ar,
-
-        session_type: payload.session_type,
-        start_date: payload.start_date,
-        end_date: payload.end_date,
-        period_id: payload.period_id,
-      });
-    }
+    await api.createExamSession({
+      name: payload.name || payload.name_ar,
+      session_type: payload.session_type,
+      start_date: payload.start_date,
+      end_date: payload.end_date,
+      period_id: payload.period_id,
+    } as any);
     toast.success(m.common_exams_create_success());
     // Reset form
     name = "";

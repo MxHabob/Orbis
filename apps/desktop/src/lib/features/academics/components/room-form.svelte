@@ -65,7 +65,7 @@ async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (payload) => {
     if (isEdit && room) {
-      await api.scheduling.updateRoom(room.id, payload);
+      await api.createRoom(payload);
       toast.success(m.common_rooms_update_success());
     } else {
       await api.createRoom(payload);

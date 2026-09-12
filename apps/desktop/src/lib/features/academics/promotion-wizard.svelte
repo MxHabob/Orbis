@@ -108,31 +108,14 @@ let policyLoaded = $state(false);
 
 // Load promotion policy and apply defaults (Policy-Driven Architecture)
 onMount(async () => {
-  try {
-    const policy = await api.platform_policy.getAutopilotConfig();
-    if (policy) {
-      // Apply policy values as defaults (user can still override)
-      config.passing_score = policy.passing_score ?? 50;
-      config.min_attendance_rate = policy.min_attendance_rate ?? 75;
-      config.auto_graduate_final_level = policy.auto_graduate_final_level === 1;
-      config.exclude_withdrawn = policy.exclude_withdrawn === 1;
-      // Default to false for these since they aren't explicitly tracked in AcademicPolicy anymore
-      config.carry_over_outstanding_fees = false;
-      config.carry_over_guardians = true;
-      if (policy.final_level) config.final_level = policy.final_level;
-    }
-    policyLoaded = true;
-  } catch (e) {
-    // Policy not found — keep hardcoded defaults
-    policyLoaded = true;
-  }
+  policyLoaded = true;
 });
 
 // ── Preview State ───────────────────────────────────────────────
 
 let isAnalyzing = $state(false);
-let previewJob = $state<PromotionJob | null>(null);
-let previewDetails = $state<PromotionDetail[]>([]);
+let previewJob = $state<any>(null);
+let previewDetails = $state<any[]>([]);
 let previewStats = $state({
   total: 0,
   promoted: 0,
@@ -145,7 +128,7 @@ let previewStats = $state({
 
 let isExecuting = $state(false);
 let showExecuteConfirm = $state(false);
-let executionResult = $state<PromotionJob | null>(null);
+let executionResult = $state<any>(null);
 
 // ── Config step valid ───────────────────────────────────────────
 
@@ -179,12 +162,20 @@ function removeMapping(index: number) {
 async function runDryRun() {
   isAnalyzing = true;
   try {
-    previewJob = await api.enrollment_workflow.startDryRun(config);
+    previewJob = await api.promoteCohort({
+      sourcePeriodId: config.source_period_id,
+      targetPeriodId: config.target_period_id || config.source_period_id,
+      jobName: config.target_year_name || "Promotion",
+      items: [],
+    });
     if (previewJob) {
-      previewDetails = await api.enrollment_workflow.getJob(previewJob.id);
-      if (previewJob.dry_run_result) {
-        previewStats = JSON.parse(previewJob.dry_run_result);
-      }
+      previewStats = {
+        total: previewJob.total_students || 0,
+        promoted: previewJob.promoted_count || 0,
+        retained: previewJob.retained_count || 0,
+        graduated: previewJob.graduated_count || 0,
+        excluded: previewJob.excluded_count || 0,
+      };
     }
     currentStep = 2; // Move to preview
   } catch (e: unknown) {
@@ -199,7 +190,12 @@ async function executePromotion() {
   showExecuteConfirm = false;
   isExecuting = true;
   try {
-    executionResult = await api.enrollment_workflow.execute(previewJob.id);
+    executionResult = await api.promoteCohort({
+      sourcePeriodId: config.source_period_id,
+      targetPeriodId: config.target_period_id || config.source_period_id,
+      jobName: config.target_year_name || "Promotion Execution",
+      items: [],
+    });
     toast.success(m.common_promo_complete());
     currentStep = 3; // Move to results
   } catch (e: unknown) {

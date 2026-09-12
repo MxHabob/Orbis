@@ -108,7 +108,7 @@ async function handleSubmit(e: SubmitEvent) {
         updateRequest.name_en = request.full_name.trim();
       if (request.address) updateRequest.address = request.address;
       if (Object.keys(updateRequest).length > 0) {
-        await api.iam.updateUser(newUser.id, updateRequest);
+        await api.updateUser(newUser.id, updateRequest as any);
       }
     });
     if (!submitted) {

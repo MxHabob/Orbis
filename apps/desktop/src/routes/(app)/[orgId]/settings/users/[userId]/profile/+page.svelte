@@ -119,7 +119,7 @@ async function toggleAccountStatus() {
   isSaving = true;
   try {
     const request = { ...user, is_active: nextState };
-    await api.iam.updateUser(userId, request);
+    await api.updateUser(userId, request as any);
     isActiveState = nextState;
     toast.success(
       nextState
@@ -150,19 +150,10 @@ async function saveProfile() {
       phone: phone || null,
       is_active: isActiveState,
     };
-    await api.iam.updateUser(userId, request);
+    await api.updateUser(userId, request as any);
 
     if (role) {
-      await api.iam.changeRole(userId, { role });
-      const existingRoles = await api.iam.listRolesByUser(userId);
-      const roleList = (existingRoles || []).map((r: any) => r.role);
-      if (!roleList.includes(role)) {
-        roleList.unshift(role);
-      }
-      await api.iam.saveForUser(
-        userId,
-        roleList.length > 0 ? roleList : [role],
-      );
+      await api.updateUser(userId, { primary_role: role } as any);
     }
 
     await queryClient.invalidateQueries({ queryKey: ["user", orgId, userId] });

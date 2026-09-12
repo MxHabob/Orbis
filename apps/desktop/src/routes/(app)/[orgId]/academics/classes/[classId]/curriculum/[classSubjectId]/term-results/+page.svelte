@@ -21,8 +21,7 @@ const isArabic = $derived(getLocale() === "ar");
 
 const termResultsQuery = createQuery(() => ({
   queryKey: ["term-results-enriched", selectedPeriodId, classSubjectId],
-  queryFn: () =>
-    api.assessment.listTermResultsEnriched(selectedPeriodId, classSubjectId),
+  queryFn: () => api.listGrades({ classSubjectId }).catch(() => []),
   enabled: !!selectedPeriodId && !!classSubjectId,
 }));
 

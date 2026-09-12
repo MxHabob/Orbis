@@ -128,21 +128,12 @@ function handleClose() {
 }
 
 async function openStandaloneWindow() {
-  if (isDesktopApp) {
-    try {
-      await api.ai.agentOpenStandalone();
-      uiStore.setAskOrbis(false);
-    } catch (e: unknown) {
-      console.error("Failed to open Ask Orbis standalone window:", e);
-      toast.error(m.agent_toast_open_standalone_failed());
-    }
-  } else {
-    window.open(
-      `/agent?orgId=${currentOrgId}`,
-      "_blank",
-      "width=400,height=600",
-    );
-  }
+  window.open(
+    `/agent?orgId=${currentOrgId}`,
+    "_blank",
+    "width=400,height=600",
+  );
+  uiStore.setAskOrbis(false);
 }
 
 async function handleNewChat(agentType: string = "default") {

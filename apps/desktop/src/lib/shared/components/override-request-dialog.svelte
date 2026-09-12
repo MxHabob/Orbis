@@ -4,7 +4,7 @@ Shared dialog for creating override/approval requests.
 
 Used when a user attempts an action that is currently blocked
 (e.g., editing grades after grade_entry_close, late enrollment).
-Calls `api.enrollment_workflow.getJob()` and shows success/error feedback.
+Calls `api.submitOverride()` and shows success/error feedback.
 
 Usage:
   <OverrideRequestDialog
@@ -172,7 +172,17 @@ async function submit() {
   }
   isSubmitting = true;
   try {
-    await api.enrollment_workflow.getJob(entityId);
+    await api.submitOverride({
+      overrideType: overrideType as any,
+      targetEntityId: entityId,
+      reason,
+      payload: {
+        fieldName,
+        oldValue,
+        newValue,
+        entityType,
+      },
+    });
     toast.success(
       m.common_override_submitted
         ? m.common_override_submitted()

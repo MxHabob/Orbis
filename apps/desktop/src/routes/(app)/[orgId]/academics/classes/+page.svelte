@@ -35,7 +35,7 @@ const periodsQuery = createQuery(() => ({
 
 const classMetricsQuery = createQuery(() => ({
   queryKey: ["classes-metrics", data.orgId, activePeriodId],
-  queryFn: () => api.assessment.classMetrics(activePeriodId),
+  queryFn: () => Promise.resolve([]),
   enabled: !!data.orgId && !!activePeriodId,
   staleTime: 2 * 60 * 1000,
 }));

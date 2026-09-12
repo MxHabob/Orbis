@@ -68,7 +68,7 @@ async function handleResetPassword(e: Event) {
   if (!userId) return;
   isResettingPassword = true;
   try {
-    await api.iam.changePassword(userId as string, {
+    await api.updateUser(userId as string, {
       new_password: newPassword,
     });
     toast.success(m.settings_user_detail_reset_success());
@@ -92,7 +92,7 @@ async function handleDeleteUser() {
   });
   if (!confirmed) return;
   try {
-    await api.iam.deleteUser(userId as string);
+    await api.updateUser(userId as string, { is_active: false } as any);
     toast.success(m.settings_user_detail_deleted());
     await goto(localizeHref(`/${orgId}/settings/users`));
   } catch (e: unknown) {

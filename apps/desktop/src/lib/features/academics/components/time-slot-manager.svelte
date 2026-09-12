@@ -110,12 +110,7 @@ async function saveSlot(event: SubmitEvent) {
   };
   const submitted = await form.submit(async (payload) => {
     if (editingId) {
-      await api.scheduling.updateTimeSlot(editingId, {
-        name: name.trim() || nameAr.trim(),
-        name_ar: nameAr.trim(),
-        start_time: startTime,
-        end_time: endTime,
-      });
+      await api.createTimeSlot(payload);
       toast.success(m.academics_schedule_time_slot_updated());
     } else {
       await api.createTimeSlot(payload);

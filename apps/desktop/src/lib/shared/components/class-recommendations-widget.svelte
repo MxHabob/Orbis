@@ -13,7 +13,7 @@ const isArabic = $derived(getLocale() === "ar");
 // Fetch metrics to generate contextual recommendations
 const classMetricsQuery = createQuery(() => ({
   queryKey: ["class-metrics", classId, periodId],
-  queryFn: () => api.assessment.classMetrics(periodId, classId).catch(() => []),
+  queryFn: () => api.listGrades().catch(() => []),
   enabled: !!classId && !!periodId,
   staleTime: 5 * 60 * 1000,
 }));

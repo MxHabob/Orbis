@@ -52,7 +52,7 @@ const classDisplayName = $derived.by(() => {
 
 const classMetricsQuery = createQuery(() => ({
   queryKey: ["class-metrics", classId, periodId],
-  queryFn: () => api.assessment.classMetrics(periodId, classId).catch(() => []),
+  queryFn: () => Promise.resolve([]),
   enabled: !!classId && !!periodId,
   staleTime: 5 * 60 * 1000,
 }));

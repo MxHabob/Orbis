@@ -95,6 +95,24 @@ export const queryKeys = {
       [...queryKeys.assessment.all, "grades", filter ?? {}] as const,
     attendance: (classId: string, date: string) =>
       [...queryKeys.assessment.all, "attendance", { classId, date }] as const,
+    gpa: (studentId: string, periodId: string) =>
+      [...queryKeys.assessment.all, "gpa", { studentId, periodId }] as const,
+  },
+
+  // ── Student Cohort Progression ──────────────────────────────
+  progression: {
+    all: ["progression"] as const,
+    jobs: () => [...queryKeys.progression.all, "jobs"] as const,
+    job: (id: string) => [...queryKeys.progression.all, "job", id] as const,
+  },
+
+  // ── Workflow & Overrides ────────────────────────────────────
+  workflow: {
+    all: ["workflow"] as const,
+    overrides: (status?: string) =>
+      [...queryKeys.workflow.all, "overrides", status ?? "all"] as const,
+    override: (id: string) =>
+      [...queryKeys.workflow.all, "override", id] as const,
   },
 
   // ── Exam ────────────────────────────────────────────────────

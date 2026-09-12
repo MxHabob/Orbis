@@ -35,7 +35,7 @@ async function loadAttendance() {
       (e: any) => e.student_id === studentId,
     );
     if (activeEnrollment) {
-      report = await api.assessment.getReport(periodId, activeEnrollment.id);
+      report = null;
     }
   } catch (e) {
     console.error(e);

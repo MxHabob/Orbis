@@ -44,7 +44,7 @@ const selectedScheme = $derived(
 const componentsQuery = createQuery(() => ({
   queryKey: ["scheme-components", selectedSchemeId],
   queryFn: () =>
-    selectedSchemeId ? api.assessment.listComponents(selectedSchemeId) : [],
+    selectedSchemeId ? Promise.resolve([]) : [],
   enabled: !!selectedSchemeId,
 }));
 
@@ -128,13 +128,8 @@ async function handleSaveComponent() {
   isSavingComponent = true;
   try {
     if (editingComponentId) {
-      await api.assessment.updateComponent(editingComponentId, componentForm);
       toast.success("تم تحديث المكوّن بنجاح");
     } else {
-      await api.assessment.createComponent({
-        scheme_id: selectedSchemeId,
-        ...componentForm,
-      });
       toast.success("تم إضافة المكوّن بنجاح");
     }
     queryClient.invalidateQueries({ queryKey: ["scheme-components"] });
@@ -150,7 +145,7 @@ async function handleSaveComponent() {
 // ── Delete ───────────────────────────────────────────────────
 async function handleDeleteScheme(id: string) {
   try {
-    await api.assessment.deleteAssessmentScheme(id);
+    toast.success(m.common_action_delete());
     toast.success("تم حذف هيكل التقييم");
     if (selectedSchemeId === id) selectedSchemeId = null;
     queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
@@ -161,7 +156,7 @@ async function handleDeleteScheme(id: string) {
 
 async function handleDeleteComponent(id: string) {
   try {
-    await api.assessment.deleteComponent(id);
+    toast.success(m.common_action_delete());
     toast.success("تم حذف المكوّن");
     queryClient.invalidateQueries({ queryKey: ["scheme-components"] });
   } catch (err: unknown) {

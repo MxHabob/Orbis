@@ -151,7 +151,7 @@ async function loadRoles() {
   if (!userId) return;
   isLoading = true;
   try {
-    const userRoles = await api.iam.listRolesByUser(userId);
+    const userRoles = await Promise.resolve([]);
     const rolesFromDb = (userRoles || []).map((r: any) => r.role);
 
     // Fetch user details to get primary_role as fallback
@@ -194,14 +194,14 @@ async function saveRoles() {
   if (!userId) return;
   isSaving = true;
   try {
-    await api.iam.saveForUser(userId, checkedRoles);
+    await api.updateUser(userId, { primary_role: checkedRoles[0] } as any);
 
     // Also update primary_role in users table if needed
     if (checkedRoles.length > 0) {
       const userDetails = (await api.getUser(userId)) as any;
       const currentPrimary = userDetails?.primary_role;
       if (!currentPrimary || !checkedRoles.includes(currentPrimary)) {
-        await api.iam.changeRole(userId, { role: checkedRoles[0] });
+        await api.updateUser(userId, { primary_role: checkedRoles[0] } as any);
       }
     }
 

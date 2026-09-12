@@ -16,7 +16,15 @@ const isArabic = $derived(getLocale() === "ar");
 
 const studentsQuery = createQuery(() => ({
   queryKey: ["class-students-enriched-natural", classId],
-  queryFn: () => api.academic.listEnrichedStudents(classId),
+  queryFn: () =>
+    api
+      .listStudents()
+      .then((res) =>
+        (res.items || []).filter(
+          (s: any) => String(s.current_class_id) === String(classId),
+        ),
+      )
+      .catch(() => []),
   enabled: !!classId,
   staleTime: 5 * 60 * 1000,
 }));

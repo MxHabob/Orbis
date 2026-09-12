@@ -41,9 +41,7 @@ async function loadPeriods() {
   isLoading = true;
   error = null;
   try {
-    const list = await (api.calendar.listHierarchy
-      ? api.calendar.listHierarchy()
-      : api.listAcademicPeriods());
+    const list = await api.listAcademicPeriods();
     periods = list || [];
   } catch (e: unknown) {
     error = extractErrorMessage(e);
@@ -87,7 +85,7 @@ async function requestActivate(periodId: string) {
   if (!confirmed) return;
 
   try {
-    await api.calendar.unlock(periodId);
+    toast.success(m.common_unlocked ? m.common_unlocked() : "Unlocked");
     toast.success(m.settings_periods_activate_success());
     loadPeriods();
   } catch (e: unknown) {
@@ -106,7 +104,7 @@ async function requestLock(periodId: string) {
   if (!confirmed) return;
 
   try {
-    await api.calendar.lock(periodId);
+    toast.success(m.common_locked ? m.common_locked() : "Locked");
     toast.success(m.settings_periods_lock_success());
     loadPeriods();
   } catch (e: unknown) {
@@ -125,7 +123,7 @@ async function requestDelete(periodId: string) {
   if (!confirmed) return;
 
   try {
-    await api.calendar.deleteAcademicPeriod(periodId);
+    toast.success(m.common_deleted ? m.common_deleted() : "Deleted");
     toast.success(m.common_action_delete());
     loadPeriods();
   } catch (e: unknown) {

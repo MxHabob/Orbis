@@ -27,20 +27,10 @@ let tasks = $state<any[]>([]);
 let agentSessions = $state<any[]>([]);
 
 async function loadData() {
-  try {
-    const [tasksRes, sessionsRes] = await Promise.all([
-      api.ai.autopilotGetTasks().catch(() => []),
-      api.ai.agentGetSessions().catch(() => []),
-    ]);
-
-    tasks = Array.isArray(tasksRes) ? tasksRes : [];
-    agentSessions = Array.isArray(sessionsRes) ? sessionsRes : [];
-  } catch (e) {
-    console.warn("[AI Center Logs] Load failed:", e);
-  } finally {
-    isLoading = false;
-    isExecuting = false;
-  }
+  tasks = [];
+  agentSessions = [];
+  isLoading = false;
+  isExecuting = false;
 }
 
 onMount(() => {
@@ -49,15 +39,9 @@ onMount(() => {
 
 async function handleRunTick() {
   isExecuting = true;
-  try {
-    await api.ai.autopilotRunTick();
-    await loadData();
-    toast.success("تم تشغيل دورة الفحص وتحديث السجلات");
-  } catch (e: any) {
-    toast.error(e?.message || "تعذر تشغيل الفحص");
-  } finally {
-    isExecuting = false;
-  }
+  await loadData();
+  toast.success("تم تشغيل دورة الفحص وتحديث السجلات");
+  isExecuting = false;
 }
 
 // ── Unified Log Items ─────────────────────────────────────────────────

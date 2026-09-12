@@ -299,35 +299,22 @@ async function handleSubmit() {
     let finalGuardianUserId = guardianUserId;
 
     if (!finalGuardianUserId) {
-      // Check if user already exists in db by phone
-      const checkExisting = await api.academic.search(phoneClean);
-      if (checkExisting && checkExisting.length > 0) {
-        finalGuardianUserId = String(
-          checkExisting[0].guardian_id ?? checkExisting[0].id,
-        );
-        // Optionally update the existing user info
-        await api.iam.updateUser(finalGuardianUserId, {
-          full_name: fullNameClean,
-          phone: phoneClean || null,
-        });
-      } else {
-        // Generate a secure random password for initial account setup
-        const tempPassword = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-        const guardEmail = emailClean || `parent.${Date.now()}@orbis.local`;
+      // Generate a secure random password for initial account setup
+      const tempPassword = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+      const guardEmail = emailClean || `parent.${Date.now()}@orbis.local`;
 
-        // Create a new parent user
-        const guardUser = await api.registerUser({
-          email: guardEmail,
-          password_hash: tempPassword,
-          full_name: fullNameClean,
-          primary_role: "parent",
-          phone: phoneClean || null,
-        });
-        finalGuardianUserId = guardUser.id;
-      }
+      // Create a new parent user
+      const guardUser = await api.registerUser({
+        email: guardEmail,
+        password_hash: tempPassword,
+        full_name: fullNameClean,
+        primary_role: "parent",
+        phone: phoneClean || null,
+      });
+      finalGuardianUserId = guardUser.id;
     } else {
       // Update existing parent user details
-      await api.iam.updateUser(finalGuardianUserId, {
+      await api.updateUser(finalGuardianUserId, {
         full_name: fullNameClean,
         phone: phoneClean || null,
       });
@@ -360,7 +347,7 @@ async function handleSubmit() {
     };
 
     if (isEditMode && editData?.id) {
-      await api.academic.updateGuardian(String(editData.id), request);
+      await api.assignGuardian(request as any);
       toast.success(m.common_guardians_update_success());
     } else {
       // Create link requires guardian_id. Let's make sure it is sent correctly.

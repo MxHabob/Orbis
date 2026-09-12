@@ -98,6 +98,17 @@ import type {
   StudentFeeFilterParams,
   PaymentFilterParams,
   PrerequisiteCheckResultDto,
+  ApprovalStepDto,
+  OverrideRequestDto,
+  SubmitOverrideRequestInput,
+  ApproveOverrideInput,
+  RejectOverrideInput,
+  PromotionJobDto,
+  PromotionDetailDto,
+  StudentProgressionItemInput,
+  PromoteCohortInput,
+  CumulativeGpaRecordDto,
+  CalculateGpaInput,
 } from "./types";
 
 export class ApiRequestError extends Error {
@@ -475,6 +486,11 @@ export class RemoteClient implements OrbisApiClient {
   ): Promise<CalculationResultDto> {
     return this.post("/api/v1/grades/calculate", req);
   }
+  async calculateGpa(
+    req: CalculateGpaInput,
+  ): Promise<CumulativeGpaRecordDto> {
+    return this.post("/api/v1/grades/gpa", req);
+  }
   async markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto> {
     return this.post("/api/v1/attendance", req);
   }
@@ -483,6 +499,40 @@ export class RemoteClient implements OrbisApiClient {
     date: string,
   ): Promise<AttendanceDto[]> {
     return this.get("/api/v1/attendance", { class_id: classId, date });
+  }
+
+  // ── Student Cohort Progression ──────────────────────────────
+  async promoteCohort(req: PromoteCohortInput): Promise<PromotionJobDto> {
+    return this.post("/api/v1/progression/promote", req);
+  }
+  async listPromotionJobs(): Promise<PromotionJobDto[]> {
+    return this.get("/api/v1/progression/jobs");
+  }
+  async getPromotionJob(id: string): Promise<PromotionJobDto> {
+    return this.get(`/api/v1/progression/jobs/${id}`);
+  }
+
+  // ── Workflow & Academic Overrides ───────────────────────────
+  async submitOverride(
+    req: SubmitOverrideRequestInput,
+  ): Promise<OverrideRequestDto> {
+    return this.post("/api/v1/workflow/overrides", req);
+  }
+  async approveOverride(
+    req: ApproveOverrideInput,
+  ): Promise<OverrideRequestDto> {
+    return this.post(`/api/v1/workflow/overrides/${req.requestId}/approve`, req);
+  }
+  async rejectOverride(
+    req: RejectOverrideInput,
+  ): Promise<OverrideRequestDto> {
+    return this.post(`/api/v1/workflow/overrides/${req.requestId}/reject`, req);
+  }
+  async listOverrides(status?: string): Promise<OverrideRequestDto[]> {
+    return this.get("/api/v1/workflow/overrides", { status });
+  }
+  async getOverride(id: string): Promise<OverrideRequestDto> {
+    return this.get(`/api/v1/workflow/overrides/${id}`);
   }
 
   // ── Exam ────────────────────────────────────────────────────

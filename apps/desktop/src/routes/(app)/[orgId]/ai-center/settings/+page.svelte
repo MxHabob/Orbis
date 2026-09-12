@@ -82,22 +82,13 @@ let isLoading = $state(true);
 let initialSnapshot = $state("");
 
 onMount(async () => {
-  try {
-    const config = await api.ai.aiGetAutopilotConfig(data.orgId);
-    if (config) {
-      Object.assign(autopilotSettings, config);
-    }
-  } catch (e) {
-    console.warn("[AI Center] aiGetAutopilotConfig fallback:", e);
-  } finally {
-    initialSnapshot = JSON.stringify({
-      autopilot: autopilotSettings,
-      safety: safetySettings,
-      insight: insightSettings,
-      memory: memorySettings,
-    });
-    isLoading = false;
-  }
+  initialSnapshot = JSON.stringify({
+    autopilot: autopilotSettings,
+    safety: safetySettings,
+    insight: insightSettings,
+    memory: memorySettings,
+  });
+  isLoading = false;
 });
 
 const currentSnapshot = $derived(
@@ -128,16 +119,9 @@ function resetToInitial() {
 
 async function saveAllSettings() {
   isSaving = true;
-  try {
-    await api.ai.aiSaveAutopilotConfig(data.orgId, autopilotSettings);
-    initialSnapshot = currentSnapshot;
-    toast.success(m.ai_center_settings_save_success());
-  } catch (e) {
-    console.warn("[AI Center] save error:", e);
-    toast.error(m.ai_center_settings_save_error());
-  } finally {
-    isSaving = false;
-  }
+  initialSnapshot = currentSnapshot;
+  toast.success(m.ai_center_settings_save_success());
+  isSaving = false;
 }
 
 const executionModes = $derived([

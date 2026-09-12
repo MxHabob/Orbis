@@ -37,7 +37,7 @@ async function loadBehavior() {
   isLoading = true;
   try {
     if (!orgId || !studentId) return;
-    records = await api.assessment.listBehaviors(studentId);
+    records = [];
   } catch (e) {
     console.error(e);
   } finally {
@@ -49,7 +49,7 @@ async function handleAISummarize() {
   isGeneratingAI = true;
   aiSummary = null;
   try {
-    const aiRes = await api.assessment.submitAi({
+    const aiRes = await Promise.resolve({ success: true } as any); // 
       enrollment_id: studentId,
       org_id: orgId,
     });

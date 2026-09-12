@@ -97,6 +97,17 @@ import type {
   StudentFeeFilterParams,
   PaymentFilterParams,
   PrerequisiteCheckResultDto,
+  ApprovalStepDto,
+  OverrideRequestDto,
+  SubmitOverrideRequestInput,
+  ApproveOverrideInput,
+  RejectOverrideInput,
+  PromotionJobDto,
+  PromotionDetailDto,
+  StudentProgressionItemInput,
+  PromoteCohortInput,
+  CumulativeGpaRecordDto,
+  CalculateGpaInput,
 } from "./types";
 
 function unwrap<T>(response: { data: T } | T): T {
@@ -370,6 +381,13 @@ export class LocalClient implements OrbisApiClient {
       await invoke("assessment_calculate_grades", { request: req }),
     );
   }
+  async calculateGpa(
+    req: CalculateGpaInput,
+  ): Promise<CumulativeGpaRecordDto> {
+    return unwrap(
+      await invoke("assessment_calculate_gpa", { request: req }),
+    );
+  }
   async markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto> {
     return unwrap(await invoke("assessment_mark_attendance", { request: req }));
   }
@@ -380,6 +398,48 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(
       await invoke("assessment_list_attendance", { classId, date }),
     );
+  }
+
+  // ── Student Cohort Progression ──────────────────────────────
+  async promoteCohort(req: PromoteCohortInput): Promise<PromotionJobDto> {
+    return unwrap(
+      await invoke("progression_promote_cohort", { request: req }),
+    );
+  }
+  async listPromotionJobs(): Promise<PromotionJobDto[]> {
+    return unwrap(await invoke("progression_list_jobs"));
+  }
+  async getPromotionJob(id: string): Promise<PromotionJobDto> {
+    return unwrap(await invoke("progression_get_job", { id }));
+  }
+
+  // ── Workflow & Academic Overrides ───────────────────────────
+  async submitOverride(
+    req: SubmitOverrideRequestInput,
+  ): Promise<OverrideRequestDto> {
+    return unwrap(
+      await invoke("workflow_submit_override", { request: req }),
+    );
+  }
+  async approveOverride(
+    req: ApproveOverrideInput,
+  ): Promise<OverrideRequestDto> {
+    return unwrap(
+      await invoke("workflow_approve_override", { request: req }),
+    );
+  }
+  async rejectOverride(
+    req: RejectOverrideInput,
+  ): Promise<OverrideRequestDto> {
+    return unwrap(
+      await invoke("workflow_reject_override", { request: req }),
+    );
+  }
+  async listOverrides(status?: string): Promise<OverrideRequestDto[]> {
+    return unwrap(await invoke("workflow_list_overrides", { status }));
+  }
+  async getOverride(id: string): Promise<OverrideRequestDto> {
+    return unwrap(await invoke("workflow_get_override", { id }));
   }
 
   // ── Exam ────────────────────────────────────────────────────

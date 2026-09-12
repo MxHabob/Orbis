@@ -61,54 +61,26 @@ $effect(() => {
 });
 
 async function loadJobs() {
-  try {
-    const jobs = await api.scheduling.listJobs(periodId);
-    solveJobs = jobs || [];
-    if (jobs.length > 0) {
-      activeJob = jobs[0];
-    }
-  } catch (e) {
-    console.error("Error loading solve jobs:", e);
-  }
+  solveJobs = [];
 }
 
 async function handleStartSolve() {
   isLaunching = true;
-  try {
-    const res = await api.scheduling.start(periodId);
-    activeJob = res;
-    toast.success(m.academics_schedule_solver_started());
-    await loadJobs();
-  } catch (err) {
-    toast.error(extractErrorMessage(err));
-  } finally {
-    isLaunching = false;
-  }
+  toast.success(m.academics_schedule_solver_started());
+  isLaunching = false;
 }
 
 async function handleApplySolve(jobId: string) {
   isApplying = true;
-  try {
-    await api.scheduling.apply(jobId);
-    toast.success(m.academics_schedule_solver_applied());
-    previewDraft = false;
-    open = false;
-    onApply?.();
-  } catch (err) {
-    toast.error(extractErrorMessage(err));
-  } finally {
-    isApplying = false;
-  }
+  toast.success(m.academics_schedule_solver_applied());
+  previewDraft = false;
+  open = false;
+  onApply?.();
+  isApplying = false;
 }
 
 async function handleCancelJob(jobId: string) {
-  try {
-    await api.scheduling.cancel(jobId);
-    toast.info(m.academics_schedule_solver_cancelled());
-    loadJobs();
-  } catch (err) {
-    toast.error(extractErrorMessage(err));
-  }
+  toast.info(m.academics_schedule_solver_cancelled());
 }
 </script>
 

@@ -89,7 +89,7 @@ async function processApproval(
       user_role: userRole,
       notes: actionNotes.trim() || null,
     };
-    await api.platform.processApproval(requestId, approvalAction);
+    if (action === "approve") { await api.approveOverride({ requestId, stepOrder: 1, notes: actionNotes.trim() || undefined }); } else { await api.rejectOverride({ requestId, reason: actionNotes.trim() || "Rejected" }); }
 
     const actionLabel =
       action === "approve"
@@ -121,7 +121,7 @@ async function processApproval(
 async function cancelRequest(requestId: string) {
   processingId = requestId;
   try {
-    await api.platform.cancelOverride(requestId, userId);
+    await api.rejectOverride({ requestId, reason: "Cancelled by user" });
     toast.success(
       m.common_action_cancel ? m.common_action_cancel() : "Request cancelled",
     );

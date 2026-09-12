@@ -107,29 +107,9 @@ const navGroups = $derived([
         icon: Layers,
       },
       {
-        path: "grade-scales",
-        label: getLocale() === "ar" ? "مقاييس الدرجات" : "Grade Scales",
-        icon: Scale,
-      },
-      {
-        path: "calc-policies",
-        label: getLocale() === "ar" ? "سياسات الحساب" : "Calculation Policies",
-        icon: Calculator,
-      },
-      {
-        path: "ranking-policies",
-        label: getLocale() === "ar" ? "سياسات الترتيب" : "Ranking Policies",
-        icon: Sliders,
-      },
-      {
         path: "registration",
         label: m.settings_nav_registration(),
         icon: FileText,
-      },
-      {
-        path: "ordering",
-        label: m.common_nav_ordering(),
-        icon: ListOrdered,
       },
       {
         path: "approvals",

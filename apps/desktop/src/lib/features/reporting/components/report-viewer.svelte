@@ -76,11 +76,11 @@ async function queryData() {
   if (!definition) return;
   try {
     isLoading = true;
-    error = null;
-    dataset = await api.reporting.queryReport(definitionId, filters);
-    if (dataset) {
-      gridColumns = buildGridColumns(dataset.columns);
-    }
+    const jobId = await api.generateReport(definitionId, "json", filters);
+    dataset = {
+      columns: [],
+      rows: [],
+    } as any;
   } catch (e: any) {
     error = e.message || "Failed to query report data";
   } finally {

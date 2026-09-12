@@ -358,6 +358,133 @@ export interface PrerequisiteCheckResultDto {
   failure_reason?: string | null;
 }
 
+export interface ApprovalStepDto {
+  step_order: number;
+  approver_role: string;
+  status: string;
+  approver_id?: string | null;
+  approver_name?: string | null;
+  decision_at?: string | null;
+  notes?: string | null;
+}
+
+export interface OverrideRequestDto {
+  id: string;
+  org_id: string;
+  override_type: string;
+  risk_level: string;
+  entity_type: string;
+  entity_id: string;
+  field_name?: string | null;
+  old_value?: string | null;
+  new_value?: string | null;
+  reason: string;
+  requested_by: string;
+  requested_by_name?: string | null;
+  status: string;
+  current_approver_role?: string | null;
+  approval_chain: ApprovalStepDto[];
+  resolved_by?: string | null;
+  resolved_by_name?: string | null;
+  resolved_at?: string | null;
+  resolution_notes?: string | null;
+  expires_at?: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubmitOverrideRequestInput {
+  overrideType: string;
+  riskLevel?: string;
+  entityType: string;
+  entityId: string;
+  fieldName?: string;
+  oldValue?: string;
+  newValue?: string;
+  reason: string;
+  approvalChain?: ApprovalStepDto[];
+  metadata?: Record<string, unknown>;
+}
+
+export interface ApproveOverrideInput {
+  requestId: string;
+  notes?: string;
+}
+
+export interface RejectOverrideInput {
+  requestId: string;
+  reason: string;
+}
+
+export interface PromotionJobDto {
+  id: string;
+  org_id: string;
+  source_period_id: string;
+  target_period_id?: string | null;
+  name: string;
+  status: string;
+  total_students: number;
+  promoted_count: number;
+  retained_count: number;
+  graduated_count: number;
+  excluded_count: number;
+  executed_by?: string | null;
+  executed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PromotionDetailDto {
+  id: string;
+  job_id: string;
+  student_id: string;
+  enrollment_id: string;
+  source_class_id?: string | null;
+  target_class_id?: string | null;
+  decision: string;
+  reason: string;
+  created_at: string;
+}
+
+export interface StudentProgressionItemInput {
+  studentId: string;
+  enrollmentId: string;
+  sourceClassId?: string;
+  targetClassId?: string;
+  decision: string;
+  reason?: string;
+}
+
+export interface PromoteCohortInput {
+  sourcePeriodId: string;
+  targetPeriodId: string;
+  jobName: string;
+  items: StudentProgressionItemInput[];
+}
+
+export interface CumulativeGpaRecordDto {
+  id: string;
+  org_id: string;
+  student_id: string;
+  period_id: string;
+  term_attempted_credits: number | string;
+  term_earned_credits: number | string;
+  term_points: number | string;
+  term_gpa: number | string;
+  cumulative_attempted_credits: number | string;
+  cumulative_earned_credits: number | string;
+  cumulative_points: number | string;
+  cumulative_gpa: number | string;
+  standing: string;
+  calculated_at: string;
+}
+
+export interface CalculateGpaInput {
+  studentId: string;
+  periodId: string;
+}
+
 export class OrbisError extends Error {
   code: string;
   details?: unknown;
@@ -606,8 +733,21 @@ export interface OrbisApiClient {
     classSubjectId?: string;
   }): Promise<GradeDto[]>;
   calculateGrades(req: CalculateGradesRequest): Promise<CalculationResultDto>;
+  calculateGpa(req: CalculateGpaInput): Promise<CumulativeGpaRecordDto>;
   markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto>;
   listAttendance(classId: string, date: string): Promise<AttendanceDto[]>;
+
+  // ── Student Cohort Progression ──────────────────────────────
+  promoteCohort(req: PromoteCohortInput): Promise<PromotionJobDto>;
+  listPromotionJobs(): Promise<PromotionJobDto[]>;
+  getPromotionJob(id: string): Promise<PromotionJobDto>;
+
+  // ── Workflow & Academic Overrides ───────────────────────────
+  submitOverride(req: SubmitOverrideRequestInput): Promise<OverrideRequestDto>;
+  approveOverride(req: ApproveOverrideInput): Promise<OverrideRequestDto>;
+  rejectOverride(req: RejectOverrideInput): Promise<OverrideRequestDto>;
+  listOverrides(status?: string): Promise<OverrideRequestDto[]>;
+  getOverride(id: string): Promise<OverrideRequestDto>;
 
   // ── Exam ────────────────────────────────────────────────────
   createExamSession(req: CreateExamSessionRequest): Promise<ExamSessionDto>;

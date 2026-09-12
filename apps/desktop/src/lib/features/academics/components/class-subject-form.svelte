@@ -139,13 +139,10 @@ async function handleSubmit() {
     };
 
     if (isEditMode && editData?.id) {
-      await api.academic.updateClassSubject(
-        String(editData.id),
-        request as any,
-      );
+      await api.assignClassSubject(request as any);
       toast.success(m.common_cs_update_success());
     } else {
-      await api.createClassSubject(request as any);
+      await api.assignClassSubject(request as any);
       toast.success(m.common_cs_create_success());
     }
 

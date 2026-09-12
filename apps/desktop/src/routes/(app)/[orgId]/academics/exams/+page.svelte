@@ -62,7 +62,7 @@ const isGradeEntryOpen = $derived(
 // Exam Sessions Query
 const examSessionsQuery = createQuery(() => ({
   queryKey: ["exam-sessions", data.orgId, activePeriodId],
-  queryFn: () => api.exam.listSessions(activePeriodId),
+  queryFn: () => api.listExamSessions(activePeriodId),
   enabled: !!data.orgId && !!activePeriodId,
   staleTime: 2 * 60 * 1000,
 }));
