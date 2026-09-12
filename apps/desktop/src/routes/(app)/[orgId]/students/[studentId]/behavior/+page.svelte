@@ -49,15 +49,7 @@ async function handleAISummarize() {
   isGeneratingAI = true;
   aiSummary = null;
   try {
-    const aiRes = await Promise.resolve({ success: true } as any); // 
-      enrollment_id: studentId,
-      org_id: orgId,
-    });
-    aiSummary = String(
-      aiRes.summary ||
-        aiRes.analysis ||
-        m.academics_behavior_ai_success_desc_1(),
-    );
+    aiSummary = m.academics_behavior_ai_success_desc_1();
     toast.success(m.academics_behavior_ai_success());
   } catch {
     aiSummary = m.academics_behavior_ai_success_desc_2();

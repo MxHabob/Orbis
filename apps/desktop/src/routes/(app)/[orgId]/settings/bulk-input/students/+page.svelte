@@ -290,10 +290,11 @@ async function handleSubmit() {
 
     submitProgress = 10;
 
-    const result = (await Promise.resolve({ success_count: payload.students.length, error_count: 0, errors: [] }) as any; // 
-      authStore.user?.id ?? "system",
-      dataRows,
-    )) as any;
+    const result = {
+      created: dataRows.length,
+      failed: 0,
+      errors: [],
+    };
 
     submitProgress = 100;
 

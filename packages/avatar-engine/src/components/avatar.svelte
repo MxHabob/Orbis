@@ -51,7 +51,7 @@ const leftEyebrowRotateSpring = spring(0);
 const rightEyebrowRotateSpring = spring(0);
 
 let _isShaking = $state(false);
-const _containerEl = $state<HTMLDivElement | null>(null);
+let _containerEl = $state<HTMLDivElement | null>(null);
 let mouseX = $state(0);
 let mouseY = $state(0);
 let isHovered = $state(false);
