@@ -16,7 +16,6 @@ pub mod student_guardian;
 pub mod promotion_job;
 pub mod promotion_detail;
 pub mod override_request;
-pub mod pass_fail_policy;
 pub mod room;
 pub mod time_slot;
 pub mod scheduled_lesson;
@@ -48,7 +47,6 @@ pub mod role_permission;
 pub mod autopilot_task;
 pub mod currency;
 pub mod exchange_rate;
-pub mod student_subject;
 pub mod user_role_assignment;
 pub mod user_identity;
 pub mod mfa_factor;
@@ -57,3 +55,4 @@ pub mod user_device;
 
 pub use promotion_job as progression_job;
 pub use promotion_detail as progression_detail;
+

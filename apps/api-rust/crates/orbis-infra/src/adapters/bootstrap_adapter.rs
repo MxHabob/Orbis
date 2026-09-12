@@ -7,8 +7,8 @@
 //! - `desktop/completeSetup()` (INSTITUTION_PROFILES)
 //!
 //! Every blueprint produces the complete seed data for one institution type:
-//! academic_policies, grade_scales, calculation_policies, pass_fail_policies,
-//! period_templates, default_permissions, currencies, and chart_of_accounts.
+//! grade_scales, calculation_policies, period_templates, default_permissions,
+//! currencies, and chart_of_accounts.
 
 use sea_orm::{ConnectionTrait, DatabaseConnection, Statement, TransactionTrait};
 use orbis_domain::errors::DomainError;
