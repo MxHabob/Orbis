@@ -49,4 +49,5 @@ pub mod identity;
 pub mod mfa;
 pub mod device;
 pub mod entitlement;
+pub mod solver;
 

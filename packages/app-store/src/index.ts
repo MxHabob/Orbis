@@ -25,6 +25,7 @@ import printer from "./printer/config";
 import mulverseCloud from "./mulverse-cloud/config";
 import cloudStorage from "./cloud-storage/config";
 import ocrService from "./ocr-service/config";
+import solverService from "./solver-service/config";
 
 // ── Payment Gateways ────────────────────────────────────────────
 import moyasar from "./moyasar/config";
@@ -70,8 +71,9 @@ export const apps: OrbisApp[] = [
   // Storage
   mulverseCloud,
   cloudStorage,
-  // AI Services
+  // AI & Automation Services
   ocrService,
+  solverService,
 ];
 
 // ── Helpers ─────────────────────────────────────────────────────
