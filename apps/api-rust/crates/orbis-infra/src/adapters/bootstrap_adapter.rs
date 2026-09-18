@@ -77,7 +77,7 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     // ── 1. Organization ────────────────────────────────────────
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO organizations (id, name, name_ar, slug, timezone, locale, base_currency_code, is_active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, $8, $9)",
+        "INSERT INTO organizations (id, name, name_ar, slug, timezone, locale, base_currency_code, is_hijri_enabled, is_active, is_verified, is_deleted, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, 1, 1, 0, $8, $9)",
         vec![
             org_id_uuid.into(),
             payload.org_name.clone().into(),
@@ -114,7 +114,7 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     // ── 2. Admin User ──────────────────────────────────────────
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO users (id, person_id, org_id, email, password_hash, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, 'active', $6, $7)",
+        "INSERT INTO users (id, person_id, org_id, email, password_hash, is_email_verified, is_phone_verified, is_mfa_enabled, status, login_count, failed_login_attempts, is_deleted, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, 1, 0, 0, 'active', 0, 0, 0, $6, $7)",
         vec![
             admin_id_uuid.into(),
             person_id_uuid.into(),

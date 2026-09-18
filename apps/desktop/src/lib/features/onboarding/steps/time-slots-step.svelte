@@ -3,6 +3,12 @@ import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
 import { CalendarDays, Plus, Trash2 } from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -102,6 +108,13 @@ function removeSlot(slot: TimeSlot) {
   const index = onboardingState.academics.timeSlots.indexOf(slot);
   if (index >= 0) onboardingState.removeTimeSlot(index);
 }
+
+const breakTypeLabels: Record<string, () => string> = {
+  recess: () => m.common_onboarding_break_recess(),
+  lunch: () => m.common_onboarding_break_lunch(),
+  prayer: () => m.common_onboarding_break_prayer(),
+  custom: () => m.common_onboarding_break_custom(),
+};
 </script>
 
 <div class="w-full space-y-5 text-start">
@@ -135,21 +148,63 @@ function removeSlot(slot: TimeSlot) {
     </div>
 
     <div class="grid grid-cols-1 gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 sm:grid-cols-2 lg:grid-cols-4">
-      <FormField label={m.common_onboarding_schedule_name_ar()} required>{#snippet children()}<Input bind:value={newSlotNameAr} placeholder={m.common_onboarding_schedule_name_ar()} class="h-9 text-xs" />{/snippet}</FormField>
-      <FormField label={m.common_onboarding_schedule_name_en()} required>{#snippet children()}<Input bind:value={newSlotName} placeholder={m.common_onboarding_schedule_name_en()} class="h-9 text-xs text-left" style="direction: ltr;" />{/snippet}</FormField>
-      <FormField label={m.academics_schedule_start_time()} required>{#snippet children()}<Input type="time" bind:value={newSlotStart} class="h-9 text-xs font-mono" />{/snippet}</FormField>
-      <FormField label={m.academics_schedule_end_time()} required>{#snippet children()}<Input type="time" bind:value={newSlotEnd} class="h-9 text-xs font-mono" />{/snippet}</FormField>
-      <FormField label={m.common_onboarding_lesson_type()} required>{#snippet children()}<select bind:value={newSlotType} class="h-9 rounded-md border border-border bg-background px-2 text-xs text-foreground">
-        <option value="lesson">{m.common_onboarding_lesson_type()}</option>
-        <option value="break">{m.common_onboarding_break_type()}</option>
-      </select>{/snippet}</FormField>
+      <FormField label={m.common_onboarding_schedule_name_ar()} required>
+        {#snippet children()}
+          <Input bind:value={newSlotNameAr} placeholder={m.common_onboarding_schedule_name_ar()} class="h-9 text-xs" />
+        {/snippet}
+      </FormField>
+      <FormField label={m.common_onboarding_schedule_name_en()} required>
+        {#snippet children()}
+          <Input bind:value={newSlotName} placeholder={m.common_onboarding_schedule_name_en()} class="h-9 text-xs text-left" style="direction: ltr;" />
+        {/snippet}
+      </FormField>
+      <FormField label={m.academics_schedule_start_time()} required>
+        {#snippet children()}
+          <Input type="time" bind:value={newSlotStart} class="h-9 text-xs font-mono" />
+        {/snippet}
+      </FormField>
+      <FormField label={m.academics_schedule_end_time()} required>
+        {#snippet children()}
+          <Input type="time" bind:value={newSlotEnd} class="h-9 text-xs font-mono" />
+        {/snippet}
+      </FormField>
+      <FormField label={m.common_onboarding_lesson_type()} required>
+        {#snippet children()}
+          <Select
+            type="single"
+            value={newSlotType}
+            onValueChange={(v) => { if (v === "lesson" || v === "break") newSlotType = v; }}
+          >
+            <SelectTrigger class="h-9 text-xs w-full bg-background">
+              {newSlotType === "lesson" ? m.common_onboarding_lesson_type() : m.common_onboarding_break_type()}
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="lesson">{m.common_onboarding_lesson_type()}</SelectItem>
+              <SelectItem value="break">{m.common_onboarding_break_type()}</SelectItem>
+            </SelectContent>
+          </Select>
+        {/snippet}
+      </FormField>
       {#if newSlotType === "break"}
-        <FormField label={m.common_onboarding_break_type()} required><select bind:value={newBreakType} class="h-9 rounded-md border border-border bg-background px-2 text-xs text-foreground sm:col-span-2">
-          <option value="recess">{m.common_onboarding_break_recess()}</option>
-          <option value="lunch">{m.common_onboarding_break_lunch()}</option>
-          <option value="prayer">{m.common_onboarding_break_prayer()}</option>
-          <option value="custom">{m.common_onboarding_break_custom()}</option>
-        </select></FormField>
+        <FormField label={m.common_onboarding_break_type()} required>
+          {#snippet children()}
+            <Select
+              type="single"
+              value={newBreakType}
+              onValueChange={(v) => { if (v) newBreakType = v as any; }}
+            >
+              <SelectTrigger class="h-9 text-xs w-full bg-background sm:col-span-2">
+                {breakTypeLabels[newBreakType]?.() || newBreakType}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recess">{m.common_onboarding_break_recess()}</SelectItem>
+                <SelectItem value="lunch">{m.common_onboarding_break_lunch()}</SelectItem>
+                <SelectItem value="prayer">{m.common_onboarding_break_prayer()}</SelectItem>
+                <SelectItem value="custom">{m.common_onboarding_break_custom()}</SelectItem>
+              </SelectContent>
+            </Select>
+          {/snippet}
+        </FormField>
       {/if}
       <Button class="h-9 gap-1.5 text-xs sm:col-span-2 lg:col-span-1" onclick={handleAddSlot} disabled={!newSlotName.trim() || !newSlotNameAr.trim() || newSlotDuration <= 0}>
         <Plus size={14} /> {m.common_onboarding_add_period()}
@@ -172,12 +227,27 @@ function removeSlot(slot: TimeSlot) {
             <Input type="time" bind:value={slot.end_time} class="h-8 text-xs font-mono" onchange={() => { validateSlotTime(slot); onboardingState.save(); }} />
           </div>
           {#if slot.is_break}
-            <select bind:value={slot.break_type} class="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground" onchange={() => { slot.is_break = true; onboardingState.save(); }}>
-              <option value="recess">{m.common_onboarding_break_recess()}</option>
-              <option value="lunch">{m.common_onboarding_break_lunch()}</option>
-              <option value="prayer">{m.common_onboarding_break_prayer()}</option>
-              <option value="custom">{m.common_onboarding_break_custom()}</option>
-            </select>
+            <Select
+              type="single"
+              value={slot.break_type || "recess"}
+              onValueChange={(v) => {
+                if (v) {
+                  slot.break_type = v as any;
+                  slot.is_break = true;
+                  onboardingState.save();
+                }
+              }}
+            >
+              <SelectTrigger class="h-8 text-xs w-full bg-background">
+                {breakTypeLabels[slot.break_type || "recess"]?.() || slot.break_type}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recess">{m.common_onboarding_break_recess()}</SelectItem>
+                <SelectItem value="lunch">{m.common_onboarding_break_lunch()}</SelectItem>
+                <SelectItem value="prayer">{m.common_onboarding_break_prayer()}</SelectItem>
+                <SelectItem value="custom">{m.common_onboarding_break_custom()}</SelectItem>
+              </SelectContent>
+            </Select>
           {/if}
           <div class="flex flex-wrap gap-1">
             {#each dayLabels as day (day.value)}
