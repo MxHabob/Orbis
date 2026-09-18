@@ -123,7 +123,9 @@ pub struct AppState {
     pub bootstrap_service: Arc<orbis_app::services::BootstrapService>,
     pub system_service: Arc<orbis_app::services::SystemService>,
     pub entitlement_provider: Arc<dyn EntitlementProvider>,
+    pub solver_sidecar: Arc<crate::features::solver_sidecar::SolverSidecarManager>,
 }
+
 
 impl AppState {
     pub async fn init(app_data_dir: &std::path::Path) -> Result<Self, String> {
@@ -364,6 +366,8 @@ impl AppState {
             entitlement_provider.clone(),
         ));
 
+        let solver_sidecar = Arc::new(crate::features::solver_sidecar::SolverSidecarManager::new());
+
         Ok(Self {
             db,
             active_session,
@@ -446,6 +450,7 @@ impl AppState {
             bootstrap_service,
             system_service,
             entitlement_provider,
+            solver_sidecar,
         })
     }
 

@@ -200,3 +200,101 @@ pub async fn scheduling_list_lessons(filter: Option<LessonFilter>, state: State<
         teacher_id: l.teacher_id.map(|t| t.to_string()),
     }).collect()))
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ── Solver IPC Handlers (Timefold Sidecar Integration) ──────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+
+use orbis_app::ports::gateways::SchedulingSolverPort;
+use orbis_domain::entities::solver::{
+    ExamProblem, ExamSolveJobStatus, JobExecutionStatus, SolveJobStatus, TimetableProblem,
+};
+use crate::features::solver_sidecar::SidecarStatus;
+
+#[tauri::command]
+pub async fn solver_get_sidecar_status(state: State<'_, AppState>) -> Result<ApiResponse<SidecarStatus>, String> {
+    let status = state.solver_sidecar.status().await;
+    Ok(ok(status))
+}
+
+#[tauri::command]
+pub async fn solver_stop_sidecar(state: State<'_, AppState>) -> Result<ApiResponse<SidecarStatus>, String> {
+    state.solver_sidecar.stop().await;
+    let status = state.solver_sidecar.status().await;
+    Ok(ok(status))
+}
+
+#[tauri::command]
+pub async fn solver_submit_timetable(
+    problem: TimetableProblem,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<()>, String> {
+    let ctx = make_ctx(&state);
+    state.solver_sidecar.ensure_running().await.map_err(|e| e.to_string())?;
+    state.solver_sidecar.increment_active_jobs();
+
+    state.integration_resolver
+        .submit_timetable(&ctx, &problem)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(()))
+}
+
+#[tauri::command]
+pub async fn solver_get_timetable_status(
+    job_id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<SolveJobStatus>, String> {
+    let ctx = make_ctx(&state);
+    state.solver_sidecar.mark_activity();
+
+    let status = state.integration_resolver
+        .get_timetable_status(&ctx, &job_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if status.status == JobExecutionStatus::Solved || status.status == JobExecutionStatus::Failed {
+        state.solver_sidecar.decrement_active_jobs();
+    }
+
+    Ok(ok(status))
+}
+
+#[tauri::command]
+pub async fn solver_submit_exam(
+    problem: ExamProblem,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<()>, String> {
+    let ctx = make_ctx(&state);
+    state.solver_sidecar.ensure_running().await.map_err(|e| e.to_string())?;
+    state.solver_sidecar.increment_active_jobs();
+
+    state.integration_resolver
+        .submit_exam(&ctx, &problem)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(()))
+}
+
+#[tauri::command]
+pub async fn solver_get_exam_status(
+    job_id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<ExamSolveJobStatus>, String> {
+    let ctx = make_ctx(&state);
+    state.solver_sidecar.mark_activity();
+
+    let status = state.integration_resolver
+        .get_exam_status(&ctx, &job_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if status.status == JobExecutionStatus::Solved || status.status == JobExecutionStatus::Failed {
+        state.solver_sidecar.decrement_active_jobs();
+    }
+
+    Ok(ok(status))
+}
+

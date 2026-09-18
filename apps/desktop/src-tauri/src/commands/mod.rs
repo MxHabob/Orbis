@@ -100,7 +100,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         progression_cmds::progression_promote_cohort,
         progression_cmds::progression_list_jobs,
         progression_cmds::progression_get_job,
-        // ── Scheduling ──────────────────────────────────────────
+        // ── Scheduling & Solver ────────────────────────────────
         scheduling_cmds::scheduling_create_room,
         scheduling_cmds::scheduling_list_rooms,
         scheduling_cmds::scheduling_get_room,
@@ -108,6 +108,12 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         scheduling_cmds::scheduling_list_time_slots,
         scheduling_cmds::scheduling_schedule_lesson,
         scheduling_cmds::scheduling_list_lessons,
+        scheduling_cmds::solver_get_sidecar_status,
+        scheduling_cmds::solver_stop_sidecar,
+        scheduling_cmds::solver_submit_timetable,
+        scheduling_cmds::solver_get_timetable_status,
+        scheduling_cmds::solver_submit_exam,
+        scheduling_cmds::solver_get_exam_status,
         // ── Assessment ──────────────────────────────────────────
         assessment_cmds::assessment_create_scheme,
         assessment_cmds::assessment_list_schemes,

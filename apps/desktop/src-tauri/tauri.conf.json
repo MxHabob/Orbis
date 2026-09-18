@@ -25,6 +25,9 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "externalBin": [
+      "binaries/solver-service"
+    ],
     "createUpdaterArtifacts": false,
     "macOS": {
       "dmg": {

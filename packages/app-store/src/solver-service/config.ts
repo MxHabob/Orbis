@@ -15,8 +15,9 @@ const config: OrbisApp = {
     "توليد الجداول الدراسية وجداول الاختبارات تلقائياً باستخدام محرك Timefold المتقدم.",
   description: `The Timetable & Schedule Solver provides automated scheduling optimization for school timetables and examination sessions.
 
-**Timefold Constraint Optimization**
-Powered by the dedicated Timefold solver service to resolve complex NP-hard school timetables with high efficiency and score calculation.
+**Timefold Constraint Optimization & Zero-Resource Sidecar**
+- In Desktop mode, runs as an automated **Tauri Native Sidecar** requiring zero setup, zero Docker, and zero background resource consumption (launches on-demand and auto-sleeps when idle).
+- In Web/Cloud mode, connects seamlessly to any dedicated Solver Service cluster.
 
 **Key Constraint Optimization**
 - Complete teacher, classroom, and student class conflict prevention.
@@ -25,8 +26,9 @@ Powered by the dedicated Timefold solver service to resolve complex NP-hard scho
 - Exam conflict group separation and daily exam limits.`,
   description_ar: `يقوم محرك الجداول والجدولة الذكية بتوليد الجداول الدراسية وجداول الاختبارات تلقائياً عبر خدمة Timefold Solver المتخصصة.
 
-**محرك Timefold لحل القيود المعقدة**
-يعتمد على خدمة الجدولة لمعالجة مشاكل الجداول الكبيرة والتوزيع العادل للحصص مع منع التعارضات بدقة متناهية.
+**محرك Timefold مع إدارة الموارد الذكية (Zero-Resource Sidecar)**
+- في تطبيق الديسكتوب: يعمل تلقائياً كـ **Tauri Sidecar مدمج** بدون أي إعداد أو Docker، وبدون استهلاك موارد في الخلفية (يبدأ عند الطلب ويتوقف تلقائياً عند الخمول).
+- في وضع السحابة / الويب: يتصل مباشرة بأي خادم جدولة خارجي بكل مرونة.
 
 **القيود وقواعد الجدولة المعتمدة**
 - منع تعارض حصص المعلمين، القاعات، والفصول الدراسية بالكامل.
@@ -34,30 +36,56 @@ Powered by the dedicated Timefold solver service to resolve complex NP-hard scho
 - توزيع الحصص الأسبوعية بالتساوي وتجنب حصص الراحة والفسح.
 - منع تعارض مجموعات الاختبارات وتحديد الحد الأقصى لاختبارات اليوم الواحد.`,
   features: [
+    "Native Tauri Embedded Sidecar (Zero Docker & Zero Setup)",
+    "On-Demand Lifecycle (0% Idle CPU & Auto-Sleep)",
     "Dedicated Timefold Constraint Optimization",
     "Teacher, Room, and Class conflict prevention",
     "Teacher availability & preferred slots",
     "Exam scheduling & conflict groups",
-    "Incremental & Full timetable generation modes",
   ],
   features_ar: [
+    "تشغيل مدمج تلقائياً كـ Tauri Sidecar بدون Docker",
+    "إدارة استهلاك الموارد (إيقاف تلقائي عند الخمول وتوفير الذاكرة)",
     "محرك Timefold لحل القيود وجدولة الحصص بكفاءة عالية",
     "منع تعارض المعلمين، القاعات، والفصول الدراسية",
     "مراعاة أوقات توفر المعلمين وساعات العمل",
     "جدولة الاختبارات وتوزيع مجموعات التعارض",
-    "أوضاع توليد الجدول بالكامل أو ملء الحصص المفقودة فقط",
   ],
   settings: [
+    {
+      id: "mode",
+      label: "Deployment Mode",
+      label_ar: "نمط التشغيل والربط",
+      description: "Choose between embedded desktop sidecar or external server cluster.",
+      description_ar: "اختر بين التشغيل المدمج في الديسكتوب (Sidecar) أو خادم خارجي.",
+      type: "select",
+      required: true,
+      value: "embedded",
+      options: [
+        { label: "Embedded Desktop Sidecar (Auto On-Demand)", value: "embedded" },
+        { label: "Remote Solver Cluster (Custom URL)", value: "remote" },
+      ],
+    },
     {
       id: "endpoint_url",
       label: "Solver Service URL",
       label_ar: "رابط خدمة الجدولة (Solver URL)",
-      description: "Endpoint URL of the running solver-service application.",
-      description_ar: "عنوان تشغيل خدمة الجدولة solver-service.",
+      description: "Endpoint URL (Default: http://127.0.0.1:8081).",
+      description_ar: "عنوان الخدمة (الافتراضي: http://127.0.0.1:8081).",
       type: "url",
       required: true,
-      value: "http://localhost:8081",
-      placeholder: "http://localhost:8081",
+      value: "http://127.0.0.1:8081",
+      placeholder: "http://127.0.0.1:8081",
+    },
+    {
+      id: "idle_timeout_minutes",
+      label: "Auto-Sleep Idle Timeout (Minutes)",
+      label_ar: "مهلة الإيقاف التلقائي عند الخمول (دقائق)",
+      description: "Automatically stops the desktop sidecar when idle to free RAM & CPU.",
+      description_ar: "إيقاف خدمة الديسكتوب تلقائياً عند عدم الاستخدام لتحرير موارد الجهاز.",
+      type: "number",
+      required: false,
+      value: 5,
     },
     {
       id: "timeout_seconds",

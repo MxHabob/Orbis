@@ -193,6 +193,12 @@ pub fn run() {
                             let _ = commands::window_cmds::check_for_updates(app_handle).await;
                         });
                     } else if event.id == "exit" {
+                        if let Some(state) = app.try_state::<AppState>() {
+                            let sidecar = state.solver_sidecar.clone();
+                            tauri::async_runtime::block_on(async move {
+                                sidecar.stop().await;
+                            });
+                        }
                         app.exit(0);
                     }
                 })
@@ -237,8 +243,17 @@ pub fn run() {
                     }
                 }
             }
+            tauri::RunEvent::Exit => {
+                if let Some(state) = app_handle.try_state::<AppState>() {
+                    let sidecar = state.solver_sidecar.clone();
+                    tauri::async_runtime::block_on(async move {
+                        sidecar.stop().await;
+                    });
+                }
+            }
             _ => {}
         });
+
 }
 
 
