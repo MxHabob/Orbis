@@ -2,29 +2,6 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Role {
-    SuperAdmin,
-    OrgAdmin,
-    Teacher,
-    Student,
-    Parent,
-    Custom(String),
-}
-
-impl ToString for Role {
-    fn to_string(&self) -> String {
-        match self {
-            Role::SuperAdmin => "SuperAdmin".to_string(),
-            Role::OrgAdmin => "OrgAdmin".to_string(),
-            Role::Teacher => "Teacher".to_string(),
-            Role::Student => "Student".to_string(),
-            Role::Parent => "Parent".to_string(),
-            Role::Custom(s) => s.clone(),
-        }
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
     pub id: Uuid,

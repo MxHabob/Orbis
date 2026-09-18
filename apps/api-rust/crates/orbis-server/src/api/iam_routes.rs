@@ -8,7 +8,6 @@ use uuid::Uuid;
 use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
-use orbis_domain::entities::user::Role as DomainRole;
 use orbis_app::services::auth_service::EffectiveContextDto;
 
 // ── DTOs ────────────────────────────────────────────────────────
@@ -32,8 +31,10 @@ pub struct RegisterUserRequest {
     pub email: String,
     pub full_name: String,
     pub password: Option<String>,
-    pub role: String,
+    #[serde(default)]
+    pub role: Option<String>,
 }
+
 
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct UserDto {
@@ -157,20 +158,19 @@ async fn register_user(
     State(state): State<AppState>,
     Json(payload): Json<RegisterUserRequest>,
 ) -> Result<Json<ApiResponse<UserDto>>, ApiError> {
-    let role = match payload.role.as_str() {
-        "SuperAdmin" => DomainRole::SuperAdmin,
-        "OrgAdmin" => DomainRole::OrgAdmin,
-        "Teacher" => DomainRole::Teacher,
-        "Student" => DomainRole::Student,
-        "Parent" => DomainRole::Parent,
-        _ => DomainRole::Custom(payload.role.clone()),
-    };
-
-    let user = state.auth_service.register_user(&ctx, payload.full_name, Some(payload.email), payload.password, role, Some(ctx.tenant_id)).await?;
+    let user = state.auth_service.register_user(
+        &ctx,
+        payload.full_name,
+        Some(payload.email),
+        payload.password,
+        payload.role,
+        Some(ctx.tenant_id),
+    ).await?;
     let person = state.person_repo.find_by_id(user.person_id).await?;
 
     Ok(ApiResponse::ok(user_to_dto(user, person.as_ref())))
 }
+
 
 #[utoipa::path(
     get,

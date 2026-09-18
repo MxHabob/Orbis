@@ -1,9 +1,6 @@
-//! Tauri IPC commands — Auth & IAM.
-
 use tauri::State;
 use serde::{Deserialize, Serialize};
 use crate::state::AppState;
-use orbis_domain::entities::user::Role as DomainRole;
 use uuid::Uuid;
 
 use super::make_ctx;
@@ -230,19 +227,13 @@ pub async fn iam_register_user(request: serde_json::Value, state: State<'_, AppS
     let full_name = request["fullName"].as_str().or(request["full_name"].as_str()).unwrap_or_default().to_string();
     let email = request["email"].as_str().map(|s| s.to_string());
     let password = request["password"].as_str().map(|s| s.to_string());
-    let role_str = request["role"].as_str().unwrap_or("Student");
-    let role = match role_str {
-        "SuperAdmin" => DomainRole::SuperAdmin,
-        "OrgAdmin" => DomainRole::OrgAdmin,
-        "Teacher" => DomainRole::Teacher,
-        "Student" => DomainRole::Student,
-        "Parent" => DomainRole::Parent,
-        r => DomainRole::Custom(r.to_string()),
-    };
+    let role = request["role"].as_str().map(|s| s.to_string());
+
     let user = state.auth_service.register_user(&ctx, full_name, email, password, role, Some(ctx.tenant_id)).await.map_err(|e| e.to_string())?;
     let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
     Ok(ok(user_to_dto(user, person.as_ref())))
 }
+
 
 #[tauri::command]
 pub async fn iam_list_users(state: State<'_, AppState>) -> Result<ApiResponse<Vec<UserDto>>, String> {

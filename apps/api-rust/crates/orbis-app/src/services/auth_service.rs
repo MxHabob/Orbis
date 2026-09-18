@@ -2,7 +2,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use orbis_domain::entities::user::{User, Role};
+use orbis_domain::entities::user::User;
 use orbis_domain::entities::person::Person;
 use orbis_domain::entities::session::Session;
 use orbis_domain::entities::mfa::{MfaFactor, MfaType, MfaRecoveryCode, MfaEnrollmentResult};
@@ -301,7 +301,7 @@ impl AuthService {
         full_name: String,
         email: Option<String>,
         password_plain: Option<String>,
-        _role: Role,
+        _role: Option<String>,
         org_id: Option<Uuid>,
     ) -> Result<User, DomainError> {
         let actual_org_id = org_id.unwrap_or(ctx.tenant_id);
