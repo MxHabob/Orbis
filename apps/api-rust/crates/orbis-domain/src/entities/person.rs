@@ -25,6 +25,7 @@ pub struct Person {
     pub phone: Option<String>,
     pub email: Option<String>,
     pub address: Option<String>,
+    pub avatar_url: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

@@ -46,6 +46,7 @@ pub struct RegisterStudentInput {
     pub special_needs_notes: Option<String>,
     pub phone: Option<String>,
     pub email: Option<String>,
+    pub avatar_url: Option<String>,
     pub initial_period_id: Option<Uuid>,
     pub initial_class_id: Option<Uuid>,
     pub study_mode: Option<StudyMode>,
@@ -116,6 +117,7 @@ impl StudentService {
                 phone: input.phone,
                 email: input.email,
                 address: None,
+                avatar_url: input.avatar_url,
                 created_at: now,
                 updated_at: now,
             };

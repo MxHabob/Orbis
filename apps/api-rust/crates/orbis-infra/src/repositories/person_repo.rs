@@ -41,6 +41,7 @@ impl PersonRepository for PersonRepoImpl {
             phone: m.phone,
             email: m.email,
             address: m.address,
+            avatar_url: m.avatar_url,
             created_at: m.created_at,
             updated_at: m.updated_at,
         }))
@@ -69,6 +70,7 @@ impl PersonRepository for PersonRepoImpl {
             phone: Set(person.phone.clone()),
             email: Set(person.email.clone()),
             address: Set(person.address.clone()),
+            avatar_url: Set(person.avatar_url.clone()),
             created_at: Set(person.created_at),
             updated_at: Set(person.updated_at),
         };

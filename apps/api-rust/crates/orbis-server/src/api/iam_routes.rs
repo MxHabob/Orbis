@@ -43,6 +43,7 @@ pub struct UserDto {
     pub email: Option<String>,
     pub full_name: String,
     pub full_name_ar: Option<String>,
+    pub avatar: Option<String>,
     pub status: String,
     pub is_email_verified: bool,
     pub is_phone_verified: bool,
@@ -50,9 +51,9 @@ pub struct UserDto {
 }
 
 pub fn user_to_dto(u: orbis_domain::entities::user::User, p: Option<&orbis_domain::entities::person::Person>) -> UserDto {
-    let (full_name, full_name_ar) = match p {
-        Some(person) => (person.full_name(), person.full_name_ar()),
-        None => (String::new(), None),
+    let (full_name, full_name_ar, avatar) = match p {
+        Some(person) => (person.full_name(), person.full_name_ar(), person.avatar_url.clone()),
+        None => (String::new(), None, None),
     };
     UserDto {
         id: u.id,
@@ -61,6 +62,7 @@ pub fn user_to_dto(u: orbis_domain::entities::user::User, p: Option<&orbis_domai
         email: u.email,
         full_name,
         full_name_ar,
+        avatar,
         status: u.status,
         is_email_verified: u.is_email_verified,
         is_phone_verified: u.is_phone_verified,

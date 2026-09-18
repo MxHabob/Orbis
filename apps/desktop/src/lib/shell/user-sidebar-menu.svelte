@@ -19,6 +19,7 @@ import {
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { authStore } from "$lib/stores";
+import { api } from "$lib/api/client";
 
 let {
   orgId,
@@ -93,6 +94,9 @@ async function handleLogout() {
       <div class="py-1">
         <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={() => handleNavigate(`/${orgId}/account`)}>
           {m.common_account_settings_title ? m.common_account_settings_title() : 'User Settings'}
+        </DropdownMenuItem>
+        <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={() => api.connectionOpenWindow()}>
+          {m.settings_connection_settings()}
         </DropdownMenuItem>
         <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={handleLogout}>
           {m.common_sign_out()}

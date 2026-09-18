@@ -43,6 +43,7 @@ pub struct PersonDto {
     pub phone: Option<String>,
     pub email: Option<String>,
     pub address: Option<String>,
+    pub avatar_url: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -74,6 +75,7 @@ pub fn person_to_dto(p: Person) -> PersonDto {
         phone: p.phone,
         email: p.email,
         address: p.address,
+        avatar_url: p.avatar_url,
         created_at: p.created_at.to_rfc3339(),
         updated_at: p.updated_at.to_rfc3339(),
     }
@@ -268,6 +270,8 @@ pub struct RegisterStudentRequest {
     pub special_needs_notes: Option<String>,
     pub phone: Option<String>,
     pub email: Option<String>,
+    #[serde(rename = "avatarUrl")]
+    pub avatar_url: Option<String>,
     #[serde(rename = "initialPeriodId")]
     pub initial_period_id: Option<String>,
     #[serde(rename = "initialClassId")]
@@ -462,6 +466,7 @@ pub async fn student_register_student(
         special_needs_notes: request.special_needs_notes,
         phone: request.phone,
         email: request.email,
+        avatar_url: request.avatar_url,
         initial_period_id,
         initial_class_id,
         study_mode,

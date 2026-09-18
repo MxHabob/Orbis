@@ -115,6 +115,7 @@ impl StudentRepository for StudentRepoImpl {
                 phone: None,
                 email: None,
                 address: None,
+                avatar_url: None,
                 created_at: sm.created_at,
                 updated_at: sm.updated_at,
             });
@@ -272,6 +273,7 @@ fn map_person_model_to_domain(m: person::Model) -> DomainPerson {
         phone: m.phone,
         email: m.email,
         address: m.address,
+        avatar_url: m.avatar_url,
         created_at: m.created_at,
         updated_at: m.updated_at,
     }

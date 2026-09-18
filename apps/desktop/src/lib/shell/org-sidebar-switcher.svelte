@@ -194,6 +194,9 @@ async function handleBranchSelect(id: string) {
       <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/billing`)}>
         {m.common_header_org_billing()}
       </DropdownMenuItem>
+      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => api.connectionOpenWindow()}>
+        {m.settings_connection_settings()}
+      </DropdownMenuItem>
     </div>
 
     <DropdownMenuSeparator class="bg-border/50" />

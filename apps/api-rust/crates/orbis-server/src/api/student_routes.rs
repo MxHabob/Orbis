@@ -32,6 +32,7 @@ pub struct StudentDto {
     pub blood_type: Option<String>,
     pub medical_notes: Option<String>,
     pub special_needs_notes: Option<String>,
+    pub avatar_url: Option<String>,
     pub status: String,
     pub standing: String,
     pub admitted_at: DateTime<Utc>,
@@ -64,6 +65,7 @@ impl From<StudentDetail> for StudentDto {
             blood_type: p.blood_type,
             medical_notes: p.medical_notes,
             special_needs_notes: p.special_needs_notes,
+            avatar_url: p.avatar_url,
             status: s.status.to_string(),
             standing: s.standing.to_string(),
             admitted_at: s.admitted_at,
@@ -91,6 +93,7 @@ pub struct RegisterStudentRequest {
     pub blood_type: Option<String>,
     pub medical_notes: Option<String>,
     pub special_needs_notes: Option<String>,
+    pub avatar_url: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -219,6 +222,7 @@ pub async fn register_student(
         special_needs_notes: p.special_needs_notes,
         phone: None,
         email: None,
+        avatar_url: p.avatar_url,
         initial_period_id: None,
         initial_class_id: None,
         study_mode: None,

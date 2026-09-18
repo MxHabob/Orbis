@@ -947,6 +947,7 @@ export type UserDeviceDto = {
 };
 
 export type UserDto = {
+    avatar?: string | null;
     email?: string | null;
     full_name: string;
     full_name_ar?: string | null;

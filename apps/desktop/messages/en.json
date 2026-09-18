@@ -2553,5 +2553,6 @@
   "settings_entitlement_status_expired": "Expired",
   "settings_entitlement_status_grace": "Grace Period",
   "settings_entitlement_status_unlicensed": "Unlicensed",
-  "settings_entitlement_features_title": "Enabled Features"
+  "settings_entitlement_features_title": "Enabled Features",
+  "settings_connection_settings": "Connection Settings"
 }

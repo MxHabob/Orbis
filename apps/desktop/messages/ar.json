@@ -2563,5 +2563,6 @@
   "settings_entitlement_status_expired": "منتهي",
   "settings_entitlement_status_grace": "فترة سماح",
   "settings_entitlement_status_unlicensed": "غير مرخص",
-  "settings_entitlement_features_title": "الميزات المفعلة"
+  "settings_entitlement_features_title": "الميزات المفعلة",
+  "settings_connection_settings": "إعدادات الاتصال"
 }

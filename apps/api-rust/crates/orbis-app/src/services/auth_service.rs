@@ -345,6 +345,7 @@ impl AuthService {
             phone: None,
             email: email.clone(),
             address: None,
+            avatar_url: None,
             created_at: now,
             updated_at: now,
         };
