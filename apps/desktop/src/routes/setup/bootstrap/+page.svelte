@@ -134,10 +134,15 @@ async function handleBootstrap(e: SubmitEvent | MouseEvent) {
       token: result.token,
       user: {
         id: result.admin_user_id,
+        org_id: result.org_id,
+        person_id: result.admin_user_id,
         email: values.adminEmail.trim(),
         full_name: values.adminFullName.trim(),
-        org_id: result.org_id,
-
+        full_name_ar: values.adminFullName.trim(),
+        status: "active",
+        is_email_verified: true,
+        is_phone_verified: false,
+        is_mfa_enabled: false,
       },
       effective_context: {
         effective_role: "super_admin",
