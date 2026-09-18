@@ -35,8 +35,6 @@ pub struct OrgDto {
     pub current_period_id: Option<String>,
     pub is_active: bool,
     pub is_verified: bool,
-    pub max_users: i32,
-    pub max_students: i32,
 }
 
 fn org_to_dto(org: orbis_domain::entities::organization::Organization) -> OrgDto {
@@ -59,8 +57,6 @@ fn org_to_dto(org: orbis_domain::entities::organization::Organization) -> OrgDto
         current_period_id: org.current_period_id,
         is_active: org.is_active,
         is_verified: org.is_verified,
-        max_users: org.max_users,
-        max_students: org.max_students,
     }
 }
 

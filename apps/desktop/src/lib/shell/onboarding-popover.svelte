@@ -10,91 +10,40 @@ import {
   TooltipContent,
 } from "@orbis/ui";
 import { Check, ChevronRight, Sparkles } from "@lucide/svelte";
-import { onboardingState } from "$lib/features/onboarding/state.svelte";
-import { authStore } from "$lib/stores";
+import { systemStore } from "$lib/stores";
 import { goto } from "$app/navigation";
-import { localizeHref } from "$lib/paraglide/runtime";
+import { localizeHref, getLocale } from "$lib/paraglide/runtime";
+import { page } from "$app/state";
 
-function handleChecklistItemClick(stepIndex: number) {
-  // tasksList index 0 = wizard step 1 (Institution Type), so offset by +1
-  onboardingState.goToStep(stepIndex + 1);
-  goto(localizeHref("/onboarding"));
+const isArabic = $derived(getLocale().startsWith("ar"));
+const orgId = $derived(page.params.orgId || "");
+
+const routeMap: Record<string, string> = {
+  academic_year: "/settings/academic-years",
+  classes: "/classes",
+  subjects: "/subjects",
+  rooms: "/settings/rooms",
+  time_slots: "/scheduling/slots",
+  fee_templates: "/finance/templates",
+  org_units: "/settings/units",
+};
+
+const items = $derived(systemStore.orgReadiness?.pending_setup_items ?? []);
+const totalTasks = $derived(items.length || 1);
+const completedTasks = $derived(systemStore.completedSetupItems.length);
+const remainingTasks = $derived(systemStore.pendingSetupItems.length);
+const progressPercent = $derived(systemStore.setupProgressPercentage);
+
+function handleItemClick(itemKey: string) {
+  if (orgId) {
+    const route = routeMap[itemKey] ?? "/settings";
+    goto(localizeHref(`/${orgId}${route}`));
+  }
 }
 
-function handleGoToWelcomeStep() {
-  onboardingState.goToStep(0);
+function handleGoToOnboarding() {
   goto(localizeHref("/onboarding"));
 }
-
-// Onboarding tasks variables — popover shows 8 tasks (steps 1-8, excluding Welcome and Launch)
-const totalTasks = 8;
-const completedTasks = $derived(
-  authStore.isSetupComplete
-    ? totalTasks
-    : onboardingState.completedSteps.slice(0, 8).filter(Boolean).length,
-);
-const remainingTasks = $derived(totalTasks - completedTasks);
-const progressPercent = $derived(
-  totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0,
-);
-
-const activeIndex = $derived(
-  authStore.isSetupComplete
-    ? -1
-    : onboardingState.activeStep > 0
-      ? onboardingState.activeStep - 1
-      : onboardingState.completedSteps.slice(0, 8).findIndex((step) => !step),
-);
-
-// Tasks list matching wizard steps
-const tasksList = $derived([
-  {
-    label: m.common_registration_inst_type(),
-    desc: m.common_onboarding_popover_task_institution_type_desc(),
-  },
-  {
-    label: m.common_onboarding_popover_task_calendar_label({
-      calendar:
-        onboardingState.calendarLabel || m.common_onboarding_review_calendar(),
-    }),
-    desc: m.common_onboarding_popover_task_calendar_desc(),
-  },
-  {
-    label: m.common_onboarding_popover_task_classroom_label({
-      classroom:
-        onboardingState.classroomLabel || m.common_onboarding_term_classroom(),
-    }),
-    desc: m.common_onboarding_popover_task_classroom_desc(),
-  },
-  {
-    label: m.common_onboarding_popover_task_stage_label({
-      stage: onboardingState.stageLabel || m.common_class_label_grade(),
-    }),
-    desc: m.common_onboarding_popover_task_stage_desc({
-      division:
-        onboardingState.divisionLabel || m.common_onboarding_term_division(),
-    }),
-  },
-  {
-    label: m.common_onboarding_popover_task_schedule_label(),
-    desc: m.common_onboarding_popover_task_schedule_desc(),
-  },
-  {
-    label: m.common_onboarding_configure_subject({
-      subject:
-        onboardingState.subjectLabel || m.common_onboarding_term_subject(),
-    }),
-    desc: m.common_onboarding_popover_task_subject_desc(),
-  },
-  {
-    label: m.common_onboarding_popover_task_fees_label(),
-    desc: m.common_onboarding_popover_task_fees_desc(),
-  },
-  {
-    label: m.common_onboarding_popover_task_review_label(),
-    desc: m.common_onboarding_popover_task_review_desc(),
-  },
-]);
 </script>
 
 <Popover>
@@ -163,7 +112,7 @@ const tasksList = $derived([
     <!-- Pointer Bezel/Tail -->
     <div class="absolute bottom-5 -inset-s-1.5 w-3 h-3 bg-card border-l border-b border-border rotate-45 z-20 rtl:inset-s-auto rtl:-inset-e-1.5 rtl:border-l-0 rtl:border-b-0 rtl:border-r rtl:border-t"></div>
 
-    <!-- Simple Clean Header Section -->
+    <!-- Header Section -->
     <div class="flex items-center justify-between p-3.5 border-b border-border bg-card z-10 select-none">
       <div class="flex items-center gap-3">
         <svg class="size-7 transform -rotate-90 text-primary shrink-0" viewBox="0 0 24 24">
@@ -185,7 +134,7 @@ const tasksList = $derived([
             {m.common_onboarding_progress_label() || 'خطوات التهيئة'}
           </h4>
           <p class="text-[10.5px] text-muted-foreground font-medium mt-0.5">
-            {m.common_onboarding_popover_tasks_completed({ completed: completedTasks, total: totalTasks })}
+            {isArabic ? `تم إنجاز ${completedTasks} من ${totalTasks}` : `${completedTasks} of ${totalTasks} completed`}
           </p>
         </div>
       </div>
@@ -194,9 +143,9 @@ const tasksList = $derived([
     <!-- Scrollable Checklist Area -->
     <div class="onboarding-list flex-1 overflow-y-auto max-h-85 p-1.5 flex flex-col gap-0.5 bg-card z-10">
       
-      <!-- Welcome Step (Step 0) -->
+      <!-- Initial Setup Link -->
       <button
-        onclick={handleGoToWelcomeStep}
+        onclick={handleGoToOnboarding}
         class="flex items-center justify-between p-2.5 rounded-lg text-start w-full transition-all cursor-pointer border border-transparent hover:bg-muted/60 text-foreground bg-transparent group"
       >
         <div class="flex items-center gap-2.5 flex-1 min-w-0">
@@ -205,10 +154,10 @@ const tasksList = $derived([
           </div>
           <div class="flex flex-col gap-0.5 flex-1 min-w-0">
             <span class="text-[11.5px] leading-tight font-bold text-foreground">
-              صفحة الترحيب والتعريف
+              {isArabic ? "معالج التهيئة الأكاديمية" : "Academic Setup Wizard"}
             </span>
             <span class="text-[10px] leading-relaxed text-muted-foreground">
-              العودة للشاشة الرئيسية وتفاصيل التخصيص
+              {isArabic ? "تعديل التقويم والفصول والمواد" : "Edit calendar, classes & subjects"}
             </span>
           </div>
         </div>
@@ -217,41 +166,35 @@ const tasksList = $derived([
 
       <div class="h-px bg-border/40 my-1 mx-2"></div>
 
-      <!-- Setup Tasks (Steps 1..8) -->
-      {#each tasksList as task, idx}
-        {@const isCompleted = authStore.isSetupComplete ? true : onboardingState.completedSteps[idx]}
-        {@const isActive = !isCompleted && idx === activeIndex}
+      <!-- Setup Tasks Items -->
+      {#each items as item, idx}
+        {@const isCompleted = item.is_completed}
         
         <button
-          onclick={() => {
-            handleChecklistItemClick(idx);
-          }}
-          class="flex items-start justify-between p-2.5 rounded-lg text-start w-full transition-all cursor-pointer font-sans border border-transparent {isActive ? 'bg-muted text-foreground font-semibold' : 'hover:bg-muted/60 text-foreground bg-transparent'}"
+          onclick={() => handleItemClick(item.key)}
+          class="flex items-start justify-between p-2.5 rounded-lg text-start w-full transition-all cursor-pointer font-sans border border-transparent hover:bg-muted/60 text-foreground bg-transparent"
         >
           <div class="flex items-start gap-2.5 flex-1 min-w-0">
             {#if isCompleted}
-              <div class="mt-0.5 shrink-0 size-4 rounded-full text-muted-foreground flex items-center justify-center">
+              <div class="mt-0.5 shrink-0 size-4 rounded-full text-emerald-500 flex items-center justify-center">
                 <Check class="size-3 stroke-[3px]" />
               </div>
             {:else}
-              <div class="mt-0.5 shrink-0 size-4 rounded-full border border-muted-foreground/30 flex items-center justify-center text-[9px] font-bold text-muted-foreground {isActive ? 'border-primary text-primary' : ''}">
+              <div class="mt-0.5 shrink-0 size-4 rounded-full border border-muted-foreground/30 flex items-center justify-center text-[9px] font-bold text-muted-foreground">
                 {idx + 1}
               </div>
             {/if}
             
             <div class="flex flex-col gap-0.5 flex-1 min-w-0">
-              <span class="text-[11.5px] leading-tight font-sans {isCompleted ? 'text-muted-foreground line-through decoration-muted-foreground/45 font-normal' : isActive ? 'text-foreground font-bold' : 'text-foreground font-semibold'}">
-                {task.label}
-              </span>
-              <span class="text-[10.5px] leading-relaxed font-sans font-normal {isCompleted ? 'text-muted-foreground/60' : 'text-muted-foreground/80'}">
-                {task.desc}
+              <span class="text-[11.5px] leading-tight font-sans {isCompleted ? 'text-muted-foreground line-through decoration-muted-foreground/45 font-normal' : 'text-foreground font-semibold'}">
+                {isArabic && item.label_ar ? item.label_ar : item.label}
               </span>
             </div>
           </div>
           
-          {#if isActive}
-            <div class="mt-1 shrink-0 text-foreground ml-2 rtl:rotate-180">
-              <ChevronRight size={12} strokeWidth={2.5} />
+          {#if !isCompleted}
+            <div class="mt-1 shrink-0 text-muted-foreground ml-2 rtl:rotate-180">
+              <ChevronRight size={12} strokeWidth={2} />
             </div>
           {/if}
         </button>

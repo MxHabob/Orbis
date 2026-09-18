@@ -5,19 +5,24 @@ import { api } from "$lib/api/client";
 import type { UserDto, EffectiveContextDto } from "$lib/api/types";
 import { extractErrorMessage } from "$lib/api";
 import { effectiveContext } from "./effective-context.svelte";
+import { systemStore } from "./system.svelte";
 
 class AuthStore {
   user = $state<UserDto | null>(null);
   token = $state<string | null>(null);
   isLoading = $state(false);
   error = $state<string | null>(null);
-  isSetupComplete = $state<boolean | null>(null);
 
   isAuthenticated = $derived(!!this.token && !!this.user);
   orgId = $derived(this.user?.org_id ?? "");
   userId = $derived(this.user?.id ?? "");
+  
+  // Organization readiness integration
+  isSetupComplete = $derived(
+    systemStore.orgReadiness ? systemStore.isOperational : null
+  );
   needsOnboarding = $derived(
-    this.isAuthenticated && this.isSetupComplete === false,
+    this.isAuthenticated && systemStore.orgLifecycleState === "core_ready"
   );
 
   async login(email: string, password: string) {
@@ -33,7 +38,7 @@ class AuthStore {
       if (res.effective_context) {
         effectiveContext.setEffectiveContext(res.effective_context);
       }
-      await this.checkSetupStatus();
+      await systemStore.loadReadiness();
     } catch (e) {
       this.error = extractErrorMessage(e);
       throw e;
@@ -56,7 +61,7 @@ class AuthStore {
     if (res.effective_context) {
       effectiveContext.setEffectiveContext(res.effective_context);
     }
-    await this.checkSetupStatus();
+    await systemStore.loadReadiness();
   }
 
   async logout() {
@@ -67,12 +72,11 @@ class AuthStore {
     }
     this.user = null;
     this.token = null;
-    this.isSetupComplete = null;
     this.restorePromise = null;
     effectiveContext.reset();
+    systemStore.reset();
     localStorage.removeItem("orbis_token");
     localStorage.removeItem("orbis_user");
-    localStorage.removeItem("orbis_is_setup_complete");
   }
 
   private restorePromise: Promise<void> | null = null;
@@ -89,17 +93,10 @@ class AuthStore {
     try {
       const token = localStorage.getItem("orbis_token");
       const userStr = localStorage.getItem("orbis_user");
-      const isSetupCompleteStr = localStorage.getItem(
-        "orbis_is_setup_complete",
-      );
       if (token && userStr) {
         try {
-          // Optimistically load cached user to prevent layout flicker & accidental redirects
           this.token = token;
           this.user = JSON.parse(userStr);
-          if (isSetupCompleteStr !== null) {
-            this.isSetupComplete = isSetupCompleteStr === "true";
-          }
           const res = await api.getSession();
           if (res?.user) {
             this.user = res.user;
@@ -108,6 +105,7 @@ class AuthStore {
               effectiveContext.setEffectiveContext(res.effective_context);
             }
           }
+          await systemStore.loadReadiness();
         } catch (e) {
           console.warn("Session revalidation notice:", e);
           const errMessage = extractErrorMessage(e);
@@ -128,35 +126,10 @@ class AuthStore {
     }
   }
 
-  async checkSetupStatus() {
-    if (!this.isAuthenticated || !this.orgId) {
-      this.isSetupComplete = null;
-      return;
-    }
-    try {
-      const org = await api.getCurrentOrg();
-      const rawSettings = (org as any)?.settings;
-      const settings =
-        typeof rawSettings === "string" ? JSON.parse(rawSettings) : rawSettings;
-      const orgComplete = settings?.onboarding_completed === true;
-      const cached = localStorage.getItem("orbis_is_setup_complete");
-      const isComplete = orgComplete || cached === "true";
-      this.isSetupComplete = isComplete;
-      localStorage.setItem("orbis_is_setup_complete", String(isComplete));
-    } catch (e) {
-      console.warn("Notice checking setup status:", e);
-      const cached = localStorage.getItem("orbis_is_setup_complete");
-      if (cached !== null) {
-        this.isSetupComplete = cached === "true";
-      } else {
-        this.isSetupComplete = false;
-      }
-    }
-  }
-
   markSetupComplete() {
-    this.isSetupComplete = true;
-    localStorage.setItem("orbis_is_setup_complete", "true");
+    if (systemStore.orgReadiness) {
+      systemStore.orgReadiness.state = "operational";
+    }
   }
 }
 

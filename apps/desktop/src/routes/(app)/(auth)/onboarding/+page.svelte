@@ -1,15 +1,13 @@
 <!--
-  Slim route page wrapper for school onboarding.
-  Handles authentication check, setup status check, and orchestrates OnboardingWizard.
+  Initial Setup route wrapper for school onboarding.
+  Checks authentication and loads readiness.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
-import { page } from "$app/state";
-import { authStore } from "$lib/stores";
-import { localizeHref, getLocale } from "$lib/paraglide/runtime";
+import { authStore, systemStore } from "$lib/stores";
+import { localizeHref } from "$lib/paraglide/runtime";
 import OnboardingWizard from "$lib/features/onboarding/onboarding-wizard.svelte";
-import { onboardingState } from "$lib/features/onboarding/state.svelte";
 
 onMount(async () => {
   await authStore.restore();
@@ -18,21 +16,9 @@ onMount(async () => {
     return;
   }
 
-  onboardingState.load();
-  if (authStore.orgId) {
-    await onboardingState.loadExistingOrg(authStore.orgId);
-  }
-
-  // Redirect to the correct localized URL based on onboardingState.locale
-  const currentUrlLocale = getLocale();
-  const stateLang =
-    onboardingState.profile.locale.split("-")[0]?.toLowerCase() || "ar";
-  const targetLang = stateLang === "ar" ? "ar" : "en";
-  if (currentUrlLocale !== targetLang) {
-    const localizedUrl = localizeHref(page.url.pathname, {
-      locale: targetLang,
-    });
-    goto(localizedUrl, { replaceState: true });
+  const readiness = await systemStore.loadReadiness();
+  if (readiness && readiness.state === "Operational") {
+    goto(localizeHref(`/${authStore.orgId}`), { replaceState: true });
   }
 });
 </script>

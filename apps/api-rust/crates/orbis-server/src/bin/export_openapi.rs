@@ -13,7 +13,7 @@ fn main() {
         vec![args[1].clone()]
     } else {
         vec![
-            "apps/api-rust/crates/orbis-server/openapi.json".to_string(),
+            "apps/api-rust/openapi.json".to_string(),
         ]
     };
 
@@ -30,4 +30,3 @@ fn main() {
         }
     }
 }
-

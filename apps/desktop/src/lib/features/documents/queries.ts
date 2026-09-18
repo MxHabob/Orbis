@@ -142,8 +142,8 @@ export function useUploadDocument(
         entity_id: payload.entity_id,
         category: payload.category,
         visibility: payload.visibility,
-        path: payload.file.name,
-        size: payload.file.size,
+        file_path: payload.file.name,
+        file_size_bytes: payload.file.size,
       });
     },
     onSuccess: () => {

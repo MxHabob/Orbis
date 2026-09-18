@@ -31,8 +31,6 @@ export interface OrgConfig {
   currentPeriodId: string | null;
   isActive: boolean;
   isVerified: boolean;
-  maxUsers: number;
-  maxStudents: number;
   settings: Record<string, unknown> | null;
   features: Record<string, unknown> | null;
 }
@@ -145,8 +143,6 @@ class OrganizationContextStore {
         currentPeriodId: (org as any).current_period_id ?? null,
         isActive: (org as any).is_active ?? true,
         isVerified: (org as any).is_verified ?? false,
-        maxUsers: (org as any).max_users ?? 1000,
-        maxStudents: (org as any).max_students ?? 5000,
         settings: (org as any).settings ?? null,
         features: (org as any).features ?? null,
       };

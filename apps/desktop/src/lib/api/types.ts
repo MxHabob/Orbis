@@ -132,6 +132,27 @@ export interface UserIdentityDto {
   connected_at: string;
 }
 
+export interface LinkedDependentDto {
+  student_id: string;
+  full_name: string;
+  name_ar?: string | null;
+  relationship: string;
+  is_emergency_contact: boolean;
+  can_pickup: boolean;
+  enrollment_status?: string | null;
+  class_name?: string | null;
+}
+
+export interface EffectiveContextDto {
+  effective_role?: string;
+  roles?: string[];
+  permissions?: string[];
+  active_org_unit_id?: string | null;
+  active_class_id?: string | null;
+  active_period_id?: string | null;
+  dependents?: LinkedDependentDto[];
+}
+
 export interface RoleDto {
   id: string;
   name: string;
@@ -661,6 +682,122 @@ export interface IntegrationStatusResponse {
   config?: IntegrationDto | null;
 }
 
+// ── Connection Types (Desktop-only, pre-database) ─────────────
+
+export type ConnectionMode = "local" | "remote";
+
+export interface ConnectionConfig {
+  mode: ConnectionMode;
+  local?: { db_filename: string };
+  remote?: { server_url: string; api_key?: string };
+}
+
+export interface ConnectionValidation {
+  is_valid: boolean;
+  mode: string;
+  message: string;
+  resolved_url?: string;
+}
+
+export interface RemoteHealthResult {
+  reachable: boolean;
+  status?: string;
+  version?: string;
+  api_version?: string;
+  latency_ms: number;
+  error?: string;
+}
+
+export interface ConnectResult {
+  connected: boolean;
+  mode: string;
+  server_url?: string;
+  server_version?: string;
+  message: string;
+}
+
+// ── System & Bootstrap Types ──────────────────────────────────
+
+export interface HealthResponse {
+  status: string;
+  version: string;
+  api_version: string;
+  database_connected: boolean;
+  has_organization: boolean;
+  schema_version: string;
+}
+
+export type OrgLifecycleState = "empty" | "core_ready" | "operational";
+
+export interface SetupItem {
+  key: string;
+  label: string;
+  label_ar: string;
+  is_required: boolean;
+  is_completed: boolean;
+}
+
+export interface OrganizationReadiness {
+  state: OrgLifecycleState;
+  org_id?: string;
+  org_name?: string;
+  has_organization: boolean;
+  has_admin: boolean;
+  has_academic_year: boolean;
+  has_classes: boolean;
+  has_subjects: boolean;
+  pending_setup_items: SetupItem[];
+}
+
+export interface BootstrapRequest {
+  orgName: string;
+  orgNameAr?: string;
+  orgType: string;
+  timezone: string;
+  locale: string;
+  currency: string;
+  adminFullName: string;
+  adminEmail: string;
+  adminPassword: string;
+}
+
+export interface BootstrapResult {
+  org_id: string;
+  admin_user_id: string;
+  token: string;
+  readiness: OrganizationReadiness;
+}
+
+export interface InitialSetupRequest {
+  orgId: string;
+  academicYearName: string;
+  academicYearNameAr?: string;
+  academicYearStart: string;
+  academicYearEnd: string;
+  periods: Array<{ name: string; name_ar?: string; period_type: string; start_date: string; end_date: string }>;
+  classes: Array<{ name: string; name_ar?: string; level: string; division?: string }>;
+  subjects: Array<{ code: string; name: string; name_ar?: string; is_core: boolean }>;
+}
+
+export interface EntitlementResult {
+  status: string;
+  plan?: string;
+  max_users?: number;
+  max_students?: number;
+  features: string[];
+  expires_at?: string;
+  grace_period_until?: string;
+}
+
+export type StartupPhase =
+  | "loading"
+  | "connection_setup"
+  | "connecting"
+  | "bootstrap"
+  | "login"
+  | "ready"
+  | "error";
+
 export interface OrbisApiClient {
   // ── Auth & MFA & Devices ────────────────────────────────────
   login(req: LoginRequest): Promise<LoginResponse>;
@@ -870,4 +1007,19 @@ export interface OrbisApiClient {
   getReportJobStatus(jobId: string): Promise<ReportJobStatusDto>;
   downloadReportFile(jobId: string): Promise<Uint8Array>;
   batchPrint(req: BatchPrintParams): Promise<string>;
+
+  // ── System & Bootstrap ──────────────────────────────────────
+  systemHealth(): Promise<HealthResponse>;
+  systemHasOrganization(): Promise<boolean>;
+  systemGetReadiness(): Promise<OrganizationReadiness>;
+  systemGetEntitlement(): Promise<EntitlementResult>;
+  bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult>;
+  bootstrapInitialSetup(req: InitialSetupRequest): Promise<OrganizationReadiness>;
+
+  // ── Connection (Desktop-only) ───────────────────────────────
+  connectionGetConfig(): Promise<ConnectionConfig>;
+  connectionSetConfig(mode: ConnectionMode, serverUrl?: string, dbFilename?: string): Promise<ConnectionConfig>;
+  connectionValidate(): Promise<ConnectionValidation>;
+  connectionCheckRemoteHealth(serverUrl: string): Promise<RemoteHealthResult>;
+  connectionConnect(): Promise<ConnectResult>;
 }

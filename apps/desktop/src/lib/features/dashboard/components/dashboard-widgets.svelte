@@ -8,6 +8,7 @@ import DesktopBanner from "./desktop-banner.svelte";
 
 import { DashboardSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
+import { SetupProgress } from "$lib/features/setup-cards";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -49,6 +50,7 @@ $effect(() => {
 		<div class="flex flex-col items-center text-center pt-6 pb-10 w-full">
 			<WelcomeSection type="both" {stats} {orgId} />
 		</div>
+		<SetupProgress {orgId} />
 		<QuickActions {orgId} />
 		<WidgetCards {stats} {orgId} />
 		<DesktopBanner />

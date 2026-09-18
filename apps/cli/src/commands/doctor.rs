@@ -1,8 +1,12 @@
-use crate::ui::output::{self, COLOR_BORDER, COLOR_EMERALD, COLOR_MUTED, COLOR_ROSE};
+use std::sync::Arc;
+use std::path::Path;
 use anyhow::Result;
 use colored::*;
-use std::path::Path;
 use sea_orm::Database;
+use orbis_app::services::SystemService;
+use orbis_infra::repositories::system_repo::SystemRepoImpl;
+
+use crate::ui::output::{self, COLOR_BORDER, COLOR_EMERALD, COLOR_MUTED, COLOR_ROSE};
 
 pub async fn execute() -> Result<()> {
     output::print_step("Running Comprehensive System Diagnostics...");
@@ -35,22 +39,39 @@ pub async fn execute() -> Result<()> {
         all_good = false;
     }
 
-    // 2. Check Database Schema & Migrations
-    if let Ok(_db) = Database::connect(&config.db_url).await {
-        checks.push(("Database Connection", "Connected & Queryable".to_string(), true));
-        let status = crate::core::database::get_full_status().await;
-        if status.has_organization {
-            checks.push(("Workspace Entity", format!("Configured ({})", status.org_name.unwrap_or_else(|| "Active".to_string())), true));
+    // 2. Check Database Schema & System Service Diagnostics
+    if let Ok(db) = Database::connect(&config.db_url).await {
+        let system_repo = Arc::new(SystemRepoImpl { db });
+        let system_service = SystemService::new(system_repo);
+
+        let health = system_service.health().await;
+        if health.database_connected {
+            checks.push(("Database Connection", "Connected & Queryable".to_string(), true));
         } else {
-            checks.push(("Workspace Entity", "Unconfigured".to_string(), false));
+            checks.push(("Database Connection", "Connection Degraded".to_string(), false));
             all_good = false;
         }
 
-        if status.has_admin {
-            checks.push(("Admin Identity", "Provisioned (Bcrypt + IAM)".to_string(), true));
-        } else {
-            checks.push(("Admin Identity", "No Admin Found".to_string(), false));
-            all_good = false;
+        match system_service.get_readiness().await {
+            Ok(readiness) => {
+                if readiness.has_organization {
+                    checks.push(("Workspace Entity", format!("Configured ({})", readiness.org_name.unwrap_or_else(|| "Active".to_string())), true));
+                } else {
+                    checks.push(("Workspace Entity", "Unconfigured".to_string(), false));
+                    all_good = false;
+                }
+
+                if readiness.has_admin {
+                    checks.push(("Admin Identity", "Provisioned (Bcrypt + IAM)".to_string(), true));
+                } else {
+                    checks.push(("Admin Identity", "No Admin Found".to_string(), false));
+                    all_good = false;
+                }
+            }
+            Err(e) => {
+                checks.push(("System Readiness", format!("Query Error: {e}"), false));
+                all_good = false;
+            }
         }
     } else {
         checks.push(("Database Connection", "Connection Failed".to_string(), false));

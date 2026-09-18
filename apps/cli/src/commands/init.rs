@@ -1,7 +1,6 @@
 use anyhow::{Result, anyhow};
-use bcrypt::{DEFAULT_COST, hash};
 use colored::*;
-use sea_orm::{ConnectionTrait, Database};
+use sea_orm::Database;
 
 use crate::core::config::CliConfig;
 use crate::core::database;
@@ -279,41 +278,42 @@ pub async fn execute() -> Result<()> {
     output::print_progress_pending(
         "Creating organization, admin account, chart of accounts, and cash/bank accounts...",
     );
-    let hashed_password = hash(&admin_password, DEFAULT_COST).unwrap_or_default();
-    let payload = orbis_infra::adapters::bootstrap_adapter::BootstrapPayload {
+    let system_repo = std::sync::Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl { db: db.clone() });
+    let entitlement_provider: std::sync::Arc<dyn orbis_app::ports::entitlement::EntitlementProvider> = std::sync::Arc::new(
+        orbis_infra::adapters::entitlement_adapter::UnlicensedEntitlementProvider,
+    );
+    let bootstrap_port: std::sync::Arc<dyn orbis_app::ports::bootstrap::BulkBootstrapPort> = std::sync::Arc::new(
+        orbis_infra::adapters::bootstrap_adapter::BootstrapAdapterImpl { db: db.clone() },
+    );
+    let password_hasher = std::sync::Arc::new(orbis_infra::security::bcrypt::BcryptHasher);
+    let token_service = std::sync::Arc::new(orbis_infra::security::jwt::JwtTokenService::new("cli-init-token-secret".to_string()));
+
+    let bootstrap_service = orbis_app::services::BootstrapService::new(
+        bootstrap_port,
+        system_repo,
+        password_hasher,
+        token_service,
+        entitlement_provider,
+    );
+
+    let request = orbis_app::services::BootstrapRequest {
         org_name: org_name.clone(),
         org_name_ar: Some(org_name_ar.clone()),
         org_type: blueprint,
+        timezone: timezone.clone(),
+        locale: language.clone(),
         currency: currency.clone(),
-        timezone: Some(timezone.clone()),
-        locale: Some(language.clone()),
-        admin_name: admin_name.clone(),
-        admin_username: admin_username.clone(),
-        admin_password_hash: hashed_password,
+        admin_full_name: admin_name.clone(),
+        admin_email: admin_username.clone(),
+        admin_password: admin_password.clone(),
     };
 
-    let result = orbis_infra::adapters::bootstrap_adapter::bootstrap_full(&db, payload).await?;
-    let org_id = result.org_id;
+    let result = bootstrap_service.bootstrap_organization(request).await
+        .map_err(|e| anyhow!("Bootstrap failed: {e}"))?;
+    let _org_id = result.org_id;
     output::print_progress_ok(
         "Organization, chart of accounts, and cash/bank accounts created successfully",
     );
-
-    // 5d. Store license limits in organization
-    output::print_progress_pending("Applying license limits...");
-    db.execute(sea_orm::Statement::from_sql_and_values(
-        db.get_database_backend(),
-        "UPDATE organizations SET max_users = $1, max_students = $2 WHERE id = $3",
-        vec![
-            (license_info.max_users as i64).into(),
-            (license_info.max_students as i64).into(),
-            org_id.clone().into(),
-        ],
-    ))
-    .await?;
-    output::print_progress_ok(&format!(
-        "License limits applied (Plan: {})",
-        license_info.plan
-    ));
 
     // 5e. Desktop download (production only)
     let env_var = std::env::var("APP_ENV").unwrap_or_else(|_| "development".to_string());

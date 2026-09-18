@@ -1,20 +1,57 @@
 <!--
-  Root page — redirects to the org dashboard or login.
-  Restores auth from localStorage on first load.
+  Root page — startup orchestrator.
+  Resolves the startup phase and routes to the correct screen:
+  - connection_setup → Connection setup screen
+  - bootstrap → Organization bootstrap screen
+  - login → Login page
+  - ready → Org dashboard
+  - error → Error recovery screen
 -->
 <script lang="ts">
 import { goto } from "$app/navigation";
 import { authStore } from "$lib/stores";
 import { onMount } from "svelte";
+import { resolveStartupPhase, type StartupState } from "$lib/core/startup";
 import { Loader2 } from "@lucide/svelte";
 
-onMount(async () => {
-  await authStore.restore();
+let startupState: StartupState | null = $state(null);
+let statusText = $state("Initializing...");
 
-  if (authStore.isAuthenticated && authStore.orgId) {
-    goto(`/${authStore.orgId}`, { replaceState: true });
-  } else {
-    goto("/login", { replaceState: true });
+onMount(async () => {
+  statusText = "Checking connection...";
+  const state = await resolveStartupPhase();
+  startupState = state;
+
+  switch (state.phase) {
+    case "connection_setup":
+      statusText = "Setup required";
+      goto("/setup/connection", { replaceState: true });
+      break;
+
+    case "bootstrap":
+      statusText = "Organization setup required";
+      goto("/setup/bootstrap", { replaceState: true });
+      break;
+
+    case "login":
+    case "ready":
+      statusText = "Restoring session...";
+      await authStore.restore();
+      if (authStore.isAuthenticated && authStore.orgId) {
+        goto(`/${authStore.orgId}`, { replaceState: true });
+      } else {
+        goto("/login", { replaceState: true });
+      }
+      break;
+
+    case "error":
+      statusText = state.error ?? "An error occurred";
+      goto("/setup/error", { replaceState: true });
+      break;
+
+    default:
+      // Unknown phase — fallback to login
+      goto("/login", { replaceState: true });
   }
 });
 </script>
@@ -24,9 +61,12 @@ onMount(async () => {
 </svelte:head>
 
 <div class="loading-root">
-	<span class="loading-icon" aria-hidden="true">
-		<Loader2 size={20} strokeWidth={2} />
-	</span>
+	<div class="loading-content">
+		<span class="loading-icon" aria-hidden="true">
+			<Loader2 size={20} strokeWidth={2} />
+		</span>
+		<span class="loading-text">{statusText}</span>
+	</div>
 </div>
 
 <style>
@@ -40,8 +80,20 @@ onMount(async () => {
 		background-color: hsl(var(--muted));
 	}
 
+	.loading-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 12px;
+	}
+
 	.loading-icon {
 		animation: loading-spin 0.9s linear infinite;
+	}
+
+	.loading-text {
+		font-size: 0.8rem;
+		opacity: 0.7;
 	}
 
 	@keyframes loading-spin {

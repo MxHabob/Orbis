@@ -111,6 +111,17 @@ import type {
   PromoteCohortInput,
   CumulativeGpaRecordDto,
   CalculateGpaInput,
+  HealthResponse,
+  OrganizationReadiness,
+  EntitlementResult,
+  BootstrapRequest,
+  BootstrapResult,
+  InitialSetupRequest,
+  ConnectionConfig,
+  ConnectionMode,
+  ConnectionValidation,
+  RemoteHealthResult,
+  ConnectResult,
 } from "./types";
 
 function unwrap<T>(response: { data: T } | T): T {
@@ -696,5 +707,46 @@ export class LocalClient implements OrbisApiClient {
   }
   async batchPrint(req: BatchPrintParams): Promise<string> {
     return unwrap(await invoke("batch_print", { ...req }));
+  }
+
+  // ── System & Bootstrap ──────────────────────────────────────
+  async systemHealth(): Promise<HealthResponse> {
+    return invoke<HealthResponse>("system_health");
+  }
+  async systemHasOrganization(): Promise<boolean> {
+    return invoke<boolean>("system_has_organization");
+  }
+  async systemGetReadiness(): Promise<OrganizationReadiness> {
+    return invoke<OrganizationReadiness>("system_get_readiness");
+  }
+  async systemGetEntitlement(): Promise<EntitlementResult> {
+    return invoke<EntitlementResult>("system_get_entitlement");
+  }
+  async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
+    return invoke<BootstrapResult>("bootstrap_organization", req as unknown as Record<string, unknown>);
+  }
+  async bootstrapInitialSetup(req: InitialSetupRequest): Promise<OrganizationReadiness> {
+    return invoke<OrganizationReadiness>("bootstrap_initial_setup", req as unknown as Record<string, unknown>);
+  }
+
+  // ── Connection (Desktop-only) ───────────────────────────────
+  async connectionGetConfig(): Promise<ConnectionConfig> {
+    return invoke<ConnectionConfig>("connection_get_config");
+  }
+  async connectionSetConfig(mode: ConnectionMode, serverUrl?: string, dbFilename?: string): Promise<ConnectionConfig> {
+    return invoke<ConnectionConfig>("connection_set_config", {
+      mode,
+      serverUrl: serverUrl ?? null,
+      dbFilename: dbFilename ?? null,
+    });
+  }
+  async connectionValidate(): Promise<ConnectionValidation> {
+    return invoke<ConnectionValidation>("connection_validate");
+  }
+  async connectionCheckRemoteHealth(serverUrl: string): Promise<RemoteHealthResult> {
+    return invoke<RemoteHealthResult>("connection_check_remote_health", { serverUrl });
+  }
+  async connectionConnect(): Promise<ConnectResult> {
+    return invoke<ConnectResult>("connection_connect");
   }
 }

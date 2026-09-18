@@ -112,6 +112,17 @@ import type {
   PromoteCohortInput,
   CumulativeGpaRecordDto,
   CalculateGpaInput,
+  HealthResponse,
+  OrganizationReadiness,
+  EntitlementResult,
+  BootstrapRequest,
+  BootstrapResult,
+  InitialSetupRequest,
+  ConnectionConfig,
+  ConnectionMode,
+  ConnectionValidation,
+  RemoteHealthResult,
+  ConnectResult,
 } from "./types";
 
 export class ApiRequestError extends Error {
@@ -786,5 +797,43 @@ export class RemoteClient implements OrbisApiClient {
   }
   async batchPrint(req: BatchPrintParams): Promise<string> {
     return this.post("/api/v1/reports/batch-print", req);
+  }
+
+  // ── System & Bootstrap ──────────────────────────────────────
+  async systemHealth(): Promise<HealthResponse> {
+    return this.get("/api/v1/health");
+  }
+  async systemHasOrganization(): Promise<boolean> {
+    const r = await this.get<{ has_organization: boolean }>("/api/v1/system/has-organization");
+    return r.has_organization;
+  }
+  async systemGetReadiness(): Promise<OrganizationReadiness> {
+    return this.get("/api/v1/system/readiness");
+  }
+  async systemGetEntitlement(): Promise<EntitlementResult> {
+    return this.get("/api/v1/system/entitlement");
+  }
+  async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
+    return this.post("/api/v1/bootstrap", req);
+  }
+  async bootstrapInitialSetup(req: InitialSetupRequest): Promise<OrganizationReadiness> {
+    return this.post("/api/v1/bootstrap/initial-setup", req);
+  }
+
+  // ── Connection (Desktop-only — not available via HTTP) ─────────
+  async connectionGetConfig(): Promise<ConnectionConfig> {
+    throw new Error("connectionGetConfig is only available in desktop mode");
+  }
+  async connectionSetConfig(_mode: ConnectionMode, _serverUrl?: string, _dbFilename?: string): Promise<ConnectionConfig> {
+    throw new Error("connectionSetConfig is only available in desktop mode");
+  }
+  async connectionValidate(): Promise<ConnectionValidation> {
+    throw new Error("connectionValidate is only available in desktop mode");
+  }
+  async connectionCheckRemoteHealth(_serverUrl: string): Promise<RemoteHealthResult> {
+    throw new Error("connectionCheckRemoteHealth is only available in desktop mode");
+  }
+  async connectionConnect(): Promise<ConnectResult> {
+    throw new Error("connectionConnect is only available in desktop mode");
   }
 }
