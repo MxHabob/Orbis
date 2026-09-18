@@ -136,14 +136,10 @@ onMount(async () => {
     const periodId =
       academicContext.effectivePeriodId || student?.period_id || "";
     if (periodId && studentId) {
-      const [gRes, aRes, bRes] = await Promise.all([
-        api.calculateGpa({ studentId, periodId }).catch(() => null),
-        Promise.resolve(null),
-        Promise.resolve([]),
-      ]);
+      const gRes = await api.calculateGpa({ studentId, periodId }).catch(() => null);
       gradesReport = gRes;
-      attendanceReport = aRes;
-      behaviorRecords = bRes;
+      attendanceReport = null;
+      behaviorRecords = [];
     }
   } catch (e) {
     console.error("Failed to load evaluation reports:", e);

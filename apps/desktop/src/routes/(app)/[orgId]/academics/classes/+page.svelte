@@ -33,15 +33,15 @@ const periodsQuery = createQuery(() => ({
   staleTime: 10 * 60 * 1000,
 }));
 
-const classMetricsQuery = createQuery(() => ({
-  queryKey: ["classes-metrics", data.orgId, activePeriodId],
-  queryFn: () => Promise.resolve([]),
-  enabled: !!data.orgId && !!activePeriodId,
-  staleTime: 2 * 60 * 1000,
+const enrollmentsQuery = createQuery(() => ({
+  queryKey: ["classes-enrollments", data.orgId, activePeriodId],
+  queryFn: () => api.listEnrollments({ periodId: activePeriodId || undefined }),
+  enabled: !!data.orgId,
+  staleTime: 3 * 60 * 1000,
 }));
 
 const periods = $derived(periodsQuery.data ?? []);
-const classMetrics = $derived(classMetricsQuery.data ?? []);
+const enrollments = $derived(enrollmentsQuery.data ?? []);
 
 $effect(() => {
   if (periods.length > 0 && !activePeriodId) {
@@ -76,26 +76,20 @@ onMount(() => {
 });
 
 function getClassMetric(classId: string): any {
-  return classMetrics.find(
-    (metric: any) => String(metric.class_id) === String(classId),
-  );
+  const count = enrollments.filter((e: any) => String(e.class_id) === String(classId)).length;
+  return { active_students: count };
 }
 
 // Compute statistics
 const totalClassesCount = $derived(classes.length);
-const totalStudentsCount = $derived(
-  classMetrics.reduce(
-    (total: number, metric: any) => total + Number(metric.active_students || 0),
-    0,
-  ),
-);
+const totalStudentsCount = $derived(enrollments.length);
 const averageClassSize = $derived(
   totalClassesCount > 0
     ? Math.round(totalStudentsCount / totalClassesCount)
     : 0,
 );
 const pageLoading = $derived(
-  isLoading || periodsQuery.isLoading || classMetricsQuery.isLoading,
+  isLoading || periodsQuery.isLoading || enrollmentsQuery.isLoading,
 );
 </script>
 
