@@ -13,6 +13,7 @@ dependencies = [
  "orbis-app",
  "orbis-domain",
  "orbis-infra",
+ "rand 0.8.6",
  "reqwest 0.13.4",
  "rust_decimal",
  "sea-orm",
@@ -3689,6 +3690,7 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
+ "tracing",
  "uuid",
 ]
 

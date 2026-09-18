@@ -13,3 +13,4 @@ uuid.workspace = true
 tokio.workspace = true
 chrono.workspace = true
 rust_decimal.workspace = true
+tracing.workspace = true

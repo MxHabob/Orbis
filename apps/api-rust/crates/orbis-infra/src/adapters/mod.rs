@@ -13,3 +13,4 @@ pub mod resolver;
 pub mod bootstrap_adapter;
 pub mod report_defaults;
 pub mod solver_adapter;
+pub mod entitlement_adapter;

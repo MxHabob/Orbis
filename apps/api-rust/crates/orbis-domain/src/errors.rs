@@ -18,4 +18,9 @@ pub enum DomainError {
     Forbidden(String),
     #[error("Internal error: {0}")]
     Internal(String),
+    #[error("Organization already initialized")]
+    AlreadyInitialized,
+    #[error("Bootstrap failed: {0}")]
+    BootstrapFailed(String),
 }
+

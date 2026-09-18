@@ -13,11 +13,13 @@ use orbis_app::ports::repositories::{
     AiRepository, WorkflowRepository, CurrencyRepository, PolicyRepository,
     SettingsRepository, DashboardRepository, OverrideRequestRepository, CoursePrerequisiteRepository,
     GpaRecordRepository, PromotionRepository, DiscountTemplateRepository,
+    SystemRepository,
 };
 use orbis_app::ports::reporting::{
     ReportDefinitionRepository, ReportTemplateRepository, ReportJobRepository,
     ReportAuditRepository, DataProviderRegistry, RendererRegistry,
 };
+use orbis_app::ports::entitlement::EntitlementProvider;
 use orbis_app::services::OrgContextResolver;
 use orbis_app::ports::event_bus::EventBus;
 use orbis_app::ports::security::{TokenService, PasswordHasher};
@@ -116,6 +118,11 @@ pub struct AppState {
     pub integration_service: Arc<orbis_app::services::IntegrationService>,
     pub workflow_service: Arc<orbis_app::services::WorkflowService>,
     pub report_service: Arc<orbis_app::services::ReportService>,
+    // ── Bootstrap & System Services ─────────────────────────────
+    pub system_repo: Arc<dyn SystemRepository>,
+    pub bootstrap_service: Arc<orbis_app::services::BootstrapService>,
+    pub system_service: Arc<orbis_app::services::SystemService>,
+    pub entitlement_provider: Arc<dyn EntitlementProvider>,
 }
 
 impl AppState {
@@ -184,7 +191,10 @@ impl AppState {
         let event_bus = Arc::new(orbis_infra::event_bus::MemoryEventBus {
             workflow_engine: Some(autopilot_engine),
         });
-        let token_service = Arc::new(orbis_infra::security::jwt::JwtTokenService::new("desktop-secret".to_string()));
+        // Generate or load a per-installation JWT secret.
+        // Stored as a file in AppData — never hardcoded.
+        let jwt_secret = Self::load_or_generate_jwt_secret(app_data_dir)?;
+        let token_service = Arc::new(orbis_infra::security::jwt::JwtTokenService::new(jwt_secret));
         let password_hasher = Arc::new(orbis_infra::security::bcrypt::BcryptHasher);
 
         let integration_resolver = Arc::new(orbis_infra::adapters::resolver::IntegrationResolver::new(integration_repo.clone()));
@@ -332,6 +342,28 @@ impl AppState {
             report_org_context_resolver.clone(),
         ));
 
+        // ── Bootstrap & System Services ─────────────────────────────
+        let system_repo_impl = Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl { db: db.clone() });
+        let entitlement_provider: Arc<dyn EntitlementProvider> = Arc::new(
+            orbis_infra::adapters::entitlement_adapter::UnlicensedEntitlementProvider,
+        );
+
+        let bootstrap_port: Arc<dyn orbis_app::ports::bootstrap::BulkBootstrapPort> = Arc::new(
+            orbis_infra::adapters::bootstrap_adapter::BootstrapAdapterImpl { db: db.clone() },
+        );
+
+        let system_service = Arc::new(orbis_app::services::SystemService::new(
+            system_repo_impl.clone(),
+        ));
+
+        let bootstrap_service = Arc::new(orbis_app::services::BootstrapService::new(
+            bootstrap_port,
+            system_repo_impl.clone(),
+            password_hasher.clone(),
+            token_service.clone(),
+            entitlement_provider.clone(),
+        ));
+
         Ok(Self {
             db,
             active_session,
@@ -410,6 +442,10 @@ impl AppState {
             integration_service,
             workflow_service,
             report_service,
+            system_repo: system_repo_impl,
+            bootstrap_service,
+            system_service,
+            entitlement_provider,
         })
     }
 
@@ -434,6 +470,32 @@ impl AppState {
     pub fn clear_active_session(&self) {
         if let Ok(mut guard) = self.active_session.write() {
             *guard = None;
+        }
+    }
+
+    /// Load or generate a per-installation JWT secret.
+    /// Stored in AppData/jwt_secret — never hardcoded.
+    fn load_or_generate_jwt_secret(app_data_dir: &std::path::Path) -> Result<String, String> {
+        let secret_path = app_data_dir.join("jwt_secret");
+        if secret_path.exists() {
+            std::fs::read_to_string(&secret_path)
+                .map(|s| s.trim().to_string())
+                .map_err(|e| format!("Failed to read JWT secret: {e}"))
+        } else {
+            use rand::Rng;
+            let secret: String = rand::thread_rng()
+                .sample_iter(&rand::distributions::Alphanumeric)
+                .take(64)
+                .map(char::from)
+                .collect();
+            // Ensure parent directory exists
+            if let Some(parent) = secret_path.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|e| format!("Failed to create AppData dir: {e}"))?;
+            }
+            std::fs::write(&secret_path, &secret)
+                .map_err(|e| format!("Failed to write JWT secret: {e}"))?;
+            Ok(secret)
         }
     }
 }

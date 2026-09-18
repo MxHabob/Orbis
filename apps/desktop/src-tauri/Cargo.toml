@@ -41,6 +41,7 @@ uuid = { version = "1.9.1", features = ["v4", "serde"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 bcrypt = "0.15.1"
 tracing = "0.1"
+rand = "0.8"
 reqwest = { version = "0.13.4", features = ["json"] }
 rust_decimal = { version = "1.36", features = ["serde", "maths"] }
 

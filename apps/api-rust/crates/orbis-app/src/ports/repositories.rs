@@ -502,3 +502,32 @@ pub struct DashboardCounts {
 pub trait DashboardRepository: Send + Sync {
     async fn get_counts(&self, org_id: Uuid) -> Result<DashboardCounts, DomainError>;
 }
+
+// =========================================================================
+// System (Health / Readiness / Bootstrap Status)
+// =========================================================================
+
+/// System-level queries for health checks, bootstrap status, and readiness.
+#[async_trait]
+pub trait SystemRepository: Send + Sync {
+    /// Check if any organization exists in the database.
+    async fn has_organization(&self) -> Result<bool, DomainError>;
+
+    /// Check if any admin user exists (user with super_admin or admin role).
+    async fn has_admin(&self) -> Result<bool, DomainError>;
+
+    /// Check if any academic year exists for the given organization.
+    async fn has_academic_year(&self, org_id: Uuid) -> Result<bool, DomainError>;
+
+    /// Check if any classes exist for the given organization.
+    async fn has_classes(&self, org_id: Uuid) -> Result<bool, DomainError>;
+
+    /// Check if any subjects exist for the given organization.
+    async fn has_subjects(&self, org_id: Uuid) -> Result<bool, DomainError>;
+
+    /// Get the name of the first organization (for display in diagnostics).
+    async fn get_org_name(&self) -> Result<Option<String>, DomainError>;
+
+    /// Get the first organization's ID (for readiness checks).
+    async fn get_first_org_id(&self) -> Result<Option<Uuid>, DomainError>;
+}

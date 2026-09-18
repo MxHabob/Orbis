@@ -48,4 +48,5 @@ pub mod user_role_assignment;
 pub mod identity;
 pub mod mfa;
 pub mod device;
+pub mod entitlement;
 

@@ -6,4 +6,6 @@ pub mod gateways;
 pub mod iam;
 pub mod reporting;
 pub mod transactions;
+pub mod bootstrap;
+pub mod entitlement;
 

@@ -972,3 +972,152 @@ async fn seed_default_reports<C: ConnectionTrait>(
 
     Ok(())
 }
+
+// ── BulkBootstrapPort Implementation ──────────────────────────────────────
+// Adapter that implements the Application-layer port using efficient SQL.
+
+use async_trait::async_trait;
+use orbis_app::ports::bootstrap::{
+    BulkBootstrapPort, ValidatedBootstrapData, ValidatedInitialSetupData,
+    BootstrapPersistenceResult,
+};
+
+pub struct BootstrapAdapterImpl {
+    pub db: DatabaseConnection,
+}
+
+#[async_trait]
+impl BulkBootstrapPort for BootstrapAdapterImpl {
+    async fn persist_bootstrap(
+        &self,
+        data: ValidatedBootstrapData,
+    ) -> Result<BootstrapPersistenceResult, DomainError> {
+        // Delegate to the existing efficient bootstrap_full() which uses raw SQL
+        // inside a single transaction for maximum performance.
+        let payload = BootstrapPayload {
+            org_name: data.organization.name.clone(),
+            org_name_ar: if data.organization.name_ar.is_empty() { None } else { Some(data.organization.name_ar.clone()) },
+            org_type: data.organization.org_type.clone(),
+            currency: data.organization.base_currency_code.clone(),
+            timezone: Some(data.organization.timezone.clone()),
+            locale: Some(data.organization.locale.clone()),
+            admin_name: data.admin_person.display_name.clone(),
+            admin_username: data.admin_user.email.clone(),
+            admin_password_hash: data.admin_user.password_hash.clone(),
+        };
+
+        let result = bootstrap_full(&self.db, payload).await?;
+
+        Ok(BootstrapPersistenceResult {
+            org_id: result.org_id,
+            admin_user_id: result.admin_id,
+            rows_inserted: 0, // Not tracked in the current impl
+        })
+    }
+
+    async fn persist_initial_setup(
+        &self,
+        data: ValidatedInitialSetupData,
+    ) -> Result<(), DomainError> {
+        let txn = self.db.begin().await
+            .map_err(|e| DomainError::Internal(format!("Failed to begin initial setup transaction: {e}")))?;
+
+        let now = Utc::now().to_rfc3339();
+        let org_id = data.org_id.to_string();
+
+        // Academic Year
+        txn.execute(Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            "INSERT INTO academic_years (id, org_id, name, name_ar, start_date, end_date, status, is_locked, created_at, updated_at) \
+             SELECT $1, $2, $3, $4, $5, $6, 'active', 0, $7, $8 \
+             WHERE NOT EXISTS (SELECT 1 FROM academic_years WHERE org_id = $2 AND name = $3)",
+            vec![
+                data.academic_year.id.to_string().into(),
+                org_id.clone().into(),
+                data.academic_year.name.clone().into(),
+                data.academic_year.name_ar.clone().into(),
+                data.academic_year.start_date.clone().into(),
+                data.academic_year.end_date.clone().into(),
+                now.clone().into(),
+                now.clone().into(),
+            ],
+        )).await.map_err(|e| DomainError::Internal(format!("Failed to insert academic year: {e}")))?;
+
+        // Periods
+        for p in &data.periods {
+            txn.execute(Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                "INSERT INTO academic_periods (id, org_id, year_id, name, name_ar, period_type, start_date, end_date, is_current, weight, status, is_locked, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, 0, 100, 'active', 0, $9, $10 \
+                 WHERE NOT EXISTS (SELECT 1 FROM academic_periods WHERE org_id = $2 AND year_id = $3 AND name = $4)",
+                vec![
+                    p.id.to_string().into(),
+                    org_id.clone().into(),
+                    p.year_id.to_string().into(),
+                    p.name.clone().into(),
+                    p.name_ar.clone().into(),
+                    p.period_type.clone().into(),
+                    p.start_date.clone().into(),
+                    p.end_date.clone().into(),
+                    now.clone().into(),
+                    now.clone().into(),
+                ],
+            )).await.map_err(|e| DomainError::Internal(format!("Failed to insert period: {e}")))?;
+        }
+
+        // First period ID for class references
+        let period_id = data.periods.first()
+            .map(|p| p.id.to_string())
+            .unwrap_or_else(|| data.academic_year.id.to_string());
+
+        // Use a nil UUID as a placeholder unit_id for classes
+        let nil_unit = Uuid::nil().to_string();
+
+        // Classes
+        for c in &data.classes {
+            txn.execute(Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                "INSERT INTO classes (id, org_id, unit_id, period_id, name, name_ar, level, division, is_active, is_deleted, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, 1, 0, $9, $10 \
+                 WHERE NOT EXISTS (SELECT 1 FROM classes WHERE org_id = $2 AND period_id = $4 AND name = $5)",
+                vec![
+                    c.id.to_string().into(),
+                    org_id.clone().into(),
+                    nil_unit.clone().into(),
+                    period_id.clone().into(),
+                    c.name.clone().into(),
+                    c.name_ar.clone().into(),
+                    c.level.clone().into(),
+                    c.division.clone().unwrap_or_default().into(),
+                    now.clone().into(),
+                    now.clone().into(),
+                ],
+            )).await.map_err(|e| DomainError::Internal(format!("Failed to insert class: {e}")))?;
+        }
+
+        // Subjects
+        for s in &data.subjects {
+            txn.execute(Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                "INSERT INTO subjects (id, org_id, code, name, name_ar, is_core, is_elective, is_lab_required, is_active, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, 0, 0, 1, $7, $8 \
+                 WHERE NOT EXISTS (SELECT 1 FROM subjects WHERE org_id = $2 AND code = $3)",
+                vec![
+                    s.id.to_string().into(),
+                    org_id.clone().into(),
+                    s.code.clone().into(),
+                    s.name.clone().into(),
+                    s.name_ar.clone().into(),
+                    (if s.is_core { 1i32 } else { 0i32 }).into(),
+                    now.clone().into(),
+                    now.clone().into(),
+                ],
+            )).await.map_err(|e| DomainError::Internal(format!("Failed to insert subject: {e}")))?;
+        }
+
+        txn.commit().await
+            .map_err(|e| DomainError::Internal(format!("Failed to commit initial setup: {e}")))?;
+
+        Ok(())
+    }
+}

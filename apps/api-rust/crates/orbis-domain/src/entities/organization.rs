@@ -3,6 +3,39 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::errors::DomainError;
 
+/// Institution type — determines blueprints for grading, periods, COA, and defaults.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum InstitutionType {
+    School,
+    University,
+    Institute,
+}
+
+impl InstitutionType {
+    pub fn from_str_loose(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "university" => Self::University,
+            "institute" | "training_center" => Self::Institute,
+            _ => Self::School,
+        }
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::School => "school",
+            Self::University => "university",
+            Self::Institute => "institute",
+        }
+    }
+}
+
+impl std::fmt::Display for InstitutionType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Organization {
     pub id: Uuid,
