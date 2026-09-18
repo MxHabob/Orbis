@@ -207,7 +207,7 @@ pub async fn scheduling_list_lessons(filter: Option<LessonFilter>, state: State<
 
 use orbis_app::ports::gateways::SchedulingSolverPort;
 use orbis_domain::entities::solver::{
-    ExamProblem, ExamSolveJobStatus, JobExecutionStatus, SolveJobStatus, TimetableProblem,
+    ExamProblem, ExamSolveJobStatus, JobStatus, SolveJobStatus, TimetableProblem,
 };
 use crate::features::solver_sidecar::SidecarStatus;
 
@@ -254,7 +254,7 @@ pub async fn solver_get_timetable_status(
         .await
         .map_err(|e| e.to_string())?;
 
-    if status.status == JobExecutionStatus::Solved || status.status == JobExecutionStatus::Failed {
+    if status.status == JobStatus::Completed || status.status == JobStatus::Failed || status.status == JobStatus::Cancelled {
         state.solver_sidecar.decrement_active_jobs();
     }
 
@@ -291,10 +291,11 @@ pub async fn solver_get_exam_status(
         .await
         .map_err(|e| e.to_string())?;
 
-    if status.status == JobExecutionStatus::Solved || status.status == JobExecutionStatus::Failed {
+    if status.status == JobStatus::Completed || status.status == JobStatus::Failed || status.status == JobStatus::Cancelled {
         state.solver_sidecar.decrement_active_jobs();
     }
 
     Ok(ok(status))
 }
+
 

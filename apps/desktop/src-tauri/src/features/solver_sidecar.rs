@@ -10,14 +10,14 @@
 //!    to run silently without popup windows.
 //! 3. **Clean Shutdown**: Guarantees termination when the main Orbis Desktop application exits.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use tokio::process::Child;
 use tokio::sync::Mutex;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
 const DEFAULT_PORT: u16 = 8081;
 const HEALTH_CHECK_TIMEOUT: Duration = Duration::from_millis(500);
