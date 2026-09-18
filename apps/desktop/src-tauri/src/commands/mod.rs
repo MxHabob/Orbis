@@ -16,6 +16,8 @@ pub mod progression_cmds;
 pub mod report_cmds;
 pub mod template_cmds;
 pub mod window_cmds;
+pub mod connection_cmds;
+pub mod bootstrap_cmds;
 
 use tauri::generate_handler;
 
@@ -182,5 +184,18 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         window_cmds::show_window,
         window_cmds::open_agent_window,
         window_cmds::check_for_updates,
+        // ── Connection ──────────────────────────────────────────
+        connection_cmds::connection_get_config,
+        connection_cmds::connection_set_config,
+        connection_cmds::connection_validate,
+        connection_cmds::connection_check_remote_health,
+        connection_cmds::connection_connect,
+        // ── Bootstrap & System ──────────────────────────────────
+        bootstrap_cmds::system_health,
+        bootstrap_cmds::system_has_organization,
+        bootstrap_cmds::system_get_readiness,
+        bootstrap_cmds::bootstrap_organization,
+        bootstrap_cmds::bootstrap_initial_setup,
+        bootstrap_cmds::system_get_entitlement,
     ]
 }

@@ -16,7 +16,9 @@ pub mod state;
 pub mod commands;
 pub mod features;
 pub mod events;
+pub mod connection;
 use state::AppState;
+use connection::ConnectionConfig;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -46,14 +48,33 @@ pub fn run() {
                 .map_err(|e| format!("Failed to resolve app data dir: {e}"))?;
             std::fs::create_dir_all(&app_data_dir)
                 .map_err(|e| format!("Failed to create app data dir {:?}: {e}", app_data_dir))?;
-            // 2. Initialize managed AppState with DatabaseProvider (multi-year support)
-            let app_state = tauri::async_runtime::block_on(async {
-                let state = AppState::init(&app_data_dir)
-                    .await
-                    .map_err(|e| format!("Database init failed: {e}"))?;
-                Ok::<AppState, String>(state)
-            })?;
-            app.manage(app_state);
+
+            // 2. Load connection configuration (works before database is connected)
+            let conn_config = ConnectionConfig::load(&app_data_dir);
+            let conn_state = commands::connection_cmds::ConnectionState {
+                app_data_dir: app_data_dir.clone(),
+                config: std::sync::Arc::new(std::sync::RwLock::new(conn_config.clone())),
+            };
+            app.manage(conn_state);
+
+            // 3. Auto-connect if a valid local config exists (seamless for returning users)
+            //    New users will see the connection/setup flow.
+            let validation = conn_config.validate(&app_data_dir);
+            if validation.is_valid && conn_config.mode == connection::ConnectionMode::Local {
+                let init_result = tauri::async_runtime::block_on(async {
+                    AppState::init(&app_data_dir).await
+                });
+                match init_result {
+                    Ok(app_state) => {
+                        app.manage(app_state);
+                    }
+                    Err(e) => {
+                        tracing::warn!("Auto-connect failed (user will see setup): {e}");
+                        // Don't crash — the frontend will detect missing AppState
+                        // and show the connection setup screen.
+                    }
+                }
+            }
             let app_handle = app.handle().clone();
             let initial_url = WebviewUrl::App("index.html".into());
             // Clone app_handle before it gets moved into closures
@@ -198,7 +219,6 @@ pub fn run() {
                 .build(app)?;
             Ok(())
         })
-        .invoke_handler(commands::generate_handlers())
         .build(tauri::generate_context!())
         .expect("error while building tauri app")
         .run(|app_handle, event| match event {
