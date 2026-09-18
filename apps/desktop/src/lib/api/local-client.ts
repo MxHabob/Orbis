@@ -749,4 +749,7 @@ export class LocalClient implements OrbisApiClient {
   async connectionConnect(): Promise<ConnectResult> {
     return invoke<ConnectResult>("connection_connect");
   }
+  async connectionOpenWindow(): Promise<void> {
+    return invoke<void>("open_connection_window");
+  }
 }

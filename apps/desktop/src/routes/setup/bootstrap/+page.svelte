@@ -1,80 +1,107 @@
 <!--
-  Organization Bootstrap Screen — create the first organization and admin user.
-  This screen appears after database connection when no organization exists.
+  Organization Bootstrap Screen — Create the first organization and super admin.
+  Clean 2-step setup built using @orbis/ui Card, Button, Input, Logo, and standard design tokens.
 -->
 <script lang="ts">
 import { goto } from "$app/navigation";
 import { api } from "$lib/api/client";
 import { authStore } from "$lib/stores";
-import { Loader2, Building2, User, ArrowRight, ArrowLeft } from "@lucide/svelte";
+import { localizeHref, getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
+import { Card } from "@orbis/ui/card";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { Logo } from "@orbis/ui/logo";
+import {
+  Building2,
+  User,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  ArrowRight,
+  ArrowLeft,
+  ShieldCheck,
+} from "@lucide/svelte";
 
-// Form state
+const isRTL = $derived(getLocale().startsWith("ar"));
+
+let step = $state(1); // 1 = Organization Details, 2 = Admin Account
+let isSubmitting = $state(false);
+let error = $state("");
+
+// Step 1: Organization
 let orgName = $state("");
 let orgNameAr = $state("");
 let orgType = $state("school");
 let timezone = $state("Asia/Riyadh");
 let locale = $state("ar");
 let currency = $state("SAR");
+
+// Step 2: Super Admin
 let adminFullName = $state("");
 let adminEmail = $state("");
 let adminPassword = $state("");
 let adminPasswordConfirm = $state("");
 
-let step = $state(1); // 1 = org info, 2 = admin info
-let isSubmitting = $state(false);
-let error = $state("");
-
-const orgTypes = [
-  { value: "school", label: "School", labelAr: "مدرسة" },
-  { value: "university", label: "University", labelAr: "جامعة" },
-  { value: "institute", label: "Training Institute", labelAr: "معهد تدريب" },
-];
+const orgTypes = $derived([
+  { value: "school", label: m.setup_bootstrap_type_school() },
+  { value: "university", label: m.setup_bootstrap_type_university() },
+  { value: "institute", label: m.setup_bootstrap_type_institute() },
+]);
 
 const currencies = [
   { code: "SAR", label: "Saudi Riyal (SAR)" },
-  { code: "USD", label: "US Dollar (USD)" },
-  { code: "EUR", label: "Euro (EUR)" },
-  { code: "GBP", label: "British Pound (GBP)" },
+  { code: "YER", label: "Yemeni Rial (YER)" },
   { code: "AED", label: "UAE Dirham (AED)" },
   { code: "EGP", label: "Egyptian Pound (EGP)" },
   { code: "KWD", label: "Kuwaiti Dinar (KWD)" },
   { code: "QAR", label: "Qatari Riyal (QAR)" },
-  { code: "BHD", label: "Bahraini Dinar (BHD)" },
-  { code: "OMR", label: "Omani Rial (OMR)" },
-  { code: "JOD", label: "Jordanian Dinar (JOD)" },
+  { code: "USD", label: "US Dollar (USD)" },
+  { code: "EUR", label: "Euro (EUR)" },
+  { code: "GBP", label: "British Pound (GBP)" },
 ];
 
 const timezones = [
   { value: "Asia/Riyadh", label: "Riyadh (UTC+3)" },
+  { value: "Asia/Aden", label: "Aden / Sana'a (UTC+3)" },
   { value: "Asia/Dubai", label: "Dubai (UTC+4)" },
   { value: "Africa/Cairo", label: "Cairo (UTC+2)" },
   { value: "Europe/London", label: "London (UTC+0)" },
   { value: "America/New_York", label: "New York (UTC-5)" },
-  { value: "Asia/Kolkata", label: "Kolkata (UTC+5:30)" },
 ];
 
-function validateStep1(): boolean {
-  if (!orgName.trim()) { error = "Organization name is required"; return false; }
-  return true;
-}
-
-function validateStep2(): boolean {
-  if (!adminFullName.trim()) { error = "Admin name is required"; return false; }
-  if (!adminEmail.trim()) { error = "Admin email is required"; return false; }
-  if (!adminPassword) { error = "Password is required"; return false; }
-  if (adminPassword.length < 8) { error = "Password must be at least 8 characters"; return false; }
-  if (adminPassword !== adminPasswordConfirm) { error = "Passwords do not match"; return false; }
-  return true;
-}
-
-function goToStep2() {
+function handleNext() {
   error = "";
-  if (validateStep1()) step = 2;
+  if (!orgName.trim()) {
+    error = m.setup_bootstrap_err_org_name_required();
+    return;
+  }
+  step = 2;
 }
 
-async function bootstrap() {
+function handleBack() {
   error = "";
-  if (!validateStep2()) return;
+  step = 1;
+}
+
+async function handleBootstrap() {
+  error = "";
+  if (!adminFullName.trim()) {
+    error = m.setup_bootstrap_err_admin_name_required();
+    return;
+  }
+  if (!adminEmail.trim()) {
+    error = m.setup_bootstrap_err_admin_email_required();
+    return;
+  }
+  if (adminPassword.length < 8) {
+    error = m.setup_bootstrap_err_password_length();
+    return;
+  }
+  if (adminPassword !== adminPasswordConfirm) {
+    error = m.setup_bootstrap_err_password_mismatch();
+    return;
+  }
 
   isSubmitting = true;
   try {
@@ -90,14 +117,20 @@ async function bootstrap() {
       adminPassword,
     });
 
-    // Store session
-    if (result.token) {
-      localStorage.setItem("orbis_token", result.token);
-      await authStore.restore();
-    }
+    // Auto-authenticate session
+    await authStore.setSession({
+      token: result.token,
+      user: {
+        id: result.admin_user_id,
+        email: adminEmail.trim(),
+        full_name: adminFullName.trim(),
+        role: "super_admin",
+        org_id: result.org_id,
+        created_at: new Date().toISOString(),
+      },
+    });
 
-    // Navigate to org dashboard
-    goto(`/${result.org_id}`, { replaceState: true });
+    goto(localizeHref("/onboarding"), { replaceState: true });
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
   } finally {
@@ -107,335 +140,240 @@ async function bootstrap() {
 </script>
 
 <svelte:head>
-	<title>Orbis — Create Organization</title>
+  <title>{m.setup_bootstrap_page_title()}</title>
 </svelte:head>
 
-<div class="setup-card">
-	<div class="setup-header">
-		<div class="step-indicator">
-			<div class="step-dot" class:active={step >= 1}></div>
-			<div class="step-line" class:active={step >= 2}></div>
-			<div class="step-dot" class:active={step >= 2}></div>
-		</div>
-		<h1>{step === 1 ? "Create Your Organization" : "Create Admin Account"}</h1>
-		<p class="subtitle">
-			{step === 1
-				? "Set up your institution's basic information"
-				: "Create the administrator account"}
-		</p>
-	</div>
+<div class="w-full max-w-3xl">
+  <Card class="bg-card border border-border shadow-2xl rounded-2xl overflow-hidden flex flex-col md:flex-row">
+    <!-- Left Brand Column -->
+    <div class="w-full md:w-20 bg-primary flex md:flex-col items-center justify-between md:justify-start p-4 md:py-8 gap-4 text-primary-foreground shrink-0 select-none">
+      <div class="flex items-center justify-center text-primary-foreground">
+        <Logo class="size-8 text-primary-foreground" dotClass="fill-white" />
+      </div>
+    </div>
 
-	{#if step === 1}
-		<!-- Organization Info -->
-		<div class="form-section">
-			<div class="field-row">
-				<div class="field-group">
-					<label for="org-name">Organization Name *</label>
-					<input id="org-name" type="text" bind:value={orgName} placeholder="Riyadh Academy" />
-				</div>
-				<div class="field-group">
-					<label for="org-name-ar">الاسم بالعربية</label>
-					<input id="org-name-ar" type="text" bind:value={orgNameAr} placeholder="أكاديمية الرياض" dir="rtl" />
-				</div>
-			</div>
+    <!-- Main Content Area -->
+    <div class="flex-1 p-6 sm:p-8 lg:p-10 flex flex-col justify-between min-w-0">
+      <div>
+        <!-- Stepper Indicator -->
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-border/60">
+          <div>
+            <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              {m.setup_bootstrap_title()}
+            </h2>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              {step === 1
+                ? m.setup_bootstrap_step_1_desc()
+                : m.setup_bootstrap_step_2_desc()}
+            </p>
+          </div>
 
-			<div class="field-group">
-				<label>Institution Type</label>
-				<div class="type-selector">
-					{#each orgTypes as t}
-						<button
-							class="type-chip"
-							class:active={orgType === t.value}
-							onclick={() => orgType = t.value}
-						>
-							<Building2 size={14} />
-							{t.label}
-						</button>
-					{/each}
-				</div>
-			</div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full {step === 1 ? 'bg-primary' : 'bg-emerald-500'}"></span>
+            <span class="w-2.5 h-2.5 rounded-full {step === 2 ? 'bg-primary' : 'bg-muted'}"></span>
+          </div>
+        </div>
 
-			<div class="field-row">
-				<div class="field-group">
-					<label for="currency">Currency</label>
-					<select id="currency" bind:value={currency}>
-						{#each currencies as c}
-							<option value={c.code}>{c.label}</option>
-						{/each}
-					</select>
-				</div>
-				<div class="field-group">
-					<label for="timezone">Timezone</label>
-					<select id="timezone" bind:value={timezone}>
-						{#each timezones as tz}
-							<option value={tz.value}>{tz.label}</option>
-						{/each}
-					</select>
-				</div>
-			</div>
-		</div>
+        {#if error}
+          <div class="mb-5 flex items-center gap-2.5 p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
+            <AlertCircle class="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        {/if}
 
-		{#if error}
-			<div class="error-banner">{error}</div>
-		{/if}
+        <!-- STEP 1: Organization Details -->
+        {#if step === 1}
+          <div class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="orgName" class="block text-xs font-medium text-foreground mb-1.5">
+                  {m.setup_bootstrap_org_name_label()}
+                </label>
+                <Input
+                  id="orgName"
+                  type="text"
+                  bind:value={orgName}
+                  class="h-10 text-xs bg-background border-input"
+                  placeholder="e.g. Al-Amal Academy"
+                />
+              </div>
 
-		<button class="primary-btn" onclick={goToStep2}>
-			Continue
-			<ArrowRight size={16} />
-		</button>
+              <div>
+                <label for="orgNameAr" class="block text-xs font-medium text-foreground mb-1.5">
+                  {m.setup_bootstrap_org_name_ar_label()}
+                </label>
+                <Input
+                  id="orgNameAr"
+                  type="text"
+                  bind:value={orgNameAr}
+                  class="h-10 text-xs bg-background border-input text-right"
+                  placeholder="مثال: أكاديمية الأمل"
+                />
+              </div>
+            </div>
 
-	{:else}
-		<!-- Admin Account -->
-		<div class="form-section">
-			<div class="field-group">
-				<label for="admin-name">Full Name *</label>
-				<input id="admin-name" type="text" bind:value={adminFullName} placeholder="Ahmed Mohammed" />
-			</div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label for="orgType" class="block text-xs font-medium text-foreground mb-1.5">
+                  {m.setup_bootstrap_org_type_label()}
+                </label>
+                <select
+                  id="orgType"
+                  bind:value={orgType}
+                  class="w-full bg-background border border-input rounded-md px-3 h-10 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
+                >
+                  {#each orgTypes as t}
+                    <option value={t.value}>{t.label}</option>
+                  {/each}
+                </select>
+              </div>
 
-			<div class="field-group">
-				<label for="admin-email">Email *</label>
-				<input id="admin-email" type="email" bind:value={adminEmail} placeholder="admin@school.com" />
-			</div>
+              <div>
+                <label for="currency" class="block text-xs font-medium text-foreground mb-1.5">
+                  {m.setup_bootstrap_currency_label()}
+                </label>
+                <select
+                  id="currency"
+                  bind:value={currency}
+                  class="w-full bg-background border border-input rounded-md px-3 h-10 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
+                >
+                  {#each currencies as c}
+                    <option value={c.code}>{c.label}</option>
+                  {/each}
+                </select>
+              </div>
 
-			<div class="field-row">
-				<div class="field-group">
-					<label for="admin-password">Password *</label>
-					<input id="admin-password" type="password" bind:value={adminPassword} placeholder="Minimum 8 characters" />
-				</div>
-				<div class="field-group">
-					<label for="admin-password-confirm">Confirm Password *</label>
-					<input id="admin-password-confirm" type="password" bind:value={adminPasswordConfirm} placeholder="Confirm password" />
-				</div>
-			</div>
-		</div>
+              <div>
+                <label for="timezone" class="block text-xs font-medium text-foreground mb-1.5">
+                  {m.setup_bootstrap_timezone_label()}
+                </label>
+                <select
+                  id="timezone"
+                  bind:value={timezone}
+                  class="w-full bg-background border border-input rounded-md px-3 h-10 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
+                >
+                  {#each timezones as tz}
+                    <option value={tz.value}>{tz.label}</option>
+                  {/each}
+                </select>
+              </div>
+            </div>
+          </div>
 
-		{#if error}
-			<div class="error-banner">{error}</div>
-		{/if}
+        <!-- STEP 2: Super Admin Account -->
+        {:else}
+          <div class="space-y-4">
+            <div>
+              <label for="adminFullName" class="block text-xs font-medium text-foreground mb-1.5">
+                {m.setup_bootstrap_admin_name_label()}
+              </label>
+              <Input
+                id="adminFullName"
+                type="text"
+                bind:value={adminFullName}
+                class="h-10 text-xs bg-background border-input"
+                placeholder="e.g. Abdullah Al-Mansoor"
+              />
+            </div>
 
-		<div class="btn-row">
-			<button class="secondary-btn" onclick={() => { step = 1; error = ""; }}>
-				<ArrowLeft size={16} />
-				Back
-			</button>
-			<button class="primary-btn" onclick={bootstrap} disabled={isSubmitting}>
-				{#if isSubmitting}
-					<Loader2 size={16} class="spin" />
-					Creating...
-				{:else}
-					Create Organization
-					<ArrowRight size={16} />
-				{/if}
-			</button>
-		</div>
-	{/if}
+            <div>
+              <label for="adminEmail" class="block text-xs font-medium text-foreground mb-1.5">
+                {m.setup_bootstrap_admin_email_label()}
+              </label>
+              <Input
+                id="adminEmail"
+                type="email"
+                bind:value={adminEmail}
+                class="h-10 text-xs bg-background border-input"
+                placeholder="admin@school.edu"
+              />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="adminPassword" class="block text-xs font-medium text-foreground mb-1.5">
+                  {m.setup_bootstrap_admin_password_label()}
+                </label>
+                <Input
+                  id="adminPassword"
+                  type="password"
+                  bind:value={adminPassword}
+                  class="h-10 text-xs bg-background border-input"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <div>
+                <label for="adminPasswordConfirm" class="block text-xs font-medium text-foreground mb-1.5">
+                  {m.setup_bootstrap_admin_password_confirm_label()}
+                </label>
+                <Input
+                  id="adminPasswordConfirm"
+                  type="password"
+                  bind:value={adminPasswordConfirm}
+                  class="h-10 text-xs bg-background border-input"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+          </div>
+        {/if}
+      </div>
+
+      <!-- Action Footer -->
+      <div class="pt-6 mt-6 border-t border-border/40 flex items-center justify-between">
+        {#if step === 2}
+          <Button
+            type="button"
+            variant="outline"
+            onclick={handleBack}
+            disabled={isSubmitting}
+            class="inline-flex items-center gap-1.5 px-4 h-10 text-xs font-medium cursor-pointer border-border"
+          >
+            {#if isRTL}
+              <ArrowRight class="w-3.5 h-3.5" />
+            {:else}
+              <ArrowLeft class="w-3.5 h-3.5" />
+            {/if}
+            <span>{m.setup_bootstrap_prev_btn()}</span>
+          </Button>
+        {:else}
+          <div></div>
+        {/if}
+
+        {#if step === 1}
+          <Button
+            type="button"
+            variant="default"
+            onclick={handleNext}
+            class="inline-flex items-center gap-2 px-6 h-10 text-xs font-semibold cursor-pointer"
+          >
+            <span>{m.setup_bootstrap_next_btn()}</span>
+            {#if isRTL}
+              <ArrowLeft class="w-4 h-4" />
+            {:else}
+              <ArrowRight class="w-4 h-4" />
+            {/if}
+          </Button>
+        {:else}
+          <Button
+            type="button"
+            variant="default"
+            onclick={handleBootstrap}
+            disabled={isSubmitting}
+            class="inline-flex items-center gap-2 px-6 h-10 text-xs font-semibold cursor-pointer disabled:opacity-50"
+          >
+            {#if isSubmitting}
+              <Loader2 class="w-4 h-4 animate-spin" />
+              <span>{m.setup_bootstrap_submitting()}</span>
+            {:else}
+              <ShieldCheck class="w-4 h-4" />
+              <span>{m.setup_bootstrap_submit_btn()}</span>
+            {/if}
+          </Button>
+        {/if}
+      </div>
+    </div>
+  </Card>
 </div>
 
-<style>
-	.setup-card {
-		width: 100%;
-		max-width: 560px;
-		background: hsl(222 47% 11% / 0.9);
-		border: 1px solid hsl(215 20% 22%);
-		border-radius: 16px;
-		padding: 2.5rem;
-		backdrop-filter: blur(20px);
-	}
-
-	.setup-header {
-		text-align: center;
-		margin-bottom: 2rem;
-	}
-
-	.step-indicator {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0;
-		margin-bottom: 1.25rem;
-	}
-
-	.step-dot {
-		width: 10px;
-		height: 10px;
-		border-radius: 50%;
-		background: hsl(215 20% 25%);
-		transition: all 0.3s;
-	}
-
-	.step-dot.active {
-		background: hsl(210 100% 55%);
-		box-shadow: 0 0 8px hsl(210 100% 55% / 0.4);
-	}
-
-	.step-line {
-		width: 60px;
-		height: 2px;
-		background: hsl(215 20% 25%);
-		transition: all 0.3s;
-	}
-
-	.step-line.active {
-		background: hsl(210 100% 55%);
-	}
-
-	h1 {
-		font-size: 1.35rem;
-		font-weight: 600;
-		color: hsl(210 40% 96%);
-		margin: 0 0 0.5rem;
-	}
-
-	.subtitle {
-		font-size: 0.85rem;
-		color: hsl(215 20% 55%);
-		margin: 0;
-	}
-
-	.form-section {
-		display: flex;
-		flex-direction: column;
-		gap: 1.25rem;
-		margin-bottom: 1.5rem;
-	}
-
-	.field-row {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 0.75rem;
-	}
-
-	.field-group label {
-		display: block;
-		font-size: 0.8rem;
-		font-weight: 500;
-		color: hsl(215 20% 65%);
-		margin-bottom: 0.4rem;
-	}
-
-	.field-group input,
-	.field-group select {
-		width: 100%;
-		padding: 0.6rem 0.8rem;
-		background: hsl(222 47% 8%);
-		border: 1px solid hsl(215 20% 22%);
-		border-radius: 8px;
-		color: hsl(210 40% 96%);
-		font-size: 0.85rem;
-		outline: none;
-		transition: border-color 0.15s;
-	}
-
-	.field-group input:focus,
-	.field-group select:focus {
-		border-color: hsl(210 100% 50%);
-	}
-
-	.field-group select {
-		appearance: none;
-		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%237a8ba5' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
-		background-repeat: no-repeat;
-		background-position: right 0.75rem center;
-		padding-right: 2rem;
-	}
-
-	.type-selector {
-		display: flex;
-		gap: 0.5rem;
-	}
-
-	.type-chip {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.375rem;
-		padding: 0.5rem;
-		border: 1px solid hsl(215 20% 22%);
-		border-radius: 8px;
-		background: transparent;
-		color: hsl(215 20% 55%);
-		font-size: 0.8rem;
-		cursor: pointer;
-		transition: all 0.15s;
-	}
-
-	.type-chip:hover {
-		border-color: hsl(210 100% 50% / 0.4);
-	}
-
-	.type-chip.active {
-		border-color: hsl(210 100% 50%);
-		background: hsl(210 100% 50% / 0.1);
-		color: hsl(210 100% 70%);
-	}
-
-	.error-banner {
-		padding: 0.65rem 0.875rem;
-		background: hsl(0 70% 40% / 0.15);
-		border: 1px solid hsl(0 70% 40% / 0.3);
-		border-radius: 8px;
-		color: hsl(0 70% 70%);
-		font-size: 0.8rem;
-		margin-bottom: 1.25rem;
-	}
-
-	.btn-row {
-		display: flex;
-		gap: 0.75rem;
-	}
-
-	.primary-btn {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		padding: 0.7rem 1.25rem;
-		background: hsl(210 100% 50%);
-		border: none;
-		border-radius: 10px;
-		color: white;
-		font-size: 0.85rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-
-	.primary-btn:hover:not(:disabled) {
-		background: hsl(210 100% 55%);
-		transform: translateY(-1px);
-		box-shadow: 0 4px 16px hsl(210 100% 50% / 0.3);
-	}
-
-	.primary-btn:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.secondary-btn {
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-		padding: 0.7rem 1rem;
-		background: hsl(215 20% 18%);
-		border: 1px solid hsl(215 20% 28%);
-		border-radius: 10px;
-		color: hsl(210 40% 80%);
-		font-size: 0.85rem;
-		cursor: pointer;
-		transition: all 0.15s;
-	}
-
-	.secondary-btn:hover {
-		background: hsl(215 20% 22%);
-	}
-
-	:global(.spin) {
-		animation: spin 0.9s linear infinite;
-	}
-
-	@keyframes spin {
-		to { transform: rotate(360deg); }
-	}
-</style>

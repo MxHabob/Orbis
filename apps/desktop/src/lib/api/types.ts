@@ -1022,4 +1022,5 @@ export interface OrbisApiClient {
   connectionValidate(): Promise<ConnectionValidation>;
   connectionCheckRemoteHealth(serverUrl: string): Promise<RemoteHealthResult>;
   connectionConnect(): Promise<ConnectResult>;
+  connectionOpenWindow(): Promise<void>;
 }

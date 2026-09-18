@@ -183,6 +183,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         // ── Window & System ─────────────────────────────────────
         window_cmds::show_window,
         window_cmds::open_agent_window,
+        window_cmds::open_connection_window,
         window_cmds::check_for_updates,
         // ── Connection ──────────────────────────────────────────
         connection_cmds::connection_get_config,

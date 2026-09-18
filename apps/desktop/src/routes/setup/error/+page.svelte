@@ -1,119 +1,84 @@
 <!--
   Error Recovery Screen — shown when startup fails.
+  Clean UI built using @orbis/ui Card, Logo, Button, and standard design tokens.
 -->
 <script lang="ts">
 import { goto } from "$app/navigation";
-import { page } from "$app/state";
+import { localizeHref } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
+import { Card } from "@orbis/ui/card";
+import { Button } from "@orbis/ui/button";
+import { Logo } from "@orbis/ui/logo";
 import { AlertTriangle, RefreshCw, Settings } from "@lucide/svelte";
 
 function retry() {
-  goto("/", { replaceState: true });
+  goto(localizeHref("/"), { replaceState: true });
 }
 
 function reconfigure() {
-  goto("/setup/connection", { replaceState: true });
+  goto(localizeHref("/setup/connection"), { replaceState: true });
 }
 </script>
 
 <svelte:head>
-	<title>Orbis — Error</title>
+  <title>{m.setup_error_page_title()}</title>
 </svelte:head>
 
-<div class="setup-card">
-	<div class="error-icon">
-		<AlertTriangle size={40} strokeWidth={1.5} />
-	</div>
-	<h1>Something went wrong</h1>
-	<p class="error-message">
-		Orbis could not start properly. This may be due to a database
-		connection issue or a configuration problem.
-	</p>
+<div class="w-full max-w-lg">
+  <Card class="bg-card border border-border shadow-2xl rounded-2xl overflow-hidden flex flex-col">
+    <!-- Brand Header -->
+    <div class="bg-primary/10 border-b border-border/60 p-6 flex items-center gap-4">
+      <div class="p-2.5 rounded-xl bg-primary text-primary-foreground">
+        <Logo class="size-6 text-primary-foreground" dotClass="fill-white" />
+      </div>
+      <div>
+        <h2 class="text-lg font-bold tracking-tight text-foreground">
+          {m.setup_error_heading()}
+        </h2>
+        <p class="text-xs text-muted-foreground">
+          {m.setup_error_subheading()}
+        </p>
+      </div>
+    </div>
 
-	<div class="btn-group">
-		<button class="primary-btn" onclick={retry}>
-			<RefreshCw size={16} />
-			Try Again
-		</button>
-		<button class="secondary-btn" onclick={reconfigure}>
-			<Settings size={16} />
-			Reconfigure Connection
-		</button>
-	</div>
+    <!-- Main Content Area -->
+    <div class="p-6 sm:p-8 flex flex-col gap-6">
+      <div class="flex items-start gap-3.5 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400">
+        <AlertTriangle class="w-5 h-5 shrink-0 mt-0.5" />
+        <div class="text-xs leading-relaxed">
+          <div class="font-semibold mb-0.5">
+            {m.setup_error_card_title()}
+          </div>
+          <div class="text-muted-foreground">
+            {m.setup_error_card_desc()}
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-3 pt-2">
+        <Button
+          type="button"
+          variant="default"
+          class="flex-1 inline-flex items-center justify-center gap-2 h-10 text-xs font-semibold cursor-pointer"
+          onclick={retry}
+        >
+          <RefreshCw class="w-3.5 h-3.5" />
+          <span>{m.setup_error_retry_btn()}</span>
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          class="flex-1 inline-flex items-center justify-center gap-2 h-10 text-xs font-semibold cursor-pointer border-border"
+          onclick={reconfigure}
+        >
+          <Settings class="w-3.5 h-3.5" />
+          <span>{m.setup_error_reconfigure_btn()}</span>
+        </Button>
+      </div>
+    </div>
+  </Card>
 </div>
 
-<style>
-	.setup-card {
-		width: 100%;
-		max-width: 420px;
-		background: hsl(222 47% 11% / 0.9);
-		border: 1px solid hsl(215 20% 22%);
-		border-radius: 16px;
-		padding: 2.5rem;
-		text-align: center;
-		backdrop-filter: blur(20px);
-	}
 
-	.error-icon {
-		color: hsl(35 90% 55%);
-		margin-bottom: 1.25rem;
-	}
-
-	h1 {
-		font-size: 1.3rem;
-		font-weight: 600;
-		color: hsl(210 40% 96%);
-		margin: 0 0 0.75rem;
-	}
-
-	.error-message {
-		font-size: 0.85rem;
-		color: hsl(215 20% 55%);
-		line-height: 1.6;
-		margin: 0 0 2rem;
-	}
-
-	.btn-group {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.primary-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		padding: 0.75rem 1.5rem;
-		background: hsl(210 100% 50%);
-		border: none;
-		border-radius: 10px;
-		color: white;
-		font-size: 0.85rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-
-	.primary-btn:hover {
-		background: hsl(210 100% 55%);
-	}
-
-	.secondary-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		padding: 0.7rem 1rem;
-		background: hsl(215 20% 18%);
-		border: 1px solid hsl(215 20% 28%);
-		border-radius: 10px;
-		color: hsl(210 40% 80%);
-		font-size: 0.85rem;
-		cursor: pointer;
-		transition: all 0.15s;
-	}
-
-	.secondary-btn:hover {
-		background: hsl(215 20% 22%);
-	}
-</style>

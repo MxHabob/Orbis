@@ -33,6 +33,37 @@ pub(crate) async fn do_open_agent_window<R: tauri::Runtime>(app: &tauri::AppHand
     Ok(())
 }
 
+pub(crate) async fn do_open_connection_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<(), String> {
+    if let Some(existing) = app.get_webview_window("orbis-connection") {
+        existing.show().map_err(|e| e.to_string())?;
+        existing.set_focus().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+    let main_window = app.get_webview_window("main");
+    let mut builder = WebviewWindowBuilder::new(
+        app,
+        "orbis-connection",
+        WebviewUrl::App("setup/connection".into()),
+    )
+    .title("Orbis Connection")
+    .inner_size(780.0, 560.0)
+    .resizable(true)
+    .shadow(true)
+    .decorations(true)
+    .visible(false)
+    .on_page_load(|webview, payload| {
+        if payload.event() == tauri::webview::PageLoadEvent::Finished {
+            let _ = webview.show();
+            let _ = webview.set_focus();
+        }
+    });
+    if let Some(ref main) = main_window {
+        builder = builder.parent(main).map_err(|e| e.to_string())?;
+    }
+    builder.build().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn show_window<R: tauri::Runtime>(window: tauri::WebviewWindow<R>) -> Result<(), String> {
     let app_handle = window.app_handle();
@@ -54,6 +85,11 @@ pub async fn show_window<R: tauri::Runtime>(window: tauri::WebviewWindow<R>) -> 
 #[tauri::command]
 pub async fn open_agent_window<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
     do_open_agent_window(&app).await
+}
+
+#[tauri::command]
+pub async fn open_connection_window<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
+    do_open_connection_window(&app).await
 }
 
 #[tauri::command]

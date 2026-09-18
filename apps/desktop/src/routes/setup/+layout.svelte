@@ -5,32 +5,11 @@ import TitleBar from "$lib/shell/title-bar.svelte";
 let { children } = $props();
 </script>
 
-<div class="setup-shell">
+<div class="h-screen w-screen bg-background text-foreground flex flex-col overflow-hidden font-sans antialiased relative select-none">
 	{#if isDesktopApp}
 		<TitleBar />
 	{/if}
-	<div class="setup-content">
+	<main class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 min-h-0 overflow-y-auto">
 		{@render children()}
-	</div>
+	</main>
 </div>
-
-<style>
-	.setup-shell {
-		display: flex;
-		flex-direction: column;
-		height: 100vh;
-		width: 100vw;
-		overflow: hidden;
-		background: linear-gradient(135deg, hsl(222 47% 8%) 0%, hsl(222 47% 14%) 100%);
-	}
-
-	.setup-content {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		min-height: 0;
-		overflow: auto;
-		padding: 2rem;
-	}
-</style>

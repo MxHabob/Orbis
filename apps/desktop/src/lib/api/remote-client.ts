@@ -836,4 +836,7 @@ export class RemoteClient implements OrbisApiClient {
   async connectionConnect(): Promise<ConnectResult> {
     throw new Error("connectionConnect is only available in desktop mode");
   }
+  async connectionOpenWindow(): Promise<void> {
+    throw new Error("connectionOpenWindow is only available in desktop mode");
+  }
 }
