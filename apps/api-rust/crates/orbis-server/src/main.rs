@@ -41,7 +41,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let finance_repo = Arc::new(orbis_infra::repositories::finance_repos::FinanceRepoImpl { db: db.clone() });
     let document_repo = Arc::new(orbis_infra::repositories::document_repos::DocumentRepoImpl { db: db.clone() });
     let integration_repo = Arc::new(orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() });
-    let ai_repo = Arc::new(orbis_infra::repositories::ai_repos::AiRepoImpl { db: db.clone() });
     let workflow_repo = Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
     let override_repo = Arc::new(orbis_infra::repositories::override_repos::OverrideRepoImpl { db: db.clone() });
     let progression_repo = Arc::new(orbis_infra::repositories::progression_repos::ProgressionRepoImpl { db: db.clone() });
@@ -233,6 +232,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         org_context_resolver.clone(),
     ));
 
+    let ai_service = Arc::new(orbis_app::services::AiOrchestrationService::new(
+        integration_resolver.clone(),
+        permission_checker.clone(),
+        student_service.clone(),
+        academic_service.clone(),
+        assessment_service.clone(),
+        finance_service.clone(),
+        scheduling_service.clone(),
+        report_service.clone(),
+        organization_service.clone(),
+    ));
+
     // Build AppState
     let state = AppState {
         db,
@@ -274,7 +285,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         payment_repo: finance_repo.clone(),
         document_repo,
         integration_repo,
-        ai_repo,
         workflow_repo,
         currency_repo: finance_repo.clone(),
         policy_repo,
@@ -306,6 +316,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         integration_service,
         workflow_service,
         report_service,
+        ai_service,
         // ── Reporting System ────────────────────────────────────
         report_definition_repo,
         report_template_repo,

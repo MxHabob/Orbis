@@ -1023,4 +1023,84 @@ export interface OrbisApiClient {
   connectionCheckRemoteHealth(serverUrl: string): Promise<RemoteHealthResult>;
   connectionConnect(): Promise<ConnectResult>;
   connectionOpenWindow(): Promise<void>;
+
+  // ── AI Platform ─────────────────────────────────────────────
+  aiChat(req: AiChatRequest): Promise<AiChatResponse>;
+  aiListTools(): Promise<AiToolDefinition[]>;
+  aiSaveSession(session: AiStoredSession): Promise<boolean>;
+  aiLoadSessions(orgId: string): Promise<AiStoredSession[]>;
+  aiDeleteSession(orgId: string, sessionId: string): Promise<boolean>;
+  aiSaveContext(orgId: string, context: Record<string, unknown>): Promise<boolean>;
+  aiLoadContext(orgId: string): Promise<Record<string, unknown> | null>;
 }
+
+// ── AI Platform Interfaces ───────────────────────────────────
+
+export interface AiToolCall {
+  id: string;
+  tool_name: string;
+  arguments: Record<string, unknown>;
+}
+
+export interface AiToolResult {
+  tool_call_id: string;
+  tool_name: string;
+  content: string;
+  is_error: boolean;
+}
+
+export interface AiMessage {
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+  tool_calls?: AiToolCall[];
+  tool_call_id?: string;
+  created_at?: string;
+}
+
+export interface AiToolDefinition {
+  name: string;
+  description: string;
+  parameters_schema: Record<string, unknown>;
+  required_permission?: string | null;
+  is_consequential: boolean;
+}
+
+export interface AiProposedAction {
+  tool_name: string;
+  title: string;
+  description: string;
+  payload: Record<string, unknown>;
+  requires_confirmation: boolean;
+}
+
+export interface AiChatRequest {
+  messages: AiMessage[];
+  screen_context?: Record<string, unknown> | null;
+  agent_type?: string | null;
+}
+
+export interface AiChatResponse {
+  response: string;
+  executed_tools: AiToolResult[];
+  proposed_actions: AiProposedAction[];
+}
+
+export interface AiStoredMessage {
+  id: string;
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+  timestamp: number;
+  executed_tools?: AiToolResult[];
+  proposed_actions?: Record<string, unknown>[];
+}
+
+export interface AiStoredSession {
+  id: string;
+  title: string;
+  org_id: string;
+  created_at: number;
+  updated_at: number;
+  context?: Record<string, unknown> | null;
+  messages: AiStoredMessage[];
+}
+

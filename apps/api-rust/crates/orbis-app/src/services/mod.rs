@@ -14,6 +14,7 @@ pub mod workflow_service;
 pub mod report_service;
 pub mod bootstrap_service;
 pub mod system_service;
+pub mod ai_service;
 
 pub use student_service::{StudentService, RegisterStudentInput};
 pub use progression_service::ProgressionService;
@@ -31,3 +32,4 @@ pub use workflow_service::{WorkflowService, SubmitOverrideInput};
 pub use report_service::{ReportService, GenerateReportInput, OrgContextResolver};
 pub use bootstrap_service::{BootstrapService, BootstrapRequest, BootstrapResult, InitialSetupRequest};
 pub use system_service::{SystemService, HealthResponse, OrganizationReadiness, OrgLifecycleState};
+pub use ai_service::AiOrchestrationService;

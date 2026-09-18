@@ -18,6 +18,7 @@ pub mod template_cmds;
 pub mod window_cmds;
 pub mod connection_cmds;
 pub mod bootstrap_cmds;
+pub mod ai_cmds;
 
 use tauri::generate_handler;
 
@@ -204,5 +205,13 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         bootstrap_cmds::bootstrap_organization,
         bootstrap_cmds::bootstrap_initial_setup,
         bootstrap_cmds::system_get_entitlement,
+        // ── AI Platform ─────────────────────────────────────────
+        ai_cmds::ai_chat,
+        ai_cmds::ai_list_tools,
+        ai_cmds::ai_save_session,
+        ai_cmds::ai_load_sessions,
+        ai_cmds::ai_delete_session,
+        ai_cmds::ai_save_context,
+        ai_cmds::ai_load_context,
     ]
 }

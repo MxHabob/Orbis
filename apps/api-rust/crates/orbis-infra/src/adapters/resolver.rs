@@ -57,6 +57,83 @@ impl IntegrationResolver {
             )),
         }
     }
+    async fn resolve_llm_adapter(&self, ctx: &RequestContext) -> Result<Box<dyn LlmGatewayPort>, DomainError> {
+        let configs = self.integration_repo.find_configs_by_org(ctx.tenant_id).await?;
+        let active_ai = configs.into_iter().find(|c| (c.category == "ai" || c.category == "llm") && c.is_enabled);
+
+        match active_ai {
+            Some(config) => {
+                let secrets = self.integration_repo.get_secrets_by_config(config.id).await?;
+                let provider = config.provider_name.to_lowercase();
+
+                if provider == "gemini" || provider == "google" {
+                    let api_key = secrets
+                        .into_iter()
+                        .find(|s| s.key_name == "api_key")
+                        .map(|s| s.secret_key)
+                        .or_else(|| std::env::var("GEMINI_API_KEY").ok())
+                        .unwrap_or_default();
+                    Ok(Box::new(GeminiAdapter::new(api_key)))
+                } else if provider == "openai" || provider == "deepseek" || provider == "groq" || provider == "mistral" {
+                    let api_key = secrets
+                        .into_iter()
+                        .find(|s| s.key_name == "api_key" || s.key_name == "secret_key")
+                        .map(|s| s.secret_key)
+                        .or_else(|| std::env::var("OPENAI_API_KEY").ok());
+                    let default_url = if provider == "deepseek" {
+                        "https://api.deepseek.com"
+                    } else if provider == "groq" {
+                        "https://api.groq.com/openai"
+                    } else {
+                        "https://api.openai.com"
+                    };
+                    let endpoint_url = config
+                        .settings
+                        .as_ref()
+                        .and_then(|s| s.get("endpoint_url"))
+                        .and_then(|v| v.as_str())
+                        .filter(|s| !s.trim().is_empty())
+                        .unwrap_or(default_url)
+                        .to_string();
+                    Ok(Box::new(OrbisAiAdapter::with_api_key(endpoint_url, api_key)))
+                } else if provider == "orbis" || provider == "ollama" || provider == "local" || provider == "vllm" || provider == "lmstudio" {
+                    let endpoint_url = config
+                        .settings
+                        .as_ref()
+                        .and_then(|s| s.get("endpoint_url"))
+                        .and_then(|v| v.as_str())
+                        .filter(|s| !s.trim().is_empty())
+                        .unwrap_or("http://localhost:11434")
+                        .to_string();
+                    let api_key = secrets
+                        .into_iter()
+                        .find(|s| s.key_name == "api_key")
+                        .map(|s| s.secret_key);
+                    Ok(Box::new(OrbisAiAdapter::with_api_key(endpoint_url, api_key)))
+                } else {
+                    Err(DomainError::Validation(format!(
+                        "Unsupported AI Provider: '{}'. Supported providers: gemini, openai, deepseek, groq, orbis (local ollama).",
+                        config.provider_name
+                    )))
+                }
+            }
+            None => {
+                // Auto Fallback: If environment keys exist, use them; otherwise fallback to local Ollama default
+                if let Ok(gemini_key) = std::env::var("GEMINI_API_KEY") {
+                    if !gemini_key.trim().is_empty() {
+                        return Ok(Box::new(GeminiAdapter::new(gemini_key)));
+                    }
+                }
+                if let Ok(openai_key) = std::env::var("OPENAI_API_KEY") {
+                    if !openai_key.trim().is_empty() {
+                        return Ok(Box::new(OrbisAiAdapter::with_api_key("https://api.openai.com".into(), Some(openai_key))));
+                    }
+                }
+                // Fallback to local Ollama / Orbis Local AI
+                Ok(Box::new(OrbisAiAdapter::new("http://localhost:11434".into())))
+            }
+        }
+    }
 }
 
 #[async_trait]
@@ -69,42 +146,21 @@ impl LlmGatewayPort for IntegrationResolver {
         user_prompt: &str,
         temperature: f64,
     ) -> Result<String, DomainError> {
-        let configs = self.integration_repo.find_configs_by_org(ctx.tenant_id).await?;
-        let active_ai = configs.into_iter().find(|c| c.category == "ai" && c.is_enabled);
+        let adapter = self.resolve_llm_adapter(ctx).await?;
+        adapter.generate_text(ctx, model, system_prompt, user_prompt, temperature).await
+    }
 
-        match active_ai {
-            Some(config) => {
-                let secrets = self.integration_repo.get_secrets_by_config(config.id).await?;
-
-                if config.provider_name == "gemini" {
-                    let api_key = secrets
-                        .into_iter()
-                        .find(|s| s.key_name == "api_key")
-                        .map(|s| s.secret_key)
-                        .unwrap_or_default();
-                    let adapter = GeminiAdapter::new(api_key);
-                    adapter.generate_text(ctx, model, system_prompt, user_prompt, temperature).await
-                } else if config.provider_name == "orbis" {
-                    let endpoint_url = config
-                        .settings
-                        .as_ref()
-                        .and_then(|s| s.get("endpoint_url"))
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("http://localhost:11434")
-                        .to_string();
-                    let adapter = OrbisAiAdapter::new(endpoint_url);
-                    adapter.generate_text(ctx, model, system_prompt, user_prompt, temperature).await
-                } else {
-                    Err(DomainError::Validation(format!(
-                        "Unsupported AI Provider: {}",
-                        config.provider_name
-                    )))
-                }
-            }
-            None => Err(DomainError::Validation(
-                "No active AI Provider integration found".into(),
-            )),
-        }
+    async fn chat_with_tools(
+        &self,
+        ctx: &RequestContext,
+        model: &str,
+        system_prompt: &str,
+        messages: &[orbis_domain::entities::ai::AiMessage],
+        tools: &[orbis_domain::entities::ai::AiToolDefinition],
+        temperature: f64,
+    ) -> Result<orbis_domain::entities::ai::LlmChatOutput, DomainError> {
+        let adapter = self.resolve_llm_adapter(ctx).await?;
+        adapter.chat_with_tools(ctx, model, system_prompt, messages, tools, temperature).await
     }
 }
 

@@ -10,7 +10,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use api::{
     iam_routes, org_routes, calendar_routes, academic_routes,
     student_routes, override_routes, scheduling_routes, assessment_routes, exam_routes,
-    finance_routes, document_routes, integration_routes, report_routes,
+    finance_routes, document_routes, integration_routes, report_routes, ai_routes,
 };
 
 // ── OpenAPI Spec ────────────────────────────────────────────────
@@ -316,6 +316,7 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(document_routes::routes())
         .merge(integration_routes::routes())
         .merge(report_routes::routes())
+        .merge(ai_routes::routes())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .layer(tower_http::cors::CorsLayer::permissive())
         .with_state(state)

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use sea_orm::DatabaseConnection;
-use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, CurrencyRepository, PolicyRepository, SettingsRepository, DashboardRepository};
+use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, WorkflowRepository, CurrencyRepository, PolicyRepository, SettingsRepository, DashboardRepository};
 use orbis_app::ports::reporting::{ReportDefinitionRepository, ReportTemplateRepository, ReportJobRepository, ReportAuditRepository, DataProviderRegistry, RendererRegistry};
 use orbis_app::services::OrgContextResolver;
 use orbis_app::ports::event_bus::EventBus;
@@ -48,7 +48,6 @@ pub struct AppState {
     pub payment_repo: Arc<dyn PaymentRepository>,
     pub document_repo: Arc<dyn DocumentRepository>,
     pub integration_repo: Arc<dyn IntegrationRepository>,
-    pub ai_repo: Arc<dyn AiRepository>,
     pub workflow_repo: Arc<dyn WorkflowRepository>,
     pub currency_repo: Arc<dyn CurrencyRepository>,
     pub policy_repo: Arc<dyn PolicyRepository>,
@@ -80,6 +79,7 @@ pub struct AppState {
     pub integration_service: Arc<orbis_app::services::IntegrationService>,
     pub workflow_service: Arc<orbis_app::services::WorkflowService>,
     pub report_service: Arc<orbis_app::services::ReportService>,
+    pub ai_service: Arc<orbis_app::services::AiOrchestrationService>,
     // ── Reporting System ────────────────────────────────────────
     pub report_definition_repo: Arc<dyn ReportDefinitionRepository>,
     pub report_template_repo: Arc<dyn ReportTemplateRepository>,

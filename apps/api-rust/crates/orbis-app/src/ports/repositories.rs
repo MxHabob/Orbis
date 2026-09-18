@@ -8,7 +8,6 @@ use orbis_domain::{
         academic_period::AcademicPeriod,
         academic_year::AcademicYear,
         account::Account,
-        ai::{AiAgent, AiInsight},
         assessment_scheme::AssessmentScheme,
         attendance::Attendance,
         behavior_record::BehaviorRecord,
@@ -437,15 +436,10 @@ pub trait OverrideRequestRepository: Send + Sync {
 }
 
 // =========================================================================
-// AI, Workflows, Documents & Integrations
+// Workflows, Documents & Integrations
 // =========================================================================
 
-#[async_trait]
-pub trait AiRepository: Send + Sync {
-    async fn find_agent_by_id(&self, id: Uuid) -> Result<Option<AiAgent>, DomainError>;
-    async fn find_active_agents(&self, org_id: Uuid) -> Result<Vec<AiAgent>, DomainError>;
-    async fn save_insight(&self, insight: &AiInsight) -> Result<(), DomainError>;
-}
+
 
 #[async_trait]
 pub trait WorkflowRepository: Send + Sync {

@@ -13,7 +13,6 @@ pub mod exam_repos;
 pub mod finance_repos;
 pub mod document_repos;
 pub mod integration_repos;
-pub mod ai_repos;
 pub mod workflow_repos;
 pub mod report_repos;
 pub mod settings_repo;

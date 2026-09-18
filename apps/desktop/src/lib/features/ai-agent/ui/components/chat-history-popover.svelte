@@ -1,48 +1,70 @@
 <!--
 @component ChatHistoryPopover
-Displays a popover of recent agent sessions with search capability.
+Displays a popover of local agent conversation sessions with search and management capabilities.
 -->
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
-import { History } from "@lucide/svelte";
+import { History, Plus, Trash2, MessageSquare } from "@lucide/svelte";
 import SearchField from "$lib/shared/components/search-field.svelte";
-import { createAgentSessionsQuery } from "$lib/features/ai/queries";
 import { formatDate } from "$lib/core/i18n";
-import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
+import type { AiChatSession } from "$lib/features/ai/session-store";
 
 let {
-  orgId = "",
+  sessions = [],
+  currentSessionId = null,
   onSelectSession,
+  onDeleteSession,
+  onNewChat,
 }: {
-  orgId?: string;
+  sessions?: AiChatSession[];
+  currentSessionId?: string | null;
   onSelectSession?: (sessionId: string) => void;
+  onDeleteSession?: (sessionId: string) => void;
+  onNewChat?: () => void;
 } = $props();
 
-const sessionsQuery = createAgentSessionsQuery(() => orgId);
-const sessions = $derived(sessionsQuery.data ?? []);
-
 let searchQuery = $state("");
+let isOpen = $state(false);
 
 const filteredSessions = $derived(
-  sessions.filter(
-    (session) =>
-      session.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      session.agent_type.toLowerCase().includes(searchQuery.toLowerCase()),
-  ),
+  sessions.filter((s) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const matchesTitle = s.title.toLowerCase().includes(query);
+    const matchesContent = s.messages.some((m) =>
+      m.content.toLowerCase().includes(query),
+    );
+    return matchesTitle || matchesContent;
+  }),
 );
+
+function handleSelect(sessionId: string) {
+  onSelectSession?.(sessionId);
+  isOpen = false;
+}
+
+function handleNewChat() {
+  onNewChat?.();
+  isOpen = false;
+}
+
+function handleDelete(e: MouseEvent, sessionId: string) {
+  e.stopPropagation();
+  onDeleteSession?.(sessionId);
+}
 </script>
 
-<Popover>
+<Popover bind:open={isOpen}>
   <PopoverTrigger>
     {#snippet child({ props }: { props: any })}
       <Button
         {...props}
         variant="ghost"
         size="icon-xs"
-        class="w-6 h-6 flex items-center justify-center rounded-md cursor-pointer"
-        title="History"
+        class="w-6 h-6 flex items-center justify-center rounded-md cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted"
+        title="سجل المحادثات"
       >
         <History size={13} />
       </Button>
@@ -51,50 +73,72 @@ const filteredSessions = $derived(
   
   <PopoverContent 
     align="end"
-    class="w-64 space-y-2 z-50 select-none bg-popover text-popover-foreground border border-border/60"
+    class="w-72 space-y-2 z-50 select-none bg-popover text-popover-foreground border border-border/80 shadow-xl p-3"
   >
-    <div class="text-[10px] font-semibold text-foreground px-0.5 text-start tracking-wide">
-      Agent history
+    <div class="flex items-center justify-between px-0.5">
+      <span class="text-[11px] font-bold text-foreground tracking-wide flex items-center gap-1.5">
+        <MessageSquare size={13} class="text-primary" />
+        سجل المحادثات السابقة
+      </span>
+      <Button
+        variant="ghost"
+        size="xs"
+        class="h-6 text-[10px] px-1.5 font-semibold text-primary hover:bg-primary/10"
+        onclick={handleNewChat}
+      >
+        <Plus size={11} class="me-1" />
+        محادثة جديدة
+      </Button>
     </div>
     
     <SearchField
       bind:value={searchQuery}
-      placeholder="Search sessions..."
-      class="w-full max-w-full md:max-w-full"
+      placeholder="بحث في المحادثات..."
+      class="w-full max-w-full md:max-w-full text-xs"
     />
-    
 
-    <div class="flex flex-col gap-2 max-h-56 overflow-y-auto scrollbar-hide text-start px-0.5">
-      {#if sessionsQuery.isLoading}
-        <div class="space-y-2 py-2">
-          <Skeleton class="h-10 w-full rounded" />
-          <Skeleton class="h-10 w-full rounded" />
-        </div>
-      {:else if sessionsQuery.isError}
-        <div class="text-center text-[10px] text-destructive/80 py-4 px-1 leading-relaxed">
-          {orgId ? "خدمة الوكيل غير متوفرة حالياً" : "Agent service offline"}
-        </div>
-      {:else if filteredSessions.length === 0}
-        <div class="text-center text-[11.5px] text-muted-foreground py-6">
-          No sessions found
+    <div class="flex flex-col gap-1.5 max-h-60 overflow-y-auto scrollbar-hide text-start px-0.5 pt-1">
+      {#if filteredSessions.length === 0}
+        <div class="text-center text-[11px] text-muted-foreground py-6 flex flex-col items-center gap-1.5">
+          <History size={20} class="text-muted-foreground/40" />
+          <span>لا توجد محادثات سابقة</span>
         </div>
       {:else}
-        {#each filteredSessions as session}
-          <button
-            onclick={() => onSelectSession?.(session.id)}
-            class="w-full text-start bg-transparent hover:bg-muted/40 p-2 rounded-md transition-all cursor-pointer group flex flex-col gap-1 focus:outline-none"
+        {#each filteredSessions as session (session.id)}
+          <div
+            role="button"
+            tabindex="0"
+            onclick={() => handleSelect(session.id)}
+            onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(session.id); }}
+            class="w-full text-start p-2 rounded-lg transition-all cursor-pointer group flex flex-col gap-1 border border-transparent {session.id === currentSessionId ? 'bg-primary/10 border-primary/20 text-primary' : 'hover:bg-muted/60 text-foreground'}"
           >
-            <div class="text-[12.5px] font-bold font-mono text-foreground group-hover:text-primary transition-colors flex justify-between items-center">
-              <span>#{session.id.substring(0, 8)}</span>
-              <Badge variant={session.status === 'active' ? 'lime' : 'secondary'} class="text-[7px] h-3.5 px-1 shrink-0">
-                {session.status}
-              </Badge>
+            <div class="flex justify-between items-center w-full">
+              <span class="text-[12px] font-semibold truncate flex-1 pe-1">
+                {session.title || "محادثة بدون عنوان"}
+              </span>
+              <div class="flex items-center gap-1 shrink-0">
+                <Badge variant="secondary" class="text-[8px] h-3.5 px-1 font-mono">
+                  {session.messages.length} رسالة
+                </Badge>
+                {#if onDeleteSession}
+                  <button
+                    type="button"
+                    onclick={(e) => handleDelete(e, session.id)}
+                    class="opacity-0 group-hover:opacity-100 hover:text-destructive p-0.5 rounded transition-opacity cursor-pointer"
+                    title="حذف المحادثة"
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                {/if}
+              </div>
             </div>
-            <div class="text-[9px] text-muted-foreground leading-normal flex justify-between items-center w-full mt-0.5">
-              <span>{session.agent_type}</span>
-              <span>{formatDate(session.created_at)}</span>
+            <div class="text-[9px] text-muted-foreground leading-normal flex justify-between items-center w-full">
+              <span>{formatDate(session.updatedAt || session.createdAt)}</span>
+              {#if session.id === currentSessionId}
+                <span class="text-[8px] font-bold text-primary">المحادثة الحالية</span>
+              {/if}
             </div>
-          </button>
+          </div>
         {/each}
       {/if}
     </div>

@@ -1,8 +1,9 @@
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
 import { Avatar } from "@orbis/avatar-engine";
-import { X, MoreHorizontal, Columns, Plus } from "@lucide/svelte";
+import { X, Activity, MessageSquare, Columns, Plus } from "@lucide/svelte";
 import ChatHistoryPopover from "./chat-history-popover.svelte";
+import type { AiChatSession } from "$lib/features/ai/session-store";
 
 let {
   isStandalone = false,
@@ -10,11 +11,15 @@ let {
   headerTitle = "",
   messagesLength = 0,
   currentOrgId = "",
+  viewMode = "chat",
+  sessions = [],
+  currentSessionId = null,
+  pendingActionsCount = 0,
   onClose,
   onOpenStandalone,
   onSelectSession,
+  onDeleteSession,
   onNewChat,
-  viewMode = "chat",
   onToggleView,
 }: {
   isStandalone: boolean;
@@ -23,10 +28,14 @@ let {
   messagesLength: number;
   currentOrgId: string;
   viewMode?: "chat" | "cockpit";
+  sessions?: AiChatSession[];
+  currentSessionId?: string | null;
+  pendingActionsCount?: number;
   onToggleView?: () => void;
   onClose: () => void;
   onOpenStandalone: () => void;
   onSelectSession: (id: string) => void;
+  onDeleteSession?: (id: string) => void;
   onNewChat: () => void;
 } = $props();
 </script>
@@ -40,7 +49,7 @@ let {
         size="icon-xs"
         onclick={onClose}
         class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-        title="Close sidebar"
+        title="إغلاق الشريط الجانبي"
       >
         <X size={14} strokeWidth={2} />
       </Button>
@@ -48,10 +57,8 @@ let {
     
     <!-- Title & Avatar -->
     <span class="text-[12px] font-semibold tracking-wide text-foreground flex items-center gap-1.5 select-none">
-      {#if messagesLength > 0}
-        <Avatar hat={userHat} width="32px" height="32px" />
-      {/if}
-      <span class="flex items-center gap-0.5">
+      <Avatar hat={userHat} width="28px" height="28px" />
+      <span class="flex items-center gap-1 font-bold">
         {headerTitle}
       </span>
     </span>
@@ -59,39 +66,49 @@ let {
 
   <!-- Actions -->
   <div class="flex items-center gap-1">
+    <!-- View mode toggle (Chat <-> Tools/Cockpit) -->
     <Button
       variant="ghost"
       size="icon-xs"
       onclick={onToggleView}
-      class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer {viewMode === 'cockpit' ? 'bg-muted text-foreground' : ''}"
-      title="Activity Logs"
+      class="w-6 h-6 relative flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer {viewMode === 'cockpit' ? 'bg-primary/10 text-primary' : ''}"
+      title={viewMode === 'cockpit' ? 'العودة للمحادثة' : 'مركز الأدوات والعمليات'}
     >
-      <MoreHorizontal size={14} />
+      <Activity size={13} />
+      {#if pendingActionsCount > 0}
+        <span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-card animate-pulse"></span>
+      {/if}
     </Button>
     
+    <!-- Standalone Window / Split Layout -->
     {#if !isStandalone}
       <Button
         variant="ghost"
         size="icon-xs"
         onclick={onOpenStandalone}
         class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-        title="Split layout"
+        title="فتح في نافذة منفصلة"
       >
         <Columns size={13} />
       </Button>
     {/if}
 
+    <!-- Chat History Sessions Popover -->
     <ChatHistoryPopover
-      orgId={currentOrgId}
+      sessions={sessions}
+      currentSessionId={currentSessionId}
       onSelectSession={onSelectSession}
+      onDeleteSession={onDeleteSession}
+      onNewChat={onNewChat}
     />
 
+    <!-- New Chat Button -->
     <Button
       variant="ghost"
       size="icon-xs"
       onclick={onNewChat}
       class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-      title="New Chat"
+      title="محادثة جديدة"
     >
       <Plus size={14} />
     </Button>

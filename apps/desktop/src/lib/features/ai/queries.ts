@@ -1,5 +1,6 @@
 /**
  * AI & Autopilot domain queries and mutations.
+ * Clean, production-grade integration with backend AI Platform & Autopilot Engine.
  */
 import {
   createQuery,
@@ -7,6 +8,38 @@ import {
   useQueryClient,
 } from "@tanstack/svelte-query";
 import { api, queryKeys } from "$lib/api";
+import type {
+  AiChatRequest,
+  AiChatResponse,
+  AiToolDefinition,
+} from "$lib/api/types";
+
+// ── AI Chat & Tools ───────────────────────────────────────────
+
+export function createAiToolsQuery() {
+  return createQuery(() => ({
+    queryKey: ["ai", "tools"],
+    queryFn: async (): Promise<AiToolDefinition[]> => {
+      return api.aiListTools();
+    },
+    staleTime: 10 * 60 * 1000,
+  }));
+}
+
+export function useAiChat() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: async (req: AiChatRequest): Promise<AiChatResponse> => {
+      return api.aiChat(req);
+    },
+    onSuccess: () => {
+      // Invalidate related domain queries if consequential actions were executed
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    },
+  }));
+}
+
+// ── Autopilot Configuration & Engine ──────────────────────────
 
 export function createAutopilotConfigQuery(orgId: string | (() => string)) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
@@ -21,23 +54,21 @@ export function createAutopilotConfigQuery(orgId: string | (() => string)) {
   }));
 }
 
-export function createAutopilotTasksQuery(orgId: string | (() => string)) {
-  const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
-  return createQuery(() => ({
-    queryKey: ["autopilot-tasks", getOrgId()],
-    queryFn: async () => [],
-    enabled: !!getOrgId(),
-    staleTime: 2 * 60 * 1000,
-  }));
-}
-
 export function createAutopilotDiagnosticsQuery(
   orgId: string | (() => string),
 ) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   return createQuery(() => ({
     queryKey: ["autopilot-diagnostics", getOrgId()],
-    queryFn: async () => ({ status: "ok", activeRules: 12 }),
+    queryFn: async () => {
+      const settings = await api.getSettings();
+      const isEnabled = settings.autopilot?.enabled ?? false;
+      return {
+        status: isEnabled ? "active" : "standby",
+        mode: settings.autopilot?.mode ?? "advisory",
+        autoLockGrades: settings.autopilot?.auto_lock_grades ?? false,
+      };
+    },
     enabled: !!getOrgId(),
     staleTime: 1 * 60 * 1000,
   }));
@@ -75,82 +106,6 @@ export function useConfigureAutopilot() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.org.settings(),
-      });
-    },
-  }));
-}
-
-export function useRunAutopilotTick() {
-  const queryClient = useQueryClient();
-  return createMutation(() => ({
-    mutationFn: async (_vars: { orgId: string }) => {
-      return { success: true };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.org.settings(),
-      });
-    },
-  }));
-}
-
-export function createAgentSessionsQuery(orgId: string | (() => string)) {
-  const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
-  return createQuery(() => ({
-    queryKey: ["agent-sessions", getOrgId()],
-    queryFn: async () => [],
-    enabled: !!getOrgId(),
-    staleTime: 2 * 60 * 1000,
-  }));
-}
-
-export function createAgentSessionLogsQuery(
-  orgId: string | (() => string),
-  sessionId: string | (() => string),
-) {
-  const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
-  const getSessionId =
-    typeof sessionId === "function" ? sessionId : () => sessionId;
-  return createQuery(() => ({
-    queryKey: ["agent-session-logs", getOrgId(), getSessionId()],
-    queryFn: async () => [],
-    enabled: !!getOrgId() && !!getSessionId(),
-    staleTime: 1 * 60 * 1000,
-  }));
-}
-
-export function useApproveAgentAction() {
-  const queryClient = useQueryClient();
-  return createMutation(() => ({
-    mutationFn: async (_vars: {
-      orgId: string;
-      actionLogId: string;
-      approvedBy: string;
-    }) => {
-      return { approved: true };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["agent-sessions"],
-      });
-    },
-  }));
-}
-
-export function useRejectAgentAction() {
-  const queryClient = useQueryClient();
-  return createMutation(() => ({
-    mutationFn: async (_vars: {
-      orgId: string;
-      actionLogId: string;
-      rejectedBy: string;
-      reason: string;
-    }) => {
-      return { rejected: true };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["agent-sessions"],
       });
     },
   }));

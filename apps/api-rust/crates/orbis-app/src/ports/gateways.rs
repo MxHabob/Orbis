@@ -1,11 +1,31 @@
 use async_trait::async_trait;
 use orbis_domain::errors::DomainError;
 use crate::context::RequestContext;
+use orbis_domain::entities::ai::{AiMessage, AiToolDefinition, LlmChatOutput};
 
 #[async_trait]
 pub trait LlmGatewayPort: Send + Sync {
     async fn generate_text(&self, ctx: &RequestContext, model: &str, system_prompt: &str, user_prompt: &str, temperature: f64) -> Result<String, DomainError>;
+
+    async fn chat_with_tools(
+        &self,
+        ctx: &RequestContext,
+        model: &str,
+        system_prompt: &str,
+        messages: &[AiMessage],
+        tools: &[AiToolDefinition],
+        temperature: f64,
+    ) -> Result<LlmChatOutput, DomainError> {
+        let _ = tools;
+        let last_user_msg = messages.iter().rev().find(|m| m.role == "user").map(|m| m.content.as_str()).unwrap_or_default();
+        let text = self.generate_text(ctx, model, system_prompt, last_user_msg, temperature).await?;
+        Ok(LlmChatOutput {
+            content: Some(text),
+            tool_calls: vec![],
+        })
+    }
 }
+
 
 
 

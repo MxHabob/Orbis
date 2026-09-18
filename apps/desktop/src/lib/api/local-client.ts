@@ -752,4 +752,27 @@ export class LocalClient implements OrbisApiClient {
   async connectionOpenWindow(): Promise<void> {
     return invoke<void>("open_connection_window");
   }
+
+  // ── AI Platform ─────────────────────────────────────────────
+  async aiChat(request: import("./types").AiChatRequest): Promise<import("./types").AiChatResponse> {
+    return unwrap(await invoke("ai_chat", { request }));
+  }
+  async aiListTools(): Promise<import("./types").AiToolDefinition[]> {
+    return unwrap(await invoke("ai_list_tools"));
+  }
+  async aiSaveSession(session: import("./types").AiStoredSession): Promise<boolean> {
+    return unwrap(await invoke("ai_save_session", { session }));
+  }
+  async aiLoadSessions(orgId: string): Promise<import("./types").AiStoredSession[]> {
+    return unwrap(await invoke("ai_load_sessions", { orgId }));
+  }
+  async aiDeleteSession(orgId: string, sessionId: string): Promise<boolean> {
+    return unwrap(await invoke("ai_delete_session", { orgId, sessionId }));
+  }
+  async aiSaveContext(orgId: string, context: Record<string, unknown>): Promise<boolean> {
+    return unwrap(await invoke("ai_save_context", { orgId, context }));
+  }
+  async aiLoadContext(orgId: string): Promise<Record<string, unknown> | null> {
+    return unwrap(await invoke("ai_load_context", { orgId }));
+  }
 }

@@ -839,4 +839,54 @@ export class RemoteClient implements OrbisApiClient {
   async connectionOpenWindow(): Promise<void> {
     throw new Error("connectionOpenWindow is only available in desktop mode");
   }
+
+  // ── AI Platform ─────────────────────────────────────────────
+  async aiChat(req: import("./types").AiChatRequest): Promise<import("./types").AiChatResponse> {
+    return this.post("/api/v1/ai/chat", req);
+  }
+  async aiListTools(): Promise<import("./types").AiToolDefinition[]> {
+    return this.get("/api/v1/ai/tools");
+  }
+  async aiSaveSession(session: import("./types").AiStoredSession): Promise<boolean> {
+    if (typeof window !== "undefined" && window.localStorage) {
+      localStorage.setItem(`remote_ai_session_${session.id}`, JSON.stringify(session));
+    }
+    return true;
+  }
+  async aiLoadSessions(orgId: string): Promise<import("./types").AiStoredSession[]> {
+    const sessions: import("./types").AiStoredSession[] = [];
+    if (typeof window !== "undefined" && window.localStorage) {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("remote_ai_session_")) {
+          try {
+            const s = JSON.parse(localStorage.getItem(key) || "");
+            if (s && (!orgId || s.org_id === orgId)) sessions.push(s);
+          } catch {}
+        }
+      }
+    }
+    return sessions.sort((a, b) => b.updated_at - a.updated_at);
+  }
+  async aiDeleteSession(orgId: string, sessionId: string): Promise<boolean> {
+    if (typeof window !== "undefined" && window.localStorage) {
+      localStorage.removeItem(`remote_ai_session_${sessionId}`);
+    }
+    return true;
+  }
+  async aiSaveContext(orgId: string, context: Record<string, unknown>): Promise<boolean> {
+    if (typeof window !== "undefined" && window.localStorage) {
+      localStorage.setItem(`remote_ai_context_${orgId}`, JSON.stringify(context));
+    }
+    return true;
+  }
+  async aiLoadContext(orgId: string): Promise<Record<string, unknown> | null> {
+    if (typeof window !== "undefined" && window.localStorage) {
+      const raw = localStorage.getItem(`remote_ai_context_${orgId}`);
+      if (raw) {
+        try { return JSON.parse(raw); } catch {}
+      }
+    }
+    return null;
+  }
 }

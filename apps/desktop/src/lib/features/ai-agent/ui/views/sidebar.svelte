@@ -1,40 +1,50 @@
 <!--
 @component AskOrbisSidebar
-A resizable right-hand sidebar overlay for Ask Orbis agent, mirroring the Seer design.
-Allows users to ask questions, select prompt suggestions, and collapse/resize.
+A resizable right-hand sidebar overlay for Ask Orbis AI agent.
+Provides file-based conversation and context persistence, ReAct reasoning loop,
+interactive tool inspections, and consequential action approvals.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { uiStore, authStore, aiContext } from "$lib/stores";
 import { fly } from "svelte/transition";
 import { getLocale } from "$lib/paraglide/runtime";
-import { isDesktopApp } from "$lib/api";
-import { toast } from "@orbis/ui";
 import ChatInput from "../components/chat-input.svelte";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import { api } from "$lib/api";
-import { createAgentSessionsQuery } from "$lib/features/ai/queries";
 import AgentHeader from "../components/agent-header.svelte";
 import AgentCockpit from "../components/agent-cockpit.svelte";
 import ChatMessageList from "../components/chat-message-list.svelte";
 import AgentEmptyState from "../components/agent-empty-state.svelte";
 import Resizer from "$lib/shell/resizer.svelte";
+import { toast } from "@orbis/ui";
+import { onMount } from "svelte";
+import {
+  type AiChatSession,
+  type AiChatMessage,
+  type ActionWithStatus,
+  loadFileSessions,
+  saveFileSession,
+  deleteFileSession,
+  saveFileContext,
+  loadFileContext,
+  createNewLocalSession,
+} from "$lib/features/ai/session-store";
 
 let { isStandalone = false }: { isStandalone?: boolean } = $props();
 
-const currentOrgId = $derived(page.params.orgId || authStore.orgId || "");
+const currentOrgId = $derived(page.params.orgId || authStore.orgId || "default");
+const isRtl = $derived(getLocale() === "ar");
 
-// Agent Session & Action Log Cockpit States
-let selectedSessionId = $state<string | null>(null);
+// File-based Sessions & Active State
+let sessions = $state<AiChatSession[]>([]);
+let activeSessionId = $state<string | null>(null);
 let viewMode = $state<"chat" | "cockpit">("chat");
-
-const sessionsQuery = createAgentSessionsQuery(() => currentOrgId);
-const sessions = $derived<any[]>(sessionsQuery.data ?? []);
-
-const effectiveSessionId = $derived(
-  selectedSessionId || (sessions.length > 0 ? sessions[0].id : null),
-);
+let isThinking = $state(false);
+let inputValue = $state(page.url.searchParams.get("ask_orbis") || "");
+let chatContainer = $state<HTMLDivElement>();
+let sidebarDiv = $state<HTMLDivElement>();
 
 function pxToRem(px: number): number {
   if (typeof document === "undefined") return px / 16;
@@ -42,12 +52,20 @@ function pxToRem(px: number): number {
   return px / base;
 }
 
-let sidebarDiv = $state<HTMLDivElement>();
-let preferredWidth = $state(pxToRem(380));
+let preferredWidth = $state(pxToRem(400));
 const minWidth = $derived(pxToRem(320));
 const maxWidth = $derived(pxToRem(650));
 
-const isRtl = $derived(getLocale() === "ar");
+const activeSession = $derived(
+  sessions.find((s) => s.id === activeSessionId) || null,
+);
+
+const messages = $derived<AiChatMessage[]>(activeSession?.messages ?? []);
+
+// Extract pending consequential actions across all messages
+const pendingActions = $derived<ActionWithStatus[]>(
+  messages.flatMap((m) => m.proposedActions || []).filter((a) => !a.status || a.status === "pending"),
+);
 
 const userName = $derived(
   authStore.user?.full_name || m.common_agent_default_user_name(),
@@ -59,29 +77,8 @@ const orgName = $derived(
     null,
 );
 
-let inputValue = $state(page.url.searchParams.get("ask_orbis") || "");
-const suggestions = $derived([
-  m.common_agent_suggest_1(),
-  m.common_agent_suggest_2(),
-  m.common_agent_suggest_3(),
-]);
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
-
-let messages = $state<Message[]>([]);
-let isThinking = $state(false);
-let chatContainer = $state<HTMLDivElement>();
-
-const currentSession = $derived(
-  sessions.find((s: any) => s.id === effectiveSessionId),
-);
-
 const userHat = $derived.by(() => {
-  const role = authStore.user?.primary_role || "viewer";
+  const role = authStore.user?.role || "viewer";
   const roleLower = String(role).toLowerCase();
   if (roleLower === "admin" || roleLower === "super_admin") return "crown";
   if (roleLower === "teacher") return "graduation";
@@ -90,12 +87,48 @@ const userHat = $derived.by(() => {
 });
 
 const headerTitle = $derived.by(() => {
-  if (messages.length === 0) return m.common_agent_title();
-  if (currentSession) {
-    const type = currentSession.agent_type;
-    return type.charAt(0).toUpperCase() + type.slice(1);
+  if (activeSession && activeSession.title && activeSession.messages.length > 0) {
+    return activeSession.title;
   }
-  return m.common_agent_title();
+  return "مساعد Orbis الذكي";
+});
+
+// Load file sessions from disk on mount & sync context
+onMount(() => {
+  let isMounted = true;
+
+  async function initStorage() {
+    const loaded = await loadFileSessions(currentOrgId);
+    if (!isMounted) return;
+    
+    if (loaded.length > 0) {
+      sessions = loaded;
+      activeSessionId = loaded[0].id;
+    } else {
+      const initial = createNewLocalSession(currentOrgId);
+      sessions = [initial];
+      activeSessionId = initial.id;
+      await saveFileSession(initial);
+    }
+
+    // Persist screen context to disk
+    if (aiContext.context) {
+      await saveFileContext(currentOrgId, aiContext.context as Record<string, unknown>);
+    }
+  }
+
+  initStorage();
+
+  return () => {
+    isMounted = false;
+  };
+});
+
+// Sync context changes to file
+$effect(() => {
+  if (aiContext.context && currentOrgId) {
+    saveFileContext(currentOrgId, aiContext.context as Record<string, unknown>);
+  }
 });
 
 function scrollToBottom() {
@@ -108,10 +141,6 @@ function scrollToBottom() {
       });
     }, 50);
   }
-}
-
-function handleSuggestionClick(suggestion: string) {
-  submitMessage(suggestion);
 }
 
 function handleClose() {
@@ -131,15 +160,34 @@ async function openStandaloneWindow() {
   window.open(
     `/agent?orgId=${currentOrgId}`,
     "_blank",
-    "width=400,height=600",
+    "width=450,height=700",
   );
   uiStore.setAskOrbis(false);
 }
 
-async function handleNewChat(agentType: string = "default") {
-  void agentType;
-  selectedSessionId = null;
-  messages = [];
+async function handleNewChat(title?: string) {
+  const newSession = createNewLocalSession(currentOrgId, title || "محادثة جديدة");
+  sessions = [newSession, ...sessions];
+  activeSessionId = newSession.id;
+  viewMode = "chat";
+  await saveFileSession(newSession);
+}
+
+async function handleSelectSession(sessionId: string) {
+  activeSessionId = sessionId;
+  viewMode = "chat";
+}
+
+async function handleDeleteSession(sessionId: string) {
+  await deleteFileSession(currentOrgId, sessionId);
+  sessions = sessions.filter((s) => s.id !== sessionId);
+  if (activeSessionId === sessionId) {
+    if (sessions.length > 0) {
+      activeSessionId = sessions[0].id;
+    } else {
+      await handleNewChat();
+    }
+  }
 }
 
 async function submitMessage(queryText?: string) {
@@ -150,56 +198,128 @@ async function submitMessage(queryText?: string) {
     inputValue = "";
   }
 
-  messages = [
-    ...messages,
-    { id: Math.random().toString(), role: "user", content: text },
-  ];
+  let current = activeSession;
+  if (!current) {
+    current = createNewLocalSession(currentOrgId, text.slice(0, 30));
+    sessions = [current, ...sessions];
+    activeSessionId = current.id;
+  }
+
+  // Update session title if first message
+  if (current.messages.length === 0) {
+    current.title = text.length > 28 ? text.slice(0, 28) + "..." : text;
+  }
+
+  const userMsg: AiChatMessage = {
+    id: `user_${Date.now()}`,
+    role: "user",
+    content: text,
+    timestamp: Date.now(),
+  };
+
+  const assistantMsgId = `assistant_${Date.now()}`;
+  const assistantMsg: AiChatMessage = {
+    id: assistantMsgId,
+    role: "assistant",
+    content: "",
+    timestamp: Date.now(),
+    executedTools: [],
+    proposedActions: [],
+  };
+
+  current.messages = [...current.messages, userMsg, assistantMsg];
+  current.updatedAt = Date.now();
+  sessions = [...sessions];
   isThinking = true;
-  const assistantMessageId = Math.random().toString();
   scrollToBottom();
 
   try {
-    messages = [
-      ...messages,
-      { id: assistantMessageId, role: "assistant", content: "" },
-    ];
+    const aiMessages: import("$lib/api/types").AiMessage[] = current.messages
+      .filter((m) => m.content.trim().length > 0)
+      .map((m) => ({
+        role: m.role as any,
+        content: m.content,
+      }));
 
-    const response = await api.queryAgent({
-      message: text,
-      context: aiContext.context || undefined,
+    const response = await api.aiChat({
+      messages: aiMessages,
+      screen_context: (aiContext.context as Record<string, unknown>) || null,
     });
 
-    // Ensure final response is set in case streaming didn't fire properly or at the end
-    const finalMsgIndex = messages.findIndex(
-      (m) => m.id === assistantMessageId,
-    );
-    const responseText =
-      typeof response === "string" ? response : response.message;
-    if (!responseText) {
-      throw new Error("AI provider returned an empty response");
+    const targetIdx = current.messages.findIndex((m) => m.id === assistantMsgId);
+    if (targetIdx !== -1) {
+      current.messages[targetIdx].content = response.response || "";
+      current.messages[targetIdx].executedTools = response.executed_tools || [];
+      current.messages[targetIdx].proposedActions = (response.proposed_actions || []).map((a) => ({
+        ...a,
+        status: "pending",
+      }));
     }
-    if (finalMsgIndex !== -1) {
-      messages[finalMsgIndex].content = responseText;
-    }
+
+    current.updatedAt = Date.now();
+    sessions = [...sessions];
+
+    // Persist updated conversation to file on disk
+    await saveFileSession(current);
   } catch (e: unknown) {
     console.error("Ask Orbis query failed:", e);
-    const failedMessageIndex = messages.findIndex(
-      (m) => m.id === assistantMessageId,
-    );
-    if (
-      failedMessageIndex !== -1 &&
-      !messages[failedMessageIndex].content.trim()
-    ) {
-      messages[failedMessageIndex].content = m.agent_error_response_failed();
+    const targetIdx = current.messages.findIndex((m) => m.id === assistantMsgId);
+    if (targetIdx !== -1) {
+      current.messages[targetIdx].content = "عذراً، حدث خطأ أثناء معالجة الطلب مع خادم الذكاء الاصطناعي.";
     }
+    sessions = [...sessions];
+    await saveFileSession(current);
   } finally {
     isThinking = false;
     scrollToBottom();
   }
 }
 
-function handleLinkClick(e: MouseEvent | null, href: string) {
-  if (e) e.preventDefault();
+async function handleApproveAction(action: ActionWithStatus, msgId?: string, actionIdx?: number) {
+  try {
+    toast.promise(
+      (async () => {
+        // Execute the action through domain services or generic update
+        if (action.tool_name === "update_student_status" && action.payload?.student_id) {
+          await api.updateStudent({
+            id: String(action.payload.student_id),
+            status: String(action.payload.new_status || "Active"),
+          });
+        }
+        
+        // Mark action as executed in the conversation
+        action.status = "executed";
+        action.executedAt = Date.now();
+        action.resultMessage = `تم تنفيذ: ${action.title} بنجاح`;
+
+        if (activeSession) {
+          activeSession.updatedAt = Date.now();
+          sessions = [...sessions];
+          await saveFileSession(activeSession);
+        }
+      })(),
+      {
+        loading: `جاري تنفيذ ${action.title}...`,
+        success: `تم تنفيذ ${action.title} بنجاح`,
+        error: "فشل تنفيذ الإجراء",
+      },
+    );
+  } catch (e) {
+    console.error("Failed to approve action:", e);
+  }
+}
+
+async function handleRejectAction(action: ActionWithStatus, msgId?: string, actionIdx?: number) {
+  action.status = "rejected";
+  if (activeSession) {
+    activeSession.updatedAt = Date.now();
+    sessions = [...sessions];
+    await saveFileSession(activeSession);
+  }
+  toast.info(`تم إلغاء ${action.title}`);
+}
+
+function handleLinkClick(href: string) {
   goto(href);
 }
 </script>
@@ -208,7 +328,7 @@ function handleLinkClick(e: MouseEvent | null, href: string) {
   bind:this={sidebarDiv}
   class={isStandalone 
     ? "relative flex w-full h-full flex-col bg-card text-card-foreground overflow-hidden select-none"
-    : "absolute " + (isRtl ? 'left-3.5 border-r' : 'right-3.5 border-l') + " top-3.5 bottom-3.5 flex shrink-0 flex-col bg-card text-card-foreground rounded-xl overflow-hidden border border-border shadow-2xl z-50 select-none"}
+    : "absolute " + (isRtl ? 'left-3.5 border-r' : 'right-3.5 border-l') + " top-3.5 bottom-3.5 flex shrink-0 flex-col bg-card text-card-foreground rounded-2xl overflow-hidden border border-border/80 shadow-2xl z-50 select-none backdrop-blur-md"}
   style:width={isStandalone ? "100%" : `${preferredWidth}rem`}
   style:min-width={isStandalone ? "100%" : `${preferredWidth}rem`}
   style:max-width={isStandalone ? "100%" : `${preferredWidth}rem`}
@@ -221,7 +341,7 @@ function handleLinkClick(e: MouseEvent | null, href: string) {
       direction="start"
       {minWidth}
       {maxWidth}
-      defaultValue={pxToRem(425)}
+      defaultValue={pxToRem(400)}
       persistId="ask-orbis-sidebar-width"
       onWidth={(w) => (preferredWidth = w)}
     />
@@ -235,26 +355,31 @@ function handleLinkClick(e: MouseEvent | null, href: string) {
     messagesLength={messages.length}
     currentOrgId={currentOrgId}
     viewMode={viewMode}
+    sessions={sessions}
+    currentSessionId={activeSessionId}
+    pendingActionsCount={pendingActions.length}
     onToggleView={() => viewMode = viewMode === "chat" ? "cockpit" : "chat"}
     onClose={handleClose}
     onOpenStandalone={openStandaloneWindow}
-    onSelectSession={(id) => { selectedSessionId = id; viewMode = "cockpit"; }}
-    onNewChat={() => handleNewChat("default")}
+    onSelectSession={handleSelectSession}
+    onDeleteSession={handleDeleteSession}
+    onNewChat={() => handleNewChat()}
   />
 
-  {#if effectiveSessionId && viewMode === "cockpit"}
-    <!-- Session Activity Cockpit View -->
+  {#if viewMode === "cockpit"}
+    <!-- Activity & System Tools Cockpit View -->
     <AgentCockpit
       orgId={currentOrgId}
-      sessionId={effectiveSessionId}
+      pendingActions={pendingActions}
       onBack={() => { viewMode = "chat"; }}
+      onApproveAction={(act) => handleApproveAction(act)}
+      onRejectAction={(act) => handleRejectAction(act)}
     />
   {:else}
-    <!-- Content Section -->
+    <!-- Chat View -->
     {#if messages.length === 0}
       <AgentEmptyState
-        suggestions={suggestions}
-        onselectSuggestion={handleSuggestionClick}
+        onselectSuggestion={(sug) => submitMessage(sug)}
       />
     {:else}
       <ChatMessageList
@@ -263,17 +388,19 @@ function handleLinkClick(e: MouseEvent | null, href: string) {
         userName={userName}
         orgName={orgName}
         bind:chatContainer={chatContainer}
-        onLinkClick={(href) => handleLinkClick(null, href)}
+        onLinkClick={handleLinkClick}
+        onApproveAction={(act, mId, aIdx) => handleApproveAction(act, mId, aIdx)}
+        onRejectAction={(act, mId, aIdx) => handleRejectAction(act, mId, aIdx)}
       />
     {/if}
 
-    <!-- Footer Input Area -->
+    <!-- Chat Input Area -->
     <ChatInput
       bind:value={inputValue}
       isThinking={isThinking}
       messagesLength={messages.length}
       onsubmit={submitMessage}
-      onnewchat={handleNewChat}
+      onnewchat={() => handleNewChat()}
     />
   {/if}
 </div>

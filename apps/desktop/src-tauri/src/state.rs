@@ -10,7 +10,7 @@ use orbis_app::ports::repositories::{
     ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository,
     ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository,
     StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository,
-    AiRepository, WorkflowRepository, CurrencyRepository, PolicyRepository,
+    WorkflowRepository, CurrencyRepository, PolicyRepository,
     SettingsRepository, DashboardRepository, OverrideRequestRepository, CoursePrerequisiteRepository,
     GpaRecordRepository, PromotionRepository, DiscountTemplateRepository,
     SystemRepository,
@@ -79,7 +79,6 @@ pub struct AppState {
     pub payment_repo: Arc<dyn PaymentRepository>,
     pub document_repo: Arc<dyn DocumentRepository>,
     pub integration_repo: Arc<dyn IntegrationRepository>,
-    pub ai_repo: Arc<dyn AiRepository>,
     pub workflow_repo: Arc<dyn WorkflowRepository>,
     pub report_definition_repo: Arc<dyn ReportDefinitionRepository>,
     pub report_template_repo: Arc<dyn ReportTemplateRepository>,
@@ -118,12 +117,14 @@ pub struct AppState {
     pub integration_service: Arc<orbis_app::services::IntegrationService>,
     pub workflow_service: Arc<orbis_app::services::WorkflowService>,
     pub report_service: Arc<orbis_app::services::ReportService>,
+    pub ai_service: Arc<orbis_app::services::AiOrchestrationService>,
     // ── Bootstrap & System Services ─────────────────────────────
     pub system_repo: Arc<dyn SystemRepository>,
     pub bootstrap_service: Arc<orbis_app::services::BootstrapService>,
     pub system_service: Arc<orbis_app::services::SystemService>,
     pub entitlement_provider: Arc<dyn EntitlementProvider>,
     pub solver_sidecar: Arc<crate::features::solver_sidecar::SolverSidecarManager>,
+    pub app_data_dir: std::path::PathBuf,
 }
 
 
@@ -154,7 +155,6 @@ impl AppState {
         let finance_repo = Arc::new(orbis_infra::repositories::finance_repos::FinanceRepoImpl { db: db.clone() });
         let document_repo = Arc::new(orbis_infra::repositories::document_repos::DocumentRepoImpl { db: db.clone() });
         let integration_repo = Arc::new(orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() });
-        let ai_repo = Arc::new(orbis_infra::repositories::ai_repos::AiRepoImpl { db: db.clone() });
         let workflow_repo = Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
         let override_repo = Arc::new(orbis_infra::repositories::override_repos::OverrideRepoImpl { db: db.clone() });
         let progression_repo = Arc::new(orbis_infra::repositories::progression_repos::ProgressionRepoImpl { db: db.clone() });
@@ -344,6 +344,18 @@ impl AppState {
             report_org_context_resolver.clone(),
         ));
 
+        let ai_service = Arc::new(orbis_app::services::AiOrchestrationService::new(
+            integration_resolver.clone(),
+            permission_checker.clone(),
+            student_service.clone(),
+            academic_service.clone(),
+            assessment_service.clone(),
+            finance_service.clone(),
+            scheduling_service.clone(),
+            report_service.clone(),
+            organization_service.clone(),
+        ));
+
         // ── Bootstrap & System Services ─────────────────────────────
         let system_repo_impl = Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl { db: db.clone() });
         let entitlement_provider: Arc<dyn EntitlementProvider> = Arc::new(
@@ -409,7 +421,6 @@ impl AppState {
             payment_repo: finance_repo.clone(),
             document_repo,
             integration_repo,
-            ai_repo,
             workflow_repo,
             report_definition_repo,
             report_template_repo,
@@ -446,11 +457,13 @@ impl AppState {
             integration_service,
             workflow_service,
             report_service,
+            ai_service,
             system_repo: system_repo_impl,
             bootstrap_service,
             system_service,
             entitlement_provider,
             solver_sidecar,
+            app_data_dir: app_data_dir.to_path_buf(),
         })
     }
 
