@@ -1,14 +1,15 @@
 <!--
   Step 5: Curriculum & Subjects (المواد الدراسية)
   List of subjects with toggle checkboxes, add custom subjects, full height utilization.
+  Allows clicking anywhere on the card to toggle activation with @orbis/ui/checkbox.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
-import { Checkbox } from "@orbis/ui/checkbox";
 import { Button } from "@orbis/ui/button";
-import { Plus, BookOpen, Trash2 } from "@lucide/svelte";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { Plus, BookOpen } from "@lucide/svelte";
 
 import { onboardingState } from "../state.svelte";
 import { l } from "$lib/core/i18n";
@@ -46,8 +47,8 @@ function handleAddSubject() {
         {onboardingState.subjectLabel}
       </h3>
     </div>
-    <span class="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full font-mono">
-      {onboardingState.academics.enabledSubjects} {m.common_word_active ? m.common_word_active() : "مفعلة"}
+    <span class="text-[11px] font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full font-mono">
+      {onboardingState.academics.enabledSubjects} / {onboardingState.academics.subjects.length} {m.common_word_active ? m.common_word_active() : "مفعلة"}
     </span>
   </div>
 
@@ -60,7 +61,7 @@ function handleAddSubject() {
       <Input bind:value={newSubCode} placeholder="CHM" class="h-7.5 text-xs font-mono uppercase bg-background text-center" />
       <Input bind:value={newSubName} placeholder="Subject Name (English)" class="h-7.5 text-xs font-sans bg-background text-left" style="direction: ltr;" />
 
-      <Button size="sm" class="h-7.5 px-3 text-xs gap-1 font-bold cursor-pointer" onclick={handleAddSubject} disabled={!newSubNameAr.trim() && !newSubName.trim()}>
+      <Button size="sm" class="h-7.5 px-3.5 text-xs gap-1 font-bold cursor-pointer" onclick={handleAddSubject} disabled={!newSubNameAr.trim() && !newSubName.trim()}>
         <Plus size={13} />
         <span>{m.common_onboarding_add()}</span>
       </Button>
@@ -70,19 +71,36 @@ function handleAddSubject() {
   <!-- Subjects Multi-Column Responsive Grid (Expands to fill 100% available height) -->
   <div class="flex-1 min-h-0 overflow-y-auto scrollbar-hide grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2.5 p-1">
     {#each onboardingState.academics.subjects as sub (sub.code)}
-      <div class="flex items-center justify-between p-2.5 rounded-2xl border bg-card hover:bg-muted/15 transition-all {sub.enabled ? 'border-border/80 shadow-2xs' : 'border-border/30 opacity-40'}">
+      <button
+        type="button"
+        onclick={() => {
+          sub.enabled = !sub.enabled;
+          onboardingState.save();
+        }}
+        class="flex items-center justify-between p-2.5 rounded-2xl border text-start transition-all duration-200 cursor-pointer select-none group
+          {sub.enabled
+            ? 'border-primary/50 bg-primary/5 shadow-2xs hover:border-primary/70 hover:bg-primary/10'
+            : 'border-border/50 bg-card/60 opacity-50 hover:opacity-80 hover:bg-muted/30'}"
+      >
         <div class="flex items-center gap-2.5 min-w-0">
-          <div class="size-3 rounded-full shrink-0" style="background-color: {sub.color};"></div>
+          <div
+            class="size-3 rounded-full shrink-0 transition-transform group-hover:scale-110"
+            style="background-color: {sub.color};"
+          ></div>
           <div class="flex items-center gap-1.5 min-w-0">
-            <span class="font-bold text-foreground text-xs truncate">{l(sub.name_ar, sub.name)}</span>
-            <span class="text-[9.5px] font-mono text-muted-foreground bg-muted px-1.5 py-0.2 rounded border border-border/50 shrink-0 uppercase">
+            <span class="font-bold text-foreground text-xs truncate {sub.enabled ? 'text-foreground' : 'text-muted-foreground'}">
+              {l(sub.name_ar, sub.name)}
+            </span>
+            <span class="text-[9.5px] font-mono text-muted-foreground bg-muted/70 px-1.5 py-0.2 rounded border border-border/50 shrink-0 uppercase">
               {sub.code}
             </span>
           </div>
         </div>
 
-        <Checkbox bind:checked={sub.enabled} class="cursor-pointer shrink-0 ms-2" />
-      </div>
+        <div class="pointer-events-none ms-2 shrink-0 flex items-center justify-center">
+          <Checkbox checked={sub.enabled} />
+        </div>
+      </button>
     {/each}
   </div>
 </div>
