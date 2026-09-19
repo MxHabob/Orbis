@@ -17,7 +17,7 @@ onMount(async () => {
   }
 
   const readiness = await systemStore.loadReadiness();
-  if (readiness && readiness.state === "Operational") {
+  if (readiness && (readiness.state === "operational" || readiness.state === "Operational")) {
     goto(localizeHref(`/${authStore.orgId}`), { replaceState: true });
   }
 });

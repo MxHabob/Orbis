@@ -389,12 +389,13 @@ export class OnboardingState {
 
     if (authStore.isAuthenticated && !this.profile.orgName) {
       try {
-        const org = await api.getCurrentOrg();
+        const org: any = await api.getCurrentOrg();
         if (org) {
           if (org.name) this.profile.orgName = org.name;
           if (org.name_ar) this.profile.orgNameAr = org.name_ar;
           if (org.currency) this.profile.currency = org.currency;
           if (org.timezone) this.profile.timezone = org.timezone;
+          if (org.locale) this.profile.locale = org.locale;
         }
       } catch {
         // Silently continue with defaults
