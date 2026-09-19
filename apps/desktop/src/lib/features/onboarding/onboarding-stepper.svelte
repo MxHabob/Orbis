@@ -63,13 +63,5 @@ const currentStepObj = $derived(steps[currentStep] || steps[0]);
         ></button>
       {/each}
     </div>
-
-    <!-- Step Counter -->
-    <span class="font-mono text-xs font-semibold text-muted-foreground tracking-wider border-s border-border/50 ps-2.5">
-      <span class="text-foreground font-bold">{String(currentStep + 1).padStart(2, "0")}</span>
-      <span class="opacity-40">/</span>
-      <span>{String(totalSteps).padStart(2, "0")}</span>
-    </span>
-
   </div>
 </div>

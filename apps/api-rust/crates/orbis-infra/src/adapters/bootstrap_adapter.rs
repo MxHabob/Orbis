@@ -1047,8 +1047,8 @@ impl BulkBootstrapPort for BootstrapAdapterImpl {
         for p in &data.periods {
             txn.execute(Statement::from_sql_and_values(
                 txn.get_database_backend(),
-                "INSERT INTO academic_periods (id, org_id, year_id, name, name_ar, period_type, start_date, end_date, is_current, weight, status, is_locked, created_at, updated_at) \
-                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, 0, 100, 'active', 0, $9, $10 \
+                "INSERT INTO academic_periods (id, org_id, year_id, name, name_ar, period_type, start_date, end_date, status, is_locked, is_enrollment_open, is_grade_entry_open, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, 'active', 0, 1, 1, $9, $10 \
                  WHERE NOT EXISTS (SELECT 1 FROM academic_periods WHERE org_id = $2 AND year_id = $3 AND name = $4)",
                 vec![
                     p.id.to_string().into(),
