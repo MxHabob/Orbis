@@ -347,7 +347,13 @@ export class LocalClient implements OrbisApiClient {
 
   // ── Scheduling ──────────────────────────────────────────────
   async createRoom(req: CreateRoomRequest): Promise<RoomDto> {
-    return unwrap(await invoke("scheduling_create_room", { request: req }));
+    const payload = {
+      name: req.name,
+      capacity: req.capacity,
+      roomType: req.room_type ?? (req as any).roomType ?? "classroom",
+      room_type: req.room_type ?? (req as any).roomType ?? "classroom",
+    };
+    return unwrap(await invoke("scheduling_create_room", { request: payload }));
   }
   async listRooms(): Promise<RoomDto[]> {
     return unwrap(await invoke("scheduling_list_rooms"));

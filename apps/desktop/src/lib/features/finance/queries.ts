@@ -81,13 +81,15 @@ export function createFeeTemplatesQuery(orgId: string | (() => string)) {
 /** Student fees. Pass orgId to get all fees for org, or enrollmentId / filter params. */
 export function createStudentFeesQuery(
   orgOrEnrollmentId: () => string,
-  filter?: () => StudentFeeFilterParams | undefined,
-  enabled: () => boolean = () => true,
+  filter?: (() => StudentFeeFilterParams | undefined) | StudentFeeFilterParams,
+  enabled: (() => boolean) | boolean = () => true,
 ) {
+  const getFilter = typeof filter === "function" ? filter : () => (typeof filter === "object" ? filter : undefined);
+  const getEnabled = typeof enabled === "function" ? enabled : () => (typeof enabled === "boolean" ? enabled : true);
   return createQuery(() => ({
-    queryKey: queryKeys.finance.studentFees(filter?.()),
-    queryFn: () => api.listStudentFees(filter?.()),
-    enabled: !!orgOrEnrollmentId() && enabled(),
+    queryKey: queryKeys.finance.studentFees(getFilter()),
+    queryFn: () => api.listStudentFees(getFilter()),
+    enabled: !!orgOrEnrollmentId() && getEnabled(),
     staleTime: 2 * 60 * 1000,
   }));
 }

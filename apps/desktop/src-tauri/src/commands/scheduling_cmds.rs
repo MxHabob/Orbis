@@ -22,8 +22,12 @@ pub struct RoomDto {
 pub struct CreateRoomInput {
     pub name: String,
     pub capacity: i32,
-    #[serde(rename = "roomType")]
+    #[serde(rename = "roomType", alias = "room_type", default = "default_room_type")]
     pub room_type: String,
+}
+
+fn default_room_type() -> String {
+    "classroom".to_string()
 }
 
 #[derive(Serialize)]

@@ -30,7 +30,7 @@ let { data, children }: { data: { orgId: string }; children: Snippet } =
 let sidebarStatsReady = $state(false);
 const feesQuery = createStudentFeesQuery(
   () => data.orgId,
-  true,
+  undefined,
   () => sidebarStatsReady,
 );
 const treasuriesQuery = createCashAccountsQuery(
