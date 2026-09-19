@@ -4,47 +4,45 @@
   add new currencies, edit currency configurations, and delete unused currencies.
 -->
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { onMount } from "svelte";
 import { api } from "$lib/api";
+import * as m from "$lib/paraglide/messages";
+import { confirmStore } from "$lib/stores";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Check,
+    Edit2,
+    Globe,
+    Info,
+    Plus,
+    RefreshCw,
+    Trash2,
+    X
+} from "@lucide/svelte";
+import {
+    FormField,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+    toast,
 } from "@orbis/ui";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
-import { FormField } from "@orbis/ui";
 import { Input } from "@orbis/ui/input";
-import { confirmStore } from "$lib/stores";
-import { Switch } from "@orbis/ui/switch";
-import { Skeleton } from "@orbis/ui/skeleton";
-import { toast } from "@orbis/ui";
 import {
-  Coins,
-  RefreshCw,
-  Edit2,
-  Trash2,
-  Plus,
-  Check,
-  X,
-  Sparkles,
-  Globe,
-  Info,
-} from "@lucide/svelte";
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+} from "@orbis/ui/select";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { Switch } from "@orbis/ui/switch";
+import { onMount } from "svelte";
 import { fade, slide } from "svelte/transition";
 
-import { l, isAr } from "$lib/core/i18n";
+import { l } from "$lib/core/i18n";
 import AddCurrencyDialog from "$lib/features/settings/components/add-currency-dialog.svelte";
 
 let orgId = $derived((page.params.orgId as string) || "");
