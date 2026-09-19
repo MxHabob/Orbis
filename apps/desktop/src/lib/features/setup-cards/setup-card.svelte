@@ -1,12 +1,25 @@
 <!--
   Setup Card — individual action card for progressive onboarding item.
-  Shows title, description, status badge, and action button.
+  Matches DesktopBanner design language with dot-grid aesthetic, clean borders, and smooth transitions.
 -->
 <script lang="ts">
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import type { SetupItem } from "$lib/api/types";
-import { CheckCircle2, Circle, ArrowRight, ArrowLeft } from "@lucide/svelte";
+import {
+  CheckCircle2,
+  Circle,
+  ArrowRight,
+  ArrowLeft,
+  Calendar,
+  GraduationCap,
+  BookOpen,
+  Building2,
+  Clock,
+  Coins,
+  Layers,
+  Sparkles,
+} from "@lucide/svelte";
 
 let {
   item,
@@ -20,51 +33,74 @@ let {
 
 const isArabic = $derived(getLocale().startsWith("ar"));
 const title = $derived(isArabic && item.label_ar ? item.label_ar : item.label);
+
+// Icon mapping per setup item
+const iconMap: Record<string, any> = {
+  academic_year: Calendar,
+  classes: GraduationCap,
+  subjects: BookOpen,
+  rooms: Building2,
+  time_slots: Clock,
+  fee_templates: Coins,
+  org_units: Layers,
+};
+
+const IconComponent = $derived(iconMap[item.key] ?? Sparkles);
 </script>
 
 <div
-  class="group relative flex items-center justify-between p-4 rounded-xl border transition-all duration-200 {item.is_completed
+  class="group/item relative flex items-center justify-between p-3 rounded-lg border transition-all duration-200 {item.is_completed
     ? 'bg-emerald-500/5 border-emerald-500/20 text-muted-foreground'
-    : 'bg-card/80 hover:bg-card border-border hover:border-primary/40 shadow-sm hover:shadow-md'}"
+    : 'border-border bg-card hover:bg-card/90 hover:border-primary/40 shadow-xs'}"
 >
-  <div class="flex items-center gap-3.5 min-w-0">
+  <div class="flex items-center gap-3 min-w-0">
     <div
-      class="shrink-0 flex items-center justify-center w-8 h-8 rounded-lg {item.is_completed
-        ? 'bg-emerald-500/10 text-emerald-500'
-        : 'bg-primary/10 text-primary'}"
+      class="shrink-0 flex items-center justify-center size-8 rounded-lg border transition-colors {item.is_completed
+        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500'
+        : 'border-border bg-background text-muted-foreground group-hover/item:text-foreground group-hover/item:border-primary/50'}"
     >
-      {#if item.is_completed}
-        <CheckCircle2 class="w-4 h-4" />
-      {:else}
-        <Circle class="w-4 h-4" />
-      {/if}
+      <svelte:component this={IconComponent} class="size-4" />
     </div>
+
     <div class="flex flex-col min-w-0">
       <div class="flex items-center gap-2">
-        <span class="font-medium text-sm text-foreground truncate {item.is_completed ? 'line-through opacity-70' : ''}">
+        <span class="font-medium text-xs text-foreground truncate {item.is_completed ? 'line-through opacity-70' : ''}">
           {title}
         </span>
         {#if item.is_required && !item.is_completed}
-          <span class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
+          <span class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
             {isArabic ? "مطلوب" : "Required"}
           </span>
         {/if}
       </div>
+      <p class="text-[10px] text-muted-foreground truncate">
+        {#if item.is_completed}
+          {isArabic ? "مكتمل وجاهز للعمل" : "Completed and configured"}
+        {:else}
+          {isArabic ? "بانتظار التهيئة والإعداد" : "Pending configuration"}
+        {/if}
+      </p>
     </div>
   </div>
 
-  {#if !item.is_completed}
-    <button
-      type="button"
-      onclick={() => goto(localizeHref(`/${orgId}${href}`))}
-      class="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-primary/10"
-    >
-      <span>{isArabic ? "إعداد" : "Configure"}</span>
-      {#if isArabic}
-        <ArrowLeft class="w-3.5 h-3.5" />
-      {:else}
-        <ArrowRight class="w-3.5 h-3.5" />
-      {/if}
-    </button>
-  {/if}
+  <div class="shrink-0 flex items-center gap-2">
+    {#if item.is_completed}
+      <div class="flex items-center gap-1 text-[11px] font-medium text-emerald-500">
+        <CheckCircle2 class="size-3.5" />
+      </div>
+    {:else}
+      <button
+        type="button"
+        onclick={() => goto(localizeHref(`/${orgId}${href}`))}
+        class="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors px-2.5 py-1 rounded-md border border-primary/20 bg-primary/5 hover:bg-primary/10"
+      >
+        <span>{isArabic ? "إعداد" : "Configure"}</span>
+        {#if isArabic}
+          <ArrowLeft class="size-3" />
+        {:else}
+          <ArrowRight class="size-3" />
+        {/if}
+      </button>
+    {/if}
+  </div>
 </div>
