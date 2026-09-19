@@ -118,6 +118,8 @@ pub struct AppState {
     pub workflow_service: Arc<orbis_app::services::WorkflowService>,
     pub report_service: Arc<orbis_app::services::ReportService>,
     pub ai_service: Arc<orbis_app::services::AiOrchestrationService>,
+    pub autopilot_service: Arc<orbis_app::services::AutopilotService>,
+    pub autopilot_task_repo: Arc<dyn orbis_app::ports::repositories::AutopilotTaskRepository>,
     // ── Bootstrap & System Services ─────────────────────────────
     pub system_repo: Arc<dyn SystemRepository>,
     pub bootstrap_service: Arc<orbis_app::services::BootstrapService>,
@@ -186,12 +188,10 @@ impl AppState {
             db: db.clone(),
         });
 
-        let autopilot_engine = Arc::new(orbis_app::autopilot::engine::AutopilotEngine {
-            policy_repo: policy_repo.clone(),
-        });
+        let autopilot_task_repo = Arc::new(orbis_infra::autopilot::task_repo::PgAutopilotTaskRepo::new(db.clone()));
 
         let event_bus = Arc::new(orbis_infra::event_bus::MemoryEventBus {
-            workflow_engine: Some(autopilot_engine),
+            workflow_engine: None,
         });
         // Generate or load a per-installation JWT secret.
         // Stored as a file in AppData — never hardcoded.
@@ -344,6 +344,32 @@ impl AppState {
             report_org_context_resolver.clone(),
         ));
 
+        let autopilot_engine = Arc::new(orbis_app::autopilot::engine::AutopilotEngine::new(
+            policy_repo.clone(),
+            autopilot_task_repo.clone(),
+            calendar_service.clone(),
+            progression_service.clone(),
+            finance_service.clone(),
+            report_service.clone(),
+            workflow_service.clone(),
+        ));
+
+        let autopilot_evaluator = Arc::new(orbis_app::autopilot::evaluator::AutopilotEvaluator::new(
+            policy_repo.clone(),
+            calendar_repo.clone(),
+            calendar_repo.clone(),
+            student_repo.clone(),
+            finance_repo.clone(),
+        ));
+
+        let autopilot_service = Arc::new(orbis_app::services::AutopilotService::new(
+            autopilot_evaluator.clone(),
+            autopilot_engine.clone(),
+            autopilot_task_repo.clone(),
+            policy_repo.clone(),
+            permission_checker.clone(),
+        ));
+
         let ai_service = Arc::new(orbis_app::services::AiOrchestrationService::new(
             integration_resolver.clone(),
             permission_checker.clone(),
@@ -354,7 +380,7 @@ impl AppState {
             scheduling_service.clone(),
             report_service.clone(),
             organization_service.clone(),
-        ));
+        ).with_autopilot_service(autopilot_service.clone()));
 
         // ── Bootstrap & System Services ─────────────────────────────
         let system_repo_impl = Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl { db: db.clone() });
@@ -380,10 +406,10 @@ impl AppState {
 
         let solver_sidecar = Arc::new(crate::features::solver_sidecar::SolverSidecarManager::new());
 
-        Ok(Self {
+        let state = Self {
             db,
             active_session,
-            org_repo,
+            org_repo: org_repo.clone(),
             org_unit_repo,
             user_repo,
             person_repo,
@@ -458,13 +484,24 @@ impl AppState {
             workflow_service,
             report_service,
             ai_service,
+            autopilot_service: autopilot_service.clone(),
+            autopilot_task_repo: autopilot_task_repo.clone(),
             system_repo: system_repo_impl,
             bootstrap_service,
             system_service,
             entitlement_provider,
             solver_sidecar,
             app_data_dir: app_data_dir.to_path_buf(),
-        })
+        };
+
+        // Spawn Autopilot Background Scheduler (checks every 60 seconds)
+        let autopilot_scheduler = Arc::new(orbis_infra::autopilot::scheduler::AutopilotScheduler::new(
+            autopilot_service.clone(),
+            org_repo.clone(),
+        ));
+        let _scheduler_handle = autopilot_scheduler.spawn(60);
+
+        Ok(state)
     }
 
     pub fn get_active_session(&self) -> Option<ActiveSession> {

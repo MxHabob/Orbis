@@ -183,4 +183,167 @@ impl CalendarService {
     pub async fn list_period_templates(&self, org_id: Uuid) -> Result<Vec<PeriodTemplate>, DomainError> {
         self.template_repo.find_by_org(org_id).await
     }
+
+    /// Activate an academic year
+    pub async fn activate_year(&self, ctx: &RequestContext, year_id: Uuid) -> Result<AcademicYear, DomainError> {
+        self.permission_checker.check(ctx, Permission::PeriodWrite).await?;
+        let mut year = self.year_repo.find_by_id(year_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Academic year {} not found", year_id)))?;
+
+        year.status = "active".to_string();
+        year.updated_at = Utc::now();
+        self.year_repo.save(&year).await?;
+        Ok(year)
+    }
+
+    /// Mark academic year as closing (initiates promotion dry-run)
+    pub async fn start_year_closing(&self, ctx: &RequestContext, year_id: Uuid) -> Result<AcademicYear, DomainError> {
+        self.permission_checker.check(ctx, Permission::PeriodWrite).await?;
+        let mut year = self.year_repo.find_by_id(year_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Academic year {} not found", year_id)))?;
+
+        year.status = "closing".to_string();
+        year.updated_at = Utc::now();
+        self.year_repo.save(&year).await?;
+        Ok(year)
+    }
+
+    /// Close an academic year
+    pub async fn close_year(&self, ctx: &RequestContext, year_id: Uuid) -> Result<AcademicYear, DomainError> {
+        self.permission_checker.check(ctx, Permission::PeriodWrite).await?;
+        let mut year = self.year_repo.find_by_id(year_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Academic year {} not found", year_id)))?;
+
+        year.status = "closed".to_string();
+        year.is_locked = true;
+        year.locked_at = Some(Utc::now());
+        year.updated_at = Utc::now();
+        self.year_repo.save(&year).await?;
+        Ok(year)
+    }
+
+    /// Transition academic period to a new state
+    pub async fn transition_period_state(
+        &self,
+        ctx: &RequestContext,
+        period_id: Uuid,
+        new_state: AcademicPeriodState,
+    ) -> Result<AcademicPeriod, DomainError> {
+        self.permission_checker.check(ctx, Permission::PeriodWrite).await?;
+        let mut period = self.period_repo.find_by_id(period_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Academic period {} not found", period_id)))?;
+
+        let now = Utc::now();
+        period.state = new_state;
+        period.updated_at = now;
+
+        match new_state {
+            AcademicPeriodState::EnrollmentOpen => {
+                period.is_enrollment_open = true;
+            }
+            AcademicPeriodState::ActiveTeaching => {
+                period.is_enrollment_open = true;
+                period.is_grade_entry_open = true;
+            }
+            AcademicPeriodState::GradeSubmission => {
+                period.is_enrollment_open = false;
+                period.is_grade_entry_open = true;
+            }
+            AcademicPeriodState::Closed | AcademicPeriodState::Archived => {
+                period.is_enrollment_open = false;
+                period.is_grade_entry_open = false;
+                period.is_locked = true;
+                period.locked_at = Some(now);
+            }
+            _ => {}
+        }
+
+        self.period_repo.save(&period).await?;
+
+        let event = DomainEvent::AcademicPeriodStateChanged {
+            period_id,
+            org_id: period.org_id,
+            new_state: new_state.to_string(),
+            timestamp: now,
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(period)
+    }
+
+    /// Open enrollment window for a period
+    pub async fn open_enrollment_window(&self, ctx: &RequestContext, period_id: Uuid) -> Result<AcademicPeriod, DomainError> {
+        self.permission_checker.check(ctx, Permission::PeriodWrite).await?;
+        let mut period = self.period_repo.find_by_id(period_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Academic period {} not found", period_id)))?;
+
+        period.is_enrollment_open = true;
+        period.updated_at = Utc::now();
+        self.period_repo.save(&period).await?;
+        Ok(period)
+    }
+
+    /// Close enrollment window for a period
+    pub async fn close_enrollment_window(&self, ctx: &RequestContext, period_id: Uuid) -> Result<AcademicPeriod, DomainError> {
+        self.permission_checker.check(ctx, Permission::PeriodWrite).await?;
+        let mut period = self.period_repo.find_by_id(period_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Academic period {} not found", period_id)))?;
+
+        period.is_enrollment_open = false;
+        period.updated_at = Utc::now();
+        self.period_repo.save(&period).await?;
+        Ok(period)
+    }
+
+    /// Open grade entry window for a period
+    pub async fn open_grade_entry_window(&self, ctx: &RequestContext, period_id: Uuid) -> Result<AcademicPeriod, DomainError> {
+        self.permission_checker.check(ctx, Permission::PeriodWrite).await?;
+        let mut period = self.period_repo.find_by_id(period_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Academic period {} not found", period_id)))?;
+
+        period.is_grade_entry_open = true;
+        period.updated_at = Utc::now();
+        self.period_repo.save(&period).await?;
+        Ok(period)
+    }
+
+    /// Close grade entry window for a period
+    pub async fn close_grade_entry_window(&self, ctx: &RequestContext, period_id: Uuid) -> Result<AcademicPeriod, DomainError> {
+        self.permission_checker.check(ctx, Permission::PeriodWrite).await?;
+        let mut period = self.period_repo.find_by_id(period_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Academic period {} not found", period_id)))?;
+
+        period.is_grade_entry_open = false;
+        period.updated_at = Utc::now();
+        self.period_repo.save(&period).await?;
+        Ok(period)
+    }
+
+    /// Auto-lock an academic period (grades, attendance, enrollment locked)
+    pub async fn lock_period(&self, ctx: &RequestContext, period_id: Uuid) -> Result<AcademicPeriod, DomainError> {
+        self.permission_checker.check(ctx, Permission::PeriodWrite).await?;
+        let mut period = self.period_repo.find_by_id(period_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Academic period {} not found", period_id)))?;
+
+        let now = Utc::now();
+        period.is_locked = true;
+        period.locked_at = Some(now);
+        period.locked_by = ctx.actor.id();
+        period.is_enrollment_open = false;
+        period.is_grade_entry_open = false;
+        period.state = AcademicPeriodState::Closed;
+        period.updated_at = now;
+
+        self.period_repo.save(&period).await?;
+
+        let event = DomainEvent::AcademicPeriodStateChanged {
+            period_id,
+            org_id: period.org_id,
+            new_state: "closed".to_string(),
+            timestamp: now,
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(period)
+    }
 }

@@ -185,3 +185,4 @@ pub mod integration_routes;
 pub mod report_routes;
 pub mod override_routes;
 pub mod ai_routes;
+pub mod autopilot_routes;

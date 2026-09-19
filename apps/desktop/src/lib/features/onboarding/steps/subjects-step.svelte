@@ -1,6 +1,6 @@
 <!--
-  Step 6: School Subjects Setup
-  List of subjects with toggle checkboxes, add custom subjects.
+  Step 5: Curriculum & Subjects (المواد الدراسية)
+  List of subjects with toggle checkboxes, add custom subjects, high density layout.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -8,20 +8,26 @@ import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Button } from "@orbis/ui/button";
-import { Plus } from "@lucide/svelte";
+import { Plus, BookOpen, Trash2 } from "@lucide/svelte";
 
 import { onboardingState } from "../state.svelte";
+import { l } from "$lib/core/i18n";
 
 let newSubCode = $state("");
 let newSubName = $state("");
 let newSubNameAr = $state("");
-let newSubColor = $state("#f59e0b");
+let newSubColor = $state("#3b82f6");
 
 function handleAddSubject() {
+  const nameAr = newSubNameAr.trim() || newSubName.trim();
+  const nameEn = newSubName.trim() || newSubNameAr.trim();
+  const code = newSubCode.trim().toUpperCase() || nameEn.slice(0, 3).toUpperCase();
+  if (!nameAr) return;
+
   const success = onboardingState.addSubject(
-    newSubCode,
-    newSubName,
-    newSubNameAr,
+    code,
+    nameEn,
+    nameAr,
     newSubColor,
   );
   if (success) {
@@ -32,71 +38,51 @@ function handleAddSubject() {
 }
 </script>
 
-<div class="w-full space-y-6">
+<div class="w-full space-y-3 text-start">
+  <div class="flex items-center justify-between border-b border-border/50 pb-1.5">
+    <div class="flex items-center gap-2">
+      <BookOpen size={16} class="text-primary shrink-0" />
+      <h3 class="text-xs font-bold text-foreground">
+        {onboardingState.subjectLabel}
+      </h3>
+    </div>
+    <span class="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+      {onboardingState.academics.enabledSubjects} {m.common_word_active ? m.common_word_active() : "مفعلة"}
+    </span>
+  </div>
 
-  <!-- Subjects List (Clean, borderless list of rows) -->
-  <div class="w-full overflow-x-auto scrollbar-hide border border-border/60 rounded-2xl bg-card shadow-sm">
-    <div class="min-w-3xl divide-y divide-border/60">
-      <!-- Header Row -->
-      <div class="grid grid-cols-[50px_1.8fr_1fr_2fr_auto] gap-4 p-4 bg-muted/20 text-xs font-semibold text-muted-foreground select-none text-start items-center">
-        <span>{m.common_td_text_color()}</span>
-        <span>{m.common_onboarding_subject_name_ar()}</span>
-        <span>{m.common_subject_label_code()}</span>
-        <span>{m.common_onboarding_subjects_table_name_en()}</span>
-        <span class="w-12 text-center">{m.common_word_status()}</span>
-      </div>
+  <!-- Inline Quick Add Subject Card -->
+  <div class="rounded-xl border border-primary/20 bg-primary/5 p-2.5 shadow-2xs">
+    <div class="grid grid-cols-[36px_2fr_1fr_2fr_auto] gap-2 items-center">
+      <input type="color" bind:value={newSubColor} class="size-7 rounded-lg border border-border/70 bg-transparent cursor-pointer p-0 shrink-0" />
+      
+      <Input bind:value={newSubNameAr} placeholder="اسم المادة (عربي)" class="h-7.5 text-xs font-bold font-sans bg-background" />
+      <Input bind:value={newSubCode} placeholder="CHM" class="h-7.5 text-xs font-mono uppercase bg-background text-center" />
+      <Input bind:value={newSubName} placeholder="Subject Name (English)" class="h-7.5 text-xs font-sans bg-background text-left" style="direction: ltr;" />
 
-      <!-- Inline Add Subject Row -->
-      <div class="grid grid-cols-[50px_1.8fr_1fr_2fr_auto] gap-4 px-4 py-2.5 items-center bg-muted/5 transition-colors text-start">
-        <!-- Color Picker -->
-        <div class="flex justify-center items-center">
-          <input type="color" bind:value={newSubColor} class="w-7 h-7 rounded-full border border-border/60 bg-transparent cursor-pointer p-0 overflow-hidden shrink-0" />
-        </div>
+      <Button size="sm" class="h-7.5 px-3 text-xs gap-1 font-bold cursor-pointer" onclick={handleAddSubject} disabled={!newSubNameAr.trim() && !newSubName.trim()}>
+        <Plus size={13} />
+        <span>{m.common_onboarding_add()}</span>
+      </Button>
+    </div>
+  </div>
 
-        <!-- Name Arabic -->
-        <FormField label={m.common_onboarding_subject_name_ar()} required>{#snippet children()}<Input bind:value={newSubNameAr} placeholder={m.common_onboarding_subjects_placeholder_ar()} class="h-8 text-xs font-bold font-sans bg-background/50 border-dashed border-border/80" />{/snippet}</FormField>
-
-        <!-- Code -->
-        <FormField label={m.common_subject_label_code()} required>{#snippet children()}<Input bind:value={newSubCode} placeholder="CHM" class="h-8 text-xs font-mono uppercase bg-background/50 border-dashed border-border/80 text-center" />{/snippet}</FormField>
-
-        <!-- Name English -->
-        <FormField label={m.common_onboarding_subjects_table_name_en()}>{#snippet children()}<Input bind:value={newSubName} placeholder={m.common_onboarding_subjects_placeholder_ar()} class="h-8 text-xs font-sans bg-background/50 border-dashed border-border/80 text-left" style="direction: ltr;" />{/snippet}</FormField>
-
-        <!-- Add Button -->
-        <div class="flex justify-center items-center">
-          <Button variant="default" size="icon-sm" class="h-8 w-8 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 animate-pulse" onclick={handleAddSubject}>
-            <Plus size={14} />
-          </Button>
-        </div>
-      </div>
-
-      <!-- Subject Rows -->
-      {#each onboardingState.academics.subjects as sub (sub.code)}
-        <div class="grid grid-cols-[50px_1.8fr_1fr_2fr_auto] gap-4 px-4 py-3 items-center hover:bg-muted/10 transition-colors text-start {sub.enabled ? '' : 'opacity-50'}">
-          <!-- Color Dot -->
-          <div class="flex justify-center items-center">
-            <div class="w-3 h-3 rounded-full shrink-0" style="background-color: {sub.color};"></div>
-          </div>
-
-          <!-- Name Arabic -->
-          <span class="font-bold text-foreground text-sm font-sans">{sub.name_ar}</span>
-
-          <!-- Code -->
-          <div class="text-start">
-            <span class="text-xs text-muted-foreground font-mono bg-muted border border-border/60 px-1.5 py-0.5 rounded uppercase">
+  <!-- Subjects 2-Column Responsive Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto scrollbar-hide pr-1">
+    {#each onboardingState.academics.subjects as sub (sub.code)}
+      <div class="flex items-center justify-between p-2 rounded-xl border bg-card hover:bg-muted/15 transition-all {sub.enabled ? 'border-border/70 shadow-2xs' : 'border-border/30 opacity-40'}">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="size-2.5 rounded-full shrink-0" style="background-color: {sub.color};"></div>
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="font-bold text-foreground text-xs truncate">{l(sub.name_ar, sub.name)}</span>
+            <span class="text-[9.5px] font-mono text-muted-foreground bg-muted px-1.5 py-0.2 rounded border border-border/50 shrink-0 uppercase">
               {sub.code}
             </span>
           </div>
-
-          <!-- Name English -->
-          <span class="text-xs text-muted-foreground font-sans">{sub.name}</span>
-
-          <!-- Status Checkbox -->
-          <div class="flex justify-center items-center w-12">
-            <Checkbox bind:checked={sub.enabled} />
-          </div>
         </div>
-      {/each}
-    </div>
+
+        <Checkbox bind:checked={sub.enabled} class="cursor-pointer shrink-0 ms-2" />
+      </div>
+    {/each}
   </div>
 </div>

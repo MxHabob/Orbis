@@ -1,6 +1,6 @@
 <!--
-  Step 4: Grade Levels & Classes
-  Enabling grades, adding/removing sections (divisions).
+  Step 4: Grade Levels & Classes (المراحل الدراسية والفصول)
+  Enabling grades, adding/removing sections (divisions) with high space efficiency.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -9,58 +9,56 @@ import { Checkbox } from "@orbis/ui/checkbox";
 import { Badge } from "@orbis/ui/badge";
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
-import { Plus } from "@lucide/svelte";
+import { Plus, GraduationCap } from "@lucide/svelte";
 
 import { onboardingState } from "../state.svelte";
+import { l } from "$lib/core/i18n";
 </script>
 
-<div class="w-full space-y-6">
+<div class="w-full space-y-3 text-start">
+  <div class="flex items-center justify-between border-b border-border/50 pb-1.5">
+    <div class="flex items-center gap-2">
+      <GraduationCap size={16} class="text-primary shrink-0" />
+      <h3 class="text-xs font-bold text-foreground">
+        {onboardingState.stageLabel} & {onboardingState.divisionLabel}
+      </h3>
+    </div>
+    <span class="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+      {onboardingState.academics.enabledStages} {onboardingState.stagesLabelPlural} / {onboardingState.academics.totalDivisions} {onboardingState.divisionLabel}
+    </span>
+  </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <!-- Responsive 3-Column Grade Grid with fixed max-height and hidden scrollbar -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[300px] overflow-y-auto scrollbar-hide pr-1">
     {#each onboardingState.academics.gradeLevels as gl (gl.level)}
       <div
-        class="bg-card border rounded-xl p-4 space-y-3 transition-colors
-          {gl.enabled ? 'border-border/60' : 'border-border/30 opacity-40'}"
+        class="bg-card border rounded-xl p-3 flex flex-col justify-between gap-2 transition-all duration-150 shadow-2xs
+          {gl.enabled ? 'border-border/80 bg-card' : 'border-border/30 opacity-40 bg-muted/10'}"
       >
         <!-- Grade Header -->
-        <div class="flex justify-between items-start">
-          <div class="flex gap-3 items-center text-start">
-            <!-- Color Tag -->
-            <div class="w-3.5 h-3.5 rounded-full" style="background-color: {gl.color};"></div>
-            <div>
-              <h4 class="font-bold text-foreground text-sm font-serif">{gl.name_ar}</h4>
-              <p class="text-xs text-muted-foreground font-mono">{gl.name}</p>
+        <div class="flex justify-between items-center gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="size-2.5 rounded-full shrink-0" style="background-color: {gl.color};"></div>
+            <div class="min-w-0">
+              <h4 class="font-bold text-foreground text-xs truncate">{l(gl.name_ar, gl.name)}</h4>
             </div>
           </div>
 
-          <div class="flex items-center gap-2">
-            <Label for="enable-{gl.level}" class="text-xs text-muted-foreground cursor-pointer">
-              {m.common_onboarding_stage_enable()}
-            </Label>
-            <Checkbox id="enable-{gl.level}" bind:checked={gl.enabled} />
-          </div>
+          <Checkbox id="enable-{gl.level}" bind:checked={gl.enabled} class="cursor-pointer" />
         </div>
 
         <!-- Divisions / Sections manager -->
         {#if gl.enabled}
-          <div class="space-y-3 pt-3 border-t border-border/60">
-            <Label class="text-xs text-muted-foreground flex justify-start">
-              {m.common_onboarding_associated_divisions({ division: onboardingState.divisionLabel })}
-            </Label>
-
-            <div class="flex flex-wrap gap-1.5 min-h-8 p-2 bg-muted/20 rounded-lg border border-border/60">
+          <div class="space-y-1.5 pt-1.5 border-t border-border/40">
+            <!-- Division Badges -->
+            <div class="flex flex-wrap gap-1 min-h-6 items-center">
               {#each gl.divisions as div, divisionIndex}
-                <Badge variant="secondary" class="bg-card border-border/60 text-foreground text-xs px-2 py-0.5 flex gap-1 items-center font-sans">
-                  <Input
-                    value={div}
-                    maxlength="40"
-                    aria-label={`${onboardingState.divisionLabel} ${div}`}
-                    class="h-6 w-8 border-0 bg-transparent p-0 text-center text-xs font-mono uppercase focus-visible:ring-0"
-                    onchange={(event) => onboardingState.renameDivision(gl.level, divisionIndex, event.currentTarget.value)}
-                  />
+                <Badge variant="secondary" class="bg-muted/60 border border-border/50 text-foreground text-[10px] px-1.5 py-0.2 flex gap-1 items-center font-sans">
+                  <span>{div}</span>
                   <button
+                    type="button"
                     onclick={() => onboardingState.removeDivision(gl.level, div)}
-                    class="hover:text-destructive font-bold ml-0.5 mr-0.5 text-[10px] cursor-pointer"
+                    class="hover:text-destructive font-bold text-[10px] cursor-pointer"
                   >
                     &times;
                   </button>
@@ -68,47 +66,27 @@ import { onboardingState } from "../state.svelte";
               {/each}
 
               {#if gl.divisions.length === 0}
-                <span class="text-xs text-muted-foreground/80 self-center">
+                <span class="text-[10px] text-muted-foreground/70">
                   {m.common_onboarding_no_divisions({ division: onboardingState.divisionLabel })}
                 </span>
               {/if}
             </div>
 
-            <div class="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="xs"
-                onclick={() => onboardingState.addNamedDivision(gl.level, "Boys")}
-                disabled={gl.divisions.includes("Boys")}
-                class="h-7 text-[10px]"
-              >
-                {m.common_onboarding_division_boys()}
-              </Button>
-              <Button
-                variant="outline"
-                size="xs"
-                onclick={() => onboardingState.addNamedDivision(gl.level, "Girls")}
-                disabled={gl.divisions.includes("Girls")}
-                class="h-7 text-[10px]"
-              >
-                {m.common_onboarding_division_girls()}
-              </Button>
-            </div>
-
-            <!-- Quick Add Division Form -->
-            <div class="flex gap-2">
+            <!-- Quick Add Division Input -->
+            <div class="flex gap-1">
               <Input
-                placeholder={m.common_onboarding_add_division_placeholder({ division: "A, B, C, Boys..." })}
+                placeholder="أ، ب، Boys..."
                 onkeydown={(event) => { if (event.key === "Enter") onboardingState.addDivision(gl.level); }}
                 bind:value={onboardingState.academics.divisionInput[gl.level]}
-                class="text-xs h-8"
+                class="text-[11px] h-6.5 px-2 bg-background font-sans"
               />
               <Button
+                type="button"
                 onclick={() => onboardingState.addDivision(gl.level)}
-                size="xs"
-                class="h-8 text-xs shrink-0 px-2.5"
+                size="icon-xs"
+                class="h-6.5 w-6.5 shrink-0 rounded-md cursor-pointer"
               >
-                <Plus class="w-3 h-3" />
+                <Plus size={11} />
               </Button>
             </div>
           </div>

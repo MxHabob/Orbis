@@ -1,12 +1,11 @@
 <!--
-  Step 4: Facilities & Learning Spaces (المباني والمرافق والقاعات التعليمية)
-  Adapts dynamically to the chosen Institution Type (School, University, Training Center, etc.)
+  Step 3: Facilities & Learning Spaces (المباني والمرافق والقاعات التعليمية)
+  Adapts dynamically to the chosen Institution Type with compact high-density layout.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import { Badge } from "@orbis/ui/badge";
-import { Label } from "@orbis/ui/label";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
 import {
@@ -30,16 +29,13 @@ import {
   Plus,
   Trash2,
   Building2,
-  School,
-  GraduationCap,
   DoorOpen,
-  Layers,
   Sparkles,
-  Users,
 } from "@lucide/svelte";
 
 import { onboardingState } from "../state.svelte";
 import AddBuildingDialog from "../components/add-building-dialog.svelte";
+import { l } from "$lib/core/i18n";
 
 let newRoomName = $state("");
 let newRoomNameAr = $state("");
@@ -48,22 +44,10 @@ let newRoomType = $state("classroom");
 let newRoomFloor = $state(0);
 
 const roomTypeOptions = [
-  {
-    value: "classroom",
-    label: () => m.common_onboarding_room_type_classroom(),
-  },
-  {
-    value: "lecture_hall",
-    label: () => m.common_onboarding_room_type_lecture_hall(),
-  },
-  {
-    value: "computer_lab",
-    label: () => m.common_onboarding_room_type_computer(),
-  },
-  {
-    value: "science_lab",
-    label: () => m.common_onboarding_room_type_science(),
-  },
+  { value: "classroom", label: () => m.common_onboarding_room_type_classroom() },
+  { value: "lecture_hall", label: () => m.common_onboarding_room_type_lecture_hall() },
+  { value: "computer_lab", label: () => m.common_onboarding_room_type_computer() },
+  { value: "science_lab", label: () => m.common_onboarding_room_type_science() },
   { value: "workshop", label: () => m.common_onboarding_room_type_workshop() },
   { value: "library", label: () => m.common_onboarding_room_type_library() },
   { value: "studio", label: () => m.common_onboarding_room_type_studio() },
@@ -75,9 +59,13 @@ function getRoomTypeLabel(type: string) {
 }
 
 function handleAddRoom() {
+  const nameAr = newRoomNameAr.trim() || newRoomName.trim();
+  const nameEn = newRoomName.trim() || newRoomNameAr.trim();
+  if (!nameAr) return;
+
   const success = onboardingState.addRoom(
-    newRoomName,
-    newRoomNameAr,
+    nameEn,
+    nameAr,
     newRoomCapacity,
     newRoomType,
     newRoomFloor,
@@ -125,185 +113,176 @@ function confirmRemoveBuilding() {
 }
 </script>
 
-<div class="w-full space-y-6 text-start">
-  <!-- Header Description -->
-  <div class="flex flex-col gap-1">
-    <h3 class="text-sm font-bold text-foreground flex items-center gap-2">
-      <Building2 size={18} class="text-primary" />
-      {m.common_onboarding_facilities_title()}
-    </h3>
-    <p class="text-xs text-muted-foreground">
-      {m.common_onboarding_facilities_desc()}
-    </p>
-  </div>
-
+<div class="w-full space-y-3 text-start">
   <!-- Building Tabs -->
   <Tabs
     value={onboardingState.facilities.activeBuildingTab}
-          onValueChange={(v: string | undefined) => (onboardingState.facilities.activeBuildingTab = v ?? onboardingState.facilities.buildings[0])}
+    onValueChange={(v: string | undefined) => (onboardingState.facilities.activeBuildingTab = v ?? onboardingState.facilities.buildings[0])}
     class="w-full"
   >
-    <TabsList class="w-full justify-start bg-transparent border-b border-border/60 rounded-none p-0 h-auto gap-2 overflow-x-auto flex-nowrap scrollbar-hide">
-      {#each onboardingState.facilities.buildings as bld}
-        <TabsTrigger
-          value={bld}
-          class="px-5 py-3 font-semibold text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-        >
-          <div class="flex items-center gap-2">
-            <Building2 size={14} class="text-primary" />
-            <span>{bld}</span>
-            <Badge variant="secondary" class="text-[10px] px-1.5 py-0">
-              {onboardingState.facilities.rooms.filter((r) => r.building === bld).length} {m.common_onboarding_rooms_count_suffix()}
-            </Badge>
-          </div>
-        </TabsTrigger>
-      {/each}
+    <div class="flex items-center justify-between border-b border-border/60 pb-1">
+      <TabsList class="justify-start bg-transparent p-0 h-auto gap-2 overflow-x-auto flex-nowrap scrollbar-hide">
+        {#each onboardingState.facilities.buildings as bld}
+          <TabsTrigger
+            value={bld}
+            class="px-3.5 py-1.5 font-bold text-xs rounded-lg border border-transparent data-[state=active]:border-primary/30 data-[state=active]:bg-primary/10 data-[state=active]:text-primary text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+          >
+            <div class="flex items-center gap-1.5">
+              <Building2 size={13} class="text-primary" />
+              <span>{bld}</span>
+              <Badge variant="secondary" class="text-[9px] px-1 py-0 font-mono">
+                {onboardingState.facilities.rooms.filter((r) => r.building === bld).length}
+              </Badge>
+            </div>
+          </TabsTrigger>
+        {/each}
+      </TabsList>
+
       <Button
         variant="ghost"
         size="sm"
-        class="shrink-0 h-9 my-auto ms-2 text-muted-foreground hover:text-primary gap-1.5 text-xs cursor-pointer"
+        class="shrink-0 h-8 text-xs text-muted-foreground hover:text-primary gap-1 cursor-pointer"
         onclick={handleAddBuilding}
       >
-        <Plus size={14} />
+        <Plus size={13} />
         {m.common_onboarding_add_building()}
       </Button>
-    </TabsList>
+    </div>
 
     {#each onboardingState.facilities.buildings as bld}
-      <TabsContent value={bld} class="space-y-4 pt-4">
+      <TabsContent value={bld} class="space-y-3 pt-2">
         <!-- Building Action Bar -->
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <DoorOpen size={15} class="text-primary" />
+            <DoorOpen size={14} class="text-primary" />
             <h4 class="text-xs font-bold text-foreground">
               {m.common_onboarding_building_rooms({ building: bld })}
             </h4>
           </div>
           <div class="flex items-center gap-2">
-            <Button variant="outline" size="sm" class="h-8 px-3 text-xs flex gap-1.5 items-center rounded-lg cursor-pointer" onclick={handleAddDefaultRooms}>
-              <Sparkles size={13} />
+            <Button variant="outline" size="xs" class="h-7 text-[11px] flex gap-1.5 items-center rounded-lg cursor-pointer" onclick={handleAddDefaultRooms}>
+              <Sparkles size={12} />
               <span>{m.common_onboarding_room_reset_defaults()}</span>
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              class="text-muted-foreground hover:text-destructive h-8 px-3 text-xs flex gap-1.5 items-center rounded-lg cursor-pointer"
-              onclick={() => handleRemoveBuilding(bld)}
-            >
-              <Trash2 size={13} />
-              <span>{m.common_onboarding_delete_building()}</span>
-            </Button>
+            {#if onboardingState.facilities.buildings.length > 1}
+              <Button
+                variant="ghost"
+                size="xs"
+                class="text-muted-foreground hover:text-destructive h-7 text-[11px] flex gap-1 items-center rounded-lg cursor-pointer"
+                onclick={() => handleRemoveBuilding(bld)}
+              >
+                <Trash2 size={12} />
+                <span>{m.common_onboarding_delete_building()}</span>
+              </Button>
+            {/if}
           </div>
         </div>
 
-        <!-- Rooms / Facilities Table -->
-        <div class="w-full overflow-x-auto scrollbar-hide border border-border/60 rounded-xl bg-card shadow-2xs">
-          <div class="min-w-190 divide-y divide-border/40">
-            <!-- Header Row -->
-            <div class="grid grid-cols-[1.5fr_1.5fr_1.8fr_1fr_1fr_auto] gap-3 p-3.5 bg-muted/30 text-xs font-semibold text-muted-foreground select-none text-start">
-              <span>{m.common_onboarding_rooms_table_name_ar()}</span>
-              <span>{m.common_onboarding_rooms_table_name_en()}</span>
-              <span>{m.common_onboarding_room_type()}</span>
-              <span>{m.common_onboarding_rooms_table_floor()}</span>
-              <span>{m.common_onboarding_room_capacity()}</span>
-              <span class="w-8"></span>
-            </div>
-
+        <!-- Rooms / Facilities Table with max-h and clean rows -->
+        <div class="w-full border border-border/70 rounded-2xl bg-card shadow-xs overflow-hidden">
+          <div class="divide-y divide-border/40">
             <!-- Inline Add New Room Row -->
-            <div class="grid grid-cols-[1.5fr_1.5fr_1.8fr_1fr_1fr_auto] gap-3 px-3.5 py-2.5 items-center bg-primary/5 border-b border-border/40">
-              <!-- Arabic Name -->
-              <FormField label={m.common_onboarding_rooms_table_name_ar()} required>{#snippet children()}<Input bind:value={newRoomNameAr} placeholder={m.common_onboarding_rooms_placeholder_ar()} class="h-8 text-xs font-sans bg-background" />{/snippet}</FormField>
+            <div class="grid grid-cols-[1.5fr_1.5fr_1.5fr_0.8fr_0.8fr_auto] gap-2.5 p-2.5 items-center bg-primary/5 border-b border-border/40">
+              <FormField label={m.common_onboarding_rooms_table_name_ar()} required>
+                {#snippet children()}<Input bind:value={newRoomNameAr} placeholder="قاعة 101" class="h-7.5 text-xs font-bold font-sans bg-background" />{/snippet}
+              </FormField>
 
-              <!-- English Name -->
-              <FormField label={m.common_onboarding_rooms_table_name_en()} required>{#snippet children()}<Input bind:value={newRoomName} placeholder={m.common_onboarding_rooms_placeholder_en()} class="h-8 text-xs font-mono bg-background" style="direction: ltr;" />{/snippet}</FormField>
+              <FormField label={m.common_onboarding_rooms_table_name_en()}>
+                {#snippet children()}<Input bind:value={newRoomName} placeholder="Room 101" class="h-7.5 text-xs font-sans bg-background text-left" style="direction: ltr;" />{/snippet}
+              </FormField>
 
-              <!-- Room Type Select -->
-              <FormField label={m.common_onboarding_room_type()} required>{#snippet children()}<Select type="single" value={newRoomType} onValueChange={(v: string | undefined) => { if (v) newRoomType = v; }}>
-                <SelectTrigger class="h-8 text-xs bg-background">
-                  {getRoomTypeLabel(newRoomType)}
-                </SelectTrigger>
-                <SelectContent class="text-xs">
-                    {#each roomTypeOptions as opt}
-                    <SelectItem value={opt.value}>{opt.label()}</SelectItem>
-                  {/each}
-                </SelectContent>
-              </Select>{/snippet}</FormField>
+              <FormField label={m.common_onboarding_room_type()} required>
+                {#snippet children()}
+                  <Select type="single" value={newRoomType} onValueChange={(v: string | undefined) => { if (v) newRoomType = v; }}>
+                    <SelectTrigger class="h-7.5 text-xs bg-background">
+                      {getRoomTypeLabel(newRoomType)}
+                    </SelectTrigger>
+                    <SelectContent class="text-xs">
+                      {#each roomTypeOptions as opt}
+                        <SelectItem value={opt.value}>{opt.label()}</SelectItem>
+                      {/each}
+                    </SelectContent>
+                  </Select>
+                {/snippet}
+              </FormField>
 
-              <FormField label={m.common_onboarding_rooms_table_floor()} required>{#snippet children()}<Input type="number" bind:value={newRoomFloor} min="0" step="1" placeholder={m.common_onboarding_room_floor_placeholder()} class="h-8 text-xs text-center font-mono bg-background" />{/snippet}</FormField>
+              <FormField label={m.common_onboarding_rooms_table_floor()} required>
+                {#snippet children()}<Input type="number" bind:value={newRoomFloor} min="0" step="1" class="h-7.5 text-xs text-center font-mono bg-background" />{/snippet}
+              </FormField>
 
-              <!-- Capacity Input -->
-              <FormField label={m.common_onboarding_room_capacity()} required>{#snippet children()}<Input type="number" bind:value={newRoomCapacity} min="1" max="500" class="h-8 text-xs text-center font-mono bg-background" />{/snippet}</FormField>
+              <FormField label={m.common_onboarding_room_capacity()} required>
+                {#snippet children()}<Input type="number" bind:value={newRoomCapacity} min="1" max="500" class="h-7.5 text-xs text-center font-mono bg-background" />{/snippet}
+              </FormField>
 
-              <!-- Add Button -->
-              <Button
-                variant="default"
-                size="icon-sm"
-                class="h-8 w-8 rounded-lg cursor-pointer"
-                onclick={handleAddRoom}
-                  title={m.common_onboarding_add_room()}
-              >
-                <Plus size={14} />
-              </Button>
-            </div>
-
-            <!-- Existing Rooms in this building -->
-            {#each onboardingState.facilities.rooms.filter((r) => r.building === bld) as rm (rm.id)}
-              <div class="grid grid-cols-[1.5fr_1.5fr_1.8fr_1fr_1fr_auto] gap-3 px-3.5 py-2.5 items-center hover:bg-muted/10 transition-colors">
-                <!-- Arabic Name -->
-                <Input
-                  bind:value={rm.name_ar}
-                  class="h-8 text-xs font-sans"
-                  onchange={() => onboardingState.save()}
-                />
-
-                <!-- English Name -->
-                <Input
-                  bind:value={rm.name}
-                  class="h-8 text-xs font-mono"
-                  style="direction: ltr;"
-                  onchange={() => onboardingState.save()}
-                />
-
-                <!-- Room Type Select -->
-                <Select type="single" value={rm.room_type} onValueChange={(v: string | undefined) => { if (v) { rm.room_type = v; onboardingState.save(); } }}>
-                  <SelectTrigger class="h-8 text-xs">
-                    {getRoomTypeLabel(rm.room_type)}
-                  </SelectTrigger>
-                  <SelectContent class="text-xs">
-                    {#each roomTypeOptions as opt}
-                    <SelectItem value={opt.value}>{opt.label()}</SelectItem>
-                    {/each}
-                  </SelectContent>
-                </Select>
-
-                <Input type="number" bind:value={rm.floor} min="0" step="1" placeholder={m.common_onboarding_room_floor_placeholder()} class="h-8 text-xs text-center font-mono" onchange={() => onboardingState.save()} />
-
-                <!-- Capacity Input -->
-                <Input
-                  type="number"
-                  bind:value={rm.capacity}
-                  min="1"
-                  max="500"
-                  class="h-8 text-xs text-center font-mono"
-                  onchange={() => onboardingState.save()}
-                />
-
-                <!-- Delete action -->
+              <div class="flex items-end pt-4">
                 <Button
-                  variant="ghost"
+                  variant="default"
                   size="icon-sm"
-                  class="text-muted-foreground hover:text-destructive h-8 w-8 hover:bg-destructive/10 cursor-pointer"
-                  onclick={() => onboardingState.removeRoom(rm.id)}
-                  title={m.common_onboarding_delete_room()}
+                  class="h-7.5 w-7.5 rounded-lg cursor-pointer shrink-0"
+                  onclick={handleAddRoom}
+                  disabled={!newRoomNameAr.trim() && !newRoomName.trim()}
+                  title={m.common_onboarding_add_room()}
                 >
-                  <Trash2 size={13} />
+                  <Plus size={13} />
                 </Button>
               </div>
-            {:else}
-              <div class="p-8 text-center text-xs text-muted-foreground">
-                {m.common_onboarding_no_rooms_in_building()}
-              </div>
-            {/each}
+            </div>
+
+            <!-- Existing Rooms in this building (Max height with scrollbar-hide) -->
+            <div class="overflow-y-auto max-h-[175px] scrollbar-hide divide-y divide-border/30">
+              {#each onboardingState.facilities.rooms.filter((r) => r.building === bld) as rm (rm.id)}
+                <div class="grid grid-cols-[1.5fr_1.5fr_1.5fr_0.8fr_0.8fr_auto] gap-2.5 px-3 py-1.5 items-center hover:bg-muted/10 transition-colors text-xs">
+                  <Input
+                    bind:value={rm.name_ar}
+                    class="h-7 text-xs font-bold font-sans"
+                    onchange={() => onboardingState.save()}
+                  />
+
+                  <Input
+                    bind:value={rm.name}
+                    class="h-7 text-xs font-sans text-left"
+                    style="direction: ltr;"
+                    onchange={() => onboardingState.save()}
+                  />
+
+                  <Select type="single" value={rm.room_type} onValueChange={(v: string | undefined) => { if (v) { rm.room_type = v; onboardingState.save(); } }}>
+                    <SelectTrigger class="h-7 text-xs">
+                      {getRoomTypeLabel(rm.room_type)}
+                    </SelectTrigger>
+                    <SelectContent class="text-xs">
+                      {#each roomTypeOptions as opt}
+                        <SelectItem value={opt.value}>{opt.label()}</SelectItem>
+                      {/each}
+                    </SelectContent>
+                  </Select>
+
+                  <Input type="number" bind:value={rm.floor} min="0" step="1" class="h-7 text-xs text-center font-mono" onchange={() => onboardingState.save()} />
+
+                  <Input
+                    type="number"
+                    bind:value={rm.capacity}
+                    min="1"
+                    max="500"
+                    class="h-7 text-xs text-center font-mono"
+                    onchange={() => onboardingState.save()}
+                  />
+
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    class="text-muted-foreground hover:text-destructive h-7 w-7 rounded-md cursor-pointer"
+                    onclick={() => onboardingState.removeRoom(rm.id)}
+                    title={m.common_onboarding_delete_room()}
+                  >
+                    <Trash2 size={12} />
+                  </Button>
+                </div>
+              {:else}
+                <div class="py-6 text-center text-xs text-muted-foreground">
+                  {m.common_onboarding_no_rooms_in_building()}
+                </div>
+              {/each}
+            </div>
           </div>
         </div>
       </TabsContent>

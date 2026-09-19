@@ -54,23 +54,85 @@ export function createAutopilotConfigQuery(orgId: string | (() => string)) {
   }));
 }
 
+export function createAutopilotTasksQuery(
+  orgId: string | (() => string),
+  params?: () => { status?: string; task_type?: string; limit?: number; offset?: number },
+) {
+  const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
+  return createQuery(() => ({
+    queryKey: queryKeys.autopilot.tasks(params?.()),
+    queryFn: async () => {
+      const res = await api.autopilotListTasks(params?.());
+      return res.items;
+    },
+    enabled: !!getOrgId(),
+    staleTime: 10 * 1000,
+    refetchInterval: 30 * 1000,
+  }));
+}
+
 export function createAutopilotDiagnosticsQuery(
   orgId: string | (() => string),
 ) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   return createQuery(() => ({
-    queryKey: ["autopilot-diagnostics", getOrgId()],
+    queryKey: queryKeys.autopilot.diagnostics(),
     queryFn: async () => {
-      const settings = await api.getSettings();
-      const isEnabled = settings.autopilot?.enabled ?? false;
-      return {
-        status: isEnabled ? "active" : "standby",
-        mode: settings.autopilot?.mode ?? "advisory",
-        autoLockGrades: settings.autopilot?.auto_lock_grades ?? false,
-      };
+      return api.autopilotGetDiagnostics();
     },
     enabled: !!getOrgId(),
-    staleTime: 1 * 60 * 1000,
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
+  }));
+}
+
+export function useRunAutopilotTick() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: async (vars?: { orgId?: string; dryRun?: boolean }) => {
+      return api.autopilotRunTick(vars?.dryRun ?? false);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.autopilot.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.finance.all });
+    },
+  }));
+}
+
+export function useExecuteAutopilotTask() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: async (taskId: string) => {
+      return api.autopilotExecuteTask(taskId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.autopilot.all });
+    },
+  }));
+}
+
+export function useRetryAutopilotTask() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: async (taskId: string) => {
+      return api.autopilotRetryTask(taskId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.autopilot.all });
+    },
+  }));
+}
+
+export function useDismissAutopilotTask() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: async (taskId: string) => {
+      return api.autopilotDismissTask(taskId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.autopilot.all });
+    },
   }));
 }
 
@@ -80,14 +142,36 @@ export function useConfigureAutopilot() {
     mutationFn: async (vars: {
       orgId: string;
       isEnabled: boolean;
-      paused: boolean;
+      paused?: boolean;
       mode: string;
+      auto_advance_periods?: boolean;
+      auto_lock_grades?: boolean;
+      auto_open_enrollment?: boolean;
+      auto_close_enrollment?: boolean;
+      auto_record_attendance?: boolean;
+      auto_fee_assignment?: boolean;
+      auto_grade_entry_reminder?: boolean;
+      auto_period_lock?: boolean;
+      auto_promotion?: boolean;
+      auto_exam_scheduling?: boolean;
+      auto_report_generation?: boolean;
     }) => {
       const current = await api.getSettings();
       const defaultAutopilot = {
         allow_grade_edit_after_close: false,
         auto_advance_periods: false,
         auto_lock_grades: false,
+        auto_open_enrollment: false,
+        auto_close_enrollment: true,
+        auto_record_attendance: true,
+        auto_fee_assignment: true,
+        auto_grade_entry_reminder: true,
+        auto_period_lock: false,
+        auto_promotion: false,
+        auto_exam_scheduling: false,
+        auto_report_generation: true,
+        grace_days: 3,
+        notify_before_deadline_hours: 24,
         grade_entry_auto_close_days: 7,
         max_retries: 3,
         enabled: vars.isEnabled && !vars.paused,
@@ -98,6 +182,7 @@ export function useConfigureAutopilot() {
         autopilot: {
           ...defaultAutopilot,
           ...(current.autopilot ?? {}),
+          ...vars,
           enabled: vars.isEnabled && !vars.paused,
           mode: vars.mode,
         },
@@ -106,6 +191,9 @@ export function useConfigureAutopilot() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.org.settings(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.autopilot.all,
       });
     },
   }));

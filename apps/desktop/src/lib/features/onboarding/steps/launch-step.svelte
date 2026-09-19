@@ -13,6 +13,7 @@ import { onboardingState } from "../state.svelte";
 import { authStore, systemStore } from "$lib/stores";
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
+import { l } from "$lib/core/i18n";
 
 let isLaunching = $state(false);
 let launchProgress = $state(0);
@@ -23,13 +24,10 @@ let message = $derived.by(() => {
   const roomCount = onboardingState.facilities.rooms.length;
   const capacity = onboardingState.facilities.totalCapacity;
   const stageCount = onboardingState.academics.enabledStages;
-  const orgDisplayName = isAr
-    ? onboardingState.profile.orgNameAr ||
-      onboardingState.profile.orgName ||
-      "المؤسسة"
-    : onboardingState.profile.orgName ||
-      onboardingState.profile.orgNameAr ||
-      "your institution";
+  const orgDisplayName = l(
+    onboardingState.profile.orgNameAr,
+    onboardingState.profile.orgName
+  ) || l("المؤسسة", "your institution");
 
   if (isAr) {
     const bldText = bldCount === 1 ? "مبنى واحد" : `${bldCount} مباني`;
@@ -89,11 +87,11 @@ async function handleCompleteSetup() {
 }
 </script>
 
-<div class="min-h-[55vh] flex flex-col items-center justify-center px-6 select-none w-full max-w-3xl mx-auto space-y-12 animate-in fade-in duration-700">
+<div class="flex flex-col items-center justify-center px-6 select-none w-full max-w-3xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-700 py-4 my-auto">
 
   <!-- Header Title -->
   <div class="text-center">
-    <h1 class="text-3xl sm:text-5xl font-light tracking-tight text-foreground font-sans leading-tight">
+    <h1 class="text-3xl sm:text-4xl font-light tracking-tight text-foreground font-sans leading-tight">
       {m.common_onboarding_launch_title()}
     </h1>
   </div>
@@ -103,12 +101,12 @@ async function handleCompleteSetup() {
     
     <!-- Avatar Section -->
     <div class="shrink-0 flex items-center justify-center">
-      <Avatar hat="graduation" width="96px" height="96px" />
+      <Avatar hat="graduation" width="88px" height="88px" />
     </div>
 
     <!-- Description text & buttons/progress -->
-    <div class="text-center sm:text-start self-center max-w-lg w-full space-y-6">
-      <p class="text-base sm:text-lg text-foreground/90 leading-relaxed font-sans font-normal">
+    <div class="text-center sm:text-start self-center max-w-lg w-full space-y-5">
+      <p class="text-base text-foreground/90 leading-relaxed font-sans font-normal">
         {message}
       </p>
 
@@ -117,7 +115,7 @@ async function handleCompleteSetup() {
           <Button
             onclick={handleCompleteSetup}
             size="lg"
-            class="px-8 py-6 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl shadow-md flex gap-2 items-center justify-center transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] w-full sm:w-auto"
+            class="px-8 py-5 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl shadow-md flex gap-2 items-center justify-center transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] w-full sm:w-auto cursor-pointer"
           >
             <Sparkles class="w-4 h-4 animate-pulse" />
             <span>{m.common_onboarding_review_launch_btn()}</span>

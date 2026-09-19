@@ -71,6 +71,16 @@ impl OrganizationRepository for OrgRepoImpl {
         Ok(model.map(map_org_model_to_domain))
     }
 
+    async fn list_all(&self) -> Result<Vec<DomainOrganization>, DomainError> {
+        let models = OrganizationEntity::find()
+            .filter(organization::Column::IsDeleted.eq(false))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        Ok(models.into_iter().map(map_org_model_to_domain).collect())
+    }
+
     async fn save(&self, org: &DomainOrganization) -> Result<(), DomainError> {
         let active_model = organization::ActiveModel {
             id: Set(org.id),

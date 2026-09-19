@@ -38,30 +38,28 @@ let isLoading = $state(true);
 
 onMount(async () => {
   try {
-    const [integrations] = await Promise.all([
+    const [integrations, taskRes, diagnostics, sessions, settings] = await Promise.all([
       api.listIntegrations().catch(() => []),
+      api.autopilotListTasks({ limit: 10 }).catch(() => ({ total_count: 0, items: [] })),
+      api.autopilotGetDiagnostics().catch(() => null),
+      api.aiLoadSessions(data.orgId).catch(() => []),
+      api.getSettings().catch(() => null),
     ]);
 
-    const tasks: any[] = [];
-    const diagnostics = null;
-    const sessions: any[] = [];
-    const config = null;
-
     healthStatus =
-      (diagnostics as any)?.is_healthy === false ? "degraded" : "healthy";
+      diagnostics?.is_healthy === false ? "degraded" : "healthy";
     activeSessions = Array.isArray(sessions) ? sessions : [];
     sessionCount = activeSessions.length;
 
     connectedIntegrations = Array.isArray(integrations) ? integrations : [];
     connectedAppsCount = connectedIntegrations.length;
 
-    const taskList = Array.isArray(tasks) ? (tasks as any[]) : [];
-    actionCount = taskList.length;
+    const taskList = Array.isArray(taskRes?.items) ? taskRes.items : [];
+    actionCount = taskRes?.total_count ?? taskList.length;
     recentLogs = taskList.slice(0, 5);
 
-    if (config) {
-      const mode =
-        (config as any).execution_mode || (config as any).autopilot_mode;
+    if (settings?.autopilot) {
+      const mode = settings.autopilot.mode;
       autopilotMode =
         mode === "automatic" ? "تلقائي" : mode === "manual" ? "يدوي" : "مقترح";
     }

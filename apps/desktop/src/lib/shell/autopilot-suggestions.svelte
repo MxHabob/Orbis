@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { AvatarPilotPlane } from "@orbis/avatar-engine";
-import { AlertCircle } from "@lucide/svelte";
+import { AlertCircle, Clock } from "@lucide/svelte";
 
 import { formatDate } from "$lib/core/i18n";
 
@@ -20,7 +20,7 @@ let {
 } = $props();
 
 const sortedTasks = $derived(
-  [...tasks].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)),
+  [...tasks].sort((a, b) => (a.scheduled_at || "").localeCompare(b.scheduled_at || "")),
 );
 </script>
 
@@ -38,9 +38,9 @@ const sortedTasks = $derived(
     </div>
   {:else}
     {#if sortedTasks.length === 0}
-      <div class="flex min-h-[205px] flex-col items-center justify-center gap-2 rounded-xl bg-background/60 px-4 py-5 text-center">
-        <div class="flex h-[112px] w-full items-center justify-center">
-          <AvatarPilotPlane mood="steady" width="172px" height="102px" />
+      <div class="flex min-h-[190px] flex-col items-center justify-center gap-2 rounded-xl bg-background/60 px-4 py-5 text-center">
+        <div class="flex h-[100px] w-full items-center justify-center">
+          <AvatarPilotPlane mood="steady" width="160px" height="96px" />
         </div>
         <span class="flex items-center gap-1.5 text-[10px] font-medium text-primary">
           <span class="size-1.5 rounded-full bg-primary" aria-hidden="true"></span>
@@ -57,29 +57,30 @@ const sortedTasks = $derived(
           {@const isFailed = task.status === "failed"}
           {@const isExecuting = task.status === "executing"}
           {@const isSuggested = task.status === "suggested"}
+          {@const errorMsg = task.error_log ?? task.last_error}
           
           <div class="relative">
             <!-- Timeline indicator dot center-aligned with the border-s line -->
             {#if isCompleted}
-              <span class="absolute inset-s-[-21px] top-1.5 size-2 rounded-full bg-primary border border-background"></span>
+              <span class="absolute -inset-s-2.5 top-1.5 size-2 rounded-full bg-emerald-500 border border-background"></span>
             {:else if isFailed}
-              <span class="absolute inset-s-[-21px] top-1.5 size-2 rounded-full bg-destructive border border-background"></span>
+              <span class="absolute -inset-s-2.5 top-1.5 size-2 rounded-full bg-destructive border border-background"></span>
             {:else if isExecuting}
-              <span class="absolute inset-s-[-21px] top-1.5 size-2 rounded-full bg-brand-lime border border-background animate-pulse"></span>
+              <span class="absolute -inset-s-2.5 top-1.5 size-2 rounded-full bg-primary border border-background animate-pulse"></span>
             {:else if isSuggested}
-              <span class="absolute inset-s-[-21px] top-1.5 size-2 rounded-full bg-amber-500 border border-background animate-bounce"></span>
+              <span class="absolute -inset-s-2.5 top-1.5 size-2 rounded-full bg-amber-500 border border-background"></span>
             {:else}
-              <span class="absolute inset-s-[-21px] top-1.5 size-2 rounded-full bg-muted-foreground/60 border border-background"></span>
+              <span class="absolute -inset-s-2.5 top-1.5 size-2 rounded-full bg-muted-foreground/60 border border-background"></span>
             {/if}
 
             <div class="flex items-center justify-between gap-1.5 text-[10px]">
-              <span class="font-bold leading-tight text-foreground">
+              <span class="font-bold leading-tight text-foreground truncate">
                 {getTaskTypeLabel(task.task_type)}
               </span>
               
               <Badge 
-                variant={isCompleted ? 'lime' : isFailed ? 'destructive' : 'secondary'} 
-                class="text-[8px] h-3 px-1 shrink-0"
+                variant={isCompleted ? 'lime' : isFailed ? 'destructive' : isExecuting ? 'default' : isSuggested ? 'warning' : 'secondary'} 
+                class="text-[8px] h-3.5 px-1 shrink-0"
               >
                 {#if isCompleted}
                   {m.common_schedule_ai_status_done()}
@@ -96,21 +97,22 @@ const sortedTasks = $derived(
             </div>
             
             <div class="text-[9px] mt-0.5 flex flex-col gap-0.5">
-              <span class="text-muted-foreground">
+              <span class="text-muted-foreground flex items-center gap-1">
+                <Clock size={9} class="shrink-0" />
                 {formatDate(task.scheduled_at)}
               </span>
               
               <!-- If failed, show error message -->
-              {#if isFailed && task.last_error}
-                <span class="text-destructive font-medium flex items-center gap-1">
-                  <AlertCircle size={8} /> {task.last_error}
+              {#if isFailed && errorMsg}
+                <span class="text-destructive font-medium flex items-center gap-1 text-[8.5px]">
+                  <AlertCircle size={9} class="shrink-0" /> {errorMsg}
                 </span>
               {/if}
 
               <!-- Show attempt count if > 0 -->
               {#if task.attempts > 0}
-                <span class="text-muted-foreground/80">
-                  {m.common_autopilot_popover_attempts_count({ attempts: task.attempts, max: config?.max_auto_retries ?? 3 })}
+                <span class="text-muted-foreground/80 text-[8.5px]">
+                  {m.common_autopilot_popover_attempts_count({ attempts: task.attempts, max: task.max_retries ?? config?.max_retries ?? 3 })}
                 </span>
               {/if}
             </div>

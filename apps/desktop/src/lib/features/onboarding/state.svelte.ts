@@ -28,7 +28,7 @@ export class OnboardingState {
   facilities = new FacilitiesInfoState();
   finance = new FinanceInfoState();
 
-  readonly totalSteps = 10;
+  readonly totalSteps = 9;
 
   constructor() {
     this.init();

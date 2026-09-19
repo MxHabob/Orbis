@@ -180,4 +180,58 @@ impl ProgressionService {
 
         Ok(job)
     }
+
+    /// Evaluate cohort progression eligibility (Dry-run preview)
+    pub async fn evaluate_cohort_progression(
+        &self,
+        ctx: &RequestContext,
+        _org_id: Uuid,
+        source_period_id: Uuid,
+    ) -> Result<Vec<StudentProgressionItem>, DomainError> {
+        self.permission_checker.check(ctx, Permission::StudentRead).await?;
+
+        let enrollments = self.enrollment_repo.find_by_period(source_period_id).await?;
+        let mut items = Vec::new();
+
+        for enr in enrollments {
+            let student_opt = self.student_repo.find_by_id(enr.student_id).await?;
+            let (decision, reason) = if let Some(student) = student_opt {
+                match student.status {
+                    StudentStatus::Active => (
+                        PromotionDecision::Promote,
+                        "Eligible for advancement to next grade/level".to_string(),
+                    ),
+                    StudentStatus::Graduated => (
+                        PromotionDecision::Exclude,
+                        "Student has already graduated".to_string(),
+                    ),
+                    StudentStatus::Withdrawn | StudentStatus::Expelled | StudentStatus::TransferredOut => (
+                        PromotionDecision::Exclude,
+                        format!("Student is currently inactive ({})", student.status),
+                    ),
+                    StudentStatus::Suspended => (
+                        PromotionDecision::Retain,
+                        "Student is currently suspended — requires review".to_string(),
+                    ),
+                    StudentStatus::OnLeave => (
+                        PromotionDecision::Retain,
+                        "Student is currently on leave — requires review before progression".to_string(),
+                    ),
+                }
+            } else {
+                (PromotionDecision::Promote, "Regular progression".to_string())
+            };
+
+            items.push(StudentProgressionItem {
+                student_id: enr.student_id,
+                enrollment_id: enr.id,
+                source_class_id: enr.class_id,
+                target_class_id: None,
+                decision,
+                reason,
+            });
+        }
+
+        Ok(items)
+    }
 }

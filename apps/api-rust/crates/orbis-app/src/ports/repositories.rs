@@ -49,6 +49,7 @@ use orbis_domain::{
         user::User,
         workflow::{WorkflowAction, WorkflowExecution, WorkflowRule},
     },
+    autopilot::task::AutopilotTask,
     errors::DomainError,
     queries::filters::{EnrollmentFilter, PaginatedList, StudentFilter},
 };
@@ -62,6 +63,7 @@ pub trait OrganizationRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Organization>, DomainError>;
     async fn find_by_slug(&self, slug: &str) -> Result<Option<Organization>, DomainError>;
     async fn find_first(&self) -> Result<Option<Organization>, DomainError>;
+    async fn list_all(&self) -> Result<Vec<Organization>, DomainError>;
     async fn save(&self, org: &Organization) -> Result<(), DomainError>;
 }
 
@@ -524,4 +526,39 @@ pub trait SystemRepository: Send + Sync {
 
     /// Get the first organization's ID (for readiness checks).
     async fn get_first_org_id(&self) -> Result<Option<Uuid>, DomainError>;
+}
+
+// =========================================================================
+// Autopilot Task Repository Port
+// =========================================================================
+
+#[async_trait]
+pub trait AutopilotTaskRepository: Send + Sync {
+    /// Retrieve all pending tasks due for execution across all orgs (or for a specific org)
+    async fn find_pending_tasks(&self, org_id: Option<Uuid>) -> Result<Vec<AutopilotTask>, DomainError>;
+
+    /// Find a specific task by its ID
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<AutopilotTask>, DomainError>;
+
+    /// Find tasks by org with status/task_type filters and pagination
+    async fn find_by_org(
+        &self,
+        org_id: Uuid,
+        status: Option<&str>,
+        task_type: Option<&str>,
+        limit: u64,
+        offset: u64,
+    ) -> Result<(Vec<AutopilotTask>, u64), DomainError>;
+
+    /// Save (insert or update) an Autopilot task
+    async fn save_task(&self, task: &AutopilotTask) -> Result<(), DomainError>;
+
+    /// Delete a task by ID
+    async fn delete_task(&self, id: Uuid) -> Result<(), DomainError>;
+
+    /// Find stuck tasks in Executing status exceeding threshold seconds
+    async fn find_stuck_tasks(&self, org_id: Uuid, threshold_seconds: i64) -> Result<Vec<AutopilotTask>, DomainError>;
+
+    /// Find overdue tasks in Pending status where scheduled_at < now
+    async fn find_overdue_tasks(&self, org_id: Uuid) -> Result<Vec<AutopilotTask>, DomainError>;
 }

@@ -9,30 +9,45 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@orbis/ui";
-import { Check, ChevronRight, Sparkles } from "@lucide/svelte";
+import { Check, CheckCircle2, ChevronRight, Sparkles, ExternalLink, ArrowRight } from "@lucide/svelte";
 import { systemStore } from "$lib/stores";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { page } from "$app/state";
+import { onMount } from "svelte";
 
 const isArabic = $derived(getLocale().startsWith("ar"));
 const orgId = $derived(page.params.orgId || "");
 
+// Map setup item keys to active application routes
 const routeMap: Record<string, string> = {
-  academic_year: "/settings/academic-years",
-  classes: "/classes",
-  subjects: "/subjects",
+  academic_year: "/settings/periods",
+  classes: "/academics/classes",
+  subjects: "/settings/subjects",
   rooms: "/settings/rooms",
-  time_slots: "/scheduling/slots",
-  fee_templates: "/finance/templates",
+  time_slots: "/settings/periods",
+  fee_templates: "/settings/fee-templates",
   org_units: "/settings/units",
 };
 
 const items = $derived(systemStore.orgReadiness?.pending_setup_items ?? []);
-const totalTasks = $derived(items.length || 1);
+const totalTasks = $derived(items.length || 0);
 const completedTasks = $derived(systemStore.completedSetupItems.length);
 const remainingTasks = $derived(systemStore.pendingSetupItems.length);
 const progressPercent = $derived(systemStore.setupProgressPercentage);
+const isFullyConfigured = $derived(totalTasks > 0 && remainingTasks === 0 && systemStore.isOperational);
+
+onMount(() => {
+  if (!systemStore.orgReadiness) {
+    systemStore.loadReadiness();
+  }
+});
+
+function handleOpenChange(open: boolean) {
+  if (open) {
+    systemStore.loadReadiness();
+  }
+}
 
 function handleItemClick(itemKey: string) {
   if (orgId) {
@@ -46,7 +61,7 @@ function handleGoToOnboarding() {
 }
 </script>
 
-<Popover>
+<Popover onOpenChange={handleOpenChange}>
   <PopoverTrigger>
     {#snippet child({ props: popoverProps }: { props: any })}
       <Tooltip>
@@ -58,6 +73,7 @@ function handleGoToOnboarding() {
                 variant="outline"
                 size="icon-sm"
                 class="relative cursor-pointer rounded-lg onboarding-popover-trigger"
+                aria-label={m.common_onboarding_progress_label()}
               >
                 <div class="relative size-5 flex items-center justify-center">
                   <!-- Progress Circular Ring SVG -->
@@ -74,7 +90,7 @@ function handleGoToOnboarding() {
                         cx="12"
                         cy="12"
                         r="9"
-                        class="stroke-primary fill-none transition-all duration-300 origin-center -rotate-90"
+                        class="{isFullyConfigured ? 'stroke-emerald-500' : 'stroke-primary'} fill-none transition-all duration-300 origin-center -rotate-90"
                         stroke-width="2.5"
                         stroke-dasharray="56.5"
                         stroke-dashoffset={56.5 - (56.5 * progressPercent) / 100}
@@ -83,13 +99,13 @@ function handleGoToOnboarding() {
                     {/if}
                   </svg>
                   
-                  {#if remainingTasks === 0}
-                    <Check class="size-3 text-primary stroke-[3px]" />
+                  {#if isFullyConfigured || remainingTasks === 0}
+                    <Check class="size-3 text-emerald-500 stroke-[3px]" />
                   {:else}
                     <span class="text-[8.5px] font-extrabold text-foreground leading-none">
                       {remainingTasks}
                     </span>
-                    <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
+                    <span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
                   {/if}
                 </div>
               </Button>
@@ -97,7 +113,7 @@ function handleGoToOnboarding() {
           {/snippet}
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={12}>
-          {m.common_onboarding_progress_label() || 'Getting Started'}
+          {isFullyConfigured ? (m.common_onboarding_completed_title?.() || 'Setup Complete') : (m.common_onboarding_progress_label?.() || 'Getting Started')}
         </TooltipContent>
       </Tooltip>
     {/snippet}
@@ -109,19 +125,16 @@ function handleGoToOnboarding() {
     sideOffset={12}
     class="w-84 bg-card border border-border shadow-xl rounded-xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start onboarding-popover-panel relative text-card-foreground"
   >
-    <!-- Pointer Bezel/Tail -->
-    <div class="absolute bottom-5 -inset-s-1.5 w-3 h-3 bg-card border-l border-b border-border rotate-45 z-20 rtl:inset-s-auto rtl:-inset-e-1.5 rtl:border-l-0 rtl:border-b-0 rtl:border-r rtl:border-t"></div>
-
     <!-- Header Section -->
     <div class="flex items-center justify-between p-3.5 border-b border-border bg-card z-10 select-none">
       <div class="flex items-center gap-3">
-        <svg class="size-7 transform -rotate-90 text-primary shrink-0" viewBox="0 0 24 24">
+        <svg class="size-7 transform -rotate-90 shrink-0" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="9" class="stroke-muted/40 fill-none" stroke-width="2.5" />
           <circle
             cx="12"
             cy="12"
             r="9"
-            class="stroke-primary fill-none transition-all duration-300"
+            class="{isFullyConfigured ? 'stroke-emerald-500' : 'stroke-primary'} fill-none transition-all duration-300"
             stroke-width="2.5"
             stroke-dasharray="56.5"
             stroke-dashoffset={56.5 - (56.5 * progressPercent) / 100}
@@ -131,12 +144,20 @@ function handleGoToOnboarding() {
 
         <div class="flex flex-col">
           <h4 class="font-bold text-xs text-foreground leading-tight">
-            {m.common_onboarding_progress_label() || 'خطوات التهيئة'}
+            {isFullyConfigured ? (m.common_onboarding_completed_title?.() || 'اكتملت التهيئة') : (m.common_onboarding_progress_label?.() || 'خطوات التهيئة')}
           </h4>
           <p class="text-[10.5px] text-muted-foreground font-medium mt-0.5">
-            {isArabic ? `تم إنجاز ${completedTasks} من ${totalTasks}` : `${completedTasks} of ${totalTasks} completed`}
+            {#if isFullyConfigured}
+              {isArabic ? "المؤسسة جاهزة للعمل بالكامل" : "Organization is fully operational"}
+            {:else}
+              {isArabic ? `تم إنجاز ${completedTasks} من ${totalTasks}` : `${completedTasks} of ${totalTasks} completed`}
+            {/if}
           </p>
         </div>
+      </div>
+
+      <div class="text-xs font-bold px-2 py-0.5 rounded-full {isFullyConfigured ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-primary/10 text-primary'}">
+        {progressPercent}%
       </div>
     </div>
 
@@ -167,38 +188,50 @@ function handleGoToOnboarding() {
       <div class="h-px bg-border/40 my-1 mx-2"></div>
 
       <!-- Setup Tasks Items -->
-      {#each items as item, idx}
-        {@const isCompleted = item.is_completed}
-        
-        <button
-          onclick={() => handleItemClick(item.key)}
-          class="flex items-start justify-between p-2.5 rounded-lg text-start w-full transition-all cursor-pointer font-sans border border-transparent hover:bg-muted/60 text-foreground bg-transparent"
-        >
-          <div class="flex items-start gap-2.5 flex-1 min-w-0">
-            {#if isCompleted}
-              <div class="mt-0.5 shrink-0 size-4 rounded-full text-emerald-500 flex items-center justify-center">
-                <Check class="size-3 stroke-[3px]" />
+      {#if items.length === 0}
+        <div class="p-4 text-center text-xs text-muted-foreground">
+          <CheckCircle2 class="size-6 text-emerald-500 mx-auto mb-1.5 opacity-80" />
+          <span>{isArabic ? "لا توجد خطوات تهيئة معلقة." : "No pending setup steps."}</span>
+        </div>
+      {:else}
+        {#each items as item, idx}
+          {@const isCompleted = item.is_completed}
+          
+          <button
+            onclick={() => handleItemClick(item.key)}
+            class="flex items-start justify-between p-2.5 rounded-lg text-start w-full transition-all cursor-pointer font-sans border border-transparent hover:bg-muted/60 text-foreground bg-transparent group"
+          >
+            <div class="flex items-start gap-2.5 flex-1 min-w-0">
+              {#if isCompleted}
+                <div class="mt-0.5 shrink-0 size-4 rounded-full text-emerald-500 bg-emerald-500/10 flex items-center justify-center">
+                  <Check class="size-2.5 stroke-[3px]" />
+                </div>
+              {:else}
+                <div class="mt-0.5 shrink-0 size-4 rounded-full border border-primary/40 bg-primary/5 flex items-center justify-center text-[9px] font-bold text-primary">
+                  {idx + 1}
+                </div>
+              {/if}
+              
+              <div class="flex flex-col gap-0.5 flex-1 min-w-0">
+                <span class="text-[11.5px] leading-tight font-sans {isCompleted ? 'text-muted-foreground line-through decoration-muted-foreground/45 font-normal' : 'text-foreground font-semibold group-hover:text-primary transition-colors'}">
+                  {isArabic && item.label_ar ? item.label_ar : item.label}
+                </span>
+                {#if !isCompleted}
+                  <span class="text-[9.5px] text-muted-foreground/80">
+                    {item.is_required ? (isArabic ? "مطلوب للتشغيل" : "Required for operations") : (isArabic ? "اختياري" : "Optional")}
+                  </span>
+                {/if}
               </div>
-            {:else}
-              <div class="mt-0.5 shrink-0 size-4 rounded-full border border-muted-foreground/30 flex items-center justify-center text-[9px] font-bold text-muted-foreground">
-                {idx + 1}
+            </div>
+            
+            {#if !isCompleted}
+              <div class="mt-1 shrink-0 text-muted-foreground group-hover:text-primary transition-colors rtl:rotate-180">
+                <ChevronRight size={12} strokeWidth={2} />
               </div>
             {/if}
-            
-            <div class="flex flex-col gap-0.5 flex-1 min-w-0">
-              <span class="text-[11.5px] leading-tight font-sans {isCompleted ? 'text-muted-foreground line-through decoration-muted-foreground/45 font-normal' : 'text-foreground font-semibold'}">
-                {isArabic && item.label_ar ? item.label_ar : item.label}
-              </span>
-            </div>
-          </div>
-          
-          {#if !isCompleted}
-            <div class="mt-1 shrink-0 text-muted-foreground ml-2 rtl:rotate-180">
-              <ChevronRight size={12} strokeWidth={2} />
-            </div>
-          {/if}
-        </button>
-      {/each}
+          </button>
+        {/each}
+      {/if}
     </div>
   </PopoverContent>
 </Popover>

@@ -44,17 +44,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let workflow_repo = Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
     let override_repo = Arc::new(orbis_infra::repositories::override_repos::OverrideRepoImpl { db: db.clone() });
     let progression_repo = Arc::new(orbis_infra::repositories::progression_repos::ProgressionRepoImpl { db: db.clone() });
-    
-    let autopilot_engine = Arc::new(orbis_app::autopilot::engine::AutopilotEngine {
-        policy_repo: Arc::new(orbis_infra::repositories::policy_repo::PgPolicyRepo { db: db.clone() }),
-    });
     let policy_repo = Arc::new(orbis_infra::repositories::policy_repo::PgPolicyRepo { db: db.clone() });
+    let autopilot_task_repo = Arc::new(orbis_infra::autopilot::task_repo::PgAutopilotTaskRepo::new(db.clone()));
 
     let settings_repo = Arc::new(orbis_infra::repositories::settings_repo::SettingsRepoImpl { db: db.clone() });
     let dashboard_repo = Arc::new(orbis_infra::repositories::dashboard_repo::DashboardRepoImpl { db: db.clone() });
 
     let event_bus = Arc::new(MemoryEventBus {
-        workflow_engine: Some(autopilot_engine),
+        workflow_engine: None,
     });
     let jwt_secret = std::env::var("JWT_SECRET")
         .unwrap_or_else(|_| "orbis_dev_super_secret_jwt_key_2026_educational_platform".to_string());
@@ -232,6 +229,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         org_context_resolver.clone(),
     ));
 
+    let autopilot_engine = Arc::new(orbis_app::autopilot::engine::AutopilotEngine::new(
+        policy_repo.clone(),
+        autopilot_task_repo.clone(),
+        calendar_service.clone(),
+        progression_service.clone(),
+        finance_service.clone(),
+        report_service.clone(),
+        workflow_service.clone(),
+    ));
+
+    let autopilot_evaluator = Arc::new(orbis_app::autopilot::evaluator::AutopilotEvaluator::new(
+        policy_repo.clone(),
+        calendar_repo.clone(),
+        calendar_repo.clone(),
+        student_repo.clone(),
+        finance_repo.clone(),
+    ));
+
+    let autopilot_service = Arc::new(orbis_app::services::AutopilotService::new(
+        autopilot_evaluator.clone(),
+        autopilot_engine.clone(),
+        autopilot_task_repo.clone(),
+        policy_repo.clone(),
+        permission_checker.clone(),
+    ));
+
     let ai_service = Arc::new(orbis_app::services::AiOrchestrationService::new(
         integration_resolver.clone(),
         permission_checker.clone(),
@@ -242,12 +265,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         scheduling_service.clone(),
         report_service.clone(),
         organization_service.clone(),
-    ));
+    ).with_autopilot_service(autopilot_service.clone()));
 
     // Build AppState
     let state = AppState {
         db,
-        org_repo,
+        org_repo: org_repo.clone(),
         org_unit_repo,
         user_repo,
         person_repo,
@@ -317,6 +340,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         workflow_service,
         report_service,
         ai_service,
+        autopilot_service: autopilot_service.clone(),
+        autopilot_task_repo: autopilot_task_repo.clone(),
         // ── Reporting System ────────────────────────────────────
         report_definition_repo,
         report_template_repo,
@@ -326,6 +351,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         report_renderer_registry: renderer_registry,
         report_org_context_resolver: org_context_resolver,
     };
+
+    // Spawn Autopilot Background Scheduler (checks every 60 seconds)
+    let autopilot_scheduler = Arc::new(orbis_infra::autopilot::scheduler::AutopilotScheduler::new(
+        autopilot_service.clone(),
+        org_repo.clone(),
+    ));
+    let _scheduler_handle = autopilot_scheduler.spawn(60);
 
     // Build Axum Router
     let app = app_router(state);

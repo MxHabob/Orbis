@@ -775,4 +775,49 @@ export class LocalClient implements OrbisApiClient {
   async aiLoadContext(orgId: string): Promise<Record<string, unknown> | null> {
     return unwrap(await invoke("ai_load_context", { orgId }));
   }
+
+  // ── Autopilot System ────────────────────────────────────────
+  async autopilotListTasks(params?: {
+    status?: string;
+    task_type?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<import("./types").ListTasksResponse> {
+    return unwrap(
+      await invoke("autopilot_list_tasks", {
+        status: params?.status ?? null,
+        taskType: params?.task_type ?? null,
+        limit: params?.limit ?? null,
+        offset: params?.offset ?? null,
+      }),
+    );
+  }
+
+  async autopilotRunTick(dryRun?: boolean): Promise<import("./types").AutopilotTaskDto[]> {
+    return unwrap(
+      await invoke("autopilot_run_tick", {
+        dryRun: dryRun ?? false,
+      }),
+    );
+  }
+
+  async autopilotGetTask(id: string): Promise<import("./types").AutopilotTaskDto> {
+    return unwrap(await invoke("autopilot_get_task", { id }));
+  }
+
+  async autopilotExecuteTask(id: string): Promise<import("./types").AutopilotTaskDto> {
+    return unwrap(await invoke("autopilot_execute_task", { id }));
+  }
+
+  async autopilotRetryTask(id: string): Promise<import("./types").AutopilotTaskDto> {
+    return unwrap(await invoke("autopilot_retry_task", { id }));
+  }
+
+  async autopilotDismissTask(id: string): Promise<import("./types").AutopilotTaskDto> {
+    return unwrap(await invoke("autopilot_dismiss_task", { id }));
+  }
+
+  async autopilotGetDiagnostics(): Promise<import("./types").AutopilotDiagnosticsDto> {
+    return unwrap(await invoke("autopilot_get_diagnostics"));
+  }
 }

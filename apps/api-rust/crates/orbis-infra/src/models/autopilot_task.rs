@@ -9,10 +9,20 @@ pub struct Model {
     pub org_id: Uuid,
     pub task_type: String,
     pub status: String,
+    pub target_id: Option<Uuid>,
+    pub target_type: Option<String>,
+    pub risk_level: String,
+    pub reason: Option<String>,
     pub parameters: Option<serde_json::Value>,
     pub scheduled_at: DateTimeUtc,
     pub executed_at: Option<DateTimeUtc>,
+    pub attempts: i32,
+    pub max_retries: i32,
     pub error_log: Option<String>,
+    pub idempotency_key: Option<String>,
+    pub triggered_by: String,
+    pub created_at: DateTimeUtc,
+    pub updated_at: DateTimeUtc,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -32,3 +42,4 @@ impl Related<super::organization::Entity> for Entity {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
+

@@ -22,7 +22,7 @@ let {
 } = $props();
 </script>
 
-<div class="w-full py-4 px-6 shrink-0 border-t border-border/40 bg-card/40 backdrop-blur-xs">
+<div class="w-full py-3.5 px-6 shrink-0 border-t border-border/60 bg-card/80 backdrop-blur-md z-30">
   <div class="max-w-4xl w-full mx-auto flex justify-between items-center">
     <!-- Back button -->
     <Button
@@ -40,7 +40,7 @@ let {
       <Button
         onclick={onNext}
         disabled={isLoading}
-        class="flex gap-2 items-center text-xs h-9 px-5 rounded-xl cursor-pointer shadow-xs"
+        class="flex gap-2 items-center text-xs h-9 px-5 rounded-xl cursor-pointer shadow-xs font-semibold"
       >
         <span>{m.common_onboarding_next_btn?.() || "Next"}</span>
         <ArrowRight class="w-4 h-4 rtl:rotate-180" />

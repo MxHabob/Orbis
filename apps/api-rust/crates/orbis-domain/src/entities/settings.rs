@@ -109,20 +109,84 @@ impl Default for NotificationSettings {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AutopilotSettings {
+    #[serde(default = "default_true")]
     pub enabled: bool,
+    #[serde(default = "default_mode")]
     pub mode: String, // "automatic", "suggested", "manual"
+    #[serde(default)]
+    pub auto_open_enrollment: bool,
+    #[serde(default = "default_true")]
+    pub auto_close_enrollment: bool,
+    #[serde(default = "default_true")]
+    pub auto_record_attendance: bool,
+    #[serde(default = "default_true")]
+    pub auto_fee_assignment: bool,
+    #[serde(default = "default_true")]
+    pub auto_grade_entry_reminder: bool,
+    #[serde(default)]
+    pub auto_period_lock: bool,
+    #[serde(default)]
+    pub auto_promotion: bool,
+    #[serde(default)]
+    pub auto_exam_scheduling: bool,
+    #[serde(default = "default_true")]
+    pub auto_report_generation: bool,
+    #[serde(default = "default_grace_days")]
+    pub grace_days: i32,
+    #[serde(default = "default_lead_hours")]
+    pub notify_before_deadline_hours: i32,
+    #[serde(default = "default_max_retries")]
     pub max_retries: i32,
+    #[serde(default)]
     pub auto_advance_periods: bool,
+    #[serde(default)]
     pub auto_lock_grades: bool,
+    #[serde(default = "default_grade_entry_auto_close_days")]
     pub grade_entry_auto_close_days: i32,
+    #[serde(default)]
     pub allow_grade_edit_after_close: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_mode() -> String {
+    "suggested".to_string()
+}
+
+fn default_grace_days() -> i32 {
+    3
+}
+
+fn default_lead_hours() -> i32 {
+    24
+}
+
+fn default_max_retries() -> i32 {
+    3
+}
+
+fn default_grade_entry_auto_close_days() -> i32 {
+    7
 }
 
 impl Default for AutopilotSettings {
     fn default() -> Self {
         Self {
             enabled: true,
-            mode: "automatic".to_string(),
+            mode: "suggested".to_string(),
+            auto_open_enrollment: false,
+            auto_close_enrollment: true,
+            auto_record_attendance: true,
+            auto_fee_assignment: true,
+            auto_grade_entry_reminder: true,
+            auto_period_lock: false,
+            auto_promotion: false,
+            auto_exam_scheduling: false,
+            auto_report_generation: true,
+            grace_days: 3,
+            notify_before_deadline_hours: 24,
             max_retries: 3,
             auto_advance_periods: false,
             auto_lock_grades: false,

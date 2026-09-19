@@ -1032,6 +1032,20 @@ export interface OrbisApiClient {
   aiDeleteSession(orgId: string, sessionId: string): Promise<boolean>;
   aiSaveContext(orgId: string, context: Record<string, unknown>): Promise<boolean>;
   aiLoadContext(orgId: string): Promise<Record<string, unknown> | null>;
+
+  // ── Autopilot System ────────────────────────────────────────
+  autopilotListTasks(params?: {
+    status?: string;
+    task_type?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<ListTasksResponse>;
+  autopilotRunTick(dryRun?: boolean): Promise<AutopilotTaskDto[]>;
+  autopilotGetTask(id: string): Promise<AutopilotTaskDto>;
+  autopilotExecuteTask(id: string): Promise<AutopilotTaskDto>;
+  autopilotRetryTask(id: string): Promise<AutopilotTaskDto>;
+  autopilotDismissTask(id: string): Promise<AutopilotTaskDto>;
+  autopilotGetDiagnostics(): Promise<AutopilotDiagnosticsDto>;
 }
 
 // ── AI Platform Interfaces ───────────────────────────────────
@@ -1102,5 +1116,45 @@ export interface AiStoredSession {
   updated_at: number;
   context?: Record<string, unknown> | null;
   messages: AiStoredMessage[];
+}
+
+// ── Autopilot System Interfaces ───────────────────────────────
+
+export interface AutopilotTaskDto {
+  id: string;
+  org_id: string;
+  task_type: string;
+  status: string;
+  target_id?: string | null;
+  target_type?: string | null;
+  risk_level: string;
+  reason?: string | null;
+  parameters?: Record<string, unknown> | null;
+  scheduled_at: string;
+  executed_at?: string | null;
+  attempts: number;
+  max_retries: number;
+  error_log?: string | null;
+  idempotency_key?: string | null;
+  triggered_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AutopilotDiagnosticsDto {
+  is_healthy: boolean;
+  status: string;
+  mode: string;
+  stuck_tasks: AutopilotTaskDto[];
+  overdue_tasks: AutopilotTaskDto[];
+  total_tasks_count: number;
+  pending_tasks_count: number;
+  completed_tasks_count: number;
+  failed_tasks_count: number;
+}
+
+export interface ListTasksResponse {
+  total_count: number;
+  items: AutopilotTaskDto[];
 }
 

@@ -184,4 +184,17 @@ export const queryKeys = {
     jobStatus: (jobId: string) =>
       [...queryKeys.report.all, "jobStatus", jobId] as const,
   },
+
+  // ── Autopilot System ────────────────────────────────────────
+  autopilot: {
+    all: ["autopilot"] as const,
+    tasks: (filter?: {
+      status?: string;
+      task_type?: string;
+      limit?: number;
+      offset?: number;
+    }) => [...queryKeys.autopilot.all, "tasks", filter ?? {}] as const,
+    task: (id: string) => [...queryKeys.autopilot.all, "task", id] as const,
+    diagnostics: () => [...queryKeys.autopilot.all, "diagnostics"] as const,
+  },
 };

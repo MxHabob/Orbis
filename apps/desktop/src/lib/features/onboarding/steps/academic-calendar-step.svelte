@@ -1,6 +1,6 @@
 <!--
-  Step 2: Academic Calendar
-  Academic year, semester dates, and automatic month distribution.
+  Step 1: Academic Calendar & Semesters Setup
+  Configures primary academic year and semester split without redundant regional settings.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -12,105 +12,70 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
+import { Calendar, Layers } from "@lucide/svelte";
 
 import { onboardingState } from "../state.svelte";
-import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
-import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
-import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
-import { getLocale, setLocale } from "$lib/paraglide/runtime";
-
-async function handleLanguageChange(newLocale: string) {
-  const lang = newLocale.split("-")[0]?.toLowerCase() || "ar";
-  const targetLang = lang === "ar" ? "ar" : "en";
-
-  // Persist current wizard input states to localStorage before reloading
-  onboardingState.save();
-
-  if (targetLang === getLocale()) return;
-
-  setLocale(targetLang);
-}
+import { l } from "$lib/core/i18n";
 </script>
 
-<div class="w-full space-y-6">
+<div class="w-full grid grid-cols-1 md:grid-cols-2 gap-4 text-start">
 
-  <!-- Regional Settings Section -->
-  <div class="border border-border rounded-xl overflow-hidden flex flex-col bg-card">
-    <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none font-serif">
-      {m.settings_general_section_regional()}
-    </div>
-
-    <div class="flex flex-col">
-      <!-- Timezone -->
-      <TimezoneSettings
-        title={m.common_general_timezone()}
-        description={m.settings_general_timezone_desc()}
-        bind:currentTimezone={onboardingState.profile.timezone}
-      />
-
-      <!-- Language -->
-      <LocaleSettings
-        title={m.settings_general_locale()}
-        description={m.settings_general_locale_desc()}
-        bind:currentLocale={onboardingState.profile.locale}
-        onchange={handleLanguageChange}
-      />
-
-      <!-- Currency -->
-      <CurrencySelector
-        title={m.finance_ledger_currency()}
-        description={m.settings_general_currency_desc()}
-        bind:currentCurrency={onboardingState.profile.currency}
-      />
-    </div>
-  </div>
-
-  <!-- Academic Year Section -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-card border border-border p-6 rounded-xl">
-    <div class="md:col-span-2 text-start">
-      <h4 class="text-sm font-semibold text-primary border-b border-border pb-2 mb-4 font-serif">
+  <!-- Left Column: Academic Year Details -->
+  <div class="bg-card border border-border/70 rounded-2xl p-4.5 flex flex-col justify-between shadow-xs space-y-3.5">
+    <div class="flex items-center gap-2 border-b border-border/50 pb-2.5">
+      <Calendar size={16} class="text-primary shrink-0" />
+      <h3 class="text-xs font-bold text-foreground">
         {m.common_onboarding_academic_year_section()}
-      </h4>
+      </h3>
     </div>
 
-    <FormField id="academicYearNameAr" label={m.common_onboarding_academic_year_name_ar()} required>
-      {#snippet children()}<Input id="academicYearNameAr" bind:value={onboardingState.calendar.academicYearNameAr} placeholder="العام الدراسي 1447 هـ" />{/snippet}
-    </FormField>
+    <div class="space-y-2.5 flex-1 flex flex-col justify-center">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <FormField id="academicYearNameAr" label={m.common_onboarding_academic_year_name_ar()} required>
+          {#snippet children()}<Input id="academicYearNameAr" bind:value={onboardingState.calendar.academicYearNameAr} placeholder="العام الدراسي 1447 هـ" class="h-8.5 text-xs font-bold font-sans" />{/snippet}
+        </FormField>
 
-    <FormField id="academicYearName" label={m.common_onboarding_academic_year_name_en()}>
-      {#snippet children()}<Input id="academicYearName" bind:value={onboardingState.calendar.academicYearName} placeholder="Academic Year 1447 Hijri" class="text-left font-sans" style="direction: ltr;" />{/snippet}
-    </FormField>
+        <FormField id="academicYearName" label={m.common_onboarding_academic_year_name_en()}>
+          {#snippet children()}<Input id="academicYearName" bind:value={onboardingState.calendar.academicYearName} placeholder="Academic Year 2025-2026" class="h-8.5 text-xs font-sans text-left" style="direction: ltr;" />{/snippet}
+        </FormField>
+      </div>
 
-    <FormField id="startDate" label={m.common_onboarding_start_date()} required>
-      {#snippet children()}<Input id="startDate" type="date" bind:value={onboardingState.calendar.startDate} />{/snippet}
-    </FormField>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <FormField id="startDate" label={m.common_onboarding_start_date()} required>
+          {#snippet children()}<Input id="startDate" type="date" bind:value={onboardingState.calendar.startDate} class="h-8.5 text-xs font-mono" />{/snippet}
+        </FormField>
 
-    <FormField id="endDate" label={m.common_onboarding_end_date()} required>
-      {#snippet children()}<Input id="endDate" type="date" bind:value={onboardingState.calendar.endDate} />{/snippet}
-    </FormField>
+        <FormField id="endDate" label={m.common_onboarding_end_date()} required>
+          {#snippet children()}<Input id="endDate" type="date" bind:value={onboardingState.calendar.endDate} class="h-8.5 text-xs font-mono" />{/snippet}
+        </FormField>
+      </div>
+    </div>
   </div>
 
-  <!-- Semesters Section -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-card border border-border p-6 rounded-xl">
-    <div class="md:col-span-2 flex items-center justify-between border-b border-border pb-2 mb-4">
-      <h4 class="text-sm font-semibold text-primary font-serif">
-        {m.common_onboarding_semester_split()}
-      </h4>
-      <span class="text-xs text-muted-foreground font-mono">
+  <!-- Right Column: Semesters & Structure -->
+  <div class="bg-card border border-border/70 rounded-2xl p-4.5 flex flex-col justify-between shadow-xs space-y-3.5">
+    <div class="flex items-center justify-between border-b border-border/50 pb-2.5">
+      <div class="flex items-center gap-2">
+        <Layers size={16} class="text-primary shrink-0" />
+        <h3 class="text-xs font-bold text-foreground">
+          {m.common_onboarding_semester_split()}
+        </h3>
+      </div>
+      <span class="text-[10px] text-muted-foreground font-mono">
         {m.common_onboarding_semester_weight_hint()}
       </span>
     </div>
 
-    <!-- Template Selection -->
-    <div class="md:col-span-2 space-y-4">
+    <div class="space-y-2.5 flex-1 flex flex-col justify-center">
+      <!-- Template Selection -->
       <FormField label={m.common_onboarding_template_label()} required>
         {#snippet children()}
         <Select type="single" bind:value={onboardingState.calendar.selectedTemplateId}>
-          <SelectTrigger class="w-full h-9 text-xs font-sans">
+          <SelectTrigger class="w-full h-8.5 text-xs font-sans bg-background">
             {#if onboardingState.calendar.selectedTemplateId}
               {@const selectedTpl = onboardingState.calendar.periodTemplates.find(t => t.id === onboardingState.calendar.selectedTemplateId)}
               {#if selectedTpl}
-                {getLocale() === "ar" ? selectedTpl.name_ar : selectedTpl.name}
+                {l(selectedTpl.name_ar, selectedTpl.name)}
               {:else}
                 {m.common_onboarding_template_placeholder()}
               {/if}
@@ -120,25 +85,26 @@ async function handleLanguageChange(newLocale: string) {
           </SelectTrigger>
           <SelectContent>
             {#each onboardingState.calendar.periodTemplates as tpl}
-              <SelectItem value={tpl.id}>{getLocale() === "ar" ? tpl.name_ar : tpl.name}</SelectItem>
+              <SelectItem value={tpl.id}>{l(tpl.name_ar, tpl.name)}</SelectItem>
             {/each}
           </SelectContent>
         </Select>
         {/snippet}
       </FormField>
 
+      <!-- Terms Weight Preview -->
       {#if onboardingState.calendar.selectedTemplateId}
         {@const selectedTpl = onboardingState.calendar.periodTemplates.find(t => t.id === onboardingState.calendar.selectedTemplateId)}
         {#if selectedTpl?.structure && selectedTpl.structure.length > 0}
-          <div class="pt-2">
-            <div class="text-[11px] font-medium text-muted-foreground mb-2 text-start">
+          <div class="pt-1">
+            <div class="text-[10.5px] font-medium text-muted-foreground mb-1.5 text-start">
               {m.common_onboarding_period_distribution()}
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {#each selectedTpl.structure as term}
-                <div class="p-3 bg-muted/40 border border-border rounded-lg flex items-center justify-between text-xs">
-                  <span class="font-medium text-foreground">{getLocale() === "ar" ? term.name_ar : term.name}</span>
-                  <span class="px-2 py-0.5 bg-primary/10 text-primary font-mono font-semibold rounded text-[11px]">
+                <div class="p-2 bg-muted/30 border border-border/60 rounded-lg flex items-center justify-between text-xs">
+                  <span class="font-bold text-foreground text-[11px] truncate">{l(term.name_ar, term.name)}</span>
+                  <span class="px-1.5 py-0.5 bg-primary/10 text-primary font-mono font-bold rounded text-[10px]">
                     {term.weight}%
                   </span>
                 </div>
@@ -149,4 +115,5 @@ async function handleLanguageChange(newLocale: string) {
       {/if}
     </div>
   </div>
+
 </div>

@@ -13,6 +13,7 @@ use crate::ports::iam::PermissionCheckerPort;
 use crate::services::{
     academic_service::AcademicService,
     assessment_service::AssessmentService,
+    autopilot_service::AutopilotService,
     finance_service::FinanceService,
     organization_service::OrganizationService,
     report_service::{GenerateReportInput, ReportService},
@@ -39,6 +40,7 @@ pub struct AiOrchestrationService {
     pub scheduling_service: Arc<SchedulingService>,
     pub report_service: Arc<ReportService>,
     pub org_service: Arc<OrganizationService>,
+    pub autopilot_service: Option<Arc<AutopilotService>>,
 }
 
 impl AiOrchestrationService {
@@ -63,7 +65,13 @@ impl AiOrchestrationService {
             scheduling_service,
             report_service,
             org_service,
+            autopilot_service: None,
         }
+    }
+
+    pub fn with_autopilot_service(mut self, autopilot_service: Arc<AutopilotService>) -> Self {
+        self.autopilot_service = Some(autopilot_service);
+        self
     }
 
     /// Registry of available domain tools with JSON schemas and permission requirements.
@@ -192,6 +200,40 @@ impl AiOrchestrationService {
                     "required": ["student_id", "status"]
                 }),
                 required_permission: Some("student:update".into()),
+                is_consequential: true,
+            },
+            AiToolDefinition {
+                name: "get_autopilot_status".into(),
+                description: "Get the current operating mode, status, and health diagnostics of the Orbis Autopilot engine.".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {}
+                }),
+                required_permission: Some("settings:read".into()),
+                is_consequential: false,
+            },
+            AiToolDefinition {
+                name: "list_autopilot_tasks".into(),
+                description: "List scheduled, executing, completed, failed, and suggested Autopilot tasks with their execution reasons and error logs.".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "status": {"type": "string", "enum": ["pending", "executing", "completed", "failed", "suggested", "cancelled"], "description": "Filter by task status"}
+                    }
+                }),
+                required_permission: Some("settings:read".into()),
+                is_consequential: false,
+            },
+            AiToolDefinition {
+                name: "trigger_autopilot_tick".into(),
+                description: "Trigger an authorized Autopilot policy evaluation tick (dry-run or live execution). Requires user confirmation.".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "dry_run": {"type": "boolean", "description": "If true, simulates execution without making state changes"}
+                    }
+                }),
+                required_permission: Some("settings:write".into()),
                 is_consequential: true,
             },
         ]
@@ -511,6 +553,57 @@ impl AiOrchestrationService {
                         "total_teachers": c.total_teachers,
                         "total_classes": c.total_classes
                     }))
+                }))
+            }
+            "get_autopilot_status" => {
+                let ap = self.autopilot_service.as_ref()
+                    .ok_or_else(|| DomainError::Internal("Autopilot service not available".into()))?;
+                let diag = ap.get_diagnostics(ctx, ctx.tenant_id).await?;
+                Ok(json!({
+                    "status": diag.status,
+                    "mode": diag.mode,
+                    "is_healthy": diag.is_healthy,
+                    "total_tasks": diag.total_tasks_count,
+                    "pending_tasks": diag.pending_tasks_count,
+                    "completed_tasks": diag.completed_tasks_count,
+                    "failed_tasks": diag.failed_tasks_count,
+                    "stuck_tasks_count": diag.stuck_tasks.len(),
+                    "overdue_tasks_count": diag.overdue_tasks.len()
+                }))
+            }
+            "list_autopilot_tasks" => {
+                let ap = self.autopilot_service.as_ref()
+                    .ok_or_else(|| DomainError::Internal("Autopilot service not available".into()))?;
+                let status_filter = arguments.get("status").and_then(|v| v.as_str());
+                let (tasks, total) = ap.list_tasks(ctx, ctx.tenant_id, status_filter, None, 20, 0).await?;
+                Ok(json!({
+                    "total": total,
+                    "tasks": tasks.into_iter().map(|t| json!({
+                        "id": t.id,
+                        "task_type": t.task_type.as_str(),
+                        "status": t.status.as_str(),
+                        "risk_level": t.risk_level.as_str(),
+                        "reason": t.reason,
+                        "scheduled_at": t.scheduled_at,
+                        "attempts": t.attempts,
+                        "error_log": t.error_log
+                    })).collect::<Vec<_>>()
+                }))
+            }
+            "trigger_autopilot_tick" => {
+                let ap = self.autopilot_service.as_ref()
+                    .ok_or_else(|| DomainError::Internal("Autopilot service not available".into()))?;
+                let dry_run = arguments.get("dry_run").and_then(|v| v.as_bool()).unwrap_or(false);
+                let tasks = ap.run_tick(ctx, ctx.tenant_id, dry_run).await?;
+                Ok(json!({
+                    "dry_run": dry_run,
+                    "evaluated_tasks_count": tasks.len(),
+                    "tasks": tasks.into_iter().map(|t| json!({
+                        "id": t.id,
+                        "task_type": t.task_type.as_str(),
+                        "status": t.status.as_str(),
+                        "reason": t.reason
+                    })).collect::<Vec<_>>()
                 }))
             }
             _ => Err(DomainError::Validation(format!("Tool '{}' not supported", tool_name))),

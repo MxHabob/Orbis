@@ -889,4 +889,44 @@ export class RemoteClient implements OrbisApiClient {
     }
     return null;
   }
+
+  // ── Autopilot System ────────────────────────────────────────
+  async autopilotListTasks(params?: {
+    status?: string;
+    task_type?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<import("./types").ListTasksResponse> {
+    const query = new URLSearchParams();
+    if (params?.status) query.set("status", params.status);
+    if (params?.task_type) query.set("task_type", params.task_type);
+    if (params?.limit !== undefined) query.set("limit", String(params.limit));
+    if (params?.offset !== undefined) query.set("offset", String(params.offset));
+    const qs = query.toString();
+    return this.get(`/api/v1/autopilot/tasks${qs ? `?${qs}` : ""}`);
+  }
+
+  async autopilotRunTick(dryRun?: boolean): Promise<import("./types").AutopilotTaskDto[]> {
+    return this.post("/api/v1/autopilot/tick", { dry_run: dryRun ?? false });
+  }
+
+  async autopilotGetTask(id: string): Promise<import("./types").AutopilotTaskDto> {
+    return this.get(`/api/v1/autopilot/tasks/${id}`);
+  }
+
+  async autopilotExecuteTask(id: string): Promise<import("./types").AutopilotTaskDto> {
+    return this.post(`/api/v1/autopilot/tasks/${id}/execute`);
+  }
+
+  async autopilotRetryTask(id: string): Promise<import("./types").AutopilotTaskDto> {
+    return this.post(`/api/v1/autopilot/tasks/${id}/retry`);
+  }
+
+  async autopilotDismissTask(id: string): Promise<import("./types").AutopilotTaskDto> {
+    return this.post(`/api/v1/autopilot/tasks/${id}/dismiss`);
+  }
+
+  async autopilotGetDiagnostics(): Promise<import("./types").AutopilotDiagnosticsDto> {
+    return this.get("/api/v1/autopilot/diagnostics");
+  }
 }

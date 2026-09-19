@@ -11,6 +11,7 @@ use api::{
     iam_routes, org_routes, calendar_routes, academic_routes,
     student_routes, override_routes, scheduling_routes, assessment_routes, exam_routes,
     finance_routes, document_routes, integration_routes, report_routes, ai_routes,
+    autopilot_routes,
 };
 
 // ── OpenAPI Spec ────────────────────────────────────────────────
@@ -38,6 +39,7 @@ use api::{
         (name = "Document", description = "Document management"),
         (name = "Integration", description = "Third-party app integrations"),
         (name = "Report", description = "Report definitions, templates, generation"),
+        (name = "Autopilot", description = "Autonomous lifecycle, finance & reporting automation engine"),
     ),
     paths(
         // Auth & MFA & Devices
@@ -168,6 +170,14 @@ use api::{
         api::report_routes::get_report_job_status,
         api::report_routes::download_report_file,
         api::report_routes::batch_print,
+        // Autopilot
+        api::autopilot_routes::list_tasks,
+        api::autopilot_routes::run_tick,
+        api::autopilot_routes::get_task,
+        api::autopilot_routes::execute_task,
+        api::autopilot_routes::retry_task,
+        api::autopilot_routes::dismiss_task,
+        api::autopilot_routes::get_diagnostics,
     ),
     components(
         schemas(
@@ -290,6 +300,11 @@ use api::{
             api::report_routes::ValidationIssueDto,
             api::report_routes::ReportDefinitionDto,
             api::report_routes::RevertVersionRequest,
+            // Autopilot
+            api::autopilot_routes::AutopilotTaskDto,
+            api::autopilot_routes::AutopilotDiagnosticsDto,
+            api::autopilot_routes::RunTickRequest,
+            api::autopilot_routes::ListTasksResponse,
         )
     ),
     modifiers(),
@@ -317,6 +332,7 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(integration_routes::routes())
         .merge(report_routes::routes())
         .merge(ai_routes::routes())
+        .merge(autopilot_routes::routes())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .layer(tower_http::cors::CorsLayer::permissive())
         .with_state(state)

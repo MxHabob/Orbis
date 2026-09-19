@@ -19,6 +19,7 @@ pub mod window_cmds;
 pub mod connection_cmds;
 pub mod bootstrap_cmds;
 pub mod ai_cmds;
+pub mod autopilot_cmds;
 
 use tauri::generate_handler;
 
@@ -213,5 +214,13 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         ai_cmds::ai_delete_session,
         ai_cmds::ai_save_context,
         ai_cmds::ai_load_context,
+        // ── Autopilot System ────────────────────────────────────
+        autopilot_cmds::autopilot_list_tasks,
+        autopilot_cmds::autopilot_run_tick,
+        autopilot_cmds::autopilot_get_task,
+        autopilot_cmds::autopilot_execute_task,
+        autopilot_cmds::autopilot_retry_task,
+        autopilot_cmds::autopilot_dismiss_task,
+        autopilot_cmds::autopilot_get_diagnostics,
     ]
 }

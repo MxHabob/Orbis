@@ -80,6 +80,8 @@ pub struct AppState {
     pub workflow_service: Arc<orbis_app::services::WorkflowService>,
     pub report_service: Arc<orbis_app::services::ReportService>,
     pub ai_service: Arc<orbis_app::services::AiOrchestrationService>,
+    pub autopilot_service: Arc<orbis_app::services::AutopilotService>,
+    pub autopilot_task_repo: Arc<dyn orbis_app::ports::repositories::AutopilotTaskRepository>,
     // ── Reporting System ────────────────────────────────────────
     pub report_definition_repo: Arc<dyn ReportDefinitionRepository>,
     pub report_template_repo: Arc<dyn ReportTemplateRepository>,
@@ -89,3 +91,4 @@ pub struct AppState {
     pub report_renderer_registry: Arc<dyn RendererRegistry>,
     pub report_org_context_resolver: Arc<dyn OrgContextResolver>,
 }
+

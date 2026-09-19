@@ -1,132 +1,110 @@
 <!--
-  Step 8: Review & Launch
-  Summary of configuration and final launch button.
+  Step 7: Review & Summary (مراجعة البيانات)
+  Compact 2x2 grid summary of configuration before final launch.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-
 import { onboardingState } from "../state.svelte";
+import { l } from "$lib/core/i18n";
+import { Building2, Calendar, GraduationCap, DollarSign, CheckCircle2 } from "@lucide/svelte";
 </script>
 
-<div class="w-full space-y-8 max-w-4xl mx-auto">
-  
-  <!-- Review Summary List (Clean, borderless sections) -->
-  <div class="border border-border/60 rounded-2xl bg-card overflow-hidden shadow-sm divide-y divide-border/60">
-    
-    <!-- Section 1: Institution Info -->
-    <div class="p-6 space-y-4">
-      <h4 class="text-xs font-bold text-primary uppercase tracking-wider text-start font-sans">
-        {m.common_onboarding_review_institution_info()}
-      </h4>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-        <div class="flex justify-between py-1 border-b border-border/30">
+<div class="w-full space-y-3 text-start">
+  <div class="flex items-center justify-between border-b border-border/50 pb-1.5">
+    <div class="flex items-center gap-2">
+      <CheckCircle2 size={16} class="text-primary shrink-0" />
+      <h3 class="text-xs font-bold text-foreground">
+        {m.common_onboarding_review_launch_btn ? "مراجعة التهيئة الأكاديمية" : "Setup Summary"}
+      </h3>
+    </div>
+    <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+      {l("جاهز للإطلاق", "Ready to Launch")}
+    </span>
+  </div>
+
+  <!-- 2x2 Clean Summary Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto scrollbar-hide pr-1">
+
+    <!-- Card 1: Institution Details -->
+    <div class="border border-border/70 rounded-2xl bg-card p-3 space-y-2 shadow-2xs">
+      <div class="flex items-center gap-1.5 text-xs font-bold text-primary border-b border-border/40 pb-1.5">
+        <Building2 size={13} />
+        <h4>{m.common_onboarding_review_institution_info()}</h4>
+      </div>
+
+      <div class="space-y-1.5 text-xs">
+        <div class="flex justify-between py-0.5 border-b border-border/30">
           <span class="text-muted-foreground">{m.common_onboarding_review_institution_name()}</span>
-          <span class="font-bold text-foreground">{onboardingState.profile.orgNameAr}</span>
+          <span class="font-bold text-foreground truncate max-w-[180px]">{l(onboardingState.profile.orgNameAr, onboardingState.profile.orgName)}</span>
         </div>
-        <div class="flex justify-between py-1 border-b border-border/30">
-          <span class="text-muted-foreground">{m.common_onboarding_review_org_id()}</span>
-          <span class="font-mono text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{onboardingState.profile.orgName}</span>
-        </div>
-        <div class="flex justify-between py-1 border-b border-border/30">
+        <div class="flex justify-between py-0.5 border-b border-border/30">
           <span class="text-muted-foreground">{m.common_onboarding_review_currency()}</span>
-          <span class="font-bold text-emerald-500">{onboardingState.profile.currency}</span>
+          <span class="font-bold text-emerald-600 dark:text-emerald-400 font-mono">{onboardingState.profile.currency}</span>
         </div>
-        <div class="flex justify-between py-1 border-b border-border/30">
+        <div class="flex justify-between py-0.5">
           <span class="text-muted-foreground">{m.common_onboarding_review_locale_timezone()}</span>
-          <span class="font-bold text-foreground">
-            {onboardingState.localizedLanguageName} / {onboardingState.profile.timezone}
-          </span>
+          <span class="font-bold text-foreground font-mono text-[11px]">{onboardingState.profile.timezone}</span>
         </div>
       </div>
     </div>
 
-    <!-- Section 2: Academic Calendar -->
-    <div class="p-6 space-y-4">
-      <h4 class="text-xs font-bold text-primary uppercase tracking-wider text-start font-sans">
-        {onboardingState.calendarLabel}
-      </h4>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-        <div class="flex justify-between py-1 border-b border-border/30">
+    <!-- Card 2: Academic Calendar -->
+    <div class="border border-border/70 rounded-2xl bg-card p-3 space-y-2 shadow-2xs">
+      <div class="flex items-center gap-1.5 text-xs font-bold text-primary border-b border-border/40 pb-1.5">
+        <Calendar size={13} />
+        <h4>{onboardingState.calendarLabel}</h4>
+      </div>
+
+      <div class="space-y-1.5 text-xs">
+        <div class="flex justify-between py-0.5 border-b border-border/30">
           <span class="text-muted-foreground">{onboardingState.calendarLabel}</span>
-          <span class="font-bold text-foreground">{onboardingState.calendar.academicYearNameAr}</span>
+          <span class="font-bold text-foreground truncate max-w-[180px]">{l(onboardingState.calendar.academicYearNameAr, onboardingState.calendar.academicYearName)}</span>
         </div>
-        <div class="flex justify-between py-1 border-b border-border/30">
+        <div class="flex justify-between py-0.5 border-b border-border/30">
           <span class="text-muted-foreground">{m.common_onboarding_review_year_duration()}</span>
-          <span class="font-bold text-foreground font-mono">
-            {m.common_onboarding_review_date_range({ start: onboardingState.calendar.startDate, end: onboardingState.calendar.endDate })}
-          </span>
+          <span class="font-bold text-foreground font-mono text-[11px]">{onboardingState.calendar.startDate} &rarr; {onboardingState.calendar.endDate}</span>
         </div>
-        {#if onboardingState.calendar.selectedTemplateId}
-          {@const activeTemplate = onboardingState.calendar.periodTemplates.find((t) => t.id === onboardingState.calendar.selectedTemplateId)}
-          {#if activeTemplate}
-            <div class="flex justify-between py-1 border-b border-border/30 md:col-span-2">
-              <span class="text-muted-foreground">{m.common_onboarding_template_label()}</span>
-              <span class="font-bold text-foreground">{activeTemplate[onboardingState.profile.locale.startsWith("ar") ? "name_ar" : "name"]}</span>
-            </div>
-          {/if}
-        {/if}
-      </div>
-    </div>
-
-    <!-- Section 3: Buildings & Rooms -->
-    <div class="p-6 space-y-4">
-      <h4 class="text-xs font-bold text-primary uppercase tracking-wider text-start font-sans">
-        {m.common_onboarding_review_buildings_halls()}
-      </h4>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-        {#each onboardingState.facilities.buildings as bld}
-          {@const roomCount = onboardingState.facilities.rooms.filter((r) => r.building === bld).length}
-          <div class="flex justify-between py-1 border-b border-border/30">
-            <span class="text-muted-foreground">{bld}</span>
-            <span class="font-bold text-foreground">
-              {roomCount} {onboardingState.classroomsLabelPlural}
-            </span>
-          </div>
-        {/each}
-        <div class="flex justify-between py-1 border-b border-border/30 md:col-span-2">
-          <span class="text-muted-foreground">{m.common_onboarding_review_capacity()}</span>
-          <span class="font-bold text-primary">
-            {m.common_insight_students_link({ count: onboardingState.facilities.totalCapacity })}
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 4: Stages & Subjects -->
-    <div class="p-6 space-y-4">
-      <h4 class="text-xs font-bold text-primary uppercase tracking-wider text-start font-sans">
-        {onboardingState.stageLabel} & {onboardingState.subjectLabel}
-      </h4>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-        <div class="flex justify-between py-1 border-b border-border/30">
-          <span class="text-muted-foreground">{m.common_onboarding_review_enabled_stages({ stage: onboardingState.stageLabel })}</span>
-          <span class="font-bold text-foreground">
-            {onboardingState.academics.enabledStages} {onboardingState.stagesLabelPlural}
-          </span>
-        </div>
-        <div class="flex justify-between py-1 border-b border-border/30">
-          <span class="text-muted-foreground">{m.common_onboarding_review_divisions_label({ division: onboardingState.divisionLabel })}</span>
-          <span class="font-bold text-foreground">
-            {onboardingState.academics.totalDivisions}
-          </span>
-        </div>
-        <div class="flex justify-between py-1 border-b border-border/30">
-          <span class="text-muted-foreground">{m.common_onboarding_review_subjects_label({ subject: onboardingState.subjectLabel })}</span>
-          <span class="font-bold text-foreground">
-            {onboardingState.academics.enabledSubjects}
-          </span>
-        </div>
-        <div class="flex justify-between py-1 border-b border-border/30">
-          <span class="text-muted-foreground">{m.common_onboarding_review_time_slots()}</span>
-          <span class="font-bold text-foreground">
-            {m.common_onboarding_review_slots_value({ count: onboardingState.academics.totalSlots })}
-          </span>
-        </div>
-        <div class="flex justify-between py-1 border-b border-border/30 md:col-span-2">
+        <div class="flex justify-between py-0.5">
           <span class="text-muted-foreground">أيام الدراسة</span>
-          <span class="font-bold text-foreground">
-            {onboardingState.academics.workingDays.length} أيام / {onboardingState.academics.timeSlots.filter((slot) => slot.is_break).length} استراحات
-          </span>
+          <span class="font-bold text-foreground">{onboardingState.academics.workingDays.length} أيام / {onboardingState.academics.totalSlots} حصص</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Facilities & Spaces -->
+    <div class="border border-border/70 rounded-2xl bg-card p-3 space-y-2 shadow-2xs">
+      <div class="flex items-center gap-1.5 text-xs font-bold text-primary border-b border-border/40 pb-1.5">
+        <Building2 size={13} />
+        <h4>{m.common_onboarding_review_buildings_halls()}</h4>
+      </div>
+
+      <div class="space-y-1.5 text-xs">
+        <div class="flex justify-between py-0.5 border-b border-border/30">
+          <span class="text-muted-foreground">المباني والقاعات</span>
+          <span class="font-bold text-foreground">{onboardingState.facilities.buildings.length} مبنى / {onboardingState.facilities.rooms.length} قاعة</span>
+        </div>
+        <div class="flex justify-between py-0.5">
+          <span class="text-muted-foreground">{m.common_onboarding_review_capacity()}</span>
+          <span class="font-bold text-primary font-mono">{onboardingState.facilities.totalCapacity} طالب</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Academics & Fees -->
+    <div class="border border-border/70 rounded-2xl bg-card p-3 space-y-2 shadow-2xs">
+      <div class="flex items-center gap-1.5 text-xs font-bold text-primary border-b border-border/40 pb-1.5">
+        <GraduationCap size={13} />
+        <h4>{onboardingState.stageLabel} & {onboardingState.subjectLabel}</h4>
+      </div>
+
+      <div class="space-y-1.5 text-xs">
+        <div class="flex justify-between py-0.5 border-b border-border/30">
+          <span class="text-muted-foreground">المراحل والفصول</span>
+          <span class="font-bold text-foreground">{onboardingState.academics.enabledStages} مراحل / {onboardingState.academics.totalDivisions} فصل</span>
+        </div>
+        <div class="flex justify-between py-0.5">
+          <span class="text-muted-foreground">المواد المفعلة</span>
+          <span class="font-bold text-foreground">{onboardingState.academics.enabledSubjects} مادة دراسية</span>
         </div>
       </div>
     </div>

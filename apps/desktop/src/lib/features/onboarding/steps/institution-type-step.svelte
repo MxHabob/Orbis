@@ -1,7 +1,6 @@
 <!--
   Step 1: Institution Type Selection
-  If CLI already set the blueprint, this shows as pre-selected (read-only info).
-  User can still change it if needed — it will re-populate defaults.
+  Shows institution type options (School, University, Institute, Training Center, Custom).
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -22,6 +21,7 @@ import {
   CheckCircle2,
   Info,
 } from "@lucide/svelte";
+import { l } from "$lib/core/i18n";
 
 const profiles = [
   { id: "school", icon: School },
@@ -31,7 +31,7 @@ const profiles = [
   { id: "custom", icon: Sliders },
 ];
 
-// Check if institution type was pre-configured by CLI
+// Check if institution type is already set
 let isPreConfigured = $derived(
   onboardingState.profile.orgName !== "" &&
     onboardingState.profile.institutionType !== "",
@@ -44,12 +44,12 @@ function selectProfile(type: string) {
 
 <div class="w-full space-y-6">
 
-  <!-- Pre-configured notice from CLI -->
+  <!-- Notice when pre-configured -->
   {#if isPreConfigured}
     <div class="flex items-center gap-3 p-3 rounded-xl border border-primary/20 bg-primary/5 text-primary text-xs font-sans">
       <Info size={16} class="shrink-0" />
       <span>
-        تم ضبط نوع المؤسسة مسبقاً أثناء تهيئة النظام. يمكنك تغييره إذا لزم الأمر.
+        {l("تم ضبط نوع المؤسسة مسبقاً أثناء التهيئة. يمكنك تعديل الخيار أدناه.", "Institution type is pre-configured. You can adjust it below if needed.")}
       </span>
     </div>
   {/if}
