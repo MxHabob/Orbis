@@ -1,6 +1,6 @@
 <!--
   Organization Bootstrap Screen — Create the first organization and super admin.
-  Clean 2-step setup built using FormController, FormField, @orbis/ui Card, Button, Input, Select, Logo, and standard design tokens.
+  Spacious, high-efficiency widescreen layout utilizing screen real estate with dual-column symmetry.
 -->
 <script lang="ts">
 import { goto } from "$app/navigation";
@@ -8,11 +8,11 @@ import { api } from "$lib/api/client";
 import { authStore } from "$lib/stores";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
-import { Card } from "@orbis/ui/card";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
 import { Logo } from "@orbis/ui/logo";
+import { Badge } from "@orbis/ui/badge";
 import {
   Select,
   SelectTrigger,
@@ -25,9 +25,23 @@ import {
   ArrowRight,
   ArrowLeft,
   ShieldCheck,
+  School,
+  GraduationCap,
+  BookOpen,
+  Briefcase,
+  CheckCircle2,
+  Building2,
+  UserCheck,
+  Sparkles,
+  KeyRound,
+  Lock,
+  Globe2,
+  Coins,
+  Check,
 } from "@lucide/svelte";
 import { z } from "zod";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { l } from "$lib/core/i18n";
 
 const isRTL = $derived(getLocale().startsWith("ar"));
 
@@ -71,11 +85,48 @@ function fieldError(field: keyof BootstrapFormValues): string | undefined {
   return form.errors[field]?.[0];
 }
 
-const orgTypes = $derived([
-  { value: "school", label: m.setup_bootstrap_type_school() },
-  { value: "university", label: m.setup_bootstrap_type_university() },
-  { value: "institute", label: m.setup_bootstrap_type_institute() },
-]);
+const orgTypeCards = [
+  {
+    value: "school",
+    icon: School,
+    title_ar: "مدرسة تعليمية",
+    title_en: "School",
+    desc_ar: "تعليم أساسي وثانوي مع فترات وفصول قياسية",
+    desc_en: "K-12 school with standard periods & classes",
+    tags_ar: ["7 حصص يومية", "حتى 3 ثانوي", "قاعات ومعامل"],
+    tags_en: ["7 Daily Periods", "Up to Grade 12", "Labs & Rooms"],
+  },
+  {
+    value: "university",
+    icon: GraduationCap,
+    title_ar: "جامعة / كلية",
+    title_en: "University",
+    desc_ar: "تعليم عالي ومستويات أكاديمية وقاعات محاضرات",
+    desc_en: "Higher education, academic levels & halls",
+    tags_ar: ["ساعات معتمدة", "مدرجات ومختبرات", "أقسام وكليات"],
+    tags_en: ["Credit Hours", "Lecture Halls", "Colleges & Depts"],
+  },
+  {
+    value: "institute",
+    icon: BookOpen,
+    title_ar: "معهد تدريبي / لغات",
+    title_en: "Institute",
+    desc_ar: "مستويات تدريبية وشهادات مهنية متخصصة",
+    desc_en: "Vocational modules & professional courses",
+    tags_ar: ["مستويات تخصصية", "معامل لغات", "شهادات إتمام"],
+    tags_en: ["Skill Levels", "Language Labs", "Certificates"],
+  },
+  {
+    value: "training_center",
+    icon: Briefcase,
+    title_ar: "مركز تدريب وتطوير",
+    title_en: "Training Center",
+    desc_ar: "معسكرات مكثفة وبرامج احترافية قصيرة",
+    desc_en: "Bootcamps & executive short programs",
+    tags_ar: ["معسكرات مكثفة", "ورش عمل تفاعلية", "قاعات افتراضية"],
+    tags_en: ["Bootcamps", "Workshops", "Virtual Rooms"],
+  },
+];
 
 const currencies = [
   { code: "SAR", label: "Saudi Riyal (SAR)" },
@@ -98,10 +149,16 @@ const timezones = [
   { value: "America/New_York", label: "New York (UTC-5)" },
 ];
 
+const isPasswordLengthValid = $derived((form.values.adminPassword?.length || 0) >= 8);
+const isPasswordMatch = $derived(
+  form.values.adminPassword &&
+  form.values.adminPassword === form.values.adminPasswordConfirm
+);
+
 function handleNext() {
   form.errors = {};
   form.formError = undefined;
-  if (!form.values.orgName.trim()) {
+  if (!form.values.orgName.trim() && !form.values.orgNameAr?.trim()) {
     form.errors.orgName = [m.setup_bootstrap_err_org_name_required()];
     return;
   }
@@ -117,8 +174,9 @@ async function handleBootstrap(e: SubmitEvent | MouseEvent) {
   if (e) e.preventDefault();
   
   await form.submit(async (values) => {
+    const finalOrgName = values.orgName.trim() || values.orgNameAr?.trim() || "Orbis Organization";
     const result = await api.bootstrapOrganization({
-      orgName: values.orgName.trim(),
+      orgName: finalOrgName,
       orgNameAr: values.orgNameAr?.trim() || undefined,
       orgType: values.orgType,
       timezone: values.timezone,
@@ -161,70 +219,73 @@ async function handleBootstrap(e: SubmitEvent | MouseEvent) {
   <title>{m.setup_bootstrap_page_title()}</title>
 </svelte:head>
 
-<div class="w-full max-w-3xl">
-  <Card class="bg-card border border-border shadow-2xl rounded-2xl overflow-hidden flex flex-col md:flex-row">
-    <!-- Left Brand Column -->
-    <div class="w-full md:w-20 bg-primary flex md:flex-col items-center justify-between md:justify-start p-4 md:py-8 gap-4 text-primary-foreground shrink-0 select-none">
-      <div class="flex items-center justify-center text-primary-foreground">
-        <Logo class="size-8 text-primary-foreground" dotClass="fill-white" />
+<div class="w-full max-w-6xl 2xl:max-w-7xl mx-auto p-1 sm:p-2 animate-in fade-in duration-300">
+  <div class="rounded-2xl sm:rounded-3xl border border-border/80 bg-card/95 shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col justify-between">
+    
+    <!-- Top Header Bar with Branding & Step Pills -->
+    <div class="flex items-center justify-between px-6 sm:px-8 py-3.5 border-b border-border/60 bg-muted/15">
+      <div class="flex items-center gap-3">
+        <div class="size-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+          <Logo class="size-5 text-primary" dotClass="fill-primary" />
+        </div>
+        <div class="text-start">
+          <h1 class="text-sm sm:text-base font-bold text-foreground leading-none">
+            {m.setup_bootstrap_title()}
+          </h1>
+          <p class="text-[11px] text-muted-foreground mt-0.5 font-medium">
+            {step === 1 ? m.setup_bootstrap_step_1_desc() : m.setup_bootstrap_step_2_desc()}
+          </p>
+        </div>
+      </div>
+
+      <!-- Luxury Step Counter & Capsule Indicators -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-background/80 border border-border/70 shadow-2xs text-xs font-semibold">
+          {#if step === 1}
+            <Building2 size={13} class="text-primary" />
+            <span class="text-foreground">{l("بيانات المنظمة", "Organization")}</span>
+          {:else}
+            <UserCheck size={13} class="text-primary" />
+            <span class="text-foreground">{l("حساب المدير", "Administrator")}</span>
+          {/if}
+          <div class="flex items-center gap-1 ms-1">
+            <span class="size-1.5 rounded-full {step === 1 ? 'bg-primary' : 'bg-primary/40'}"></span>
+            <span class="size-1.5 rounded-full {step === 2 ? 'bg-primary' : 'bg-muted-foreground/30'}"></span>
+          </div>
+          <span class="text-muted-foreground font-mono text-[11px] ms-0.5">0{step} / 02</span>
+        </div>
       </div>
     </div>
 
-    <!-- Main Content Area -->
-    <form onsubmit={handleBootstrap} class="flex-1 p-6 sm:p-8 lg:p-10 flex flex-col justify-between min-w-0">
+    <!-- Main Content Form Area -->
+    <form onsubmit={handleBootstrap} class="p-5 sm:p-7 lg:p-8 flex flex-col justify-between space-y-5">
       <div>
-        <!-- Stepper Indicator -->
-        <div class="flex items-center justify-between mb-6 pb-4 border-b border-border/60">
-          <div>
-            <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              {m.setup_bootstrap_title()}
-            </h2>
-            <p class="text-xs text-muted-foreground mt-0.5">
-              {step === 1
-                ? m.setup_bootstrap_step_1_desc()
-                : m.setup_bootstrap_step_2_desc()}
-            </p>
-          </div>
-
-          <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-full {step === 1 ? 'bg-primary' : 'bg-emerald-500'}"></span>
-            <span class="w-2.5 h-2.5 rounded-full {step === 2 ? 'bg-primary' : 'bg-muted'}"></span>
-          </div>
-        </div>
-
         {#if form.formError}
-          <div class="mb-5 flex items-center gap-2.5 p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
+          <div class="mb-4 flex items-center gap-2.5 p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
             <AlertCircle class="w-4 h-4 shrink-0" />
             <span>{form.formError}</span>
           </div>
         {/if}
 
-        <!-- STEP 1: Organization Details -->
+        <!-- STEP 1: Organization Details (Widescreen 2-Column Grid) -->
         {#if step === 1}
-          <div class="space-y-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                id="orgName"
-                label={m.setup_bootstrap_org_name_label()}
-                error={fieldError("orgName")}
-                required
-              >
-                {#snippet children()}
-                  <Input
-                    id="orgName"
-                    type="text"
-                    bind:value={form.values.orgName}
-                    disabled={form.isSubmitting}
-                    class="h-10 text-xs bg-background border-input"
-                    placeholder="e.g. Al-Amal Academy"
-                  />
-                {/snippet}
-              </FormField>
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 text-start items-start">
+            
+            <!-- Left Side: Identity & Localization (5 Cols) -->
+            <div class="lg:col-span-5 space-y-4 rounded-2xl bg-muted/10 border border-border/60 p-4 sm:p-5">
+              <div class="flex items-center gap-2 pb-1 border-b border-border/40">
+                <Building2 size={15} class="text-primary" />
+                <h3 class="font-bold text-xs sm:text-sm text-foreground">
+                  {l("هوية وإعدادات المنشأة", "Identity & Regional Settings")}
+                </h3>
+              </div>
 
+              <!-- Arabic Name -->
               <FormField
                 id="orgNameAr"
                 label={m.setup_bootstrap_org_name_ar_label()}
                 error={fieldError("orgNameAr")}
+                required
               >
                 {#snippet children()}
                   <Input
@@ -232,180 +293,316 @@ async function handleBootstrap(e: SubmitEvent | MouseEvent) {
                     type="text"
                     bind:value={form.values.orgNameAr}
                     disabled={form.isSubmitting}
-                    class="h-10 text-xs bg-background border-input text-right"
-                    placeholder="مثال: أكاديمية الأمل"
+                    class="h-9 text-xs font-bold font-sans bg-background border-input text-right"
+                    placeholder="مثال: أكاديمية النور التعليمية"
                   />
                 {/snippet}
               </FormField>
+
+              <!-- English Name -->
+              <FormField
+                id="orgName"
+                label={m.setup_bootstrap_org_name_label()}
+                error={fieldError("orgName")}
+              >
+                {#snippet children()}
+                  <Input
+                    id="orgName"
+                    type="text"
+                    bind:value={form.values.orgName}
+                    disabled={form.isSubmitting}
+                    class="h-9 text-xs font-sans bg-background border-input text-left"
+                    style="direction: ltr;"
+                    placeholder="e.g. Al-Noor Academy"
+                  />
+                {/snippet}
+              </FormField>
+
+              <!-- Currency & Timezone Grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <FormField
+                  id="currency"
+                  label={m.setup_bootstrap_currency_label()}
+                  error={fieldError("currency")}
+                  required
+                >
+                  {#snippet children()}
+                    <Select
+                      type="single"
+                      value={form.values.currency}
+                      onValueChange={(v : any) => { if (v) form.values.currency = v; }}
+                      disabled={form.isSubmitting}
+                    >
+                      <SelectTrigger id="currency" class="h-9 text-xs w-full bg-background border-input font-sans">
+                        {currencies.find(c => c.code === form.values.currency)?.label || form.values.currency}
+                      </SelectTrigger>
+                      <SelectContent class="max-h-56">
+                        {#each currencies as c}
+                          <SelectItem value={c.code} class="text-xs">{c.label}</SelectItem>
+                        {/each}
+                      </SelectContent>
+                    </Select>
+                  {/snippet}
+                </FormField>
+
+                <FormField
+                  id="timezone"
+                  label={m.setup_bootstrap_timezone_label()}
+                  error={fieldError("timezone")}
+                  required
+                >
+                  {#snippet children()}
+                    <Select
+                      type="single"
+                      value={form.values.timezone}
+                      onValueChange={(v : any) => { if (v) form.values.timezone = v; }}
+                      disabled={form.isSubmitting}
+                    >
+                      <SelectTrigger id="timezone" class="h-9 text-xs w-full bg-background border-input font-sans">
+                        {timezones.find(tz => tz.value === form.values.timezone)?.label || form.values.timezone}
+                      </SelectTrigger>
+                      <SelectContent class="max-h-56">
+                        {#each timezones as tz}
+                          <SelectItem value={tz.value} class="text-xs">{tz.label}</SelectItem>
+                        {/each}
+                      </SelectContent>
+                    </Select>
+                  {/snippet}
+                </FormField>
+              </div>
+
+              <!-- Live Configuration Note -->
+              <div class="flex items-start gap-2.5 p-3 rounded-xl bg-primary/5 border border-primary/15 text-[11px] text-muted-foreground leading-relaxed">
+                <Sparkles size={14} class="text-primary shrink-0 mt-0.5" />
+                <span>
+                  {l(
+                    "يتم ضبط المصطلحات والمراحل والحصص الدراسية والقاعات تلقائياً وفورياً بمجرد اختيار نوع المؤسسة.",
+                    "Terminology, stages, time slots, and rooms will automatically calibrate based on selected institution type."
+                  )}
+                </span>
+              </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <FormField
-                id="orgType"
-                label={m.setup_bootstrap_org_type_label()}
-                error={fieldError("orgType")}
-                required
-              >
-                {#snippet children()}
-                  <Select
-                    type="single"
-                    value={form.values.orgType}
-                    onValueChange={(v : any) => { if (v) form.values.orgType = v; }}
-                    disabled={form.isSubmitting}
-                  >
-                    <SelectTrigger id="orgType" class="h-10 text-xs w-full bg-background border-input">
-                      {orgTypes.find(t => t.value === form.values.orgType)?.label || form.values.orgType}
-                    </SelectTrigger>
-                    <SelectContent>
-                      {#each orgTypes as t}
-                        <SelectItem value={t.value} class="text-xs">{t.label}</SelectItem>
-                      {/each}
-                    </SelectContent>
-                  </Select>
-                {/snippet}
-              </FormField>
+            <!-- Right Side: Organization Classification 2x2 Grid (7 Cols) -->
+            <div class="lg:col-span-7 space-y-3">
+              <div class="flex items-center justify-between pb-1 border-b border-border/40">
+                <div class="flex items-center gap-2">
+                  <Sparkles size={15} class="text-primary" />
+                  <h3 class="font-bold text-xs sm:text-sm text-foreground">
+                    {m.setup_bootstrap_org_type_label()}
+                  </h3>
+                </div>
+                <span class="text-[11px] text-muted-foreground font-medium">
+                  {l("حدد النموذج الأنسب لمنشأتك", "Select institutional structure")}
+                </span>
+              </div>
 
-              <FormField
-                id="currency"
-                label={m.setup_bootstrap_currency_label()}
-                error={fieldError("currency")}
-                required
-              >
-                {#snippet children()}
-                  <Select
-                    type="single"
-                    value={form.values.currency}
-                    onValueChange={(v : any ) => { if (v) form.values.currency = v; }}
-                    disabled={form.isSubmitting}
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {#each orgTypeCards as ot}
+                  {@const isSelected = form.values.orgType === ot.value}
+                  <button
+                    type="button"
+                    class="p-4 rounded-2xl border text-start flex flex-col justify-between gap-3 transition-all duration-200 cursor-pointer shadow-2xs hover:shadow-xs group {isSelected ? 'border-primary ring-2 ring-primary/20 bg-primary/5' : 'border-border/70 bg-card hover:bg-muted/15'}"
+                    onclick={() => { form.values.orgType = ot.value; }}
                   >
-                    <SelectTrigger id="currency" class="h-10 text-xs w-full bg-background border-input font-sans">
-                      {currencies.find(c => c.code === form.values.currency)?.label || form.values.currency}
-                    </SelectTrigger>
-                    <SelectContent class="max-h-56">
-                      {#each currencies as c}
-                        <SelectItem value={c.code} class="text-xs">{c.label}</SelectItem>
-                      {/each}
-                    </SelectContent>
-                  </Select>
-                {/snippet}
-              </FormField>
+                    <div class="flex items-center justify-between w-full">
+                      <div class="size-8 rounded-xl flex items-center justify-center {isSelected ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted text-foreground group-hover:bg-primary/10 group-hover:text-primary'} transition-colors">
+                        <ot.icon size={16} />
+                      </div>
+                      {#if isSelected}
+                        <Badge variant="default" class="text-[10px] h-5 gap-1 px-2 font-semibold">
+                          <CheckCircle2 size={11} />
+                          <span>{l("مفعل", "Selected")}</span>
+                        </Badge>
+                      {/if}
+                    </div>
 
-              <FormField
-                id="timezone"
-                label={m.setup_bootstrap_timezone_label()}
-                error={fieldError("timezone")}
-                required
-              >
-                {#snippet children()}
-                  <Select
-                    type="single"
-                    value={form.values.timezone}
-                    onValueChange={(v : any) => { if (v) form.values.timezone = v; }}
-                    disabled={form.isSubmitting}
-                  >
-                    <SelectTrigger id="timezone" class="h-10 text-xs w-full bg-background border-input font-sans">
-                      {timezones.find(tz => tz.value === form.values.timezone)?.label || form.values.timezone}
-                    </SelectTrigger>
-                    <SelectContent class="max-h-56">
-                      {#each timezones as tz}
-                        <SelectItem value={tz.value} class="text-xs">{tz.label}</SelectItem>
+                    <div class="space-y-1">
+                      <h4 class="font-bold text-xs sm:text-sm text-foreground {isSelected ? 'text-primary' : ''}">
+                        {l(ot.title_ar, ot.title_en)}
+                      </h4>
+                      <p class="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
+                        {l(ot.desc_ar, ot.desc_en)}
+                      </p>
+                    </div>
+
+                    <!-- Micro Feature Tags -->
+                    <div class="flex flex-wrap gap-1.5 pt-1 border-t border-border/30">
+                      {#each (isRTL ? ot.tags_ar : ot.tags_en) as tag}
+                        <span class="text-[10px] font-medium px-2 py-0.5 rounded-md {isSelected ? 'bg-primary/10 text-primary' : 'bg-muted/40 text-muted-foreground'}">
+                          {tag}
+                        </span>
                       {/each}
-                    </SelectContent>
-                  </Select>
-                {/snippet}
-              </FormField>
+                    </div>
+                  </button>
+                {/each}
+              </div>
             </div>
+
           </div>
 
-        <!-- STEP 2: Super Admin Account -->
+        <!-- STEP 2: Super Admin Account (Widescreen 2-Column Grid) -->
         {:else}
-          <div class="space-y-4">
-            <FormField
-              id="adminFullName"
-              label={m.setup_bootstrap_admin_name_label()}
-              error={fieldError("adminFullName")}
-              required
-            >
-              {#snippet children()}
-                <Input
-                  id="adminFullName"
-                  type="text"
-                  bind:value={form.values.adminFullName}
-                  disabled={form.isSubmitting}
-                  class="h-10 text-xs bg-background border-input"
-                  placeholder="e.g. Abdullah Al-Mansoor"
-                />
-              {/snippet}
-            </FormField>
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 text-start items-start">
+            
+            <!-- Left Side: Administrator Identity & Role Card (6 Cols) -->
+            <div class="lg:col-span-6 space-y-4 rounded-2xl bg-muted/10 border border-border/60 p-5 sm:p-6">
+              <div class="flex items-center gap-2 pb-1 border-b border-border/40">
+                <UserCheck size={16} class="text-primary" />
+                <h3 class="font-bold text-xs sm:text-sm text-foreground">
+                  {l("بيانات المدير المسؤول", "Super Administrator Profile")}
+                </h3>
+              </div>
 
-            <FormField
-              id="adminEmail"
-              label={m.setup_bootstrap_admin_email_label()}
-              error={fieldError("adminEmail")}
-              required
-            >
-              {#snippet children()}
-                <Input
-                  id="adminEmail"
-                  type="email"
-                  bind:value={form.values.adminEmail}
-                  disabled={form.isSubmitting}
-                  class="h-10 text-xs bg-background border-input"
-                  placeholder="admin@school.edu"
-                />
-              {/snippet}
-            </FormField>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
-                id="adminPassword"
-                label={m.setup_bootstrap_admin_password_label()}
-                error={fieldError("adminPassword")}
+                id="adminFullName"
+                label={m.setup_bootstrap_admin_name_label()}
+                error={fieldError("adminFullName")}
                 required
               >
                 {#snippet children()}
                   <Input
-                    id="adminPassword"
-                    type="password"
-                    bind:value={form.values.adminPassword}
+                    id="adminFullName"
+                    type="text"
+                    bind:value={form.values.adminFullName}
                     disabled={form.isSubmitting}
-                    class="h-10 text-xs bg-background border-input"
-                    placeholder="••••••••"
+                    class="h-10 text-xs bg-background border-input font-medium"
+                    placeholder="مثال: عبدالله المنصور"
                   />
                 {/snippet}
               </FormField>
 
               <FormField
-                id="adminPasswordConfirm"
-                label={m.setup_bootstrap_admin_password_confirm_label()}
-                error={fieldError("adminPasswordConfirm")}
+                id="adminEmail"
+                label={m.setup_bootstrap_admin_email_label()}
+                error={fieldError("adminEmail")}
                 required
               >
                 {#snippet children()}
                   <Input
-                    id="adminPasswordConfirm"
-                    type="password"
-                    bind:value={form.values.adminPasswordConfirm}
+                    id="adminEmail"
+                    type="email"
+                    bind:value={form.values.adminEmail}
                     disabled={form.isSubmitting}
-                    class="h-10 text-xs bg-background border-input"
-                    placeholder="••••••••"
+                    class="h-10 text-xs bg-background border-input text-left"
+                    style="direction: ltr;"
+                    placeholder="admin@institution.edu"
                   />
                 {/snippet}
               </FormField>
+
+              <!-- Super Admin Role Explanation Card -->
+              <div class="p-3.5 rounded-xl bg-card border border-border/70 space-y-2">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2 text-xs font-bold text-foreground">
+                    <ShieldCheck size={15} class="text-primary" />
+                    <span>{l("المدير العام الأعلى (Super Admin)", "Super Administrator")}</span>
+                  </div>
+                  <Badge variant="outline" class="text-[10px] bg-primary/5 text-primary border-primary/20">
+                    {l("صلاحيات كاملة", "Root Authority")}
+                  </Badge>
+                </div>
+                <p class="text-[11px] text-muted-foreground leading-relaxed">
+                  {l(
+                    "يمتلك هذا الحساب الصلاحيات الجذرية لإدارة كافة المنظومة، وتعيين الكادر الإداري، والتحكم بالهيكل المالي والأكاديمي.",
+                    "This account holds root administrative privileges for full organizational structure, staff provisioning, and academic controls."
+                  )}
+                </p>
+              </div>
             </div>
+
+            <!-- Right Side: Security & Password Setup (6 Cols) -->
+            <div class="lg:col-span-6 space-y-4 rounded-2xl bg-muted/10 border border-border/60 p-5 sm:p-6">
+              <div class="flex items-center gap-2 pb-1 border-b border-border/40">
+                <KeyRound size={16} class="text-primary" />
+                <h3 class="font-bold text-xs sm:text-sm text-foreground">
+                  {l("كلمة المرور والأمان", "Security & Password Setup")}
+                </h3>
+              </div>
+
+              <div class="space-y-4">
+                <FormField
+                  id="adminPassword"
+                  label={m.setup_bootstrap_admin_password_label()}
+                  error={fieldError("adminPassword")}
+                  required
+                >
+                  {#snippet children()}
+                    <Input
+                      id="adminPassword"
+                      type="password"
+                      bind:value={form.values.adminPassword}
+                      disabled={form.isSubmitting}
+                      class="h-10 text-xs bg-background border-input"
+                      placeholder="••••••••"
+                    />
+                  {/snippet}
+                </FormField>
+
+                <FormField
+                  id="adminPasswordConfirm"
+                  label={m.setup_bootstrap_admin_password_confirm_label()}
+                  error={fieldError("adminPasswordConfirm")}
+                  required
+                >
+                  {#snippet children()}
+                    <Input
+                      id="adminPasswordConfirm"
+                      type="password"
+                      bind:value={form.values.adminPasswordConfirm}
+                      disabled={form.isSubmitting}
+                      class="h-10 text-xs bg-background border-input"
+                      placeholder="••••••••"
+                    />
+                  {/snippet}
+                </FormField>
+              </div>
+
+              <!-- Real-time Security Checklist -->
+              <div class="p-3.5 rounded-xl bg-card border border-border/70 space-y-2">
+                <div class="text-[11px] font-bold text-foreground">
+                  {l("متطلبات الحماية الموصى بها", "Recommended Security Standards")}
+                </div>
+                <div class="space-y-1.5 text-[11px]">
+                  <div class="flex items-center gap-2 {isPasswordLengthValid ? 'text-emerald-500 font-semibold' : 'text-muted-foreground'}">
+                    {#if isPasswordLengthValid}
+                      <Check size={13} class="text-emerald-500 shrink-0" />
+                    {:else}
+                      <div class="size-3 rounded-full border border-muted-foreground/40 shrink-0"></div>
+                    {/if}
+                    <span>{l("8 أحرف على الأقل", "Minimum 8 characters")}</span>
+                  </div>
+
+                  <div class="flex items-center gap-2 {isPasswordMatch ? 'text-emerald-500 font-semibold' : 'text-muted-foreground'}">
+                    {#if isPasswordMatch}
+                      <Check size={13} class="text-emerald-500 shrink-0" />
+                    {:else}
+                      <div class="size-3 rounded-full border border-muted-foreground/40 shrink-0"></div>
+                    {/if}
+                    <span>{l("تطابق كلمتي المرور", "Passwords match perfectly")}</span>
+                  </div>
+
+                  <div class="flex items-center gap-2 text-muted-foreground">
+                    <Lock size={12} class="text-primary shrink-0" />
+                    <span>{l("تشفير محلي وسحابي آمن (Argon2 / SHA-256)", "Secure encryption with Argon2 & SHA-256")}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         {/if}
       </div>
 
       <!-- Action Footer -->
-      <div class="pt-6 mt-6 border-t border-border/40 flex items-center justify-between">
+      <div class="pt-3 border-t border-border/50 flex items-center justify-between">
         {#if step === 2}
           <Button
             type="button"
             variant="outline"
             onclick={handleBack}
             disabled={form.isSubmitting}
-            class="inline-flex items-center gap-1.5 px-4 h-10 text-xs font-medium cursor-pointer border-border"
+            class="inline-flex items-center gap-1.5 px-4 h-9 text-xs font-medium cursor-pointer border-border"
           >
             {#if isRTL}
               <ArrowRight class="w-3.5 h-3.5" />
@@ -423,13 +620,13 @@ async function handleBootstrap(e: SubmitEvent | MouseEvent) {
             type="button"
             variant="default"
             onclick={handleNext}
-            class="inline-flex items-center gap-2 px-6 h-10 text-xs font-semibold cursor-pointer"
+            class="inline-flex items-center gap-2 px-6 h-9 text-xs font-semibold cursor-pointer"
           >
             <span>{m.setup_bootstrap_next_btn()}</span>
             {#if isRTL}
-              <ArrowLeft class="w-4 h-4" />
+              <ArrowLeft class="w-3.5 h-3.5" />
             {:else}
-              <ArrowRight class="w-4 h-4" />
+              <ArrowRight class="w-3.5 h-3.5" />
             {/if}
           </Button>
         {:else}
@@ -437,18 +634,18 @@ async function handleBootstrap(e: SubmitEvent | MouseEvent) {
             type="submit"
             variant="default"
             disabled={form.isSubmitting}
-            class="inline-flex items-center gap-2 px-6 h-10 text-xs font-semibold cursor-pointer disabled:opacity-50"
+            class="inline-flex items-center gap-2 px-7 h-9 text-xs font-semibold cursor-pointer disabled:opacity-50"
           >
             {#if form.isSubmitting}
-              <Loader2 class="w-4 h-4 animate-spin" />
+              <Loader2 class="w-3.5 h-3.5 animate-spin" />
               <span>{m.setup_bootstrap_submitting()}</span>
             {:else}
-              <ShieldCheck class="w-4 h-4" />
+              <ShieldCheck class="w-3.5 h-3.5" />
               <span>{m.setup_bootstrap_submit_btn()}</span>
             {/if}
           </Button>
         {/if}
       </div>
     </form>
-  </Card>
+  </div>
 </div>

@@ -30,8 +30,11 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
 
         // 1. Fetch only active users with an administrator role
     let sql = r#"
-                SELECT u.id, u.email, u.full_name, u.password_hash, u.mfa_enabled, ura.role_id
+                  SELECT u.id, u.email,
+                      COALESCE(NULLIF(p.display_name, ''), TRIM(p.first_name || ' ' || p.last_name)) AS full_name,
+                      u.password_hash, u.is_mfa_enabled, ura.role_id
                 FROM users u
+                  INNER JOIN persons p ON p.id = u.person_id
                 INNER JOIN user_role_assignments ura ON ura.user_id = u.id
                 WHERE u.status = 'active'
                     AND u.is_deleted = 0

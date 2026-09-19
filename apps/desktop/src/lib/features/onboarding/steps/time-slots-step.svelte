@@ -1,6 +1,6 @@
 <!--
   Step 2: Daily Schedule & Time Slots Setup
-  Working days configuration and daily periods schedule with compact high-density layout.
+  Working days configuration and daily periods schedule with full height utilization.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -101,10 +101,10 @@ const breakTypeLabels: Record<string, () => string> = {
 };
 </script>
 
-<div class="w-full space-y-3 text-start">
+<div class="w-full h-full flex flex-col min-h-0 space-y-3 text-start">
 
   <!-- Top Working Days Bar -->
-  <div class="rounded-2xl border border-border/70 bg-card p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+  <div class="rounded-2xl border border-border/70 bg-card p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs shrink-0">
     <div class="flex items-center gap-2.5">
       <CalendarDays size={16} class="text-primary shrink-0" />
       <span class="text-xs font-bold text-foreground">{m.common_onboarding_working_days_title()}</span>
@@ -114,7 +114,7 @@ const breakTypeLabels: Record<string, () => string> = {
       {#each dayLabels as day (day.value)}
         <button
           type="button"
-          class="rounded-lg border px-2.5 py-1 text-[11px] font-bold transition-colors cursor-pointer {onboardingState.academics.workingDays.includes(day.value) ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted/50'}"
+          class="rounded-lg border px-3 py-1 text-[11px] font-bold transition-colors cursor-pointer {onboardingState.academics.workingDays.includes(day.value) ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted/50'}"
           aria-pressed={onboardingState.academics.workingDays.includes(day.value)}
           onclick={() => toggleWorkingDay(day.value)}
         >{day.label}</button>
@@ -122,17 +122,17 @@ const breakTypeLabels: Record<string, () => string> = {
     </div>
   </div>
 
-  <!-- Main Schedule Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-12 gap-3.5">
+  <!-- Main Schedule Grid (Expands to fill 100% available height) -->
+  <div class="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-3.5">
 
     <!-- Add Slot Form (4 cols) -->
-    <div class="md:col-span-4 rounded-2xl border border-border/70 bg-card p-3.5 flex flex-col justify-between shadow-xs space-y-2.5">
-      <div class="flex items-center gap-1.5 border-b border-border/50 pb-2">
-        <Plus size={14} class="text-primary shrink-0" />
+    <div class="md:col-span-4 rounded-2xl border border-border/70 bg-card p-4 flex flex-col justify-between shadow-xs space-y-3 overflow-y-auto">
+      <div class="flex items-center gap-1.5 border-b border-border/50 pb-2 shrink-0">
+        <Plus size={15} class="text-primary shrink-0" />
         <h4 class="text-xs font-bold text-foreground">{m.common_onboarding_add_period()}</h4>
       </div>
 
-      <div class="space-y-2">
+      <div class="space-y-2.5 flex-1">
         <FormField label={m.common_onboarding_schedule_name_ar()} required>
           {#snippet children()}
             <Input bind:value={newSlotNameAr} placeholder="الحصة الأولى" class="h-8 text-xs font-bold font-sans" />
@@ -201,57 +201,57 @@ const breakTypeLabels: Record<string, () => string> = {
         </div>
       </div>
 
-      <Button size="sm" class="h-8 w-full gap-1.5 text-xs font-bold cursor-pointer" onclick={handleAddSlot} disabled={(!newSlotName.trim() && !newSlotNameAr.trim()) || newSlotDuration <= 0}>
+      <Button size="sm" class="h-8 w-full gap-1.5 text-xs font-bold cursor-pointer shrink-0" onclick={handleAddSlot} disabled={(!newSlotName.trim() && !newSlotNameAr.trim()) || newSlotDuration <= 0}>
         <Plus size={13} /> {m.common_onboarding_add_period()}
       </Button>
     </div>
 
-    <!-- Slots Table / List (8 cols) -->
-    <div class="md:col-span-8 rounded-2xl border border-border/70 bg-card p-3.5 flex flex-col justify-between shadow-xs space-y-2">
-      <div class="flex items-center justify-between border-b border-border/50 pb-2">
+    <!-- Slots Table / List (8 cols) (Expands to fill vertical height) -->
+    <div class="md:col-span-8 rounded-2xl border border-border/70 bg-card p-4 flex flex-col justify-between shadow-xs space-y-2 min-h-0">
+      <div class="flex items-center justify-between border-b border-border/50 pb-2 shrink-0">
         <div class="flex items-center gap-2">
-          <Clock size={15} class="text-primary shrink-0" />
+          <Clock size={16} class="text-primary shrink-0" />
           <h4 class="text-xs font-bold text-foreground">{m.common_onboarding_schedule_title()}</h4>
         </div>
-        <span class="rounded-full bg-primary/10 px-2 py-0.5 text-[10.5px] font-bold text-primary">
+        <span class="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary font-mono">
           {onboardingState.academics.timeSlots.length} {m.common_word_active ? m.common_word_active() : "فترات"}
         </span>
       </div>
 
-      <!-- Compact List with fixed max height -->
-      <div class="overflow-y-auto max-h-[220px] scrollbar-hide divide-y divide-border/40 pr-1">
+      <!-- Scrollable List filling full height -->
+      <div class="flex-1 min-h-0 overflow-y-auto scrollbar-hide divide-y divide-border/40 pe-1">
         {#each onboardingState.academics.timeSlots as slot, index (slot.name + slot.start_time + index)}
           {@const duration = getDuration(slot.start_time, slot.end_time)}
-          <div class="py-1.5 flex items-center justify-between gap-3 text-xs">
+          <div class="py-2.5 flex items-center justify-between gap-3 text-xs hover:bg-muted/10 px-2 rounded-lg transition-colors">
             <div class="flex items-center gap-2.5 min-w-0">
-              <span class="flex size-5 shrink-0 items-center justify-center rounded-full {slot.is_break ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-primary/10 text-primary'} text-[10px] font-bold">
+              <span class="flex size-6 shrink-0 items-center justify-center rounded-full {slot.is_break ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-primary/10 text-primary'} text-[11px] font-bold">
                 {index + 1}
               </span>
-              <div class="flex items-center gap-1.5 min-w-0">
+              <div class="flex items-center gap-2 min-w-0">
                 <span class="font-bold text-foreground text-xs truncate">{l(slot.name_ar, slot.name)}</span>
                 {#if slot.is_break}
-                  <span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-medium shrink-0">
+                  <span class="text-[9.5px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-medium shrink-0">
                     {breakTypeLabels[slot.break_type || "recess"]?.() || "استراحة"}
                   </span>
                 {/if}
               </div>
             </div>
 
-            <div class="flex items-center gap-3 shrink-0 font-mono text-[11px] text-muted-foreground">
-              <span>{slot.start_time} - {slot.end_time}</span>
-              <span class="px-1.5 py-0.5 rounded bg-muted text-[10px] font-bold">{duration} د</span>
+            <div class="flex items-center gap-3 shrink-0 font-mono text-xs text-muted-foreground">
+              <span class="font-semibold text-foreground">{slot.start_time} - {slot.end_time}</span>
+              <span class="px-2 py-0.5 rounded-md bg-muted text-[10px] font-bold">{duration} دقيقة</span>
               <button
                 type="button"
                 class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer"
                 aria-label={m.common_onboarding_delete_period()}
                 onclick={() => removeSlot(slot)}
               >
-                <Trash2 size={13} />
+                <Trash2 size={14} />
               </button>
             </div>
           </div>
         {:else}
-          <div class="py-8 text-center text-xs text-muted-foreground">
+          <div class="py-12 text-center text-xs text-muted-foreground">
             {m.common_onboarding_no_periods()}
           </div>
         {/each}

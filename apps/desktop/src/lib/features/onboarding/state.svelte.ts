@@ -15,7 +15,7 @@ import { api } from "$lib/api";
 import type { InitialSetupRequest } from "$lib/api/types";
 import type { Room, TimeSlot } from "./types";
 
-const STORAGE_KEY = "orbis_onboarding_state";
+const STORAGE_KEY = "orbis_onboarding_state_v3";
 
 export class OnboardingState {
   currentStep = $state(0);
@@ -592,8 +592,12 @@ export class OnboardingState {
       }
     }
 
-    // 3. If no grade levels or subjects loaded yet, apply profile chosen in setup
-    if (this.academics.gradeLevels.length === 0) {
+    // 3. Ensure complete profile is applied if anything is missing
+    if (
+      this.academics.gradeLevels.length < 10 ||
+      this.academics.timeSlots.length < 7 ||
+      this.academics.subjects.length < 18
+    ) {
       this.selectInstitutionType(this.profile.institutionType || "school");
     }
   }

@@ -1,15 +1,16 @@
 <!--
   Bottom navigation bar for the onboarding wizard.
-  Shows Previous/Next buttons aligned with the form width.
+  Mirrors the luxury centered capsule aesthetic and design tokens of onboarding-stepper.
 -->
 <script lang="ts">
+import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
-import { ArrowRight, ArrowLeft } from "@lucide/svelte";
+import { ArrowRight, ArrowLeft, Loader2, Sparkles } from "@lucide/svelte";
 
 let {
   activeStep,
-  totalSteps = 10,
+  totalSteps = 9,
   isLoading = false,
   onNext,
   onPrev,
@@ -20,31 +21,64 @@ let {
   onNext: () => void;
   onPrev: () => void;
 } = $props();
+
+const isArabic = $derived(getLocale().startsWith("ar"));
+const isLastStep = $derived(activeStep >= totalSteps - 1);
 </script>
 
-<div class="w-full py-3.5 px-6 shrink-0 border-t border-border/60 bg-card/80 backdrop-blur-md z-30">
-  <div class="max-w-7xl 2xl:max-w-[1550px] w-full mx-auto flex justify-between items-center">
-    <!-- Back button -->
+<div class="w-full flex items-center justify-center py-2 select-none shrink-0">
+  <!-- Centered Luxury Capsule Footer Unit -->
+  <div class="inline-flex items-center gap-3 px-3 py-1.5 rounded-full bg-card/90 border border-border/80 shadow-2xs backdrop-blur-md">
+    
+    <!-- Previous Button -->
     <Button
       variant="outline"
+      size="xs"
       onclick={onPrev}
       disabled={activeStep === 0 || isLoading}
-      class="flex gap-2 items-center text-xs h-9 px-4 rounded-xl cursor-pointer"
+      class=" px-3.5 h-7 text-xs font-medium cursor-pointer border-border/70"
     >
-      <ArrowLeft class="w-4 h-4 rtl:rotate-180" />
-      <span>{m.common_onboarding_prev_btn?.() || "Previous"}</span>
+      {#if isArabic}
+        <ArrowRight class="w-3.5 h-3.5" />
+      {:else}
+        <ArrowLeft class="w-3.5 h-3.5" />
+      {/if}
+      <span>{m.common_onboarding_prev_btn?.() || (isArabic ? "السابق" : "Previous")}</span>
     </Button>
 
-    <!-- Next button (hidden on last step where launch button exists) -->
-    {#if activeStep < totalSteps - 1}
+    <!-- Step Counter Pill -->
+    <span class="font-mono text-xs font-semibold text-muted-foreground tracking-wider px-2.5 py-0.5 rounded-full bg-muted/40 border border-border/40">
+      <span class="text-foreground font-bold">{String(activeStep + 1).padStart(2, "0")}</span>
+      <span class="opacity-40">/</span>
+      <span>{String(totalSteps).padStart(2, "0")}</span>
+    </span>
+
+    <!-- Next / Launch Button -->
+    {#if !isLastStep}
       <Button
+        variant="default"
+        size="xs"
         onclick={onNext}
         disabled={isLoading}
-        class="flex gap-2 items-center text-xs h-9 px-5 rounded-xl cursor-pointer shadow-xs font-semibold"
+        class="px-4 h-7 text-xs font-bold cursor-pointer shadow-xs"
       >
-        <span>{m.common_onboarding_next_btn?.() || "Next"}</span>
-        <ArrowRight class="w-4 h-4 rtl:rotate-180" />
+        {#if isLoading}
+          <Loader2 class="w-3.5 h-3.5 animate-spin" />
+        {:else}
+          <span>{m.common_onboarding_next_btn?.() || (isArabic ? "التالي" : "Next")}</span>
+          {#if isArabic}
+            <ArrowLeft class="w-3.5 h-3.5" />
+          {:else}
+            <ArrowRight class="w-3.5 h-3.5" />
+          {/if}
+        {/if}
       </Button>
+    {:else}
+      <div class="inline-flex items-center gap-1.5 px-3.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold">
+        <Sparkles class="w-3.5 h-3.5" />
+        <span>{isArabic ? "جاهز" : "Ready"}</span>
+      </div>
     {/if}
+
   </div>
 </div>
