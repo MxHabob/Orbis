@@ -1,161 +1,605 @@
 // ── Onboarding State ──────────────────────────────────────────────────
-// Streamlined initial setup state for Academic Year, Periods, Classes, and Subjects.
+// Central orchestrator for the 10-step academic onboarding wizard.
 
+import { ProfileInfoState } from "./state/profile-info.svelte";
+import { CalendarInfoState } from "./state/calendar-info.svelte";
+import { AcademicsInfoState } from "./state/academics-info.svelte";
+import { FacilitiesInfoState } from "./state/facilities-info.svelte";
+import { FinanceInfoState } from "./state/finance-info.svelte";
+
+import { INSTITUTION_PROFILES, type InstitutionProfile } from "./templates";
+import { getLocale } from "$lib/paraglide/runtime";
 import { systemStore } from "$lib/stores/system.svelte";
 import { authStore } from "$lib/stores/auth.svelte";
+import { api } from "$lib/api";
 import type { InitialSetupRequest } from "$lib/api/types";
+import type { Room, TimeSlot } from "./types";
 
-export interface PeriodItem {
-  name: string;
-  name_ar?: string;
-  period_type: string;
-  start_date: string;
-  end_date: string;
-}
+const STORAGE_KEY = "orbis_onboarding_state";
 
-export interface ClassItem {
-  name: string;
-  name_ar?: string;
-  level: string;
-  division?: string;
-}
-
-export interface SubjectItem {
-  code: string;
-  name: string;
-  name_ar?: string;
-  is_core: boolean;
-}
-
-class OnboardingState {
+export class OnboardingState {
   currentStep = $state(0);
   isLoading = $state(false);
-  error = $state<string | null>(null);
+  errorMessage = $state<string | null>(null);
 
-  // Step 1: Academic Year & Periods
-  academicYearName = $state("2026/2027");
-  academicYearNameAr = $state("العام الدراسي 2026/2027");
-  academicYearStart = $state("2026-09-01");
-  academicYearEnd = $state("2027-06-30");
+  profile = new ProfileInfoState();
+  calendar = new CalendarInfoState();
+  academics = new AcademicsInfoState();
+  facilities = new FacilitiesInfoState();
+  finance = new FinanceInfoState();
 
-  periods = $state<PeriodItem[]>([
-    {
-      name: "First Semester",
-      name_ar: "الفصل الدراسي الأول",
-      period_type: "semester",
-      start_date: "2026-09-01",
-      end_date: "2027-01-15",
-    },
-    {
-      name: "Second Semester",
-      name_ar: "الفصل الدراسي الثاني",
-      period_type: "semester",
-      start_date: "2027-02-01",
-      end_date: "2027-06-30",
-    },
-  ]);
+  readonly totalSteps = 10;
 
-  // Step 2: Classes
-  classes = $state<ClassItem[]>([
-    { name: "Grade 1 - A", name_ar: "الصف الأول - أ", level: "Grade 1", division: "A" },
-    { name: "Grade 1 - B", name_ar: "الصف الأول - ب", level: "Grade 1", division: "B" },
-    { name: "Grade 2 - A", name_ar: "الصف الثاني - أ", level: "Grade 2", division: "A" },
-    { name: "Grade 2 - B", name_ar: "الصف الثاني - ب", level: "Grade 2", division: "B" },
-  ]);
-
-  // Step 3: Core Subjects
-  subjects = $state<SubjectItem[]>([
-    { code: "MATH101", name: "Mathematics", name_ar: "الرياضيات", is_core: true },
-    { code: "SCI101", name: "Science", name_ar: "العلوم", is_core: true },
-    { code: "ARB101", name: "Arabic Language", name_ar: "اللغة العربية", is_core: true },
-    { code: "ENG101", name: "English Language", name_ar: "اللغة الإنجليزية", is_core: true },
-    { code: "HIS101", name: "Social Studies", name_ar: "الدراسات الاجتماعية", is_core: false },
-    { code: "ART101", name: "Art & Design", name_ar: "التربية الفنية", is_core: false },
-  ]);
-
-  addPeriod() {
-    this.periods.push({
-      name: `Period ${this.periods.length + 1}`,
-      name_ar: `الفصل ${this.periods.length + 1}`,
-      period_type: "semester",
-      start_date: this.academicYearStart,
-      end_date: this.academicYearEnd,
-    });
+  constructor() {
+    this.init();
   }
 
-  removePeriod(index: number) {
-    if (this.periods.length > 1) {
-      this.periods.splice(index, 1);
-    }
+  // ── Derived Properties & Labels ─────────────────────────────────────
+
+  get isFirstStep() {
+    return this.currentStep === 0;
   }
 
-  addClass(name: string, level: string, division?: string, name_ar?: string) {
-    this.classes.push({ name, level, division, name_ar });
+  get isLastStep() {
+    return this.currentStep === this.totalSteps - 1;
   }
 
-  removeClass(index: number) {
-    if (this.classes.length > 1) {
-      this.classes.splice(index, 1);
-    }
+  get progressPercentage() {
+    return Math.round(((this.currentStep + 1) / this.totalSteps) * 100);
   }
 
-  addSubject(code: string, name: string, name_ar?: string, is_core = true) {
-    this.subjects.push({ code, name, name_ar, is_core });
+  get isArabic() {
+    return getLocale().startsWith("ar");
   }
 
-  removeSubject(index: number) {
-    if (this.subjects.length > 1) {
-      this.subjects.splice(index, 1);
-    }
+  get currentProfile(): InstitutionProfile {
+    return (
+      INSTITUTION_PROFILES[this.profile.institutionType] ||
+      INSTITUTION_PROFILES["school"]
+    );
   }
+
+  get stageLabel(): string {
+    return this.isArabic
+      ? this.currentProfile.terminology.stage_ar
+      : this.currentProfile.terminology.stage;
+  }
+
+  get stagesLabelPlural(): string {
+    return this.isArabic ? "مراحل" : "Stages";
+  }
+
+  get classroomLabel(): string {
+    return this.isArabic
+      ? this.currentProfile.terminology.classroom_ar
+      : this.currentProfile.terminology.classroom;
+  }
+
+  get classroomsLabelPlural(): string {
+    return this.isArabic ? "قاعات" : "Classrooms";
+  }
+
+  get divisionLabel(): string {
+    return this.isArabic
+      ? this.currentProfile.terminology.division_ar
+      : this.currentProfile.terminology.division;
+  }
+
+  get subjectLabel(): string {
+    return this.isArabic
+      ? this.currentProfile.terminology.subject_ar
+      : this.currentProfile.terminology.subject;
+  }
+
+  get calendarLabel(): string {
+    return this.isArabic
+      ? this.currentProfile.terminology.calendar_ar
+      : this.currentProfile.terminology.calendar;
+  }
+
+  get localizedLanguageName(): string {
+    return this.profile.locale.startsWith("ar") ? "العربية" : "English";
+  }
+
+  localizedProfile(type: string) {
+    const prof = INSTITUTION_PROFILES[type] || INSTITUTION_PROFILES["school"];
+    return {
+      name: this.isArabic ? prof.name_ar : prof.name,
+      description: this.isArabic ? prof.description_ar : prof.description,
+    };
+  }
+
+  // ── Navigation ──────────────────────────────────────────────────────
 
   nextStep() {
-    if (this.currentStep < 2) {
+    if (this.currentStep < this.totalSteps - 1) {
       this.currentStep += 1;
+      this.save();
     }
   }
 
   prevStep() {
     if (this.currentStep > 0) {
       this.currentStep -= 1;
+      this.save();
     }
   }
 
-  async submit(orgId: string): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
+  goToStep(step: number) {
+    if (step >= 0 && step < this.totalSteps) {
+      this.currentStep = step;
+      this.save();
+    }
+  }
+
+  // ── Preset & Profile Selection ──────────────────────────────────────
+
+  selectInstitutionType(type: string) {
+    const prof = INSTITUTION_PROFILES[type];
+    if (!prof) return;
+
+    this.profile.institutionType = type;
+    this.profile.studentNumberPattern = prof.numberingPattern;
+    this.profile.activeFields = { ...prof.activeFields };
+    this.profile.requiredFields = { ...prof.requiredFields };
+    this.profile.preventDuplicates = { ...prof.preventDuplicates };
+    this.profile.requiredDocumentsList = [...prof.requiredDocuments];
+
+    // Populate Grade Levels
+    this.academics.gradeLevels = prof.stages.map((stage) => ({
+      level: stage.level,
+      name: stage.name,
+      name_ar: stage.name_ar,
+      color: stage.color,
+      enabled: true,
+      divisions: [...stage.divisions],
+    }));
+
+    // Populate Time Slots
+    this.academics.timeSlots = prof.timeSlots.map((slot) => ({
+      name: slot.name,
+      name_ar: slot.name_ar,
+      start_time: slot.start_time,
+      end_time: slot.end_time,
+      is_break: slot.is_break ?? false,
+      break_type: slot.break_type,
+      applicable_days: slot.applicable_days
+        ? [...slot.applicable_days]
+        : [...this.academics.workingDays],
+    }));
+
+    // Populate Subjects
+    this.academics.subjects = prof.subjects.map((sub) => ({
+      code: sub.code,
+      name: sub.name,
+      name_ar: sub.name_ar,
+      color: sub.color,
+      icon: sub.icon,
+      sort_order: sub.sort_order,
+      enabled: true,
+    }));
+
+    this.save();
+  }
+
+  // ── Facilities Mutations ───────────────────────────────────────────
+
+  addBuilding(name: string) {
+    if (!name.trim()) return;
+    const clean = name.trim();
+    if (!this.facilities.buildings.includes(clean)) {
+      this.facilities.buildings.push(clean);
+      this.facilities.activeBuildingTab = clean;
+      this.addDefaultRoomsToBuilding(clean);
+      this.save();
+    }
+  }
+
+  removeBuilding(name: string) {
+    if (this.facilities.buildings.length <= 1) return;
+    this.facilities.buildings = this.facilities.buildings.filter(
+      (b) => b !== name
+    );
+    this.facilities.rooms = this.facilities.rooms.filter(
+      (r) => r.building !== name
+    );
+    this.facilities.activeBuildingTab = this.facilities.buildings[0] || "";
+    this.save();
+  }
+
+  addDefaultRoomsToBuilding(building: string) {
+    const existing = this.facilities.rooms.filter((r) => r.building === building);
+    if (existing.length > 0) return;
+
+    for (let i = 1; i <= 6; i++) {
+      this.facilities.rooms.push({
+        id: `room-${building}-${Date.now()}-${i}`,
+        name: `Classroom ${i}`,
+        name_ar: `الفصل ${i}`,
+        capacity: 30,
+        room_type: "classroom",
+        building,
+        floor: i <= 3 ? 1 : 2,
+      });
+    }
+    this.facilities.rooms.push({
+      id: `lab-${building}-${Date.now()}-1`,
+      name: `Science Lab 1`,
+      name_ar: `المختبر العلمي 1`,
+      capacity: 25,
+      room_type: "science_lab",
+      building,
+      floor: 1,
+    });
+    this.save();
+  }
+
+  addRoom(
+    name: string,
+    name_ar: string,
+    capacity: number,
+    room_type: string,
+    floor: number
+  ): boolean {
+    if (!name.trim() || !name_ar.trim() || capacity <= 0) return false;
+    const building = this.facilities.activeBuildingTab;
+    if (!building) return false;
+
+    const newRoom: Room = {
+      id: `room-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: name.trim(),
+      name_ar: name_ar.trim(),
+      capacity: Number(capacity),
+      room_type,
+      building,
+      floor: Number(floor) || 0,
+    };
+
+    this.facilities.rooms.push(newRoom);
+    this.save();
+    return true;
+  }
+
+  removeRoom(id: string) {
+    this.facilities.rooms = this.facilities.rooms.filter((r) => r.id !== id);
+    this.save();
+  }
+
+  // ── Time Slots Mutations ────────────────────────────────────────────
+
+  addTimeSlot(
+    name: string,
+    name_ar: string,
+    start_time: string,
+    end_time: string,
+    options?: { isBreak?: boolean; breakType?: any }
+  ): boolean {
+    if (!name.trim() || !name_ar.trim()) return false;
+
+    const newSlot: TimeSlot = {
+      name: name.trim(),
+      name_ar: name_ar.trim(),
+      start_time,
+      end_time,
+      is_break: options?.isBreak ?? false,
+      break_type: options?.breakType,
+      applicable_days: [...this.academics.workingDays],
+    };
+
+    this.academics.timeSlots.push(newSlot);
+    this.save();
+    return true;
+  }
+
+  removeTimeSlot(index: number) {
+    if (index >= 0 && index < this.academics.timeSlots.length) {
+      this.academics.timeSlots.splice(index, 1);
+      this.save();
+    }
+  }
+
+  // ── Academics / Grades Mutations ────────────────────────────────────
+
+  addDivision(level: string) {
+    const gl = this.academics.gradeLevels.find((l) => l.level === level);
+    if (!gl) return;
+
+    const rawInput = this.academics.divisionInput[level]?.trim() || "";
+    if (!rawInput) {
+      // Auto-assign next letter
+      const alphabet = ["A", "B", "C", "D", "E", "F", "G"];
+      const nextLetter = alphabet.find((l) => !gl.divisions.includes(l)) || `${gl.divisions.length + 1}`;
+      gl.divisions.push(nextLetter);
+    } else {
+      const parts = rawInput.split(/[,،\s]+/).filter(Boolean);
+      for (const part of parts) {
+        if (!gl.divisions.includes(part)) {
+          gl.divisions.push(part);
+        }
+      }
+      this.academics.divisionInput[level] = "";
+    }
+    this.save();
+  }
+
+  addNamedDivision(level: string, name: string) {
+    const gl = this.academics.gradeLevels.find((l) => l.level === level);
+    if (!gl) return;
+    if (!gl.divisions.includes(name)) {
+      gl.divisions.push(name);
+      this.save();
+    }
+  }
+
+  renameDivision(level: string, divisionIndex: number, newName: string) {
+    const gl = this.academics.gradeLevels.find((l) => l.level === level);
+    if (!gl) return;
+    if (divisionIndex >= 0 && divisionIndex < gl.divisions.length && newName.trim()) {
+      gl.divisions[divisionIndex] = newName.trim();
+      this.save();
+    }
+  }
+
+  removeDivision(level: string, div: string) {
+    const gl = this.academics.gradeLevels.find((l) => l.level === level);
+    if (!gl) return;
+    gl.divisions = gl.divisions.filter((d) => d !== div);
+    this.save();
+  }
+
+  // ── Subjects Mutations ──────────────────────────────────────────────
+
+  addSubject(code: string, name: string, name_ar?: string, color = "#f59e0b"): boolean {
+    if (!code.trim() || !name.trim()) return false;
+    const cleanCode = code.trim().toUpperCase();
+
+    if (this.academics.subjects.some((s) => s.code === cleanCode)) {
+      return false;
+    }
+
+    this.academics.subjects.push({
+      code: cleanCode,
+      name: name.trim(),
+      name_ar: name_ar?.trim() || name.trim(),
+      color,
+      icon: "BookOpen",
+      sort_order: this.academics.subjects.length + 1,
+      enabled: true,
+    });
+
+    this.save();
+    return true;
+  }
+
+  // ── Persistence & Initialization ────────────────────────────────────
+
+  async init(orgDto?: any) {
+    // 1. If stored in localStorage, load it
+    this.load();
+
+    // 2. If organization info is present from passed orgDto or systemStore or API
+    if (orgDto) {
+      if (orgDto.name) this.profile.orgName = orgDto.name;
+      if (orgDto.name_ar) this.profile.orgNameAr = orgDto.name_ar;
+      if (orgDto.currency) this.profile.currency = orgDto.currency;
+      if (orgDto.timezone) this.profile.timezone = orgDto.timezone;
+    } else if (systemStore.orgReadiness?.org_name) {
+      if (!this.profile.orgName) this.profile.orgName = systemStore.orgReadiness.org_name;
+    }
+
+    if (authStore.isAuthenticated && !this.profile.orgName) {
+      try {
+        const org = await api.getCurrentOrg();
+        if (org) {
+          if (org.name) this.profile.orgName = org.name;
+          if (org.name_ar) this.profile.orgNameAr = org.name_ar;
+          if (org.currency) this.profile.currency = org.currency;
+          if (org.timezone) this.profile.timezone = org.timezone;
+        }
+      } catch {
+        // Silently continue with defaults
+      }
+    }
+
+    // 3. If no grade levels or subjects loaded yet, apply default school profile
+    if (this.academics.gradeLevels.length === 0) {
+      this.selectInstitutionType(this.profile.institutionType || "school");
+    }
+  }
+
+  save() {
     try {
-      const payload: InitialSetupRequest = {
-        orgId: orgId || authStore.orgId,
-        academicYearName: this.academicYearName,
-        academicYearNameAr: this.academicYearNameAr || undefined,
-        academicYearStart: this.academicYearStart,
-        academicYearEnd: this.academicYearEnd,
-        periods: this.periods.map((p) => ({
-          name: p.name,
-          name_ar: p.name_ar,
-          period_type: p.period_type,
-          start_date: p.start_date,
-          end_date: p.end_date,
-        })),
-        classes: this.classes.map((c) => ({
-          name: c.name,
-          name_ar: c.name_ar,
-          level: c.level,
-          division: c.division,
-        })),
-        subjects: this.subjects.map((s) => ({
+      if (typeof window === "undefined" || !window.localStorage) return;
+      const data = {
+        currentStep: this.currentStep,
+        profile: this.profile.serialize(),
+        calendar: this.calendar.serialize(),
+        academics: this.academics.serialize(),
+        facilities: this.facilities.serialize(),
+        finance: this.finance.serialize(),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.warn("Failed to persist onboarding state:", e);
+    }
+  }
+
+  load(): boolean {
+    try {
+      if (typeof window === "undefined" || !window.localStorage) return false;
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+
+      if (data.profile) this.profile.deserialize(data.profile);
+      if (data.calendar) this.calendar.deserialize(data.calendar);
+      if (data.academics) this.academics.deserialize(data.academics);
+      if (data.facilities) this.facilities.deserialize(data.facilities);
+      if (data.finance) this.finance.deserialize(data.finance);
+      if (typeof data.currentStep === "number") {
+        this.currentStep = Math.min(Math.max(0, data.currentStep), this.totalSteps - 1);
+      }
+      return true;
+    } catch (e) {
+      console.warn("Failed to load onboarding state:", e);
+      return false;
+    }
+  }
+
+  reset() {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+      this.currentStep = 0;
+      this.errorMessage = null;
+      this.profile = new ProfileInfoState();
+      this.calendar = new CalendarInfoState();
+      this.academics = new AcademicsInfoState();
+      this.facilities = new FacilitiesInfoState();
+      this.finance = new FinanceInfoState();
+      this.selectInstitutionType("school");
+    } catch (e) {
+      console.warn("Failed to reset onboarding state:", e);
+    }
+  }
+
+  // ── Final Setup & Backend Bootstrap ─────────────────────────────────
+
+  async completeSetup(orgId: string): Promise<boolean> {
+    this.isLoading = true;
+    this.errorMessage = null;
+
+    const targetOrgId = orgId || authStore.orgId;
+    if (!targetOrgId) {
+      this.errorMessage = "No active organization ID found.";
+      this.isLoading = false;
+      return false;
+    }
+
+    try {
+      // 1. Periods generation from selected template
+      const selectedTpl = this.calendar.periodTemplates.find(
+        (t) => t.id === this.calendar.selectedTemplateId
+      );
+
+      let periods: Array<{
+        name: string;
+        name_ar?: string;
+        period_type: string;
+        start_date: string;
+        end_date: string;
+      }> = [];
+
+      if (selectedTpl?.structure && selectedTpl.structure.length > 0) {
+        periods = selectedTpl.structure.map((item, idx) => ({
+          name: item.name || `Period ${idx + 1}`,
+          name_ar: item.name_ar || `الفصل ${idx + 1}`,
+          period_type: item.type || "semester",
+          start_date: this.calendar.startDate,
+          end_date: this.calendar.endDate,
+        }));
+      } else {
+        periods = [
+          {
+            name: "First Semester",
+            name_ar: "الفصل الدراسي الأول",
+            period_type: "semester",
+            start_date: this.calendar.startDate,
+            end_date: this.calendar.endDate,
+          },
+        ];
+      }
+
+      // 2. Classes generation from enabled grade levels & divisions
+      const enabledGrades = this.academics.gradeLevels.filter((gl) => gl.enabled);
+      const classes: Array<{
+        name: string;
+        name_ar?: string;
+        level: string;
+        division?: string;
+      }> = [];
+
+      for (const gl of enabledGrades) {
+        if (gl.divisions.length > 0) {
+          for (const div of gl.divisions) {
+            classes.push({
+              name: `${gl.name} - ${div}`,
+              name_ar: `${gl.name_ar} - ${div}`,
+              level: gl.name,
+              division: div,
+            });
+          }
+        } else {
+          classes.push({
+            name: gl.name,
+            name_ar: gl.name_ar,
+            level: gl.name,
+          });
+        }
+      }
+
+      if (classes.length === 0) {
+        classes.push({
+          name: "Grade 1 - A",
+          name_ar: "الصف الأول - أ",
+          level: "Grade 1",
+          division: "A",
+        });
+      }
+
+      // 3. Subjects generation from enabled subjects
+      const enabledSubjects = this.academics.subjects.filter((s) => s.enabled);
+      const subjects: Array<{
+        code: string;
+        name: string;
+        name_ar?: string;
+        is_core: boolean;
+      }> = (enabledSubjects.length > 0 ? enabledSubjects : this.academics.subjects).map(
+        (s) => ({
           code: s.code,
           name: s.name,
           name_ar: s.name_ar,
-          is_core: s.is_core,
-        })),
+          is_core: true,
+        })
+      );
+
+      // 4. Initial Setup Request
+      const payload: InitialSetupRequest = {
+        orgId: targetOrgId,
+        academicYearName: this.calendar.academicYearName || "Academic Year 2026/2027",
+        academicYearNameAr: this.calendar.academicYearNameAr || undefined,
+        academicYearStart: this.calendar.startDate,
+        academicYearEnd: this.calendar.endDate,
+        periods,
+        classes,
+        subjects,
       };
 
+      // 5. Complete core initial setup in backend
       await systemStore.completeInitialSetup(payload);
+
+      // 6. Create Rooms in background (best effort)
+      for (const rm of this.facilities.rooms) {
+        try {
+          await api.createRoom({
+            name: rm.name,
+            room_type: rm.room_type,
+            capacity: rm.capacity,
+          });
+        } catch (e) {
+          console.warn("Room creation note:", e);
+        }
+      }
+
+      // 7. Clean up local persistence
+      if (typeof window !== "undefined" && window.localStorage) {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+
       return true;
     } catch (e) {
-      this.error = e instanceof Error ? e.message : String(e);
+      this.errorMessage = e instanceof Error ? e.message : String(e);
       return false;
     } finally {
       this.isLoading = false;

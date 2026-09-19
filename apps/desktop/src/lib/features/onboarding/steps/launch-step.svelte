@@ -10,7 +10,7 @@ import { Sparkles } from "@lucide/svelte";
 import { Avatar } from "@orbis/avatar-engine";
 
 import { onboardingState } from "../state.svelte";
-import { authStore } from "$lib/stores";
+import { authStore, systemStore } from "$lib/stores";
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
 
@@ -72,7 +72,7 @@ async function handleCompleteSetup() {
       setTimeout(async () => {
         isLaunching = false;
         authStore.markSetupComplete();
-        await authStore.checkSetupStatus();
+        await systemStore.loadReadiness();
         goto(localizeHref(`/${orgId}`), {
           invalidateAll: true,
           replaceState: true,
