@@ -11,6 +11,7 @@ import { INSTITUTION_PROFILES, type InstitutionProfile } from "./templates";
 import { getLocale } from "$lib/paraglide/runtime";
 import { systemStore } from "$lib/stores/system.svelte";
 import { authStore } from "$lib/stores/auth.svelte";
+import { orgContext } from "$lib/stores/org-context.svelte";
 import { api } from "$lib/api";
 import type { InitialSetupRequest } from "$lib/api/types";
 import type { Room, TimeSlot } from "./types";
@@ -561,7 +562,8 @@ export class OnboardingState {
     if (orgDto) {
       if (orgDto.name) this.profile.orgName = orgDto.name;
       if (orgDto.name_ar) this.profile.orgNameAr = orgDto.name_ar;
-      if (orgDto.currency) this.profile.currency = orgDto.currency;
+      const curr = orgDto.base_currency_code || orgDto.baseCurrencyCode || orgDto.currency;
+      if (curr) this.profile.currency = curr;
       if (orgDto.timezone) this.profile.timezone = orgDto.timezone;
       if (orgDto.locale) this.profile.locale = orgDto.locale;
       const type = orgDto.org_type || orgDto.institution_type || orgDto.type;
@@ -579,7 +581,8 @@ export class OnboardingState {
         if (org) {
           if (org.name) this.profile.orgName = org.name;
           if (org.name_ar) this.profile.orgNameAr = org.name_ar;
-          if (org.currency) this.profile.currency = org.currency;
+          const curr = org.base_currency_code || org.baseCurrencyCode || org.currency;
+          if (curr) this.profile.currency = curr;
           if (org.timezone) this.profile.timezone = org.timezone;
           if (org.locale) this.profile.locale = org.locale;
           const type = org.org_type || org.institution_type || org.type;
@@ -592,6 +595,14 @@ export class OnboardingState {
       }
     }
 
+    // Also sync from orgContext if already initialized
+    if (orgContext.isInitialized && orgContext.baseCurrency) {
+      this.profile.currency = orgContext.baseCurrency;
+      if (orgContext.name && !this.profile.orgName) this.profile.orgName = orgContext.name;
+      if (orgContext.nameAr && !this.profile.orgNameAr) this.profile.orgNameAr = orgContext.nameAr;
+      if (orgContext.timezone && !this.profile.timezone) this.profile.timezone = orgContext.timezone;
+    }
+
     // 3. Ensure complete profile is applied if anything is missing
     if (
       this.academics.gradeLevels.length < 10 ||
@@ -600,12 +611,15 @@ export class OnboardingState {
     ) {
       this.selectInstitutionType(this.profile.institutionType || "school");
     }
+
+    this.save();
   }
 
   save() {
     try {
       if (typeof window === "undefined" || !window.localStorage) return;
       const data = {
+        orgId: authStore.orgId,
         currentStep: this.currentStep,
         profile: this.profile.serialize(),
         calendar: this.calendar.serialize(),
@@ -625,6 +639,11 @@ export class OnboardingState {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return false;
       const data = JSON.parse(raw);
+
+      // If stored state is from a different org_id, don't load stale cache
+      if (data.orgId && authStore.orgId && data.orgId !== authStore.orgId) {
+        return false;
+      }
 
       if (data.profile) this.profile.deserialize(data.profile);
       if (data.calendar) this.calendar.deserialize(data.calendar);

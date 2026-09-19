@@ -1,4 +1,5 @@
 import { detectTimezone, detectLocale, detectCurrency } from "../utils";
+import { orgContext } from "$lib/stores/org-context.svelte";
 
 export class ProfileInfoState {
   institutionType = $state("school");
@@ -15,7 +16,7 @@ export class ProfileInfoState {
   rootUnitNameAr = $state("");
   timezone = $state(detectTimezone());
   locale = $state(detectLocale());
-  currency = $state(detectCurrency(detectTimezone()));
+  currency = $state(orgContext.isInitialized && orgContext.baseCurrency ? orgContext.baseCurrency : detectCurrency(detectTimezone()));
 
   serialize() {
     return {
@@ -51,6 +52,7 @@ export class ProfileInfoState {
     if (data.rootUnitNameAr) this.rootUnitNameAr = data.rootUnitNameAr;
     if (data.timezone) this.timezone = data.timezone;
     if (data.locale) this.locale = data.locale;
-    if (data.currency) this.currency = data.currency;
+    const curr = data.currency || data.base_currency_code || data.baseCurrencyCode;
+    if (curr) this.currency = curr;
   }
 }

@@ -1,7 +1,7 @@
 <!--
-  Step 6: Tuition & Registration Fees (الرسوم الدراسية)
+  Step 6: Tuition & Registration Fees (الرسوم الدراسية والتسجيل)
   Categorized by educational stage groups (Kindergarten, Primary, Preparatory, Secondary)
-  with unified group fee batch setting and individual grade customization.
+  with unified stage fee setting and expandable individual grade customization.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -16,7 +16,12 @@ import {
   School,
   Check,
   Layers,
+  ChevronDown,
+  ChevronUp,
+  SlidersHorizontal,
+  Coins,
   ArrowDownToDot,
+  RotateCcw,
 } from "@lucide/svelte";
 
 import { onboardingState } from "../state.svelte";
@@ -27,14 +32,12 @@ const enabledGradeLevels = $derived(
   onboardingState.academics.gradeLevels.filter((gl) => gl.enabled),
 );
 
-// Group state for batch fee inputs
-let groupBatchAmounts = $state<Record<string, number | "">>({
-  kg: "",
-  primary: "",
-  prep: "",
-  secondary: "",
-  other: "",
-});
+// Map of stageId -> whether grade customization is expanded
+let expandedStages = $state<Record<string, boolean>>({});
+
+// Global batch amount across all stages
+let globalBatchAmount = $state<number | "">("");
+let showGlobalBatchBar = $state(false);
 
 interface EducationalStageGroup {
   id: string;
@@ -44,6 +47,7 @@ interface EducationalStageGroup {
   desc_en: string;
   icon: any;
   color: string;
+  accentBg: string;
   grades: GradeLevel[];
 }
 
@@ -89,6 +93,7 @@ const stageGroups = $derived.by(() => {
       desc_en: "Early childhood levels",
       icon: Sparkles,
       color: "text-pink-500 bg-pink-500/10 border-pink-500/20",
+      accentBg: "from-pink-500/5 to-transparent",
       grades: kgGrades,
     });
   }
@@ -102,6 +107,7 @@ const stageGroups = $derived.by(() => {
       desc_en: "Elementary school grades",
       icon: BookOpen,
       color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
+      accentBg: "from-blue-500/5 to-transparent",
       grades: primaryGrades,
     });
   }
@@ -115,6 +121,7 @@ const stageGroups = $derived.by(() => {
       desc_en: "Middle school grades",
       icon: GraduationCap,
       color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+      accentBg: "from-emerald-500/5 to-transparent",
       grades: prepGrades,
     });
   }
@@ -128,6 +135,7 @@ const stageGroups = $derived.by(() => {
       desc_en: "High school grades",
       icon: School,
       color: "text-purple-500 bg-purple-500/10 border-purple-500/20",
+      accentBg: "from-purple-500/5 to-transparent",
       grades: secGrades,
     });
   }
@@ -141,6 +149,7 @@ const stageGroups = $derived.by(() => {
       desc_en: "Active grades & modules",
       icon: Layers,
       color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
+      accentBg: "from-amber-500/5 to-transparent",
       grades: otherGrades,
     });
   }
@@ -148,113 +157,256 @@ const stageGroups = $derived.by(() => {
   return groups;
 });
 
-function applyBatchFeeToGroup(groupId: string, grades: GradeLevel[]) {
-  const amount = groupBatchAmounts[groupId];
-  if (amount === "" || amount === undefined || Number(amount) < 0) return;
+// Helper: get the representative stage fee (if all same, return that, otherwise return first or "")
+function getStageFee(grades: GradeLevel[]): number | "" {
+  if (grades.length === 0) return "";
+  const firstVal = onboardingState.finance.registrationFees[grades[0].level];
+  const allSame = grades.every(
+    (g) => onboardingState.finance.registrationFees[g.level] === firstVal,
+  );
+  return allSame && firstVal !== undefined ? firstVal : (firstVal ?? "");
+}
 
-  const numAmount = Number(amount);
+// Helper: check if all grades in stage have uniform fee
+function isStageUniform(grades: GradeLevel[]): boolean {
+  if (grades.length <= 1) return true;
+  const firstVal = onboardingState.finance.registrationFees[grades[0].level];
+  return grades.every(
+    (g) => onboardingState.finance.registrationFees[g.level] === firstVal,
+  );
+}
+
+// Apply fee to all grades in a stage
+function setStageFee(grades: GradeLevel[], amount: number | "") {
+  const val = amount === "" || amount === undefined || Number(amount) < 0 ? 0 : Number(amount);
   for (const g of grades) {
-    onboardingState.finance.registrationFees[g.level] = numAmount;
+    onboardingState.finance.registrationFees[g.level] = val;
   }
   onboardingState.save();
+}
+
+// Apply global fee to ALL grades across all stages
+function applyGlobalFee() {
+  if (globalBatchAmount === "" || Number(globalBatchAmount) < 0) return;
+  const val = Number(globalBatchAmount);
+  for (const g of enabledGradeLevels) {
+    onboardingState.finance.registrationFees[g.level] = val;
+  }
+  onboardingState.save();
+  showGlobalBatchBar = false;
+}
+
+function toggleExpandStage(stageId: string) {
+  expandedStages[stageId] = !expandedStages[stageId];
 }
 </script>
 
 <div class="w-full h-full flex flex-col min-h-0 space-y-2.5 text-start">
   
   <!-- Header Bar -->
-  <div class="flex items-center justify-between border-b border-border/50 pb-1.5 shrink-0">
-    <div class="flex items-center gap-2">
-      <DollarSign size={16} class="text-primary shrink-0" />
-      <h3 class="text-xs font-bold text-foreground">
-        {m.common_onboarding_fees_label({ currency: onboardingState.profile.currency })}
-      </h3>
+  <div class="flex items-center justify-between border-b border-border/50 pb-2 shrink-0">
+    <div class="flex items-center gap-2.5">
+      <div class="size-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+        <Coins size={15} />
+      </div>
+      <div>
+        <h3 class="text-xs sm:text-sm font-bold text-foreground leading-tight">
+          {m.common_onboarding_fees_label({ currency: onboardingState.profile.currency })}
+        </h3>
+        <p class="text-[10.5px] text-muted-foreground">
+          {l(
+            "حدد الرسوم الدراسية والتسجيل للمراحل التعليمية مع إمكانية تخصيص رسوم كل صف",
+            "Configure tuition and registration fees per stage group with optional grade-level overrides",
+          )}
+        </p>
+      </div>
     </div>
+
+    <!-- Right Controls: Currency Badge & Global Batch Button -->
     <div class="flex items-center gap-2">
-      <span class="text-[11px] font-bold text-muted-foreground font-mono">
-        {l("تحديد الرسوم حسب المجموعات والمراحل", "Fee structure by stage groups")}
-      </span>
-      <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full font-mono">
+      <Button
+        variant="ghost"
+        size="xs"
+        class="h-7 text-[11px] gap-1.5 font-bold cursor-pointer text-muted-foreground hover:text-foreground"
+        onclick={() => (showGlobalBatchBar = !showGlobalBatchBar)}
+      >
+        <SlidersHorizontal size={12} />
+        <span>{l("تسعير موحد للكل", "Global Fee")}</span>
+      </Button>
+
+      <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-mono">
         {onboardingState.profile.currency}
       </span>
     </div>
   </div>
 
-  <!-- Stage Groups Structured Vertical List (Expands to fill 100% available space) -->
-  <div class="flex-1 min-h-0 overflow-y-auto scrollbar-hide space-y-3.5 p-1">
+  <!-- Optional Global Batch Toolbar -->
+  {#if showGlobalBatchBar}
+    <div class="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2 shrink-0">
+      <div class="flex items-center gap-2">
+        <ArrowDownToDot size={14} class="text-primary" />
+        <span class="text-xs font-bold text-foreground">
+          {l("تطبيق مبلغ موحد لكافة المراحل والصفوف:", "Apply uniform amount across all stages:")}
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="relative w-36">
+          <Input
+            type="number"
+            min="0"
+            placeholder="0"
+            bind:value={globalBatchAmount}
+            class="h-7 text-xs font-bold font-mono bg-background pe-8 text-start"
+          />
+          <div class="absolute inset-y-0 inset-e-2 flex items-center pointer-events-none text-[9px] font-bold text-muted-foreground uppercase">
+            {onboardingState.profile.currency}
+          </div>
+        </div>
+        <Button
+          size="xs"
+          class="h-7 px-3 text-xs font-bold gap-1 cursor-pointer"
+          onclick={applyGlobalFee}
+          disabled={globalBatchAmount === "" || Number(globalBatchAmount) < 0}
+        >
+          <Check size={12} />
+          <span>{l("تطبيق على الكل", "Apply All")}</span>
+        </Button>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Stage Groups Structured Vertical List -->
+  <div class="flex-1 min-h-0 overflow-y-auto scrollbar-hide space-y-3 p-0.5">
     {#each stageGroups as group (group.id)}
-      <div class="rounded-2xl border border-border/80 bg-card/90 shadow-2xs overflow-hidden p-3.5 space-y-3">
+      {@const currentStageFee = getStageFee(group.grades)}
+      {@const isUniform = isStageUniform(group.grades)}
+      {@const isExpanded = !!expandedStages[group.id]}
+
+      <div class="rounded-2xl border border-border/70 bg-card shadow-2xs overflow-hidden transition-all duration-200 hover:border-border">
         
-        <!-- Group Header & Bulk Fee Setter -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2.5 border-b border-border/50">
-          <div class="flex items-center gap-2.5">
-            <div class="size-7 rounded-xl border flex items-center justify-center {group.color}">
-              <group.icon size={14} />
+        <!-- Stage Row / Header -->
+        <div class="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 bg-gradient-to-r {group.accentBg}">
+          
+          <!-- Stage Identity -->
+          <div class="flex items-center gap-3">
+            <div class="size-9 rounded-xl border flex items-center justify-center shrink-0 {group.color} shadow-2xs">
+              <group.icon size={16} />
             </div>
             <div>
               <div class="flex items-center gap-2">
                 <h4 class="font-bold text-xs sm:text-sm text-foreground">
                   {l(group.name_ar, group.name_en)}
                 </h4>
-                <Badge variant="secondary" class="text-[10px] px-1.5 py-0 font-mono">
+                <Badge variant="secondary" class="text-[10px] px-2 py-0 font-medium">
                   {group.grades.length} {l("صفوف", "grades")}
                 </Badge>
+                {#if !isUniform}
+                  <Badge variant="outline" class="text-[9.5px] px-1.5 py-0 text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10 font-medium">
+                    {l("رسوم متباينة", "Customized")}
+                  </Badge>
+                {/if}
               </div>
-              <p class="text-[10.5px] text-muted-foreground">
+              <p class="text-[11px] text-muted-foreground mt-0.5">
                 {l(group.desc_ar, group.desc_en)}
               </p>
             </div>
           </div>
 
-          <!-- Batch Fee Setter Input & Button -->
-          <div class="flex items-center gap-1.5 shrink-0 bg-muted/30 p-1 rounded-xl border border-border/60">
-            <div class="relative w-28">
-              <Input
-                type="number"
-                min="0"
-                placeholder={l("مبلغ موحد", "Uniform Fee")}
-                bind:value={groupBatchAmounts[group.id]}
-                class="h-7 text-xs font-bold font-mono bg-background text-end pe-2 ps-2"
-              />
-            </div>
-            <Button
-              variant="outline"
-              size="xs"
-              class="h-7 px-2.5 text-[11px] gap-1 font-bold cursor-pointer border-border shrink-0"
-              onclick={() => applyBatchFeeToGroup(group.id, group.grades)}
-              disabled={groupBatchAmounts[group.id] === "" || Number(groupBatchAmounts[group.id]) < 0}
-            >
-              <ArrowDownToDot size={12} />
-              <span>{l("تطبيق للمجموعة", "Apply to Group")}</span>
-            </Button>
-          </div>
-        </div>
-
-        <!-- Grade Cards Grid inside this Group -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-2.5">
-          {#each group.grades as gl (gl.level)}
-            <div class="flex items-center justify-between p-2.5 rounded-xl border border-border/70 bg-background/80 hover:bg-muted/15 transition-colors shadow-2xs">
-              <div class="flex items-center gap-2 min-w-0">
-                <div class="size-2.5 rounded-full shrink-0" style="background-color: {gl.color};"></div>
-                <span class="font-bold text-foreground text-xs truncate">{l(gl.name_ar, gl.name)}</span>
-              </div>
-
-              <div class="relative w-28 shrink-0">
+          <!-- Stage Fee Setting Input & Grade Customization Toggle -->
+          <div class="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
+            
+            <!-- Stage Uniform Fee Input -->
+            <div class="flex items-center gap-1.5 bg-background/90 p-1 rounded-xl border border-border/80 shadow-2xs">
+              <span class="text-[11px] font-bold text-muted-foreground px-2">
+                {l("رسوم المرحلة:", "Stage Fee:")}
+              </span>
+              <div class="relative w-32">
                 <Input
                   type="number"
                   min="0"
-                  placeholder="0"
-                  bind:value={onboardingState.finance.registrationFees[gl.level]}
-                  onchange={() => onboardingState.save()}
-                  class="h-7 ps-8 text-end text-xs font-bold font-mono bg-background border-border/70 focus:border-primary"
+                  placeholder={isUniform ? "0" : l("متباين", "Mixed")}
+                  value={currentStageFee}
+                  oninput={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    setStageFee(group.grades, target.value === "" ? "" : Number(target.value));
+                  }}
+                  class="h-7 text-xs font-bold font-mono bg-background pe-8 text-start border-transparent focus:border-primary"
                 />
-                <div class="absolute inset-y-0 inset-s-2 flex items-center pointer-events-none text-[9px] font-bold text-muted-foreground uppercase font-sans">
+                <div class="absolute inset-y-0 inset-e-2 flex items-center pointer-events-none text-[9px] font-bold text-muted-foreground uppercase font-mono">
                   {onboardingState.profile.currency}
                 </div>
               </div>
             </div>
-          {/each}
+
+            <!-- Toggle Details Button -->
+            <Button
+              variant="outline"
+              size="xs"
+              class="h-9 px-2.5 text-xs gap-1.5 font-bold cursor-pointer border-border/80 bg-background/90"
+              onclick={() => toggleExpandStage(group.id)}
+            >
+              <span class="text-[11px]">{isExpanded ? l("إخفاء الصفوف", "Hide") : l("تخصيص الصفوف", "Customize")}</span>
+              {#if isExpanded}
+                <ChevronUp size={13} />
+              {:else}
+                <ChevronDown size={13} />
+              {/if}
+            </Button>
+
+          </div>
         </div>
+
+        <!-- Collapsible Individual Grade Customization Area -->
+        {#if isExpanded}
+          <div class="p-3.5 border-t border-border/40 bg-muted/10 space-y-2.5 animate-in fade-in duration-150">
+            <div class="flex items-center justify-between pb-1">
+              <span class="text-[11px] font-bold text-muted-foreground">
+                {l("تخصيص الرسوم لكل صف دراسي في هذه المرحلة:", "Individual fee customization per grade:")}
+              </span>
+              {#if !isUniform}
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  class="h-6 px-2 text-[10px] gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                  onclick={() => setStageFee(group.grades, currentStageFee)}
+                >
+                  <RotateCcw size={10} />
+                  <span>{l("إعادة التوحيد مع المرحلة", "Reset to Stage Fee")}</span>
+                </Button>
+              {/if}
+            </div>
+
+            <!-- Grade Items Grid (Spacious 2 to 4 column layout for clear, unclipped labels) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5">
+              {#each group.grades as gl (gl.level)}
+                {@const isGradeCustom = currentStageFee !== "" && onboardingState.finance.registrationFees[gl.level] !== currentStageFee}
+
+                <div class="flex items-center justify-between p-2.5 rounded-xl border border-border/80 bg-background hover:bg-muted/10 transition-colors shadow-2xs gap-2">
+                  <div class="flex items-center gap-2 min-w-0 flex-1">
+                    <div class="size-2.5 rounded-full shrink-0" style="background-color: {gl.color || '#3b82f6'};"></div>
+                    <span class="font-bold text-foreground text-xs truncate">
+                      {l(gl.name_ar, gl.name)}
+                    </span>
+                  </div>
+
+                  <div class="relative w-28 shrink-0">
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      bind:value={onboardingState.finance.registrationFees[gl.level]}
+                      onchange={() => onboardingState.save()}
+                      class="h-7 text-xs font-bold font-mono bg-background pe-8 text-start border-border/70 focus:border-primary {isGradeCustom ? 'border-amber-500/60 ring-1 ring-amber-500/20' : ''}"
+                    />
+                    <div class="absolute inset-y-0 inset-e-2 flex items-center pointer-events-none text-[8.5px] font-bold text-muted-foreground uppercase font-mono">
+                      {onboardingState.profile.currency}
+                    </div>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
 
       </div>
     {:else}
@@ -265,3 +417,4 @@ function applyBatchFeeToGroup(groupId: string, grades: GradeLevel[]) {
   </div>
 
 </div>
+

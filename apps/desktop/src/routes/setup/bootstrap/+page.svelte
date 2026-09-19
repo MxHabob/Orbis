@@ -42,6 +42,9 @@ import {
 import { z } from "zod";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { l } from "$lib/core/i18n";
+import { detectTimezone, detectCurrency, detectLocale } from "$lib/features/onboarding/utils";
+import { onboardingState } from "$lib/features/onboarding/state.svelte";
+import { orgContext } from "$lib/stores/org-context.svelte";
 
 const isRTL = $derived(getLocale().startsWith("ar"));
 
@@ -65,14 +68,18 @@ const bootstrapSchema = z.object({
 
 type BootstrapFormValues = z.infer<typeof bootstrapSchema>;
 
+const detectedTz = detectTimezone();
+const detectedLoc = detectLocale();
+const detectedCurr = detectCurrency(detectedTz);
+
 const form = new FormController<BootstrapFormValues>({
   initialValues: {
     orgName: "",
     orgNameAr: "",
     orgType: "school",
-    timezone: "Asia/Riyadh",
-    locale: "ar",
-    currency: "SAR",
+    timezone: detectedTz,
+    locale: detectedLoc,
+    currency: detectedCurr,
     adminFullName: "",
     adminEmail: "",
     adminPassword: "",
@@ -209,6 +216,20 @@ async function handleBootstrap(e: SubmitEvent | MouseEvent) {
         dependents: [],
       },
     });
+
+    // Reset and initialize onboarding state with freshly bootstrapped parameters
+    onboardingState.reset();
+    await onboardingState.init({
+      name: finalOrgName,
+      name_ar: values.orgNameAr?.trim(),
+      currency: values.currency,
+      base_currency_code: values.currency,
+      baseCurrencyCode: values.currency,
+      timezone: values.timezone,
+      locale: values.locale,
+      org_type: values.orgType,
+    });
+    await orgContext.load();
 
     goto(localizeHref("/onboarding"), { replaceState: true });
   });
