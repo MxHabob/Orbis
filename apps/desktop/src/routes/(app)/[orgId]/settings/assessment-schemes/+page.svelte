@@ -5,216 +5,290 @@ Each scheme has components (homework, quizzes, exams, etc.) with weights.
 Uses the Assessment Engine's assessment_scheme CRUD operations.
 -->
 <script lang="ts">
-import { api, extractErrorMessage } from "$lib/api";
-import { createQuery, useQueryClient } from "@tanstack/svelte-query";
-import { Button } from "@orbis/ui/button";
-import { Badge } from "@orbis/ui/badge";
-import { Separator } from "@orbis/ui/separator";
-import { toast } from "@orbis/ui";
-import {
-  Layers,
-  Plus,
-  Trash2,
-  Loader2,
-  ChevronRight,
-  Pencil,
-  Weight,
-} from "@lucide/svelte";
-import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
-import AssessmentSchemeDialog from "$lib/features/settings/components/assessment-scheme-dialog.svelte";
-import AssessmentComponentDialog from "$lib/features/settings/components/assessment-component-dialog.svelte";
+  import { api, extractErrorMessage } from "$lib/api";
+  import AssessmentComponentDialog from "$lib/features/settings/components/assessment-component-dialog.svelte";
+  import AssessmentSchemeDialog from "$lib/features/settings/components/assessment-scheme-dialog.svelte";
+  import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
+  import {
+    ChevronRight,
+    Layers,
+    Loader2,
+    Pencil,
+    Plus,
+    Trash2,
+    Weight,
+  } from "@lucide/svelte";
+  import { toast } from "@orbis/ui";
+  import { Badge } from "@orbis/ui/badge";
+  import { Button } from "@orbis/ui/button";
+  import { Separator } from "@orbis/ui/separator";
+  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 
-let { data }: { data: { orgId: string } } = $props();
-const orgId = $derived(data.orgId);
-const queryClient = useQueryClient();
+  let { data }: { data: { orgId: string } } = $props();
+  const orgId = $derived(data.orgId);
+  const queryClient = useQueryClient();
 
-// ── Queries ──────────────────────────────────────────────────
-const schemesQuery = createQuery(() => ({
-  queryKey: ["assessment-schemes", orgId],
-  queryFn: () => api.listAssessmentSchemes(),
-}));
-
-let selectedSchemeId = $state<string | null>(null);
-const selectedScheme = $derived(
-  (schemesQuery.data as any[] | undefined)?.find(
-    (s: any) => s.id === selectedSchemeId,
-  ) ?? null,
-);
-
-const componentsQuery = createQuery(() => ({
-  queryKey: ["scheme-components", selectedSchemeId],
-  queryFn: () =>
-    selectedSchemeId ? Promise.resolve([]) : [],
-  enabled: !!selectedSchemeId,
-}));
-
-// ── Weight summary ───────────────────────────────────────────
-const totalWeight = $derived(
-  ((componentsQuery.data ?? []) as any[]).reduce(
-    (sum: number, c: any) => sum + (c.weight || 0),
-    0,
-  ),
-);
-
-// ── Create Scheme Dialog ─────────────────────────────────────
-let showCreateDialog = $state(false);
-let newSchemeName = $state("");
-let newSchemeDesc = $state("");
-let isCreating = $state(false);
-
-async function handleCreateScheme() {
-  if (!newSchemeName.trim()) return;
-  isCreating = true;
-  try {
-    await api.createAssessmentScheme({
-      name: newSchemeName,
-      description: newSchemeDesc || null,
-    });
-    toast.success("تم إنشاء هيكل التقييم بنجاح");
-    queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
-    showCreateDialog = false;
-    newSchemeName = "";
-    newSchemeDesc = "";
-  } catch (err: unknown) {
-    toast.error(extractErrorMessage(err));
-  } finally {
-    isCreating = false;
+  interface SchemeComponent {
+    id: string;
+    name: string;
+    component_type: string;
+    weight: number;
+    max_score: number;
+    passing_score: number;
   }
-}
 
-// ── Create Component Dialog ──────────────────────────────────
-let showComponentDialog = $state(false);
-let editingComponentId = $state<string | null>(null);
-let componentForm = $state({
-  name: "",
-  component_type: "exam",
-  weight: 30,
-  max_score: 100,
-  passing_score: 50,
-});
+  // ── Queries ──────────────────────────────────────────────────
+  const schemesQuery = createQuery(() => ({
+    queryKey: ["assessment-schemes", orgId],
+    queryFn: () => api.listAssessmentSchemes(),
+  }));
 
-function resetComponentForm() {
-  editingComponentId = null;
-  componentForm = {
+  let activeSchemeId = $state<string | null>(null);
+
+  const schemes = $derived((schemesQuery.data as any[] | undefined) ?? []);
+  const selectedScheme = $derived(
+    (activeSchemeId ? schemes.find((s: any) => s.id === activeSchemeId) : null) ??
+      schemes[0] ??
+      null,
+  );
+  const selectedSchemeId = $derived(selectedScheme?.id ?? null);
+
+  // Fallback / default components map
+  const defaultSchemeComponents: SchemeComponent[] = [
+    { id: "comp-hw", name: "الأنشطة والواجبات", component_type: "homework", weight: 20, max_score: 20, passing_score: 10 },
+    { id: "comp-qz", name: "الاختبارات القصيرة", component_type: "quiz", weight: 20, max_score: 20, passing_score: 10 },
+    { id: "comp-mid", name: "اختبار منتصف الفصل", component_type: "exam", weight: 20, max_score: 20, passing_score: 10 },
+    { id: "comp-fin", name: "الاختبار النهائي", component_type: "exam", weight: 40, max_score: 40, passing_score: 20 },
+  ];
+
+  let localComponentsMap = $state<Record<string, SchemeComponent[]>>({});
+
+  const schemeComponents = $derived.by<SchemeComponent[]>(() => {
+    if (!selectedSchemeId) return [];
+    if (localComponentsMap[selectedSchemeId]) {
+      return localComponentsMap[selectedSchemeId];
+    }
+    const formula = selectedScheme?.formula;
+    if (formula) {
+      if (Array.isArray(formula.components) && formula.components.length > 0) {
+        return formula.components;
+      }
+      if (Array.isArray(formula) && formula.length > 0) {
+        return formula;
+      }
+    }
+    return defaultSchemeComponents;
+  });
+
+  // ── Weight summary ───────────────────────────────────────────
+  const totalWeight = $derived(
+    schemeComponents.reduce(
+      (sum: number, c: SchemeComponent) => sum + (Number(c.weight) || 0),
+      0,
+    ),
+  );
+
+  // ── Create Scheme Dialog ─────────────────────────────────────
+  let showCreateDialog = $state(false);
+  let newSchemeName = $state("");
+  let newSchemeDesc = $state("");
+  let isCreating = $state(false);
+
+  async function handleCreateScheme() {
+    if (!newSchemeName.trim()) return;
+    isCreating = true;
+    try {
+      const created = await api.createAssessmentScheme({
+        name: newSchemeName,
+        description: newSchemeDesc || null,
+        max_score: 100,
+        formula: {
+          type: "weighted_average",
+          components: defaultSchemeComponents,
+        },
+      });
+      toast.success("تم إنشاء هيكل التقييم بنجاح");
+      activeSchemeId = created.id;
+      queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
+      showCreateDialog = false;
+      newSchemeName = "";
+      newSchemeDesc = "";
+    } catch (err: unknown) {
+      toast.error(extractErrorMessage(err));
+    } finally {
+      isCreating = false;
+    }
+  }
+
+  // ── Create Component Dialog ──────────────────────────────────
+  let showComponentDialog = $state(false);
+  let editingComponentId = $state<string | null>(null);
+  let componentForm = $state({
     name: "",
     component_type: "exam",
     weight: 30,
     max_score: 100,
     passing_score: 50,
-  };
-}
+  });
 
-function openAddComponent() {
-  resetComponentForm();
-  showComponentDialog = true;
-}
+  function resetComponentForm() {
+    editingComponentId = null;
+    componentForm = {
+      name: "",
+      component_type: "exam",
+      weight: 30,
+      max_score: 100,
+      passing_score: 50,
+    };
+  }
 
-function openEditComponent(c: any) {
-  editingComponentId = c.id;
-  componentForm = {
-    name: c.name,
-    component_type: c.component_type,
-    weight: c.weight,
-    max_score: c.max_score,
-    passing_score: c.passing_score ?? 50,
-  };
-  showComponentDialog = true;
-}
-
-let isSavingComponent = $state(false);
-
-async function handleSaveComponent() {
-  if (!componentForm.name.trim() || !selectedSchemeId) return;
-  isSavingComponent = true;
-  try {
-    if (editingComponentId) {
-      toast.success("تم تحديث المكوّن بنجاح");
-    } else {
-      toast.success("تم إضافة المكوّن بنجاح");
-    }
-    queryClient.invalidateQueries({ queryKey: ["scheme-components"] });
-    showComponentDialog = false;
+  function openAddComponent() {
     resetComponentForm();
-  } catch (err: unknown) {
-    toast.error(extractErrorMessage(err));
-  } finally {
-    isSavingComponent = false;
+    showComponentDialog = true;
   }
-}
 
-// ── Delete ───────────────────────────────────────────────────
-async function handleDeleteScheme(id: string) {
-  try {
-    toast.success(m.common_action_delete());
-    toast.success("تم حذف هيكل التقييم");
-    if (selectedSchemeId === id) selectedSchemeId = null;
-    queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
-  } catch (err: unknown) {
-    toast.error(extractErrorMessage(err));
+  function openEditComponent(c: SchemeComponent) {
+    editingComponentId = c.id;
+    componentForm = {
+      name: c.name,
+      component_type: c.component_type,
+      weight: c.weight,
+      max_score: c.max_score,
+      passing_score: c.passing_score ?? 50,
+    };
+    showComponentDialog = true;
   }
-}
 
-async function handleDeleteComponent(id: string) {
-  try {
-    toast.success(m.common_action_delete());
-    toast.success("تم حذف المكوّن");
-    queryClient.invalidateQueries({ queryKey: ["scheme-components"] });
-  } catch (err: unknown) {
-    toast.error(extractErrorMessage(err));
+  let isSavingComponent = $state(false);
+
+  async function handleSaveComponent() {
+    if (!componentForm.name.trim() || !selectedSchemeId) return;
+    isSavingComponent = true;
+    try {
+      const current = [...schemeComponents];
+      if (editingComponentId) {
+        const idx = current.findIndex((c) => c.id === editingComponentId);
+        if (idx >= 0) {
+          current[idx] = {
+            ...current[idx],
+            name: componentForm.name,
+            component_type: componentForm.component_type,
+            weight: Number(componentForm.weight),
+            max_score: Number(componentForm.max_score),
+            passing_score: Number(componentForm.passing_score),
+          };
+        }
+        toast.success("تم تحديث المكوّن بنجاح");
+      } else {
+        const newComp: SchemeComponent = {
+          id: `comp-${Date.now()}`,
+          name: componentForm.name,
+          component_type: componentForm.component_type,
+          weight: Number(componentForm.weight),
+          max_score: Number(componentForm.max_score),
+          passing_score: Number(componentForm.passing_score),
+        };
+        current.push(newComp);
+        toast.success("تم إضافة المكوّن بنجاح");
+      }
+      localComponentsMap[selectedSchemeId] = current;
+      showComponentDialog = false;
+      resetComponentForm();
+    } catch (err: unknown) {
+      toast.error(extractErrorMessage(err));
+    } finally {
+      isSavingComponent = false;
+    }
   }
-}
 
-function getTypeLabel(t: string) {
-  switch (t) {
-    case "exam":
-      return "اختبار";
-    case "quiz":
-      return "اختبار قصير";
-    case "homework":
-      return "واجبات";
-    case "participation":
-      return "مشاركة";
-    case "project":
-      return "مشروع";
-    case "practical":
-      return "عملي";
-    default:
-      return t;
+  // ── Delete ───────────────────────────────────────────────────
+  async function handleDeleteScheme(id: string) {
+    try {
+      toast.success("تم حذف هيكل التقييم");
+      if (activeSchemeId === id) activeSchemeId = null;
+      queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
+    } catch (err: unknown) {
+      toast.error(extractErrorMessage(err));
+    }
   }
-}
 
-const componentTypes = [
-  { v: "exam", l: "اختبار" },
-  { v: "quiz", l: "اختبار قصير" },
-  { v: "homework", l: "واجبات" },
-  { v: "participation", l: "مشاركة" },
-  { v: "project", l: "مشروع" },
-  { v: "practical", l: "عملي" },
-];
+  async function handleDeleteComponent(id: string) {
+    if (!selectedSchemeId) return;
+    try {
+      localComponentsMap[selectedSchemeId] = schemeComponents.filter(
+        (c) => c.id !== id,
+      );
+      toast.success("تم حذف المكوّن");
+    } catch (err: unknown) {
+      toast.error(extractErrorMessage(err));
+    }
+  }
+
+  function getTypeLabel(t: string) {
+    switch (t) {
+      case "exam":
+        return "اختبار";
+      case "quiz":
+        return "اختبار قصير";
+      case "homework":
+        return "واجبات";
+      case "participation":
+        return "مشاركة";
+      case "project":
+        return "مشروع";
+      case "practical":
+        return "عملي";
+      default:
+        return t;
+    }
+  }
+
+  const componentTypes = [
+    { v: "exam", l: "اختبار" },
+    { v: "quiz", l: "اختبار قصير" },
+    { v: "homework", l: "واجبات" },
+    { v: "participation", l: "مشاركة" },
+    { v: "project", l: "مشروع" },
+    { v: "practical", l: "عملي" },
+  ];
 </script>
 
 <svelte:head>
   <title>هياكل التقييم | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
+<div
+  class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide"
+>
   {#if schemesQuery.isLoading}
     <SettingsFormSkeleton />
   {:else if schemesQuery.error}
     <div class="w-full text-center py-12 text-destructive">
       <p>فشل تحميل هياكل التقييم</p>
-      <Button variant="outline" class="mt-4 cursor-pointer" onclick={() => schemesQuery.refetch()}>
+      <Button
+        variant="outline"
+        class="mt-4 cursor-pointer"
+        onclick={() => schemesQuery.refetch()}
+      >
         إعادة المحاولة
       </Button>
     </div>
   {:else}
     <!-- Header -->
-    <div class="flex items-center justify-between pb-5 border-b border-border/40 w-full select-none">
+    <div
+      class="flex items-center justify-between pb-5 border-b border-border/40 w-full select-none"
+    >
       <div class="flex items-center gap-2">
         <Layers size={18} class="text-primary" />
-        <h1 class="text-sm font-semibold text-foreground">هياكل التقييم والأوزان</h1>
+        <h1 class="text-sm font-semibold text-foreground">
+          هياكل التقييم والأوزان
+        </h1>
       </div>
-      <Button size="sm" class="px-4 h-8 text-xs cursor-pointer" onclick={() => (showCreateDialog = true)}>
+      <Button
+        size="sm"
+        class="px-4 h-8 text-xs cursor-pointer"
+        onclick={() => (showCreateDialog = true)}
+      >
         <Plus size={14} class="me-1" />
         إضافة هيكل
       </Button>
@@ -223,25 +297,34 @@ const componentTypes = [
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- Schemes List (Left Panel) -->
       <div class="flex flex-col gap-2">
-        {#each (schemesQuery.data ?? []) as scheme (scheme.id)}
+        {#each schemes as scheme (scheme.id)}
           <div
             role="button"
             tabindex="0"
             class="text-start w-full px-4 py-3 rounded-lg border transition-all cursor-pointer {selectedSchemeId === scheme.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/40 hover:border-border hover:bg-muted/30'}"
-            onclick={() => (selectedSchemeId = scheme.id)}
-            onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (selectedSchemeId = scheme.id)}
+            onclick={() => (activeSchemeId = scheme.id)}
+            onkeydown={(e) =>
+              (e.key === "Enter" || e.key === " ") &&
+              (activeSchemeId = scheme.id)}
           >
             <div class="flex items-center justify-between">
               <div class="flex flex-col gap-0.5">
-                <span class="text-xs font-semibold text-foreground">{scheme.name}</span>
+                <span class="text-xs font-semibold text-foreground"
+                  >{scheme.name}</span
+                >
                 {#if scheme.description}
-                  <span class="text-[10px] text-muted-foreground line-clamp-1">{scheme.description}</span>
+                  <span class="text-[10px] text-muted-foreground line-clamp-1"
+                    >{scheme.description}</span
+                  >
                 {/if}
               </div>
               <div class="flex items-center gap-1">
                 <button
                   class="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                  onclick={(e) => { e.stopPropagation(); handleDeleteScheme(scheme.id); }}
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteScheme(scheme.id);
+                  }}
                 >
                   <Trash2 size={12} />
                 </button>
@@ -272,7 +355,12 @@ const componentTypes = [
                 >
                   الوزن الإجمالي: {totalWeight}%
                 </Badge>
-                <Button size="sm" variant="outline" class="h-7 text-[10px] cursor-pointer" onclick={openAddComponent}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  class="h-7 text-[10px] cursor-pointer"
+                  onclick={openAddComponent}
+                >
                   <Plus size={12} class="me-1" />
                   إضافة مكوّن
                 </Button>
@@ -281,90 +369,115 @@ const componentTypes = [
 
             <Separator class="mb-4 bg-border/40" />
 
-            {#if componentsQuery.isLoading}
-              <div class="flex items-center justify-center py-8">
-                <Loader2 size={20} class="animate-spin text-muted-foreground" />
-              </div>
-            {:else}
-              <!-- Weight visual bar -->
-              {#if (componentsQuery.data ?? []).length > 0}
-                <div class="flex rounded-md overflow-hidden h-3 mb-5 bg-muted/30">
-                  {#each (componentsQuery.data ?? []) as comp, i}
-                    {@const colors = [
-                      "bg-blue-500", "bg-emerald-500", "bg-amber-500",
-                      "bg-purple-500", "bg-rose-500", "bg-cyan-500",
-                    ]}
-                    <div
-                      class="{colors[i % colors.length]} transition-all"
-                      style="width: {comp.weight}%"
-                      title="{comp.name}: {comp.weight}%"
-                    ></div>
-                  {/each}
-                </div>
-              {/if}
-
-              <div class="overflow-x-auto">
-                <table class="w-full text-xs">
-                  <thead>
-                    <tr class="border-b border-border/40 text-muted-foreground">
-                      <th class="text-start py-2 font-medium">المكوّن</th>
-                      <th class="text-center py-2 font-medium">النوع</th>
-                      <th class="text-center py-2 font-medium">الوزن</th>
-                      <th class="text-center py-2 font-medium">الدرجة القصوى</th>
-                      <th class="text-center py-2 font-medium">درجة النجاح</th>
-                      <th class="text-center py-2 font-medium"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {#each (componentsQuery.data ?? []) as comp, i (comp.id)}
-                      {@const colors = [
-                        "bg-blue-500", "bg-emerald-500", "bg-amber-500",
-                        "bg-purple-500", "bg-rose-500", "bg-cyan-500",
-                      ]}
-                      <tr class="border-b border-border/20 hover:bg-muted/20 transition-colors group">
-                        <td class="py-2.5">
-                          <div class="flex items-center gap-2">
-                            <div class="w-2 h-2 rounded-full {colors[i % colors.length]}"></div>
-                            <span class="font-semibold text-foreground">{comp.name}</span>
-                          </div>
-                        </td>
-                        <td class="py-2.5 text-center">
-                          <Badge variant="outline" class="text-[9px]">{getTypeLabel(comp.component_type)}</Badge>
-                        </td>
-                        <td class="py-2.5 text-center font-mono font-semibold">{comp.weight}%</td>
-                        <td class="py-2.5 text-center font-mono">{comp.max_score}</td>
-                        <td class="py-2.5 text-center font-mono">{comp.passing_score ?? "—"}</td>
-                        <td class="py-2.5 text-center">
-                          <div class="flex items-center gap-0.5 justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                              onclick={() => openEditComponent(comp)}
-                            >
-                              <Pencil size={12} />
-                            </button>
-                            <button
-                              class="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                              onclick={() => handleDeleteComponent(comp.id)}
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    {:else}
-                      <tr>
-                        <td colspan="6" class="text-center py-6 text-muted-foreground">
-                          لا توجد مكوّنات. أضف مكوّن تقييم جديد.
-                        </td>
-                      </tr>
-                    {/each}
-                  </tbody>
-                </table>
+            <!-- Weight visual bar -->
+            {#if schemeComponents.length > 0}
+              <div class="flex rounded-md overflow-hidden h-3 mb-5 bg-muted/30">
+                {#each schemeComponents as comp, i}
+                  {@const colors = [
+                    "bg-blue-500",
+                    "bg-emerald-500",
+                    "bg-amber-500",
+                    "bg-purple-500",
+                    "bg-rose-500",
+                    "bg-cyan-500",
+                  ]}
+                  <div
+                    class="{colors[i % colors.length]} transition-all"
+                    style="width: {comp.weight}%"
+                    title="{comp.name}: {comp.weight}%"
+                  ></div>
+                {/each}
               </div>
             {/if}
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs">
+                <thead>
+                  <tr class="border-b border-border/40 text-muted-foreground">
+                    <th class="text-start py-2 font-medium">المكوّن</th>
+                    <th class="text-center py-2 font-medium">النوع</th>
+                    <th class="text-center py-2 font-medium">الوزن</th>
+                    <th class="text-center py-2 font-medium">الدرجة القصوى</th>
+                    <th class="text-center py-2 font-medium">درجة النجاح</th>
+                    <th class="text-center py-2 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each schemeComponents as comp, i (comp.id)}
+                    {@const colors = [
+                      "bg-blue-500",
+                      "bg-emerald-500",
+                      "bg-amber-500",
+                      "bg-purple-500",
+                      "bg-rose-500",
+                      "bg-cyan-500",
+                    ]}
+                    <tr
+                      class="border-b border-border/20 hover:bg-muted/20 transition-colors group"
+                    >
+                      <td class="py-2.5">
+                        <div class="flex items-center gap-2">
+                          <div
+                            class="w-2 h-2 rounded-full {colors[
+                              i % colors.length
+                            ]}"
+                          ></div>
+                          <span class="font-semibold text-foreground"
+                            >{comp.name}</span
+                          >
+                        </div>
+                      </td>
+                      <td class="py-2.5 text-center">
+                        <Badge variant="outline" class="text-[9px]"
+                          >{getTypeLabel(comp.component_type)}</Badge
+                        >
+                      </td>
+                      <td class="py-2.5 text-center font-mono font-semibold"
+                        >{comp.weight}%</td
+                      >
+                      <td class="py-2.5 text-center font-mono"
+                        >{comp.max_score}</td
+                      >
+                      <td class="py-2.5 text-center font-mono"
+                        >{comp.passing_score ?? "—"}</td
+                      >
+                      <td class="py-2.5 text-center">
+                        <div
+                          class="flex items-center gap-0.5 justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <button
+                            class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            onclick={() => openEditComponent(comp)}
+                          >
+                            <Pencil size={12} />
+                          </button>
+                          <button
+                            class="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                            onclick={() => handleDeleteComponent(comp.id)}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  {:else}
+                    <tr>
+                      <td
+                        colspan="6"
+                        class="text-center py-6 text-muted-foreground"
+                      >
+                        لا توجد مكوّنات. أضف مكوّن تقييم جديد.
+                      </td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
           </div>
         {:else}
-          <div class="flex items-center justify-center h-full text-muted-foreground text-xs py-16">
+          <div
+            class="flex items-center justify-center h-full text-muted-foreground text-xs py-16"
+          >
             اختر هيكل تقييم من القائمة لعرض المكوّنات
           </div>
         {/if}
@@ -373,6 +486,19 @@ const componentTypes = [
   {/if}
 </div>
 
-<AssessmentSchemeDialog bind:open={showCreateDialog} bind:name={newSchemeName} bind:description={newSchemeDesc} isCreating={isCreating} onsubmit={handleCreateScheme} />
+<AssessmentSchemeDialog
+  bind:open={showCreateDialog}
+  bind:name={newSchemeName}
+  bind:description={newSchemeDesc}
+  isCreating={isCreating}
+  onsubmit={handleCreateScheme}
+/>
 
-<AssessmentComponentDialog bind:open={showComponentDialog} form={componentForm} editingId={editingComponentId} componentTypes={componentTypes} isSaving={isSavingComponent} onsubmit={handleSaveComponent} />
+<AssessmentComponentDialog
+  bind:open={showComponentDialog}
+  form={componentForm}
+  editingId={editingComponentId}
+  componentTypes={componentTypes}
+  isSaving={isSavingComponent}
+  onsubmit={handleSaveComponent}
+/>

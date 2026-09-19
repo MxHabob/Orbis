@@ -868,35 +868,53 @@ export function getSystemRoleDef(roleId: string): SystemRoleDef | undefined {
 /**
  * Computes total permissions granted across a role's permissions dictionary.
  */
-export function countRolePermissions(perms?: Record<string, string[]> | null): number {
-  if (!perms) return 0;
-  if (perms["*"] && perms["*"].includes("*")) {
-    // Super admin has all permissions
-    let total = 0;
-    for (const d of IAM_DOMAINS) {
-      for (const r of d.resources) {
-        total += r.actions.length;
+export function countRolePermissions(perms?: Record<string, string[]> | null, roleId?: string): number {
+  if (perms && Object.keys(perms).length > 0) {
+    if (perms["*"] && perms["*"].includes("*")) {
+      let total = 0;
+      for (const d of IAM_DOMAINS) {
+        for (const r of d.resources) {
+          total += r.actions.length;
+        }
       }
+      return total;
     }
-    return total;
+    let count = 0;
+    for (const acts of Object.values(perms)) {
+      count += (acts || []).length;
+    }
+    if (count > 0) return count;
   }
-  let count = 0;
-  for (const acts of Object.values(perms)) {
-    count += (acts || []).length;
+
+  // Fallback to system role preset if perms is empty
+  if (roleId) {
+    const sys = getSystemRoleDef(roleId);
+    if (sys) {
+      return countRolePermissions(sys.defaultPermissions);
+    }
   }
-  return count;
+
+  return 0;
 }
 
 /**
  * Calculates domain coverage statistics for a given role's permissions.
  */
-export function getRoleDomainStats(perms?: Record<string, string[]> | null): Array<{
+export function getRoleDomainStats(perms?: Record<string, string[]> | null, roleId?: string): Array<{
   domain: IamDomainDef;
   selectedCount: number;
   totalCount: number;
   percentage: number;
 }> {
-  const isSuper = Boolean(perms?.["*"]?.includes("*"));
+  let effectivePerms = perms;
+  if ((!effectivePerms || Object.keys(effectivePerms).length === 0) && roleId) {
+    const sys = getSystemRoleDef(roleId);
+    if (sys) {
+      effectivePerms = sys.defaultPermissions;
+    }
+  }
+
+  const isSuper = Boolean(effectivePerms?.["*"]?.includes("*"));
 
   return IAM_DOMAINS.map((domain) => {
     let domainTotal = 0;
@@ -906,8 +924,8 @@ export function getRoleDomainStats(perms?: Record<string, string[]> | null): Arr
       domainTotal += res.actions.length;
       if (isSuper) {
         domainSelected += res.actions.length;
-      } else if (perms && perms[res.key]) {
-        domainSelected += perms[res.key].length;
+      } else if (effectivePerms && effectivePerms[res.key]) {
+        domainSelected += effectivePerms[res.key].length;
       }
     }
 

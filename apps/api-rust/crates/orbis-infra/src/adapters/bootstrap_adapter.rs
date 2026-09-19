@@ -976,7 +976,8 @@ fn institute_blueprint() -> InstitutionBlueprint {
 fn comprehensive_role_permissions() -> Vec<RolePermission> {
     vec![
         // Super Admin & Admin
-        RolePermission { role: "admin".into(), document_type: "*".into(), actions: vec!["read".into(), "write".into(), "delete".into(), "admin".into()] },
+        RolePermission { role: "super_admin".into(), document_type: "*".into(), actions: vec!["*".into(), "read".into(), "write".into(), "delete".into(), "admin".into()] },
+        RolePermission { role: "admin".into(), document_type: "*".into(), actions: vec!["*".into(), "read".into(), "write".into(), "delete".into(), "admin".into()] },
 
         // Principal / Dean
         RolePermission { role: "principal".into(), document_type: "Organization".into(), actions: vec!["read".into(), "write".into()] },
@@ -1291,6 +1292,25 @@ impl BulkBootstrapPort for BootstrapAdapterImpl {
         let now = Utc::now().to_rfc3339();
         let org_id = data.org_id;
 
+        let normalize_start = |s: &str| -> String {
+            if s.len() == 10 && !s.contains('T') {
+                format!("{}T00:00:00Z", s)
+            } else {
+                s.to_string()
+            }
+        };
+
+        let normalize_end = |s: &str| -> String {
+            if s.len() == 10 && !s.contains('T') {
+                format!("{}T23:59:59Z", s)
+            } else {
+                s.to_string()
+            }
+        };
+
+        let year_start = normalize_start(&data.academic_year.start_date);
+        let year_end = normalize_end(&data.academic_year.end_date);
+
         // Academic Year
         txn.execute(Statement::from_sql_and_values(
             txn.get_database_backend(),
@@ -1302,8 +1322,8 @@ impl BulkBootstrapPort for BootstrapAdapterImpl {
                 org_id.into(),
                 data.academic_year.name.clone().into(),
                 data.academic_year.name_ar.clone().into(),
-                data.academic_year.start_date.clone().into(),
-                data.academic_year.end_date.clone().into(),
+                year_start.into(),
+                year_end.into(),
                 now.clone().into(),
                 now.clone().into(),
             ],
@@ -1311,6 +1331,8 @@ impl BulkBootstrapPort for BootstrapAdapterImpl {
 
         // Periods
         for p in &data.periods {
+            let p_start = normalize_start(&p.start_date);
+            let p_end = normalize_end(&p.end_date);
             txn.execute(Statement::from_sql_and_values(
                 txn.get_database_backend(),
                 "INSERT INTO academic_periods (id, org_id, year_id, name, name_ar, period_type, start_date, end_date, status, is_locked, is_enrollment_open, is_grade_entry_open, created_at, updated_at) \
@@ -1323,8 +1345,8 @@ impl BulkBootstrapPort for BootstrapAdapterImpl {
                     p.name.clone().into(),
                     p.name_ar.clone().into(),
                     p.period_type.clone().into(),
-                    p.start_date.clone().into(),
-                    p.end_date.clone().into(),
+                    p_start.into(),
+                    p_end.into(),
                     now.clone().into(),
                     now.clone().into(),
                 ],

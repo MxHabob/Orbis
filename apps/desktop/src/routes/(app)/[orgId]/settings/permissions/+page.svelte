@@ -203,7 +203,7 @@ async function handleDeleteRole(roleToDelete: RoleDto) {
           </TableHeader>
           <TableBody>
             {#each roles as role (role.id)}
-              {@const permCount = countRolePermissions(role.permissions)}
+              {@const permCount = countRolePermissions(role.permissions, role.id)}
               <TableRow class="hover:bg-muted/10 transition-all duration-150">
                 <!-- ID / Code -->
                 <TableCell class="text-start font-mono text-xs text-foreground font-bold">

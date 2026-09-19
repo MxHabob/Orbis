@@ -112,17 +112,40 @@ pub async fn org_get_dashboard(state: State<'_, AppState>) -> Result<ApiResponse
 
 #[derive(Serialize)]
 pub struct OrgUnitDto {
-    pub id: String, pub org_id: String, pub parent_id: Option<String>,
-    pub path: String, pub depth: i32, pub name: String,
-    pub unit_type: String, pub is_active: bool,
+    pub id: String,
+    pub org_id: String,
+    pub parent_id: Option<String>,
+    pub path: String,
+    pub depth: i32,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub code: Option<String>,
+    pub unit_type: String,
+    pub capacity: Option<i32>,
+    pub building: Option<String>,
+    pub floor: Option<i32>,
+    pub room_number: Option<String>,
+    pub sort_order: Option<i32>,
+    pub is_active: bool,
 }
 
 fn unit_to_dto(u: orbis_domain::entities::org_unit::OrgUnit) -> OrgUnitDto {
     OrgUnitDto {
-        id: u.id.to_string(), org_id: u.org_id.to_string(),
+        id: u.id.to_string(),
+        org_id: u.org_id.to_string(),
         parent_id: u.parent_id.map(|p| p.to_string()),
-        path: u.path, depth: u.depth, name: u.name,
-        unit_type: u.unit_type, is_active: u.is_active,
+        path: u.path,
+        depth: u.depth,
+        name: u.name,
+        name_ar: u.name_ar,
+        code: u.code,
+        unit_type: u.unit_type,
+        capacity: u.capacity,
+        building: u.building,
+        floor: u.floor,
+        room_number: u.room_number,
+        sort_order: u.sort_order,
+        is_active: u.is_active,
     }
 }
 
@@ -130,10 +153,43 @@ fn unit_to_dto(u: orbis_domain::entities::org_unit::OrgUnit) -> OrgUnitDto {
 pub async fn org_create_unit(request: serde_json::Value, state: State<'_, AppState>) -> Result<ApiResponse<OrgUnitDto>, String> {
     let ctx = make_ctx(&state);
     let name = request["name"].as_str().unwrap_or_default().to_string();
-    let unit_type = request["unitType"].as_str().unwrap_or_default().to_string();
+    let name_ar = request["nameAr"].as_str().or_else(|| request["name_ar"].as_str()).map(|s| s.to_string());
+    let code = request["code"].as_str().map(|s| s.to_string());
+    let unit_type = request["unitType"].as_str().unwrap_or("division").to_string();
     let parent_id = request["parentId"].as_str().and_then(|s| Uuid::parse_str(s).ok());
     let data_isolation = request["dataIsolation"].as_str().unwrap_or("none").to_string();
-    let unit = state.organization_service.create_org_unit(&ctx, ctx.tenant_id, name, unit_type, parent_id, data_isolation).await.map_err(|e| e.to_string())?;
+    let mut unit = state.organization_service.create_org_unit(&ctx, ctx.tenant_id, name, unit_type, parent_id, data_isolation).await.map_err(|e| e.to_string())?;
+    
+    // Set additional optional metadata if provided
+    let mut needs_save = false;
+    if name_ar.is_some() {
+        unit.name_ar = name_ar;
+        needs_save = true;
+    }
+    if code.is_some() {
+        unit.code = code;
+        needs_save = true;
+    }
+    if let Some(cap) = request["capacity"].as_i64() {
+        unit.capacity = Some(cap as i32);
+        needs_save = true;
+    }
+    if let Some(bld) = request["building"].as_str() {
+        unit.building = Some(bld.to_string());
+        needs_save = true;
+    }
+    if let Some(flr) = request["floor"].as_i64() {
+        unit.floor = Some(flr as i32);
+        needs_save = true;
+    }
+    if let Some(rm) = request["roomNumber"].as_str().or_else(|| request["room_number"].as_str()) {
+        unit.room_number = Some(rm.to_string());
+        needs_save = true;
+    }
+    if needs_save {
+        state.org_unit_repo.save(&unit).await.map_err(|e| e.to_string())?;
+    }
+
     Ok(ok(unit_to_dto(unit)))
 }
 

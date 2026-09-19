@@ -17,6 +17,7 @@ pub struct AssessmentSchemeDto {
     pub name: String,
     pub description: Option<String>,
     pub max_score: f64,
+    pub formula: Option<serde_json::Value>,
 }
 
 #[derive(Deserialize)]
@@ -125,6 +126,7 @@ pub async fn assessment_create_scheme(request: CreateSchemeInput, state: State<'
         name: s.name,
         description: s.description,
         max_score: s.max_score,
+        formula: s.formula,
     }))
 }
 
@@ -138,6 +140,7 @@ pub async fn assessment_list_schemes(state: State<'_, AppState>) -> Result<ApiRe
         name: s.name,
         description: s.description,
         max_score: s.max_score,
+        formula: s.formula,
     }).collect()))
 }
 
@@ -151,6 +154,7 @@ pub async fn assessment_get_scheme(id: String, state: State<'_, AppState>) -> Re
         name: s.name,
         description: s.description,
         max_score: s.max_score,
+        formula: s.formula,
     }))
 }
 
