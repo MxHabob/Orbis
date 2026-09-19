@@ -14,8 +14,8 @@
  * - Always use formatDate(), formatCurrency(), formatNumber(), formatPercent()
  */
 
-import { orgContext } from "$lib/stores/org-context.svelte";
 import { getLocale } from "$lib/paraglide/runtime";
+import { orgContext } from "$lib/stores/org-context.svelte";
 
 // ── Internal helpers ─────────────────────────────────────────────
 
@@ -99,14 +99,23 @@ export function formatCurrency(
  * @param options - Additional Intl.DateTimeFormat options
  */
 export function formatDate(
-  value: string | Date | null | undefined,
+  value: string | number | Date | null | undefined,
   type: "date" | "datetime" | "time" | "relative" = "date",
   options?: Intl.DateTimeFormatOptions,
 ): string {
-  if (!value) return "";
+  if (value === null || value === undefined || value === "") return "";
 
-  const d = typeof value === "string" ? new Date(value) : value;
-  if (isNaN(d.getTime())) return "";
+  let d: Date;
+  if (value instanceof Date) {
+    d = value;
+  } else if (typeof value === "number") {
+    const normalized = Number.isFinite(value) && value < 1e12 ? value * 1000 : value;
+    d = new Date(normalized);
+  } else {
+    d = new Date(value);
+  }
+
+  if (Number.isNaN(d.getTime())) return "";
 
   const locale = getFormattingLocale();
   const timezone = getFormattingTimezone();

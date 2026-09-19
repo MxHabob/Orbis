@@ -164,10 +164,15 @@ async function handleDeleteCurrency(currencyToDelete: any) {
   }
 }
 
+function formatExchangeRate(value: unknown, digits = 4): string {
+  const rate = Number(value ?? 1);
+  return Number.isFinite(rate) && rate > 0 ? rate.toFixed(digits) : "1.0000";
+}
+
 function startEditingRate(c: any) {
   if (c.is_base === 1) return;
   editingRateCode = c.code;
-  editRateValue = c.exchange_rate;
+  editRateValue = Number(c.exchange_rate ?? 1);
 }
 
 function cancelEditingRate() {
@@ -351,7 +356,7 @@ let baseCurrencyCode = $derived(
                       class="text-foreground hover:text-primary hover:underline cursor-pointer transition-colors duration-150 py-1 px-2 hover:bg-primary/5 rounded font-mono font-bold"
                       title={m.settings_currencies_edit_rate_tooltip()}
                     >
-                      {c.exchange_rate.toFixed(4)}
+                      {formatExchangeRate(c.exchange_rate, 4)}
                     </button>
                     <span class="text-[10px] text-muted-foreground font-bold mr-1">{baseCurrencyCode}</span>
                   {/if}

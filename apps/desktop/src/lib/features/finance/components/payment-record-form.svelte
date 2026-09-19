@@ -59,7 +59,8 @@ const exchangeRate = $derived.by(() => {
   const selectedCurr = activeCurrencies.find(
     (c) => c.code === currency.toUpperCase(),
   );
-  return selectedCurr ? selectedCurr.exchange_rate : 1.0;
+  const rate = Number(selectedCurr?.exchange_rate ?? 1.0);
+  return Number.isFinite(rate) && rate > 0 ? rate : 1.0;
 });
 
 const convertedAmount = $derived.by(() => {
@@ -304,7 +305,7 @@ async function handleSubmit(e: SubmitEvent) {
 		/>
 		{#if currency.toUpperCase() !== 'YER' && amount && amount > 0}
 			<div class="text-xs text-emerald-500 font-bold select-none mt-1" transition:slide={{ duration: 150 }}>
-				 {m.common_payment_converted_yer({ amount: formatCurrency(convertedAmount, "YER"), rate: exchangeRate.toFixed(2) })}
+				 {m.common_payment_converted_yer({ amount: formatCurrency(convertedAmount, "YER"), rate: Number.isFinite(exchangeRate) && exchangeRate > 0 ? exchangeRate.toFixed(2) : "1.00" })}
 			</div>
 		{/if}
 		{/snippet}

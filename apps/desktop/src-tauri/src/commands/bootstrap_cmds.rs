@@ -97,26 +97,27 @@ pub async fn bootstrap_initial_setup(
         periods: periods.into_iter().map(|p| {
             orbis_app::services::bootstrap_service::PeriodInput {
                 name: p.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                name_ar: p.get("name_ar").and_then(|v| v.as_str()).map(|s| s.to_string()),
-                period_type: p.get("period_type").and_then(|v| v.as_str()).unwrap_or("semester").to_string(),
-                start_date: p.get("start_date").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                end_date: p.get("end_date").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                name_ar: p.get("name_ar").or_else(|| p.get("nameAr")).and_then(|v| v.as_str()).map(|s| s.to_string()),
+                period_type: p.get("period_type").or_else(|| p.get("periodType")).and_then(|v| v.as_str()).unwrap_or("semester").to_string(),
+                start_date: p.get("start_date").or_else(|| p.get("startDate")).and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                end_date: p.get("end_date").or_else(|| p.get("endDate")).and_then(|v| v.as_str()).unwrap_or("").to_string(),
             }
         }).collect(),
         classes: classes.into_iter().map(|c| {
             orbis_app::services::bootstrap_service::ClassInput {
                 name: c.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                name_ar: c.get("name_ar").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                name_ar: c.get("name_ar").or_else(|| c.get("nameAr")).and_then(|v| v.as_str()).map(|s| s.to_string()),
                 level: c.get("level").and_then(|v| v.as_str()).unwrap_or("").to_string(),
                 division: c.get("division").and_then(|v| v.as_str()).map(|s| s.to_string()),
             }
         }).collect(),
         subjects: subjects.into_iter().map(|s| {
+            let is_core = s.get("is_core").or_else(|| s.get("isCore")).and_then(|v| v.as_bool()).unwrap_or(true);
             orbis_app::services::bootstrap_service::SubjectInput {
                 code: s.get("code").and_then(|v| v.as_str()).unwrap_or("").to_string(),
                 name: s.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                name_ar: s.get("name_ar").and_then(|v| v.as_str()).map(|s| s.to_string()),
-                is_core: s.get("is_core").and_then(|v| v.as_bool()).unwrap_or(true),
+                name_ar: s.get("name_ar").or_else(|| s.get("nameAr")).and_then(|v| v.as_str()).map(|s| s.to_string()),
+                is_core,
             }
         }).collect(),
     };
