@@ -87,7 +87,7 @@ async function handleCompleteSetup() {
 }
 </script>
 
-<div class="flex flex-col items-center justify-center px-6 select-none w-full max-w-3xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-700 py-4 my-auto">
+<div class="flex flex-col items-center justify-center px-6 select-none w-full max-w-4xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-700 py-4 my-auto">
 
   <!-- Header Title -->
   <div class="text-center">

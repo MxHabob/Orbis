@@ -176,8 +176,14 @@ export class OnboardingState {
       color: sub.color,
       icon: sub.icon,
       sort_order: sub.sort_order,
-      enabled: true,
+      enabled: sub.enabled !== undefined ? sub.enabled : true,
     }));
+
+    // Reset and re-populate rooms for current buildings
+    this.facilities.rooms = [];
+    for (const bld of this.facilities.buildings) {
+      this.addDefaultRoomsToBuilding(bld);
+    }
 
     this.save();
   }
@@ -211,26 +217,200 @@ export class OnboardingState {
     const existing = this.facilities.rooms.filter((r) => r.building === building);
     if (existing.length > 0) return;
 
-    for (let i = 1; i <= 6; i++) {
-      this.facilities.rooms.push({
-        id: `room-${building}-${Date.now()}-${i}`,
-        name: `Classroom ${i}`,
-        name_ar: `الفصل ${i}`,
-        capacity: 30,
-        room_type: "classroom",
-        building,
-        floor: i <= 3 ? 1 : 2,
-      });
+    const instType = this.profile.institutionType || "school";
+    if (instType === "university") {
+      for (let i = 1; i <= 6; i++) {
+        this.facilities.rooms.push({
+          id: `room-${building}-${Date.now()}-${i}`,
+          name: `Lecture Hall ${i}`,
+          name_ar: `قاعة المحاضرات ${i}`,
+          capacity: 60,
+          room_type: "lecture_hall",
+          building,
+          floor: i <= 3 ? 1 : 2,
+        });
+      }
+      this.facilities.rooms.push(
+        {
+          id: `lab-sci-${building}-${Date.now()}`,
+          name: `Advanced Research Lab`,
+          name_ar: `معمل البحوث المتقدمة`,
+          capacity: 30,
+          room_type: "science_lab",
+          building,
+          floor: 1,
+        },
+        {
+          id: `lab-comp-${building}-${Date.now()}`,
+          name: `Computer & AI Center`,
+          name_ar: `مركز الحاسوب والذكاء الاصطناعي`,
+          capacity: 40,
+          room_type: "computer_lab",
+          building,
+          floor: 2,
+        },
+        {
+          id: `lib-${building}-${Date.now()}`,
+          name: `University Central Library`,
+          name_ar: `المكتبة الجامعية المركزية`,
+          capacity: 80,
+          room_type: "library",
+          building,
+          floor: 1,
+        },
+        {
+          id: `aud-${building}-${Date.now()}`,
+          name: `Grand Auditorium`,
+          name_ar: `المدرج الرئيسي للمؤتمرات`,
+          capacity: 150,
+          room_type: "activity_hall",
+          building,
+          floor: 1,
+        },
+        {
+          id: `vroom-${building}-${Date.now()}`,
+          name: `Virtual Lecture Hall (Online)`,
+          name_ar: `قاعة المحاضرات الافتراضية (عن بُعد)`,
+          capacity: 300,
+          room_type: "virtual_classroom",
+          building,
+          floor: 0,
+        }
+      );
+    } else if (instType === "institute") {
+      for (let i = 1; i <= 4; i++) {
+        this.facilities.rooms.push({
+          id: `room-${building}-${Date.now()}-${i}`,
+          name: `Training Room ${i}`,
+          name_ar: `قاعة التدريب ${i}`,
+          capacity: 25,
+          room_type: "classroom",
+          building,
+          floor: 1,
+        });
+      }
+      this.facilities.rooms.push(
+        {
+          id: `lab-comp-${building}-${Date.now()}`,
+          name: `IT & Multimedia Lab`,
+          name_ar: `معمل الحاسب والوسائط`,
+          capacity: 25,
+          room_type: "computer_lab",
+          building,
+          floor: 1,
+        },
+        {
+          id: `lab-lang-${building}-${Date.now()}`,
+          name: `Languages Lab`,
+          name_ar: `مختبر اللغات الحديثة`,
+          capacity: 25,
+          room_type: "workshop",
+          building,
+          floor: 1,
+        },
+        {
+          id: `vroom-${building}-${Date.now()}`,
+          name: `Virtual Classroom (Online)`,
+          name_ar: `القاعة الافتراضية للتدريب`,
+          capacity: 100,
+          room_type: "virtual_classroom",
+          building,
+          floor: 0,
+        }
+      );
+    } else if (instType === "training_center") {
+      for (let i = 1; i <= 3; i++) {
+        this.facilities.rooms.push({
+          id: `room-${building}-${Date.now()}-${i}`,
+          name: `Workshop Hall ${i}`,
+          name_ar: `قاعة ورش العمل ${i}`,
+          capacity: 30,
+          room_type: "workshop",
+          building,
+          floor: 1,
+        });
+      }
+      this.facilities.rooms.push(
+        {
+          id: `lab-comp-${building}-${Date.now()}`,
+          name: `Executive Tech Lab`,
+          name_ar: `معمل التدريب التقني التنفيذي`,
+          capacity: 25,
+          room_type: "computer_lab",
+          building,
+          floor: 1,
+        },
+        {
+          id: `vroom-${building}-${Date.now()}`,
+          name: `Virtual Webinar Room`,
+          name_ar: `قاعة الندوات الافتراضية (ويبينار)`,
+          capacity: 200,
+          room_type: "virtual_classroom",
+          building,
+          floor: 0,
+        }
+      );
+    } else {
+      // Default: School
+      for (let i = 1; i <= 8; i++) {
+        this.facilities.rooms.push({
+          id: `room-${building}-${Date.now()}-${i}`,
+          name: `Classroom ${i}`,
+          name_ar: `الفصل ${i}`,
+          capacity: 30,
+          room_type: "classroom",
+          building,
+          floor: i <= 4 ? 1 : 2,
+        });
+      }
+      this.facilities.rooms.push(
+        {
+          id: `lab-sci-${building}-${Date.now()}`,
+          name: `Science Lab`,
+          name_ar: `المختبر العلمي`,
+          capacity: 25,
+          room_type: "science_lab",
+          building,
+          floor: 1,
+        },
+        {
+          id: `lab-comp-${building}-${Date.now()}`,
+          name: `Computer Lab`,
+          name_ar: `معمل الحاسوب`,
+          capacity: 25,
+          room_type: "computer_lab",
+          building,
+          floor: 2,
+        },
+        {
+          id: `lib-${building}-${Date.now()}`,
+          name: `Library & Learning Resources`,
+          name_ar: `المكتبة ومصادر التعلم`,
+          capacity: 40,
+          room_type: "library",
+          building,
+          floor: 1,
+        },
+        {
+          id: `act-${building}-${Date.now()}`,
+          name: `Activity Hall`,
+          name_ar: `قاعة الأنشطة والفعاليات`,
+          capacity: 60,
+          room_type: "activity_hall",
+          building,
+          floor: 1,
+        },
+        {
+          id: `vroom-${building}-${Date.now()}`,
+          name: `Virtual Classroom (Online)`,
+          name_ar: `القاعة الافتراضية (تعليم عن بُعد)`,
+          capacity: 100,
+          room_type: "virtual_classroom",
+          building,
+          floor: 0,
+        }
+      );
     }
-    this.facilities.rooms.push({
-      id: `lab-${building}-${Date.now()}-1`,
-      name: `Science Lab 1`,
-      name_ar: `المختبر العلمي 1`,
-      capacity: 25,
-      room_type: "science_lab",
-      building,
-      floor: 1,
-    });
     this.save();
   }
 
@@ -383,11 +563,17 @@ export class OnboardingState {
       if (orgDto.name_ar) this.profile.orgNameAr = orgDto.name_ar;
       if (orgDto.currency) this.profile.currency = orgDto.currency;
       if (orgDto.timezone) this.profile.timezone = orgDto.timezone;
-    } else if (systemStore.orgReadiness?.org_name) {
-      if (!this.profile.orgName) this.profile.orgName = systemStore.orgReadiness.org_name;
+      if (orgDto.locale) this.profile.locale = orgDto.locale;
+      const type = orgDto.org_type || orgDto.institution_type || orgDto.type;
+      if (type) this.profile.institutionType = type;
+    } else if (systemStore.orgReadiness) {
+      const r = systemStore.orgReadiness;
+      if (r.org_name && !this.profile.orgName) this.profile.orgName = r.org_name;
+      const type = (r as any).org_type || (r as any).institution_type || (r as any).type;
+      if (type && !this.profile.institutionType) this.profile.institutionType = type;
     }
 
-    if (authStore.isAuthenticated && !this.profile.orgName) {
+    if (authStore.isAuthenticated) {
       try {
         const org: any = await api.getCurrentOrg();
         if (org) {
@@ -396,13 +582,17 @@ export class OnboardingState {
           if (org.currency) this.profile.currency = org.currency;
           if (org.timezone) this.profile.timezone = org.timezone;
           if (org.locale) this.profile.locale = org.locale;
+          const type = org.org_type || org.institution_type || org.type;
+          if (type && !this.profile.institutionType) {
+            this.profile.institutionType = type;
+          }
         }
       } catch {
         // Silently continue with defaults
       }
     }
 
-    // 3. If no grade levels or subjects loaded yet, apply default school profile
+    // 3. If no grade levels or subjects loaded yet, apply profile chosen in setup
     if (this.academics.gradeLevels.length === 0) {
       this.selectInstitutionType(this.profile.institutionType || "school");
     }

@@ -22,8 +22,8 @@ import { Building2, Calendar, GraduationCap, DollarSign, CheckCircle2 } from "@l
     </span>
   </div>
 
-  <!-- 2x2 Clean Summary Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto scrollbar-hide pr-1">
+  <!-- Multi-Column Clean Summary Grid (Expanded for Widescreen) -->
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5 max-h-[340px] overflow-y-auto scrollbar-hide pr-1">
 
     <!-- Card 1: Institution Details -->
     <div class="border border-border/70 rounded-2xl bg-card p-3 space-y-2 shadow-2xs">

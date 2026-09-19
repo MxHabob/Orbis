@@ -45,6 +45,7 @@ let newRoomFloor = $state(0);
 
 const roomTypeOptions = [
   { value: "classroom", label: () => m.common_onboarding_room_type_classroom() },
+  { value: "virtual_classroom", label: () => l("قاعة افتراضية (عن بُعد)", "Virtual Classroom (Online)") },
   { value: "lecture_hall", label: () => m.common_onboarding_room_type_lecture_hall() },
   { value: "computer_lab", label: () => m.common_onboarding_room_type_computer() },
   { value: "science_lab", label: () => m.common_onboarding_room_type_science() },

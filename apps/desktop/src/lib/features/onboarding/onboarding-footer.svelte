@@ -23,7 +23,7 @@ let {
 </script>
 
 <div class="w-full py-3.5 px-6 shrink-0 border-t border-border/60 bg-card/80 backdrop-blur-md z-30">
-  <div class="max-w-4xl w-full mx-auto flex justify-between items-center">
+  <div class="max-w-7xl 2xl:max-w-[1550px] w-full mx-auto flex justify-between items-center">
     <!-- Back button -->
     <Button
       variant="outline"

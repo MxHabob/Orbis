@@ -28,8 +28,8 @@ import { l } from "$lib/core/i18n";
     </span>
   </div>
 
-  <!-- Responsive 3-Column Grade Grid with fixed max-height and hidden scrollbar -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[300px] overflow-y-auto scrollbar-hide pr-1">
+  <!-- Responsive Multi-Column Grade Grid (Expanded for Widescreen) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 max-h-[340px] overflow-y-auto scrollbar-hide pr-1">
     {#each onboardingState.academics.gradeLevels as gl (gl.level)}
       <div
         class="bg-card border rounded-xl p-3 flex flex-col justify-between gap-2 transition-all duration-150 shadow-2xs

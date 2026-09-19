@@ -48,7 +48,7 @@ const progressPercent = $derived(
 const currentStepObj = $derived(steps[currentStep] || steps[0]);
 </script>
 
-<div class="w-full max-w-5xl mx-auto px-4 space-y-2 select-none">
+<div class="w-full max-w-7xl 2xl:max-w-[1550px] mx-auto px-4 sm:px-6 lg:px-8 space-y-2 select-none">
   <!-- Desktop Stepper Navigation Tabs -->
   <div class="hidden md:flex items-center justify-between gap-1 overflow-x-auto scrollbar-hide py-1">
     {#each steps as st, idx}

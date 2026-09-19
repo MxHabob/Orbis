@@ -23,7 +23,7 @@ import { l } from "$lib/core/i18n";
 let newSlotName = $state("");
 let newSlotNameAr = $state("");
 let newSlotStart = $state("08:00");
-let newSlotEnd = $state("08:45");
+let newSlotEnd = $state("08:40");
 let newSlotType = $state<"lesson" | "break">("lesson");
 let newBreakType = $state<"recess" | "lunch" | "prayer" | "custom">("recess");
 

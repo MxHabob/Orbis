@@ -28,8 +28,8 @@ const enabledGradeLevels = $derived(
     </span>
   </div>
 
-  <!-- Registration Fees 2-Column Responsive Grid -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[260px] overflow-y-auto scrollbar-hide pr-1">
+  <!-- Registration Fees Multi-Column Responsive Grid (Expanded for Widescreen) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto scrollbar-hide pr-1">
     {#each enabledGradeLevels as gl (gl.level)}
       <div class="flex items-center justify-between p-2.5 rounded-xl border border-border/70 bg-card hover:bg-muted/15 transition-colors shadow-2xs">
         <div class="flex items-center gap-2 min-w-0">

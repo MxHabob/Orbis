@@ -37,7 +37,7 @@ function handleStepClick(step: number) {
 <div class="h-full w-full bg-gradient-to-br from-background via-background/98 to-primary/5 text-foreground flex flex-col justify-between overflow-hidden font-sans select-none">
 
   <!-- Stepper Indicator -->
-  <div class="w-full pt-3 px-4 shrink-0">
+  <div class="w-full pt-2.5 pb-1 px-4 shrink-0">
     <OnboardingStepper
       currentStep={onboardingState.currentStep}
       totalSteps={onboardingState.totalSteps}
@@ -45,8 +45,8 @@ function handleStepClick(step: number) {
     />
   </div>
 
-  <!-- Step Content Container (Fits comfortably in viewport) -->
-  <main class="flex-1 min-h-0 max-w-5xl w-full mx-auto px-4 py-1.5 flex flex-col justify-center overflow-hidden">
+  <!-- Step Content Container (Full screen real estate, zero wasted top margin) -->
+  <main class="flex-1 min-h-0 w-full max-w-7xl 2xl:max-w-[1550px] mx-auto px-4 sm:px-6 lg:px-8 pt-1.5 pb-2 flex flex-col justify-center overflow-hidden">
     
     {#if onboardingState.errorMessage}
       <div class="mb-2 flex items-center gap-2.5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs animate-in fade-in shrink-0">
@@ -55,7 +55,7 @@ function handleStepClick(step: number) {
       </div>
     {/if}
 
-    <div class="w-full my-auto flex flex-col justify-center">
+    <div class="w-full flex-1 min-h-0 flex flex-col justify-center overflow-hidden">
       {#if onboardingState.currentStep === 0}
         <WelcomeStep />
       {:else if onboardingState.currentStep === 1}

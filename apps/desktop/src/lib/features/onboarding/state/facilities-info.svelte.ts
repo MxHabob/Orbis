@@ -3,7 +3,7 @@ import { getDefaultBuildings } from "../utils";
 
 function createDefaultRooms(building: string): Room[] {
   const rooms: Room[] = [];
-  for (let index = 1; index <= 10; index++) {
+  for (let index = 1; index <= 8; index++) {
     rooms.push({
       id: `default-room-${index}`,
       name: `Classroom ${index}`,
@@ -11,27 +11,54 @@ function createDefaultRooms(building: string): Room[] {
       capacity: 30,
       room_type: "classroom",
       building,
-      floor: index <= 5 ? 1 : 2,
+      floor: index <= 4 ? 1 : 2,
     });
   }
   rooms.push(
     {
-      id: "default-computer-lab-1",
-      name: "Computer Lab 1",
-      name_ar: "مختبر حاسب 1",
+      id: "default-science-lab",
+      name: "Science Lab",
+      name_ar: "المختبر العلمي",
+      capacity: 25,
+      room_type: "science_lab",
+      building,
+      floor: 1,
+    },
+    {
+      id: "default-computer-lab",
+      name: "Computer Lab",
+      name_ar: "معمل الحاسوب",
       capacity: 25,
       room_type: "computer_lab",
       building,
       floor: 2,
     },
     {
-      id: "default-science-lab-1",
-      name: "Science Lab 1",
-      name_ar: "مختبر علمي 1",
-      capacity: 25,
-      room_type: "science_lab",
+      id: "default-library",
+      name: "Library & Learning Resources",
+      name_ar: "المكتبة ومصادر التعلم",
+      capacity: 40,
+      room_type: "library",
       building,
       floor: 1,
+    },
+    {
+      id: "default-activity-hall",
+      name: "Activity Hall",
+      name_ar: "قاعة الأنشطة والفعاليات",
+      capacity: 60,
+      room_type: "activity_hall",
+      building,
+      floor: 1,
+    },
+    {
+      id: "default-virtual-classroom",
+      name: "Virtual Classroom (Online)",
+      name_ar: "القاعة الافتراضية (تعليم عن بُعد)",
+      capacity: 100,
+      room_type: "virtual_classroom",
+      building,
+      floor: 0,
     },
   );
   return rooms;

@@ -67,8 +67,8 @@ function handleAddSubject() {
     </div>
   </div>
 
-  <!-- Subjects 2-Column Responsive Grid -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto scrollbar-hide pr-1">
+  <!-- Subjects Multi-Column Responsive Grid (Expanded for Widescreen) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 max-h-[250px] overflow-y-auto scrollbar-hide pr-1">
     {#each onboardingState.academics.subjects as sub (sub.code)}
       <div class="flex items-center justify-between p-2 rounded-xl border bg-card hover:bg-muted/15 transition-all {sub.enabled ? 'border-border/70 shadow-2xs' : 'border-border/30 opacity-40'}">
         <div class="flex items-center gap-2.5 min-w-0">
