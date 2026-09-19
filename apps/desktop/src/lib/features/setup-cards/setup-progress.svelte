@@ -42,14 +42,14 @@ function handleDismiss(e: MouseEvent) {
   localStorage.setItem("orbis_setup_progress_dismissed", "true");
 }
 
-// Map setup item keys to application routes
+// Map setup item keys to active application routes
 const routeMap: Record<string, string> = {
-  academic_year: "/settings/academic-years",
-  classes: "/classes",
-  subjects: "/subjects",
+  academic_year: "/settings/periods",
+  classes: "/academics/classes",
+  subjects: "/settings/subjects",
   rooms: "/settings/rooms",
-  time_slots: "/scheduling/slots",
-  fee_templates: "/finance/templates",
+  time_slots: "/settings/periods",
+  fee_templates: "/settings/fee-templates",
   org_units: "/settings/units",
 };
 
