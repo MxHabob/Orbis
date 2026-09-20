@@ -166,6 +166,15 @@ impl SchedulingService {
     ) -> Result<ScheduledLesson, DomainError> {
         self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
 
+        if let Some(tid) = teacher_id {
+            let teacher_lessons = self.lesson_repo.find_by_teacher(tid).await?;
+            if teacher_lessons.iter().any(|l| l.time_slot_id == time_slot_id) {
+                return Err(DomainError::Conflict(
+                    "Teacher is already scheduled for another lesson in this time slot".into(),
+                ));
+            }
+        }
+
         let now = Utc::now();
         let lesson_id = Uuid::new_v4();
 

@@ -28,6 +28,7 @@
         "@lucide/svelte": "^1.33.0",
         "@orbis/app-store": "workspace:*",
         "@orbis/avatar-engine": "workspace:*",
+        "@orbis/blueprints": "workspace:*",
         "@orbis/location": "workspace:*",
         "@orbis/schemas": "workspace:*",
         "@orbis/sdk": "workspace:*",
@@ -122,6 +123,18 @@
       },
       "peerDependencies": {
         "svelte": "^5",
+      },
+    },
+    "packages/blueprints": {
+      "name": "@orbis/blueprints",
+      "version": "1.0.0",
+      "dependencies": {
+        "zod": "^4.1.13",
+      },
+      "devDependencies": {
+        "@orbis/tsconfig": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^7.0.2",
       },
     },
     "packages/docforge": {
@@ -695,6 +708,8 @@
     "@orbis/app-store": ["@orbis/app-store@workspace:packages/app-store"],
 
     "@orbis/avatar-engine": ["@orbis/avatar-engine@workspace:packages/avatar-engine"],
+
+    "@orbis/blueprints": ["@orbis/blueprints@workspace:packages/blueprints"],
 
     "@orbis/desktop": ["@orbis/desktop@workspace:apps/desktop"],
 

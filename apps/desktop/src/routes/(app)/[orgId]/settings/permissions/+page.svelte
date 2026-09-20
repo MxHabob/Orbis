@@ -53,7 +53,7 @@ let editingRole = $state<RoleDto | null>(null);
 async function loadRoles() {
   isLoading = true;
   try {
-    const fetchedRoles = await api.listRoles().catch(() => []);
+    const fetchedRoles = await api.listRoles();
 
     // Merge system role definitions if not already in DB or if perms are empty
     const merged: RoleDto[] = [];

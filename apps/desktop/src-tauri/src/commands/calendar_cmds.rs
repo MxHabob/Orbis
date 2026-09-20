@@ -179,6 +179,30 @@ pub async fn calendar_get_context(state: State<'_, AppState>) -> Result<ApiRespo
 }
 
 #[tauri::command]
+pub async fn calendar_lock_period(id: String, state: State<'_, AppState>) -> Result<ApiResponse<AcademicPeriodDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let period = state.calendar_service.lock_period(&ctx, uid).await.map_err(|e| e.to_string())?;
+    Ok(ok(period_dto(period)))
+}
+
+#[tauri::command]
+pub async fn calendar_unlock_period(id: String, state: State<'_, AppState>) -> Result<ApiResponse<AcademicPeriodDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let period = state.calendar_service.unlock_period(&ctx, uid).await.map_err(|e| e.to_string())?;
+    Ok(ok(period_dto(period)))
+}
+
+#[tauri::command]
+pub async fn calendar_close_period(id: String, state: State<'_, AppState>) -> Result<ApiResponse<AcademicPeriodDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let period = state.calendar_service.close_period(&ctx, uid).await.map_err(|e| e.to_string())?;
+    Ok(ok(period_dto(period)))
+}
+
+#[tauri::command]
 pub async fn calendar_list_period_templates() -> Result<ApiResponse<Vec<PeriodTemplateDto>>, String> {
     Ok(ok(vec![
         PeriodTemplateDto { id: "semesters".to_string(), name: "Two Semesters (Fall/Spring)".to_string() },

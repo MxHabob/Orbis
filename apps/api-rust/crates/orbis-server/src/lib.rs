@@ -80,6 +80,9 @@ use api::{
         api::calendar_routes::create_period,
         api::calendar_routes::list_periods,
         api::calendar_routes::get_period,
+        api::calendar_routes::lock_period,
+        api::calendar_routes::unlock_period,
+        api::calendar_routes::close_period,
         api::calendar_routes::list_period_templates,
         // Academic
         api::academic_routes::create_subject,
@@ -204,6 +207,8 @@ use api::{
             api::iam_routes::RoleDto,
             api::iam_routes::SaveRoleRequest,
             api::iam_routes::PermissionRuleDto,
+            api::iam_routes::EffectiveContextDto,
+            api::iam_routes::LinkedDependentDto,
             // Org
             api::org_routes::CreateOrgRequest,
             api::org_routes::UpdateOrgRequest,

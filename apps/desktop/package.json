@@ -25,6 +25,7 @@
     "@lucide/svelte": "^1.33.0",
     "@orbis/app-store": "workspace:*",
     "@orbis/avatar-engine": "workspace:*",
+    "@orbis/blueprints": "workspace:*",
     "@orbis/location": "workspace:*",
     "@orbis/schemas": "workspace:*",
     "@orbis/sdk": "workspace:*",

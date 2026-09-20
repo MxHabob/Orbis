@@ -209,6 +209,57 @@ async fn get_period(
 }
 
 
+#[utoipa::path(post, path = "/api/v1/academic-periods/{id}/lock",
+    params(("id" = Uuid, Path, description = "Academic Period ID")),
+    responses((status = 200, body = AcademicPeriodDto)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn lock_period(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
+    let p = state.calendar_service.lock_period(&ctx, id).await?;
+    Ok(ApiResponse::ok(AcademicPeriodDto {
+        id: p.id, year_id: p.year_id, name: p.name,
+        start_date: p.start_date, end_date: p.end_date,
+        period_type: p.period_type, status: p.state.to_string(),
+    }))
+}
+
+#[utoipa::path(post, path = "/api/v1/academic-periods/{id}/unlock",
+    params(("id" = Uuid, Path, description = "Academic Period ID")),
+    responses((status = 200, body = AcademicPeriodDto)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn unlock_period(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
+    let p = state.calendar_service.unlock_period(&ctx, id).await?;
+    Ok(ApiResponse::ok(AcademicPeriodDto {
+        id: p.id, year_id: p.year_id, name: p.name,
+        start_date: p.start_date, end_date: p.end_date,
+        period_type: p.period_type, status: p.state.to_string(),
+    }))
+}
+
+#[utoipa::path(post, path = "/api/v1/academic-periods/{id}/close",
+    params(("id" = Uuid, Path, description = "Academic Period ID")),
+    responses((status = 200, body = AcademicPeriodDto)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn close_period(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
+    let p = state.calendar_service.close_period(&ctx, id).await?;
+    Ok(ApiResponse::ok(AcademicPeriodDto {
+        id: p.id, year_id: p.year_id, name: p.name,
+        start_date: p.start_date, end_date: p.end_date,
+        period_type: p.period_type, status: p.state.to_string(),
+    }))
+}
+
 #[utoipa::path(get, path = "/api/v1/period-templates",
     responses((status = 200, body = Vec<PeriodTemplateDto>)),
     security(("bearer" = [])), tag = "Calendar")]
@@ -232,5 +283,8 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/academic-years/:id", get(get_year))
         .route("/api/v1/academic-periods", post(create_period).get(list_periods))
         .route("/api/v1/academic-periods/:id", get(get_period))
+        .route("/api/v1/academic-periods/:id/lock", post(lock_period))
+        .route("/api/v1/academic-periods/:id/unlock", post(unlock_period))
+        .route("/api/v1/academic-periods/:id/close", post(close_period))
         .route("/api/v1/period-templates", get(list_period_templates))
 }

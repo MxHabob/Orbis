@@ -66,13 +66,6 @@ export type AssessmentSchemeDto = {
     org_id: string;
 };
 
-export type UpdateSchemeRequest = {
-    description?: string | null;
-    formula?: unknown;
-    max_score?: number | null;
-    name?: string | null;
-};
-
 export type AssignClassSubjectRequest = {
     class_id: string;
     period_id: string;
@@ -124,14 +117,58 @@ export type AttendanceDto = {
     student_id: string;
 };
 
+export type AutopilotDiagnosticsDto = {
+    completed_tasks_count: number;
+    failed_tasks_count: number;
+    is_healthy: boolean;
+    mode: string;
+    overdue_tasks: Array<AutopilotTaskDto>;
+    pending_tasks_count: number;
+    status: string;
+    stuck_tasks: Array<AutopilotTaskDto>;
+    total_tasks_count: number;
+};
+
 export type AutopilotSettingsDto = {
     allow_grade_edit_after_close: boolean;
     auto_advance_periods: boolean;
+    auto_close_enrollment: boolean;
+    auto_exam_scheduling: boolean;
+    auto_fee_assignment: boolean;
+    auto_grade_entry_reminder: boolean;
     auto_lock_grades: boolean;
+    auto_open_enrollment: boolean;
+    auto_period_lock: boolean;
+    auto_promotion: boolean;
+    auto_record_attendance: boolean;
+    auto_report_generation: boolean;
     enabled: boolean;
+    grace_days: number;
     grade_entry_auto_close_days: number;
     max_retries: number;
     mode: string;
+    notify_before_deadline_hours: number;
+};
+
+export type AutopilotTaskDto = {
+    attempts: number;
+    created_at: string;
+    error_log?: string | null;
+    executed_at?: string | null;
+    id: string;
+    idempotency_key?: string | null;
+    max_retries: number;
+    org_id: string;
+    parameters?: unknown;
+    reason?: string | null;
+    risk_level: string;
+    scheduled_at: string;
+    status: string;
+    target_id?: string | null;
+    target_type?: string | null;
+    task_type: string;
+    triggered_by: string;
+    updated_at: string;
 };
 
 export type BatchPrintRequest = {
@@ -148,7 +185,7 @@ export type CalculateGradesRequest = {
 };
 
 export type CalculationResultDto = {
-    final_score: number;
+    final_score: string;
     message: string;
 };
 
@@ -350,6 +387,14 @@ export type DocumentDto = {
     visibility: string;
 };
 
+export type EffectiveContextDto = {
+    active_period_id?: string | null;
+    dependents: Array<LinkedDependentDto>;
+    effective_role: string;
+    permissions: Array<string>;
+    roles: Array<string>;
+};
+
 export type EnrollStudentRequest = {
     class_id?: string | null;
     period_id: string;
@@ -494,13 +539,30 @@ export type IntegrationStatusDto = {
     is_enabled: boolean;
 };
 
+export type LinkedDependentDto = {
+    current_grade_level?: string | null;
+    current_section_name?: string | null;
+    full_name: string;
+    full_name_ar?: string | null;
+    is_emergency_contact: boolean;
+    is_fee_payer: boolean;
+    is_primary_contact: boolean;
+    relationship: string;
+    student_id: string;
+};
+
+export type ListTasksResponse = {
+    items: Array<AutopilotTaskDto>;
+    total_count: number;
+};
+
 export type LoginRequest = {
     email: string;
     password: string;
 };
 
 export type LoginResponse = {
-    effective_context: unknown;
+    effective_context: EffectiveContextDto;
     refresh_token: string;
     token: string;
     user: UserDto;
@@ -557,42 +619,42 @@ export type OrbisErrorBody = {
 };
 
 export type OrgDto = {
+    base_currency_code?: string | null;
+    code?: string | null;
+    current_period_id?: string | null;
+    date_format?: string | null;
+    favicon?: string | null;
+    features?: unknown;
     id: string;
+    is_active: boolean;
+    is_hijri_enabled: boolean;
+    is_verified: boolean;
+    locale: string;
+    logo?: string | null;
     name: string;
     name_ar?: string | null;
-    slug: string;
-    code?: string | null;
-    timezone: string;
-    locale: string;
-    date_format?: string | null;
-    is_hijri_enabled: boolean;
-    base_currency_code?: string | null;
     primary_color?: string | null;
-    logo?: string | null;
-    favicon?: string | null;
-    current_period_id?: string | null;
-    is_active: boolean;
-    is_verified: boolean;
-    settings?: Record<string, unknown> | null;
-    features?: Record<string, unknown> | null;
+    settings?: unknown;
+    slug: string;
+    timezone: string;
 };
 
 export type OrgUnitDto = {
+    building?: string | null;
+    capacity?: number | null;
+    code?: string | null;
+    depth: number;
+    floor?: number | null;
     id: string;
+    is_active: boolean;
+    name: string;
+    name_ar?: string | null;
     org_id: string;
     parent_id?: string | null;
     path: string;
-    depth: number;
-    name: string;
-    name_ar?: string | null;
-    code?: string | null;
-    unit_type: string;
-    capacity?: number | null;
-    building?: string | null;
-    floor?: number | null;
     room_number?: string | null;
     sort_order?: number | null;
-    is_active: boolean;
+    unit_type: string;
 };
 
 export type OrganizationSettingsDto = {
@@ -645,6 +707,15 @@ export type PeriodTemplateDto = {
     name: string;
 };
 
+export type PermissionRuleDto = {
+    actions: Array<string>;
+    document_type: string;
+    id?: string | null;
+    level?: number | null;
+    only_if_creator?: boolean | null;
+    role: string;
+};
+
 export type PreviewTemplateRequest = {
     context_data: unknown;
     document_json: string;
@@ -686,6 +757,7 @@ export type RecordGradeRequest = {
 };
 
 export type RegisterStudentRequest = {
+    avatar_url?: string | null;
     blood_type?: string | null;
     date_of_birth?: string | null;
     first_name: string;
@@ -707,7 +779,7 @@ export type RegisterUserRequest = {
     email: string;
     full_name: string;
     password?: string | null;
-    role: string;
+    role?: string | null;
 };
 
 export type ReportDefinitionDto = {
@@ -740,12 +812,35 @@ export type RevertVersionRequest = {
     version: number;
 };
 
+export type RoleDto = {
+    id: string;
+    is_system: boolean;
+    name: string;
+    name_ar?: string | null;
+    permissions: {
+        [key: string]: Array<string>;
+    };
+};
+
 export type RoomDto = {
     capacity: number;
     id: string;
     name: string;
     org_id: string;
     room_type: string;
+};
+
+export type RunTickRequest = {
+    dry_run?: boolean | null;
+};
+
+export type SaveRoleRequest = {
+    id: string;
+    name: string;
+    name_ar?: string | null;
+    permissions?: {
+        [key: string]: Array<string>;
+    } | null;
 };
 
 export type ScheduleExamRequest = {
@@ -787,13 +882,14 @@ export type SecretDto = {
 };
 
 export type SessionResponse = {
-    effective_context: unknown;
+    effective_context: EffectiveContextDto;
     org_id: string;
     user: UserDto;
 };
 
 export type StudentDto = {
     admitted_at: string;
+    avatar_url?: string | null;
     blood_type?: string | null;
     created_at: string;
     date_of_birth?: string | null;
@@ -938,7 +1034,16 @@ export type UpdateTemplateRequest = {
 };
 
 export type UpdateUserRequest = {
+    address?: string | null;
+    birth_date?: string | null;
     full_name?: string | null;
+    full_name_ar?: string | null;
+    gender?: string | null;
+    is_active?: boolean | null;
+    national_id?: string | null;
+    phone?: string | null;
+    roles?: Array<string> | null;
+    status?: string | null;
 };
 
 export type UploadDocumentRequest = {
@@ -982,7 +1087,7 @@ export type UserDto = {
     full_name_ar?: string | null;
     gender?: string | null;
     id: string;
-    is_active?: boolean;
+    is_active: boolean;
     is_email_verified: boolean;
     is_mfa_enabled: boolean;
     is_phone_verified: boolean;
@@ -1062,6 +1167,60 @@ export type GetPeriodResponses = {
 };
 
 export type GetPeriodResponse = GetPeriodResponses[keyof GetPeriodResponses];
+
+export type ClosePeriodData = {
+    body?: never;
+    path: {
+        /**
+         * Academic Period ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-periods/{id}/close';
+};
+
+export type ClosePeriodResponses = {
+    200: AcademicPeriodDto;
+};
+
+export type ClosePeriodResponse = ClosePeriodResponses[keyof ClosePeriodResponses];
+
+export type LockPeriodData = {
+    body?: never;
+    path: {
+        /**
+         * Academic Period ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-periods/{id}/lock';
+};
+
+export type LockPeriodResponses = {
+    200: AcademicPeriodDto;
+};
+
+export type LockPeriodResponse = LockPeriodResponses[keyof LockPeriodResponses];
+
+export type UnlockPeriodData = {
+    body?: never;
+    path: {
+        /**
+         * Academic Period ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-periods/{id}/unlock';
+};
+
+export type UnlockPeriodResponses = {
+    200: AcademicPeriodDto;
+};
+
+export type UnlockPeriodResponse = UnlockPeriodResponses[keyof UnlockPeriodResponses];
 
 export type ListYearsData = {
     body?: never;
@@ -1374,6 +1533,214 @@ export type GetSessionResponses = {
 };
 
 export type GetSessionResponse = GetSessionResponses[keyof GetSessionResponses];
+
+export type GetDiagnosticsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/autopilot/diagnostics';
+};
+
+export type GetDiagnosticsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type GetDiagnosticsResponses = {
+    /**
+     * Autopilot diagnostics summary
+     */
+    200: unknown;
+};
+
+export type ListTasksData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Filter by task status (pending, executing, completed, failed, suggested, cancelled)
+         */
+        status?: string | null;
+        /**
+         * Filter by task type
+         */
+        task_type?: string | null;
+        /**
+         * Pagination limit (default 20)
+         */
+        limit?: number | null;
+        /**
+         * Pagination offset (default 0)
+         */
+        offset?: number | null;
+    };
+    url: '/api/v1/autopilot/tasks';
+};
+
+export type ListTasksErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type ListTasksResponses = {
+    /**
+     * Paginated autopilot tasks list
+     */
+    200: unknown;
+};
+
+export type GetTaskData = {
+    body?: never;
+    path: {
+        /**
+         * Task UUID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/autopilot/tasks/{id}';
+};
+
+export type GetTaskErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Task not found
+     */
+    404: unknown;
+};
+
+export type GetTaskResponses = {
+    /**
+     * Autopilot task detail
+     */
+    200: unknown;
+};
+
+export type DismissTaskData = {
+    body?: never;
+    path: {
+        /**
+         * Task UUID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/autopilot/tasks/{id}/dismiss';
+};
+
+export type DismissTaskErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Task not found
+     */
+    404: unknown;
+};
+
+export type DismissTaskResponses = {
+    /**
+     * Dismissed task result
+     */
+    200: unknown;
+};
+
+export type ExecuteTaskData = {
+    body?: never;
+    path: {
+        /**
+         * Task UUID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/autopilot/tasks/{id}/execute';
+};
+
+export type ExecuteTaskErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Task not found
+     */
+    404: unknown;
+};
+
+export type ExecuteTaskResponses = {
+    /**
+     * Executed task result
+     */
+    200: unknown;
+};
+
+export type RetryTaskData = {
+    body?: never;
+    path: {
+        /**
+         * Task UUID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/autopilot/tasks/{id}/retry';
+};
+
+export type RetryTaskErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Task not found
+     */
+    404: unknown;
+};
+
+export type RetryTaskResponses = {
+    /**
+     * Retried task result
+     */
+    200: unknown;
+};
+
+export type RunTickData = {
+    body?: RunTickRequest | null;
+    path?: never;
+    query?: never;
+    url: '/api/v1/autopilot/tick';
+};
+
+export type RunTickErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type RunTickResponses = {
+    /**
+     * Evaluated autopilot tasks list
+     */
+    200: unknown;
+};
 
 export type ListClassSubjectsData = {
     body?: never;
@@ -1772,6 +2139,70 @@ export type CalculateGradesResponses = {
 };
 
 export type CalculateGradesResponse = CalculateGradesResponses[keyof CalculateGradesResponses];
+
+export type ListPermissionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/iam/permissions';
+};
+
+export type ListPermissionsResponses = {
+    /**
+     * List of permissions rules
+     */
+    200: Array<PermissionRuleDto>;
+};
+
+export type ListPermissionsResponse = ListPermissionsResponses[keyof ListPermissionsResponses];
+
+export type SavePermissionsData = {
+    body: Array<PermissionRuleDto>;
+    path?: never;
+    query?: never;
+    url: '/api/v1/iam/permissions';
+};
+
+export type SavePermissionsResponses = {
+    /**
+     * Permissions saved
+     */
+    200: boolean;
+};
+
+export type SavePermissionsResponse = SavePermissionsResponses[keyof SavePermissionsResponses];
+
+export type ListRolesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/iam/roles';
+};
+
+export type ListRolesResponses = {
+    /**
+     * List of roles
+     */
+    200: Array<RoleDto>;
+};
+
+export type ListRolesResponse = ListRolesResponses[keyof ListRolesResponses];
+
+export type SaveRoleData = {
+    body: SaveRoleRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/iam/roles';
+};
+
+export type SaveRoleResponses = {
+    /**
+     * Role saved
+     */
+    200: RoleDto;
+};
+
+export type SaveRoleResponse = SaveRoleResponses[keyof SaveRoleResponses];
 
 export type ListUsersData = {
     body?: never;

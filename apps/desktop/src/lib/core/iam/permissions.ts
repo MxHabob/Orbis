@@ -46,6 +46,150 @@ export interface SystemRoleDef {
 }
 
 // ============================================================================
+// Canonical Backend Permissions Map (Single Source of Truth)
+// ============================================================================
+
+export const Permissions = {
+  // --- Organization ---
+  OrganizationRead: "organization:read",
+  OrganizationWrite: "organization:write",
+
+  // --- Users & IAM ---
+  UserRead: "user:read",
+  UserWrite: "user:write",
+  UserDelete: "user:delete",
+  UserRoleWrite: "user:role_write",
+  UserPasswordWrite: "user:password_write",
+
+  // --- Academic Period & Calendar ---
+  PeriodRead: "period:read",
+  PeriodWrite: "period:write",
+  PeriodActivate: "period:activate",
+  PeriodLock: "period:lock",
+  PeriodUnlock: "period:unlock",
+
+  // --- Org Units (Branches/Departments) ---
+  OrgUnitRead: "org_unit:read",
+  OrgUnitWrite: "org_unit:write",
+  OrgUnitDelete: "org_unit:delete",
+
+  // --- Classes & Subjects ---
+  ClassRead: "class:read",
+  ClassWrite: "class:write",
+  ClassDelete: "class:delete",
+  SubjectRead: "subject:read",
+  SubjectWrite: "subject:write",
+  SubjectDelete: "subject:delete",
+
+  // --- Scheduling ---
+  ScheduleRead: "schedule:read",
+  ScheduleWrite: "schedule:write",
+  ScheduleDelete: "schedule:delete",
+
+  // --- Assessments & Grades ---
+  AssessmentRead: "assessment:read",
+  AssessmentWrite: "assessment:write",
+  AssessmentDelete: "assessment:delete",
+  GradeRead: "grade:read",
+  GradeWrite: "grade:write",
+  GradeEntryManage: "grade:entry_manage",
+  GradeAnalytics: "grade:analytics",
+  GradeReport: "grade:report",
+
+  // --- Students & Guardians ---
+  StudentRead: "student:read",
+  StudentWrite: "student:write",
+  StudentCreate: "student:create",
+  StudentUpdate: "student:update",
+  StudentDelete: "student:delete",
+  GuardianRead: "guardian:read",
+  GuardianWrite: "guardian:write",
+  GuardianDelete: "guardian:delete",
+  EnrollmentRead: "enrollment:read",
+  EnrollmentWrite: "enrollment:write",
+  EnrollmentPromote: "enrollment:promote",
+  EnrollmentTransfer: "enrollment:transfer",
+
+  // --- Workflows & Approvals ---
+  WorkflowRead: "workflow:read",
+  WorkflowWrite: "workflow:write",
+  WorkflowApprove: "workflow:approve",
+  WorkflowExecute: "workflow:execute",
+
+  // --- Attendance & Behavior ---
+  AttendanceRead: "attendance:read",
+  AttendanceWrite: "attendance:write",
+  AttendanceAnalytics: "attendance:analytics",
+  AttendanceReport: "attendance:report",
+  BehaviorRead: "behavior:read",
+  BehaviorWrite: "behavior:write",
+  BehaviorDelete: "behavior:delete",
+  BehaviorAI: "behavior:ai",
+
+  // --- Documents & Templates ---
+  DocumentRead: "document:read",
+  DocumentWrite: "document:write",
+  DocumentDelete: "document:delete",
+  TemplateRead: "template:read",
+  TemplateWrite: "template:write",
+  TemplatePublish: "template:publish",
+  TemplateDelete: "template:delete",
+  TemplateImport: "template:import",
+  TemplateExport: "template:export",
+  TemplateGenerateSingle: "template:generate_single",
+  TemplateGenerateBatch: "template:generate_batch",
+  TemplateGenerateDownload: "template:generate_download",
+  TemplateAssetUpload: "template:asset_upload",
+  TemplateAssetDelete: "template:asset_delete",
+  TemplateComponentWrite: "template:component_write",
+  TemplateComponentDelete: "template:component_delete",
+
+  // --- Examinations ---
+  ExamSessionRead: "exam_session:read",
+  ExamSessionWrite: "exam_session:write",
+  ExamSessionActivate: "exam_session:activate",
+  ExamSessionDelete: "exam_session:delete",
+  SeatingNumberGenerate: "seating_number:generate",
+  SeatingNumberRead: "seating_number:read",
+  SecretNumberGenerate: "secret_number:generate",
+  SecretNumberRead: "secret_number:read",
+  SecretNumberReveal: "secret_number:reveal",
+  ExamHallRead: "exam_hall:read",
+  ExamHallWrite: "exam_hall:write",
+  ExamHallAllocate: "exam_hall:allocate",
+  ProctorRead: "proctor:read",
+  ProctorAssign: "proctor:assign",
+  StudentOrderRead: "student_order:read",
+  StudentOrderRebuild: "student_order:rebuild",
+  StudentOrderFreeze: "student_order:freeze",
+  ExamScheduleRead: "exam_schedule:read",
+  ExamScheduleWrite: "exam_schedule:write",
+
+  // --- System & Audit ---
+  NotificationRead: "notification:read",
+  NotificationWrite: "notification:write",
+  DashboardRead: "dashboard:read",
+  AuditRead: "audit:read",
+  ImportData: "data:import",
+  ExportData: "data:export",
+
+  // --- Finance ---
+  FinanceRead: "finance:read",
+  FinanceWrite: "finance:write",
+  ProcessPayment: "finance:payment",
+
+  // --- Promotions ---
+  PromotionRead: "promotion:read",
+  PromotionWrite: "promotion:write",
+  PromotionExecute: "promotion:execute",
+
+  // --- Special System Roles ---
+  AutopilotBypass: "system:autopilot",
+} as const;
+
+export type Permission = typeof Permissions[keyof typeof Permissions];
+
+// ============================================================================
 // 1. Unified IAM Domain & Resource Catalog
 // ============================================================================
 

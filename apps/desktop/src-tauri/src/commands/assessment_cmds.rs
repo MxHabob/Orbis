@@ -112,7 +112,8 @@ pub struct CalculateGradesInput {
 
 #[derive(Serialize)]
 pub struct CalculationResultDto {
-    pub final_score: f64,
+    pub final_score: Decimal,
+    pub message: String,
 }
 
 #[derive(Deserialize, Default)]
@@ -321,7 +322,10 @@ pub async fn assessment_calculate_grades(request: CalculateGradesInput, state: S
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(CalculationResultDto { final_score }))
+    Ok(ok(CalculationResultDto {
+        final_score,
+        message: "Calculated successfully".to_string(),
+    }))
 }
 
 #[derive(Serialize)]

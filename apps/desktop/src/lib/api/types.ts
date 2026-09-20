@@ -49,7 +49,6 @@ import type {
   AttendanceDto,
   CalculationResultDto,
   CreateSchemeRequest,
-  UpdateSchemeRequest,
   RecordGradeRequest,
   MarkAttendanceRequest,
   CalculateGradesRequest,
@@ -76,6 +75,9 @@ import type {
   UploadDocumentRequest,
   IntegrationDto,
   ConnectAppRequest,
+  RoleDto,
+  SaveRoleRequest,
+  PermissionRuleDto,
 } from "@orbis/sdk";
 
 // ═══════════════════════════════════════════════════════════════
@@ -133,52 +135,7 @@ export interface UserIdentityDto {
   connected_at: string;
 }
 
-export interface LinkedDependentDto {
-  student_id: string;
-  full_name: string;
-  name_ar?: string | null;
-  relationship: string;
-  is_emergency_contact: boolean;
-  can_pickup: boolean;
-  enrollment_status?: string | null;
-  class_name?: string | null;
-}
-
-export interface EffectiveContextDto {
-  effective_role?: string;
-  roles?: string[];
-  permissions?: string[];
-  active_org_unit_id?: string | null;
-  active_class_id?: string | null;
-  active_period_id?: string | null;
-  dependents?: LinkedDependentDto[];
-}
-
-export interface RoleDto {
-  id: string;
-  name: string;
-  name_ar?: string;
-  description?: string;
-  is_system: boolean;
-  permissions?: Record<string, string[]>;
-}
-
-export interface SaveRoleRequest {
-  id: string;
-  name: string;
-  name_ar?: string;
-  description?: string;
-  permissions?: Record<string, string[]>;
-}
-
-export interface PermissionRuleDto {
-  id?: string;
-  role: string;
-  document_type: string;
-  level?: number;
-  only_if_creator?: boolean;
-  actions: string[];
-}
+export type UpdateSchemeRequest = Partial<CreateSchemeRequest>;
 
 export interface PaginatedResponse<T> {
   items: T[];
@@ -846,6 +803,9 @@ export interface OrbisApiClient {
   createAcademicPeriod(req: CreatePeriodRequest): Promise<AcademicPeriodDto>;
   listAcademicPeriods(): Promise<AcademicPeriodDto[]>;
   getAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
+  lockAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
+  unlockAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
+  closeAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   listPeriodTemplates(): Promise<PeriodTemplateDto[]>;
 
   // ── Academic ────────────────────────────────────────────────

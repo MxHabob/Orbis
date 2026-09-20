@@ -321,7 +321,7 @@ impl CalendarService {
 
     /// Auto-lock an academic period (grades, attendance, enrollment locked)
     pub async fn lock_period(&self, ctx: &RequestContext, period_id: Uuid) -> Result<AcademicPeriod, DomainError> {
-        self.permission_checker.check(ctx, Permission::PeriodWrite).await?;
+        self.permission_checker.check(ctx, Permission::PeriodLock).await?;
         let mut period = self.period_repo.find_by_id(period_id).await?
             .ok_or_else(|| DomainError::NotFound(format!("Academic period {} not found", period_id)))?;
 
@@ -345,5 +345,36 @@ impl CalendarService {
         self.event_bus.publish(ctx, &event).await?;
 
         Ok(period)
+    }
+
+    /// Unlock an academic period
+    pub async fn unlock_period(&self, ctx: &RequestContext, period_id: Uuid) -> Result<AcademicPeriod, DomainError> {
+        self.permission_checker.check(ctx, Permission::PeriodUnlock).await?;
+        let mut period = self.period_repo.find_by_id(period_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Academic period {} not found", period_id)))?;
+
+        let now = Utc::now();
+        period.is_locked = false;
+        period.locked_at = None;
+        period.locked_by = None;
+        period.state = AcademicPeriodState::ActiveTeaching;
+        period.updated_at = now;
+
+        self.period_repo.save(&period).await?;
+
+        let event = DomainEvent::AcademicPeriodStateChanged {
+            period_id,
+            org_id: period.org_id,
+            new_state: "active_teaching".to_string(),
+            timestamp: now,
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(period)
+    }
+
+    /// Authoritatively close an academic period
+    pub async fn close_period(&self, ctx: &RequestContext, period_id: Uuid) -> Result<AcademicPeriod, DomainError> {
+        self.lock_period(ctx, period_id).await
     }
 }

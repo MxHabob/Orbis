@@ -8,7 +8,56 @@ use uuid::Uuid;
 use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
-use orbis_app::services::auth_service::EffectiveContextDto;
+
+#[derive(Serialize, Deserialize, ToSchema, Clone, Debug)]
+pub struct LinkedDependentDto {
+    pub student_id: Uuid,
+    pub full_name: String,
+    pub full_name_ar: Option<String>,
+    pub relationship: String,
+    pub is_primary_contact: bool,
+    pub is_emergency_contact: bool,
+    pub is_fee_payer: bool,
+    pub current_grade_level: Option<String>,
+    pub current_section_name: Option<String>,
+}
+
+impl From<orbis_app::services::auth_service::LinkedDependentDto> for LinkedDependentDto {
+    fn from(d: orbis_app::services::auth_service::LinkedDependentDto) -> Self {
+        Self {
+            student_id: d.student_id,
+            full_name: d.full_name,
+            full_name_ar: d.full_name_ar,
+            relationship: d.relationship,
+            is_primary_contact: d.is_primary_contact,
+            is_emergency_contact: d.is_emergency_contact,
+            is_fee_payer: d.is_fee_payer,
+            current_grade_level: d.current_grade_level,
+            current_section_name: d.current_section_name,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Clone, Debug)]
+pub struct EffectiveContextDto {
+    pub effective_role: String,
+    pub roles: Vec<String>,
+    pub permissions: Vec<String>,
+    pub active_period_id: Option<Uuid>,
+    pub dependents: Vec<LinkedDependentDto>,
+}
+
+impl From<orbis_app::services::auth_service::EffectiveContextDto> for EffectiveContextDto {
+    fn from(c: orbis_app::services::auth_service::EffectiveContextDto) -> Self {
+        Self {
+            effective_role: c.effective_role,
+            roles: c.roles,
+            permissions: c.permissions,
+            active_period_id: c.active_period_id,
+            dependents: c.dependents.into_iter().map(Into::into).collect(),
+        }
+    }
+}
 
 // ── DTOs ────────────────────────────────────────────────────────
 
@@ -180,7 +229,7 @@ async fn login(
         token: res.token,
         refresh_token: res.refresh_token,
         user: user_dto,
-        effective_context: res.effective_context,
+        effective_context: res.effective_context.into(),
     }))
 }
 
@@ -212,7 +261,7 @@ async fn get_session(
     Ok(ApiResponse::ok(SessionResponse {
         org_id: ctx.tenant_id,
         user: user_dto,
-        effective_context,
+        effective_context: effective_context.into(),
     }))
 }
 
@@ -750,7 +799,7 @@ async fn mfa_challenge(
         token: res.token,
         refresh_token: res.refresh_token,
         user: user_to_dto(user, person.as_ref(), roles),
-        effective_context,
+        effective_context: effective_context.into(),
     }))
 }
 
@@ -799,7 +848,7 @@ async fn google_login(
         token: res.token,
         refresh_token: res.refresh_token,
         user: user_to_dto(user, person.as_ref(), roles),
-        effective_context,
+        effective_context: effective_context.into(),
     }))
 }
 

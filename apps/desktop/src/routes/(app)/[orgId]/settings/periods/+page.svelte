@@ -76,17 +76,17 @@ function openEditSheet(period: any) {
 
 async function requestActivate(periodId: string) {
   const confirmed = await confirmStore.prompt({
-    title: m.common_word_status() + "؟",
-    description: m.common_onboarding_delete_building_confirm(),
-    confirmText: m.common_word_status(),
+    title: l("تنشيط الفترة الدراسية؟", "Activate Period?"),
+    description: l("سيتم فتح إدخال الدرجات والتسجيل للفترة المختارة.", "Grade entry and enrollment will be enabled for this period."),
+    confirmText: l("تنشيط", "Activate"),
     variant: "default",
   });
 
   if (!confirmed) return;
 
   try {
-    toast.success(m.common_unlocked ? m.common_unlocked() : "Unlocked");
-    toast.success(m.settings_periods_activate_success());
+    await api.unlockAcademicPeriod(periodId);
+    toast.success(l("تم تنشيط الفترة بنجاح", "Period activated successfully"));
     loadPeriods();
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -95,17 +95,17 @@ async function requestActivate(periodId: string) {
 
 async function requestLock(periodId: string) {
   const confirmed = await confirmStore.prompt({
-    title: m.common_td_ctx_lock() + "؟",
-    description: m.settings_periods_lock_confirm(),
-    confirmText: m.common_td_ctx_lock(),
+    title: l("إغلاق وقفل الفترة الدراسية؟", "Lock / Close Period?"),
+    description: l("سيتم قفل إدخال الدرجات وتجميد العمليات الأكاديمية لهذه الفترة.", "Grade entry, attendance, and enrollments will be locked for this period."),
+    confirmText: l("قفل الفترة", "Lock Period"),
     variant: "destructive",
   });
 
   if (!confirmed) return;
 
   try {
-    toast.success(m.common_locked ? m.common_locked() : "Locked");
-    toast.success(m.settings_periods_lock_success());
+    await api.lockAcademicPeriod(periodId);
+    toast.success(l("تم قفل الفترة الدراسية بنجاح", "Period locked successfully"));
     loadPeriods();
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));

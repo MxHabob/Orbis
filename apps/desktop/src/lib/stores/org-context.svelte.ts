@@ -143,8 +143,8 @@ class OrganizationContextStore {
         currentPeriodId: org.current_period_id ?? null,
         isActive: org.is_active ?? true,
         isVerified: org.is_verified ?? false,
-        settings: org.settings ?? null,
-        features: org.features ?? null,
+        settings: (org.settings as Record<string, unknown> | null) ?? null,
+        features: (org.features as Record<string, unknown> | null) ?? null,
       };
       this.isInitialized = true;
     } catch (e: unknown) {

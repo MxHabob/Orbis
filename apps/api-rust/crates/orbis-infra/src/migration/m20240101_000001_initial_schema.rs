@@ -86,6 +86,7 @@ impl MigrationTrait for Migration {
             schema.create_table_from_entity(report::report_template_binding::Entity),
             schema.create_table_from_entity(report::report_job::Entity),
             schema.create_table_from_entity(report::report_audit_log::Entity),
+            schema.create_table_from_entity(custom_field_definition::Entity),
         ];
 
         for mut stmt in table_statements {

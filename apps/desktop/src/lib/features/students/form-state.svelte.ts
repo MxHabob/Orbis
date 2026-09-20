@@ -13,6 +13,7 @@ import { PersonalInfoState } from "./state/personal-info.svelte";
 import { GuardianState } from "./state/guardian-info.svelte";
 import { FinancialInfoState } from "./state/financial-info.svelte";
 import { DocumentInfoState } from "./state/document-info.svelte";
+import { effectiveContext } from "$lib/stores/effective-context.svelte";
 
 export class StudentFormState {
   orgId: string;
@@ -331,7 +332,7 @@ export class StudentFormState {
           medicalNotes: this.personal.medicalNotes || undefined,
           phone: this.personal.phone || undefined,
           email: this.personal.email.trim() || undefined,
-          initialPeriodId: this.orgId,
+          initialPeriodId: effectiveContext.currentPeriodId || this.orgId,
           initialClassId: this.personal.classId || undefined,
           studyMode: "regular",
         });

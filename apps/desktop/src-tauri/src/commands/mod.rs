@@ -76,6 +76,9 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         calendar_cmds::calendar_create_period,
         calendar_cmds::calendar_list_periods,
         calendar_cmds::calendar_get_period,
+        calendar_cmds::calendar_lock_period,
+        calendar_cmds::calendar_unlock_period,
+        calendar_cmds::calendar_close_period,
         calendar_cmds::calendar_list_period_templates,
         // ── Academic ────────────────────────────────────────────
         academic_cmds::academic_create_subject,

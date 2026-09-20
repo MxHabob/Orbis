@@ -341,6 +341,15 @@ export class RemoteClient implements OrbisApiClient {
   async getAcademicPeriod(id: string): Promise<AcademicPeriodDto> {
     return this.get(`/api/v1/academic-periods/${id}`);
   }
+  async lockAcademicPeriod(id: string): Promise<AcademicPeriodDto> {
+    return this.post(`/api/v1/academic-periods/${id}/lock`, {});
+  }
+  async unlockAcademicPeriod(id: string): Promise<AcademicPeriodDto> {
+    return this.post(`/api/v1/academic-periods/${id}/unlock`, {});
+  }
+  async closeAcademicPeriod(id: string): Promise<AcademicPeriodDto> {
+    return this.post(`/api/v1/academic-periods/${id}/close`, {});
+  }
   async listPeriodTemplates(): Promise<PeriodTemplateDto[]> {
     return this.get("/api/v1/period-templates");
   }

@@ -9,7 +9,6 @@ pub struct Model {
     pub period_id: Uuid,
     pub student_id: Uuid,
     pub class_id: Option<Uuid>,
-    #[sea_orm(unique)]
     pub student_number: String,
     pub status: String,
     pub study_mode: Option<String>,

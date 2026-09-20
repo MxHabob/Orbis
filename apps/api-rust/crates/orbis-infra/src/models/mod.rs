@@ -51,6 +51,7 @@ pub mod user_identity;
 pub mod mfa_factor;
 pub mod mfa_recovery_code;
 pub mod user_device;
+pub mod custom_field_definition;
 
 pub use promotion_job as progression_job;
 pub use promotion_detail as progression_detail;

@@ -265,6 +265,15 @@ export class LocalClient implements OrbisApiClient {
   async getAcademicPeriod(id: string): Promise<AcademicPeriodDto> {
     return unwrap(await invoke("calendar_get_period", { id }));
   }
+  async lockAcademicPeriod(id: string): Promise<AcademicPeriodDto> {
+    return unwrap(await invoke("calendar_lock_period", { id }));
+  }
+  async unlockAcademicPeriod(id: string): Promise<AcademicPeriodDto> {
+    return unwrap(await invoke("calendar_unlock_period", { id }));
+  }
+  async closeAcademicPeriod(id: string): Promise<AcademicPeriodDto> {
+    return unwrap(await invoke("calendar_close_period", { id }));
+  }
   async listPeriodTemplates(): Promise<PeriodTemplateDto[]> {
     return unwrap(await invoke("calendar_list_period_templates"));
   }
