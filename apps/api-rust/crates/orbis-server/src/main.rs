@@ -82,6 +82,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut provider_registry = InMemoryDataProviderRegistry::new();
     provider_registry.register_provider(Box::new(FeeCollectionDataProvider { db: db.clone() }));
     provider_registry.register_provider(Box::new(StudentListDataProvider { db: db.clone() }));
+    provider_registry.register_provider(Box::new(TermResultDataProvider { db: db.clone() }));
+    provider_registry.register_provider(Box::new(AnnualResultDataProvider { db: db.clone() }));
+    provider_registry.register_provider(Box::new(ExamSeatingPlanDataProvider { db: db.clone() }));
+    provider_registry.register_provider(Box::new(ExamAttendanceSheetDataProvider { db: db.clone() }));
+    provider_registry.register_provider(Box::new(PaymentReceiptDataProvider { db: db.clone() }));
+    provider_registry.register_provider(Box::new(StudentStatementDataProvider { db: db.clone() }));
     let provider_registry = Arc::new(provider_registry);
 
     // Build renderer registry — register all available renderers

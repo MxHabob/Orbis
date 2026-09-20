@@ -422,26 +422,61 @@ impl BootstrapService {
         let period_templates = self.build_period_templates(org_id, institution_type);
 
         // Assessment scheme
-        let (cw_weight, exam_weight, scheme_name) = match institution_type {
-            InstitutionType::School => (20.0, 30.0, "المخطط التقييمي الشهري"),
-            InstitutionType::University => (40.0, 60.0, "University Assessment"),
-            InstitutionType::Institute => (50.0, 50.0, "Training Assessment"),
+        let (formula, max_score, scheme_name) = match institution_type {
+            InstitutionType::School => (
+                serde_json::json!({
+                    "type": "add",
+                    "operands": [
+                        { "type": "variable", "name": "assignments" },
+                        { "type": "variable", "name": "oral" },
+                        { "type": "variable", "name": "attendance" },
+                        { "type": "variable", "name": "written_test" }
+                    ],
+                    "weights": {
+                        "assignments": 20,
+                        "oral": 20,
+                        "attendance": 20,
+                        "written_test": 40,
+                        "monthly_total": 100,
+                        "term_monthly_contribution": 20,
+                        "term_final_exam": 30,
+                        "term_total": 50,
+                        "annual_total": 100
+                    }
+                }),
+                100.0,
+                "مخطط التقييم المدرسي القياسي (واجبات 20 + شفهي 20 + مواظبة 20 + تحريري 40 = 100)"
+            ),
+            InstitutionType::University => (
+                serde_json::json!({
+                    "type": "weighted_sum",
+                    "items": [
+                        { "node": { "type": "variable", "name": "coursework" }, "weight": 0.4 },
+                        { "node": { "type": "variable", "name": "final_exam" }, "weight": 0.6 }
+                    ]
+                }),
+                100.0,
+                "University Assessment Scheme (Coursework 40% + Final Exam 60%)"
+            ),
+            InstitutionType::Institute => (
+                serde_json::json!({
+                    "type": "weighted_sum",
+                    "items": [
+                        { "node": { "type": "variable", "name": "practical" }, "weight": 0.5 },
+                        { "node": { "type": "variable", "name": "theory" }, "weight": 0.5 }
+                    ]
+                }),
+                100.0,
+                "Training Assessment Scheme (Practical 50% + Theory 50%)"
+            ),
         };
-
-        let formula = serde_json::json!({
-            "type": "weighted_sum",
-            "items": [
-                { "node": { "type": "variable", "name": "coursework" }, "weight": cw_weight / 100.0 },
-                { "node": { "type": "variable", "name": "final_exam" }, "weight": exam_weight / 100.0 }
-            ]
-        });
 
         let assessment_scheme = ValidatedAssessmentScheme {
             id: Uuid::new_v4(),
             org_id,
             name: scheme_name.to_string(),
-            description: "Standard Assessment Scheme".to_string(),
-            max_score: 100.0,
+            description: "Standard Institution Assessment Scheme".to_string(),
+            max_score,
             formula,
         };
 
@@ -554,12 +589,34 @@ impl BootstrapService {
         vec![
             ValidatedPeriodTemplate {
                 id: Uuid::new_v4(), org_id,
-                name: "Two Semesters (Fall & Spring)".into(),
-                name_ar: "نظام الفصلين الدراسيين (الترم الأول والثاني)".into(),
+                name: "Standard School System (2 Terms, 4 Assessment Periods Each)".into(),
+                name_ar: "نظام الفصلين الدراسيين (فصلان، 4 فترات تقييم لكل فصل)".into(),
                 institution_type: "school".into(),
                 structure: serde_json::json!([
-                    { "name": "First Semester", "name_ar": "الفصل الدراسي الأول", "type": "semester", "weight": 50 },
-                    { "name": "Second Semester", "name_ar": "الفصل الدراسي الثاني", "type": "semester", "weight": 50 }
+                    {
+                        "name": "Term 1",
+                        "name_ar": "الفصل الدراسي الأول",
+                        "type": "term",
+                        "weight": 50,
+                        "periods": [
+                            { "name": "Month 1", "name_ar": "الشهر الأول", "type": "month", "weight": 100 },
+                            { "name": "Month 2", "name_ar": "الشهر الثاني", "type": "month", "weight": 100 },
+                            { "name": "Month 3", "name_ar": "الشهر الثالث", "type": "month", "weight": 100 },
+                            { "name": "Term 1 Final Exam", "name_ar": "اختبار نهاية الفصل الأول", "type": "exam", "weight": 30 }
+                        ]
+                    },
+                    {
+                        "name": "Term 2",
+                        "name_ar": "الفصل الدراسي الثاني",
+                        "type": "term",
+                        "weight": 50,
+                        "periods": [
+                            { "name": "Month 1", "name_ar": "الشهر الأول", "type": "month", "weight": 100 },
+                            { "name": "Month 2", "name_ar": "الشهر الثاني", "type": "month", "weight": 100 },
+                            { "name": "Month 3", "name_ar": "الشهر الثالث", "type": "month", "weight": 100 },
+                            { "name": "Term 2 Final Exam", "name_ar": "اختبار نهاية الفصل الثاني", "type": "exam", "weight": 30 }
+                        ]
+                    }
                 ]),
                 is_default: true,
             },

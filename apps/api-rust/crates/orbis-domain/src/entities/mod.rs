@@ -1,4 +1,5 @@
 pub mod organization;
+pub mod academic_policy;
 pub mod org_unit;
 pub mod user;
 pub mod person;

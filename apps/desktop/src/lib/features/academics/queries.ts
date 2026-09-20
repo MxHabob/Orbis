@@ -130,3 +130,30 @@ export function createPrerequisitesQuery(
   }));
 }
 
+/** Calculate student rankings using authoritative backend engine */
+export function createCalculateRankingsMutation() {
+  return {
+    mutateAsync: async (params: {
+      items: Array<{ id: string; score: number }>;
+      tiePolicy?: "standard_competition" | "dense" | "fractional";
+    }) => {
+      return (api as any).calculateRankings?.(params);
+    },
+  };
+}
+
+/** Generate student certificates & grade sheets */
+export function createGenerateReportMutation() {
+  return {
+    mutateAsync: async (params: {
+      reportCode: string;
+      format?: string;
+      parameters?: Record<string, any>;
+      locale?: string;
+    }) => {
+      return (api as any).generateReport?.(params);
+    },
+  };
+}
+
+

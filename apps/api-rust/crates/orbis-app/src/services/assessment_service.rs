@@ -16,7 +16,6 @@ use std::sync::Arc;
 use uuid::Uuid;
 use chrono::{Utc, NaiveDate};
 use rust_decimal::Decimal;
-use rust_decimal::prelude::ToPrimitive;
 
 pub struct AssessmentService {
     pub scheme_repo: Arc<dyn AssessmentSchemeRepository>,
@@ -122,7 +121,7 @@ impl AssessmentService {
         scheme_id: Uuid,
         student_id: Uuid,
         class_subject_id: Uuid,
-    ) -> Result<f64, DomainError> {
+    ) -> Result<Decimal, DomainError> {
         let scheme = self.scheme_repo.find_by_id(scheme_id).await?
             .ok_or_else(|| DomainError::NotFound("Assessment Scheme not found".into()))?;
 
@@ -137,12 +136,13 @@ impl AssessmentService {
         let mut engine = CalcEngine::new();
         for grade in grades {
             let var_name = grade.component_id.map(|cid| cid.to_string()).unwrap_or_else(|| grade.class_subject_id.to_string());
-            engine.set_variable(&var_name, grade.score.to_f64().unwrap_or(0.0));
+            engine.set_variable(&var_name, grade.score);
         }
 
+        let max_score_decimal = Decimal::from_f64_retain(scheme.max_score).unwrap_or(Decimal::from(100));
         let final_score = engine.evaluate(&formula)?;
-        let final_score = if final_score > scheme.max_score {
-            scheme.max_score
+        let final_score = if final_score > max_score_decimal {
+            max_score_decimal
         } else {
             final_score
         };

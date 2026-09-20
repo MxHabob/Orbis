@@ -1117,6 +1117,87 @@ body {{ margin: 0; padding: 0; font-family: 'Noto Sans Arabic', 'Segoe UI', sans
     Ok(ApiResponse::ok_with_id(html, ctx.request_id))
 }
 
+#[derive(Serialize, ToSchema)]
+pub struct ProviderSchemaResponse {
+    pub provider_key: String,
+    pub name: String,
+    pub name_ar: String,
+    pub fields: Vec<ProviderSchemaField>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct ProviderSchemaField {
+    pub key: String,
+    pub label: String,
+    pub label_ar: String,
+    pub data_type: String,
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/reports/schema/{key}",
+    tag = "Report",
+    params(("key" = String, Path, description = "Data provider key (e.g. academic.term_result, exam.seating_plan)")),
+    responses((status = 200, description = "Get data provider schema for template discovery", body = ApiResponse<ProviderSchemaResponse>)),
+    security(("bearer" = []))
+)]
+pub async fn get_provider_schema(
+    _auth: AuthContext,
+    Path(key): Path<String>,
+) -> Result<Json<ApiResponse<ProviderSchemaResponse>>, ApiError> {
+    let (name, name_ar, fields) = match key.as_str() {
+        "academic.term_result" => (
+            "Term Student Certificate",
+            "شهادة نتائج الفصل الدراسي",
+            vec![
+                ProviderSchemaField { key: "student_name".into(), label: "Student Name".into(), label_ar: "اسم الطالب".into(), data_type: "text".into() },
+                ProviderSchemaField { key: "subject_name".into(), label: "Subject".into(), label_ar: "المادة".into(), data_type: "text".into() },
+                ProviderSchemaField { key: "score".into(), label: "Score".into(), label_ar: "الدرجة".into(), data_type: "decimal".into() },
+                ProviderSchemaField { key: "max_score".into(), label: "Max Score".into(), label_ar: "الدرجة العظمى".into(), data_type: "decimal".into() },
+                ProviderSchemaField { key: "percentage".into(), label: "Percentage".into(), label_ar: "النسبة المئوية".into(), data_type: "percentage".into() },
+                ProviderSchemaField { key: "status".into(), label: "Status".into(), label_ar: "الحالة".into(), data_type: "status".into() },
+            ],
+        ),
+        "exam.seating_plan" => (
+            "Exam Seating Plan",
+            "مخطط جلوس الطلاب في الاختبارات",
+            vec![
+                ProviderSchemaField { key: "seating_number".into(), label: "Seat #".into(), label_ar: "رقم الجلوس".into(), data_type: "text".into() },
+                ProviderSchemaField { key: "student_name".into(), label: "Student Name".into(), label_ar: "اسم الطالب".into(), data_type: "text".into() },
+                ProviderSchemaField { key: "room_name".into(), label: "Room".into(), label_ar: "القاعة".into(), data_type: "text".into() },
+                ProviderSchemaField { key: "session_name".into(), label: "Session".into(), label_ar: "جلسة الاختبار".into(), data_type: "text".into() },
+            ],
+        ),
+        "finance.payment_receipt" => (
+            "Payment Receipt",
+            "سند قبض مالي",
+            vec![
+                ProviderSchemaField { key: "receipt_number".into(), label: "Receipt #".into(), label_ar: "رقم السند".into(), data_type: "text".into() },
+                ProviderSchemaField { key: "student_name".into(), label: "Student Name".into(), label_ar: "اسم الطالب".into(), data_type: "text".into() },
+                ProviderSchemaField { key: "fee_name".into(), label: "Fee".into(), label_ar: "نوع الرسم".into(), data_type: "text".into() },
+                ProviderSchemaField { key: "amount".into(), label: "Amount".into(), label_ar: "المبلغ".into(), data_type: "currency".into() },
+                ProviderSchemaField { key: "payment_method".into(), label: "Payment Method".into(), label_ar: "طريقة الدفع".into(), data_type: "text".into() },
+            ],
+        ),
+        _ => (
+            "Standard Document Data",
+            "بيانات المستند",
+            vec![
+                ProviderSchemaField { key: "student_name".into(), label: "Student Name".into(), label_ar: "اسم الطالب".into(), data_type: "text".into() },
+                ProviderSchemaField { key: "class_name".into(), label: "Class".into(), label_ar: "الصف".into(), data_type: "text".into() },
+                ProviderSchemaField { key: "status".into(), label: "Status".into(), label_ar: "الحالة".into(), data_type: "status".into() },
+            ],
+        ),
+    };
+
+    Ok(ApiResponse::ok(ProviderSchemaResponse {
+        provider_key: key,
+        name: name.to_string(),
+        name_ar: name_ar.to_string(),
+        fields,
+    }))
+}
+
 // ═══════════════════════════════════════════════════════════════
 // ROUTER
 // ═══════════════════════════════════════════════════════════════
@@ -1138,4 +1219,5 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/reports/jobs/:id/status", get(get_report_job_status))
         .route("/api/v1/reports/jobs/:id/download", get(download_report_file))
         .route("/api/v1/reports/batch-print", post(batch_print))
+        .route("/api/v1/reports/schema/:key", get(get_provider_schema))
 }

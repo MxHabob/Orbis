@@ -97,7 +97,7 @@ pub struct CalculateGradesRequest {
 
 #[derive(Serialize, ToSchema)]
 pub struct CalculationResultDto {
-    pub final_score: f64,
+    pub final_score: Decimal,
     pub message: String,
 }
 
@@ -257,6 +257,59 @@ pub async fn calculate_grades(
     }))
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct CalculateTermResultRequest {
+    pub student_id: Uuid,
+    pub class_id: Uuid,
+    pub period_id: Uuid,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct CalculateAnnualResultRequest {
+    pub student_id: Uuid,
+    pub class_id: Uuid,
+    pub academic_year_id: Uuid,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct CalculateRankingsRequest {
+    pub items: Vec<ScoreItemRequest>,
+    pub tie_policy: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct ScoreItemRequest {
+    pub id: Uuid,
+    pub score: Decimal,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct RankingItemDto {
+    pub id: Uuid,
+    pub rank: u32,
+}
+
+#[utoipa::path(post, path = "/api/v1/grades/actions/calculate-rankings", request_body = CalculateRankingsRequest,
+    responses((status = 200, body = Vec<RankingItemDto>)), security(("bearer" = [])), tag = "Assessment")]
+pub async fn calculate_rankings(
+    _ctx: AuthContext, State(_state): State<AppState>, Json(p): Json<CalculateRankingsRequest>,
+) -> Result<Json<ApiResponse<Vec<RankingItemDto>>>, ApiError> {
+    use orbis_domain::entities::academic_policy::TiePolicy;
+    use orbis_app::services::calculation_engine::AcademicCalculationEngine;
+
+    let tie_policy = match p.tie_policy.as_deref() {
+        Some("dense") => TiePolicy::Dense,
+        Some("fractional") => TiePolicy::Fractional,
+        _ => TiePolicy::StandardCompetition,
+    };
+
+    let items_tuples: Vec<(Uuid, Decimal)> = p.items.into_iter().map(|i| (i.id, i.score)).collect();
+    let rankings = AcademicCalculationEngine::compute_rankings(&items_tuples, tie_policy);
+
+    let dtos = rankings.into_iter().map(|(id, rank)| RankingItemDto { id, rank }).collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
 #[utoipa::path(post, path = "/api/v1/attendance", request_body = MarkAttendanceRequest,
     responses((status = 201, body = AttendanceDto)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn mark_attendance(
@@ -300,5 +353,6 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/assessment-schemes/:id", get(get_scheme).put(update_scheme).delete(delete_scheme))
         .route("/api/v1/grades", post(record_grade).get(list_grades))
         .route("/api/v1/grades/actions/calculate", post(calculate_grades))
+        .route("/api/v1/grades/actions/calculate-rankings", post(calculate_rankings))
         .route("/api/v1/attendance", post(mark_attendance).get(list_attendance))
 }
