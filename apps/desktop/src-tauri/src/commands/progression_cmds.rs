@@ -31,7 +31,7 @@ pub struct PromotionJobDto {
     pub updated_at: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct StudentProgressionItemInput {
     #[serde(rename = "studentId")]
     pub student_id: String,
