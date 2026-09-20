@@ -18,7 +18,7 @@ impl MigrationTrait for Migration {
         // in all existing organizations, only if they don't already exist.
         db.execute_unprepared(
             r#"
-            INSERT INTO role_permission (id, role_id, org_id, resource, action, created_at)
+            INSERT INTO role_permissions (id, role_id, org_id, resource, action, created_at)
             SELECT
                 lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)),2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6))),
                 r.role_id,
@@ -27,12 +27,12 @@ impl MigrationTrait for Migration {
                 '*',
                 datetime('now')
             FROM (
-                SELECT 'super_admin' as role_id, id as org_id FROM organization
+                SELECT 'super_admin' as role_id, id as org_id FROM organizations
                 UNION ALL
-                SELECT 'admin' as role_id, id as org_id FROM organization
+                SELECT 'admin' as role_id, id as org_id FROM organizations
             ) r
             WHERE NOT EXISTS (
-                SELECT 1 FROM role_permission rp
+                SELECT 1 FROM role_permissions rp
                 WHERE rp.role_id = r.role_id
                   AND rp.org_id = r.org_id
                   AND rp.resource = '*'
@@ -49,7 +49,7 @@ impl MigrationTrait for Migration {
         let db = manager.get_connection();
 
         db.execute_unprepared(
-            "DELETE FROM role_permission WHERE role_id IN ('super_admin', 'admin') AND resource = '*' AND action = '*'",
+            "DELETE FROM role_permissions WHERE role_id IN ('super_admin', 'admin') AND resource = '*' AND action = '*'",
         )
         .await?;
 
