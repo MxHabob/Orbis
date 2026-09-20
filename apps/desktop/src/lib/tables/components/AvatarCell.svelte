@@ -11,7 +11,7 @@ interface Props {
 let { row, column }: Props = $props();
 
 const name = $derived(String(row[column.id] || ""));
-const src = $derived(row.avatar_url || row.avatar || "");
+const src = $derived(row.avatar_url || "");
 const initials = $derived.by(() => {
   if (!name) return "";
   const parts = name.trim().split(/\s+/);

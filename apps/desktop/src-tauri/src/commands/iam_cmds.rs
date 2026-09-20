@@ -7,7 +7,7 @@ use super::make_ctx;
 use super::org_cmds::ApiResponse;
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UserDto {
     pub id: String,
     pub org_id: String,
@@ -15,11 +15,18 @@ pub struct UserDto {
     pub email: Option<String>,
     pub full_name: String,
     pub full_name_ar: Option<String>,
-    pub avatar: Option<String>,
+    pub avatar_url: Option<String>,
     pub status: String,
     pub is_email_verified: bool,
     pub is_phone_verified: bool,
     pub is_mfa_enabled: bool,
+    pub roles: Vec<String>,
+    pub phone: Option<String>,
+    pub national_id: Option<String>,
+    pub gender: Option<String>,
+    pub birth_date: Option<String>,
+    pub address: Option<String>,
+    pub is_active: bool,
 }
 
 #[derive(Serialize)]
@@ -59,11 +66,41 @@ pub struct SessionResponse {
     pub effective_context: EffectiveContextDto,
 }
 
-fn user_to_dto(u: orbis_domain::entities::user::User, p: Option<&orbis_domain::entities::person::Person>) -> UserDto {
-    let (full_name, full_name_ar, avatar) = match p {
-        Some(person) => (person.full_name(), person.full_name_ar(), person.avatar_url.clone()),
-        None => (String::new(), None, None),
+pub async fn get_roles_for_user(db: &sea_orm::DatabaseConnection, user_id: Uuid) -> Vec<String> {
+    use orbis_infra::models::user_role_assignment;
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+
+    user_role_assignment::Entity::find()
+        .filter(user_role_assignment::Column::UserId.eq(user_id))
+        .all(db)
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .map(|r| r.role_id)
+        .collect()
+}
+
+fn user_to_dto(
+    u: orbis_domain::entities::user::User,
+    p: Option<&orbis_domain::entities::person::Person>,
+    roles: Vec<String>,
+) -> UserDto {
+    let (full_name, full_name_ar, avatar_url, phone, national_id, gender, birth_date, address) = match p {
+        Some(person) => (
+            person.full_name(),
+            person.full_name_ar(),
+            person.avatar_url.clone(),
+            person.phone.clone(),
+            person.national_id.clone(),
+            person.gender.clone(),
+            person.birth_date.map(|d| d.to_string()),
+            person.address.clone(),
+        ),
+        None => (String::new(), None, None, None, None, None, None, None),
     };
+
+    let is_active = u.status == "active";
+
     UserDto {
         id: u.id.to_string(),
         org_id: u.org_id.to_string(),
@@ -71,11 +108,18 @@ fn user_to_dto(u: orbis_domain::entities::user::User, p: Option<&orbis_domain::e
         email: u.email,
         full_name,
         full_name_ar,
-        avatar,
+        avatar_url,
         status: u.status,
         is_email_verified: u.is_email_verified,
         is_phone_verified: u.is_phone_verified,
         is_mfa_enabled: u.is_mfa_enabled,
+        roles,
+        phone,
+        national_id,
+        gender,
+        birth_date,
+        address,
+        is_active,
     }
 }
 
@@ -113,7 +157,8 @@ pub async fn auth_login(request: serde_json::Value, state: State<'_, AppState>) 
         token: res.token.clone(),
     });
 
-    let user_dto = user_to_dto(res.user, res.person.as_ref());
+    let roles = get_roles_for_user(&state.db, res.user.id).await;
+    let user_dto = user_to_dto(res.user, res.person.as_ref(), roles);
     let effective_context = map_effective_context(res.effective_context);
 
     Ok(ok(LoginResponse {
@@ -131,9 +176,10 @@ pub async fn auth_get_session(request: Option<serde_json::Value>, state: State<'
         if let Ok(Some(user)) = state.auth_service.get_user(session.user_id).await {
             let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
             let eff = state.auth_service.build_effective_context(&user, person.as_ref()).await.map_err(|e| e.to_string())?;
+            let roles = get_roles_for_user(&state.db, user.id).await;
             return Ok(ok(SessionResponse {
                 org_id: session.org_id.to_string(),
-                user: user_to_dto(user, person.as_ref()),
+                user: user_to_dto(user, person.as_ref(), roles),
                 effective_context: map_effective_context(eff),
             }));
         }
@@ -157,9 +203,10 @@ pub async fn auth_get_session(request: Option<serde_json::Value>, state: State<'
                         });
                         let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
                         let eff = state.auth_service.build_effective_context(&user, person.as_ref()).await.map_err(|e| e.to_string())?;
+                        let roles = get_roles_for_user(&state.db, user.id).await;
                         return Ok(ok(SessionResponse {
                             org_id: user.org_id.to_string(),
-                            user: user_to_dto(user, person.as_ref()),
+                            user: user_to_dto(user, person.as_ref(), roles),
                             effective_context: map_effective_context(eff),
                         }));
                     }
@@ -176,9 +223,10 @@ pub async fn auth_get_session(request: Option<serde_json::Value>, state: State<'
                         });
                         let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
                         let eff = state.auth_service.build_effective_context(&user, person.as_ref()).await.map_err(|e| e.to_string())?;
+                        let roles = get_roles_for_user(&state.db, user.id).await;
                         return Ok(ok(SessionResponse {
                             org_id: oid.to_string(),
-                            user: user_to_dto(user, person.as_ref()),
+                            user: user_to_dto(user, person.as_ref(), roles),
                             effective_context: map_effective_context(eff),
                         }));
                     }
@@ -200,9 +248,10 @@ pub async fn auth_get_session(request: Option<serde_json::Value>, state: State<'
                 });
                 let person = state.person_repo.find_by_id(u.person_id).await.unwrap_or(None);
                 let eff = state.auth_service.build_effective_context(u, person.as_ref()).await.map_err(|e| e.to_string())?;
+                let roles = get_roles_for_user(&state.db, u.id).await;
                 return Ok(ok(SessionResponse {
                     org_id: org.id.to_string(),
-                    user: user_to_dto(u.clone(), person.as_ref()),
+                    user: user_to_dto(u.clone(), person.as_ref(), roles),
                     effective_context: map_effective_context(eff),
                 }));
             }
@@ -229,11 +278,29 @@ pub async fn iam_register_user(request: serde_json::Value, state: State<'_, AppS
     let password = request["password"].as_str().map(|s| s.to_string());
     let role = request["role"].as_str().map(|s| s.to_string());
 
-    let user = state.auth_service.register_user(&ctx, full_name, email, password, role, Some(ctx.tenant_id)).await.map_err(|e| e.to_string())?;
-    let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
-    Ok(ok(user_to_dto(user, person.as_ref())))
-}
+    let user = state.auth_service.register_user(&ctx, full_name, email, password, role.clone(), Some(ctx.tenant_id)).await.map_err(|e| e.to_string())?;
+    
+    // Assign role in user_role_assignments if given
+    if let Some(r) = role {
+        use orbis_infra::models::user_role_assignment;
+        use sea_orm::{ActiveModelTrait, Set};
+        let model = user_role_assignment::ActiveModel {
+            id: Set(Uuid::new_v4()),
+            user_id: Set(user.id),
+            role_id: Set(r),
+            org_id: Set(ctx.tenant_id),
+            scope_type: Set("global".to_string()),
+            scope_id: Set(None),
+            assigned_by: Set(None),
+            created_at: Set(chrono::Utc::now()),
+        };
+        let _ = model.insert(&state.db).await;
+    }
 
+    let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
+    let roles = get_roles_for_user(&state.db, user.id).await;
+    Ok(ok(user_to_dto(user, person.as_ref(), roles)))
+}
 
 #[tauri::command]
 pub async fn iam_list_users(state: State<'_, AppState>) -> Result<ApiResponse<Vec<UserDto>>, String> {
@@ -242,7 +309,8 @@ pub async fn iam_list_users(state: State<'_, AppState>) -> Result<ApiResponse<Ve
     let mut dtos = Vec::new();
     for u in users {
         let p = state.person_repo.find_by_id(u.person_id).await.unwrap_or(None);
-        dtos.push(user_to_dto(u, p.as_ref()));
+        let roles = get_roles_for_user(&state.db, u.id).await;
+        dtos.push(user_to_dto(u, p.as_ref(), roles));
     }
     Ok(ok(dtos))
 }
@@ -253,17 +321,109 @@ pub async fn iam_get_user(id: String, state: State<'_, AppState>) -> Result<ApiR
     let user = state.auth_service.get_user(uid).await.map_err(|e| e.to_string())?
         .ok_or_else(|| "User not found".to_string())?;
     let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
-    Ok(ok(user_to_dto(user, person.as_ref())))
+    let roles = get_roles_for_user(&state.db, user.id).await;
+    Ok(ok(user_to_dto(user, person.as_ref(), roles)))
 }
 
 #[tauri::command]
 pub async fn iam_update_user(id: String, request: serde_json::Value, state: State<'_, AppState>) -> Result<ApiResponse<UserDto>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    
+    // 1. Get user
+    let mut user = state.auth_service.get_user(uid).await.map_err(|e| e.to_string())?
+        .ok_or_else(|| "User not found".to_string())?;
+
+    // 2. Update user name
     let full_name = request.get("fullName").or(request.get("full_name")).and_then(|v| v.as_str()).map(|s| s.to_string());
-    let user = state.auth_service.update_user(&ctx, uid, full_name).await.map_err(|e| e.to_string())?;
+    if let Some(name) = full_name.as_ref() {
+        let _ = state.auth_service.update_user(&ctx, uid, Some(name.clone())).await;
+    }
+
+    if let Some(is_active) = request.get("is_active").and_then(|v| v.as_bool()) {
+        user.status = if is_active { "active".to_string() } else { "inactive".to_string() };
+        let _ = state.user_repo.save(&user).await;
+    } else if let Some(status) = request.get("status").and_then(|v| v.as_str()) {
+        user.status = status.to_string();
+        let _ = state.user_repo.save(&user).await;
+    }
+
+    // 3. Update Person details
+    if let Ok(Some(mut person)) = state.person_repo.find_by_id(user.person_id).await {
+        let mut changed = false;
+        if let Some(phone) = request.get("phone").and_then(|v| v.as_str()) {
+            person.phone = if phone.is_empty() { None } else { Some(phone.to_string()) };
+            changed = true;
+        }
+        if let Some(name_ar) = request.get("name_ar").and_then(|v| v.as_str()) {
+            person.first_name_ar = Some(name_ar.to_string());
+            changed = true;
+        }
+        if let Some(name_en) = request.get("name_en").and_then(|v| v.as_str()) {
+            person.first_name = name_en.to_string();
+            changed = true;
+        }
+        if let Some(nid) = request.get("national_id").and_then(|v| v.as_str()) {
+            person.national_id = if nid.is_empty() { None } else { Some(nid.to_string()) };
+            changed = true;
+        }
+        if let Some(gender) = request.get("gender").and_then(|v| v.as_str()) {
+            person.gender = if gender.is_empty() { None } else { Some(gender.to_string()) };
+            changed = true;
+        }
+        if let Some(addr) = request.get("address").and_then(|v| v.as_str()) {
+            person.address = if addr.is_empty() { None } else { Some(addr.to_string()) };
+            changed = true;
+        }
+        if changed {
+            let _ = state.person_repo.save(&person).await;
+        }
+    }
+
+    // 4. Update Role assignments
+    use orbis_infra::models::user_role_assignment;
+    use sea_orm::{ActiveModelTrait, EntityTrait, QueryFilter, ColumnTrait, Set};
+
+    let mut new_roles = Vec::new();
+    if let Some(roles_arr) = request.get("roles").and_then(|v| v.as_array()) {
+        for r in roles_arr {
+            if let Some(s) = r.as_str() {
+                if !s.is_empty() && !new_roles.contains(&s.to_string()) {
+                    new_roles.push(s.to_string());
+                }
+            }
+        }
+    } else if let Some(r) = request.get("primary_role").or(request.get("role")).and_then(|v| v.as_str()) {
+        if !r.is_empty() {
+            new_roles.push(r.to_string());
+        }
+    }
+
+    if !new_roles.is_empty() {
+        let _ = user_role_assignment::Entity::delete_many()
+            .filter(user_role_assignment::Column::UserId.eq(uid))
+            .exec(&state.db)
+            .await;
+
+        let now = chrono::Utc::now();
+        for role_id in &new_roles {
+            let model = user_role_assignment::ActiveModel {
+                id: Set(Uuid::new_v4()),
+                user_id: Set(uid),
+                role_id: Set(role_id.clone()),
+                org_id: Set(ctx.tenant_id),
+                scope_type: Set("global".to_string()),
+                scope_id: Set(None),
+                assigned_by: Set(None),
+                created_at: Set(now),
+            };
+            let _ = model.insert(&state.db).await;
+        }
+    }
+
     let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
-    Ok(ok(user_to_dto(user, person.as_ref())))
+    let roles = get_roles_for_user(&state.db, user.id).await;
+    Ok(ok(user_to_dto(user, person.as_ref(), roles)))
 }
 
 #[derive(Serialize)]
@@ -339,11 +499,12 @@ pub async fn auth_mfa_challenge(request: serde_json::Value, state: State<'_, App
 
     let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
     let eff = state.auth_service.build_effective_context(&user, person.as_ref()).await.map_err(|e| e.to_string())?;
+    let roles = get_roles_for_user(&state.db, user.id).await;
 
     Ok(ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
-        user: user_to_dto(user, person.as_ref()),
+        user: user_to_dto(user, person.as_ref(), roles),
         effective_context: map_effective_context(eff),
     }))
 }
@@ -378,11 +539,12 @@ pub async fn auth_login_google(request: serde_json::Value, state: State<'_, AppS
 
     let person = state.person_repo.find_by_id(user.person_id).await.unwrap_or(None);
     let eff = state.auth_service.build_effective_context(&user, person.as_ref()).await.map_err(|e| e.to_string())?;
+    let roles = get_roles_for_user(&state.db, user.id).await;
 
     Ok(ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
-        user: user_to_dto(user, person.as_ref()),
+        user: user_to_dto(user, person.as_ref(), roles),
         effective_context: map_effective_context(eff),
     }))
 }
@@ -439,70 +601,60 @@ pub struct PermissionRuleDto {
     pub actions: Vec<String>,
 }
 
+fn canonicalize_resource(res: &str) -> String {
+    match res {
+        "OrgUnit" => "org_unit".to_string(),
+        "FeeTemplate" => "fee_template".to_string(),
+        "DiscountTemplate" => "discount_template".to_string(),
+        "StudentFee" => "student_fee".to_string(),
+        "JournalEntry" => "journal_entry".to_string(),
+        "ExamSession" => "exam_session".to_string(),
+        "ExamSchedule" => "exam_schedule".to_string(),
+        "SeatingNumber" => "seating_number".to_string(),
+        "SecretNumber" => "secret_number".to_string(),
+        "AcademicAdvisor" => "academic_advisor".to_string(),
+        "DepartmentHead" => "department_head".to_string(),
+        other => other.to_lowercase(),
+    }
+}
+
 #[tauri::command]
 pub async fn iam_list_roles(state: State<'_, AppState>) -> Result<ApiResponse<Vec<RoleDto>>, String> {
     let ctx = make_ctx(&state);
     use orbis_infra::models::{role, role_permission};
     use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
 
-    // 1. Base system roles
-    let system_role_defs = vec![
-        ("super_admin", "Super Admin", Some("مدير النظام العام".to_string())),
-        ("admin", "Organization Admin", Some("مدير المنظمة".to_string())),
-        ("principal", "Principal", Some("مدير المدرسة".to_string())),
-        ("teacher", "Teacher", Some("معلم".to_string())),
-        ("accountant", "Accountant", Some("محاسب".to_string())),
-        ("registrar", "Registrar", Some("مسجل شؤون الطلاب".to_string())),
-        ("student", "Student", Some("طالب".to_string())),
-        ("parent", "Parent", Some("ولي أمر".to_string())),
-    ];
-
-    let mut result_roles = Vec::new();
     let permissions = role_permission::Entity::find()
         .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
         .all(&state.db)
         .await
         .unwrap_or_default();
 
-    // Map permissions by role
     let mut perm_map: std::collections::HashMap<String, std::collections::HashMap<String, Vec<String>>> = std::collections::HashMap::new();
     for p in permissions {
         let role_perms = perm_map.entry(p.role_id.clone()).or_default();
-        let acts = role_perms.entry(p.resource.clone()).or_default();
+        let res_key = canonicalize_resource(&p.resource);
+        let acts = role_perms.entry(res_key).or_default();
         if !acts.contains(&p.action) {
             acts.push(p.action);
         }
     }
 
-    // Add system roles
-    for (id, name, name_ar) in system_role_defs {
-        let role_perms = perm_map.remove(id).unwrap_or_default();
-        result_roles.push(RoleDto {
-            id: id.to_string(),
-            name: name.to_string(),
-            name_ar,
-            is_system: true,
-            permissions: role_perms,
-        });
-    }
-
-    // Add custom roles from DB
+    let mut result_roles = Vec::new();
     if let Ok(db_roles) = role::Entity::find()
         .filter(role::Column::OrgId.eq(ctx.tenant_id))
         .all(&state.db)
         .await
     {
         for r in db_roles {
-            if !result_roles.iter().any(|existing| existing.id == r.id) {
-                let role_perms = perm_map.remove(&r.id).unwrap_or_default();
-                result_roles.push(RoleDto {
-                    id: r.id,
-                    name: r.name,
-                    name_ar: r.name_ar,
-                    is_system: r.is_system,
-                    permissions: role_perms,
-                });
-            }
+            let role_perms = perm_map.remove(&r.id).unwrap_or_default();
+            result_roles.push(RoleDto {
+                id: r.id,
+                name: r.name,
+                name_ar: r.name_ar,
+                is_system: r.is_system,
+                permissions: role_perms,
+            });
         }
     }
 

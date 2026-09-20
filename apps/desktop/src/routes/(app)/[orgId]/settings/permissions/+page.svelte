@@ -55,17 +55,23 @@ async function loadRoles() {
   try {
     const fetchedRoles = await api.listRoles().catch(() => []);
 
-    // Merge system role definitions if not already in DB
-    const merged: RoleDto[] = [...fetchedRoles];
+    // Merge system role definitions if not already in DB or if perms are empty
+    const merged: RoleDto[] = [];
     for (const sys of SYSTEM_ROLE_DEFINITIONS) {
-      if (!merged.some((r) => r.id === sys.id)) {
-        merged.push({
-          id: sys.id,
-          name: sys.nameEn,
-          name_ar: sys.nameAr,
-          is_system: true,
-          permissions: sys.defaultPermissions,
-        });
+      const existing = fetchedRoles.find((r) => r.id === sys.id);
+      const hasPerms = existing?.permissions && Object.keys(existing.permissions).length > 0;
+      merged.push({
+        id: sys.id,
+        name: sys.nameEn,
+        name_ar: sys.nameAr,
+        is_system: true,
+        permissions: hasPerms ? existing!.permissions : sys.defaultPermissions,
+      });
+    }
+
+    for (const r of fetchedRoles) {
+      if (!merged.some((m) => m.id === r.id)) {
+        merged.push(r);
       }
     }
 

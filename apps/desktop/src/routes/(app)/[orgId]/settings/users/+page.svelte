@@ -75,8 +75,7 @@ const filteredUsers = $derived(
 
     const matchesRole =
       selectedRole === "all" ||
-      String(user.primary_role || user.role || "").toLowerCase() ===
-        selectedRole.toLowerCase();
+      user.roles?.some((r) => r.toLowerCase() === selectedRole.toLowerCase());
 
     return matchesSearch && matchesRole;
   }),
@@ -89,7 +88,7 @@ const gridSource = $derived(
     filteredUsers.map((u) => ({
       ...u,
       full_name: l(u.name_ar, u.full_name) || u.full_name || "—",
-      role: String(u.primary_role || u.role || "staff"),
+      role: u.roles?.[0] || "staff",
       status: u.is_deleted ? "inactive" : "active",
     })),
   ),

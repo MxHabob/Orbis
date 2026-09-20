@@ -25,6 +25,12 @@
       "skillPath": ".agents/skills/openspec-propose/SKILL.md",
       "computedHash": "d23cc33093e73d6bd78c4634f9e3a1b951a016d3c205fb5344f600eefee66f65"
     },
+    "svelte-code-writer": {
+      "source": "sveltejs/ai-tools",
+      "sourceType": "github",
+      "skillPath": "plugins/claude/svelte/skills/svelte-code-writer/SKILL.md",
+      "computedHash": "6f78193a79906175595ce8e4ca8d726da350eb99035a9544b6553620df5673a1"
+    },
     "tauri": {
       "source": "full-stack-skills/tauri-skills",
       "sourceType": "github",

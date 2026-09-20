@@ -41,11 +41,11 @@ const user = $derived((userQuery.data as any) ?? null);
 const isLoading = $derived(userQuery.isLoading);
 const fullName = $derived(user?.full_name ?? "");
 const email = $derived(user?.email ?? "");
-const role = $derived(user?.primary_role ?? user?.role ?? "teacher");
+const role = $derived(user?.roles?.[0] ?? "staff");
 const isActiveState = $derived(
   user?.is_active !== undefined ? Boolean(user.is_active) : true,
 );
-const avatarUrl = $derived(user?.avatar_url || user?.avatar || null);
+const avatarUrl = $derived(user?.avatar_url ?? null);
 
 function handleAvatarUpload(url: string) {
   queryClient.setQueryData(["user", orgId, userId], (current: any) =>

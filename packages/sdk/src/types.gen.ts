@@ -955,15 +955,23 @@ export type UserDeviceDto = {
 };
 
 export type UserDto = {
+    address?: string | null;
+    avatar_url?: string | null;
+    birth_date?: string | null;
     email?: string | null;
     full_name: string;
     full_name_ar?: string | null;
+    gender?: string | null;
     id: string;
+    is_active?: boolean;
     is_email_verified: boolean;
     is_mfa_enabled: boolean;
     is_phone_verified: boolean;
+    national_id?: string | null;
     org_id: string;
     person_id: string;
+    phone?: string | null;
+    roles?: Array<string>;
     status: string;
 };
 

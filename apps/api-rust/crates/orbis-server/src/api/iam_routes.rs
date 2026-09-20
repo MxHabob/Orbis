@@ -1,4 +1,4 @@
-//! IAM routes — Authentication, users, roles.
+//! IAM routes — Authentication, users, roles, permissions.
 
 use axum::{extract::State, routing::{get, post}, Json, Router};
 use serde::{Deserialize, Serialize};
@@ -35,7 +35,6 @@ pub struct RegisterUserRequest {
     pub role: Option<String>,
 }
 
-
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct UserDto {
     pub id: Uuid,
@@ -44,18 +43,40 @@ pub struct UserDto {
     pub email: Option<String>,
     pub full_name: String,
     pub full_name_ar: Option<String>,
-    pub avatar: Option<String>,
+    pub avatar_url: Option<String>,
     pub status: String,
     pub is_email_verified: bool,
     pub is_phone_verified: bool,
     pub is_mfa_enabled: bool,
+    #[serde(default)]
+    pub roles: Vec<String>,
+    pub phone: Option<String>,
+    pub national_id: Option<String>,
+    pub gender: Option<String>,
+    pub birth_date: Option<String>,
+    pub address: Option<String>,
+    pub is_active: bool,
 }
 
-pub fn user_to_dto(u: orbis_domain::entities::user::User, p: Option<&orbis_domain::entities::person::Person>) -> UserDto {
-    let (full_name, full_name_ar, avatar) = match p {
-        Some(person) => (person.full_name(), person.full_name_ar(), person.avatar_url.clone()),
-        None => (String::new(), None, None),
+pub fn user_to_dto(
+    u: orbis_domain::entities::user::User,
+    p: Option<&orbis_domain::entities::person::Person>,
+    roles: Vec<String>,
+) -> UserDto {
+    let (full_name, full_name_ar, avatar_url, phone, national_id, gender, birth_date, address) = match p {
+        Some(person) => (
+            person.full_name(),
+            person.full_name_ar(),
+            person.avatar_url.clone(),
+            person.phone.clone(),
+            person.national_id.clone(),
+            person.gender.clone(),
+            person.birth_date.map(|d| d.to_string()),
+            person.address.clone(),
+        ),
+        None => (String::new(), None, None, None, None, None, None, None),
     };
+    let is_active = u.status == "active";
     UserDto {
         id: u.id,
         org_id: u.org_id,
@@ -63,11 +84,18 @@ pub fn user_to_dto(u: orbis_domain::entities::user::User, p: Option<&orbis_domai
         email: u.email,
         full_name,
         full_name_ar,
-        avatar,
+        avatar_url,
         status: u.status,
         is_email_verified: u.is_email_verified,
         is_phone_verified: u.is_phone_verified,
         is_mfa_enabled: u.is_mfa_enabled,
+        roles,
+        phone,
+        national_id,
+        gender,
+        birth_date,
+        address,
+        is_active,
     }
 }
 
@@ -76,6 +104,50 @@ pub struct SessionResponse {
     pub user: UserDto,
     pub org_id: Uuid,
     pub effective_context: EffectiveContextDto,
+}
+
+fn canonicalize_resource(res: &str) -> String {
+    match res {
+        "OrgUnit" => "org_unit".to_string(),
+        "FeeTemplate" => "fee_template".to_string(),
+        "DiscountTemplate" => "discount_template".to_string(),
+        "StudentFee" => "student_fee".to_string(),
+        "JournalEntry" => "journal_entry".to_string(),
+        "ExamSession" => "exam_session".to_string(),
+        "ExamSchedule" => "exam_schedule".to_string(),
+        "SeatingNumber" => "seating_number".to_string(),
+        "SecretNumber" => "secret_number".to_string(),
+        "AcademicAdvisor" => "academic_advisor".to_string(),
+        "DepartmentHead" => "department_head".to_string(),
+        other => other.to_lowercase(),
+    }
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
+pub struct RoleDto {
+    pub id: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub is_system: bool,
+    pub permissions: std::collections::HashMap<String, Vec<String>>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct SaveRoleRequest {
+    pub id: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub permissions: Option<std::collections::HashMap<String, Vec<String>>>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
+pub struct PermissionRuleDto {
+    pub id: Option<String>,
+    pub role: String,
+    pub document_type: String,
+    pub level: Option<i32>,
+    pub only_if_creator: Option<bool>,
+    pub actions: Vec<String>,
 }
 
 // ── Handlers ────────────────────────────────────────────────────
@@ -101,7 +173,8 @@ async fn login(
     };
 
     let res = state.auth_service.login(&ctx, &payload.email, &payload.password).await?;
-    let user_dto = user_to_dto(res.user, res.person.as_ref());
+    let roles = res.effective_context.roles.clone();
+    let user_dto = user_to_dto(res.user, res.person.as_ref(), roles);
 
     Ok(ApiResponse::ok(LoginResponse {
         token: res.token,
@@ -133,7 +206,8 @@ async fn get_session(
 
     let person = state.person_repo.find_by_id(user.person_id).await?;
     let effective_context = state.auth_service.build_effective_context(&user, person.as_ref()).await?;
-    let user_dto = user_to_dto(user, person.as_ref());
+    let roles = effective_context.roles.clone();
+    let user_dto = user_to_dto(user, person.as_ref(), roles);
 
     Ok(ApiResponse::ok(SessionResponse {
         org_id: ctx.tenant_id,
@@ -163,14 +237,31 @@ async fn register_user(
         payload.full_name,
         Some(payload.email),
         payload.password,
-        payload.role,
+        payload.role.clone(),
         Some(ctx.tenant_id),
     ).await?;
+
+    if let Some(role) = payload.role {
+        use orbis_infra::models::user_role_assignment;
+        use sea_orm::{ActiveModelTrait, Set};
+        let model = user_role_assignment::ActiveModel {
+            id: Set(Uuid::new_v4()),
+            user_id: Set(user.id),
+            role_id: Set(role),
+            org_id: Set(ctx.tenant_id),
+            scope_type: Set("global".to_string()),
+            scope_id: Set(None),
+            assigned_by: Set(None),
+            created_at: Set(chrono::Utc::now()),
+        };
+        let _ = model.insert(&state.db).await;
+    }
+
     let person = state.person_repo.find_by_id(user.person_id).await?;
+    let roles = state.permission_checker.get_user_roles(user.id, user.org_id).await.unwrap_or_default();
 
-    Ok(ApiResponse::ok(user_to_dto(user, person.as_ref())))
+    Ok(ApiResponse::ok(user_to_dto(user, person.as_ref(), roles)))
 }
-
 
 #[utoipa::path(
     get,
@@ -189,7 +280,8 @@ async fn list_users(
     let mut dtos = Vec::new();
     for u in users {
         let p = state.person_repo.find_by_id(u.person_id).await.unwrap_or(None);
-        dtos.push(user_to_dto(u, p.as_ref()));
+        let roles = state.permission_checker.get_user_roles(u.id, u.org_id).await.unwrap_or_default();
+        dtos.push(user_to_dto(u, p.as_ref(), roles));
     }
     Ok(ApiResponse::ok(dtos))
 }
@@ -219,12 +311,22 @@ async fn get_user(
     }
 
     let person = state.person_repo.find_by_id(user.person_id).await?;
-    Ok(ApiResponse::ok(user_to_dto(user, person.as_ref())))
+    let roles = state.permission_checker.get_user_roles(user.id, user.org_id).await.unwrap_or_default();
+    Ok(ApiResponse::ok(user_to_dto(user, person.as_ref(), roles)))
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct UpdateUserRequest {
     pub full_name: Option<String>,
+    pub full_name_ar: Option<String>,
+    pub phone: Option<String>,
+    pub national_id: Option<String>,
+    pub gender: Option<String>,
+    pub birth_date: Option<String>,
+    pub address: Option<String>,
+    pub is_active: Option<bool>,
+    pub status: Option<String>,
+    pub roles: Option<Vec<String>>,
 }
 
 #[utoipa::path(
@@ -252,22 +354,276 @@ pub async fn update_user(
         return Err(ApiError::forbidden("Access denied to this user"));
     }
 
-    if let Some(name) = p.full_name {
-        if let Ok(Some(mut person)) = state.person_repo.find_by_id(user.person_id).await {
-            let parts: Vec<&str> = name.split_whitespace().collect();
-            person.first_name = parts.first().unwrap_or(&"").to_string();
-            if parts.len() > 1 {
-                person.last_name = parts[1..].join(" ");
+    if let Some(ref name) = p.full_name {
+        let _ = state.auth_service.update_user(&ctx, id, Some(name.clone())).await;
+    }
+
+    if let Some(is_active) = p.is_active {
+        user.status = if is_active { "active".to_string() } else { "inactive".to_string() };
+        user.updated_at = chrono::Utc::now();
+        state.user_repo.save(&user).await?;
+    } else if let Some(status) = p.status {
+        user.status = status;
+        user.updated_at = chrono::Utc::now();
+        state.user_repo.save(&user).await?;
+    }
+
+    // Person updates
+    if let Ok(Some(mut person)) = state.person_repo.find_by_id(user.person_id).await {
+        let mut changed = false;
+        if let Some(phone) = p.phone {
+            person.phone = if phone.is_empty() { None } else { Some(phone) };
+            changed = true;
+        }
+        if let Some(name_ar) = p.full_name_ar {
+            person.first_name_ar = if name_ar.is_empty() { None } else { Some(name_ar) };
+            changed = true;
+        }
+        if let Some(nid) = p.national_id {
+            person.national_id = if nid.is_empty() { None } else { Some(nid) };
+            changed = true;
+        }
+        if let Some(g) = p.gender {
+            person.gender = if g.is_empty() { None } else { Some(g) };
+            changed = true;
+        }
+        if let Some(addr) = p.address {
+            person.address = if addr.is_empty() { None } else { Some(addr) };
+            changed = true;
+        }
+        if let Some(dob_str) = p.birth_date {
+            if let Ok(d) = chrono::NaiveDate::parse_from_str(&dob_str, "%Y-%m-%d") {
+                person.birth_date = Some(d);
+                changed = true;
             }
+        }
+        if changed {
             person.updated_at = chrono::Utc::now();
             let _ = state.person_repo.save(&person).await;
         }
     }
-    user.updated_at = chrono::Utc::now();
-    state.user_repo.save(&user).await?;
+
+    // Roles updates
+    if let Some(new_roles) = p.roles {
+        use orbis_infra::models::user_role_assignment;
+        use sea_orm::{ActiveModelTrait, EntityTrait, QueryFilter, ColumnTrait, Set};
+
+        let _ = user_role_assignment::Entity::delete_many()
+            .filter(user_role_assignment::Column::UserId.eq(user.id))
+            .exec(&state.db)
+            .await;
+
+        for r in new_roles {
+            let model = user_role_assignment::ActiveModel {
+                id: Set(Uuid::new_v4()),
+                user_id: Set(user.id),
+                role_id: Set(r),
+                org_id: Set(ctx.tenant_id),
+                scope_type: Set("global".to_string()),
+                scope_id: Set(None),
+                assigned_by: Set(ctx.actor.id().map(|id| id.to_string())),
+                created_at: Set(chrono::Utc::now()),
+            };
+            let _ = model.insert(&state.db).await;
+        }
+    }
 
     let person = state.person_repo.find_by_id(user.person_id).await?;
-    Ok(ApiResponse::ok(user_to_dto(user, person.as_ref())))
+    let roles = state.permission_checker.get_user_roles(user.id, user.org_id).await.unwrap_or_default();
+    Ok(ApiResponse::ok(user_to_dto(user, person.as_ref(), roles)))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/iam/roles",
+    responses((status = 200, description = "List of roles", body = Vec<RoleDto>)),
+    security(("bearer" = [])),
+    tag = "IAM"
+)]
+pub async fn list_roles(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<Vec<RoleDto>>>, ApiError> {
+    use orbis_infra::models::{role, role_permission};
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+
+    let permissions = role_permission::Entity::find()
+        .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
+        .all(&state.db)
+        .await
+        .unwrap_or_default();
+
+    let mut perm_map: std::collections::HashMap<String, std::collections::HashMap<String, Vec<String>>> = std::collections::HashMap::new();
+    for p in permissions {
+        let role_perms = perm_map.entry(p.role_id.clone()).or_default();
+        let res_key = canonicalize_resource(&p.resource);
+        let acts = role_perms.entry(res_key).or_default();
+        if !acts.contains(&p.action) {
+            acts.push(p.action);
+        }
+    }
+
+    let mut result_roles = Vec::new();
+    if let Ok(db_roles) = role::Entity::find()
+        .filter(role::Column::OrgId.eq(ctx.tenant_id))
+        .all(&state.db)
+        .await
+    {
+        for r in db_roles {
+            let role_perms = perm_map.remove(&r.id).unwrap_or_default();
+            result_roles.push(RoleDto {
+                id: r.id,
+                name: r.name,
+                name_ar: r.name_ar,
+                is_system: r.is_system,
+                permissions: role_perms,
+            });
+        }
+    }
+
+    Ok(ApiResponse::ok(result_roles))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/iam/roles",
+    request_body = SaveRoleRequest,
+    responses((status = 200, description = "Role saved", body = RoleDto)),
+    security(("bearer" = [])),
+    tag = "IAM"
+)]
+pub async fn save_role(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(request): Json<SaveRoleRequest>,
+) -> Result<Json<ApiResponse<RoleDto>>, ApiError> {
+    use orbis_infra::models::{role, role_permission};
+    use sea_orm::{ActiveModelTrait, EntityTrait, QueryFilter, ColumnTrait, Set};
+
+    let role_id = request.id.clone();
+    let now = chrono::Utc::now();
+
+    let active_role = role::ActiveModel {
+        id: Set(role_id.clone()),
+        org_id: Set(ctx.tenant_id),
+        name: Set(request.name.clone()),
+        name_ar: Set(request.name_ar.clone()),
+        is_system: Set(false),
+        created_at: Set(now),
+        updated_at: Set(now),
+    };
+
+    let _ = active_role.insert(&state.db).await;
+
+    if let Some(perms) = request.permissions {
+        let _ = role_permission::Entity::delete_many()
+            .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
+            .filter(role_permission::Column::RoleId.eq(&role_id))
+            .exec(&state.db)
+            .await;
+
+        for (resource, actions) in &perms {
+            for action in actions {
+                let p_model = role_permission::ActiveModel {
+                    id: Set(Uuid::new_v4()),
+                    role_id: Set(role_id.clone()),
+                    org_id: Set(ctx.tenant_id),
+                    resource: Set(resource.clone()),
+                    action: Set(action.clone()),
+                    condition: Set(None),
+                    created_at: Set(now),
+                };
+                let _ = p_model.insert(&state.db).await;
+            }
+        }
+    }
+
+    Ok(ApiResponse::ok(RoleDto {
+        id: role_id,
+        name: request.name,
+        name_ar: request.name_ar,
+        is_system: false,
+        permissions: std::collections::HashMap::new(),
+    }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/iam/permissions",
+    responses((status = 200, description = "List of permissions rules", body = Vec<PermissionRuleDto>)),
+    security(("bearer" = [])),
+    tag = "IAM"
+)]
+pub async fn list_permissions(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<Vec<PermissionRuleDto>>>, ApiError> {
+    use orbis_infra::models::role_permission;
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+
+    let permissions = role_permission::Entity::find()
+        .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
+        .all(&state.db)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+
+    let mut grouped: std::collections::HashMap<(String, String), Vec<String>> = std::collections::HashMap::new();
+    for p in permissions {
+        grouped.entry((p.role_id, p.resource)).or_default().push(p.action);
+    }
+
+    let result = grouped.into_iter().map(|((role, document_type), actions)| PermissionRuleDto {
+        id: None,
+        role,
+        document_type,
+        level: Some(10),
+        only_if_creator: Some(false),
+        actions,
+    }).collect();
+
+    Ok(ApiResponse::ok(result))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/iam/permissions",
+    request_body = Vec<PermissionRuleDto>,
+    responses((status = 200, description = "Permissions saved", body = bool)),
+    security(("bearer" = [])),
+    tag = "IAM"
+)]
+pub async fn save_permissions(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(request): Json<Vec<PermissionRuleDto>>,
+) -> Result<Json<ApiResponse<bool>>, ApiError> {
+    use orbis_infra::models::role_permission;
+    use sea_orm::{ActiveModelTrait, EntityTrait, QueryFilter, ColumnTrait, Set};
+
+    let now = chrono::Utc::now();
+    for rule in request {
+        let _ = role_permission::Entity::delete_many()
+            .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
+            .filter(role_permission::Column::RoleId.eq(&rule.role))
+            .filter(role_permission::Column::Resource.eq(&rule.document_type))
+            .exec(&state.db)
+            .await;
+
+        for action in rule.actions {
+            let p_model = role_permission::ActiveModel {
+                id: Set(Uuid::new_v4()),
+                role_id: Set(rule.role.clone()),
+                org_id: Set(ctx.tenant_id),
+                resource: Set(rule.document_type.clone()),
+                action: Set(action),
+                condition: Set(None),
+                created_at: Set(now),
+            };
+            let _ = p_model.insert(&state.db).await;
+        }
+    }
+
+    Ok(ApiResponse::ok(true))
 }
 
 // ── MFA & Identity DTOs ─────────────────────────────────────────
@@ -388,11 +744,12 @@ async fn mfa_challenge(
         .ok_or_else(|| ApiError::not_found("User not found"))?;
     let person = state.person_repo.find_by_id(user.person_id).await?;
     let effective_context = state.auth_service.build_effective_context(&user, person.as_ref()).await?;
+    let roles = effective_context.roles.clone();
 
     Ok(ApiResponse::ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
-        user: user_to_dto(user, person.as_ref()),
+        user: user_to_dto(user, person.as_ref(), roles),
         effective_context,
     }))
 }
@@ -436,11 +793,12 @@ async fn google_login(
         .ok_or_else(|| ApiError::not_found("User not found"))?;
     let person = state.person_repo.find_by_id(user.person_id).await?;
     let effective_context = state.auth_service.build_effective_context(&user, person.as_ref()).await?;
+    let roles = effective_context.roles.clone();
 
     Ok(ApiResponse::ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
-        user: user_to_dto(user, person.as_ref()),
+        user: user_to_dto(user, person.as_ref(), roles),
         effective_context,
     }))
 }
@@ -502,4 +860,6 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/auth/devices/:id", axum::routing::delete(revoke_device))
         .route("/api/v1/iam/users", post(register_user).get(list_users))
         .route("/api/v1/iam/users/:id", get(get_user).put(update_user))
+        .route("/api/v1/iam/roles", get(list_roles).post(save_role))
+        .route("/api/v1/iam/permissions", get(list_permissions).post(save_permissions))
 }

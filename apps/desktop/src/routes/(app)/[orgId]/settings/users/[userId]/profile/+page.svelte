@@ -88,7 +88,7 @@ $effect(() => {
   nameEn = fetched.name_en || "";
   email = fetched.email || "";
   phone = (fetched.phone as string) || "";
-  role = fetched.primary_role || fetched.role || "teacher";
+  role = fetched.roles?.[0] || "staff";
   isActiveState =
     fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
   initializedUserId = userId;
@@ -149,12 +149,9 @@ async function saveProfile() {
       email: email || null,
       phone: phone || null,
       is_active: isActiveState,
+      roles: role ? [role] : user?.roles,
     };
     await api.updateUser(userId, request as any);
-
-    if (role) {
-      await api.updateUser(userId, { primary_role: role } as any);
-    }
 
     await queryClient.invalidateQueries({ queryKey: ["user", orgId, userId] });
     await queryClient.invalidateQueries({ queryKey: ["users", orgId] });

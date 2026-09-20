@@ -78,21 +78,7 @@ async function loadRoles() {
     availableRoles = roles;
 
     // Load active roles for this user
-    const currentRoles: string[] = [];
-    if (userDetails) {
-      if (userDetails.primary_role) {
-        currentRoles.push(userDetails.primary_role);
-      }
-      if (Array.isArray(userDetails.roles)) {
-        for (const r of userDetails.roles) {
-          if (!currentRoles.includes(r)) {
-            currentRoles.push(r);
-          }
-        }
-      }
-    }
-
-    checkedRoles = currentRoles;
+    checkedRoles = Array.isArray(userDetails?.roles) ? [...userDetails.roles] : [];
   } catch (e) {
     console.error("Failed to load user roles:", e);
   } finally {
@@ -117,7 +103,7 @@ async function saveRoles() {
   isSaving = true;
   try {
     await api.updateUser(userId, {
-      primary_role: checkedRoles[0] || "user",
+      roles: checkedRoles,
     } as any);
 
     toast.success(

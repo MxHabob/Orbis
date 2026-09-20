@@ -64,7 +64,7 @@ async function loadUserAccount() {
     fullName = authStore.user.full_name || "";
     selectedTheme = themeStore.current;
     selectedLanguage = getLocale();
-    const avatar = (authStore.user as any).avatar || null;
+    const avatar = authStore.user.avatar_url || null;
     avatarUrl = avatar;
     if (avatar && avatar.includes("gravatar.com")) {
       useGravatar = true;

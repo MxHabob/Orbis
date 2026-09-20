@@ -56,6 +56,10 @@ use api::{
         api::iam_routes::list_users,
         api::iam_routes::get_user,
         api::iam_routes::update_user,
+        api::iam_routes::list_roles,
+        api::iam_routes::save_role,
+        api::iam_routes::list_permissions,
+        api::iam_routes::save_permissions,
         // Organization
         api::org_routes::create_org,
         api::org_routes::get_current_org,
@@ -197,6 +201,9 @@ use api::{
             api::iam_routes::GoogleAuthRequest,
             api::iam_routes::UserDeviceDto,
             api::iam_routes::UserIdentityDto,
+            api::iam_routes::RoleDto,
+            api::iam_routes::SaveRoleRequest,
+            api::iam_routes::PermissionRuleDto,
             // Org
             api::org_routes::CreateOrgRequest,
             api::org_routes::UpdateOrgRequest,

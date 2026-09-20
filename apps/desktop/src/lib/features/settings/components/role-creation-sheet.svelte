@@ -59,13 +59,30 @@ $effect(() => {
       roleId = editingRole.id;
       roleName = editingRole.name || "";
       roleNameAr = editingRole.name_ar || "";
-      const perms: Record<string, string[]> = {};
-      if (editingRole.permissions) {
-        for (const [k, v] of Object.entries(editingRole.permissions)) {
-          perms[k] = [...v];
-        }
+      
+      let sourcePerms = editingRole.permissions;
+      if ((!sourcePerms || Object.keys(sourcePerms).length === 0) && editingRole.id) {
+        const sys = SYSTEM_ROLE_DEFINITIONS.find((r) => r.id === editingRole.id);
+        if (sys) sourcePerms = sys.defaultPermissions;
       }
-      permissionsMap = perms;
+
+      if (sourcePerms?.["*"]?.includes("*") || editingRole.id === "super_admin") {
+        const fullPerms: Record<string, string[]> = {};
+        for (const domain of IAM_DOMAINS) {
+          for (const res of domain.resources) {
+            fullPerms[res.key] = res.actions.map((a) => a.key);
+          }
+        }
+        permissionsMap = fullPerms;
+      } else {
+        const perms: Record<string, string[]> = {};
+        if (sourcePerms) {
+          for (const [k, v] of Object.entries(sourcePerms)) {
+            perms[k] = [...v];
+          }
+        }
+        permissionsMap = perms;
+      }
     } else {
       roleId = "";
       roleName = "";

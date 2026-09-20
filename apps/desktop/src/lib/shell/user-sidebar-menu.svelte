@@ -61,7 +61,7 @@ async function handleLogout() {
             aria-label={m.common_nav_account()}
           >
             <Avatar class="h-full w-full rounded-[10px] bg-transparent">
-              <AvatarImage src={authStore.user?.avatar ? String(authStore.user.avatar) : undefined} alt={authStore.user?.full_name ?? 'User'} class="object-cover" />
+              <AvatarImage src={authStore.user?.avatar_url ? String(authStore.user.avatar_url) : undefined} alt={authStore.user?.full_name ?? 'User'} class="object-cover" />
               <AvatarFallback class="bg-transparent text-white font-bold text-sm">
                 {userInitials}
               </AvatarFallback>
@@ -79,7 +79,7 @@ async function handleLogout() {
     <DropdownMenuContent align="end" side="right" sideOffset={12} class="w-64 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none overflow-visible">
       <div class="flex items-center gap-3 px-3 py-2.5 border-b border-border/50">
         <Avatar class="h-8 w-8 rounded-full">
-          <AvatarImage src={authStore.user?.avatar ? String(authStore.user.avatar) : undefined} alt={authStore.user?.full_name ?? 'User'} class="object-cover" />
+          <AvatarImage src={authStore.user?.avatar_url ? String(authStore.user.avatar_url) : undefined} alt={authStore.user?.full_name ?? 'User'} class="object-cover" />
           <AvatarFallback class="bg-[#b02a87] text-white font-bold text-xs">
             {userInitials}
           </AvatarFallback>
