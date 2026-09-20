@@ -503,6 +503,10 @@ impl BootstrapService {
     fn build_default_permissions(&self, org_id: Uuid) -> Vec<ValidatedRolePermission> {
         let mut perms = vec![];
         let rules: Vec<(&str, &str, Vec<&str>)> = vec![
+            // Administrative roles — universal access
+            ("super_admin", "*", vec!["*"]),
+            ("admin", "*", vec!["*"]),
+            // Domain-specific roles
             ("teacher", "Grade", vec!["read", "write"]),
             ("teacher", "Attendance", vec!["read", "write"]),
             ("teacher", "Assessment", vec!["read", "write"]),

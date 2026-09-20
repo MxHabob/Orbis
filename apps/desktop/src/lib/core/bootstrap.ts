@@ -14,6 +14,7 @@
  */
 
 import { academicContext } from "$lib/stores/academic-context.svelte";
+import { orgContext } from "$lib/stores/org-context.svelte";
 import { workflowInbox } from "$lib/stores/workflow-inbox.svelte";
 import { isDesktopApp } from "$lib/api";
 
@@ -27,6 +28,9 @@ let unlistenCalendarSuggestions: (() => void) | null = null;
 export function bootstrapApp(orgId: string): void {
   if (bootstrapped || !orgId) return;
   bootstrapped = true;
+
+  // 0. Load organization context (locale, currency, timezone, branding)
+  orgContext.load();
 
   // 1. Resolve academic context (year, active period, phase, read-only status)
   academicContext.resolveContext(orgId);

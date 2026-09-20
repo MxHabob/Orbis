@@ -37,10 +37,45 @@ pub struct UpdateOrgRequest {
 pub struct OrgDto {
     pub id: Uuid,
     pub name: String,
+    pub name_ar: Option<String>,
     pub slug: String,
+    pub code: Option<String>,
     pub timezone: String,
     pub locale: String,
+    pub date_format: Option<String>,
+    pub is_hijri_enabled: bool,
+    pub base_currency_code: Option<String>,
     pub primary_color: Option<String>,
+    pub logo: Option<String>,
+    pub favicon: Option<String>,
+    pub current_period_id: Option<String>,
+    pub is_active: bool,
+    pub is_verified: bool,
+    pub settings: Option<serde_json::Value>,
+    pub features: Option<serde_json::Value>,
+}
+
+fn org_to_dto(org: orbis_domain::entities::organization::Organization) -> OrgDto {
+    OrgDto {
+        id: org.id,
+        name: org.name,
+        name_ar: org.name_ar,
+        slug: org.slug,
+        code: org.code,
+        timezone: org.timezone,
+        locale: org.locale,
+        date_format: org.date_format,
+        is_hijri_enabled: org.is_hijri_enabled,
+        base_currency_code: org.base_currency_code,
+        primary_color: org.primary_color,
+        logo: org.logo,
+        favicon: org.favicon,
+        current_period_id: org.current_period_id,
+        is_active: org.is_active,
+        is_verified: org.is_verified,
+        settings: org.settings,
+        features: org.features,
+    }
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -59,8 +94,35 @@ pub struct OrgUnitDto {
     pub path: String,
     pub depth: i32,
     pub name: String,
+    pub name_ar: Option<String>,
+    pub code: Option<String>,
     pub unit_type: String,
+    pub capacity: Option<i32>,
+    pub building: Option<String>,
+    pub floor: Option<i32>,
+    pub room_number: Option<String>,
+    pub sort_order: Option<i32>,
     pub is_active: bool,
+}
+
+fn unit_to_dto(u: orbis_domain::entities::org_unit::OrgUnit) -> OrgUnitDto {
+    OrgUnitDto {
+        id: u.id,
+        org_id: u.org_id,
+        parent_id: u.parent_id,
+        path: u.path,
+        depth: u.depth,
+        name: u.name,
+        name_ar: u.name_ar,
+        code: u.code,
+        unit_type: u.unit_type,
+        capacity: u.capacity,
+        building: u.building,
+        floor: u.floor,
+        room_number: u.room_number,
+        sort_order: u.sort_order,
+        is_active: u.is_active,
+    }
 }
 
 // ── Handlers ────────────────────────────────────────────────────
@@ -82,14 +144,7 @@ async fn create_org(
         &ctx, payload.name, payload.slug, payload.timezone, payload.locale
     ).await?;
 
-    Ok(ApiResponse::ok(OrgDto {
-        id: org.id,
-        name: org.name,
-        slug: org.slug,
-        timezone: org.timezone,
-        locale: org.locale,
-        primary_color: org.primary_color,
-    }))
+    Ok(ApiResponse::ok(org_to_dto(org)))
 }
 
 #[utoipa::path(get, path = "/api/v1/organizations/current",
@@ -102,14 +157,7 @@ async fn get_current_org(
     let org = state.organization_service.get_organization(ctx.tenant_id).await?
         .ok_or_else(|| ApiError::not_found("Organization not found"))?;
 
-    Ok(ApiResponse::ok(OrgDto {
-        id: org.id,
-        name: org.name,
-        slug: org.slug,
-        timezone: org.timezone,
-        locale: org.locale,
-        primary_color: org.primary_color,
-    }))
+    Ok(ApiResponse::ok(org_to_dto(org)))
 }
 
 #[utoipa::path(put, path = "/api/v1/organizations/current", request_body = UpdateOrgRequest,
@@ -124,14 +172,7 @@ async fn update_current_org(
         &ctx, ctx.tenant_id, payload.name, payload.timezone, payload.locale, payload.primary_color
     ).await?;
 
-    Ok(ApiResponse::ok(OrgDto {
-        id: org.id,
-        name: org.name,
-        slug: org.slug,
-        timezone: org.timezone,
-        locale: org.locale,
-        primary_color: org.primary_color,
-    }))
+    Ok(ApiResponse::ok(org_to_dto(org)))
 }
 
 #[utoipa::path(post, path = "/api/v1/organizations/bootstrap",
@@ -402,16 +443,7 @@ async fn create_org_unit(
 ) -> Result<Json<ApiResponse<OrgUnitDto>>, ApiError> {
     let unit = state.organization_service.create_org_unit(&ctx, ctx.tenant_id, payload.name, payload.unit_type, payload.parent_id, payload.data_isolation).await?;
 
-    Ok(ApiResponse::ok(OrgUnitDto {
-        id: unit.id,
-        org_id: unit.org_id,
-        parent_id: unit.parent_id,
-        path: unit.path,
-        depth: unit.depth,
-        name: unit.name,
-        unit_type: unit.unit_type,
-        is_active: unit.is_active,
-    }))
+    Ok(ApiResponse::ok(unit_to_dto(unit)))
 }
 
 #[utoipa::path(get, path = "/api/v1/org-units",
@@ -422,16 +454,7 @@ async fn list_org_units(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<OrgUnitDto>>>, ApiError> {
     let units = state.organization_service.list_org_units(ctx.tenant_id).await?;
-    let dtos: Vec<OrgUnitDto> = units.into_iter().map(|u| OrgUnitDto {
-        id: u.id,
-        org_id: u.org_id,
-        parent_id: u.parent_id,
-        path: u.path,
-        depth: u.depth,
-        name: u.name,
-        unit_type: u.unit_type,
-        is_active: u.is_active,
-    }).collect();
+    let dtos: Vec<OrgUnitDto> = units.into_iter().map(unit_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -447,11 +470,7 @@ async fn get_org_unit(
     let u = state.organization_service.get_org_unit(id).await?
         .ok_or_else(|| ApiError::not_found(format!("OrgUnit {} not found", id)))?;
 
-    Ok(ApiResponse::ok(OrgUnitDto {
-        id: u.id, org_id: u.org_id, parent_id: u.parent_id,
-        path: u.path, depth: u.depth, name: u.name,
-        unit_type: u.unit_type, is_active: u.is_active,
-    }))
+    Ok(ApiResponse::ok(unit_to_dto(u)))
 }
 
 #[utoipa::path(delete, path = "/api/v1/org-units/{id}",

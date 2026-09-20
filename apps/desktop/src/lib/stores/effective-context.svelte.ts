@@ -128,7 +128,7 @@ class EffectiveContextStore {
 
   /** Checks if the user has a specific permission */
   hasPermission(permission: string): boolean {
-    if (this.userPermissions.has("*") || this.userPermissions.has("admin")) {
+    if (this.userPermissions.has("*")) {
       return true;
     }
     return this.userPermissions.has(permission);

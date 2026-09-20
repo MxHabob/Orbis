@@ -127,9 +127,9 @@ class AuthStore {
   }
 
   markSetupComplete() {
-    if (systemStore.orgReadiness) {
-      systemStore.orgReadiness.state = "operational";
-    }
+    // Reload readiness from the backend to get the authoritative state
+    // instead of manually overriding the derived value.
+    systemStore.loadReadiness();
   }
 }
 

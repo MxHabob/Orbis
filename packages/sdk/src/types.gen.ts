@@ -558,22 +558,41 @@ export type OrbisErrorBody = {
 
 export type OrgDto = {
     id: string;
-    locale: string;
     name: string;
-    primary_color?: string | null;
+    name_ar?: string | null;
     slug: string;
+    code?: string | null;
     timezone: string;
+    locale: string;
+    date_format?: string | null;
+    is_hijri_enabled: boolean;
+    base_currency_code?: string | null;
+    primary_color?: string | null;
+    logo?: string | null;
+    favicon?: string | null;
+    current_period_id?: string | null;
+    is_active: boolean;
+    is_verified: boolean;
+    settings?: Record<string, unknown> | null;
+    features?: Record<string, unknown> | null;
 };
 
 export type OrgUnitDto = {
-    depth: number;
     id: string;
-    is_active: boolean;
-    name: string;
     org_id: string;
     parent_id?: string | null;
     path: string;
+    depth: number;
+    name: string;
+    name_ar?: string | null;
+    code?: string | null;
     unit_type: string;
+    capacity?: number | null;
+    building?: string | null;
+    floor?: number | null;
+    room_number?: string | null;
+    sort_order?: number | null;
+    is_active: boolean;
 };
 
 export type OrganizationSettingsDto = {
