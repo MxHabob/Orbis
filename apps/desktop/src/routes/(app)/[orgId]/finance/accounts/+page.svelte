@@ -19,17 +19,24 @@ import LedgerCreateSheet from "$lib/features/finance/components/ledger-create-sh
 import { DataTable } from "$lib/tables";
 import { cashAccounts as tDef, withIndex } from "$lib/tables/definitions";
 
+import AccountTree from "$lib/features/finance/components/account-tree.svelte";
+import { LayoutGrid, Network } from "@lucide/svelte";
+
 let { data }: { data: { orgId: string } } = $props();
 
 // ── State ──────────────────────────────────────────────────────────────
+let allAccounts = $state<any[]>([]);
 let childAccounts = $state<any[]>([]);
 let baseCurrency = $state("YER");
 let isLoading = $state(true);
 let isAddDialogOpen = $state(false);
+let viewMode = $state<"grid" | "tree">("grid");
 let searchQuery = $state("");
-let accountTypeFilter = $state("all");
-let accountSubtypeFilter = $state("all");
-let currencyFilter = $state("all");
+let activeFilter = $state<UniversalFilter>({
+  logic: "AND",
+  conditions: [],
+  groups: [],
+});
 
 function handleSuccess() {
   isAddDialogOpen = false;
@@ -42,27 +49,54 @@ async function loadData() {
   isLoading = true;
   try {
     const [accounts, currencies] = await Promise.all([
-      api
-        .listAccounts()
-        .then((accounts) =>
-          accounts.filter(
-            (account: any) =>
-              !accounts.some(
-                (candidate: any) => candidate.parent_id === account.id,
-              ),
-          ),
-        ),
+      api.listAccounts(),
       api.listCurrencies(),
     ]);
-    childAccounts = accounts;
-    const base = currencies.find((c: any) => c.is_base === 1);
+    allAccounts = accounts;
+    childAccounts = accounts.filter(
+      (account: any) =>
+        !accounts.some((candidate: any) => candidate.parent_id === account.id),
+    );
+    const base = currencies.find((c: any) => (c as any).is_base === 1 || (c as any).is_base === true);
     if (base) baseCurrency = base.code;
   } catch (e) {
-    console.error("Error:", e);
+    console.error("Error loading accounts:", e);
   } finally {
     isLoading = false;
   }
 }
+
+// Build hierarchical categories for AccountTree
+const treeCategories = $derived.by(() => {
+  const accountTypes = ["asset", "liability", "equity", "revenue", "expense"];
+  const typeLabels: Record<string, string> = {
+    asset: getLocale() === "ar" ? "الأصول" : "Assets",
+    liability: getLocale() === "ar" ? "الالتزامات" : "Liabilities",
+    equity: getLocale() === "ar" ? "حقوق الملكية" : "Equity",
+    revenue: getLocale() === "ar" ? "الإيرادات" : "Revenue",
+    expense: getLocale() === "ar" ? "المصروفات" : "Expenses",
+  };
+
+  function buildTree(parentId: string | null, type: string): any[] {
+    return allAccounts
+      .filter((a) => {
+        const aType = String(a.type || a.account_type || "asset").toLowerCase();
+        const matchesParent = parentId ? a.parent_id === parentId : !a.parent_id;
+        return matchesParent && (parentId ? true : aType === type);
+      })
+      .map((node) => ({
+        ...node,
+        name: node.name_ar || node.name || "—",
+        children: buildTree(node.id, type),
+      }));
+  }
+
+  return accountTypes.map((type) => ({
+    id: type,
+    name: typeLabels[type] || type,
+    accounts: buildTree(null, type),
+  }));
+});
 
 onMount(() => {
   if (data.orgId) loadData();
@@ -109,11 +143,6 @@ import { applyFilter } from "@orbis/ui/filter-builder";
 import type { UniversalFilter } from "@orbis/ui/filter-builder";
 import { accountFilterFields } from "$lib/tables/definitions/filter-configs";
 
-let activeFilter = $state<UniversalFilter>({
-  logic: "AND",
-  conditions: [],
-  groups: [],
-});
 
 const filteredAccounts = $derived(
   applyFilter(
@@ -186,8 +215,29 @@ function exportAccounts() {
 </script>
 
 <div class="flex h-full min-h-0 w-full flex-col overflow-hidden p-6 font-sans">
-  <div class="flex min-h-0 w-full flex-1 flex-col gap-7" in:fade={{ duration: 180 }}>
-    <header class="flex shrink-0 justify-end">
+  <div class="flex min-h-0 w-full flex-1 flex-col gap-5" in:fade={{ duration: 180 }}>
+    <header class="flex shrink-0 items-center justify-between">
+      <div class="flex items-center gap-1.5 bg-muted/40 p-0.5 rounded-lg border border-border/40">
+        <Button
+          variant={viewMode === "grid" ? "default" : "ghost"}
+          size="sm"
+          class="h-7 text-xs font-semibold px-2.5 gap-1.5"
+          onclick={() => viewMode = "grid"}
+        >
+          <LayoutGrid size={13} />
+          <span>جدول الحسابات</span>
+        </Button>
+        <Button
+          variant={viewMode === "tree" ? "default" : "ghost"}
+          size="sm"
+          class="h-7 text-xs font-semibold px-2.5 gap-1.5"
+          onclick={() => viewMode = "tree"}
+        >
+          <Network size={13} />
+          <span>شجرة الحسابات</span>
+        </Button>
+      </div>
+
       <Button variant="outline" class="h-9 px-3 text-xs font-bold shrink-0" onclick={() => { isAddDialogOpen = true; }}>
         <Plus size={14} class="me-1.5" />
         {m.finance_new_cash_account_button()}
@@ -195,24 +245,30 @@ function exportAccounts() {
     </header>
 
     <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <DataTable
-        columns={treasuryCols}
-        source={treasurySource}
-        loading={isLoading}
-        searchable
-        searchPlaceholder="ابحث باسم الحساب أو رقمه..."
-        bind:searchValue={searchQuery}
-        filterable={true}
-        filterFields={accountFilterFields}
-        bind:filterValue={activeFilter}
-        emptyIcon={Landmark}
-        emptyTitle={m.finance_no_ledgers()}
-        {rtl}
-        refreshable
-        onRefresh={loadData}
-        exportable
-        onExport={exportAccounts}
-      />
+      {#if viewMode === "grid"}
+        <DataTable
+          columns={treasuryCols}
+          source={treasurySource}
+          loading={isLoading}
+          searchable
+          searchPlaceholder="ابحث باسم الحساب أو رقمه..."
+          bind:searchValue={searchQuery}
+          filterable={true}
+          filterFields={accountFilterFields}
+          bind:filterValue={activeFilter}
+          emptyIcon={Landmark}
+          emptyTitle={m.finance_no_ledgers()}
+          {rtl}
+          refreshable
+          onRefresh={loadData}
+          exportable
+          onExport={exportAccounts}
+        />
+      {:else}
+        <div class="flex h-full min-h-0 flex-col overflow-y-auto card-tactile bg-card p-4 rounded-xl">
+          <AccountTree categories={treeCategories} />
+        </div>
+      {/if}
     </div>
   </div>
 </div>

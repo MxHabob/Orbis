@@ -433,6 +433,10 @@ export type EnrollmentSettingsDto = {
     sibling_priority_enabled: boolean;
 };
 
+export type EvaluateCohortRequest = {
+    source_period_id: string;
+};
+
 export type ExamScheduleDto = {
     class_subject_id: string;
     end_time: string;
@@ -496,6 +500,19 @@ export type GenerateReportRequest = {
 export type GenerateReportResponse = {
     job_id: string;
     status: string;
+};
+
+export type GenerateSeatingRequest = {
+    exam_session_id: string;
+    prefix?: string | null;
+    room_ids?: Array<string>;
+    start_number?: number | null;
+    student_ids: Array<string>;
+};
+
+export type GenerateSecretsRequest = {
+    exam_schedule_id: string;
+    student_ids: Array<string>;
 };
 
 export type GoogleAuthRequest = {
@@ -748,6 +765,31 @@ export type ProctorDto = {
     teacher_id: string;
 };
 
+export type PromoteCohortRequest = {
+    items: Array<StudentProgressionItemInput>;
+    job_name: string;
+    source_period_id: string;
+    target_period_id: string;
+};
+
+export type PromotionJobDto = {
+    created_at: string;
+    excluded_count: number;
+    executed_at?: string | null;
+    executed_by?: string | null;
+    graduated_count: number;
+    id: string;
+    name: string;
+    org_id: string;
+    promoted_count: number;
+    retained_count: number;
+    source_period_id: string;
+    status: string;
+    target_period_id?: string | null;
+    total_students: number;
+    updated_at: string;
+};
+
 export type RankingItemDto = {
     id: string;
     rank: number;
@@ -943,6 +985,15 @@ export type StudentFeeDto = {
     period_id: string;
     status: string;
     student_id: string;
+};
+
+export type StudentProgressionItemInput = {
+    decision: string;
+    enrollment_id: string;
+    reason?: string;
+    source_class_id?: string | null;
+    student_id: string;
+    target_class_id?: string | null;
 };
 
 export type SubjectDto = {
@@ -2020,6 +2071,24 @@ export type ScheduleExamResponses = {
 
 export type ScheduleExamResponse = ScheduleExamResponses[keyof ScheduleExamResponses];
 
+export type ListSeatingData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Exam Session ID
+         */
+        session_id: string;
+    };
+    url: '/api/v1/exam-seating';
+};
+
+export type ListSeatingResponses = {
+    200: Array<SeatingDto>;
+};
+
+export type ListSeatingResponse = ListSeatingResponses[keyof ListSeatingResponses];
+
 export type AssignSeatingData = {
     body: AssignSeatingRequest;
     path?: never;
@@ -2033,6 +2102,37 @@ export type AssignSeatingResponses = {
 
 export type AssignSeatingResponse = AssignSeatingResponses[keyof AssignSeatingResponses];
 
+export type GenerateSeatingData = {
+    body: GenerateSeatingRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/exam-seating/actions/generate';
+};
+
+export type GenerateSeatingResponses = {
+    200: Array<SeatingDto>;
+};
+
+export type GenerateSeatingResponse = GenerateSeatingResponses[keyof GenerateSeatingResponses];
+
+export type ListSecretsData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Exam Schedule ID
+         */
+        schedule_id: string;
+    };
+    url: '/api/v1/exam-secrets';
+};
+
+export type ListSecretsResponses = {
+    200: Array<SecretDto>;
+};
+
+export type ListSecretsResponse = ListSecretsResponses[keyof ListSecretsResponses];
+
 export type AssignSecretData = {
     body: AssignSecretRequest;
     path?: never;
@@ -2045,6 +2145,19 @@ export type AssignSecretResponses = {
 };
 
 export type AssignSecretResponse = AssignSecretResponses[keyof AssignSecretResponses];
+
+export type GenerateSecretsData = {
+    body: GenerateSecretsRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/exam-secrets/actions/generate';
+};
+
+export type GenerateSecretsResponses = {
+    200: Array<SecretDto>;
+};
+
+export type GenerateSecretsResponse = GenerateSecretsResponses[keyof GenerateSecretsResponses];
 
 export type ListSessionsData = {
     body?: never;
@@ -2694,6 +2807,63 @@ export type ListPeriodTemplatesResponses = {
 };
 
 export type ListPeriodTemplatesResponse = ListPeriodTemplatesResponses[keyof ListPeriodTemplatesResponses];
+
+export type EvaluateCohortData = {
+    body: EvaluateCohortRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/progression/evaluate';
+};
+
+export type EvaluateCohortResponses = {
+    200: Array<StudentProgressionItemInput>;
+};
+
+export type EvaluateCohortResponse = EvaluateCohortResponses[keyof EvaluateCohortResponses];
+
+export type ListJobsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/progression/jobs';
+};
+
+export type ListJobsResponses = {
+    200: Array<PromotionJobDto>;
+};
+
+export type ListJobsResponse = ListJobsResponses[keyof ListJobsResponses];
+
+export type GetJobData = {
+    body?: never;
+    path: {
+        /**
+         * Promotion Job ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/progression/jobs/{id}';
+};
+
+export type GetJobResponses = {
+    200: PromotionJobDto;
+};
+
+export type GetJobResponse = GetJobResponses[keyof GetJobResponses];
+
+export type PromoteCohortData = {
+    body: PromoteCohortRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/progression/promote';
+};
+
+export type PromoteCohortResponses = {
+    201: PromotionJobDto;
+};
+
+export type PromoteCohortResponse = PromoteCohortResponses[keyof PromoteCohortResponses];
 
 export type ListReportDefinitionsData = {
     body?: never;

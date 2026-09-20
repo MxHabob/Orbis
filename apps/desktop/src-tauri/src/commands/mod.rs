@@ -102,6 +102,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         student_cmds::student_assign_guardian,
         student_cmds::student_list_guardians,
         // ── Student Cohort Progression ──────────────────────────
+        progression_cmds::progression_evaluate_cohort,
         progression_cmds::progression_promote_cohort,
         progression_cmds::progression_list_jobs,
         progression_cmds::progression_get_job,

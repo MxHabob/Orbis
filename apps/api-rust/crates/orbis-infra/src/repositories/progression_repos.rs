@@ -47,6 +47,38 @@ impl PromotionRepository for ProgressionRepoImpl {
         }))
     }
 
+    async fn find_jobs_by_org(&self, org_id: Uuid) -> Result<Vec<PromotionJob>, DomainError> {
+        let models = PromotionJobEntity::find()
+            .filter(promotion_job::Column::OrgId.eq(org_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| PromotionJob {
+            id: m.id,
+            org_id: m.org_id,
+            source_period_id: m.source_period_id,
+            target_period_id: m.target_period_id,
+            name: m.name,
+            status: match m.status.as_str() {
+                "preview_ready" => PromotionJobStatus::PreviewReady,
+                "executing" => PromotionJobStatus::Executing,
+                "completed" => PromotionJobStatus::Completed,
+                "failed" => PromotionJobStatus::Failed,
+                "rolled_back" => PromotionJobStatus::RolledBack,
+                _ => PromotionJobStatus::Draft,
+            },
+            total_students: m.total_students as u32,
+            promoted_count: m.promoted_count as u32,
+            retained_count: m.retained_count as u32,
+            graduated_count: m.graduated_count as u32,
+            excluded_count: m.excluded_count as u32,
+            executed_by: m.executed_by,
+            executed_at: m.executed_at.map(Into::into),
+            created_at: m.created_at.into(),
+            updated_at: m.updated_at.into(),
+        }).collect())
+    }
+
     async fn find_details_by_job(&self, job_id: Uuid) -> Result<Vec<PromotionDetail>, DomainError> {
         let models = PromotionDetailEntity::find()
             .filter(promotion_detail::Column::JobId.eq(job_id))

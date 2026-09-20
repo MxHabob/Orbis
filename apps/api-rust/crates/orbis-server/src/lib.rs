@@ -9,7 +9,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use api::{
     iam_routes, org_routes, calendar_routes, academic_routes,
-    student_routes, override_routes, scheduling_routes, assessment_routes, exam_routes,
+    student_routes, override_routes, progression_routes, scheduling_routes, assessment_routes, exam_routes,
     finance_routes, document_routes, integration_routes, report_routes, ai_routes,
     autopilot_routes,
 };
@@ -110,6 +110,11 @@ use api::{
         api::override_routes::get_override,
         api::override_routes::approve_override,
         api::override_routes::reject_override,
+        // Progression
+        api::progression_routes::evaluate_cohort,
+        api::progression_routes::promote_cohort,
+        api::progression_routes::list_jobs,
+        api::progression_routes::get_job,
         // Scheduling
         api::scheduling_routes::create_room,
         api::scheduling_routes::list_rooms,
@@ -327,6 +332,11 @@ use api::{
             api::autopilot_routes::AutopilotDiagnosticsDto,
             api::autopilot_routes::RunTickRequest,
             api::autopilot_routes::ListTasksResponse,
+            // Progression
+            api::progression_routes::PromotionJobDto,
+            api::progression_routes::StudentProgressionItemInput,
+            api::progression_routes::PromoteCohortRequest,
+            api::progression_routes::EvaluateCohortRequest,
         )
     ),
     modifiers(),
@@ -346,6 +356,7 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(academic_routes::routes())
         .merge(student_routes::routes())
         .merge(override_routes::routes())
+        .merge(progression_routes::routes())
         .merge(scheduling_routes::routes())
         .merge(assessment_routes::routes())
         .merge(exam_routes::routes())

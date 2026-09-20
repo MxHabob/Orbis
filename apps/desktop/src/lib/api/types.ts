@@ -59,6 +59,8 @@ import type {
   SeatingDto,
   SecretDto,
   ProctorDto,
+  GenerateSeatingRequest,
+  GenerateSecretsRequest,
   CreateExamSessionRequest,
   ScheduleExamRequest,
   AssignSeatingRequest,
@@ -874,6 +876,7 @@ export interface OrbisApiClient {
   listAttendance(classId: string, date: string): Promise<AttendanceDto[]>;
 
   // ── Student Cohort Progression ──────────────────────────────
+  evaluateCohort(sourcePeriodId: string): Promise<StudentProgressionItemInput[]>;
   promoteCohort(req: PromoteCohortInput): Promise<PromotionJobDto>;
   listPromotionJobs(): Promise<PromotionJobDto[]>;
   getPromotionJob(id: string): Promise<PromotionJobDto>;
@@ -892,7 +895,11 @@ export interface OrbisApiClient {
   scheduleExam(req: ScheduleExamRequest): Promise<ExamScheduleDto>;
   listExamSchedules(sessionId: string): Promise<ExamScheduleDto[]>;
   assignSeating(req: AssignSeatingRequest): Promise<SeatingDto>;
+  listSeating(sessionId: string): Promise<SeatingDto[]>;
+  generateSeating(req: GenerateSeatingRequest): Promise<SeatingDto[]>;
   assignSecret(req: AssignSecretRequest): Promise<SecretDto>;
+  listSecrets(scheduleId: string): Promise<SecretDto[]>;
+  generateSecrets(req: GenerateSecretsRequest): Promise<SecretDto[]>;
   assignProctor(req: AssignProctorRequest): Promise<ProctorDto>;
 
   // ── Finance ─────────────────────────────────────────────────

@@ -135,11 +135,38 @@ pub async fn progression_promote_cohort(
 }
 
 #[tauri::command]
+pub async fn progression_evaluate_cohort(
+    source_period_id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<StudentProgressionItemInput>>, String> {
+    let ctx = make_ctx(&state);
+    let pid = Uuid::parse_str(&source_period_id).map_err(|_| "Invalid source_period_id")?;
+    let items = state.progression_service
+        .evaluate_cohort_progression(&ctx, ctx.tenant_id, pid)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(items.into_iter().map(|i| StudentProgressionItemInput {
+        student_id: i.student_id.to_string(),
+        enrollment_id: i.enrollment_id.to_string(),
+        source_class_id: i.source_class_id.map(|c| c.to_string()),
+        target_class_id: i.target_class_id.map(|c| c.to_string()),
+        decision: i.decision.to_string(),
+        reason: i.reason,
+    }).collect()))
+}
+
+#[tauri::command]
 pub async fn progression_list_jobs(
-    _state: State<'_, AppState>,
+    state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<PromotionJobDto>>, String> {
-    // List jobs
-    Ok(ok(vec![]))
+    let ctx = make_ctx(&state);
+    let jobs = state.progression_service
+        .progression_repo
+        .find_jobs_by_org(ctx.tenant_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(jobs.into_iter().map(job_to_dto).collect()))
 }
 
 #[tauri::command]

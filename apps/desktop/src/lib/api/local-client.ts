@@ -62,6 +62,8 @@ import type {
   SecretDto,
   ProctorDto,
   CreateExamSessionRequest,
+  GenerateSeatingRequest,
+  GenerateSecretsRequest,
   ScheduleExamRequest,
   AssignSeatingRequest,
   AssignSecretRequest,
@@ -471,6 +473,15 @@ export class LocalClient implements OrbisApiClient {
   }
 
   // ── Student Cohort Progression ──────────────────────────────
+  async evaluateCohort(
+    sourcePeriodId: string,
+  ): Promise<StudentProgressionItemInput[]> {
+    return unwrap(
+      await invoke("progression_evaluate_cohort", {
+        sourcePeriodId,
+      }),
+    );
+  }
   async promoteCohort(req: PromoteCohortInput): Promise<PromotionJobDto> {
     return unwrap(
       await invoke("progression_promote_cohort", { request: req }),
@@ -533,8 +544,20 @@ export class LocalClient implements OrbisApiClient {
   async assignSeating(req: AssignSeatingRequest): Promise<SeatingDto> {
     return unwrap(await invoke("exam_assign_seating", { request: req }));
   }
+  async listSeating(sessionId: string): Promise<SeatingDto[]> {
+    return unwrap(await invoke("exam_list_seating", { sessionId }));
+  }
+  async generateSeating(req: GenerateSeatingRequest): Promise<SeatingDto[]> {
+    return unwrap(await invoke("exam_generate_seating", { request: req }));
+  }
   async assignSecret(req: AssignSecretRequest): Promise<SecretDto> {
     return unwrap(await invoke("exam_assign_secret", { request: req }));
+  }
+  async listSecrets(scheduleId: string): Promise<SecretDto[]> {
+    return unwrap(await invoke("exam_list_secrets", { scheduleId }));
+  }
+  async generateSecrets(req: GenerateSecretsRequest): Promise<SecretDto[]> {
+    return unwrap(await invoke("exam_generate_secrets", { request: req }));
   }
   async assignProctor(req: AssignProctorRequest): Promise<ProctorDto> {
     return unwrap(await invoke("exam_assign_proctor", { request: req }));

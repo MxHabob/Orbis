@@ -263,7 +263,10 @@ async function loadSession() {
         console.error("Failed to load schedules", err);
         return [];
       }),
-      Promise.resolve([]),
+      api.listSeating(sessionId as string).catch((err: unknown) => {
+        console.error("Failed to load seating numbers", err);
+        return [];
+      }),
       Promise.resolve([]),
       Promise.resolve([]),
       api.listRooms().catch((err: unknown) => {
@@ -305,22 +308,68 @@ onMount(() => {
 
 // Quick actions
 async function handleGenerateSeating() {
-  const promise = Promise.resolve();
-  toast.promise(promise, {
-    loading: "جاري توليد أرقام الجلوس...",
-    success: "تم توليد أرقام الجلوس بنجاح!",
-    error: (err) => (err as any)?.message || "فشل توليد أرقام الجلوس",
-  });
   try {
+    const studentsRes = await api.listStudents({ pageSize: 500 });
+    const studentIds = studentsRes.items.map((s: any) => s.student?.id || s.id);
+    if (!studentIds.length) {
+      toast.error("لا يوجد طلاب مسجلين لتوليد أرقام جلوس لهم");
+      return;
+    }
+    const roomIds = rooms.map((r: any) => r.id);
+
+    const promise = api.generateSeating({
+      exam_session_id: sessionId as string,
+      student_ids: studentIds,
+      room_ids: roomIds,
+      prefix: "SEAT-",
+      start_number: 1001,
+    });
+
+    toast.promise(promise, {
+      loading: "جاري توليد أرقام الجلوس...",
+      success: "تم توليد أرقام الجلوس بنجاح!",
+      error: (err) => (err as any)?.message || "فشل توليد أرقام الجلوس",
+    });
+
     await promise;
     await loadSession();
   } catch (err) {
-    console.error(err);
+    console.error("Failed to generate seating", err);
   }
 }
 
 async function handleGenerateSecrets() {
-  toast.error("توليد الأرقام السرية غير متاح في نسخة سطح المكتب حاليًا");
+  try {
+    if (!schedules.length) {
+      toast.error("لا يوجد جداول امتحانات مسجلة لتوليد الأرقام السرية");
+      return;
+    }
+    const studentsRes = await api.listStudents({ pageSize: 500 });
+    const studentIds = studentsRes.items.map((s: any) => s.student?.id || s.id);
+    if (!studentIds.length) {
+      toast.error("لا يوجد طلاب مسجلين لتوليد أرقام سرية لهم");
+      return;
+    }
+
+    const promises = schedules.map((schedule: any) =>
+      api.generateSecrets({
+        exam_schedule_id: schedule.id,
+        student_ids: studentIds,
+      }),
+    );
+
+    const promise = Promise.all(promises);
+    toast.promise(promise, {
+      loading: "جاري توليد الأرقام السرية للامتحانات...",
+      success: "تم توليد وتشفير الأرقام السرية لجميع الجداول بنجاح!",
+      error: (err) => (err as any)?.message || "فشل توليد الأرقام السرية",
+    });
+
+    await promise;
+    await loadSession();
+  } catch (err) {
+    console.error("Failed to generate secrets", err);
+  }
 }
 
 // Generate an array of YYYY-MM-DD strings between two dates inclusive

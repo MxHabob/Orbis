@@ -421,6 +421,7 @@ pub trait CurrencyRepository: Send + Sync {
 #[async_trait]
 pub trait PromotionRepository: Send + Sync {
     async fn find_job_by_id(&self, job_id: Uuid) -> Result<Option<PromotionJob>, DomainError>;
+    async fn find_jobs_by_org(&self, org_id: Uuid) -> Result<Vec<PromotionJob>, DomainError>;
     async fn find_details_by_job(&self, job_id: Uuid) -> Result<Vec<PromotionDetail>, DomainError>;
     async fn save_job(&self, job: &PromotionJob) -> Result<(), DomainError>;
     async fn save_detail(&self, detail: &PromotionDetail) -> Result<(), DomainError>;

@@ -62,6 +62,8 @@ import type {
   SecretDto,
   ProctorDto,
   CreateExamSessionRequest,
+  GenerateSeatingRequest,
+  GenerateSecretsRequest,
   ScheduleExamRequest,
   AssignSeatingRequest,
   AssignSecretRequest,
@@ -554,6 +556,13 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   // ── Student Cohort Progression ──────────────────────────────
+  async evaluateCohort(
+    sourcePeriodId: string,
+  ): Promise<StudentProgressionItemInput[]> {
+    return this.post("/api/v1/progression/evaluate", {
+      source_period_id: sourcePeriodId,
+    });
+  }
   async promoteCohort(req: PromoteCohortInput): Promise<PromotionJobDto> {
     return this.post("/api/v1/progression/promote", req);
   }
@@ -608,8 +617,20 @@ export class RemoteClient implements OrbisApiClient {
   async assignSeating(req: AssignSeatingRequest): Promise<SeatingDto> {
     return this.post("/api/v1/exam-seating", req);
   }
+  async listSeating(sessionId: string): Promise<SeatingDto[]> {
+    return this.get("/api/v1/exam-seating", { session_id: sessionId });
+  }
+  async generateSeating(req: GenerateSeatingRequest): Promise<SeatingDto[]> {
+    return this.post("/api/v1/exam-seating/actions/generate", req);
+  }
   async assignSecret(req: AssignSecretRequest): Promise<SecretDto> {
     return this.post("/api/v1/exam-secrets", req);
+  }
+  async listSecrets(scheduleId: string): Promise<SecretDto[]> {
+    return this.get("/api/v1/exam-secrets", { schedule_id: scheduleId });
+  }
+  async generateSecrets(req: GenerateSecretsRequest): Promise<SecretDto[]> {
+    return this.post("/api/v1/exam-secrets/actions/generate", req);
   }
   async assignProctor(req: AssignProctorRequest): Promise<ProctorDto> {
     return this.post("/api/v1/exam-proctors", req);
