@@ -12,7 +12,7 @@ import {
 } from "@lucide/svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
-import { academicContext, workflowInbox, authStore } from "$lib/stores";
+import { academicContext, workflowInbox, effectiveContext } from "$lib/stores";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -20,8 +20,10 @@ let { orgId }: { orgId: string } = $props();
 const ACTIONS = $derived.by(() => {
   const phase = academicContext.periodPhase;
   const ro = academicContext.isReadOnly;
-  const role = authStore.user?.primary_role ?? "viewer";
-  const isAdmin = ["admin", "super_admin", "principal"].includes(role);
+  const canManageApprovals =
+    effectiveContext.hasPermission("workflow:manage") ||
+    effectiveContext.hasPermission("approvals:read") ||
+    effectiveContext.hasPermission("*");
 
   const actions: Array<{
     label: string;
@@ -69,7 +71,7 @@ const ACTIONS = $derived.by(() => {
         : "Approvals",
       icon: ClipboardCheck,
       href: `/${orgId}/settings/approvals`,
-      show: workflowInbox.hasActions && isAdmin,
+      show: workflowInbox.hasActions && canManageApprovals,
       badge:
         workflowInbox.totalCount > 0
           ? String(workflowInbox.totalCount)

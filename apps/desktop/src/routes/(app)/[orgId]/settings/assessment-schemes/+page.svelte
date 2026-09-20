@@ -53,31 +53,18 @@ Uses the Assessment Engine's assessment_scheme CRUD operations.
   );
   const selectedSchemeId = $derived(selectedScheme?.id ?? null);
 
-  // Fallback / default components map
-  const defaultSchemeComponents: SchemeComponent[] = [
-    { id: "comp-hw", name: "الأنشطة والواجبات", component_type: "homework", weight: 20, max_score: 20, passing_score: 10 },
-    { id: "comp-qz", name: "الاختبارات القصيرة", component_type: "quiz", weight: 20, max_score: 20, passing_score: 10 },
-    { id: "comp-mid", name: "اختبار منتصف الفصل", component_type: "exam", weight: 20, max_score: 20, passing_score: 10 },
-    { id: "comp-fin", name: "الاختبار النهائي", component_type: "exam", weight: 40, max_score: 40, passing_score: 20 },
-  ];
-
-  let localComponentsMap = $state<Record<string, SchemeComponent[]>>({});
-
   const schemeComponents = $derived.by<SchemeComponent[]>(() => {
-    if (!selectedSchemeId) return [];
-    if (localComponentsMap[selectedSchemeId]) {
-      return localComponentsMap[selectedSchemeId];
-    }
-    const formula = selectedScheme?.formula;
+    if (!selectedScheme) return [];
+    const formula = selectedScheme.formula as any;
     if (formula) {
-      if (Array.isArray(formula.components) && formula.components.length > 0) {
+      if (Array.isArray(formula.components)) {
         return formula.components;
       }
-      if (Array.isArray(formula) && formula.length > 0) {
+      if (Array.isArray(formula)) {
         return formula;
       }
     }
-    return defaultSchemeComponents;
+    return [];
   });
 
   // ── Weight summary ───────────────────────────────────────────
@@ -99,17 +86,17 @@ Uses the Assessment Engine's assessment_scheme CRUD operations.
     isCreating = true;
     try {
       const created = await api.createAssessmentScheme({
-        name: newSchemeName,
-        description: newSchemeDesc || null,
+        name: newSchemeName.trim(),
+        description: newSchemeDesc.trim() || null,
         max_score: 100,
         formula: {
           type: "weighted_average",
-          components: defaultSchemeComponents,
+          components: [],
         },
       });
       toast.success("تم إنشاء هيكل التقييم بنجاح");
       activeSchemeId = created.id;
-      queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
+      await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
       showCreateDialog = false;
       newSchemeName = "";
       newSchemeDesc = "";
@@ -162,7 +149,7 @@ Uses the Assessment Engine's assessment_scheme CRUD operations.
   let isSavingComponent = $state(false);
 
   async function handleSaveComponent() {
-    if (!componentForm.name.trim() || !selectedSchemeId) return;
+    if (!componentForm.name.trim() || !selectedScheme) return;
     isSavingComponent = true;
     try {
       const current = [...schemeComponents];
@@ -171,27 +158,36 @@ Uses the Assessment Engine's assessment_scheme CRUD operations.
         if (idx >= 0) {
           current[idx] = {
             ...current[idx],
-            name: componentForm.name,
+            name: componentForm.name.trim(),
             component_type: componentForm.component_type,
-            weight: Number(componentForm.weight),
-            max_score: Number(componentForm.max_score),
-            passing_score: Number(componentForm.passing_score),
+            weight: Number(componentForm.weight) || 0,
+            max_score: Number(componentForm.max_score) || 100,
+            passing_score: Number(componentForm.passing_score) || 50,
           };
         }
-        toast.success("تم تحديث المكوّن بنجاح");
       } else {
         const newComp: SchemeComponent = {
           id: `comp-${Date.now()}`,
-          name: componentForm.name,
+          name: componentForm.name.trim(),
           component_type: componentForm.component_type,
-          weight: Number(componentForm.weight),
-          max_score: Number(componentForm.max_score),
-          passing_score: Number(componentForm.passing_score),
+          weight: Number(componentForm.weight) || 0,
+          max_score: Number(componentForm.max_score) || 100,
+          passing_score: Number(componentForm.passing_score) || 50,
         };
         current.push(newComp);
-        toast.success("تم إضافة المكوّن بنجاح");
       }
-      localComponentsMap[selectedSchemeId] = current;
+      await api.updateAssessmentScheme(selectedScheme.id, {
+        formula: {
+          type: "weighted_average",
+          components: current,
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
+      toast.success(
+        editingComponentId
+          ? "تم تحديث المكوّن بنجاح"
+          : "تم إضافة المكوّن بنجاح",
+      );
       showComponentDialog = false;
       resetComponentForm();
     } catch (err: unknown) {
@@ -204,20 +200,26 @@ Uses the Assessment Engine's assessment_scheme CRUD operations.
   // ── Delete ───────────────────────────────────────────────────
   async function handleDeleteScheme(id: string) {
     try {
+      await api.deleteAssessmentScheme(id);
       toast.success("تم حذف هيكل التقييم");
       if (activeSchemeId === id) activeSchemeId = null;
-      queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
+      await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
     } catch (err: unknown) {
       toast.error(extractErrorMessage(err));
     }
   }
 
   async function handleDeleteComponent(id: string) {
-    if (!selectedSchemeId) return;
+    if (!selectedScheme) return;
     try {
-      localComponentsMap[selectedSchemeId] = schemeComponents.filter(
-        (c) => c.id !== id,
-      );
+      const updated = schemeComponents.filter((c) => c.id !== id);
+      await api.updateAssessmentScheme(selectedScheme.id, {
+        formula: {
+          type: "weighted_average",
+          components: updated,
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
       toast.success("تم حذف المكوّن");
     } catch (err: unknown) {
       toast.error(extractErrorMessage(err));

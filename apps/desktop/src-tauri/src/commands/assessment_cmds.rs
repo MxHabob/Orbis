@@ -29,6 +29,16 @@ pub struct CreateSchemeInput {
     pub formula: Option<serde_json::Value>,
 }
 
+#[derive(Deserialize)]
+pub struct UpdateSchemeInput {
+    pub id: String,
+    pub name: Option<String>,
+    pub description: Option<String>,
+    #[serde(rename = "maxScore")]
+    pub max_score: Option<f64>,
+    pub formula: Option<serde_json::Value>,
+}
+
 #[derive(Serialize)]
 pub struct GradeDto {
     pub id: String,
@@ -156,6 +166,42 @@ pub async fn assessment_get_scheme(id: String, state: State<'_, AppState>) -> Re
         max_score: s.max_score,
         formula: s.formula,
     }))
+}
+
+#[tauri::command]
+pub async fn assessment_update_scheme(request: UpdateSchemeInput, state: State<'_, AppState>) -> Result<ApiResponse<AssessmentSchemeDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&request.id).map_err(|_| "Invalid ID")?;
+    let s = state.assessment_service.update_assessment_scheme(
+        &ctx,
+        ctx.tenant_id,
+        uid,
+        request.name,
+        request.description,
+        request.max_score,
+        request.formula,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(ok(AssessmentSchemeDto {
+        id: s.id.to_string(),
+        org_id: s.org_id.to_string(),
+        name: s.name,
+        description: s.description,
+        max_score: s.max_score,
+        formula: s.formula,
+    }))
+}
+
+#[tauri::command]
+pub async fn assessment_delete_scheme(id: String, state: State<'_, AppState>) -> Result<ApiResponse<()>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
+    state.assessment_service.delete_assessment_scheme(&ctx, ctx.tenant_id, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(()))
 }
 
 #[tauri::command]

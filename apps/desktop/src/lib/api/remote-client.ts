@@ -50,6 +50,7 @@ import type {
   AttendanceDto,
   CalculationResultDto,
   CreateSchemeRequest,
+  UpdateSchemeRequest,
   RecordGradeRequest,
   MarkAttendanceRequest,
   CalculateGradesRequest,
@@ -488,6 +489,15 @@ export class RemoteClient implements OrbisApiClient {
     req: CreateSchemeRequest,
   ): Promise<AssessmentSchemeDto> {
     return this.post("/api/v1/assessment-schemes", req);
+  }
+  async updateAssessmentScheme(
+    id: string,
+    req: UpdateSchemeRequest,
+  ): Promise<AssessmentSchemeDto> {
+    return this.put(`/api/v1/assessment-schemes/${id}`, req);
+  }
+  async deleteAssessmentScheme(id: string): Promise<void> {
+    return this.del(`/api/v1/assessment-schemes/${id}`);
   }
   async listAssessmentSchemes(): Promise<AssessmentSchemeDto[]> {
     return this.get("/api/v1/assessment-schemes");

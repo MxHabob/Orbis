@@ -325,6 +325,63 @@ impl AssessmentService {
         Ok(scheme)
     }
 
+    /// Update assessment scheme
+    pub async fn update_assessment_scheme(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        scheme_id: Uuid,
+        name: Option<String>,
+        description: Option<String>,
+        max_score: Option<f64>,
+        formula: Option<serde_json::Value>,
+    ) -> Result<AssessmentScheme, DomainError> {
+        self.permission_checker.check(ctx, Permission::AssessmentWrite).await?;
+
+        let mut scheme = self.scheme_repo.find_by_id(scheme_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Assessment Scheme {} not found", scheme_id)))?;
+
+        if scheme.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        if let Some(n) = name {
+            scheme.name = n;
+        }
+        if let Some(d) = description {
+            scheme.description = Some(d);
+        }
+        if let Some(m) = max_score {
+            scheme.max_score = m;
+        }
+        if let Some(f) = formula {
+            scheme.formula = Some(f);
+        }
+        scheme.updated_at = Utc::now();
+
+        self.scheme_repo.save(&scheme).await?;
+        Ok(scheme)
+    }
+
+    /// Delete assessment scheme
+    pub async fn delete_assessment_scheme(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        scheme_id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::AssessmentDelete).await?;
+
+        let scheme = self.scheme_repo.find_by_id(scheme_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Assessment Scheme {} not found", scheme_id)))?;
+
+        if scheme.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        self.scheme_repo.delete(scheme_id).await
+    }
+
     /// List assessment schemes
     pub async fn list_assessment_schemes(&self, org_id: Uuid) -> Result<Vec<AssessmentScheme>, DomainError> {
         self.scheme_repo.find_by_org(org_id).await

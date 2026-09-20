@@ -6,7 +6,7 @@ Main: App header + description + features.
 Sidebar: CTA card + settings form + related apps.
 -->
 <script lang="ts">
-import { onMount } from "svelte";
+import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import {
   getAppById,
   getAppsByCategory,
@@ -14,13 +14,14 @@ import {
   getCategoryNameAr,
 } from "@orbis/app-store";
 import type { OrbisApp } from "@orbis/app-store";
-import { api } from "$lib/api";
+import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import AppIcon from "$lib/features/ai-center/components/integrations/app-icon.svelte";
 import AppConnectForm from "$lib/features/ai-center/components/integrations/app-connect-form.svelte";
 import { l } from "$lib/core/i18n";
 
 let { data }: { data: { orgId: string; appId: string } } = $props();
+const queryClient = useQueryClient();
 
 const app = $derived(getAppById(data.appId));
 const relatedApps = $derived(
@@ -33,22 +34,23 @@ const relatedApps = $derived(
 const basePath = $derived(`/${data.orgId}/ai-center/integrations`);
 
 let isConnecting = $state(false);
-let isConnected = $state(false);
 let connectError = $state<string | null>(null);
 
-// Check current status on mount
-onMount(() => {
-  if (data.appId) {
-    api
-      .getIntegrationStatus(data.appId)
-      .then((status) => {
-        isConnected = status?.connected ?? false;
-      })
-      .catch(() => {
-        isConnected = false;
-      });
-  }
-});
+const statusQuery = createQuery(() => ({
+  queryKey: ["integration-status", data.orgId, data.appId],
+  queryFn: async () => {
+    try {
+      const status = await api.getIntegrationStatus(data.appId);
+      return status?.connected ?? false;
+    } catch {
+      return false;
+    }
+  },
+  enabled: !!data.appId,
+  staleTime: 30 * 1000,
+}));
+
+const isConnected = $derived(statusQuery.data ?? false);
 
 /** Simple markdown bold and link parser */
 function renderDescription(text: string): string {
@@ -113,7 +115,9 @@ async function handleConnect(values: Record<string, unknown>) {
       settings,
       secrets,
     });
-    isConnected = true;
+    await queryClient.invalidateQueries({
+      queryKey: ["integration-status", data.orgId, data.appId],
+    });
   } catch (e: any) {
     connectError = e?.message ?? "Connection failed";
   } finally {
@@ -124,7 +128,9 @@ async function handleConnect(values: Record<string, unknown>) {
 async function handleDisconnect() {
   try {
     await api.disconnectApp(data.appId);
-    isConnected = false;
+    await queryClient.invalidateQueries({
+      queryKey: ["integration-status", data.orgId, data.appId],
+    });
   } catch (e: any) {
     console.error("[AI Center] Disconnect failed:", e);
   }

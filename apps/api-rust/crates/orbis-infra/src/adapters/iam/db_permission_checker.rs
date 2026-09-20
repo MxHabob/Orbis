@@ -141,10 +141,12 @@ impl PermissionCheckerPort for DbPermissionChecker {
             .map(|rp| {
                 if rp.resource == "*" {
                     "*".to_string()
+                } else if rp.resource.contains(':') {
+                    rp.resource.to_lowercase()
                 } else if rp.action.is_empty() || rp.action == "*" {
-                    rp.resource
+                    rp.resource.to_lowercase()
                 } else {
-                    format!("{}:{}", rp.resource, rp.action)
+                    format!("{}:{}", rp.resource.to_lowercase(), rp.action.to_lowercase())
                 }
             })
             .collect();

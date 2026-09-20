@@ -50,6 +50,7 @@ import type {
   AttendanceDto,
   CalculationResultDto,
   CreateSchemeRequest,
+  UpdateSchemeRequest,
   RecordGradeRequest,
   MarkAttendanceRequest,
   CalculateGradesRequest,
@@ -388,6 +389,25 @@ export class LocalClient implements OrbisApiClient {
     req: CreateSchemeRequest,
   ): Promise<AssessmentSchemeDto> {
     return unwrap(await invoke("assessment_create_scheme", { request: req }));
+  }
+  async updateAssessmentScheme(
+    id: string,
+    req: UpdateSchemeRequest,
+  ): Promise<AssessmentSchemeDto> {
+    return unwrap(
+      await invoke("assessment_update_scheme", {
+        request: {
+          id,
+          name: req.name,
+          description: req.description,
+          maxScore: req.max_score,
+          formula: req.formula,
+        },
+      }),
+    );
+  }
+  async deleteAssessmentScheme(id: string): Promise<void> {
+    unwrap(await invoke("assessment_delete_scheme", { id }));
   }
   async listAssessmentSchemes(): Promise<AssessmentSchemeDto[]> {
     return unwrap(await invoke("assessment_list_schemes"));

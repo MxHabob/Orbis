@@ -48,26 +48,7 @@ let { org, isSaving, onsave } = $props<{
   onsave: (registrationConfig: any) => void;
 }>();
 
-// Active tab
-let activeTab = $state<"policies" | "documents" | "fields">("policies");
-
-// Institution Type Presets
-let institutionType = $state("school");
-
-// Student Number Pattern
-let studentNumberPrefix = $state("STU");
-let studentNumberYearFormat = $state("YEAR"); // "YEAR" (2026) or "YEAR2" (26) or "NONE"
-let studentNumberDigits = $state(4); // 4 -> 0001, 5 -> 00001, 6 -> 000001
-
-// Admission Policies
-let requiresApproval = $state(false);
-let allowNoGuardian = $state(false);
-let allowDuplicateNationalId = $state(false);
-let autoAssignFees = $state(true);
-let maxClassCapacity = $state<number | null>(30);
-let ageCalculationDate = $state("start_of_year"); // "start_of_year" | "custom"
-
-// Required Documents
+// Required Documents Interface & Defaults
 interface DocItem {
   id: string;
   nameAr: string;
@@ -75,7 +56,7 @@ interface DocItem {
   isRequired: boolean;
 }
 
-let requiredDocuments = $state<DocItem[]>([
+const defaultDocuments: DocItem[] = [
   { id: "birth_cert", nameAr: "شهادة الميلاد الأصلية المعتمدة", nameEn: "Certified Birth Certificate", isRequired: true },
   { id: "national_id", nameAr: "بطاقة الهوية الوطنية / جواز السفر", nameEn: "National ID / Passport", isRequired: true },
   { id: "academic_transcript", nameAr: "كشف درجات / شهادة آخر مؤهل دراسي", nameEn: "Previous Academic Transcript", isRequired: true },
@@ -83,12 +64,9 @@ let requiredDocuments = $state<DocItem[]>([
   { id: "photos", nameAr: "صور شخصية حديثة (4x6)", nameEn: "Recent Personal Photographs", isRequired: true },
   { id: "guardian_id", nameAr: "صورة هوية ولي الأمر", nameEn: "Guardian National ID Copy", isRequired: true },
   { id: "transfer_cert", nameAr: "استمارة نقل أو إخلاء طرف للطلاب المحولين", nameEn: "Transfer / Clearance Certificate", isRequired: false },
-]);
+];
 
-let newDocNameAr = $state("");
-let newDocNameEn = $state("");
-
-// Application Form Fields Configuration
+// Application Form Fields Configuration Interface & Defaults
 interface FieldConfig {
   key: string;
   nameAr: string;
@@ -99,7 +77,7 @@ interface FieldConfig {
   supportsDuplicate: boolean;
 }
 
-let formFields = $state<FieldConfig[]>([
+const defaultFormFields: FieldConfig[] = [
   { key: "national_id", nameAr: "الرقم الوطني / رقم الهوية", nameEn: "National ID Number", isActive: true, isRequired: true, preventDuplicate: true, supportsDuplicate: true },
   { key: "phone", nameAr: "رقم هاتف الطالب / التواصل", nameEn: "Student Phone Number", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: true },
   { key: "email", nameAr: "البريد الإلكتروني", nameEn: "Email Address", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: true },
@@ -112,44 +90,90 @@ let formFields = $state<FieldConfig[]>([
   { key: "emergency_contact", nameAr: "جهة الاتصال للطوارئ", nameEn: "Emergency Contact", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
   { key: "medical_notes", nameAr: "الملاحظات الطبية والحساسية", nameEn: "Medical Notes & Allergies", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
   { key: "previous_school", nameAr: "المدرسة / المؤسسة السابقة", nameEn: "Previous Institution", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
-]);
+];
 
-let isInitialized = $state(false);
-
-// Load existing settings
-$effect(() => {
-  if (org && !isInitialized) {
-    isInitialized = true;
-    let settingsObj: any = {};
-    try {
-      settingsObj = typeof org.settings === "string" ? JSON.parse(org.settings) : org.settings || {};
-    } catch {}
-
-    const reg = settingsObj.registration || settingsObj.registration_config || {};
-
-    if (reg.institution_type) institutionType = reg.institution_type;
-    if (reg.student_number_prefix) studentNumberPrefix = reg.student_number_prefix;
-    if (reg.student_number_digits) studentNumberDigits = Number(reg.student_number_digits);
-    if (reg.student_number_year_format) studentNumberYearFormat = reg.student_number_year_format;
-
-    const pol = reg.policy_settings || reg;
-    if (pol.requires_approval !== undefined) requiresApproval = Boolean(pol.requires_approval);
-    if (pol.allow_no_guardian !== undefined) allowNoGuardian = Boolean(pol.allow_no_guardian);
-    if (pol.allow_duplicate_national_id !== undefined) allowDuplicateNationalId = Boolean(pol.allow_duplicate_national_id);
-    if (pol.auto_assign_fees !== undefined) autoAssignFees = Boolean(pol.auto_assign_fees);
-    if (pol.max_class_capacity !== undefined) maxClassCapacity = pol.max_class_capacity == null ? null : Number(pol.max_class_capacity);
-
-    // Documents
-    if (Array.isArray(reg.required_documents_list) && reg.required_documents_list.length > 0) {
-      requiredDocuments = reg.required_documents_list;
-    }
-
-    // Fields
-    if (Array.isArray(reg.form_fields_list) && reg.form_fields_list.length > 0) {
-      formFields = reg.form_fields_list;
-    }
+function parseOrgRegistration(rawOrg: any) {
+  let settingsObj: any = {};
+  try {
+    settingsObj = typeof rawOrg?.settings === "string" ? JSON.parse(rawOrg.settings) : rawOrg?.settings || {};
+  } catch {
+    settingsObj = {};
   }
+
+  const reg = settingsObj.registration || settingsObj.registration_config || {};
+  const pol = reg.policy_settings || reg;
+
+  return {
+    institutionType: reg.institution_type || "school",
+    studentNumberPrefix: reg.student_number_prefix || "STU",
+    studentNumberYearFormat: reg.student_number_year_format || "YEAR",
+    studentNumberDigits: reg.student_number_digits ? Number(reg.student_number_digits) : 4,
+    requiresApproval: pol.requires_approval !== undefined ? Boolean(pol.requires_approval) : false,
+    allowNoGuardian: pol.allow_no_guardian !== undefined ? Boolean(pol.allow_no_guardian) : false,
+    allowDuplicateNationalId: pol.allow_duplicate_national_id !== undefined ? Boolean(pol.allow_duplicate_national_id) : false,
+    autoAssignFees: pol.auto_assign_fees !== undefined ? Boolean(pol.auto_assign_fees) : true,
+    maxClassCapacity: pol.max_class_capacity !== undefined ? (pol.max_class_capacity == null ? null : Number(pol.max_class_capacity)) : 30,
+    requiredDocuments: Array.isArray(reg.required_documents_list) && reg.required_documents_list.length > 0 ? reg.required_documents_list : defaultDocuments,
+    formFields: Array.isArray(reg.form_fields_list) && reg.form_fields_list.length > 0 ? reg.form_fields_list : defaultFormFields,
+  };
+}
+
+const initialState = parseOrgRegistration(org);
+
+// Active tab
+let activeTab = $state<"policies" | "documents" | "fields">("policies");
+
+// Institution Type Presets
+let institutionType = $state(initialState.institutionType);
+
+// Student Number Pattern
+let studentNumberPrefix = $state(initialState.studentNumberPrefix);
+let studentNumberYearFormat = $state(initialState.studentNumberYearFormat);
+let studentNumberDigits = $state(initialState.studentNumberDigits);
+
+// Admission Policies
+let requiresApproval = $state(initialState.requiresApproval);
+let allowNoGuardian = $state(initialState.allowNoGuardian);
+let allowDuplicateNationalId = $state(initialState.allowDuplicateNationalId);
+let autoAssignFees = $state(initialState.autoAssignFees);
+let maxClassCapacity = $state<number | null>(initialState.maxClassCapacity);
+let ageCalculationDate = $state("start_of_year");
+
+let requiredDocuments = $state<DocItem[]>(JSON.parse(JSON.stringify(initialState.requiredDocuments)));
+let newDocNameAr = $state("");
+let newDocNameEn = $state("");
+
+let formFields = $state<FieldConfig[]>(JSON.parse(JSON.stringify(initialState.formFields)));
+
+const isDirty = $derived.by(() => {
+  return (
+    institutionType !== initialState.institutionType ||
+    studentNumberPrefix !== initialState.studentNumberPrefix ||
+    studentNumberYearFormat !== initialState.studentNumberYearFormat ||
+    studentNumberDigits !== initialState.studentNumberDigits ||
+    requiresApproval !== initialState.requiresApproval ||
+    allowNoGuardian !== initialState.allowNoGuardian ||
+    allowDuplicateNationalId !== initialState.allowDuplicateNationalId ||
+    autoAssignFees !== initialState.autoAssignFees ||
+    maxClassCapacity !== initialState.maxClassCapacity ||
+    JSON.stringify(requiredDocuments) !== JSON.stringify(initialState.requiredDocuments) ||
+    JSON.stringify(formFields) !== JSON.stringify(initialState.formFields)
+  );
 });
+
+function resetToInitial() {
+  institutionType = initialState.institutionType;
+  studentNumberPrefix = initialState.studentNumberPrefix;
+  studentNumberYearFormat = initialState.studentNumberYearFormat;
+  studentNumberDigits = initialState.studentNumberDigits;
+  requiresApproval = initialState.requiresApproval;
+  allowNoGuardian = initialState.allowNoGuardian;
+  allowDuplicateNationalId = initialState.allowDuplicateNationalId;
+  autoAssignFees = initialState.autoAssignFees;
+  maxClassCapacity = initialState.maxClassCapacity;
+  requiredDocuments = JSON.parse(JSON.stringify(initialState.requiredDocuments));
+  formFields = JSON.parse(JSON.stringify(initialState.formFields));
+}
 
 // Generated ID Preview
 const studentNumberPreview = $derived.by(() => {
@@ -630,11 +654,9 @@ function handleFormSave() {
 
   <!-- Bottom Save Bar -->
   <SettingsBottomBar
-    isDirty={true}
+    {isDirty}
     {isSaving}
     onsave={handleFormSave}
-    onreset={() => {
-      isInitialized = false;
-    }}
+    onreset={resetToInitial}
   />
 </div>

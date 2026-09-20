@@ -59,10 +59,18 @@ export type ApprovalStepDto = {
 
 export type AssessmentSchemeDto = {
     description?: string | null;
+    formula?: unknown;
     id: string;
     max_score: number;
     name: string;
     org_id: string;
+};
+
+export type UpdateSchemeRequest = {
+    description?: string | null;
+    formula?: unknown;
+    max_score?: number | null;
+    name?: string | null;
 };
 
 export type AssignClassSubjectRequest = {

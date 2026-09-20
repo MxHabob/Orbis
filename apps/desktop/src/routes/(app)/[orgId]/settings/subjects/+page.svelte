@@ -5,8 +5,8 @@ and triggers the subject creation side sheet.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
-import { api } from "$lib/api";
+import { createQuery, useQueryClient } from "@tanstack/svelte-query";
+import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
@@ -27,36 +27,23 @@ import SearchField from "$lib/shared/components/search-field.svelte";
 import SubjectCreateSheet from "$lib/features/academics/components/subject-create-sheet.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
+const queryClient = useQueryClient();
 
-// State
-let subjects = $state<any[]>([]);
-let isLoading = $state(true);
-let error = $state<string | null>(null);
+const subjectsQuery = createQuery(() => ({
+  queryKey: ["subjects", data.orgId],
+  queryFn: () => api.listSubjects(),
+  enabled: !!data.orgId,
+  staleTime: 3 * 60 * 1000,
+}));
+
 let searchQuery = $state("");
-
-// Sheet trigger state
 let isModalOpen = $state(false);
 
-// Load data
-async function loadData() {
-  isLoading = true;
-  error = null;
-  try {
-    const list = await api.listSubjects();
-    subjects = list;
-  } catch (e) {
-    error = e instanceof Error ? e.message : String(e);
-    toast.error(m.common_subjects_toast_load_error());
-  } finally {
-    isLoading = false;
-  }
-}
-
-onMount(() => {
-  if (data.orgId) {
-    loadData();
-  }
-});
+const subjects = $derived((subjectsQuery.data as any[] | undefined) ?? []);
+const isLoading = $derived(subjectsQuery.isLoading);
+const error = $derived(
+  subjectsQuery.error ? extractErrorMessage(subjectsQuery.error) : null,
+);
 
 // Derived filtered subjects
 const filteredSubjects = $derived(
@@ -149,7 +136,7 @@ function getSubjectTheme(nameStr: string) {
 		<div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-center gap-3">
 			<p class="text-xs text-destructive font-semibold">{m.common_subjects_load_error()}</p>
 			<p class="text-xs text-muted-foreground">{error}</p>
-			<Button variant="outline" class="text-xs" onclick={loadData}>{m.common_retry()}</Button>
+			<Button variant="outline" class="text-xs" onclick={() => subjectsQuery.refetch()}>{m.common_retry()}</Button>
 		</div>
 	{:else if filteredSubjects.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-muted-foreground rounded-xl gap-4">
@@ -205,4 +192,4 @@ function getSubjectTheme(nameStr: string) {
 </div>
 
 <!-- Subject Creation Side Sheet Component -->
-<SubjectCreateSheet bind:open={isModalOpen} orgId={data.orgId} onSuccess={loadData} />
+<SubjectCreateSheet bind:open={isModalOpen} orgId={data.orgId} onSuccess={() => queryClient.invalidateQueries({ queryKey: ["subjects"] })} />

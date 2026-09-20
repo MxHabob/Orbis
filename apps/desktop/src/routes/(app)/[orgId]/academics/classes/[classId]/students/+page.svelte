@@ -5,8 +5,7 @@ import { api, extractErrorMessage } from "$lib/api";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { MetricProgress } from "@orbis/ui";
-import { Users, AlertCircle, RefreshCcw, MoreHorizontal } from "@lucide/svelte";
+import { Users, AlertCircle, RefreshCcw } from "@lucide/svelte";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 
@@ -99,8 +98,9 @@ function refetch() {
           <tr>
             <th class="px-4 py-3 text-start font-semibold">Student</th>
             <th class="px-4 py-3 text-start font-semibold">Status</th>
-            <th class="px-4 py-3 text-start font-semibold w-48">Attendance (Mock)</th>
-            <th class="px-4 py-3 text-start font-semibold w-48">Performance (Mock)</th>
+            <th class="px-4 py-3 text-start font-semibold">National ID</th>
+            <th class="px-4 py-3 text-start font-semibold">Gender</th>
+            <th class="px-4 py-3 text-start font-semibold">Enrolled Date</th>
             <th class="px-4 py-3 text-end font-semibold">Actions</th>
           </tr>
         </thead>
@@ -108,9 +108,9 @@ function refetch() {
           {#each students as student (student.id)}
             <tr class="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
               <td class="px-4 py-3">
-                <a href={localizeHref(`/${orgId}/students/${student.student_id}`)} class="flex flex-col group">
+                <a href={localizeHref(`/${orgId}/students/${student.student_id || student.id}`)} class="flex flex-col group">
                   <span class="font-bold text-foreground group-hover:text-primary transition-colors">{studentName(student)}</span>
-                  <span class="text-[9px] text-muted-foreground mt-0.5 font-mono">{student.student_number || student.student_id}</span>
+                  <span class="text-[9px] text-muted-foreground mt-0.5 font-mono">{student.student_number || student.student_id || student.id}</span>
                 </a>
               </td>
               <td class="px-4 py-3">
@@ -118,36 +118,28 @@ function refetch() {
                   {student.status || "active"}
                 </Badge>
               </td>
-              <td class="px-4 py-3">
-                <!-- Placeholder for actual studentMetrics endpoint -->
-                <div class="flex flex-col gap-1 w-full max-w-[140px]">
-                  <div class="flex justify-between text-[9px] font-medium text-muted-foreground">
-                    <span>Rate</span>
-                    <span class="text-foreground">92%</span>
-                  </div>
-                  <MetricProgress value={92} variant="single" tone="success" class="h-1.5" showProgress={false} />
-                </div>
+              <td class="px-4 py-3 font-mono text-muted-foreground">
+                {student.national_id || "—"}
               </td>
-              <td class="px-4 py-3">
-                <!-- Placeholder for actual studentMetrics endpoint -->
-                <div class="flex flex-col gap-1 w-full max-w-[140px]">
-                  <div class="flex justify-between text-[9px] font-medium text-muted-foreground">
-                    <span>GPA</span>
-                    <span class="text-foreground">3.4</span>
-                  </div>
-                  <MetricProgress value={85} variant="single" tone="primary" class="h-1.5" showProgress={false} />
-                </div>
+              <td class="px-4 py-3 capitalize text-muted-foreground">
+                {student.gender || "—"}
+              </td>
+              <td class="px-4 py-3 text-muted-foreground font-mono text-[11px]">
+                {student.created_at ? new Date(student.created_at).toLocaleDateString() : "—"}
               </td>
               <td class="px-4 py-3 text-end">
-                <Button variant="ghost" size="sm" class="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
-                  <MoreHorizontal size={14} />
-                </Button>
+                <a
+                  href={localizeHref(`/${orgId}/students/${student.student_id || student.id}`)}
+                  class="inline-flex items-center justify-center h-8 px-2.5 rounded text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                >
+                  {isArabic ? "عرض الملف" : "View"}
+                </a>
               </td>
             </tr>
           {/each}
           {#if students.length === 0}
             <tr>
-              <td colspan="5" class="py-12 text-center text-xs text-muted-foreground">
+              <td colspan="6" class="py-12 text-center text-xs text-muted-foreground">
                 No students enrolled in this class.
               </td>
             </tr>

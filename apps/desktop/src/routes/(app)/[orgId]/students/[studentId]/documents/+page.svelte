@@ -7,7 +7,8 @@ Excludes any hardcoded fake/placeholder data.
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { confirmStore } from "$lib/stores";
-import { api } from "$lib/api";
+import { createQuery, useQueryClient } from "@tanstack/svelte-query";
+import { api, extractErrorMessage } from "$lib/api";
 import {
   Table,
   TableBody,
@@ -26,30 +27,38 @@ import {
   Trash2,
   Plus,
   RefreshCcw,
-  File,
   AlertCircle,
   CheckCircle2,
   ExternalLink,
   X,
   Paperclip,
 } from "@lucide/svelte";
-import { onMount } from "svelte";
 import { toast } from "@orbis/ui";
 import { createEnrollmentsQuery } from "$lib/features/students";
-
 import { formatDate } from "$lib/core/i18n";
 
 const orgId = $derived(page.params.orgId || "");
 const studentId = $derived(page.params.studentId || "");
+const queryClient = useQueryClient();
+
 const enrollmentsQuery = createEnrollmentsQuery(() => orgId);
 const student = $derived(
   enrollmentsQuery.data?.find((s) => s.id === studentId),
 );
 const studentUserId = $derived(student?.student_id || "");
 
-let documents = $state<any[]>([]);
-let isLoading = $state(true);
-let error = $state<string | null>(null);
+const documentsQuery = createQuery(() => ({
+  queryKey: ["student-documents", studentUserId],
+  queryFn: () => api.listDocuments(null, studentUserId, null, null),
+  enabled: !!studentUserId,
+  staleTime: 3 * 60 * 1000,
+}));
+
+const documents = $derived((documentsQuery.data as any[] | undefined) ?? []);
+const isLoading = $derived(documentsQuery.isLoading || enrollmentsQuery.isLoading);
+const error = $derived(
+  documentsQuery.error ? extractErrorMessage(documentsQuery.error) : null,
+);
 
 // Modal/Form States
 let showAddModal = $state(false);
@@ -66,26 +75,6 @@ let newDocUrl = $state("");
 let uploadFileUrl = $state("");
 let uploadFileSize = $state("1.5 MB");
 let uploadFileExt = $state("pdf");
-
-$effect(() => {
-  if (studentUserId) {
-    loadDocuments();
-  }
-});
-
-async function loadDocuments() {
-  if (!orgId || !studentUserId) return;
-  isLoading = true;
-  error = null;
-  try {
-    // Fetch real documents for this student
-    documents = await api.listDocuments(null, studentUserId, null, null);
-  } catch (e) {
-    error = e instanceof Error ? e.message : String(e);
-  } finally {
-    isLoading = false;
-  }
-}
 
 async function handleAddDocument() {
   if (!newDocName.trim()) {
@@ -111,7 +100,9 @@ async function handleAddDocument() {
     newDocDescription = "";
     newDocUrl = "";
 
-    await loadDocuments();
+    await queryClient.invalidateQueries({
+      queryKey: ["student-documents", studentUserId],
+    });
   } catch (e: any) {
     toast.error(e.message || String(e));
   }
@@ -131,7 +122,9 @@ async function handleDelete(docId: string) {
   try {
     await api.deleteDocument(docId);
     toast.success(m.common_docs_delete_success());
-    await loadDocuments();
+    await queryClient.invalidateQueries({
+      queryKey: ["student-documents", studentUserId],
+    });
   } catch (e: any) {
     toast.error(e.message || String(e));
   }
@@ -181,7 +174,9 @@ async function handleUploadFile() {
     await api.uploadDocument(request);
     toast.success(m.common_docs_upload_success());
     showUploadModal = false;
-    await loadDocuments();
+    await queryClient.invalidateQueries({
+      queryKey: ["student-documents", studentUserId],
+    });
   } catch (e: any) {
     toast.error(e.message || String(e));
   }
@@ -200,7 +195,7 @@ async function handleUploadFile() {
         variant="outline"
         size="icon-sm"
         class="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-        onclick={loadDocuments}
+        onclick={() => documentsQuery.refetch()}
         title={m.academics_grades_refresh()}
       >
         <RefreshCcw size={13} class={isLoading ? 'animate-spin' : ''} />
@@ -226,7 +221,7 @@ async function handleUploadFile() {
     <div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-destructive text-center gap-2">
       <h3 class="font-semibold text-xs">{m.common_loading_error()}</h3>
       <p class="text-[10px] text-muted-foreground">{error}</p>
-      <Button variant="link" onclick={loadDocuments} class="text-[10px] underline cursor-pointer mt-2 hover:text-foreground">{m.common_retry()}</Button>
+      <Button variant="link" onclick={() => documentsQuery.refetch()} class="text-[10px] underline cursor-pointer mt-2 hover:text-foreground">{m.common_retry()}</Button>
     </div>
   {:else if documents.length === 0}
     <!-- Real DB empty state - NO mock fake data fallback here -->
@@ -399,7 +394,7 @@ async function handleUploadFile() {
           <Input 
             type="text" 
             placeholder={m.common_docs_form_url_placeholder()} 
-            class="text-xs font-mono"
+            class="text-xs font-mono" 
             bind:value={newDocUrl}
           />
         </div>

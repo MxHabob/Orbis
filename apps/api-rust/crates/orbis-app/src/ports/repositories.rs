@@ -257,6 +257,7 @@ pub trait AssessmentSchemeRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<AssessmentScheme>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<AssessmentScheme>, DomainError>;
     async fn save(&self, scheme: &AssessmentScheme) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]

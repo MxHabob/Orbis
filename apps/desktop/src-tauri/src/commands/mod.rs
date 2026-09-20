@@ -120,6 +120,8 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         assessment_cmds::assessment_create_scheme,
         assessment_cmds::assessment_list_schemes,
         assessment_cmds::assessment_get_scheme,
+        assessment_cmds::assessment_update_scheme,
+        assessment_cmds::assessment_delete_scheme,
         assessment_cmds::assessment_record_grade,
         assessment_cmds::assessment_list_grades,
         assessment_cmds::assessment_calculate_grades,

@@ -5,9 +5,8 @@ and triggers the class creation side sheet. Each card links to the class detail 
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
-import { createQuery } from "@tanstack/svelte-query";
-import { api } from "$lib/api";
+import { createQuery, useQueryClient } from "@tanstack/svelte-query";
+import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { MetricProgress } from "@orbis/ui";
@@ -19,12 +18,16 @@ import { fade } from "svelte/transition";
 import ClassCreateSheet from "$lib/features/academics/components/class-create-sheet.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
+const queryClient = useQueryClient();
 
-// State
-let classes = $state<any[]>([]);
-let isLoading = $state(true);
-let error = $state<string | null>(null);
 let activePeriodId = $state("");
+
+const classesQuery = createQuery(() => ({
+  queryKey: ["classes", data.orgId],
+  queryFn: () => api.listClasses(),
+  enabled: !!data.orgId,
+  staleTime: 3 * 60 * 1000,
+}));
 
 const periodsQuery = createQuery(() => ({
   queryKey: ["classes-periods", data.orgId],
@@ -40,8 +43,12 @@ const enrollmentsQuery = createQuery(() => ({
   staleTime: 3 * 60 * 1000,
 }));
 
+const classes = $derived((classesQuery.data as any[] | undefined) ?? []);
 const periods = $derived(periodsQuery.data ?? []);
 const enrollments = $derived(enrollmentsQuery.data ?? []);
+const error = $derived(
+  classesQuery.error ? extractErrorMessage(classesQuery.error) : null,
+);
 
 $effect(() => {
   if (periods.length > 0 && !activePeriodId) {
@@ -54,29 +61,16 @@ $effect(() => {
 // Sheet trigger state
 let isModalOpen = $state(false);
 
-// Load data
-async function loadData() {
-  isLoading = true;
-  error = null;
-  try {
-    const classData = await api.listClasses();
-    classes = classData;
-  } catch (e) {
-    error = e instanceof Error ? e.message : String(e);
-    toast.error(m.common_classes_load_error());
-  } finally {
-    isLoading = false;
-  }
+function refetchAll() {
+  classesQuery.refetch();
+  periodsQuery.refetch();
+  enrollmentsQuery.refetch();
 }
 
-onMount(() => {
-  if (data.orgId) {
-    loadData();
-  }
-});
-
 function getClassMetric(classId: string): any {
-  const count = enrollments.filter((e: any) => String(e.class_id) === String(classId)).length;
+  const count = enrollments.filter(
+    (e: any) => String(e.class_id) === String(classId),
+  ).length;
   return { active_students: count };
 }
 
@@ -89,7 +83,7 @@ const averageClassSize = $derived(
     : 0,
 );
 const pageLoading = $derived(
-  isLoading || periodsQuery.isLoading || enrollmentsQuery.isLoading,
+  classesQuery.isLoading || periodsQuery.isLoading || enrollmentsQuery.isLoading,
 );
 </script>
 
@@ -183,7 +177,7 @@ const pageLoading = $derived(
 				{m.common_classes_load_error()}
 			</p>
 			<p class="text-xs text-muted-foreground">{error}</p>
-			<Button variant="outline" class="text-xs" onclick={loadData}
+			<Button variant="outline" class="text-xs" onclick={refetchAll}
 				>{m.common_retry()}</Button
 			>
 		</div>
@@ -333,5 +327,5 @@ const pageLoading = $derived(
 <ClassCreateSheet
 	bind:open={isModalOpen}
 	orgId={data.orgId}
-	onSuccess={loadData}
+	onSuccess={() => queryClient.invalidateQueries({ queryKey: ["classes"] })}
 />

@@ -6,24 +6,19 @@
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { confirmStore } from "$lib/stores";
-import { onMount } from "svelte";
+import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { toast } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
 import { Plus, Users2, Edit2, Trash2 } from "@lucide/svelte";
-import { api } from "$lib/api";
+import { api, extractErrorMessage } from "$lib/api";
 import type { GuardianLink, JsonRecord } from "@orbis/sdk";
 import GuardianLinkSheet from "$lib/features/students/components/guardian-link-sheet.svelte";
 
 const orgId = $derived(page.params.orgId ?? "");
 const studentId = $derived(page.params.studentId ?? "");
-
-let guardians = $state<GuardianLink[]>([]);
-let guardianUsers = $state<Record<string, JsonRecord>>({});
-let isLoading = $state(false);
-let sheetOpen = $state(false);
-let editTarget = $state<GuardianLink | null>(null);
+const queryClient = useQueryClient();
 
 const relations: Record<string, string> = {
   father: m.common_guardians_relationship_father(),
@@ -34,14 +29,10 @@ const relations: Record<string, string> = {
   other: m.common_guardians_relationship_other(),
 };
 
-async function loadData() {
-  if (!studentId) return;
-  isLoading = true;
-  try {
-    const links = await api.listGuardians(studentId);
-    guardians = links;
-
-    // Fetch guardian user details in parallel
+const guardiansQuery = createQuery(() => ({
+  queryKey: ["student-guardians", studentId],
+  queryFn: async () => {
+    const links = (await api.listGuardians(studentId)) as unknown as GuardianLink[];
     const userMap: Record<string, JsonRecord> = {};
     await Promise.all(
       links.map(async (link: any) => {
@@ -51,15 +42,17 @@ async function loadData() {
         } catch {}
       }),
     );
-    guardianUsers = userMap;
-  } catch (e) {
-    console.error("Failed to load guardians:", e);
-  } finally {
-    isLoading = false;
-  }
-}
+    return { links, userMap };
+  },
+  enabled: !!studentId,
+  staleTime: 3 * 60 * 1000,
+}));
 
-onMount(loadData);
+const guardians = $derived(guardiansQuery.data?.links ?? []);
+const guardianUsers = $derived(guardiansQuery.data?.userMap ?? {});
+const isLoading = $derived(guardiansQuery.isLoading);
+let sheetOpen = $state(false);
+let editTarget = $state<GuardianLink | null>(null);
 
 function getGuardianUser(link: GuardianLink): JsonRecord | null {
   return guardianUsers[String(link.guardian_id)] ?? null;
@@ -88,12 +81,11 @@ async function handleDelete(link: GuardianLink) {
   });
   if (!confirmed) return;
   try {
-    toast.success(m.common_action_delete());
-    guardians = guardians.filter((g) => g.id !== link.id);
     toast.success(m.common_guardians_delete_success());
+    await queryClient.invalidateQueries({ queryKey: ["student-guardians", studentId] });
   } catch (e: unknown) {
     toast.error(
-      `${m.common_guardians_delete_failed()}: ${e instanceof Error ? e.message : String(e)}`,
+      `${m.common_guardians_delete_failed()}: ${extractErrorMessage(e)}`,
     );
   }
 }
@@ -256,5 +248,5 @@ async function handleDelete(link: GuardianLink) {
   {orgId}
   {studentId}
   editData={editTarget}
-  onSuccess={loadData}
+  onSuccess={() => queryClient.invalidateQueries({ queryKey: ["student-guardians", studentId] })}
 />

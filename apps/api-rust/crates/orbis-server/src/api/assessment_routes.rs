@@ -18,6 +18,7 @@ pub struct AssessmentSchemeDto {
     pub name: String,
     pub description: Option<String>,
     pub max_score: f64,
+    pub formula: Option<serde_json::Value>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -25,6 +26,14 @@ pub struct CreateSchemeRequest {
     pub name: String,
     pub description: Option<String>,
     pub max_score: f64,
+    pub formula: Option<serde_json::Value>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct UpdateSchemeRequest {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub max_score: Option<f64>,
     pub formula: Option<serde_json::Value>,
 }
 
@@ -113,7 +122,7 @@ pub async fn create_scheme(
         p.formula,
     ).await?;
     Ok(ApiResponse::ok(AssessmentSchemeDto {
-        id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score,
+        id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score, formula: s.formula,
     }))
 }
 
@@ -124,7 +133,7 @@ pub async fn list_schemes(
 ) -> Result<Json<ApiResponse<Vec<AssessmentSchemeDto>>>, ApiError> {
     let schemes = state.assessment_service.list_assessment_schemes(ctx.tenant_id).await?;
     let dtos = schemes.into_iter().map(|s| AssessmentSchemeDto {
-        id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score,
+        id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score, formula: s.formula,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -137,8 +146,42 @@ pub async fn get_scheme(
 ) -> Result<Json<ApiResponse<AssessmentSchemeDto>>, ApiError> {
     let s = state.assessment_scheme_repo.find_by_id(id).await?.ok_or_else(|| ApiError::not_found("Scheme not found"))?;
     Ok(ApiResponse::ok(AssessmentSchemeDto {
-        id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score,
+        id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score, formula: s.formula,
     }))
+}
+
+#[utoipa::path(put, path = "/api/v1/assessment-schemes/{id}", request_body = UpdateSchemeRequest,
+    params(("id" = Uuid, Path, description = "Assessment Scheme ID")),
+    responses((status = 200, body = AssessmentSchemeDto)), security(("bearer" = [])), tag = "Assessment")]
+pub async fn update_scheme(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<UpdateSchemeRequest>,
+) -> Result<Json<ApiResponse<AssessmentSchemeDto>>, ApiError> {
+    let s = state.assessment_service.update_assessment_scheme(
+        &ctx,
+        ctx.tenant_id,
+        id,
+        p.name,
+        p.description,
+        p.max_score,
+        p.formula,
+    ).await?;
+    Ok(ApiResponse::ok(AssessmentSchemeDto {
+        id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score, formula: s.formula,
+    }))
+}
+
+#[utoipa::path(delete, path = "/api/v1/assessment-schemes/{id}",
+    params(("id" = Uuid, Path, description = "Assessment Scheme ID")),
+    responses((status = 200, body = ())), security(("bearer" = [])), tag = "Assessment")]
+pub async fn delete_scheme(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    state.assessment_service.delete_assessment_scheme(
+        &ctx,
+        ctx.tenant_id,
+        id,
+    ).await?;
+    Ok(ApiResponse::ok(()))
 }
 
 #[utoipa::path(post, path = "/api/v1/grades", request_body = RecordGradeRequest,
@@ -254,7 +297,7 @@ pub async fn list_attendance(
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/assessment-schemes", post(create_scheme).get(list_schemes))
-        .route("/api/v1/assessment-schemes/:id", get(get_scheme))
+        .route("/api/v1/assessment-schemes/:id", get(get_scheme).put(update_scheme).delete(delete_scheme))
         .route("/api/v1/grades", post(record_grade).get(list_grades))
         .route("/api/v1/grades/actions/calculate", post(calculate_grades))
         .route("/api/v1/attendance", post(mark_attendance).get(list_attendance))

@@ -49,6 +49,7 @@ import type {
   AttendanceDto,
   CalculationResultDto,
   CreateSchemeRequest,
+  UpdateSchemeRequest,
   RecordGradeRequest,
   MarkAttendanceRequest,
   CalculateGradesRequest,
@@ -892,6 +893,11 @@ export interface OrbisApiClient {
   createAssessmentScheme(
     req: CreateSchemeRequest,
   ): Promise<AssessmentSchemeDto>;
+  updateAssessmentScheme(
+    id: string,
+    req: UpdateSchemeRequest,
+  ): Promise<AssessmentSchemeDto>;
+  deleteAssessmentScheme(id: string): Promise<void>;
   listAssessmentSchemes(): Promise<AssessmentSchemeDto[]>;
   getAssessmentScheme(id: string): Promise<AssessmentSchemeDto>;
   recordGrade(req: RecordGradeRequest): Promise<GradeDto>;
