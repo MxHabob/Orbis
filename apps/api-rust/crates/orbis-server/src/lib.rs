@@ -125,6 +125,7 @@ use api::{
         api::assessment_routes::record_grade,
         api::assessment_routes::list_grades,
         api::assessment_routes::calculate_grades,
+        api::assessment_routes::calculate_rankings,
         api::assessment_routes::mark_attendance,
         api::assessment_routes::list_attendance,
         // Exam
@@ -134,7 +135,11 @@ use api::{
         api::exam_routes::schedule_exam,
         api::exam_routes::list_schedules,
         api::exam_routes::assign_seating,
+        api::exam_routes::list_seating,
+        api::exam_routes::generate_seating,
         api::exam_routes::assign_secret,
+        api::exam_routes::list_secrets,
+        api::exam_routes::generate_secrets,
         api::exam_routes::assign_proctor,
         // Finance
         api::finance_routes::create_account,
@@ -266,6 +271,9 @@ use api::{
             api::assessment_routes::MarkAttendanceRequest,
             api::assessment_routes::CalculateGradesRequest,
             api::assessment_routes::CalculationResultDto,
+            api::assessment_routes::CalculateRankingsRequest,
+            api::assessment_routes::ScoreItemRequest,
+            api::assessment_routes::RankingItemDto,
             // Exam
             api::exam_routes::ExamSessionDto,
             api::exam_routes::CreateExamSessionRequest,
@@ -273,8 +281,10 @@ use api::{
             api::exam_routes::ScheduleExamRequest,
             api::exam_routes::SeatingDto,
             api::exam_routes::AssignSeatingRequest,
+            api::exam_routes::GenerateSeatingRequest,
             api::exam_routes::SecretDto,
             api::exam_routes::AssignSecretRequest,
+            api::exam_routes::GenerateSecretsRequest,
             api::exam_routes::ProctorDto,
             api::exam_routes::AssignProctorRequest,
             // Finance

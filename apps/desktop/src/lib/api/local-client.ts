@@ -54,6 +54,8 @@ import type {
   RecordGradeRequest,
   MarkAttendanceRequest,
   CalculateGradesRequest,
+  CalculateRankingsRequest,
+  RankingItemDto,
   ExamSessionDto,
   ExamScheduleDto,
   SeatingDto,
@@ -447,6 +449,13 @@ export class LocalClient implements OrbisApiClient {
   ): Promise<CumulativeGpaRecordDto> {
     return unwrap(
       await invoke("assessment_calculate_gpa", { request: req }),
+    );
+  }
+  async calculateRankings(
+    req: CalculateRankingsRequest,
+  ): Promise<RankingItemDto[]> {
+    return unwrap(
+      await invoke("assessment_calculate_rankings", { request: req }),
     );
   }
   async markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto> {

@@ -54,6 +54,8 @@ import type {
   RecordGradeRequest,
   MarkAttendanceRequest,
   CalculateGradesRequest,
+  CalculateRankingsRequest,
+  RankingItemDto,
   ExamSessionDto,
   ExamScheduleDto,
   SeatingDto,
@@ -535,6 +537,11 @@ export class RemoteClient implements OrbisApiClient {
     req: CalculateGpaInput,
   ): Promise<CumulativeGpaRecordDto> {
     return this.post("/api/v1/grades/gpa", req);
+  }
+  async calculateRankings(
+    req: CalculateRankingsRequest,
+  ): Promise<RankingItemDto[]> {
+    return this.post("/api/v1/grades/actions/calculate-rankings", req);
   }
   async markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto> {
     return this.post("/api/v1/attendance", req);

@@ -350,8 +350,63 @@ impl SchedulingService {
         Ok(seating)
     }
 
+    pub async fn list_seating_numbers(&self, session_id: Uuid) -> Result<Vec<SeatingNumber>, DomainError> {
+        self.seating_number_repo.find_by_session(session_id).await
+    }
+
     pub async fn get_student_seating(&self, session_id: Uuid, student_id: Uuid) -> Result<Option<SeatingNumber>, DomainError> {
         self.seating_number_repo.find_by_session_and_student(session_id, student_id).await
+    }
+
+    pub async fn generate_seating_numbers(
+        &self,
+        ctx: &RequestContext,
+        session_id: Uuid,
+        student_ids: Vec<Uuid>,
+        room_ids: Vec<Uuid>,
+        prefix: Option<String>,
+        start_number: Option<u32>,
+    ) -> Result<Vec<SeatingNumber>, DomainError> {
+        self.permission_checker.check(ctx, Permission::SeatingNumberGenerate).await?;
+
+        let now = Utc::now();
+        let prefix = prefix.unwrap_or_else(|| "SEAT-".to_string());
+        let start = start_number.unwrap_or(1);
+
+        let mut seatings = Vec::with_capacity(student_ids.len());
+        for (i, &student_id) in student_ids.iter().enumerate() {
+            let seat_num = format!("{}{:04}", prefix, start + (i as u32));
+            let room_id = if !room_ids.is_empty() {
+                Some(room_ids[i % room_ids.len()])
+            } else {
+                None
+            };
+
+            let seating = SeatingNumber {
+                id: Uuid::new_v4(),
+                exam_session_id: session_id,
+                student_id,
+                room_id,
+                seating_number: seat_num.clone(),
+                created_at: now,
+                updated_at: now,
+            };
+            seatings.push(seating);
+        }
+
+        self.seating_number_repo.save_bulk(&seatings).await?;
+
+        for s in &seatings {
+            let event = DomainEvent::SeatingNumberAssigned {
+                student_id: s.student_id,
+                session_id: s.exam_session_id,
+                seating_number: s.seating_number.clone(),
+                timestamp: now,
+            };
+            self.event_bus.publish(ctx, &event).await?;
+        }
+
+        Ok(seatings)
     }
 
     // ── Secret Numbers ──────────────────────────────────────────────
@@ -379,6 +434,47 @@ impl SchedulingService {
 
         self.secret_number_repo.save(&secret).await?;
         Ok(secret)
+    }
+
+    pub async fn list_secret_numbers(&self, schedule_id: Uuid) -> Result<Vec<SecretNumber>, DomainError> {
+        self.secret_number_repo.find_by_schedule(schedule_id).await
+    }
+
+    pub async fn generate_secret_numbers(
+        &self,
+        ctx: &RequestContext,
+        schedule_id: Uuid,
+        student_ids: Vec<Uuid>,
+    ) -> Result<Vec<SecretNumber>, DomainError> {
+        self.permission_checker.check(ctx, Permission::SecretNumberGenerate).await?;
+
+        let now = Utc::now();
+        let mut used_secrets = std::collections::HashSet::new();
+        let mut secrets = Vec::with_capacity(student_ids.len());
+
+        for &student_id in &student_ids {
+            let mut candidate;
+            loop {
+                let u = Uuid::new_v4();
+                let num = (u.as_u128() % 900_000) + 100_000;
+                candidate = format!("{:06}", num);
+                if used_secrets.insert(candidate.clone()) {
+                    break;
+                }
+            }
+
+            secrets.push(SecretNumber {
+                id: Uuid::new_v4(),
+                exam_schedule_id: schedule_id,
+                student_id,
+                secret_number: candidate,
+                created_at: now,
+                updated_at: now,
+            });
+        }
+
+        self.secret_number_repo.save_bulk(&secrets).await?;
+        Ok(secrets)
     }
 
     // ── Exam Proctors ───────────────────────────────────────────────

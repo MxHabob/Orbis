@@ -333,14 +333,18 @@ pub trait ExamScheduleRepository: Send + Sync {
 
 #[async_trait]
 pub trait SeatingNumberRepository: Send + Sync {
+    async fn find_by_session(&self, session_id: Uuid) -> Result<Vec<SeatingNumber>, DomainError>;
     async fn find_by_session_and_student(&self, session_id: Uuid, student_id: Uuid) -> Result<Option<SeatingNumber>, DomainError>;
     async fn save(&self, seating: &SeatingNumber) -> Result<(), DomainError>;
+    async fn save_bulk(&self, seatings: &[SeatingNumber]) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait SecretNumberRepository: Send + Sync {
-    async fn find_by_schedule_and_seating(&self, schedule_id: Uuid, seating_id: Uuid) -> Result<Option<SecretNumber>, DomainError>;
+    async fn find_by_schedule(&self, schedule_id: Uuid) -> Result<Vec<SecretNumber>, DomainError>;
+    async fn find_by_schedule_and_seating(&self, schedule_id: Uuid, student_id: Uuid) -> Result<Option<SecretNumber>, DomainError>;
     async fn save(&self, secret: &SecretNumber) -> Result<(), DomainError>;
+    async fn save_bulk(&self, secrets: &[SecretNumber]) -> Result<(), DomainError>;
 }
 
 #[async_trait]

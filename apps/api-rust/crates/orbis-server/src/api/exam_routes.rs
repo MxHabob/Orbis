@@ -99,11 +99,33 @@ pub struct AssignProctorRequest {
     pub is_chief: bool,
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct GenerateSeatingRequest {
+    pub exam_session_id: Uuid,
+    pub student_ids: Vec<Uuid>,
+    #[serde(default)]
+    pub room_ids: Vec<Uuid>,
+    pub prefix: Option<String>,
+    pub start_number: Option<u32>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct GenerateSecretsRequest {
+    pub exam_schedule_id: Uuid,
+    pub student_ids: Vec<Uuid>,
+}
+
 #[derive(Deserialize)]
 pub struct SessionQuery { pub period_id: Option<Uuid> }
 
 #[derive(Deserialize)]
 pub struct ScheduleQuery { pub session_id: Uuid }
+
+#[derive(Deserialize)]
+pub struct SeatingQuery { pub session_id: Uuid }
+
+#[derive(Deserialize)]
+pub struct SecretQuery { pub schedule_id: Uuid }
 
 // ── Handlers ────────────────────────────────────────────────────
 
@@ -186,6 +208,37 @@ async fn assign_seating(
     }))
 }
 
+#[utoipa::path(get, path = "/api/v1/exam-seating",
+    params(("session_id" = Uuid, Query, description = "Exam Session ID")),
+    responses((status = 200, body = Vec<SeatingDto>)), security(("bearer" = [])), tag = "Exam")]
+async fn list_seating(
+    _ctx: AuthContext, State(state): State<AppState>, Query(q): Query<SeatingQuery>,
+) -> Result<Json<ApiResponse<Vec<SeatingDto>>>, ApiError> {
+    let list = state.scheduling_service.list_seating_numbers(q.session_id).await?;
+    let dtos = list.into_iter().map(|s| SeatingDto {
+        id: s.id, exam_session_id: s.exam_session_id,
+        student_id: s.student_id, seating_number: s.seating_number,
+        room_id: s.room_id,
+    }).collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(post, path = "/api/v1/exam-seating/actions/generate", request_body = GenerateSeatingRequest,
+    responses((status = 200, body = Vec<SeatingDto>)), security(("bearer" = [])), tag = "Exam")]
+async fn generate_seating(
+    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<GenerateSeatingRequest>,
+) -> Result<Json<ApiResponse<Vec<SeatingDto>>>, ApiError> {
+    let seatings = state.scheduling_service.generate_seating_numbers(
+        &ctx, p.exam_session_id, p.student_ids, p.room_ids, p.prefix, p.start_number,
+    ).await?;
+    let dtos = seatings.into_iter().map(|s| SeatingDto {
+        id: s.id, exam_session_id: s.exam_session_id,
+        student_id: s.student_id, seating_number: s.seating_number,
+        room_id: s.room_id,
+    }).collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
 #[utoipa::path(post, path = "/api/v1/exam-secrets", request_body = AssignSecretRequest,
     responses((status = 201, body = SecretDto)), security(("bearer" = [])), tag = "Exam")]
 async fn assign_secret(
@@ -196,6 +249,35 @@ async fn assign_secret(
         id: s.id, exam_schedule_id: s.exam_schedule_id,
         student_id: s.student_id, secret_number: s.secret_number,
     }))
+}
+
+#[utoipa::path(get, path = "/api/v1/exam-secrets",
+    params(("schedule_id" = Uuid, Query, description = "Exam Schedule ID")),
+    responses((status = 200, body = Vec<SecretDto>)), security(("bearer" = [])), tag = "Exam")]
+async fn list_secrets(
+    _ctx: AuthContext, State(state): State<AppState>, Query(q): Query<SecretQuery>,
+) -> Result<Json<ApiResponse<Vec<SecretDto>>>, ApiError> {
+    let list = state.scheduling_service.list_secret_numbers(q.schedule_id).await?;
+    let dtos = list.into_iter().map(|s| SecretDto {
+        id: s.id, exam_schedule_id: s.exam_schedule_id,
+        student_id: s.student_id, secret_number: s.secret_number,
+    }).collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(post, path = "/api/v1/exam-secrets/actions/generate", request_body = GenerateSecretsRequest,
+    responses((status = 200, body = Vec<SecretDto>)), security(("bearer" = [])), tag = "Exam")]
+async fn generate_secrets(
+    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<GenerateSecretsRequest>,
+) -> Result<Json<ApiResponse<Vec<SecretDto>>>, ApiError> {
+    let secrets = state.scheduling_service.generate_secret_numbers(
+        &ctx, p.exam_schedule_id, p.student_ids,
+    ).await?;
+    let dtos = secrets.into_iter().map(|s| SecretDto {
+        id: s.id, exam_schedule_id: s.exam_schedule_id,
+        student_id: s.student_id, secret_number: s.secret_number,
+    }).collect();
+    Ok(ApiResponse::ok(dtos))
 }
 
 #[utoipa::path(post, path = "/api/v1/exam-proctors", request_body = AssignProctorRequest,
@@ -216,7 +298,9 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/exam-sessions", post(create_session).get(list_sessions))
         .route("/api/v1/exam-sessions/:id", get(get_session))
         .route("/api/v1/exam-schedules", post(schedule_exam).get(list_schedules))
-        .route("/api/v1/exam-seating", post(assign_seating))
-        .route("/api/v1/exam-secrets", post(assign_secret))
+        .route("/api/v1/exam-seating", post(assign_seating).get(list_seating))
+        .route("/api/v1/exam-seating/actions/generate", post(generate_seating))
+        .route("/api/v1/exam-secrets", post(assign_secret).get(list_secrets))
+        .route("/api/v1/exam-secrets/actions/generate", post(generate_secrets))
         .route("/api/v1/exam-proctors", post(assign_proctor))
 }

@@ -131,6 +131,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         assessment_cmds::assessment_mark_attendance,
         assessment_cmds::assessment_list_attendance,
         assessment_cmds::assessment_calculate_gpa,
+        assessment_cmds::assessment_calculate_rankings,
         // ── Exam ────────────────────────────────────────────────
         exam_cmds::exam_create_session,
         exam_cmds::exam_list_sessions,
@@ -138,7 +139,11 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         exam_cmds::exam_schedule_exam,
         exam_cmds::exam_list_schedules,
         exam_cmds::exam_assign_seating,
+        exam_cmds::exam_list_seating,
+        exam_cmds::exam_generate_seating,
         exam_cmds::exam_assign_secret,
+        exam_cmds::exam_list_secrets,
+        exam_cmds::exam_generate_secrets,
         exam_cmds::exam_assign_proctor,
         // ── Finance ─────────────────────────────────────────────
         finance_cmds::finance_create_account,

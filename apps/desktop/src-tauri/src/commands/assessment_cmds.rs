@@ -386,3 +386,53 @@ pub async fn assessment_calculate_gpa(
     }))
 }
 
+#[derive(Deserialize)]
+pub struct ScoreItemInput {
+    pub id: String,
+    pub score: Decimal,
+}
+
+#[derive(Deserialize)]
+pub struct CalculateRankingsInput {
+    pub items: Vec<ScoreItemInput>,
+    #[serde(rename = "tiePolicy")]
+    pub tie_policy: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct RankingItemDto {
+    pub id: String,
+    pub rank: u32,
+}
+
+#[tauri::command]
+pub async fn assessment_calculate_rankings(
+    request: CalculateRankingsInput,
+) -> Result<ApiResponse<Vec<RankingItemDto>>, String> {
+    use orbis_domain::entities::academic_policy::TiePolicy;
+    use orbis_app::services::calculation_engine::AcademicCalculationEngine;
+
+    let tie_policy = match request.tie_policy.as_deref() {
+        Some("dense") => TiePolicy::Dense,
+        Some("fractional") => TiePolicy::Fractional,
+        _ => TiePolicy::StandardCompetition,
+    };
+
+    let mut scores = Vec::new();
+    for item in request.items {
+        let uid = Uuid::parse_str(&item.id).map_err(|_| "Invalid student ID in score items")?;
+        scores.push((uid, item.score));
+    }
+
+    let ranked = AcademicCalculationEngine::compute_rankings(&scores, tie_policy);
+    let dtos = ranked
+        .into_iter()
+        .map(|(id, rank)| RankingItemDto {
+            id: id.to_string(),
+            rank: rank as u32,
+        })
+        .collect();
+
+    Ok(ok(dtos))
+}
+

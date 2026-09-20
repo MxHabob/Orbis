@@ -184,6 +184,11 @@ export type CalculateGradesRequest = {
     student_id: string;
 };
 
+export type CalculateRankingsRequest = {
+    items: Array<ScoreItemRequest>;
+    tie_policy?: string | null;
+};
+
 export type CalculationResultDto = {
     final_score: string;
     message: string;
@@ -743,6 +748,11 @@ export type ProctorDto = {
     teacher_id: string;
 };
 
+export type RankingItemDto = {
+    id: string;
+    rank: number;
+};
+
 export type RecordGradeRequest = {
     class_subject_id: string;
     component_id?: string | null;
@@ -864,6 +874,11 @@ export type ScheduledLessonDto = {
     room_id?: string | null;
     teacher_id?: string | null;
     time_slot_id: string;
+};
+
+export type ScoreItemRequest = {
+    id: string;
+    score: string;
 };
 
 export type SeatingDto = {
@@ -2139,6 +2154,19 @@ export type CalculateGradesResponses = {
 };
 
 export type CalculateGradesResponse = CalculateGradesResponses[keyof CalculateGradesResponses];
+
+export type CalculateRankingsData = {
+    body: CalculateRankingsRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/grades/actions/calculate-rankings';
+};
+
+export type CalculateRankingsResponses = {
+    200: Array<RankingItemDto>;
+};
+
+export type CalculateRankingsResponse = CalculateRankingsResponses[keyof CalculateRankingsResponses];
 
 export type ListPermissionsData = {
     body?: never;

@@ -125,6 +125,20 @@ impl ExamScheduleRepository for ExamRepoImpl {
 
 #[async_trait]
 impl SeatingNumberRepository for ExamRepoImpl {
+    async fn find_by_session(&self, session_id: Uuid) -> Result<Vec<DomainSeatingNumber>, DomainError> {
+        let models = SeatingNumberEntity::find()
+            .filter(seating_number::Column::ExamSessionId.eq(session_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainSeatingNumber {
+            id: m.id, exam_session_id: m.exam_session_id,
+            student_id: m.student_id, seating_number: m.seating_number,
+            room_id: m.room_id, created_at: m.created_at,
+            updated_at: m.updated_at,
+        }).collect())
+    }
+
     async fn find_by_session_and_student(&self, session_id: Uuid, student_id: Uuid) -> Result<Option<DomainSeatingNumber>, DomainError> {
         let model = SeatingNumberEntity::find()
             .filter(seating_number::Column::ExamSessionId.eq(session_id))
@@ -155,10 +169,30 @@ impl SeatingNumberRepository for ExamRepoImpl {
         }
         Ok(())
     }
+
+    async fn save_bulk(&self, seatings: &[DomainSeatingNumber]) -> Result<(), DomainError> {
+        for s in seatings {
+            SeatingNumberRepository::save(self, s).await?;
+        }
+        Ok(())
+    }
 }
 
 #[async_trait]
 impl SecretNumberRepository for ExamRepoImpl {
+    async fn find_by_schedule(&self, schedule_id: Uuid) -> Result<Vec<DomainSecretNumber>, DomainError> {
+        let models = SecretNumberEntity::find()
+            .filter(secret_number::Column::ExamScheduleId.eq(schedule_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainSecretNumber {
+            id: m.id, exam_schedule_id: m.exam_schedule_id,
+            student_id: m.student_id, secret_number: m.secret_number,
+            created_at: m.created_at, updated_at: m.updated_at,
+        }).collect())
+    }
+
     async fn find_by_schedule_and_seating(&self, schedule_id: Uuid, seating_id: Uuid) -> Result<Option<DomainSecretNumber>, DomainError> {
         let model = SecretNumberEntity::find()
             .filter(secret_number::Column::ExamScheduleId.eq(schedule_id))
@@ -184,6 +218,13 @@ impl SecretNumberRepository for ExamRepoImpl {
             active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
             active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        }
+        Ok(())
+    }
+
+    async fn save_bulk(&self, secrets: &[DomainSecretNumber]) -> Result<(), DomainError> {
+        for s in secrets {
+            SecretNumberRepository::save(self, s).await?;
         }
         Ok(())
     }

@@ -52,6 +52,8 @@ import type {
   RecordGradeRequest,
   MarkAttendanceRequest,
   CalculateGradesRequest,
+  CalculateRankingsRequest,
+  RankingItemDto,
   ExamSessionDto,
   ExamScheduleDto,
   SeatingDto,
@@ -867,6 +869,7 @@ export interface OrbisApiClient {
   }): Promise<GradeDto[]>;
   calculateGrades(req: CalculateGradesRequest): Promise<CalculationResultDto>;
   calculateGpa(req: CalculateGpaInput): Promise<CumulativeGpaRecordDto>;
+  calculateRankings(req: CalculateRankingsRequest): Promise<RankingItemDto[]>;
   markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto>;
   listAttendance(classId: string, date: string): Promise<AttendanceDto[]>;
 

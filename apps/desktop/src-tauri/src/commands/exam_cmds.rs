@@ -171,6 +171,22 @@ pub async fn exam_list_schedules(session_id: String, state: State<'_, AppState>)
     }).collect()))
 }
 
+#[derive(Deserialize)]
+pub struct GenerateSeatingInput {
+    pub exam_session_id: String,
+    pub student_ids: Vec<String>,
+    #[serde(default)]
+    pub room_ids: Vec<String>,
+    pub prefix: Option<String>,
+    pub start_number: Option<u32>,
+}
+
+#[derive(Deserialize)]
+pub struct GenerateSecretsInput {
+    pub exam_schedule_id: String,
+    pub student_ids: Vec<String>,
+}
+
 #[tauri::command]
 pub async fn exam_assign_seating(request: AssignSeatingInput, state: State<'_, AppState>) -> Result<ApiResponse<SeatingDto>, String> {
     let ctx = make_ctx(&state);
@@ -192,6 +208,39 @@ pub async fn exam_assign_seating(request: AssignSeatingInput, state: State<'_, A
 }
 
 #[tauri::command]
+pub async fn exam_list_seating(session_id: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<SeatingDto>>, String> {
+    let sid = Uuid::parse_str(&session_id).map_err(|_| "Invalid session_id")?;
+    let list = state.scheduling_service.list_seating_numbers(sid).await.map_err(|e| e.to_string())?;
+    Ok(ok(list.into_iter().map(|s| SeatingDto {
+        id: s.id.to_string(),
+        exam_session_id: s.exam_session_id.to_string(),
+        student_id: s.student_id.to_string(),
+        seating_number: s.seating_number,
+        room_id: s.room_id.map(|r| r.to_string()),
+    }).collect()))
+}
+
+#[tauri::command]
+pub async fn exam_generate_seating(request: GenerateSeatingInput, state: State<'_, AppState>) -> Result<ApiResponse<Vec<SeatingDto>>, String> {
+    let ctx = make_ctx(&state);
+    let session_id = Uuid::parse_str(&request.exam_session_id).map_err(|_| "Invalid exam_session_id")?;
+    let student_ids = request.student_ids.into_iter().filter_map(|s| Uuid::parse_str(&s).ok()).collect();
+    let room_ids = request.room_ids.into_iter().filter_map(|r| Uuid::parse_str(&r).ok()).collect();
+
+    let seatings = state.scheduling_service.generate_seating_numbers(
+        &ctx, session_id, student_ids, room_ids, request.prefix, request.start_number,
+    ).await.map_err(|e| e.to_string())?;
+
+    Ok(ok(seatings.into_iter().map(|s| SeatingDto {
+        id: s.id.to_string(),
+        exam_session_id: s.exam_session_id.to_string(),
+        student_id: s.student_id.to_string(),
+        seating_number: s.seating_number,
+        room_id: s.room_id.map(|r| r.to_string()),
+    }).collect()))
+}
+
+#[tauri::command]
 pub async fn exam_assign_secret(request: AssignSecretInput, state: State<'_, AppState>) -> Result<ApiResponse<SecretDto>, String> {
     let ctx = make_ctx(&state);
     let schedule_id = Uuid::parse_str(&request.exam_schedule_id).map_err(|_| "Invalid exam_schedule_id")?;
@@ -207,6 +256,36 @@ pub async fn exam_assign_secret(request: AssignSecretInput, state: State<'_, App
         student_id: s.student_id.to_string(),
         secret_number: s.secret_number,
     }))
+}
+
+#[tauri::command]
+pub async fn exam_list_secrets(schedule_id: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<SecretDto>>, String> {
+    let sid = Uuid::parse_str(&schedule_id).map_err(|_| "Invalid schedule_id")?;
+    let list = state.scheduling_service.list_secret_numbers(sid).await.map_err(|e| e.to_string())?;
+    Ok(ok(list.into_iter().map(|s| SecretDto {
+        id: s.id.to_string(),
+        exam_schedule_id: s.exam_schedule_id.to_string(),
+        student_id: s.student_id.to_string(),
+        secret_number: s.secret_number,
+    }).collect()))
+}
+
+#[tauri::command]
+pub async fn exam_generate_secrets(request: GenerateSecretsInput, state: State<'_, AppState>) -> Result<ApiResponse<Vec<SecretDto>>, String> {
+    let ctx = make_ctx(&state);
+    let schedule_id = Uuid::parse_str(&request.exam_schedule_id).map_err(|_| "Invalid exam_schedule_id")?;
+    let student_ids = request.student_ids.into_iter().filter_map(|s| Uuid::parse_str(&s).ok()).collect();
+
+    let secrets = state.scheduling_service.generate_secret_numbers(
+        &ctx, schedule_id, student_ids,
+    ).await.map_err(|e| e.to_string())?;
+
+    Ok(ok(secrets.into_iter().map(|s| SecretDto {
+        id: s.id.to_string(),
+        exam_schedule_id: s.exam_schedule_id.to_string(),
+        student_id: s.student_id.to_string(),
+        secret_number: s.secret_number,
+    }).collect()))
 }
 
 #[tauri::command]
