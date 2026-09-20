@@ -17,6 +17,20 @@ export { aiContext } from "./ai-context.svelte";
 // ── Workflow Inbox (pending action counts for Title Bar badge)
 export { workflowInbox } from "./workflow-inbox.svelte";
 
+// ── Effective Context & Permissions
+export {
+  effectiveContext,
+  type ScopeLevel,
+  type ScopeFilter,
+} from "./effective-context.svelte";
+
+// ── Print Dialog Store
+export {
+  printState,
+  openPrintDialog,
+  closePrintDialog,
+} from "./print.svelte";
+
 // ── Feature Stores ──────────────────────────────────────────────────
 // Import feature stores directly from their feature module:
 //   import { studentsStore } from "$lib/features/students/store.svelte";
