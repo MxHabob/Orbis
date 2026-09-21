@@ -74,7 +74,7 @@ const isLastStep = $derived(activeStep >= totalSteps - 1);
         {/if}
       </Button>
     {:else}
-      <div class="inline-flex items-center gap-1.5 px-3.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold">
+      <div class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold">
         <Sparkles class="w-3.5 h-3.5" />
         <span>{isArabic ? "جاهز" : "Ready"}</span>
       </div>

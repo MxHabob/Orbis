@@ -1,36 +1,31 @@
 <!--
   Step 7: Review & Summary (مراجعة البيانات)
-  Summary of configuration before final launch with full height utilization.
+  Summary of configuration before final launch with a clean minimalist design.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onboardingState } from "../state.svelte";
 import { l } from "$lib/core/i18n";
-import { Building2, Calendar, GraduationCap, DollarSign, CheckCircle2, BookOpen, Clock, DoorOpen } from "@lucide/svelte";
 </script>
 
-<div class="w-full h-full flex flex-col min-h-0 space-y-2.5 text-start">
-  <div class="flex items-center justify-between border-b border-border/50 pb-1.5 shrink-0">
-    <div class="flex items-center gap-2">
-      <CheckCircle2 size={16} class="text-primary shrink-0" />
-      <h3 class="text-xs font-bold text-foreground">
-        {m.common_onboarding_review_launch_btn ? "مراجعة التهيئة الأكاديمية" : "Setup Summary"}
-      </h3>
-    </div>
-    <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full font-mono">
+<div class="w-full h-full flex flex-col min-h-0 space-y-3 text-start animate-in fade-in duration-300">
+  <div class="flex items-center justify-between border-b border-border/50 pb-2 shrink-0">
+    <h3 class="text-xs font-bold text-foreground">
+      {l("مراجعة التهيئة الأكاديمية", "Setup Summary")}
+    </h3>
+    <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-mono">
       {l("جاهز للإطلاق", "Ready to Launch")}
     </span>
   </div>
 
-  <!-- Multi-Column Clean Summary Grid (Expands to fill vertical space) -->
+  <!-- Multi-Column Clean Summary Grid -->
   <div class="flex-1 min-h-0 overflow-y-auto scrollbar-hide grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5 p-1">
 
     <!-- Card 1: Institution Details -->
-    <div class="border border-border/70 rounded-2xl bg-card p-4 space-y-2.5 shadow-2xs flex flex-col justify-between">
+    <div class="border border-border/70 rounded-2xl bg-card p-4 space-y-3 shadow-2xs flex flex-col justify-between">
       <div>
-        <div class="flex items-center gap-1.5 text-xs font-bold text-primary border-b border-border/40 pb-2 mb-2">
-          <Building2 size={14} />
-          <h4>{m.common_onboarding_review_institution_info()}</h4>
+        <div class="border-b border-border/40 pb-2 mb-2">
+          <h4 class="text-xs font-bold text-foreground">{m.common_onboarding_review_institution_info()}</h4>
         </div>
 
         <div class="space-y-2 text-xs">
@@ -40,7 +35,7 @@ import { Building2, Calendar, GraduationCap, DollarSign, CheckCircle2, BookOpen,
           </div>
           <div class="flex justify-between py-1 border-b border-border/30">
             <span class="text-muted-foreground">{m.common_onboarding_review_currency()}</span>
-            <span class="font-bold text-emerald-600 dark:text-emerald-400 font-mono">{onboardingState.profile.currency}</span>
+            <span class="font-bold text-primary font-mono">{onboardingState.profile.currency}</span>
           </div>
           <div class="flex justify-between py-1">
             <span class="text-muted-foreground">{m.common_onboarding_review_locale_timezone()}</span>
@@ -51,11 +46,10 @@ import { Building2, Calendar, GraduationCap, DollarSign, CheckCircle2, BookOpen,
     </div>
 
     <!-- Card 2: Academic Calendar -->
-    <div class="border border-border/70 rounded-2xl bg-card p-4 space-y-2.5 shadow-2xs flex flex-col justify-between">
+    <div class="border border-border/70 rounded-2xl bg-card p-4 space-y-3 shadow-2xs flex flex-col justify-between">
       <div>
-        <div class="flex items-center gap-1.5 text-xs font-bold text-primary border-b border-border/40 pb-2 mb-2">
-          <Calendar size={14} />
-          <h4>{onboardingState.calendarLabel}</h4>
+        <div class="border-b border-border/40 pb-2 mb-2">
+          <h4 class="text-xs font-bold text-foreground">{onboardingState.calendarLabel}</h4>
         </div>
 
         <div class="space-y-2 text-xs">
@@ -76,11 +70,10 @@ import { Building2, Calendar, GraduationCap, DollarSign, CheckCircle2, BookOpen,
     </div>
 
     <!-- Card 3: Facilities & Spaces -->
-    <div class="border border-border/70 rounded-2xl bg-card p-4 space-y-2.5 shadow-2xs flex flex-col justify-between">
+    <div class="border border-border/70 rounded-2xl bg-card p-4 space-y-3 shadow-2xs flex flex-col justify-between">
       <div>
-        <div class="flex items-center gap-1.5 text-xs font-bold text-primary border-b border-border/40 pb-2 mb-2">
-          <DoorOpen size={14} />
-          <h4>{m.common_onboarding_review_buildings_halls()}</h4>
+        <div class="border-b border-border/40 pb-2 mb-2">
+          <h4 class="text-xs font-bold text-foreground">{m.common_onboarding_review_buildings_halls()}</h4>
         </div>
 
         <div class="space-y-2 text-xs">
@@ -97,11 +90,10 @@ import { Building2, Calendar, GraduationCap, DollarSign, CheckCircle2, BookOpen,
     </div>
 
     <!-- Card 4: Academics & Subjects -->
-    <div class="border border-border/70 rounded-2xl bg-card p-4 space-y-2.5 shadow-2xs flex flex-col justify-between">
+    <div class="border border-border/70 rounded-2xl bg-card p-4 space-y-3 shadow-2xs flex flex-col justify-between">
       <div>
-        <div class="flex items-center gap-1.5 text-xs font-bold text-primary border-b border-border/40 pb-2 mb-2">
-          <GraduationCap size={14} />
-          <h4>{onboardingState.stageLabel} & {onboardingState.subjectLabel}</h4>
+        <div class="border-b border-border/40 pb-2 mb-2">
+          <h4 class="text-xs font-bold text-foreground">{onboardingState.stageLabel} & {onboardingState.subjectLabel}</h4>
         </div>
 
         <div class="space-y-2 text-xs">
@@ -119,3 +111,4 @@ import { Building2, Calendar, GraduationCap, DollarSign, CheckCircle2, BookOpen,
 
   </div>
 </div>
+

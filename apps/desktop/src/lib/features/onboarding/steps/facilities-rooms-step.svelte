@@ -1,6 +1,6 @@
 <!--
   Step 3: Facilities & Learning Spaces (المباني والمرافق والقاعات التعليمية)
-  Adapts dynamically to the chosen Institution Type, fully utilizing widescreen height and width.
+  Clean, minimalist layout for configuring buildings and rooms.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -28,8 +28,6 @@ import {
 import {
   Plus,
   Trash2,
-  Building2,
-  DoorOpen,
   Sparkles,
 } from "@lucide/svelte";
 
@@ -114,7 +112,7 @@ function confirmRemoveBuilding() {
 }
 </script>
 
-<div class="w-full h-full flex flex-col min-h-0 space-y-3 text-start">
+<div class="w-full h-full flex flex-col min-h-0 space-y-3 text-start animate-in fade-in duration-300">
   <!-- Building Tabs -->
   <Tabs
     value={onboardingState.facilities.activeBuildingTab}
@@ -126,10 +124,9 @@ function confirmRemoveBuilding() {
         {#each onboardingState.facilities.buildings as bld}
           <TabsTrigger
             value={bld}
-            class="px-3.5 py-1.5 font-bold text-xs rounded-lg border border-transparent data-[state=active]:border-primary/30 data-[state=active]:bg-primary/10 data-[state=active]:text-primary text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+            class="px-3.5 py-1.5 font-bold text-xs rounded-xl border border-transparent data-[state=active]:border-primary/30 data-[state=active]:bg-primary/10 data-[state=active]:text-primary text-muted-foreground hover:text-foreground shrink-0 cursor-pointer transition-all duration-150"
           >
             <div class="flex items-center gap-1.5">
-              <Building2 size={13} class="text-primary" />
               <span>{bld}</span>
               <Badge variant="secondary" class="text-[9px] px-1.5 py-0 font-mono">
                 {onboardingState.facilities.rooms.filter((r) => r.building === bld).length}
@@ -142,7 +139,7 @@ function confirmRemoveBuilding() {
       <Button
         variant="ghost"
         size="sm"
-        class="shrink-0 h-8 text-xs text-muted-foreground hover:text-primary gap-1 cursor-pointer"
+        class="shrink-0 h-8 text-xs text-muted-foreground hover:text-primary gap-1 cursor-pointer font-bold"
         onclick={handleAddBuilding}
       >
         <Plus size={13} />
@@ -151,15 +148,13 @@ function confirmRemoveBuilding() {
     </div>
 
     {#each onboardingState.facilities.buildings as bld}
-      <TabsContent value={bld} class="flex-1 flex flex-col min-h-0 space-y-2.5 pt-2">
+      <TabsContent value={bld} class="flex-1 flex flex-col min-h-0 space-y-2.5 pt-1.5">
         <!-- Building Action Bar -->
         <div class="flex items-center justify-between shrink-0">
-          <div class="flex items-center gap-2">
-            <DoorOpen size={15} class="text-primary" />
-            <h4 class="text-xs font-bold text-foreground">
-              {m.common_onboarding_building_rooms({ building: bld })}
-            </h4>
-          </div>
+          <h4 class="text-xs font-bold text-foreground">
+            {m.common_onboarding_building_rooms({ building: bld })}
+          </h4>
+
           <div class="flex items-center gap-2">
             <Button variant="outline" size="xs" class="h-7 text-[11px] flex gap-1.5 items-center rounded-lg cursor-pointer" onclick={handleAddDefaultRooms}>
               <Sparkles size={12} />
@@ -180,10 +175,10 @@ function confirmRemoveBuilding() {
         </div>
 
         <!-- Rooms / Facilities Table with flex-1 and scrollable body filling available height -->
-        <div class="w-full flex-1 flex flex-col min-h-0 border border-border/70 rounded-2xl bg-card shadow-xs overflow-hidden">
+        <div class="w-full flex-1 flex flex-col min-h-0 border border-border/70 rounded-2xl bg-card shadow-2xs overflow-hidden">
           
           <!-- Inline Add New Room Row (Fixed top header) -->
-          <div class="grid grid-cols-[1.5fr_1.5fr_1.5fr_0.8fr_0.8fr_auto] gap-2.5 p-2.5 items-center bg-primary/5 border-b border-border/40 shrink-0">
+          <div class="grid grid-cols-[1.5fr_1.5fr_1.5fr_0.8fr_0.8fr_auto] gap-2.5 p-2.5 items-center bg-muted/20 border-b border-border/40 shrink-0">
             <FormField label={m.common_onboarding_rooms_table_name_ar()} required>
               {#snippet children()}<Input bind:value={newRoomNameAr} placeholder="قاعة 101" class="h-7.5 text-xs font-bold font-sans bg-background" />{/snippet}
             </FormField>
@@ -229,25 +224,25 @@ function confirmRemoveBuilding() {
             </div>
           </div>
 
-          <!-- Existing Rooms in this building (Expands to fill 100% of available height) -->
+          <!-- Existing Rooms in this building -->
           <div class="flex-1 min-h-0 overflow-y-auto scrollbar-hide divide-y divide-border/30">
             {#each onboardingState.facilities.rooms.filter((r) => r.building === bld) as rm (rm.id)}
               <div class="grid grid-cols-[1.5fr_1.5fr_1.5fr_0.8fr_0.8fr_auto] gap-2.5 px-3 py-2 items-center hover:bg-muted/10 transition-colors text-xs">
                 <Input
                   bind:value={rm.name_ar}
-                  class="h-7.5 text-xs font-bold font-sans"
+                  class="h-7.5 text-xs font-bold font-sans bg-background"
                   onchange={() => onboardingState.save()}
                 />
 
                 <Input
                   bind:value={rm.name}
-                  class="h-7.5 text-xs font-sans text-left"
+                  class="h-7.5 text-xs font-sans bg-background text-left"
                   style="direction: ltr;"
                   onchange={() => onboardingState.save()}
                 />
 
                 <Select type="single" value={rm.room_type} onValueChange={(v: string | undefined) => { if (v) { rm.room_type = v; onboardingState.save(); } }}>
-                  <SelectTrigger class="h-7.5 text-xs">
+                  <SelectTrigger class="h-7.5 text-xs bg-background">
                     {getRoomTypeLabel(rm.room_type)}
                   </SelectTrigger>
                   <SelectContent class="text-xs">
@@ -257,14 +252,14 @@ function confirmRemoveBuilding() {
                   </SelectContent>
                 </Select>
 
-                <Input type="number" bind:value={rm.floor} min="0" step="1" class="h-7.5 text-xs text-center font-mono" onchange={() => onboardingState.save()} />
+                <Input type="number" bind:value={rm.floor} min="0" step="1" class="h-7.5 text-xs text-center font-mono bg-background" onchange={() => onboardingState.save()} />
 
                 <Input
                   type="number"
                   bind:value={rm.capacity}
                   min="1"
                   max="500"
-                  class="h-7.5 text-xs text-center font-mono"
+                  class="h-7.5 text-xs text-center font-mono bg-background"
                   onchange={() => onboardingState.save()}
                 />
 
@@ -311,3 +306,4 @@ function confirmRemoveBuilding() {
     </AlertDialogContent>
   </AlertDialog>
 </div>
+

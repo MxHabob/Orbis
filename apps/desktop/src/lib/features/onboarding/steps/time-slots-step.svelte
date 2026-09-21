@@ -1,6 +1,6 @@
 <!--
   Step 2: Daily Schedule & Time Slots Setup
-  Working days configuration and daily periods schedule with full height utilization.
+  Working days configuration and daily periods schedule with clean, elegant layout.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -13,7 +13,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { CalendarDays, Clock, Plus, Trash2, Coffee, BookOpen } from "@lucide/svelte";
+import { Plus, Trash2 } from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
 import { onboardingState } from "../state.svelte";
@@ -101,20 +101,17 @@ const breakTypeLabels: Record<string, () => string> = {
 };
 </script>
 
-<div class="w-full h-full flex flex-col min-h-0 space-y-3 text-start">
+<div class="w-full h-full flex flex-col min-h-0 space-y-3 text-start animate-in fade-in duration-300">
 
   <!-- Top Working Days Bar -->
-  <div class="rounded-2xl border border-border/70 bg-card p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs shrink-0">
-    <div class="flex items-center gap-2.5">
-      <CalendarDays size={16} class="text-primary shrink-0" />
-      <span class="text-xs font-bold text-foreground">{m.common_onboarding_working_days_title()}</span>
-    </div>
+  <div class="rounded-2xl border border-border/70 bg-card p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs shrink-0">
+    <span class="text-xs font-bold text-foreground">{m.common_onboarding_working_days_title()}</span>
 
     <div class="flex flex-wrap gap-1.5">
       {#each dayLabels as day (day.value)}
         <button
           type="button"
-          class="rounded-lg border px-3 py-1 text-[11px] font-bold transition-colors cursor-pointer {onboardingState.academics.workingDays.includes(day.value) ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted/50'}"
+          class="rounded-xl border px-3.5 py-1 text-[11px] font-bold transition-all duration-150 cursor-pointer {onboardingState.academics.workingDays.includes(day.value) ? 'border-primary/40 bg-primary/10 text-primary shadow-2xs' : 'border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/40'}"
           aria-pressed={onboardingState.academics.workingDays.includes(day.value)}
           onclick={() => toggleWorkingDay(day.value)}
         >{day.label}</button>
@@ -122,38 +119,40 @@ const breakTypeLabels: Record<string, () => string> = {
     </div>
   </div>
 
-  <!-- Main Schedule Grid (Expands to fill 100% available height) -->
+  <!-- Main Schedule Grid -->
   <div class="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-3.5">
 
     <!-- Add Slot Form (4 cols) -->
-    <div class="md:col-span-4 rounded-2xl border border-border/70 bg-card p-4 flex flex-col justify-between shadow-xs space-y-3 overflow-y-auto">
-      <div class="flex items-center gap-1.5 border-b border-border/50 pb-2 shrink-0">
-        <Plus size={15} class="text-primary shrink-0" />
+    <div class="md:col-span-4 rounded-2xl border border-border/70 bg-card p-4 flex flex-col justify-between shadow-2xs space-y-3 overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-border/50 pb-2 shrink-0">
         <h4 class="text-xs font-bold text-foreground">{m.common_onboarding_add_period()}</h4>
+        <span class="text-[10px] text-muted-foreground font-mono">
+          {newSlotDuration > 0 ? `${newSlotDuration} min` : ""}
+        </span>
       </div>
 
       <div class="space-y-2.5 flex-1">
         <FormField label={m.common_onboarding_schedule_name_ar()} required>
           {#snippet children()}
-            <Input bind:value={newSlotNameAr} placeholder="الحصة الأولى" class="h-8 text-xs font-bold font-sans" />
+            <Input bind:value={newSlotNameAr} placeholder="الحصة الأولى" class="h-8 text-xs font-bold font-sans bg-background" />
           {/snippet}
         </FormField>
 
         <FormField label={m.common_onboarding_schedule_name_en()}>
           {#snippet children()}
-            <Input bind:value={newSlotName} placeholder="Period 1" class="h-8 text-xs font-sans text-left" style="direction: ltr;" />
+            <Input bind:value={newSlotName} placeholder="Period 1" class="h-8 text-xs font-sans bg-background text-left" style="direction: ltr;" />
           {/snippet}
         </FormField>
 
         <div class="grid grid-cols-2 gap-2">
           <FormField label={m.academics_schedule_start_time()} required>
             {#snippet children()}
-              <Input type="time" bind:value={newSlotStart} class="h-8 text-xs font-mono" />
+              <Input type="time" bind:value={newSlotStart} class="h-8 text-xs font-mono bg-background" />
             {/snippet}
           </FormField>
           <FormField label={m.academics_schedule_end_time()} required>
             {#snippet children()}
-              <Input type="time" bind:value={newSlotEnd} class="h-8 text-xs font-mono" />
+              <Input type="time" bind:value={newSlotEnd} class="h-8 text-xs font-mono bg-background" />
             {/snippet}
           </FormField>
         </div>
@@ -206,25 +205,22 @@ const breakTypeLabels: Record<string, () => string> = {
       </Button>
     </div>
 
-    <!-- Slots Table / List (8 cols) (Expands to fill vertical height) -->
-    <div class="md:col-span-8 rounded-2xl border border-border/70 bg-card p-4 flex flex-col justify-between shadow-xs space-y-2 min-h-0">
+    <!-- Slots Table / List (8 cols) -->
+    <div class="md:col-span-8 rounded-2xl border border-border/70 bg-card p-4 flex flex-col justify-between shadow-2xs space-y-2 min-h-0">
       <div class="flex items-center justify-between border-b border-border/50 pb-2 shrink-0">
-        <div class="flex items-center gap-2">
-          <Clock size={16} class="text-primary shrink-0" />
-          <h4 class="text-xs font-bold text-foreground">{m.common_onboarding_schedule_title()}</h4>
-        </div>
+        <h4 class="text-xs font-bold text-foreground">{m.common_onboarding_schedule_title()}</h4>
         <span class="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary font-mono">
           {onboardingState.academics.timeSlots.length} {m.common_word_active ? m.common_word_active() : "فترات"}
         </span>
       </div>
 
-      <!-- Scrollable List filling full height -->
+      <!-- Scrollable List -->
       <div class="flex-1 min-h-0 overflow-y-auto scrollbar-hide divide-y divide-border/40 pe-1">
         {#each onboardingState.academics.timeSlots as slot, index (slot.name + slot.start_time + index)}
           {@const duration = getDuration(slot.start_time, slot.end_time)}
-          <div class="py-2.5 flex items-center justify-between gap-3 text-xs hover:bg-muted/10 px-2 rounded-lg transition-colors">
+          <div class="py-2 flex items-center justify-between gap-3 text-xs hover:bg-muted/10 px-2 rounded-xl transition-colors">
             <div class="flex items-center gap-2.5 min-w-0">
-              <span class="flex size-6 shrink-0 items-center justify-center rounded-full {slot.is_break ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-primary/10 text-primary'} text-[11px] font-bold">
+              <span class="flex size-5.5 shrink-0 items-center justify-center rounded-full {slot.is_break ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-primary/10 text-primary'} text-[10px] font-bold font-mono">
                 {index + 1}
               </span>
               <div class="flex items-center gap-2 min-w-0">
@@ -237,16 +233,16 @@ const breakTypeLabels: Record<string, () => string> = {
               </div>
             </div>
 
-            <div class="flex items-center gap-3 shrink-0 font-mono text-xs text-muted-foreground">
-              <span class="font-semibold text-foreground">{slot.start_time} - {slot.end_time}</span>
-              <span class="px-2 py-0.5 rounded-md bg-muted text-[10px] font-bold">{duration} دقيقة</span>
+            <div class="flex items-center gap-2.5 shrink-0 font-mono text-xs text-muted-foreground">
+              <span class="font-medium text-foreground text-[11px]">{slot.start_time} - {slot.end_time}</span>
+              <span class="px-2 py-0.5 rounded-md bg-muted/60 text-[10px] font-medium">{duration} min</span>
               <button
                 type="button"
                 class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer"
                 aria-label={m.common_onboarding_delete_period()}
                 onclick={() => removeSlot(slot)}
               >
-                <Trash2 size={14} />
+                <Trash2 size={13} />
               </button>
             </div>
           </div>
@@ -261,3 +257,4 @@ const breakTypeLabels: Record<string, () => string> = {
   </div>
 
 </div>
+

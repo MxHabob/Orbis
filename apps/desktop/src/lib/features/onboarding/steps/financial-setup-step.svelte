@@ -1,7 +1,6 @@
 <!--
   Step 6: Tuition & Registration Fees (الرسوم الدراسية والتسجيل)
-  Categorized by educational stage groups (Kindergarten, Primary, Preparatory, Secondary)
-  with unified stage fee setting and expandable individual grade customization.
+  Categorized by educational stage groups with clean stage fee setting and individual grade customization.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -9,18 +8,10 @@ import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import {
-  DollarSign,
-  GraduationCap,
-  BookOpen,
-  Sparkles,
-  School,
   Check,
-  Layers,
   ChevronDown,
   ChevronUp,
   SlidersHorizontal,
-  Coins,
-  ArrowDownToDot,
   RotateCcw,
 } from "@lucide/svelte";
 
@@ -32,10 +23,7 @@ const enabledGradeLevels = $derived(
   onboardingState.academics.gradeLevels.filter((gl) => gl.enabled),
 );
 
-// Map of stageId -> whether grade customization is expanded
 let expandedStages = $state<Record<string, boolean>>({});
-
-// Global batch amount across all stages
 let globalBatchAmount = $state<number | "">("");
 let showGlobalBatchBar = $state(false);
 
@@ -45,9 +33,6 @@ interface EducationalStageGroup {
   name_en: string;
   desc_ar: string;
   desc_en: string;
-  icon: any;
-  color: string;
-  accentBg: string;
   grades: GradeLevel[];
 }
 
@@ -91,9 +76,6 @@ const stageGroups = $derived.by(() => {
       name_en: "Kindergarten (KG)",
       desc_ar: "صفوف الروضة والتمهيدي",
       desc_en: "Early childhood levels",
-      icon: Sparkles,
-      color: "text-pink-500 bg-pink-500/10 border-pink-500/20",
-      accentBg: "from-pink-500/5 to-transparent",
       grades: kgGrades,
     });
   }
@@ -105,9 +87,6 @@ const stageGroups = $derived.by(() => {
       name_en: "Primary Stage (Grades 1 - 6)",
       desc_ar: "صفوف التعليم الأساسي المبكر",
       desc_en: "Elementary school grades",
-      icon: BookOpen,
-      color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
-      accentBg: "from-blue-500/5 to-transparent",
       grades: primaryGrades,
     });
   }
@@ -119,9 +98,6 @@ const stageGroups = $derived.by(() => {
       name_en: "Preparatory / Middle Stage (7 - 9)",
       desc_ar: "صفوف التعليم الأساسي المتقدم",
       desc_en: "Middle school grades",
-      icon: GraduationCap,
-      color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
-      accentBg: "from-emerald-500/5 to-transparent",
       grades: prepGrades,
     });
   }
@@ -133,9 +109,6 @@ const stageGroups = $derived.by(() => {
       name_en: "Secondary Stage (10 - 12)",
       desc_ar: "صفوف التعليم الثانوي التخصصي",
       desc_en: "High school grades",
-      icon: School,
-      color: "text-purple-500 bg-purple-500/10 border-purple-500/20",
-      accentBg: "from-purple-500/5 to-transparent",
       grades: secGrades,
     });
   }
@@ -147,9 +120,6 @@ const stageGroups = $derived.by(() => {
       name_en: "Academic Stages & Levels",
       desc_ar: "كافة المستويات والصفوف المفعلة",
       desc_en: "Active grades & modules",
-      icon: Layers,
-      color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
-      accentBg: "from-amber-500/5 to-transparent",
       grades: otherGrades,
     });
   }
@@ -157,7 +127,6 @@ const stageGroups = $derived.by(() => {
   return groups;
 });
 
-// Helper: get the representative stage fee (if all same, return that, otherwise return first or "")
 function getStageFee(grades: GradeLevel[]): number | "" {
   if (grades.length === 0) return "";
   const firstVal = onboardingState.finance.registrationFees[grades[0].level];
@@ -167,7 +136,6 @@ function getStageFee(grades: GradeLevel[]): number | "" {
   return allSame && firstVal !== undefined ? firstVal : (firstVal ?? "");
 }
 
-// Helper: check if all grades in stage have uniform fee
 function isStageUniform(grades: GradeLevel[]): boolean {
   if (grades.length <= 1) return true;
   const firstVal = onboardingState.finance.registrationFees[grades[0].level];
@@ -176,7 +144,6 @@ function isStageUniform(grades: GradeLevel[]): boolean {
   );
 }
 
-// Apply fee to all grades in a stage
 function setStageFee(grades: GradeLevel[], amount: number | "") {
   const val = amount === "" || amount === undefined || Number(amount) < 0 ? 0 : Number(amount);
   for (const g of grades) {
@@ -185,7 +152,6 @@ function setStageFee(grades: GradeLevel[], amount: number | "") {
   onboardingState.save();
 }
 
-// Apply global fee to ALL grades across all stages
 function applyGlobalFee() {
   if (globalBatchAmount === "" || Number(globalBatchAmount) < 0) return;
   const val = Number(globalBatchAmount);
@@ -201,40 +167,35 @@ function toggleExpandStage(stageId: string) {
 }
 </script>
 
-<div class="w-full h-full flex flex-col min-h-0 space-y-2.5 text-start">
+<div class="w-full h-full flex flex-col min-h-0 space-y-3 text-start animate-in fade-in duration-300">
   
   <!-- Header Bar -->
   <div class="flex items-center justify-between border-b border-border/50 pb-2 shrink-0">
-    <div class="flex items-center gap-2.5">
-      <div class="size-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-        <Coins size={15} />
-      </div>
-      <div>
-        <h3 class="text-xs sm:text-sm font-bold text-foreground leading-tight">
-          {m.common_onboarding_fees_label({ currency: onboardingState.profile.currency })}
-        </h3>
-        <p class="text-[10.5px] text-muted-foreground">
-          {l(
-            "حدد الرسوم الدراسية والتسجيل للمراحل التعليمية مع إمكانية تخصيص رسوم كل صف",
-            "Configure tuition and registration fees per stage group with optional grade-level overrides",
-          )}
-        </p>
-      </div>
+    <div>
+      <h3 class="text-xs sm:text-sm font-bold text-foreground leading-tight">
+        {m.common_onboarding_fees_label({ currency: onboardingState.profile.currency })}
+      </h3>
+      <p class="text-[10.5px] text-muted-foreground mt-0.5">
+        {l(
+          "حدد الرسوم الدراسية والتسجيل للمراحل التعليمية مع إمكانية تخصيص رسوم كل صف",
+          "Configure tuition and registration fees per stage group with optional grade-level overrides",
+        )}
+      </p>
     </div>
 
     <!-- Right Controls: Currency Badge & Global Batch Button -->
     <div class="flex items-center gap-2">
       <Button
-        variant="ghost"
+        variant="outline"
         size="xs"
-        class="h-7 text-[11px] gap-1.5 font-bold cursor-pointer text-muted-foreground hover:text-foreground"
+        class="h-7 text-[11px] gap-1.5 font-bold cursor-pointer text-muted-foreground hover:text-foreground border-border/70"
         onclick={() => (showGlobalBatchBar = !showGlobalBatchBar)}
       >
         <SlidersHorizontal size={12} />
         <span>{l("تسعير موحد للكل", "Global Fee")}</span>
       </Button>
 
-      <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-mono">
+      <span class="text-[11px] font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full font-mono">
         {onboardingState.profile.currency}
       </span>
     </div>
@@ -242,13 +203,10 @@ function toggleExpandStage(stageId: string) {
 
   <!-- Optional Global Batch Toolbar -->
   {#if showGlobalBatchBar}
-    <div class="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2 shrink-0">
-      <div class="flex items-center gap-2">
-        <ArrowDownToDot size={14} class="text-primary" />
-        <span class="text-xs font-bold text-foreground">
-          {l("تطبيق مبلغ موحد لكافة المراحل والصفوف:", "Apply uniform amount across all stages:")}
-        </span>
-      </div>
+    <div class="flex items-center justify-between gap-3 p-3 rounded-2xl bg-card border border-border/70 shadow-2xs animate-in fade-in shrink-0">
+      <span class="text-xs font-bold text-foreground">
+        {l("تطبيق مبلغ موحد لكافة المراحل والصفوف:", "Apply uniform amount across all stages:")}
+      </span>
       <div class="flex items-center gap-2">
         <div class="relative w-36">
           <Input
@@ -256,7 +214,7 @@ function toggleExpandStage(stageId: string) {
             min="0"
             placeholder="0"
             bind:value={globalBatchAmount}
-            class="h-7 text-xs font-bold font-mono bg-background pe-8 text-start"
+            class="h-7.5 text-xs font-bold font-mono bg-background pe-8 text-start"
           />
           <div class="absolute inset-y-0 inset-e-2 flex items-center pointer-events-none text-[9px] font-bold text-muted-foreground uppercase">
             {onboardingState.profile.currency}
@@ -264,12 +222,12 @@ function toggleExpandStage(stageId: string) {
         </div>
         <Button
           size="xs"
-          class="h-7 px-3 text-xs font-bold gap-1 cursor-pointer"
+          class="h-7.5 px-3 text-xs font-bold gap-1 cursor-pointer"
           onclick={applyGlobalFee}
           disabled={globalBatchAmount === "" || Number(globalBatchAmount) < 0}
         >
           <Check size={12} />
-          <span>{l("تطبيق على الكل", "Apply All")}</span>
+          <span>{l("تطبيق", "Apply")}</span>
         </Button>
       </div>
     </div>
@@ -282,41 +240,36 @@ function toggleExpandStage(stageId: string) {
       {@const isUniform = isStageUniform(group.grades)}
       {@const isExpanded = !!expandedStages[group.id]}
 
-      <div class="rounded-2xl border border-border/70 bg-card shadow-2xs overflow-hidden transition-all duration-200 hover:border-border">
+      <div class="rounded-2xl border border-border/70 bg-card shadow-2xs overflow-hidden transition-all duration-150">
         
         <!-- Stage Row / Header -->
-        <div class="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 bg-gradient-to-r {group.accentBg}">
+        <div class="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/10">
           
           <!-- Stage Identity -->
-          <div class="flex items-center gap-3">
-            <div class="size-9 rounded-xl border flex items-center justify-center shrink-0 {group.color} shadow-2xs">
-              <group.icon size={16} />
-            </div>
-            <div>
-              <div class="flex items-center gap-2">
-                <h4 class="font-bold text-xs sm:text-sm text-foreground">
-                  {l(group.name_ar, group.name_en)}
-                </h4>
-                <Badge variant="secondary" class="text-[10px] px-2 py-0 font-medium">
-                  {group.grades.length} {l("صفوف", "grades")}
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="font-bold text-xs sm:text-sm text-foreground">
+                {l(group.name_ar, group.name_en)}
+              </h4>
+              <Badge variant="secondary" class="text-[10px] px-2 py-0 font-medium">
+                {group.grades.length} {l("صفوف", "grades")}
+              </Badge>
+              {#if !isUniform}
+                <Badge variant="outline" class="text-[9.5px] px-1.5 py-0 text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10 font-medium">
+                  {l("رسوم متباينة", "Customized")}
                 </Badge>
-                {#if !isUniform}
-                  <Badge variant="outline" class="text-[9.5px] px-1.5 py-0 text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10 font-medium">
-                    {l("رسوم متباينة", "Customized")}
-                  </Badge>
-                {/if}
-              </div>
-              <p class="text-[11px] text-muted-foreground mt-0.5">
-                {l(group.desc_ar, group.desc_en)}
-              </p>
+              {/if}
             </div>
+            <p class="text-[11px] text-muted-foreground mt-0.5">
+              {l(group.desc_ar, group.desc_en)}
+            </p>
           </div>
 
           <!-- Stage Fee Setting Input & Grade Customization Toggle -->
           <div class="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
             
             <!-- Stage Uniform Fee Input -->
-            <div class="flex items-center gap-1.5 bg-background/90 p-1 rounded-xl border border-border/80 shadow-2xs">
+            <div class="flex items-center gap-1.5 bg-background p-1 rounded-xl border border-border/70 shadow-2xs">
               <span class="text-[11px] font-bold text-muted-foreground px-2">
                 {l("رسوم المرحلة:", "Stage Fee:")}
               </span>
@@ -342,7 +295,7 @@ function toggleExpandStage(stageId: string) {
             <Button
               variant="outline"
               size="xs"
-              class="h-9 px-2.5 text-xs gap-1.5 font-bold cursor-pointer border-border/80 bg-background/90"
+              class="h-8.5 px-3 text-xs gap-1.5 font-bold cursor-pointer border-border/70 bg-background"
               onclick={() => toggleExpandStage(group.id)}
             >
               <span class="text-[11px]">{isExpanded ? l("إخفاء الصفوف", "Hide") : l("تخصيص الصفوف", "Customize")}</span>
@@ -358,7 +311,7 @@ function toggleExpandStage(stageId: string) {
 
         <!-- Collapsible Individual Grade Customization Area -->
         {#if isExpanded}
-          <div class="p-3.5 border-t border-border/40 bg-muted/10 space-y-2.5 animate-in fade-in duration-150">
+          <div class="p-3.5 border-t border-border/40 bg-muted/5 space-y-2.5 animate-in fade-in duration-150">
             <div class="flex items-center justify-between pb-1">
               <span class="text-[11px] font-bold text-muted-foreground">
                 {l("تخصيص الرسوم لكل صف دراسي في هذه المرحلة:", "Individual fee customization per grade:")}
@@ -376,14 +329,14 @@ function toggleExpandStage(stageId: string) {
               {/if}
             </div>
 
-            <!-- Grade Items Grid (Spacious 2 to 4 column layout for clear, unclipped labels) -->
+            <!-- Grade Items Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5">
               {#each group.grades as gl (gl.level)}
                 {@const isGradeCustom = currentStageFee !== "" && onboardingState.finance.registrationFees[gl.level] !== currentStageFee}
 
-                <div class="flex items-center justify-between p-2.5 rounded-xl border border-border/80 bg-background hover:bg-muted/10 transition-colors shadow-2xs gap-2">
+                <div class="flex items-center justify-between p-2.5 rounded-xl border border-border/70 bg-background hover:bg-muted/10 transition-colors shadow-2xs gap-2">
                   <div class="flex items-center gap-2 min-w-0 flex-1">
-                    <div class="size-2.5 rounded-full shrink-0" style="background-color: {gl.color || '#3b82f6'};"></div>
+                    <div class="size-2 rounded-full shrink-0" style="background-color: {gl.color || '#3b82f6'};"></div>
                     <span class="font-bold text-foreground text-xs truncate">
                       {l(gl.name_ar, gl.name)}
                     </span>
@@ -396,7 +349,7 @@ function toggleExpandStage(stageId: string) {
                       placeholder="0"
                       bind:value={onboardingState.finance.registrationFees[gl.level]}
                       onchange={() => onboardingState.save()}
-                      class="h-7 text-xs font-bold font-mono bg-background pe-8 text-start border-border/70 focus:border-primary {isGradeCustom ? 'border-amber-500/60 ring-1 ring-amber-500/20' : ''}"
+                      class="h-7 text-xs font-bold font-mono bg-background pe-8 text-start border-border/60 focus:border-primary {isGradeCustom ? 'border-amber-500/60 ring-1 ring-amber-500/20' : ''}"
                     />
                     <div class="absolute inset-y-0 inset-e-2 flex items-center pointer-events-none text-[8.5px] font-bold text-muted-foreground uppercase font-mono">
                       {onboardingState.profile.currency}
@@ -417,4 +370,5 @@ function toggleExpandStage(stageId: string) {
   </div>
 
 </div>
+
 

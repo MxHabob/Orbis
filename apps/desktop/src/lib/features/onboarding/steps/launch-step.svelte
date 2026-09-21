@@ -1,19 +1,22 @@
 <!--
-  Step 9: Launch Setup
+  Step 8: Launch Setup
   Animated Avatar, final launch button, and progress indicators.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Progress } from "@orbis/ui/progress";
-import { Sparkles } from "@lucide/svelte";
+import { Sparkles, ArrowRight, ArrowLeft } from "@lucide/svelte";
 import { Avatar } from "@orbis/avatar-engine";
+import { getLocale } from "$lib/paraglide/runtime";
 
 import { onboardingState } from "../state.svelte";
 import { authStore, systemStore } from "$lib/stores";
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { l } from "$lib/core/i18n";
+
+const isRTL = $derived(getLocale().startsWith("ar"));
 
 let isLaunching = $state(false);
 let launchProgress = $state(0);
@@ -35,13 +38,13 @@ let message = $derived.by(() => {
       roomCount === 1 ? "قاعة دراسية واحدة" : `${roomCount} قاعة دراسية`;
     const stageText =
       stageCount === 1 ? "مرحلة دراسية واحدة" : `${stageCount} مراحل دراسية`;
-    return `لقد قمت بإعداد ${bldText} تحتوي على ${roomText} بسعة استيعابية إجمالية تبلغ ${capacity} طالباً. سأبدأ الآن بتنظيم هذه البنية، وربط الـ ${stageText} التي قمت بتفعيلها لبناء بيئة العمل الخاصة بـ ${orgDisplayName}.`;
+    return `تم تجهيز ${bldText} بإجمالي ${roomText} وسعة استيعابية تبلغ ${capacity} طالباً، مع ربط وتفعيل ${stageText}. جاهزون الآن لإطلاق بيئة العمل الخاصة بـ ${orgDisplayName}.`;
   } else {
     const bldText = bldCount === 1 ? "1 building" : `${bldCount} buildings`;
     const roomText = roomCount === 1 ? "1 room" : `${roomCount} rooms`;
     const stageText =
       stageCount === 1 ? "1 academic stage" : `${stageCount} academic stages`;
-    return `You have configured ${bldText} containing ${roomText} with a total capacity of ${capacity} students. I will now link this infrastructure with the ${stageText} you activated to initialize ${orgDisplayName}'s workspace.`;
+    return `Configured ${bldText} with ${roomText} and total capacity of ${capacity} students, linking ${stageText}. Ready to initialize workspace for ${orgDisplayName}.`;
   }
 });
 
@@ -55,7 +58,7 @@ async function handleCompleteSetup() {
   // Start background complete setup IPC request
   const setupPromise = onboardingState.completeSetup(orgId);
 
-  // Animate progress bar (takes about 3 seconds)
+  // Animate progress bar
   const interval = setInterval(() => {
     if (launchProgress < 95) {
       launchProgress += Math.floor(Math.random() * 8) + 3;
@@ -75,7 +78,7 @@ async function handleCompleteSetup() {
           invalidateAll: true,
           replaceState: true,
         });
-      }, 800); // slight delay for smooth visual transition
+      }, 700);
     } else {
       clearInterval(interval);
       isLaunching = false;
@@ -87,57 +90,60 @@ async function handleCompleteSetup() {
 }
 </script>
 
-<div class="flex flex-col items-center justify-center px-6 select-none w-full max-w-4xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-700 py-4 my-auto">
+<div class="flex flex-col items-center justify-center px-4 select-none w-full max-w-2xl mx-auto my-auto py-6 animate-in fade-in duration-500">
 
-  <!-- Header Title -->
-  <div class="text-center">
-    <h1 class="text-3xl sm:text-4xl font-light tracking-tight text-foreground font-sans leading-tight">
-      {m.common_onboarding_launch_title()}
-    </h1>
-  </div>
-
-  <!-- Avatar & Message Details -->
-  <div class="w-full max-w-2xl flex flex-col sm:flex-row items-center gap-6 sm:gap-8 justify-center">
+  <div class="w-full bg-card border border-border/70 rounded-3xl p-6 sm:p-8 shadow-2xs text-center flex flex-col items-center space-y-5">
     
-    <!-- Avatar Section -->
-    <div class="shrink-0 flex items-center justify-center">
-      <Avatar hat="graduation" width="88px" height="88px" />
+    <!-- Avatar with subtle ring -->
+    <div class="relative p-1 rounded-full bg-primary/5 ring-1 ring-primary/20">
+      <Avatar hat="graduation" width="84px" height="84px" />
     </div>
 
-    <!-- Description text & buttons/progress -->
-    <div class="text-center sm:text-start self-center max-w-lg w-full space-y-5">
-      <p class="text-base text-foreground/90 leading-relaxed font-sans font-normal">
+    <!-- Title & Message -->
+    <div class="space-y-2 max-w-md">
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-sans">
+        {m.common_onboarding_launch_title()}
+      </h1>
+      <p class="text-xs sm:text-sm text-muted-foreground leading-relaxed font-sans font-normal">
         {message}
       </p>
+    </div>
 
-      <div class="w-full max-w-sm mx-auto sm:mx-0">
-        {#if !isLaunching}
-          <Button
-            onclick={handleCompleteSetup}
-            size="lg"
-            class="px-8 py-5 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl shadow-md flex gap-2 items-center justify-center transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] w-full sm:w-auto cursor-pointer"
-          >
-            <Sparkles class="w-4 h-4 animate-pulse" />
-            <span>{m.common_onboarding_review_launch_btn()}</span>
-          </Button>
-        {:else}
-          <div class="space-y-2.5">
-            <Progress value={launchProgress} class="h-1.5 w-full bg-muted" />
-            <div class="flex justify-between text-[10px] font-bold font-mono text-muted-foreground uppercase tracking-wider">
-              <span>{m.common_onboarding_launch_loading()}</span>
-              <span>{launchProgress}%</span>
-            </div>
+    <!-- Action Area -->
+    <div class="w-full max-w-xs pt-2">
+      {#if !isLaunching}
+        <Button
+          onclick={handleCompleteSetup}
+          size="default"
+          class="w-full h-9 text-xs font-bold gap-2 cursor-pointer shadow-xs"
+        >
+          <Sparkles class="w-3.5 h-3.5" />
+          <span>{m.common_onboarding_review_launch_btn()}</span>
+          {#if isRTL}
+            <ArrowLeft class="w-3.5 h-3.5" />
+          {:else}
+            <ArrowRight class="w-3.5 h-3.5" />
+          {/if}
+        </Button>
+      {:else}
+        <div class="space-y-2">
+          <Progress value={launchProgress} class="h-1.5 w-full bg-muted" />
+          <div class="flex justify-between text-[10px] font-bold font-mono text-muted-foreground">
+            <span>{m.common_onboarding_launch_loading()}</span>
+            <span>{launchProgress}%</span>
           </div>
-        {/if}
+        </div>
+      {/if}
 
-        {#if onboardingState.errorMessage}
-          <div class="mt-4 p-3 rounded-xl border border-destructive/20 bg-destructive/5 text-destructive text-xs text-start font-sans leading-relaxed animate-in fade-in duration-200">
-            <span class="font-bold">{m.common_onboarding_launch_error()}</span>
-            <p class="font-mono mt-1 text-[10px] opacity-90 wrap-break-word">{onboardingState.errorMessage}</p>
-          </div>
-        {/if}
-      </div>
+      {#if onboardingState.errorMessage}
+        <div class="mt-3 p-2.5 rounded-xl border border-destructive/20 bg-destructive/10 text-destructive text-xs text-start font-sans leading-relaxed animate-in fade-in">
+          <span class="font-bold">{m.common_onboarding_launch_error()}</span>
+          <p class="font-mono mt-1 text-[10px] opacity-90">{onboardingState.errorMessage}</p>
+        </div>
+      {/if}
     </div>
 
   </div>
+
 </div>
+
