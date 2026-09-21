@@ -75,6 +75,10 @@ pub struct OnboardingCalendarDto {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OnboardingPeriodItemDto {
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default, alias = "parent_id")]
+    pub parent_id: Option<String>,
     pub name: String,
     #[serde(default, alias = "name_ar")]
     pub name_ar: Option<String>,
@@ -294,11 +298,25 @@ impl OnboardingService {
             end_date: request.calendar.end_date.clone(),
         };
 
-        let validated_periods = request.calendar.periods.iter().map(|p| {
+        let mut period_id_map: std::collections::HashMap<String, Uuid> = std::collections::HashMap::new();
+        for (idx, p) in request.calendar.periods.iter().enumerate() {
+            let key = p.id.clone().unwrap_or_else(|| format!("p_{idx}"));
+            let assigned_id = p.id.as_deref().and_then(|s| Uuid::parse_str(s).ok()).unwrap_or_else(Uuid::new_v4);
+            period_id_map.insert(key, assigned_id);
+        }
+
+        let validated_periods = request.calendar.periods.iter().enumerate().map(|(idx, p)| {
+            let key = p.id.clone().unwrap_or_else(|| format!("p_{idx}"));
+            let pid = *period_id_map.get(&key).unwrap();
+            let parent_uuid = p.parent_id.as_deref().and_then(|pid_ref| {
+                period_id_map.get(pid_ref).copied().or_else(|| Uuid::parse_str(pid_ref).ok())
+            });
+
             ValidatedOnboardingPeriod {
-                id: Uuid::new_v4(),
+                id: pid,
                 org_id: target_org_id,
                 year_id,
+                parent_id: parent_uuid,
                 name: p.name.clone(),
                 name_ar: p.name_ar.clone(),
                 period_type: p.period_type.clone(),

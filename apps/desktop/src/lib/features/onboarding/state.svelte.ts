@@ -698,6 +698,8 @@ export class OnboardingState {
       );
 
       let periods: Array<{
+        id?: string;
+        parentId?: string;
         name: string;
         nameAr?: string;
         periodType: string;
@@ -705,27 +707,50 @@ export class OnboardingState {
         endDate: string;
       }> = [];
 
+      const startMs = new Date(this.calendar.startDate).getTime();
+      const endMs = new Date(this.calendar.endDate).getTime();
+      const totalDuration = Math.max(endMs - startMs, 86400000);
+
       if (selectedTpl?.structure && selectedTpl.structure.length > 0) {
-        for (let i = 0; i < selectedTpl.structure.length; i++) {
+        const numTerms = selectedTpl.structure.length;
+        const termDuration = totalDuration / numTerms;
+
+        for (let i = 0; i < numTerms; i++) {
           const item = selectedTpl.structure[i];
+          const termStart = new Date(startMs + i * termDuration);
+          const termEnd = new Date(startMs + (i + 1) * termDuration - 86400000);
+          const termId = `term_${i + 1}`;
+
+          const termStartStr = termStart.toISOString().split("T")[0];
+          const termEndStr = termEnd.toISOString().split("T")[0];
+
           periods.push({
+            id: termId,
             name: item.name || `Period ${i + 1}`,
             nameAr: item.name_ar || `الفصل ${i + 1}`,
-            periodType: item.type || "term",
-            startDate: this.calendar.startDate,
-            endDate: this.calendar.endDate,
+            periodType: item.type || "semester",
+            startDate: termStartStr,
+            endDate: termEndStr,
           });
 
-          // Also generate monthly assessment sub-periods if defined in template structure
+          // Also generate monthly assessment sub-periods linked to this parent term
           if (Array.isArray(item.children) && item.children.length > 0) {
-            for (let j = 0; j < item.children.length; j++) {
+            const numChildren = item.children.length;
+            const childDuration = (termEnd.getTime() - termStart.getTime()) / numChildren;
+
+            for (let j = 0; j < numChildren; j++) {
               const child = item.children[j];
+              const childStart = new Date(termStart.getTime() + j * childDuration);
+              const childEnd = new Date(termStart.getTime() + (j + 1) * childDuration - 86400000);
+
               periods.push({
+                id: `${termId}_sub_${j + 1}`,
+                parentId: termId,
                 name: `${item.name || `Term ${i + 1}`} - ${child.name || `Month ${j + 1}`}`,
                 nameAr: `${item.name_ar || `الفصل ${i + 1}`} - ${child.name_ar || `الشهر ${j + 1}`}`,
                 periodType: child.type || "monthly",
-                startDate: this.calendar.startDate,
-                endDate: this.calendar.endDate,
+                startDate: childStart.toISOString().split("T")[0],
+                endDate: childEnd.toISOString().split("T")[0],
               });
             }
           }
@@ -733,6 +758,7 @@ export class OnboardingState {
       } else {
         periods = [
           {
+            id: "sem_1",
             name: "First Semester",
             nameAr: "الفصل الدراسي الأول",
             periodType: "semester",

@@ -1,4 +1,4 @@
-﻿//! Onboarding port — Application-layer contract for complete organization onboarding persistence.
+//! Onboarding port — Application-layer contract for complete organization onboarding persistence.
 //!
 //! Owns the transactional materialization of administrator decisions made during the
 //! Onboarding Wizard (Calendar, Academics, Facilities, Finance, Registration & Policies).
@@ -43,6 +43,7 @@ pub struct ValidatedOnboardingPeriod {
     pub id: Uuid,
     pub org_id: Uuid,
     pub year_id: Uuid,
+    pub parent_id: Option<Uuid>,
     pub name: String,
     pub name_ar: Option<String>,
     pub period_type: String,

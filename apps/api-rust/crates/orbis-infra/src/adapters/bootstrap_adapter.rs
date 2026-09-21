@@ -151,6 +151,11 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
         info!("Note: Report seeding warning: {}", e);
     }
 
+    // ── 7. Default Assessment Schemes (Evaluation architecture) ───────────────────
+    if let Err(e) = seed_assessment_schemes(db, org_id_uuid, &blueprint, &now).await {
+        info!("Note: Assessment scheme seeding warning: {}", e);
+    }
+
     info!("Minimal technical bootstrap completed for org_id={} type={}", org_id, payload.org_type);
 
     Ok(BootstrapResult {
@@ -301,7 +306,6 @@ async fn seed_period_templates<C: ConnectionTrait>(
     Ok(primary_tmpl_id)
 }
 
-#[allow(dead_code)]
 async fn seed_assessment_schemes<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
@@ -309,20 +313,31 @@ async fn seed_assessment_schemes<C: ConnectionTrait>(
     now: &str,
 ) -> Result<(), DomainError> {
     let scheme_id_uuid = Uuid::new_v4();
+    let components: Vec<serde_json::Value> = blueprint.assessment_components.iter().enumerate().map(|(idx, c)| {
+        serde_json::json!({
+            "id": format!("comp_{}", idx + 1),
+            "name": c.name,
+            "component_type": c.component_type,
+            "weight": c.weight,
+            "max_score": c.max_score,
+            "passing_score": c.passing_score,
+        })
+    }).collect();
+
     let formula_json = serde_json::json!({
         "type": "weighted_sum",
-        "items": [
-            { "node": { "type": "variable", "name": "coursework" }, "weight": blueprint.coursework_weight / 100.0 },
-            { "node": { "type": "variable", "name": "final_exam" }, "weight": blueprint.exam_weight / 100.0 }
-        ]
+        "components": components,
     });
+
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO assessment_schemes (id, org_id, name, description, max_score, formula, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        "INSERT INTO assessment_schemes (id, org_id, name, description, max_score, formula, created_at, updated_at) \
+         SELECT $1, $2, $3, $4, $5, $6, $7, $8 \
+         WHERE NOT EXISTS (SELECT 1 FROM assessment_schemes WHERE org_id = $2)",
         vec![
             scheme_id_uuid.into(), org_id.into(),
             blueprint.assessment_scheme_name.clone().into(),
-            "Standard Assessment Scheme".into(),
+            "هيكل التقييم القياسي المعتمد للمؤسسة".into(),
             100.0f64.into(),
             formula_json.to_string().into(),
             now.to_string().into(), now.to_string().into(),
@@ -1440,13 +1455,14 @@ impl OnboardingPort for OnboardingAdapterImpl {
             let p_end = normalize_end(&p.end_date);
             txn.execute(Statement::from_sql_and_values(
                 txn.get_database_backend(),
-                "INSERT INTO academic_periods (id, org_id, year_id, name, name_ar, period_type, start_date, end_date, status, is_locked, is_enrollment_open, is_grade_entry_open, created_at, updated_at) \
-                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, 'active', 0, 1, 1, $9, $10 \
-                 WHERE NOT EXISTS (SELECT 1 FROM academic_periods WHERE org_id = $2 AND year_id = $3 AND name = $4)",
+                "INSERT INTO academic_periods (id, org_id, year_id, parent_id, name, name_ar, period_type, start_date, end_date, status, is_locked, is_enrollment_open, is_grade_entry_open, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, 'active', 0, 1, 1, $10, $11 \
+                 WHERE NOT EXISTS (SELECT 1 FROM academic_periods WHERE org_id = $2 AND year_id = $3 AND name = $5)",
                 vec![
                     p.id.into(),
                     org_id.into(),
                     p.year_id.into(),
+                    p.parent_id.into(),
                     p.name.clone().into(),
                     p.name_ar.clone().unwrap_or_else(|| p.name.clone()).into(),
                     p.period_type.clone().into(),
@@ -1588,6 +1604,16 @@ impl OnboardingPort for OnboardingAdapterImpl {
                     now.clone().into(), now.clone().into(),
                 ]
             )).await.ok();
+        }
+
+        // 12. Assessment Schemes
+        let blueprint = match data.org_type.as_str() {
+            "university" => university_blueprint(),
+            "institute" | "training_center" => institute_blueprint(),
+            _ => school_blueprint(),
+        };
+        if let Err(e) = seed_assessment_schemes(&txn, org_id, &blueprint, &now).await {
+            info!("Assessment schemes seeding note: {}", e);
         }
 
         txn.commit().await

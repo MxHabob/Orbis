@@ -12,7 +12,7 @@ use orbis_domain::entities::payment::{Payment as DomainPayment, PaymentMethod};
 use orbis_domain::entities::currency::Currency as DomainCurrency;
 use orbis_domain::entities::exchange_rate::ExchangeRate as DomainExchangeRate;
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter, PaginatorTrait};
+use sea_orm::{ActiveModelTrait, ConnectionTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter, PaginatorTrait};
 use uuid::Uuid;
 use rust_decimal::Decimal;
 
@@ -533,21 +533,34 @@ impl CurrencyRepository for FinanceRepoImpl {
     }
 
     async fn find_by_org(&self, _org_id: Uuid) -> Result<Vec<DomainCurrency>, DomainError> {
+        let base_currency_row = self.db.query_one(sea_orm::Statement::from_sql_and_values(
+            self.db.get_database_backend(),
+            "SELECT base_currency_code FROM organizations WHERE id = $1 LIMIT 1",
+            vec![_org_id.into()]
+        )).await.ok().flatten();
+
+        let base_code: String = base_currency_row
+            .and_then(|r| r.try_get("", "base_currency_code").ok())
+            .unwrap_or_else(|| "YER".into());
+
         let models = CurrencyEntity::find()
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| DomainCurrency {
-            code: m.id.clone(),
-            org_id: _org_id,
-            name: m.name,
-            name_ar: m.name_ar,
-            symbol: m.symbol,
-            symbol_position: "before".into(),
-            decimal_places: m.decimal_places as u32,
-            is_base: m.id == "SAR",
-            is_active: m.is_active,
-            updated_at: m.created_at,
+        Ok(models.into_iter().map(|m| {
+            let is_base = m.id.to_uppercase() == base_code.to_uppercase();
+            DomainCurrency {
+                code: m.id.clone(),
+                org_id: _org_id,
+                name: m.name,
+                name_ar: m.name_ar,
+                symbol: m.symbol,
+                symbol_position: "after".into(),
+                decimal_places: m.decimal_places as u32,
+                is_base,
+                is_active: is_base || m.is_active,
+                updated_at: m.created_at,
+            }
         }).collect())
     }
 

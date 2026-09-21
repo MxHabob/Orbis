@@ -292,7 +292,13 @@ pub fn discount_template_to_dto(d: DiscountTemplate) -> DiscountTemplateDto {
 pub struct CurrencyDto {
     pub code: String,
     pub name: String,
+    pub name_ar: Option<String>,
     pub symbol: String,
+    pub symbol_position: String,
+    pub decimal_places: u32,
+    pub is_base: bool,
+    pub is_active: bool,
+    pub exchange_rate: f64,
 }
 
 // ── Request Inputs ───────────────────────────────────────────────
@@ -651,7 +657,17 @@ pub async fn finance_list_currencies(
 ) -> Result<ApiResponse<Vec<CurrencyDto>>, String> {
     let ctx = make_ctx(&state);
     let items = state.currency_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
-    Ok(ok(items.into_iter().map(|c| CurrencyDto { code: c.code, name: c.name, symbol: c.symbol }).collect()))
+    Ok(ok(items.into_iter().map(|c| CurrencyDto {
+        code: c.code,
+        name: c.name,
+        name_ar: c.name_ar,
+        symbol: c.symbol,
+        symbol_position: c.symbol_position,
+        decimal_places: c.decimal_places,
+        is_base: c.is_base,
+        is_active: c.is_active,
+        exchange_rate: if c.is_base { 1.0 } else { 1.0 },
+    }).collect()))
 }
 
 #[tauri::command]

@@ -14,9 +14,15 @@ export type AcademicPeriodDto = {
     end_date: string;
     id: string;
     name: string;
+    name_ar?: string | null;
+    parent_id?: string | null;
+    code?: string | null;
     period_type: string;
     start_date: string;
     status: string;
+    is_locked?: boolean;
+    is_enrollment_open?: boolean;
+    is_grade_entry_open?: boolean;
     year_id: string;
 };
 
@@ -353,7 +359,13 @@ export type CreateYearRequest = {
 export type CurrencyDto = {
     code: string;
     name: string;
+    name_ar?: string | null;
     symbol: string;
+    symbol_position?: string | null;
+    decimal_places?: number | null;
+    is_base?: boolean | null;
+    is_active?: boolean | null;
+    exchange_rate?: number | null;
 };
 
 export type DashboardCountsDto = {

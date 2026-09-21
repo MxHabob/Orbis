@@ -34,11 +34,17 @@ pub struct CreateYearInput {
 pub struct AcademicPeriodDto {
     pub id: String,
     pub year_id: String,
+    pub parent_id: Option<String>,
     pub name: String,
+    pub name_ar: Option<String>,
+    pub code: Option<String>,
     pub start_date: String,
     pub end_date: String,
     pub period_type: String,
     pub status: String,
+    pub is_locked: bool,
+    pub is_enrollment_open: bool,
+    pub is_grade_entry_open: bool,
 }
 
 #[derive(Deserialize)]
@@ -84,14 +90,25 @@ fn year_dto(y: orbis_domain::entities::academic_year::AcademicYear) -> AcademicY
 }
 
 fn period_dto(p: orbis_domain::entities::academic_period::AcademicPeriod) -> AcademicPeriodDto {
+    let status_str = match p.state {
+        orbis_domain::entities::academic_period::AcademicPeriodState::Closed => "closed",
+        orbis_domain::entities::academic_period::AcademicPeriodState::Archived => "archived",
+        _ => if p.is_locked { "locked" } else { "active" },
+    };
     AcademicPeriodDto {
         id: p.id.to_string(),
         year_id: p.year_id.to_string(),
+        parent_id: p.parent_id.map(|u| u.to_string()),
         name: p.name,
+        name_ar: p.name_ar,
+        code: p.code,
         start_date: p.start_date.to_rfc3339(),
         end_date: p.end_date.to_rfc3339(),
         period_type: p.period_type,
-        status: p.state.to_string(),
+        status: status_str.to_string(),
+        is_locked: p.is_locked,
+        is_enrollment_open: p.is_enrollment_open,
+        is_grade_entry_open: p.is_grade_entry_open,
     }
 }
 
