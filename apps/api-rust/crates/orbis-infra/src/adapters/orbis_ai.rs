@@ -11,6 +11,7 @@ use serde_json::json;
 pub struct OrbisAiAdapter {
     pub endpoint_url: String,
     pub api_key: Option<String>,
+    pub default_model: String,
     pub client: Client,
 }
 
@@ -19,6 +20,7 @@ impl OrbisAiAdapter {
         Self {
             endpoint_url,
             api_key: None,
+            default_model: "llama3.2".to_string(),
             client: Client::new(),
         }
     }
@@ -27,6 +29,20 @@ impl OrbisAiAdapter {
         Self {
             endpoint_url,
             api_key,
+            default_model: "gpt-4o".to_string(),
+            client: Client::new(),
+        }
+    }
+
+    pub fn with_config(
+        endpoint_url: String,
+        api_key: Option<String>,
+        default_model: String,
+    ) -> Self {
+        Self {
+            endpoint_url,
+            api_key,
+            default_model,
             client: Client::new(),
         }
     }
@@ -43,7 +59,11 @@ impl LlmGatewayPort for OrbisAiAdapter {
         temperature: f64,
     ) -> Result<String, DomainError> {
         let endpoint = format!("{}/v1/chat/completions", self.endpoint_url.trim_end_matches('/'));
-        let selected_model = if model.trim().is_empty() { "gpt-4o" } else { model };
+        let selected_model = if model.trim().is_empty() {
+            &self.default_model
+        } else {
+            model
+        };
 
         let payload = json!({
             "model": selected_model,
@@ -94,7 +114,11 @@ impl LlmGatewayPort for OrbisAiAdapter {
         temperature: f64,
     ) -> Result<LlmChatOutput, DomainError> {
         let endpoint = format!("{}/v1/chat/completions", self.endpoint_url.trim_end_matches('/'));
-        let selected_model = if model.trim().is_empty() { "gpt-4o" } else { model };
+        let selected_model = if model.trim().is_empty() {
+            &self.default_model
+        } else {
+            model
+        };
 
         // Construct standard OpenAI messages array
         let mut messages_payload = Vec::new();
