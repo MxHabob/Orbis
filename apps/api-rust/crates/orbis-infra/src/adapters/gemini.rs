@@ -8,6 +8,7 @@ use serde_json::json;
 
 pub struct GeminiAdapter {
     pub api_key: String,
+    pub default_model: String,
     pub client: Client,
 }
 
@@ -15,6 +16,15 @@ impl GeminiAdapter {
     pub fn new(api_key: String) -> Self {
         Self {
             api_key,
+            default_model: "gemini-3.8-flash".to_string(),
+            client: Client::new(),
+        }
+    }
+
+    pub fn with_default_model(api_key: String, default_model: String) -> Self {
+        Self {
+            api_key,
+            default_model,
             client: Client::new(),
         }
     }
@@ -30,9 +40,8 @@ impl LlmGatewayPort for GeminiAdapter {
         user_prompt: &str,
         temperature: f64,
     ) -> Result<String, DomainError> {
-        const CURRENT_FLASH_MODEL: &str = "gemini-2.5-flash";
         let mut selected_model = if model.trim().is_empty() {
-            CURRENT_FLASH_MODEL.to_string()
+            self.default_model.clone()
         } else {
             model.to_string()
         };
@@ -64,8 +73,8 @@ impl LlmGatewayPort for GeminiAdapter {
                 let error_text = res.text().await.unwrap_or_default();
                 let is_retired_model =
                     status.as_u16() == 404 && error_text.contains("no longer available");
-                if attempt == 0 && is_retired_model && selected_model != CURRENT_FLASH_MODEL {
-                    selected_model = CURRENT_FLASH_MODEL.to_string();
+                if attempt == 0 && is_retired_model && selected_model != self.default_model {
+                    selected_model = self.default_model.clone();
                     continue;
                 }
                 return Err(DomainError::Validation(format!("Gemini API Error: {}", error_text)));
@@ -96,11 +105,15 @@ impl LlmGatewayPort for GeminiAdapter {
         tools: &[AiToolDefinition],
         temperature: f64,
     ) -> Result<LlmChatOutput, DomainError> {
-        const DEFAULT_MODEL: &str = "gemini-2.5-flash";
-        let selected_model = if model.trim().is_empty() {
-            DEFAULT_MODEL
+        let mut selected_model = if model.trim().is_empty()
+            || model.starts_with("gpt")
+            || model.starts_with("claude")
+            || model.starts_with("deepseek")
+            || model.starts_with("llama")
+        {
+            self.default_model.clone()
         } else {
-            model
+            model.to_string()
         };
 
         // Build contents for Gemini API
@@ -165,62 +178,72 @@ impl LlmGatewayPort for GeminiAdapter {
             }]);
         }
 
-        let url = format!(
-            "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent",
-            selected_model
-        );
+        for attempt in 0..2 {
+            let url = format!(
+                "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent",
+                selected_model
+            );
 
-        let res = self
-            .client
-            .post(&url)
-            .header("x-goog-api-key", &self.api_key)
-            .json(&payload)
-            .send()
-            .await
-            .map_err(|e| DomainError::Validation(format!("Gemini API Network Error: {}", e)))?;
+            let res = self
+                .client
+                .post(&url)
+                .header("x-goog-api-key", &self.api_key)
+                .json(&payload)
+                .send()
+                .await
+                .map_err(|e| DomainError::Validation(format!("Gemini API Network Error: {}", e)))?;
 
-        if !res.status().is_success() {
-            let error_text = res.text().await.unwrap_or_default();
-            return Err(DomainError::Validation(format!("Gemini API Error: {}", error_text)));
-        }
-
-        let body: serde_json::Value = res
-            .json()
-            .await
-            .map_err(|e| DomainError::Validation(format!("Invalid JSON from Gemini: {}", e)))?;
-
-        let candidate = &body["candidates"][0]["content"];
-        let parts = candidate["parts"].as_array();
-
-        let mut content_parts = Vec::new();
-        let mut tool_calls = Vec::new();
-
-        if let Some(parts_arr) = parts {
-            for (idx, part) in parts_arr.iter().enumerate() {
-                if let Some(text) = part["text"].as_str() {
-                    content_parts.push(text);
+            if !res.status().is_success() {
+                let status = res.status();
+                let error_text = res.text().await.unwrap_or_default();
+                let is_retired_model = status.as_u16() == 404;
+                if attempt == 0 && is_retired_model && selected_model != self.default_model {
+                    selected_model = self.default_model.clone();
+                    continue;
                 }
-                if let Some(fc) = part.get("functionCall") {
-                    let tool_name = fc["name"].as_str().unwrap_or_default().to_string();
-                    let arguments = fc.get("args").cloned().unwrap_or(json!({}));
-                    tool_calls.push(AiToolCall {
-                        id: format!("call_gemini_{}_{}", tool_name, idx),
-                        tool_name,
-                        arguments,
-                    });
+                return Err(DomainError::Validation(format!("Gemini API Error: {}", error_text)));
+            }
+
+            let body: serde_json::Value = res
+                .json()
+                .await
+                .map_err(|e| DomainError::Validation(format!("Invalid JSON from Gemini: {}", e)))?;
+
+            let candidate = &body["candidates"][0]["content"];
+            let parts = candidate["parts"].as_array();
+
+            let mut content_parts = Vec::new();
+            let mut tool_calls = Vec::new();
+
+            if let Some(parts_arr) = parts {
+                for (idx, part) in parts_arr.iter().enumerate() {
+                    if let Some(text) = part["text"].as_str() {
+                        content_parts.push(text);
+                    }
+                    if let Some(fc) = part.get("functionCall") {
+                        let tool_name = fc["name"].as_str().unwrap_or_default().to_string();
+                        let arguments = fc.get("args").cloned().unwrap_or(json!({}));
+                        tool_calls.push(AiToolCall {
+                            id: format!("call_gemini_{}_{}", tool_name, idx),
+                            tool_name,
+                            arguments,
+                        });
+                    }
                 }
             }
+
+            let content = if content_parts.is_empty() {
+                None
+            } else {
+                Some(content_parts.join("\n"))
+            };
+
+            return Ok(LlmChatOutput {
+                content,
+                tool_calls,
+            });
         }
 
-        let content = if content_parts.is_empty() {
-            None
-        } else {
-            Some(content_parts.join("\n"))
-        };
-
-        Ok(LlmChatOutput {
-            content,
-            tool_calls,
-        })
+        Err(DomainError::Validation("Gemini model retry failed".into()))
     }
 }

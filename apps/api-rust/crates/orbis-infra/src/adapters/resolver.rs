@@ -59,14 +59,16 @@ impl IntegrationResolver {
     }
     async fn resolve_llm_adapter(&self, ctx: &RequestContext) -> Result<Box<dyn LlmGatewayPort>, DomainError> {
         let configs = self.integration_repo.find_configs_by_org(ctx.tenant_id).await?;
-        let active_ai = configs.into_iter().find(|c| (c.category == "ai" || c.category == "llm") && c.is_enabled);
+        let active_ai = configs.into_iter().find(|c| {
+            (c.category == "ai" || c.category == "llm" || c.category == "ai-provider" || c.category == "ai_provider" || c.category == "ai-gateway") && c.is_enabled
+        });
 
         match active_ai {
             Some(config) => {
                 let secrets = self.integration_repo.get_secrets_by_config(config.id).await?;
                 let provider = config.provider_name.to_lowercase();
 
-                if provider == "gemini" || provider == "google" {
+                if provider == "gemini" || provider == "gemini-ai" || provider == "google" || provider == "google-gemini" {
                     let api_key = secrets
                         .into_iter()
                         .find(|s| s.key_name == "api_key")
