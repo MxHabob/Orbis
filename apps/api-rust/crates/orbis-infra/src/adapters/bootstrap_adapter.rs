@@ -1347,9 +1347,8 @@ impl OnboardingPort for OnboardingAdapterImpl {
         // 1. Update Organization Profile & Settings
         txn.execute(Statement::from_sql_and_values(
             txn.get_database_backend(),
-            "UPDATE organizations SET org_type = $1, base_currency_code = $2, timezone = $3, locale = $4, settings = $5, updated_at = $6 WHERE id = $7",
+            "UPDATE organizations SET base_currency_code = $1, timezone = $2, locale = $3, settings = $4, updated_at = $5 WHERE id = $6",
             vec![
-                data.org_type.into(),
                 data.base_currency_code.clone().into(),
                 data.timezone.into(),
                 data.locale.into(),
@@ -1396,8 +1395,8 @@ impl OnboardingPort for OnboardingAdapterImpl {
         for rm in &data.rooms {
             txn.execute(Statement::from_sql_and_values(
                 txn.get_database_backend(),
-                "INSERT INTO rooms (id, org_id, name, room_type, capacity, is_active, created_at, updated_at) \
-                 SELECT $1, $2, $3, $4, $5, 1, $6, $7 \
+                "INSERT INTO rooms (id, org_id, name, room_type, capacity, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, $7 \
                  WHERE NOT EXISTS (SELECT 1 FROM rooms WHERE org_id = $2 AND name = $3)",
                 vec![
                     rm.id.into(), org_id.into(), rm.name.clone().into(),
@@ -1504,21 +1503,22 @@ impl OnboardingPort for OnboardingAdapterImpl {
         }
 
         // 8. Time Slots
-        for ts in &data.time_slots {
+        for (slot_idx, ts) in data.time_slots.iter().enumerate() {
+            let start_time_str = if ts.start_time.len() == 5 { format!("{}:00", ts.start_time) } else { ts.start_time.clone() };
+            let end_time_str = if ts.end_time.len() == 5 { format!("{}:00", ts.end_time) } else { ts.end_time.clone() };
+
             txn.execute(Statement::from_sql_and_values(
                 txn.get_database_backend(),
-                "INSERT INTO time_slots (id, org_id, name, name_ar, start_time, end_time, day_of_week, is_break, break_type, is_active, created_at, updated_at) \
-                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, 1, $10, $11 \
-                 WHERE NOT EXISTS (SELECT 1 FROM time_slots WHERE org_id = $2 AND start_time = $5 AND end_time = $6 AND day_of_week = $7)",
+                "INSERT INTO time_slots (id, period_id, day_of_week, start_time, end_time, slot_index, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, $7, $8 \
+                 WHERE NOT EXISTS (SELECT 1 FROM time_slots WHERE period_id = $2 AND start_time = $4 AND end_time = $5 AND day_of_week = $3)",
                 vec![
-                    ts.id.into(), org_id.into(),
-                    ts.name.clone().into(),
-                    ts.name_ar.clone().unwrap_or_else(|| ts.name.clone()).into(),
-                    ts.start_time.clone().into(),
-                    ts.end_time.clone().into(),
-                    ts.day_of_week.into(),
-                    (if ts.is_break { 1i32 } else { 0i32 }).into(),
-                    ts.break_type.clone().unwrap_or_default().into(),
+                    ts.id.into(),
+                    first_period_id.into(),
+                    (ts.day_of_week as i16).into(),
+                    start_time_str.into(),
+                    end_time_str.into(),
+                    (slot_idx as i32 + 1).into(),
                     now.clone().into(), now.clone().into(),
                 ]
             )).await.ok();
@@ -1532,17 +1532,38 @@ impl OnboardingPort for OnboardingAdapterImpl {
         }
 
         // 10. Fee Templates
+        let rec_row = txn.query_one(Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            "SELECT id FROM accounts WHERE org_id = $1 AND code = '110401' LIMIT 1",
+            vec![org_id.into()]
+        )).await.ok().flatten();
+        let rec_id: Uuid = match rec_row {
+            Some(r) => r.try_get("", "id").unwrap_or_else(|_| Uuid::new_v4()),
+            None => Uuid::new_v4(),
+        };
+        let rev_row = txn.query_one(Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            "SELECT id FROM accounts WHERE org_id = $1 AND code = '410101' LIMIT 1",
+            vec![org_id.into()]
+        )).await.ok().flatten();
+        let rev_id: Uuid = match rev_row {
+            Some(r) => r.try_get("", "id").unwrap_or(rec_id),
+            None => rec_id,
+        };
+
         for f in &data.fee_templates {
             txn.execute(Statement::from_sql_and_values(
                 txn.get_database_backend(),
-                "INSERT INTO fee_templates (id, org_id, code, name, name_ar, category, default_amount, currency_code, frequency, is_mandatory, is_active, created_at, updated_at) \
-                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1, $11, $12 \
+                "INSERT INTO fee_templates (id, org_id, code, name, name_ar, category, default_amount, currency_code, revenue_account_id, receivable_account_id, frequency, is_mandatory, is_active, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 1, $13, $14 \
                  WHERE NOT EXISTS (SELECT 1 FROM fee_templates WHERE org_id = $2 AND code = $3)",
                 vec![
                     f.id.into(), org_id.into(), f.code.clone().into(),
                     f.name.clone().into(), f.name_ar.clone().into(),
                     f.category.clone().into(), f.default_amount.into(),
-                    f.currency_code.clone().into(), f.frequency.clone().into(),
+                    f.currency_code.clone().into(),
+                    rev_id.into(), rec_id.into(),
+                    f.frequency.clone().into(),
                     (if f.is_mandatory { 1i32 } else { 0i32 }).into(),
                     now.clone().into(), now.clone().into(),
                 ]
