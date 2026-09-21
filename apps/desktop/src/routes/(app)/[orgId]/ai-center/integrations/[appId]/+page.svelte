@@ -19,6 +19,7 @@ import { Button } from "@orbis/ui/button";
 import AppIcon from "$lib/features/ai-center/components/integrations/app-icon.svelte";
 import AppConnectForm from "$lib/features/ai-center/components/integrations/app-connect-form.svelte";
 import { l } from "$lib/core/i18n";
+    import { toast } from "@orbis/ui/sonner";
 
 let { data }: { data: { orgId: string; appId: string } } = $props();
 const queryClient = useQueryClient();
@@ -36,17 +37,19 @@ const basePath = $derived(`/${data.orgId}/ai-center/integrations`);
 let isConnecting = $state(false);
 let connectError = $state<string | null>(null);
 
+const providerName = $derived(app?.adapter_name ?? data.appId);
+
 const statusQuery = createQuery(() => ({
-  queryKey: ["integration-status", data.orgId, data.appId],
+  queryKey: ["integration-status", data.orgId, providerName],
   queryFn: async () => {
     try {
-      const status = await api.getIntegrationStatus(data.appId);
+      const status = await api.getIntegrationStatus(providerName);
       return status?.connected ?? false;
     } catch {
       return false;
     }
   },
-  enabled: !!data.appId,
+  enabled: !!providerName,
   staleTime: 30 * 1000,
 }));
 
@@ -109,17 +112,19 @@ async function handleConnect(values: Record<string, unknown>) {
     }
 
     await api.connectApp({
-      provider_name: app?.adapter_name ?? data.appId,
+      provider_name: providerName,
       category: app?.category ?? "other",
       env: "production",
       settings,
       secrets,
     });
+    toast.success(l(`تم ربط ${app?.name || providerName} بنجاح`, `Connected ${app?.name || providerName} successfully`));
     await queryClient.invalidateQueries({
-      queryKey: ["integration-status", data.orgId, data.appId],
+      queryKey: ["integration-status", data.orgId, providerName],
     });
   } catch (e: any) {
-    connectError = e?.message ?? "Connection failed";
+    connectError = extractErrorMessage(e) || (e?.message ?? "Connection failed");
+    toast.error(connectError);
   } finally {
     isConnecting = false;
   }
@@ -127,12 +132,14 @@ async function handleConnect(values: Record<string, unknown>) {
 
 async function handleDisconnect() {
   try {
-    await api.disconnectApp(data.appId);
+    await api.disconnectApp(providerName);
+    toast.success(l("تم قطع الاتصال بنجاح", "Disconnected successfully"));
     await queryClient.invalidateQueries({
-      queryKey: ["integration-status", data.orgId, data.appId],
+      queryKey: ["integration-status", data.orgId, providerName],
     });
   } catch (e: any) {
     console.error("[AI Center] Disconnect failed:", e);
+    toast.error(extractErrorMessage(e));
   }
 }
 
@@ -257,7 +264,17 @@ const activeFeatures = $derived(app ? l(app.features_ar, app.features) : []);
                 {#if connectError}
                   <p class="text-[10px] text-red-500 mb-2">{connectError}</p>
                 {/if}
-                <Button class="w-full" size="sm" disabled={!app.active || isConnecting}>
+                <Button
+                  class="w-full"
+                  size="sm"
+                  disabled={!app.active || isConnecting}
+                  onclick={() => {
+                    const formEl = document.querySelector('form');
+                    if (formEl) {
+                      formEl.requestSubmit();
+                    }
+                  }}
+                >
                   {isConnecting ? l("جاري الاتصال...", "Connecting...") : app.active ? l(`ربط ${app.name}`, `Connect ${app.name}`) : l("قريباً", "Coming Soon")}
                 </Button>
               {/if}

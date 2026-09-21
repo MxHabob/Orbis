@@ -58,13 +58,25 @@ impl IntegrationRepository for IntegrationRepoImpl {
     }
 
     async fn save_secret(&self, secret: &DomainIntegrationSecret) -> Result<(), DomainError> {
+        let existing = integration_secret::Entity::find()
+            .filter(integration_secret::Column::ConfigId.eq(secret.config_id))
+            .filter(integration_secret::Column::KeyName.eq(&secret.key_name))
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        let sid = existing.as_ref().map(|e| e.id).unwrap_or(secret.id);
+
         let active = integration_secret::ActiveModel {
-            id: Set(secret.id), config_id: Set(secret.config_id), secret_key: Set(secret.secret_key.clone()),
-            key_name: Set(secret.key_name.clone()), created_at: Set(secret.created_at.into()),
+            id: Set(sid),
+            config_id: Set(secret.config_id),
+            secret_key: Set(secret.secret_key.clone()),
+            key_name: Set(secret.key_name.clone()),
+            created_at: Set(existing.as_ref().map(|e| e.created_at).unwrap_or_else(|| secret.created_at.into())),
             updated_at: Set(secret.updated_at.into()),
         };
 
-        if integration_secret::Entity::find_by_id(secret.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
+        if existing.is_some() {
             active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
             active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;

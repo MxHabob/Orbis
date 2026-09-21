@@ -195,7 +195,7 @@ async function saveRateValue(code: string) {
 
 // Find base currency representation
 let baseCurrencyCode = $derived(
-  currencies.find((c) => c.is_base === 1)?.code || "YER",
+  currencies.find((c) => c.is_base === true || c.is_base === 1)?.code || "YER",
 );
 </script>
 
@@ -298,7 +298,7 @@ let baseCurrencyCode = $derived(
                   </span>
                 </TableCell>
                 <TableCell class="text-start text-xs">
-                  {#if c.is_base === 1}
+                  {#if c.is_base === true || c.is_base === 1}
                     <Badge variant="success" class="text-[9px] font-bold">
                       {m.settings_currencies_type_base()}
                     </Badge>
@@ -309,7 +309,7 @@ let baseCurrencyCode = $derived(
                   {/if}
                 </TableCell>
                 <TableCell class="text-start text-xs">
-                  {#if c.is_active === 1}
+                  {#if c.is_active === true || c.is_active === 1}
                     <Badge variant="success" class="text-[9px] font-bold">
                       {m.common_phase_active()}
                     </Badge>
@@ -320,7 +320,7 @@ let baseCurrencyCode = $derived(
                   {/if}
                 </TableCell>
                 <TableCell class="text-end text-xs font-bold font-mono">
-                  {#if c.is_base === 1}
+                  {#if c.is_base === true || c.is_base === 1}
                     <span class="text-foreground select-none">1.0000</span>
                   {:else if editingRateCode === c.code}
                     <div class="flex items-center justify-end gap-1.5" transition:fade={{ duration: 100 }}>

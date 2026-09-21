@@ -40,7 +40,8 @@ impl IntegrationService {
         self.permission_checker.check(ctx, Permission::OrganizationWrite).await?;
 
         let now = Utc::now();
-        let config_id = Uuid::new_v4();
+        let existing = self.integration_repo.find_config_by_provider(org_id, &provider_name).await?;
+        let config_id = existing.as_ref().map(|c| c.id).unwrap_or_else(Uuid::new_v4);
 
         let config = IntegrationConfig {
             id: config_id,
@@ -50,7 +51,7 @@ impl IntegrationService {
             is_enabled: true,
             env,
             settings: Some(settings),
-            created_at: now,
+            created_at: existing.as_ref().map(|c| c.created_at).unwrap_or(now),
             updated_at: now,
         };
 

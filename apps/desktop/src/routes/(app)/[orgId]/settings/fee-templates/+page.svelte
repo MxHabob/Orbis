@@ -82,7 +82,7 @@ const gridSource = $derived(
       name: tpl.name_ar || tpl.name || "—",
       amount: formatCurrency(Number(tpl.default_amount || 0), "YER"),
       frequency: getFrequencyLabel(tpl.frequency),
-      status: tpl.is_active === 1 ? "active" : "inactive",
+      status: (tpl.is_active === true || tpl.is_active === 1) ? "active" : "inactive",
       class_count: getCategoryLabel(tpl.category),
     })),
   ),

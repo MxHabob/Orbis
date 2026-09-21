@@ -37,6 +37,7 @@ import {
   Building2,
   BookOpen,
   CheckCircle2,
+  Lock as LockIcon,
 } from "@lucide/svelte";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
@@ -290,16 +291,11 @@ function handleFormSave() {
       </div>
     </div>
 
-    <!-- Quick Preset Select -->
-    <div class="w-full sm:w-56 shrink-0">
-      <Select
-        type="single"
-        value={institutionType}
-        onValueChange={(v) => {
-          if (v) applyPreset(v);
-        }}
-      >
-        <SelectTrigger class="h-9 w-full text-xs font-semibold">
+    <!-- Locked Profile Badge -->
+    <div class="shrink-0 flex items-center gap-2">
+      <Badge variant="outline" class="px-3.5 py-1.5 h-8 text-xs font-bold gap-1.5 bg-muted/40 border-border/80 text-foreground">
+        <LockIcon class="w-3.5 h-3.5 text-muted-foreground" />
+        <span>
           {#if institutionType === "school"}
             {l("مدرسة تعليم عام (K-12)", "K-12 School")}
           {:else if institutionType === "university"}
@@ -311,14 +307,8 @@ function handleFormSave() {
           {:else}
             {institutionType}
           {/if}
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="school" class="text-xs">{l("مدرسة تعليم عام (K-12)", "K-12 School")}</SelectItem>
-          <SelectItem value="university" class="text-xs">{l("جامعة / كلية أكاديمية", "University / College")}</SelectItem>
-          <SelectItem value="institute" class="text-xs">{l("معهد تدريبي / مهني", "Training Institute")}</SelectItem>
-          <SelectItem value="quran_center" class="text-xs">{l("مركز تحفيظ قرآن كريم", "Quranic Center")}</SelectItem>
-        </SelectContent>
-      </Select>
+        </span>
+      </Badge>
     </div>
   </div>
 
