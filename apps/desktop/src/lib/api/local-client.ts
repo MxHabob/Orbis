@@ -667,10 +667,18 @@ export class LocalClient implements OrbisApiClient {
   }
   async listTemplates(filter?: {
     documentType?: string;
+    document_type?: string;
     entityType?: string;
+    entity_type?: string;
     status?: string;
   }): Promise<TemplateDto[]> {
-    return unwrap(await invoke("template_list", { filter: filter ?? {} }));
+    return unwrap(
+      await invoke("template_list", {
+        documentType: filter?.documentType ?? filter?.document_type,
+        entityType: filter?.entityType ?? filter?.entity_type,
+        status: filter?.status,
+      }),
+    );
   }
   async updateTemplate(
     id: string,

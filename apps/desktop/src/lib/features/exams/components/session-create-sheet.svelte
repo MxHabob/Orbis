@@ -70,8 +70,7 @@ $effect(() => {
 // Load academic periods on open
 $effect(() => {
   if (open && orgId) {
-    api.calendar
-      .listAcademicPeriods()
+    api.listAcademicPeriods()
       .then((res: any) => {
         periodsList = res || [];
         if (!periodId && periodsList.length > 0) {
