@@ -53,6 +53,8 @@ import type {
   UpdateSchemeRequest,
   RecordGradeRequest,
   MarkAttendanceRequest,
+  BehaviorRecordDto,
+  RecordBehaviorInput,
   CalculateGradesRequest,
   CalculateRankingsRequest,
   RankingItemDto,
@@ -95,7 +97,9 @@ import type {
   StudentFilterParams,
   EnrollmentFilterParams,
   UpdateStudentStatusInput,
+  UpdateStudentProfileInput,
   ChangeStudyModeInput,
+  TransferClassInput,
   PaginatedList,
   ReportJobStatusDto,
   BatchPrintParams,
@@ -340,8 +344,14 @@ export class LocalClient implements OrbisApiClient {
   async updateStudentStatus(req: UpdateStudentStatusInput): Promise<StudentDto> {
     return unwrap(await invoke("student_update_student_status", { request: req }));
   }
+  async updateStudentProfile(req: UpdateStudentProfileInput): Promise<StudentDetailDto> {
+    return unwrap(await invoke("student_update_profile", { request: req }));
+  }
   async changeStudyMode(req: ChangeStudyModeInput): Promise<EnrollmentDto> {
     return unwrap(await invoke("student_change_study_mode", { request: req }));
+  }
+  async transferClass(req: TransferClassInput): Promise<EnrollmentDto> {
+    return unwrap(await invoke("student_transfer_class", { request: req }));
   }
   async enrollStudent(req: EnrollStudentRequest): Promise<EnrollmentDto> {
     return unwrap(await invoke("student_enroll_student", { request: req }));
@@ -471,6 +481,18 @@ export class LocalClient implements OrbisApiClient {
   ): Promise<AttendanceDto[]> {
     return unwrap(
       await invoke("assessment_list_attendance", { classId, date }),
+    );
+  }
+  async recordBehavior(req: RecordBehaviorInput): Promise<BehaviorRecordDto> {
+    return unwrap(
+      await invoke("assessment_record_behavior", { request: req }),
+    );
+  }
+  async listStudentBehaviorRecords(
+    studentId: string,
+  ): Promise<BehaviorRecordDto[]> {
+    return unwrap(
+      await invoke("assessment_list_student_behavior_records", { studentId }),
     );
   }
 

@@ -232,9 +232,9 @@ impl FinanceService {
             timestamp: now,
         }).await;
 
-        // 8. Notification
-        let receipt_body = format!("Payment of {} received successfully. Reference: {:?}", amount, payment.reference);
-        let _ = self.notification_gateway.send_email(ctx, "parent@example.com", "Payment Receipt", &receipt_body).await;
+        // 8. Notification — receipt dispatch is handled by the PaymentReceived event subscriber,
+        // which has access to guardian/person repos for email lookup.
+        // The event was already published above.
 
         Ok(payment)
     }

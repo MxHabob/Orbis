@@ -246,10 +246,59 @@ export interface UpdateStudentStatusInput {
   reason?: string;
 }
 
+export interface UpdateStudentProfileInput {
+  studentId: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  firstNameAr?: string;
+  middleNameAr?: string;
+  lastNameAr?: string;
+  displayName?: string;
+  nationalId?: string;
+  passportNumber?: string;
+  gender?: string;
+  birthDate?: string;
+  placeOfBirth?: string;
+  nationality?: string;
+  bloodType?: string;
+  medicalNotes?: string;
+  specialNeedsNotes?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  avatarUrl?: string;
+}
+
 export interface ChangeStudyModeInput {
   enrollmentId: string;
   studyMode: string;
   reason?: string;
+}
+
+export interface TransferClassInput {
+  enrollmentId: string;
+  targetClassId: string;
+  reason?: string;
+}
+
+export interface BehaviorRecordDto {
+  id: string;
+  studentId: string;
+  orgId: string;
+  reporterId: string;
+  recordType: string;
+  description: string;
+  points: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecordBehaviorInput {
+  studentId: string;
+  recordType: string;
+  description: string;
+  points: number;
 }
 
 export interface ReportJobStatusDto {
@@ -927,7 +976,9 @@ export interface OrbisApiClient {
   listStudents(filter?: StudentFilterParams): Promise<PaginatedList<StudentDetailDto>>;
   getStudent(id: string): Promise<StudentDetailDto>;
   updateStudentStatus(req: UpdateStudentStatusInput): Promise<StudentDto>;
+  updateStudentProfile(req: UpdateStudentProfileInput): Promise<StudentDetailDto>;
   changeStudyMode(req: ChangeStudyModeInput): Promise<EnrollmentDto>;
+  transferClass(req: TransferClassInput): Promise<EnrollmentDto>;
   enrollStudent(req: EnrollStudentRequest): Promise<EnrollmentDto>;
   listEnrollments(filter?: EnrollmentFilterParams): Promise<EnrollmentDto[]>;
   getEnrollment(id: string): Promise<EnrollmentDto>;
@@ -967,6 +1018,8 @@ export interface OrbisApiClient {
   calculateRankings(req: CalculateRankingsRequest): Promise<RankingItemDto[]>;
   markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto>;
   listAttendance(classId: string, date: string): Promise<AttendanceDto[]>;
+  recordBehavior(req: RecordBehaviorInput): Promise<BehaviorRecordDto>;
+  listStudentBehaviorRecords(studentId: string): Promise<BehaviorRecordDto[]>;
 
   // ── Student Cohort Progression ──────────────────────────────
   evaluateCohort(sourcePeriodId: string): Promise<StudentProgressionItemInput[]>;

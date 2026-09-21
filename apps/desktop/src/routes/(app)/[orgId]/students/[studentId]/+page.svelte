@@ -274,49 +274,32 @@ async function saveStudentDetails(e: Event) {
 
   isSaving = true;
   try {
-    // 1. Verify parent control account '110301' exists in chart of accounts
-    const accounts = await api.listAccounts();
-    const hasControlAccount = accounts.some(
-      (acc: any) => acc.code === "110301",
-    );
-    if (!hasControlAccount) {
-      toast.error(m.common_form_error_control_account_missing());
-      isSaving = false;
-      return;
-    }
+    // Parse Arabic full name into parts (first middle last)
+    const arParts = nameAr.trim().split(/\s+/);
+    const enParts = nameEn.trim().split(/\s+/);
 
-    const studentUserData = {
-      full_name: nameAr.trim(),
-      name_ar: nameAr.trim(),
-      name_en: nameEn.trim() || null,
-      email: email.trim() || null,
-      phone: phone.trim() || null,
-      sex: sex,
-      date_of_birth: birthDate,
-      address: address.trim() || null,
-      status: isActiveState ? "active" : "inactive",
-    };
-
-    // Update student user details
-    await api.updateUser(String(student.student_id), studentUserData as any);
-
-    // If class has changed, invoke transfer command
-    if (student.class_id !== classId) {
-      await api.changeStudyMode({ enrollmentId: studentId, studyMode: "FullTime", targetClassId: classId } as any);
-    }
-
-    // Transition enrollment status if it was draft/pending_review and active switch is checked
-    if (
-      (student.status === "draft" || student.status === "pending_review") &&
-      isActiveState
-    ) {
-      await api.updateStudentStatus({ studentId, status: "Withdrawn" } as any);
-    }
+    // Update student profile via the proper Student API
+    await api.updateStudentProfile({
+      studentId: String(student.student_id),
+      firstNameAr: arParts[0] || undefined,
+      middleNameAr: arParts.length > 2 ? arParts.slice(1, -1).join(" ") : undefined,
+      lastNameAr: arParts.length > 1 ? arParts[arParts.length - 1] : undefined,
+      displayName: nameAr.trim(),
+      firstName: enParts[0] || undefined,
+      middleName: enParts.length > 2 ? enParts.slice(1, -1).join(" ") : undefined,
+      lastName: enParts.length > 1 ? enParts[enParts.length - 1] : undefined,
+      email: email.trim() || undefined,
+      phone: phone.trim() || undefined,
+      gender: sex || undefined,
+      birthDate: birthDate || undefined,
+      address: address.trim() || undefined,
+    });
 
     toast.success(m.common_form_success_update());
 
     // Invalidate query data to trigger reactive updates
     queryClient.invalidateQueries({ queryKey: ["enrollments", orgId] });
+    queryClient.invalidateQueries({ queryKey: ["student", studentId] });
     initialized = false; // re-populate form with updated data
   } catch (e: any) {
     console.error("Save error:", e);

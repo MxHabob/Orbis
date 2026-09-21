@@ -125,14 +125,14 @@ const columns = $derived(
       <div class="border border-border bg-card/30 p-4 rounded-xl flex items-center justify-between">
         <div class="flex flex-col">
           <span class="text-[10px] text-muted-foreground">{m.academics_grades_overall_grade()}</span>
-          <span class="text-sm font-bold text-gradient-brand mt-0.5">{m.academics_grades_overall_grade_value()}</span>
+          <span class="text-sm font-bold text-gradient-brand mt-0.5">{report?.cumulative_gpa != null ? Number(report.cumulative_gpa).toFixed(2) : "—"}</span>
         </div>
         <Award size={18} class="text-primary" />
       </div>
       <div class="border border-border bg-card/30 p-4 rounded-xl flex items-center justify-between">
         <div class="flex flex-col">
           <span class="text-[10px] text-muted-foreground">{m.academics_grades_last_update()}</span>
-          <span class="text-xs font-semibold text-foreground mt-0.5">{m.academics_grades_last_update_value()}</span>
+          <span class="text-xs font-semibold text-foreground mt-0.5">{report?.calculated_at ? formatDate(report.calculated_at) : "—"}</span>
         </div>
         <Calendar size={18} class="text-muted-foreground" />
       </div>

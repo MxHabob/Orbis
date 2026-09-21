@@ -1,6 +1,6 @@
 use orbis_domain::entities::progression::{PromotionJob, PromotionDetail, PromotionJobStatus, PromotionDecision};
 use orbis_domain::entities::enrollment::{Enrollment, EnrollmentStatus};
-use orbis_domain::entities::student::StudentStatus;
+use orbis_domain::entities::student::{StudentStatus, AcademicStanding};
 use orbis_domain::events::DomainEvent;
 use orbis_domain::errors::DomainError;
 use orbis_domain::iam::permission::Permission;
@@ -197,10 +197,26 @@ impl ProgressionService {
             let student_opt = self.student_repo.find_by_id(enr.student_id).await?;
             let (decision, reason) = if let Some(student) = student_opt {
                 match student.status {
-                    StudentStatus::Active => (
-                        PromotionDecision::Promote,
-                        "Eligible for advancement to next grade/level".to_string(),
-                    ),
+                    StudentStatus::Active => {
+                        match student.standing {
+                            AcademicStanding::GoodStanding | AcademicStanding::HonorList => (
+                                PromotionDecision::Promote,
+                                "Eligible for advancement to next grade/level".to_string(),
+                            ),
+                            AcademicStanding::AcademicWarning1 | AcademicStanding::AcademicWarning2 => (
+                                PromotionDecision::Promote,
+                                format!("Eligible for advancement under academic warning ({})", student.standing),
+                            ),
+                            AcademicStanding::AcademicWarning3 | AcademicStanding::Probation => (
+                                PromotionDecision::Retain,
+                                format!("Academic standing requires retention or review ({})", student.standing),
+                            ),
+                            AcademicStanding::Dismissed => (
+                                PromotionDecision::Exclude,
+                                "Student dismissed for academic reasons".to_string(),
+                            ),
+                        }
+                    },
                     StudentStatus::Graduated => (
                         PromotionDecision::Exclude,
                         "Student has already graduated".to_string(),

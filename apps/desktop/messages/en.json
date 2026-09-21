@@ -415,6 +415,7 @@
   "common_student_layout_transfer_class": "Transfer Class",
   "common_student_layout_transfer_coming_soon": "Transfer Class coming soon",
   "common_student_layout_withdraw_coming_soon": "Withdraw Student coming soon",
+  "common_student_layout_withdraw_confirm": "Are you sure you want to withdraw this student? This action will change their status to Withdrawn.",
   "common_classes_total_classes": "Total Classes",
   "common_classes_enrolled_students": "Enrolled Students",
   "common_classes_avg_size": "Average Class Size",

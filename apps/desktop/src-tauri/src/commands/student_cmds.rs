@@ -11,6 +11,7 @@ use orbis_domain::entities::enrollment::{Enrollment, StudyMode, EnrollmentStatus
 use orbis_domain::entities::student_guardian::StudentGuardian;
 use orbis_domain::queries::filters::{StudentFilter, EnrollmentFilter, PaginationParams, PaginatedList};
 use orbis_app::services::student_service::RegisterStudentInput as ServiceRegisterStudentInput;
+use orbis_app::services::student_service::UpdateStudentProfileInput as ServiceUpdateProfileInput;
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
 
@@ -316,6 +317,47 @@ pub struct ChangeStudyModeInput {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct UpdateStudentProfileRequest {
+    #[serde(rename = "studentId")]
+    pub student_id: String,
+    #[serde(rename = "firstName")]
+    pub first_name: Option<String>,
+    #[serde(rename = "middleName")]
+    pub middle_name: Option<String>,
+    #[serde(rename = "lastName")]
+    pub last_name: Option<String>,
+    #[serde(rename = "firstNameAr")]
+    pub first_name_ar: Option<String>,
+    #[serde(rename = "middleNameAr")]
+    pub middle_name_ar: Option<String>,
+    #[serde(rename = "lastNameAr")]
+    pub last_name_ar: Option<String>,
+    #[serde(rename = "displayName")]
+    pub display_name: Option<String>,
+    #[serde(rename = "nationalId")]
+    pub national_id: Option<String>,
+    #[serde(rename = "passportNumber")]
+    pub passport_number: Option<String>,
+    pub gender: Option<String>,
+    #[serde(rename = "birthDate")]
+    pub birth_date: Option<String>,
+    #[serde(rename = "placeOfBirth")]
+    pub place_of_birth: Option<String>,
+    pub nationality: Option<String>,
+    #[serde(rename = "bloodType")]
+    pub blood_type: Option<String>,
+    #[serde(rename = "medicalNotes")]
+    pub medical_notes: Option<String>,
+    #[serde(rename = "specialNeedsNotes")]
+    pub special_needs_notes: Option<String>,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+    pub address: Option<String>,
+    #[serde(rename = "avatarUrl")]
+    pub avatar_url: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct EnrollStudentInput {
     #[serde(rename = "periodId")]
     pub period_id: String,
@@ -542,6 +584,46 @@ pub async fn student_update_student_status(
 }
 
 #[tauri::command]
+pub async fn student_update_profile(
+    request: UpdateStudentProfileRequest,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<StudentDetailDto>, String> {
+    let ctx = make_ctx(&state);
+    let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid student ID")?;
+    let birth_date = request.birth_date.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
+
+    let input = ServiceUpdateProfileInput {
+        first_name: request.first_name,
+        middle_name: request.middle_name,
+        last_name: request.last_name,
+        first_name_ar: request.first_name_ar,
+        middle_name_ar: request.middle_name_ar,
+        last_name_ar: request.last_name_ar,
+        display_name: request.display_name,
+        national_id: request.national_id,
+        passport_number: request.passport_number,
+        gender: request.gender,
+        birth_date,
+        place_of_birth: request.place_of_birth,
+        nationality: request.nationality,
+        blood_type: request.blood_type,
+        medical_notes: request.medical_notes,
+        special_needs_notes: request.special_needs_notes,
+        phone: request.phone,
+        email: request.email,
+        address: request.address,
+        avatar_url: request.avatar_url,
+    };
+
+    let detail = state.student_service
+        .update_student_profile(&ctx, student_id, input)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(student_detail_to_dto(detail)))
+}
+
+#[tauri::command]
 pub async fn student_change_study_mode(
     request: ChangeStudyModeInput,
     state: State<'_, AppState>,
@@ -552,6 +634,32 @@ pub async fn student_change_study_mode(
 
     let enrollment = state.student_service
         .change_study_mode(&ctx, enrollment_id, study_mode, request.reason)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(enrollment_to_dto(enrollment)))
+}
+
+#[derive(Deserialize, Debug)]
+pub struct TransferClassInput {
+    #[serde(rename = "enrollmentId")]
+    pub enrollment_id: String,
+    #[serde(rename = "targetClassId")]
+    pub target_class_id: String,
+    pub reason: Option<String>,
+}
+
+#[tauri::command]
+pub async fn student_transfer_class(
+    request: TransferClassInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<EnrollmentDto>, String> {
+    let ctx = make_ctx(&state);
+    let enrollment_id = Uuid::parse_str(&request.enrollment_id).map_err(|_| "Invalid enrollment ID")?;
+    let target_class_id = Uuid::parse_str(&request.target_class_id).map_err(|_| "Invalid target class ID")?;
+
+    let enrollment = state.student_service
+        .transfer_class(&ctx, enrollment_id, target_class_id, request.reason)
         .await
         .map_err(|e| e.to_string())?;
 

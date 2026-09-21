@@ -436,3 +436,76 @@ pub async fn assessment_calculate_rankings(
     Ok(ok(dtos))
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BehaviorRecordDto {
+    pub id: String,
+    #[serde(rename = "studentId")]
+    pub student_id: String,
+    #[serde(rename = "orgId")]
+    pub org_id: String,
+    #[serde(rename = "reporterId")]
+    pub reporter_id: String,
+    #[serde(rename = "recordType")]
+    pub record_type: String,
+    pub description: String,
+    pub points: i32,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RecordBehaviorInput {
+    #[serde(rename = "studentId")]
+    pub student_id: String,
+    #[serde(rename = "recordType")]
+    pub record_type: String,
+    pub description: String,
+    pub points: i32,
+}
+
+fn behavior_to_dto(r: orbis_domain::entities::behavior_record::BehaviorRecord) -> BehaviorRecordDto {
+    BehaviorRecordDto {
+        id: r.id.to_string(),
+        student_id: r.student_id.to_string(),
+        org_id: r.org_id.to_string(),
+        reporter_id: r.reporter_id.to_string(),
+        record_type: r.record_type,
+        description: r.description,
+        points: r.points,
+        created_at: r.created_at.to_rfc3339(),
+        updated_at: r.updated_at.to_rfc3339(),
+    }
+}
+
+#[tauri::command]
+pub async fn assessment_record_behavior(
+    request: RecordBehaviorInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<BehaviorRecordDto>, String> {
+    let ctx = make_ctx(&state);
+    let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
+    let record = state.assessment_service
+        .record_behavior(&ctx, ctx.tenant_id, student_id, request.record_type, request.description, request.points)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(behavior_to_dto(record)))
+}
+
+#[tauri::command]
+pub async fn assessment_list_student_behavior_records(
+    student_id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<BehaviorRecordDto>>, String> {
+    let ctx = make_ctx(&state);
+    let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid studentId")?;
+    let records = state.assessment_service
+        .list_student_behavior_records(&ctx, sid)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(records.into_iter().map(behavior_to_dto).collect()))
+}
+

@@ -242,6 +242,12 @@ impl BootstrapService {
     /// Complete initial academic setup — create year, periods, classes, subjects.
     ///
     /// Single transactional operation. Idempotent — safe to retry.
+    /// Complete initial academic setup for an organization.
+    ///
+    /// **DEPRECATED:** This method is a subset of `OnboardingService::complete_onboarding()`.
+    /// All new code should use `OnboardingService::complete_onboarding()` instead.
+    /// This method will be removed in a future release after all consumers are migrated.
+    #[deprecated(note = "Use OnboardingService::complete_onboarding() instead — this is a subset.")]
     pub async fn complete_initial_setup(
         &self,
         org_id: Uuid,

@@ -414,6 +414,7 @@
   "common_student_layout_transfer_class": "نقل الصف",
   "common_student_layout_transfer_coming_soon": "ميزة نقل الفصل قيد التحضير",
   "common_student_layout_withdraw_coming_soon": "ميزة تسجيل الانسحاب قيد التحضير",
+  "common_student_layout_withdraw_confirm": "هل أنت متأكد من سحب هذا الطالب؟ سيتم تغيير حالته إلى منسحب.",
   "common_classes_total_classes": "إجمالي الفصول",
   "common_classes_enrolled_students": "الطلاب المقيدين",
   "common_classes_avg_size": "متوسط حجم الفصل",

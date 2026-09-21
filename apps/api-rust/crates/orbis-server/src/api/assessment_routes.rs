@@ -79,6 +79,27 @@ pub struct AttendanceDto {
     pub notes: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct BehaviorRecordDto {
+    pub id: Uuid,
+    pub student_id: Uuid,
+    pub org_id: Uuid,
+    pub reporter_id: Uuid,
+    pub record_type: String,
+    pub description: String,
+    pub points: i32,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct RecordBehaviorRequest {
+    pub student_id: Uuid,
+    pub record_type: String,
+    pub description: String,
+    pub points: i32,
+}
+
 #[derive(Deserialize, ToSchema)]
 pub struct MarkAttendanceRequest {
     pub student_id: Uuid,
@@ -347,6 +368,43 @@ pub async fn list_attendance(
     Ok(ApiResponse::ok(dtos))
 }
 
+#[utoipa::path(post, path = "/api/v1/behavior", request_body = RecordBehaviorRequest,
+    responses((status = 201, body = BehaviorRecordDto)), security(("bearer" = [])), tag = "Assessment")]
+pub async fn record_behavior(
+    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<RecordBehaviorRequest>,
+) -> Result<Json<ApiResponse<BehaviorRecordDto>>, ApiError> {
+    let r = state.assessment_service.record_behavior(
+        &ctx,
+        ctx.tenant_id,
+        p.student_id,
+        p.record_type,
+        p.description,
+        p.points,
+    ).await?;
+    Ok(ApiResponse::ok(BehaviorRecordDto {
+        id: r.id, student_id: r.student_id, org_id: r.org_id,
+        reporter_id: r.reporter_id, record_type: r.record_type,
+        description: r.description, points: r.points,
+        created_at: r.created_at, updated_at: r.updated_at,
+    }))
+}
+
+#[utoipa::path(get, path = "/api/v1/students/:id/behavior",
+    params(("id" = Uuid, Path, description = "Student ID")),
+    responses((status = 200, body = Vec<BehaviorRecordDto>)), security(("bearer" = [])), tag = "Assessment")]
+pub async fn list_student_behavior(
+    ctx: AuthContext, State(state): State<AppState>, Path(student_id): Path<Uuid>,
+) -> Result<Json<ApiResponse<Vec<BehaviorRecordDto>>>, ApiError> {
+    let list = state.assessment_service.list_student_behavior_records(&ctx, student_id).await?;
+    let dtos = list.into_iter().map(|r| BehaviorRecordDto {
+        id: r.id, student_id: r.student_id, org_id: r.org_id,
+        reporter_id: r.reporter_id, record_type: r.record_type,
+        description: r.description, points: r.points,
+        created_at: r.created_at, updated_at: r.updated_at,
+    }).collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/assessment-schemes", post(create_scheme).get(list_schemes))
@@ -355,4 +413,7 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/grades/actions/calculate", post(calculate_grades))
         .route("/api/v1/grades/actions/calculate-rankings", post(calculate_rankings))
         .route("/api/v1/attendance", post(mark_attendance).get(list_attendance))
+        .route("/api/v1/behavior", post(record_behavior))
+        .route("/api/v1/students/:id/behavior", get(list_student_behavior))
 }
+

@@ -27,6 +27,8 @@ pub enum DomainEvent {
     StudentEnrolled { enrollment_id: Uuid, student_id: Uuid, class_id: Option<Uuid>, org_id: Uuid, study_mode: String, timestamp: DateTime<Utc> },
     StudentStudyModeChanged { student_id: Uuid, old_mode: String, new_mode: String, timestamp: DateTime<Utc> },
     StudentStatusChanged { student_id: Uuid, old_status: String, new_status: String, timestamp: DateTime<Utc> },
+    StudentProfileUpdated { student_id: Uuid, person_id: Uuid, timestamp: DateTime<Utc> },
+    StudentClassTransferred { student_id: Uuid, enrollment_id: Uuid, old_class_id: Option<Uuid>, new_class_id: Uuid, reason: String, timestamp: DateTime<Utc> },
     StudentWithdrawn { enrollment_id: Uuid, student_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
     GuardianAssigned { student_guardian_id: Uuid, student_id: Uuid, guardian_id: Uuid, timestamp: DateTime<Utc> },
     CohortPromoted { job_id: Uuid, org_id: Uuid, promoted_count: u32, timestamp: DateTime<Utc> },

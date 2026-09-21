@@ -1,4 +1,5 @@
 use orbis_domain::entities::assessment_scheme::AssessmentScheme;
+use orbis_domain::entities::behavior_record::BehaviorRecord;
 use orbis_domain::entities::grade::Grade;
 use orbis_domain::entities::attendance::Attendance;
 use orbis_domain::entities::gpa_record::CumulativeGpaRecord;
@@ -395,5 +396,42 @@ impl AssessmentService {
     /// List attendance
     pub async fn list_attendance(&self, org_id: Uuid, filter: AttendanceFilter) -> Result<PaginatedList<Attendance>, DomainError> {
         self.attendance_repo.list(org_id, filter).await
+    }
+
+    /// Record behavior for a student
+    pub async fn record_behavior(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        student_id: Uuid,
+        record_type: String,
+        description: String,
+        points: i32,
+    ) -> Result<BehaviorRecord, DomainError> {
+        self.permission_checker.check(ctx, Permission::StudentWrite).await?;
+        let now = Utc::now();
+        let record = BehaviorRecord {
+            id: Uuid::new_v4(),
+            student_id,
+            org_id,
+            reporter_id: ctx.user_id().unwrap_or(Uuid::nil()),
+            record_type,
+            description,
+            points,
+            created_at: now,
+            updated_at: now,
+        };
+        self.behavior_repo.save(&record).await?;
+        Ok(record)
+    }
+
+    /// List behavior records for a student
+    pub async fn list_student_behavior_records(
+        &self,
+        ctx: &RequestContext,
+        student_id: Uuid,
+    ) -> Result<Vec<BehaviorRecord>, DomainError> {
+        self.permission_checker.check(ctx, Permission::StudentRead).await?;
+        self.behavior_repo.find_by_student(student_id).await
     }
 }

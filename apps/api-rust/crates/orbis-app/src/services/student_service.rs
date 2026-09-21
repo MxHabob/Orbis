@@ -52,6 +52,30 @@ pub struct RegisterStudentInput {
     pub study_mode: Option<StudyMode>,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct UpdateStudentProfileInput {
+    pub first_name: Option<String>,
+    pub middle_name: Option<String>,
+    pub last_name: Option<String>,
+    pub first_name_ar: Option<String>,
+    pub middle_name_ar: Option<String>,
+    pub last_name_ar: Option<String>,
+    pub display_name: Option<String>,
+    pub national_id: Option<String>,
+    pub passport_number: Option<String>,
+    pub gender: Option<String>,
+    pub birth_date: Option<NaiveDate>,
+    pub place_of_birth: Option<String>,
+    pub nationality: Option<String>,
+    pub blood_type: Option<String>,
+    pub medical_notes: Option<String>,
+    pub special_needs_notes: Option<String>,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+    pub address: Option<String>,
+    pub avatar_url: Option<String>,
+}
+
 impl StudentService {
     pub fn new(
         student_repo: Arc<dyn StudentRepository>,
@@ -292,6 +316,92 @@ impl StudentService {
         }).await;
 
         Ok(enrollment)
+    }
+
+    /// Transfer a student to a different class within the same enrollment.
+    pub async fn transfer_class(
+        &self,
+        ctx: &RequestContext,
+        enrollment_id: Uuid,
+        target_class_id: Uuid,
+        reason: Option<String>,
+    ) -> Result<Enrollment, DomainError> {
+        self.permission_checker.check(ctx, Permission::StudentUpdate).await?;
+
+        let mut enrollment = self.enrollment_repo.find_by_id(enrollment_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Enrollment {} not found", enrollment_id)))?;
+
+        let old_class_id = enrollment.class_id;
+        enrollment.class_id = Some(target_class_id);
+        enrollment.updated_at = Utc::now();
+
+        self.enrollment_repo.save(&enrollment).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::StudentClassTransferred {
+            student_id: enrollment.student_id,
+            enrollment_id,
+            old_class_id,
+            new_class_id: target_class_id,
+            reason: reason.unwrap_or_default(),
+            timestamp: Utc::now(),
+        }).await;
+
+        Ok(enrollment)
+    }
+
+    /// Update student profile (Person demographic data).
+    /// This is the correct endpoint for editing student details like
+    /// name, birth_date, gender, phone, etc. — NOT the IAM updateUser endpoint.
+    pub async fn update_student_profile(
+        &self,
+        ctx: &RequestContext,
+        student_id: Uuid,
+        input: UpdateStudentProfileInput,
+    ) -> Result<StudentDetail, DomainError> {
+        self.permission_checker.check(ctx, Permission::StudentUpdate).await?;
+
+        // 1. Load student to get person_id
+        let student = self.student_repo.find_by_id(student_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
+
+        // 2. Load the person record
+        let mut person = self.person_repo.find_by_id(student.person_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Person {} not found", student.person_id)))?;
+
+        // 3. Apply partial updates
+        if let Some(v) = input.first_name { person.first_name = v; }
+        if let Some(v) = input.middle_name { person.middle_name = Some(v); }
+        if let Some(v) = input.last_name { person.last_name = v; }
+        if let Some(v) = input.first_name_ar { person.first_name_ar = Some(v); }
+        if let Some(v) = input.middle_name_ar { person.middle_name_ar = Some(v); }
+        if let Some(v) = input.last_name_ar { person.last_name_ar = Some(v); }
+        if let Some(v) = input.display_name { person.display_name = Some(v); }
+        if let Some(v) = input.national_id { person.national_id = Some(v); }
+        if let Some(v) = input.passport_number { person.passport_number = Some(v); }
+        if let Some(v) = input.gender { person.gender = Some(v); }
+        if let Some(v) = input.birth_date { person.birth_date = Some(v); }
+        if let Some(v) = input.place_of_birth { person.place_of_birth = Some(v); }
+        if let Some(v) = input.nationality { person.nationality = Some(v); }
+        if let Some(v) = input.blood_type { person.blood_type = Some(v); }
+        if let Some(v) = input.medical_notes { person.medical_notes = Some(v); }
+        if let Some(v) = input.special_needs_notes { person.special_needs_notes = Some(v); }
+        if let Some(v) = input.phone { person.phone = Some(v); }
+        if let Some(v) = input.email { person.email = Some(v); }
+        if let Some(v) = input.address { person.address = Some(v); }
+        if let Some(v) = input.avatar_url { person.avatar_url = Some(v); }
+        person.updated_at = Utc::now();
+
+        // 4. Persist
+        self.person_repo.save(&person).await?;
+
+        // 5. Publish event
+        let _ = self.event_bus.publish(ctx, &DomainEvent::StudentProfileUpdated {
+            student_id,
+            person_id: student.person_id,
+            timestamp: Utc::now(),
+        }).await;
+
+        Ok(StudentDetail { student, person })
     }
 
     /// Assign guardian to student

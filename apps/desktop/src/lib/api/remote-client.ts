@@ -53,6 +53,8 @@ import type {
   UpdateSchemeRequest,
   RecordGradeRequest,
   MarkAttendanceRequest,
+  BehaviorRecordDto,
+  RecordBehaviorInput,
   CalculateGradesRequest,
   CalculateRankingsRequest,
   RankingItemDto,
@@ -96,7 +98,9 @@ import type {
   StudentFilterParams,
   EnrollmentFilterParams,
   UpdateStudentStatusInput,
+  UpdateStudentProfileInput,
   ChangeStudyModeInput,
+  TransferClassInput,
   PaginatedList,
   BatchPrintParams,
   ReportJobStatusDto,
@@ -434,11 +438,22 @@ export class RemoteClient implements OrbisApiClient {
       reason: req.reason,
     });
   }
+  async updateStudentProfile(
+    req: UpdateStudentProfileInput,
+  ): Promise<StudentDetailDto> {
+    return this.put(`/api/v1/students/${req.studentId}/profile`, req);
+  }
   async changeStudyMode(
     req: ChangeStudyModeInput,
   ): Promise<EnrollmentDto> {
     return this.post(`/api/v1/enrollments/${req.enrollmentId}/study-mode`, {
       study_mode: req.studyMode,
+      reason: req.reason,
+    });
+  }
+  async transferClass(req: TransferClassInput): Promise<EnrollmentDto> {
+    return this.post(`/api/v1/enrollments/${req.enrollmentId}/transfer-class`, {
+      target_class_id: req.targetClassId,
       reason: req.reason,
     });
   }
@@ -555,6 +570,14 @@ export class RemoteClient implements OrbisApiClient {
     date: string,
   ): Promise<AttendanceDto[]> {
     return this.get("/api/v1/attendance", { class_id: classId, date });
+  }
+  async recordBehavior(req: RecordBehaviorInput): Promise<BehaviorRecordDto> {
+    return this.post("/api/v1/behavior", req);
+  }
+  async listStudentBehaviorRecords(
+    studentId: string,
+  ): Promise<BehaviorRecordDto[]> {
+    return this.get(`/api/v1/students/${studentId}/behavior`);
   }
 
   // ── Student Cohort Progression ──────────────────────────────

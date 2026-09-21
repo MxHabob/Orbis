@@ -95,7 +95,9 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         student_cmds::student_list_students,
         student_cmds::student_get_student,
         student_cmds::student_update_student_status,
+        student_cmds::student_update_profile,
         student_cmds::student_change_study_mode,
+        student_cmds::student_transfer_class,
         student_cmds::student_enroll_student,
         student_cmds::student_list_enrollments,
         student_cmds::student_get_enrollment,
@@ -133,6 +135,8 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         assessment_cmds::assessment_list_attendance,
         assessment_cmds::assessment_calculate_gpa,
         assessment_cmds::assessment_calculate_rankings,
+        assessment_cmds::assessment_record_behavior,
+        assessment_cmds::assessment_list_student_behavior_records,
         // ── Exam ────────────────────────────────────────────────
         exam_cmds::exam_create_session,
         exam_cmds::exam_list_sessions,
