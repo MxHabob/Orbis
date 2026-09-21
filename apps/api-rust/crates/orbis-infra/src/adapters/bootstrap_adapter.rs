@@ -533,8 +533,8 @@ pub async fn seed_roles_and_permissions<C: ConnectionTrait>(
             let perm_id_uuid = Uuid::new_v4();
             db.execute(Statement::from_sql_and_values(
                 db.get_database_backend(),
-                "INSERT INTO role_permissions (id, role_id, org_id, resource, action, effect, created_at) \
-                 SELECT $1, $2, $3, $4, $5, 'allow', $6 \
+                "INSERT INTO role_permissions (id, role_id, org_id, resource, action, created_at) \
+                 SELECT $1, $2, $3, $4, $5, $6 \
                  WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id = $2 AND org_id = $3 AND resource = $4 AND action = $5)",
                 vec![
                     perm_id_uuid.into(),
