@@ -478,7 +478,7 @@ async fn seed_currencies<C: ConnectionTrait>(
     Ok(())
 }
 
-async fn seed_roles_and_permissions<C: ConnectionTrait>(
+pub async fn seed_roles_and_permissions<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
     admin_id: Uuid,
@@ -487,6 +487,7 @@ async fn seed_roles_and_permissions<C: ConnectionTrait>(
     let default_roles = vec![
         ("super_admin", "Super Administrator", "مدير نظام عام"),
         ("admin", "Operations Administrator", "مدير النظام والعمليات"),
+        ("org_admin", "Organization Administrator", "مدير المؤسسة"),
         ("principal", "Principal / Dean", "مدير المؤسسة / عميد الكلية"),
         ("academic_advisor", "Academic Advisor", "المرشد الأكاديمي والطلابي"),
         ("department_head", "Department Head", "رئيس القسم الأكاديمي"),
@@ -504,7 +505,9 @@ async fn seed_roles_and_permissions<C: ConnectionTrait>(
     for (role_id, name_en, name_ar) in default_roles {
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
-            "INSERT INTO roles (id, org_id, name, name_ar, is_system, created_at, updated_at) VALUES ($1, $2, $3, $4, 1, $5, $6) ON CONFLICT DO NOTHING",
+            "INSERT INTO roles (id, org_id, name, name_ar, is_system, created_at, updated_at) \
+             SELECT $1, $2, $3, $4, 1, $5, $6 \
+             WHERE NOT EXISTS (SELECT 1 FROM roles WHERE id = $1 AND org_id = $2)",
             vec![
                 role_id.into(), org_id.into(),
                 name_en.into(), name_ar.into(),
@@ -516,7 +519,9 @@ async fn seed_roles_and_permissions<C: ConnectionTrait>(
     let assignment_id_uuid = Uuid::new_v4();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO user_role_assignments (id, user_id, role_id, org_id, scope_type, scope_id, assigned_by, created_at) VALUES ($1, $2, 'super_admin', $3, 'global', NULL, NULL, $4)",
+        "INSERT INTO user_role_assignments (id, user_id, role_id, org_id, scope_type, scope_id, assigned_by, created_at) \
+         SELECT $1, $2, 'super_admin', $3, 'global', NULL, NULL, $4 \
+         WHERE NOT EXISTS (SELECT 1 FROM user_role_assignments WHERE user_id = $2 AND org_id = $3)",
         vec![
             assignment_id_uuid.into(), admin_id.into(),
             org_id.into(), now.to_string().into(),
@@ -528,7 +533,9 @@ async fn seed_roles_and_permissions<C: ConnectionTrait>(
             let perm_id_uuid = Uuid::new_v4();
             db.execute(Statement::from_sql_and_values(
                 db.get_database_backend(),
-                "INSERT INTO role_permissions (id, role_id, org_id, resource, action, effect, created_at) VALUES ($1, $2, $3, $4, $5, 'allow', $6)",
+                "INSERT INTO role_permissions (id, role_id, org_id, resource, action, effect, created_at) \
+                 SELECT $1, $2, $3, $4, $5, 'allow', $6 \
+                 WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id = $2 AND org_id = $3 AND resource = $4 AND action = $5)",
                 vec![
                     perm_id_uuid.into(),
                     perm.role.clone().into(),
@@ -895,9 +902,10 @@ fn institute_blueprint() -> InstitutionBlueprint {
 
 fn comprehensive_role_permissions() -> Vec<RolePermission> {
     vec![
-        // Super Admin & Admin
+        // Super Admin & Admin & Org Admin
         RolePermission { role: "super_admin".into(), document_type: "*".into(), actions: vec!["*".into(), "read".into(), "write".into(), "delete".into(), "admin".into()] },
         RolePermission { role: "admin".into(), document_type: "*".into(), actions: vec!["*".into(), "read".into(), "write".into(), "delete".into(), "admin".into()] },
+        RolePermission { role: "org_admin".into(), document_type: "*".into(), actions: vec!["*".into(), "read".into(), "write".into(), "delete".into(), "admin".into()] },
 
         // Principal / Dean
         RolePermission { role: "principal".into(), document_type: "Organization".into(), actions: vec!["read".into(), "write".into()] },
@@ -913,6 +921,11 @@ fn comprehensive_role_permissions() -> Vec<RolePermission> {
         RolePermission { role: "principal".into(), document_type: "Enrollment".into(), actions: vec!["read".into(), "write".into(), "promote".into(), "transfer".into()] },
         RolePermission { role: "principal".into(), document_type: "Exam".into(), actions: vec!["read_schedule".into(), "write_schedule".into(), "read_hall".into(), "write_hall".into(), "allocate_hall".into(), "read_proctor".into(), "assign_proctor".into()] },
         RolePermission { role: "principal".into(), document_type: "Report".into(), actions: vec!["read".into(), "write".into(), "generate".into()] },
+        RolePermission { role: "principal".into(), document_type: "Document".into(), actions: vec!["read".into(), "write".into()] },
+        RolePermission { role: "principal".into(), document_type: "Finance".into(), actions: vec!["read".into(), "write".into(), "payment".into()] },
+        RolePermission { role: "principal".into(), document_type: "Integration".into(), actions: vec!["read".into(), "write".into()] },
+        RolePermission { role: "principal".into(), document_type: "Dashboard".into(), actions: vec!["read".into()] },
+        RolePermission { role: "principal".into(), document_type: "Audit".into(), actions: vec!["read".into()] },
         RolePermission { role: "principal".into(), document_type: "AI".into(), actions: vec!["use_copilot".into(), "analytics".into(), "risk_prediction".into()] },
 
         // Academic Advisor
@@ -1614,6 +1627,17 @@ impl OnboardingPort for OnboardingAdapterImpl {
         };
         if let Err(e) = seed_assessment_schemes(&txn, org_id, &blueprint, &now).await {
             info!("Assessment schemes seeding note: {}", e);
+        }
+
+        // 13. Roles & Granular Permissions Seeding
+        let admin_user_row = txn.query_one(Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            "SELECT id FROM users WHERE org_id = $1 LIMIT 1",
+            vec![org_id.into()]
+        )).await.ok().flatten();
+        let admin_user_id = admin_user_row.and_then(|r| r.try_get::<Uuid>("", "id").ok()).unwrap_or_else(Uuid::new_v4);
+        if let Err(e) = seed_roles_and_permissions(&txn, org_id, admin_user_id, &now).await {
+            info!("Roles & permissions onboarding seeding note: {}", e);
         }
 
         txn.commit().await
