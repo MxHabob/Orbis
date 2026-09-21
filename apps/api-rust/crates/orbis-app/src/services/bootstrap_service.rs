@@ -37,20 +37,28 @@ use crate::services::system_service::{OrganizationReadiness, OrgLifecycleState, 
 
 /// Request to bootstrap a new organization.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BootstrapRequest {
+    #[serde(alias = "org_name")]
     pub org_name: String,
+    #[serde(default, alias = "org_name_ar")]
     pub org_name_ar: Option<String>,
+    #[serde(alias = "org_type")]
     pub org_type: String,
     pub timezone: String,
     pub locale: String,
     pub currency: String,
+    #[serde(alias = "admin_full_name")]
     pub admin_full_name: String,
+    #[serde(alias = "admin_email")]
     pub admin_email: String,
+    #[serde(alias = "admin_password")]
     pub admin_password: String,
 }
 
 /// Result of a successful bootstrap.
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BootstrapResult {
     pub org_id: String,
     pub admin_user_id: String,
@@ -60,7 +68,9 @@ pub struct BootstrapResult {
 
 /// Request for completing initial academic setup.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InitialSetupRequest {
+    #[serde(alias = "academic_year")]
     pub academic_year: AcademicYearInput,
     pub periods: Vec<PeriodInput>,
     pub classes: Vec<ClassInput>,
@@ -68,35 +78,50 @@ pub struct InitialSetupRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AcademicYearInput {
     pub name: String,
+    #[serde(default, alias = "name_ar")]
     pub name_ar: Option<String>,
+    #[serde(alias = "start_date")]
     pub start_date: String,
+    #[serde(alias = "end_date")]
     pub end_date: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PeriodInput {
     pub name: String,
+    #[serde(default, alias = "name_ar")]
     pub name_ar: Option<String>,
+    #[serde(alias = "period_type")]
     pub period_type: String,
+    #[serde(alias = "start_date")]
     pub start_date: String,
+    #[serde(alias = "end_date")]
     pub end_date: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ClassInput {
     pub name: String,
+    #[serde(default, alias = "name_ar")]
     pub name_ar: Option<String>,
     pub level: String,
+    #[serde(default)]
     pub division: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SubjectInput {
     pub code: String,
     pub name: String,
+    #[serde(default, alias = "name_ar")]
     pub name_ar: Option<String>,
+    #[serde(default, alias = "is_core")]
     pub is_core: bool,
 }
 

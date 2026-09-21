@@ -1,16 +1,17 @@
 <!--
-  Onboarding Wizard — Streamlined 9-step academic setup.
-  Coordinates all steps from calendar and spaces to curriculum, fees, review, and launch.
+  Onboarding Wizard — Streamlined Unified Academic Setup.
+  Coordinates all steps from organization bootstrap to calendar, spaces, curriculum, fees, review, and launch.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { onboardingState } from "./state.svelte";
-import { authStore } from "$lib/stores/auth.svelte";
+import { authStore, systemStore } from "$lib/stores";
 
 import OnboardingStepper from "./onboarding-stepper.svelte";
 import OnboardingFooter from "./onboarding-footer.svelte";
 
+import OrganizationBootstrapStep from "./steps/organization-bootstrap-step.svelte";
 import WelcomeStep from "./steps/welcome-step.svelte";
 import AcademicCalendarStep from "./steps/academic-calendar-step.svelte";
 import TimeSlotsStep from "./steps/time-slots-step.svelte";
@@ -24,27 +25,32 @@ import LaunchStep from "./steps/launch-step.svelte";
 import { AlertCircle } from "@lucide/svelte";
 
 const isArabic = $derived(getLocale().startsWith("ar"));
+let needsBootstrap = $derived(!authStore.isAuthenticated);
 
-onMount(() => {
+onMount(async () => {
+  await authStore.restore();
+  await systemStore.loadReadiness();
   onboardingState.init();
 });
 
 function handleStepClick(step: number) {
+  if (needsBootstrap) return;
   onboardingState.goToStep(step);
 }
 </script>
 
 <div class="h-full w-full bg-background text-foreground flex flex-col overflow-hidden font-sans select-none">
 
+  {#if !needsBootstrap}
     <OnboardingStepper
       currentStep={onboardingState.currentStep}
       totalSteps={onboardingState.totalSteps}
       onStepClick={handleStepClick}
     />
-
+  {/if}
 
   <!-- Main Content Container (Direct, flat, zero nested container clutter) -->
-  <main class="flex-1 min-h-0 w-full px-4 sm:px-6 lg:px-8 py-2.5 flex flex-col overflow-hidden">
+  <main class="flex-1 min-h-0 w-full px-4 sm:px-6 lg:px-8 py-2.5 flex flex-col overflow-hidden justify-center">
     {#if onboardingState.errorMessage}
       <div class="mb-2 flex items-center gap-2.5 p-2.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs animate-in fade-in shrink-0">
         <AlertCircle class="w-4 h-4 shrink-0" />
@@ -52,8 +58,10 @@ function handleStepClick(step: number) {
       </div>
     {/if}
 
-    <div class="w-full h-full flex flex-col overflow-hidden">
-      {#if onboardingState.currentStep === 0}
+    <div class="w-full h-full flex flex-col overflow-y-auto justify-center">
+      {#if needsBootstrap}
+        <OrganizationBootstrapStep />
+      {:else if onboardingState.currentStep === 0}
         <WelcomeStep />
       {:else if onboardingState.currentStep === 1}
         <AcademicCalendarStep />
@@ -76,12 +84,14 @@ function handleStepClick(step: number) {
   </main>
 
   <!-- Bottom Navigation Footer -->
-  <OnboardingFooter
-    activeStep={onboardingState.currentStep}
-    totalSteps={onboardingState.totalSteps}
-    isLoading={onboardingState.isLoading}
-    onNext={() => onboardingState.nextStep()}
-    onPrev={() => onboardingState.prevStep()}
-  />
+  {#if !needsBootstrap}
+    <OnboardingFooter
+      activeStep={onboardingState.currentStep}
+      totalSteps={onboardingState.totalSteps}
+      isLoading={onboardingState.isLoading}
+      onNext={() => onboardingState.nextStep()}
+      onPrev={() => onboardingState.prevStep()}
+    />
+  {/if}
 
 </div>

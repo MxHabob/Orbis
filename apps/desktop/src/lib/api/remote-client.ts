@@ -123,6 +123,8 @@ import type {
   BootstrapRequest,
   BootstrapResult,
   InitialSetupRequest,
+  CompleteOrganizationOnboardingRequest,
+  OnboardingResult,
   ConnectionConfig,
   ConnectionMode,
   ConnectionValidation,
@@ -865,6 +867,9 @@ export class RemoteClient implements OrbisApiClient {
   }
   async bootstrapInitialSetup(req: InitialSetupRequest): Promise<OrganizationReadiness> {
     return this.post("/api/v1/bootstrap/initial-setup", req);
+  }
+  async completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {
+    return this.post("/api/v1/onboarding/complete", req);
   }
 
   // ── Connection (Desktop-only — not available via HTTP) ─────────

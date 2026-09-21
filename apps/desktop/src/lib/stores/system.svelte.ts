@@ -9,6 +9,8 @@ import type {
   OrganizationReadiness,
   SetupItem,
   InitialSetupRequest,
+  CompleteOrganizationOnboardingRequest,
+  OnboardingResult,
   EntitlementResult,
   OrgLifecycleState,
 } from "$lib/api/types";
@@ -105,6 +107,17 @@ class SystemStore {
     try {
       const res = await api.bootstrapInitialSetup(req);
       this.orgReadiness = res;
+      return res;
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  async completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {
+    this.isLoading = true;
+    try {
+      const res = await api.completeOnboarding(req);
+      this.orgReadiness = res.readiness;
       return res;
     } finally {
       this.isLoading = false;

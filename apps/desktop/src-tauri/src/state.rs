@@ -123,6 +123,7 @@ pub struct AppState {
     // ── Bootstrap & System Services ─────────────────────────────
     pub system_repo: Arc<dyn SystemRepository>,
     pub bootstrap_service: Arc<orbis_app::services::BootstrapService>,
+    pub onboarding_service: Arc<orbis_app::services::OnboardingService>,
     pub system_service: Arc<orbis_app::services::SystemService>,
     pub entitlement_provider: Arc<dyn EntitlementProvider>,
     pub solver_sidecar: Arc<crate::features::solver_sidecar::SolverSidecarManager>,
@@ -404,6 +405,11 @@ impl AppState {
             entitlement_provider.clone(),
         ));
 
+        let onboarding_service = Arc::new(orbis_app::services::OnboardingService::new(
+            Arc::new(orbis_infra::adapters::bootstrap_adapter::OnboardingAdapterImpl { db: db.clone() }),
+            system_repo_impl.clone(),
+        ));
+
         let solver_sidecar = Arc::new(crate::features::solver_sidecar::SolverSidecarManager::new());
 
         let state = Self {
@@ -488,6 +494,7 @@ impl AppState {
             autopilot_task_repo: autopilot_task_repo.clone(),
             system_repo: system_repo_impl,
             bootstrap_service,
+            onboarding_service,
             system_service,
             entitlement_provider,
             solver_sidecar,

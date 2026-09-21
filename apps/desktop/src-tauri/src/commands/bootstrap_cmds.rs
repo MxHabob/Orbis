@@ -138,3 +138,23 @@ pub async fn system_get_entitlement(
         .await
         .map_err(|e| e.to_string())
 }
+
+/// Complete organization onboarding atomically.
+#[tauri::command]
+pub async fn onboarding_complete(
+    state: State<'_, AppState>,
+    request: orbis_app::services::CompleteOrganizationOnboardingRequest,
+) -> Result<orbis_app::services::OnboardingResult, String> {
+    let target_org_id = if let Some(ref req_org_id) = request.org_id {
+        req_org_id.parse::<uuid::Uuid>().map_err(|_| "Invalid organization ID in request".to_string())?
+    } else {
+        let session = state.get_active_session()
+            .ok_or_else(|| "Not authenticated. Complete bootstrap or login first.".to_string())?;
+        session.org_id
+    };
+
+    state.onboarding_service
+        .complete_onboarding(target_org_id, request)
+        .await
+        .map_err(|e| e.to_string())
+}

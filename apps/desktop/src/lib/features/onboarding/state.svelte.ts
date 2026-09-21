@@ -1,19 +1,19 @@
 // ── Onboarding State ──────────────────────────────────────────────────
 // Central orchestrator for the 10-step academic onboarding wizard.
 
-import { ProfileInfoState } from "./state/profile-info.svelte";
-import { CalendarInfoState } from "./state/calendar-info.svelte";
 import { AcademicsInfoState } from "./state/academics-info.svelte";
+import { CalendarInfoState } from "./state/calendar-info.svelte";
 import { FacilitiesInfoState } from "./state/facilities-info.svelte";
 import { FinanceInfoState } from "./state/finance-info.svelte";
+import { ProfileInfoState } from "./state/profile-info.svelte";
 
-import { INSTITUTION_PROFILES, type InstitutionProfile } from "./templates";
+import { api } from "$lib/api";
+import type { CompleteOrganizationOnboardingRequest } from "$lib/api/types";
 import { getLocale } from "$lib/paraglide/runtime";
-import { systemStore } from "$lib/stores/system.svelte";
 import { authStore } from "$lib/stores/auth.svelte";
 import { orgContext } from "$lib/stores/org-context.svelte";
-import { api } from "$lib/api";
-import type { InitialSetupRequest } from "$lib/api/types";
+import { systemStore } from "$lib/stores/system.svelte";
+import { INSTITUTION_PROFILES, type InstitutionProfile } from "./templates";
 import type { Room, TimeSlot } from "./types";
 
 const STORAGE_KEY = "orbis_onboarding_state_v3";
@@ -699,28 +699,45 @@ export class OnboardingState {
 
       let periods: Array<{
         name: string;
-        name_ar?: string;
-        period_type: string;
-        start_date: string;
-        end_date: string;
+        nameAr?: string;
+        periodType: string;
+        startDate: string;
+        endDate: string;
       }> = [];
 
       if (selectedTpl?.structure && selectedTpl.structure.length > 0) {
-        periods = selectedTpl.structure.map((item, idx) => ({
-          name: item.name || `Period ${idx + 1}`,
-          name_ar: item.name_ar || `الفصل ${idx + 1}`,
-          period_type: item.type || "semester",
-          start_date: this.calendar.startDate,
-          end_date: this.calendar.endDate,
-        }));
+        for (let i = 0; i < selectedTpl.structure.length; i++) {
+          const item = selectedTpl.structure[i];
+          periods.push({
+            name: item.name || `Period ${i + 1}`,
+            nameAr: item.name_ar || `الفصل ${i + 1}`,
+            periodType: item.type || "term",
+            startDate: this.calendar.startDate,
+            endDate: this.calendar.endDate,
+          });
+
+          // Also generate monthly assessment sub-periods if defined in template structure
+          if (Array.isArray(item.children) && item.children.length > 0) {
+            for (let j = 0; j < item.children.length; j++) {
+              const child = item.children[j];
+              periods.push({
+                name: `${item.name || `Term ${i + 1}`} - ${child.name || `Month ${j + 1}`}`,
+                nameAr: `${item.name_ar || `الفصل ${i + 1}`} - ${child.name_ar || `الشهر ${j + 1}`}`,
+                periodType: child.type || "monthly",
+                startDate: this.calendar.startDate,
+                endDate: this.calendar.endDate,
+              });
+            }
+          }
+        }
       } else {
         periods = [
           {
             name: "First Semester",
-            name_ar: "الفصل الدراسي الأول",
-            period_type: "semester",
-            start_date: this.calendar.startDate,
-            end_date: this.calendar.endDate,
+            nameAr: "الفصل الدراسي الأول",
+            periodType: "semester",
+            startDate: this.calendar.startDate,
+            endDate: this.calendar.endDate,
           },
         ];
       }
@@ -729,7 +746,7 @@ export class OnboardingState {
       const enabledGrades = this.academics.gradeLevels.filter((gl) => gl.enabled);
       const classes: Array<{
         name: string;
-        name_ar?: string;
+        nameAr?: string;
         level: string;
         division?: string;
       }> = [];
@@ -739,7 +756,7 @@ export class OnboardingState {
           for (const div of gl.divisions) {
             classes.push({
               name: `${gl.name} - ${div}`,
-              name_ar: `${gl.name_ar} - ${div}`,
+              nameAr: `${gl.name_ar} - ${div}`,
               level: gl.name,
               division: div,
             });
@@ -747,7 +764,7 @@ export class OnboardingState {
         } else {
           classes.push({
             name: gl.name,
-            name_ar: gl.name_ar,
+            nameAr: gl.name_ar,
             level: gl.name,
           });
         }
@@ -756,7 +773,7 @@ export class OnboardingState {
       if (classes.length === 0) {
         classes.push({
           name: "Grade 1 - A",
-          name_ar: "الصف الأول - أ",
+          nameAr: "الصف الأول - أ",
           level: "Grade 1",
           division: "A",
         });
@@ -767,46 +784,102 @@ export class OnboardingState {
       const subjects: Array<{
         code: string;
         name: string;
-        name_ar?: string;
-        is_core: boolean;
+        nameAr?: string;
+        isCore: boolean;
       }> = (enabledSubjects.length > 0 ? enabledSubjects : this.academics.subjects).map(
         (s) => ({
           code: s.code,
           name: s.name,
-          name_ar: s.name_ar,
-          is_core: true,
+          nameAr: s.name_ar,
+          isCore: true,
         })
       );
 
-      // 4. Initial Setup Request
-      const payload: InitialSetupRequest = {
-        orgId: targetOrgId,
-        academicYearName: this.calendar.academicYearName || "Academic Year 2026/2027",
-        academicYearNameAr: this.calendar.academicYearNameAr || undefined,
-        academicYearStart: this.calendar.startDate,
-        academicYearEnd: this.calendar.endDate,
-        periods,
-        classes,
-        subjects,
+      // 4. Time slots generation
+      const timeSlots = this.academics.timeSlots.map((ts) => ({
+        name: ts.name,
+        nameAr: ts.name_ar,
+        startTime: ts.start_time,
+        endTime: ts.end_time,
+        isBreak: ts.is_break,
+        breakType: ts.break_type,
+      }));
+
+      // 5. Facilities generation
+      const facilities = {
+        buildings: this.facilities.buildings || [],
+        rooms: (this.facilities.rooms || []).map((rm) => ({
+          name: rm.name,
+          roomType: rm.room_type,
+          capacity: rm.capacity,
+          building: rm.building,
+        })),
       };
 
-      // 5. Complete core initial setup in backend
-      await systemStore.completeInitialSetup(payload);
+      // 6. Finance configuration & fee templates
+      const feeTemplates = Object.entries(this.finance.registrationFees).map(([code, amount]) => ({
+        code: `FEE_${code.toUpperCase()}`,
+        name: `${code} Fee`,
+        nameAr: `رسوم ${code}`,
+        category: "tuition",
+        defaultAmount: amount,
+        frequency: "annual",
+        isMandatory: true,
+      }));
 
-      // 6. Create Rooms in background (best effort)
-      for (const rm of this.facilities.rooms) {
-        try {
-          await api.createRoom({
-            name: rm.name,
-            room_type: rm.room_type,
-            capacity: rm.capacity,
-          });
-        } catch (e) {
-          console.warn("Room creation note:", e);
-        }
+      const finance = {
+        initializeChartOfAccounts: true,
+        taxRate: 0.15,
+        feeTemplates,
+        discountTemplates: [],
+      };
+
+      // 7. Profile & Registration configuration
+      const profile = {
+        institutionType: this.profile.institutionType,
+        name: this.profile.orgName || (this.isArabic ? "مؤسسة أوربس التعليمية" : "Orbis Educational Institution"),
+        nameAr: this.profile.orgNameAr || undefined,
+        baseCurrencyCode: this.profile.currency || "SAR",
+        timezone: this.profile.timezone || "Asia/Riyadh",
+        locale: this.profile.locale || "ar-SA",
+        studentNumberPattern: this.profile.studentNumberPattern,
+        requiredFields: this.profile.requiredFields,
+        activeFields: this.profile.activeFields,
+        preventDuplicates: this.profile.preventDuplicates,
+        requiredDocuments: this.profile.requiredDocumentsList,
+      };
+
+      // 8. Complete Atomic Onboarding Request
+      const payload: CompleteOrganizationOnboardingRequest = {
+        orgId: targetOrgId,
+        profile,
+        calendar: {
+          academicYearName: this.calendar.academicYearName || "Academic Year 2026/2027",
+          academicYearNameAr: this.calendar.academicYearNameAr || undefined,
+          startDate: this.calendar.startDate,
+          endDate: this.calendar.endDate,
+          periods,
+        },
+        academics: {
+          classes,
+          subjects,
+          timeSlots,
+          workingDays: this.academics.workingDays,
+        },
+        facilities,
+        finance,
+      };
+
+      // 9. Send single atomic request to authoritative Onboarding Engine
+      const result = await systemStore.completeOnboarding(payload);
+      if (!result.success) {
+        throw new Error("Onboarding completion failed");
       }
 
-      // 7. Clean up local persistence
+      // 10. Refresh active organization context
+      await orgContext.refresh();
+
+      // 11. Clean up local persistence
       if (typeof window !== "undefined" && window.localStorage) {
         localStorage.removeItem(STORAGE_KEY);
       }

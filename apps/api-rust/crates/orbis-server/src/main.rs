@@ -275,7 +275,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Build AppState
     let state = AppState {
-        db,
+        db: db.clone(),
         org_repo: org_repo.clone(),
         org_unit_repo,
         user_repo,
@@ -320,8 +320,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         settings_repo,
         dashboard_repo,
         event_bus,
-        token_service,
-        password_hasher,
+        token_service: token_service.clone(),
+        password_hasher: password_hasher.clone(),
         integration_resolver,
         permission_checker,
         // ── Identity, MFA & Devices ─────────────────────────────
@@ -356,6 +356,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         report_provider_registry: provider_registry,
         report_renderer_registry: renderer_registry,
         report_org_context_resolver: org_context_resolver,
+        // ── Bootstrap & System Services ──────────────────────────
+        bootstrap_service: Arc::new(orbis_app::services::BootstrapService::new(
+            Arc::new(orbis_infra::adapters::bootstrap_adapter::BootstrapAdapterImpl {
+                db: db.clone(),
+            }),
+            Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl {
+                db: db.clone(),
+            }),
+            password_hasher.clone(),
+            token_service.clone(),
+            Arc::new(orbis_infra::adapters::entitlement_adapter::UnlicensedEntitlementProvider),
+        )),
+        onboarding_service: Arc::new(orbis_app::services::OnboardingService::new(
+            Arc::new(orbis_infra::adapters::bootstrap_adapter::OnboardingAdapterImpl {
+                db: db.clone(),
+            }),
+            Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl {
+                db: db.clone(),
+            }),
+        )),
+        system_service: Arc::new(orbis_app::services::SystemService::new(
+            Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl {
+                db: db.clone(),
+            }),
+        )),
     };
 
     // Spawn Autopilot Background Scheduler (checks every 60 seconds)

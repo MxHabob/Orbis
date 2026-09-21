@@ -133,84 +133,25 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
         _ => school_blueprint(),
     };
 
-    // ── 3. OrgUnits Hierarchy ──────────────────────────────────
-    if let Err(e) = seed_org_units(db, org_id_uuid, &payload.org_type, &now).await {
-        info!("Note: OrgUnits seeding warning: {}", e);
-    }
-
-    // ── 4. Rooms & Educational Facilities ──────────────────────
-    if let Err(e) = seed_rooms(db, org_id_uuid, &now).await {
-        info!("Note: Rooms seeding warning: {}", e);
-    }
-
-    // ── 5. Period Templates ────────────────────────────────────
+    // ── 3. Period Templates Catalog (System templates for onboarding options) ────
     let tmpl_id = seed_period_templates(db, org_id_uuid, &payload.org_type, &blueprint, &now).await?;
 
-    // ── 6. Default Assessment Scheme ───────────────────────────
-    if let Err(e) = seed_assessment_schemes(db, org_id_uuid, &blueprint, &now).await {
-        info!("Note: Assessment scheme seeding warning: {}", e);
-    }
-
-    // ── 7. Default Academic Year & Period ──────────────────────
-    let year_id_uuid = Uuid::new_v4();
-    let next_year_date = "2027-06-30T23:59:59Z";
-    db.execute(Statement::from_sql_and_values(
-        db.get_database_backend(),
-        "INSERT INTO academic_years (id, org_id, name, name_ar, start_date, end_date, status, is_locked, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, 'active', 0, $7, $8)",
-        vec![
-            year_id_uuid.into(), org_id_uuid.into(),
-            "Academic Year 2026/2027".into(), "العام الدراسي 2026/2027".into(),
-            now.clone().into(), next_year_date.into(),
-            now.clone().into(), now.clone().into(),
-        ]
-    )).await.ok();
-
-    let period_id_uuid = Uuid::new_v4();
-    db.execute(Statement::from_sql_and_values(
-        db.get_database_backend(),
-        "INSERT INTO academic_periods (id, org_id, year_id, name, name_ar, period_type, start_date, end_date, status, is_locked, is_enrollment_open, is_grade_entry_open, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, 'semester', $6, $7, 'active', 0, 1, 1, $8, $9)",
-        vec![
-            period_id_uuid.into(), org_id_uuid.into(), year_id_uuid.into(),
-            "First Semester".into(), "الفصل الدراسي الأول".into(),
-            now.clone().into(), next_year_date.into(),
-            now.clone().into(), now.clone().into(),
-        ]
-    )).await.ok();
-
-    // ── 8. Chart of Accounts (COA) ─────────────────────────────
-    if let Err(e) = seed_chart_of_accounts(db, org_id_uuid, &payload.currency, &now).await {
-        info!("Note: COA seeding warning: {}", e);
-    }
-
-    // ── 9. Fee Templates ───────────────────────────────────────
-    if let Err(e) = seed_fee_templates(db, org_id_uuid, &payload.currency, &now).await {
-        info!("Note: Fee templates seeding warning: {}", e);
-    }
-
-    // ── 10. Discount Templates ─────────────────────────────────
-    if let Err(e) = seed_discount_templates(db, org_id_uuid, &now).await {
-        info!("Note: Discount templates seeding warning: {}", e);
-    }
-
-    // ── 11. Currencies ─────────────────────────────────────────
+    // ── 4. Currencies Catalog (System standard currencies) ────────────────────────
     if let Err(e) = seed_currencies(db, &now).await {
         info!("Note: Currencies seeding warning: {}", e);
     }
 
-    // ── 12. Roles & Permissions Matrix ─────────────────────────
+    // ── 5. Roles & Permissions Matrix (Core IAM RBAC) ────────────────────────────
     if let Err(e) = seed_roles_and_permissions(db, org_id_uuid, admin_id_uuid, &now).await {
         info!("Note: Roles seeding warning: {}", e);
     }
 
-    // ── 13. Default Reports & Document Templates ───────────────
+    // ── 6. Default Document & Report Templates (System templates) ─────────────────
     if let Err(e) = seed_default_reports(db, org_id_uuid, &now).await {
         info!("Note: Report seeding warning: {}", e);
     }
 
-    // ── 14. Organization Settings ──────────────────────────────
-    seed_org_settings(db, org_id_uuid, &payload.currency, &blueprint).await.ok();
-
-    info!("Bootstrap completed for org_id={} type={}", org_id, payload.org_type);
+    info!("Minimal technical bootstrap completed for org_id={} type={}", org_id, payload.org_type);
 
     Ok(BootstrapResult {
         org_id,
@@ -221,10 +162,11 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
 
 // ── Subsystem Seeders ───────────────────────────────────────────
 
+#[allow(dead_code)]
 async fn seed_org_units<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
-    org_type: &str,
+    _org_type: &str,
     now: &str,
 ) -> Result<Uuid, DomainError> {
     let root_id = Uuid::new_v4();
@@ -234,96 +176,62 @@ async fn seed_org_units<C: ConnectionTrait>(
         vec![root_id.into(), org_id.into(), now.to_string().into(), now.to_string().into()]
     )).await.map_err(|e| DomainError::Internal(format!("Failed to seed root org_unit: {e}")))?;
 
-    let sub_units = match org_type {
-        "university" => vec![
-            ("Faculty of Engineering & Computing", "كلية الهندسة والحاسوب", "ENG", "faculty", 1),
-            ("Faculty of Business & Administrative Sciences", "كلية العلوم الإدارية والمالية", "BUS", "faculty", 2),
-            ("Faculty of Humanities & Languages", "كلية العلوم الإنسانية واللغات", "HUM", "faculty", 3),
-            ("Deanship of Admissions & Registration", "عمادة القبول والتسجيل", "ADM", "deanship", 4),
-            ("Deanship of Student Affairs", "عمادة شؤون الطلاب", "STU", "deanship", 5),
-            ("Administrative & Financial Affairs", "الشؤون الإدارية والمالية", "FIN", "department", 6),
-        ],
-        "institute" | "training_center" => vec![
-            ("Information Technology & Software Dept", "قسم تقنية المعلومات والبرمجيات", "IT", "department", 1),
-            ("Languages & Communication Skills Dept", "قسم اللغات والمهارات العامة", "LANG", "department", 2),
-            ("Professional Training & Certifications", "قسم التدريب المهني والشهادات الاحترافية", "TRAIN", "department", 3),
-            ("Trainee Affairs & Admissions", "إدارة شؤون المتدربين والقبول", "REG", "department", 4),
-            ("Administrative & Financial Services", "الشؤون الإدارية والمالية", "ADM", "department", 5),
-        ],
-        _ => vec![
-            ("Kindergarten Stage", "مرحلة رياض الأطفال", "KG", "division", 1),
-            ("Primary Stage", "المرحلة الابتدائية", "PRI", "division", 2),
-            ("Middle School Stage", "المرحلة المتوسطة", "MID", "division", 3),
-            ("High School Stage", "المرحلة الثانوية", "SEC", "division", 4),
-            ("Administrative & Financial Affairs", "الشؤون الإدارية والمالية", "ADM", "department", 5),
-            ("Student Affairs & Counseling", "شؤون الطلاب والإرشاد الطلابي", "STU", "department", 6),
-        ],
-    };
-
-    for (name, name_ar, code, unit_type, sort_order) in sub_units {
-        let uid = Uuid::new_v4();
-        let path = format!("root.{}", uid);
-        db.execute(Statement::from_sql_and_values(
-            db.get_database_backend(),
-            "INSERT INTO org_units (id, org_id, parent_id, path, depth, name, name_ar, code, unit_type, data_isolation, children_count, descendant_count, sort_order, is_active, created_at, updated_at) VALUES ($1, $2, $3, $4, 1, $5, $6, $7, $8, 'none', 0, 0, $9, 1, $10, $11)",
-            vec![
-                uid.into(), org_id.into(), root_id.into(), path.into(),
-                name.into(), name_ar.into(), code.into(), unit_type.into(),
-                sort_order.into(), now.to_string().into(), now.to_string().into()
-            ]
-        )).await.ok();
-    }
-
+    // Note: Child organizational units (Branches, Buildings, Stages, Departments)
+    // are created and structured dynamically by the Onboarding wizard according to the institution's actual configuration.
     Ok(root_id)
-}
-
-async fn seed_rooms<C: ConnectionTrait>(
-    db: &C,
-    org_id: Uuid,
-    now: &str,
-) -> Result<(), DomainError> {
-    let rooms = vec![
-        ("Main Auditorium", 250, "auditorium"),
-        ("Computer & AI Lab", 35, "lab"),
-        ("Science & Innovation Lab", 30, "lab"),
-        ("Central Library & Learning Hub", 60, "library"),
-        ("Smart Lecture Hall A1", 50, "lecture_hall"),
-        ("Classroom 101", 30, "classroom"),
-        ("Classroom 102", 30, "classroom"),
-        ("Classroom 103", 30, "classroom"),
-    ];
-
-    for (name, cap, r_type) in rooms {
-        let rid = Uuid::new_v4();
-        db.execute(Statement::from_sql_and_values(
-            db.get_database_backend(),
-            "INSERT INTO rooms (id, org_id, name, capacity, room_type, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-            vec![
-                rid.into(), org_id.into(), name.into(),
-                cap.into(), r_type.into(), now.to_string().into(), now.to_string().into()
-            ]
-        )).await.ok();
-    }
-    Ok(())
 }
 
 async fn seed_period_templates<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
     org_type: &str,
-    blueprint: &InstitutionBlueprint,
+    _blueprint: &InstitutionBlueprint,
     now: &str,
 ) -> Result<String, DomainError> {
     let standard_templates = vec![
         (
             Uuid::new_v4().to_string(),
-            "Two Semesters (Fall & Spring)".to_string(),
-            "نظام الفصلين الدراسيين (الترم الأول والثاني)".to_string(),
+            "Two Semesters with Monthly Assessments".to_string(),
+            "نظام الفصلين الدراسيين مع تقييمات شهرية".to_string(),
+            serde_json::json!([
+                {
+                    "name": "First Semester",
+                    "name_ar": "الفصل الدراسي الأول",
+                    "type": "semester",
+                    "weight": 50,
+                    "children": [
+                        { "name": "Month 1 Assessment", "name_ar": "تقييم الشهر الأول", "type": "monthly", "weight": 10 },
+                        { "name": "Month 2 Assessment", "name_ar": "تقييم الشهر الثاني", "type": "monthly", "weight": 10 },
+                        { "name": "Month 3 Assessment", "name_ar": "تقييم الشهر الثالث", "type": "monthly", "weight": 10 },
+                        { "name": "Midterm Exam", "name_ar": "اختبار منتصف الفصل الأول", "type": "exam", "weight": 20 },
+                        { "name": "First Semester Final Exam", "name_ar": "اختبار نهاية الفصل الأول", "type": "final_exam", "weight": 50 }
+                    ]
+                },
+                {
+                    "name": "Second Semester",
+                    "name_ar": "الفصل الدراسي الثاني",
+                    "type": "semester",
+                    "weight": 50,
+                    "children": [
+                        { "name": "Month 4 Assessment", "name_ar": "تقييم الشهر الرابع", "type": "monthly", "weight": 10 },
+                        { "name": "Month 5 Assessment", "name_ar": "تقييم الشهر الخامس", "type": "monthly", "weight": 10 },
+                        { "name": "Month 6 Assessment", "name_ar": "تقييم الشهر السادس", "type": "monthly", "weight": 10 },
+                        { "name": "Midterm Exam", "name_ar": "اختبار منتصف الفصل الثاني", "type": "exam", "weight": 20 },
+                        { "name": "Second Semester Final Exam", "name_ar": "اختبار نهاية الفصل الثاني", "type": "final_exam", "weight": 50 }
+                    ]
+                }
+            ]),
+            1i32,
+        ),
+        (
+            Uuid::new_v4().to_string(),
+            "Two Standard Semesters (Fall & Spring)".to_string(),
+            "نظام الفصلين الدراسيين القياسي (ترم أول وترم ثاني)".to_string(),
             serde_json::json!([
                 { "name": "First Semester", "name_ar": "الفصل الدراسي الأول", "type": "semester", "weight": 50 },
                 { "name": "Second Semester", "name_ar": "الفصل الدراسي الثاني", "type": "semester", "weight": 50 }
             ]),
-            1i32,
+            0i32,
         ),
         (
             Uuid::new_v4().to_string(),
@@ -346,13 +254,6 @@ async fn seed_period_templates<C: ConnectionTrait>(
                 { "name": "Quarter 3", "name_ar": "الربع الثالث", "type": "quarter", "weight": 25 },
                 { "name": "Quarter 4", "name_ar": "الربع الرابع", "type": "quarter", "weight": 25 }
             ]),
-            0i32,
-        ),
-        (
-            Uuid::new_v4().to_string(),
-            "Two Semesters with Monthly Assessment".to_string(),
-            "فصلين دراسيين مع تقييمات شهرية".to_string(),
-            blueprint.period_structure.clone(),
             0i32,
         ),
         (
@@ -400,6 +301,7 @@ async fn seed_period_templates<C: ConnectionTrait>(
     Ok(primary_tmpl_id)
 }
 
+#[allow(dead_code)]
 async fn seed_assessment_schemes<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
@@ -429,6 +331,7 @@ async fn seed_assessment_schemes<C: ConnectionTrait>(
     Ok(())
 }
 
+#[allow(dead_code)]
 async fn seed_fee_templates<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
@@ -486,6 +389,7 @@ async fn seed_fee_templates<C: ConnectionTrait>(
     Ok(())
 }
 
+#[allow(dead_code)]
 async fn seed_discount_templates<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
@@ -625,6 +529,7 @@ async fn seed_roles_and_permissions<C: ConnectionTrait>(
     Ok(())
 }
 
+#[allow(dead_code)]
 async fn seed_org_settings<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
@@ -1414,6 +1319,258 @@ impl BulkBootstrapPort for BootstrapAdapterImpl {
 
         txn.commit().await
             .map_err(|e| DomainError::Internal(format!("Failed to commit initial setup: {e}")))?;
+
+        Ok(())
+    }
+}
+
+// ── OnboardingPort Implementation ─────────────────────────────────────────
+
+use orbis_app::ports::onboarding::{OnboardingPort, ValidatedOnboardingData};
+
+pub struct OnboardingAdapterImpl {
+    pub db: DatabaseConnection,
+}
+
+#[async_trait]
+impl OnboardingPort for OnboardingAdapterImpl {
+    async fn persist_onboarding(
+        &self,
+        data: ValidatedOnboardingData,
+    ) -> Result<(), DomainError> {
+        let txn = self.db.begin().await
+            .map_err(|e| DomainError::Internal(format!("Failed to begin onboarding transaction: {e}")))?;
+
+        let now = Utc::now().to_rfc3339();
+        let org_id = data.org_id;
+
+        // 1. Update Organization Profile & Settings
+        txn.execute(Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            "UPDATE organizations SET org_type = $1, base_currency_code = $2, timezone = $3, locale = $4, settings = $5, updated_at = $6 WHERE id = $7",
+            vec![
+                data.org_type.into(),
+                data.base_currency_code.clone().into(),
+                data.timezone.into(),
+                data.locale.into(),
+                data.settings.to_string().into(),
+                now.clone().into(),
+                org_id.into(),
+            ]
+        )).await.map_err(|e| DomainError::Internal(format!("Failed to update organization settings: {e}")))?;
+
+        // 2. OrgUnits Hierarchy (Campus + Buildings)
+        let campus_id = Uuid::new_v4();
+        txn.execute(Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            "INSERT INTO org_units (id, org_id, parent_id, path, depth, name, name_ar, code, unit_type, data_isolation, children_count, descendant_count, sort_order, is_active, created_at, updated_at) \
+             SELECT $1, $2, NULL, 'root', 0, 'Main Campus', 'المقر الرئيسي', 'HQ', 'campus', 'none', 0, 0, 1, 1, $3, $4 \
+             WHERE NOT EXISTS (SELECT 1 FROM org_units WHERE org_id = $2 AND depth = 0)",
+            vec![campus_id.into(), org_id.into(), now.clone().into(), now.clone().into()]
+        )).await.map_err(|e| DomainError::Internal(format!("Failed to seed root campus: {e}")))?;
+
+        let root_unit_row = txn.query_one(Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            "SELECT id FROM org_units WHERE org_id = $1 AND depth = 0 LIMIT 1",
+            vec![org_id.into()]
+        )).await.map_err(|e| DomainError::Internal(e.to_string()))?.ok_or_else(|| DomainError::NotFound("Root campus unit not found".into()))?;
+        let real_campus_id: Uuid = root_unit_row.try_get("", "id").unwrap_or(campus_id);
+
+        for b in &data.buildings {
+            txn.execute(Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                "INSERT INTO org_units (id, org_id, parent_id, path, depth, name, name_ar, code, unit_type, data_isolation, children_count, descendant_count, sort_order, is_active, created_at, updated_at) \
+                 SELECT $1, $2, $3, 'root.' || $4, 1, $5, $6, $4, 'building', 'none', 0, 0, 1, 1, $7, $8 \
+                 WHERE NOT EXISTS (SELECT 1 FROM org_units WHERE org_id = $2 AND code = $4)",
+                vec![
+                    b.id.into(), org_id.into(), real_campus_id.into(),
+                    b.code.clone().into(),
+                    b.name.clone().into(),
+                    b.name_ar.clone().unwrap_or_else(|| b.name.clone()).into(),
+                    now.clone().into(), now.clone().into(),
+                ]
+            )).await.map_err(|e| DomainError::Internal(format!("Failed to create building unit: {e}")))?;
+        }
+
+        // 3. Rooms
+        for rm in &data.rooms {
+            txn.execute(Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                "INSERT INTO rooms (id, org_id, name, room_type, capacity, is_active, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, 1, $6, $7 \
+                 WHERE NOT EXISTS (SELECT 1 FROM rooms WHERE org_id = $2 AND name = $3)",
+                vec![
+                    rm.id.into(), org_id.into(), rm.name.clone().into(),
+                    rm.room_type.clone().into(), rm.capacity.into(),
+                    now.clone().into(), now.clone().into(),
+                ]
+            )).await.map_err(|e| DomainError::Internal(format!("Failed to insert room: {e}")))?;
+        }
+
+        // 4. Academic Year
+        let normalize_start = |s: &str| -> String {
+            if s.len() == 10 && !s.contains('T') { format!("{}T00:00:00Z", s) } else { s.to_string() }
+        };
+        let normalize_end = |s: &str| -> String {
+            if s.len() == 10 && !s.contains('T') { format!("{}T23:59:59Z", s) } else { s.to_string() }
+        };
+
+        let year_start = normalize_start(&data.academic_year.start_date);
+        let year_end = normalize_end(&data.academic_year.end_date);
+
+        txn.execute(Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            "INSERT INTO academic_years (id, org_id, name, name_ar, start_date, end_date, status, is_locked, created_at, updated_at) \
+             SELECT $1, $2, $3, $4, $5, $6, 'active', 0, $7, $8 \
+             WHERE NOT EXISTS (SELECT 1 FROM academic_years WHERE org_id = $2 AND name = $3)",
+            vec![
+                data.academic_year.id.into(),
+                org_id.into(),
+                data.academic_year.name.clone().into(),
+                data.academic_year.name_ar.clone().unwrap_or_else(|| data.academic_year.name.clone()).into(),
+                year_start.into(),
+                year_end.into(),
+                now.clone().into(),
+                now.clone().into(),
+            ],
+        )).await.map_err(|e| DomainError::Internal(format!("Failed to insert academic year: {e}")))?;
+
+        // 5. Academic Periods
+        for p in &data.periods {
+            let p_start = normalize_start(&p.start_date);
+            let p_end = normalize_end(&p.end_date);
+            txn.execute(Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                "INSERT INTO academic_periods (id, org_id, year_id, name, name_ar, period_type, start_date, end_date, status, is_locked, is_enrollment_open, is_grade_entry_open, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, 'active', 0, 1, 1, $9, $10 \
+                 WHERE NOT EXISTS (SELECT 1 FROM academic_periods WHERE org_id = $2 AND year_id = $3 AND name = $4)",
+                vec![
+                    p.id.into(),
+                    org_id.into(),
+                    p.year_id.into(),
+                    p.name.clone().into(),
+                    p.name_ar.clone().unwrap_or_else(|| p.name.clone()).into(),
+                    p.period_type.clone().into(),
+                    p_start.into(),
+                    p_end.into(),
+                    now.clone().into(),
+                    now.clone().into(),
+                ],
+            )).await.map_err(|e| DomainError::Internal(format!("Failed to insert period: {e}")))?;
+        }
+
+        let first_period_id = data.periods.first().map(|p| p.id).unwrap_or(data.academic_year.id);
+
+        // 6. Classes
+        for c in &data.classes {
+            txn.execute(Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                "INSERT INTO classes (id, org_id, unit_id, period_id, name, name_ar, level, division, is_active, is_deleted, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, 1, 0, $9, $10 \
+                 WHERE NOT EXISTS (SELECT 1 FROM classes WHERE org_id = $2 AND period_id = $4 AND name = $5)",
+                vec![
+                    c.id.into(),
+                    org_id.into(),
+                    real_campus_id.into(),
+                    first_period_id.into(),
+                    c.name.clone().into(),
+                    c.name_ar.clone().unwrap_or_else(|| c.name.clone()).into(),
+                    c.level.clone().into(),
+                    c.division.clone().unwrap_or_default().into(),
+                    now.clone().into(),
+                    now.clone().into(),
+                ],
+            )).await.map_err(|e| DomainError::Internal(format!("Failed to insert class: {e}")))?;
+        }
+
+        // 7. Subjects
+        for s in &data.subjects {
+            txn.execute(Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                "INSERT INTO subjects (id, org_id, code, name, name_ar, is_core, is_elective, is_lab_required, is_active, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, 0, 0, 1, $7, $8 \
+                 WHERE NOT EXISTS (SELECT 1 FROM subjects WHERE org_id = $2 AND code = $3)",
+                vec![
+                    s.id.into(),
+                    org_id.into(),
+                    s.code.clone().into(),
+                    s.name.clone().into(),
+                    s.name_ar.clone().unwrap_or_else(|| s.name.clone()).into(),
+                    (if s.is_core { 1i32 } else { 0i32 }).into(),
+                    now.clone().into(),
+                    now.clone().into(),
+                ],
+            )).await.map_err(|e| DomainError::Internal(format!("Failed to insert subject: {e}")))?;
+        }
+
+        // 8. Time Slots
+        for ts in &data.time_slots {
+            txn.execute(Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                "INSERT INTO time_slots (id, org_id, name, name_ar, start_time, end_time, day_of_week, is_break, break_type, is_active, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, 1, $10, $11 \
+                 WHERE NOT EXISTS (SELECT 1 FROM time_slots WHERE org_id = $2 AND start_time = $5 AND end_time = $6 AND day_of_week = $7)",
+                vec![
+                    ts.id.into(), org_id.into(),
+                    ts.name.clone().into(),
+                    ts.name_ar.clone().unwrap_or_else(|| ts.name.clone()).into(),
+                    ts.start_time.clone().into(),
+                    ts.end_time.clone().into(),
+                    ts.day_of_week.into(),
+                    (if ts.is_break { 1i32 } else { 0i32 }).into(),
+                    ts.break_type.clone().unwrap_or_default().into(),
+                    now.clone().into(), now.clone().into(),
+                ]
+            )).await.ok();
+        }
+
+        // 9. Chart of Accounts (COA) initialization if requested
+        if data.initialize_chart_of_accounts {
+            if let Err(e) = seed_chart_of_accounts(&txn, org_id, &data.base_currency_code, &now).await {
+                info!("COA onboarding initialization note: {}", e);
+            }
+        }
+
+        // 10. Fee Templates
+        for f in &data.fee_templates {
+            txn.execute(Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                "INSERT INTO fee_templates (id, org_id, code, name, name_ar, category, default_amount, currency_code, frequency, is_mandatory, is_active, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1, $11, $12 \
+                 WHERE NOT EXISTS (SELECT 1 FROM fee_templates WHERE org_id = $2 AND code = $3)",
+                vec![
+                    f.id.into(), org_id.into(), f.code.clone().into(),
+                    f.name.clone().into(), f.name_ar.clone().into(),
+                    f.category.clone().into(), f.default_amount.into(),
+                    f.currency_code.clone().into(), f.frequency.clone().into(),
+                    (if f.is_mandatory { 1i32 } else { 0i32 }).into(),
+                    now.clone().into(), now.clone().into(),
+                ]
+            )).await.ok();
+        }
+
+        // 11. Discount Templates
+        for d in &data.discount_templates {
+            txn.execute(Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                "INSERT INTO discount_templates (id, org_id, code, name, name_ar, discount_type, value, is_approval_required, is_auto_apply, is_stackable, priority, is_active, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 1, $12, $13 \
+                 WHERE NOT EXISTS (SELECT 1 FROM discount_templates WHERE org_id = $2 AND code = $3)",
+                vec![
+                    d.id.into(), org_id.into(), d.code.clone().into(),
+                    d.name.clone().into(), d.name_ar.clone().into(),
+                    d.discount_type.clone().into(), d.value.into(),
+                    (if d.is_approval_required { 1i32 } else { 0i32 }).into(),
+                    (if d.is_auto_apply { 1i32 } else { 0i32 }).into(),
+                    (if d.is_stackable { 1i32 } else { 0i32 }).into(),
+                    d.priority.into(),
+                    now.clone().into(), now.clone().into(),
+                ]
+            )).await.ok();
+        }
+
+        txn.commit().await
+            .map_err(|e| DomainError::Internal(format!("Failed to commit onboarding transaction: {e}")))?;
 
         Ok(())
     }

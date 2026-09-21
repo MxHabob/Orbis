@@ -741,6 +741,99 @@ export interface InitialSetupRequest {
   subjects: Array<{ code: string; name: string; name_ar?: string; is_core: boolean }>;
 }
 
+export interface CompleteOrganizationOnboardingRequest {
+  orgId?: string;
+  profile: {
+    institutionType: string;
+    name: string;
+    nameAr?: string;
+    baseCurrencyCode: string;
+    timezone: string;
+    locale: string;
+    studentNumberPattern?: string;
+    requiredFields?: Record<string, unknown>;
+    activeFields?: Record<string, unknown>;
+    preventDuplicates?: Record<string, unknown>;
+    requiredDocuments?: string[];
+  };
+  calendar: {
+    academicYearName: string;
+    academicYearNameAr?: string;
+    startDate: string;
+    endDate: string;
+    periods: Array<{
+      name: string;
+      nameAr?: string;
+      periodType: string;
+      startDate: string;
+      endDate: string;
+    }>;
+  };
+  academics: {
+    classes: Array<{
+      name: string;
+      nameAr?: string;
+      level: string;
+      division?: string;
+    }>;
+    subjects: Array<{
+      code: string;
+      name: string;
+      nameAr?: string;
+      isCore: boolean;
+    }>;
+    timeSlots?: Array<{
+      name: string;
+      nameAr?: string;
+      startTime: string;
+      endTime: string;
+      dayOfWeek?: number;
+      isBreak?: boolean;
+      breakType?: string;
+    }>;
+    workingDays?: number[];
+  };
+  facilities?: {
+    buildings: string[];
+    rooms: Array<{
+      name: string;
+      roomType: string;
+      capacity: number;
+      building?: string;
+    }>;
+  };
+  finance?: {
+    initializeChartOfAccounts?: boolean;
+    taxRate?: number;
+    feeTemplates?: Array<{
+      code: string;
+      name: string;
+      nameAr?: string;
+      category: string;
+      defaultAmount: number;
+      frequency: string;
+      isMandatory?: boolean;
+    }>;
+    discountTemplates?: Array<{
+      code: string;
+      name: string;
+      nameAr?: string;
+      discountType: string;
+      value: number;
+      isApprovalRequired?: boolean;
+      isAutoApply?: boolean;
+      isStackable?: boolean;
+      priority?: number;
+    }>;
+  };
+}
+
+export interface OnboardingResult {
+  success: boolean;
+  orgId: string;
+  readiness: OrganizationReadiness;
+}
+
 export interface EntitlementResult {
   status: string;
   plan?: string;
@@ -991,6 +1084,7 @@ export interface OrbisApiClient {
   systemGetEntitlement(): Promise<EntitlementResult>;
   bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult>;
   bootstrapInitialSetup(req: InitialSetupRequest): Promise<OrganizationReadiness>;
+  completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult>;
 
   // ── Connection (Desktop-only) ───────────────────────────────
   connectionGetConfig(): Promise<ConnectionConfig>;

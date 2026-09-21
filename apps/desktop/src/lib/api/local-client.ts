@@ -122,6 +122,8 @@ import type {
   BootstrapRequest,
   BootstrapResult,
   InitialSetupRequest,
+  CompleteOrganizationOnboardingRequest,
+  OnboardingResult,
   ConnectionConfig,
   ConnectionMode,
   ConnectionValidation,
@@ -802,6 +804,9 @@ export class LocalClient implements OrbisApiClient {
   }
   async bootstrapInitialSetup(req: InitialSetupRequest): Promise<OrganizationReadiness> {
     return invoke<OrganizationReadiness>("bootstrap_initial_setup", req as unknown as Record<string, unknown>);
+  }
+  async completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {
+    return invoke<OnboardingResult>("onboarding_complete", { request: req });
   }
 
   // ── Connection (Desktop-only) ───────────────────────────────

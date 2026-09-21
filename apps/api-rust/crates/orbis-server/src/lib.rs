@@ -60,11 +60,16 @@ use api::{
         api::iam_routes::save_role,
         api::iam_routes::list_permissions,
         api::iam_routes::save_permissions,
-        // Organization
+        // Organization & Bootstrap
         api::org_routes::create_org,
         api::org_routes::get_current_org,
         api::org_routes::update_current_org,
-        api::org_routes::bootstrap_org,
+        api::org_routes::bootstrap_org_endpoint,
+        api::org_routes::bootstrap_initial_setup_endpoint,
+        api::org_routes::onboarding_complete_endpoint,
+        api::org_routes::get_system_readiness_endpoint,
+        api::org_routes::get_system_has_org_endpoint,
+        api::org_routes::get_system_entitlement_endpoint,
         api::org_routes::get_settings,
         api::org_routes::update_settings,
         api::org_routes::get_dashboard,

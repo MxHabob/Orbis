@@ -7,5 +7,6 @@ pub mod iam;
 pub mod reporting;
 pub mod transactions;
 pub mod bootstrap;
+pub mod onboarding;
 pub mod entitlement;
 

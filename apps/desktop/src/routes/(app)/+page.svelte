@@ -1,17 +1,17 @@
 <!--
   Root page — startup orchestrator.
   Resolves the startup phase and routes to the correct screen:
-  - connection_setup → Connection setup screen
-  - bootstrap → Organization bootstrap screen
-  - login → Login page
-  - ready → Org dashboard
-  - error → Error recovery screen
+  - connection_setup → /connection
+  - bootstrap → /onboarding
+  - login / ready → /login or /[orgId]
+  - error → /connection
 -->
 <script lang="ts">
 import { goto } from "$app/navigation";
 import { authStore } from "$lib/stores";
 import { onMount } from "svelte";
 import { resolveStartupPhase, type StartupState } from "$lib/core/startup";
+import { localizeHref } from "$lib/paraglide/runtime";
 import { Loader2 } from "@lucide/svelte";
 
 let startupState: StartupState | null = $state(null);
@@ -25,12 +25,12 @@ onMount(async () => {
   switch (state.phase) {
     case "connection_setup":
       statusText = "Setup required";
-      goto("/setup/connection", { replaceState: true });
+      goto(localizeHref("/connection"), { replaceState: true });
       break;
 
     case "bootstrap":
       statusText = "Organization setup required";
-      goto("/setup/bootstrap", { replaceState: true });
+      goto(localizeHref("/onboarding"), { replaceState: true });
       break;
 
     case "login":
@@ -38,20 +38,24 @@ onMount(async () => {
       statusText = "Restoring session...";
       await authStore.restore();
       if (authStore.isAuthenticated && authStore.orgId) {
-        goto(`/${authStore.orgId}`, { replaceState: true });
+        if (authStore.needsOnboarding) {
+          goto(localizeHref("/onboarding"), { replaceState: true });
+        } else {
+          goto(localizeHref(`/${authStore.orgId}`), { replaceState: true });
+        }
       } else {
-        goto("/login", { replaceState: true });
+        goto(localizeHref("/login"), { replaceState: true });
       }
       break;
 
     case "error":
       statusText = state.error ?? "An error occurred";
-      goto("/setup/error", { replaceState: true });
+      goto(localizeHref("/connection"), { replaceState: true });
       break;
 
     default:
       // Unknown phase — fallback to login
-      goto("/login", { replaceState: true });
+      goto(localizeHref("/login"), { replaceState: true });
   }
 });
 </script>
