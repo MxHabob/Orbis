@@ -128,6 +128,11 @@ impl FinanceService {
 
         if let Some(f_id) = fee_id {
             if let Some(mut fee) = self.student_fee_repo.find_by_id(f_id).await? {
+                if amount > fee.balance_due {
+                    return Err(DomainError::Validation(format!(
+                        "Payment amount ({}) exceeds fee balance due ({})", amount, fee.balance_due
+                    )));
+                }
                 student_resolved_id = Some(fee.student_id);
                 enrollment_resolved_id = fee.enrollment_id;
                 fee.apply_payment(amount);
@@ -394,5 +399,178 @@ impl FinanceService {
     /// List payments
     pub async fn list_payments(&self, org_id: Uuid, filter: PaymentFilter) -> Result<PaginatedList<Payment>, DomainError> {
         self.payment_repo.list(org_id, filter).await
+    }
+
+    /// Reverse an existing posted journal entry
+    pub async fn reverse_journal_entry(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        entry_id: Uuid,
+        reason: String,
+    ) -> Result<JournalEntry, DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+
+        let mut original_entry = self.journal_repo.find_by_id(entry_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Journal entry {} not found", entry_id)))?;
+
+        if original_entry.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        if original_entry.is_reversed {
+            return Err(DomainError::Validation("Journal entry is already reversed".into()));
+        }
+
+        let now = Utc::now();
+        let user_id = ctx.user_id().unwrap_or(Uuid::nil());
+
+        // Mark original as reversed
+        original_entry.is_reversed = true;
+        original_entry.reversed_by = Some(user_id);
+        original_entry.reversal_reason = Some(reason.clone());
+        self.journal_repo.save(&original_entry).await?;
+
+        // Create opposing reversing entry
+        let reversal_id = Uuid::new_v4();
+        let reversal_lines: Vec<JournalEntryLine> = original_entry.lines.into_iter().map(|l| {
+            JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: l.account_id,
+                debit_amount: l.credit_amount,
+                credit_amount: l.debit_amount,
+                description: Some(format!("Reversal: {}", l.description.unwrap_or_default())),
+                entity_type: l.entity_type,
+                entity_id: l.entity_id,
+            }
+        }).collect();
+
+        let reversing_entry = JournalEntry {
+            id: reversal_id,
+            org_id,
+            reference_number: format!("REV-{}", original_entry.reference_number),
+            accounting_date: now.date_naive(),
+            amount: original_entry.amount,
+            currency_code: original_entry.currency_code,
+            exchange_rate: original_entry.exchange_rate,
+            base_amount: original_entry.base_amount,
+            debit_account_id: original_entry.credit_account_id,
+            credit_account_id: original_entry.debit_account_id,
+            description: format!("Reversal of {}: {}", original_entry.reference_number, reason),
+            description_ar: None,
+            source_type: "reversal".into(),
+            source_id: Some(original_entry.id),
+            status: JournalPostingStatus::Posted,
+            lines: reversal_lines,
+            is_reversed: false,
+            reversed_by: None,
+            reversal_reason: None,
+            created_by: Some(user_id),
+            created_at: now,
+        };
+
+        self.journal_repo.save(&reversing_entry).await?;
+        Ok(reversing_entry)
+    }
+
+    /// Process a refund for a student fee
+    pub async fn refund_student_fee(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        fee_id: Uuid,
+        refund_amount: Decimal,
+        notes: Option<String>,
+    ) -> Result<StudentFee, DomainError> {
+        self.permission_checker.check(ctx, Permission::ProcessPayment).await?;
+
+        let mut fee = self.student_fee_repo.find_by_id(fee_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Student fee {} not found", fee_id)))?;
+
+        if fee.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        if refund_amount <= Decimal::ZERO || refund_amount > fee.paid_amount {
+            return Err(DomainError::Validation(format!(
+                "Invalid refund amount: {} (Paid: {})", refund_amount, fee.paid_amount
+            )));
+        }
+
+        fee.paid_amount -= refund_amount;
+        fee.balance_due += refund_amount;
+        if fee.paid_amount == Decimal::ZERO {
+            fee.status = FeeStatus::Refunded;
+        } else {
+            fee.status = FeeStatus::PartiallyPaid;
+        }
+        if let Some(n) = notes {
+            fee.notes = Some(match fee.notes {
+                Some(existing) => format!("{}; Refund note: {}", existing, n),
+                None => format!("Refund note: {}", n),
+            });
+        }
+        fee.updated_at = Utc::now();
+
+        self.student_fee_repo.save(&fee).await?;
+        Ok(fee)
+    }
+
+    /// Split a single student fee into multiple installment schedule records
+    pub async fn split_fee_into_installments(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        fee_id: Uuid,
+        num_installments: u32,
+        due_dates: Vec<chrono::NaiveDate>,
+    ) -> Result<Vec<StudentFee>, DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+
+        if num_installments < 2 || due_dates.len() != num_installments as usize {
+            return Err(DomainError::Validation("Installment count must match number of due dates".into()));
+        }
+
+        let base_fee = self.student_fee_repo.find_by_id(fee_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Student fee {} not found", fee_id)))?;
+
+        if base_fee.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        if base_fee.paid_amount > Decimal::ZERO {
+            return Err(DomainError::Validation("Cannot split fee that already has payments applied".into()));
+        }
+
+        let installment_amount = (base_fee.net_amount / Decimal::from(num_installments)).round_dp(2);
+        let mut created_fees = Vec::new();
+        let now = Utc::now();
+
+        for (i, due_date) in due_dates.into_iter().enumerate() {
+            let inst_fee = StudentFee {
+                id: if i == 0 { base_fee.id } else { Uuid::new_v4() },
+                org_id: base_fee.org_id,
+                period_id: base_fee.period_id,
+                student_id: base_fee.student_id,
+                enrollment_id: base_fee.enrollment_id,
+                fee_template_id: base_fee.fee_template_id,
+                original_amount: installment_amount,
+                discount_amount: Decimal::ZERO,
+                net_amount: installment_amount,
+                paid_amount: Decimal::ZERO,
+                balance_due: installment_amount,
+                status: FeeStatus::Pending,
+                due_date,
+                discount_details: None,
+                installment_number: Some((i + 1) as u32),
+                notes: Some(format!("Installment {} of {}", i + 1, num_installments)),
+                created_at: now,
+                updated_at: now,
+            };
+            self.student_fee_repo.save(&inst_fee).await?;
+            created_fees.push(inst_fee);
+        }
+
+        Ok(created_fees)
     }
 }

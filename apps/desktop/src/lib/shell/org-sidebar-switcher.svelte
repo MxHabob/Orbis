@@ -182,7 +182,7 @@ async function handleBranchSelect(id: string) {
       <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings`)}>
         {m.common_header_org_settings()}
       </DropdownMenuItem>
-      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings/branches`)}>
+      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings/units`)}>
         {m.common_header_org_branches()}
       </DropdownMenuItem>
       <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings/users`)}>

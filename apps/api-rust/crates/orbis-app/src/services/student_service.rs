@@ -104,15 +104,20 @@ impl StudentService {
     ) -> Result<StudentDetail, DomainError> {
         self.permission_checker.check(ctx, Permission::StudentCreate).await?;
 
-        // 1. Check if student number already exists in org
-        if self.student_repo.find_by_student_number(org_id, &input.student_number).await?.is_some() {
+        // 1. Resolve or auto-generate student number
+        let now = Utc::now();
+        let student_number = if input.student_number.trim().is_empty() {
+            format!("STD-{}-{}", now.format("%Y"), Uuid::new_v4().to_string().chars().take(6).collect::<String>().to_uppercase())
+        } else {
+            input.student_number.trim().to_string()
+        };
+
+        if self.student_repo.find_by_student_number(org_id, &student_number).await?.is_some() {
             return Err(DomainError::Conflict(format!(
                 "Student number '{}' is already assigned in this organization",
-                input.student_number
+                student_number
             )));
         }
-
-        let now = Utc::now();
 
         // 2. Resolve or create Person
         let person_id = if let Some(pid) = input.person_id {
@@ -159,7 +164,7 @@ impl StudentService {
             org_id,
             person_id,
             user_id: input.user_id,
-            student_number: input.student_number.clone(),
+            student_number: student_number.clone(),
             status: StudentStatus::Active,
             standing: AcademicStanding::GoodStanding,
             admitted_at: now,
@@ -181,7 +186,7 @@ impl StudentService {
                 period_id,
                 student_id,
                 input.initial_class_id,
-                input.student_number.clone(),
+                student_number.clone(),
                 mode,
             );
             self.enrollment_repo.save(&enrollment).await?;
@@ -228,6 +233,11 @@ impl StudentService {
                 "Cannot enroll student with status {:?}",
                 student.status
             )));
+        }
+
+        let existing_student_enrollments = self.enrollment_repo.find_by_student(student_id).await?;
+        if existing_student_enrollments.iter().any(|e| e.period_id == period_id && e.status == orbis_domain::entities::enrollment::EnrollmentStatus::Active) {
+            return Err(DomainError::Conflict("Student is already actively enrolled in this period".into()));
         }
 
         let now = Utc::now();
