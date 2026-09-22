@@ -12,7 +12,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import { AdjustmentsHorizontal, Collapse, Expand } from "@orbis/icons";
+import { AdjustmentsHorizontal, Collapse, Expand, Knobs } from "@orbis/icons";
 
 let {
   store,
@@ -91,7 +91,7 @@ let {
           class:active={store.snapEnabled}
           onclick={() => store.snapEnabled = !store.snapEnabled}
         >
-          <Magnet size={12} />
+          <Knobs size={12} />
         </button>
       </TooltipTrigger>
       <TooltipContent>{store.snapEnabled ? m.template_tooltip_disable_snap() : m.template_tooltip_enable_snap()}</TooltipContent>

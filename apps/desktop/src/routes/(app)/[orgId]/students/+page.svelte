@@ -8,7 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { ArrowForward, ArrowUpTray, BookOpen, CheckCircle, DocumentChartBar, Download, Plus, Search, UserBadgeCheck, Printer } from "@orbis/icons";
+import { ArrowForward, ArrowUpTray, BookOpen, CheckCircle, DocumentChartBar, Download, Plus, Printer, Search, UserBadgeCheck, XMark } from "@orbis/icons";
 import { fly } from "svelte/transition";
 import { quintOut } from "svelte/easing";
 import { studentsStore, createEnrollmentsQuery } from "$lib/features/students";
@@ -165,7 +165,7 @@ function handleExportStudents() {
         actions={[
           {
             label: m.common_filter_clear(),
-            icon: FilterX,
+            icon: XMark,
             onclick: clearFilters,
             disabled: !hasActiveFilters
           }

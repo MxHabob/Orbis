@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { fade } from "svelte/transition";
-import { AdjustmentsHorizontal, ArrowRight, Bolt, ChartBar, CheckCircle, ClockRotateRight, InfoCircle, Sparkles, UserBadgeCheck } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowRight, Bolt, ChartBar, CheckCircle, ClockRotateRight, Cube, InfoCircle, Sparkles, UserBadgeCheck } from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 import { localizeHref } from "$lib/paraglide/runtime";
 import AiPerformanceTrendCard from "$lib/features/ai-center/components/overview/ai-performance-trend-card.svelte";
@@ -183,7 +183,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
 
             <div class="flex items-center justify-between p-2.5 rounded-lg border border-border/40 bg-background/50">
               <div class="flex items-center gap-2">
-                <Plug size={14} class="text-muted-foreground" />
+                <Cube size={14} class="text-muted-foreground" />
                 <span class="text-xs text-foreground font-medium">{m.ai_center_overview_integrations ? m.ai_center_overview_integrations() : "التكاملات المتصلة"}</span>
               </div>
               <span class="text-sm font-mono font-bold text-foreground">{connectedAppsCount}</span>
@@ -246,7 +246,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
         <div class="bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col justify-between space-y-4">
           <div class="flex items-center justify-between border-b border-border/40 pb-3">
             <div class="flex items-center gap-2">
-              <Plug size={16} class="text-primary" />
+              <Cube size={16} class="text-primary" />
               <h2 class="text-sm font-bold text-foreground">
                 {m.ai_center_overview_connected_providers ? m.ai_center_overview_connected_providers() : "المزودات المربوطة"}
               </h2>
@@ -261,7 +261,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
               {#each connectedIntegrations as item}
                 <div class="p-3 border border-border/40 rounded-lg bg-background/40 flex items-center justify-between">
                   <div class="flex items-center gap-2.5">
-                    <Plug size={16} class="text-primary" />
+                    <Cube size={16} class="text-primary" />
                     <div>
                       <h4 class="text-xs font-bold text-foreground">{item.provider_name || item.name || item.id}</h4>
                       <p class="text-[10px] text-muted-foreground">{item.category || item.provider || "خدمة متصلة"}</p>
@@ -273,7 +273,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
             </div>
           {:else}
             <div class="border border-border/40 rounded-lg p-6 flex flex-col items-center text-center bg-background/20 space-y-1.5">
-              <Plug size={20} class="text-muted-foreground" />
+              <Cube size={20} class="text-muted-foreground" />
               <p class="text-xs font-bold text-foreground">لا توجد خدمات مربوطة حالياً</p>
               <p class="text-[11px] text-muted-foreground">يمكنك ربط وتكتاف أجهزة المزودين من خلال متجر التكاملات.</p>
             </div>

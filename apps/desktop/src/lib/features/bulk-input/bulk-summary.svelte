@@ -12,7 +12,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@orbis/ui/accordion";
-import { AdjustmentsHorizontal, Hashtag, InfoCircle } from "@orbis/icons";
+import { AdjustmentsHorizontal, CheckCircle, Hashtag, InfoCircle, XMark } from "@orbis/icons";
 
 interface Props {
   totalFilled: number;
@@ -58,14 +58,14 @@ let progressPercent = $derived(
     </div>
 
     <div class="flex items-center gap-1.5">
-      <CircleCheck size={13} class="text-primary" />
+      <CheckCircle size={13} class="text-primary" />
       <span class="text-xs font-medium text-muted-foreground">{m.common_bulk_input_valid()}:</span>
       <Badge variant="success" class="text-xs px-2 py-0.5">{valid}</Badge>
     </div>
 
     {#if errorCount > 0}
       <div class="flex items-center gap-1.5">
-        <CircleX size={13} class="text-destructive" />
+        <XMark size={13} class="text-destructive" />
         <span class="text-xs font-medium text-muted-foreground">{m.common_bulk_input_errors()}:</span>
         <Badge variant="destructive" class="text-xs px-2 py-0.5">{errorCount}</Badge>
       </div>

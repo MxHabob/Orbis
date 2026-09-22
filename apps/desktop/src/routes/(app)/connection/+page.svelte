@@ -13,7 +13,7 @@ import { FormField } from "@orbis/ui";
 import { Logo } from "@orbis/ui/logo";
 import { Badge } from "@orbis/ui/badge";
 import type { ConnectionMode, RemoteHealthResult } from "$lib/api/types";
-import { AdjustmentsHorizontal, ArrowLeft, ArrowRight, Bolt, ChartBar, CheckCircle, Database, GlobeAlt, InfoCircle, UserBadgeCheck } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowLeft, ArrowPath, ArrowRight, Bolt, ChartBar, CheckCircle, Computer, Database, GlobeAlt, InfoCircle, UserBadgeCheck } from "@orbis/icons";
 import { z } from "zod";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { l } from "$lib/core/i18n";
@@ -142,7 +142,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
         <div class="lg:col-span-5 rounded-2xl bg-muted/10 border border-border/60 p-5 flex flex-col justify-between space-y-5 text-start">
           <div class="space-y-4">
             <div class="flex items-center gap-2 pb-1 border-b border-border/40">
-              <Server size={15} class="text-primary" />
+              <Database size={15} class="text-primary" />
               <h3 class="font-bold text-xs sm:text-sm text-foreground">
                 {l("البنية التحتية للنظام", "System Architecture")}
               </h3>
@@ -158,7 +158,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
             <div class="space-y-3">
               <div class="p-3 rounded-xl border border-border/50 bg-card/60 space-y-1">
                 <div class="flex items-center gap-2 font-bold text-xs text-foreground">
-                  <HardDrive size={13} class="text-primary" />
+                  <Computer size={13} class="text-primary" />
                   <span>{l("النمط المحلي (Local Embedded)", "Local Embedded Mode")}</span>
                 </div>
                 <p class="text-[11px] text-muted-foreground leading-normal">
@@ -283,7 +283,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
                   {/snippet}
                 </FormField>
                 <p class="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                  <HardDrive size={12} class="text-muted-foreground/80 shrink-0" />
+                  <Computer size={12} class="text-muted-foreground/80 shrink-0" />
                   <span>{m.setup_connection_db_file_hint()}</span>
                 </p>
               {:else}
@@ -314,7 +314,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
                           disabled={isCheckingHealth || !form.values.serverUrl.trim()}
                         >
                           {#if isCheckingHealth}
-                            <Loader2 class="size-3.5 animate-spin" />
+                            <ArrowPath class="size-3.5 animate-spin" />
                           {:else}
                             <ChartBar class="size-3.5 text-primary" />
                           {/if}
@@ -354,7 +354,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
               disabled={form.isSubmitting || (form.values.mode === 'remote' && healthResult !== null && !healthResult.reachable)}
             >
               {#if form.isSubmitting}
-                <Loader2 class="size-4 animate-spin" />
+                <ArrowPath class="size-4 animate-spin" />
                 <span>{m.setup_connection_connecting()}</span>
               {:else}
                 <span>{m.setup_connection_connect_btn()}</span>

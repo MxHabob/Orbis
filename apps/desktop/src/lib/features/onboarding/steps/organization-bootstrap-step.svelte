@@ -18,7 +18,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { AdjustmentsHorizontal, ArrowLeft, ArrowRight, Check, Eye, EyeSlash, InfoCircle, Sparkles } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowLeft, ArrowPath, ArrowRight, Check, Eye, EyeSlash, InfoCircle, Sparkles } from "@orbis/icons";
 import { z } from "zod";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { l } from "$lib/core/i18n";
@@ -582,7 +582,7 @@ async function handleBootstrapSubmit(e?: Event) {
         class="px-5 h-7 text-xs font-bold cursor-pointer shadow-xs gap-2"
       >
         {#if form.isSubmitting}
-          <Loader2 class="w-3.5 h-3.5 animate-spin" />
+          <ArrowPath class="w-3.5 h-3.5 animate-spin" />
           <span>{m.setup_bootstrap_submitting?.() || (isRTL ? "جاري إنشاء المؤسسة..." : "Creating Organization...")}</span>
         {:else}
           <Sparkles class="w-3.5 h-3.5" />

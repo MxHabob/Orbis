@@ -12,7 +12,7 @@ import {
   TooltipProvider,
 } from "@orbis/ui/tooltip";
 import * as m from "$lib/paraglide/messages";
-import { Grid, Component, Bold, Photo, Wrench, SettingsAlt } from "@orbis/icons";
+import { Bold, Component, DocumentPage, Grid, Photo, SettingsAlt, Wrench } from "@orbis/icons";
 
 let {
   store,
@@ -28,8 +28,8 @@ type RailItem = {
 };
 
 const topItems: RailItem[] = [
-  { id: "templates", icon: LayoutTemplate, label: m.common_td_panel_pages() },
-  { id: "elements", icon: Shapes, label: m.common_td_panel_elements() },
+  { id: "templates", icon: DocumentPage, label: m.common_td_panel_pages() },
+  { id: "elements", icon: Component, label: m.common_td_panel_elements() },
   { id: "text", icon: Type, label: m.common_td_panel_text() },
   { id: "uploads", icon: ImageIcon, label: m.common_td_panel_media() },
   { id: "tools", icon: Wrench, label: m.common_td_panel_tools() },

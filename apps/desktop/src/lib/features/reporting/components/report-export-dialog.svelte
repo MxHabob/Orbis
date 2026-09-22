@@ -8,7 +8,7 @@ import {
   DialogFooter,
 } from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui/button";
-import { AdjustmentsHorizontal, Download, DocumentChartBar } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowPath, DocumentChartBar, Download } from "@orbis/icons";
 import { api } from "$lib/api";
 import { toast } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
@@ -89,7 +89,7 @@ async function handleExport() {
       </Button>
       <Button onclick={handleExport} disabled={isExporting}>
         {#if isExporting}
-          <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+          <ArrowPath class="mr-2 h-4 w-4 animate-spin" />
         {:else}
           <Download class="mr-2 h-4 w-4" />
         {/if}

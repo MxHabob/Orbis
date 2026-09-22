@@ -20,7 +20,7 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Label } from "@orbis/ui/label";
-import { AdjustmentsHorizontal, ArrowLeft, ArrowUpTray, FloppyDisk, Info, Trash } from "@orbis/icons";
+import { AdjustmentsHorizontal, AlignHorizontal, ArrowLeft, ArrowUpTray, FloppyDisk, Info, Trash } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 
 import { localizeHref } from "$lib/paraglide/runtime";
@@ -373,7 +373,7 @@ async function handleSubmit() {
         <Popover>
           <PopoverTrigger>
             <Button variant="outline" size="sm" class="text-xs cursor-pointer">
-              <Columns3 size={13} class="me-1.5" />
+              <AlignHorizontal size={13} class="me-1.5" />
               {m.common_bulk_extra_columns()}
             </Button>
           </PopoverTrigger>

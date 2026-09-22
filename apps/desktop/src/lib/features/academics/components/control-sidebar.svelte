@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
-import { AdjustmentsHorizontal, ChartBar, CheckCircle, Lock, Refresh, Users, XMark } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowPath, ChartBar, CheckCircle, Clock, Lock, LockClosed, Refresh, Users, XMark } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 
 import { formatNumber, formatDate } from "$lib/core/i18n";
@@ -107,7 +107,7 @@ let {
             disabled={isPeriodActionLoading}
           >
             {#if isPeriodActionLoading}
-              <Loader2 size={14} class="animate-spin" />
+              <ArrowPath size={14} class="animate-spin" />
             {:else}
               <Unlock size={14} />
             {/if}
@@ -121,7 +121,7 @@ let {
             disabled={isPeriodActionLoading}
           >
             {#if isPeriodActionLoading}
-              <Loader2 size={14} class="animate-spin" />
+              <ArrowPath size={14} class="animate-spin" />
             {:else}
               <Lock size={14} />
             {/if}
@@ -136,9 +136,9 @@ let {
               disabled={isPeriodActionLoading}
             >
               {#if isPeriodActionLoading}
-                <Loader2 size={14} class="animate-spin" />
+                <ArrowPath size={14} class="animate-spin" />
               {:else}
-                <CalendarOff size={14} />
+                <LockClosed size={14} />
               {/if}
               {m.common_control_close_entry()}
             </Button>
@@ -150,9 +150,9 @@ let {
               disabled={isPeriodActionLoading}
             >
               {#if isPeriodActionLoading}
-                <Loader2 size={14} class="animate-spin" />
+                <ArrowPath size={14} class="animate-spin" />
               {:else}
-                <CalendarClock size={14} />
+                <Clock size={14} />
               {/if}
               {m.common_control_open_entry()}
             </Button>
@@ -168,7 +168,7 @@ let {
           disabled={isCompileLoading}
         >
           {#if isCompileLoading}
-            <Loader2 size={14} class="animate-spin" />
+            <ArrowPath size={14} class="animate-spin" />
           {:else}
             <Refresh size={14} />
           {/if}

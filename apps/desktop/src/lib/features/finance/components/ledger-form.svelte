@@ -21,7 +21,7 @@ import {
 } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
-import { AdjustmentsHorizontal, BookOpen, Check, Info, Users, BuildingLibrary } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowPath, BookOpen, BuildingLibrary, Check, Info, Users } from "@orbis/icons";
 
 let {
   orgId,
@@ -446,7 +446,7 @@ async function handleSubmit(e: SubmitEvent) {
           disabled={isSubmitting || (activeTab === "gl" && !glParentId)}
         >
           {#if isSubmitting}
-            <Loader2 size={13} class="animate-spin" />
+            <ArrowPath size={13} class="animate-spin" />
           {:else}
             <Check size={13} />
           {/if}

@@ -1,7 +1,7 @@
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
 import UserAvatar from "$lib/shared/components/user-avatar.svelte";
-import { AdjustmentsHorizontal, ChartBar, ChatBubble, ClockRotateRight, Grid, Plus, XMark } from "@orbis/icons";
+import { AdjustmentsHorizontal, ChartBar, ChatBubble, ClockRotateRight, Expand, Grid, Plus, XMark } from "@orbis/icons";
 import ChatHistoryPopover from "./chat-history-popover.svelte";
 import type { AiChatSession } from "$lib/features/ai/session-store";
 
@@ -87,7 +87,7 @@ let {
         class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
         title="فتح في نافذة منفصلة"
       >
-        <Columns size={13} />
+        <Expand size={13} />
       </Button>
     {/if}
 

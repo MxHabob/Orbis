@@ -2,7 +2,7 @@
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
-import { AdjustmentsHorizontal } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowPath } from "@orbis/icons";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,6 @@ let {
       <FormField label="اسم الهيكل" required>{#snippet children()}<Input bind:value={name} placeholder="مثال: هيكل التقييم الابتدائي" class="text-xs" />{/snippet}</FormField>
       <FormField label="الوصف (اختياري)">{#snippet children()}<Input bind:value={description} placeholder="وصف مختصر لهيكل التقييم" class="text-xs" />{/snippet}</FormField>
     </div>
-    <DialogFooter><Button size="sm" class="text-xs cursor-pointer" onclick={onsubmit} disabled={isCreating || !name.trim()}>{#if isCreating}<Loader2 size={12} class="animate-spin me-1" />{/if}إنشاء</Button></DialogFooter>
+    <DialogFooter><Button size="sm" class="text-xs cursor-pointer" onclick={onsubmit} disabled={isCreating || !name.trim()}>{#if isCreating}<ArrowPath size={12} class="animate-spin me-1" />{/if}إنشاء</Button></DialogFooter>
   </DialogContent>
 </Dialog>

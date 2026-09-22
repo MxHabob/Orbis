@@ -13,7 +13,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, ArrowLeft, BookOpen, Calendar, CheckCircle, Document, DocumentPage, Hashtag, Keyboard, Plus, Search, User, XMark } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowLeft, Banknotes, BookOpen, Calendar, CheckCircle, Document, DocumentPage, Hashtag, Keyboard, Plus, Search, User, XMark } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 import { matchStudent } from "$lib/shared/utils/search";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
@@ -572,7 +572,7 @@ onMount(() => {
         <!-- Payment Recording Form -->
         <form onsubmit={handlePaymentSubmit} class="flex flex-col gap-5 text-start h-full" in:fade={{ duration: 150 }}>
           <h3 class="text-sm font-bold text-foreground border-b border-border/80 pb-2 select-none flex items-center gap-2">
-            <DollarSign size={15} class="text-lime-500" />
+            <Banknotes size={15} class="text-lime-500" />
             <span>{m.finance_pos_record_payment_receipt()}</span>
           </h3>
 

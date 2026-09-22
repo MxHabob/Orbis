@@ -11,7 +11,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@orbis/ui/accordion";
-import { AdjustmentsHorizontal, Hashtag } from "@orbis/icons";
+import { AdjustmentsHorizontal, CheckCircle, Hashtag, XMark } from "@orbis/icons";
 
 interface Props {
   totalFilledRows: number;
@@ -33,13 +33,13 @@ let { totalFilledRows, validCount, errorCount, errorDetails }: Props = $props();
     </div>
 
     <div class="flex items-center gap-1.5">
-      <CircleCheck size={13} class="text-primary" />
+      <CheckCircle size={13} class="text-primary" />
       <span class="text-xs font-medium text-muted-foreground">{m.common_bulk_input_valid()}:</span>
       <Badge variant="success" class="text-xs px-2 py-0.5">{validCount}</Badge>
     </div>
 
     <div class="flex items-center gap-1.5">
-      <CircleX size={13} class="text-destructive" />
+      <XMark size={13} class="text-destructive" />
       <span class="text-xs font-medium text-muted-foreground">{m.common_bulk_input_errors()}:</span>
       <Badge variant={errorCount > 0 ? "destructive" : "secondary"} class="text-xs px-2 py-0.5">{errorCount}</Badge>
     </div>

@@ -431,7 +431,7 @@ async function handleSubmit(e: Event) {
           class="text-xs cursor-pointer gap-1.5 font-bold"
         >
           {#if isSubmitting}
-            <Loader2 size={12} class="animate-spin" />
+            <ArrowPath size={12} class="animate-spin" />
           {:else}
             <Check size={12} />
           {/if}

@@ -34,7 +34,7 @@ import { Button } from "@orbis/ui/button";
 import { Textarea } from "@orbis/ui/textarea";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
-import { AdjustmentsHorizontal, InfoCircle, UserBadgeCheck } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowPath, InfoCircle, UserBadgeCheck } from "@orbis/icons";
 import type { OverrideType, RiskLevel } from "@orbis/sdk";
 
 interface Props {
@@ -267,7 +267,7 @@ async function submit() {
       </Button>
       <Button onclick={submit} disabled={isSubmitting || !reason.trim()}>
         {#if isSubmitting}
-          <Loader2 class="size-4 animate-spin me-2" />
+          <ArrowPath class="size-4 animate-spin me-2" />
         {/if}
         {m.common_override_submit ? m.common_override_submit() : "Submit Request"}
       </Button>

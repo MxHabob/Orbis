@@ -30,7 +30,7 @@ import {
 } from "@orbis/ui/select";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import { toast } from "@orbis/ui";
-import { Calendar, ChevronLeft, ChevronRight, Document, DocumentPage, Plus, Refresh, Search, SignOut, TaskList, Trash, Printer } from "@orbis/icons";
+import { Calendar, CheckSquare, ChevronLeft, ChevronRight, Document, DocumentPage, Plus, Printer, Refresh, Search, SignOut, TaskList, Trash } from "@orbis/icons";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 
@@ -971,7 +971,7 @@ const filteredPayments = $derived.by(() => {
           disabled={!selectedPayment} 
           class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted"
         >
-          <DocumentPage size={12} />
+          <Printer size={12} />
           <span>{m.finance_payments_print_receipt()}</span>
         </Button>
         <Button 
@@ -980,7 +980,7 @@ const filteredPayments = $derived.by(() => {
           onclick={() => { if(selectedPayment) showQrModal = true; else toast.error('الرجاء اختيار سند أولاً'); }} 
           class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted"
         >
-          <QrCode size={12} />
+          <CheckSquare size={12} />
           <span>QR</span>
         </Button>
       </div>

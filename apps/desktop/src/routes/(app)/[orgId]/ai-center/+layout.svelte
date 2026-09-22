@@ -4,7 +4,7 @@ Full-width workspace layout for AI Center with a header sub-navigation bar using
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { AdjustmentsHorizontal, Camera, GlobeAlt, Settings, UserBadgeCheck } from "@orbis/icons";
+import { AdjustmentsHorizontal, Camera, Cube, GlobeAlt, Settings, TaskList, UserBadgeCheck } from "@orbis/icons";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import type { Snippet } from "svelte";
 let { data, children }: { data: { orgId: string }; children: Snippet } =
@@ -23,14 +23,14 @@ const navItems = $derived([
   {
     path: "live",
     label: m.ai_center_nav_live ? m.ai_center_nav_live() : "البث المباشر",
-    icon: Video,
+    icon: Camera,
   },
   {
     path: "integrations",
     label: m.ai_center_nav_integrations
       ? m.ai_center_nav_integrations()
       : "التكاملات",
-    icon: Plug,
+    icon: Cube,
   },
   {
     path: "permissions",
@@ -47,7 +47,7 @@ const navItems = $derived([
   {
     path: "ai-logs",
     label: m.ai_center_nav_logs ? m.ai_center_nav_logs() : "سجل الأنشطة",
-    icon: ScrollText,
+    icon: TaskList,
   },
 ]);
 </script>

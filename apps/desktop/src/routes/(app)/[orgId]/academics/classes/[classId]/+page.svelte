@@ -128,7 +128,7 @@ function handleNotifications() {
     />
     <QuickActionButton 
       label={isArabic ? "مشاركة الرابط" : "Share"} 
-      icon={Share2} 
+      icon={Share} 
       onclick={handleShareLink}
     />
     <QuickActionButton 
@@ -148,7 +148,7 @@ function handleNotifications() {
     />
     <QuickActionButton 
       label={isArabic ? "الإعلانات" : "Announcements"} 
-      icon={MessageSquare} 
+      icon={ChatBubble} 
       onclick={() => toast.info(isArabic ? "إرسال إعلان للطلاب وأولياء الأمور..." : "Post class announcement...")}
     />
   </div>

@@ -25,7 +25,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@orbis/ui/alert-dialog";
-import { AdjustmentsHorizontal, CheckCircle, ClockRotateRight, InfoCircle, UndoAction, XMark } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowPath, CheckCircle, ClockRotateRight, InfoCircle, UndoAction, XMark } from "@orbis/icons";
 import type { PromotionJob } from "@orbis/sdk";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
@@ -56,7 +56,7 @@ function statusIcon(status: string) {
     case "failed":
       return XMark;
     case "executing":
-      return Loader2;
+      return ArrowPath;
     case "rolled_back":
       return Undo2;
     default:

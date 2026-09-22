@@ -22,7 +22,7 @@ import {
 } from "@orbis/ui/tooltip";
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
-import { AdjustmentsHorizontal, AlignHorizontal, ArrowForward, ArrowLeft, Bold, Collapse, Expand, Eye, FloppyDisk, Italic, Minus, Plus, Underline, UndoAction } from "@orbis/icons";
+import { AdjustmentsHorizontal, AlignHorizontal, AlignVertical, ArrowForward, ArrowLeft, Bold, Collapse, Component, Expand, Eye, FloppyDisk, Grid, Italic, Knobs, Minus, Plus, Underline, UndoAction } from "@orbis/icons";
 
 let {
   store,
@@ -378,7 +378,7 @@ function handleAlign(
         <Tooltip>
           <TooltipTrigger>
             <button type="button" class="ctx-format-btn">
-              <Group size={13} />
+              <Component size={13} />
             </button>
           </TooltipTrigger>
           <TooltipContent>{m.template_auto_group ? m.template_auto_group() : "Group"}</TooltipContent>
@@ -396,12 +396,12 @@ function handleAlign(
           <PopoverContent class="w-auto p-2" align="center">
             <div class="flex items-center gap-1">
               {#each [
-                { icon: AlignLeft, type: "left" as const },
-                { icon: AlignCenter, type: "center" as const },
-                { icon: AlignRight, type: "right" as const },
-                { icon: AlignStartVertical, type: "top" as const },
-                { icon: AlignCenterVertical, type: "middle" as const },
-                { icon: AlignEndVertical, type: "bottom" as const },
+                { icon: AlignHorizontal, type: "left" as const },
+                { icon: AlignHorizontal, type: "center" as const },
+                { icon: AlignHorizontal, type: "right" as const },
+                { icon: AlignVertical, type: "top" as const },
+                { icon: AlignHorizontalVertical, type: "middle" as const },
+                { icon: AlignVertical, type: "bottom" as const },
               ] as btn, i (i)}
                 <button type="button" class="ctx-format-btn" onclick={() => handleAlign(btn.type)}>
                   <svelte:component this={btn.icon} size={13} />
@@ -420,7 +420,7 @@ function handleAlign(
     <Tooltip>
       <TooltipTrigger>
         <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={() => store.undo()} disabled={!store.canUndo}>
-          <Undo2 size={14} />
+          <UndoAction size={14} />
         </Button>
       </TooltipTrigger>
       <TooltipContent>{m.template_tooltip_undo()}</TooltipContent>
@@ -428,7 +428,7 @@ function handleAlign(
     <Tooltip>
       <TooltipTrigger>
         <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={() => store.redo()} disabled={!store.canRedo}>
-          <Redo2 size={14} />
+          <ArrowForward size={14} />
         </Button>
       </TooltipTrigger>
       <TooltipContent>{m.template_tooltip_redo()}</TooltipContent>
@@ -439,7 +439,7 @@ function handleAlign(
     <Tooltip>
       <TooltipTrigger>
         <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={() => store.gridVisible = !store.gridVisible}>
-          <Grid3x3 size={13} class={store.gridVisible ? "text-primary" : ""} />
+          <Grid size={13} class={store.gridVisible ? "text-primary" : ""} />
         </Button>
       </TooltipTrigger>
       <TooltipContent>{m.template_tooltip_grid()}</TooltipContent>
@@ -447,7 +447,7 @@ function handleAlign(
     <Tooltip>
       <TooltipTrigger>
         <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={() => store.snapEnabled = !store.snapEnabled}>
-          <Magnet size={13} class={store.snapEnabled ? "text-primary" : ""} />
+          <Knobs size={13} class={store.snapEnabled ? "text-primary" : ""} />
         </Button>
       </TooltipTrigger>
       <TooltipContent>{m.template_tooltip_snap()}</TooltipContent>
@@ -455,7 +455,7 @@ function handleAlign(
     <Tooltip>
       <TooltipTrigger>
         <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={() => store.rulersVisible = !store.rulersVisible}>
-          <Ruler size={13} class={store.rulersVisible ? "text-primary" : ""} />
+          <AdjustmentsHorizontal size={13} class={store.rulersVisible ? "text-primary" : ""} />
         </Button>
       </TooltipTrigger>
       <TooltipContent>{m.template_tooltip_rulers()}</TooltipContent>

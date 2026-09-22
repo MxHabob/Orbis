@@ -9,7 +9,7 @@ Uses the Assessment Engine's assessment_scheme CRUD operations.
   import AssessmentComponentDialog from "$lib/features/settings/components/assessment-component-dialog.svelte";
   import AssessmentSchemeDialog from "$lib/features/settings/components/assessment-scheme-dialog.svelte";
   import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
-  import { AdjustmentsHorizontal, ChevronRight, Keyframes, Pencil, Plus, Trash } from "@orbis/icons";
+  import { AdjustmentsHorizontal, ChevronRight, Keyframes, Pencil, Plus, Scale, Trash } from "@orbis/icons";
   import { toast } from "@orbis/ui";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
@@ -339,7 +339,7 @@ Uses the Assessment Engine's assessment_scheme CRUD operations.
           <div class="border border-border/40 rounded-lg p-5">
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-2">
-                <Weight size={16} class="text-primary" />
+                <Scale size={16} class="text-primary" />
                 <h2 class="text-sm font-semibold">{selectedScheme.name}</h2>
               </div>
               <div class="flex items-center gap-2">

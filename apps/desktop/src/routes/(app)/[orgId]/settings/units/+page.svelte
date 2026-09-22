@@ -17,7 +17,7 @@ import { toast } from "@orbis/ui";
 import { l, isAr } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
 import SearchField from "$lib/shared/components/search-field.svelte";
-import { AdjustmentsHorizontal, BookOpen, ChevronDown, ChevronRight, Cube, EllipsisVertical, Home, Keyframes, Pencil, Pin, Plus, Search, Trash, Users, BuildingOffice } from "@orbis/icons";
+import { AdjustmentsHorizontal, BookOpen, BuildingOffice, ChevronDown, ChevronRight, Cube, EllipsisVertical, Folder, Home, Keyframes, Pencil, Pin, Plus, QueueList, Search, Trash, Users } from "@orbis/icons";
 import OrgUnitSheet from "$lib/features/academics/components/org-unit-sheet.svelte";
 import { confirmStore } from "$lib/stores";
 
@@ -322,9 +322,9 @@ function getUnitTypeIcon(typeStr: string) {
       return Home;
     case "facility":
     case "classroom":
-      return DoorOpen;
+      return Pin;
     case "office":
-      return Briefcase;
+      return BuildingOffice;
     default:
       return Box;
   }
@@ -409,7 +409,7 @@ function escapeHtml(text: string): string {
             class="text-[10px] h-7 px-3 font-semibold gap-1.5"
             onclick={() => viewMode = "tree"}
           >
-            <FolderTree size={12} />
+            <Folder size={12} />
             <span>{m.settings_units_hierarchy()}</span>
           </Button>
           <Button
@@ -418,7 +418,7 @@ function escapeHtml(text: string): string {
             class="text-[10px] h-7 px-3 font-semibold gap-1.5"
             onclick={() => viewMode = "flat"}
           >
-            <List size={12} />
+            <QueueList size={12} />
             <span>{m.settings_units_flat_list()}</span>
           </Button>
         </div>

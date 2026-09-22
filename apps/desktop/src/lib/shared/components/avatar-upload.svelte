@@ -5,7 +5,7 @@ A circular avatar image uploader with hover edit states and customizable fallbac
 <script lang="ts">
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui/avatar";
 import { cn } from "@orbis/ui/utils";
-import { AdjustmentsHorizontal, User } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowPath, User } from "@orbis/icons";
 import {
   useUploadDocument,
   resolveDocumentUrl,
@@ -105,7 +105,7 @@ function handleFileChange(event: Event) {
 >
   {#if isLoading || uploadMutation.isPending}
     <div class="flex items-center justify-center w-full h-full bg-background/50 backdrop-blur-xs">
-      <Loader2 class="animate-spin text-primary shrink-0" size={Math.max(16, size / 3.5)} />
+      <ArrowPath class="animate-spin text-primary shrink-0" size={Math.max(16, size / 3.5)} />
     </div>
   {:else}
     <Avatar class="w-full h-full rounded-md">

@@ -25,7 +25,7 @@ import { api } from "$lib/api";
 import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
-import { AdjustmentsHorizontal, BarsArrowUp, ClockRotateRight, InfoCircle, Lock } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowPath, BarsArrowUp, ClockRotateRight, InfoCircle, Lock } from "@orbis/icons";
 import type { Snippet } from "svelte";
 
 type GateType = "enrollment" | "grading" | "attendance" | string;
@@ -102,7 +102,7 @@ const decisionColors: Record<GateDecision, string> = {
 
 {#if gateQuery.isLoading}
   <Button {size} disabled>
-    <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+    <ArrowPath class="mr-2 h-4 w-4 animate-spin" />
     جارِ التحقق...
   </Button>
 {:else if verdict}

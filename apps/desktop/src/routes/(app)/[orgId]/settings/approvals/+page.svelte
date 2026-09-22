@@ -30,7 +30,7 @@ import { Textarea } from "@orbis/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Separator } from "@orbis/ui/separator";
-import { AdjustmentsHorizontal, ArrowUpCircle, CheckCircle, CheckSquare, ClockRotateRight, InfoCircle, UserBadgeCheck, XMark } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowPath, ArrowUpCircle, CheckCircle, CheckSquare, ClockRotateRight, InfoCircle, UserBadgeCheck, XMark } from "@orbis/icons";
 import type { AcademicOverrideRequest, ApprovalAction } from "@orbis/sdk";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -303,7 +303,7 @@ function parseApprovalChain(
                         disabled={processingId === request.id}
                       >
                         {#if processingId === request.id}
-                          <Loader2 class="size-3.5 animate-spin me-1" />
+                          <ArrowPath class="size-3.5 animate-spin me-1" />
                         {:else}
                           <CheckCircle class="size-3.5 me-1" />
                         {/if}

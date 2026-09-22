@@ -24,7 +24,7 @@ import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte
 import { DataTable, CheckboxCell } from "$lib/tables";
 import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
 import { confirmStore } from "$lib/stores";
-import { AdjustmentsHorizontal, ArrowUpTray, Document, Grid } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowPath, ArrowUpTray, Document, Grid, QueueList } from "@orbis/icons";
 import type { Documents } from "@orbis/sdk";
 import { createOperationToast } from "$lib/shared/components/operation-toast";
 
@@ -350,7 +350,7 @@ async function handleFileSelect(event: Event) {
           <Grid class="h-3.5 w-3.5" />
         </Button>
         <Button variant={viewMode === "table" ? "secondary" : "ghost"} size="icon-xs" onclick={() => viewMode = "table"} title="عرض جدول" aria-label="عرض جدول">
-          <List class="h-3.5 w-3.5" />
+          <QueueList class="h-3.5 w-3.5" />
         </Button>
       </div>
       <Select type="single" value={uploadCategory} onValueChange={(value: string | undefined) => uploadCategory = value ?? "events"}>
@@ -362,7 +362,7 @@ async function handleFileSelect(event: Event) {
         </SelectContent>
       </Select>
       <Button variant="default" size="sm" onclick={openFilePicker} disabled={uploadMutation.isPending}>
-        {#if uploadMutation.isPending}<Loader2 size={14} class="me-1.5 animate-spin" />{:else}<ArrowUpTray size={14} class="me-1.5" />{/if}
+        {#if uploadMutation.isPending}<ArrowPath size={14} class="me-1.5 animate-spin" />{:else}<ArrowUpTray size={14} class="me-1.5" />{/if}
         {m.common_docs_btn_upload()}
       </Button>
       <input bind:this={fileInput} type="file" accept="image/*,video/*" multiple class="hidden" onchange={handleFileSelect} />
@@ -421,7 +421,7 @@ async function handleFileSelect(event: Event) {
           class="text-xs gap-2 rounded-xl"
         >
           {#if documentsQuery.isFetchingNextPage}
-            <Loader2 class="h-3.5 w-3.5 animate-spin" />
+            <ArrowPath class="h-3.5 w-3.5 animate-spin" />
             <span>{m.settings_archive_loading_more()}</span>
           {:else}
             <span>{m.settings_archive_load_more()}</span>

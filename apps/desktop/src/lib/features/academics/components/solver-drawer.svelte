@@ -10,7 +10,7 @@ import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Label } from "@orbis/ui/label";
-import { AdjustmentsHorizontal, Check, CheckCircle, ClockRotateRight, Eye, InfoCircle, Sparkles } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowPath, Check, CheckCircle, ClockRotateRight, Eye, InfoCircle, Sparkles } from "@orbis/icons";
 import { api, extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
@@ -112,7 +112,7 @@ async function handleCancelJob(jobId: string) {
           onclick={handleStartSolve}
         >
           {#if isLaunching || activeJob?.status === "running" || activeJob?.status === "pending"}
-            <Loader2 size={13} class="animate-spin" />
+            <ArrowPath size={13} class="animate-spin" />
             <span>{m.academics_schedule_computing()}</span>
           {:else}
             <Sparkles size={13} />
@@ -136,7 +136,7 @@ async function handleCancelJob(jobId: string) {
               </Badge>
             {:else if activeJob.status === "running" || activeJob.status === "pending"}
               <Badge variant="secondary" class="bg-primary/10 text-primary gap-1 text-[10px] animate-pulse">
-                <Loader2 size={10} class="animate-spin" />
+                <ArrowPath size={10} class="animate-spin" />
                 {m.academics_schedule_status_running()}
               </Badge>
             {:else if activeJob.status === "failed"}
@@ -198,7 +198,7 @@ async function handleCancelJob(jobId: string) {
                 onclick={() => handleApplySolve(activeJob.id)}
               >
                 {#if isApplying}
-                  <Loader2 size={13} class="animate-spin" />
+                  <ArrowPath size={13} class="animate-spin" />
                   <span>{m.academics_schedule_applying()}</span>
                 {:else}
                   <Check size={14} />

@@ -20,7 +20,7 @@ import {
 import { toast } from "@orbis/ui";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import { ArrowLeft, Bolt, BookOpen, Calendar, CheckCircle, Hashtag, Home, Lock, Pencil, Play, Plus, Trash, UserBadgeCheck, XMark, Printer } from "@orbis/icons";
+import { ArrowLeft, ArrowsRightLeft, Bolt, BookOpen, Calendar, CheckCircle, Hashtag, Home, Lock, Pencil, Play, Plus, Printer, Trash, UserBadgeCheck, XMark } from "@orbis/icons";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";
@@ -848,7 +848,7 @@ async function handleAssignProctors() {
 					<div class="flex items-center justify-between text-xs text-muted-foreground select-none px-1">
 						<span>{m.academics_exams_activated()}{halls.length}{m.academics_exams_committees_out_of()}{rooms.length}{m.academics_exams_available_classrooms_suffix()}</span>
 						<Button variant="outline" class="h-6 px-2 text-[9px] cursor-pointer" onclick={() => { activeConfigTab = "halls"; isConfigModalOpen = true; }}>
-							<Shuffle size={10} class="me-1" />
+							<ArrowsRightLeft size={10} class="me-1" />
 							توزيع الطلاب تلقائياً
 						</Button>
 					</div>
@@ -1021,7 +1021,7 @@ async function handleAssignProctors() {
 				<Bolt size={10} /> جدولة تلقائية
 			</Button>
 			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={() => { activeConfigTab = "halls"; isConfigModalOpen = true; }}>
-				<Shuffle size={10} /> توزيع اللجان
+				<ArrowsRightLeft size={10} /> توزيع اللجان
 			</Button>
 		</div>
 	{/if}
@@ -1157,7 +1157,7 @@ async function handleAssignProctors() {
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
 						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAllocateHalls(); }}>
-							<Shuffle size={12} class="me-1" /> بدء التوزيع التلقائي
+							<ArrowsRightLeft size={12} class="me-1" /> بدء التوزيع التلقائي
 						</Button>
 					</div>
 

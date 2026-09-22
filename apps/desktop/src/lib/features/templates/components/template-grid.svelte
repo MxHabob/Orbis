@@ -10,7 +10,7 @@ import {
   CardContent,
   CardFooter,
 } from "@orbis/ui/card";
-import { AdjustmentsHorizontal, CheckCircle, DocumentPage, Pencil, Plus, Refresh, Trash } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArchiveBox, CheckCircle, DocumentPage, Pencil, Plus, Refresh, Trash } from "@orbis/icons";
 
 import { l } from "$lib/core/i18n";
 
@@ -142,7 +142,7 @@ let {
                 onclick={() => onarchive(template.id)}
                 title={m.settings_templates_action_archive()}
               >
-                <Archive size={13} />
+                <ArchiveBox size={13} />
               </Button>
             {:else}
               {#if template.status === 'archived'}

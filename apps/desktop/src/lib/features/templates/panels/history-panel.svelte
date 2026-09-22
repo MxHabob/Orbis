@@ -47,7 +47,7 @@ function jumpToState(index: number) {
       <Tooltip>
         <TooltipTrigger>
           <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={() => store.undo()} disabled={!canUndo}>
-            <Undo2 size={11} />
+            <UndoAction size={11} />
           </Button>
         </TooltipTrigger>
         <TooltipContent>{m.template_history_undo()}</TooltipContent>
@@ -55,7 +55,7 @@ function jumpToState(index: number) {
       <Tooltip>
         <TooltipTrigger>
           <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={() => store.redo()} disabled={!canRedo}>
-            <Redo2 size={11} />
+            <ArrowForward size={11} />
           </Button>
         </TooltipTrigger>
         <TooltipContent>{m.template_history_redo()}</TooltipContent>

@@ -13,7 +13,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import { AdjustmentsHorizontal, AlignHorizontal, ArrowForward, Bold, CheckBox, Clipboard, Collapse, Expand, Eye, FloppyDisk, Grid, Minus, Pencil, Photo, Trash, UndoAction } from "@orbis/icons";
+import { AdjustmentsHorizontal, AlignHorizontal, AlignVertical, ArrowForward, Bold, CheckBox, CheckSquare, Clipboard, Collapse, CursorArrowRays, Expand, Eye, FloppyDisk, Grid, H1, Hashtag, Minus, Pencil, Photo, Trash, UndoAction, Wrench } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 
 let {
@@ -32,16 +32,16 @@ const tools: {
   label: string;
   draggable: boolean;
 }[] = [
-  { id: "select", icon: MousePointer2, label: "Select", draggable: false },
-  { id: "text", icon: Type, label: "Text", draggable: true },
-  { id: "image", icon: ImageIcon, label: "Image", draggable: true },
+  { id: "select", icon: CursorArrowRays, label: "Select", draggable: false },
+  { id: "text", icon: H1, label: "Text", draggable: true },
+  { id: "image", icon: Photo, label: "Image", draggable: true },
   { id: "shape", icon: CheckBox, label: "Shape", draggable: true },
   { id: "frame", icon: Grid, label: "Frame", draggable: true },
   { id: "table", icon: Grid, label: "Table", draggable: true },
-  { id: "barcode", icon: Barcode, label: "Barcode", draggable: true },
-  { id: "qrcode", icon: QrCode, label: "QR Code", draggable: true },
+  { id: "barcode", icon: Hashtag, label: "Barcode", draggable: true },
+  { id: "qrcode", icon: CheckSquare, label: "QR Code", draggable: true },
   { id: "separator", icon: Minus, label: "Separator", draggable: true },
-  { id: "pan", icon: Hand, label: "Pan", draggable: false },
+  { id: "pan", icon: Wrench, label: "Pan", draggable: false },
 ];
 
 function selectTool(id: EditorTool) {
@@ -95,12 +95,12 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
     <!-- Alignment Tools -->
     <div class="flex items-center gap-0.5">
       {#each [
-        { icon: AlignLeft, action: "left", label: "Align Left" },
-        { icon: AlignCenter, action: "center", label: "Align Center" },
-        { icon: AlignRight, action: "right", label: "Align Right" },
-        { icon: AlignStartVertical, action: "top", label: "Align Top" },
-        { icon: AlignCenterVertical, action: "middle", label: "Align Middle" },
-        { icon: AlignEndVertical, action: "bottom", label: "Align Bottom" },
+        { icon: AlignHorizontal, action: "left", label: "Align Left" },
+        { icon: AlignHorizontal, action: "center", label: "Align Center" },
+        { icon: AlignHorizontal, action: "right", label: "Align Right" },
+        { icon: AlignVertical, action: "top", label: "Align Top" },
+        { icon: AlignHorizontalVertical, action: "middle", label: "Align Middle" },
+        { icon: AlignVertical, action: "bottom", label: "Align Bottom" },
       ] as item (item.action)}
         <Tooltip>
           <TooltipTrigger>
@@ -148,7 +148,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
       <Tooltip>
         <TooltipTrigger>
           <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={() => store.undo()} disabled={!store.canUndo}>
-            <Undo2 size={14} />
+            <UndoAction size={14} />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
@@ -157,7 +157,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
       <Tooltip>
         <TooltipTrigger>
           <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={() => store.redo()} disabled={!store.canRedo}>
-            <Redo2 size={14} />
+            <ArrowForward size={14} />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Redo (Ctrl+Y)</TooltipContent>
@@ -172,7 +172,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
       <Tooltip>
         <TooltipTrigger>
           <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={() => store.gridVisible = !store.gridVisible}>
-            <Grid3x3 size={13} class={store.gridVisible ? "text-primary" : ""} />
+            <Grid size={13} class={store.gridVisible ? "text-primary" : ""} />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Grid</TooltipContent>
@@ -181,7 +181,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
       <Tooltip>
         <TooltipTrigger>
           <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={() => store.rulersVisible = !store.rulersVisible}>
-            <Ruler size={13} class={store.rulersVisible ? "text-primary" : ""} />
+            <AdjustmentsHorizontal size={13} class={store.rulersVisible ? "text-primary" : ""} />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Rulers</TooltipContent>

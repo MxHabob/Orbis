@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
-import { ArrowForward } from "@orbis/icons";
+import { ArrowForward, CreditCard } from "@orbis/icons";
 import { formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 
@@ -45,7 +45,7 @@ let {
         <div class="flex items-center justify-between p-2 rounded-xl border border-border/40 bg-card/30 hover:bg-card/50 transition-colors">
           <div class="flex items-center gap-2 text-start min-w-0">
             <div class="h-6 w-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0 select-none">
-              <ArrowUpRight size={12} />
+              <CreditCard size={12} />
             </div>
             <div class="flex flex-col min-w-0">
               <span class="font-bold text-foreground truncate max-w-[150px] text-[10px]">{p.studentName}</span>

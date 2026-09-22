@@ -237,7 +237,7 @@ const advisorInsights = $derived.by(() => {
           variant="outline"
           class="text-[9px] px-2 py-0.5 font-bold flex items-center gap-1.5 border-border/60 bg-card/60"
         >
-          <Milestone size={10} class="text-primary" />
+          <Calendar size={10} class="text-primary" />
           <span>{activeYearName}</span>
         </Badge>
       {:else}

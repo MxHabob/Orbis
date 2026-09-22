@@ -17,7 +17,7 @@ import {
   TooltipProvider,
 } from "@orbis/ui/tooltip";
 import { ScrollArea } from "@orbis/ui/scroll-area";
-import { AdjustmentsHorizontal, Bold, Calendar, ChevronDown, ChevronRight, Clipboard, Code, Hashtag, Knobs, Photo, Plus, Search, Trash } from "@orbis/icons";
+import { AdjustmentsHorizontal, Bars3BottomLeft, Bold, Calendar, ChevronDown, ChevronRight, Clipboard, Code, Hashtag, Knobs, Photo, Plus, Search, Trash } from "@orbis/icons";
 
 let {
   store,
@@ -183,11 +183,11 @@ function getTypeIcon(type: string) {
     case "boolean":
       return ToggleLeft;
     case "image":
-      return ImageIcon;
+      return Photo;
     case "array":
       return List;
     default:
-      return Variable;
+      return Code;
   }
 }
 
@@ -224,7 +224,7 @@ function handleDragStart(e: DragEvent, varName: string) {
   <!-- Header -->
   <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
     <div class="flex items-center gap-2">
-      <Variable size={13} class="text-primary" />
+      <Code size={13} class="text-primary" />
       <h3 class="text-xs font-bold text-foreground">{m.template_panel_variables()}</h3>
     </div>
     <div class="flex items-center gap-1">
@@ -292,7 +292,7 @@ function handleDragStart(e: DragEvent, varName: string) {
   <div class="grow overflow-y-auto scrollbar-hide">
     {#if variableEntries.length === 0}
       <div class="flex flex-col items-center justify-center py-8 px-4 gap-2">
-        <Variable size={20} class="text-muted-foreground/30" />
+        <Code size={20} class="text-muted-foreground/30" />
         <p class="text-[10px] text-muted-foreground text-center">
           {searchQuery ? m.template_msg_no_results() : m.template_msg_no_vars()}
         </p>
@@ -308,7 +308,7 @@ function handleDragStart(e: DragEvent, varName: string) {
             ondragstart={(e) => handleDragStart(e, varName)}
           >
             <!-- Drag handle -->
-            <GripVertical size={9} class="text-muted-foreground/30 group-hover:text-muted-foreground shrink-0" />
+            <Bars3BottomLeft size={9} class="text-muted-foreground/30 group-hover:text-muted-foreground shrink-0" />
 
             <!-- Type icon -->
             <TypeIconComp size={11} class="shrink-0 text-muted-foreground" />

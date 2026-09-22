@@ -11,7 +11,7 @@ import { readable } from "svelte/store";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
-import { AdjustmentsHorizontal, ArrowRight, DocumentPage, Grid, Home, Info, InfoCircle, Lock, Plus, Sparkles, TaskList, UserBadgeCheck } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowRight, Calendar, DocumentPage, Grid, Home, Info, InfoCircle, Lock, LockClosed, Plus, Sparkles, TaskList, UserBadgeCheck } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { createQuery } from "@tanstack/svelte-query";
 import { api, extractErrorMessage } from "$lib/api";
@@ -142,7 +142,7 @@ const advisorInsights = $derived.by(() => {
       ? m.academics_exams_center_grade_open_insight()
       : m.academics_exams_center_grade_locked_insight(),
     variant: isGradeEntryOpen ? ("warning" as const) : ("success" as const),
-    icon: isGradeEntryOpen ? Unlock : Lock,
+    icon: isGradeEntryOpen ? Lock : LockClosed,
   });
 
   // 2. Exam Sessions Insight
@@ -198,7 +198,7 @@ const advisorInsights = $derived.by(() => {
     <div class="flex items-center gap-2">
       {#if activeYearName}
         <Badge variant="outline" class="text-[9px] px-2 py-0.5 font-bold flex items-center gap-1.5 border-border/60 bg-card/60">
-          <Milestone size={10} class="text-primary" />
+          <Calendar size={10} class="text-primary" />
           <span>{activeYearName}</span>
         </Badge>
       {:else}

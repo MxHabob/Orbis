@@ -34,7 +34,7 @@ import {
   DialogFooter,
 } from "@orbis/ui/dialog";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, Banknotes, BookOpen, ChartBar, CheckCircle, ClockRotateRight, Document, DocumentChartBar, DocumentPage, Download, Eye, Keyframes, Play, Refresh, Search, Sparkles, Users } from "@orbis/icons";
+import { AdjustmentsHorizontal, Banknotes, BookOpen, Calendar, ChartBar, CheckCircle, ClockRotateRight, Document, DocumentChartBar, DocumentPage, Download, Eye, Keyframes, Play, Refresh, Search, Sparkles, Users } from "@orbis/icons";
 
 import MetricsView from "$lib/features/metrics/metrics-view.svelte";
 
@@ -103,7 +103,7 @@ const categories = [
   { id: "academic", label: "الشؤون الأكاديمية", icon: BookOpen },
   { id: "students", label: "شؤون الطلاب والقبول", icon: Users },
   { id: "finance", label: "المالية والحسابات", icon: Banknotes },
-  { id: "attendance", label: "الحضور والغياب", icon: CalendarCheck2 },
+  { id: "attendance", label: "الحضور والغياب", icon: Calendar },
   { id: "exams", label: "الاختبارات واللجان", icon: DocumentPage },
 ];
 

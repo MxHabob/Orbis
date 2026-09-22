@@ -9,7 +9,7 @@ import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { AdjustmentsHorizontal, BookOpen, Calculator, Clock, Heart, Plus, Search } from "@orbis/icons";
+import { AdjustmentsHorizontal, BookOpen, Calculator, Clock, Component, GlobeAlt, Heart, Plus, Search, Sparkles } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
 import SearchField from "$lib/shared/components/search-field.svelte";
@@ -64,13 +64,13 @@ function getSubjectTheme(nameStr: string) {
   }
   if (nameLower.includes("science")) {
     return {
-      icon: FlaskConical,
+      icon: BookOpen,
       bg: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
     };
   }
   if (nameLower.includes("english")) {
     return {
-      icon: Languages,
+      icon: GlobeAlt,
       bg: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
     };
   }
@@ -82,13 +82,13 @@ function getSubjectTheme(nameStr: string) {
   }
   if (nameLower.includes("art")) {
     return {
-      icon: Palette,
+      icon: Component,
       bg: "bg-pink-500/10 text-pink-500 border-pink-500/20",
     };
   }
   if (nameLower.includes("computer")) {
     return {
-      icon: Atom,
+      icon: Sparkles,
       bg: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
     };
   }

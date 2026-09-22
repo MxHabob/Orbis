@@ -307,7 +307,7 @@ function handleFormSave() {
         <span>{l("سياسات القبول والترقيم", "Admission & Numbering")}</span>
       </TabsTrigger>
       <TabsTrigger value="documents" class="text-xs font-semibold gap-1.5 px-4 h-7">
-        <FileCheck class="w-3.5 h-3.5" />
+        <DocumentCheck class="w-3.5 h-3.5" />
         <span>{l("المستندات المطلوبة", "Required Documents")}</span>
         <Badge variant="secondary" class="ms-1 px-1.5 py-0 text-[10px] font-mono">
           {requiredDocuments.length}

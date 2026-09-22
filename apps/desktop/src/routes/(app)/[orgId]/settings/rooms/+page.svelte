@@ -6,7 +6,7 @@ import { Button } from "@orbis/ui/button";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
-import { AdjustmentsHorizontal, Plus } from "@orbis/icons";
+import { AdjustmentsHorizontal, Pin, Plus } from "@orbis/icons";
 import RoomCreateSheet from "$lib/features/academics/components/room-create-sheet.svelte";
 
 import { DataTable } from "$lib/tables";
@@ -130,7 +130,7 @@ function openCreateSheet() {
             isSheetOpen = true;
           }
         }}
-        emptyIcon={DoorOpen}
+        emptyIcon={Pin}
         emptyTitle={m.common_rooms_empty()}
         emptyDescription={m.common_rooms_empty_desc()}
         rtl={getLocale() === "ar"}

@@ -5,7 +5,7 @@ import { authStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
-import { AdjustmentsHorizontal, Eye, EyeSlash } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowPath, Eye, EyeSlash } from "@orbis/icons";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "@orbis/ui";
@@ -113,7 +113,7 @@ function handleForgotPassword() {
 			disabled={form.isSubmitting}
 		>
 			{#if form.isSubmitting}
-				<Loader2 size={13} strokeWidth={2} class="mr-1.5 animate-spin" />
+				<ArrowPath size={13} strokeWidth={2} class="mr-1.5 animate-spin" />
 				{m.auth_login_submitting()}
 			{:else}
 				{m.auth_login_continue()}

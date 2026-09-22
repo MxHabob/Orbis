@@ -12,14 +12,14 @@ import { Badge } from "@orbis/ui/badge";
 
 import { onboardingState } from "../state.svelte";
 import { INSTITUTION_PROFILES } from "../templates";
-import { AdjustmentsHorizontal, BookOpen, CheckCircle, Home, Info } from "@orbis/icons";
+import { AcademicCap, AdjustmentsHorizontal, BookOpen, CheckCircle, Home, Info } from "@orbis/icons";
 import { l } from "$lib/core/i18n";
 
 const profiles = [
   { id: "school", icon: Home },
   { id: "university", icon: BookOpen },
   { id: "institute", icon: BookOpen },
-  { id: "training_center", icon: Presentation },
+  { id: "training_center", icon: AcademicCap },
   { id: "custom", icon: AdjustmentsHorizontal },
 ];
 

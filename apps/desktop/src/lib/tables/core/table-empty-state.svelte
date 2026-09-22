@@ -34,7 +34,7 @@ let {
     {@const Icon = icon}
     <Icon size={40} class="opacity-25" />
   {:else}
-    <TableProperties size={40} class="opacity-25" />
+    <Grid size={40} class="opacity-25" />
   {/if}
 
   <div class="flex flex-col gap-1 text-center max-w-xs">

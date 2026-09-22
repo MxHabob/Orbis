@@ -103,7 +103,7 @@ function stopResize() {
               {m.template_panel_layers()}
             </TabsTrigger>
             <TabsTrigger value="variables" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
-              <Variable size={11} />
+              <Code size={11} />
               {m.template_panel_variables()}
             </TabsTrigger>
             <TabsTrigger value="history" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">

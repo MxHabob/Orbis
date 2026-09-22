@@ -4,7 +4,7 @@ import { api } from "$lib/api";
 import type { ReportDefinition, ReportDataset, ColumnDef } from "@orbis/sdk";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { DocumentChartBar, Download, InfoCircle, Printer, Refresh } from "@orbis/icons";
+import { ArrowPath, DocumentChartBar, Download, InfoCircle, Printer, Refresh } from "@orbis/icons";
 import { OrbisGrid } from "@orbis/svelte-grid";
 import * as m from "$lib/paraglide/messages";
 import ReportExportDialog from "./report-export-dialog.svelte";
@@ -95,7 +95,7 @@ onMount(() => {
         {#if definition}
           {definition.name}
         {:else if isLoading}
-          <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+          <ArrowPath class="h-4 w-4 animate-spin text-muted-foreground" />
         {:else}
           Unknown Report
         {/if}
@@ -181,7 +181,7 @@ onMount(() => {
         </div>
       {:else if isLoading && !dataset}
         <div class="absolute inset-0 flex items-center justify-center">
-          <Loader2 class="h-8 w-8 animate-spin text-muted-foreground/30" />
+          <ArrowPath class="h-8 w-8 animate-spin text-muted-foreground/30" />
         </div>
       {/if}
     </div>

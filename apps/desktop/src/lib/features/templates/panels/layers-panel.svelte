@@ -8,7 +8,7 @@ import type { EditorStore } from "../stores/editor-store.svelte";
 import type { TemplateNode } from "@docforge/core";
 import { isContainerNode } from "@docforge/core";
 import { Button } from "@orbis/ui/button";
-import { AdjustmentsHorizontal, Bold, CheckBox, ChevronDown, ChevronRight, DocumentPage, Eye, EyeSlash, Grid, Lock, Minus, Photo, Plus } from "@orbis/icons";
+import { AdjustmentsHorizontal, Bold, CheckBox, CheckSquare, ChevronDown, ChevronRight, DocumentPage, Eye, EyeSlash, Grid, H1, Hashtag, Lock, Minus, Photo, Plus } from "@orbis/icons";
 
 let {
   store,
@@ -29,9 +29,9 @@ function toggleCollapse(id: string) {
 function getIcon(type: string) {
   switch (type) {
     case "Text":
-      return Type;
+      return H1;
     case "Image":
-      return ImageIcon;
+      return Photo;
     case "Shape":
       return CheckBox;
     case "Frame":
@@ -40,9 +40,9 @@ function getIcon(type: string) {
     case "Table":
       return Grid;
     case "Barcode":
-      return Barcode;
+      return Hashtag;
     case "QRCode":
-      return QrCode;
+      return CheckSquare;
     case "Separator":
       return Minus;
     default:

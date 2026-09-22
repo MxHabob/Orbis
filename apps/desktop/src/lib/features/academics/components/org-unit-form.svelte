@@ -15,7 +15,7 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, BookOpen, Home, Keyframes, Pin, UserBadgeCheck, Users } from "@orbis/icons";
+import { AdjustmentsHorizontal, BookOpen, BuildingOffice, Home, Keyframes, Pin, UserBadgeCheck, Users } from "@orbis/icons";
 import { onMount, untrack } from "svelte";
 import {
   Accordion,
@@ -76,11 +76,11 @@ const unitTypeOptions = [
   {
     value: "department",
     label: m.common_org_unit_department(),
-    icon: Briefcase,
+    icon: BuildingOffice,
   },
   { value: "program", label: m.common_org_unit_program(), icon: BookOpen },
   { value: "building", label: m.common_org_unit_building(), icon: Home },
-  { value: "facility", label: m.common_org_unit_facility(), icon: DoorOpen },
+  { value: "facility", label: m.common_org_unit_facility(), icon: Pin },
 ];
 
 async function loadReferenceData() {

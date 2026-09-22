@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import type { EditorStore } from "../stores/editor-store.svelte";
 import { Input } from "@orbis/ui/input";
 import { Badge } from "@orbis/ui/badge";
-import { AdjustmentsHorizontal, ArrowDownTray, Bold, CheckBox, CheckCircle, Component, Grid, Merge, Minus, Photo, Search, Tag } from "@orbis/icons";
+import { AdjustmentsHorizontal, AlignVertical, ArrowDownTray, ArrowPath, Bold, CheckBox, CheckCircle, CheckSquare, Component, Cube, Grid, Hashtag, Merge, Minus, Photo, Search, Sidebar, Tag } from "@orbis/icons";
 
 let {
   store,
@@ -38,7 +38,7 @@ const elements: ElementItem[] = [
   {
     id: "image",
     type: "Image",
-    icon: Image,
+    icon: Photo,
     label: "Image",
     labelAr: m.template_element_image(),
     category: "basic",
@@ -78,7 +78,7 @@ const elements: ElementItem[] = [
   {
     id: "barcode",
     type: "Barcode",
-    icon: Barcode,
+    icon: Hashtag,
     label: "Barcode",
     labelAr: m.template_element_barcode(),
     category: "data",
@@ -86,7 +86,7 @@ const elements: ElementItem[] = [
   {
     id: "qrcode",
     type: "QRCode",
-    icon: QrCode,
+    icon: CheckSquare,
     label: "QR Code",
     labelAr: m.template_element_qrcode(),
     category: "data",
@@ -94,7 +94,7 @@ const elements: ElementItem[] = [
   {
     id: "frame",
     type: "Frame",
-    icon: Frame,
+    icon: Cube,
     label: "Frame",
     labelAr: m.template_element_frame(),
     category: "layout",
@@ -102,7 +102,7 @@ const elements: ElementItem[] = [
   {
     id: "grid",
     type: "Grid",
-    icon: Grid3X3,
+    icon: Grid,
     label: "Grid",
     labelAr: "شبكة",
     category: "layout",
@@ -110,7 +110,7 @@ const elements: ElementItem[] = [
   {
     id: "repeater",
     type: "Repeater",
-    icon: Repeat2,
+    icon: ArrowPath,
     label: "Repeater",
     labelAr: "مكرر",
     category: "logic",
@@ -142,7 +142,7 @@ const elements: ElementItem[] = [
   {
     id: "header",
     type: "Header",
-    icon: PanelTop,
+    icon: Sidebar,
     label: "Header",
     labelAr: "رأس الصفحة",
     category: "flow",
@@ -150,7 +150,7 @@ const elements: ElementItem[] = [
   {
     id: "footer",
     type: "Footer",
-    icon: PanelBottom,
+    icon: Sidebar,
     label: "Footer",
     labelAr: "تذييل الصفحة",
     category: "flow",
@@ -158,7 +158,7 @@ const elements: ElementItem[] = [
   {
     id: "watermark",
     type: "Watermark",
-    icon: Stamp,
+    icon: CheckCircle,
     label: "Watermark",
     labelAr: "علامة مائية",
     category: "basic",
@@ -166,7 +166,7 @@ const elements: ElementItem[] = [
   {
     id: "spacer",
     type: "Spacer",
-    icon: MoveVertical,
+    icon: AlignVertical,
     label: "Spacer",
     labelAr: "مسافة",
     category: "layout",

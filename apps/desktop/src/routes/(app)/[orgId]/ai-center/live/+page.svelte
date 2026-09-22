@@ -7,7 +7,7 @@ Wired to: api.getIntegrationStatus('hikvision-camera')
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
-import { AdjustmentsHorizontal, AppNotification, Camera, CheckBox, ClockRotateRight, Expand, GlobeAlt, Grid, InfoCircle } from "@orbis/icons";
+import { AdjustmentsHorizontal, AppNotification, Bolt, Camera, CheckBox, ClockRotateRight, Cloud, Expand, GlobeAlt, Grid, InfoCircle, Sparkles } from "@orbis/icons";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
@@ -69,8 +69,8 @@ const gridSlots: Record<GridLayout, number> = { "1x1": 1, "2x2": 4, "3x3": 9 };
 const eventStyles: Record<string, { color: string; icon: typeof AppNotification }> = {
   motion: { color: "text-muted-foreground", icon: AppNotification },
   alarm: { color: "text-foreground font-semibold", icon: InfoCircle },
-  disconnect: { color: "text-muted-foreground", icon: WifiOff },
-  reconnect: { color: "text-primary", icon: Wifi },
+  disconnect: { color: "text-muted-foreground", icon: Cloud },
+  reconnect: { color: "text-primary", icon: Bolt },
 };
 </script>
 
@@ -78,7 +78,7 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
   <!-- Top Control Bar (Midday Style) -->
   <div class="px-6 py-3 shrink-0 border-b border-border/40 bg-background flex items-center justify-between">
     <div class="flex items-center gap-2">
-      <Radio size={15} class="text-primary animate-pulse" />
+      <Sparkles size={15} class="text-primary animate-pulse" />
       <span class="text-xs text-muted-foreground font-semibold">
         {cameras.length > 0
           ? `${cameras.filter(c => c.status === "online").length} من أصل ${cameras.length} كاميرات متصلة`
@@ -90,8 +90,8 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
     <div class="flex items-center gap-1 border border-border/60 bg-muted/40 p-1 rounded-lg">
       {#each [
         { l: "1x1" as GridLayout, icon: CheckBox, label: m.ai_center_live_grid_1x1 ? m.ai_center_live_grid_1x1() : "شاشة كاملة" },
-        { l: "2x2" as GridLayout, icon: Grid2x2, label: m.ai_center_live_grid_2x2 ? m.ai_center_live_grid_2x2() : "شبكة 2x2" },
-        { l: "3x3" as GridLayout, icon: Grid3x3, label: m.ai_center_live_grid_3x3 ? m.ai_center_live_grid_3x3() : "شبكة 3x3" },
+        { l: "2x2" as GridLayout, icon: Grid, label: m.ai_center_live_grid_2x2 ? m.ai_center_live_grid_2x2() : "شبكة 2x2" },
+        { l: "3x3" as GridLayout, icon: Grid, label: m.ai_center_live_grid_3x3 ? m.ai_center_live_grid_3x3() : "شبكة 3x3" },
       ] as opt}
         <Button
           type="button"
@@ -149,7 +149,7 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
                   </button>
                 {:else}
                   <div class="text-center p-4">
-                    <VideoOff size={28} class="text-muted-foreground mx-auto mb-2" />
+                    <Camera size={28} class="text-muted-foreground mx-auto mb-2" />
                     <p class="text-xs font-semibold text-muted-foreground">{cam.name}</p>
                     <p class="text-[10px] text-muted-foreground font-semibold mt-1">{cam.status === "error" ? "خطأ في الاتصال" : "غير متصل"}</p>
                   </div>
@@ -157,7 +157,7 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
               {:else}
                 <div class="text-center">
                   <div class="w-10 h-10 rounded-full border border-dashed border-border flex items-center justify-center mx-auto mb-1.5">
-                    <Video size={16} class="text-muted-foreground" />
+                    <Camera size={16} class="text-muted-foreground" />
                   </div>
                   <p class="text-[10px] text-muted-foreground">خانة شاغرة</p>
                 </div>

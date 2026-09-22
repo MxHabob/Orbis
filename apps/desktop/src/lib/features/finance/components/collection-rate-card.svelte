@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui";
-import { AdjustmentsHorizontal, ArrowRight } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowRight, Clock } from "@orbis/icons";
 import { formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 
@@ -22,7 +22,7 @@ let {
   <!-- Header -->
   <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-3">
     <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
-      <Hourglass size={11} class="text-muted-foreground/80" />
+      <Clock size={11} class="text-muted-foreground/80" />
       <span>{m.finance_overview_performance_title()}</span>
     </div>
   </div>

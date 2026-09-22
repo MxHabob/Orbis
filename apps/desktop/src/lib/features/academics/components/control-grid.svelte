@@ -9,7 +9,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { AdjustmentsHorizontal, BookOpen, ChartBar, FloppyDisk, Info, Refresh, Users } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowPath, BookOpen, ChartBar, FloppyDisk, Info, Refresh, Users } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 import ClassSelect from "$lib/features/academics/components/class-select.svelte";
 import SubjectSelect from "$lib/features/academics/components/subject-select.svelte";
@@ -82,7 +82,7 @@ let {
           disabled={isSaving || !isDirty}
         >
           {#if isSaving}
-            <Loader2 size={11} class="animate-spin" />
+            <ArrowPath size={11} class="animate-spin" />
           {:else}
             <FloppyDisk size={11} />
           {/if}

@@ -469,7 +469,7 @@ const workflowCategories = $derived([
     <!-- ── Section 4: Insight Engine & Anomaly Detection ─────────── -->
     <div class="border border-border rounded-md overflow-hidden flex flex-col">
       <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center gap-2 text-start">
-        <SearchCode size={15} class="text-primary" />
+        <Search size={15} class="text-primary" />
         <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
           {m.ai_center_settings_section_insight()}
         </span>
@@ -572,7 +572,7 @@ const workflowCategories = $derived([
     <!-- ── Section 5: Explainability & Reasoning Scope ────────────── -->
     <div class="border border-border rounded-md overflow-hidden flex flex-col">
       <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center gap-2 text-start">
-        <FileSearch size={15} class="text-primary" />
+        <Search size={15} class="text-primary" />
         <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
           {m.ai_center_settings_section_memory()}
         </span>

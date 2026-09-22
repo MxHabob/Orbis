@@ -4,7 +4,7 @@ A styled logo uploader with loading indicator, image preview, and hover states.
 -->
 <script lang="ts">
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui/avatar";
-import { AdjustmentsHorizontal, ArrowUpTray } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowPath, ArrowUpTray } from "@orbis/icons";
 import {
   useUploadDocument,
   resolveDocumentUrl,
@@ -92,7 +92,7 @@ function handleFileChange(event: Event) {
 >
   {#if isLoading || uploadMutation.isPending}
     <div class="flex items-center justify-center w-full h-full bg-background/50 backdrop-blur-xs">
-      <Loader2 class="animate-spin text-primary shrink-0" size={Math.max(16, size / 3)} />
+      <ArrowPath class="animate-spin text-primary shrink-0" size={Math.max(16, size / 3)} />
     </div>
   {:else}
     <Avatar class="w-full h-full rounded-none bg-transparent flex items-center justify-center">

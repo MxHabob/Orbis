@@ -6,7 +6,7 @@
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
-import { AdjustmentsHorizontal, ArrowLeft, ArrowRight, Sparkles } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowLeft, ArrowPath, ArrowRight, Sparkles } from "@orbis/icons";
 
 let {
   activeStep,
@@ -63,7 +63,7 @@ const isLastStep = $derived(activeStep >= totalSteps - 1);
         class="px-4 h-7 text-xs font-bold cursor-pointer shadow-xs"
       >
         {#if isLoading}
-          <Loader2 class="w-3.5 h-3.5 animate-spin" />
+          <ArrowPath class="w-3.5 h-3.5 animate-spin" />
         {:else}
           <span>{m.common_onboarding_next_btn?.() || (isArabic ? "التالي" : "Next")}</span>
           {#if isArabic}

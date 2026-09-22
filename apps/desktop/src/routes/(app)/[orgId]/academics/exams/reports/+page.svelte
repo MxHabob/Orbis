@@ -11,7 +11,7 @@ import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
-import { ArrowRight, Calendar, ChartBar, Clipboard, Document, DocumentPage, Download, Eye, Grid, Hashtag, Home, Info, InfoCircle, Sparkles, UserBadgeCheck, Printer } from "@orbis/icons";
+import { ArrowRight, Calendar, ChartBar, Clipboard, ClipboardCheck, Document, DocumentPage, Download, Eye, Grid, Hashtag, Home, Info, InfoCircle, Printer, Sparkles, UserBadgeCheck } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
 import { createPeriodsQuery } from "$lib/features/academics";
 import { createQuery } from "@tanstack/svelte-query";
@@ -234,7 +234,7 @@ function handlePrint() {
     <div class="flex items-center gap-2">
       {#if activeYearName}
         <Badge variant="outline" class="text-[9px] px-2 py-0.5 font-bold flex items-center gap-1.5 border-border/60 bg-card/60">
-          <Milestone size={10} class="text-primary" />
+          <Calendar size={10} class="text-primary" />
           <span>{activeYearName}</span>
         </Badge>
       {/if}

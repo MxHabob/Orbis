@@ -8,7 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import { fly } from "svelte/transition";
 import { quintOut } from "svelte/easing";
 import { Button } from "@orbis/ui/button";
-import { AdjustmentsHorizontal, InfoCircle } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowPath, InfoCircle } from "@orbis/icons";
 
 interface Props {
   visible?: boolean;
@@ -89,7 +89,7 @@ const displayMessage = $derived(message || m.settings_unsaved_changes());
           onclick={onsave}
         >
           {#if isSaving}
-            <Loader2 size={13} class="animate-spin me-1.5" />
+            <ArrowPath size={13} class="animate-spin me-1.5" />
           {:else}
             {displaySaveLabel}
           {/if}

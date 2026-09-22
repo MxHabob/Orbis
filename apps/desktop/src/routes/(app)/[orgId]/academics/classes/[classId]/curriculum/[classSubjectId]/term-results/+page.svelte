@@ -4,7 +4,7 @@ import { createQuery } from "@tanstack/svelte-query";
 import { api, extractErrorMessage } from "$lib/api";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
-import { AdjustmentsHorizontal, CheckCircle, Grid, InfoCircle, Refresh, XMark } from "@orbis/icons";
+import { AdjustmentsHorizontal, CheckCircle, DocumentCheck, Grid, InfoCircle, Refresh, XMark } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -35,7 +35,7 @@ function getStudentName(enrollmentId: string): string {
   <div class="flex items-center justify-between shrink-0 px-0.5">
     <div class="flex items-center gap-2">
       <div class="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-        <FileCheck2 size={14} class="text-primary opacity-80" />
+        <DocumentCheck size={14} class="text-primary opacity-80" />
         <span>
           {isArabic 
             ? `${termResults.length} نتيجة مسجلة لهذا الترم` 
@@ -71,7 +71,7 @@ function getStudentName(enrollmentId: string): string {
       </div>
     {:else if termResults.length === 0}
       <div class="flex flex-col h-full items-center justify-center p-8 text-center bg-muted/5 gap-2">
-        <FileCheck2 size={28} class="text-muted-foreground opacity-40 mb-1" />
+        <DocumentCheck size={28} class="text-muted-foreground opacity-40 mb-1" />
         <p class="text-xs font-bold text-foreground">
           {isArabic ? "لم يتم احتساب نتائج الترم بعد" : "No term results calculated yet"}
         </p>

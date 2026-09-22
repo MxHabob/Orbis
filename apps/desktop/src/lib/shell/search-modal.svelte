@@ -9,32 +9,7 @@ import { api } from "$lib/api";
 import { queryClient } from "$lib/api";
 
 import { matchStudent } from "$lib/shared/utils/search";
-import {
-  AdjustmentsHorizontal,
-  AppNotification,
-  ArrowPath,
-  Banknotes,
-  Bolt,
-  BookOpen,
-  BuildingLibrary,
-  BuildingOffice,
-  Calendar,
-  ChartBar,
-  CreditCard,
-  Document,
-  DocumentChartBar,
-  DocumentCheck,
-  DocumentPage,
-  GlobeAlt,
-  Pin,
-  Plus,
-  ReceiptPercent,
-  Search,
-  Settings,
-  ShieldCheck,
-  UserBadgeCheck,
-  Users,
-} from "@orbis/icons";
+import { AdjustmentsHorizontal, AppNotification, ArrowPath, ArrowUturnLeft, Banknotes, Bolt, BookOpen, BuildingLibrary, BuildingOffice, Calendar, ChartBar, CreditCard, Document, DocumentChartBar, DocumentCheck, DocumentPage, GlobeAlt, Pin, Plus, ReceiptPercent, Search, Settings, ShieldCheck, UserBadgeCheck, Users } from "@orbis/icons";
 
 let searchQuery = $state("");
 let inputEl = $state<HTMLInputElement | null>(null);
@@ -483,7 +458,7 @@ function handleKeydown(e: KeyboardEvent) {
                     {/if}
                   </div>
                   <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <CornerDownLeft class="size-3 text-muted-foreground group-hover:text-accent-foreground" />
+                    <ArrowUturnLeft class="size-3 text-muted-foreground group-hover:text-accent-foreground" />
                   </div>
                 </button>
               {/each}

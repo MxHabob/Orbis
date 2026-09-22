@@ -143,7 +143,7 @@ async function handleSave(e?: Event) {
         <!-- Email Notifications -->
         <div class="flex flex-col gap-6 text-start">
           <div class="border-b border-border/60 pb-3 flex items-center gap-2">
-            <Mail size={16} class="text-primary" />
+            <AppNotification size={16} class="text-primary" />
             <h2 class="text-sm font-semibold text-foreground">{m.settings_notifications_email()}</h2>
           </div>
 

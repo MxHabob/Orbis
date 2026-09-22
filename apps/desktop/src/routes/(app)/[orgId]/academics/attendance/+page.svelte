@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@orbis/ui/table";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, CheckCircle, ClockRotateRight, FloppyDisk, InfoCircle, Refresh, Search, Users, XMark } from "@orbis/icons";
+import { AdjustmentsHorizontal, Calendar, CheckCircle, ClockRotateRight, FloppyDisk, InfoCircle, Refresh, Search, Users, XMark } from "@orbis/icons";
 import { exportToCsv } from "$lib/shared/utils/export";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -226,7 +226,7 @@ const filteredRows = $derived(
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div class="flex items-center gap-3.5">
         <div class="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs">
-          <CalendarCheck2 class="w-6 h-6" />
+          <Calendar class="w-6 h-6" />
         </div>
         <div>
           <h1 class="text-xl font-bold text-foreground tracking-tight">

@@ -45,7 +45,7 @@ import {
 } from "@orbis/ui/alert-dialog";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Progress } from "@orbis/ui/progress";
-import { AdjustmentsHorizontal, ArrowLeft, ArrowRight, BookOpen, Check, Play, Plus, Trash, User, UserBadgeCheck, Users } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowLeft, ArrowPath, ArrowRight, BookOpen, Check, Play, Plus, Trash, User, UserBadgeCheck, UserMinus, Users } from "@orbis/icons";
 import type {
   PromotionConfig,
   PromotionJob,
@@ -491,7 +491,7 @@ function decisionLabel(d: string) {
           </div>
           <!-- Retained -->
           <div class="p-4 rounded-xl border border-border bg-card text-center flex flex-col justify-between h-28 select-none">
-            <UserX class="size-5 mx-auto text-destructive" />
+            <UserMinus class="size-5 mx-auto text-destructive" />
             <div>
               <div class="text-2xl font-bold text-destructive">{previewStats.retained}</div>
               <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_retained()}</div>
@@ -565,7 +565,7 @@ function decisionLabel(d: string) {
       <div class="w-full space-y-6">
         {#if isExecuting}
           <div class="border border-border rounded-xl bg-card flex flex-col items-center justify-center py-16 text-center select-none">
-            <Loader2 class="size-12 text-primary animate-spin mb-4" />
+            <ArrowPath class="size-12 text-primary animate-spin mb-4" />
             <h3 class="text-lg font-semibold text-foreground font-serif">{m.common_promo_executing()}</h3>
             <p class="text-sm text-muted-foreground mt-1">{m.common_promo_execute_confirm()}</p>
           </div>
@@ -633,7 +633,7 @@ function decisionLabel(d: string) {
               class="flex gap-2 items-center font-bold select-none"
             >
               {#if isAnalyzing}
-                <Loader2 class="size-4 animate-spin" />
+                <ArrowPath class="size-4 animate-spin" />
                 <span>{m.common_promo_running()}</span>
               {:else}
                 <Play class="size-4" />
