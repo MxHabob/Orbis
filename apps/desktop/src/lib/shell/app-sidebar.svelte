@@ -14,7 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@orbis/ui";
-import { AdjustmentsHorizontal, BookOpen, Document, DocumentPage, Settings, Users } from "@orbis/icons";
+import { BookOpen, Document, DocumentPage, Grid, Settings, Sparkles, Users } from "@orbis/icons";
 import OrgSidebarSwitcher from "./org-sidebar-switcher.svelte";
 import UserSidebarMenu from "./user-sidebar-menu.svelte";
 import OnboardingPopover from "./onboarding-popover.svelte";
@@ -60,7 +60,7 @@ const orgNameDisplay = $derived(orgQuery.data?.name || fallbackName);
 const navItems = $derived([
   {
     href: `/${orgId}`,
-    icon: LayoutDashboard,
+    icon: Grid,
     label: m.common_nav_overview(),
     match: "exact",
   },
@@ -90,7 +90,7 @@ const navItems = $derived([
   },
   {
     href: `/${orgId}/ai-center`,
-    icon: AdjustmentsHorizontal,
+    icon: Sparkles,
     label: "AI Center",
     match: "prefix",
   },
