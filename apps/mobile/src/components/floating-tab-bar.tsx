@@ -13,8 +13,11 @@
  * presents the signed-in user's digital ID card.
  */
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
+  Animated,
+  Keyboard,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -27,7 +30,7 @@ import { Grid, Document, ChartBar } from "@orbis/icons/native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Fonts, Radii, Spacing, Typography } from "@/constants/theme";
+import { Colors, Fonts, Radii, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
 
@@ -68,6 +71,7 @@ type FloatingControlProps = {
   children: React.ReactNode;
   onPress: () => void;
   accessibilityLabel: string;
+  active?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -79,6 +83,49 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
   const theme = useTheme();
   const router = useRouter();
   const { t } = useI18n();
+
+  const translateY = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, () => {
+      Animated.parallel([
+        Animated.timing(translateY, {
+          toValue: 80,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      Animated.parallel([
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [opacity, translateY]);
 
   const bottom = Math.max(insets.bottom, Spacing.three) + Spacing.one;
 
@@ -113,13 +160,24 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
 
   const digitalIdLabel = t("tab_digital_id");
 
-  // Shared floating surface — identical for every control.
+  // Shared floating surface
   const surface = theme.cardElevated;
   const border = theme.cardBorder;
   const iconColor = theme.foreground;
+  const activeColor = theme.primary;
 
   return (
-    <View pointerEvents="box-none" style={[styles.navigation, { bottom }]}>
+    <Animated.View
+      pointerEvents="box-none"
+      style={[
+        styles.navigation,
+        {
+          bottom,
+          transform: [{ translateY }],
+          opacity,
+        },
+      ]}
+    >
       {/* LEFT — Apps */}
       <View style={styles.appsWrapper}>
         <View
@@ -141,15 +199,19 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
 
         <FloatingControl
           accessibilityLabel="Apps"
+          active={isAppsFocused}
           onPress={() => navigateToRoute(ROUTE_APPS)}
           style={[
             styles.iconButton,
-            { backgroundColor: surface, borderColor: border },
+            {
+              backgroundColor: isAppsFocused ? theme.accentLight : surface,
+              borderColor: isAppsFocused ? theme.primary : border,
+            },
           ]}
         >
           <Grid
             size={21}
-            color={iconColor}
+            color={isAppsFocused ? activeColor : iconColor}
           />
         </FloatingControl>
       </View>
@@ -179,18 +241,22 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
       {/* RIGHT — Analytics */}
       <FloatingControl
         accessibilityLabel="Analytics"
+        active={isAnalyticsFocused}
         onPress={() => navigateToRoute(ROUTE_ANALYTICS)}
         style={[
           styles.iconButton,
-          { backgroundColor: surface, borderColor: border },
+          {
+            backgroundColor: isAnalyticsFocused ? theme.accentLight : surface,
+            borderColor: isAnalyticsFocused ? theme.primary : border,
+          },
         ]}
       >
         <ChartBar
           size={21}
-          color={iconColor}
+          color={isAnalyticsFocused ? activeColor : iconColor}
         />
       </FloatingControl>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -202,11 +268,13 @@ function FloatingControl({
   children,
   onPress,
   accessibilityLabel,
+  active,
   style,
 }: FloatingControlProps) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ selected: active }}
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       style={({ pressed }) => [

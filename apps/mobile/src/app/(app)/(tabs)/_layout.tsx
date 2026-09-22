@@ -8,61 +8,24 @@
  * - System StatusBar follows the current color scheme.
  */
 
-import { Platform } from "react-native";
-
 import { Tabs } from "expo-router";
-import { NativeTabs } from "expo-router/unstable-native-tabs";
-
 import { FloatingTabBar } from "@/components/floating-tab-bar";
-import { useI18n } from "@/lib/i18n";
 
 export default function TabsLayout() {
-  const { t } = useI18n();
-
   return (
-    <>
-      {Platform.OS === "ios" ? (
-        <NativeTabs>
-          <NativeTabs.Trigger name="index">
-            <NativeTabs.Trigger.Icon
-              sf={{
-                default: "house",
-                selected: "house.fill",
-              }}
-            />
-
-            <NativeTabs.Trigger.Label>{t("tab_home")}</NativeTabs.Trigger.Label>
-          </NativeTabs.Trigger>
-
-          <NativeTabs.Trigger name="behavior">
-            <NativeTabs.Trigger.Icon
-              sf={{
-                default: "sparkles",
-                selected: "sparkles",
-              }}
-            />
-
-            <NativeTabs.Trigger.Label>
-              {t("tab_behavior_ai")}
-            </NativeTabs.Trigger.Label>
-          </NativeTabs.Trigger>
-        </NativeTabs>
-      ) : (
-        <Tabs
-          screenOptions={{
-            headerShown: false,
-            tabBarShowLabel: false,
-            tabBarStyle: {
-              display: "none",
-            },
-          }}
-          tabBar={(props: any) => <FloatingTabBar {...(props as any)} />}
-        >
-          <Tabs.Screen name="index" />
-
-          <Tabs.Screen name="behavior" />
-        </Tabs>
-      )}
-    </>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          display: "none",
+        },
+      }}
+      tabBar={(props: any) => <FloatingTabBar {...(props as any)} />}
+    >
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="behavior" />
+    </Tabs>
   );
 }
+

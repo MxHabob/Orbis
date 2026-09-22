@@ -558,6 +558,12 @@ export const Radii = {
 // ─────────────────────────────────────────────────────────────────────────
 
 export const Typography = {
+  display: {
+    fontSize: 32,
+    lineHeight: 38,
+    fontWeight: "800" as const,
+  },
+
   h1: {
     fontSize: 24,
     lineHeight: 30,
@@ -574,6 +580,30 @@ export const Typography = {
     fontSize: 16,
     lineHeight: 22,
     fontWeight: "600" as const,
+  },
+
+  title: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: "600" as const,
+  },
+
+  bodyLarge: {
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: "400" as const,
+  },
+
+  bodyMedium: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "400" as const,
+  },
+
+  bodySmall: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "400" as const,
   },
 
   body: {
@@ -605,6 +635,78 @@ export const Typography = {
     lineHeight: 14,
     fontWeight: "500" as const,
   },
+
+  mono: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "400" as const,
+    fontFamily: Platform.select({
+      ios: "Courier",
+      android: "monospace",
+      default: "monospace",
+    }),
+  },
+} as const;
+
+// ─────────────────────────────────────────────────────────────────────────
+// Shadows
+// ─────────────────────────────────────────────────────────────────────────
+
+export const Shadows = {
+  none: {
+    shadowColor: "transparent",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
+  sm: {
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  md: {
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  lg: {
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+} as const;
+
+// ─────────────────────────────────────────────────────────────────────────
+// Controls & Touch Targets
+// ─────────────────────────────────────────────────────────────────────────
+
+export const ControlHeights = {
+  sm: 36,
+  md: 44,
+  lg: 52,
+} as const;
+
+export const TouchTargets = {
+  min: 44,
+} as const;
+
+// ─────────────────────────────────────────────────────────────────────────
+// Animations
+// ─────────────────────────────────────────────────────────────────────────
+
+export const AnimationTokens = {
+  duration: {
+    fast: 150,
+    normal: 250,
+    slow: 400,
+  },
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -628,3 +730,4 @@ export const Fonts = Platform.select({
     mono: "JetBrains Mono, monospace",
   },
 });
+

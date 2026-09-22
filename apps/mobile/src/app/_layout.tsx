@@ -20,6 +20,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 import { ToastProvider } from "@/components/ui/toast";
 import { AppErrorBoundary } from "@/components/ui/error-boundary";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -55,46 +56,48 @@ export default function RootLayout() {
   }, [currentColors.background]);
 
   return (
-    <I18nProvider>
-      <AuthProvider>
-        <AppQueryProvider>
-          <GestureHandlerRootView>
-            <EffectiveContextProvider>
-              <ThemeProvider value={navigationTheme}>
-                <ToastProvider>
-                  <AppErrorBoundary>
-                    <ThemedStatusBar
-                      backgroundColor={currentColors.background}
-                    />
-                    <Stack
-                      screenOptions={{
-                        headerShown: false,
-                        animation: "slide_from_right",
-                        contentStyle: {
-                          backgroundColor: currentColors.background,
-                        },
-                      }}
-                    >
-                      <Stack.Screen
-                        name="(auth)"
-                        options={{ headerShown: false }}
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <I18nProvider>
+          <AuthProvider>
+            <AppQueryProvider>
+              <EffectiveContextProvider>
+                <ThemeProvider value={navigationTheme}>
+                  <ToastProvider>
+                    <AppErrorBoundary>
+                      <ThemedStatusBar
+                        backgroundColor={currentColors.background}
                       />
-                      <Stack.Screen
-                        name="(app)"
-                        options={{ headerShown: false }}
-                      />
-                      <Stack.Screen
-                        name="+not-found"
-                        options={{ title: "Oops!", headerShown: true }}
-                      />
-                    </Stack>
-                  </AppErrorBoundary>
-                </ToastProvider>
-              </ThemeProvider>
-            </EffectiveContextProvider>
-          </GestureHandlerRootView>
-        </AppQueryProvider>
-      </AuthProvider>
-    </I18nProvider>
+                      <Stack
+                        screenOptions={{
+                          headerShown: false,
+                          animation: "slide_from_right",
+                          contentStyle: {
+                            backgroundColor: currentColors.background,
+                          },
+                        }}
+                      >
+                        <Stack.Screen
+                          name="(auth)"
+                          options={{ headerShown: false }}
+                        />
+                        <Stack.Screen
+                          name="(app)"
+                          options={{ headerShown: false }}
+                        />
+                        <Stack.Screen
+                          name="+not-found"
+                          options={{ title: "Oops!", headerShown: true }}
+                        />
+                      </Stack>
+                    </AppErrorBoundary>
+                  </ToastProvider>
+                </ThemeProvider>
+              </EffectiveContextProvider>
+            </AppQueryProvider>
+          </AuthProvider>
+        </I18nProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

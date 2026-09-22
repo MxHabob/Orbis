@@ -43,7 +43,10 @@ type HeaderProps = {
   onProfilePress?: () => void;
   onCrownPress?: () => void;
 
+  leftAction?: React.ReactNode;
   rightAction?: React.ReactNode;
+
+  largeTitle?: boolean;
 
   /**
    * Kept for compatibility with existing screens.
@@ -62,6 +65,7 @@ type HeaderProps = {
   transparent?: boolean;
 
   style?: StyleProp<ViewStyle>;
+  children?: React.ReactNode;
 };
 
 // ---------------------------------------------------------------------------
@@ -78,14 +82,19 @@ export function Header({
   onProfilePress,
   onCrownPress,
 
+  leftAction,
   rightAction,
+
+  largeTitle = false,
 
   showTitle = true,
   showCrown = true,
   transparent = false,
 
   style,
+  children,
 }: HeaderProps) {
+
   const router = useRouter();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -176,52 +185,56 @@ export function Header({
       <View style={styles.content}>
         {/* LEFT */}
         <View style={[styles.sideSlot, { width: sideSize, height: sideSize }]}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={leftLabel}
-            hitSlop={8}
-            onPress={showBack ? handleBack : handleProfile}
-            style={({ pressed }) => [
-              styles.floatingControl,
-              {
-                width: sideSize,
-                height: sideSize,
-                borderRadius: sideSize / 2,
-                backgroundColor: transparent
-                  ? "rgba(255,255,255,0.10)"
-                  : theme.card,
-                borderColor: transparent
-                  ? "rgba(255,255,255,0.16)"
-                  : theme.border,
-                shadowColor: Colors.light.text,
-              },
-              pressed && styles.pressed,
-            ]}
-          >
-            {showBack ? (
-              isArabic ? (
-                <ChevronRight
-                  size={21}
-                  color={transparent ? "#FFFFFF" : theme.text}
-                />
+          {leftAction ? (
+            leftAction
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={leftLabel}
+              hitSlop={8}
+              onPress={showBack ? handleBack : handleProfile}
+              style={({ pressed }) => [
+                styles.floatingControl,
+                {
+                  width: sideSize,
+                  height: sideSize,
+                  borderRadius: sideSize / 2,
+                  backgroundColor: transparent
+                    ? "rgba(255,255,255,0.10)"
+                    : theme.card,
+                  borderColor: transparent
+                    ? "rgba(255,255,255,0.16)"
+                    : theme.border,
+                  shadowColor: Colors.light.text,
+                },
+                pressed && styles.pressed,
+              ]}
+            >
+              {showBack ? (
+                isArabic ? (
+                  <ChevronRight
+                    size={21}
+                    color={transparent ? "#FFFFFF" : theme.text}
+                  />
+                ) : (
+                  <ChevronLeft
+                    size={21}
+                    color={transparent ? "#FFFFFF" : theme.text}
+                  />
+                )
               ) : (
-                <ChevronLeft
+                <User
                   size={21}
                   color={transparent ? "#FFFFFF" : theme.text}
                 />
-              )
-            ) : (
-              <User
-                size={21}
-                color={transparent ? "#FFFFFF" : theme.text}
-              />
-            )}
-          </Pressable>
+              )}
+            </Pressable>
+          )}
         </View>
 
         {/* CENTER — PAGE TITLE */}
         <View style={styles.centerSlot}>
-          {showTitle && title ? (
+          {showTitle && title && !largeTitle ? (
             <View
               style={[
                 styles.titleControl,
@@ -312,8 +325,38 @@ export function Header({
           )}
         </View>
       </View>
+
+      {largeTitle && title ? (
+        <View style={styles.largeTitleContainer}>
+          <Text
+            style={[
+              styles.largeTitleText,
+              { color: transparent ? "#FFFFFF" : theme.text },
+            ]}
+          >
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text
+              style={[
+                styles.largeSubtitleText,
+                {
+                  color: transparent
+                    ? "rgba(255,255,255,0.72)"
+                    : theme.textSecondary,
+                },
+              ]}
+            >
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
+      {children}
     </View>
   );
+
 }
 
 // ---------------------------------------------------------------------------
@@ -400,6 +443,23 @@ const styles = StyleSheet.create({
   pressed: {
     transform: [{ scale: 0.94 }],
   },
+
+  largeTitleContainer: {
+    marginTop: Spacing.three,
+    paddingHorizontal: Spacing.one,
+  },
+
+  largeTitleText: {
+    ...Typography.h1,
+    fontFamily: Fonts.sans,
+  },
+
+  largeSubtitleText: {
+    ...Typography.bodySmall,
+    fontFamily: Fonts.sans,
+    marginTop: Spacing.half,
+  },
 });
 
 export default Header;
+
