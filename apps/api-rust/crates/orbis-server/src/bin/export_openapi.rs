@@ -13,7 +13,6 @@ fn main() {
         vec![args[1].clone()]
     } else {
         vec![
-            "openapi.json".to_string(),
             "../../packages/sdk/openapi.json".to_string(),
         ]
     };
