@@ -326,7 +326,7 @@ function getUnitTypeIcon(typeStr: string) {
     case "office":
       return BuildingOffice;
     default:
-      return Box;
+      return Cube;
   }
 }
 

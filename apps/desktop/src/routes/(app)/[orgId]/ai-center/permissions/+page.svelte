@@ -41,9 +41,9 @@ Clean Midday inspired layout with elegant subheadings.
     isLoading = true;
     try {
       const [registered, logs] = await Promise.all([
-        (commands as any).aiCenter?.listRegisteredActions?.().catch(() => []) ??
+        (api as any).aiCenter?.listRegisteredActions?.().catch(() => []) ??
           Promise.resolve([]),
-        (commands as any).aiCenter
+        (api as any).aiCenter
           ?.listActionLogs?.(data.orgId)
           .catch(() => []) ??
           api.iam?.listAuditLogs?.().catch(() => []) ??
@@ -67,7 +67,7 @@ Clean Midday inspired layout with elegant subheadings.
 
   async function handleApprove(id: string) {
     try {
-      await (commands as any).aiCenter?.approveAction?.(id);
+      await (api as any).aiCenter?.approveAction?.(id);
       pendingApprovals = pendingApprovals.filter((a) => a.id !== id);
     } catch (e) {
       console.error(e);
@@ -76,7 +76,7 @@ Clean Midday inspired layout with elegant subheadings.
 
   async function handleReject(id: string) {
     try {
-      await (commands as any).aiCenter?.rejectAction?.(
+      await (api as any).aiCenter?.rejectAction?.(
         id,
         "تم الرفض بواسطة المسؤول",
       );
