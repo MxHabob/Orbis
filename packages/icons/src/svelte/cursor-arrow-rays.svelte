@@ -1,0 +1,39 @@
+<script lang="ts">
+	import type { SVGAttributes } from 'svelte/elements';
+
+	interface Props extends SVGAttributes<SVGSVGElement> {
+		class?: string;
+		className?: string;
+		size?: number | string;
+		strokeWidth?: number | string;
+	}
+
+	let {
+		class: klass = '',
+		className = '',
+		size,
+		strokeWidth,
+		...restProps
+	}: Props = $props();
+
+	const computedClass = $derived([className || 'size-4', klass].filter(Boolean).join(' '));
+</script>
+
+<svg
+	xmlns="http://www.w3.org/2000/svg"
+	viewBox="0 0 24 24"
+	fill="none"
+	stroke="currentColor"
+	stroke-width={strokeWidth ?? 'strokeWidth'}
+	width={size}
+	height={size}
+	class={computedClass}
+	aria-hidden="true"
+	{...restProps}
+>
+	<path
+		stroke-linecap="round"
+		stroke-linejoin="round"
+		d="M15.042 21.672 13.684 16.6m0 0-2.51 2.225.569-9.47 5.227 7.917-3.286-.672ZM12 2.25V4.5m5.834.166-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243-1.59-1.59"
+	/>
+</svg>

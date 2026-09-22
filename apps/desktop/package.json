@@ -26,6 +26,7 @@
     "@orbis/app-store": "workspace:*",
     "@orbis/avatar-engine": "workspace:*",
     "@orbis/blueprints": "workspace:*",
+    "@orbis/icons": "workspace:*",
     "@orbis/location": "workspace:*",
     "@orbis/schemas": "workspace:*",
     "@orbis/sdk": "workspace:*",

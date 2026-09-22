@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo/ui": "~57.0.19",
     "@expo/vector-icons": "^15.1.1",
+    "@orbis/icons": "workspace:*",
     "@orbis/sdk": "workspace:*",
     "@tanstack/react-query": "^5.102.8",
     "buffer": "^6.0.3",
