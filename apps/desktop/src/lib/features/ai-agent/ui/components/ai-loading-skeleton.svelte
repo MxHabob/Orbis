@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount, onDestroy } from "svelte";
-import { Logo } from "@orbis/ui/logo";
+import UserAvatar from "$lib/shared/components/user-avatar.svelte";
 import { Skeleton } from "@orbis/ui/skeleton";
 
 let {
@@ -14,7 +14,7 @@ let {
 const defaultPhases = [
   "جاري التفكير وتحليل البيانات...",
   "جاري استرجاع وفحص السجلات...",
-  "جاري صياغة الاستجابة الذكية...",
+  "جاري صياغة الاستجابة...",
 ];
 
 let currentPhaseIndex = $state(0);
@@ -36,10 +36,16 @@ const currentStatus = $derived(
 </script>
 
 <div class="flex flex-col gap-3 w-full text-start py-1 select-none {className}">
-  <!-- Minimalist AI Status with Logo & Dynamic Shimmering Text -->
+  <!-- Minimalist AI Status with Thinking Avatar & Dynamic Shimmering Text -->
   <div class="flex items-center gap-2">
-    <div class="relative flex items-center justify-center">
-      <Logo class="h-4 w-auto" />
+    <div class="relative flex items-center justify-center shrink-0">
+      <UserAvatar
+        hat="graduation"
+        state="thinking"
+        width="22px"
+        height="22px"
+        class="shrink-0"
+      />
     </div>
     {#key currentStatus}
       <span class="ai-shimmer-text text-[12px] font-medium tracking-wide animate-fade-in">

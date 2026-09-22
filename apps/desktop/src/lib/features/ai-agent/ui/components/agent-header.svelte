@@ -1,13 +1,12 @@
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
-import { Avatar } from "@orbis/avatar-engine";
+import UserAvatar from "$lib/shared/components/user-avatar.svelte";
 import { X, Activity, MessageSquare, Columns, Plus } from "@lucide/svelte";
 import ChatHistoryPopover from "./chat-history-popover.svelte";
 import type { AiChatSession } from "$lib/features/ai/session-store";
 
 let {
   isStandalone = false,
-  userHat = "none",
   headerTitle = "",
   messagesLength = 0,
   currentOrgId = "",
@@ -23,7 +22,6 @@ let {
   onToggleView,
 }: {
   isStandalone: boolean;
-  userHat: string;
   headerTitle: string;
   messagesLength: number;
   currentOrgId: string;
@@ -57,7 +55,7 @@ let {
     
     <!-- Title & Avatar -->
     <span class="text-[12px] font-semibold tracking-wide text-foreground flex items-center gap-1.5 select-none">
-      <Avatar hat={userHat} width="28px" height="28px" />
+      <UserAvatar width="26px" height="26px" />
       <span class="flex items-center gap-1 font-bold">
         {headerTitle}
       </span>

@@ -78,20 +78,12 @@ const orgName = $derived(
     null,
 );
 
-const userHat = $derived.by(() => {
-  const role = authStore.user?.role || "viewer";
-  const roleLower = String(role).toLowerCase();
-  if (roleLower === "admin" || roleLower === "super_admin") return "crown";
-  if (roleLower === "teacher") return "graduation";
-  if (roleLower === "registrar") return "firefighter";
-  return "none";
-});
 
 const headerTitle = $derived.by(() => {
   if (activeSession && activeSession.title && activeSession.messages.length > 0) {
     return activeSession.title;
   }
-  return "مساعد Orbis الذكي";
+  return "Orbis";
 });
 
 // Load file sessions from disk on mount & sync context
@@ -435,7 +427,6 @@ function handleLinkClick(href: string) {
   <!-- Header Section -->
   <AgentHeader
     isStandalone={isStandalone}
-    userHat={userHat}
     headerTitle={headerTitle}
     messagesLength={messages.length}
     currentOrgId={currentOrgId}

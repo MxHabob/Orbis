@@ -1,10 +1,12 @@
 <script lang="ts">
+import { onDestroy } from "svelte";
 import {
   Avatar,
   AvatarController,
   ALL_AVATAR_HATS,
   type AvatarHat,
 } from "@orbis/avatar-engine";
+import type { AvatarState } from "@orbis/avatar-engine/src/core/avatar-state-machine.js";
 import { authStore } from "$lib/stores";
 import type { UserDto } from "$lib/api/types";
 
@@ -107,6 +109,7 @@ let {
   user = null,
   role = null,
   hat = null,
+  state: avatarState = null,
   width = "100%",
   height = "100%",
   controller = undefined,
@@ -115,6 +118,7 @@ let {
   user?: UserDto | null;
   role?: string | null;
   hat?: AvatarHat | null;
+  state?: AvatarState | null;
   width?: string;
   height?: string;
   controller?: AvatarController;
@@ -128,6 +132,20 @@ const effectiveHat = $derived.by<AvatarHat>(() => {
   const userRole = role || targetUser?.roles || (targetUser as any)?.role || "viewer";
   return resolveUserHat(userRole);
 });
+
+// Create single managed controller if state prop is provided
+const defaultController = avatarState ? new AvatarController(avatarState) : undefined;
+const activeController = $derived(controller ?? defaultController);
+
+$effect(() => {
+  if (!controller && defaultController && avatarState && defaultController.state !== avatarState) {
+    defaultController.transitionTo(avatarState);
+  }
+});
+
+onDestroy(() => {
+  defaultController?.destroy();
+});
 </script>
 
 <div class="inline-flex items-center justify-center select-none {className}">
@@ -135,6 +153,6 @@ const effectiveHat = $derived.by<AvatarHat>(() => {
     hat={effectiveHat}
     {width}
     {height}
-    {controller}
+    controller={activeController}
   />
 </div>

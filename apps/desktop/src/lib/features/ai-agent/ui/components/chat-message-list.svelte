@@ -4,6 +4,7 @@ import { marked } from "marked";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import AiLoadingSkeleton from "./ai-loading-skeleton.svelte";
+import UserAvatar from "$lib/shared/components/user-avatar.svelte";
 import {
   Wrench,
   CheckCircle2,
@@ -240,6 +241,25 @@ function handleContentClick(e: MouseEvent) {
           <!-- Assistant Text Content with Full GFM Markdown Support -->
           {#if msg.content}
             <div class="relative bg-card/60 hover:bg-card/90 border rounded-xl p-3.5 shadow-2xs transition-colors {msg.isError ? 'border-destructive/30 bg-destructive/5 dark:bg-destructive/10' : 'border-border/50'}">
+              <!-- Assistant Header Badge with Expressive Avatar -->
+              <div class="flex items-center gap-2 mb-2 pb-1 border-b border-border/30 select-none">
+                <div class="flex items-center justify-center shrink-0">
+                  <UserAvatar
+                    hat="graduation"
+                    state={msg.isError ? "error" : "idle"}
+                    width="20px"
+                    height="20px"
+                    class="shrink-0"
+                  />
+                </div>
+                <span class="text-[11px] font-bold text-foreground/80 flex items-center gap-1.5">
+                  <span>Orbis</span>
+                  {#if msg.isError}
+                    <Badge variant="destructive" class="text-[8px] h-3.5 px-1 font-bold">خطأ في الطلب</Badge>
+                  {/if}
+                </span>
+              </div>
+
               <!-- Rendered Markdown Container -->
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -261,7 +281,6 @@ function handleContentClick(e: MouseEvent) {
                     title="إعادة التوليد"
                   >
                     <RotateCcw size={11} />
-                    <span>إعادة المحاولة</span>
                   </button>
                 {/if}
 
@@ -274,10 +293,8 @@ function handleContentClick(e: MouseEvent) {
                 >
                   {#if copiedMessageId === msg.id}
                     <Check size={11} class="text-emerald-500" />
-                    <span class="text-emerald-500 font-medium">تم النسخ</span>
                   {:else}
                     <Copy size={11} />
-                    <span>نسخ</span>
                   {/if}
                 </button>
               </div>
