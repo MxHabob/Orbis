@@ -14,7 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@orbis/ui";
-import { BookOpen, Document, DocumentPage, Grid, Settings, Sparkles, Users } from "@orbis/icons";
+import { Banknotes, BookOpen, DocumentPage, Grid, Settings, Sparkles, Users } from "@orbis/icons";
 import OrgSidebarSwitcher from "./org-sidebar-switcher.svelte";
 import UserSidebarMenu from "./user-sidebar-menu.svelte";
 import OnboardingPopover from "./onboarding-popover.svelte";
@@ -78,7 +78,7 @@ const navItems = $derived([
   },
   {
     href: `/${orgId}/finance`,
-    icon: Document,
+    icon: Banknotes,
     label: m.common_nav_finance(),
     match: "prefix",
   },

@@ -209,7 +209,7 @@ function handleGoToOnboarding() {
           class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-primary hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           title={m.common_autopilot_popover_ai_center?.() || "AI Center"}
         >
-          <AdjustmentsHorizontal size={14} />
+          <Sparkles size={14} />
         </a>
 
         <a 
