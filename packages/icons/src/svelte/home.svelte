@@ -24,7 +24,7 @@
 	viewBox="0 0 22 22"
 	fill="none"
 	stroke="currentColor"
-	stroke-width={strokeWidth ?? 'strokeWidth'}
+	stroke-width={strokeWidth ?? '1.5'}
 	width={size}
 	height={size}
 	class={computedClass}

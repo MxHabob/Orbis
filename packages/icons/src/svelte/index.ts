@@ -198,3 +198,8 @@ export { default as Wrench } from './wrench.svelte';
 export { default as XMark } from './x-mark.svelte';
 export { default as Youtube } from './youtube.svelte';
 export { default as ZoomReset } from './zoom-reset.svelte';
+export { default as Bell } from './bell.svelte';
+export { default as Sun } from './sun.svelte';
+export { default as Moon } from './moon.svelte';
+export { default as Maximize } from './maximize.svelte';
+export { default as Restore } from './restore.svelte';

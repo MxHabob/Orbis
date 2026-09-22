@@ -24,7 +24,7 @@
 	viewBox="0 0 24 24"
 	fill="none"
 	stroke="currentColor"
-	stroke-width={strokeWidth ?? 'strokeWidth'}
+	stroke-width={strokeWidth ?? '1.5'}
 	width={size}
 	height={size}
 	class={computedClass}
@@ -32,11 +32,12 @@
 	{...restProps}
 >
 	<path
-		d="M19 8C20.6569 8 22 6.65685 22 5C22 3.34315 20.6569 2 19 2C17.3431 2 16 3.34315 16 5C16 6.65685 17.3431 8 19 8Z"
+		d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"
 		stroke-linecap="round"
 		stroke-linejoin="round"
-	></path><path
-		d="M21 12V15C21 18.3137 18.3137 21 15 21H9C5.68629 21 3 18.3137 3 15V9C3 5.68629 5.68629 3 9 3H12"
+	></path>
+	<path
+		d="M10.3 21a1.94 1.94 0 0 0 3.4 0"
 		stroke-linecap="round"
 		stroke-linejoin="round"
 	></path>

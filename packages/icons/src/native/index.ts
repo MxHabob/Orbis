@@ -198,3 +198,8 @@ export { Wrench } from './wrench';
 export { XMark } from './x-mark';
 export { Youtube } from './youtube';
 export { ZoomReset } from './zoom-reset';
+export { Bell, default as BellIcon } from './bell';
+export { Sun, default as SunIcon } from './sun';
+export { Moon, default as MoonIcon } from './moon';
+export { Maximize, default as MaximizeIcon } from './maximize';
+export { Restore, default as RestoreIcon } from './restore';

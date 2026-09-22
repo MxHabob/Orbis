@@ -3,15 +3,7 @@
   import * as m from "$lib/paraglide/messages";
   import { localizeHref } from "$lib/paraglide/runtime";
   import { authStore, themeStore, uiStore, workflowInbox } from "$lib/stores";
-  import {
-    AppNotification,
-    CheckBox,
-    Clipboard,
-    Collapse,
-    LightBulb,
-    Search,
-    XMark,
-  } from "@orbis/icons";
+  import { Bell, Eye, Maximize, Minus, Moon, Restore, Search, Sparkles, Sun, XMark } from "@orbis/icons";
   import { Button } from "@orbis/ui/button";
   import { Logo } from "@orbis/ui/logo";
   import { onMount } from "svelte";
@@ -182,7 +174,7 @@
               );
           }}
         >
-          <AppNotification size={14} class="stroke-[2px]" />
+          <Bell size={14} class="stroke-[2px]" />
           <span
             class="absolute -top-0.5 -inset-e-0.5 size-4 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center font-semibold"
           >
@@ -203,10 +195,7 @@
               );
           }}
         >
-          <AppNotification
-            size={14}
-            class="stroke-[2px] text-muted-foreground"
-          />
+          <Bell size={14} class="stroke-[2px] text-muted-foreground" />
         </Button>
       {/if}
 
@@ -219,13 +208,14 @@
       variant="outline"
       size="icon-sm"
       onclick={() => themeStore.toggle()}
-      class="rounded-[8px] shrink-0"
+      class="rounded-[8px] shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
       title={m.common_titlebar_theme_toggle()}
+      aria-label="Toggle Theme"
     >
       {#if themeStore.resolved === "dark"}
-        <LightBulb size={14} class="stroke-[2px]" />
+        <Sun size={14} class="stroke-[2px] text-amber-400" />
       {:else}
-        <LightBulb size={14} class="stroke-[2px]" />
+        <Moon size={14} class="stroke-[2px] text-indigo-500" />
       {/if}
     </Button>
 
@@ -247,46 +237,46 @@
     <!-- Windows Window Controls (Min, Max, Close) -->
     {#if !isMac && appWindow}
       <div
-        class="flex items-center border-s border-border/40 ms-1.5 ps-1.5 h-6"
+        class="flex items-center border-s border-border/40 ms-1.5 ps-1.5 h-6 gap-0.5"
       >
         <!-- Minimize -->
-        <Button
-          variant="ghost"
-          size="icon-sm"
+        <button
+          type="button"
           onclick={() => appWindow.minimize()}
-          class="text-muted-foreground hover:text-foreground hover:bg-muted"
+          class="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
           title={m.common_titlebar_minimize()}
+          aria-label="Minimize"
         >
-          <Collapse size={12} />
-        </Button>
+          <Minus size={13} class="stroke-[2px]" />
+        </button>
 
         <!-- Expand / Restore -->
-        <Button
-          variant="ghost"
-          size="icon-sm"
+        <button
+          type="button"
           onclick={() => appWindow.toggleMaximize()}
-          class="text-muted-foreground hover:text-foreground hover:bg-muted"
+          class="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
           title={isMaximized
             ? m.common_titlebar_restore()
             : m.common_titlebar_maximize()}
+          aria-label="Maximize / Restore"
         >
           {#if isMaximized}
-            <Clipboard size={11} class="rotate-180" />
+            <Restore size={12} class="stroke-[1.6]" />
           {:else}
-            <CheckBox size={11} />
+            <Maximize size={12} class="stroke-[1.6]" />
           {/if}
-        </Button>
+        </button>
 
         <!-- Close -->
-        <Button
-          variant="ghost"
-          size="icon-sm"
+        <button
+          type="button"
           onclick={() => appWindow.close()}
-          class="text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
+          class="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors cursor-pointer"
           title={m.common_titlebar_close()}
+          aria-label="Close"
         >
-          <XMark size={12} />
-        </Button>
+          <XMark size={13} class="stroke-[2px]" />
+        </button>
       </div>
     {/if}
   </div>
