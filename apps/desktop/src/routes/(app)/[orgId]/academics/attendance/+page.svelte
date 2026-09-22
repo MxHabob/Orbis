@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@orbis/ui/table";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, CheckCircle, ClockRotateRight, FloppyDisk, Grid, InfoCircle, Refresh, Search, Users, XMark } from "@orbis/icons";
+import { AdjustmentsHorizontal, CheckCircle, ClockRotateRight, FloppyDisk, InfoCircle, Refresh, Search, Users, XMark } from "@orbis/icons";
 import { exportToCsv } from "$lib/shared/utils/export";
 
 let { data }: { data: { orgId: string } } = $props();

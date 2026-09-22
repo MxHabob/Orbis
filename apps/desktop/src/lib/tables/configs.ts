@@ -1,6 +1,4 @@
-<script lang="ts">
 import { Grid } from "@orbis/icons";
-</script>
 import * as m from "$lib/paraglide/messages";
 // ── Desktop Grid Config ────────────────────────────────────────────
 // Central registry of table configurations for the school management system.

@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@orbis/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
-import { AdjustmentsHorizontal, BookOpen, CheckCircle, DocumentCheck, FloppyDisk, Grid, Home, Label, Lock, Plus, Sparkles, Trash, UserBadgeCheck } from "@orbis/icons";
+import { AdjustmentsHorizontal, BookOpen, CheckCircle, DocumentCheck, FloppyDisk, Home, Lock, Plus, Sparkles, Trash, UserBadgeCheck } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";

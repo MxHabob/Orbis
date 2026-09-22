@@ -1,6 +1,4 @@
-<script lang="ts">
 import { Clipboard } from "@orbis/icons";
-</script>
 import * as m from "$lib/paraglide/messages";
 // ═══════════════════════════════════════════════════════════════
 // Template Designer — Clipboard Manager

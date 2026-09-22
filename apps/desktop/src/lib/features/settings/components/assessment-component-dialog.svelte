@@ -2,7 +2,7 @@
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
-import { AdjustmentsHorizontal, Label } from "@orbis/icons";
+import { AdjustmentsHorizontal } from "@orbis/icons";
 import {
   Dialog,
   DialogContent,

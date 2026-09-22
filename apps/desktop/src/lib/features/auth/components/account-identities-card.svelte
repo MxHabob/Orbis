@@ -10,7 +10,7 @@ import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Label } from "@orbis/ui/label";
 import { toast } from "@orbis/ui";
-import { ArrowForward, Label, LinkSlash, UserBadgeCheck } from "@orbis/icons";
+import { ArrowForward, LinkSlash, UserBadgeCheck } from "@orbis/icons";
 import SettingsCard from "$lib/shared/components/settings-card.svelte";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 

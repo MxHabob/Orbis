@@ -17,7 +17,7 @@ import { toast } from "@orbis/ui";
 import { l, isAr } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
 import SearchField from "$lib/shared/components/search-field.svelte";
-import { AdjustmentsHorizontal, BookOpen, ChevronDown, ChevronRight, Cube, EllipsisVertical, Grid, Home, Keyframes, Pencil, Pin, Plus, Search, Trash, Users } from "@orbis/icons";
+import { AdjustmentsHorizontal, BookOpen, ChevronDown, ChevronRight, Cube, EllipsisVertical, Home, Keyframes, Pencil, Pin, Plus, Search, Trash, Users } from "@orbis/icons";
 import OrgUnitSheet from "$lib/features/academics/components/org-unit-sheet.svelte";
 import { confirmStore } from "$lib/stores";
 

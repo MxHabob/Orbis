@@ -17,7 +17,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { ClockRotateRight, FloppyDisk, Heart, Label, Pencil, Plus, Trash, XMark } from "@orbis/icons";
+import { ClockRotateRight, FloppyDisk, Heart, Pencil, Plus, Trash, XMark } from "@orbis/icons";
 import { api, extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";

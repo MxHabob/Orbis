@@ -1,6 +1,4 @@
-<script lang="ts">
 import { FloppyDisk } from "@orbis/icons";
-</script>
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { api, queryKeys } from "$lib/api";

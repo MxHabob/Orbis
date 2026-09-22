@@ -45,8 +45,7 @@ function defaultCompare(a: unknown, b: unknown): number {
  *
  * @example
  * ```svelte
- * <script lang="ts">
-import { AdjustmentsHorizontal } from "@orbis/icons";
+ * import { AdjustmentsHorizontal } from "@orbis/icons";
 
  * import { createTableState } from '@orbis/ui-svelte/table';
  *
@@ -57,8 +56,7 @@ import { AdjustmentsHorizontal } from "@orbis/icons";
  *   enableSorting: true,
  *   enableRowSelection: true,
  * });
- * </script>
- * ```
+ *  * ```
  */
 export function createTableState<T>(options: TableOptions<T>) {
   // ── Source Data ─────────────────────────────────────────────────

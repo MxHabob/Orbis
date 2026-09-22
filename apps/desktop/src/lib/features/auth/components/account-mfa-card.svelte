@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Label } from "@orbis/ui/label";
-import { Label, Settings, UserBadgeCheck } from "@orbis/icons";
+import { Settings, UserBadgeCheck } from "@orbis/icons";
 import SettingsCard from "$lib/shared/components/settings-card.svelte";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 import MfaEnrollModal from "./mfa-enroll-modal.svelte";

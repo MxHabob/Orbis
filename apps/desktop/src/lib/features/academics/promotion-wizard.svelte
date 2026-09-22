@@ -45,7 +45,7 @@ import {
 } from "@orbis/ui/alert-dialog";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Progress } from "@orbis/ui/progress";
-import { AdjustmentsHorizontal, ArrowLeft, ArrowRight, BookOpen, Check, Grid, Label, Play, Plus, Trash, User, UserBadgeCheck, Users } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowLeft, ArrowRight, BookOpen, Check, Play, Plus, Trash, User, UserBadgeCheck, Users } from "@orbis/icons";
 import type {
   PromotionConfig,
   PromotionJob,

@@ -8,7 +8,7 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
-import { AdjustmentsHorizontal, Bolt, BookOpen, Calendar, ChartBar, CheckCircle, ClockRotateRight, Document, DocumentPage, Keyframes, Label, Lock, Search, Sparkles, UserBadgeCheck } from "@orbis/icons";
+import { AdjustmentsHorizontal, Bolt, BookOpen, Calendar, ChartBar, CheckCircle, ClockRotateRight, Document, DocumentPage, Keyframes, Lock, Search, Sparkles, UserBadgeCheck } from "@orbis/icons";
 import { Input } from "@orbis/ui/input";
 import { Switch } from "@orbis/ui/switch";
 import { Label } from "@orbis/ui/label";

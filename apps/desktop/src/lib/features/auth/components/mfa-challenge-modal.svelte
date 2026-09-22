@@ -14,7 +14,7 @@ import { Label } from "@orbis/ui/label";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { toast } from "@orbis/ui";
 import { api, type LoginResponse } from "$lib/api";
-import { Check, Label, UserBadgeCheck } from "@orbis/icons";
+import { Check, UserBadgeCheck } from "@orbis/icons";
 
 interface Props {
   open: boolean;

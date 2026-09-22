@@ -20,7 +20,7 @@ import {
   DialogFooter,
 } from "@orbis/ui/dialog";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, CheckCircle, Grid, InfoCircle, Label, Plus, Trash } from "@orbis/icons";
+import { AdjustmentsHorizontal, CheckCircle, Grid, InfoCircle, Plus, Trash } from "@orbis/icons";
 
 interface JournalLine {
   id: string;

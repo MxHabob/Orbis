@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Home, Label } from "@orbis/icons";
+import { Home } from "@orbis/icons";
 
 import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui/label";

@@ -1,6 +1,4 @@
-<script lang="ts">
 import { Grid } from "@orbis/icons";
-</script>
 // ── Grid Infrastructure Types ──────────────────────────────────────
 // Central type definitions for the Svelte 5 Runes-based table system.
 // Inspired by TanStack Grid patterns but native to Svelte 5.

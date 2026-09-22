@@ -1,6 +1,4 @@
-<script lang="ts">
 import { Grid } from "@orbis/icons";
-</script>
 import * as m from "$lib/paraglide/messages";
 /**
  * @orbis/desktop — Grid Definitions

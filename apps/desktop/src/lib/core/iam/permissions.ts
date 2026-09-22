@@ -1,6 +1,4 @@
-<script lang="ts">
 import { Pencil } from "@orbis/icons";
-</script>
 /**
  * Orbis IAM Permissions System (Single Source of Truth)
  * 

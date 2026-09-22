@@ -9,7 +9,7 @@ import { Label } from "@orbis/ui/label";
 import { Button } from "@orbis/ui/button";
 import { Separator } from "@orbis/ui/separator";
 import ColorPicker from "../shared/color-picker.svelte";
-import { DocumentPage, Label, Refresh } from "@orbis/icons";
+import { DocumentPage, Refresh } from "@orbis/icons";
 
 let {
   store,

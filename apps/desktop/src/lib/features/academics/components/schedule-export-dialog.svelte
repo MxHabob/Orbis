@@ -15,7 +15,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { AdjustmentsHorizontal, DocumentPage, Download, Grid, Keyframes, Label, Pin, User, Users } from "@orbis/icons";
+import { AdjustmentsHorizontal, DocumentPage, Download, Grid, Keyframes, Pin, User, Users } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 

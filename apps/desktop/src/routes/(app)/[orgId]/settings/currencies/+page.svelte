@@ -8,7 +8,7 @@ import { page } from "$app/state";
 import { api } from "$lib/api";
 import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
-import { Check, GlobeAlt, Grid, Info, Pencil, Plus, Refresh, Trash, XMark } from "@orbis/icons";
+import { Check, GlobeAlt, Info, Pencil, Plus, Refresh, Trash, XMark } from "@orbis/icons";
 import {
     FormField,
     Grid,

@@ -9,7 +9,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { AdjustmentsHorizontal, Label } from "@orbis/icons";
+import { AdjustmentsHorizontal } from "@orbis/icons";
 import {
   Dialog,
   DialogContent,

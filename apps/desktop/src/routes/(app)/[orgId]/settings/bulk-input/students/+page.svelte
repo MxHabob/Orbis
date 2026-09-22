@@ -20,7 +20,7 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Label } from "@orbis/ui/label";
-import { AdjustmentsHorizontal, ArrowLeft, ArrowUpTray, FloppyDisk, Info, Label, Trash } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowLeft, ArrowUpTray, FloppyDisk, Info, Trash } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 
 import { localizeHref } from "$lib/paraglide/runtime";

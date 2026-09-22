@@ -16,7 +16,7 @@ import {
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
-import { GlobeAlt, Grid, Label } from "@orbis/icons";
+import { GlobeAlt, Grid } from "@orbis/icons";
 
 let prefTheme = $state("dark");
 let prefLanguage = $state("ar");

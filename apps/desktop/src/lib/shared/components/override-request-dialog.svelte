@@ -34,7 +34,7 @@ import { Button } from "@orbis/ui/button";
 import { Textarea } from "@orbis/ui/textarea";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
-import { AdjustmentsHorizontal, InfoCircle, Label, UserBadgeCheck } from "@orbis/icons";
+import { AdjustmentsHorizontal, InfoCircle, UserBadgeCheck } from "@orbis/icons";
 import type { OverrideType, RiskLevel } from "@orbis/sdk";
 
 interface Props {

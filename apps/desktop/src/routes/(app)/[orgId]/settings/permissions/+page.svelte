@@ -8,7 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { confirmStore } from "$lib/stores";
-import { Check, Clipboard, Grid, Pencil, Plus, Refresh, Trash, UserBadgeCheck } from "@orbis/icons";
+import { Check, Clipboard, Pencil, Plus, Refresh, Trash, UserBadgeCheck } from "@orbis/icons";
 import {
   Grid,
   TableBody,

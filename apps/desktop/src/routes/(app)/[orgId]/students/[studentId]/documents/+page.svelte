@@ -21,7 +21,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { ArrowForward, ArrowUpTray, CheckCircle, Clip, DocumentPage, Grid, InfoCircle, Label, Plus, Refresh, Trash, XMark } from "@orbis/icons";
+import { ArrowForward, ArrowUpTray, CheckCircle, Clip, DocumentPage, InfoCircle, Plus, Refresh, Trash, XMark } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { createEnrollmentsQuery } from "$lib/features/students";
 import { formatDate } from "$lib/core/i18n";

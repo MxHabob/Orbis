@@ -20,7 +20,7 @@ import {
 import { toast } from "@orbis/ui";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import { AdjustmentsHorizontal, ArrowLeft, Bolt, BookOpen, Calendar, CheckCircle, Grid, Hashtag, Home, Lock, Pencil, Play, Plus, Trash, UserBadgeCheck, XMark } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowLeft, Bolt, BookOpen, Calendar, CheckCircle, Hashtag, Home, Lock, Pencil, Play, Plus, Trash, UserBadgeCheck, XMark } from "@orbis/icons";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";

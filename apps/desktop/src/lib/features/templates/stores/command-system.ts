@@ -1,6 +1,4 @@
-<script lang="ts">
 import { FloppyDisk } from "@orbis/icons";
-</script>
 import * as m from "$lib/paraglide/messages";
 // ═══════════════════════════════════════════════════════════════
 // Template Designer — Command System

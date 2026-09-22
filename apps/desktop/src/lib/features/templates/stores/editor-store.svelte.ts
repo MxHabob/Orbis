@@ -1,6 +1,4 @@
-<script lang="ts">
 import { FloppyDisk, Grid } from "@orbis/icons";
-</script>
 import * as m from "$lib/paraglide/messages";
 // ═══════════════════════════════════════════════════════════════
 // Template Designer — Editor Store (Svelte 5 Runes)

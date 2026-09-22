@@ -1,6 +1,4 @@
-<script lang="ts">
 import { AdjustmentsHorizontal } from "@orbis/icons";
-</script>
 /**
  * @orbis/desktop — AdjustmentsHorizontal Configurations
  *

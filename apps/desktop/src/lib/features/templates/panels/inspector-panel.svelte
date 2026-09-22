@@ -23,7 +23,7 @@ import {
 } from "@orbis/ui/accordion";
 import { Separator } from "@orbis/ui/separator";
 import { Badge } from "@orbis/ui/badge";
-import { AdjustmentsHorizontal, Label } from "@orbis/icons";
+import { AdjustmentsHorizontal } from "@orbis/icons";
 
 let {
   store,

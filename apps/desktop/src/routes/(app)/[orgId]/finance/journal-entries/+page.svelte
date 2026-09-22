@@ -31,7 +31,7 @@ import {
   SheetFooter,
 } from "@orbis/ui/sheet";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, Calendar, CheckCircle, DocumentChartBar, Download, Eye, Grid, InfoCircle, Plus, Search, Trash } from "@orbis/icons";
+import { AdjustmentsHorizontal, Calendar, CheckCircle, DocumentChartBar, Download, Eye, InfoCircle, Plus, Search, Trash } from "@orbis/icons";
 import CreateJournalDialog from "$lib/features/finance/components/create-journal-dialog.svelte";
 import { exportToCsv } from "$lib/shared/utils/export";
 

@@ -24,7 +24,7 @@ import {
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 
-import { AdjustmentsHorizontal, BookOpen, Grid, Label, Lock, Pencil, UserBadgeCheck } from "@orbis/icons";
+import { AdjustmentsHorizontal, BookOpen, Grid, Lock, Pencil, UserBadgeCheck } from "@orbis/icons";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
