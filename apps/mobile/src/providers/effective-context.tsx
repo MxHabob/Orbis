@@ -21,9 +21,7 @@ import React, {
 } from "react";
 import { useAuth } from "@/lib/api";
 import { setSecureItem } from "@/lib/api/storage";
-import type { LinkedDependentDto } from "@/lib/api/types";
-
-export type { LinkedDependentDto };
+import { LinkedDependentDto } from "@orbis/sdk";
 
 export interface EffectiveContextType {
   // ── Authoritative IAM / RBAC Matrix ──────────────────────────────
