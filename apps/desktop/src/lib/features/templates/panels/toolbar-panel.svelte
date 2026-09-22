@@ -99,7 +99,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
         { icon: AlignHorizontal, action: "center", label: "Align Center" },
         { icon: AlignHorizontal, action: "right", label: "Align Right" },
         { icon: AlignVertical, action: "top", label: "Align Top" },
-        { icon: AlignHorizontalVertical, action: "middle", label: "Align Middle" },
+        { icon: AlignVertical, action: "middle", label: "Align Middle" },
         { icon: AlignVertical, action: "bottom", label: "Align Bottom" },
       ] as item (item.action)}
         <Tooltip>

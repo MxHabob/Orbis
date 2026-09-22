@@ -264,7 +264,7 @@ function handleAlign(
               const next = current === "start" ? "center" : current === "center" ? "end" : "start";
               updateProp("textAlign", next);
             }}>
-              <svelte:component this={nodeProps.textAlign === "center" ? AlignCenter : nodeProps.textAlign === "end" ? AlignLeft : AlignRight} size={13} />
+              <AlignHorizontal size={13} />
             </button>
           </TooltipTrigger>
           <TooltipContent>{m.template_auto_alignment ? m.template_auto_alignment() : "Alignment"}</TooltipContent>
@@ -400,7 +400,7 @@ function handleAlign(
                 { icon: AlignHorizontal, type: "center" as const },
                 { icon: AlignHorizontal, type: "right" as const },
                 { icon: AlignVertical, type: "top" as const },
-                { icon: AlignHorizontalVertical, type: "middle" as const },
+                { icon: AlignVertical, type: "middle" as const },
                 { icon: AlignVertical, type: "bottom" as const },
               ] as btn, i (i)}
                 <button type="button" class="ctx-format-btn" onclick={() => handleAlign(btn.type)}>

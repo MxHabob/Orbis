@@ -150,7 +150,7 @@ function handleSelectAll() {
 
       <button type="button" class="context-menu-item" onclick={handleToggleLock}>
         {#if isLocked}
-          <Unlock size={12} />
+          <Lock size={12} />
           <span>{m.template_action_unlock()}</span>
         {:else}
           <Lock size={12} />

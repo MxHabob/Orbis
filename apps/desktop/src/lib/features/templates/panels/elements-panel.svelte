@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import type { EditorStore } from "../stores/editor-store.svelte";
 import { Input } from "@orbis/ui/input";
 import { Badge } from "@orbis/ui/badge";
-import { AdjustmentsHorizontal, AlignVertical, ArrowDownTray, ArrowPath, Bold, CheckBox, CheckCircle, CheckSquare, Component, Cube, Grid, Hashtag, Merge, Minus, Photo, Search, Sidebar, Tag } from "@orbis/icons";
+import { AdjustmentsHorizontal, AlignVertical, ArrowDownTray, ArrowPath, Bold, CheckBox, CheckCircle, CheckSquare, Component, Cube, Grid, H1, Hashtag, Merge, Minus, Photo, Search, Sidebar, Tag } from "@orbis/icons";
 
 let {
   store,
@@ -30,7 +30,7 @@ const elements: ElementItem[] = [
   {
     id: "text",
     type: "Text",
-    icon: Type,
+    icon: H1,
     label: "Text",
     labelAr: m.template_element_text(),
     category: "basic",
