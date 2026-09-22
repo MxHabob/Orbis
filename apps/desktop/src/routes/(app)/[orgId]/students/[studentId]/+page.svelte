@@ -15,7 +15,7 @@ import {
 import { Badge } from "@orbis/ui/badge";
 import AttendanceTrendsCard from "$lib/features/metrics/cards/attendance-trends-card.svelte";
 import GradeDistributionCard from "$lib/features/metrics/cards/grade-distribution-card.svelte";
-import { AdjustmentsHorizontal, Grid, Pencil } from "@orbis/icons";
+import { AdjustmentsHorizontal, Grid, Pencil, AcademicCap } from "@orbis/icons";
 import { onMount } from "svelte";
 import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
@@ -350,7 +350,7 @@ async function saveStudentDetails(e: Event) {
             <!-- Decision Helper Banner -->
             <div class="p-4 rounded-xl border flex items-center justify-between gap-4 shadow-sm {decisionHelper.colorClass}">
               <div class="flex items-center gap-3">
-                <AdjustmentsHorizontal size={18} class="shrink-0" />
+                <AcademicCap size={18} class="shrink-0" />
                 <div class="flex flex-col gap-0.5 text-start">
                   <span class="text-xs font-bold text-foreground">{m.academics_student_evaluation_recommendation_title()}</span>
                   <p class="text-[10px] leading-relaxed font-semibold">{decisionHelper.rec}</p>

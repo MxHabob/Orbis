@@ -16,7 +16,7 @@ import {
 } from "@orbis/ui/dialog";
 import { Progress } from "@orbis/ui/progress";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, CheckCircle, DocumentPage, Download, Refresh, XMark } from "@orbis/icons";
+import { AdjustmentsHorizontal, CheckCircle, DocumentPage, Download, Refresh, XMark, Printer } from "@orbis/icons";
 
 let {
   open = $bindable(false),
@@ -224,7 +224,7 @@ function handleDownload() {
             disabled={!pdfUrl || isGenerating}
             class="flex-1 sm:flex-none font-bold"
         >
-          <AdjustmentsHorizontal size={16} class="me-2" />
+          <Printer size={16} class="me-2" />
           Print Natively
         </Button>
       </div>

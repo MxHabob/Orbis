@@ -9,7 +9,32 @@ import { api } from "$lib/api";
 import { queryClient } from "$lib/api";
 
 import { matchStudent } from "$lib/shared/utils/search";
-import { AdjustmentsHorizontal, ArrowPath, Bolt, BookOpen, Calendar, ChartBar, Document, DocumentPage, Plus, Search, Settings, UserBadgeCheck, Users } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  AppNotification,
+  ArrowPath,
+  Banknotes,
+  Bolt,
+  BookOpen,
+  BuildingLibrary,
+  BuildingOffice,
+  Calendar,
+  ChartBar,
+  CreditCard,
+  Document,
+  DocumentChartBar,
+  DocumentCheck,
+  DocumentPage,
+  GlobeAlt,
+  Pin,
+  Plus,
+  ReceiptPercent,
+  Search,
+  Settings,
+  ShieldCheck,
+  UserBadgeCheck,
+  Users,
+} from "@orbis/icons";
 
 let searchQuery = $state("");
 let inputEl = $state<HTMLInputElement | null>(null);
@@ -134,33 +159,33 @@ const systemPages = $derived([
       ? m.finance_layout_nav_fees()
       : "Student Fees",
     path: `/${currentOrgId}/finance/fees`,
-    icon: DocumentPage,
+    icon: DocumentChartBar,
   },
   {
     title: m.finance_layout_nav_payments
       ? m.finance_layout_nav_payments()
       : "Receipts",
     path: `/${currentOrgId}/finance/payments`,
-    icon: Document,
+    icon: CreditCard,
   },
   {
     title: m.finance_layout_nav_cash_accounts
       ? m.finance_layout_nav_cash_accounts()
       : "Disbursals",
     path: `/${currentOrgId}/finance/accounts`,
-    icon: Document,
+    icon: BuildingLibrary,
   },
   {
     title: m.common_je_title ? m.common_je_title() : "Journal Entries",
     path: `/${currentOrgId}/finance/journal-entries`,
-    icon: DocumentPage,
+    icon: BookOpen,
   },
   {
     title: m.finance_layout_nav_ledger
       ? m.finance_layout_nav_ledger()
       : "Ledger",
     path: `/${currentOrgId}/finance/statement`,
-    icon: DocumentPage,
+    icon: DocumentChartBar,
   },
   {
     title: m.finance_layout_nav_reports
@@ -187,12 +212,12 @@ const systemPages = $derived([
   {
     title: m.common_nav_exams ? m.common_nav_exams() : "Exams",
     path: `/${currentOrgId}/academics/exams`,
-    icon: DocumentPage,
+    icon: DocumentCheck,
   },
   {
     title: m.common_control_label ? m.common_control_label() : "Control Board",
     path: `/${currentOrgId}/academics/control`,
-    icon: UserBadgeCheck,
+    icon: AdjustmentsHorizontal,
   },
   // Settings
   {
@@ -200,12 +225,12 @@ const systemPages = $derived([
       ? m.common_nav_notifications()
       : "Notifications",
     path: `/${currentOrgId}/settings/notifications`,
-    icon: Settings,
+    icon: AppNotification,
   },
   {
     title: m.common_nav_security ? m.common_nav_security() : "Security",
     path: `/${currentOrgId}/settings/security`,
-    icon: Settings,
+    icon: ShieldCheck,
   },
   {
     title: m.settings_nav_users ? m.settings_nav_users() : "Users & Staff",
@@ -217,7 +242,7 @@ const systemPages = $derived([
       ? m.settings_nav_permissions()
       : "Permissions",
     path: `/${currentOrgId}/settings/permissions`,
-    icon: UserBadgeCheck,
+    icon: ShieldCheck,
   },
   {
     title: m.settings_nav_cycles ? m.settings_nav_cycles() : "Academic Periods",
@@ -229,12 +254,12 @@ const systemPages = $derived([
       ? m.settings_nav_units()
       : "Organizational Units",
     path: `/${currentOrgId}/settings/units`,
-    icon: Settings,
+    icon: BuildingOffice,
   },
   {
     title: m.common_nav_rooms ? m.common_nav_rooms() : "Rooms & Halls",
     path: `/${currentOrgId}/settings/rooms`,
-    icon: Settings,
+    icon: Pin,
   },
   {
     title: m.common_exams_detail_subjects
@@ -248,7 +273,7 @@ const systemPages = $derived([
       ? m.settings_nav_currencies()
       : "Currencies",
     path: `/${currentOrgId}/settings/currencies`,
-    icon: ArrowRightLeft,
+    icon: GlobeAlt,
   },
   {
     title: m.common_breadcrumb_fees
@@ -262,7 +287,7 @@ const systemPages = $derived([
       ? m.common_form_summary_discount()
       : "Discount Templates",
     path: `/${currentOrgId}/settings/discount-templates`,
-    icon: DocumentPage,
+    icon: ReceiptPercent,
   },
   // User Account
   {

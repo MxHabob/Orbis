@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { onMount, untrack } from "svelte";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
-import { ArrowLeft, ChevronDown, EllipsisHorizontal, FloppyDisk } from "@orbis/icons";
+import { ArrowLeft, ChevronDown, EllipsisHorizontal, FloppyDisk, Check } from "@orbis/icons";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import {
   DropdownMenu,
@@ -110,7 +110,7 @@ onMount(async () => {
               <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center justify-between gap-1.5" onclick={async () => { state.selectedTemplateId = tpl.id; await state.handleDownloadRegistrationForm(); }}>
                 <span>{tpl.name_ar || tpl.name}</span>
                 {#if state.selectedTemplateId === tpl.id}
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check text-primary h-3.5 w-3.5"><path d="M20 6 9 17l-5-5"/></svg>
+                  <Check size={14} class="text-primary h-3.5 w-3.5" />
                 {/if}
               </DropdownMenuItem>
             {/each}

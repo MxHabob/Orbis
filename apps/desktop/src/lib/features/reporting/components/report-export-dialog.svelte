@@ -8,7 +8,7 @@ import {
   DialogFooter,
 } from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui/button";
-import { AdjustmentsHorizontal, Download, Grid } from "@orbis/icons";
+import { AdjustmentsHorizontal, Download, DocumentChartBar } from "@orbis/icons";
 import { api } from "$lib/api";
 import { toast } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
@@ -78,7 +78,7 @@ async function handleExport() {
         class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all hover:bg-muted {selectedFormat === 'csv' ? 'border-primary bg-primary/5 text-primary' : 'border-transparent bg-muted/50'}"
         onclick={() => selectedFormat = "csv"}
       >
-        <Grid size={32} aria-hidden="true" />
+        <DocumentChartBar size={32} aria-hidden="true" />
         <span class="text-sm font-medium">CSV</span>
       </button>
     </div>

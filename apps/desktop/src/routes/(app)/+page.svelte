@@ -12,7 +12,7 @@ import { authStore } from "$lib/stores";
 import { onMount } from "svelte";
 import { resolveStartupPhase, type StartupState } from "$lib/core/startup";
 import { localizeHref } from "$lib/paraglide/runtime";
-import { AdjustmentsHorizontal } from "@orbis/icons";
+import { ArrowPath } from "@orbis/icons";
 
 let startupState: StartupState | null = $state(null);
 let statusText = $state("Initializing...");
@@ -67,7 +67,7 @@ onMount(async () => {
 <div class="loading-root">
 	<div class="loading-content">
 		<span class="loading-icon" aria-hidden="true">
-			<AdjustmentsHorizontal size={20} strokeWidth={2} />
+			<ArrowPath size={20} strokeWidth={2} class="animate-spin text-primary" />
 		</span>
 		<span class="loading-text">{statusText}</span>
 	</div>

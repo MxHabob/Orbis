@@ -8,7 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { AdjustmentsHorizontal, ArrowForward, ArrowUpTray, BookOpen, CheckCircle, DocumentChartBar, Download, Plus, Search, UserBadgeCheck } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowForward, ArrowUpTray, BookOpen, CheckCircle, DocumentChartBar, Download, Plus, Search, UserBadgeCheck, Printer } from "@orbis/icons";
 import { fly } from "svelte/transition";
 import { quintOut } from "svelte/easing";
 import { studentsStore, createEnrollmentsQuery } from "$lib/features/students";
@@ -317,7 +317,7 @@ function handleExportStudents() {
             class="h-8 px-3 text-xs font-semibold shadow-xs cursor-pointer gap-1.5"
             onclick={() => printDialogOpen = true}
           >
-            <AdjustmentsHorizontal size={14} />
+            <Printer size={14} />
             <span>{m.common_print_templates()} ({selectedStudentIds.size})</span>
           </Button>
 

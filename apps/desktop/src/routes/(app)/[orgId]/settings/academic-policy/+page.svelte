@@ -24,7 +24,7 @@ import {
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 
-import { AdjustmentsHorizontal, BookOpen, Grid, Lock, Pencil, UserBadgeCheck } from "@orbis/icons";
+import { AdjustmentsHorizontal, BookOpen, Grid, Lock, Pencil, UserBadgeCheck, Scale } from "@orbis/icons";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
@@ -166,7 +166,7 @@ async function handleSave(e?: Event) {
         <!-- 1. Grading & Evaluation Defaults Section -->
         <div class="flex flex-col gap-5 text-start bg-card border border-border/50 rounded-xl p-5 shadow-2xs">
           <div class="border-b border-border/60 pb-3 flex items-center gap-2">
-            <AdjustmentsHorizontal size={16} class="text-primary" />
+            <Scale size={16} class="text-primary" />
             <h2 class="text-xs font-semibold text-foreground">
               نظام الدرجات والتقييم الأساسي
             </h2>

@@ -4,7 +4,7 @@ import { api } from "$lib/api";
 import type { ReportDefinition, ReportDataset, ColumnDef } from "@orbis/sdk";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { AdjustmentsHorizontal, Download, InfoCircle, Refresh } from "@orbis/icons";
+import { AdjustmentsHorizontal, Download, InfoCircle, Refresh, Printer } from "@orbis/icons";
 import { OrbisGrid } from "@orbis/svelte-grid";
 import * as m from "$lib/paraglide/messages";
 import ReportExportDialog from "./report-export-dialog.svelte";
@@ -122,7 +122,7 @@ onMount(() => {
     {#if definition}
       <div class="w-72 border-r bg-card/30 flex flex-col shrink-0 overflow-y-auto">
         <div class="p-4 border-b bg-muted/20 flex items-center gap-2">
-          <AdjustmentsHorizontal class="h-4 w-4 text-muted-foreground" />
+          <Printer class="h-4 w-4 text-muted-foreground" />
           <h3 class="font-medium text-sm">المعاملات</h3>
         </div>
         
@@ -176,7 +176,7 @@ onMount(() => {
         </div>
       {:else if !isLoading && !error && definition}
         <div class="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
-          <AdjustmentsHorizontal class="h-12 w-12 opacity-20 mb-3" />
+          <DocumentChartBar class="h-12 w-12 opacity-20 mb-3" />
           <p class="text-sm">أدخل المعاملات ثم اضغط "تحديث" لعرض البيانات.</p>
         </div>
       {:else if isLoading && !dataset}

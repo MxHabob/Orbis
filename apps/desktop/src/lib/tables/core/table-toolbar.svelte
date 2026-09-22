@@ -6,7 +6,7 @@
 <script lang="ts">
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
-import { AdjustmentsHorizontal, Download, Refresh, Search, XMark } from "@orbis/icons";
+import { AdjustmentsHorizontal, Download, Refresh, Search, XMark, Printer } from "@orbis/icons";
 import type { Snippet } from "svelte";
 
 interface Props {

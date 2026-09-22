@@ -20,7 +20,7 @@ import {
 import { toast } from "@orbis/ui";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import { AdjustmentsHorizontal, ArrowLeft, Bolt, BookOpen, Calendar, CheckCircle, Hashtag, Home, Lock, Pencil, Play, Plus, Trash, UserBadgeCheck, XMark } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowLeft, Bolt, BookOpen, Calendar, CheckCircle, Hashtag, Home, Lock, Pencil, Play, Plus, Trash, UserBadgeCheck, XMark, Printer } from "@orbis/icons";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";
@@ -794,7 +794,7 @@ async function handleAssignProctors() {
 									class="h-7 px-3 text-[10px] flex items-center gap-1.5 cursor-pointer border-primary/30 text-primary"
 									onclick={() => printDialogOpen = true}
 								>
-									<AdjustmentsHorizontal size={12} />
+									<Printer size={12} />
 									<span>{m.common_print_templates()} ({selectedSeatIds.size})</span>
 								</Button>
 							{/if}

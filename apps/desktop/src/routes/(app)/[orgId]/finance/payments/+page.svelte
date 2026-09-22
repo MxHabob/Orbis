@@ -30,7 +30,7 @@ import {
 } from "@orbis/ui/select";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, Calendar, ChevronLeft, ChevronRight, Document, DocumentPage, Plus, Refresh, Search, SignOut, TaskList, Trash } from "@orbis/icons";
+import { AdjustmentsHorizontal, Calendar, ChevronLeft, ChevronRight, Document, DocumentPage, Plus, Refresh, Search, SignOut, TaskList, Trash, Printer } from "@orbis/icons";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 
@@ -951,7 +951,7 @@ const filteredPayments = $derived.by(() => {
             onclick={() => { printTemplateId = "22222222-2222-2222-2222-222222222222"; printParameters = { ids: Array.from(selectedPaymentIds) }; printReportOpen = true; }} 
             class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted border-primary/30 text-primary"
           >
-            <AdjustmentsHorizontal size={12} />
+            <Printer size={12} />
             <span>{m.common_print_templates()} ({selectedPaymentIds.size})</span>
           </Button>
         {/if}
@@ -961,8 +961,8 @@ const filteredPayments = $derived.by(() => {
           onclick={handlePrintList} 
           class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted"
         >
-          <AdjustmentsHorizontal size={12} />
-          <span>{m.finance_journal_print_table()}</span>
+          <Printer size={12} />
+            <span>{m.finance_journal_print_table()}</span>
         </Button>
         <Button 
           variant="outline" 

@@ -6,7 +6,7 @@ Attendance stats + log history using OrbisGrid.
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { api } from "$lib/api";
-import { AdjustmentsHorizontal, Calendar, ClockRotateRight, UserBadgeCheck } from "@orbis/icons";
+import { AdjustmentsHorizontal, Calendar, ClockRotateRight, UserBadgeCheck, UserMinus } from "@orbis/icons";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -105,7 +105,7 @@ const rtl = $derived(getLocale() === "ar");
           <span class="text-[9px] text-muted-foreground">{m.academics_attendance_absent_days()}</span>
           <span class="text-sm font-bold mt-0.5 text-destructive">{formatNumber(report.absent_count || 0)} {m.academics_attendance_day_unit()}</span>
         </div>
-        <AdjustmentsHorizontal size={16} class="text-destructive" />
+        <UserMinus size={16} class="text-destructive" />
       </div>
       <div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
         <div class="flex flex-col">

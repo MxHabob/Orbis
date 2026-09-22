@@ -11,7 +11,7 @@ import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, ArrowRight, Calendar, ChartBar, Clipboard, Document, DocumentPage, Download, Eye, Grid, Hashtag, Home, Info, InfoCircle, Sparkles, UserBadgeCheck } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowRight, Calendar, ChartBar, Clipboard, Document, DocumentPage, Download, Eye, Grid, Hashtag, Home, Info, InfoCircle, Sparkles, UserBadgeCheck, Printer } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
 import { createPeriodsQuery } from "$lib/features/academics";
 import { createQuery } from "@tanstack/svelte-query";
@@ -262,7 +262,7 @@ function handlePrint() {
         class="text-[10px] font-bold px-3 h-7.5 rounded-md gap-1.5 cursor-pointer"
         onclick={handlePrint}
       >
-        <AdjustmentsHorizontal size={13} />
+        <Printer size={13} />
         <span>طباعة التقرير</span>
       </Button>
     </div>
@@ -371,7 +371,7 @@ function handlePrint() {
                 class="w-full text-xs font-bold justify-center gap-2 cursor-pointer h-8.5"
                 onclick={handlePrint}
               >
-                <AdjustmentsHorizontal size={14} />
+                <Printer size={14} />
                 <span>طباعة التقرير الآن</span>
               </Button>
             </div>

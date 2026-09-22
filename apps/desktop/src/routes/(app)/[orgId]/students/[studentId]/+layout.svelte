@@ -12,7 +12,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
   import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
   import MainViewport from "$lib/shell/main-viewport.svelte";
   import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-  import { AdjustmentsHorizontal, BookOpen, Document, DocumentPage, EllipsisHorizontal, User, UserBadgeCheck, Users } from "@orbis/icons";
+  import { AdjustmentsHorizontal, BookOpen, Document, DocumentPage, EllipsisHorizontal, User, UserBadgeCheck, Users, Phone } from "@orbis/icons";
   import { toast } from "@orbis/ui";
   import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui/avatar";
   import { Badge } from "@orbis/ui/badge";
@@ -192,7 +192,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
               }),
             )}
         >
-          <AdjustmentsHorizontal size={12} />
+          <Phone size={12} />
           {m.students_detail_call_guardian()}
         </Button>
 

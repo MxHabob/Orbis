@@ -6,7 +6,24 @@ Now includes rooms and subjects (moved from academics).
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { AdjustmentsHorizontal, AppNotification, BookOpen, Calendar, ClockRotateRight, DocumentChartBar, DocumentPage, Hashtag, Keyframes, Lock, Pin, Settings, UserBadgeCheck, Users } from "@orbis/icons";
+import {
+  AppNotification,
+  ArchiveBox,
+  ArrowUpTray,
+  BookOpen,
+  BuildingOffice,
+  Calendar,
+  CheckCircle,
+  ClockRotateRight,
+  GlobeAlt,
+  Keyframes,
+  Pin,
+  ReceiptPercent,
+  Scale,
+  Settings,
+  ShieldCheck,
+  Users,
+} from "@orbis/icons";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import type { Snippet } from "svelte";
@@ -45,12 +62,12 @@ const navGroups = $derived([
       {
         path: "permissions",
         label: m.settings_nav_permissions(),
-        icon: UserBadgeCheck,
+        icon: ShieldCheck,
       },
       {
         path: "units",
         label: m.settings_nav_units(),
-        icon: Network,
+        icon: BuildingOffice,
       },
     ],
   },
@@ -77,7 +94,7 @@ const navGroups = $derived([
       {
         path: "academic-policy",
         label: m.common_nav_academic_policy(),
-        icon: AdjustmentsHorizontal,
+        icon: Scale,
       },
       {
         path: "assessment-schemes",
@@ -92,7 +109,7 @@ const navGroups = $derived([
       {
         path: "approvals",
         label: m.settings_nav_approvals(),
-        icon: CheckSquare,
+        icon: CheckCircle,
       },
     ],
   },
@@ -102,7 +119,7 @@ const navGroups = $derived([
       {
         path: "currencies",
         label: m.settings_nav_currencies(),
-        icon: DocumentChartBar,
+        icon: GlobeAlt,
       },
       {
         path: "fee-templates",
@@ -112,7 +129,7 @@ const navGroups = $derived([
       {
         path: "discount-templates",
         label: m.common_dt_title(),
-        icon: Hashtag,
+        icon: ReceiptPercent,
       },
     ],
   },
@@ -122,17 +139,17 @@ const navGroups = $derived([
       {
         path: "branches",
         label: getLocale() === "ar" ? "الفروع" : "Branches",
-        icon: Network,
+        icon: BuildingOffice,
       },
       {
         path: "bulk-input",
         label: m.settings_nav_import_export(),
-        icon: FileDown,
+        icon: ArrowUpTray,
       },
       {
         path: "archive",
         label: m.settings_nav_archive(),
-        icon: DocumentPage,
+        icon: ArchiveBox,
       },
       {
         path: "audit",

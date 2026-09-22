@@ -27,7 +27,7 @@ import { Separator } from "@orbis/ui/separator";
 import { toast } from "@orbis/ui";
 
 import { getLocale } from "$lib/paraglide/runtime";
-import { AdjustmentsHorizontal, CheckCircle, DocumentPage, Download, Grid, InfoCircle, Label, Refresh } from "@orbis/icons";
+import { AdjustmentsHorizontal, CheckCircle, DocumentPage, Download, Grid, InfoCircle, Label, Refresh, Printer } from "@orbis/icons";
 
 import {
   computeMultiUpLayout,
@@ -510,7 +510,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
         disabled={!selectedTemplateId || generatingPdf || isBatchProcessing}
         onclick={handlePrintAction}
       >
-        <AdjustmentsHorizontal size={14} class="me-1.5" />
+        <Printer size={14} class="me-1.5" />
         {entityIds.length > multiUpLayout.itemsPerSheet
           ? m.common_print_multi_up_start_batch_count({ count: String(entityIds.length) })
           : m.common_print_multi_up_start_batch()}

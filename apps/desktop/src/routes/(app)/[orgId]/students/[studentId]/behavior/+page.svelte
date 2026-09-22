@@ -137,7 +137,7 @@ const rtl = $derived(getLocale() === "ar");
   <div class="border border-border/80 bg-linear-to-l from-brand-purple/5 to-brand-indigo/5 p-4 rounded-xl shadow-sm flex flex-col gap-3">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <AdjustmentsHorizontal size={16} class="text-primary animate-pulse" />
+        <Sparkles size={16} class="text-primary animate-pulse" />
         <span class="font-bold text-foreground">{m.academics_behavior_ai_title()}</span>
       </div>
       <Button variant="lime" class="text-[10px] h-7 px-2.5" onclick={handleAISummarize} disabled={isGeneratingAI}>

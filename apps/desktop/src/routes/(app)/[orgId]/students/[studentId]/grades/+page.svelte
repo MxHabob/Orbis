@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
-import { AdjustmentsHorizontal, BookOpen, Calendar, Refresh } from "@orbis/icons";
+import { AdjustmentsHorizontal, BookOpen, Calendar, Refresh, AcademicCap } from "@orbis/icons";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -127,7 +127,7 @@ const columns = $derived(
           <span class="text-[10px] text-muted-foreground">{m.academics_grades_overall_grade()}</span>
           <span class="text-sm font-bold text-gradient-brand mt-0.5">{report?.cumulative_gpa != null ? Number(report.cumulative_gpa).toFixed(2) : "—"}</span>
         </div>
-        <AdjustmentsHorizontal size={18} class="text-primary" />
+        <AcademicCap size={18} class="text-primary" />
       </div>
       <div class="border border-border bg-card/30 p-4 rounded-xl flex items-center justify-between">
         <div class="flex flex-col">

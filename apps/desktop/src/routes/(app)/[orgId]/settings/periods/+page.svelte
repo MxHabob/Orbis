@@ -4,7 +4,7 @@
   import PeriodCreateSheet from "$lib/features/academics/components/period-create-sheet.svelte";
   import * as m from "$lib/paraglide/messages";
   import { confirmStore } from "$lib/stores";
-  import { AdjustmentsHorizontal, CheckCircle, ChevronDown, ChevronRight, Lock, Pencil, Plus, Trash } from "@orbis/icons";
+  import { AdjustmentsHorizontal, CheckCircle, ChevronDown, ChevronRight, Lock, Pencil, Plus, Trash, AcademicCap } from "@orbis/icons";
   import { toast } from "@orbis/ui";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
@@ -254,7 +254,7 @@
                   <span
                     class="text-[9px] text-muted-foreground flex items-center gap-1"
                   >
-                    <AdjustmentsHorizontal size={10} />
+                    <AcademicCap size={10} />
                     {node.grading_system}
                   </span>
                 {/if}

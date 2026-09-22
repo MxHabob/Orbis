@@ -325,7 +325,7 @@ const workflowCategories = $derived([
     <!-- ── Section 2: Autonomous Workflows ────────────────────────── -->
     <div class="border border-border rounded-md overflow-hidden flex flex-col">
       <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center gap-2 text-start">
-        <AdjustmentsHorizontal size={15} class="text-primary" />
+        <Sparkles size={15} class="text-primary" />
         <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
           {m.ai_center_settings_section_workflows()}
         </span>

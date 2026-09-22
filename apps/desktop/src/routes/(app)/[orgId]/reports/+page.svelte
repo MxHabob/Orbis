@@ -34,7 +34,7 @@ import {
   DialogFooter,
 } from "@orbis/ui/dialog";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, BookOpen, ChartBar, CheckCircle, ClockRotateRight, Document, DocumentPage, Download, Eye, Keyframes, Play, Refresh, Search, Sparkles, Users } from "@orbis/icons";
+import { AdjustmentsHorizontal, BookOpen, ChartBar, CheckCircle, ClockRotateRight, Document, DocumentPage, Download, Eye, Keyframes, Play, Refresh, Search, Sparkles, Users, Banknotes } from "@orbis/icons";
 
 import MetricsView from "$lib/features/metrics/metrics-view.svelte";
 
@@ -99,10 +99,10 @@ async function loadData() {
 
 // Category filter
 const categories = [
-  { id: "all", label: "جميع التقارير", icon: Keyframes },
+  { id: "all", label: "جميع التقارير", icon: DocumentChartBar },
   { id: "academic", label: "الشؤون الأكاديمية", icon: BookOpen },
   { id: "students", label: "شؤون الطلاب والقبول", icon: Users },
-  { id: "finance", label: "المالية والحسابات", icon: Document },
+  { id: "finance", label: "المالية والحسابات", icon: Banknotes },
   { id: "attendance", label: "الحضور والغياب", icon: CalendarCheck2 },
   { id: "exams", label: "الاختبارات واللجان", icon: DocumentPage },
 ];
@@ -255,7 +255,7 @@ function handleDownloadCurrent() {
       <Tabs value={activeMainTab} onValueChange={(v: any) => (activeMainTab = v)}>
         <TabsList class="bg-muted/40 p-1 rounded-xl border border-border/60">
           <TabsTrigger value="reports" class="text-xs font-semibold gap-1.5 px-3 py-1.5 rounded-lg">
-            <AdjustmentsHorizontal class="w-3.5 h-3.5" />
+            <DocumentChartBar class="w-3.5 h-3.5" />
             استخراج التقارير والمستندات
           </TabsTrigger>
           <TabsTrigger value="analytics" class="text-xs font-semibold gap-1.5 px-3 py-1.5 rounded-lg">
@@ -378,7 +378,7 @@ function handleDownloadCurrent() {
         <SheetHeader class="space-y-1">
           <div class="flex items-center gap-2">
             <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <AdjustmentsHorizontal class="w-4 h-4" />
+              <DocumentChartBar class="w-4 h-4" />
             </div>
             <div>
               <SheetTitle class="text-base font-bold text-foreground">

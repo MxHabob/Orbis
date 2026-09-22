@@ -6,7 +6,7 @@ using <MainViewport>. Uses the shared SidebarNav component.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { createClassesQuery } from "$lib/features/academics";
-import { AdjustmentsHorizontal, BookOpen, Calendar, ChartBar, GlobeAlt, TaskList, UserBadgeCheck } from "@orbis/icons";
+import { AcademicCap, AdjustmentsHorizontal, BookOpen, Calendar, ChartBar, DocumentCheck, TaskList, UserBadgeCheck } from "@orbis/icons";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import ArchivedBanner from "$lib/features/academics/archived-banner.svelte";
@@ -24,7 +24,7 @@ const navItems = $derived([
   {
     path: "",
     label: m.common_nav_overview(),
-    icon: GlobeAlt,
+    icon: AcademicCap,
   },
   {
     path: "classes",
@@ -40,7 +40,7 @@ const navItems = $derived([
   {
     path: "exams",
     label: m.common_nav_exams ? m.common_nav_exams() : "الامتحانات",
-    icon: TaskList,
+    icon: DocumentCheck,
   },
   {
     path: "promotion",

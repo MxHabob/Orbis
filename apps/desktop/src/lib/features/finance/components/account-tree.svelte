@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
-import { AdjustmentsHorizontal, CheckBox, ChevronDown, ChevronRight, DocumentPage, Folder, FolderOpen } from "@orbis/icons";
+import { AdjustmentsHorizontal, CheckBox, CheckSquare, ChevronDown, ChevronRight, DocumentPage, Folder, FolderOpen } from "@orbis/icons";
 import { slide } from "svelte/transition";
 
 let {
