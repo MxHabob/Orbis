@@ -118,16 +118,13 @@ export function EffectiveContextProvider({
       if (authCtx?.dependents && authCtx.dependents.length > 0) {
         const mapped: LinkedChild[] = authCtx.dependents.map((d) => ({
           id: d.student_id,
-          name:
-            d.display_name ||
-            `${d.first_name || ""} ${d.last_name || ""}`.trim() ||
-            d.student_number,
-          studentNumber: d.student_number,
-          className: d.current_class_id ?? undefined,
-          isPrimary: d.is_primary,
-          isAuthorizedPickup: d.is_authorized_pickup,
+          name: d.full_name,
+          studentNumber: d.student_id,
+          className: d.current_grade_level ?? undefined,
+          isPrimary: d.is_primary_contact,
+          isAuthorizedPickup: d.is_primary_contact,
           isEmergencyContact: d.is_emergency_contact,
-          isPayer: d.is_payer,
+          isPayer: d.is_fee_payer,
         }));
         setChildrenList(mapped);
       } else if (user) {
