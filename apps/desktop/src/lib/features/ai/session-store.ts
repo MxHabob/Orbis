@@ -12,6 +12,7 @@ export interface AiChatMessage {
   role: "user" | "assistant" | "system" | "tool";
   content: string;
   timestamp: number;
+  isError?: boolean;
   executedTools?: AiToolResult[];
   proposedActions?: ActionWithStatus[];
 }

@@ -57,9 +57,9 @@ async function copyText(text: string, id: string) {
   }
 }
 
-// Markdown parser supporting bold, inline code, code blocks, lists, links, and headers
+// Markdown parser supporting bold, inline code, code blocks, lists, links, headers, and blockquotes
 interface MessagePart {
-  type: "text" | "bold" | "code" | "code_block" | "link" | "header" | "list_item";
+  type: "text" | "bold" | "code" | "code_block" | "link" | "header" | "list_item" | "blockquote";
   content?: string;
   label?: string;
   href?: string;
@@ -109,6 +109,12 @@ function parseMarkdown(text: string): MessagePart[] {
       continue;
     } else if (line.startsWith("# ")) {
       parts.push({ type: "header", content: line.replace("# ", "").trim() });
+      continue;
+    }
+
+    // Blockquote
+    if (line.startsWith("> ")) {
+      parts.push({ type: "blockquote", content: line.replace(/^>\s*/, "").trim() });
       continue;
     }
 
@@ -219,7 +225,7 @@ function parseMarkdown(text: string): MessagePart[] {
 
           <!-- Assistant Text Content -->
           {#if msg.content}
-            <div class="group relative bg-card/60 hover:bg-card/90 border border-border/50 rounded-xl p-3.5 shadow-2xs transition-colors">
+            <div class="group relative bg-card/60 hover:bg-card/90 border rounded-xl p-3.5 shadow-2xs transition-colors {msg.isError ? 'border-destructive/30 bg-destructive/5 dark:bg-destructive/10' : 'border-border/50'}">
               <div class="leading-relaxed space-y-1.5 wrap-break-word">
                 {#each parseMarkdown(msg.content) as part}
                   {#if part.type === 'bold'}
@@ -228,6 +234,10 @@ function parseMarkdown(text: string): MessagePart[] {
                     <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[11.5px] text-primary border border-border/60">{part.content}</code>
                   {:else if part.type === 'code_block'}
                     <pre class="my-2 p-3 rounded-lg bg-muted/80 font-mono text-[11px] overflow-x-auto border border-border/70 text-foreground">{part.content}</pre>
+                  {:else if part.type === 'blockquote'}
+                    <blockquote class="my-1.5 ps-2.5 pe-2 py-1.5 rounded-e-md border-s-2 border-amber-500/60 bg-muted/50 font-mono text-[11px] text-muted-foreground break-words whitespace-pre-wrap">
+                      {part.content}
+                    </blockquote>
                   {:else if part.type === 'header'}
                     <div class="text-sm font-bold text-foreground pt-2 pb-1 border-b border-border/40">{part.content}</div>
                   {:else if part.type === 'list_item'}

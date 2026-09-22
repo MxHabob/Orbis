@@ -1,4 +1,4 @@
-<!--
+                                                                                                                                                               <!--
 @component AskOrbisSidebar
 A resizable right-hand sidebar overlay for Ask Orbis AI agent.
 Provides file-based conversation and context persistence, ReAct reasoning loop,
@@ -31,6 +31,7 @@ import {
   loadFileContext,
   createNewLocalSession,
 } from "$lib/features/ai/session-store";
+import { formatAiErrorMessage } from "$lib/features/ai/error-formatter";
 
 let { isStandalone = false }: { isStandalone?: boolean } = $props();
 
@@ -265,7 +266,8 @@ async function submitMessage(queryText?: string) {
     console.error("Ask Orbis query failed:", e);
     const targetIdx = current.messages.findIndex((m) => m.id === assistantMsgId);
     if (targetIdx !== -1) {
-      current.messages[targetIdx].content = "عذراً، حدث خطأ أثناء معالجة الطلب مع خادم الذكاء الاصطناعي.";
+      current.messages[targetIdx].content = formatAiErrorMessage(e);
+      current.messages[targetIdx].isError = true;
     }
     sessions = [...sessions];
     await saveFileSession(current);
