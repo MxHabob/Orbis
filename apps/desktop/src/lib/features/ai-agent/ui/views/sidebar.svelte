@@ -12,7 +12,7 @@ import { getLocale } from "$lib/paraglide/runtime";
 import ChatInput from "../components/chat-input.svelte";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
-import { api } from "$lib/api";
+import { api, isDesktopApp } from "$lib/api";
 import AgentHeader from "../components/agent-header.svelte";
 import AgentCockpit from "../components/agent-cockpit.svelte";
 import ChatMessageList from "../components/chat-message-list.svelte";
@@ -158,10 +158,20 @@ function handleClose() {
 }
 
 async function openStandaloneWindow() {
+  if (isDesktopApp) {
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("open_agent_window");
+      uiStore.setAskOrbis(false);
+      return;
+    } catch (e) {
+      console.warn("Failed to open Tauri agent window via IPC, falling back to window.open:", e);
+    }
+  }
   window.open(
     `/agent?orgId=${currentOrgId}`,
     "_blank",
-    "width=450,height=700",
+    "width=460,height=720",
   );
   uiStore.setAskOrbis(false);
 }
@@ -189,6 +199,121 @@ async function handleDeleteSession(sessionId: string) {
       await handleNewChat();
     }
   }
+}
+
+async function executeChatStream(current: AiChatSession, assistantMsgId: string) {
+  isThinking = true;
+  scrollToBottom();
+
+  try {
+    const aiMessages: import("$lib/api/types").AiMessage[] = current.messages
+      .filter((m) => m.content.trim().length > 0 && m.id !== assistantMsgId)
+      .map((m) => ({
+        role: m.role as any,
+        content: m.content,
+      }));
+
+    const response = await api.aiChat({
+      messages: aiMessages,
+      screen_context: (aiContext.context as Record<string, unknown>) || null,
+    });
+
+    const targetIdx = current.messages.findIndex((m) => m.id === assistantMsgId);
+    if (targetIdx !== -1) {
+      current.messages[targetIdx].content = response.response || "";
+      current.messages[targetIdx].isError = false;
+      current.messages[targetIdx].executedTools = response.executed_tools || [];
+      current.messages[targetIdx].proposedActions = (response.proposed_actions || []).map((a) => ({
+        ...a,
+        status: "pending",
+      }));
+    }
+
+    current.updatedAt = Date.now();
+    sessions = [...sessions];
+    await saveFileSession(current);
+  } catch (e: unknown) {
+    console.error("Ask Orbis query failed:", e);
+    const targetIdx = current.messages.findIndex((m) => m.id === assistantMsgId);
+    if (targetIdx !== -1) {
+      current.messages[targetIdx].content = formatAiErrorMessage(e);
+      current.messages[targetIdx].isError = true;
+    }
+    sessions = [...sessions];
+    await saveFileSession(current);
+  } finally {
+    isThinking = false;
+    scrollToBottom();
+  }
+}
+
+async function handleRetry(msgId: string) {
+  if (isThinking || !activeSession) return;
+  const current = activeSession;
+  const targetIdx = current.messages.findIndex((m) => m.id === msgId);
+  if (targetIdx === -1) return;
+
+  const targetMsg = current.messages[targetIdx];
+
+  if (targetMsg.role === "assistant") {
+    // Keep user messages preceding this assistant message, replace assistant message with empty thinking placeholder
+    const assistantMsgId = `assistant_${Date.now()}`;
+    const assistantMsg: AiChatMessage = {
+      id: assistantMsgId,
+      role: "assistant",
+      content: "",
+      timestamp: Date.now(),
+      executedTools: [],
+      proposedActions: [],
+    };
+    current.messages = [...current.messages.slice(0, targetIdx), assistantMsg];
+    current.updatedAt = Date.now();
+    sessions = [...sessions];
+    await executeChatStream(current, assistantMsgId);
+  } else if (targetMsg.role === "user") {
+    // Slice off anything after this user message and generate new assistant reply
+    const assistantMsgId = `assistant_${Date.now()}`;
+    const assistantMsg: AiChatMessage = {
+      id: assistantMsgId,
+      role: "assistant",
+      content: "",
+      timestamp: Date.now(),
+      executedTools: [],
+      proposedActions: [],
+    };
+    current.messages = [...current.messages.slice(0, targetIdx + 1), assistantMsg];
+    current.updatedAt = Date.now();
+    sessions = [...sessions];
+    await executeChatStream(current, assistantMsgId);
+  }
+}
+
+async function handleEditUserMessage(msgId: string, newText: string) {
+  if (isThinking || !activeSession) return;
+  const current = activeSession;
+  const targetIdx = current.messages.findIndex((m) => m.id === msgId);
+  if (targetIdx === -1) return;
+
+  // Update this user message and slice off subsequent messages
+  current.messages[targetIdx].content = newText;
+  current.messages[targetIdx].timestamp = Date.now();
+  current.messages = current.messages.slice(0, targetIdx + 1);
+
+  const assistantMsgId = `assistant_${Date.now()}`;
+  const assistantMsg: AiChatMessage = {
+    id: assistantMsgId,
+    role: "assistant",
+    content: "",
+    timestamp: Date.now(),
+    executedTools: [],
+    proposedActions: [],
+  };
+
+  current.messages = [...current.messages, assistantMsg];
+  current.updatedAt = Date.now();
+  sessions = [...sessions];
+
+  await executeChatStream(current, assistantMsgId);
 }
 
 async function submitMessage(queryText?: string) {
@@ -231,50 +356,8 @@ async function submitMessage(queryText?: string) {
   current.messages = [...current.messages, userMsg, assistantMsg];
   current.updatedAt = Date.now();
   sessions = [...sessions];
-  isThinking = true;
-  scrollToBottom();
 
-  try {
-    const aiMessages: import("$lib/api/types").AiMessage[] = current.messages
-      .filter((m) => m.content.trim().length > 0)
-      .map((m) => ({
-        role: m.role as any,
-        content: m.content,
-      }));
-
-    const response = await api.aiChat({
-      messages: aiMessages,
-      screen_context: (aiContext.context as Record<string, unknown>) || null,
-    });
-
-    const targetIdx = current.messages.findIndex((m) => m.id === assistantMsgId);
-    if (targetIdx !== -1) {
-      current.messages[targetIdx].content = response.response || "";
-      current.messages[targetIdx].executedTools = response.executed_tools || [];
-      current.messages[targetIdx].proposedActions = (response.proposed_actions || []).map((a) => ({
-        ...a,
-        status: "pending",
-      }));
-    }
-
-    current.updatedAt = Date.now();
-    sessions = [...sessions];
-
-    // Persist updated conversation to file on disk
-    await saveFileSession(current);
-  } catch (e: unknown) {
-    console.error("Ask Orbis query failed:", e);
-    const targetIdx = current.messages.findIndex((m) => m.id === assistantMsgId);
-    if (targetIdx !== -1) {
-      current.messages[targetIdx].content = formatAiErrorMessage(e);
-      current.messages[targetIdx].isError = true;
-    }
-    sessions = [...sessions];
-    await saveFileSession(current);
-  } finally {
-    isThinking = false;
-    scrollToBottom();
-  }
+  await executeChatStream(current, assistantMsgId);
 }
 
 async function handleApproveAction(action: ActionWithStatus, msgId?: string, actionIdx?: number) {
@@ -393,6 +476,8 @@ function handleLinkClick(href: string) {
         onLinkClick={handleLinkClick}
         onApproveAction={(act, mId, aIdx) => handleApproveAction(act, mId, aIdx)}
         onRejectAction={(act, mId, aIdx) => handleRejectAction(act, mId, aIdx)}
+        onRetry={handleRetry}
+        onEditUserMessage={handleEditUserMessage}
       />
     {/if}
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Skeleton } from "@orbis/ui/skeleton";
+import { marked } from "marked";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import AiLoadingSkeleton from "./ai-loading-skeleton.svelte";
@@ -11,12 +11,20 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
-  ExternalLink,
   Copy,
   Check,
+  RotateCcw,
+  Pencil,
+  X,
+  Send,
 } from "@lucide/svelte";
 import type { AiChatMessage, ActionWithStatus } from "$lib/features/ai/session-store";
-import type { AiToolResult } from "$lib/api/types";
+
+// Configure marked with GFM & breaks
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+});
 
 let {
   messages = [],
@@ -27,6 +35,8 @@ let {
   onLinkClick,
   onApproveAction,
   onRejectAction,
+  onRetry,
+  onEditUserMessage,
 }: {
   messages: AiChatMessage[];
   isThinking: boolean;
@@ -36,10 +46,14 @@ let {
   onLinkClick: (href: string) => void;
   onApproveAction?: (action: ActionWithStatus, msgId: string, actionIdx: number) => void;
   onRejectAction?: (action: ActionWithStatus, msgId: string, actionIdx: number) => void;
+  onRetry?: (msgId: string) => void;
+  onEditUserMessage?: (msgId: string, newText: string) => void;
 } = $props();
 
 let expandedTools = $state<Record<string, boolean>>({});
 let copiedMessageId = $state<string | null>(null);
+let editingMessageId = $state<string | null>(null);
+let editingText = $state("");
 
 function toggleTool(key: string) {
   expandedTools[key] = !expandedTools[key];
@@ -57,112 +71,42 @@ async function copyText(text: string, id: string) {
   }
 }
 
-// Markdown parser supporting bold, inline code, code blocks, lists, links, headers, and blockquotes
-interface MessagePart {
-  type: "text" | "bold" | "code" | "code_block" | "link" | "header" | "list_item" | "blockquote";
-  content?: string;
-  label?: string;
-  href?: string;
-  language?: string;
+function startEditing(msg: AiChatMessage) {
+  editingMessageId = msg.id;
+  editingText = msg.content;
 }
 
-function parseMarkdown(text: string): MessagePart[] {
-  if (!text) return [];
-  const parts: MessagePart[] = [];
-  
-  // Split lines to handle headers and lists cleanly
-  const lines = text.split("\n");
-  let inCodeBlock = false;
-  let codeBlockLang = "";
-  let codeBlockBuffer: string[] = [];
+function cancelEditing() {
+  editingMessageId = null;
+  editingText = "";
+}
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    if (line.startsWith("```")) {
-      if (inCodeBlock) {
-        parts.push({
-          type: "code_block",
-          content: codeBlockBuffer.join("\n"),
-          language: codeBlockLang,
-        });
-        codeBlockBuffer = [];
-        inCodeBlock = false;
-      } else {
-        inCodeBlock = true;
-        codeBlockLang = line.replace("```", "").trim();
-      }
-      continue;
-    }
-
-    if (inCodeBlock) {
-      codeBlockBuffer.push(line);
-      continue;
-    }
-
-    // Header
-    if (line.startsWith("### ")) {
-      parts.push({ type: "header", content: line.replace("### ", "").trim() });
-      continue;
-    } else if (line.startsWith("## ")) {
-      parts.push({ type: "header", content: line.replace("## ", "").trim() });
-      continue;
-    } else if (line.startsWith("# ")) {
-      parts.push({ type: "header", content: line.replace("# ", "").trim() });
-      continue;
-    }
-
-    // Blockquote
-    if (line.startsWith("> ")) {
-      parts.push({ type: "blockquote", content: line.replace(/^>\s*/, "").trim() });
-      continue;
-    }
-
-    // List item
-    if (line.startsWith("- ") || line.startsWith("* ") || /^\d+\.\s/.test(line)) {
-      const cleanLine = line.replace(/^[-*]\s+|\d+\.\s+/, "");
-      parts.push({ type: "list_item", content: cleanLine });
-      continue;
-    }
-
-    // Parse inline elements (bold, links, code)
-    const inlineRegex = /(\*\*([^*]+)\*\*|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\))/g;
-    let lastIdx = 0;
-    let match;
-
-    while ((match = inlineRegex.exec(line)) !== null) {
-      if (match.index > lastIdx) {
-        parts.push({
-          type: "text",
-          content: line.substring(lastIdx, match.index),
-        });
-      }
-
-      if (match[2]) {
-        // Bold
-        parts.push({ type: "bold", content: match[2] });
-      } else if (match[3]) {
-        // Inline code
-        parts.push({ type: "code", content: match[3] });
-      } else if (match[4] && match[5]) {
-        // Link
-        parts.push({ type: "link", label: match[4], href: match[5] });
-      }
-
-      lastIdx = inlineRegex.lastIndex;
-    }
-
-    if (lastIdx < line.length) {
-      parts.push({ type: "text", content: line.substring(lastIdx) });
-    }
-
-    // Add newline if not last line
-    if (i < lines.length - 1) {
-      parts.push({ type: "text", content: "\n" });
-    }
+function submitEdit(msgId: string) {
+  const trimmed = editingText.trim();
+  if (trimmed && onEditUserMessage) {
+    onEditUserMessage(msgId, trimmed);
   }
+  editingMessageId = null;
+  editingText = "";
+}
 
-  return parts;
+function renderMarkdown(content: string): string {
+  if (!content) return "";
+  try {
+    return marked.parse(content) as string;
+  } catch (e) {
+    console.error("Markdown parse error:", e);
+    return content;
+  }
+}
+
+function handleContentClick(e: MouseEvent) {
+  const target = (e.target as HTMLElement)?.closest("a");
+  if (target && target.getAttribute("href")) {
+    const href = target.getAttribute("href") || "";
+    e.preventDefault();
+    onLinkClick(href);
+  }
 }
 </script>
 
@@ -173,20 +117,90 @@ function parseMarkdown(text: string): MessagePart[] {
   <div class="flex flex-col gap-5 w-full">
     {#each messages as msg (msg.id)}
       {#if msg.role === 'user'}
-        <!-- User message bubble -->
-        <div class="flex justify-end w-full">
-          <div class="max-w-[85%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-tr-sm text-[13px] leading-relaxed break-words whitespace-pre-wrap font-medium shadow-sm">
-            {msg.content}
-          </div>
+        <!-- User message bubble with Hover Action Buttons -->
+        <div class="group relative flex flex-col items-end w-full">
+          {#if editingMessageId === msg.id}
+            <!-- Inline Edit Form -->
+            <div class="w-full max-w-[90%] flex flex-col gap-2 bg-card border border-primary/40 rounded-2xl p-3 shadow-md">
+              <textarea
+                bind:value={editingText}
+                rows={3}
+                class="w-full p-2 text-[13px] bg-background border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary resize-none text-foreground font-sans leading-relaxed"
+                placeholder="تعديل الرسالة..."
+                onkeydown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    submitEdit(msg.id);
+                  }
+                  if (e.key === 'Escape') {
+                    cancelEditing();
+                  }
+                }}
+              ></textarea>
+              <div class="flex items-center justify-end gap-2">
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  class="text-[11px] h-7 px-2.5 text-muted-foreground hover:bg-muted"
+                  onclick={cancelEditing}
+                >
+                  <X size={12} class="me-1" />
+                  إلغاء
+                </Button>
+                <Button
+                  size="xs"
+                  variant="default"
+                  class="text-[11px] h-7 px-3 bg-primary text-primary-foreground font-semibold"
+                  onclick={() => submitEdit(msg.id)}
+                  disabled={!editingText.trim()}
+                >
+                  <Send size={12} class="me-1" />
+                  حفظ وإرسال
+                </Button>
+              </div>
+            </div>
+          {:else}
+            <!-- User Text Bubble -->
+            <div class="max-w-[85%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-tr-sm text-[13px] leading-relaxed break-words whitespace-pre-wrap font-medium shadow-sm">
+              {msg.content}
+            </div>
+
+            <!-- User Hover Action Bar -->
+            <div class="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity select-none">
+              <!-- Edit Button -->
+              <button
+                type="button"
+                onclick={() => startEditing(msg)}
+                class="p-1 rounded-md text-muted-foreground/80 hover:text-foreground hover:bg-muted/70 transition-colors cursor-pointer"
+                title="تعديل السؤال"
+              >
+                <Pencil size={12} />
+              </button>
+
+              <!-- Copy Button -->
+              <button
+                type="button"
+                onclick={() => copyText(msg.content, msg.id)}
+                class="p-1 rounded-md text-muted-foreground/80 hover:text-foreground hover:bg-muted/70 transition-colors cursor-pointer"
+                title="نسخ النص"
+              >
+                {#if copiedMessageId === msg.id}
+                  <Check size={12} class="text-emerald-500" />
+                {:else}
+                  <Copy size={12} />
+                {/if}
+              </button>
+            </div>
+          {/if}
         </div>
       {:else}
         <!-- Assistant response bubble -->
-        <div class="flex flex-col gap-3 w-full text-start text-[13px] text-foreground/90 leading-relaxed font-normal">
+        <div class="group relative flex flex-col gap-3 w-full text-start text-[13px] text-foreground/90 leading-relaxed font-normal">
           
           <!-- Executed Tools Badges (ReAct steps) -->
           {#if msg.executedTools && msg.executedTools.length > 0}
             <div class="flex flex-col gap-1.5 w-full">
-              {#each msg.executedTools as tool, tIdx}
+              {#each msg.executedTools as tool, tIdx (`${msg.id}_tool_${tIdx}`)}
                 {@const toolKey = `${msg.id}_tool_${tIdx}`}
                 {@const isExpanded = !!expandedTools[toolKey]}
                 <div class="border border-border/70 rounded-lg bg-muted/40 overflow-hidden text-xs">
@@ -223,54 +237,44 @@ function parseMarkdown(text: string): MessagePart[] {
             </div>
           {/if}
 
-          <!-- Assistant Text Content -->
+          <!-- Assistant Text Content with Full GFM Markdown Support -->
           {#if msg.content}
-            <div class="group relative bg-card/60 hover:bg-card/90 border rounded-xl p-3.5 shadow-2xs transition-colors {msg.isError ? 'border-destructive/30 bg-destructive/5 dark:bg-destructive/10' : 'border-border/50'}">
-              <div class="leading-relaxed space-y-1.5 wrap-break-word">
-                {#each parseMarkdown(msg.content) as part}
-                  {#if part.type === 'bold'}
-                    <strong class="font-bold text-foreground">{part.content}</strong>
-                  {:else if part.type === 'code'}
-                    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[11.5px] text-primary border border-border/60">{part.content}</code>
-                  {:else if part.type === 'code_block'}
-                    <pre class="my-2 p-3 rounded-lg bg-muted/80 font-mono text-[11px] overflow-x-auto border border-border/70 text-foreground">{part.content}</pre>
-                  {:else if part.type === 'blockquote'}
-                    <blockquote class="my-1.5 ps-2.5 pe-2 py-1.5 rounded-e-md border-s-2 border-amber-500/60 bg-muted/50 font-mono text-[11px] text-muted-foreground break-words whitespace-pre-wrap">
-                      {part.content}
-                    </blockquote>
-                  {:else if part.type === 'header'}
-                    <div class="text-sm font-bold text-foreground pt-2 pb-1 border-b border-border/40">{part.content}</div>
-                  {:else if part.type === 'list_item'}
-                    <div class="flex items-start gap-2 ps-2">
-                      <span class="text-primary font-bold">•</span>
-                      <span>{part.content}</span>
-                    </div>
-                  {:else if part.type === 'link'}
-                    <button
-                      type="button"
-                      onclick={() => onLinkClick(part.href || "")}
-                      class="inline-flex items-center gap-1 text-primary hover:underline font-semibold cursor-pointer align-baseline px-1 py-0.5 rounded hover:bg-primary/10 transition-colors"
-                    >
-                      {part.label}
-                      <ExternalLink size={10} />
-                    </button>
-                  {:else}
-                    <span class="whitespace-pre-wrap">{part.content}</span>
-                  {/if}
-                {/each}
+            <div class="relative bg-card/60 hover:bg-card/90 border rounded-xl p-3.5 shadow-2xs transition-colors {msg.isError ? 'border-destructive/30 bg-destructive/5 dark:bg-destructive/10' : 'border-border/50'}">
+              <!-- Rendered Markdown Container -->
+              <!-- svelte-ignore a11y_click_events_have_key_events -->
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div 
+                class="prose-ai text-[13px] leading-relaxed"
+                onclick={handleContentClick}
+              >
+                {@html renderMarkdown(msg.content)}
               </div>
 
-              <!-- Action Bar (Copy) -->
-              <div class="flex items-center justify-end gap-1.5 mt-2 pt-1 border-t border-border/30 opacity-0 group-hover:opacity-100 transition-opacity">
+              <!-- Action Bar (Copy & Retry on hover) -->
+              <div class="flex items-center justify-end gap-1.5 mt-2.5 pt-1.5 border-t border-border/30 opacity-0 group-hover:opacity-100 transition-opacity select-none">
+                <!-- Retry / Regenerate button -->
+                {#if onRetry && !isThinking}
+                  <button
+                    type="button"
+                    onclick={() => onRetry(msg.id)}
+                    class="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-muted transition-colors cursor-pointer"
+                    title="إعادة التوليد"
+                  >
+                    <RotateCcw size={11} />
+                    <span>إعادة المحاولة</span>
+                  </button>
+                {/if}
+
+                <!-- Copy button -->
                 <button
                   type="button"
                   onclick={() => copyText(msg.content, msg.id)}
-                  class="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-muted transition-colors cursor-pointer"
-                  title="نسخ النص"
+                  class="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-muted transition-colors cursor-pointer"
+                  title="نسخ الرد"
                 >
                   {#if copiedMessageId === msg.id}
                     <Check size={11} class="text-emerald-500" />
-                    <span>تم النسخ</span>
+                    <span class="text-emerald-500 font-medium">تم النسخ</span>
                   {:else}
                     <Copy size={11} />
                     <span>نسخ</span>
@@ -283,7 +287,7 @@ function parseMarkdown(text: string): MessagePart[] {
           <!-- Proposed Consequential Actions -->
           {#if msg.proposedActions && msg.proposedActions.length > 0}
             <div class="space-y-2 mt-1">
-              {#each msg.proposedActions as action, aIdx}
+              {#each msg.proposedActions as action, aIdx (`${msg.id}_act_${aIdx}`)}
                 <div class="border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 rounded-xl p-3.5 space-y-2.5 shadow-sm">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
@@ -314,7 +318,7 @@ function parseMarkdown(text: string): MessagePart[] {
                   <!-- Payload details preview -->
                   {#if action.payload && Object.keys(action.payload).length > 0}
                     <div class="bg-background/80 border border-border/60 rounded-lg p-2 font-mono text-[10.5px] space-y-1 text-muted-foreground">
-                      {#each Object.entries(action.payload) as [key, val]}
+                      {#each Object.entries(action.payload) as [key, val] (key)}
                         <div class="flex items-center justify-between">
                           <span class="font-semibold text-foreground/70">{key}:</span>
                           <span class="text-foreground">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</span>
@@ -369,3 +373,135 @@ function parseMarkdown(text: string): MessagePart[] {
     {/if}
   </div>
 </div>
+
+<style>
+  :global(.prose-ai) {
+    line-height: 1.65;
+    color: var(--foreground);
+    word-break: break-word;
+  }
+
+  :global(.prose-ai p) {
+    margin-bottom: 0.5rem;
+  }
+
+  :global(.prose-ai p:last-child) {
+    margin-bottom: 0;
+  }
+
+  :global(.prose-ai strong) {
+    font-weight: 700;
+    color: var(--foreground);
+  }
+
+  :global(.prose-ai em) {
+    font-style: italic;
+  }
+
+  :global(.prose-ai code) {
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    padding: 0.15rem 0.35rem;
+    border-radius: 0.375rem;
+    background-color: var(--muted);
+    color: var(--primary);
+    border: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+  }
+
+  :global(.prose-ai pre) {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    background-color: color-mix(in oklch, var(--muted) 80%, transparent);
+    border: 1px solid var(--border);
+    overflow-x: auto;
+    margin: 0.6rem 0;
+  }
+
+  :global(.prose-ai pre code) {
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+  }
+
+  :global(.prose-ai ul) {
+    list-style-type: disc;
+    padding-inline-start: 1.25rem;
+    margin: 0.5rem 0;
+  }
+
+  :global(.prose-ai ol) {
+    list-style-type: decimal;
+    padding-inline-start: 1.25rem;
+    margin: 0.5rem 0;
+  }
+
+  :global(.prose-ai li) {
+    margin-bottom: 0.25rem;
+  }
+
+  :global(.prose-ai blockquote) {
+    border-inline-start: 3px solid var(--primary);
+    padding-inline-start: 0.75rem;
+    margin: 0.5rem 0;
+    color: var(--muted-foreground);
+    background-color: color-mix(in oklch, var(--muted) 40%, transparent);
+    border-radius: 0 0.375rem 0.375rem 0;
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+  }
+
+  :global(.prose-ai table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75rem 0;
+    font-size: 0.88em;
+  }
+
+  :global(.prose-ai th), :global(.prose-ai td) {
+    border: 1px solid var(--border);
+    padding: 0.4rem 0.6rem;
+    text-align: start;
+  }
+
+  :global(.prose-ai th) {
+    background-color: var(--muted);
+    font-weight: 600;
+  }
+
+  :global(.prose-ai h1) {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-top: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  :global(.prose-ai h2) {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: 0.65rem;
+    margin-bottom: 0.4rem;
+  }
+
+  :global(.prose-ai h3) {
+    font-size: 0.98rem;
+    font-weight: 700;
+    margin-top: 0.5rem;
+    margin-bottom: 0.35rem;
+  }
+
+  :global(.prose-ai hr) {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 1rem 0;
+  }
+
+  :global(.prose-ai a) {
+    color: var(--primary);
+    text-decoration: underline;
+    font-weight: 500;
+    cursor: pointer;
+  }
+</style>

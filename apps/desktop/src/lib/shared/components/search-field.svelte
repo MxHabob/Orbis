@@ -47,7 +47,7 @@ function handleKeyDown(event: KeyboardEvent) {
     {value}
     oninput={handleInput}
     onkeydown={handleKeyDown}
-    class="ps-9 w-full h-9 text-xs"
+    class="ps-9 w-full text-xs"
     autocomplete="off"
     autocapitalize="none"
     autocorrect="off"

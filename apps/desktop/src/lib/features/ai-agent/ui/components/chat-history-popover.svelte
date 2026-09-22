@@ -75,27 +75,20 @@ function handleDelete(e: MouseEvent, sessionId: string) {
     align="end"
     class="w-72 space-y-2 z-50 select-none bg-popover text-popover-foreground border border-border/80 shadow-xl p-3"
   >
-    <div class="flex items-center justify-between px-0.5">
-      <span class="text-[11px] font-bold text-foreground tracking-wide flex items-center gap-1.5">
-        <MessageSquare size={13} class="text-primary" />
-        سجل المحادثات السابقة
-      </span>
-      <Button
-        variant="ghost"
-        size="xs"
-        class="h-6 text-[10px] px-1.5 font-semibold text-primary hover:bg-primary/10"
-        onclick={handleNewChat}
-      >
-        <Plus size={11} class="me-1" />
-        محادثة جديدة
-      </Button>
-    </div>
-    
+    <div class="flex items-center gap-4 justify-between">
     <SearchField
       bind:value={searchQuery}
       placeholder="بحث في المحادثات..."
-      class="w-full max-w-full md:max-w-full text-xs"
+      class="w-full max-w-full text-xs"
     />
+      <Button
+        size="xs"
+        onclick={handleNewChat}
+      >
+        <Plus size={14}  />
+      </Button>
+    </div>
+    
 
     <div class="flex flex-col gap-1.5 max-h-60 overflow-y-auto scrollbar-hide text-start px-0.5 pt-1">
       {#if filteredSessions.length === 0}
