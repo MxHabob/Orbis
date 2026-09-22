@@ -5,8 +5,6 @@
  * Directly re-exports from @orbis/sdk with mobile error envelopes.
  */
 
-export * from "@orbis/sdk";
-
 import type {
   ValidationResultDto,
   ValidationIssueDto,

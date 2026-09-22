@@ -20,15 +20,15 @@ import {
   deleteSecureItem,
   STORAGE_KEYS,
 } from "./storage";
-import {
-  type UserDto,
-  type LoginResponse,
-  type EffectiveContextDto,
-  type MfaChallengeRequest,
-  type MfaVerifyEnrollmentRequest,
-  OrbisError,
-  ApiRequestError,
-} from "./types";
+import type {
+  EffectiveContextDto,
+  LoginResponse,
+  MfaChallengeRequest,
+  MfaVerifyEnrollmentRequest,
+  UserDto,
+} from "@orbis/sdk";
+import { OrbisError, ApiRequestError } from "./types";
+
 
 export interface AuthState {
   user: UserDto | null;
@@ -42,6 +42,8 @@ export interface AuthState {
   userId: string;
   needsOnboarding: boolean;
 }
+
+
 
 export interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<LoginResponse>;
