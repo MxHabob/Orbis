@@ -21,6 +21,14 @@
       },
       "predictiveBackGestureEnabled": false
     },
+    "ios": {
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "Orbis connects to your school server on the local network.",
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    },
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"

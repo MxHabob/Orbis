@@ -12,8 +12,9 @@ let customBaseUrl: string | null = null;
 
 export function resolveDefaultApiUrl(): string {
   // 1. Explicit public env override
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+  const configuredUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (configuredUrl) {
+    return configuredUrl.replace(/\/$/, "");
   }
 
   // 2. Physical device connected via Expo dev server LAN IP
