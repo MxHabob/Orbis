@@ -1,10 +1,9 @@
 /**
  * @module @orbis/mobile/hooks/use-api-queries
  *
- * Centralized, performance-optimized React Query hooks using the authenticated MobileApiClient.
- * Completely eliminates manual useEffect data fetching, providing instant cache,
+ * Centralized, performance-optimized React Query hooks using the unified `api` client.
+ * Eliminates manual data fetching, providing instant cache,
  * background revalidation, and type-safe query results.
- * Guaranteed to never return `undefined` to satisfy TanStack Query v5 contracts.
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -31,12 +30,26 @@ const STALE_TIME = 1000 * 60 * 5; // 5 minutes cache
 const GC_TIME = 1000 * 60 * 15; // 15 minutes garbage collection
 
 /**
+ * Helper to safely extract response data from SDK calls
+ */
+function extractData<T>(res: any): T {
+  return res?.data !== undefined ? res.data : res;
+}
+
+/**
  * Fetch Current Organization Metadata
  */
 export function useCurrentOrgQuery() {
   return useQuery({
     queryKey: queryKeys.org.current(),
-    queryFn: () => api.getCurrentOrg(),
+    queryFn: async (): Promise<OrgDto | null> => {
+      try {
+        const res = await api.getCurrentOrg({ throwOnError: true });
+        return extractData<OrgDto>(res);
+      } catch {
+        return null;
+      }
+    },
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
   });
@@ -50,8 +63,8 @@ export function useDashboardQuery() {
     queryKey: queryKeys.org.dashboard(),
     queryFn: async (): Promise<DashboardCountsDto | null> => {
       try {
-        const res = await api.getDashboard();
-        return res ?? null;
+        const res = await api.getDashboard({ throwOnError: true });
+        return extractData<DashboardCountsDto>(res);
       } catch {
         return null;
       }
@@ -69,8 +82,8 @@ export function useAcademicContextQuery() {
     queryKey: queryKeys.calendar.context(),
     queryFn: async (): Promise<AcademicContextResponse | null> => {
       try {
-        const res = await api.getAcademicContext();
-        return res ?? null;
+        const res = await api.getCurrentContext({ throwOnError: true });
+        return extractData<AcademicContextResponse>(res);
       } catch {
         return null;
       }
@@ -88,8 +101,8 @@ export function useClassesQuery() {
     queryKey: queryKeys.academic.classes(),
     queryFn: async (): Promise<ClassDto[]> => {
       try {
-        const res = await api.listClasses();
-        return res ?? [];
+        const res = await api.listClasses({ throwOnError: true });
+        return extractData<ClassDto[]>(res) ?? [];
       } catch {
         return [];
       }
@@ -108,8 +121,8 @@ export function useClassQuery(classId?: string) {
     queryFn: async (): Promise<ClassDto | null> => {
       if (!classId) return null;
       try {
-        const res = await api.getClass(classId);
-        return res ?? null;
+        const res = await api.getClass({ path: { id: classId }, throwOnError: true });
+        return extractData<ClassDto>(res);
       } catch {
         return null;
       }
@@ -131,8 +144,11 @@ export function useEnrollmentsQuery(filter?: {
     queryKey: queryKeys.student.enrollments(filter),
     queryFn: async (): Promise<EnrollmentDto[]> => {
       try {
-        const res = await api.listEnrollments(filter);
-        return res ?? [];
+        const res = await api.listEnrollments({
+          query: { class_id: filter?.classId, student_id: filter?.studentId } as any,
+          throwOnError: true,
+        });
+        return extractData<EnrollmentDto[]>(res) ?? [];
       } catch {
         return [];
       }
@@ -153,8 +169,11 @@ export function useGradesQuery(filter?: {
     queryKey: queryKeys.assessment.grades(filter),
     queryFn: async (): Promise<GradeDto[]> => {
       try {
-        const res = await api.listGrades(filter);
-        return res ?? [];
+        const res = await api.listGrades({
+          query: { student_id: filter?.studentId, class_subject_id: filter?.classSubjectId } as any,
+          throwOnError: true,
+        });
+        return extractData<GradeDto[]>(res) ?? [];
       } catch {
         return [];
       }
@@ -179,8 +198,11 @@ export function useAttendanceQuery(filter?: {
     ),
     queryFn: async (): Promise<AttendanceDto[]> => {
       try {
-        const res = await api.listAttendance(filter);
-        return res ?? [];
+        const res = await api.listAttendance({
+          query: { class_id: filter?.classId, student_id: filter?.studentId, date: filter?.date } as any,
+          throwOnError: true,
+        });
+        return extractData<AttendanceDto[]>(res) ?? [];
       } catch {
         return [];
       }
@@ -198,8 +220,11 @@ export function useSchedulesQuery(sessionId?: string) {
     queryKey: queryKeys.scheduling.lessons({ periodId: sessionId }),
     queryFn: async (): Promise<ScheduledLessonDto[]> => {
       try {
-        const res = await api.listScheduledLessons({ periodId: sessionId });
-        return res ?? [];
+        const res = await api.listLessons({
+          query: { period_id: sessionId } as any,
+          throwOnError: true,
+        });
+        return extractData<ScheduledLessonDto[]>(res) ?? [];
       } catch {
         return [];
       }
@@ -218,8 +243,11 @@ export function useFeesQuery(studentId?: string) {
     queryFn: async (): Promise<StudentFeeDto[]> => {
       if (!studentId) return [];
       try {
-        const res = await api.listStudentFees({ studentId });
-        return res ?? [];
+        const res = await api.listFees({
+          query: { student_id: studentId } as any,
+          throwOnError: true,
+        });
+        return extractData<StudentFeeDto[]>(res) ?? [];
       } catch {
         return [];
       }
@@ -239,8 +267,11 @@ export function useGuardiansQuery(studentId?: string) {
     queryFn: async (): Promise<GuardianDto[]> => {
       if (!studentId) return [];
       try {
-        const res = await api.listGuardians(studentId);
-        return res ?? [];
+        const res = await api.listGuardians({
+          query: { student_id: studentId },
+          throwOnError: true,
+        });
+        return extractData<GuardianDto[]>(res) ?? [];
       } catch {
         return [];
       }
@@ -260,8 +291,11 @@ export function useUserQuery(userId?: string) {
     queryFn: async (): Promise<UserDto | null> => {
       if (!userId) return null;
       try {
-        const res = await api.getUser(userId);
-        return res ?? null;
+        const res = await api.getUser({
+          path: { id: userId },
+          throwOnError: true,
+        });
+        return extractData<UserDto>(res);
       } catch {
         return null;
       }
@@ -277,8 +311,8 @@ export function useSystemSettingsQuery() {
     queryKey: queryKeys.org.settings(),
     queryFn: async (): Promise<OrganizationSettingsDto | null> => {
       try {
-        const res = await api.getSettings();
-        return res ?? null;
+        const res = await api.getSettings({ throwOnError: true });
+        return extractData<OrganizationSettingsDto>(res);
       } catch {
         return null;
       }
@@ -295,7 +329,8 @@ export function useMarkAttendanceMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (variables: MarkAttendanceRequest) => {
-      return await api.markAttendance(variables);
+      const res = await api.markAttendance({ body: variables, throwOnError: true });
+      return extractData<AttendanceDto>(res);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.assessment.all });
@@ -311,7 +346,8 @@ export function useRecordGradeMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (variables: RecordGradeRequest) => {
-      return await api.recordGrade(variables);
+      const res = await api.recordGrade({ body: variables, throwOnError: true });
+      return extractData<GradeDto>(res);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.assessment.all });

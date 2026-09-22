@@ -83,3 +83,16 @@ export async function deleteSecureItem(key: string): Promise<void> {
   }
   memoryFallback.delete(key);
 }
+
+export const authStorage = {
+  getAccessToken: () => getSecureItem(STORAGE_KEYS.TOKEN),
+  setAccessToken: (token: string) => setSecureItem(STORAGE_KEYS.TOKEN, token),
+  clear: async () => {
+    await Promise.all([
+      deleteSecureItem(STORAGE_KEYS.TOKEN),
+      deleteSecureItem(STORAGE_KEYS.USER),
+      deleteSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT),
+    ]);
+  },
+};
+

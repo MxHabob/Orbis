@@ -82,7 +82,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkSetupStatus = useCallback(async (): Promise<boolean> => {
     try {
-      const org = await api.getCurrentOrg();
+      const res = await api.getCurrentOrg({ throwOnError: true });
+      const org = (res as any).data ?? res;
       const complete = !!org && !!org.id;
       setIsSetupComplete(complete);
       await setSecureItem(
@@ -109,7 +110,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.effective_context) {
         setEffectiveContext(res.effective_context);
       }
-      api.setToken(res.token);
       setError(null);
 
       const writes: Promise<void>[] = [
@@ -137,15 +137,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await api.login({ email, password });
-        if (res.token && res.user) {
+        const res = await api.login({ body: { email, password }, throwOnError: true });
+        const data = (res as any).data ?? res;
+        if (data?.token && data?.user) {
           await setSession({
-            token: res.token,
-            user: res.user,
-            effective_context: res.effective_context,
+            token: data.token,
+            user: data.user,
+            effective_context: data.effective_context,
           });
         }
-        return res;
+        return data;
       } catch (err) {
         const orbisErr = OrbisError.fromUnknown(err);
         setError(orbisErr.message);
@@ -162,15 +163,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await api.loginWithGoogle({ id_token: idToken });
-        if (res.token && res.user) {
+        const res = await api.googleLogin({ body: { id_token: idToken }, throwOnError: true });
+        const data = (res as any).data ?? res;
+        if (data?.token && data?.user) {
           await setSession({
-            token: res.token,
-            user: res.user,
-            effective_context: res.effective_context,
+            token: data.token,
+            user: data.user,
+            effective_context: data.effective_context,
           });
         }
-        return res;
+        return data;
       } catch (err) {
         const orbisErr = OrbisError.fromUnknown(err);
         setError(orbisErr.message);
@@ -187,15 +189,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await api.mfaChallenge(req);
-        if (res.token && res.user) {
+        const res = await api.mfaChallenge({ body: req as any, throwOnError: true });
+        const data = (res as any).data ?? res;
+        if (data?.token && data?.user) {
           await setSession({
-            token: res.token,
-            user: res.user,
-            effective_context: res.effective_context,
+            token: data.token,
+            user: data.user,
+            effective_context: data.effective_context,
           });
         }
-        return res;
+        return data;
       } catch (err) {
         const orbisErr = OrbisError.fromUnknown(err);
         setError(orbisErr.message);
@@ -209,30 +212,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const mfaVerifyEnrollment = useCallback(
     async (req: MfaVerifyEnrollmentRequest): Promise<boolean> => {
-      return api.mfaVerifyEnrollment(req);
+      const res = await api.mfaVerifyEnrollment({ body: req, throwOnError: true });
+      return (res as any).data ?? res;
     },
     [],
   );
 
   const logout = useCallback(async () => {
-    try {
-      await api.logout();
-    } catch {
-      // Ignore network errors on logout
-    } finally {
-      setUser(null);
-      setEffectiveContext(null);
-      setToken(null);
-      setIsSetupComplete(null);
-      api.clearToken();
+    setUser(null);
+    setEffectiveContext(null);
+    setToken(null);
+    setIsSetupComplete(null);
 
-      await Promise.all([
-        deleteSecureItem(STORAGE_KEYS.TOKEN),
-        deleteSecureItem(STORAGE_KEYS.USER),
-        deleteSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT),
-        deleteSecureItem(STORAGE_KEYS.SETUP_COMPLETE),
-      ]);
-    }
+    await Promise.all([
+      deleteSecureItem(STORAGE_KEYS.TOKEN),
+      deleteSecureItem(STORAGE_KEYS.USER),
+      deleteSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT),
+      deleteSecureItem(STORAGE_KEYS.SETUP_COMPLETE),
+    ]);
   }, []);
 
   const restoreSession = useCallback(async () => {
@@ -257,14 +254,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setEffectiveContext(parsedCtx);
             } catch {}
           }
-          api.setToken(savedToken);
 
           if (savedSetup !== null) {
             setIsSetupComplete(savedSetup === "true");
           }
 
           // Revalidate session with backend in background
-          const session = await api.getSession();
+          const res = await api.getSession({ throwOnError: true });
+          const session = (res as any).data ?? res;
           if (session?.user) {
             setUser(session.user);
             await setSecureItem(
@@ -297,7 +294,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (err) {
-      console.warn("[Auth] Failed to restore session from storage:", err);
+      console.warn("[Auth] Restore session error:", err);
     } finally {
       setIsLoading(false);
     }
@@ -307,7 +304,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     restoreSession();
   }, [restoreSession]);
 
-  const contextValue = useMemo<AuthContextType>(
+  const value = useMemo<AuthContextType>(
     () => ({
       user,
       effectiveContext,
@@ -352,9 +349,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ],
   );
 
-  return (
-    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextType {
