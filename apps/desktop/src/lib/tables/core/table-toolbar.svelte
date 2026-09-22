@@ -6,7 +6,7 @@
 <script lang="ts">
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
-import { AdjustmentsHorizontal, Download, Refresh, Search, XMark, Printer } from "@orbis/icons";
+import { Download, Refresh, Search, XMark, Printer } from "@orbis/icons";
 import type { Snippet } from "svelte";
 
 interface Props {
@@ -139,7 +139,7 @@ function handleKeydown(e: KeyboardEvent) {
         class="text-muted-foreground hover:text-foreground"
         title="Print"
       >
-        <AdjustmentsHorizontal size={14} />
+        <Printer size={14} />
       </Button>
     {/if}
 

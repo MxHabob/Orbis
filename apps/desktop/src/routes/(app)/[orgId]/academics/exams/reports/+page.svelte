@@ -11,7 +11,7 @@ import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, ArrowRight, Calendar, ChartBar, Clipboard, Document, DocumentPage, Download, Eye, Grid, Hashtag, Home, Info, InfoCircle, Sparkles, UserBadgeCheck, Printer } from "@orbis/icons";
+import { ArrowRight, Calendar, ChartBar, Clipboard, Document, DocumentPage, Download, Eye, Grid, Hashtag, Home, Info, InfoCircle, Sparkles, UserBadgeCheck, Printer } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
 import { createPeriodsQuery } from "$lib/features/academics";
 import { createQuery } from "@tanstack/svelte-query";

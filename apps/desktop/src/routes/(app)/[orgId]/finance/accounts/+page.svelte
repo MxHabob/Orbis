@@ -10,7 +10,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { AdjustmentsHorizontal, Grid, Plus } from "@orbis/icons";
+import { AdjustmentsHorizontal, Grid, Plus, BuildingLibrary, BuildingOffice } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
@@ -233,7 +233,7 @@ function exportAccounts() {
           class="h-7 text-xs font-semibold px-2.5 gap-1.5"
           onclick={() => viewMode = "tree"}
         >
-          <Network size={13} />
+          <BuildingOffice size={13} />
           <span>شجرة الحسابات</span>
         </Button>
       </div>
@@ -256,7 +256,7 @@ function exportAccounts() {
           filterable={true}
           filterFields={accountFilterFields}
           bind:filterValue={activeFilter}
-          emptyIcon={Landmark}
+          emptyIcon={BuildingLibrary}
           emptyTitle={m.finance_no_ledgers()}
           {rtl}
           refreshable

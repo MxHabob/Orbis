@@ -100,7 +100,7 @@ const defaultValues = $derived(
   {#if footerActions && footerActions.length > 0}
     <div class="flex flex-col items-start gap-0.5 pt-1">
       {#each footerActions as footer}
-        {@const FooterIcon = footer.icon || HelpCircle}
+        {@const FooterIcon = footer.icon || QuestionMarkCircle}
         <Button
           variant="ghost"
           size="sm"

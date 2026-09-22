@@ -15,6 +15,7 @@ import {
   Calendar,
   CheckCircle,
   ClockRotateRight,
+  DocumentPage,
   GlobeAlt,
   Keyframes,
   Pin,

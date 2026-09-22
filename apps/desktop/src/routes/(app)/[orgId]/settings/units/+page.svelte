@@ -17,7 +17,7 @@ import { toast } from "@orbis/ui";
 import { l, isAr } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
 import SearchField from "$lib/shared/components/search-field.svelte";
-import { AdjustmentsHorizontal, BookOpen, ChevronDown, ChevronRight, Cube, EllipsisVertical, Home, Keyframes, Pencil, Pin, Plus, Search, Trash, Users } from "@orbis/icons";
+import { AdjustmentsHorizontal, BookOpen, ChevronDown, ChevronRight, Cube, EllipsisVertical, Home, Keyframes, Pencil, Pin, Plus, Search, Trash, Users, BuildingOffice } from "@orbis/icons";
 import OrgUnitSheet from "$lib/features/academics/components/org-unit-sheet.svelte";
 import { confirmStore } from "$lib/stores";
 
@@ -315,7 +315,7 @@ function getUnitTypeIcon(typeStr: string) {
     case "college":
       return BookOpen;
     case "department":
-      return Network;
+      return BuildingOffice;
     case "program":
       return BookOpen;
     case "building":
@@ -468,7 +468,7 @@ function escapeHtml(text: string): string {
     </div>
   {:else if units.length === 0}
     <div class="flex flex-col items-center justify-center py-16 text-muted-foreground border border-border border-dashed rounded-xl gap-4 bg-card/10">
-      <Network size={48} class="text-muted-foreground/30 animate-pulse" />
+      <BuildingOffice size={48} class="text-muted-foreground/30 animate-pulse" />
       <div class="flex flex-col gap-1 text-center">
         <p class="text-xs font-semibold">No units found</p>
         <p class="text-[10px] text-muted-foreground/80">Add your first site, building, department, or classroom location.</p>

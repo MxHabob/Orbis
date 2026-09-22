@@ -30,7 +30,7 @@ import {
 } from "@orbis/ui/select";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, Calendar, ChevronLeft, ChevronRight, Document, DocumentPage, Plus, Refresh, Search, SignOut, TaskList, Trash, Printer } from "@orbis/icons";
+import { Calendar, ChevronLeft, ChevronRight, Document, DocumentPage, Plus, Refresh, Search, SignOut, TaskList, Trash, Printer } from "@orbis/icons";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 

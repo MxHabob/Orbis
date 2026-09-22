@@ -21,7 +21,7 @@ import {
 } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
-import { AdjustmentsHorizontal, BookOpen, Check, Info, Users } from "@orbis/icons";
+import { AdjustmentsHorizontal, BookOpen, Check, Info, Users, BuildingLibrary } from "@orbis/icons";
 
 let {
   orgId,
@@ -243,7 +243,7 @@ async function handleSubmit(e: SubmitEvent) {
               <BookOpen size={15} class="shrink-0 text-primary" />
               {m.common_ledger_tab_gl()}
             {:else if activeTab === "cash_account"}
-              <Landmark size={15} class="shrink-0 text-primary" />
+              <BuildingLibrary size={15} class="shrink-0 text-primary" />
               {m.common_ledger_tab_cash_account()}
             {:else}
               <Users size={15} class="shrink-0 text-primary" />

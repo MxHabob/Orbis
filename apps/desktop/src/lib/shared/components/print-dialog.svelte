@@ -27,7 +27,7 @@ import { Separator } from "@orbis/ui/separator";
 import { toast } from "@orbis/ui";
 
 import { getLocale } from "$lib/paraglide/runtime";
-import { AdjustmentsHorizontal, CheckCircle, DocumentPage, Download, Grid, InfoCircle, Label, Refresh, Printer } from "@orbis/icons";
+import { CheckCircle, DocumentPage, Download, Grid, InfoCircle, Label, Refresh, Printer } from "@orbis/icons";
 
 import {
   computeMultiUpLayout,

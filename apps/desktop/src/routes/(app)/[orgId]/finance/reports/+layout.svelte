@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-import { AdjustmentsHorizontal, ChartBar, DocumentChartBar } from "@orbis/icons";
+import { BuildingLibrary, ChartBar, DocumentChartBar } from "@orbis/icons";
 import type { Snippet } from "svelte";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } =
@@ -22,7 +22,7 @@ const items = $derived([
   {
     path: "balance-sheet",
     label: m.finance_reports_balance_sheet_tab(),
-    icon: Landmark,
+    icon: BuildingLibrary,
   },
 ]);
 </script>

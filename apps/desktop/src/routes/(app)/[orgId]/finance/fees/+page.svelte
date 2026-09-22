@@ -198,7 +198,7 @@ const rtl = $derived(getLocale() === "ar");
           <span class="text-base font-bold text-rose-500 font-mono">{formatCurrency(stats.due, "YER")}</span>
         </div>
         <div class="h-8 w-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500">
-          <HelpCircle size={15} />
+          <QuestionMarkCircle size={15} />
         </div>
       </div>
     </div>

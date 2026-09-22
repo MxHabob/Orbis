@@ -15,7 +15,7 @@ import {
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { AdjustmentsHorizontal, Download, Printer, Refresh, Search } from "@orbis/icons";
+import { Download, Printer, Refresh, Search } from "@orbis/icons";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
 import { openPrintDialog } from "$lib/stores/print.svelte";
 import type { Snippet } from "svelte";

@@ -6,7 +6,7 @@ import {
   getDocumentSource,
   resolveDocumentUrl,
 } from "$lib/features/documents/queries";
-import { AdjustmentsHorizontal, DocumentPage, Download, Play, Trash } from "@orbis/icons";
+import { DocumentPage, Download, Play, SoundHigh, Trash } from "@orbis/icons";
 import type { Documents } from "@orbis/sdk";
 
 let {
@@ -78,7 +78,7 @@ function loadWhenVisible(node: HTMLDivElement) {
       {/await}
     {:else if isAudio}
       <div class="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground/70">
-        <Music class="h-10 w-10" strokeWidth={1.5} />
+        <SoundHigh class="h-10 w-10" strokeWidth={1.5} />
         <span class="text-[10px]">ملف صوتي</span>
       </div>
     {:else}

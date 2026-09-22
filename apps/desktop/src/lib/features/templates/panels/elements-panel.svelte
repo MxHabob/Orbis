@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import type { EditorStore } from "../stores/editor-store.svelte";
 import { Input } from "@orbis/ui/input";
 import { Badge } from "@orbis/ui/badge";
-import { AdjustmentsHorizontal, Bold, CheckBox, CheckCircle, Grid, Merge, Minus, Photo, Search, Tag } from "@orbis/icons";
+import { AdjustmentsHorizontal, Bold, CheckBox, CheckCircle, Grid, Merge, Minus, Photo, Search, Tag, ArrowDownTray } from "@orbis/icons";
 
 let {
   store,
@@ -134,7 +134,7 @@ const elements: ElementItem[] = [
   {
     id: "page-break",
     type: "PageBreak",
-    icon: FileDown,
+    icon: ArrowDownTray,
     label: "Page Break",
     labelAr: "فاصل صفحة",
     category: "flow",

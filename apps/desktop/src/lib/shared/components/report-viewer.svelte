@@ -16,7 +16,7 @@ import {
 } from "@orbis/ui/dialog";
 import { Progress } from "@orbis/ui/progress";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, CheckCircle, DocumentPage, Download, Refresh, XMark, Printer } from "@orbis/icons";
+import { CheckCircle, DocumentPage, Download, Refresh, XMark, Printer } from "@orbis/icons";
 
 let {
   open = $bindable(false),

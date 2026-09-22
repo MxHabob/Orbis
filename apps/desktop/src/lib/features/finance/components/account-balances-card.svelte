@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui";
-import { AdjustmentsHorizontal, Document } from "@orbis/icons";
+import { BuildingLibrary, Document } from "@orbis/icons";
 import { formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 
@@ -32,7 +32,7 @@ let {
         <div class="flex items-center justify-between p-2 rounded-xl border border-border/40 bg-card/30 hover:bg-card/50 transition-colors">
           <div class="flex items-center gap-2 text-start min-w-0">
             <div class="h-6 w-6 rounded-lg bg-brand-lime/10 border border-brand-lime/20 flex items-center justify-center text-brand-lime shrink-0 select-none">
-              <Landmark size={12} />
+              <BuildingLibrary size={12} />
             </div>
             <div class="flex flex-col min-w-0">
               <span class="font-bold text-foreground truncate max-w-32.5 text-[10px]">{t.name_ar || t.name}</span>

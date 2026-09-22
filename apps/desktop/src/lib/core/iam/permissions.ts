@@ -815,7 +815,7 @@ export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDef[] = [
     nameAr: "محاسب مالي",
     descEn: "Tuition billing, receipt vouchers, student ledgers, discount policies, and payment tracking.",
     descAr: "إدارة الرسوم الدراسية، سندات القبض والصرف، فواتير الطلاب، الخصومات، والتقارير المالية.",
-    iconName: "Landmark",
+    iconName: "BuildingLibrary",
     color: "emerald",
     isSystem: true,
     defaultPermissions: {
