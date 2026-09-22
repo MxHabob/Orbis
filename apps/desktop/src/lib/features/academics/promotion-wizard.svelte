@@ -163,9 +163,9 @@ async function runDryRun() {
   isAnalyzing = true;
   try {
     previewJob = await api.promoteCohort({
-      sourcePeriodId: config.source_period_id,
-      targetPeriodId: config.target_period_id || config.source_period_id,
-      jobName: config.target_year_name || "Promotion",
+      source_period_id: config.source_period_id,
+      target_period_id: config.target_period_id || config.source_period_id,
+      job_name: config.target_year_name || "Promotion",
       items: [],
     });
     if (previewJob) {
@@ -191,9 +191,9 @@ async function executePromotion() {
   isExecuting = true;
   try {
     executionResult = await api.promoteCohort({
-      sourcePeriodId: config.source_period_id,
-      targetPeriodId: config.target_period_id || config.source_period_id,
-      jobName: config.target_year_name || "Promotion Execution",
+      source_period_id: config.source_period_id,
+      target_period_id: config.target_period_id || config.source_period_id,
+      job_name: config.target_year_name || "Promotion Execution",
       items: [],
     });
     toast.success(m.common_promo_complete());

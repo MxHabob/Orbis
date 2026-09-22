@@ -89,7 +89,7 @@ async function processApproval(
       user_role: userRole,
       notes: actionNotes.trim() || null,
     };
-    if (action === "approve") { await api.approveOverride({ requestId, stepOrder: 1, notes: actionNotes.trim() || undefined }); } else { await api.rejectOverride({ requestId, reason: actionNotes.trim() || "Rejected" }); }
+    if (action === "approve") { await api.approveOverride({ request_id: requestId, notes: actionNotes.trim() || undefined }); } else { await api.rejectOverride({ request_id: requestId, reason: actionNotes.trim() || "Rejected" }); }
 
     const actionLabel =
       action === "approve"

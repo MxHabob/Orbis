@@ -96,7 +96,7 @@ export function createUpdateStudentStatusMutation() {
   return createMutation(() => ({
     mutationFn: (req: UpdateStudentStatusInput) => api.updateStudentStatus(req),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.student.detail(vars.studentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.detail(vars.student_id || vars.studentId || "") });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
     },
   }));

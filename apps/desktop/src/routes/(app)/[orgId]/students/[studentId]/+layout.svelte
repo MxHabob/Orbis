@@ -71,8 +71,8 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     if (!confirm(m.common_student_layout_withdraw_confirm?.())) return;
     isWithdrawing = true;
     try {
-      await api.updateStudentStatus({ studentId, status: "withdrawn" });
-      toast.success(m.common_form_success_update());
+      await api.updateStudentStatus({ student_id: studentId, status: "withdrawn" });
+      toast.success(m.common_students_status_updated());
       queryClient.invalidateQueries({ queryKey: ["enrollments", orgId] });
       queryClient.invalidateQueries({ queryKey: ["student", studentId] });
     } catch (e: any) {

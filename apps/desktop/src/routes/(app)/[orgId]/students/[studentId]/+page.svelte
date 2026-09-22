@@ -136,7 +136,7 @@ onMount(async () => {
     const periodId =
       academicContext.effectivePeriodId || student?.period_id || "";
     if (periodId && studentId) {
-      const gRes = await api.calculateGpa({ studentId, periodId }).catch(() => null);
+      const gRes = await api.calculateGpa({ student_id: studentId, period_id: periodId }).catch(() => null);
       gradesReport = gRes;
       attendanceReport = null;
       behaviorRecords = [];

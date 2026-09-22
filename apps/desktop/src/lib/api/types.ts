@@ -190,64 +190,70 @@ export interface StudentDetailDto {
 }
 
 export interface StudentFilterParams {
-  periodId?: string;
-  classId?: string;
+  period_id?: string;
+  class_id?: string;
   status?: string;
   standing?: string;
   search?: string;
   page?: number;
+  page_size?: number;
+  sort_by?: string;
+  sort_dir?: string;
+  periodId?: string;
+  classId?: string;
   pageSize?: number;
   sortBy?: string;
   sortDir?: string;
 }
 
 export interface EnrollmentFilterParams {
+  period_id?: string;
+  class_id?: string;
+  student_id?: string;
+  study_mode?: string;
+  status?: string;
+  page?: number;
+  page_size?: number;
+  sort_by?: string;
+  sort_dir?: string;
   periodId?: string;
   classId?: string;
   studentId?: string;
   studyMode?: string;
-  status?: string;
-  page?: number;
   pageSize?: number;
   sortBy?: string;
   sortDir?: string;
 }
 
 export interface RegisterStudentInput {
-  personId?: string;
-  userId?: string;
-  studentNumber: string;
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  firstNameAr?: string;
-  middleNameAr?: string;
-  lastNameAr?: string;
-  displayName?: string;
-  nationalId?: string;
-  passportNumber?: string;
+  person_id?: string;
+  user_id?: string;
+  student_number: string;
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  first_name_ar?: string;
+  middle_name_ar?: string;
+  last_name_ar?: string;
+  display_name?: string;
+  national_id?: string;
+  passport_number?: string;
   gender?: string;
-  birthDate?: string;
-  placeOfBirth?: string;
+  birth_date?: string;
+  place_of_birth?: string;
   nationality?: string;
-  bloodType?: string;
-  medicalNotes?: string;
-  specialNeedsNotes?: string;
+  blood_type?: string;
+  medical_notes?: string;
+  special_needs_notes?: string;
   phone?: string;
   email?: string;
-  initialPeriodId?: string;
-  initialClassId?: string;
-  studyMode?: string;
-}
-
-export interface UpdateStudentStatusInput {
-  studentId: string;
-  status: string;
-  reason?: string;
-}
-
-export interface UpdateStudentProfileInput {
-  studentId: string;
+  initial_period_id?: string;
+  initial_class_id?: string;
+  study_mode?: string;
+  // Aliases for compatibility
+  personId?: string;
+  userId?: string;
+  studentNumber?: string;
   firstName?: string;
   middleName?: string;
   lastName?: string;
@@ -257,48 +263,105 @@ export interface UpdateStudentProfileInput {
   displayName?: string;
   nationalId?: string;
   passportNumber?: string;
-  gender?: string;
   birthDate?: string;
   placeOfBirth?: string;
-  nationality?: string;
   bloodType?: string;
   medicalNotes?: string;
   specialNeedsNotes?: string;
+  initialPeriodId?: string;
+  initialClassId?: string;
+  studyMode?: string;
+}
+
+export interface UpdateStudentStatusInput {
+  student_id: string;
+  status: string;
+  reason?: string;
+  studentId?: string;
+}
+
+export interface UpdateStudentProfileInput {
+  student_id: string;
+  first_name?: string;
+  middle_name?: string;
+  last_name?: string;
+  first_name_ar?: string;
+  middle_name_ar?: string;
+  last_name_ar?: string;
+  display_name?: string;
+  national_id?: string;
+  passport_number?: string;
+  gender?: string;
+  birth_date?: string;
+  place_of_birth?: string;
+  nationality?: string;
+  blood_type?: string;
+  medical_notes?: string;
+  special_needs_notes?: string;
   phone?: string;
   email?: string;
   address?: string;
+  avatar_url?: string;
+  // Aliases
+  studentId?: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  firstNameAr?: string;
+  middleNameAr?: string;
+  lastNameAr?: string;
+  displayName?: string;
+  nationalId?: string;
+  passportNumber?: string;
+  birthDate?: string;
+  placeOfBirth?: string;
+  bloodType?: string;
+  medicalNotes?: string;
+  specialNeedsNotes?: string;
   avatarUrl?: string;
 }
 
 export interface ChangeStudyModeInput {
-  enrollmentId: string;
-  studyMode: string;
+  enrollment_id: string;
+  study_mode: string;
   reason?: string;
+  enrollmentId?: string;
+  studyMode?: string;
 }
 
 export interface TransferClassInput {
-  enrollmentId: string;
-  targetClassId: string;
+  enrollment_id: string;
+  target_class_id: string;
   reason?: string;
+  enrollmentId?: string;
+  targetClassId?: string;
 }
 
 export interface BehaviorRecordDto {
   id: string;
-  studentId: string;
-  orgId: string;
-  reporterId: string;
-  recordType: string;
+  student_id: string;
+  org_id: string;
+  reporter_id: string;
+  record_type: string;
   description: string;
   points: number;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
+  studentId?: string;
+  orgId?: string;
+  reporterId?: string;
+  recordType?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface RecordBehaviorInput {
-  studentId: string;
-  recordType: string;
+  student_id: string;
+  record_type: string;
   description: string;
   points: number;
+  studentId?: string;
+  recordType?: string;
 }
 
 export interface ReportJobStatusDto {
@@ -453,26 +516,36 @@ export interface OverrideRequestDto {
 }
 
 export interface SubmitOverrideRequestInput {
-  overrideType: string;
+  override_type: string;
+  risk_level?: string;
+  entity_type: string;
+  entity_id: string;
+  field_name?: string;
+  old_value?: string;
+  new_value?: string;
+  reason: string;
+  approval_chain?: ApprovalStepDto[];
+  metadata?: Record<string, unknown>;
+  overrideType?: string;
   riskLevel?: string;
-  entityType: string;
-  entityId: string;
+  entityType?: string;
+  entityId?: string;
   fieldName?: string;
   oldValue?: string;
   newValue?: string;
-  reason: string;
   approvalChain?: ApprovalStepDto[];
-  metadata?: Record<string, unknown>;
 }
 
 export interface ApproveOverrideInput {
-  requestId: string;
+  request_id: string;
   notes?: string;
+  requestId?: string;
 }
 
 export interface RejectOverrideInput {
-  requestId: string;
+  request_id: string;
   reason: string;
+  requestId?: string;
 }
 
 export interface PromotionJobDto {
@@ -506,19 +579,26 @@ export interface PromotionDetailDto {
 }
 
 export interface StudentProgressionItemInput {
-  studentId: string;
-  enrollmentId: string;
-  sourceClassId?: string;
-  targetClassId?: string;
+  student_id: string;
+  enrollment_id: string;
+  source_class_id?: string;
+  target_class_id?: string;
   decision: string;
   reason?: string;
+  studentId?: string;
+  enrollmentId?: string;
+  sourceClassId?: string;
+  targetClassId?: string;
 }
 
 export interface PromoteCohortInput {
-  sourcePeriodId: string;
-  targetPeriodId: string;
-  jobName: string;
+  source_period_id: string;
+  target_period_id: string;
+  job_name: string;
   items: StudentProgressionItemInput[];
+  sourcePeriodId?: string;
+  targetPeriodId?: string;
+  jobName?: string;
 }
 
 export interface CumulativeGpaRecordDto {
@@ -539,8 +619,10 @@ export interface CumulativeGpaRecordDto {
 }
 
 export interface CalculateGpaInput {
-  studentId: string;
-  periodId: string;
+  student_id: string;
+  period_id: string;
+  studentId?: string;
+  periodId?: string;
 }
 
 export class OrbisError extends Error {

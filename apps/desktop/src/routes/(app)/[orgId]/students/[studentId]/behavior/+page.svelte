@@ -59,8 +59,8 @@ async function handleAddRecord() {
   isSaving = true;
   try {
     await api.recordBehavior({
-      studentId,
-      recordType: newRecordType,
+      student_id: studentId,
+      record_type: newRecordType,
       description: newDescription.trim(),
       points: Number(newPoints) || 0,
     });
