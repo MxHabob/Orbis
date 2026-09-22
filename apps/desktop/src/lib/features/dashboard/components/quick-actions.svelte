@@ -2,7 +2,14 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
-import { BookOpen, ChartBar, Clipboard, Document, User, UserBadgeCheck } from "@orbis/icons";
+import {
+  BookOpen,
+  ChartBar,
+  ClipboardCheck,
+  CreditCard,
+  UserBadgeCheck,
+  UserPlus,
+} from "@orbis/icons";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import { academicContext, workflowInbox, effectiveContext } from "$lib/stores";
@@ -20,7 +27,7 @@ const ACTIONS = $derived.by(() => {
 
   const actions: Array<{
     label: string;
-    icon: typeof UserPlus;
+    icon: any;
     href: string;
     show: boolean;
     badge?: string;
@@ -34,7 +41,7 @@ const ACTIONS = $derived.by(() => {
     },
     {
       label: m.common_action_record_payment(),
-      icon: Document,
+      icon: CreditCard,
       href: `/${orgId}/finance/payments`,
       show: !ro,
     },
