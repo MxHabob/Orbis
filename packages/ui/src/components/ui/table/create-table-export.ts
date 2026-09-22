@@ -1,6 +1,3 @@
-<script lang="ts">
-import { AdjustmentsHorizontal, Home } from "@orbis/icons";
-</script>
 // ── createTableExport ───────────────────────────────────────────────
 // Export utilities for table data. Home management systems commonly
 // need CSV and JSON export for grades, attendance, and financial reports.

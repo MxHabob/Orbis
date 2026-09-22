@@ -1,6 +1,3 @@
-<script lang="ts">
-import { Clipboard, Home } from "@orbis/icons";
-</script>
 export interface Terminology {
   stage: string;
   stage_ar: string;

@@ -8,7 +8,6 @@ import { page } from "$app/state";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
-import { Label } from "@orbis/ui/label";
 import {
   Dialog,
   DialogContent,

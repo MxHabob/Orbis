@@ -1,6 +1,3 @@
-<script lang="ts">
-import { Grid } from "@orbis/icons";
-</script>
 // ── @orbis/ui-svelte/table ──────────────────────────────────────────
 // Grid infrastructure: primitive components + headless hooks + utilities.
 

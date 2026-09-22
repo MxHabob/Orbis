@@ -1,6 +1,3 @@
-<script lang="ts">
-import { BarsArrowUp, Home } from "@orbis/icons";
-</script>
 // ── Onboarding State ──────────────────────────────────────────────────
 // Central orchestrator for the 10-step academic onboarding wizard.
 
