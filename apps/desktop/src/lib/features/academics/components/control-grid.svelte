@@ -9,16 +9,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import {
-  Users,
-  RefreshCw,
-  Save,
-  Loader2,
-  GraduationCap,
-  BookOpen,
-  Info,
-  BarChart3,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, BookOpen, ChartBar, FloppyDisk, Info, Refresh, Users } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 import ClassSelect from "$lib/features/academics/components/class-select.svelte";
 import SubjectSelect from "$lib/features/academics/components/subject-select.svelte";
@@ -80,7 +71,7 @@ let {
           onclick={onRefresh}
           disabled={isMatrixLoading}
         >
-          <RefreshCw size={11} class={isMatrixLoading ? "animate-spin" : ""} />
+          <Refresh size={11} class={isMatrixLoading ? "animate-spin" : ""} />
           {m.common_control_refresh()}
         </Button>
         <Button
@@ -93,7 +84,7 @@ let {
           {#if isSaving}
             <Loader2 size={11} class="animate-spin" />
           {:else}
-            <Save size={11} />
+            <FloppyDisk size={11} />
           {/if}
           {m.common_action_save()}
         </Button>
@@ -148,7 +139,7 @@ let {
     </div>
   {:else}
     <div class="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
-      <BarChart3 size={32} class="opacity-40" />
+      <ChartBar size={32} class="opacity-40" />
       <p class="text-xs">{m.common_control_select_filters()}</p>
     </div>
   {/if}

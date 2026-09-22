@@ -29,7 +29,7 @@ export interface Cog6Props extends SvgProps {
 export function Cog6({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: Cog6Props) {

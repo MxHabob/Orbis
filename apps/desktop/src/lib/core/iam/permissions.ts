@@ -1,3 +1,6 @@
+<script lang="ts">
+import { Pencil } from "@orbis/icons";
+</script>
 /**
  * Orbis IAM Permissions System (Single Source of Truth)
  * 
@@ -221,7 +224,7 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descAr: "الفروع، المباني، والكليات والوحدات الإدارية",
         actions: [
           { key: "read", labelEn: "View Units", labelAr: "عرض الفروع" },
-          { key: "write", labelEn: "Create / Edit Units", labelAr: "إنشاء وتعديل الفروع" },
+          { key: "write", labelEn: "Create / Pencil Units", labelAr: "إنشاء وتعديل الفروع" },
           { key: "delete", labelEn: "Delete Units", labelAr: "حذف الفروع" },
         ],
       },
@@ -233,7 +236,7 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descAr: "حسابات الكادر الإداري، المعلمين، والطلاب",
         actions: [
           { key: "read", labelEn: "View Users", labelAr: "عرض المستخدمين" },
-          { key: "write", labelEn: "Create / Edit Users", labelAr: "إنشاء وتعديل الحسابات" },
+          { key: "write", labelEn: "Create / Pencil Users", labelAr: "إنشاء وتعديل الحسابات" },
           { key: "delete", labelEn: "Suspend / Delete", labelAr: "تعطيل وحذف الحسابات" },
           { key: "role_write", labelEn: "Assign Roles", labelAr: "تعيين وتعديل الأدوار" },
           { key: "password_write", labelEn: "Reset Password", labelAr: "إعادة ضبط كلمة المرور" },
@@ -257,7 +260,7 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descAr: "الفصول الدراسية، نوافذ القيد، وقفل الفترات",
         actions: [
           { key: "read", labelEn: "View Periods", labelAr: "عرض الفصول الأكاديمية" },
-          { key: "write", labelEn: "Create / Edit Periods", labelAr: "إنشاء وتعديل الفصول" },
+          { key: "write", labelEn: "Create / Pencil Periods", labelAr: "إنشاء وتعديل الفصول" },
           { key: "activate", labelEn: "Activate / Open Enrollment", labelAr: "تفعيل وفتح القيد" },
           { key: "lock", labelEn: "Lock Grades & Period", labelAr: "قفل الدرجات والفترة" },
           { key: "unlock", labelEn: "Unlock Period", labelAr: "إلغاء قفل الفترة" },
@@ -271,7 +274,7 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descAr: "الصفوف الدراسية، الشعب، السعة، وتعيين رواد الفصول",
         actions: [
           { key: "read", labelEn: "View Classes", labelAr: "عرض الصفوف والشعب" },
-          { key: "write", labelEn: "Create / Edit Classes", labelAr: "إنشاء وتعديل الشعب" },
+          { key: "write", labelEn: "Create / Pencil Classes", labelAr: "إنشاء وتعديل الشعب" },
           { key: "delete", labelEn: "Delete Classes", labelAr: "حذف الصفوف والشعب" },
         ],
       },
@@ -283,7 +286,7 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descAr: "المواد الدراسية، الأوزان النسبية، والخطط الدراسية",
         actions: [
           { key: "read", labelEn: "View Subjects", labelAr: "عرض المواد" },
-          { key: "write", labelEn: "Create / Edit Subjects", labelAr: "إنشاء وتعديل المواد" },
+          { key: "write", labelEn: "Create / Pencil Subjects", labelAr: "إنشاء وتعديل المواد" },
           { key: "delete", labelEn: "Delete Subjects", labelAr: "حذف المواد" },
         ],
       },
@@ -295,7 +298,7 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descAr: "الحصص اليومية، توزيع جداول المعلمين، والقاعات",
         actions: [
           { key: "read", labelEn: "View Schedules", labelAr: "عرض الجداول الدراسية" },
-          { key: "write", labelEn: "Build / Edit Schedule", labelAr: "بناء وتعديل الجداول" },
+          { key: "write", labelEn: "Build / Pencil Schedule", labelAr: "بناء وتعديل الجداول" },
           { key: "delete", labelEn: "Clear Schedule", labelAr: "مسح وتفريغ الجداول" },
         ],
       },
@@ -331,7 +334,7 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descAr: "أولياء الأمور، جهات الاتصال للطوارئ، والربط بالبوابة",
         actions: [
           { key: "read", labelEn: "View Guardians", labelAr: "عرض أولياء الأمور" },
-          { key: "write", labelEn: "Link / Edit Guardians", labelAr: "ربط وتعديل أولياء الأمور" },
+          { key: "write", labelEn: "Link / Pencil Guardians", labelAr: "ربط وتعديل أولياء الأمور" },
           { key: "delete", labelEn: "Unlink Guardian", labelAr: "فك ارتباط ولي الأمر" },
         ],
       },
@@ -378,7 +381,7 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descAr: "سلالم الدرجات، الأوزان النسبية، وأنظمة التقييم",
         actions: [
           { key: "read", labelEn: "View Schemes", labelAr: "عرض مخططات التقييم" },
-          { key: "write", labelEn: "Create / Edit Schemes", labelAr: "إنشاء وتعديل المخططات" },
+          { key: "write", labelEn: "Create / Pencil Schemes", labelAr: "إنشاء وتعديل المخططات" },
           { key: "delete", labelEn: "Delete Schemes", labelAr: "حذف المخططات" },
         ],
       },
@@ -390,7 +393,7 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descAr: "رصد الدرجات، احتساب المعدلات التراكمية، وكشوف العلامات",
         actions: [
           { key: "read", labelEn: "View Grades", labelAr: "عرض الدرجات" },
-          { key: "write", labelEn: "Record / Edit Grades", labelAr: "رصد وتعديل الدرجات" },
+          { key: "write", labelEn: "Record / Pencil Grades", labelAr: "رصد وتعديل الدرجات" },
           { key: "entry_manage", labelEn: "Manage Grade Entry Deadlines", labelAr: "إدارة فترات الرصد" },
           { key: "analytics", labelEn: "Compute GPA & Stats", labelAr: "احتساب المعدلات والتحليلات" },
           { key: "report", labelEn: "Generate Grade Transcripts", labelAr: "إصدار الشهادات وكشوف الدرجات" },
@@ -440,7 +443,7 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descAr: "إعدادات فترات وجلسات الامتحانات النصفية والنهائية",
         actions: [
           { key: "read", labelEn: "View Exam Sessions", labelAr: "عرض جلسات الامتحانات" },
-          { key: "write", labelEn: "Create / Edit Session", labelAr: "إنشاء وتعديل الجلسات" },
+          { key: "write", labelEn: "Create / Pencil Session", labelAr: "إنشاء وتعديل الجلسات" },
           { key: "activate", labelEn: "Activate Session", labelAr: "بدء وتفعيل الجلسة" },
           { key: "delete", labelEn: "Delete Session", labelAr: "حذف الجلسة" },
         ],
@@ -511,7 +514,7 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descAr: "مواعيد الاختبارات، الفترات الزمنية، وتخصيص القاعات",
         actions: [
           { key: "read", labelEn: "View Exam Timetable", labelAr: "عرض جدول الامتحانات" },
-          { key: "write", labelEn: "Build / Edit Exam Schedule", labelAr: "إنشاء وتعديل جدول الامتحانات" },
+          { key: "write", labelEn: "Build / Pencil Exam Schedule", labelAr: "إنشاء وتعديل جدول الامتحانات" },
         ],
       },
     ],
@@ -532,7 +535,7 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descAr: "شجرة الحسابات، قوالب الرسوم، حسابات الطلاب، ومعالجة الدفعات",
         actions: [
           { key: "read", labelEn: "View Financial Records", labelAr: "عرض السجلات المالية والرسوم" },
-          { key: "write", labelEn: "Create / Edit Fees & Invoices", labelAr: "إنشاء وتعديل الرسوم والفواتير" },
+          { key: "write", labelEn: "Create / Pencil Fees & Invoices", labelAr: "إنشاء وتعديل الرسوم والفواتير" },
           { key: "payment", labelEn: "Process Payments & Receipts", labelAr: "تحصيل الدفعات وإصدار السندات" },
         ],
       },
@@ -566,7 +569,7 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descAr: "محرر القوالب المرئي، تصاميم الشهادات، المكونات، ومخزن الأصول",
         actions: [
           { key: "read", labelEn: "View Templates", labelAr: "عرض القوالب" },
-          { key: "write", labelEn: "Design / Edit Templates", labelAr: "تصميم وتعديل القوالب" },
+          { key: "write", labelEn: "Design / Pencil Templates", labelAr: "تصميم وتعديل القوالب" },
           { key: "publish", labelEn: "Publish Template", labelAr: "نشر واعتماد القالب" },
           { key: "delete", labelEn: "Delete Template", labelAr: "حذف القالب" },
           { key: "import", labelEn: "Import Template Schema", labelAr: "استيراد قالب" },

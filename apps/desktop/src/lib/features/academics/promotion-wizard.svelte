@@ -26,7 +26,7 @@ import { Checkbox } from "@orbis/ui/checkbox";
 import { Badge } from "@orbis/ui/badge";
 import { Separator } from "@orbis/ui/separator";
 import {
-  Table,
+  Grid,
   TableBody,
   TableHead,
   TableHeader,
@@ -45,20 +45,7 @@ import {
 } from "@orbis/ui/alert-dialog";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Progress } from "@orbis/ui/progress";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Play,
-  Check,
-  Loader2,
-  Plus,
-  Trash2,
-  Users,
-  UserCheck,
-  UserX,
-  GraduationCap,
-  Ban,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowLeft, ArrowRight, BookOpen, Check, Grid, Label, Play, Plus, Trash, User, UserBadgeCheck, Users } from "@orbis/icons";
 import type {
   PromotionConfig,
   PromotionJob,
@@ -429,7 +416,7 @@ function decisionLabel(d: string) {
                     {m.common_promo_source_level()} &rarr; {m.common_promo_target_level()}
                   </CardTitle>
                   <Button variant="ghost" size="icon-xs" onclick={() => removeMapping(i)} class="text-destructive hover:text-destructive hover:bg-destructive/5 shrink-0">
-                    <Trash2 class="size-3.5" />
+                    <Trash class="size-3.5" />
                   </Button>
                 </CardHeader>
                 <CardContent class="p-0">
@@ -496,7 +483,7 @@ function decisionLabel(d: string) {
           </div>
           <!-- Promoted -->
           <div class="p-4 rounded-xl border border-border bg-card text-center flex flex-col justify-between h-28 select-none">
-            <UserCheck class="size-5 mx-auto text-primary" />
+            <UserBadgeCheck class="size-5 mx-auto text-primary" />
             <div>
               <div class="text-2xl font-bold text-primary">{previewStats.promoted}</div>
               <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_promoted()}</div>
@@ -512,7 +499,7 @@ function decisionLabel(d: string) {
           </div>
           <!-- Graduated -->
           <div class="p-4 rounded-xl border border-border bg-card text-center flex flex-col justify-between h-28 select-none">
-            <GraduationCap class="size-5 mx-auto text-foreground" />
+            <BookOpen class="size-5 mx-auto text-foreground" />
             <div>
               <div class="text-2xl font-bold text-foreground">{previewStats.graduated}</div>
               <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_form_status_graduated()}</div>
@@ -520,7 +507,7 @@ function decisionLabel(d: string) {
           </div>
           <!-- Excluded -->
           <div class="p-4 rounded-xl border border-border bg-card text-center flex flex-col justify-between h-28 select-none">
-            <Ban class="size-5 mx-auto text-muted-foreground" />
+            <AdjustmentsHorizontal class="size-5 mx-auto text-muted-foreground" />
             <div>
               <div class="text-2xl font-bold text-foreground">{previewStats.excluded}</div>
               <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_excluded()}</div>
@@ -528,7 +515,7 @@ function decisionLabel(d: string) {
           </div>
         </div>
 
-        <!-- Student Details Table Card -->
+        <!-- Student Details Grid Card -->
         <Card class="w-full">
           <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border">
             <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
@@ -537,7 +524,7 @@ function decisionLabel(d: string) {
           </CardHeader>
           <CardContent class="p-0">
             <div class="overflow-x-auto">
-              <Table>
+              <Grid>
                 <TableHeader>
                   <TableRow>
                     <TableHead class="text-start">{m.common_word_student()}</TableHead>
@@ -567,7 +554,7 @@ function decisionLabel(d: string) {
                     </TableRow>
                   {/if}
                 </TableBody>
-              </Table>
+              </Grid>
             </div>
           </CardContent>
         </Card>

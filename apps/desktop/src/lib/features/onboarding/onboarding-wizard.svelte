@@ -22,7 +22,7 @@ import FinancialSetupStep from "./steps/financial-setup-step.svelte";
 import ReviewStep from "./steps/review-step.svelte";
 import LaunchStep from "./steps/launch-step.svelte";
 
-import { AlertCircle } from "@lucide/svelte";
+import { InfoCircle } from "@orbis/icons";
 
 const isArabic = $derived(getLocale().startsWith("ar"));
 let needsBootstrap = $derived(!authStore.isAuthenticated);
@@ -53,7 +53,7 @@ function handleStepClick(step: number) {
   <main class="flex-1 min-h-0 w-full px-4 sm:px-6 lg:px-8 py-2.5 flex flex-col overflow-hidden justify-center">
     {#if onboardingState.errorMessage}
       <div class="mb-2 flex items-center gap-2.5 p-2.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs animate-in fade-in shrink-0">
-        <AlertCircle class="w-4 h-4 shrink-0" />
+        <InfoCircle class="w-4 h-4 shrink-0" />
         <span class="font-medium">{onboardingState.errorMessage}</span>
       </div>
     {/if}

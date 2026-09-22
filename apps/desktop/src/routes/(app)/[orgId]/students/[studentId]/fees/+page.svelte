@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { api } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { CreditCard, Wallet, CheckCircle2, AlertCircle } from "@lucide/svelte";
+import { CheckCircle, ClockRotateRight, Document, InfoCircle } from "@orbis/icons";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -157,14 +157,14 @@ const rtl = $derived(getLocale() === "ar");
         <span class="text-[9px] text-muted-foreground">{m.finance_fees_total_fees()}</span>
         <span class="text-sm font-bold mt-0.5 text-foreground">{formatCurrency(totalFees)}</span>
       </div>
-      <Wallet size={16} class="text-primary" />
+      <Document size={16} class="text-primary" />
     </div>
     <div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
       <div class="flex flex-col">
         <span class="text-[9px] text-muted-foreground">{m.finance_fees_total_paid()}</span>
         <span class="text-sm font-bold mt-0.5 text-emerald-500">{formatCurrency(totalPaid)}</span>
       </div>
-      <CheckCircle2 size={16} class="text-emerald-500" />
+      <CheckCircle size={16} class="text-emerald-500" />
     </div>
     <div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
       <div class="flex flex-col">
@@ -173,7 +173,7 @@ const rtl = $derived(getLocale() === "ar");
           {formatCurrency(balanceDue)}
         </span>
       </div>
-      <AlertCircle size={16} class={balanceDue > 0 ? 'text-destructive' : 'text-emerald-500'} />
+      <InfoCircle size={16} class={balanceDue > 0 ? 'text-destructive' : 'text-emerald-500'} />
     </div>
   </div>
 
@@ -187,20 +187,20 @@ const rtl = $derived(getLocale() === "ar");
       <DataTable
         columns={feesCols}
         source={feesSource}
-        emptyIcon={Wallet}
+        emptyIcon={Document}
         emptyTitle={m.finance_fees_no_fees()}
         {rtl}
         height="200px"
       />
     </div>
 
-    <!-- Payments History -->
+    <!-- Payments ClockRotateRight -->
     <div class="flex flex-col gap-2">
       <span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider px-1">{m.finance_fees_payments_title()}</span>
       <DataTable
         columns={paymentsCols}
         source={paymentsSource}
-        emptyIcon={CreditCard}
+        emptyIcon={Document}
         emptyTitle={m.finance_fees_no_payments()}
         {rtl}
         height="200px"

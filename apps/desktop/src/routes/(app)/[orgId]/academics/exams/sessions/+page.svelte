@@ -11,15 +11,7 @@ import { Skeleton } from "@orbis/ui/skeleton";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { api } from "$lib/api";
 import { fade } from "svelte/transition";
-import {
-  Plus,
-  Search,
-  Calendar,
-  BookOpen,
-  Users,
-  ArrowRight,
-  ClipboardList,
-} from "@lucide/svelte";
+import { ArrowRight, BookOpen, Calendar, Plus, Search, TaskList, Users } from "@orbis/icons";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";
@@ -109,7 +101,7 @@ function getTypeLabel(type: string): string {
 		<!-- Empty State -->
 		<div class="flex-1 flex flex-col items-center justify-center gap-4 py-16 text-center" in:fade={{ duration: 200 }}>
 			<div class="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center">
-				<ClipboardList size={28} class="text-muted-foreground" />
+				<TaskList size={28} class="text-muted-foreground" />
 			</div>
 			<p class="text-xs text-muted-foreground max-w-xs">
 				{m.common_exams_sessions_empty()}

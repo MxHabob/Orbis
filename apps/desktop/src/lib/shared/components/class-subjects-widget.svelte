@@ -4,15 +4,7 @@ import { api } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
-import {
-  BookOpen,
-  Plus,
-  User,
-  Clock,
-  ChevronRight,
-  ArrowLeft,
-  ArrowRight,
-} from "@lucide/svelte";
+import { ArrowLeft, ArrowRight, BookOpen, ChevronRight, ClockRotateRight, Plus, User } from "@orbis/icons";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import WorkspaceCard from "./workspace-card.svelte";
 import { page } from "$app/state";
@@ -115,7 +107,7 @@ function subjectName(subject: any): string {
                 {#if subject.weekly_hours}
                   <span class="opacity-40">•</span>
                   <span class="flex items-center gap-1 shrink-0">
-                    <Clock size={10} class="opacity-70" />
+                    <ClockRotateRight size={10} class="opacity-70" />
                     {subject.weekly_hours} {isArabic ? "س" : "h"}
                   </span>
                 {/if}

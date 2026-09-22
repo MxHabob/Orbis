@@ -5,7 +5,7 @@ Uses the shared @orbis/ui/sheet component.
 -->
 <script lang="ts">
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
-import { Award } from "@lucide/svelte";
+import { AdjustmentsHorizontal } from "@orbis/icons";
 import AssessmentForm from "./assessment-form.svelte";
 import * as m from "$lib/paraglide/messages";
 

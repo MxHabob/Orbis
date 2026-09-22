@@ -16,7 +16,7 @@ import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import { authStore } from "$lib/stores";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
-import { Save, User } from "@lucide/svelte";
+import { FloppyDisk, User } from "@orbis/icons";
 import { userCreateInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
@@ -263,7 +263,7 @@ async function handleSubmit(e: SubmitEvent) {
             class="text-xs h-9 px-6 gap-1.5 font-semibold"
             disabled={isSubmitting}
           >
-            <Save size={14} />
+            <FloppyDisk size={14} />
             {isSubmitting ? m.common_state_saving() : m.common_action_save()}
           </Button>
         </div>

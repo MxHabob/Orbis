@@ -29,7 +29,7 @@ export interface UserCircleProps extends SvgProps {
 export function UserCircle({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: UserCircleProps) {

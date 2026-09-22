@@ -29,7 +29,7 @@ export interface LockClosedProps extends SvgProps {
 export function LockClosed({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: LockClosedProps) {

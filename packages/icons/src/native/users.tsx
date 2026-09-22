@@ -29,7 +29,7 @@ export interface UsersProps extends SvgProps {
 export function Users({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: UsersProps) {

@@ -5,7 +5,7 @@ import {
   type WithElementRef,
   type WithoutChildren,
 } from "../../../utils.js";
-import MoreHorizontalIcon from "@lucide/svelte/icons/more-horizontal";
+import { EllipsisHorizontal } from "@orbis/icons";
 
 let {
   ref = $bindable(null),
@@ -22,6 +22,6 @@ let {
 	class={cn("size-5 [&>svg]:size-4 flex items-center justify-center", className)}
 	{...restProps}
 >
-	<MoreHorizontalIcon  />
+	<EllipsisHorizontal  />
 	<span class="sr-only">More</span>
 </span>

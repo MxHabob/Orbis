@@ -15,7 +15,7 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import {
-  Table,
+  Grid,
   TableBody,
   TableCell,
   TableHead,
@@ -23,18 +23,7 @@ import {
   TableRow,
 } from "@orbis/ui/table";
 import { toast } from "@orbis/ui";
-import {
-  CalendarCheck2,
-  Users,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  AlertCircle,
-  Save,
-  RotateCcw,
-  Search,
-  Filter,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, CheckCircle, ClockRotateRight, FloppyDisk, Grid, InfoCircle, Refresh, Search, Users, XMark } from "@orbis/icons";
 import { exportToCsv } from "$lib/shared/utils/export";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -142,7 +131,7 @@ function markAll(status: "present" | "absent" | "late" | "excused") {
   );
 }
 
-// Save all attendance records
+// FloppyDisk all attendance records
 async function handleSaveAttendance() {
   if (!selectedClassId || attendanceRows.length === 0) return;
 
@@ -293,7 +282,7 @@ const filteredRows = $derived(
           disabled={isSaving || attendanceRows.length === 0}
           class="h-9 text-xs font-bold gap-1.5 shadow-sm"
         >
-          <Save class="w-4 h-4" />
+          <FloppyDisk class="w-4 h-4" />
           {isSaving ? "جاري الحفظ..." : "حفظ السجل"}
         </Button>
       </div>
@@ -313,7 +302,7 @@ const filteredRows = $derived(
 
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-          <CheckCircle2 class="w-4 h-4" />
+          <CheckCircle class="w-4 h-4" />
         </div>
         <div>
           <div class="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono leading-none">{formatNumber(presentCount)}</div>
@@ -323,7 +312,7 @@ const filteredRows = $derived(
 
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-600 dark:text-red-400">
-          <XCircle class="w-4 h-4" />
+          <XMark class="w-4 h-4" />
         </div>
         <div>
           <div class="text-lg font-bold text-red-600 dark:text-red-400 font-mono leading-none">{formatNumber(absentCount)}</div>
@@ -333,7 +322,7 @@ const filteredRows = $derived(
 
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
-          <Clock class="w-4 h-4" />
+          <ClockRotateRight class="w-4 h-4" />
         </div>
         <div>
           <div class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono leading-none">{formatNumber(lateCount)}</div>
@@ -343,7 +332,7 @@ const filteredRows = $derived(
 
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
-          <AlertCircle class="w-4 h-4" />
+          <InfoCircle class="w-4 h-4" />
         </div>
         <div>
           <div class="text-lg font-bold text-blue-600 dark:text-blue-400 font-mono leading-none">{formatNumber(excusedCount)}</div>
@@ -353,7 +342,7 @@ const filteredRows = $derived(
     </div>
   </div>
 
-  <!-- Table & Bulk Controls -->
+  <!-- Grid & Bulk Controls -->
   <Card class="border border-border/80 shadow-xs">
     <div class="p-4 border-b border-border/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
       <!-- Search & Filters -->
@@ -400,7 +389,7 @@ const filteredRows = $derived(
           onclick={() => markAll("present")}
           class="h-8 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 font-semibold"
         >
-          <CheckCircle2 class="w-3.5 h-3.5 me-1" />
+          <CheckCircle class="w-3.5 h-3.5 me-1" />
           الكل حاضر
         </Button>
 
@@ -410,7 +399,7 @@ const filteredRows = $derived(
           onclick={() => markAll("absent")}
           class="h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-500/10 font-semibold"
         >
-          <XCircle class="w-3.5 h-3.5 me-1" />
+          <XMark class="w-3.5 h-3.5 me-1" />
           الكل غائب
         </Button>
 
@@ -428,7 +417,7 @@ const filteredRows = $derived(
 
     <!-- Roster Grid -->
     <CardContent class="p-0">
-      <Table>
+      <Grid>
         <TableHeader class="bg-muted/40">
           <TableRow>
             <TableHead class="text-xs font-bold w-12 text-center">#</TableHead>
@@ -514,7 +503,7 @@ const filteredRows = $derived(
             {/each}
           {/if}
         </TableBody>
-      </Table>
+      </Grid>
     </CardContent>
   </Card>
 </div>

@@ -25,15 +25,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@orbis/ui/alert-dialog";
-import {
-  History,
-  Undo2,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Loader2,
-  AlertTriangle,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, CheckCircle, ClockRotateRight, InfoCircle, UndoAction, XMark } from "@orbis/icons";
 import type { PromotionJob } from "@orbis/sdk";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
@@ -60,15 +52,15 @@ async function handleRollback() {
 function statusIcon(status: string) {
   switch (status) {
     case "completed":
-      return CheckCircle2;
+      return CheckCircle;
     case "failed":
-      return XCircle;
+      return XMark;
     case "executing":
       return Loader2;
     case "rolled_back":
       return Undo2;
     default:
-      return Clock;
+      return ClockRotateRight;
   }
 }
 
@@ -104,7 +96,7 @@ function statusLabel(status: string) {
 <div class="flex flex-col gap-6 w-full max-w-3xl mx-auto">
   <div class="space-y-2 text-start select-none">
     <h3 class="text-foreground font-bold text-xl font-serif flex items-center gap-2">
-      <History class="size-5 text-muted-foreground" />
+      <ClockRotateRight class="size-5 text-muted-foreground" />
       {m.common_promo_history()}
     </h3>
     <p class="text-muted-foreground text-xs font-sans">
@@ -129,7 +121,7 @@ function statusLabel(status: string) {
     </div>
   {:else if (jobsQuery.data ?? []).length === 0}
     <div class="border-2 border-dashed border-border rounded-xl bg-card p-12 text-center flex flex-col items-center justify-center">
-      <History class="size-10 text-muted-foreground/40 mb-3" />
+      <ClockRotateRight class="size-10 text-muted-foreground/40 mb-3" />
       <h3 class="font-bold text-foreground font-serif">{m.common_promo_no_jobs()}</h3>
       <p class="text-xs text-muted-foreground mt-1 font-sans">{m.common_promo_no_jobs_desc()}</p>
     </div>
@@ -196,7 +188,7 @@ function statusLabel(status: string) {
     <AlertDialogHeader>
       <AlertDialogTitle>
         <div class="flex items-center gap-2">
-          <AlertTriangle class="size-5 text-destructive" />
+          <InfoCircle class="size-5 text-destructive" />
           {m.common_action_back()}
         </div>
       </AlertDialogTitle>

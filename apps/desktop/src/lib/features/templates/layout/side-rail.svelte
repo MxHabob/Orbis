@@ -12,14 +12,7 @@ import {
   TooltipProvider,
 } from "@orbis/ui/tooltip";
 import * as m from "$lib/paraglide/messages";
-import {
-  LayoutTemplate,
-  Shapes,
-  Type,
-  ImageIcon,
-  Wrench,
-  Settings2,
-} from "@lucide/svelte";
+import { Grid, Component, Bold, Photo, Wrench, SettingsAlt } from "@orbis/icons";
 
 let {
   store,

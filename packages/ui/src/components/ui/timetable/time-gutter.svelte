@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Coffee, Clock } from "@lucide/svelte";
+import { ClockRotateRight, Heart } from "@orbis/icons";
 
 interface Props {
   timeSlots: any[];
@@ -37,7 +37,7 @@ function formatTime(val: string): string {
     >
       {#if isBreak}
         <div class="flex items-center justify-center gap-1 text-[10px] font-semibold text-primary">
-          <Coffee size={11} class="shrink-0" />
+          <Heart size={11} class="shrink-0" />
           <span class="truncate">{slot.name_ar || slot.name || (isArabic ? "استراحة" : "Break")}</span>
         </div>
         <span class="text-[9px] text-muted-foreground font-mono">

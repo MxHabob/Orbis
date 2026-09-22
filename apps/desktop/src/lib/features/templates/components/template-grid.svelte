@@ -10,15 +10,7 @@ import {
   CardContent,
   CardFooter,
 } from "@orbis/ui/card";
-import {
-  FileText,
-  Plus,
-  Trash2,
-  Edit,
-  Archive,
-  RefreshCw,
-  CheckCircle,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, CheckCircle, DocumentPage, Pencil, Plus, Refresh, Trash } from "@orbis/icons";
 
 import { l } from "$lib/core/i18n";
 
@@ -81,7 +73,7 @@ let {
 {:else if templates.length === 0}
   <div class="flex flex-col items-center justify-center py-20 px-4 bg-card/20 border border-border/40 border-dashed rounded-[2rem] gap-5 mx-auto w-full max-w-3xl my-8">
     <div class="h-16 w-16 bg-muted/30 rounded-2xl flex items-center justify-center text-muted-foreground">
-      <FileText size={32} strokeWidth={1.5} />
+      <DocumentPage size={32} strokeWidth={1.5} />
     </div>
     <div class="text-center flex flex-col gap-1.5">
       <h3 class="text-base font-bold text-foreground">{m.settings_templates_empty()}</h3>
@@ -128,7 +120,7 @@ let {
             onclick={() => onconfirmdelete(template.id)}
             title={m.common_action_delete()}
           >
-            <Trash2 size={13} />
+            <Trash size={13} />
           </Button>
           
           <div class="flex items-center gap-1.5 shrink-0">
@@ -139,7 +131,7 @@ let {
               href={`/${orgId}/templates/${template.id}`}
               title={m.common_action_edit_simple()}
             >
-              <Edit size={13} />
+              <Pencil size={13} />
             </Button>
 
             {#if template.status === 'published'}
@@ -161,7 +153,7 @@ let {
                   onclick={() => onrestore(template.id)}
                   title={m.common_titlebar_restore()}
                 >
-                  <RefreshCw size={13} />
+                  <Refresh size={13} />
                 </Button>
               {:else}
                 <Button

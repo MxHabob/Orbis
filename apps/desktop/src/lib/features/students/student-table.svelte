@@ -10,7 +10,7 @@ import type { Enrollment } from "$lib/api";
 
 import { formatDate, l } from "$lib/core/i18n";
 import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
-import { GraduationCap } from "@lucide/svelte";
+import { BookOpen } from "@orbis/icons";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { studentsStore } from "$lib/features/students";
@@ -189,7 +189,7 @@ function handleGridAction(event: GridActionEvent) {
   filterable={true}
   filterFields={studentFilterFields}
   bind:filterValue={activeFilter}
-  emptyIcon={GraduationCap}
+  emptyIcon={BookOpen}
   emptyTitle={m.common_table_no_students()}
   emptyDescription={m.common_table_no_students_hint()}
 />

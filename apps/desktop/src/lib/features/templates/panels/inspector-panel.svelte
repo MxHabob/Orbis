@@ -23,7 +23,7 @@ import {
 } from "@orbis/ui/accordion";
 import { Separator } from "@orbis/ui/separator";
 import { Badge } from "@orbis/ui/badge";
-import { Sliders } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Label } from "@orbis/icons";
 
 let {
   store,
@@ -52,7 +52,7 @@ function updatePosition(key: string, value: number) {
 <div class="flex flex-col h-full overflow-y-auto scrollbar-hide text-start">
   <!-- Header -->
   <div class="px-3 py-2 border-b border-border/40 flex items-center gap-2">
-    <Sliders size={13} class="text-primary shrink-0" />
+    <AdjustmentsHorizontal size={13} class="text-primary shrink-0" />
     <h3 class="text-xs font-bold text-foreground">{m.template_title_properties()}</h3>
   </div>
 

@@ -2,14 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Sheet, SheetContent, SheetFooter } from "@orbis/ui/sheet";
-import {
-  Download,
-  File,
-  Trash2,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-} from "@lucide/svelte";
+import { Collapse, Document, Download, Expand, Trash } from "@orbis/icons";
 import type { Documents } from "@orbis/sdk";
 
 let {
@@ -113,14 +106,14 @@ function endPan(event: PointerEvent) {
         {#if isImage}
           <div class="absolute inset-e-4 top-4 z-10 flex items-center gap-1 rounded-md border border-border/60 bg-background/90 p-1 shadow-sm">
             <Button variant="ghost" size="icon-xs" onclick={() => setImageZoom(imageZoom - 0.25)} disabled={imageZoom <= 0.5} title={m.archive_zoom_out()} aria-label={m.archive_zoom_out()}>
-              <ZoomOut size={14} />
+              <Collapse size={14} />
             </Button>
             <span class="min-w-12 text-center text-[10px] font-medium text-muted-foreground">{Math.round(imageZoom * 100)}%</span>
             <Button variant="ghost" size="icon-xs" onclick={() => setImageZoom(imageZoom + 0.25)} disabled={imageZoom >= 4} title={m.archive_zoom_in()} aria-label={m.archive_zoom_in()}>
-              <ZoomIn size={14} />
+              <Expand size={14} />
             </Button>
             <Button variant="ghost" size="icon-xs" onclick={() => { imageZoom = 1; imagePanX = 0; imagePanY = 0; }} disabled={imageZoom === 1 && imagePanX === 0 && imagePanY === 0} title={m.archive_zoom_reset()} aria-label={m.archive_zoom_reset()}>
-              <Maximize2 size={14} />
+              <Expand size={14} />
             </Button>
           </div>
         {/if}
@@ -211,7 +204,7 @@ function endPan(event: PointerEvent) {
           {m.settings_archive_action_download()}
         </Button>
         <Button variant="destructive" size="sm" onclick={removeDocument}>
-          <Trash2 size={14} class="me-1.5" />
+          <Trash size={14} class="me-1.5" />
           {m.common_action_delete()}
         </Button>
       </SheetFooter>

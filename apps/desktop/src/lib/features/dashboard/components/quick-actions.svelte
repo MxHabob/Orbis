@@ -2,14 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
-import {
-  UserPlus,
-  Wallet,
-  BookOpen,
-  BarChart3,
-  ShieldCheck,
-  ClipboardCheck,
-} from "@lucide/svelte";
+import { BookOpen, ChartBar, Clipboard, Document, User, UserBadgeCheck } from "@orbis/icons";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import { academicContext, workflowInbox, effectiveContext } from "$lib/stores";
@@ -41,7 +34,7 @@ const ACTIONS = $derived.by(() => {
     },
     {
       label: m.common_action_record_payment(),
-      icon: Wallet,
+      icon: Document,
       href: `/${orgId}/finance/payments`,
       show: !ro,
     },
@@ -54,13 +47,13 @@ const ACTIONS = $derived.by(() => {
     // Phase-specific actions
     {
       label: m.common_control_label ? m.common_control_label() : "Control",
-      icon: ShieldCheck,
+      icon: UserBadgeCheck,
       href: `/${orgId}/academics/control`,
       show: phase === "grade_entry" || phase === "exams",
     },
     {
       label: m.common_action_view_reports(),
-      icon: BarChart3,
+      icon: ChartBar,
       href: `/${orgId}/reports`,
       show: true,
     },

@@ -29,7 +29,7 @@ export interface PagePlusProps extends SvgProps {
 export function PagePlus({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: PagePlusProps) {

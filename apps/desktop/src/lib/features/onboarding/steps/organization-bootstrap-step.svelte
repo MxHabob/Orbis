@@ -18,16 +18,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import {
-  Loader2,
-  AlertCircle,
-  ArrowRight,
-  ArrowLeft,
-  Check,
-  Sparkles,
-  Eye,
-  EyeOff,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowLeft, ArrowRight, Check, Eye, EyeSlash, InfoCircle, Sparkles } from "@orbis/icons";
 import { z } from "zod";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { l } from "$lib/core/i18n";
@@ -257,7 +248,7 @@ async function handleBootstrapSubmit(e?: Event) {
     
     {#if form.formError}
       <div class="mb-2.5 flex items-center gap-2 p-2.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs animate-in fade-in shrink-0">
-        <AlertCircle class="w-4 h-4 shrink-0" />
+        <InfoCircle class="w-4 h-4 shrink-0" />
         <span class="font-medium">{form.formError}</span>
       </div>
     {/if}
@@ -456,7 +447,7 @@ async function handleBootstrapSubmit(e?: Event) {
                       aria-label="Toggle password visibility"
                     >
                       {#if showPassword}
-                        <EyeOff size={13} />
+                        <EyeSlash size={13} />
                       {:else}
                         <Eye size={13} />
                       {/if}
@@ -490,7 +481,7 @@ async function handleBootstrapSubmit(e?: Event) {
                       aria-label="Toggle password confirm visibility"
                     >
                       {#if showPasswordConfirm}
-                        <EyeOff size={13} />
+                        <EyeSlash size={13} />
                       {:else}
                         <Eye size={13} />
                       {/if}

@@ -5,7 +5,7 @@ A circular avatar image uploader with hover edit states and customizable fallbac
 <script lang="ts">
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui/avatar";
 import { cn } from "@orbis/ui/utils";
-import { Loader2, User } from "@lucide/svelte";
+import { AdjustmentsHorizontal, User } from "@orbis/icons";
 import {
   useUploadDocument,
   resolveDocumentUrl,

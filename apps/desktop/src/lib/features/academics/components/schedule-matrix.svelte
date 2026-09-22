@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Users, User, MapPin } from "@lucide/svelte";
+import { Grid, Pin, User, Users } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 
@@ -47,7 +47,7 @@ function getLessonForClassSlot(classId: string, slotId: string) {
 
 <div class="flex flex-1 min-h-0 w-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-xs">
   <div class="flex-1 min-h-0 min-w-0 flex flex-col overflow-auto scrollbar-hide">
-    <!-- Matrix Table -->
+    <!-- Matrix Grid -->
     <table class="w-full border-collapse text-xs select-none">
       <thead class="sticky top-0 z-20 bg-card shadow-2xs">
         <tr class="border-b border-border/60 bg-muted/20">

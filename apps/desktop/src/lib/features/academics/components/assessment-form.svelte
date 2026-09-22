@@ -12,7 +12,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { Award } from "@lucide/svelte";
+import { AdjustmentsHorizontal } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
@@ -83,7 +83,7 @@ async function handleSubmit(e: SubmitEvent) {
 <form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
 	<SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
 		<SheetTitle class="text-xl font-bold text-foreground flex items-center gap-2">
-			<Award size={18} class="text-primary" />
+			<AdjustmentsHorizontal size={18} class="text-primary" />
 			<span>{m.common_assessment_sheet_title()}</span>
 		</SheetTitle>
 	</SheetHeader>

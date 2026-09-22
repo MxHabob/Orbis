@@ -4,16 +4,7 @@
   import PeriodCreateSheet from "$lib/features/academics/components/period-create-sheet.svelte";
   import * as m from "$lib/paraglide/messages";
   import { confirmStore } from "$lib/stores";
-  import {
-    Award,
-    CheckCircle2,
-    ChevronDown,
-    ChevronRight,
-    Lock as LockIcon,
-    Pencil,
-    Plus,
-    Trash2,
-  } from "@lucide/svelte";
+  import { AdjustmentsHorizontal, CheckCircle, ChevronDown, ChevronRight, Lock, Pencil, Plus, Trash } from "@orbis/icons";
   import { toast } from "@orbis/ui";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
@@ -263,7 +254,7 @@
                   <span
                     class="text-[9px] text-muted-foreground flex items-center gap-1"
                   >
-                    <Award size={10} />
+                    <AdjustmentsHorizontal size={10} />
                     {node.grading_system}
                   </span>
                 {/if}
@@ -285,7 +276,7 @@
                   : ''}"
                 onclick={() => requestActivate(node.id)}
               >
-                {#if isRoot}<CheckCircle2 size={12} class="me-1" />{/if}
+                {#if isRoot}<CheckCircle size={12} class="me-1" />{/if}
                 {m.common_word_status()}
               </Button>
             {/if}
@@ -296,7 +287,7 @@
                 class="text-[10px] h-7 px-2.5 font-semibold"
                 onclick={() => requestLock(node.id)}
               >
-                {#if isRoot}<LockIcon size={12} class="me-1" />{/if}
+                {#if isRoot}<Lock size={12} class="me-1" />{/if}
                 {m.common_td_ctx_lock()}
               </Button>
             {/if}
@@ -315,7 +306,7 @@
               class="text-[10px] h-7 px-2.5 font-semibold"
               onclick={() => requestDelete(node.id)}
             >
-              {#if isRoot}<Trash2 size={12} />{:else}<Trash2 size={12} />{/if}
+              {#if isRoot}<Trash size={12} />{:else}<Trash size={12} />{/if}
             </Button>
           </div>
         </div>

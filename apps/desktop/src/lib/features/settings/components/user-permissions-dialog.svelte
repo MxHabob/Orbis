@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Input } from "@orbis/ui/input";
-import { ChevronRight, Search, UserCheck, Shield, Users } from "@lucide/svelte";
+import { ChevronRight, Search, UserBadgeCheck, Users } from "@orbis/icons";
 import {
   Dialog,
   DialogContent,
@@ -44,7 +44,7 @@ const filteredUsers = $derived.by(() => {
     <DialogHeader class="space-y-1.5">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-          <UserCheck class="w-4 h-4" />
+          <UserBadgeCheck class="w-4 h-4" />
         </div>
         <div>
           <DialogTitle class="text-base font-bold text-foreground">

@@ -29,7 +29,7 @@ export interface DocumentArrowUpProps extends SvgProps {
 export function DocumentArrowUp({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: DocumentArrowUpProps) {

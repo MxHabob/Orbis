@@ -6,7 +6,7 @@ import {
   SelectContent,
   SelectItem,
 } from "../components/ui/select";
-import { Plus, Trash2, GitBranch } from "@lucide/svelte";
+import { Merge, Plus, Trash } from "@orbis/icons";
 import {
   FilterOperator,
   type UniversalFilter,
@@ -95,13 +95,13 @@ function removeGroup(index: number) {
             </Button>
             
             <Button variant="outline" size="sm" onclick={addGroup} class="h-8 gap-1 text-xs">
-                <GitBranch class="w-3.5 h-3.5" />
+                <Merge class="w-3.5 h-3.5" />
                 <span class="hidden sm:inline">{translations.group}</span>
             </Button>
 
             {#if !isRoot}
                 <Button variant="ghost" size="icon" onclick={onRemove} class="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors ml-1">
-                    <Trash2 class="w-3.5 h-3.5" />
+                    <Trash class="w-3.5 h-3.5" />
                     <span class="sr-only">{translations.removeGroup}</span>
                 </Button>
             {/if}

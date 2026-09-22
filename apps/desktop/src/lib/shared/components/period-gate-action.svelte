@@ -25,7 +25,7 @@ import { api } from "$lib/api";
 import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
-import { Loader2, Lock, Clock, AlertTriangle, Send } from "@lucide/svelte";
+import { AdjustmentsHorizontal, BarsArrowUp, ClockRotateRight, InfoCircle, Lock } from "@orbis/icons";
 import type { Snippet } from "svelte";
 
 type GateType = "enrollment" | "grading" | "attendance" | string;
@@ -121,7 +121,7 @@ const decisionColors: Record<GateDecision, string> = {
     {:else}
       <div class="flex items-center gap-2">
         <Button {size} variant="outline" class="border-amber-500/30 text-amber-600" onclick={onAction}>
-          <Clock class="mr-2 h-4 w-4" />
+          <ClockRotateRight class="mr-2 h-4 w-4" />
           {label} (متأخر)
         </Button>
         {#if verdict.allowed_actions.includes("save_draft")}
@@ -143,7 +143,7 @@ const decisionColors: Record<GateDecision, string> = {
           </Button>
         {/if}
         <Button {size} variant="secondary" onclick={() => onOverride?.(verdict!)}>
-          <Send class="mr-2 h-4 w-4" />
+          <BarsArrowUp class="mr-2 h-4 w-4" />
           طلب تجاوز
         </Button>
         <Badge variant="outline" class={decisionColors.requires_override}>
@@ -162,7 +162,7 @@ const decisionColors: Record<GateDecision, string> = {
           {label}
         </Button>
         <Badge variant="outline" class={decisionColors.blocked}>
-          <AlertTriangle class="mr-1 h-3 w-3" />
+          <InfoCircle class="mr-1 h-3 w-3" />
           {reason}
         </Badge>
       </div>

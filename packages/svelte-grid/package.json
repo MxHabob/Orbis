@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@orbis/ui": "workspace:*",
-    "@lucide/svelte": "^1.33.0"
+    "@orbis/icons": "workspace:*"
   },
   "peerDependencies": {
     "svelte": "^5.0.0"

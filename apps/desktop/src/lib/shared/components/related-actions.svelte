@@ -10,7 +10,7 @@ import {
   AccordionContent,
 } from "@orbis/ui/accordion";
 import { Button } from "@orbis/ui/button";
-import { Globe, HelpCircle, MessageSquareShare } from "@lucide/svelte";
+import { AdjustmentsHorizontal, GlobeAlt, QuestionMarkCircle } from "@orbis/icons";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 
 export interface SubLink {
@@ -58,7 +58,7 @@ const defaultValues = $derived(
     class="w-full space-y-1"
   >
     {#each groups as group (group.id)}
-      {@const IconComponent = group.icon || Globe}
+      {@const IconComponent = group.icon || GlobeAlt}
 
       <AccordionItem 
         value={group.id} 

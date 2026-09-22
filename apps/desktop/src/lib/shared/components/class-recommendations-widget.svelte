@@ -2,7 +2,7 @@
 import { createQuery } from "@tanstack/svelte-query";
 import { api } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { Sparkles, AlertTriangle, CheckCircle2, Info } from "@lucide/svelte";
+import { CheckCircle, Info, InfoCircle, Sparkles } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 import WorkspaceCard from "./workspace-card.svelte";
 
@@ -40,7 +40,7 @@ const recommendations = $derived.by(() => {
       id: "attendance-low",
       title: "Review Attendance Records",
       desc: `Overall attendance is ${attendanceRate}%. Action required.`,
-      icon: AlertTriangle,
+      icon: InfoCircle,
       colorClass: "bg-rose-100 text-rose-600",
     });
   } else {
@@ -48,7 +48,7 @@ const recommendations = $derived.by(() => {
       id: "attendance-good",
       title: "Attendance on Track",
       desc: `Overall attendance is healthy at ${attendanceRate}%.`,
-      icon: CheckCircle2,
+      icon: CheckCircle,
       colorClass: "bg-green-100 text-green-600",
     });
   }

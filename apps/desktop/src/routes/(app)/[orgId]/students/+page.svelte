@@ -8,19 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import {
-  Plus,
-  Search,
-  FilterX,
-  Download,
-  Printer,
-  Upload,
-  ShieldAlert,
-  GraduationCap,
-  ExternalLink,
-  CheckCircle2,
-  FileSpreadsheet,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowForward, ArrowUpTray, BookOpen, CheckCircle, DocumentChartBar, Download, Plus, Search, UserBadgeCheck } from "@orbis/icons";
 import { fly } from "svelte/transition";
 import { quintOut } from "svelte/easing";
 import { studentsStore, createEnrollmentsQuery } from "$lib/features/students";
@@ -206,7 +194,7 @@ function handleExportStudents() {
               class="text-xs h-9 px-3"
               onclick={() => goto(localizeHref(`/${data.orgId}/settings/bulk-input`))}
             >
-              <Upload size={13} class="me-1.5" />
+              <ArrowUpTray size={13} class="me-1.5" />
               {m.common_bulk_hub_title()}
             </Button>
             <Button
@@ -214,7 +202,7 @@ function handleExportStudents() {
               class="text-xs h-9 px-3"
               onclick={handleExportStudents}
             >
-              <FileSpreadsheet size={13} class="me-1.5" />
+              <DocumentChartBar size={13} class="me-1.5" />
               {m.common_export()}
             </Button>
             {#if academicContext.effectivePeriodId}
@@ -287,7 +275,7 @@ function handleExportStudents() {
         <!-- Selection Counter & Info -->
         <div class="flex min-w-0 items-center gap-2.5 text-start">
           <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-            <GraduationCap size={15} strokeWidth={2.5} />
+            <BookOpen size={15} strokeWidth={2.5} />
           </span>
           <div class="flex flex-col min-w-0">
             <span class="truncate text-xs font-bold text-foreground">
@@ -316,7 +304,7 @@ function handleExportStudents() {
                 class="h-8 px-2.5 text-xs font-medium cursor-pointer gap-1.5"
                 onclick={() => goto(localizeHref(`/${data.orgId}/students/${singleStudent.id}`))}
               >
-                <ExternalLink size={13} />
+                <ArrowForward size={13} />
                 <span>الملف الشخصي</span>
               </Button>
             {/if}
@@ -329,7 +317,7 @@ function handleExportStudents() {
             class="h-8 px-3 text-xs font-semibold shadow-xs cursor-pointer gap-1.5"
             onclick={() => printDialogOpen = true}
           >
-            <Printer size={14} />
+            <AdjustmentsHorizontal size={14} />
             <span>{m.common_print_templates()} ({selectedStudentIds.size})</span>
           </Button>
 

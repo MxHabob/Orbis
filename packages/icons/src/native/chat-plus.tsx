@@ -29,7 +29,7 @@ export interface ChatPlusProps extends SvgProps {
 export function ChatPlus({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: ChatPlusProps) {

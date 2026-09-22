@@ -9,18 +9,7 @@ import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
-import {
-  Plus,
-  BookOpen,
-  Calculator,
-  FlaskConical,
-  Languages,
-  Atom,
-  Palette,
-  Heart,
-  Award,
-  Search,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, BookOpen, Plus, Search } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
 import SearchField from "$lib/shared/components/search-field.svelte";
@@ -180,7 +169,7 @@ function getSubjectTheme(nameStr: string) {
 								{sub.code || `SUB-${String(sub.id).slice(0, 3).toUpperCase()}`}
 							</span>
 							<span class="flex items-center gap-1">
-								<Award size={9} />
+								<AdjustmentsHorizontal size={9} />
 								<span>{m.common_subjects_periods_count({ count: sub.credit_hours || 3 })}</span>
 							</span>
 						</div>

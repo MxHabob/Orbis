@@ -29,7 +29,7 @@ export interface BoltProps extends SvgProps {
 export function Bolt({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: BoltProps) {

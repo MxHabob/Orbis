@@ -1,5 +1,8 @@
+<script lang="ts">
+import { AdjustmentsHorizontal } from "@orbis/icons";
+</script>
 /**
- * @orbis/desktop — Filter Configurations
+ * @orbis/desktop — AdjustmentsHorizontal Configurations
  *
  * Defines which fields are filterable for each entity/table.
  * Each config returns FieldDefinition[] that the FilterBuilder uses

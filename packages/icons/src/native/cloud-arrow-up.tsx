@@ -29,7 +29,7 @@ export interface CloudArrowUpProps extends SvgProps {
 export function CloudArrowUp({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: CloudArrowUpProps) {

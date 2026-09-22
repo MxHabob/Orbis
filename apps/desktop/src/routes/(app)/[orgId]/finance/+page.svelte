@@ -9,7 +9,7 @@ directly inside the cards' headers.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { AlertCircle } from "@lucide/svelte";
+import { Grid, InfoCircle } from "@orbis/icons";
 
 import { extractErrorMessage } from "$lib/api";
 
@@ -208,7 +208,7 @@ const recentPayments = $derived.by(() => {
       <!-- 1. Full-Width SVG Cash Flow Trend Chart at the very top -->
       <CashFlowTrendCard orgId={data.orgId} />
 
-      <!-- 2. Middle Section: Late Paying Students Table & Donut Analytics -->
+      <!-- 2. Middle Section: Late Paying Students Grid & Donut Analytics -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <LateStudentsCard {lateStudents} orgId={data.orgId} />
         <CollectionRateCard {collectionRate} {totalFees} {totalPaid} orgId={data.orgId} />

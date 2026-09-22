@@ -1,5 +1,8 @@
+<script lang="ts">
+import { AdjustmentsHorizontal, Home } from "@orbis/icons";
+</script>
 // ── createTableExport ───────────────────────────────────────────────
-// Export utilities for table data. School management systems commonly
+// Export utilities for table data. Home management systems commonly
 // need CSV and JSON export for grades, attendance, and financial reports.
 // XLSX export is supported via optional dynamic import (no bundle bloat).
 
@@ -124,7 +127,7 @@ export async function exportTableData<T>(
 ): Promise<void> {
   const { data, columns, format, filename = "export", formatters } = options;
 
-  // Filter out non-data columns (actions, select, etc.)
+  // AdjustmentsHorizontal out non-data columns (actions, select, etc.)
   const exportableColumns = columns.filter(
     (col) =>
       col.id !== "actions" &&

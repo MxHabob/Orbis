@@ -13,21 +13,7 @@ import { FormField } from "@orbis/ui";
 import { Logo } from "@orbis/ui/logo";
 import { Badge } from "@orbis/ui/badge";
 import type { ConnectionMode, RemoteHealthResult } from "$lib/api/types";
-import {
-  Database,
-  Globe,
-  Loader2,
-  CheckCircle2,
-  AlertCircle,
-  ArrowRight,
-  ArrowLeft,
-  Activity,
-  Server,
-  Zap,
-  Shield,
-  HardDrive,
-  Cpu,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowLeft, ArrowRight, Bolt, ChartBar, CheckCircle, Database, GlobeAlt, InfoCircle, UserBadgeCheck } from "@orbis/icons";
 import { z } from "zod";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { l } from "$lib/core/i18n";
@@ -142,7 +128,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
 
       <div class="flex items-center gap-2">
         <Badge variant="outline" class="text-[10px] px-2.5 py-0.5 gap-1.5 text-muted-foreground font-mono bg-background/50">
-          <Activity size={10} class="text-emerald-500 animate-pulse" />
+          <ChartBar size={10} class="text-emerald-500 animate-pulse" />
           <span>V2.4 ENGINE</span>
         </Badge>
       </div>
@@ -185,7 +171,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
 
               <div class="p-3 rounded-xl border border-border/50 bg-card/60 space-y-1">
                 <div class="flex items-center gap-2 font-bold text-xs text-foreground">
-                  <Globe size={13} class="text-primary" />
+                  <GlobeAlt size={13} class="text-primary" />
                   <span>{l("نمط الخادم السحابي (Remote Cloud)", "Remote Cloud Mode")}</span>
                 </div>
                 <p class="text-[11px] text-muted-foreground leading-normal">
@@ -199,7 +185,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
           </div>
 
           <div class="flex items-center gap-2 pt-2 border-t border-border/30 text-[11px] text-muted-foreground">
-            <Shield size={12} class="text-primary shrink-0" />
+            <UserBadgeCheck size={12} class="text-primary shrink-0" />
             <span>{l("جميع الاتصالات والبيانات مشفرة ومعزولة بأمان عالي", "All connections and data are strictly isolated and encrypted")}</span>
           </div>
         </div>
@@ -209,7 +195,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
           <div class="space-y-5">
             {#if form.formError}
               <div class="flex items-center gap-2.5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs animate-in fade-in">
-                <AlertCircle class="w-4 h-4 shrink-0" />
+                <InfoCircle class="w-4 h-4 shrink-0" />
                 <span>{form.formError}</span>
               </div>
             {/if}
@@ -233,7 +219,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
                     </div>
                     {#if form.values.mode === "local"}
                       <div class="size-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                        <CheckCircle2 size={12} />
+                        <CheckCircle size={12} />
                       </div>
                     {/if}
                   </div>
@@ -255,11 +241,11 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
                 >
                   <div class="flex items-center justify-between w-full">
                     <div class="size-9 rounded-xl flex items-center justify-center {form.values.mode === 'remote' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}">
-                      <Globe size={16} />
+                      <GlobeAlt size={16} />
                     </div>
                     {#if form.values.mode === "remote"}
                       <div class="size-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                        <CheckCircle2 size={12} />
+                        <CheckCircle size={12} />
                       </div>
                     {/if}
                   </div>
@@ -330,7 +316,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
                           {#if isCheckingHealth}
                             <Loader2 class="size-3.5 animate-spin" />
                           {:else}
-                            <Activity class="size-3.5 text-primary" />
+                            <ChartBar class="size-3.5 text-primary" />
                           {/if}
                           <span>{m.setup_connection_test_btn()}</span>
                         </Button>
@@ -341,7 +327,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
                   {#if healthResult}
                     <div class="p-2.5 rounded-xl border text-xs flex items-center gap-2 {healthResult.reachable ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-destructive/10 border-destructive/20 text-destructive'}">
                       {#if healthResult.reachable}
-                        <CheckCircle2 class="size-4 shrink-0" />
+                        <CheckCircle class="size-4 shrink-0" />
                         <span>
                           {m.setup_connection_connected_status({
                             status: healthResult.status ?? "ok",
@@ -349,7 +335,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
                           })}
                         </span>
                       {:else}
-                        <AlertCircle class="size-4 shrink-0" />
+                        <InfoCircle class="size-4 shrink-0" />
                         <span>{healthResult.error ?? m.setup_connection_unreachable()}</span>
                       {/if}
                     </div>

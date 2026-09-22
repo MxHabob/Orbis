@@ -6,13 +6,13 @@
 
 import React from "react";
 import { View, Text, StyleSheet, type ViewStyle } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { ArchiveBox } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 import { Spacing, Typography } from "@/constants/theme";
 import { Button } from "./button";
 
 export interface EmptyStateProps {
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: React.ComponentType<{ size?: number; color?: string }> | React.ReactNode;
   title: string;
   description?: string;
   actionTitle?: string;
@@ -21,7 +21,7 @@ export interface EmptyStateProps {
 }
 
 export function EmptyState({
-  icon = "file-tray-outline",
+  icon: IconComponent,
   title,
   description,
   actionTitle,
@@ -38,7 +38,15 @@ export function EmptyState({
           { backgroundColor: theme.backgroundElement },
         ]}
       >
-        <Ionicons name={icon} size={36} color={theme.textSecondary} />
+        {IconComponent ? (
+          typeof IconComponent === "function" ? (
+            <IconComponent size={36} color={theme.textSecondary} />
+          ) : (
+            IconComponent
+          )
+        ) : (
+          <ArchiveBox size={36} color={theme.textSecondary} />
+        )}
       </View>
       <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
       {description && (

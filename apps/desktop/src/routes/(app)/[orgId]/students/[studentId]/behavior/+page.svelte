@@ -7,13 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
-import {
-  ShieldCheck,
-  ShieldAlert,
-  Sparkles,
-  BrainCircuit,
-  Plus,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, Plus, Sparkles, UserBadgeCheck } from "@orbis/icons";
 import { onMount } from "svelte";
 import { toast } from "@orbis/ui";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -143,7 +137,7 @@ const rtl = $derived(getLocale() === "ar");
   <div class="border border-border/80 bg-linear-to-l from-brand-purple/5 to-brand-indigo/5 p-4 rounded-xl shadow-sm flex flex-col gap-3">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <BrainCircuit size={16} class="text-primary animate-pulse" />
+        <AdjustmentsHorizontal size={16} class="text-primary animate-pulse" />
         <span class="font-bold text-foreground">{m.academics_behavior_ai_title()}</span>
       </div>
       <Button variant="lime" class="text-[10px] h-7 px-2.5" onclick={handleAISummarize} disabled={isGeneratingAI}>
@@ -175,7 +169,7 @@ const rtl = $derived(getLocale() === "ar");
       filterable={true}
       filterFields={behaviorFilterFields}
       bind:filterValue={activeFilter}
-      emptyIcon={ShieldCheck}
+      emptyIcon={UserBadgeCheck}
       emptyTitle={m.academics_behavior_empty_title()}
       emptyDescription={m.academics_behavior_empty_desc()}
       {rtl}

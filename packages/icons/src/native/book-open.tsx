@@ -29,7 +29,7 @@ export interface BookOpenProps extends SvgProps {
 export function BookOpen({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: BookOpenProps) {

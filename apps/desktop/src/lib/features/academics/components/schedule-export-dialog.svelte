@@ -15,15 +15,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import {
-  Printer,
-  FileText,
-  Download,
-  Users,
-  User,
-  MapPin,
-  Layers,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, DocumentPage, Download, Grid, Keyframes, Label, Pin, User, Users } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 
@@ -129,7 +121,7 @@ function handlePrint() {
   <DialogContent class="w-full sm:max-w-3xl overflow-y-auto max-h-[90vh] flex flex-col p-6 text-start">
     <DialogHeader>
       <DialogTitle class="flex items-center gap-2">
-        <Printer size={18} class="text-primary" />
+        <AdjustmentsHorizontal size={18} class="text-primary" />
         <span>{m.academics_schedule_export_dialog_title()}</span>
       </DialogTitle>
     </DialogHeader>
@@ -219,7 +211,7 @@ function handlePrint() {
           </div>
         </div>
 
-        <!-- Matrix Table for Print -->
+        <!-- Matrix Grid for Print -->
         <table class="w-full border-collapse text-xs">
           <thead>
             <tr class="bg-muted/40 border-b border-border">
@@ -275,7 +267,7 @@ function handlePrint() {
       </Button>
 
       <Button size="sm" class="gap-1.5 text-xs font-bold shadow-xs" onclick={handlePrint}>
-        <Printer size={14} />
+        <AdjustmentsHorizontal size={14} />
         <span>{m.academics_schedule_print_now()}</span>
       </Button>
     </DialogFooter>

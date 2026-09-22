@@ -30,16 +30,7 @@ import { Textarea } from "@orbis/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Separator } from "@orbis/ui/separator";
-import {
-  CheckSquare,
-  Shield,
-  CheckCircle2,
-  XCircle,
-  ArrowUpCircle,
-  Clock,
-  AlertTriangle,
-  Loader2,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowUpCircle, CheckCircle, ClockRotateRight, InfoCircle, UserBadgeCheck, XMark } from "@orbis/icons";
 import type { AcademicOverrideRequest, ApprovalAction } from "@orbis/sdk";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -223,7 +214,7 @@ function parseApprovalChain(
           </div>
         {:else if pendingItems.length === 0}
           <div class="flex flex-col items-center justify-center py-16 text-center gap-3">
-            <CheckCircle2 class="size-10 text-muted-foreground/40" />
+            <CheckCircle class="size-10 text-muted-foreground/40" />
             <p class="text-sm text-muted-foreground">
               {m.common_approvals_empty_pending ? m.common_approvals_empty_pending() : "No pending approvals"}
             </p>
@@ -243,7 +234,7 @@ function parseApprovalChain(
                         </Badge>
                         <Badge variant={riskBadgeVariant(request.risk_level)} class="text-[10px]">
                           {#if request.risk_level === "high" || request.risk_level === "critical"}
-                            <AlertTriangle class="size-3 me-0.5" />
+                            <InfoCircle class="size-3 me-0.5" />
                           {/if}
                           {request.risk_level}
                         </Badge>
@@ -281,11 +272,11 @@ function parseApprovalChain(
                         {#each chain as step}
                           <div class="flex items-center gap-1">
                             {#if step.status === "approved"}
-                              <CheckCircle2 class="size-3 text-primary" />
+                              <CheckCircle class="size-3 text-primary" />
                             {:else if step.status === "rejected"}
-                              <XCircle class="size-3 text-destructive" />
+                              <XMark class="size-3 text-destructive" />
                             {:else}
-                              <Clock class="size-3 text-muted-foreground" />
+                              <ClockRotateRight class="size-3 text-muted-foreground" />
                             {/if}
                             <span class="capitalize">{step.role}</span>
                           </div>
@@ -314,7 +305,7 @@ function parseApprovalChain(
                         {#if processingId === request.id}
                           <Loader2 class="size-3.5 animate-spin me-1" />
                         {:else}
-                          <CheckCircle2 class="size-3.5 me-1" />
+                          <CheckCircle class="size-3.5 me-1" />
                         {/if}
                         {m.common_approval_approve ? m.common_approval_approve() : "Approve"}
                       </Button>
@@ -323,7 +314,7 @@ function parseApprovalChain(
                         onclick={() => processApproval(request.id, "reject")}
                         disabled={processingId === request.id}
                       >
-                        <XCircle class="size-3.5 me-1" />
+                        <XMark class="size-3.5 me-1" />
                         {m.common_approval_reject ? m.common_approval_reject() : "Reject"}
                       </Button>
                       <Button
@@ -353,7 +344,7 @@ function parseApprovalChain(
           </div>
         {:else if myRequests.length === 0}
           <div class="flex flex-col items-center justify-center py-16 text-center gap-3">
-            <Shield class="size-10 text-muted-foreground/40" />
+            <UserBadgeCheck class="size-10 text-muted-foreground/40" />
             <p class="text-sm text-muted-foreground">
               {m.common_approvals_empty_mine ? m.common_approvals_empty_mine() : "You haven't submitted any override requests"}
             </p>
@@ -383,7 +374,7 @@ function parseApprovalChain(
                           disabled={processingId === request.id}
                           class="text-destructive"
                         >
-                          <XCircle class="size-3.5" />
+                          <XMark class="size-3.5" />
                         </Button>
                       {/if}
                     </div>
@@ -411,7 +402,7 @@ function parseApprovalChain(
           </div>
         {:else if logItems.length === 0}
           <div class="flex flex-col items-center justify-center py-16 text-center gap-3">
-            <Clock class="size-10 text-muted-foreground/40" />
+            <ClockRotateRight class="size-10 text-muted-foreground/40" />
             <p class="text-sm text-muted-foreground">
               {m.common_approvals_empty_log ? m.common_approvals_empty_log() : "No approval history yet"}
             </p>

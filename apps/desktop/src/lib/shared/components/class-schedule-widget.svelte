@@ -3,7 +3,7 @@ import { createQuery } from "@tanstack/svelte-query";
 import { api } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { TimetableGrid } from "@orbis/ui";
-import { Clock, Calendar, ExternalLink } from "@lucide/svelte";
+import { ArrowForward, Calendar, ClockRotateRight } from "@orbis/icons";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import WorkspaceCard from "./workspace-card.svelte";
 import { page } from "$app/state";
@@ -129,7 +129,7 @@ const isLoading = $derived(scheduleQuery.isLoading || timeSlotsQuery.isLoading);
     >
       <Calendar size={13} />
       <span>{isArabic ? "عرض وإدارة الجدول" : "Full Schedule"}</span>
-      <ExternalLink size={11} class="opacity-70" />
+      <ArrowForward size={11} class="opacity-70" />
     </a>
   {/snippet}
 
@@ -141,7 +141,7 @@ const isLoading = $derived(scheduleQuery.isLoading || timeSlotsQuery.isLoading);
   {:else if lessons.length === 0 && timeSlots.length === 0}
     <div class="flex flex-col items-center justify-center p-8 text-center border border-dashed border-border/60 rounded-xl bg-muted/10 my-2">
       <div class="p-3 bg-primary/10 rounded-full text-primary mb-2">
-        <Clock size={24} />
+        <ClockRotateRight size={24} />
       </div>
       <p class="text-sm font-bold text-foreground">{isArabic ? "لا توجد حصص مجدولة" : "No Lessons Scheduled"}</p>
       <p class="text-[11px] text-muted-foreground mt-1 max-w-sm">

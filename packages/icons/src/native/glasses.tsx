@@ -29,7 +29,7 @@ export interface GlassesProps extends SvgProps {
 export function Glasses({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: GlassesProps) {
@@ -45,7 +45,7 @@ export function Glasses({
       aria-hidden={true}
       {...props}
     >
-      <!-- Left lens -->
+      
 	<Path
 		d="M2 14
 		   C2 16.2091 3.79086 18 6 18
@@ -56,7 +56,7 @@ export function Glasses({
 		strokeLinejoin="round"
 	/>
 
-	<!-- Right lens -->
+	
 	<Path
 		d="M14 14
 		   C14 16.2091 15.7909 18 18 18
@@ -67,13 +67,13 @@ export function Glasses({
 		strokeLinejoin="round"
 	/>
 
-	<!-- Left temple (side-mounted) -->
+	
 	<Path d="M2 14L0.8 14.4" strokeLinecap="round" />
 
-	<!-- Right temple (side-mounted) -->
+	
 	<Path d="M22 14L23.2 14.4" strokeLinecap="round" />
 
-	<!-- Bridge -->
+	
 	<Path d="M14 14H10" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );

@@ -29,7 +29,7 @@ export interface UserAltProps extends SvgProps {
 export function UserAlt({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: UserAltProps) {

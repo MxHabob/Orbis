@@ -5,7 +5,7 @@ import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
-  Table,
+  Grid,
   TableHeader,
   TableRow,
   TableHead,
@@ -17,28 +17,7 @@ import { toast } from "@orbis/ui";
 import { l, isAr } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
 import SearchField from "$lib/shared/components/search-field.svelte";
-import {
-  Plus,
-  Search,
-  Pencil,
-  Trash2,
-  Network,
-  School,
-  Building2,
-  MapPin,
-  Briefcase,
-  Box,
-  ChevronRight,
-  ChevronDown,
-  List,
-  FolderTree,
-  MoreVertical,
-  Layers,
-  Users,
-  GraduationCap,
-  BookOpen,
-  DoorOpen,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, BookOpen, ChevronDown, ChevronRight, Cube, EllipsisVertical, Grid, Home, Keyframes, Pencil, Pin, Plus, Search, Trash, Users } from "@orbis/icons";
 import OrgUnitSheet from "$lib/features/academics/components/org-unit-sheet.svelte";
 import { confirmStore } from "$lib/stores";
 
@@ -328,19 +307,19 @@ function getUnitTypeBadgeClass(typeStr: string): string {
 function getUnitTypeIcon(typeStr: string) {
   switch (String(typeStr).toLowerCase()) {
     case "branch":
-      return School;
+      return Home;
     case "stage":
-      return Layers;
+      return Keyframes;
     case "section":
       return Users;
     case "college":
-      return GraduationCap;
+      return BookOpen;
     case "department":
       return Network;
     case "program":
       return BookOpen;
     case "building":
-      return Building2;
+      return Home;
     case "facility":
     case "classroom":
       return DoorOpen;
@@ -506,7 +485,7 @@ function escapeHtml(text: string): string {
   {:else}
     <div class="overflow-hidden" in:fade={{ duration: 150 }}>
       <div class="overflow-x-auto">
-        <Table>
+        <Grid>
           <TableHeader>
             <TableRow class="hover:bg-transparent">
               <TableHead class="text-start text-xs font-bold text-muted-foreground">{isAr() ? "الرمز" : "Code"}</TableHead>
@@ -637,7 +616,7 @@ function escapeHtml(text: string): string {
                         title="Delete"
                         onclick={() => handleDeleteUnit(node.unit)}
                       >
-                        <Trash2 size={12} class="text-muted-foreground hover:text-destructive" />
+                        <Trash size={12} class="text-muted-foreground hover:text-destructive" />
                       </Button>
                     </div>
                   </TableCell>
@@ -739,7 +718,7 @@ function escapeHtml(text: string): string {
                         title="Delete"
                         onclick={() => handleDeleteUnit(unit)}
                       >
-                        <Trash2 size={12} class="text-muted-foreground hover:text-destructive" />
+                        <Trash size={12} class="text-muted-foreground hover:text-destructive" />
                       </Button>
                     </div>
                   </TableCell>
@@ -747,7 +726,7 @@ function escapeHtml(text: string): string {
               {/each}
             {/if}
           </TableBody>
-        </Table>
+        </Grid>
       </div>
     </div>
   {/if}

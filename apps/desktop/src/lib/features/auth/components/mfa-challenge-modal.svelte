@@ -14,7 +14,7 @@ import { Label } from "@orbis/ui/label";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { toast } from "@orbis/ui";
 import { api, type LoginResponse } from "$lib/api";
-import { ShieldCheck, Check } from "@lucide/svelte";
+import { Check, Label, UserBadgeCheck } from "@orbis/icons";
 
 interface Props {
   open: boolean;
@@ -60,7 +60,7 @@ async function handleSubmitChallenge() {
   <DialogContent class="max-w-md text-start font-sans">
     <DialogHeader>
       <DialogTitle class="text-sm font-bold flex items-center gap-2">
-        <ShieldCheck class="w-4.5 h-4.5 text-primary" />
+        <UserBadgeCheck class="w-4.5 h-4.5 text-primary" />
         <span>{m.common_mfa_challenge_dialog_title()}</span>
       </DialogTitle>
       <DialogDescription class="text-xs text-muted-foreground">

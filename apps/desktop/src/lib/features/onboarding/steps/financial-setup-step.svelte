@@ -7,13 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
-import {
-  Check,
-  ChevronDown,
-  ChevronUp,
-  SlidersHorizontal,
-  RotateCcw,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, Check, ChevronDown, ChevronUp, Refresh } from "@orbis/icons";
 
 import { onboardingState } from "../state.svelte";
 import type { GradeLevel } from "../types";
@@ -191,7 +185,7 @@ function toggleExpandStage(stageId: string) {
         class="h-7 text-[11px] gap-1.5 font-bold cursor-pointer text-muted-foreground hover:text-foreground border-border/70"
         onclick={() => (showGlobalBatchBar = !showGlobalBatchBar)}
       >
-        <SlidersHorizontal size={12} />
+        <AdjustmentsHorizontal size={12} />
         <span>{l("تسعير موحد للكل", "Global Fee")}</span>
       </Button>
 
@@ -323,7 +317,7 @@ function toggleExpandStage(stageId: string) {
                   class="h-6 px-2 text-[10px] gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
                   onclick={() => setStageFee(group.grades, currentStageFee)}
                 >
-                  <RotateCcw size={10} />
+                  <Refresh size={10} />
                   <span>{l("إعادة التوحيد مع المرحلة", "Reset to Stage Fee")}</span>
                 </Button>
               {/if}

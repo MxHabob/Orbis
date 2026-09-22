@@ -4,6 +4,8 @@ A reusable dropdown menu portal positioned dynamically on demand.
 Used to render cell actions overflow menu without mounting Svelte components inside every cell.
 -->
 <script lang="ts">
+import { AdjustmentsHorizontal } from "@orbis/icons";
+
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -30,7 +32,7 @@ let activeRowIndex = $state(-1);
 let activeProp = $state("");
 let originalEvent = $state<MouseEvent | null>(null);
 
-// Filter actions based on conditional visibility for the active row
+// AdjustmentsHorizontal actions based on conditional visibility for the active row
 const visibleActions = $derived(
   actions.filter((action) => !action.visible || action.visible(activeRow)),
 );

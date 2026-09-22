@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui";
-import { Hourglass, ArrowRight } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowRight } from "@orbis/icons";
 import { formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 

@@ -12,7 +12,7 @@ import {
   AccountPasswordCard,
   AccountSessionsCard,
 } from "$lib/features/auth";
-import { Smartphone, Laptop } from "@lucide/svelte";
+import { Computer } from "@orbis/icons";
 
 let isUpdating = $state(false);
 let currentPassword = $state("");
@@ -89,7 +89,7 @@ async function loadSecurityData() {
     if (devices && devices.length > 0) {
       activeSessions = devices.map((d) => {
         const isMobile = d.device_type === "Mobile";
-        const icon = isMobile ? Smartphone : Laptop;
+        const icon = isMobile ? Computer : Computer;
         return {
           id: d.id,
           device:
@@ -113,7 +113,7 @@ async function loadSecurityData() {
           isCurrent: true,
           isTrusted: true,
           lastActive: "Just now",
-          icon: Laptop,
+          icon: Computer,
         },
       ];
     }

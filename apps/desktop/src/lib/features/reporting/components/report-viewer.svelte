@@ -4,13 +4,7 @@ import { api } from "$lib/api";
 import type { ReportDefinition, ReportDataset, ColumnDef } from "@orbis/sdk";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import {
-  Loader2,
-  Download,
-  Filter,
-  RefreshCw,
-  AlertCircle,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, Download, InfoCircle, Refresh } from "@orbis/icons";
 import { OrbisGrid } from "@orbis/svelte-grid";
 import * as m from "$lib/paraglide/messages";
 import ReportExportDialog from "./report-export-dialog.svelte";
@@ -113,7 +107,7 @@ onMount(() => {
     
     <div class="flex items-center gap-2">
       <Button variant="outline" size="sm" onclick={queryData} disabled={isLoading || !definition}>
-        <RefreshCw class="mr-2 h-4 w-4 {isLoading ? 'animate-spin' : ''}" />
+        <Refresh class="mr-2 h-4 w-4 {isLoading ? 'animate-spin' : ''}" />
         {m.common_refresh()}
       </Button>
       <Button size="sm" onclick={() => isExportDialogOpen = true} disabled={!dataset}>
@@ -124,11 +118,11 @@ onMount(() => {
   </div>
 
   <div class="flex flex-1 overflow-hidden">
-    <!-- Filter Sidebar -->
+    <!-- AdjustmentsHorizontal Sidebar -->
     {#if definition}
       <div class="w-72 border-r bg-card/30 flex flex-col shrink-0 overflow-y-auto">
         <div class="p-4 border-b bg-muted/20 flex items-center gap-2">
-          <Filter class="h-4 w-4 text-muted-foreground" />
+          <AdjustmentsHorizontal class="h-4 w-4 text-muted-foreground" />
           <h3 class="font-medium text-sm">المعاملات</h3>
         </div>
         
@@ -142,7 +136,7 @@ onMount(() => {
                 {/if}
               </label>
               
-              <!-- Dynamic Filter Inputs (Simplified for MVP) -->
+              <!-- Dynamic AdjustmentsHorizontal Inputs (Simplified for MVP) -->
               <Input 
                 id={`report-param-${param.key}`}
                 type={param.paramType === 'number' ? 'number' : param.paramType === 'date' ? 'date' : 'text'}
@@ -164,7 +158,7 @@ onMount(() => {
     <div class="flex-1 bg-muted/10 relative">
       {#if error}
         <div class="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-background/50 backdrop-blur-sm z-10">
-          <AlertCircle class="h-10 w-10 text-destructive mb-3" />
+          <InfoCircle class="h-10 w-10 text-destructive mb-3" />
           <h3 class="text-lg font-semibold">Error</h3>
           <p class="text-sm text-muted-foreground max-w-md">{error}</p>
           <Button variant="outline" class="mt-4" onclick={loadDefinition}>Retry</Button>
@@ -182,7 +176,7 @@ onMount(() => {
         </div>
       {:else if !isLoading && !error && definition}
         <div class="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
-          <Filter class="h-12 w-12 opacity-20 mb-3" />
+          <AdjustmentsHorizontal class="h-12 w-12 opacity-20 mb-3" />
           <p class="text-sm">أدخل المعاملات ثم اضغط "تحديث" لعرض البيانات.</p>
         </div>
       {:else if isLoading && !dataset}

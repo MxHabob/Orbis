@@ -11,7 +11,7 @@ import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
-import { Zap, Bot, Play, AlertCircle } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Bolt, InfoCircle, Play, Sparkles } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { formatDate } from "$lib/core/i18n";
 
@@ -148,7 +148,7 @@ function formatTime(dtStr: string): string {
       />
     </div>
 
-    <!-- Category Filter Pills Bar -->
+    <!-- Category AdjustmentsHorizontal Pills Bar -->
     <div class="flex flex-wrap gap-1.5 items-center justify-center sm:justify-start">
       {#each categories as cat (cat.id)}
         <Button
@@ -191,9 +191,9 @@ function formatTime(dtStr: string): string {
               <div class="flex items-center justify-between gap-3 mb-4">
                 <div class="w-9 h-9 rounded-lg border border-border flex items-center justify-center shrink-0 {log.source === 'autopilot' ? 'bg-primary/10 text-primary' : 'bg-brand-lime/10 text-brand-lime'}">
                   {#if log.source === "autopilot"}
-                    <Zap size={18} />
+                    <Bolt size={18} />
                   {:else}
-                    <Bot size={18} />
+                    <Sparkles size={18} />
                   {/if}
                 </div>
 
@@ -231,7 +231,7 @@ function formatTime(dtStr: string): string {
 
               {#if log.lastError}
                 <div class="mt-2 p-2 rounded-md bg-destructive/10 border border-destructive/20 text-[10px] text-destructive flex items-start gap-1.5 font-medium">
-                  <AlertCircle size={12} class="shrink-0 mt-0.5" />
+                  <InfoCircle size={12} class="shrink-0 mt-0.5" />
                   <span class="line-clamp-2">{log.lastError}</span>
                 </div>
               {/if}

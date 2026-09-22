@@ -10,7 +10,7 @@ import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { MetricProgress } from "@orbis/ui";
-import { Plus, Users, GraduationCap } from "@lucide/svelte";
+import { BookOpen, Plus, Users } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { l } from "$lib/core/i18n/locale";
@@ -185,7 +185,7 @@ const pageLoading = $derived(
 		<div
 			class="flex flex-col items-center justify-center py-16 text-muted-foreground border border-border border-dashed rounded-xl gap-4"
 		>
-			<GraduationCap size={48} class="text-muted-foreground/30" />
+			<BookOpen size={48} class="text-muted-foreground/30" />
 			<div class="flex flex-col gap-1 text-center">
 				<p class="text-xs font-semibold">
 					{m.common_classes_empty_title()}

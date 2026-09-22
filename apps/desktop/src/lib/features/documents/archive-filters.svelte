@@ -7,7 +7,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@orbis/ui/select";
-import { Search, SlidersHorizontal, X } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Search, XMark } from "@orbis/icons";
 
 type Category = readonly [string, string];
 
@@ -53,7 +53,7 @@ function clearFilters() {
 
   <div class="flex flex-wrap items-center gap-1.5">
     <div class="flex items-center gap-1 px-1 text-muted-foreground" aria-hidden="true">
-      <SlidersHorizontal size={14} />
+      <AdjustmentsHorizontal size={14} />
       <span class="text-[11px]">تصفية</span>
     </div>
     <Select type="single" value={selectedCategory || "all"} onValueChange={(value) => selectedCategory = value === "all" ? "" : value ?? ""}>
@@ -94,7 +94,7 @@ function clearFilters() {
     </Select>
     {#if hasFilters}
       <Button variant="ghost" size="sm" class="h-8 gap-1 text-xs" onclick={clearFilters}>
-        <X size={13} />
+        <XMark size={13} />
         مسح
       </Button>
     {/if}

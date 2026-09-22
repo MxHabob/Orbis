@@ -5,7 +5,7 @@ Displays a popover of local agent conversation sessions with search and manageme
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
-import { History, Plus, Trash2, MessageSquare } from "@lucide/svelte";
+import { ChatBubble, ClockRotateRight, Plus, Trash } from "@orbis/icons";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import { formatDate } from "$lib/core/i18n";
 import { Badge } from "@orbis/ui/badge";
@@ -66,7 +66,7 @@ function handleDelete(e: MouseEvent, sessionId: string) {
         class="w-6 h-6 flex items-center justify-center rounded-md cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted"
         title="سجل المحادثات"
       >
-        <History size={13} />
+        <ClockRotateRight size={13} />
       </Button>
     {/snippet}
   </PopoverTrigger>
@@ -93,7 +93,7 @@ function handleDelete(e: MouseEvent, sessionId: string) {
     <div class="flex flex-col gap-1.5 max-h-60 overflow-y-auto scrollbar-hide text-start px-0.5 pt-1">
       {#if filteredSessions.length === 0}
         <div class="text-center text-[11px] text-muted-foreground py-6 flex flex-col items-center gap-1.5">
-          <History size={20} class="text-muted-foreground/40" />
+          <ClockRotateRight size={20} class="text-muted-foreground/40" />
           <span>لا توجد محادثات سابقة</span>
         </div>
       {:else}
@@ -120,7 +120,7 @@ function handleDelete(e: MouseEvent, sessionId: string) {
                     class="opacity-0 group-hover:opacity-100 hover:text-destructive p-0.5 rounded transition-opacity cursor-pointer"
                     title="حذف المحادثة"
                   >
-                    <Trash2 size={11} />
+                    <Trash size={11} />
                   </button>
                 {/if}
               </div>

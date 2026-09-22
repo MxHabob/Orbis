@@ -13,7 +13,7 @@ import { toast } from "@orbis/ui";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { getLocale } from "$lib/paraglide/runtime";
 import { l, isAr } from "$lib/core/i18n";
-import { Plus, Users } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Plus, Users } from "@orbis/icons";
 
 import type { User } from "$lib/api";
 import { authStore } from "$lib/stores";
@@ -155,7 +155,7 @@ async function handleAction(event: GridActionEvent) {
   <div class="flex items-center justify-between gap-4 flex-nowrap shrink-0">
     <h1 class="text-lg font-bold text-foreground truncate">{m.settings_users_title()}</h1>
     <div class="flex items-center gap-2 flex-nowrap shrink-0">
-      <!-- Role Filter -->
+      <!-- Role AdjustmentsHorizontal -->
       <div class="w-40 text-start">
         <Select type="single" value={selectedRole} onValueChange={(v) => (selectedRole = v ?? "all")}>
           <SelectTrigger class="h-8 w-full text-xs bg-card border-border/60">

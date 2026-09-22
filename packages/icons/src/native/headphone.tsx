@@ -29,7 +29,7 @@ export interface HeadphoneProps extends SvgProps {
 export function Headphone({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: HeadphoneProps) {

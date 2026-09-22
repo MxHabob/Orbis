@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { getContext } from "svelte";
 import { Button } from "@orbis/ui/button";
-import * as Icons from "@lucide/svelte";
+import * as Icons from "@orbis/icons";
 import type { GridActionEvent } from "@orbis/svelte-grid";
 
 interface ActionItem {

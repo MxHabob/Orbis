@@ -10,7 +10,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { Plus, Landmark } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Grid, Plus } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
@@ -20,7 +20,7 @@ import { DataTable } from "$lib/tables";
 import { cashAccounts as tDef, withIndex } from "$lib/tables/definitions";
 
 import AccountTree from "$lib/features/finance/components/account-tree.svelte";
-import { LayoutGrid, Network } from "@lucide/svelte";
+
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -224,7 +224,7 @@ function exportAccounts() {
           class="h-7 text-xs font-semibold px-2.5 gap-1.5"
           onclick={() => viewMode = "grid"}
         >
-          <LayoutGrid size={13} />
+          <Grid size={13} />
           <span>جدول الحسابات</span>
         </Button>
         <Button

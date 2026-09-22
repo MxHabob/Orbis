@@ -3,6 +3,8 @@
 Integrations store page — Midday inspired centered layout header using shared SearchField and AiEmptyState components.
 -->
 <script lang="ts">
+import { AdjustmentsHorizontal } from "@orbis/icons";
+
 import * as m from "$lib/paraglide/messages";
 import { apps, categories, getAppsByCategory } from "@orbis/app-store";
 import type { OrbisApp } from "@orbis/app-store";
@@ -62,7 +64,7 @@ const basePath = $derived(`/${data.orgId}/ai-center/integrations`);
     </div>
   </header>
 
-  <!-- Category Filter Pills Bar -->
+  <!-- Category AdjustmentsHorizontal Pills Bar -->
   <div class="flex justify-center py-1">
     <CategoryFilter {categories} bind:active={activeCategory} />
   </div>

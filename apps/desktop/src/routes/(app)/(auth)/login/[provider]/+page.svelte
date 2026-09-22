@@ -12,7 +12,7 @@ import { authStore } from "$lib/stores";
 import { toast } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { Card } from "@orbis/ui/card";
-import { CheckCircle2, AlertCircle, RefreshCw } from "@lucide/svelte";
+import { CheckCircle, InfoCircle, Refresh } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 import BackgroundPattern from "$lib/features/auth/components/background-pattern.svelte";
 
@@ -412,7 +412,7 @@ onMount(() => {
       <!-- Status Descriptions -->
       {#if status === "authenticating" || status === "linking"}
         <div class="flex flex-col items-center gap-3 my-4">
-          <RefreshCw class="w-6 h-6 text-primary animate-spin" />
+          <Refresh class="w-6 h-6 text-primary animate-spin" />
           <p class="text-xs text-muted-foreground">
             {isLinking ? m.auth_provider_verifying() : m.auth_provider_connecting({ provider: providerConfig.name })}
           </p>
@@ -420,7 +420,7 @@ onMount(() => {
       {:else if status === "success"}
         <div class="flex flex-col items-center gap-3 my-4">
           <div class="w-10 h-10 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 class="w-6 h-6" />
+            <CheckCircle class="w-6 h-6" />
           </div>
           <p class="text-xs font-medium text-emerald-600 dark:text-emerald-400">
             {isLinking
@@ -432,7 +432,7 @@ onMount(() => {
       {:else if status === "error"}
         <div class="flex flex-col items-center gap-3 my-4">
           <div class="w-10 h-10 rounded-full bg-destructive/15 border border-destructive/30 flex items-center justify-center text-destructive">
-            <AlertCircle class="w-6 h-6" />
+            <InfoCircle class="w-6 h-6" />
           </div>
           <p class="text-xs font-semibold text-destructive">
             {m.auth_provider_failed()}
@@ -451,7 +451,7 @@ onMount(() => {
             class="w-full h-9 text-xs font-semibold"
             onclick={handleRetry}
           >
-            <RefreshCw class="w-3.5 h-3.5 me-1.5" />
+            <Refresh class="w-3.5 h-3.5 me-1.5" />
             <span>{m.auth_provider_try_again()}</span>
           </Button>
 

@@ -29,7 +29,7 @@ export interface H3Props extends SvgProps {
 export function H3({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: H3Props) {

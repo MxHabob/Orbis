@@ -14,15 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@orbis/ui";
-import {
-  LayoutDashboard,
-  Users,
-  BookOpen,
-  Wallet,
-  Settings,
-  FileText,
-  Brain,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, BookOpen, Document, DocumentPage, Settings, Users } from "@orbis/icons";
 import OrgSidebarSwitcher from "./org-sidebar-switcher.svelte";
 import UserSidebarMenu from "./user-sidebar-menu.svelte";
 import OnboardingPopover from "./onboarding-popover.svelte";
@@ -86,19 +78,19 @@ const navItems = $derived([
   },
   {
     href: `/${orgId}/finance`,
-    icon: Wallet,
+    icon: Document,
     label: m.common_nav_finance(),
     match: "prefix",
   },
   {
     href: `/${orgId}/templates`,
-    icon: FileText,
+    icon: DocumentPage,
     label: m.settings_nav_templates(),
     match: "prefix",
   },
   {
     href: `/${orgId}/ai-center`,
-    icon: Brain,
+    icon: AdjustmentsHorizontal,
     label: "AI Center",
     match: "prefix",
   },

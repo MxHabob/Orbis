@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
-import { Activity, ArrowRight, Sparkles } from "@lucide/svelte";
+import { ArrowRight, ChartBar, Sparkles } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 
 let {
@@ -169,11 +169,11 @@ function handleMouseLeave() {
         </div>
       {/if}
 
-      <!-- Zero Activity Overlay -->
+      <!-- Zero ChartBar Overlay -->
       {#if displayData.every((d) => d.requests === 0)}
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
           <div class="px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur-xs border border-border/60 text-[10px] text-muted-foreground font-medium flex items-center gap-1.5 shadow-xs">
-            <Activity size={12} class="text-primary" />
+            <ChartBar size={12} class="text-primary" />
             <span>جاهز للاستخدام — يبدأ المخطط بالرسم فور تنفيذ الوكلاء للعمليات والاستفسارات</span>
           </div>
         </div>
@@ -183,7 +183,7 @@ function handleMouseLeave() {
     <!-- Footer link -->
     <div class="border-t border-border/40 pt-2.5 flex items-center justify-between w-full select-none text-[10px] font-medium z-10">
       <div class="flex items-center gap-2 text-muted-foreground">
-        <Activity size={12} class="text-primary" />
+        <ChartBar size={12} class="text-primary" />
         <span>مراقبة الأداء والاستجابة الفعلية للنظام.</span>
       </div>
       <a href={localizeHref(`/${orgId}/ai-center/ai-logs`)} class="text-primary hover:underline flex items-center gap-1 group font-semibold">

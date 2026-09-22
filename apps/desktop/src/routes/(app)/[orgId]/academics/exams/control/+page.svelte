@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api, extractErrorMessage } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { ShieldCheck, Lock, AlertTriangle } from "@lucide/svelte";
+import { FloppyDisk, InfoCircle, Lock, Pencil, UserBadgeCheck } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { slide } from "svelte/transition";
 import { academicContext, authStore } from "$lib/stores";
@@ -148,7 +148,7 @@ $effect(() => {
   }
 });
 
-// ── Cell Edit Handler ──────────────────────────────────────────────────────
+// ── Cell Pencil Handler ──────────────────────────────────────────────────────
 function handleCellEdit(event: CellEditEvent) {
   const { rowIndex, columnId, newValue } = event;
   const field = columnId;
@@ -165,7 +165,7 @@ function handleCellEdit(event: CellEditEvent) {
   isDirty = true;
 }
 
-// ── Save All Grades ────────────────────────────────────────────────────────
+// ── FloppyDisk All Grades ────────────────────────────────────────────────────────
 async function handleSaveAll() {
   if (!matrixData || !canEnterGrades) return;
   isSaving = true;
@@ -279,7 +279,7 @@ onMount(() => {
         in:slide={{ duration: 200 }}
       >
         <div class="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-          <AlertTriangle size={16} class="text-amber-500" />
+          <InfoCircle size={16} class="text-amber-500" />
         </div>
         <div class="text-start">
           <p class="text-xs font-bold text-amber-500">{m.common_control_entry_closed_title()}</p>

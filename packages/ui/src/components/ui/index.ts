@@ -85,7 +85,7 @@ export {
 export { Skeleton } from "./skeleton/index.js";
 export { Switch } from "./switch/index.js";
 export {
-  Table,
+  Grid,
   TableBody,
   TableCaption,
   TableCell,

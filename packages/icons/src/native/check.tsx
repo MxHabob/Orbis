@@ -29,7 +29,7 @@ export interface CheckProps extends SvgProps {
 export function Check({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: CheckProps) {

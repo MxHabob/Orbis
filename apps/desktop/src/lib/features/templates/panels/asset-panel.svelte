@@ -14,14 +14,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import {
-  ImageIcon,
-  Search,
-  Plus,
-  Trash2,
-  Upload,
-  Loader2,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowUpTray, Photo, Plus, Search, Trash } from "@orbis/icons";
 import {
   useDocuments,
   useUploadDocument,
@@ -49,7 +42,7 @@ let serverAssets = $derived(
   documentsQuery.data?.pages.flatMap((p) => p.items) || [],
 );
 
-// Filter by search query
+// AdjustmentsHorizontal by search query
 let filteredAssets = $derived(
   serverAssets.filter((doc) => {
     if (!searchQuery) return true;
@@ -94,7 +87,7 @@ function removeAsset(doc: any) {
   }
 }
 
-// ── Upload ───────────────────────────────────────
+// ── ArrowUpTray ───────────────────────────────────────
 
 function handleFileSelect(e: Event) {
   const target = e.target as HTMLInputElement;
@@ -141,7 +134,7 @@ function triggerUpload() {
             {#if uploadMutation.isPending}
               <Loader2 size={11} class="animate-spin" />
             {:else}
-              <Upload size={11} />
+              <ArrowUpTray size={11} />
             {/if}
           </Button>
         </TooltipTrigger>
@@ -222,7 +215,7 @@ function triggerUpload() {
                 <Plus size={10} class="text-primary" />
               </button>
               <button type="button" class="p-0.5 rounded bg-background/80 hover:bg-accent cursor-pointer" onclick={() => removeAsset(doc)}>
-                <Trash2 size={10} class="text-destructive" />
+                <Trash size={10} class="text-destructive" />
               </button>
             </div>
           </div>

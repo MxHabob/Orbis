@@ -7,19 +7,7 @@ import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { MetricProgress } from "@orbis/ui";
-import {
-  AlertCircle,
-  Users,
-  TrendingUp,
-  CheckCircle2,
-  FileText,
-  Bell,
-  CheckSquare,
-  MessageSquare,
-  Sparkles,
-  Share2,
-  BookOpen,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, AppNotification, BookOpen, ChartBar, ChatBubble, CheckCircle, DocumentPage, InfoCircle, Share, Sparkles, Users } from "@orbis/icons";
 import { fade } from "svelte/transition";
 import { academicContext } from "$lib/stores";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -135,7 +123,7 @@ function handleNotifications() {
 
     <QuickActionButton 
       label={isArabic ? "الإشعارات" : "Notifications"} 
-      icon={Bell} 
+      icon={AppNotification} 
       onclick={handleNotifications}
     />
     <QuickActionButton 
@@ -150,7 +138,7 @@ function handleNotifications() {
     />
     <QuickActionButton 
       label={isArabic ? "الواجبات" : "Assignments"} 
-      icon={FileText} 
+      icon={DocumentPage} 
       onclick={() => toast.info(isArabic ? "إدارة الواجبات..." : "Manage assignments...")}
     />
     <QuickActionButton 
@@ -173,7 +161,7 @@ function handleNotifications() {
     </div>
   {:else if error}
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2 font-sans">
-      <AlertCircle size={24} />
+      <InfoCircle size={24} />
       <h3 class="font-semibold text-xs">{m.academics_class_overview_load_failed ? m.academics_class_overview_load_failed() : "Failed to load class metrics"}</h3>
       <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
       <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.common_retry ? m.common_retry() : "Retry"}</Button>
@@ -202,7 +190,7 @@ function handleNotifications() {
           title={isArabic ? "المستوى الأكاديمي العام" : "Student Performance"}
           subtitle={isArabic ? "لا توجد بيانات أداء" : "No performance data"}
           displayValue="0%"
-          icon={TrendingUp}
+          icon={ChartBar}
           segments={[]}
         />
 
@@ -211,7 +199,7 @@ function handleNotifications() {
           title={isArabic ? "إنجاز المنهاج الدراسي" : "Curriculum Progress"}
           subtitle={isArabic ? "لا توجد بيانات للمنهاج" : "No curriculum data"}
           displayValue="0%"
-          icon={CheckCircle2}
+          icon={CheckCircle}
           segments={[]}
         />
 

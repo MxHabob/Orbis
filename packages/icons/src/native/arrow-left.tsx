@@ -29,7 +29,7 @@ export interface ArrowLeftProps extends SvgProps {
 export function ArrowLeft({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: ArrowLeftProps) {

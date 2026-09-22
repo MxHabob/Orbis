@@ -12,7 +12,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@orbis/ui/accordion";
-import { CircleCheck, CircleX, Hash, AlertTriangle } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Hashtag, InfoCircle } from "@orbis/icons";
 
 interface Props {
   totalFilled: number;
@@ -52,7 +52,7 @@ let progressPercent = $derived(
   <!-- Summary Badges -->
   <div class="flex items-center gap-4 flex-wrap">
     <div class="flex items-center gap-1.5">
-      <Hash size={13} class="text-muted-foreground" />
+      <Hashtag size={13} class="text-muted-foreground" />
       <span class="text-xs font-medium text-muted-foreground">{m.common_grades_col_total()}:</span>
       <Badge variant="secondary" class="text-xs px-2 py-0.5">{totalFilled}</Badge>
     </div>
@@ -93,7 +93,7 @@ let progressPercent = $derived(
       <AccordionItem value="errors" class="rounded-lg bg-destructive/5">
         <AccordionTrigger class="px-4 py-2 text-xs font-medium text-destructive hover:no-underline">
           <div class="flex items-center gap-1.5">
-            <AlertTriangle size={13} />
+            <InfoCircle size={13} />
             {m.common_bulk_input_error_details()} ({errorDetails.length})
           </div>
         </AccordionTrigger>

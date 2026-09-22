@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Button } from "../components/ui/button";
-import { Trash2 } from "@lucide/svelte";
+import { Trash } from "@orbis/icons";
 import type { FilterCondition, FieldDefinition } from "./types";
 import FilterFieldPicker from "./FilterFieldPicker.svelte";
 import FilterOperatorPicker from "./FilterOperatorPicker.svelte";
@@ -31,7 +31,7 @@ let {
 
     <!-- Delete Button -->
     <Button variant="ghost" size="icon" onclick={onRemove} class="text-destructive hover:bg-destructive/10 hover:text-destructive shrink-0 mt-2 sm:mt-0">
-        <Trash2 class="w-4 h-4" />
+        <Trash class="w-4 h-4" />
         <span class="sr-only">Remove Condition</span>
     </Button>
 </div>

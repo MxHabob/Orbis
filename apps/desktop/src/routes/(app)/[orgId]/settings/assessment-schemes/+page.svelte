@@ -9,15 +9,7 @@ Uses the Assessment Engine's assessment_scheme CRUD operations.
   import AssessmentComponentDialog from "$lib/features/settings/components/assessment-component-dialog.svelte";
   import AssessmentSchemeDialog from "$lib/features/settings/components/assessment-scheme-dialog.svelte";
   import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
-  import {
-    ChevronRight,
-    Layers,
-    Loader2,
-    Pencil,
-    Plus,
-    Trash2,
-    Weight,
-  } from "@lucide/svelte";
+  import { AdjustmentsHorizontal, ChevronRight, Keyframes, Pencil, Plus, Trash } from "@orbis/icons";
   import { toast } from "@orbis/ui";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
@@ -281,7 +273,7 @@ Uses the Assessment Engine's assessment_scheme CRUD operations.
       class="flex items-center justify-between pb-5 border-b border-border/40 w-full select-none"
     >
       <div class="flex items-center gap-2">
-        <Layers size={18} class="text-primary" />
+        <Keyframes size={18} class="text-primary" />
         <h1 class="text-sm font-semibold text-foreground">
           هياكل التقييم والأوزان
         </h1>
@@ -328,7 +320,7 @@ Uses the Assessment Engine's assessment_scheme CRUD operations.
                     handleDeleteScheme(scheme.id);
                   }}
                 >
-                  <Trash2 size={12} />
+                  <Trash size={12} />
                 </button>
                 <ChevronRight size={14} class="text-muted-foreground" />
               </div>
@@ -457,7 +449,7 @@ Uses the Assessment Engine's assessment_scheme CRUD operations.
                             class="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
                             onclick={() => handleDeleteComponent(comp.id)}
                           >
-                            <Trash2 size={12} />
+                            <Trash size={12} />
                           </button>
                         </div>
                       </td>

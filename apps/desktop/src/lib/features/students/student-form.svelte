@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { onMount, untrack } from "svelte";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
-import { ArrowLeft, MoreHorizontal, ChevronDown, Save } from "@lucide/svelte";
+import { ArrowLeft, ChevronDown, EllipsisHorizontal, FloppyDisk } from "@orbis/icons";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import {
   DropdownMenu,
@@ -101,7 +101,7 @@ onMount(async () => {
                  m.common_form_select_template()}
               </span>
               <div class="h-8 w-8 flex items-center justify-center text-muted-foreground">
-                <MoreHorizontal class="h-4 w-4" />
+                <EllipsisHorizontal class="h-4 w-4" />
               </div>
             </div>
           </DropdownMenuTrigger>
@@ -172,7 +172,7 @@ onMount(async () => {
           onclick={() => handleSave(state.registrationStatus)}
           disabled={state.isSaving}
         >
-          <Save class="me-1.5 h-4 w-4" />
+          <FloppyDisk class="me-1.5 h-4 w-4" />
           {state.isSaving ? m.common_state_saving() : m.settings_action_save_changes()}
         </Button>
       {:else}
@@ -182,7 +182,7 @@ onMount(async () => {
           onclick={() => handleSave("draft")}
           disabled={state.isSaving}
         >
-          <Save class="me-1.5 h-4 w-4" />
+          <FloppyDisk class="me-1.5 h-4 w-4" />
           {state.isSaving ? m.common_state_saving() : m.common_form_btn_create()}
         </Button>
       {/if}

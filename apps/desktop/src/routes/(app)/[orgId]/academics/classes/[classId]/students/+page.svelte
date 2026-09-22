@@ -5,7 +5,7 @@ import { api, extractErrorMessage } from "$lib/api";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { Users, AlertCircle, RefreshCcw } from "@lucide/svelte";
+import { InfoCircle, Refresh, Users } from "@orbis/icons";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 
@@ -70,7 +70,7 @@ function refetch() {
     </div>
     <div class="flex gap-2">
       <Button variant="outline" size="sm" class="h-8 gap-1.5 text-xs font-semibold" onclick={refetch}>
-        <RefreshCcw size={12} class={isLoading ? "animate-spin" : ""} />
+        <Refresh size={12} class={isLoading ? "animate-spin" : ""} />
         {m.common_retry ? m.common_retry() : "Refresh"}
       </Button>
       <Button variant="default" size="sm" class="h-8 gap-1.5 text-xs font-semibold">
@@ -81,7 +81,7 @@ function refetch() {
 
   {#if error}
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2 font-sans">
-      <AlertCircle size={24} />
+      <InfoCircle size={24} />
       <h3 class="font-semibold text-xs">Failed to load students</h3>
       <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
     </div>

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Save, X } from "@lucide/svelte";
+import { FloppyDisk, XMark } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { api } from "$lib/api";
 import { createTimeSlotInputSchema } from "@orbis/schemas";
@@ -135,11 +135,11 @@ async function saveSlot(event: SubmitEvent) {
       <FormField label={m.academics_schedule_end_time()} error={form.errors.end_time?.[0]} required>{#snippet children()}<Input bind:value={endTime} type="time" required disabled={isSubmitting} />{/snippet}</FormField>
       <div class="flex gap-2">
         <Button type="submit" class="h-9 flex-1 gap-1.5 text-xs" disabled={isSubmitting}>
-          <Save size={14} />
+          <FloppyDisk size={14} />
           {m.academics_schedule_save_slot()}
         </Button>
         <Button type="button" variant="ghost" size="icon" class="h-9 w-9" onclick={() => { open = false; resetForm(); }} aria-label={m.common_action_cancel()}>
-          <X size={14} />
+          <XMark size={14} />
         </Button>
       </div>
     </form>

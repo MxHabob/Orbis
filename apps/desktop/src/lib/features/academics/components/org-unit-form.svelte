@@ -15,18 +15,7 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
-import {
-  Building2,
-  School,
-  GraduationCap,
-  Layers,
-  DoorOpen,
-  Briefcase,
-  ShieldCheck,
-  MapPin,
-  Users,
-  BookOpen,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, BookOpen, Home, Keyframes, Pin, UserBadgeCheck, Users } from "@orbis/icons";
 import { onMount, untrack } from "svelte";
 import {
   Accordion,
@@ -80,17 +69,17 @@ function fieldError(field: string): string | undefined {
 }
 
 const unitTypeOptions = [
-  { value: "branch", label: m.common_org_unit_branch(), icon: School },
-  { value: "stage", label: m.common_org_unit_stage(), icon: Layers },
+  { value: "branch", label: m.common_org_unit_branch(), icon: Home },
+  { value: "stage", label: m.common_org_unit_stage(), icon: Keyframes },
   { value: "section", label: m.common_org_unit_section(), icon: Users },
-  { value: "college", label: m.common_org_unit_college(), icon: GraduationCap },
+  { value: "college", label: m.common_org_unit_college(), icon: BookOpen },
   {
     value: "department",
     label: m.common_org_unit_department(),
     icon: Briefcase,
   },
   { value: "program", label: m.common_org_unit_program(), icon: BookOpen },
-  { value: "building", label: m.common_org_unit_building(), icon: Building2 },
+  { value: "building", label: m.common_org_unit_building(), icon: Home },
   { value: "facility", label: m.common_org_unit_facility(), icon: DoorOpen },
 ];
 
@@ -144,7 +133,7 @@ async function handleSubmit(e: SubmitEvent) {
 <form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0 text-start">
   <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
     <SheetTitle class="text-base font-bold text-foreground flex items-center gap-2">
-      <Building2 size={18} class="text-primary" />
+      <Home size={18} class="text-primary" />
       {isEdit ? m.common_org_unit_edit_title() : m.common_org_unit_add_title()}
     </SheetTitle>
   </SheetHeader>

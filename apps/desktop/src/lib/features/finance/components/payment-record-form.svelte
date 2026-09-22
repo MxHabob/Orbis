@@ -1,4 +1,6 @@
 <script lang="ts">
+import { DocumentPage } from "@orbis/icons";
+
 import { api } from "$lib/api";
 import { formatCurrency } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
@@ -310,7 +312,7 @@ async function handleSubmit(e: SubmitEvent) {
 		{/snippet}
 	</FormField>
 
-	<!-- Receipt ID -->
+	<!-- DocumentPage ID -->
 	<FormField id="pay_receipt" label={m.common_payment_label_receipt()}>
 		{#snippet children()}
 		<Input 

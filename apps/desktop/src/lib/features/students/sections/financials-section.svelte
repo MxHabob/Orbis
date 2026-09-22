@@ -1,4 +1,6 @@
 <script lang="ts">
+import { DocumentPage, Label } from "@orbis/icons";
+
 import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui/label";
 import { Input } from "@orbis/ui/input";
@@ -175,7 +177,7 @@ let { state }: { state: StudentFormState } = $props();
 
   </div>
 
-  <!-- Live Receipt Calculator Summary Column -->
+  <!-- Live DocumentPage Calculator Summary Column -->
   <div class="flex flex-col gap-6">
     <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/20 sticky top-6">
       <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">

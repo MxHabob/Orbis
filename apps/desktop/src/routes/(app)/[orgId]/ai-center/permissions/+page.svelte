@@ -6,18 +6,7 @@ Clean Midday inspired layout with elegant subheadings.
 <script lang="ts">
   import { api } from "$lib/api";
   import * as m from "$lib/paraglide/messages";
-  import {
-    Bot,
-    Check,
-    CheckCircle,
-    ChevronDown,
-    Lock,
-    Shield,
-    ShieldAlert,
-    ShieldCheck,
-    ShieldX,
-    X,
-  } from "@lucide/svelte";
+  import { Check, CheckCircle, ChevronDown, Lock, Sparkles, UserBadgeCheck, XMark } from "@orbis/icons";
   import { Button } from "@orbis/ui/button";
   import { onMount } from "svelte";
 
@@ -123,7 +112,7 @@ Clean Midday inspired layout with elegant subheadings.
   <div class="w-full space-y-6">
     <!-- Risk Summary Cards (Full Grid Width) -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {#each [{ level: "low", label: "منخفض المخاطر", count: riskSummary.low, icon: ShieldCheck }, { level: "medium", label: "متوسط المخاطر", count: riskSummary.medium, icon: Shield }, { level: "high", label: "مرتفع المخاطر", count: riskSummary.high, icon: ShieldAlert }, { level: "critical", label: "حرج للغاية", count: riskSummary.critical, icon: ShieldX }] as card}
+      {#each [{ level: "low", label: "منخفض المخاطر", count: riskSummary.low, icon: UserBadgeCheck }, { level: "medium", label: "متوسط المخاطر", count: riskSummary.medium, icon: UserBadgeCheck }, { level: "high", label: "مرتفع المخاطر", count: riskSummary.high, icon: UserBadgeCheck }, { level: "critical", label: "حرج للغاية", count: riskSummary.critical, icon: UserBadgeCheck }] as card}
         <div
           class="border border-border rounded-xl p-4 bg-card flex flex-col justify-between shadow-sm"
         >
@@ -199,7 +188,7 @@ Clean Midday inspired layout with elegant subheadings.
                 (expandedDomain = expandedDomain === domain ? null : domain)}
             >
               <div class="flex items-center gap-2.5">
-                <Bot size={15} class="text-primary" />
+                <Sparkles size={15} class="text-primary" />
                 <span class="text-xs font-semibold text-foreground"
                   >{domainLabels[domain] ?? domain}</span
                 >
@@ -288,7 +277,7 @@ Clean Midday inspired layout with elegant subheadings.
         <div
           class="bg-card border border-border rounded-xl p-8 flex flex-col items-center text-center"
         >
-          <Shield size={24} class="text-muted-foreground/60 mb-2" />
+          <UserBadgeCheck size={24} class="text-muted-foreground/60 mb-2" />
           <p class="text-xs font-semibold text-foreground">
             لا توجد إجراءات مسجلة حالياً في مصفوفة الصلاحيات
           </p>
@@ -328,7 +317,7 @@ Clean Midday inspired layout with elegant subheadings.
                   class="text-xs"
                   onclick={() => handleReject(approval.id)}
                 >
-                  <X size={12} class="ml-1" /> رفض
+                  <XMark size={12} class="ml-1" /> رفض
                 </Button>
                 <Button
                   size="sm"

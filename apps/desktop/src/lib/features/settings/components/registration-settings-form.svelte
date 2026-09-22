@@ -17,7 +17,7 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import {
-  Table,
+  Grid,
   TableBody,
   TableCell,
   TableHead,
@@ -25,20 +25,7 @@ import {
   TableRow,
 } from "@orbis/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
-import {
-  Plus,
-  Trash2,
-  Sparkles,
-  ShieldCheck,
-  FileCheck,
-  SlidersHorizontal,
-  GraduationCap,
-  School,
-  Building2,
-  BookOpen,
-  CheckCircle2,
-  Lock as LockIcon,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, BookOpen, CheckCircle, DocumentCheck, FloppyDisk, Grid, Home, Label, Lock, Plus, Sparkles, Trash, UserBadgeCheck } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
@@ -241,7 +228,7 @@ function removeDocument(id: string) {
   requiredDocuments = requiredDocuments.filter((d) => d.id !== id);
 }
 
-// Save form
+// FloppyDisk form
 function handleFormSave() {
   const activeFieldsList = formFields.filter((f) => f.isActive).map((f) => f.key);
   const requiredFieldsList = formFields.filter((f) => f.isActive && f.isRequired).map((f) => f.key);
@@ -279,7 +266,7 @@ function handleFormSave() {
   <div class="p-4 rounded-xl border border-border/70 bg-card shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4">
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-        <GraduationCap class="w-5 h-5" />
+        <BookOpen class="w-5 h-5" />
       </div>
       <div>
         <h3 class="text-sm font-bold text-foreground">
@@ -294,7 +281,7 @@ function handleFormSave() {
     <!-- Locked Profile Badge -->
     <div class="shrink-0 flex items-center gap-2">
       <Badge variant="outline" class="px-3.5 py-1.5 h-8 text-xs font-bold gap-1.5 bg-muted/40 border-border/80 text-foreground">
-        <LockIcon class="w-3.5 h-3.5 text-muted-foreground" />
+        <Lock class="w-3.5 h-3.5 text-muted-foreground" />
         <span>
           {#if institutionType === "school"}
             {l("مدرسة تعليم عام (K-12)", "K-12 School")}
@@ -316,7 +303,7 @@ function handleFormSave() {
   <Tabs value={activeTab} onValueChange={(v) => (activeTab = v as any)}>
     <TabsList class="h-9 p-1 bg-muted/50 rounded-lg border border-border/40">
       <TabsTrigger value="policies" class="text-xs font-semibold gap-1.5 px-4 h-7">
-        <ShieldCheck class="w-3.5 h-3.5" />
+        <UserBadgeCheck class="w-3.5 h-3.5" />
         <span>{l("سياسات القبول والترقيم", "Admission & Numbering")}</span>
       </TabsTrigger>
       <TabsTrigger value="documents" class="text-xs font-semibold gap-1.5 px-4 h-7">
@@ -327,7 +314,7 @@ function handleFormSave() {
         </Badge>
       </TabsTrigger>
       <TabsTrigger value="fields" class="text-xs font-semibold gap-1.5 px-4 h-7">
-        <SlidersHorizontal class="w-3.5 h-3.5" />
+        <AdjustmentsHorizontal class="w-3.5 h-3.5" />
         <span>{l("حقول استمارة التسجيل", "Form Fields Matrix")}</span>
       </TabsTrigger>
     </TabsList>
@@ -532,9 +519,9 @@ function handleFormSave() {
         </div>
       </div>
 
-      <!-- Documents Table -->
+      <!-- Documents Grid -->
       <div class="rounded-xl border border-border/70 bg-card overflow-hidden shadow-2xs">
-        <Table>
+        <Grid>
           <TableHeader class="bg-muted/40">
             <TableRow>
               <TableHead class="text-start font-bold text-xs">{l("اسم الوثيقة والمستند المطلوب", "Document Title")}</TableHead>
@@ -577,20 +564,20 @@ function handleFormSave() {
                     class="h-7 w-7 p-0 text-muted-foreground hover:text-destructive cursor-pointer"
                     onclick={() => removeDocument(doc.id)}
                   >
-                    <Trash2 class="w-3.5 h-3.5" />
+                    <Trash class="w-3.5 h-3.5" />
                   </Button>
                 </TableCell>
               </TableRow>
             {/each}
           </TableBody>
-        </Table>
+        </Grid>
       </div>
     </TabsContent>
 
     <!-- TAB 3: Form Fields Matrix -->
     <TabsContent value="fields" class="space-y-4 pt-4">
       <div class="rounded-xl border border-border/70 bg-card overflow-hidden shadow-2xs">
-        <Table>
+        <Grid>
           <TableHeader class="bg-muted/40">
             <TableRow>
               <TableHead class="text-start font-bold text-xs">{l("حقل استمارة التسجيل", "Field Name")}</TableHead>
@@ -637,12 +624,12 @@ function handleFormSave() {
               </TableRow>
             {/each}
           </TableBody>
-        </Table>
+        </Grid>
       </div>
     </TabsContent>
   </Tabs>
 
-  <!-- Bottom Save Bar -->
+  <!-- Bottom FloppyDisk Bar -->
   <SettingsBottomBar
     {isDirty}
     {isSaving}

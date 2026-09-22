@@ -10,7 +10,7 @@ import { formatDate } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
-  Table,
+  Grid,
   TableHeader,
   TableRow,
   TableHead,
@@ -20,24 +20,7 @@ import {
 import { toast } from "@orbis/ui";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import {
-  ArrowLeft,
-  BookOpen,
-  Calendar,
-  Hash,
-  Building2,
-  UserCheck,
-  Plus,
-  Zap,
-  Lock,
-  Shuffle,
-  Play,
-  CheckCircle2,
-  Pencil,
-  Trash,
-  XCircle,
-  Printer,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowLeft, Bolt, BookOpen, Calendar, CheckCircle, Grid, Hashtag, Home, Lock, Pencil, Play, Plus, Trash, UserBadgeCheck, XMark } from "@orbis/icons";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";
@@ -211,19 +194,19 @@ const tabs = $derived([
   {
     id: "seating",
     label: m.common_exams_detail_seating(),
-    icon: Hash,
+    icon: Hashtag,
     count: seatingNumbers.length,
   },
   {
     id: "halls",
     label: m.common_exams_stat_halls(),
-    icon: Building2,
+    icon: Home,
     count: halls.length,
   },
   {
     id: "proctors",
     label: m.common_exams_stat_proctors(),
-    icon: UserCheck,
+    icon: UserBadgeCheck,
     count: proctors.length,
   },
 ]);
@@ -602,7 +585,7 @@ async function handleAssignProctors() {
 						</div>
 					{:else}
 						<div class="card-tactile bg-card overflow-hidden">
-							<Table>
+							<Grid>
 								<TableHeader>
 									<TableRow class="text-[10px]">
 										<TableHead class="w-10">#</TableHead>
@@ -627,7 +610,7 @@ async function handleAssignProctors() {
 										</TableRow>
 									{/each}
 								</TableBody>
-							</Table>
+							</Grid>
 						</div>
 						<Button variant="outline" class="w-fit h-7 px-3 text-[10px] cursor-pointer" onclick={() => isSubjectSheetOpen = true}>
 							<Plus size={12} class="me-1" />
@@ -644,7 +627,7 @@ async function handleAssignProctors() {
 							<Calendar size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_exams_scheduled()}</p>
 							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={handleAutoSchedule}>
-								<Zap size={12} class="me-1" />
+								<Bolt size={12} class="me-1" />
 								{m.common_exams_actions_auto_schedule()}
 							</Button>
 						</div>
@@ -711,9 +694,9 @@ async function handleAssignProctors() {
 															title={sched.status === "cancelled" ? "إعادة تفعيل الامتحان" : "إلغاء تفعيل الامتحان"}
 														>
 															{#if sched.status === "cancelled"}
-																<CheckCircle2 size={12} class="text-emerald-500 hover:text-emerald-600" />
+																<CheckCircle size={12} class="text-emerald-500 hover:text-emerald-600" />
 															{:else}
-																<XCircle size={12} class="text-amber-500 hover:text-amber-600" />
+																<XMark size={12} class="text-amber-500 hover:text-amber-600" />
 															{/if}
 														</button>
 														<button 
@@ -766,9 +749,9 @@ async function handleAssignProctors() {
 															title={sched.status === "cancelled" ? "إعادة تفعيل الامتحان" : "إلغاء تفعيل الامتحان"}
 														>
 															{#if sched.status === "cancelled"}
-																<CheckCircle2 size={12} class="text-emerald-500 hover:text-emerald-600" />
+																<CheckCircle size={12} class="text-emerald-500 hover:text-emerald-600" />
 															{:else}
-																<XCircle size={12} class="text-amber-500 hover:text-amber-600" />
+																<XMark size={12} class="text-amber-500 hover:text-amber-600" />
 															{/if}
 														</button>
 														<button 
@@ -795,10 +778,10 @@ async function handleAssignProctors() {
 				<div class="flex flex-col gap-4">
 					{#if seatingNumbers.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
-							<Hash size={24} class="text-muted-foreground" />
+							<Hashtag size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_seating_numbers()}</p>
 							<Button variant="default" class="h-7 px-3 text-[10px] cursor-pointer" onclick={handleGenerateSeating}>
-								<Hash size={12} class="me-1" />
+								<Hashtag size={12} class="me-1" />
 								{m.common_exams_actions_generate_seating()}
 							</Button>
 						</div>
@@ -811,13 +794,13 @@ async function handleAssignProctors() {
 									class="h-7 px-3 text-[10px] flex items-center gap-1.5 cursor-pointer border-primary/30 text-primary"
 									onclick={() => printDialogOpen = true}
 								>
-									<Printer size={12} />
+									<AdjustmentsHorizontal size={12} />
 									<span>{m.common_print_templates()} ({selectedSeatIds.size})</span>
 								</Button>
 							{/if}
 						</div>
 						<div class="card-tactile bg-card overflow-hidden">
-							<Table>
+							<Grid>
 								<TableHeader>
 									<TableRow class="text-[10px]">
 										<TableHead class="w-10 text-center">
@@ -854,7 +837,7 @@ async function handleAssignProctors() {
 										</TableRow>
 									{/each}
 								</TableBody>
-							</Table>
+							</Grid>
 						</div>
 					{/if}
 				</div>
@@ -872,7 +855,7 @@ async function handleAssignProctors() {
 
 					{#if rooms.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
-							<Building2 size={24} class="text-muted-foreground" />
+							<Home size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_classrooms()}</p>
 						</div>
 					{:else}
@@ -931,16 +914,16 @@ async function handleAssignProctors() {
 				<div class="flex flex-col gap-4">
 					{#if proctors.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
-							<UserCheck size={24} class="text-muted-foreground" />
+							<UserBadgeCheck size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_proctors_assigned()}</p>
 							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={() => { activeConfigTab = "proctors"; isConfigModalOpen = true; }}>
-								<UserCheck size={12} class="me-1" />
+								<UserBadgeCheck size={12} class="me-1" />
 								{m.common_exams_actions_assign_proctors()}
 							</Button>
 						</div>
 					{:else}
 						<div class="card-tactile bg-card overflow-hidden">
-							<Table>
+							<Grid>
 								<TableHeader>
 									<TableRow class="text-[10px]">
 										<TableHead>{m.academics_exams_proctor()}</TableHead>
@@ -957,7 +940,7 @@ async function handleAssignProctors() {
 											<TableCell>{p.role}</TableCell>
 											<TableCell>
 												{#if p.is_confirmed === 1}
-													<CheckCircle2 size={14} class="text-emerald-500" />
+													<CheckCircle size={14} class="text-emerald-500" />
 												{:else}
 													<span class="text-[9px] text-amber-500">{m.academics_exams_pending_confirmation()}</span>
 												{/if}
@@ -965,7 +948,7 @@ async function handleAssignProctors() {
 										</TableRow>
 									{/each}
 								</TableBody>
-							</Table>
+							</Grid>
 						</div>
 					{/if}
 				</div>
@@ -1029,13 +1012,13 @@ async function handleAssignProctors() {
 		<div class="border-t border-border pt-4 flex flex-wrap items-center gap-2" in:fade={{ delay: 150, duration: 200 }}>
 			<span class="text-[9px] text-muted-foreground font-bold uppercase tracking-wider me-2">{m.academics_exams_quick_actions()}</span>
 			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={handleGenerateSeating}>
-				<Hash size={10} /> أرقام الجلوس
+				<Hashtag size={10} /> أرقام الجلوس
 			</Button>
 			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={handleGenerateSecrets}>
 				<Lock size={10} /> الأرقام السرية
 			</Button>
 			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={() => { activeConfigTab = "schedule"; isConfigModalOpen = true; }}>
-				<Zap size={10} /> جدولة تلقائية
+				<Bolt size={10} /> جدولة تلقائية
 			</Button>
 			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={() => { activeConfigTab = "halls"; isConfigModalOpen = true; }}>
 				<Shuffle size={10} /> توزيع اللجان
@@ -1139,7 +1122,7 @@ async function handleAssignProctors() {
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
 						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAutoSchedule(); }}>
-							<Zap size={12} class="me-1" /> بدء الجدولة الذكية
+							<Bolt size={12} class="me-1" /> بدء الجدولة الذكية
 						</Button>
 					</div>
 
@@ -1216,7 +1199,7 @@ async function handleAssignProctors() {
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
 						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAssignProctors(); }}>
-							<UserCheck size={12} class="me-1" /> تعيين المراقبين تلقائياً
+							<UserBadgeCheck size={12} class="me-1" /> تعيين المراقبين تلقائياً
 						</Button>
 					</div>
 				{/if}

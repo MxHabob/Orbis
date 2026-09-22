@@ -1,3 +1,6 @@
+<script lang="ts">
+import { FloppyDisk } from "@orbis/icons";
+</script>
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { api, queryKeys } from "$lib/api";
@@ -284,7 +287,7 @@ export class StudentFormState {
     );
   }
 
-  // Save operation
+  // FloppyDisk operation
   async handleSave(queryClient?: any) {
     if (!this.personal.nameAr.trim()) {
       toast.error(m.common_form_error_name_required());
@@ -344,7 +347,7 @@ export class StudentFormState {
         toast.success(m.common_form_success_update());
       }
 
-      // 3. Save guardians
+      // 3. FloppyDisk guardians
       for (const guardian of this.guardian.linkedGuardians) {
         if (!guardian.full_name.trim()) continue;
         let guardianUserId = guardian.user_id;

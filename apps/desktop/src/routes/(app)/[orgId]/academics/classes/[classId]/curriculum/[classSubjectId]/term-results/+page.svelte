@@ -4,14 +4,7 @@ import { createQuery } from "@tanstack/svelte-query";
 import { api, extractErrorMessage } from "$lib/api";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
-import {
-  AlertCircle,
-  RefreshCcw,
-  FileCheck2,
-  Printer,
-  CheckCircle2,
-  XCircle,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, CheckCircle, Grid, InfoCircle, Refresh, XMark } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -59,13 +52,13 @@ function getStudentName(enrollmentId: string): string {
         onclick={() => termResultsQuery.refetch()} 
         disabled={termResultsQuery.isLoading}
       >
-        <RefreshCcw size={12} class={termResultsQuery.isLoading ? "animate-spin" : ""} />
+        <Refresh size={12} class={termResultsQuery.isLoading ? "animate-spin" : ""} />
         <span>{isArabic ? "تحديث" : "Refresh"}</span>
       </Button>
     </div>
   </div>
 
-  <!-- Table Container -->
+  <!-- Grid Container -->
   <div class="flex-1 overflow-auto border border-border/70 rounded-xl shadow-xs bg-card">
     {#if termResultsQuery.isLoading}
       <div class="flex h-full items-center justify-center text-xs text-muted-foreground animate-pulse">
@@ -73,7 +66,7 @@ function getStudentName(enrollmentId: string): string {
       </div>
     {:else if termResultsQuery.error}
       <div class="flex h-full flex-col items-center justify-center text-xs text-destructive gap-2 p-6">
-        <AlertCircle size={24} />
+        <InfoCircle size={24} />
         <span class="font-semibold">{extractErrorMessage(termResultsQuery.error)}</span>
       </div>
     {:else if termResults.length === 0}
@@ -111,12 +104,12 @@ function getStudentName(enrollmentId: string): string {
               <td class="px-4 py-3 text-center">
                 {#if r.is_passed === 1}
                   <Badge variant="secondary" class="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-bold">
-                    <CheckCircle2 size={11} class="me-1 inline" />
+                    <CheckCircle size={11} class="me-1 inline" />
                     {isArabic ? "ناجح" : "Passed"}
                   </Badge>
                 {:else}
                   <Badge variant="destructive" class="text-[10px] font-bold">
-                    <XCircle size={11} class="me-1 inline" />
+                    <XMark size={11} class="me-1 inline" />
                     {isArabic ? "راسب" : "Failed"}
                   </Badge>
                 {/if}

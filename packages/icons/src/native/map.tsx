@@ -29,7 +29,7 @@ export interface MapProps extends SvgProps {
 export function Map({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: MapProps) {

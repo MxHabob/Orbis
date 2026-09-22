@@ -13,21 +13,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
-import {
-  Search,
-  ArrowLeft,
-  CreditCard,
-  User,
-  Hash,
-  BookOpen,
-  DollarSign,
-  Calendar,
-  CheckCircle,
-  FileText,
-  Keyboard,
-  X,
-  Plus,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowLeft, BookOpen, Calendar, CheckCircle, Document, DocumentPage, Hashtag, Keyboard, Plus, Search, User, XMark } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 import { matchStudent } from "$lib/shared/utils/search";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
@@ -66,7 +52,7 @@ let referenceNumber = $state("");
 let notes = $state("");
 let isSubmitting = $state(false);
 
-// Filter students locally based on search query
+// AdjustmentsHorizontal students locally based on search query
 const filteredStudents = $derived.by(() => {
   if (!searchQuery.trim()) return [];
   return students.filter((s) => matchStudent(s, searchQuery)).slice(0, 8); // Limit to 8 quick results
@@ -122,7 +108,7 @@ async function loadStudentData(enrollId: string) {
     // Unpaid/Partially paid fees
     activeStudentFees = feesList.filter((f) => f.status !== "paid");
 
-    // Filter payments for this student
+    // AdjustmentsHorizontal payments for this student
     activeStudentPayments = paymentsList
       .filter((p) => String(p.enrollment_id) === String(enrollId))
       .slice(0, 5); // last 5 payments
@@ -303,7 +289,7 @@ onMount(() => {
       </a>
       <div class="text-start">
         <h2 class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
-          <CreditCard size={15} class="text-lime-500" />
+          <Document size={15} class="text-lime-500" />
           <span>{m.finance_pos_quick_pos_payment_register()}</span>
         </h2>
         <p class="text-[10px] text-muted-foreground mt-0.5">
@@ -365,7 +351,7 @@ onMount(() => {
               onclick={() => { searchQuery = ""; highlightedIndex = -1; }}
               class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground"
             >
-              <X size={14} />
+              <XMark size={14} />
             </button>
           {/if}
         </div>
@@ -435,7 +421,7 @@ onMount(() => {
             class="absolute top-3 right-3 text-muted-foreground/60 hover:text-foreground h-6 w-6 rounded-md flex items-center justify-center hover:bg-accent border border-border/50"
             title={m.finance_pos_deselect_student()}
           >
-            <X size={12} />
+            <XMark size={12} />
           </button>
           
           <div class="flex items-center gap-4">
@@ -446,7 +432,7 @@ onMount(() => {
               <span class="text-sm font-bold text-foreground">{selectedStudent.full_name}</span>
               <div class="flex items-center gap-3 text-[10px] text-muted-foreground">
                 <span class="flex items-center gap-0.5 font-mono">
-                  <Hash size={10} />
+                  <Hashtag size={10} />
                   <span>#{selectedStudent.student_number || selectedStudent.id.slice(0,8)}</span>
                 </span>
                 {#if selectedStudent.class_name}
@@ -567,7 +553,7 @@ onMount(() => {
       {#if !selectedStudent}
         <!-- Form Disabled Overlay state -->
         <div class="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground select-none">
-          <FileText size={40} class="text-muted-foreground/30 mb-3" />
+          <DocumentPage size={40} class="text-muted-foreground/30 mb-3" />
           <p class="text-xs font-semibold">{m.finance_pos_payment_form_offline()}</p>
           <p class="text-[9.5px] text-muted-foreground/80 mt-1 max-w-[250px]">
             {m.finance_pos_search_for_a_student_and()}
@@ -708,9 +694,9 @@ onMount(() => {
             </div>
           </div>
 
-          <!-- Receipt & Ref details -->
+          <!-- DocumentPage & Ref details -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <!-- Receipt Number -->
+            <!-- DocumentPage Number -->
             <div class="flex flex-col gap-2">
               <label for="pos_receipt" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 {m.common_payment_label_receipt()}
@@ -777,7 +763,7 @@ onMount(() => {
                 {m.common_loading()}
               {:else}
                 <span class="flex items-center justify-center gap-1.5">
-                  <CreditCard size={15} />
+                  <Document size={15} />
                   <span>{m.finance_pos_record_post_payment()}</span>
                 </span>
               {/if}

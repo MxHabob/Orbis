@@ -24,14 +24,7 @@ import {
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 
-import {
-  ShieldAlert,
-  Award,
-  Loader2,
-  BookCheck,
-  GraduationCap,
-  LockKeyhole,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, BookOpen, Grid, Label, Lock, Pencil, UserBadgeCheck } from "@orbis/icons";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
@@ -167,13 +160,13 @@ async function handleSave(e?: Event) {
 
       </div>
 
-      <!-- Two-Column Settings Layout -->
+      <!-- Two-Column Settings Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         <!-- 1. Grading & Evaluation Defaults Section -->
         <div class="flex flex-col gap-5 text-start bg-card border border-border/50 rounded-xl p-5 shadow-2xs">
           <div class="border-b border-border/60 pb-3 flex items-center gap-2">
-            <Award size={16} class="text-primary" />
+            <AdjustmentsHorizontal size={16} class="text-primary" />
             <h2 class="text-xs font-semibold text-foreground">
               نظام الدرجات والتقييم الأساسي
             </h2>
@@ -243,7 +236,7 @@ async function handleSave(e?: Event) {
         <!-- 2. Enrollment Rules Section -->
         <div class="flex flex-col gap-5 text-start bg-card border border-border/50 rounded-xl p-5 shadow-2xs">
           <div class="border-b border-border/60 pb-3 flex items-center gap-2">
-            <ShieldAlert size={16} class="text-primary" />
+            <UserBadgeCheck size={16} class="text-primary" />
             <h2 class="text-xs font-semibold text-foreground">
               {m.common_policy_card_enrollment
                 ? m.common_policy_card_enrollment()
@@ -314,7 +307,7 @@ async function handleSave(e?: Event) {
         <!-- 3. Grade Entry & Locking Policies Section -->
         <div class="flex flex-col gap-5 text-start bg-card border border-border/50 rounded-xl p-5 shadow-2xs">
           <div class="border-b border-border/60 pb-3 flex items-center gap-2">
-            <LockKeyhole size={16} class="text-primary" />
+            <Lock size={16} class="text-primary" />
             <h2 class="text-xs font-semibold text-foreground">
               ضوابط رصد وقفل الدرجات
             </h2>
@@ -336,7 +329,7 @@ async function handleSave(e?: Event) {
               />
             </div>
 
-            <!-- Allow Grade Edit After Close -->
+            <!-- Allow Grade Pencil After Close -->
             <div class="flex items-center justify-between py-2 border-b border-border/20">
               <div class="flex flex-col text-start gap-0.5 pe-4">
                 <span class="text-xs font-semibold text-foreground">السماح بتعديل الدرجات بعد الإغلاق</span>
@@ -351,7 +344,7 @@ async function handleSave(e?: Event) {
               />
             </div>
 
-            <!-- Grade Edit Requires Approval -->
+            <!-- Grade Pencil Requires Approval -->
             <div class="flex items-center justify-between py-2">
               <div class="flex flex-col text-start gap-0.5 pe-4">
                 <span class="text-xs font-semibold text-foreground">تعديل الدرجة يتطلب موافقة واعتماد</span>
@@ -371,7 +364,7 @@ async function handleSave(e?: Event) {
         <!-- 4. Promotion & Graduation Rules Section -->
         <div class="flex flex-col gap-5 text-start bg-card border border-border/50 rounded-xl p-5 shadow-2xs">
           <div class="border-b border-border/60 pb-3 flex items-center gap-2">
-            <GraduationCap size={16} class="text-primary" />
+            <BookOpen size={16} class="text-primary" />
             <h2 class="text-xs font-semibold text-foreground">
               ضوابط الترفيع الأكاديمي والتخرج
             </h2>

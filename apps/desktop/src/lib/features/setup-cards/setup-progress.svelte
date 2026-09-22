@@ -6,20 +6,7 @@
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { systemStore } from "$lib/stores/system.svelte";
-import {
-  X,
-  Calendar,
-  GraduationCap,
-  BookOpen,
-  Building2,
-  Clock,
-  Coins,
-  Layers,
-  Check,
-  ArrowRight,
-  ArrowLeft,
-  Sparkles,
-} from "@lucide/svelte";
+import { ArrowLeft, ArrowRight, BookOpen, Calendar, Check, ClockRotateRight, DocumentChartBar, Home, Keyframes, Sparkles, XMark } from "@orbis/icons";
 import { onMount } from "svelte";
 import { fly } from "svelte/transition";
 
@@ -55,12 +42,12 @@ const routeMap: Record<string, string> = {
 
 const iconMap: Record<string, any> = {
   academic_year: Calendar,
-  classes: GraduationCap,
+  classes: BookOpen,
   subjects: BookOpen,
-  rooms: Building2,
-  time_slots: Clock,
-  fee_templates: Coins,
-  org_units: Layers,
+  rooms: Home,
+  time_slots: ClockRotateRight,
+  fee_templates: DocumentChartBar,
+  org_units: Keyframes,
 };
 
 const items = $derived(systemStore.orgReadiness?.pending_setup_items ?? []);
@@ -103,7 +90,7 @@ const displaySteps = $derived(items.slice(0, 4));
         class="absolute top-2.5 {isArabic ? 'left-2.5' : 'right-2.5'} z-20 text-muted-foreground hover:text-foreground p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 focus:outline-none rounded-lg hover:bg-muted/50"
         title={isArabic ? "إخفاء" : "Dismiss"}
       >
-        <X size={14} />
+        <XMark size={14} />
       </button>
 
       <!-- Dot-grid visual header area matching DesktopBanner -->

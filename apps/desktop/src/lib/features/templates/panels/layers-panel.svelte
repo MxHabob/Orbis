@@ -8,24 +8,7 @@ import type { EditorStore } from "../stores/editor-store.svelte";
 import type { TemplateNode } from "@docforge/core";
 import { isContainerNode } from "@docforge/core";
 import { Button } from "@orbis/ui/button";
-import {
-  Type,
-  ImageIcon,
-  Square,
-  LayoutGrid,
-  Table,
-  Barcode,
-  QrCode,
-  Minus,
-  ChevronDown,
-  ChevronRight,
-  Eye,
-  EyeOff,
-  Lock,
-  Unlock,
-  Plus,
-  FileText,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, Bold, CheckBox, ChevronDown, ChevronRight, DocumentPage, Eye, EyeSlash, Grid, Lock, Minus, Photo, Plus } from "@orbis/icons";
 
 let {
   store,
@@ -50,12 +33,12 @@ function getIcon(type: string) {
     case "Image":
       return ImageIcon;
     case "Shape":
-      return Square;
+      return CheckBox;
     case "Frame":
     case "Grid":
-      return LayoutGrid;
+      return Grid;
     case "Table":
-      return Table;
+      return Grid;
     case "Barcode":
       return Barcode;
     case "QRCode":
@@ -63,7 +46,7 @@ function getIcon(type: string) {
     case "Separator":
       return Minus;
     default:
-      return FileText;
+      return DocumentPage;
   }
 }
 
@@ -169,7 +152,7 @@ function getIconColor(type: string): string {
             <!-- Visibility toggle (on hover) -->
             <span class="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
               {#if node.visible === false}
-                <EyeOff size={10} class="text-muted-foreground/50" />
+                <EyeSlash size={10} class="text-muted-foreground/50" />
               {:else}
                 <Eye size={10} class="text-muted-foreground/30" />
               {/if}

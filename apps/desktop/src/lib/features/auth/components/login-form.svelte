@@ -5,7 +5,7 @@ import { authStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
-import { Eye, EyeOff, Loader2 } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Eye, EyeSlash } from "@orbis/icons";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "@orbis/ui";
@@ -95,7 +95,7 @@ function handleForgotPassword() {
 				aria-label={showPassword ? m.auth_login_hide_password() : m.auth_login_show_password()}
 			>
 				{#if showPassword}
-					<EyeOff size={15} strokeWidth={2} />
+					<EyeSlash size={15} strokeWidth={2} />
 				{:else}
 					<Eye size={15} strokeWidth={2} />
 				{/if}

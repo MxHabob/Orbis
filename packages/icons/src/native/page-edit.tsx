@@ -29,7 +29,7 @@ export interface PageEditProps extends SvgProps {
 export function PageEdit({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: PageEditProps) {

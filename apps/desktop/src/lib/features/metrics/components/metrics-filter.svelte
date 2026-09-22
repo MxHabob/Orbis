@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@orbis/ui/dropdown-menu";
-import { Filter, ChevronDown } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ChevronDown } from "@orbis/icons";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 
@@ -96,7 +96,7 @@ const className = $derived(() => {
 		<DropdownMenuTrigger>
 			{#snippet child({ props }: { props: any })}
 				<Button {...props} variant="outline" class="gap-2 px-2.5 h-8 text-xs font-medium bg-background border-border hover:bg-muted/40 cursor-pointer">
-					<Filter size={13} class="text-[#666]" />
+					<AdjustmentsHorizontal size={13} class="text-[#666]" />
 					<span>{m.reports_metrics_filters()}</span>
 					<ChevronDown size={12} class="text-[#666] opacity-60" />
 				</Button>

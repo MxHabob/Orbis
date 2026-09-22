@@ -29,7 +29,7 @@ export interface GlobeAltProps extends SvgProps {
 export function GlobeAlt({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: GlobeAltProps) {

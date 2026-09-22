@@ -6,7 +6,7 @@ import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
-import { ArrowRight } from "@lucide/svelte";
+import { ArrowRight } from "@orbis/icons";
 
 let {
   orgId,

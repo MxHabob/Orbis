@@ -22,7 +22,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { CheckCircle, InfoCircle, Sparkles } from "@orbis/icons/native";
 import { Radii, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -147,18 +147,18 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     switch (variant) {
       case "success":
         return (
-          <Ionicons name="checkmark-circle" size={20} color={theme.success} />
+          <CheckCircle size={20} color={theme.success} />
         );
       case "error":
-        return <Ionicons name="alert-circle" size={20} color={theme.error} />;
+        return <InfoCircle size={20} color={theme.error} />;
       case "warning":
-        return <Ionicons name="warning" size={20} color={theme.warning} />;
+        return <InfoCircle size={20} color={theme.warning} />;
       case "info":
         return (
-          <Ionicons name="information-circle" size={20} color={theme.info} />
+          <InfoCircle size={20} color={theme.info} />
         );
       default:
-        return <Ionicons name="sparkles" size={18} color={theme.primary} />;
+        return <Sparkles size={18} color={theme.primary} />;
     }
   };
 

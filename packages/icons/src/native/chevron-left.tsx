@@ -29,7 +29,7 @@ export interface ChevronLeftProps extends SvgProps {
 export function ChevronLeft({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: ChevronLeftProps) {

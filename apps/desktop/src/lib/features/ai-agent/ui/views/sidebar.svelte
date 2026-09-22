@@ -5,6 +5,8 @@ Provides file-based conversation and context persistence, ReAct reasoning loop,
 interactive tool inspections, and consequential action approvals.
 -->
 <script lang="ts">
+import { ChartBar } from "@orbis/icons";
+
 import * as m from "$lib/paraglide/messages";
 import { uiStore, authStore, aiContext } from "$lib/stores";
 import { fly } from "svelte/transition";
@@ -443,7 +445,7 @@ function handleLinkClick(href: string) {
   />
 
   {#if viewMode === "cockpit"}
-    <!-- Activity & System Tools Cockpit View -->
+    <!-- ChartBar & System Tools Cockpit View -->
     <AgentCockpit
       orgId={currentOrgId}
       pendingActions={pendingActions}

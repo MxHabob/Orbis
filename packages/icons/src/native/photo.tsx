@@ -29,7 +29,7 @@ export interface PhotoProps extends SvgProps {
 export function Photo({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: PhotoProps) {

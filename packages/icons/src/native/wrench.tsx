@@ -29,7 +29,7 @@ export interface WrenchProps extends SvgProps {
 export function Wrench({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: WrenchProps) {

@@ -15,7 +15,7 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import {
-  Table,
+  Grid,
   TableBody,
   TableCell,
   TableHead,
@@ -31,19 +31,7 @@ import {
   SheetFooter,
 } from "@orbis/ui/sheet";
 import { toast } from "@orbis/ui";
-import {
-  Scale,
-  Plus,
-  Search,
-  Download,
-  Filter,
-  Eye,
-  Trash2,
-  Calendar,
-  CheckCircle2,
-  AlertCircle,
-  FileSpreadsheet,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, Calendar, CheckCircle, DocumentChartBar, Download, Eye, Grid, InfoCircle, Plus, Search, Trash } from "@orbis/icons";
 import CreateJournalDialog from "$lib/features/finance/components/create-journal-dialog.svelte";
 import { exportToCsv } from "$lib/shared/utils/export";
 
@@ -183,7 +171,7 @@ const filteredEntries = $derived(
           disabled={filteredEntries.length === 0}
           class="h-9 text-xs font-semibold gap-1.5"
         >
-          <FileSpreadsheet class="w-4 h-4" />
+          <DocumentChartBar class="w-4 h-4" />
           تصدير CSV
         </Button>
 
@@ -213,7 +201,7 @@ const filteredEntries = $derived(
 
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-          <CheckCircle2 class="w-4 h-4" />
+          <CheckCircle class="w-4 h-4" />
         </div>
         <div>
           <div class="text-lg font-bold text-foreground font-mono leading-none">
@@ -225,7 +213,7 @@ const filteredEntries = $derived(
     </div>
   </div>
 
-  <!-- Filters & Table Card -->
+  <!-- Filters & Grid Card -->
   <Card class="border border-border/80 shadow-xs">
     <div class="p-4 border-b border-border/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
       <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -258,9 +246,9 @@ const filteredEntries = $derived(
       </div>
     </div>
 
-    <!-- Data Table -->
+    <!-- Data Grid -->
     <CardContent class="p-0">
-      <Table>
+      <Grid>
         <TableHeader class="bg-muted/40">
           <TableRow>
             <TableHead class="text-xs font-bold w-12 text-center">#</TableHead>
@@ -322,7 +310,7 @@ const filteredEntries = $derived(
             {/each}
           {/if}
         </TableBody>
-      </Table>
+      </Grid>
     </CardContent>
   </Card>
 </div>

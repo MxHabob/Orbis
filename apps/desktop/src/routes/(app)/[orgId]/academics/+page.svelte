@@ -10,20 +10,7 @@ import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
-import {
-  GraduationCap,
-  Calendar,
-  ShieldCheck,
-  CalendarDays,
-  CalendarClock,
-  TrendingUp,
-  ClipboardList,
-  ArrowRight,
-  Milestone,
-  AlertCircle,
-  Sparkles,
-  Info,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowRight, BookOpen, Calendar, ChartBar, Grid, Info, InfoCircle, Sparkles, TaskList, UserBadgeCheck } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 
 import {
@@ -122,7 +109,7 @@ const directoryItems = $derived([
     path: `/${data.orgId}/academics/classes`,
     title: m.common_search_group_classes(),
     desc: m.academics_overview_card_classes_desc(),
-    icon: GraduationCap,
+    icon: BookOpen,
     badge: m.academics_overview_card_classes_badge({ count: classes.length }),
   },
   {
@@ -136,14 +123,14 @@ const directoryItems = $derived([
     path: `/${data.orgId}/academics/promotion`,
     title: m.academics_overview_card_promotion_title(),
     desc: m.academics_overview_card_promotion_desc(),
-    icon: TrendingUp,
+    icon: ChartBar,
     badge: m.common_promo_wizard_title(),
   },
   {
     path: `/${data.orgId}/academics/exams`, // Moved under academics
     title: m.academics_overview_card_exams_title(),
     desc: m.academics_overview_card_exams_desc(),
-    icon: ClipboardList,
+    icon: TaskList,
     badge: m.academics_overview_card_exams_badge(),
   },
 ]);
@@ -162,7 +149,7 @@ const advisorInsights = $derived.by(() => {
           })
         : m.academics_overview_insight_grades_closed(),
       variant: isGradeEntryOpen ? ("warning" as const) : ("neutral" as const),
-      icon: ShieldCheck,
+      icon: UserBadgeCheck,
     });
   }
 
@@ -190,7 +177,7 @@ const advisorInsights = $derived.by(() => {
         id: "promotion",
         text: m.academics_overview_insight_promo_running(),
         variant: "warning" as const,
-        icon: TrendingUp,
+        icon: ChartBar,
       });
     } else {
       insights.push({
@@ -200,7 +187,7 @@ const advisorInsights = $derived.by(() => {
           retained: activePromoJob.retained_count ?? 0,
         }),
         variant: "success" as const,
-        icon: TrendingUp,
+        icon: ChartBar,
       });
     }
   } else {
@@ -208,7 +195,7 @@ const advisorInsights = $derived.by(() => {
       id: "promotion",
       text: m.academics_overview_insight_promo_none(),
       variant: "neutral" as const,
-      icon: TrendingUp,
+      icon: ChartBar,
     });
   }
 
@@ -223,14 +210,14 @@ const advisorInsights = $derived.by(() => {
         session: activeExamSession.name_ar || activeExamSession.name,
       }),
       variant: "success" as const,
-      icon: ClipboardList,
+      icon: TaskList,
     });
   } else {
     insights.push({
       id: "exams-none",
       text: m.academics_overview_insight_exams_none(),
       variant: "neutral" as const,
-      icon: ClipboardList,
+      icon: TaskList,
     });
   }
 
@@ -279,7 +266,7 @@ const advisorInsights = $derived.by(() => {
   </div>
 
   {#if isLoading}
-    <!-- Split Layout Loading Skeleton -->
+    <!-- Split Grid Loading Skeleton -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
       <!-- Left Directory List Skeleton -->
       <div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-3">
@@ -328,7 +315,7 @@ const advisorInsights = $derived.by(() => {
     <div
       class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2"
     >
-      <AlertCircle size={24} />
+      <InfoCircle size={24} />
       <h3 class="font-semibold text-xs">{m.common_error_load_overview()}</h3>
       <p class="text-[10px] text-muted-foreground">
         {extractErrorMessage(error)}
@@ -340,7 +327,7 @@ const advisorInsights = $derived.by(() => {
       >
     </div>
   {:else}
-    <!-- Main Content Split Layout -->
+    <!-- Main Content Split Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
       <!-- 1. LEFT COLUMN: Directory Index List (Notion Database style) -->
       <div class="lg:col-span-7 xl:col-span-8 flex flex-col">

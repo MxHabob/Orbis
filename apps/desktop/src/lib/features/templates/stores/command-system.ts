@@ -1,3 +1,6 @@
+<script lang="ts">
+import { FloppyDisk } from "@orbis/icons";
+</script>
 import * as m from "$lib/paraglide/messages";
 // ═══════════════════════════════════════════════════════════════
 // Template Designer — Command System
@@ -55,7 +58,7 @@ export class UpdatePropsCommand implements EditorCommand {
   }
 
   execute(doc: TemplateDocument): TemplateDocument {
-    // Save previous props for undo
+    // FloppyDisk previous props for undo
     const node = findNode(doc, this.nodeId);
     if (node && "props" in node && node.props) {
       this.prevProps = {};
@@ -215,7 +218,7 @@ export class RemoveNodeCommand implements EditorCommand {
   }
 
   execute(doc: TemplateDocument): TemplateDocument {
-    // Save the node and its parent for undo
+    // FloppyDisk the node and its parent for undo
     this.removedNode = findNode(doc, this.nodeId);
     // Find parent
     const parentInfo = findParentOfNode(doc, this.nodeId);

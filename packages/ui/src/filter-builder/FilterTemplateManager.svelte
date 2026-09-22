@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Button } from "../components/ui/button";
-import { Save, FolderOpen, Trash2 } from "@lucide/svelte";
+import { AdjustmentsHorizontal, FloppyDisk, FolderOpen, Trash } from "@orbis/icons";
 import {
   Dialog,
   DialogContent,
@@ -75,18 +75,18 @@ function removeTemplate(id: string) {
 </script>
 
 <div class="flex items-center gap-2">
-    <!-- Save Dialog -->
+    <!-- FloppyDisk Dialog -->
     <Dialog bind:open={isSaveDialogOpen}>
         <DialogTrigger>
             {#snippet child({ props })}
                 <Button variant="outline" size="sm" class="gap-2 text-xs h-8" {...props}>
-                    <Save class="w-3.5 h-3.5" /> Save View
+                    <FloppyDisk class="w-3.5 h-3.5" /> FloppyDisk View
                 </Button>
             {/snippet}
         </DialogTrigger>
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Save Filter Template</DialogTitle>
+                <DialogTitle>Save AdjustmentsHorizontal Template</DialogTitle>
                 <DialogDescription>Save the current filter configuration for quick access later.</DialogDescription>
             </DialogHeader>
             <div class="py-4">
@@ -120,7 +120,7 @@ function removeTemplate(id: string) {
                                 {t.name}
                             </button>
                             <Button variant="ghost" size="icon" class="h-8 w-8 text-destructive" onclick={() => removeTemplate(t.id)}>
-                                <Trash2 class="w-3.5 h-3.5" />
+                                <Trash class="w-3.5 h-3.5" />
                             </Button>
                         </div>
                     {/each}

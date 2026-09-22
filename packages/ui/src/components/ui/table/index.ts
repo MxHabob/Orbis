@@ -1,5 +1,8 @@
+<script lang="ts">
+import { Grid } from "@orbis/icons";
+</script>
 // ── @orbis/ui-svelte/table ──────────────────────────────────────────
-// Table infrastructure: primitive components + headless hooks + utilities.
+// Grid infrastructure: primitive components + headless hooks + utilities.
 
 // ── Primitive Components (shadcn-svelte) ────────────────────────────
 
@@ -22,7 +25,7 @@ export {
   Header,
   Row,
   //
-  Root as Table,
+  Root as Grid,
   Body as TableBody,
   Caption as TableCaption,
   Cell as TableCell,

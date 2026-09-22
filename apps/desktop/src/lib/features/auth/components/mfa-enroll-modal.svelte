@@ -15,15 +15,7 @@ import { Label } from "@orbis/ui/label";
 import { toast } from "@orbis/ui";
 import { api, type MfaEnrollResponse } from "$lib/api";
 import { authStore } from "$lib/stores";
-import {
-  ShieldCheck,
-  Copy,
-  Check,
-  Download,
-  AlertTriangle,
-  ArrowRight,
-  ArrowLeft,
-} from "@lucide/svelte";
+import { ArrowLeft, ArrowRight, Check, Clipboard, Download, InfoCircle, Label, UserBadgeCheck } from "@orbis/icons";
 
 interface Props {
   open: boolean;
@@ -150,7 +142,7 @@ async function handleVerifyAndActivate() {
   <DialogContent class="max-w-md text-start font-sans">
     <DialogHeader>
       <DialogTitle class="text-sm font-bold flex items-center gap-2">
-        <ShieldCheck class="w-4.5 h-4.5 text-primary" />
+        <UserBadgeCheck class="w-4.5 h-4.5 text-primary" />
         <span>{m.common_mfa_enroll_dialog_title()}</span>
       </DialogTitle>
       <DialogDescription class="text-xs text-muted-foreground">
@@ -206,7 +198,7 @@ async function handleVerifyAndActivate() {
                     <Check class="w-3.5 h-3.5 text-emerald-500" />
                     <span>{m.common_mfa_enroll_copied()}</span>
                   {:else}
-                    <Copy class="w-3.5 h-3.5" />
+                    <Clipboard class="w-3.5 h-3.5" />
                     <span>{m.common_mfa_enroll_copy()}</span>
                   {/if}
                 </Button>
@@ -218,7 +210,7 @@ async function handleVerifyAndActivate() {
         {:else if step === 'codes'}
           <div class="flex flex-col gap-3 text-start">
             <div class="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5 text-amber-600 dark:text-amber-400">
-              <AlertTriangle class="w-4 h-4 shrink-0 mt-0.5" />
+              <InfoCircle class="w-4 h-4 shrink-0 mt-0.5" />
               <div class="text-xs leading-relaxed">
                 <strong class="font-semibold">{m.common_mfa_enroll_codes_warning_title()}</strong>
                 <p class="text-[11px] text-muted-foreground mt-0.5">
@@ -247,7 +239,7 @@ async function handleVerifyAndActivate() {
                   <Check class="w-3.5 h-3.5 text-emerald-500" />
                   <span>{m.common_mfa_enroll_copied()}</span>
                 {:else}
-                  <Copy class="w-3.5 h-3.5" />
+                  <Clipboard class="w-3.5 h-3.5" />
                   <span>{m.common_mfa_enroll_copy_all_codes()}</span>
                 {/if}
               </Button>
@@ -325,7 +317,7 @@ async function handleVerifyAndActivate() {
             <div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"></div>
             <span>...</span>
           {:else}
-            <ShieldCheck class="w-3.5 h-3.5" />
+            <UserBadgeCheck class="w-3.5 h-3.5" />
             <span>{m.common_mfa_enroll_confirm_btn()}</span>
           {/if}
         </Button>

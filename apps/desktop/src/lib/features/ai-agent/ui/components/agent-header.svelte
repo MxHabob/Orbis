@@ -1,7 +1,7 @@
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
 import UserAvatar from "$lib/shared/components/user-avatar.svelte";
-import { X, Activity, MessageSquare, Columns, Plus } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ChartBar, ChatBubble, ClockRotateRight, Grid, Plus, XMark } from "@orbis/icons";
 import ChatHistoryPopover from "./chat-history-popover.svelte";
 import type { AiChatSession } from "$lib/features/ai/session-store";
 
@@ -49,7 +49,7 @@ let {
         class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
         title="إغلاق الشريط الجانبي"
       >
-        <X size={14} strokeWidth={2} />
+        <XMark size={14} strokeWidth={2} />
       </Button>
     {/if}
     
@@ -72,13 +72,13 @@ let {
       class="w-6 h-6 relative flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer {viewMode === 'cockpit' ? 'bg-primary/10 text-primary' : ''}"
       title={viewMode === 'cockpit' ? 'العودة للمحادثة' : 'مركز الأدوات والعمليات'}
     >
-      <Activity size={13} />
+      <ChartBar size={13} />
       {#if pendingActionsCount > 0}
         <span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-card animate-pulse"></span>
       {/if}
     </Button>
     
-    <!-- Standalone Window / Split Layout -->
+    <!-- Standalone Window / Split Grid -->
     {#if !isStandalone}
       <Button
         variant="ghost"
@@ -91,7 +91,7 @@ let {
       </Button>
     {/if}
 
-    <!-- Chat History Sessions Popover -->
+    <!-- Chat ClockRotateRight Sessions Popover -->
     <ChatHistoryPopover
       sessions={sessions}
       currentSessionId={currentSessionId}

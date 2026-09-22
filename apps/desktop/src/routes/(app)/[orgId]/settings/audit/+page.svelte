@@ -12,7 +12,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { History } from "@lucide/svelte";
+import { ClockRotateRight } from "@orbis/icons";
 import { l, isAr } from "$lib/core/i18n";
 import { formatDate as fmtDate } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -154,7 +154,7 @@ function openDetails(log: any) {
       filterable={true}
       filterFields={auditFilterFields}
       bind:filterValue={activeFilter}
-      emptyIcon={History}
+      emptyIcon={ClockRotateRight}
       emptyTitle={m.common_audit_empty?.() || "No audit logs found"}
       emptyDescription={m.common_audit_empty_desc?.() || "No operations have been recorded yet."}
       rtl={getLocale() === "ar"}

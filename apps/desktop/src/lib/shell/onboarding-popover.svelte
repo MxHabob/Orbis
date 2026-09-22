@@ -9,7 +9,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@orbis/ui";
-import { Check, CheckCircle2, ChevronRight, Sparkles, ExternalLink, ArrowRight } from "@lucide/svelte";
+import { ArrowForward, ArrowRight, Check, CheckCircle, ChevronRight, Sparkles } from "@orbis/icons";
 import { systemStore } from "$lib/stores";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
@@ -190,7 +190,7 @@ function handleGoToOnboarding() {
       <!-- Setup Tasks Items -->
       {#if items.length === 0}
         <div class="p-4 text-center text-xs text-muted-foreground">
-          <CheckCircle2 class="size-6 text-emerald-500 mx-auto mb-1.5 opacity-80" />
+          <CheckCircle class="size-6 text-emerald-500 mx-auto mb-1.5 opacity-80" />
           <span>{isArabic ? "لا توجد خطوات تهيئة معلقة." : "No pending setup steps."}</span>
         </div>
       {:else}

@@ -7,27 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import type { EditorStore } from "../stores/editor-store.svelte";
 import { Input } from "@orbis/ui/input";
 import { Badge } from "@orbis/ui/badge";
-import {
-  Search,
-  Type,
-  Image,
-  Square,
-  Circle,
-  Minus,
-  Table,
-  Barcode,
-  QrCode,
-  Frame,
-  Grid3X3,
-  Repeat2,
-  GitBranch,
-  Component,
-  FileDown,
-  PanelTop,
-  PanelBottom,
-  Stamp,
-  MoveVertical,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, Bold, CheckBox, CheckCircle, Grid, Merge, Minus, Photo, Search, Tag } from "@orbis/icons";
 
 let {
   store,
@@ -66,7 +46,7 @@ const elements: ElementItem[] = [
   {
     id: "shape-rect",
     type: "Shape",
-    icon: Square,
+    icon: CheckBox,
     label: "Rectangle",
     labelAr: m.template_element_rect(),
     category: "shapes",
@@ -90,7 +70,7 @@ const elements: ElementItem[] = [
   {
     id: "table",
     type: "Table",
-    icon: Table,
+    icon: Grid,
     label: "Table",
     labelAr: m.template_element_table(),
     category: "data",
@@ -138,7 +118,7 @@ const elements: ElementItem[] = [
   {
     id: "conditional",
     type: "Conditional",
-    icon: GitBranch,
+    icon: Merge,
     label: "Conditional",
     labelAr: "شرط",
     category: "logic",

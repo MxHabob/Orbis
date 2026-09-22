@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Button } from "../components/ui/button";
-import { Filter, X } from "@lucide/svelte";
+import { AdjustmentsHorizontal, XMark } from "@orbis/icons";
 import {
   Dialog,
   DialogContent,
@@ -57,7 +57,7 @@ function handleClear() {
         <DialogTrigger>
             {#snippet child({ props })}
                 <Button variant="ghost" size="sm" class="h-8 gap-1.5 text-xs relative" {...props}>
-                    <Filter class="w-3.5 h-3.5" />
+                    <AdjustmentsHorizontal class="w-3.5 h-3.5" />
                     {translations.filter}
                     {#if activeCount > 0}
                         <span class="absolute -top-1 -inset-e-1 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
@@ -76,7 +76,7 @@ function handleClear() {
             </div>
             <DialogFooter class="flex items-center justify-between gap-2">
                 <Button variant="ghost" size="sm" class="text-xs text-destructive" onclick={handleClear}>
-                    <X class="w-3.5 h-3.5 me-1" /> {translations.clearAll}
+                    <XMark class="w-3.5 h-3.5 me-1" /> {translations.clearAll}
                 </Button>
                 <Button size="sm" class="text-xs" onclick={handleApply}>
                     {translations.applyFilter}

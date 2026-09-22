@@ -10,7 +10,7 @@ import {
   TooltipProvider,
 } from "@orbis/ui/tooltip";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { Activity, RefreshCw, AlertTriangle, Settings, Brain, ArrowRight, Sparkles, CheckCircle2, ChevronRight } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowRight, ChartBar, CheckCircle, ChevronRight, InfoCircle, Refresh, Settings, Sparkles } from "@orbis/icons";
 import { systemStore } from "$lib/stores";
 import { Avatar } from "@orbis/avatar-engine";
 import { goto } from "$app/navigation";
@@ -152,7 +152,7 @@ function handleGoToOnboarding() {
               class="relative cursor-pointer rounded-[10px]"
               aria-label={m.common_autopilot_popover_title()}
             >
-              <Activity size={16} strokeWidth={1.8} class="text-foreground" />
+              <ChartBar size={16} strokeWidth={1.8} class="text-foreground" />
               
               {#if hasDiagnosticsWarning}
                 <span class="absolute -top-0.5 -inset-e-0.5 size-1.5 rounded-full bg-destructive border border-background animate-pulse"></span>
@@ -209,7 +209,7 @@ function handleGoToOnboarding() {
           class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-primary hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           title={m.common_autopilot_popover_ai_center?.() || "AI Center"}
         >
-          <Brain size={14} />
+          <AdjustmentsHorizontal size={14} />
         </a>
 
         <a 
@@ -263,7 +263,7 @@ function handleGoToOnboarding() {
     <!-- Diagnostics Panel (Stuck / Overdue Alerts) -->
     {#if hasDiagnosticsWarning && diagnostics}
       <div class="px-4 py-2 border-b border-destructive/15 bg-destructive/5 text-[10px] text-destructive flex items-center gap-1.5">
-        <AlertTriangle size={12} class="shrink-0" />
+        <InfoCircle size={12} class="shrink-0" />
         <span class="font-bold">{m.common_autopilot_popover_diagnostics_warning()}</span>
         <span class="ms-auto text-[9px] text-destructive/80">{(diagnostics.stuck_tasks?.length ?? 0) + (diagnostics.overdue_tasks?.length ?? 0)}</span>
       </div>
@@ -284,7 +284,7 @@ function handleGoToOnboarding() {
         onclick={handleRunTick}
         disabled={runTickMutation.isPending || !isOperational}
       >
-        <RefreshCw size={12} class={runTickMutation.isPending ? "animate-spin" : ""} />
+        <Refresh size={12} class={runTickMutation.isPending ? "animate-spin" : ""} />
         {#if runTickMutation.isPending}
           {m.common_autopilot_popover_tick_running()}
         {:else}

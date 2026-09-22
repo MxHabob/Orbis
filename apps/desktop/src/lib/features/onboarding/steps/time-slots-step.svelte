@@ -13,7 +13,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { Plus, Trash2 } from "@lucide/svelte";
+import { Grid, Plus, Trash } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 
 import { onboardingState } from "../state.svelte";
@@ -205,7 +205,7 @@ const breakTypeLabels: Record<string, () => string> = {
       </Button>
     </div>
 
-    <!-- Slots Table / List (8 cols) -->
+    <!-- Slots Grid / List (8 cols) -->
     <div class="md:col-span-8 rounded-2xl border border-border/70 bg-card p-4 flex flex-col justify-between shadow-2xs space-y-2 min-h-0">
       <div class="flex items-center justify-between border-b border-border/50 pb-2 shrink-0">
         <h4 class="text-xs font-bold text-foreground">{m.common_onboarding_schedule_title()}</h4>
@@ -242,7 +242,7 @@ const breakTypeLabels: Record<string, () => string> = {
                 aria-label={m.common_onboarding_delete_period()}
                 onclick={() => removeSlot(slot)}
               >
-                <Trash2 size={13} />
+                <Trash size={13} />
               </button>
             </div>
           </div>

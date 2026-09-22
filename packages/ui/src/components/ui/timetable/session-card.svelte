@@ -1,14 +1,5 @@
 <script lang="ts">
-import {
-  GripVertical,
-  MapPin,
-  Pencil,
-  Trash2,
-  Users,
-  AlertTriangle,
-  BookOpen,
-  Clock,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, BookOpen, ClockRotateRight, InfoCircle, Pencil, Pin, Trash, Users } from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 
 interface Props {
@@ -194,7 +185,7 @@ function handleDragStart(e: DragEvent) {
         class="shrink-0 flex items-center justify-center text-destructive animate-pulse"
         title={conflictMessage || (isArabic ? "يوجد تعارض في هذا الموعد" : "Schedule conflict")}
       >
-        <AlertTriangle size={13} strokeWidth={2.5} />
+        <InfoCircle size={13} strokeWidth={2.5} />
       </span>
     {/if}
   </div>
@@ -218,7 +209,7 @@ function handleDragStart(e: DragEvent) {
 
     {#if roomName}
       <span class="inline-flex items-center gap-1 truncate text-foreground/80 font-medium" title={roomName}>
-        <MapPin size={10} class="shrink-0 text-primary" />
+        <Pin size={10} class="shrink-0 text-primary" />
         <span class="truncate">{roomName}</span>
       </span>
     {/if}
@@ -252,7 +243,7 @@ function handleDragStart(e: DragEvent) {
             onclick={handleDeleteClick}
             aria-label={isArabic ? "حذف" : "Delete"}
           >
-            <Trash2 size={10} />
+            <Trash size={10} />
           </Button>
         {/if}
       </div>

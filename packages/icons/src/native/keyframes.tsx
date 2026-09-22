@@ -29,7 +29,7 @@ export interface KeyframesProps extends SvgProps {
 export function Keyframes({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: KeyframesProps) {

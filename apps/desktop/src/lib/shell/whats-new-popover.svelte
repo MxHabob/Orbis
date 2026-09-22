@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
-import { Megaphone } from "@lucide/svelte";
+import { AdjustmentsHorizontal } from "@orbis/icons";
 import { isDesktopApp } from "$lib/api";
 
 import orbisEcosystem from "$lib/assets/orbis-ecosystem.png";
@@ -33,7 +33,7 @@ const handleLearnMore = async () => {
       title={m.common_whats_new_header_title()}
       aria-label={m.common_whats_new_header_title()}
     >
-      <Megaphone size={14} class="text-foreground stroke-[2px]" />
+      <AdjustmentsHorizontal size={14} class="text-foreground stroke-[2px]" />
     </Button>
   </PopoverTrigger>
   

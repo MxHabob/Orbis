@@ -2,7 +2,7 @@
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
-import { Loader2 } from "@lucide/svelte";
+import { AdjustmentsHorizontal } from "@orbis/icons";
 import {
   Dialog,
   DialogContent,

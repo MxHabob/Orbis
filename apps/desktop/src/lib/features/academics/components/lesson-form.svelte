@@ -21,14 +21,7 @@ import {
 } from "@orbis/ui/select";
 import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import { Textarea } from "@orbis/ui/textarea";
-import {
-  BookOpen,
-  Clock,
-  MapPin,
-  ShieldAlert,
-  User,
-  Users,
-} from "@lucide/svelte";
+import { BookOpen, ClockRotateRight, Pin, User, UserBadgeCheck, Users } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
@@ -217,7 +210,7 @@ async function handleSubmit(event: SubmitEvent) {
   <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
     {#if conflictMessage}
       <div class="mb-6 flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-start text-xs text-amber-600 dark:text-amber-400">
-        <ShieldAlert size={16} class="mt-0.5 shrink-0 text-amber-500" />
+        <UserBadgeCheck size={16} class="mt-0.5 shrink-0 text-amber-500" />
         <span class="font-medium">{conflictMessage}</span>
       </div>
     {/if}
@@ -253,14 +246,14 @@ async function handleSubmit(event: SubmitEvent) {
           <FormField id="lesson-room" label={m.common_lesson_label_room()}>
             {#snippet children()}
             <Select type="single" value={selectedRoomId} onValueChange={(value: string | undefined) => (selectedRoomId = value ?? "")}>
-              <SelectTrigger id="lesson-room" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><MapPin size={13} class="text-muted-foreground" /><span>{rooms.find((item) => String(item.id) === selectedRoomId) ? l(rooms.find((item) => String(item.id) === selectedRoomId).name_ar, rooms.find((item) => String(item.id) === selectedRoomId).name) : m.common_lesson_option_select_room()}</span></div></SelectTrigger>
+              <SelectTrigger id="lesson-room" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><Pin size={13} class="text-muted-foreground" /><span>{rooms.find((item) => String(item.id) === selectedRoomId) ? l(rooms.find((item) => String(item.id) === selectedRoomId).name_ar, rooms.find((item) => String(item.id) === selectedRoomId).name) : m.common_lesson_option_select_room()}</span></div></SelectTrigger>
               <SelectContent><SelectItem value="">{m.common_lesson_option_no_room()}</SelectItem>{#each rooms as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.name)}</SelectItem>{/each}</SelectContent>
             </Select>
             {/snippet}
           </FormField>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div class="flex flex-col gap-2 text-start"><label for="lesson-day" class="text-sm font-medium text-foreground">{m.common_lesson_label_day()} *</label><Select type="single" value={String(selectedDay)} onValueChange={(value: string | undefined) => (selectedDay = Number(value) || 1)}><SelectTrigger id="lesson-day" class="h-9 w-full text-sm"><span class="truncate">{weekdays.find((item) => item.value === selectedDay)?.label}</span></SelectTrigger><SelectContent>{#each weekdays as item}<SelectItem value={String(item.value)}>{item.label}</SelectItem>{/each}</SelectContent></Select></div>
-            <div class="flex flex-col gap-2 text-start"><label for="lesson-slot" class="text-sm font-medium text-foreground">{m.common_lesson_label_period()} *</label><Select type="single" value={selectedSlotId} onValueChange={(value: string | undefined) => (selectedSlotId = value ?? "")}><SelectTrigger id="lesson-slot" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><Clock size={13} class="text-muted-foreground" /><span>{timeSlots.find((item) => String(item.id) === selectedSlotId)?.name_ar || m.common_lesson_select_slot()}</span></div></SelectTrigger><SelectContent>{#each timeSlots.filter((item) => !item.is_break) as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.name)} ({item.start_time?.slice(0, 5)} - {item.end_time?.slice(0, 5)})</SelectItem>{/each}</SelectContent></Select></div>
+            <div class="flex flex-col gap-2 text-start"><label for="lesson-slot" class="text-sm font-medium text-foreground">{m.common_lesson_label_period()} *</label><Select type="single" value={selectedSlotId} onValueChange={(value: string | undefined) => (selectedSlotId = value ?? "")}><SelectTrigger id="lesson-slot" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><ClockRotateRight size={13} class="text-muted-foreground" /><span>{timeSlots.find((item) => String(item.id) === selectedSlotId)?.name_ar || m.common_lesson_select_slot()}</span></div></SelectTrigger><SelectContent>{#each timeSlots.filter((item) => !item.is_break) as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.name)} ({item.start_time?.slice(0, 5)} - {item.end_time?.slice(0, 5)})</SelectItem>{/each}</SelectContent></Select></div>
           </div>
         </AccordionContent>
       </AccordionItem>

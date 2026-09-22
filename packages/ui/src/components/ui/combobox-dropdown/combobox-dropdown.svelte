@@ -7,7 +7,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "../popover/index.js";
 import { Input } from "../input/index.js";
 import { Button } from "../button/index.js";
 import { cn } from "../../../utils.js";
-import { Check, ChevronsUpDown, Search } from "@lucide/svelte";
+import { Check, ChevronUpDown, Search } from "@orbis/icons";
 
 interface ComboboxItem {
   id: string;
@@ -65,7 +65,7 @@ function handleSelect(item: ComboboxItem) {
         <span class="truncate">
           {selectedItem ? selectedItem.label : placeholder}
         </span>
-        <ChevronsUpDown class="ms-2 h-4 w-4 shrink-0 opacity-50" />
+        <ChevronUpDown class="ms-2 h-4 w-4 shrink-0 opacity-50" />
       </Button>
     {/snippet}
   </PopoverTrigger>

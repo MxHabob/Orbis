@@ -16,7 +16,7 @@ import {
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
-import { Layout, Globe } from "@lucide/svelte";
+import { GlobeAlt, Grid, Label } from "@orbis/icons";
 
 let prefTheme = $state("dark");
 let prefLanguage = $state("ar");
@@ -31,7 +31,7 @@ let notifyPush = $state(true);
       <Label
         class="text-xs font-medium text-muted-foreground flex items-center gap-1.5"
       >
-        <Layout size={13} />
+        <Grid size={13} />
         {m.settings_user_detail_pref_theme()}
       </Label>
       <Select
@@ -67,7 +67,7 @@ let notifyPush = $state(true);
       <Label
         class="text-xs font-medium text-muted-foreground flex items-center gap-1.5"
       >
-        <Globe size={13} />
+        <GlobeAlt size={13} />
         {m.settings_general_locale()}
       </Label>
       <Select

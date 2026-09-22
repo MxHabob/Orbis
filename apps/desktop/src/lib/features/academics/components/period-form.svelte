@@ -14,7 +14,7 @@ import { toast } from "@orbis/ui";
 import { createPeriodInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
-import { ChevronRight } from "@lucide/svelte";
+import { ChevronRight } from "@orbis/icons";
 import {
   Accordion,
   AccordionContent,

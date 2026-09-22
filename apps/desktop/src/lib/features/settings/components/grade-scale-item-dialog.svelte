@@ -3,7 +3,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Switch } from "@orbis/ui/switch";
-import { Loader2 } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Label } from "@orbis/icons";
 import {
   Dialog,
   DialogContent,

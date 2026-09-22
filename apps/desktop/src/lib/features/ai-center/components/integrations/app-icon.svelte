@@ -4,7 +4,7 @@ Renders a Lucide icon by name string or SVG logo HTML without forced external bo
 Scales both square and wide landscape logos proportionally and consistently within bounded limits.
 -->
 <script lang="ts">
-import * as icons from "@lucide/svelte";
+import * as icons from "@orbis/icons";
 
 let {
   icon,
@@ -18,9 +18,9 @@ let {
   class?: string;
 } = $props();
 
-// Dynamically resolve the Lucide icon component by name
+// Dynamically resolve the icon component by name
 const IconComponent = $derived(
-  (icons as Record<string, any>)[icon] ?? icons.Package,
+  (icons as Record<string, any>)[icon] ?? icons.Cube,
 );
 
 const logoHtml = $derived(

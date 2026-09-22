@@ -29,7 +29,7 @@ export interface ChatBubbleProps extends SvgProps {
 export function ChatBubble({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: ChatBubbleProps) {

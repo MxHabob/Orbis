@@ -3,18 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
-import {
-  Wrench,
-  ShieldCheck,
-  Zap,
-  Activity,
-  ArrowRight,
-  ArrowLeft,
-  CheckCircle2,
-  AlertTriangle,
-  Settings2,
-  Lock,
-} from "@lucide/svelte";
+import { ArrowLeft, ArrowRight, Bolt, ChartBar, CheckCircle, InfoCircle, Lock, SettingsAlt, UserBadgeCheck, Wrench } from "@orbis/icons";
 import {
   createAiToolsQuery,
   createAutopilotDiagnosticsQuery,
@@ -100,7 +89,7 @@ async function toggleAutopilotMode() {
     العودة للمحادثة
   </Button>
   <span class="text-xs font-bold text-foreground flex items-center gap-1.5">
-    <Activity size={13} class="text-primary" />
+    <ChartBar size={13} class="text-primary" />
     مركز التحكم والأدوات
   </span>
 </div>
@@ -112,7 +101,7 @@ async function toggleAutopilotMode() {
     <div class="space-y-2.5">
       <div class="flex items-center justify-between">
         <span class="text-xs font-bold text-foreground flex items-center gap-1.5">
-          <AlertTriangle size={13} class="text-amber-500" />
+          <InfoCircle size={13} class="text-amber-500" />
           الإجراءات المعلقة ({pendingActions.length})
         </span>
       </div>
@@ -136,7 +125,7 @@ async function toggleAutopilotMode() {
                 class="text-[10.5px] h-6 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
                 onclick={() => onApproveAction?.(action)}
               >
-                <CheckCircle2 size={11} class="me-1" />
+                <CheckCircle size={11} class="me-1" />
                 موافقة وتنفيذ
               </Button>
               <Button
@@ -158,7 +147,7 @@ async function toggleAutopilotMode() {
   <div class="border border-border/80 rounded-xl p-3.5 bg-card text-foreground space-y-3 shadow-2xs">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <Zap size={15} class="text-primary" />
+        <Bolt size={15} class="text-primary" />
         <span class="text-xs font-bold">محرك الطيار الآلي (Autopilot Engine)</span>
       </div>
       <Badge 

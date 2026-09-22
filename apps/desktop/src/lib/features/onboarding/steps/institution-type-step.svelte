@@ -1,6 +1,6 @@
 <!--
   Step 1: Institution Type Selection
-  Shows institution type options (School, University, Institute, Training Center, Custom).
+  Shows institution type options (Home, University, Institute, Training Center, Custom).
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -12,23 +12,15 @@ import { Badge } from "@orbis/ui/badge";
 
 import { onboardingState } from "../state.svelte";
 import { INSTITUTION_PROFILES } from "../templates";
-import {
-  School,
-  GraduationCap,
-  BookOpen,
-  Presentation,
-  Sliders,
-  CheckCircle2,
-  Info,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, BookOpen, CheckCircle, Home, Info } from "@orbis/icons";
 import { l } from "$lib/core/i18n";
 
 const profiles = [
-  { id: "school", icon: School },
-  { id: "university", icon: GraduationCap },
+  { id: "school", icon: Home },
+  { id: "university", icon: BookOpen },
   { id: "institute", icon: BookOpen },
   { id: "training_center", icon: Presentation },
-  { id: "custom", icon: Sliders },
+  { id: "custom", icon: AdjustmentsHorizontal },
 ];
 
 // Check if institution type is already set
@@ -69,7 +61,7 @@ function selectProfile(type: string) {
           </div>
           {#if onboardingState.profile.institutionType === prof.id}
             <div class="text-primary">
-              <CheckCircle2 size={16} />
+              <CheckCircle size={16} />
             </div>
           {/if}
         </div>

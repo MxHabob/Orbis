@@ -8,7 +8,7 @@
   import { Badge } from "@orbis/ui/badge";
   import { Input } from "@orbis/ui/input";
   import { Button } from "@orbis/ui/button";
-  import { Plus } from "@lucide/svelte";
+  import { Plus } from "@orbis/icons";
 
   import { onboardingState } from "../state.svelte";
   import { l } from "$lib/core/i18n";

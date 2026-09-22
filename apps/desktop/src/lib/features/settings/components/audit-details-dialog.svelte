@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Info } from "@lucide/svelte";
+import { Info } from "@orbis/icons";
 import {
   Dialog,
   DialogContent,

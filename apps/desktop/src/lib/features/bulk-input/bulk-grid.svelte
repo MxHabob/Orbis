@@ -8,6 +8,8 @@ beforepaste event) to expand rows when needed, and oncelledit for data model syn
 RevoGrid handles the actual cell population internally.
 -->
 <script lang="ts">
+import { Pencil } from "@orbis/icons";
+
 import { OrbisGrid } from "@orbis/svelte-grid";
 import type { CellEditEvent, OrbisColumnDef } from "@orbis/svelte-grid";
 import { addRowIndices } from "$lib/tables";
@@ -56,7 +58,7 @@ let gridRef = $state<any>(null);
 // ── Indexed source for display ─────────────────────────────────────
 let indexedSource = $derived(addRowIndices(rows));
 
-// ── Cell Edit Handler ──────────────────────────────────────────────
+// ── Cell Pencil Handler ──────────────────────────────────────────────
 // Called by OrbisGrid after RevoGrid applies edits (including from paste)
 function handleCellEdit(event: CellEditEvent) {
   const { rowIndex, columnId: prop, newValue } = event;

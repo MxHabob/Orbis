@@ -29,7 +29,7 @@ export interface LineSpaceProps extends SvgProps {
 export function LineSpace({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: LineSpaceProps) {

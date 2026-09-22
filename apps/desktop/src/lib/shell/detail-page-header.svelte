@@ -5,7 +5,7 @@ Provides a back button, title slot, and actions slot in a consistent layout.
 -->
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
-import { ArrowRight, ArrowLeft, Printer } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowLeft, ArrowRight } from "@orbis/icons";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { goto } from "$app/navigation";
 import type { Snippet } from "svelte";
@@ -71,7 +71,7 @@ function handleBack(e: MouseEvent) {
           class="gap-1.5"
           onclick={() => openPrintDialog(printType, printIds)}
         >
-          <Printer class="h-4 w-4" />
+          <AdjustmentsHorizontal class="h-4 w-4" />
           <span class="hidden sm:inline">طباعة</span>
         </Button>
       {/if}

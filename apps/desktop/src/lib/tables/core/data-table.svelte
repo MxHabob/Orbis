@@ -15,7 +15,7 @@ import {
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { Search, Download, RefreshCcw, Printer } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Download, Refresh, Search } from "@orbis/icons";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
 import { openPrintDialog } from "$lib/stores/print.svelte";
 import type { Snippet } from "svelte";
@@ -235,7 +235,7 @@ function handleSearchKeydown(e: KeyboardEvent) {
             onclick={() => onRefresh?.()}
             class="text-muted-foreground"
           >
-            <RefreshCcw size={14} />
+            <Refresh size={14} />
           </Button>
         {/if}
 
@@ -247,7 +247,7 @@ function handleSearchKeydown(e: KeyboardEvent) {
             class="text-muted-foreground"
             title="Print"
           >
-            <Printer size={14} />
+            <AdjustmentsHorizontal size={14} />
           </Button>
         {/if}
 

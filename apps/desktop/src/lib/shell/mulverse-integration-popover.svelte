@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui";
-import { GitBranch } from "@lucide/svelte";
+import { Merge } from "@orbis/icons";
 </script>
 
 <Popover>
@@ -18,7 +18,7 @@ import { GitBranch } from "@lucide/svelte";
 						class="relative cursor-pointer rounded-[10px]"
 						aria-label={m.common_sidebar_mulverse_connect_title()}
 					>
-						<GitBranch size={16} strokeWidth={1.8} class="text-foreground" />
+						<Merge size={16} strokeWidth={1.8} class="text-foreground" />
 						<span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
 					</Button>
 				</TooltipTrigger>

@@ -5,7 +5,7 @@ import { Switch } from "@orbis/ui/switch";
 import { toast } from "@orbis/ui";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
-import { Bell, Mail } from "@lucide/svelte";
+import { AdjustmentsHorizontal, AppNotification } from "@orbis/icons";
 
 let isSaving = $state(false);
 let initialSnapshot = $state("");
@@ -79,7 +79,7 @@ async function handleSave(e?: Event) {
         <!-- In-App Notifications -->
         <div class="flex flex-col gap-6 text-start">
           <div class="border-b border-border/60 pb-3 flex items-center gap-2">
-            <Bell size={16} class="text-primary" />
+            <AppNotification size={16} class="text-primary" />
             <h2 class="text-sm font-semibold text-foreground">{m.settings_notifications_in_app()}</h2>
           </div>
 

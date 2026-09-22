@@ -29,7 +29,7 @@ export interface ComponentProps extends SvgProps {
 export function Component({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: ComponentProps) {

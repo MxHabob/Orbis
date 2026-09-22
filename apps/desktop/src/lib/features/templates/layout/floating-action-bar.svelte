@@ -13,16 +13,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import {
-  Trash2,
-  Copy,
-  ClipboardCopy,
-  Lock,
-  Unlock,
-  ArrowUpToLine,
-  ArrowDownToLine,
-  MoreHorizontal,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, Clipboard, EllipsisHorizontal, Lock, Trash } from "@orbis/icons";
 
 let {
   store,
@@ -69,7 +60,7 @@ const isLocked = $derived(node?.locked ?? false);
       <Tooltip>
         <TooltipTrigger>
           <button type="button" class="fab-btn" onclick={() => store.duplicateSelected()}>
-            <Copy size={13} />
+            <Clipboard size={13} />
           </button>
         </TooltipTrigger>
         <TooltipContent>{m.template_tooltip_duplicate()}</TooltipContent>
@@ -78,7 +69,7 @@ const isLocked = $derived(node?.locked ?? false);
       <Tooltip>
         <TooltipTrigger>
           <button type="button" class="fab-btn" onclick={() => store.deleteSelected()}>
-            <Trash2 size={13} />
+            <Trash size={13} />
           </button>
         </TooltipTrigger>
         <TooltipContent>{m.template_tooltip_delete()}</TooltipContent>

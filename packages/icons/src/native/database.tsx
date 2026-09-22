@@ -29,7 +29,7 @@ export interface DatabaseProps extends SvgProps {
 export function Database({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: DatabaseProps) {

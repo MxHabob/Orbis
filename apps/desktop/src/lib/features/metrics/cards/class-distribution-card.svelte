@@ -1,5 +1,5 @@
 <script lang="ts">
-import { BarChart, Users } from "@lucide/svelte";
+import { ChartBar, Users } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
 import { onMount } from "svelte";

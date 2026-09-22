@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
  */
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
-import { ChevronLeft, ChevronRight } from "@lucide/svelte";
+import { ChevronLeft, ChevronRight, Grid } from "@orbis/icons";
 
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -117,7 +117,7 @@ function nextPage() {
     </div>
   {/if}
 
-  <!-- Layout Stats -->
+  <!-- Grid Stats -->
   <div class="flex items-center gap-2 flex-wrap justify-center">
     <Badge variant="secondary" class="text-[10px]">
       {layout.columns}×{layout.rows} = {layout.itemsPerSheet} / {m.common_print_multi_up_items_per_sheet()}

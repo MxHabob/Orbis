@@ -6,7 +6,7 @@
 <script lang="ts">
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
-import { Search, Download, RefreshCcw, X, Printer } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Download, Refresh, Search, XMark } from "@orbis/icons";
 import type { Snippet } from "svelte";
 
 interface Props {
@@ -96,7 +96,7 @@ function handleKeydown(e: KeyboardEvent) {
           class="absolute end-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
           onclick={clearSearch}
         >
-          <X size={12} />
+          <XMark size={12} />
         </button>
       {/if}
     </div>
@@ -127,7 +127,7 @@ function handleKeydown(e: KeyboardEvent) {
         class="text-muted-foreground hover:text-foreground"
         title="Refresh"
       >
-        <RefreshCcw size={14} />
+        <Refresh size={14} />
       </Button>
     {/if}
 
@@ -139,7 +139,7 @@ function handleKeydown(e: KeyboardEvent) {
         class="text-muted-foreground hover:text-foreground"
         title="Print"
       >
-        <Printer size={14} />
+        <AdjustmentsHorizontal size={14} />
       </Button>
     {/if}
 

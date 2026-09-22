@@ -6,29 +6,7 @@ Now includes rooms and subjects (moved from academics).
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import {
-  Settings,
-  Bell,
-  Lock,
-  Users,
-  Calendar,
-  Network,
-  History,
-  FileDown,
-  Shield,
-  Coins,
-  ListOrdered,
-  FileText,
-  MapPin,
-  BookOpen,
-  Receipt,
-  Percent,
-  CheckSquare,
-  Sliders,
-  Scale,
-  Calculator,
-  Layers,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, AppNotification, BookOpen, Calendar, ClockRotateRight, DocumentChartBar, DocumentPage, Hashtag, Keyframes, Lock, Pin, Settings, UserBadgeCheck, Users } from "@orbis/icons";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import type { Snippet } from "svelte";
@@ -52,7 +30,7 @@ const navGroups = $derived([
       {
         path: "notifications",
         label: m.common_nav_notifications(),
-        icon: Bell,
+        icon: AppNotification,
       },
     ],
   },
@@ -67,7 +45,7 @@ const navGroups = $derived([
       {
         path: "permissions",
         label: m.settings_nav_permissions(),
-        icon: Shield,
+        icon: UserBadgeCheck,
       },
       {
         path: "units",
@@ -94,22 +72,22 @@ const navGroups = $derived([
       {
         path: "rooms",
         label: m.common_nav_rooms(),
-        icon: MapPin,
+        icon: Pin,
       },
       {
         path: "academic-policy",
         label: m.common_nav_academic_policy(),
-        icon: Sliders,
+        icon: AdjustmentsHorizontal,
       },
       {
         path: "assessment-schemes",
         label: getLocale() === "ar" ? "هياكل التقييم" : "Assessment Schemes",
-        icon: Layers,
+        icon: Keyframes,
       },
       {
         path: "registration",
         label: m.settings_nav_registration(),
-        icon: FileText,
+        icon: DocumentPage,
       },
       {
         path: "approvals",
@@ -124,17 +102,17 @@ const navGroups = $derived([
       {
         path: "currencies",
         label: m.settings_nav_currencies(),
-        icon: Coins,
+        icon: DocumentChartBar,
       },
       {
         path: "fee-templates",
         label: m.common_breadcrumb_fees(),
-        icon: Receipt,
+        icon: DocumentPage,
       },
       {
         path: "discount-templates",
         label: m.common_dt_title(),
-        icon: Percent,
+        icon: Hashtag,
       },
     ],
   },
@@ -154,12 +132,12 @@ const navGroups = $derived([
       {
         path: "archive",
         label: m.settings_nav_archive(),
-        icon: FileText,
+        icon: DocumentPage,
       },
       {
         path: "audit",
         label: m.common_nav_audit(),
-        icon: History,
+        icon: ClockRotateRight,
       },
     ],
   },

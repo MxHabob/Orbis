@@ -17,22 +17,7 @@ import {
   TooltipProvider,
 } from "@orbis/ui/tooltip";
 import { ScrollArea } from "@orbis/ui/scroll-area";
-import {
-  Variable,
-  Search,
-  Plus,
-  Trash2,
-  GripVertical,
-  Type as TypeIcon,
-  Hash,
-  Calendar,
-  ToggleLeft,
-  ImageIcon,
-  List,
-  ChevronDown,
-  ChevronRight,
-  Copy,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, Bold, Calendar, ChevronDown, ChevronRight, Clipboard, Code, Hashtag, Knobs, Photo, Plus, Search, Trash } from "@orbis/icons";
 
 let {
   store,
@@ -192,7 +177,7 @@ function getTypeIcon(type: string) {
     case "string":
       return TypeIcon;
     case "number":
-      return Hash;
+      return Hashtag;
     case "date":
       return Calendar;
     case "boolean":
@@ -353,7 +338,7 @@ function handleDragStart(e: DragEvent, varName: string) {
               <Tooltip>
                 <TooltipTrigger>
                   <button type="button" class="p-0.5 rounded hover:bg-accent cursor-pointer" onclick={() => copyVariableTag(varName)}>
-                    <Copy size={10} class="text-muted-foreground" />
+                    <Clipboard size={10} class="text-muted-foreground" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>{m.template_tooltip_copy_tag()}</TooltipContent>
@@ -363,7 +348,7 @@ function handleDragStart(e: DragEvent, varName: string) {
                 <Tooltip>
                   <TooltipTrigger>
                     <button type="button" class="p-0.5 rounded hover:bg-accent cursor-pointer" onclick={() => removeVariable(varName)}>
-                      <Trash2 size={10} class="text-destructive" />
+                      <Trash size={10} class="text-destructive" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>{m.template_tooltip_delete()}</TooltipContent>

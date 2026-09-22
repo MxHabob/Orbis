@@ -4,7 +4,7 @@
   Displays an icon, title, and optional description.
 -->
 <script lang="ts">
-import { TableProperties } from "@lucide/svelte";
+import { Grid } from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 import type { Component } from "svelte";
 

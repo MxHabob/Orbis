@@ -4,6 +4,8 @@
   Refactored into clean sub-components for modularity and maintainability.
 -->
 <script lang="ts">
+import { Grid } from "@orbis/icons";
+
 import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui/card";
 import { Logo } from "@orbis/ui/logo";
@@ -54,7 +56,7 @@ import EnvironmentSelect from "$lib/features/auth/components/environment-select.
 						</div>
 					</div>
 
-					<!-- Split Layout for Credentials Form & Environment Inputs -->
+					<!-- Split Grid for Credentials Form & Environment Inputs -->
 					<div class="flex flex-col lg:flex-row gap-6 sm:gap-8 lg:gap-10">
 						<!-- Left Side: Credentials Form -->
 						<div class="flex-1 flex flex-col gap-4">

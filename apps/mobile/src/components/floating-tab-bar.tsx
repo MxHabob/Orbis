@@ -23,7 +23,7 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import { Ionicons } from "@expo/vector-icons";
+import { Grid, Document, ChartBar } from "@orbis/icons/native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -147,8 +147,7 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
             { backgroundColor: surface, borderColor: border },
           ]}
         >
-          <Ionicons
-            name={isAppsFocused ? "grid" : "grid-outline"}
+          <Grid
             size={21}
             color={iconColor}
           />
@@ -164,7 +163,7 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
           { backgroundColor: surface, borderColor: border },
         ]}
       >
-        <Ionicons name={"card-outline"} size={21} color={iconColor} />
+        <Document size={21} color={iconColor} />
 
         <Text
           numberOfLines={1}
@@ -186,8 +185,7 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
           { backgroundColor: surface, borderColor: border },
         ]}
       >
-        <Ionicons
-          name={isAnalyticsFocused ? "bar-chart" : "bar-chart-outline"}
+        <ChartBar
           size={21}
           color={iconColor}
         />

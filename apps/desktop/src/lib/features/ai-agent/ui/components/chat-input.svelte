@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
-import { Plus, ArrowLeft, ArrowRight, CornerDownLeft, Sparkles } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowLeft, ArrowRight, Plus, Sparkles } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 import { Textarea } from "@orbis/ui/textarea";
 import { getLocale } from "$lib/paraglide/runtime";

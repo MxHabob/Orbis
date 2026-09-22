@@ -28,15 +28,7 @@ import { Separator } from "@orbis/ui/separator";
 import { toast } from "@orbis/ui";
 
 import { getLocale } from "$lib/paraglide/runtime";
-import {
-  Printer,
-  Download,
-  RefreshCw,
-  AlertCircle,
-  CheckCircle2,
-  FileText,
-  LayoutGrid,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, CheckCircle, DocumentPage, Download, Grid, InfoCircle, Label, Refresh } from "@orbis/icons";
 
 import {
   computeMultiUpLayout,
@@ -332,7 +324,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
   <DialogContent class="sm:max-w-195 text-start max-h-[90vh] flex flex-col overflow-hidden">
     <DialogHeader class="shrink-0">
       <DialogTitle class="flex items-center gap-2">
-        <LayoutGrid class="text-primary h-5 w-5" />
+        <Grid class="text-primary h-5 w-5" />
         <span>{m.common_print_multi_up_title()}</span>
       </DialogTitle>
     </DialogHeader>
@@ -349,11 +341,11 @@ function applySuggestion(suggestion: MultiUpLayout) {
         </div>
         {#if batchProgress === 100}
           <div class="flex items-center gap-2 text-emerald-500 text-xs font-semibold animate-bounce mt-2">
-            <CheckCircle2 size={16} />
+            <CheckCircle size={16} />
             <span>{m.common_print_multi_up_complete()}</span>
           </div>
         {:else}
-          <RefreshCw size={24} class="animate-spin text-primary mt-2" />
+          <Refresh size={24} class="animate-spin text-primary mt-2" />
         {/if}
       </div>
 
@@ -372,7 +364,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
               <div class="h-8 bg-muted rounded animate-pulse"></div>
             {:else if templates.length === 0}
               <div class="text-[10px] text-destructive flex items-center gap-1">
-                <AlertCircle size={12} />
+                <InfoCircle size={12} />
                 <span>{m.common_print_multi_up_no_templates()}</span>
               </div>
             {:else}
@@ -432,7 +424,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
               </TabsTrigger>
             </TabsList>
 
-            <!-- Layout Preview Tab -->
+            <!-- Grid Preview Tab -->
             <TabsContent value="preview" class="grow flex items-center justify-center p-4 border border-border rounded-xl bg-muted/10 mt-2 overflow-hidden">
               <MultiUpPreview
                 layout={multiUpLayout}
@@ -446,7 +438,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
             <TabsContent value="pdf" class="grow border border-border rounded-xl bg-muted/20 mt-2 relative min-h-70 overflow-hidden flex items-center justify-center">
               {#if generatingPdf}
                 <div class="absolute inset-0 bg-background/60 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10">
-                  <RefreshCw size={20} class="text-primary animate-spin" />
+                  <Refresh size={20} class="text-primary animate-spin" />
                   <p class="text-[10px] font-semibold">{m.common_print_multi_up_preview_loading()}</p>
                 </div>
               {/if}
@@ -459,7 +451,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
                 ></iframe>
               {:else}
                 <div class="text-muted-foreground flex flex-col items-center gap-2 text-[10px]">
-                  <FileText size={28} />
+                  <DocumentPage size={28} />
                   <p>{m.common_print_multi_up_preview_empty()}</p>
                   <Button
                     variant="outline"
@@ -468,7 +460,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
                     disabled={generatingPdf || !selectedTemplateId}
                     class="mt-2 cursor-pointer"
                   >
-                    <RefreshCw size={12} class="me-1" />
+                    <Refresh size={12} class="me-1" />
                     {m.common_print_multi_up_refresh_preview()}
                   </Button>
                 </div>
@@ -519,7 +511,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
         disabled={!selectedTemplateId || generatingPdf || isBatchProcessing}
         onclick={handlePrintAction}
       >
-        <Printer size={14} class="me-1.5" />
+        <AdjustmentsHorizontal size={14} class="me-1.5" />
         {entityIds.length > multiUpLayout.itemsPerSheet
           ? m.common_print_multi_up_start_batch_count({ count: String(entityIds.length) })
           : m.common_print_multi_up_start_batch()}

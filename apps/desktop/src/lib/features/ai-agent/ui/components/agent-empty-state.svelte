@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Avatar } from "@orbis/avatar-engine";
-import { Sparkles } from "@lucide/svelte";
+import { Sparkles } from "@orbis/icons";
 
 let {
   suggestions = [],

@@ -1,15 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
-import {
-  ChevronDown,
-  ChevronRight,
-  CheckSquare,
-  FileText,
-  Folder,
-  FolderOpen,
-  Square,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, CheckBox, ChevronDown, ChevronRight, DocumentPage, Folder, FolderOpen } from "@orbis/icons";
 import { slide } from "svelte/transition";
 
 let {
@@ -82,7 +74,7 @@ function toggleAll() {
       {:else if selectedIds.size > 0}
         <span class="flex h-3 w-3 items-center justify-center rounded border border-primary bg-primary/20"><span class="h-1 w-1 rounded-sm bg-primary"></span></span>
       {:else}
-        <Square size={12} />
+        <CheckBox size={12} />
       {/if}
     </button>
   </div>
@@ -101,14 +93,14 @@ function toggleAll() {
                   {#if isExpanded}<ChevronDown size={10} class="shrink-0 text-muted-foreground" />{:else}<ChevronRight size={10} class="shrink-0 text-muted-foreground {getLocale() === 'ar' ? 'rotate-180' : ''}" />{/if}
                   <Folder size={10} class="shrink-0 text-primary/80" />
                 {:else}
-                  <FileText size={10} class="shrink-0 text-muted-foreground/70" />
+                  <DocumentPage size={10} class="shrink-0 text-muted-foreground/70" />
                 {/if}
                 <span class="truncate">{node.name_ar || node.name}</span>
               </button>
               <div class="flex shrink-0 items-center gap-1">
                 <span class="font-mono text-[8px] text-muted-foreground">{node.code}</span>
                 <button type="button" class="p-0.5 text-muted-foreground hover:text-primary" onclick={() => toggleIds(descendants(node))}>
-                  {#if state === "checked"}<CheckSquare size={10} class="text-primary" />{:else if state === "partial"}<span class="flex h-2.5 w-2.5 items-center justify-center rounded border border-primary bg-primary/20"><span class="h-0.5 w-0.5 bg-primary"></span></span>{:else}<Square size={10} />{/if}
+                  {#if state === "checked"}<CheckSquare size={10} class="text-primary" />{:else if state === "partial"}<span class="flex h-2.5 w-2.5 items-center justify-center rounded border border-primary bg-primary/20"><span class="h-0.5 w-0.5 bg-primary"></span></span>{:else}<CheckBox size={10} />{/if}
                 </button>
               </div>
             </div>
@@ -129,7 +121,7 @@ function toggleAll() {
               <Folder size={10} class="text-primary/80" /><span class="truncate">{getLocale() === "ar" ? category.name_ar : category.name_en}</span>
             </button>
             <button type="button" class="p-0.5 text-muted-foreground hover:text-primary" onclick={() => toggleCategory(category)}>
-              {#if categoryState === "checked"}<CheckSquare size={10} class="text-primary" />{:else if categoryState === "partial"}<span class="flex h-2.5 w-2.5 items-center justify-center rounded border border-primary bg-primary/20"><span class="h-0.5 w-0.5 bg-primary"></span></span>{:else}<Square size={10} />{/if}
+              {#if categoryState === "checked"}<CheckSquare size={10} class="text-primary" />{:else if categoryState === "partial"}<span class="flex h-2.5 w-2.5 items-center justify-center rounded border border-primary bg-primary/20"><span class="h-0.5 w-0.5 bg-primary"></span></span>{:else}<CheckBox size={10} />{/if}
             </button>
           </div>
           {#if expandedCategories[category.id]}<div class="border-s border-border/40">{@render renderNodes(category.accounts || [], 1)}</div>{/if}

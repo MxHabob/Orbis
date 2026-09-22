@@ -21,14 +21,7 @@ import {
 } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
-import {
-  BookOpen,
-  Landmark,
-  Users,
-  Info,
-  Check,
-  Loader2,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, BookOpen, Check, Info, Users } from "@orbis/icons";
 
 let {
   orgId,

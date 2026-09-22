@@ -29,7 +29,7 @@ export interface EllipsisVerticalProps extends SvgProps {
 export function EllipsisVertical({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: EllipsisVerticalProps) {

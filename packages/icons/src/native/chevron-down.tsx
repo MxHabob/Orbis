@@ -29,7 +29,7 @@ export interface ChevronDownProps extends SvgProps {
 export function ChevronDown({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: ChevronDownProps) {

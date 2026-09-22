@@ -5,20 +5,7 @@ import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import AiLoadingSkeleton from "./ai-loading-skeleton.svelte";
 import UserAvatar from "$lib/shared/components/user-avatar.svelte";
-import {
-  Wrench,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  Check,
-  RotateCcw,
-  Pencil,
-  X,
-  Send,
-} from "@lucide/svelte";
+import { BarsArrowUp, Check, CheckCircle, ChevronDown, ChevronRight, Clipboard, InfoCircle, Pencil, Refresh, Wrench, XMark } from "@orbis/icons";
 import type { AiChatMessage, ActionWithStatus } from "$lib/features/ai/session-store";
 
 // Configure marked with GFM & breaks
@@ -121,7 +108,7 @@ function handleContentClick(e: MouseEvent) {
         <!-- User message bubble with Hover Action Buttons -->
         <div class="group relative flex flex-col items-end w-full">
           {#if editingMessageId === msg.id}
-            <!-- Inline Edit Form -->
+            <!-- Inline Pencil Form -->
             <div class="w-full max-w-[90%] flex flex-col gap-2 bg-card border border-primary/40 rounded-2xl p-3 shadow-md">
               <textarea
                 bind:value={editingText}
@@ -145,7 +132,7 @@ function handleContentClick(e: MouseEvent) {
                   class="text-[11px] h-7 px-2.5 text-muted-foreground hover:bg-muted"
                   onclick={cancelEditing}
                 >
-                  <X size={12} class="me-1" />
+                  <XMark size={12} class="me-1" />
                   إلغاء
                 </Button>
                 <Button
@@ -155,7 +142,7 @@ function handleContentClick(e: MouseEvent) {
                   onclick={() => submitEdit(msg.id)}
                   disabled={!editingText.trim()}
                 >
-                  <Send size={12} class="me-1" />
+                  <BarsArrowUp size={12} class="me-1" />
                   حفظ وإرسال
                 </Button>
               </div>
@@ -168,7 +155,7 @@ function handleContentClick(e: MouseEvent) {
 
             <!-- User Hover Action Bar -->
             <div class="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity select-none">
-              <!-- Edit Button -->
+              <!-- Pencil Button -->
               <button
                 type="button"
                 onclick={() => startEditing(msg)}
@@ -178,7 +165,7 @@ function handleContentClick(e: MouseEvent) {
                 <Pencil size={12} />
               </button>
 
-              <!-- Copy Button -->
+              <!-- Clipboard Button -->
               <button
                 type="button"
                 onclick={() => copyText(msg.content, msg.id)}
@@ -188,7 +175,7 @@ function handleContentClick(e: MouseEvent) {
                 {#if copiedMessageId === msg.id}
                   <Check size={12} class="text-emerald-500" />
                 {:else}
-                  <Copy size={12} />
+                  <Clipboard size={12} />
                 {/if}
               </button>
             </div>
@@ -270,7 +257,7 @@ function handleContentClick(e: MouseEvent) {
                 {@html renderMarkdown(msg.content)}
               </div>
 
-              <!-- Action Bar (Copy & Retry on hover) -->
+              <!-- Action Bar (Clipboard & Retry on hover) -->
               <div class="flex items-center justify-end gap-1.5 mt-2.5 pt-1.5 border-t border-border/30 opacity-0 group-hover:opacity-100 transition-opacity select-none">
                 <!-- Retry / Regenerate button -->
                 {#if onRetry && !isThinking}
@@ -280,11 +267,11 @@ function handleContentClick(e: MouseEvent) {
                     class="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-muted transition-colors cursor-pointer"
                     title="إعادة التوليد"
                   >
-                    <RotateCcw size={11} />
+                    <Refresh size={11} />
                   </button>
                 {/if}
 
-                <!-- Copy button -->
+                <!-- Clipboard button -->
                 <button
                   type="button"
                   onclick={() => copyText(msg.content, msg.id)}
@@ -294,7 +281,7 @@ function handleContentClick(e: MouseEvent) {
                   {#if copiedMessageId === msg.id}
                     <Check size={11} class="text-emerald-500" />
                   {:else}
-                    <Copy size={11} />
+                    <Clipboard size={11} />
                   {/if}
                 </button>
               </div>
@@ -308,17 +295,17 @@ function handleContentClick(e: MouseEvent) {
                 <div class="border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 rounded-xl p-3.5 space-y-2.5 shadow-sm">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                      <AlertTriangle size={15} class="text-amber-500 shrink-0" />
+                      <InfoCircle size={15} class="text-amber-500 shrink-0" />
                       <span class="text-[12.5px] font-bold text-foreground">{action.title}</span>
                     </div>
                     {#if action.status === 'executed'}
                       <Badge variant="lime" class="text-[9px] px-1.5 py-0.5 flex items-center gap-1">
-                        <CheckCircle2 size={10} />
+                        <CheckCircle size={10} />
                         تم التنفيذ
                       </Badge>
                     {:else if action.status === 'rejected'}
                       <Badge variant="outline" class="text-[9px] px-1.5 py-0.5 text-destructive border-destructive/30 flex items-center gap-1">
-                        <XCircle size={10} />
+                        <XMark size={10} />
                         تم الإلغاء
                       </Badge>
                     {:else}
@@ -347,7 +334,7 @@ function handleContentClick(e: MouseEvent) {
                   <!-- Action Buttons -->
                   {#if action.status === 'executed'}
                     <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 pt-1">
-                      <CheckCircle2 size={12} />
+                      <CheckCircle size={12} />
                       {action.resultMessage || "تم تنفيذ الإجراء بنجاح في النظام"}
                     </div>
                   {:else if action.status === 'rejected'}
@@ -362,7 +349,7 @@ function handleContentClick(e: MouseEvent) {
                         class="text-[11px] h-7 px-3 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
                         onclick={() => onApproveAction?.(action, msg.id, aIdx)}
                       >
-                        <CheckCircle2 size={12} class="me-1" />
+                        <CheckCircle size={12} class="me-1" />
                         الموافقة والتنفيذ
                       </Button>
                       <Button

@@ -22,31 +22,7 @@ import {
 } from "@orbis/ui/tooltip";
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
-import {
-  ArrowLeft,
-  Undo2,
-  Redo2,
-  Save,
-  Eye,
-  ZoomIn,
-  ZoomOut,
-  Maximize,
-  Grid3x3,
-  Ruler,
-  Magnet,
-  Bold,
-  Italic,
-  Underline,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignStartVertical,
-  AlignCenterVertical,
-  AlignEndVertical,
-  Minus,
-  Plus,
-  Group,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, AlignHorizontal, ArrowForward, ArrowLeft, Bold, Collapse, Expand, Eye, FloppyDisk, Italic, Minus, Plus, Underline, UndoAction } from "@orbis/icons";
 
 let {
   store,
@@ -492,7 +468,7 @@ function handleAlign(
       {m.template_btn_preview()}
     </Button>
     <Button variant="lime" size="xs" class="cursor-pointer text-[10px]" onclick={onsave} disabled={!store.isDirty}>
-      <Save size={13} class="me-1" />
+      <FloppyDisk size={13} class="me-1" />
       {m.template_btn_save()}
     </Button>
   </div>

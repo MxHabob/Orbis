@@ -6,20 +6,7 @@
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import type { SetupItem } from "$lib/api/types";
-import {
-  CheckCircle2,
-  Circle,
-  ArrowRight,
-  ArrowLeft,
-  Calendar,
-  GraduationCap,
-  BookOpen,
-  Building2,
-  Clock,
-  Coins,
-  Layers,
-  Sparkles,
-} from "@lucide/svelte";
+import { ArrowLeft, ArrowRight, BookOpen, Calendar, CheckCircle, ClockRotateRight, DocumentChartBar, Home, Keyframes, Sparkles } from "@orbis/icons";
 
 let {
   item,
@@ -37,12 +24,12 @@ const title = $derived(isArabic && item.label_ar ? item.label_ar : item.label);
 // Icon mapping per setup item
 const iconMap: Record<string, any> = {
   academic_year: Calendar,
-  classes: GraduationCap,
+  classes: BookOpen,
   subjects: BookOpen,
-  rooms: Building2,
-  time_slots: Clock,
-  fee_templates: Coins,
-  org_units: Layers,
+  rooms: Home,
+  time_slots: ClockRotateRight,
+  fee_templates: DocumentChartBar,
+  org_units: Keyframes,
 };
 
 const IconComponent = $derived(iconMap[item.key] ?? Sparkles);
@@ -86,7 +73,7 @@ const IconComponent = $derived(iconMap[item.key] ?? Sparkles);
   <div class="shrink-0 flex items-center gap-2">
     {#if item.is_completed}
       <div class="flex items-center gap-1 text-[11px] font-medium text-emerald-500">
-        <CheckCircle2 class="size-3.5" />
+        <CheckCircle class="size-3.5" />
       </div>
     {:else}
       <button

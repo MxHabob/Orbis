@@ -1,11 +1,14 @@
+<script lang="ts">
+import { Grid } from "@orbis/icons";
+</script>
 import * as m from "$lib/paraglide/messages";
-// ── Desktop Table Config ────────────────────────────────────────────
+// ── Desktop Grid Config ────────────────────────────────────────────
 // Central registry of table configurations for the school management system.
 // Inspired by: apps/dashboard/src/utils/table-configs.ts
 
 import type { TableConfig, StickyColumnConfig } from "@orbis/ui";
 
-// ── Table IDs ──────────────────────────────────────────────────────
+// ── Grid IDs ──────────────────────────────────────────────────────
 
 export type TableId =
   | "students"
@@ -137,7 +140,7 @@ export const ROW_HEIGHTS: Record<TableId, number> = {
   reports: 50,
 };
 
-// ── Full Table Configs ─────────────────────────────────────────────
+// ── Full Grid Configs ─────────────────────────────────────────────
 
 export const TABLE_CONFIGS: Record<TableId, TableConfig> = Object.fromEntries(
   (Object.keys(STICKY_COLUMNS) as TableId[]).map((id) => [

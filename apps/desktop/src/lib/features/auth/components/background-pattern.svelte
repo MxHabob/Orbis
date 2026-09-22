@@ -1,4 +1,6 @@
 <script lang="ts">
+import { GlobeAlt } from "@orbis/icons";
+
 // BackgroundPattern.svelte
 </script>
 
@@ -19,7 +21,7 @@
 			<circle cx="15" cy="10" r="0.8" fill="currentColor" />
 		</g>
 		
-		<!-- Globe (Centered at 0,0) -->
+		<!-- GlobeAlt (Centered at 0,0) -->
 		<g id="icon-globe">
 			<circle cx="0" cy="0" r="14" fill="none" stroke="currentColor" stroke-width="1.5" />
 			<ellipse cx="0" cy="0" rx="14" ry="5" fill="none" stroke="currentColor" stroke-width="1.5" />

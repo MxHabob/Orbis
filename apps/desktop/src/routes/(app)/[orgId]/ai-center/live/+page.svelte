@@ -7,21 +7,7 @@ Wired to: api.getIntegrationStatus('hikvision-camera')
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
-import {
-  Video,
-  VideoOff,
-  Maximize2,
-  Grid2x2,
-  Grid3x3,
-  Square,
-  Wifi,
-  WifiOff,
-  Bell,
-  Camera,
-  AlertTriangle,
-  Clock,
-  Radio,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, AppNotification, Camera, CheckBox, ClockRotateRight, Expand, GlobeAlt, Grid, InfoCircle } from "@orbis/icons";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
@@ -80,9 +66,9 @@ const gridCols: Record<GridLayout, string> = {
 };
 const gridSlots: Record<GridLayout, number> = { "1x1": 1, "2x2": 4, "3x3": 9 };
 
-const eventStyles: Record<string, { color: string; icon: typeof Bell }> = {
-  motion: { color: "text-muted-foreground", icon: Bell },
-  alarm: { color: "text-foreground font-semibold", icon: AlertTriangle },
+const eventStyles: Record<string, { color: string; icon: typeof AppNotification }> = {
+  motion: { color: "text-muted-foreground", icon: AppNotification },
+  alarm: { color: "text-foreground font-semibold", icon: InfoCircle },
   disconnect: { color: "text-muted-foreground", icon: WifiOff },
   reconnect: { color: "text-primary", icon: Wifi },
 };
@@ -100,10 +86,10 @@ const eventStyles: Record<string, { color: string; icon: typeof Bell }> = {
       </span>
     </div>
 
-    <!-- Grid Layout Selector -->
+    <!-- Grid Grid Selector -->
     <div class="flex items-center gap-1 border border-border/60 bg-muted/40 p-1 rounded-lg">
       {#each [
-        { l: "1x1" as GridLayout, icon: Square, label: m.ai_center_live_grid_1x1 ? m.ai_center_live_grid_1x1() : "شاشة كاملة" },
+        { l: "1x1" as GridLayout, icon: CheckBox, label: m.ai_center_live_grid_1x1 ? m.ai_center_live_grid_1x1() : "شاشة كاملة" },
         { l: "2x2" as GridLayout, icon: Grid2x2, label: m.ai_center_live_grid_2x2 ? m.ai_center_live_grid_2x2() : "شبكة 2x2" },
         { l: "3x3" as GridLayout, icon: Grid3x3, label: m.ai_center_live_grid_3x3 ? m.ai_center_live_grid_3x3() : "شبكة 3x3" },
       ] as opt}
@@ -159,7 +145,7 @@ const eventStyles: Record<string, { color: string; icon: typeof Bell }> = {
                     </div>
                   </div>
                   <button type="button" onclick={(event) => event.stopPropagation()} class="absolute top-2.5 right-2.5 p-1.5 bg-background/80 border border-border/40 rounded-md text-foreground hover:text-primary transition-colors cursor-pointer">
-                    <Maximize2 size={12} />
+                    <Expand size={12} />
                   </button>
                 {:else}
                   <div class="text-center p-4">
@@ -185,7 +171,7 @@ const eventStyles: Record<string, { color: string; icon: typeof Bell }> = {
       <div class="w-72 border-r border-border/40 bg-background flex flex-col shrink-0">
         <div class="px-4 py-3 border-b border-border/40 bg-background flex items-center justify-between">
           <h3 class="text-xs font-semibold text-foreground flex items-center gap-2">
-            <Bell size={14} class="text-primary" />
+            <AppNotification size={14} class="text-primary" />
             <span>{m.ai_center_live_events ? m.ai_center_live_events() : "الأحداث المباشرة"}</span>
           </h3>
           <span class="text-[10px] font-mono text-muted-foreground">{events.length} تنبيه</span>
@@ -207,7 +193,7 @@ const eventStyles: Record<string, { color: string; icon: typeof Bell }> = {
             {/each}
           {:else}
             <div class="flex flex-col items-center justify-center py-16 text-center px-4">
-              <Clock size={18} class="text-muted-foreground mb-2" />
+              <ClockRotateRight size={18} class="text-muted-foreground mb-2" />
               <p class="text-xs font-semibold text-foreground">لا توجد أحداث حية</p>
               <p class="text-[10px] text-muted-foreground mt-0.5">سيتم إدراج التنبيهات ورصد الحركة التلقائي فور رصدها.</p>
             </div>

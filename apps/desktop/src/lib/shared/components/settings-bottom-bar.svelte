@@ -8,7 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import { fly } from "svelte/transition";
 import { quintOut } from "svelte/easing";
 import { Button } from "@orbis/ui/button";
-import { Loader2, AlertCircle } from "@lucide/svelte";
+import { AdjustmentsHorizontal, InfoCircle } from "@orbis/icons";
 
 interface Props {
   visible?: boolean;
@@ -58,7 +58,7 @@ const displayMessage = $derived(message || m.settings_unsaved_changes());
       <!-- Unsaved Changes Status Indicator -->
       <div class="flex min-w-0 items-center gap-2 text-start">
         <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
-          <AlertCircle size={15} strokeWidth={2} />
+          <InfoCircle size={15} strokeWidth={2} />
         </span>
         <span class="truncate text-sm font-medium text-foreground">
           {displayMessage}

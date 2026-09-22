@@ -1,4 +1,6 @@
 <script lang="ts">
+import { FloppyDisk } from "@orbis/icons";
+
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
@@ -101,7 +103,7 @@ async function handleSaveDetails(e: Event) {
     authStore.user = updatedUser;
     localStorage.setItem("orbis_user", JSON.stringify(updatedUser));
 
-    // 3. Save Theme Preference
+    // 3. FloppyDisk Theme Preference
     themeStore.set(selectedTheme);
 
     toast.success(m.common_account_save_success());

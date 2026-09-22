@@ -9,14 +9,7 @@ import { TimetableGrid } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
-import {
-  AlertTriangle,
-  Clock,
-  Users,
-  User,
-  MapPin,
-  Sparkles,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ClockRotateRight, InfoCircle, Pencil, Pin, Sparkles, User, Users } from "@orbis/icons";
 
 // Feature Components
 import {
@@ -105,7 +98,7 @@ const subjects = $derived(subjectsQuery.data ?? []);
 const users = $derived(usersQuery.data ?? []);
 const rooms = $derived(roomsQuery.data ?? []);
 
-// Filter teachers exclusively
+// AdjustmentsHorizontal teachers exclusively
 const teachers = $derived(
   users.filter(
     (u: any) =>
@@ -233,7 +226,7 @@ const conflictLessonIds = $derived.by(() => {
   return ids;
 });
 
-// Filter lessons based on active view mode and selections
+// AdjustmentsHorizontal lessons based on active view mode and selections
 const filteredLessons = $derived.by(() => {
   let list = allLessons;
   if (viewMode === "class") {
@@ -466,7 +459,7 @@ const error = $derived(
 </script>
 
 <div class="h-full w-full flex flex-col items-stretch overflow-hidden">
-  <!-- Top Horizontal Command & Filter Toolbar -->
+  <!-- Top Horizontal Command & AdjustmentsHorizontal Toolbar -->
   <ScheduleToolbar
     bind:activePeriodId
     {periods}
@@ -506,7 +499,7 @@ const error = $derived(
       {:else if timeSlots.length === 0}
         <div class="flex-1 flex flex-col items-center justify-center p-12 border border-dashed border-border/60 bg-card rounded-2xl text-center gap-4 max-w-md mx-auto my-auto">
           <div class="p-3.5 bg-primary/10 rounded-full text-primary">
-            <Clock size={28} />
+            <ClockRotateRight size={28} />
           </div>
           <div class="flex flex-col gap-1">
             <h3 class="font-bold text-sm text-foreground">
@@ -519,7 +512,7 @@ const error = $derived(
             </p>
           </div>
           <Button size="sm" onclick={() => (isTimeSlotsSheetOpen = true)} class="gap-1.5 text-xs font-semibold">
-            <Clock size={13} />
+            <ClockRotateRight size={13} />
             <span>{isArabic ? "إعداد جدول الحصص الآن" : "Configure Time Slots"}</span>
           </Button>
         </div>
@@ -540,7 +533,7 @@ const error = $derived(
         {:else if roomOccupancy}
           <div class="flex items-center justify-between px-3 py-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-xs">
             <div class="flex items-center gap-2">
-              <MapPin size={14} class="text-emerald-500" />
+              <Pin size={14} class="text-emerald-500" />
               <span class="font-bold text-foreground">{getRoomName(selectedRoomId)}</span>
               {#if roomOccupancy.capacity}
                 <Badge variant="outline" class="h-4 text-[9px]">{isArabic ? `السعة: ${roomOccupancy.capacity}` : `Capacity: ${roomOccupancy.capacity}`}</Badge>
@@ -599,7 +592,7 @@ const error = $derived(
   </div>
 </div>
 
-<!-- Lesson Create / Edit Side Sheet -->
+<!-- Lesson Create / Pencil Side Sheet -->
 <LessonSheet
   bind:open={isLessonSheetOpen}
   orgId={data.orgId}

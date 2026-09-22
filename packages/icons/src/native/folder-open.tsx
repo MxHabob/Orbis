@@ -29,7 +29,7 @@ export interface FolderOpenProps extends SvgProps {
 export function FolderOpen({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: FolderOpenProps) {

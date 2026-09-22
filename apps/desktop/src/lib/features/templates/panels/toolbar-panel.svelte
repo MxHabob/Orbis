@@ -13,36 +13,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import {
-  MousePointer2,
-  Type,
-  ImageIcon,
-  Square,
-  LayoutGrid,
-  Table,
-  Barcode,
-  QrCode,
-  Minus,
-  Hand,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignStartVertical,
-  AlignCenterVertical,
-  AlignEndVertical,
-  Undo2,
-  Redo2,
-  ZoomIn,
-  ZoomOut,
-  Maximize,
-  Grid3x3,
-  Ruler,
-  Copy,
-  Trash2,
-  Group,
-  Save,
-  Eye,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, AlignHorizontal, ArrowForward, Bold, CheckBox, Clipboard, Collapse, Expand, Eye, FloppyDisk, Grid, Minus, Pencil, Photo, Trash, UndoAction } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 
 let {
@@ -64,9 +35,9 @@ const tools: {
   { id: "select", icon: MousePointer2, label: "Select", draggable: false },
   { id: "text", icon: Type, label: "Text", draggable: true },
   { id: "image", icon: ImageIcon, label: "Image", draggable: true },
-  { id: "shape", icon: Square, label: "Shape", draggable: true },
-  { id: "frame", icon: LayoutGrid, label: "Frame", draggable: true },
-  { id: "table", icon: Table, label: "Table", draggable: true },
+  { id: "shape", icon: CheckBox, label: "Shape", draggable: true },
+  { id: "frame", icon: Grid, label: "Frame", draggable: true },
+  { id: "table", icon: Grid, label: "Table", draggable: true },
   { id: "barcode", icon: Barcode, label: "Barcode", draggable: true },
   { id: "qrcode", icon: QrCode, label: "QR Code", draggable: true },
   { id: "separator", icon: Minus, label: "Separator", draggable: true },
@@ -149,12 +120,12 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
 
     <Separator orientation="vertical" class="h-6 mx-1" />
 
-    <!-- Edit Actions -->
+    <!-- Pencil Actions -->
     <div class="flex items-center gap-0.5">
       <Tooltip>
         <TooltipTrigger>
           <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={() => store.duplicateSelected()} disabled={store.selectedIds.length === 0}>
-            <Copy size={13} />
+            <Clipboard size={13} />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Duplicate (Ctrl+D)</TooltipContent>
@@ -163,7 +134,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
       <Tooltip>
         <TooltipTrigger>
           <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={() => store.deleteSelected()} disabled={store.selectedIds.length === 0}>
-            <Trash2 size={13} />
+            <Trash size={13} />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Delete (Del)</TooltipContent>
@@ -220,30 +191,30 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
 
       <!-- Zoom Controls -->
       <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={() => store.zoomOut()}>
-        <ZoomOut size={13} />
+        <Collapse size={13} />
       </Button>
       <Badge variant="outline" class="text-[9px] font-mono min-w-[40px] justify-center">
         {store.zoomPercent}%
       </Badge>
       <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={() => store.zoomIn()}>
-        <ZoomIn size={13} />
+        <Expand size={13} />
       </Button>
       <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={() => store.zoomToFit(800, 600)}>
-        <Maximize size={13} />
+        <Expand size={13} />
       </Button>
     </div>
 
     <Separator orientation="vertical" class="h-6 mx-1" />
 
-    <!-- Preview & Save -->
+    <!-- Preview & FloppyDisk -->
     <div class="flex items-center gap-1 shrink-0">
       <Button variant="outline" size="xs" class="cursor-pointer" onclick={onpreview}>
         <Eye size={13} class="me-1" />
         Preview
       </Button>
       <Button variant="lime" size="xs" class="cursor-pointer" onclick={onsave} disabled={!store.isDirty}>
-        <Save size={13} class="me-1" />
-        Save
+        <FloppyDisk size={13} class="me-1" />
+        FloppyDisk
       </Button>
     </div>
   </TooltipProvider>

@@ -20,7 +20,7 @@ import {
   DialogFooter,
 } from "@orbis/ui/dialog";
 import { toast } from "@orbis/ui";
-import { Plus, Trash2, CheckCircle2, AlertTriangle, Scale } from "@lucide/svelte";
+import { AdjustmentsHorizontal, CheckCircle, Grid, InfoCircle, Label, Plus, Trash } from "@orbis/icons";
 
 interface JournalLine {
   id: string;
@@ -185,7 +185,7 @@ async function handleSubmit() {
         />
       </div>
 
-      <!-- Journal Lines Table -->
+      <!-- Journal Lines Grid -->
       <div class="rounded-xl border border-border/70 overflow-hidden mt-4">
         <div class="bg-muted/40 px-3 py-2 border-b border-border/70 grid grid-cols-12 gap-2 text-xs font-bold text-foreground">
           <div class="col-span-5">الحساب المحاسبي</div>
@@ -250,7 +250,7 @@ async function handleSubmit() {
                   onclick={() => removeLine(index)}
                   class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors"
                 >
-                  <Trash2 class="w-3.5 h-3.5" />
+                  <Trash class="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -269,10 +269,10 @@ async function handleSubmit() {
       <div class="p-3 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs {isBalanced ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300'}">
         <div class="flex items-center gap-2">
           {#if isBalanced}
-            <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0" />
+            <CheckCircle class="w-4 h-4 text-emerald-600 shrink-0" />
             <span class="font-bold">القيد متوازن وجاهز للترحيل</span>
           {:else}
-            <AlertTriangle class="w-4 h-4 text-red-600 shrink-0" />
+            <InfoCircle class="w-4 h-4 text-red-600 shrink-0" />
             <span class="font-bold">القيد غير متوازن! الفارق: {formatCurrency(difference, selectedCurrency)}</span>
           {/if}
         </div>

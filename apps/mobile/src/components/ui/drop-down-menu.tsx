@@ -35,7 +35,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { CheckCircle } from "@orbis/icons/native";
 import { Radii, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -361,7 +361,7 @@ export const DropdownMenuItem = ({
       </View>
 
       {selected ? (
-        <Ionicons name="checkmark-circle" size={18} color={theme.primary} />
+        <CheckCircle size={18} color={theme.primary} />
       ) : null}
     </TouchableOpacity>
   );

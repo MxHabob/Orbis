@@ -4,6 +4,8 @@ Wraps OrbisGrid with bulk input logic: dynamic columns, paste handling,
 real-time validation, and error highlighting.
 -->
 <script lang="ts">
+import { Pencil } from "@orbis/icons";
+
 import { OrbisGrid } from "@orbis/svelte-grid";
 import type { CellEditEvent } from "@orbis/svelte-grid";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -65,7 +67,7 @@ function runValidation() {
   }, 300);
 }
 
-// ── Cell Edit Handler ──────────────────────────────────────────────
+// ── Cell Pencil Handler ──────────────────────────────────────────────
 function handleCellEdit(event: CellEditEvent) {
   const { rowIndex, columnId: prop, newValue } = event;
   if (rowIndex >= 0 && rowIndex < rows.length) {

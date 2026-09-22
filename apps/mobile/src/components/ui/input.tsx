@@ -21,7 +21,7 @@ import {
   Pressable,
   type ViewStyle,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Eye, EyeSlash } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Radii, Spacing, Typography } from "@/constants/theme";
@@ -113,11 +113,11 @@ export const Input = React.memo<InputProps>(
               style={styles.eyeButton}
               hitSlop={8}
             >
-              <Ionicons
-                name={showPassword ? "eye-off-outline" : "eye-outline"}
-                size={18}
-                color={theme.textSecondary}
-              />
+              {showPassword ? (
+                <EyeSlash size={18} color={theme.textSecondary} />
+              ) : (
+                <Eye size={18} color={theme.textSecondary} />
+              )}
             </Pressable>
           )}
         </View>

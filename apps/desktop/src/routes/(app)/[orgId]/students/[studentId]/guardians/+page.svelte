@@ -11,7 +11,7 @@ import { toast } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
-import { Plus, Users2, Edit2, Trash2 } from "@lucide/svelte";
+import { Pencil, Plus, Trash, Users } from "@orbis/icons";
 import { api, extractErrorMessage } from "$lib/api";
 import type { GuardianLink, JsonRecord } from "@orbis/sdk";
 import GuardianLinkSheet from "$lib/features/students/components/guardian-link-sheet.svelte";
@@ -119,7 +119,7 @@ async function handleDelete(link: GuardianLink) {
     <!-- Empty State -->
     <div class="flex flex-col items-center justify-center gap-4 py-16 text-center">
       <div class="p-5 rounded-2xl bg-muted/30 border border-border/30">
-        <Users2 class="h-10 w-10 text-muted-foreground/40" />
+        <Users class="h-10 w-10 text-muted-foreground/40" />
       </div>
       <div class="space-y-1">
         <p class="text-sm font-semibold text-foreground">{m.common_guardians_empty()}</p>
@@ -148,7 +148,7 @@ async function handleDelete(link: GuardianLink) {
                 class="h-7 px-2.5 text-xs text-primary hover:bg-primary/10 gap-1"
                 onclick={() => openEdit(link)}
               >
-                <Edit2 size={12} />
+                <Pencil size={12} />
                 {m.common_action_edit_simple()}
               </Button>
               <Button
@@ -157,7 +157,7 @@ async function handleDelete(link: GuardianLink) {
                 class="h-7 px-2.5 text-xs text-destructive hover:bg-destructive/10 gap-1"
                 onclick={() => handleDelete(link)}
               >
-                <Trash2 size={12} />
+                <Trash size={12} />
                 {m.common_action_unlink()}
               </Button>
             </div>

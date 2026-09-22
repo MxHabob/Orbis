@@ -1,3 +1,6 @@
+<script lang="ts">
+import { BarsArrowUp, Home } from "@orbis/icons";
+</script>
 // ── Onboarding State ──────────────────────────────────────────────────
 // Central orchestrator for the 10-step academic onboarding wizard.
 
@@ -352,7 +355,7 @@ export class OnboardingState {
         }
       );
     } else {
-      // Default: School
+      // Default: Home
       for (let i = 1; i <= 8; i++) {
         this.facilities.rooms.push({
           id: `room-${building}-${Date.now()}-${i}`,
@@ -896,7 +899,7 @@ export class OnboardingState {
         finance,
       };
 
-      // 9. Send single atomic request to authoritative Onboarding Engine
+      // 9. BarsArrowUp single atomic request to authoritative Onboarding Engine
       const result = await systemStore.completeOnboarding(payload);
       if (!result.success) {
         throw new Error("Onboarding completion failed");

@@ -25,7 +25,6 @@
       "dependencies": {
         "@docforge/core": "workspace:*",
         "@internationalized/date": "^3.12.0",
-        "@lucide/svelte": "^1.33.0",
         "@orbis/app-store": "workspace:*",
         "@orbis/avatar-engine": "workspace:*",
         "@orbis/blueprints": "workspace:*",
@@ -70,7 +69,6 @@
       "version": "1.0.0",
       "dependencies": {
         "@expo/ui": "~57.0.19",
-        "@expo/vector-icons": "^15.1.1",
         "@orbis/icons": "workspace:*",
         "@orbis/sdk": "workspace:*",
         "@tanstack/react-query": "^5.102.8",
@@ -218,7 +216,7 @@
       "name": "@orbis/svelte-grid",
       "version": "2.0.0",
       "dependencies": {
-        "@lucide/svelte": "^1.33.0",
+        "@orbis/icons": "workspace:*",
         "@orbis/ui": "workspace:*",
       },
       "devDependencies": {
@@ -238,7 +236,6 @@
       "dependencies": {
         "@fontsource-variable/rubik": "^5.2.8",
         "@internationalized/date": "^3.12.0",
-        "@lucide/svelte": "^1.33.0",
         "@orbis/icons": "workspace:*",
         "@orbis/utils": "workspace:*",
         "bits-ui": "^2.16.3",
@@ -250,7 +247,6 @@
         "tailwindcss-animate": "^1.0.7",
       },
       "devDependencies": {
-        "@lucide/svelte": "^1.33.0",
         "@tanstack/table-core": "^9.1.2",
         "embla-carousel-svelte": "^8.6.0",
         "formsnap": "^2.0.1",
@@ -565,8 +561,6 @@
 
     "@expo/ui": ["@expo/ui@57.0.19", "", { "dependencies": { "sf-symbols-typescript": "^2.1.0", "vaul": "^1.1.2" }, "peerDependencies": { "@babel/core": "*", "expo": "*", "react": "*", "react-dom": "*", "react-native": "*", "react-native-worklets": "*" }, "optionalPeers": ["@babel/core", "react-dom", "react-native-worklets"] }, "sha512-WB95zQPge5nb04zgY3O2NmMtxg6G+qFH3yOAHcBkTUrJXoBReQoyY3cfp/8N5Q/azcfHJcBE3Jy0Rwq9OoRrfA=="],
 
-    "@expo/vector-icons": ["@expo/vector-icons@15.1.1", "", { "peerDependencies": { "expo-font": ">=14.0.4", "react": "*", "react-native": "*" } }, "sha512-Iu2VkcoI5vygbtYngm7jb4ifxElNVXQYdDrYkT7UCEIiKLeWnQY0wf2ZhHZ+Wro6Sc5TaumpKUOqDRpLi5rkvw=="],
-
     "@expo/ws-tunnel": ["@expo/ws-tunnel@2.0.0", "", { "peerDependencies": { "ws": "^8.0.0" } }, "sha512-j+JfTRdCk820J9dU0sA2SqshQIKFOMo7ED84w9MJFcebfbNQgsLztEY/SABDkGnjatrW4xGqnUhVRxSBVyCkXw=="],
 
     "@expo/xcpretty": ["@expo/xcpretty@4.4.4", "", { "dependencies": { "@babel/code-frame": "^7.20.0", "chalk": "^4.1.0", "js-yaml": "^4.1.0" }, "bin": { "excpretty": "build/cli.js" } }, "sha512-4aQzz9vgxcNXFfo/iyNgDDYfsU5XGKKxWxZopw0cVotHiW+U8IJbIxMaxsINs6bHhtkG3StKNPcOrn3eBuxKPw=="],
@@ -696,8 +690,6 @@
     "@lix-js/sdk": ["@lix-js/sdk@0.4.10", "", { "dependencies": { "@lix-js/server-protocol-schema": "0.1.1", "dedent": "1.5.1", "human-id": "^4.1.1", "js-sha256": "^0.11.0", "kysely": "^0.28.12", "sqlite-wasm-kysely": "0.3.0", "uuid": "^14.0.0" } }, "sha512-0dMInAJK/67guTG5rRZaCEhvzC5cCXENOjaePA5AqMXrCE97kaY7SRor9e2vnoGsFIiGqXKlT0MCIoZj36G0gg=="],
 
     "@lix-js/server-protocol-schema": ["@lix-js/server-protocol-schema@0.1.1", "", {}, "sha512-jBeALB6prAbtr5q4vTuxnRZZv1M2rKe8iNqRQhFJ4Tv7150unEa0vKyz0hs8Gl3fUGsWaNJBh3J8++fpbrpRBQ=="],
-
-    "@lucide/svelte": ["@lucide/svelte@1.33.0", "", { "peerDependencies": { "svelte": "^5" } }, "sha512-b+osTYG2V4dge5Lr7tnaTaahhy/4vH7Xb8zcqVjmctjwgkpXS0NNOJPkGzHHZoxtw/OO+2YAU28omeMfYCaawg=="],
 
     "@lukeed/ms": ["@lukeed/ms@2.0.2", "", {}, "sha512-9I2Zn6+NJLfaGoz9jN3lpwDgAYvfGeNYdbAIjJOqzs4Tpc+VU3Jqq4IofSUBKajiDS8k9fZIg18/z13mpk1bsA=="],
 

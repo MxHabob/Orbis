@@ -7,18 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { fade } from "svelte/transition";
-import {
-  Activity,
-  Zap,
-  CheckCircle,
-  AlertTriangle,
-  Clock,
-  Bot,
-  Plug,
-  ArrowRight,
-  ShieldAlert,
-  Sparkles,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowRight, Bolt, ChartBar, CheckCircle, ClockRotateRight, InfoCircle, Sparkles, UserBadgeCheck } from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 import { localizeHref } from "$lib/paraglide/runtime";
 import AiPerformanceTrendCard from "$lib/features/ai-center/components/overview/ai-performance-trend-card.svelte";
@@ -81,13 +70,13 @@ const healthConfig = {
     color: "text-foreground font-semibold",
     bg: "bg-muted border border-border",
     label: "استجابة بطيئة",
-    icon: AlertTriangle,
+    icon: InfoCircle,
   },
   offline: {
     color: "text-muted-foreground",
     bg: "bg-muted border border-border",
     label: "غير متصل",
-    icon: Clock,
+    icon: ClockRotateRight,
   },
 };
 
@@ -105,7 +94,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
   {:else}
     <div class="flex flex-col gap-6" in:fade={{ duration: 150 }}>
       
-      <!-- 1. Full-Width SVG AI Activity Trend Chart at top -->
+      <!-- 1. Full-Width SVG AI ChartBar Trend Chart at top -->
       <AiPerformanceTrendCard orgId={data.orgId} {isLoading} />
 
       <!-- 2. Middle Section: AI Agents Grid & System Autopilot Health Card -->
@@ -115,7 +104,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
         <div class="lg:col-span-2 bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col justify-between space-y-4">
           <div class="flex items-center justify-between border-b border-border/40 pb-3">
             <div class="flex items-center gap-2">
-              <Bot size={16} class="text-primary" />
+              <Sparkles size={16} class="text-primary" />
               <h2 class="text-sm font-bold text-foreground">
                 {m.ai_center_overview_agents_title ? m.ai_center_overview_agents_title() : "وكلاء الذكاء الاصطناعي النشطين"}
               </h2>
@@ -131,7 +120,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
                 <div class="border border-border/60 rounded-lg p-3.5 flex items-start justify-between bg-background/40 hover:border-border transition-colors">
                   <div class="flex items-start gap-3">
                     <div class="w-9 h-9 rounded-lg border border-border flex items-center justify-center shrink-0 bg-primary/10 text-primary">
-                      <Bot size={18} />
+                      <Sparkles size={18} />
                     </div>
                     <div>
                       <h3 class="text-xs font-bold text-foreground mb-0.5">{session.title || session.id}</h3>
@@ -146,7 +135,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
             </div>
           {:else}
             <div class="border border-border/40 rounded-lg p-6 flex flex-col items-center text-center bg-background/20 space-y-1.5">
-              <Bot size={24} class="text-muted-foreground" />
+              <Sparkles size={24} class="text-muted-foreground" />
               <p class="text-xs font-bold text-foreground">لا توجد جلسات وكلاء نشطة حالياً</p>
               <p class="text-[11px] text-muted-foreground">يتم إنشاء وتفعيل جلسات الوكلاء تلقائياً عند تنفيذ المهام والاستفسارات.</p>
             </div>
@@ -165,7 +154,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
         <div class="bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col justify-between space-y-4">
           <div class="flex items-center justify-between border-b border-border/40 pb-3">
             <div class="flex items-center gap-2">
-              <Zap size={16} class="text-primary" />
+              <Bolt size={16} class="text-primary" />
               <h2 class="text-sm font-bold text-foreground">
                 {m.ai_center_overview_health ? m.ai_center_overview_health() : "حالة محرك الذكاء الاصطناعي"}
               </h2>
@@ -178,7 +167,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
           <div class="space-y-3">
             <div class="flex items-center justify-between p-2.5 rounded-lg border border-border/40 bg-background/50">
               <div class="flex items-center gap-2">
-                <Activity size={14} class="text-muted-foreground" />
+                <ChartBar size={14} class="text-muted-foreground" />
                 <span class="text-xs text-foreground font-medium">{m.ai_center_overview_sessions ? m.ai_center_overview_sessions() : "الجلسات النشطة"}</span>
               </div>
               <span class="text-sm font-mono font-bold text-foreground">{sessionCount}</span>
@@ -186,7 +175,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
 
             <div class="flex items-center justify-between p-2.5 rounded-lg border border-border/40 bg-background/50">
               <div class="flex items-center gap-2">
-                <Zap size={14} class="text-muted-foreground" />
+                <Bolt size={14} class="text-muted-foreground" />
                 <span class="text-xs text-foreground font-medium">{m.ai_center_overview_autopilot ? m.ai_center_overview_autopilot() : "وضع الطيار الآلي"}</span>
               </div>
               <span class="text-xs font-bold text-foreground bg-muted px-2 py-0.5 rounded border border-border">{autopilotMode}</span>
@@ -204,7 +193,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
           <a href={localizeHref(`/${data.orgId}/ai-center/permissions`)} class="w-full">
             <Button size="sm" variant="outline" class="w-full text-xs font-semibold justify-between">
               <span>إدارة مصفوفة الصلاحيات</span>
-              <ShieldAlert size={12} />
+              <UserBadgeCheck size={12} />
             </Button>
           </a>
         </div>
@@ -218,7 +207,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
         <div class="lg:col-span-2 bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
           <div class="flex items-center justify-between border-b border-border/40 pb-3">
             <div class="flex items-center gap-2">
-              <Clock size={16} class="text-primary" />
+              <ClockRotateRight size={16} class="text-primary" />
               <h2 class="text-sm font-bold text-foreground">
                 {m.ai_center_overview_recent_activity ? m.ai_center_overview_recent_activity() : "أحدث الأنشطة والأوامر المنفذة"}
               </h2>
@@ -246,7 +235,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
             </div>
           {:else}
             <div class="border border-border/40 rounded-lg p-6 flex flex-col items-center text-center bg-background/20">
-              <Clock size={20} class="text-muted-foreground mb-2" />
+              <ClockRotateRight size={20} class="text-muted-foreground mb-2" />
               <p class="text-xs font-semibold text-foreground">لا توجد سجلات تنفيذية جديدة</p>
               <p class="text-[11px] text-muted-foreground mt-0.5">ستظهر السجلات هنا فور قيام الوكلاء بتنفيذ مهام أو توصيات تلقائية.</p>
             </div>

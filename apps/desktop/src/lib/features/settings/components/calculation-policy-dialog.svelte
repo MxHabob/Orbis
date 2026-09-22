@@ -9,7 +9,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { Loader2 } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Label } from "@orbis/icons";
 import {
   Dialog,
   DialogContent,

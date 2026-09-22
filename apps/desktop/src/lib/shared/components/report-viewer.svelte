@@ -16,14 +16,7 @@ import {
 } from "@orbis/ui/dialog";
 import { Progress } from "@orbis/ui/progress";
 import { toast } from "@orbis/ui";
-import {
-  Printer,
-  RefreshCw,
-  FileText,
-  Download,
-  CheckCircle2,
-  XCircle,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, CheckCircle, DocumentPage, Download, Refresh, XMark } from "@orbis/icons";
 
 let {
   open = $bindable(false),
@@ -156,7 +149,7 @@ function handleDownload() {
     <!-- Header -->
     <DialogHeader class="shrink-0 p-4 border-b border-border bg-muted/30">
       <DialogTitle class="flex items-center gap-2 text-lg">
-        <FileText class="text-primary h-5 w-5" />
+        <DocumentPage class="text-primary h-5 w-5" />
         <span>{reportTitle}</span>
       </DialogTitle>
     </DialogHeader>
@@ -171,16 +164,16 @@ function handleDownload() {
           </div>
           <Progress value={progress} class="h-2.5 w-full" />
           <div class="flex items-center gap-2 mt-2">
-            <RefreshCw size={24} class="animate-spin text-primary" />
+            <Refresh size={24} class="animate-spin text-primary" />
           </div>
         </div>
       {:else if errorMessage}
         <div class="flex flex-col items-center justify-center gap-4 text-destructive p-8 text-center">
-          <XCircle size={48} />
+          <XMark size={48} />
           <h3 class="text-lg font-bold">Generation Failed</h3>
           <p class="text-sm opacity-80 max-w-sm">{errorMessage}</p>
           <Button variant="outline" onclick={generateReport} class="mt-4">
-            <RefreshCw size={14} class="me-2" />
+            <Refresh size={14} class="me-2" />
             Retry
           </Button>
         </div>
@@ -193,7 +186,7 @@ function handleDownload() {
         ></iframe>
       {:else}
         <div class="text-muted-foreground flex flex-col items-center gap-3">
-          <FileText size={48} class="opacity-20" />
+          <DocumentPage size={48} class="opacity-20" />
           <p class="text-sm">No report generated</p>
         </div>
       {/if}
@@ -204,7 +197,7 @@ function handleDownload() {
       <div class="flex items-center gap-2 hidden sm:flex">
         {#if pdfUrl}
             <div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs font-semibold px-2 py-1 bg-emerald-500/10 rounded-md">
-                <CheckCircle2 size={14} />
+                <CheckCircle size={14} />
                 <span>Ready</span>
             </div>
         {/if}
@@ -231,7 +224,7 @@ function handleDownload() {
             disabled={!pdfUrl || isGenerating}
             class="flex-1 sm:flex-none font-bold"
         >
-          <Printer size={16} class="me-2" />
+          <AdjustmentsHorizontal size={16} class="me-2" />
           Print Natively
         </Button>
       </div>

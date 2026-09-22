@@ -29,7 +29,7 @@ export interface StarProps extends SvgProps {
 export function Star({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: StarProps) {

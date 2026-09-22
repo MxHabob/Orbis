@@ -29,7 +29,7 @@ export interface FaceIdProps extends SvgProps {
 export function FaceId({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: FaceIdProps) {

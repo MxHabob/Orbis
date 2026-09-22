@@ -17,7 +17,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { Clock, Plus, Trash2, Edit2, Coffee, Save, X } from "@lucide/svelte";
+import { ClockRotateRight, FloppyDisk, Heart, Label, Pencil, Plus, Trash, XMark } from "@orbis/icons";
 import { api, extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
@@ -200,7 +200,7 @@ async function handleDeleteSlot(id: string) {
               {editingSlotId ? m.academics_schedule_time_slot_edit() : m.academics_schedule_time_slot_new()}
             </span>
             <Button variant="ghost" size="icon" class="h-6 w-6" onclick={resetForm}>
-              <X size={12} />
+              <XMark size={12} />
             </Button>
           </div>
 
@@ -268,7 +268,7 @@ async function handleDeleteSlot(id: string) {
               {m.common_action_cancel()}
             </Button>
             <Button type="submit" size="sm" class="h-8 text-xs font-semibold" disabled={isSubmitting}>
-              <Save size={13} class="me-1" />
+              <FloppyDisk size={13} class="me-1" />
               {m.academics_schedule_save_slot()}
             </Button>
           </div>
@@ -293,7 +293,7 @@ async function handleDeleteSlot(id: string) {
 
         {#if timeSlots.length === 0}
           <div class="flex flex-col items-center justify-center p-8 border border-dashed border-border/60 rounded-xl bg-muted/10 text-center gap-2">
-            <Clock size={24} class="text-muted-foreground/60" />
+            <ClockRotateRight size={24} class="text-muted-foreground/60" />
             <p class="text-xs text-muted-foreground">
               {m.academics_schedule_no_slots()}
             </p>
@@ -309,7 +309,7 @@ async function handleDeleteSlot(id: string) {
                   class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md font-bold text-xs {isSlotBreak ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-primary/10 text-primary'}"
                 >
                   {#if isSlotBreak}
-                    <Coffee size={13} />
+                    <Heart size={13} />
                   {:else}
                     {slot.slot_number}
                   {/if}
@@ -333,7 +333,7 @@ async function handleDeleteSlot(id: string) {
                   onclick={() => startEdit(slot)}
                   aria-label={m.academics_schedule_edit()}
                 >
-                  <Edit2 size={12} />
+                  <Pencil size={12} />
                 </Button>
                 <Button
                   variant="ghost"
@@ -342,7 +342,7 @@ async function handleDeleteSlot(id: string) {
                   onclick={() => handleDeleteSlot(String(slot.id))}
                   aria-label={m.common_action_delete()}
                 >
-                  <Trash2 size={12} />
+                  <Trash size={12} />
                 </Button>
               </div>
             </div>

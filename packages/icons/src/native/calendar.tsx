@@ -29,7 +29,7 @@ export interface CalendarProps extends SvgProps {
 export function Calendar({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: CalendarProps) {

@@ -29,7 +29,7 @@ export interface ArrowUpLeftAltProps extends SvgProps {
 export function ArrowUpLeftAlt({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: ArrowUpLeftAltProps) {

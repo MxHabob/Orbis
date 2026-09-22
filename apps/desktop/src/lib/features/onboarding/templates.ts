@@ -1,3 +1,6 @@
+<script lang="ts">
+import { Clipboard, Home } from "@orbis/icons";
+</script>
 export interface Terminology {
   stage: string;
   stage_ar: string;
@@ -127,7 +130,7 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       "شهادة الميلاد (Birth Certificate)",
       "كرت اللقاحات (Vaccination Card)",
       "آخر شهادة دراسية (Previous Report Card)",
-      "صورة بطاقة ولي الأمر (Guardian ID Copy)",
+      "صورة بطاقة ولي الأمر (Guardian ID Clipboard)",
     ],
     stages: [
       {
@@ -526,7 +529,7 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       allow_duplicate_national_id: false,
     },
     requiredDocuments: [
-      "شهادة الثانوية العامة (High School Certificate)",
+      "شهادة الثانوية العامة (High Home Certificate)",
       "صورة جواز السفر / الهوية (National ID / Passport copy)",
       "صور شخصية حديثة (Personal Photos)",
       "شهادة خلو من السوابق (Good Conduct Certificate)",
@@ -675,7 +678,7 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       allow_duplicate_national_id: true,
     },
     requiredDocuments: [
-      "صورة الهوية الوطنية (ID Copy)",
+      "صورة الهوية الوطنية (ID Clipboard)",
       "المؤهلات العلمية السابقة (Educational Qualifications)",
     ],
     stages: [
@@ -798,7 +801,7 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       allow_duplicate_national_id: true,
     },
     requiredDocuments: [
-      "صورة الهوية الوطنية (ID Copy)",
+      "صورة الهوية الوطنية (ID Clipboard)",
       "موافقة جهة العمل (Employer Approval)",
       "السيرة الذاتية (Resume / CV)",
     ],
@@ -914,7 +917,7 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       email: false,
       phone: true,
     },
-    requiredDocuments: ["صورة الهوية الوطنية (ID Copy)"],
+    requiredDocuments: ["صورة الهوية الوطنية (ID Clipboard)"],
     stages: [
       {
         level: "level1",

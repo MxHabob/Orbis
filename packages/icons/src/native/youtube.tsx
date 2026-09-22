@@ -29,7 +29,7 @@ export interface YoutubeProps extends SvgProps {
 export function Youtube({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: YoutubeProps) {

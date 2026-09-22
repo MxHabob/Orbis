@@ -3,6 +3,8 @@
 Roles tab for user detail — clean checklist of available system and custom roles using standard Orbis form styling.
 -->
 <script lang="ts">
+import { FloppyDisk } from "@orbis/icons";
+
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { onMount } from "svelte";
@@ -175,7 +177,7 @@ async function saveRoles() {
       {/each}
     </div>
 
-    <!-- Save Button -->
+    <!-- FloppyDisk Button -->
     <div class="flex justify-end pt-2">
       <Button
         variant="lime"

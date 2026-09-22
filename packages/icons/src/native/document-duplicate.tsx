@@ -29,7 +29,7 @@ export interface DocumentDuplicateProps extends SvgProps {
 export function DocumentDuplicate({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: DocumentDuplicateProps) {

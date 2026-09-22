@@ -10,15 +10,7 @@ import {
   createCashAccountsQuery,
   createStudentFeesQuery,
 } from "$lib/features/finance";
-import {
-  Wallet,
-  CreditCard,
-  Landmark,
-  BarChart3,
-  Compass,
-  BookOpen,
-  ClipboardList,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, BookOpen, ChartBar, Document, GlobeAlt, TaskList } from "@orbis/icons";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import ArchivedBanner from "$lib/features/academics/archived-banner.svelte";
@@ -58,18 +50,18 @@ const navItems = $derived([
   {
     path: "",
     label: m.common_nav_overview(),
-    icon: Compass,
+    icon: GlobeAlt,
   },
   {
     path: "fees",
     label: m.finance_layout_nav_fees(),
-    icon: Wallet,
+    icon: Document,
     badge: unpaidFeesCount > 0 ? unpaidFeesCount : null,
   },
   {
     path: "payments",
     label: m.finance_layout_nav_payments(),
-    icon: CreditCard,
+    icon: Document,
   },
 
   {
@@ -88,12 +80,12 @@ const navItems = $derived([
     label: m.finance_layout_nav_ledger
       ? m.finance_layout_nav_ledger()
       : "كشف الحساب",
-    icon: ClipboardList,
+    icon: TaskList,
   },
   {
     path: "reports",
     label: m.finance_layout_nav_reports(),
-    icon: BarChart3,
+    icon: ChartBar,
   },
 ]);
 </script>

@@ -25,11 +25,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@orbis/ui/alert-dialog";
-import {
-  Plus,
-  Trash2,
-  Sparkles,
-} from "@lucide/svelte";
+import { Grid, Plus, Sparkles, Trash } from "@orbis/icons";
 
 import { onboardingState } from "../state.svelte";
 import AddBuildingDialog from "../components/add-building-dialog.svelte";
@@ -167,14 +163,14 @@ function confirmRemoveBuilding() {
                 class="text-muted-foreground hover:text-destructive h-7 text-[11px] flex gap-1 items-center rounded-lg cursor-pointer"
                 onclick={() => handleRemoveBuilding(bld)}
               >
-                <Trash2 size={12} />
+                <Trash size={12} />
                 <span>{m.common_onboarding_delete_building()}</span>
               </Button>
             {/if}
           </div>
         </div>
 
-        <!-- Rooms / Facilities Table with flex-1 and scrollable body filling available height -->
+        <!-- Rooms / Facilities Grid with flex-1 and scrollable body filling available height -->
         <div class="w-full flex-1 flex flex-col min-h-0 border border-border/70 rounded-2xl bg-card shadow-2xs overflow-hidden">
           
           <!-- Inline Add New Room Row (Fixed top header) -->
@@ -270,7 +266,7 @@ function confirmRemoveBuilding() {
                   onclick={() => onboardingState.removeRoom(rm.id)}
                   title={m.common_onboarding_delete_room()}
                 >
-                  <Trash2 size={13} />
+                  <Trash size={13} />
                 </Button>
               </div>
             {:else}

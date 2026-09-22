@@ -6,7 +6,7 @@ import {
   getDocumentSource,
   resolveDocumentUrl,
 } from "$lib/features/documents/queries";
-import { Download, FileText, Music, Play, Trash2 } from "@lucide/svelte";
+import { AdjustmentsHorizontal, DocumentPage, Download, Play, Trash } from "@orbis/icons";
 import type { Documents } from "@orbis/sdk";
 
 let {
@@ -42,7 +42,7 @@ function formatDate(value?: string) {
     <Checkbox checked={selected} onCheckedChange={(value: boolean | "indeterminate") => ontoggle(document.id, value === true)} aria-label={`تحديد ${document.name}`} />
     <button type="button" class="flex min-w-0 items-center gap-2 text-start" onclick={() => onpreview(document)}>
     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
-      {#if isVideo}<Play class="h-4 w-4" />{:else if isAudio}<Music class="h-4 w-4" />{:else}<FileText class="h-4 w-4" />{/if}
+      {#if isVideo}<Play class="h-4 w-4" />{:else if isAudio}<Music class="h-4 w-4" />{:else}<DocumentPage class="h-4 w-4" />{/if}
     </span>
     <span class="min-w-0">
       <span class="block truncate font-medium text-foreground" title={document.name}>{document.name}</span>
@@ -60,7 +60,7 @@ function formatDate(value?: string) {
       </a>
     {/await}
     <Button variant="ghost" size="icon-sm" onclick={() => ondelete(document.id)} title={m.common_action_delete()} aria-label={m.common_action_delete()}>
-      <Trash2 class="h-3.5 w-3.5 text-destructive" />
+      <Trash class="h-3.5 w-3.5 text-destructive" />
     </Button>
   </div>
 </div>

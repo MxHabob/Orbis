@@ -34,7 +34,7 @@ import { Button } from "@orbis/ui/button";
 import { Textarea } from "@orbis/ui/textarea";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
-import { Loader2, AlertTriangle, Shield } from "@lucide/svelte";
+import { AdjustmentsHorizontal, InfoCircle, Label, UserBadgeCheck } from "@orbis/icons";
 import type { OverrideType, RiskLevel } from "@orbis/sdk";
 
 interface Props {
@@ -203,7 +203,7 @@ async function submit() {
   <DialogContent class="sm:max-w-md">
     <DialogHeader>
       <DialogTitle class="flex items-center gap-2">
-        <Shield class="size-5 text-primary" />
+        <UserBadgeCheck class="size-5 text-primary" />
         {m.common_override_request_title ? m.common_override_request_title() : "Override Request"}
       </DialogTitle>
     </DialogHeader>
@@ -219,7 +219,7 @@ async function submit() {
         </div>
         <Badge variant={riskBadgeVariant} class="text-xs">
           {#if riskLevel === "high" || riskLevel === "critical"}
-            <AlertTriangle class="size-3 me-1" />
+            <InfoCircle class="size-3 me-1" />
           {/if}
           {riskLabel}
         </Badge>
@@ -256,7 +256,7 @@ async function submit() {
 
       <!-- Approval Chain Preview -->
       <div class="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 flex items-center gap-2">
-        <Shield class="size-3.5 shrink-0" />
+        <UserBadgeCheck class="size-3.5 shrink-0" />
         {approvalChainPreview}
       </div>
     </div>

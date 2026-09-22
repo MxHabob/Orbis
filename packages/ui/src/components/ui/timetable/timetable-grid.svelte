@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Clock, Plus } from "@lucide/svelte";
+import { ClockRotateRight, Plus } from "@orbis/icons";
 import SessionCard from "./session-card.svelte";
 import TimeGutter from "./time-gutter.svelte";
 import CalendarHeader from "./calendar-header.svelte";
@@ -130,7 +130,7 @@ function handleDrop(e: DragEvent, day: number, slotId: string) {
     <!-- Header Row (Sticky top) -->
     <div class="sticky top-0 z-20 flex min-w-[700px] border-b border-border/60 bg-card shadow-2xs">
       <div class="h-10 shrink-0 border-e border-border/60 bg-muted/20 flex items-center justify-center {compact ? 'w-20' : 'w-28'} text-muted-foreground/60">
-        <Clock size={13} />
+        <ClockRotateRight size={13} />
       </div>
       <CalendarHeader {weekdays} {lessonsByDay} {locale} />
     </div>

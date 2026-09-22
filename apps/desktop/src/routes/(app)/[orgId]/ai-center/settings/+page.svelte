@@ -8,24 +8,7 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
-import {
-  Zap,
-  ShieldAlert,
-  SearchCode,
-  FileSearch,
-  Sparkles,
-  Sliders,
-  CheckCircle2,
-  Lock,
-  Clock,
-  Activity,
-  Layers,
-  GraduationCap,
-  Calendar,
-  CreditCard,
-  UserCheck,
-  FileText,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, Bolt, BookOpen, Calendar, ChartBar, CheckCircle, ClockRotateRight, Document, DocumentPage, Keyframes, Label, Lock, Search, Sparkles, UserBadgeCheck } from "@orbis/icons";
 import { Input } from "@orbis/ui/input";
 import { Switch } from "@orbis/ui/switch";
 import { Label } from "@orbis/ui/label";
@@ -137,7 +120,7 @@ const executionModes = $derived([
     title: m.ai_center_settings_mode_auto_title(),
     subtitle: m.ai_center_settings_mode_auto_sub(),
     desc: m.ai_center_settings_mode_auto_desc(),
-    icon: Zap,
+    icon: Bolt,
   },
   {
     id: "manual",
@@ -157,14 +140,14 @@ const workflowCategories = $derived([
         id: "auto_open_enrollment" as const,
         label: m.ai_center_settings_wf_open_enrollment(),
         desc: m.ai_center_settings_wf_open_enrollment_desc(),
-        icon: UserCheck,
+        icon: UserBadgeCheck,
         risk: "low",
       },
       {
         id: "auto_close_enrollment" as const,
         label: m.ai_center_settings_wf_close_enrollment(),
         desc: m.ai_center_settings_wf_close_enrollment_desc(),
-        icon: Clock,
+        icon: ClockRotateRight,
         risk: "low",
       },
     ],
@@ -176,14 +159,14 @@ const workflowCategories = $derived([
         id: "auto_record_attendance" as const,
         label: m.ai_center_settings_wf_record_attendance(),
         desc: m.ai_center_settings_wf_record_attendance_desc(),
-        icon: Activity,
+        icon: ChartBar,
         risk: "medium",
       },
       {
         id: "auto_grade_entry_reminder" as const,
         label: m.ai_center_settings_wf_grade_reminders(),
         desc: m.ai_center_settings_wf_grade_reminders_desc(),
-        icon: FileText,
+        icon: DocumentPage,
         risk: "low",
       },
       {
@@ -197,7 +180,7 @@ const workflowCategories = $derived([
         id: "auto_report_generation" as const,
         label: m.ai_center_settings_wf_report_gen(),
         desc: m.ai_center_settings_wf_report_gen_desc(),
-        icon: GraduationCap,
+        icon: BookOpen,
         risk: "medium",
       },
     ],
@@ -209,7 +192,7 @@ const workflowCategories = $derived([
         id: "auto_fee_assignment" as const,
         label: m.ai_center_settings_wf_fee_assignment(),
         desc: m.ai_center_settings_wf_fee_assignment_desc(),
-        icon: CreditCard,
+        icon: Document,
         risk: "high",
       },
       {
@@ -223,7 +206,7 @@ const workflowCategories = $derived([
         id: "auto_promotion" as const,
         label: m.ai_center_settings_wf_promotion(),
         desc: m.ai_center_settings_wf_promotion_desc(),
-        icon: Layers,
+        icon: Keyframes,
         risk: "critical",
       },
     ],
@@ -242,7 +225,7 @@ const workflowCategories = $derived([
     <div class="border border-border rounded-md overflow-hidden flex flex-col">
       <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center justify-between">
         <div class="flex items-center gap-2 text-start">
-          <Zap size={15} class="text-primary" />
+          <Bolt size={15} class="text-primary" />
           <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
             {m.ai_center_settings_section_autopilot_mode()}
           </span>
@@ -286,7 +269,7 @@ const workflowCategories = $derived([
                 </div>
                 {#if isSelected}
                   <span class="flex items-center gap-1 text-[11px] font-bold text-primary">
-                    <CheckCircle2 size={13} />
+                    <CheckCircle size={13} />
                     {m.ai_center_settings_selected()}
                   </span>
                 {:else}
@@ -342,7 +325,7 @@ const workflowCategories = $derived([
     <!-- ── Section 2: Autonomous Workflows ────────────────────────── -->
     <div class="border border-border rounded-md overflow-hidden flex flex-col">
       <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center gap-2 text-start">
-        <Sliders size={15} class="text-primary" />
+        <AdjustmentsHorizontal size={15} class="text-primary" />
         <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
           {m.ai_center_settings_section_workflows()}
         </span>
@@ -396,7 +379,7 @@ const workflowCategories = $derived([
     <!-- ── Section 3: Safety Gates & Risk Controls ────────────────── -->
     <div class="border border-border rounded-md overflow-hidden flex flex-col">
       <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center gap-2 text-start">
-        <ShieldAlert size={15} class="text-primary" />
+        <UserBadgeCheck size={15} class="text-primary" />
         <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
           {m.ai_center_settings_section_safety()}
         </span>

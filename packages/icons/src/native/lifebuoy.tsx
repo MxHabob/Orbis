@@ -29,7 +29,7 @@ export interface LifebuoyProps extends SvgProps {
 export function Lifebuoy({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: LifebuoyProps) {

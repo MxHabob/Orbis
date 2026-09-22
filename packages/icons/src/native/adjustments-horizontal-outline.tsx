@@ -29,7 +29,7 @@ export interface AdjustmentsHorizontalOutlineProps extends SvgProps {
 export function AdjustmentsHorizontalOutline({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: AdjustmentsHorizontalOutlineProps) {

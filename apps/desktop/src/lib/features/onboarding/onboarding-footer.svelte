@@ -6,7 +6,7 @@
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
-import { ArrowRight, ArrowLeft, Loader2, Sparkles } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowLeft, ArrowRight, Sparkles } from "@orbis/icons";
 
 let {
   activeStep,

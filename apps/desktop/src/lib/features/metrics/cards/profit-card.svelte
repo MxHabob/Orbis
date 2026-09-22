@@ -6,7 +6,7 @@ import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
-import { TrendingUp, ArrowRight } from "@lucide/svelte";
+import { ArrowRight, ChartBar } from "@orbis/icons";
 
 let {
   orgId,
@@ -85,7 +85,7 @@ $effect(() => {
     <div class="flex flex-col w-full text-start select-none">
       <div class="flex items-center justify-between w-full h-5">
         <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <TrendingUp size={14} class="text-muted-foreground/80" />
+          <ChartBar size={14} class="text-muted-foreground/80" />
           <span>{m.reports_profit_title()}</span>
         </div>
         {#if isEditing}

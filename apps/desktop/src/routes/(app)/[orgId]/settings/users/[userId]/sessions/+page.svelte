@@ -11,7 +11,7 @@ import { api } from "$lib/api";
 import type { UserSession } from "$lib/api";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { Monitor, Smartphone } from "@lucide/svelte";
+import { Computer } from "@orbis/icons";
 import { fade } from "svelte/transition";
 import { formatDate } from "$lib/core/i18n";
 
@@ -29,7 +29,7 @@ async function loadSessions() {
       const isMobile =
         s.device_type === "mobile" ||
         (s.user_agent && /mobile|android|iphone|ipad/i.test(s.user_agent));
-      const icon = isMobile ? Smartphone : Monitor;
+      const icon = isMobile ? Computer : Computer;
 
       let device = "Unknown Device";
       if (s.device_name) {
@@ -87,7 +87,7 @@ onMount(loadSessions);
   <div
     class="flex flex-col items-center justify-center py-12 text-muted-foreground border border-border border-dashed rounded-xl gap-3"
   >
-    <Monitor size={40} class="text-muted-foreground/30" />
+    <Computer size={40} class="text-muted-foreground/30" />
     <p class="text-xs font-semibold">
       {m.settings_user_detail_no_sessions()}
     </p>

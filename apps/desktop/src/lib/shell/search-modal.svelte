@@ -9,22 +9,7 @@ import { api } from "$lib/api";
 import { queryClient } from "$lib/api";
 
 import { matchStudent } from "$lib/shared/utils/search";
-import {
-  Search,
-  Zap,
-  CornerDownLeft,
-  Users,
-  GraduationCap,
-  BookOpen,
-  FileText,
-  Settings,
-  Plus,
-  BarChart3,
-  Calendar,
-  Shield,
-  ArrowRightLeft,
-  Wallet,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowPath, Bolt, BookOpen, Calendar, ChartBar, Document, DocumentPage, Plus, Search, Settings, UserBadgeCheck, Users } from "@orbis/icons";
 
 let searchQuery = $state("");
 let inputEl = $state<HTMLInputElement | null>(null);
@@ -111,7 +96,7 @@ const shortcuts = $derived([
     title: m.settings_nav_templates
       ? m.settings_nav_templates()
       : "قوالب المستندات",
-    icon: FileText,
+    icon: DocumentPage,
     action: () => goto(`/${currentOrgId}/templates`),
     group: m.common_search_group_shortcuts
       ? m.common_search_group_shortcuts()
@@ -122,7 +107,7 @@ const shortcuts = $derived([
     title: m.reports_extract_report
       ? m.reports_extract_report()
       : "استخراج التقارير",
-    icon: BarChart3,
+    icon: ChartBar,
     action: () => goto(`/${currentOrgId}/reports`),
     group: m.common_search_group_shortcuts
       ? m.common_search_group_shortcuts()
@@ -149,40 +134,40 @@ const systemPages = $derived([
       ? m.finance_layout_nav_fees()
       : "Student Fees",
     path: `/${currentOrgId}/finance/fees`,
-    icon: FileText,
+    icon: DocumentPage,
   },
   {
     title: m.finance_layout_nav_payments
       ? m.finance_layout_nav_payments()
       : "Receipts",
     path: `/${currentOrgId}/finance/payments`,
-    icon: Wallet,
+    icon: Document,
   },
   {
     title: m.finance_layout_nav_cash_accounts
       ? m.finance_layout_nav_cash_accounts()
       : "Disbursals",
     path: `/${currentOrgId}/finance/accounts`,
-    icon: Wallet,
+    icon: Document,
   },
   {
     title: m.common_je_title ? m.common_je_title() : "Journal Entries",
     path: `/${currentOrgId}/finance/journal-entries`,
-    icon: FileText,
+    icon: DocumentPage,
   },
   {
     title: m.finance_layout_nav_ledger
       ? m.finance_layout_nav_ledger()
       : "Ledger",
     path: `/${currentOrgId}/finance/statement`,
-    icon: FileText,
+    icon: DocumentPage,
   },
   {
     title: m.finance_layout_nav_reports
       ? m.finance_layout_nav_reports()
       : "Financial Reports",
     path: `/${currentOrgId}/finance/reports`,
-    icon: BarChart3,
+    icon: ChartBar,
   },
   // Academics
   {
@@ -190,7 +175,7 @@ const systemPages = $derived([
       ? m.common_search_group_classes()
       : "Classes",
     path: `/${currentOrgId}/academics/classes`,
-    icon: GraduationCap,
+    icon: BookOpen,
   },
   {
     title: m.common_exams_detail_schedule
@@ -202,12 +187,12 @@ const systemPages = $derived([
   {
     title: m.common_nav_exams ? m.common_nav_exams() : "Exams",
     path: `/${currentOrgId}/academics/exams`,
-    icon: FileText,
+    icon: DocumentPage,
   },
   {
     title: m.common_control_label ? m.common_control_label() : "Control Board",
     path: `/${currentOrgId}/academics/control`,
-    icon: Shield,
+    icon: UserBadgeCheck,
   },
   // Settings
   {
@@ -232,7 +217,7 @@ const systemPages = $derived([
       ? m.settings_nav_permissions()
       : "Permissions",
     path: `/${currentOrgId}/settings/permissions`,
-    icon: Shield,
+    icon: UserBadgeCheck,
   },
   {
     title: m.settings_nav_cycles ? m.settings_nav_cycles() : "Academic Periods",
@@ -270,14 +255,14 @@ const systemPages = $derived([
       ? m.common_breadcrumb_fees()
       : "Fee Templates",
     path: `/${currentOrgId}/settings/fee-templates`,
-    icon: FileText,
+    icon: DocumentPage,
   },
   {
     title: m.common_form_summary_discount
       ? m.common_form_summary_discount()
       : "Discount Templates",
     path: `/${currentOrgId}/settings/discount-templates`,
-    icon: FileText,
+    icon: DocumentPage,
   },
   // User Account
   {
@@ -342,7 +327,7 @@ const filteredItems = $derived.by(() => {
       .map((c) => ({
         id: `class-${c.id}`,
         title: c.name || "Class",
-        icon: GraduationCap,
+        icon: BookOpen,
         action: () => goto(`/${currentOrgId}/academics/classes`),
         group: m.common_search_group_classes
           ? m.common_search_group_classes()
@@ -486,7 +471,7 @@ function handleKeydown(e: KeyboardEvent) {
     <!-- Search Footer -->
     <div class="h-10 px-4 border-t border-border bg-muted/30 flex items-center justify-between text-xs text-muted-foreground select-none shrink-0 rounded-b-xl">
       <div class="flex items-center gap-1.5">
-        <Zap class="size-3.5 fill-primary text-primary animate-pulse" />
+        <Bolt class="size-3.5 fill-primary text-primary animate-pulse" />
         <span class="font-bold text-foreground">Orbis Search</span>
       </div>
       <div class="flex items-center gap-3 font-medium">

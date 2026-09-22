@@ -15,7 +15,7 @@ import {
   CardContent,
 } from "@orbis/ui/card";
 import { Badge } from "@orbis/ui/badge";
-import { ArrowLeft, Users, GraduationCap, ArrowRight } from "@lucide/svelte";
+import { ArrowLeft, ArrowRight, BookOpen, Users } from "@orbis/icons";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 let { data }: { data: { orgId: string } } = $props();
@@ -91,7 +91,7 @@ let { data }: { data: { orgId: string } } = $props();
           <CardHeader class="pb-3">
             <div class="flex items-center justify-between">
               <div class="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <GraduationCap size={20} class="text-primary" />
+                <BookOpen size={20} class="text-primary" />
               </div>
               <ArrowRight
                 size={16}

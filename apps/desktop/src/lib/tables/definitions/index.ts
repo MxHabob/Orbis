@@ -1,6 +1,9 @@
+<script lang="ts">
+import { Grid } from "@orbis/icons";
+</script>
 import * as m from "$lib/paraglide/messages";
 /**
- * @orbis/desktop — Table Definitions
+ * @orbis/desktop — Grid Definitions
  *
  * Centralized column definitions for all system tables.
  * Each function returns OrbisColumnDef[] configured for a specific entity.

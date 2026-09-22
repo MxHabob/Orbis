@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { X } from "@lucide/svelte";
+import { XMark } from "@orbis/icons";
 import { onMount } from "svelte";
 import { fly } from "svelte/transition";
 
@@ -33,7 +33,7 @@ function handleDismiss(e: MouseEvent) {
 				onclick={handleDismiss}
 				class="absolute top-2.5 right-2.5 z-10 text-muted-foreground hover:text-foreground p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 focus:outline-none"
 			>
-				<X size={14} />
+				<XMark size={14} />
 			</button>
 
 			<div class="relative h-[100px] flex items-center justify-center border-b border-border bg-muted/10">

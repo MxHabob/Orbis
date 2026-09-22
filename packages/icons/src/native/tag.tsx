@@ -29,7 +29,7 @@ export interface TagProps extends SvgProps {
 export function Tag({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: TagProps) {
@@ -45,10 +45,10 @@ export function Tag({
       aria-hidden={true}
       {...props}
     >
-      <!-- Tag body with pointed end -->
+      
 	<Path d="M4 12 L8 7 H21 V17 H8 L4 12 Z" stroke="currentColor" fill="none" />
 
-	<!-- Tag hole -->
+	
 	<Circle cx="10" cy="12" r="0.75" fill="currentColor" stroke="currentColor" />
     </Svg>
   );

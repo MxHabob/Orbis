@@ -29,7 +29,7 @@ export interface InfoCircleProps extends SvgProps {
 export function InfoCircle({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: InfoCircleProps) {

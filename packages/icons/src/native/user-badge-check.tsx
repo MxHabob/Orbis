@@ -29,7 +29,7 @@ export interface UserBadgeCheckProps extends SvgProps {
 export function UserBadgeCheck({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: UserBadgeCheckProps) {

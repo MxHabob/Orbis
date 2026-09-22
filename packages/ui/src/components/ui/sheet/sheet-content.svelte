@@ -4,7 +4,7 @@ export type Side = "top" | "right" | "bottom" | "left";
 
 <script lang="ts">
 	import { Dialog as SheetPrimitive } from "bits-ui";
-	import XIcon from '@lucide/svelte/icons/x';
+	import { XMark } from "@orbis/icons";
 	import { Button } from "../button/index.js";
 	import { cn, type WithoutChildrenOrChild } from "../../../utils.js";
 	import SheetOverlay from "./sheet-overlay.svelte";
@@ -46,7 +46,7 @@ export type Side = "top" | "right" | "bottom" | "left";
 				<SheetPrimitive.Close data-slot="sheet-close">
 					{#snippet child({ props })}
 						<Button variant="ghost" class="absolute top-4 inset-e-4" size="icon-sm" {...props}>
-							<XIcon />
+							<XMark />
 							<span class="sr-only">Close</span>
 						</Button>
 					{/snippet}

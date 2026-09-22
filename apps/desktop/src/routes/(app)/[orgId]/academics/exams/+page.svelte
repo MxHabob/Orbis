@@ -11,20 +11,7 @@ import { readable } from "svelte/store";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
-import {
-  ClipboardList,
-  ShieldCheck,
-  Building2,
-  FileText,
-  ArrowRight,
-  Sparkles,
-  Milestone,
-  AlertCircle,
-  Plus,
-  Lock,
-  Unlock,
-  Info,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowRight, DocumentPage, Grid, Home, Info, InfoCircle, Lock, Plus, Sparkles, TaskList, UserBadgeCheck } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { createQuery } from "@tanstack/svelte-query";
 import { api, extractErrorMessage } from "$lib/api";
@@ -116,7 +103,7 @@ const directoryItems = $derived([
     path: `/${data.orgId}/academics/exams/sessions`,
     title: m.common_exams_sessions_title(),
     desc: m.academics_exams_center_sessions_desc(),
-    icon: ClipboardList,
+    icon: TaskList,
     badge: m.academics_exams_center_sessions_badge({
       count: examSessions.length,
     }),
@@ -125,21 +112,21 @@ const directoryItems = $derived([
     path: `/${data.orgId}/academics/exams/control`,
     title: m.academics_exams_center_control_title(),
     desc: m.academics_exams_center_control_desc(),
-    icon: ShieldCheck,
+    icon: UserBadgeCheck,
     badge: m.academics_exams_center_control_badge(),
   },
   {
     path: `/${data.orgId}/academics/exams/sessions`,
     title: m.academics_exams_center_halls_title(),
     desc: m.academics_exams_center_halls_desc(),
-    icon: Building2,
+    icon: Home,
     badge: m.academics_exams_center_halls_badge(),
   },
   {
     path: `/${data.orgId}/academics/exams/reports`,
     title: m.academics_exams_center_reports_title(),
     desc: m.academics_exams_center_reports_desc(),
-    icon: FileText,
+    icon: DocumentPage,
     badge: m.academics_exams_center_reports_badge(),
   },
 ]);
@@ -166,14 +153,14 @@ const advisorInsights = $derived.by(() => {
         count: examSessions.length,
       }),
       variant: "success" as const,
-      icon: ClipboardList,
+      icon: TaskList,
     });
   } else {
     insights.push({
       id: "sessions-none",
       text: m.academics_exams_center_sessions_empty_insight(),
       variant: "neutral" as const,
-      icon: ClipboardList,
+      icon: TaskList,
     });
   }
 
@@ -182,7 +169,7 @@ const advisorInsights = $derived.by(() => {
     id: "seating-ready",
     text: m.academics_exams_center_seating_ready_insight(),
     variant: "success" as const,
-    icon: ShieldCheck,
+    icon: UserBadgeCheck,
   });
 
   return insights;
@@ -195,7 +182,7 @@ const advisorInsights = $derived.by(() => {
   <div class="flex items-center justify-between border-b border-border/40 pb-4">
     <div class="flex items-center gap-3 text-start">
       <div class="h-8.5 w-8.5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold text-xs">
-        <ClipboardList size={18} />
+        <TaskList size={18} />
       </div>
       <div class="flex flex-col">
         <h2 class="text-xs font-bold text-foreground tracking-wide uppercase">
@@ -240,7 +227,7 @@ const advisorInsights = $derived.by(() => {
   </div>
 
   {#if isLoading}
-    <!-- Split Layout Loading Skeleton -->
+    <!-- Split Grid Loading Skeleton -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
       <!-- Left Directory List Skeleton -->
       <div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-3">
@@ -283,13 +270,13 @@ const advisorInsights = $derived.by(() => {
     </div>
   {:else if error}
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
-      <AlertCircle size={24} />
+      <InfoCircle size={24} />
       <h3 class="font-semibold text-xs">{m.academics_exams_center_error_title()}</h3>
       <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
       <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.academics_exams_center_retry()}</Button>
     </div>
   {:else}
-    <!-- Main Content Split Layout -->
+    <!-- Main Content Split Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
       
       <!-- 1. LEFT COLUMN: Directory Index List (Notion Database style) -->

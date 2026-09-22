@@ -29,7 +29,7 @@ export interface ArrowRightTagProps extends SvgProps {
 export function ArrowRightTag({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: ArrowRightTagProps) {

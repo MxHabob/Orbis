@@ -4,7 +4,7 @@ import { createQuery } from "@tanstack/svelte-query";
 import { api } from "$lib/api";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { Users, BookOpen, GraduationCap, ChevronRight } from "@lucide/svelte";
+import { BookOpen, ChevronRight, Users } from "@orbis/icons";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { academicContext } from "$lib/stores";

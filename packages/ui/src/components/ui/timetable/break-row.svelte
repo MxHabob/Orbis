@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Coffee, Sun, Utensils, Moon } from "@lucide/svelte";
+import { Heart, LightBulb } from "@orbis/icons";
 
 interface Props {
   slot: any;
@@ -39,13 +39,13 @@ const timeLabel = $derived.by(() => {
   style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.015) 10px, rgba(0,0,0,0.015) 20px);"
 >
   {#if slot.break_type === "lunch"}
-    <Utensils size={13} class="text-primary" />
+    <Heart size={13} class="text-primary" />
   {:else if slot.break_type === "prayer"}
-    <Moon size={13} class="text-primary" />
+    <LightBulb size={13} class="text-primary" />
   {:else if slot.break_type === "morning"}
-    <Sun size={13} class="text-primary" />
+    <LightBulb size={13} class="text-primary" />
   {:else}
-    <Coffee size={13} class="text-primary" />
+    <Heart size={13} class="text-primary" />
   {/if}
 
   <span class="tracking-wide text-foreground/80">{breakName}</span>

@@ -10,16 +10,7 @@ import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Label } from "@orbis/ui/label";
-import {
-  WandSparkles,
-  Loader2,
-  CheckCircle2,
-  AlertTriangle,
-  Eye,
-  Check,
-  Clock,
-  Sparkles,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, Check, CheckCircle, ClockRotateRight, Eye, InfoCircle, Label, Sparkles } from "@orbis/icons";
 import { api, extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
@@ -89,7 +80,7 @@ async function handleCancelJob(jobId: string) {
     <SheetHeader>
       <div class="flex items-center gap-2">
         <div class="p-2 rounded-lg bg-primary/10 text-primary">
-          <WandSparkles size={18} />
+          <Sparkles size={18} />
         </div>
         <div>
           <SheetTitle>
@@ -140,7 +131,7 @@ async function handleCancelJob(jobId: string) {
 
             {#if activeJob.status === "completed"}
               <Badge variant="default" class="bg-emerald-600 text-white gap-1 text-[10px]">
-                <CheckCircle2 size={10} />
+                <CheckCircle size={10} />
                 {m.academics_schedule_status_completed()}
               </Badge>
             {:else if activeJob.status === "running" || activeJob.status === "pending"}
@@ -150,7 +141,7 @@ async function handleCancelJob(jobId: string) {
               </Badge>
             {:else if activeJob.status === "failed"}
               <Badge variant="destructive" class="gap-1 text-[10px]">
-                <AlertTriangle size={10} />
+                <InfoCircle size={10} />
                 {m.academics_schedule_status_failed()}
               </Badge>
             {:else}
@@ -219,7 +210,7 @@ async function handleCancelJob(jobId: string) {
         </div>
       {/if}
 
-      <!-- Past Solve Jobs History -->
+      <!-- Past Solve Jobs ClockRotateRight -->
       {#if solveJobs.length > 1}
         <div class="flex flex-col gap-1.5 mt-2">
           <span class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
@@ -230,7 +221,7 @@ async function handleCancelJob(jobId: string) {
             {#each solveJobs.slice(1) as job (job.id)}
               <div class="flex items-center justify-between p-2 rounded-md border border-border/40 bg-card text-xs">
                 <div class="flex items-center gap-1.5">
-                  <Clock size={11} class="text-muted-foreground" />
+                  <ClockRotateRight size={11} class="text-muted-foreground" />
                   <span class="text-[10px] text-muted-foreground font-mono">
                     {new Date(job.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </span>

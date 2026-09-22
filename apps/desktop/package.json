@@ -22,7 +22,6 @@
   "dependencies": {
     "@docforge/core": "workspace:*",
     "@internationalized/date": "^3.12.0",
-    "@lucide/svelte": "^1.33.0",
     "@orbis/app-store": "workspace:*",
     "@orbis/avatar-engine": "workspace:*",
     "@orbis/blueprints": "workspace:*",

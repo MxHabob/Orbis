@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
-import { GraduationCap, Award, Calendar, RefreshCcw } from "@lucide/svelte";
+import { AdjustmentsHorizontal, BookOpen, Calendar, Refresh } from "@orbis/icons";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -101,7 +101,7 @@ const columns = $derived(
       onclick={loadGrades}
       title={m.academics_grades_refresh()}
     >
-      <RefreshCcw size={12} class={isLoading ? 'animate-spin' : ''} />
+      <Refresh size={12} class={isLoading ? 'animate-spin' : ''} />
     </Button>
   </div>
 
@@ -112,7 +112,7 @@ const columns = $derived(
     filterable={true}
     filterFields={gradesFilterFields}
     bind:filterValue={activeFilter}
-    emptyIcon={GraduationCap}
+    emptyIcon={BookOpen}
     emptyTitle={m.academics_grades_empty_title()}
     emptyDescription={m.academics_grades_empty_subtitle()}
     rtl={getLocale() === "ar"}
@@ -127,7 +127,7 @@ const columns = $derived(
           <span class="text-[10px] text-muted-foreground">{m.academics_grades_overall_grade()}</span>
           <span class="text-sm font-bold text-gradient-brand mt-0.5">{report?.cumulative_gpa != null ? Number(report.cumulative_gpa).toFixed(2) : "—"}</span>
         </div>
-        <Award size={18} class="text-primary" />
+        <AdjustmentsHorizontal size={18} class="text-primary" />
       </div>
       <div class="border border-border bg-card/30 p-4 rounded-xl flex items-center justify-between">
         <div class="flex flex-col">

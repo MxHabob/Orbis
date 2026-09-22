@@ -29,7 +29,7 @@ export interface SettingsAltProps extends SvgProps {
 export function SettingsAlt({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: SettingsAltProps) {

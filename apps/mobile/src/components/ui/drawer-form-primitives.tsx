@@ -13,7 +13,7 @@ import {
   type TextInputProps,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { CheckCircle } from "@orbis/icons/native";
 import { Button } from "@/components/ui/button";
 import { useDrawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
@@ -124,7 +124,7 @@ export function DrawerOptionRow({
         </View>
       </View>
       {isActive && (
-        <Ionicons name="checkmark-circle" size={22} color={theme.primary} />
+        <CheckCircle size={22} color={theme.primary} />
       )}
     </Pressable>
   );

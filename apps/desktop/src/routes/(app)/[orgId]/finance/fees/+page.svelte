@@ -16,7 +16,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { Plus, Wallet, CheckSquare, HelpCircle } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Document, Grid, Plus, QuestionMarkCircle } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
@@ -172,7 +172,7 @@ const rtl = $derived(getLocale() === "ar");
           <span class="text-base font-bold text-foreground font-mono">{formatCurrency(stats.invoiced, "YER")}</span>
         </div>
         <div class="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-          <Wallet size={15} />
+          <Document size={15} />
         </div>
       </div>
 
@@ -204,7 +204,7 @@ const rtl = $derived(getLocale() === "ar");
     </div>
   {/if}
 
-  <!-- Main Billing Table -->
+  <!-- Main Billing Grid -->
   <div class="flex-1 min-h-0">
     <DataTable
       {columns}
@@ -216,7 +216,7 @@ const rtl = $derived(getLocale() === "ar");
       filterable={true}
       filterFields={studentFeeFilterFields}
       bind:filterValue={activeFilter}
-      emptyIcon={Wallet}
+      emptyIcon={Document}
       emptyTitle={m.finance_fees_empty_title()}
       emptyDescription={m.finance_fees_empty_desc()}
       {rtl}

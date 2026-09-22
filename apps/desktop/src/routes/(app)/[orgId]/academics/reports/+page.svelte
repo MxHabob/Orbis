@@ -4,7 +4,7 @@ import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { BarChart3, FileText, AlertCircle } from "@lucide/svelte";
+import { ChartBar, DocumentPage, InfoCircle } from "@orbis/icons";
 
 let reports = $state<any[]>([]);
 let isLoading = $state(true);
@@ -41,13 +41,13 @@ onMount(() => {
     </div>
   {:else if error}
     <div class="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
-      <AlertCircle size={32} class="text-destructive opacity-50" />
+      <InfoCircle size={32} class="text-destructive opacity-50" />
       <p class="text-sm">{error}</p>
       <Button variant="outline" size="sm" onclick={loadReports}>إعادة المحاولة</Button>
     </div>
   {:else if reports.length === 0}
     <div class="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
-      <FileText size={32} class="opacity-30" />
+      <DocumentPage size={32} class="opacity-30" />
       <p class="text-sm">لا توجد تقارير متاحة حالياً.</p>
     </div>
   {:else}
@@ -57,7 +57,7 @@ onMount(() => {
           href={`/${page.params.orgId}/academics/reports/${report.id}`}
           class="flex flex-col gap-2 p-6 rounded-xl border bg-card hover:border-primary hover:shadow-md transition-all"
         >
-          <BarChart3 class="h-8 w-8 text-primary mb-2" />
+          <ChartBar class="h-8 w-8 text-primary mb-2" />
           <h3 class="font-medium">{report.name}</h3>
           {#if report.description}
             <p class="text-xs text-muted-foreground">{report.description}</p>

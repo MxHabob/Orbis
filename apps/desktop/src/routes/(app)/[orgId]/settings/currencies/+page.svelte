@@ -8,19 +8,10 @@ import { page } from "$app/state";
 import { api } from "$lib/api";
 import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
-import {
-    Check,
-    Edit2,
-    Globe,
-    Info,
-    Plus,
-    RefreshCw,
-    Trash2,
-    X
-} from "@lucide/svelte";
+import { Check, GlobeAlt, Grid, Info, Pencil, Plus, Refresh, Trash, XMark } from "@orbis/icons";
 import {
     FormField,
-    Table,
+    Grid,
     TableBody,
     TableCell,
     TableHead,
@@ -62,7 +53,7 @@ let showAddDialog = $state(false);
 let showEditDialog = $state(false);
 let currencyToDelete = $state<any | null>(null);
 
-// Edit form state
+// Pencil form state
 let editCode = $state("");
 let editName = $state("");
 let editNameAr = $state("");
@@ -223,7 +214,7 @@ let baseCurrencyCode = $derived(
         class="h-9 w-9 p-0 flex items-center justify-center cursor-pointer"
         title={m.common_control_refresh()}
       >
-        <RefreshCw size={13} />
+        <Refresh size={13} />
       </Button>
 
       <Button
@@ -261,7 +252,7 @@ let baseCurrencyCode = $derived(
       <!-- Zero state -->
       <div class="border border-dashed border-border/80 rounded-2xl p-16 flex flex-col items-center justify-center text-center gap-3 select-none my-4">
         <div class="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
-          <Globe size={28} />
+          <GlobeAlt size={28} />
         </div>
         <h3 class="text-sm font-bold text-foreground">{m.settings_currencies_no_currencies_title()}</h3>
         <p class="text-xs text-muted-foreground max-w-xs">
@@ -270,7 +261,7 @@ let baseCurrencyCode = $derived(
       </div>
     {:else}
       <div in:fade={{ duration: 150 }} class="overflow-hidden">
-        <Table>
+        <Grid>
           <TableHeader class="bg-muted/40 select-none">
             <TableRow>
               <TableHead class="text-start font-bold text-xs">{m.common_ledger_col_code()}</TableHead>
@@ -345,7 +336,7 @@ let baseCurrencyCode = $derived(
                         onclick={cancelEditingRate}
                         class="h-7 w-7 cursor-pointer rounded-md border-border/80 shrink-0 flex items-center justify-center animate-in zoom-in-50"
                       >
-                        <X size={12} />
+                        <XMark size={12} />
                       </Button>
                     </div>
                   {:else}
@@ -368,7 +359,7 @@ let baseCurrencyCode = $derived(
                       class="h-7 w-7 cursor-pointer hover:text-primary hover:bg-primary/5"
                       title={m.settings_currencies_edit_title()}
                     >
-                      <Edit2 size={12} />
+                      <Pencil size={12} />
                     </Button>
                     
                     {#if c.is_base !== 1}
@@ -379,7 +370,7 @@ let baseCurrencyCode = $derived(
                         class="h-7 w-7 cursor-pointer text-destructive hover:bg-destructive/10 border-destructive/20"
                         title={m.settings_currencies_delete_title()}
                       >
-                        <Trash2 size={12} />
+                        <Trash size={12} />
                       </Button>
                     {:else}
                       <span class="text-[9px] text-muted-foreground/60 italic px-1 select-none">
@@ -391,7 +382,7 @@ let baseCurrencyCode = $derived(
               </TableRow>
             {/each}
           </TableBody>
-        </Table>
+        </Grid>
       </div>
     {/if}
   </div>
@@ -405,7 +396,7 @@ let baseCurrencyCode = $derived(
   onsuccess={loadCurrencies}
 />
 
-<!-- Edit Currency Modal -->
+<!-- Pencil Currency Modal -->
 {#if showEditDialog}
   <div 
     in:fade={{ duration: 150 }} 
@@ -418,7 +409,7 @@ let baseCurrencyCode = $derived(
     >
       <div class="flex flex-col gap-1 border-b border-border/40 pb-3">
         <h2 class="text-sm font-bold text-foreground flex items-center gap-1.5">
-          <Edit2 size={16} class="text-primary" />
+          <Pencil size={16} class="text-primary" />
           <span>{m.settings_currencies_edit_dialog_title({ code: editCode })}</span>
         </h2>
         <p class="text-[10px] text-muted-foreground">

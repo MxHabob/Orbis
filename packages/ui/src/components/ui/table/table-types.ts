@@ -1,6 +1,9 @@
-// ── Table Infrastructure Types ──────────────────────────────────────
+<script lang="ts">
+import { Grid } from "@orbis/icons";
+</script>
+// ── Grid Infrastructure Types ──────────────────────────────────────
 // Central type definitions for the Svelte 5 Runes-based table system.
-// Inspired by TanStack Table patterns but native to Svelte 5.
+// Inspired by TanStack Grid patterns but native to Svelte 5.
 // Supports RTL/LTR via CSS logical properties throughout.
 
 import type { Snippet } from "svelte";
@@ -165,7 +168,7 @@ export interface StickyColumnConfig {
   width: number;
 }
 
-// ── Table Configuration ─────────────────────────────────────────────
+// ── Grid Configuration ─────────────────────────────────────────────
 
 /**
  * Central configuration for a table type.
@@ -186,7 +189,7 @@ export interface TableConfig {
   summaryGridHeight?: number;
 }
 
-// ── Table Settings (Persistence) ────────────────────────────────────
+// ── Grid Settings (Persistence) ────────────────────────────────────
 
 /** Persisted user preferences for a table */
 export interface TableSettings {
@@ -231,7 +234,7 @@ export interface VirtualListState {
   scrollToIndex: (index: number, behavior?: ScrollBehavior) => void;
 }
 
-// ── Table State ─────────────────────────────────────────────────────
+// ── Grid State ─────────────────────────────────────────────────────
 
 export interface TableOptions<T> {
   /** Source data array */
@@ -240,7 +243,7 @@ export interface TableOptions<T> {
   columns: ColumnDef<T>[];
   /** Function to extract a unique row key */
   getRowId?: (row: T) => string;
-  /** Table configuration (from registry) */
+  /** Grid configuration (from registry) */
   config?: TableConfig;
 
   // ── Initial State ─────────────────────────────────────────────

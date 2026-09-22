@@ -17,7 +17,7 @@ import { createDocument } from "@docforge/core";
 
 import { l, isAr } from "$lib/core/i18n";
 import SearchField from "$lib/shared/components/search-field.svelte";
-import { Plus, RefreshCw, FileText } from "@lucide/svelte";
+import { DocumentPage, Plus, Refresh } from "@orbis/icons";
 import { fade } from "svelte/transition";
 
 // Component imports

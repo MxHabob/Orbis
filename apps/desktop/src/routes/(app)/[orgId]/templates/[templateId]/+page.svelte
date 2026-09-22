@@ -1,4 +1,6 @@
 <script lang="ts">
+import { FloppyDisk, Grid } from "@orbis/icons";
+
 /**
  * Template Designer — Main Editor Page (v3.0 — Canva-Inspired)
  *
@@ -32,7 +34,7 @@ import {
 import CanvasRoot from "$lib/features/templates/canvas/canvas-root.svelte";
 import CanvasContextMenu from "$lib/features/templates/canvas/canvas-context-menu.svelte";
 import * as m from "$lib/paraglide/messages";
-// ── New Layout Components ────────────────────────────────────
+// ── New Grid Components ────────────────────────────────────
 import SideRail from "$lib/features/templates/layout/side-rail.svelte";
 import FlyoutPanel from "$lib/features/templates/layout/flyout-panel.svelte";
 import ContextToolbar from "$lib/features/templates/layout/context-toolbar.svelte";
@@ -140,7 +142,7 @@ async function renameTemplate(newName: string) {
   }
 }
 
-// ── Save ─────────────────────────────────────────────────────
+// ── FloppyDisk ─────────────────────────────────────────────────────
 
 async function saveTemplate() {
   if (!templateRecord || !store.isDirty || isSaving) return;

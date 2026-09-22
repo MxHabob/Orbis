@@ -8,17 +8,9 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { confirmStore } from "$lib/stores";
+import { Check, Clipboard, Grid, Pencil, Plus, Refresh, Trash, UserBadgeCheck } from "@orbis/icons";
 import {
-  Plus,
-  RefreshCw,
-  Edit2,
-  Trash2,
-  Shield,
-  Check,
-  Copy,
-} from "@lucide/svelte";
-import {
-  Table,
+  Grid,
   TableBody,
   TableCell,
   TableHead,
@@ -100,7 +92,7 @@ function openDuplicateRole(role: RoleDto) {
   editingRole = {
     ...role,
     id: `${role.id}_copy`,
-    name: `${role.name} (Copy)`,
+    name: `${role.name} (Clipboard)`,
     name_ar: role.name_ar ? `${role.name_ar} (نسخة)` : undefined,
     is_system: false,
   };
@@ -158,7 +150,7 @@ async function handleDeleteRole(roleToDelete: RoleDto) {
         class="h-9 w-9 p-0 flex items-center justify-center cursor-pointer"
         title={m.common_control_refresh ? m.common_control_refresh() : "تحديث"}
       >
-        <RefreshCw size={13} class={isLoading ? "animate-spin" : ""} />
+        <Refresh size={13} class={isLoading ? "animate-spin" : ""} />
       </Button>
 
       <Button
@@ -173,7 +165,7 @@ async function handleDeleteRole(roleToDelete: RoleDto) {
     </div>
   </div>
 
-  <!-- Content Section: Standard Table -->
+  <!-- Content Section: Standard Grid -->
   <div class="w-full">
     {#if isLoading}
       <div class="flex flex-col gap-3">
@@ -185,7 +177,7 @@ async function handleDeleteRole(roleToDelete: RoleDto) {
       <!-- Empty state -->
       <div class="border border-dashed border-border/80 rounded-2xl p-16 flex flex-col items-center justify-center text-center gap-3 select-none my-4">
         <div class="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
-          <Shield size={28} />
+          <UserBadgeCheck size={28} />
         </div>
         <h3 class="text-sm font-bold text-foreground">
           {l("لا توجد أدوار مسجلة", "No roles found")}
@@ -196,7 +188,7 @@ async function handleDeleteRole(roleToDelete: RoleDto) {
       </div>
     {:else}
       <div in:fade={{ duration: 150 }} class="overflow-hidden">
-        <Table>
+        <Grid>
           <TableHeader class="bg-muted/40 select-none">
             <TableRow>
               <TableHead class="text-start font-bold text-xs">{l("معرف الدور (Code)", "Role ID")}</TableHead>
@@ -256,7 +248,7 @@ async function handleDeleteRole(roleToDelete: RoleDto) {
                       class="h-7 w-7 cursor-pointer hover:text-primary hover:bg-primary/5"
                       title={l("تعديل الصلاحيات", "Edit Permissions")}
                     >
-                      <Edit2 size={12} />
+                      <Pencil size={12} />
                     </Button>
 
                     <Button
@@ -266,7 +258,7 @@ async function handleDeleteRole(roleToDelete: RoleDto) {
                       class="h-7 w-7 cursor-pointer hover:text-foreground hover:bg-muted/50"
                       title={l("نسخ الدور", "Duplicate Role")}
                     >
-                      <Copy size={12} />
+                      <Clipboard size={12} />
                     </Button>
 
                     {#if !role.is_system}
@@ -277,7 +269,7 @@ async function handleDeleteRole(roleToDelete: RoleDto) {
                         class="h-7 w-7 cursor-pointer text-destructive hover:bg-destructive/10 border-destructive/20"
                         title={m.common_action_delete ? m.common_action_delete() : "حذف"}
                       >
-                        <Trash2 size={12} />
+                        <Trash size={12} />
                       </Button>
                     {:else}
                       <span class="w-7"></span>
@@ -287,13 +279,13 @@ async function handleDeleteRole(roleToDelete: RoleDto) {
               </TableRow>
             {/each}
           </TableBody>
-        </Table>
+        </Grid>
       </div>
     {/if}
   </div>
 </div>
 
-<!-- Role Creation / Edit Sheet -->
+<!-- Role Creation / Pencil Sheet -->
 <RoleCreationSheet
   bind:open={isSheetOpen}
   editingRole={editingRole}

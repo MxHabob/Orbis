@@ -34,24 +34,7 @@ import {
   DialogFooter,
 } from "@orbis/ui/dialog";
 import { toast } from "@orbis/ui";
-import {
-  FileText,
-  Printer,
-  Download,
-  Search,
-  Sparkles,
-  Layers,
-  GraduationCap,
-  Wallet,
-  Users,
-  BarChart3,
-  CalendarCheck2,
-  CheckCircle2,
-  Clock,
-  Play,
-  Eye,
-  RefreshCw,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, BookOpen, ChartBar, CheckCircle, ClockRotateRight, Document, DocumentPage, Download, Eye, Keyframes, Label, Play, Refresh, Search, Sparkles, Users } from "@orbis/icons";
 
 import MetricsView from "$lib/features/metrics/metrics-view.svelte";
 
@@ -116,12 +99,12 @@ async function loadData() {
 
 // Category filter
 const categories = [
-  { id: "all", label: "جميع التقارير", icon: Layers },
-  { id: "academic", label: "الشؤون الأكاديمية", icon: GraduationCap },
+  { id: "all", label: "جميع التقارير", icon: Keyframes },
+  { id: "academic", label: "الشؤون الأكاديمية", icon: BookOpen },
   { id: "students", label: "شؤون الطلاب والقبول", icon: Users },
-  { id: "finance", label: "المالية والحسابات", icon: Wallet },
+  { id: "finance", label: "المالية والحسابات", icon: Document },
   { id: "attendance", label: "الحضور والغياب", icon: CalendarCheck2 },
-  { id: "exams", label: "الاختبارات واللجان", icon: FileText },
+  { id: "exams", label: "الاختبارات واللجان", icon: DocumentPage },
 ];
 
 const filteredDefinitions = $derived(
@@ -256,7 +239,7 @@ function handleDownloadCurrent() {
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div class="flex items-center gap-3.5">
         <div class="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs">
-          <FileText class="w-6 h-6" />
+          <DocumentPage class="w-6 h-6" />
         </div>
         <div>
           <h1 class="text-xl font-bold text-foreground tracking-tight">
@@ -272,11 +255,11 @@ function handleDownloadCurrent() {
       <Tabs value={activeMainTab} onValueChange={(v: any) => (activeMainTab = v)}>
         <TabsList class="bg-muted/40 p-1 rounded-xl border border-border/60">
           <TabsTrigger value="reports" class="text-xs font-semibold gap-1.5 px-3 py-1.5 rounded-lg">
-            <Printer class="w-3.5 h-3.5" />
+            <AdjustmentsHorizontal class="w-3.5 h-3.5" />
             استخراج التقارير والمستندات
           </TabsTrigger>
           <TabsTrigger value="analytics" class="text-xs font-semibold gap-1.5 px-3 py-1.5 rounded-lg">
-            <BarChart3 class="w-3.5 h-3.5" />
+            <ChartBar class="w-3.5 h-3.5" />
             لوحة التحليلات والمؤشرات
           </TabsTrigger>
         </TabsList>
@@ -292,7 +275,7 @@ function handleDownloadCurrent() {
     <!-- Categories Navigation & Search -->
     <div class="space-y-4">
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <!-- Category Filter Pills -->
+        <!-- Category AdjustmentsHorizontal Pills -->
         <div class="flex flex-wrap items-center gap-1.5 p-1 bg-muted/30 rounded-xl border border-border/60">
           {#each categories as cat}
             {@const Icon = cat.icon}
@@ -328,7 +311,7 @@ function handleDownloadCurrent() {
         </div>
       {:else if filteredDefinitions.length === 0}
         <Card class="border border-dashed p-12 text-center flex flex-col items-center justify-center gap-2 text-muted-foreground">
-          <FileText class="w-8 h-8 opacity-40" />
+          <DocumentPage class="w-8 h-8 opacity-40" />
           <div class="text-sm font-bold">لا توجد تقارير مطابقة</div>
           <div class="text-xs">جرب اختيار تصنيف آخر أو تغيير كلمة البحث</div>
         </Card>
@@ -339,7 +322,7 @@ function handleDownloadCurrent() {
               <div class="space-y-3">
                 <div class="flex items-start justify-between gap-2">
                   <div class="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                    <FileText class="w-5 h-5" />
+                    <DocumentPage class="w-5 h-5" />
                   </div>
                   <Badge variant="outline" class="text-[9px] font-mono uppercase bg-muted/40">
                     {def.code}
@@ -395,7 +378,7 @@ function handleDownloadCurrent() {
         <SheetHeader class="space-y-1">
           <div class="flex items-center gap-2">
             <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <Printer class="w-4 h-4" />
+              <AdjustmentsHorizontal class="w-4 h-4" />
             </div>
             <div>
               <SheetTitle class="text-base font-bold text-foreground">
@@ -474,7 +457,7 @@ function handleDownloadCurrent() {
                 onclick={() => (selectedFormat = "PDF")}
                 class="p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer {selectedFormat === 'PDF' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-muted-foreground hover:text-foreground'}"
               >
-                <FileText class="w-4 h-4" />
+                <DocumentPage class="w-4 h-4" />
                 مستند PDF جاهز للطباعة
               </button>
               <button
@@ -490,7 +473,7 @@ function handleDownloadCurrent() {
 
           {#if isGenerating}
             <div class="p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-center gap-3">
-              <RefreshCw class="w-5 h-5 text-primary animate-spin" />
+              <Refresh class="w-5 h-5 text-primary animate-spin" />
               <div class="text-xs text-primary font-semibold">{jobStatus}</div>
             </div>
           {/if}

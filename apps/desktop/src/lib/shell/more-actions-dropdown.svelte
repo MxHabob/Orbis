@@ -15,21 +15,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui";
 import { isDesktopApp } from "$lib/api";
 import BackupCliDialog from "./backup-cli-dialog.svelte";
-import {
-  MoreHorizontal,
-  HelpCircle,
-  Users,
-  Scale,
-  Megaphone,
-  Globe,
-  Compass,
-  FileText,
-  Headphones,
-  MessageSquare,
-  Lock,
-  SquareCode,
-  DatabaseBackup,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, AppNotification, ChatBubble, CodeBracket, DocumentPage, EllipsisHorizontal, GlobeAlt, Lock, QuestionMarkCircle, Users } from "@orbis/icons";
 
 let isBackupCliOpen = $state(false);
 
@@ -74,7 +60,7 @@ const iconClass = "text-muted-foreground shrink-0";
             class="relative cursor-pointer rounded-[10px]"
             aria-label={m.common_sidebar_more_actions?.() ?? "More Options"}
           >
-            <MoreHorizontal size={16} strokeWidth={1.8} class="text-foreground" />
+            <EllipsisHorizontal size={16} strokeWidth={1.8} class="text-foreground" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={12}>
@@ -95,11 +81,11 @@ const iconClass = "text-muted-foreground shrink-0";
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent side="left" align="end" sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://www.mulverse.com')}>
-            <Compass size={13} class={iconClass} />
+            <GlobeAlt size={13} class={iconClass} />
             <span>{m.common_sidebar_help_welcome_page?.() ?? "Welcome Page"}</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://docs.orbis.edu')}>
-            <FileText size={13} class={iconClass} />
+            <DocumentPage size={13} class={iconClass} />
             <span>{m.common_sidebar_help_documentation?.() ?? "Documentation"}</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://docs.orbis.edu/api')}>
@@ -155,7 +141,7 @@ const iconClass = "text-muted-foreground shrink-0";
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent side="left" align="end" sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/terms')}>
-            <FileText size={13} class={iconClass} />
+            <DocumentPage size={13} class={iconClass} />
             <span>{m.common_sidebar_help_terms?.() ?? "Terms of Service"}</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/privacy')}>
@@ -169,13 +155,13 @@ const iconClass = "text-muted-foreground shrink-0";
 
     <!-- Give Feedback -->
     <DropdownMenuItem class={menuItemClass} onclick={() => (isBackupCliOpen = true)}>
-      <Megaphone size={14} class={iconClass} />
+      <AppNotification size={14} class={iconClass} />
       <span>{m.common_action_back?.() ?? "Give feedback"}</span>
     </DropdownMenuItem>
 
     <!-- Tour Navigation -->
     <DropdownMenuItem class={menuItemClass} onclick={() => alert('Tour is coming soon!')}>
-      <Globe size={14} class={iconClass} />
+      <GlobeAlt size={14} class={iconClass} />
       <span>{m.common_sidebar_help_tour?.() ?? "Tour the new navigation"}</span>
     </DropdownMenuItem>
   </DropdownMenuContent>

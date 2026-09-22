@@ -29,7 +29,7 @@ export interface ClockRotateRightProps extends SvgProps {
 export function ClockRotateRight({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: ClockRotateRightProps) {

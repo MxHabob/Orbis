@@ -11,24 +11,7 @@ import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
-import {
-  FileText,
-  Calendar,
-  Hash,
-  Building2,
-  UserCheck,
-  CreditCard,
-  ClipboardCheck,
-  BarChart3,
-  Printer,
-  Eye,
-  ArrowRight,
-  Sparkles,
-  Milestone,
-  AlertCircle,
-  Download,
-  Info,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowRight, Calendar, ChartBar, Clipboard, Document, DocumentPage, Download, Eye, Grid, Hashtag, Home, Info, InfoCircle, Sparkles, UserBadgeCheck } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
 import { createPeriodsQuery } from "$lib/features/academics";
 import { createQuery } from "@tanstack/svelte-query";
@@ -116,7 +99,7 @@ const reportItems = $derived([
       ? m.common_exams_reports_seating_list()
       : "كشوفات أرقام الجلوس واللجان",
     desc: "قوائم أسماء الطلاب الموزعين على اللجان مع أرقام الجلوس والأرقام السرية.",
-    icon: Hash,
+    icon: Hashtag,
     badge: "أرقام الجلوس",
   },
   {
@@ -125,7 +108,7 @@ const reportItems = $derived([
       ? m.common_exams_reports_hall_map()
       : "خريطة توزيع قاعات الامتحان",
     desc: "توزيع القاعات والسعة الاستيعابية ومواقع الجلوس لكل لجنة امتحانية.",
-    icon: Building2,
+    icon: Home,
     badge: "توزيع القاعات",
   },
   {
@@ -134,7 +117,7 @@ const reportItems = $derived([
       ? m.common_exams_reports_proctor_sheet()
       : "جدول تكليف الملاحظين والمراقبين",
     desc: "جدول توزيع المعلمين والملاحظين على اللجان والفترات الامتحانية اليومية.",
-    icon: UserCheck,
+    icon: UserBadgeCheck,
     badge: "الملاحظين",
   },
   {
@@ -143,7 +126,7 @@ const reportItems = $derived([
       ? m.common_exams_reports_student_cards()
       : "بطاقات دخول الامتحان للطلاب",
     desc: "بطاقات تعريفية رسمية تحتوي على رقم الجلوس واللجنة والقاعة الامتحانية.",
-    icon: CreditCard,
+    icon: Document,
     badge: "بطاقات الجلوس",
   },
   {
@@ -161,7 +144,7 @@ const reportItems = $derived([
       ? m.common_exams_reports_summary()
       : "سجل رصد الدرجات الشامل (الشيت)",
     desc: "الشيت المعتمد لرصد درجات الاختبارات الشفهية والتحريرية ونتيجة الكنترول.",
-    icon: BarChart3,
+    icon: ChartBar,
     badge: "شيت الدرجات",
   },
 ]);
@@ -235,7 +218,7 @@ function handlePrint() {
   <div class="flex items-center justify-between border-b border-border/40 pb-4">
     <div class="flex items-center gap-3 text-start">
       <div class="h-8.5 w-8.5 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0 font-bold text-xs">
-        <FileText size={18} />
+        <DocumentPage size={18} />
       </div>
       <div class="flex flex-col">
         <h2 class="text-xs font-bold text-foreground tracking-wide uppercase">
@@ -269,7 +252,7 @@ function handlePrint() {
         href={localizeHref(`/${data.orgId}/templates`)}
         class="text-[10px] font-bold px-3 h-7.5 rounded-md gap-1.5 cursor-pointer ms-2 border-border/60"
       >
-        <FileText size={13} class="text-primary" />
+        <DocumentPage size={13} class="text-primary" />
         <span>مصمم القوالب في النظام</span>
       </Button>
 
@@ -279,7 +262,7 @@ function handlePrint() {
         class="text-[10px] font-bold px-3 h-7.5 rounded-md gap-1.5 cursor-pointer"
         onclick={handlePrint}
       >
-        <Printer size={13} />
+        <AdjustmentsHorizontal size={13} />
         <span>طباعة التقرير</span>
       </Button>
     </div>
@@ -301,12 +284,12 @@ function handlePrint() {
     </div>
   {:else if error}
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
-      <AlertCircle size={24} />
+      <InfoCircle size={24} />
       <h3 class="font-semibold text-xs">تعذر تحميل بيانات التقارير</h3>
       <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
     </div>
   {:else}
-    <!-- Main Content Split Layout -->
+    <!-- Main Content Split Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
       
       <!-- 1. LEFT COLUMN: Directory Index List (Notion Database style) -->
@@ -388,7 +371,7 @@ function handlePrint() {
                 class="w-full text-xs font-bold justify-center gap-2 cursor-pointer h-8.5"
                 onclick={handlePrint}
               >
-                <Printer size={14} />
+                <AdjustmentsHorizontal size={14} />
                 <span>طباعة التقرير الآن</span>
               </Button>
             </div>

@@ -15,7 +15,7 @@ import {
 import { Badge } from "@orbis/ui/badge";
 import AttendanceTrendsCard from "$lib/features/metrics/cards/attendance-trends-card.svelte";
 import GradeDistributionCard from "$lib/features/metrics/cards/grade-distribution-card.svelte";
-import { BrainCircuit } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Grid, Label, Pencil } from "@orbis/icons";
 import { onMount } from "svelte";
 import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
@@ -350,7 +350,7 @@ async function saveStudentDetails(e: Event) {
             <!-- Decision Helper Banner -->
             <div class="p-4 rounded-xl border flex items-center justify-between gap-4 shadow-sm {decisionHelper.colorClass}">
               <div class="flex items-center gap-3">
-                <BrainCircuit size={18} class="shrink-0" />
+                <AdjustmentsHorizontal size={18} class="shrink-0" />
                 <div class="flex flex-col gap-0.5 text-start">
                   <span class="text-xs font-bold text-foreground">{m.academics_student_evaluation_recommendation_title()}</span>
                   <p class="text-[10px] leading-relaxed font-semibold">{decisionHelper.rec}</p>
@@ -364,7 +364,7 @@ async function saveStudentDetails(e: Event) {
         {/if}
       </div>
 
-      <!-- Profile Edit Form -->
+      <!-- Profile Pencil Form -->
       <form onsubmit={saveStudentDetails} in:fade={{ duration: 100 }} class="flex flex-col gap-6">
       
       <!-- Organization Settings style Card -->
@@ -375,7 +375,7 @@ async function saveStudentDetails(e: Event) {
           <span>{m.common_form_student_info()}</span>
         </div>
 
-        <!-- Card Body with Clear Vertical Rows (Layout identical to settings_+page.svelte) -->
+        <!-- Card Body with Clear Vertical Rows (Grid identical to settings_+page.svelte) -->
         <div class="flex flex-col">
           
           <!-- Row 1: Student Active Status -->

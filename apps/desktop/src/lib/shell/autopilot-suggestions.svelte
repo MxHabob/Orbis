@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { AvatarPilotPlane } from "@orbis/avatar-engine";
-import { AlertCircle, Clock } from "@lucide/svelte";
+import { ClockRotateRight, InfoCircle } from "@orbis/icons";
 
 import { formatDate } from "$lib/core/i18n";
 
@@ -98,14 +98,14 @@ const sortedTasks = $derived(
             
             <div class="text-[9px] mt-0.5 flex flex-col gap-0.5">
               <span class="text-muted-foreground flex items-center gap-1">
-                <Clock size={9} class="shrink-0" />
+                <ClockRotateRight size={9} class="shrink-0" />
                 {formatDate(task.scheduled_at)}
               </span>
               
               <!-- If failed, show error message -->
               {#if isFailed && errorMsg}
                 <span class="text-destructive font-medium flex items-center gap-1 text-[8.5px]">
-                  <AlertCircle size={9} class="shrink-0" /> {errorMsg}
+                  <InfoCircle size={9} class="shrink-0" /> {errorMsg}
                 </span>
               {/if}
 

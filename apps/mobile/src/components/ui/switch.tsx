@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Radii } from "@/constants/theme";
-import { Ionicons } from "@expo/vector-icons";
+import { Check, XMark } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 
 export interface SwitchProps {
@@ -46,11 +46,11 @@ export function Switch({
           },
         ]}
       >
-        <Ionicons
-          name={value ? "checkmark" : "close"}
-          size={12}
-          color={value ? theme.primary : theme.mutedForeground}
-        />
+        {value ? (
+          <Check size={12} color={theme.primary} />
+        ) : (
+          <XMark size={12} color={theme.mutedForeground} />
+        )}
       </View>
     </Pressable>
   );

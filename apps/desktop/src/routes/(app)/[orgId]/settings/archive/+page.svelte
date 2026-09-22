@@ -24,7 +24,7 @@ import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte
 import { DataTable, CheckboxCell } from "$lib/tables";
 import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
 import { confirmStore } from "$lib/stores";
-import { File, LayoutGrid, List, Loader2, Upload } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowUpTray, Document, Grid } from "@orbis/icons";
 import type { Documents } from "@orbis/sdk";
 import { createOperationToast } from "$lib/shared/components/operation-toast";
 
@@ -347,7 +347,7 @@ async function handleFileSelect(event: Event) {
     <div class="flex shrink-0 items-center gap-2">
       <div class="flex items-center rounded-md border border-border bg-background p-0.5" role="group" aria-label="طريقة عرض الأرشيف">
         <Button variant={viewMode === "grid" ? "secondary" : "ghost"} size="icon-xs" onclick={() => viewMode = "grid"} title="عرض شبكي" aria-label="عرض شبكي">
-          <LayoutGrid class="h-3.5 w-3.5" />
+          <Grid class="h-3.5 w-3.5" />
         </Button>
         <Button variant={viewMode === "table" ? "secondary" : "ghost"} size="icon-xs" onclick={() => viewMode = "table"} title="عرض جدول" aria-label="عرض جدول">
           <List class="h-3.5 w-3.5" />
@@ -362,7 +362,7 @@ async function handleFileSelect(event: Event) {
         </SelectContent>
       </Select>
       <Button variant="default" size="sm" onclick={openFilePicker} disabled={uploadMutation.isPending}>
-        {#if uploadMutation.isPending}<Loader2 size={14} class="me-1.5 animate-spin" />{:else}<Upload size={14} class="me-1.5" />{/if}
+        {#if uploadMutation.isPending}<Loader2 size={14} class="me-1.5 animate-spin" />{:else}<ArrowUpTray size={14} class="me-1.5" />{/if}
         {m.common_docs_btn_upload()}
       </Button>
       <input bind:this={fileInput} type="file" accept="image/*,video/*" multiple class="hidden" onchange={handleFileSelect} />
@@ -381,7 +381,7 @@ async function handleFileSelect(event: Event) {
       <h3 class="text-base font-semibold text-foreground">{m.settings_archive_empty_title()}</h3>
       <p class="text-xs text-muted-foreground max-w-sm mt-1">{m.settings_archive_empty_desc()}</p>
       <Button variant="outline" size="sm" class="mt-3" onclick={openFilePicker} disabled={uploadMutation.isPending}>
-        <Upload size={14} class="me-1.5" />
+        <ArrowUpTray size={14} class="me-1.5" />
         {m.common_docs_btn_upload()}
       </Button>
     </div>

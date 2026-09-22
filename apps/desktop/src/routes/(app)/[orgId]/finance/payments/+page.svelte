@@ -1,7 +1,7 @@
 <!--
   @page PaymentsListingPage
   Redesigned to match the professional double-entry ledger statement page aesthetics.
-  Incorporates a highly optimized, compact ERP "Customer Receipt Voucher" (سند قبض عملاء) form layout
+  Incorporates a highly optimized, compact ERP "Customer DocumentPage Voucher" (سند قبض عملاء) form layout
   with zero space waste and school-focused inputs (Student, Fee, Amount, Box, Method, Date, Notes).
 -->
 <script lang="ts">
@@ -11,7 +11,7 @@ import { api } from "$lib/api";
 import { queryClient } from "$lib/api";
 import {
   Card,
-  Table,
+  Grid,
   TableBody,
   TableCell,
   TableHead,
@@ -30,21 +30,7 @@ import {
 } from "@orbis/ui/select";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import { toast } from "@orbis/ui";
-import {
-  Plus,
-  CreditCard,
-  Search,
-  Calendar,
-  FileText,
-  ClipboardList,
-  Trash2,
-  RefreshCw,
-  LogOut,
-  QrCode,
-  Printer,
-  ChevronLeft,
-  ChevronRight,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, Calendar, ChevronLeft, ChevronRight, Document, DocumentPage, Grid, Label, Plus, Refresh, Search, SignOut, TaskList, Trash } from "@orbis/icons";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 
@@ -110,7 +96,7 @@ let selectedFeesInfo = $state<{ id: string; amount: number; notes: string }[]>(
 let checkInfo = $state("");
 let notes = $state("");
 
-// Filter & Sub-bar Options
+// AdjustmentsHorizontal & Sub-bar Options
 let searchQuery = $state("");
 let methodFilter = $state("all");
 let showUserRecords = $state(true);
@@ -508,7 +494,7 @@ function handlePrintVoucher() {
     toast.error("الرجاء اختيار سند من الجدول أولاً");
     return;
   }
-  printTemplateId = "11111111-1111-1111-1111-111111111111"; // Payment Receipt Template
+  printTemplateId = "11111111-1111-1111-1111-111111111111"; // Payment DocumentPage Template
   printParameters = { payment_id: selectedPayment.id };
   printReportOpen = true;
 }
@@ -574,10 +560,10 @@ const filteredPayments = $derived.by(() => {
 </script>
 
 <div class="h-full flex flex-col overflow-hidden bg-background p-4 font-sans text-start">
-  <!-- Main Content Scroll Area (Form + Table) -->
+  <!-- Main Content Scroll Area (Form + Grid) -->
   <div class="flex-1 overflow-y-auto py-3 space-y-4">
     
-    <!-- Redesigned Receipt Voucher Input Form Card -->
+    <!-- Redesigned DocumentPage Voucher Input Form Card -->
     <Card class="border border-border/60 shadow-sm overflow-hidden bg-card">
       <!-- Voucher Header & Shared Controls -->
       <div class="bg-muted/45 border-b border-border/60 p-4 flex flex-wrap items-center justify-between gap-4 select-none">
@@ -770,7 +756,7 @@ const filteredPayments = $derived.by(() => {
                     onclick={() => deletePaymentRow(index)}
                     class="text-destructive hover:bg-destructive/10 cursor-pointer h-8 w-8"
                   >
-                    <Trash2 size={14} />
+                    <Trash size={14} />
                   </Button>
                 </div>
               </div>
@@ -808,7 +794,7 @@ const filteredPayments = $derived.by(() => {
               disabled={!selectedPayment}
               class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all"
             >
-              <Trash2 size={14} />
+              <Trash size={14} />
               <span>{m.finance_payments_void_receipt()}</span>
             </Button>
 
@@ -818,7 +804,7 @@ const filteredPayments = $derived.by(() => {
               onclick={clearForm}
               class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all border-border text-foreground hover:bg-muted"
             >
-              <LogOut size={14} />
+              <SignOut size={14} />
               <span>{m.finance_payments_clear_fields()}</span>
             </Button>
           </div>
@@ -837,7 +823,7 @@ const filteredPayments = $derived.by(() => {
             <span class="text-sm font-bold text-emerald-500 font-mono">{formatCurrency(stats.total, "YER")}</span>
           </div>
           <div class="h-6 w-6 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-            <CreditCard size={12} />
+            <Document size={12} />
           </div>
         </div>
 
@@ -851,13 +837,13 @@ const filteredPayments = $derived.by(() => {
             </span>
           </div>
           <div class="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center text-primary">
-            <ClipboardList size={12} />
+            <TaskList size={12} />
           </div>
         </div>
       </div>
     {/if}
 
-    <!-- Filter & Sub-Action Bar -->
+    <!-- AdjustmentsHorizontal & Sub-Action Bar -->
     <div class="flex flex-wrap items-center justify-between gap-3 py-2 select-none border-b border-border/40">
       
       <div class="flex flex-wrap items-center gap-3 flex-1">
@@ -887,7 +873,7 @@ const filteredPayments = $derived.by(() => {
 
         <span class="text-border hidden md:inline">|</span>
 
-        <!-- Filter Mode Select -->
+        <!-- AdjustmentsHorizontal Mode Select -->
         <Select type="single" bind:value={filterMode}>
           <SelectTrigger class="h-8 text-xs bg-background border-border w-28 cursor-pointer text-start">
             {filterMode === "day" ? m.finance_payments_today() : (filterMode === "range" ? m.finance_payments_specific_period() : m.finance_je_filter_all())}
@@ -899,7 +885,7 @@ const filteredPayments = $derived.by(() => {
           </SelectContent>
         </Select>
 
-        <!-- Day Filter controls -->
+        <!-- Day AdjustmentsHorizontal controls -->
         {#if filterMode === "day"}
           <div class="flex items-center gap-1.5 bg-muted/40 p-0.5 rounded-lg border border-border/50">
             <Button
@@ -965,7 +951,7 @@ const filteredPayments = $derived.by(() => {
             onclick={() => { printTemplateId = "22222222-2222-2222-2222-222222222222"; printParameters = { ids: Array.from(selectedPaymentIds) }; printReportOpen = true; }} 
             class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted border-primary/30 text-primary"
           >
-            <Printer size={12} />
+            <AdjustmentsHorizontal size={12} />
             <span>{m.common_print_templates()} ({selectedPaymentIds.size})</span>
           </Button>
         {/if}
@@ -975,7 +961,7 @@ const filteredPayments = $derived.by(() => {
           onclick={handlePrintList} 
           class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted"
         >
-          <Printer size={12} />
+          <AdjustmentsHorizontal size={12} />
           <span>{m.finance_journal_print_table()}</span>
         </Button>
         <Button 
@@ -985,7 +971,7 @@ const filteredPayments = $derived.by(() => {
           disabled={!selectedPayment} 
           class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted"
         >
-          <FileText size={12} />
+          <DocumentPage size={12} />
           <span>{m.finance_payments_print_receipt()}</span>
         </Button>
         <Button 
@@ -1001,7 +987,7 @@ const filteredPayments = $derived.by(() => {
 
     </div>
 
-    <!-- Table Grid container -->
+    <!-- Grid Grid container -->
     <div class="overflow-hidden">
       {#if isLoading}
         <div class="flex flex-col gap-2">
@@ -1011,7 +997,7 @@ const filteredPayments = $derived.by(() => {
         </div>
       {:else}
         <div in:fade={{ duration: 150 }} class="border border-border/60 rounded-xl overflow-hidden bg-card/30 shadow-sm">
-          <Table>
+          <Grid>
             <TableHeader class="bg-muted/40 select-none">
               <TableRow>
                 <TableHead class="w-10 text-center">
@@ -1061,7 +1047,7 @@ const filteredPayments = $derived.by(() => {
                 {/if}
               {/each}
             </TableBody>
-          </Table>
+          </Grid>
         </div>
       {/if}
     </div>

@@ -9,7 +9,7 @@
  * title pill, and a right floating control (custom action / crown).
  */
 
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { ChevronLeft, ChevronRight, User, AppNotification } from "@orbis/icons/native";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
@@ -90,7 +90,7 @@ export function Header({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { t } = useI18n();
+  const { t, isArabic } = useI18n();
 
   const sideSize = width < 360 ? 46 : 48;
 
@@ -198,11 +198,24 @@ export function Header({
               pressed && styles.pressed,
             ]}
           >
-            <Ionicons
-              name={showBack ? "chevron-back" : "person-outline"}
-              size={21}
-              color={transparent ? "#FFFFFF" : theme.text}
-            />
+            {showBack ? (
+              isArabic ? (
+                <ChevronRight
+                  size={21}
+                  color={transparent ? "#FFFFFF" : theme.text}
+                />
+              ) : (
+                <ChevronLeft
+                  size={21}
+                  color={transparent ? "#FFFFFF" : theme.text}
+                />
+              )
+            ) : (
+              <User
+                size={21}
+                color={transparent ? "#FFFFFF" : theme.text}
+              />
+            )}
           </Pressable>
         </View>
 
@@ -289,8 +302,7 @@ export function Header({
                 pressed && styles.pressed,
               ]}
             >
-              <Ionicons
-                name="notifications-outline"
+              <AppNotification
                 size={20}
                 color={transparent ? "#FFFFFF" : theme.text}
               />

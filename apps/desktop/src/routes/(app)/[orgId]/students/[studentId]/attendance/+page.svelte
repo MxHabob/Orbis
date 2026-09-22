@@ -6,7 +6,7 @@ Attendance stats + log history using OrbisGrid.
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { api } from "$lib/api";
-import { Calendar, UserCheck, Ban, Clock } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Calendar, ClockRotateRight, UserBadgeCheck } from "@orbis/icons";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -98,21 +98,21 @@ const rtl = $derived(getLocale() === "ar");
           <span class="text-[9px] text-muted-foreground">{m.academics_attendance_present_days()}</span>
           <span class="text-sm font-bold mt-0.5 text-emerald-500">{formatNumber(report.present_count || 0)} {m.academics_attendance_day_unit()}</span>
         </div>
-        <UserCheck size={16} class="text-emerald-500" />
+        <UserBadgeCheck size={16} class="text-emerald-500" />
       </div>
       <div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
         <div class="flex flex-col">
           <span class="text-[9px] text-muted-foreground">{m.academics_attendance_absent_days()}</span>
           <span class="text-sm font-bold mt-0.5 text-destructive">{formatNumber(report.absent_count || 0)} {m.academics_attendance_day_unit()}</span>
         </div>
-        <Ban size={16} class="text-destructive" />
+        <AdjustmentsHorizontal size={16} class="text-destructive" />
       </div>
       <div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
         <div class="flex flex-col">
           <span class="text-[9px] text-muted-foreground">{m.academics_attendance_late_cases()}</span>
           <span class="text-sm font-bold mt-0.5 text-amber-500">{formatNumber(report.late_count || 0)} {m.academics_attendance_times_unit()}</span>
         </div>
-        <Clock size={16} class="text-amber-500" />
+        <ClockRotateRight size={16} class="text-amber-500" />
       </div>
       <div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
         <div class="flex flex-col">

@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => {
           // Split heavy vendor libs into separate chunks for better caching
           manualChunks(id: string) {
             if (id.includes("node_modules")) {
-              if (id.includes("@lucide/svelte")) return "vendor-icons";
+              if (id.includes("@orbis/icons")) return "vendor-icons";
               if (id.includes("@tauri-apps")) return "vendor-tauri";
               if (id.includes("@tanstack")) return "vendor-query";
               if (id.includes("zod")) return "vendor-utils";

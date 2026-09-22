@@ -29,7 +29,7 @@ export interface DocumentProps extends SvgProps {
 export function Document({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: DocumentProps) {

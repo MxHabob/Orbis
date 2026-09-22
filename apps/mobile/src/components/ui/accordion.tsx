@@ -1,6 +1,6 @@
 import { PropsWithChildren, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { ChevronUp, ChevronDown } from "@orbis/icons/native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
@@ -39,11 +39,11 @@ export function Accordion({
         style={({ pressed }) => [styles.trigger, pressed && styles.pressed]}
       >
         <Text style={styles.title}>{title}</Text>
-        <Ionicons
-          name={open ? "chevron-up" : "chevron-down"}
-          size={18}
-          color={theme.textSecondary}
-        />
+        {open ? (
+          <ChevronUp size={18} color={theme.textSecondary} />
+        ) : (
+          <ChevronDown size={18} color={theme.textSecondary} />
+        )}
       </Pressable>
       {open && (
         <Animated.View

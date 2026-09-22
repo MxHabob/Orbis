@@ -29,7 +29,7 @@ export interface CursorArrowRaysProps extends SvgProps {
 export function CursorArrowRays({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: CursorArrowRaysProps) {

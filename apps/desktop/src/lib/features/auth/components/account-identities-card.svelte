@@ -10,7 +10,7 @@ import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Label } from "@orbis/ui/label";
 import { toast } from "@orbis/ui";
-import { Unlink, ExternalLink, ShieldCheck } from "@lucide/svelte";
+import { ArrowForward, Label, LinkSlash, UserBadgeCheck } from "@orbis/icons";
 import SettingsCard from "$lib/shared/components/settings-card.svelte";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 
@@ -118,7 +118,7 @@ function handleDisconnectProvider(provider: "google" | "microsoft") {
         class="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium"
       >
         <span>{m.common_account_identities_configure_in_integrations()}</span>
-        <ExternalLink class="w-3 h-3" />
+        <ArrowForward class="w-3 h-3" />
       </a>
     {/if}
   {/snippet}
@@ -162,7 +162,7 @@ function handleDisconnectProvider(provider: "google" | "microsoft") {
           class="h-9 px-4 text-xs font-medium text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
           onclick={() => handleDisconnectProvider("google")}
         >
-          <Unlink class="w-3.5 h-3.5 me-1.5" />
+          <LinkSlash class="w-3.5 h-3.5 me-1.5" />
           <span>{m.common_account_identities_disconnect()}</span>
         </Button>
       {:else}
@@ -226,7 +226,7 @@ function handleDisconnectProvider(provider: "google" | "microsoft") {
           class="h-9 px-4 text-xs font-medium text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
           onclick={() => handleDisconnectProvider("microsoft")}
         >
-          <Unlink class="w-3.5 h-3.5 me-1.5" />
+          <LinkSlash class="w-3.5 h-3.5 me-1.5" />
           <span>{m.common_account_identities_disconnect()}</span>
         </Button>
       {:else}

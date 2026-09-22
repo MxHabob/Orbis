@@ -14,7 +14,7 @@ import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
-import { Trash2 } from "@lucide/svelte";
+import { Trash } from "@orbis/icons";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
@@ -173,7 +173,7 @@ const menuItems = $derived([
         class="text-destructive border-destructive/20 hover:bg-destructive/5"
         onclick={handleDeleteUser}
       >
-        <Trash2 size={13} class="me-1" />
+        <Trash size={13} class="me-1" />
         {m.settings_user_detail_btn_delete()}
       </Button>
     {/snippet}

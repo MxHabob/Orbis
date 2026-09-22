@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
-import { Plus, Percent } from "@lucide/svelte";
+import { Hashtag, Plus } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { toast } from "@orbis/ui";
@@ -108,7 +108,7 @@ function handleGridAction(event: GridActionEvent) {
   <div class="flex items-center justify-between pb-4 flex-nowrap shrink-0">
     <div class="flex flex-col gap-0.5 text-start">
       <h1 class="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
-        <Percent class="text-primary" size={18} />
+        <Hashtag class="text-primary" size={18} />
         <span>{m.common_dt_title?.() || "Discount Templates"}</span>
       </h1>
       <p class="text-xs text-muted-foreground">
@@ -129,7 +129,7 @@ function handleGridAction(event: GridActionEvent) {
       filterable={true}
       filterFields={discountTemplateFilterFields}
       bind:filterValue={activeFilter}
-      emptyIcon={Percent}
+      emptyIcon={Hashtag}
       emptyTitle={m.common_dt_empty?.() || "No discount templates"}
       emptyDescription={m.common_dt_empty_desc?.() || "Create standard discounts or scholarships"}
       rtl={getLocale() === "ar"}

@@ -19,7 +19,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@orbis/ui/dialog";
-import { ShieldAlert, Plus, Check, SlidersHorizontal, Lock } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Check, Label, Lock, Plus, UserBadgeCheck } from "@orbis/icons";
 import { l } from "$lib/core/i18n";
 import {
   IAM_DOMAINS,
@@ -92,7 +92,7 @@ function clearActions() {
     <DialogHeader class="space-y-1.5">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-          <ShieldAlert class="w-4 h-4" />
+          <UserBadgeCheck class="w-4 h-4" />
         </div>
         <div>
           <DialogTitle class="text-base font-bold text-foreground">

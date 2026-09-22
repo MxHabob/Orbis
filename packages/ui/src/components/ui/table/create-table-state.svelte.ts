@@ -46,6 +46,8 @@ function defaultCompare(a: unknown, b: unknown): number {
  * @example
  * ```svelte
  * <script lang="ts">
+import { AdjustmentsHorizontal } from "@orbis/icons";
+
  * import { createTableState } from '@orbis/ui-svelte/table';
  *
  * const table = createTableState({
@@ -68,7 +70,7 @@ export function createTableState<T>(options: TableOptions<T>) {
     options.initialSorting ?? { column: null, direction: "asc" },
   );
 
-  // ── Filter State ───────────────────────────────────────────────
+  // ── AdjustmentsHorizontal State ───────────────────────────────────────────────
   let globalFilter = $state("");
   let columnFilters = $state<Record<string, string>>({});
 

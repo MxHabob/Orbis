@@ -13,7 +13,7 @@ import { DataTable } from "$lib/tables";
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import AccountTree from "$lib/features/finance/components/account-tree.svelte";
-import { ArrowLeft, ArrowRight } from "@lucide/svelte";
+import { ArrowLeft, ArrowRight } from "@orbis/icons";
 
 let { data }: { data: { orgId: string } } = $props();
 

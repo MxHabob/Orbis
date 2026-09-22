@@ -18,15 +18,7 @@ import {
 import Resizer from "$lib/shell/resizer.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { TimetableGrid } from "@orbis/ui";
-import {
-  ArrowLeft,
-  Clock,
-  User,
-  Eye,
-  SlidersHorizontal,
-  BookOpen,
-  History,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowLeft, BookOpen, ClockRotateRight, Eye, User } from "@orbis/icons";
 
 interface Props {
   orgId: string;
@@ -222,7 +214,7 @@ const solutionAssignments = $derived.by(() => {
   }
 });
 
-// Filter existing lessons based on active sub-perspective
+// AdjustmentsHorizontal existing lessons based on active sub-perspective
 const existingPreviewLessons = $derived.by(() => {
   if (previewPerspective === "class" && previewClassId) {
     return allLessons.filter(
@@ -242,7 +234,7 @@ const existingPreviewLessons = $derived.by(() => {
   return allLessons;
 });
 
-// Filter draft lessons based on active sub-perspective
+// AdjustmentsHorizontal draft lessons based on active sub-perspective
 const currentDraftLessons = $derived.by(() => {
   if (previewPerspective === "class" && previewClassId) {
     return solutionAssignments.filter(
@@ -463,7 +455,7 @@ function getSubjectColor(subjectId: string): string {
             : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'}"
           onclick={() => (studioModule = 'constraints')}
         >
-          <SlidersHorizontal size={13} class={studioModule === 'constraints' ? 'text-primary' : 'text-muted-foreground'} />
+          <AdjustmentsHorizontal size={13} class={studioModule === 'constraints' ? 'text-primary' : 'text-muted-foreground'} />
           <span class="truncate">{m.academics_studio_rules()}</span>
         </button>
 
@@ -485,7 +477,7 @@ function getSubjectColor(subjectId: string): string {
             : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'}"
           onclick={() => (studioModule = 'history')}
         >
-          <History size={13} class={studioModule === 'history' ? 'text-primary' : 'text-muted-foreground'} />
+          <ClockRotateRight size={13} class={studioModule === 'history' ? 'text-primary' : 'text-muted-foreground'} />
           <span class="truncate">{m.academics_studio_history()}</span>
         </button>
       </div>
@@ -832,7 +824,7 @@ function getSubjectColor(subjectId: string): string {
         </div>
       {/if}
 
-      <!-- 5. History Module -->
+      <!-- 5. ClockRotateRight Module -->
       {#if studioModule === "history"}
         <div class="flex-1 min-h-0 w-full overflow-auto rounded-xl border border-border/60 bg-card p-4 shadow-xs scrollbar-hide flex flex-col gap-2">
           <h3 class="text-xs font-bold text-foreground uppercase tracking-wider mb-2">
@@ -848,7 +840,7 @@ function getSubjectColor(subjectId: string): string {
               <div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-card hover:border-primary/40 transition-colors">
                 <div class="flex items-center gap-3">
                   <div class="p-2 rounded-md bg-muted/40 text-muted-foreground">
-                    <Clock size={14} />
+                    <ClockRotateRight size={14} />
                   </div>
                   <div>
                     <div class="flex items-center gap-2">

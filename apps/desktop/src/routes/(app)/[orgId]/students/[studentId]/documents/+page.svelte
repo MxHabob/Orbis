@@ -10,7 +10,7 @@ import { confirmStore } from "$lib/stores";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { api, extractErrorMessage } from "$lib/api";
 import {
-  Table,
+  Grid,
   TableBody,
   TableCell,
   TableHead,
@@ -21,18 +21,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Skeleton } from "@orbis/ui/skeleton";
-import {
-  FileText,
-  Upload,
-  Trash2,
-  Plus,
-  RefreshCcw,
-  AlertCircle,
-  CheckCircle2,
-  ExternalLink,
-  X,
-  Paperclip,
-} from "@lucide/svelte";
+import { ArrowForward, ArrowUpTray, CheckCircle, Clip, DocumentPage, Grid, InfoCircle, Label, Plus, Refresh, Trash, XMark } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { createEnrollmentsQuery } from "$lib/features/students";
 import { formatDate } from "$lib/core/i18n";
@@ -71,7 +60,7 @@ let newDocTitle = $state("");
 let newDocDescription = $state("");
 let newDocUrl = $state("");
 
-// Upload simulated file fields
+// ArrowUpTray simulated file fields
 let uploadFileUrl = $state("");
 let uploadFileSize = $state("1.5 MB");
 let uploadFileExt = $state("pdf");
@@ -198,7 +187,7 @@ async function handleUploadFile() {
         onclick={() => documentsQuery.refetch()}
         title={m.academics_grades_refresh()}
       >
-        <RefreshCcw size={13} class={isLoading ? 'animate-spin' : ''} />
+        <Refresh size={13} class={isLoading ? 'animate-spin' : ''} />
       </Button>
       <Button 
         variant="lime"
@@ -226,7 +215,7 @@ async function handleUploadFile() {
   {:else if documents.length === 0}
     <!-- Real DB empty state - NO mock fake data fallback here -->
     <div class="flex flex-col items-center justify-center p-12 text-center text-muted-foreground border border-dashed border-border rounded-xl bg-card/10 gap-3">
-      <FileText size={28} class="text-muted-foreground/30 animate-pulse" />
+      <DocumentPage size={28} class="text-muted-foreground/30 animate-pulse" />
       <div class="flex flex-col gap-0.5">
         <p class="text-xs font-semibold">{m.common_docs_empty()}</p>
         <p class="text-[10px] text-muted-foreground/80">{m.common_docs_empty_hint()}</p>
@@ -241,9 +230,9 @@ async function handleUploadFile() {
       </Button>
     </div>
   {:else}
-    <!-- Main Documents Table -->
+    <!-- Main Documents Grid -->
     <div class="border border-border rounded-lg bg-card overflow-hidden">
-      <Table>
+      <Grid>
         <TableHeader>
           <TableRow class="hover:bg-transparent">
             <TableHead class="text-start">{m.common_docs_col_name()}</TableHead>
@@ -260,7 +249,7 @@ async function handleUploadFile() {
               <TableCell class="text-start">
                 <div class="flex items-center gap-2.5">
                   <div class="p-1.5 bg-primary/5 text-primary rounded-md">
-                    <FileText size={14} />
+                    <DocumentPage size={14} />
                   </div>
                   <div class="flex flex-col text-start">
                     <span class="font-bold text-foreground">{doc.title || doc.name}</span>
@@ -282,12 +271,12 @@ async function handleUploadFile() {
               <TableCell class="text-start">
                 {#if isUploaded}
                   <span class="badge-brand-success py-0.5 px-2 text-[9px] flex items-center w-fit gap-1 font-semibold">
-                    <CheckCircle2 size={10} />
+                    <CheckCircle size={10} />
                     {m.common_docs_status_uploaded()}
                   </span>
                 {:else}
                   <span class="badge-brand-destructive py-0.5 px-2 text-[9px] flex items-center w-fit gap-1 font-semibold">
-                    <AlertCircle size={10} />
+                    <InfoCircle size={10} />
                     {m.common_docs_status_pending()}
                   </span>
                 {/if}
@@ -308,7 +297,7 @@ async function handleUploadFile() {
                       class="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
                       title={m.common_docs_action_open_file()}
                     >
-                      <ExternalLink size={12} />
+                      <ArrowForward size={12} />
                     </Button>
                   {:else}
                     <Button 
@@ -316,7 +305,7 @@ async function handleUploadFile() {
                       class="text-[10px] h-7 px-2 gap-1.5 cursor-pointer hover:bg-primary/5 hover:text-primary hover:border-primary/50"
                       onclick={() => openUploadModal(doc)}
                     >
-                      <Upload size={11} />
+                      <ArrowUpTray size={11} />
                       {m.common_docs_btn_upload()}
                     </Button>
                   {/if}
@@ -327,14 +316,14 @@ async function handleUploadFile() {
                     onclick={() => handleDelete(doc.id)}
                     title={m.common_action_delete()}
                   >
-                    <Trash2 size={12} />
+                    <Trash size={12} />
                   </Button>
                 </div>
               </TableCell>
             </TableRow>
           {/each}
         </TableBody>
-      </Table>
+      </Grid>
     </div>
   {/if}
 </div>
@@ -345,7 +334,7 @@ async function handleUploadFile() {
     <div class="bg-card border border-border p-6 rounded-xl shadow-xl w-full max-w-md flex flex-col gap-4 text-start select-none">
       <div class="flex items-center justify-between border-b border-border/80 pb-3">
         <h3 class="font-bold text-sm text-foreground flex items-center gap-2">
-          <Paperclip size={15} class="text-primary" />
+          <Clip size={15} class="text-primary" />
           {m.common_docs_add_btn()}
         </h3>
         <Button 
@@ -354,7 +343,7 @@ async function handleUploadFile() {
           class="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
           onclick={() => showAddModal = false}
         >
-          <X size={14} />
+          <XMark size={14} />
         </Button>
       </div>
 
@@ -420,13 +409,13 @@ async function handleUploadFile() {
   </div>
 {/if}
 
-<!-- Modal: Upload simulated document file -->
+<!-- Modal: ArrowUpTray simulated document file -->
 {#if showUploadModal}
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-xs">
     <div class="bg-card border border-border p-6 rounded-xl shadow-xl w-full max-w-md flex flex-col gap-4 text-start select-none">
       <div class="flex items-center justify-between border-b border-border/80 pb-3">
         <h3 class="font-bold text-sm text-foreground flex items-center gap-2">
-          <Upload size={15} class="text-primary" />
+          <ArrowUpTray size={15} class="text-primary" />
           {m.common_docs_upload_dialog_title()}
         </h3>
         <Button 
@@ -435,7 +424,7 @@ async function handleUploadFile() {
           class="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
           onclick={() => showUploadModal = false}
         >
-          <X size={14} />
+          <XMark size={14} />
         </Button>
       </div>
 

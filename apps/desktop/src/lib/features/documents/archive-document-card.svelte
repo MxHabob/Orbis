@@ -6,7 +6,7 @@ import {
   getDocumentSource,
   resolveDocumentUrl,
 } from "$lib/features/documents/queries";
-import { Download, FileText, Music, Play, Trash2 } from "@lucide/svelte";
+import { AdjustmentsHorizontal, DocumentPage, Download, Play, Trash } from "@orbis/icons";
 import type { Documents } from "@orbis/sdk";
 
 let {
@@ -67,7 +67,7 @@ function loadWhenVisible(node: HTMLDivElement) {
       {#await resolveDocumentUrl(source) then mediaUrl}
         <img src={mediaUrl} alt={document.name} loading="lazy" decoding="async" width="320" height="240" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
       {:catch}
-        <FileText class="m-auto h-8 w-8 text-muted-foreground/60" />
+        <DocumentPage class="m-auto h-8 w-8 text-muted-foreground/60" />
       {/await}
     {:else if isNearViewport && isVideo}
       {#await resolveDocumentUrl(source) then sourceUrl}
@@ -83,7 +83,7 @@ function loadWhenVisible(node: HTMLDivElement) {
       </div>
     {:else}
       <div class="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground/70">
-        <FileText class="h-9 w-9" strokeWidth={1.5} />
+        <DocumentPage class="h-9 w-9" strokeWidth={1.5} />
         <span class="rounded bg-muted px-2 py-0.5 text-[10px] font-semibold">{extension}</span>
       </div>
     {/if}
@@ -110,7 +110,7 @@ function loadWhenVisible(node: HTMLDivElement) {
         title={m.common_action_delete()}
         aria-label={m.common_action_delete()}
       >
-        <Trash2 class="h-4 w-4" />
+        <Trash class="h-4 w-4" />
       </Button>
     </div>
   </div>

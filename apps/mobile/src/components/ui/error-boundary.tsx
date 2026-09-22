@@ -7,7 +7,7 @@
 
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { InfoCircle } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 import { Radii, Spacing, Typography } from "@/constants/theme";
 import { Button } from "./button";
@@ -39,7 +39,7 @@ export function ErrorFallback({
         <View
           style={[styles.iconWrapper, { backgroundColor: theme.errorLight }]}
         >
-          <Ionicons name="alert-circle" size={40} color={theme.destructive} />
+          <InfoCircle size={40} color={theme.destructive} />
         </View>
 
         <Text style={[styles.title, { color: theme.text }]}>

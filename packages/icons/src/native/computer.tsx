@@ -29,7 +29,7 @@ export interface ComputerProps extends SvgProps {
 export function Computer({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: ComputerProps) {

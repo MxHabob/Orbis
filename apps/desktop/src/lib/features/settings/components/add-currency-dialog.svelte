@@ -35,14 +35,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import {
-  Sparkles,
-  Coins,
-  ArrowRightLeft,
-  Check,
-  Globe,
-  Loader2,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowPath, Check, DocumentChartBar, GlobeAlt, Label, Sparkles } from "@orbis/icons";
 import { currencyInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
@@ -256,7 +249,7 @@ async function handleSubmit(e: Event) {
     <DialogHeader>
       <div class="flex items-center justify-between">
         <DialogTitle class="text-sm font-semibold flex items-center gap-2">
-          <Coins size={16} class="text-primary" />
+          <DocumentChartBar size={16} class="text-primary" />
           <span>{m.settings_currencies_add_dialog_title()}</span>
         </DialogTitle>
         {#if code}
@@ -392,7 +385,7 @@ async function handleSubmit(e: Event) {
       <!-- Base Currency Switch -->
       <div class="flex items-center justify-between p-3 rounded-lg border border-border/40 bg-muted/10">
         <div class="flex items-center gap-2">
-          <Globe size={14} class="text-muted-foreground" />
+          <GlobeAlt size={14} class="text-muted-foreground" />
           <div class="flex flex-col gap-0.5">
             <Label class="text-xs font-medium cursor-pointer">
               {m.settings_currencies_type_base()}

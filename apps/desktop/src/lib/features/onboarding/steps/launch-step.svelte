@@ -6,7 +6,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Progress } from "@orbis/ui/progress";
-import { Sparkles, ArrowRight, ArrowLeft } from "@lucide/svelte";
+import { ArrowLeft, ArrowRight, Sparkles } from "@orbis/icons";
 import { Avatar } from "@orbis/avatar-engine";
 import { getLocale } from "$lib/paraglide/runtime";
 

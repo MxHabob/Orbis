@@ -1,5 +1,5 @@
 <script lang="ts">
-import { CheckCircle2, Info, TriangleAlert, X, XCircle } from "@lucide/svelte";
+import { CheckCircle, Info, InfoCircle, XMark } from "@orbis/icons";
 import { Button } from "../button/index.js";
 import { Progress } from "../progress/index.js";
 import Spinner from "../spinner.svelte";
@@ -14,9 +14,9 @@ const visibleToasts = $derived(toastStore.toasts.filter((item) => item.open));
     <div class="toast-item" data-variant={item.variant} role="status" aria-live="polite">
       <div class="toast-main">
         <div class="toast-icon">
-          {#if item.variant === "success"}<CheckCircle2 size={16} />
-          {:else if item.variant === "error" || item.variant === "destructive"}<XCircle size={16} />
-          {:else if item.variant === "warning"}<TriangleAlert size={16} />
+          {#if item.variant === "success"}<CheckCircle size={16} />
+          {:else if item.variant === "error" || item.variant === "destructive"}<XMark size={16} />
+          {:else if item.variant === "warning"}<InfoCircle size={16} />
           {:else if item.variant === "info" || item.variant === "ai"}<Info size={16} />
           {:else}<Spinner size={16} />{/if}
         </div>
@@ -27,7 +27,7 @@ const visibleToasts = $derived(toastStore.toasts.filter((item) => item.open));
           </div>
           {#if item.description}<p>{item.description}</p>{/if}
         </div>
-        <button type="button" class="toast-close" aria-label="Close" onclick={() => toastStore.dismiss(item.id)}><X size={14} /></button>
+        <button type="button" class="toast-close" aria-label="Close" onclick={() => toastStore.dismiss(item.id)}><XMark size={14} /></button>
       </div>
       {#if item.variant === "progress"}<Progress value={item.progress ?? 0} class="toast-progress" />{/if}
       {#if item.action}<Button size="xs" class="toast-action" onclick={item.action.onClick}>{item.action.label}</Button>{/if}

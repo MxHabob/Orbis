@@ -29,7 +29,7 @@ export interface UsageIconProps extends SvgProps {
 export function UsageIcon({
   size = 20,
   color = 'currentColor',
-  strokeWidth = strokeWidth,
+  strokeWidth = 1.5,
   style,
   ...props
 }: UsageIconProps) {

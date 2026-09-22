@@ -1,4 +1,6 @@
 <script lang="ts">
+import { Home, Label } from "@orbis/icons";
+
 import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui/label";
 import { Input } from "@orbis/ui/input";
@@ -14,7 +16,7 @@ let { state }: { state: StudentFormState } = $props();
   </div>
 
   <div class="flex flex-col">
-    <!-- Previous School -->
+    <!-- Previous Home -->
     {#if state.activeFields.previous_school}
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
         <div class="flex flex-col gap-1 text-start">

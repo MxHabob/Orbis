@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { Settings2, AlertCircle } from "@lucide/svelte";
+import { InfoCircle, SettingsAlt } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 
 let {
@@ -45,7 +45,7 @@ const components = $derived((componentsQuery.data || []) as any[]);
         </div>
       {:else if componentsQuery.error}
         <div class="flex flex-col items-center justify-center py-12 text-destructive gap-2 text-center border border-destructive/20 bg-destructive/5 rounded-xl">
-          <AlertCircle size={24} />
+          <InfoCircle size={24} />
           <h3 class="text-sm font-bold">Failed to load</h3>
           <p class="text-xs opacity-80">{componentsQuery.error.message}</p>
         </div>

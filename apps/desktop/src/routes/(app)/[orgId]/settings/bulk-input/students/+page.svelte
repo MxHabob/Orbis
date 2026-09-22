@@ -20,7 +20,7 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Label } from "@orbis/ui/label";
-import { ArrowLeft, Upload, Columns3, Trash2, Info } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowLeft, ArrowUpTray, FloppyDisk, Info, Label, Trash } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 
 import { localizeHref } from "$lib/paraglide/runtime";
@@ -72,7 +72,7 @@ onMount(() => {
   }
 });
 
-// Save rows to localStorage whenever they change
+// FloppyDisk rows to localStorage whenever they change
 $effect(() => {
   if (rows && rows.length > 0) {
     const clean = rows.map((r) => {
@@ -228,7 +228,7 @@ async function handleSubmit() {
   submitProgress = 0;
 
   try {
-    // Filter only non-empty rows and add class_id if globally selected
+    // AdjustmentsHorizontal only non-empty rows and add class_id if globally selected
     const dataRows = rows
       .filter((r) => {
         for (const [k, v] of Object.entries(r)) {
@@ -402,7 +402,7 @@ async function handleSubmit() {
           class="text-xs cursor-pointer text-destructive hover:text-destructive"
           onclick={handleClearAll}
         >
-          <Trash2 size={13} class="me-1.5" />
+          <Trash size={13} class="me-1.5" />
           {m.common_bulk_input_clear()}
         </Button>
 
@@ -423,7 +423,7 @@ async function handleSubmit() {
           disabled={isSubmitting || summary.totalFilled === 0 || summary.errorCount > 0 || !gate.isAllowed}
           onclick={handleSubmit}
         >
-          <Upload size={13} class="me-1.5" />
+          <ArrowUpTray size={13} class="me-1.5" />
           {m.common_bulk_input_submit()} ({summary.valid})
         </Button>
       </div>

@@ -11,17 +11,7 @@ import {
 } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Logo } from "@orbis/ui/logo";
-import {
-  Minimize2,
-  Square,
-  Copy,
-  X,
-  GraduationCap,
-  Sun,
-  Moon,
-  Search,
-  Bell,
-} from "@lucide/svelte";
+import { AppNotification, BookOpen, CheckBox, Clipboard, Collapse, Expand, LightBulb, Search, XMark } from "@orbis/icons";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 
 import WhatsNewPopover from "./whats-new-popover.svelte";
@@ -202,7 +192,7 @@ onMount(() => {
         <kbd class="ml-1 rounded px-1 py-0.5 font-mono text-[9px] font-medium text-zinc-400">Ctrl /</kbd>
       </Button>
 
-      <!-- Workflow Inbox Bell -->
+      <!-- Workflow Inbox AppNotification -->
       {#if workflowInbox.hasActions}
         <Button
           variant="ghost"
@@ -214,7 +204,7 @@ onMount(() => {
             if (orgId) window.location.href = localizeHref(`/${orgId}/settings/approvals`);
           }}
         >
-          <Bell size={14} class="stroke-[2px]" />
+          <AppNotification size={14} class="stroke-[2px]" />
           <span class="absolute -top-0.5 -inset-e-0.5 size-4 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center font-semibold">
             {workflowInbox.totalCount}
           </span>
@@ -230,11 +220,11 @@ onMount(() => {
             if (orgId) window.location.href = localizeHref(`/${orgId}/settings/approvals`);
           }}
         >
-          <Bell size={14} class="stroke-[2px] text-muted-foreground" />
+          <AppNotification size={14} class="stroke-[2px] text-muted-foreground" />
         </Button>
       {/if}
 
-      <!-- What's New Megaphone (Original Header Design) -->
+      <!-- What's New AppNotification (Original Header Design) -->
       <WhatsNewPopover />
     {/if}
 
@@ -247,9 +237,9 @@ onMount(() => {
       title={m.common_titlebar_theme_toggle()}
     >
       {#if themeStore.resolved === "dark"}
-        <Sun size={14} class="stroke-[2px]" />
+        <LightBulb size={14} class="stroke-[2px]" />
       {:else}
-        <Moon size={14} class="stroke-[2px]" />
+        <LightBulb size={14} class="stroke-[2px]" />
       {/if}
     </Button>
 
@@ -277,10 +267,10 @@ onMount(() => {
           class="text-muted-foreground hover:text-foreground hover:bg-muted"
           title={m.common_titlebar_minimize()}
         >
-          <Minimize2 size={12} />
+          <Collapse size={12} />
         </Button>
 
-        <!-- Maximize / Restore -->
+        <!-- Expand / Restore -->
         <Button 
           variant="ghost"
           size="icon-sm"
@@ -289,9 +279,9 @@ onMount(() => {
           title={isMaximized ? m.common_titlebar_restore() : m.common_titlebar_maximize()}
         >
           {#if isMaximized}
-            <Copy size={11} class="rotate-180" />
+            <Clipboard size={11} class="rotate-180" />
           {:else}
-            <Square size={11} />
+            <CheckBox size={11} />
           {/if}
         </Button>
 
@@ -303,7 +293,7 @@ onMount(() => {
           class="text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
           title={m.common_titlebar_close()}
         >
-          <X size={12} />
+          <XMark size={12} />
         </Button>
       </div>
     {/if}

@@ -12,18 +12,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
   import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
   import MainViewport from "$lib/shell/main-viewport.svelte";
   import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-  import {
-    FileText,
-    GraduationCap,
-    MoreHorizontal,
-    PhoneCall,
-    ShieldAlert,
-    User,
-    UserCheck,
-    Users,
-    Users2,
-    Wallet,
-  } from "@lucide/svelte";
+  import { AdjustmentsHorizontal, BookOpen, Document, DocumentPage, EllipsisHorizontal, User, UserBadgeCheck, Users } from "@orbis/icons";
   import { toast } from "@orbis/ui";
   import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui/avatar";
   import { Badge } from "@orbis/ui/badge";
@@ -120,32 +109,32 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     {
       path: "grades",
       label: m.students_detail_tab_grades(),
-      icon: GraduationCap,
+      icon: BookOpen,
     },
     {
       path: "fees",
       label: m.students_detail_tab_fees(),
-      icon: Wallet,
+      icon: Document,
     },
     {
       path: "attendance",
       label: m.common_promo_attendance(),
-      icon: UserCheck,
+      icon: UserBadgeCheck,
     },
     {
       path: "behavior",
       label: m.common_detail_tab_behavior(),
-      icon: ShieldAlert,
+      icon: UserBadgeCheck,
     },
     {
       path: "guardians",
       label: m.common_guardians_tab(),
-      icon: Users2,
+      icon: Users,
     },
     {
       path: "documents",
       label: m.students_detail_tab_documents(),
-      icon: FileText,
+      icon: DocumentPage,
     },
   ]);
 </script>
@@ -203,7 +192,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
               }),
             )}
         >
-          <PhoneCall size={12} />
+          <AdjustmentsHorizontal size={12} />
           {m.students_detail_call_guardian()}
         </Button>
 
@@ -216,7 +205,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
                 class="h-8 w-8 p-0 cursor-pointer"
                 {...props}
               >
-                <MoreHorizontal size={14} />
+                <EllipsisHorizontal size={14} />
               </Button>
             {/snippet}
           </DropdownMenuTrigger>
@@ -239,7 +228,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
               onclick={withdrawStudent}
               disabled={isWithdrawing}
             >
-              <ShieldAlert size={12} class="text-destructive shrink-0" />
+              <UserBadgeCheck size={12} class="text-destructive shrink-0" />
               <span>{m.common_inspector_withdraw()}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
