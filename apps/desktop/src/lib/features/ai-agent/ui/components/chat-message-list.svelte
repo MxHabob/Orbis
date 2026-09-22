@@ -3,6 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
+import AiLoadingSkeleton from "./ai-loading-skeleton.svelte";
 import {
   Wrench,
   CheckCircle2,
@@ -354,15 +355,7 @@ function parseMarkdown(text: string): MessagePart[] {
 
     <!-- Thinking/loading skeleton -->
     {#if isThinking && messages.at(-1)?.role === "assistant" && !messages.at(-1)?.content?.trim()}
-      <div class="flex flex-col gap-3 w-full text-start mt-2 p-3 bg-muted/20 rounded-xl border border-border/40">
-        <div class="flex items-center gap-2 text-xs font-semibold text-primary animate-pulse">
-          <Wrench size={13} class="animate-spin" />
-          <span>جاري التفكير وتحليل البيانات...</span>
-        </div>
-        <Skeleton class="h-4 w-3/4 rounded-md" />
-        <Skeleton class="h-4 w-5/6 rounded-md" />
-        <Skeleton class="h-4 w-1/2 rounded-md" />
-      </div>
+      <AiLoadingSkeleton class="mt-2" />
     {/if}
   </div>
 </div>
