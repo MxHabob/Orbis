@@ -233,75 +233,48 @@ fn paginated_to_dto<T: Serialize, U: Serialize, F: Fn(T) -> U>(p: PaginatedList<
 
 #[derive(Deserialize, Debug)]
 pub struct RegisterStudentRequest {
-    #[serde(rename = "personId")]
     pub person_id: Option<String>,
-    #[serde(rename = "userId")]
     pub user_id: Option<String>,
-    #[serde(rename = "studentNumber")]
     pub student_number: String,
-    #[serde(rename = "firstName")]
     pub first_name: String,
-    #[serde(rename = "middleName")]
     pub middle_name: Option<String>,
-    #[serde(rename = "lastName")]
     pub last_name: String,
-    #[serde(rename = "firstNameAr")]
     pub first_name_ar: Option<String>,
-    #[serde(rename = "middleNameAr")]
     pub middle_name_ar: Option<String>,
-    #[serde(rename = "lastNameAr")]
     pub last_name_ar: Option<String>,
-    #[serde(rename = "displayName")]
     pub display_name: Option<String>,
-    #[serde(rename = "nationalId")]
     pub national_id: Option<String>,
-    #[serde(rename = "passportNumber")]
     pub passport_number: Option<String>,
     pub gender: Option<String>,
-    #[serde(rename = "birthDate")]
     pub birth_date: Option<String>,
-    #[serde(rename = "placeOfBirth")]
     pub place_of_birth: Option<String>,
     pub nationality: Option<String>,
-    #[serde(rename = "bloodType")]
     pub blood_type: Option<String>,
-    #[serde(rename = "medicalNotes")]
     pub medical_notes: Option<String>,
-    #[serde(rename = "specialNeedsNotes")]
     pub special_needs_notes: Option<String>,
     pub phone: Option<String>,
     pub email: Option<String>,
-    #[serde(rename = "avatarUrl")]
     pub avatar_url: Option<String>,
-    #[serde(rename = "initialPeriodId")]
     pub initial_period_id: Option<String>,
-    #[serde(rename = "initialClassId")]
     pub initial_class_id: Option<String>,
-    #[serde(rename = "studyMode")]
     pub study_mode: Option<String>,
 }
 
 #[derive(Deserialize, Default, Debug)]
 pub struct StudentFilterInput {
-    #[serde(rename = "periodId")]
     pub period_id: Option<String>,
-    #[serde(rename = "classId")]
     pub class_id: Option<String>,
     pub status: Option<String>,
     pub standing: Option<String>,
     pub search: Option<String>,
     pub page: Option<u64>,
-    #[serde(rename = "pageSize")]
     pub page_size: Option<u64>,
-    #[serde(rename = "sortBy")]
     pub sort_by: Option<String>,
-    #[serde(rename = "sortDir")]
     pub sort_dir: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct UpdateStudentStatusInput {
-    #[serde(rename = "studentId")]
     pub student_id: String,
     pub status: String,
     pub reason: Option<String>,
@@ -309,110 +282,75 @@ pub struct UpdateStudentStatusInput {
 
 #[derive(Deserialize, Debug)]
 pub struct ChangeStudyModeInput {
-    #[serde(rename = "enrollmentId")]
     pub enrollment_id: String,
-    #[serde(rename = "studyMode")]
     pub study_mode: String,
     pub reason: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct UpdateStudentProfileRequest {
-    #[serde(rename = "studentId")]
     pub student_id: String,
-    #[serde(rename = "firstName")]
     pub first_name: Option<String>,
-    #[serde(rename = "middleName")]
     pub middle_name: Option<String>,
-    #[serde(rename = "lastName")]
     pub last_name: Option<String>,
-    #[serde(rename = "firstNameAr")]
     pub first_name_ar: Option<String>,
-    #[serde(rename = "middleNameAr")]
     pub middle_name_ar: Option<String>,
-    #[serde(rename = "lastNameAr")]
     pub last_name_ar: Option<String>,
-    #[serde(rename = "displayName")]
     pub display_name: Option<String>,
-    #[serde(rename = "nationalId")]
     pub national_id: Option<String>,
-    #[serde(rename = "passportNumber")]
     pub passport_number: Option<String>,
     pub gender: Option<String>,
-    #[serde(rename = "birthDate")]
     pub birth_date: Option<String>,
-    #[serde(rename = "placeOfBirth")]
     pub place_of_birth: Option<String>,
     pub nationality: Option<String>,
-    #[serde(rename = "bloodType")]
     pub blood_type: Option<String>,
-    #[serde(rename = "medicalNotes")]
     pub medical_notes: Option<String>,
-    #[serde(rename = "specialNeedsNotes")]
     pub special_needs_notes: Option<String>,
     pub phone: Option<String>,
     pub email: Option<String>,
     pub address: Option<String>,
-    #[serde(rename = "avatarUrl")]
     pub avatar_url: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct EnrollStudentInput {
-    #[serde(rename = "periodId")]
     pub period_id: String,
-    #[serde(rename = "studentId")]
     pub student_id: String,
-    #[serde(rename = "classId")]
     pub class_id: Option<String>,
-    #[serde(rename = "studentNumber")]
     pub student_number: String,
-    #[serde(rename = "studyMode")]
     pub study_mode: Option<String>,
 }
 
 #[derive(Deserialize, Default, Debug)]
 pub struct EnrollmentFilterInput {
-    #[serde(rename = "periodId")]
     pub period_id: Option<String>,
-    #[serde(rename = "classId")]
     pub class_id: Option<String>,
-    #[serde(rename = "studentId")]
     pub student_id: Option<String>,
-    #[serde(rename = "studyMode")]
     pub study_mode: Option<String>,
     pub status: Option<String>,
     pub page: Option<u64>,
-    #[serde(rename = "pageSize")]
     pub page_size: Option<u64>,
-    #[serde(rename = "sortBy")]
     pub sort_by: Option<String>,
-    #[serde(rename = "sortDir")]
     pub sort_dir: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct AssignGuardianInput {
-    #[serde(rename = "studentId")]
     pub student_id: String,
-    #[serde(rename = "guardianId")]
     pub guardian_id: String,
     pub relationship: String,
-    #[serde(rename = "relationshipAr")]
     pub relationship_ar: Option<String>,
-    #[serde(rename = "isPrimary", default)]
+    #[serde(default)]
     pub is_primary: bool,
-    #[serde(rename = "isEmergencyContact", default)]
+    #[serde(default)]
     pub is_emergency_contact: bool,
-    #[serde(rename = "isAuthorizedPickup", default)]
+    #[serde(default)]
     pub is_authorized_pickup: bool,
-    #[serde(rename = "isPayer", default)]
+    #[serde(default)]
     pub is_payer: bool,
-    #[serde(rename = "paymentSharePercent")]
     pub payment_share_percent: Option<f64>,
     pub occupation: Option<String>,
     pub employer: Option<String>,
-    #[serde(rename = "workPhone")]
     pub work_phone: Option<String>,
     pub notes: Option<String>,
 }
@@ -642,9 +580,7 @@ pub async fn student_change_study_mode(
 
 #[derive(Deserialize, Debug)]
 pub struct TransferClassInput {
-    #[serde(rename = "enrollmentId")]
     pub enrollment_id: String,
-    #[serde(rename = "targetClassId")]
     pub target_class_id: String,
     pub reason: Option<String>,
 }

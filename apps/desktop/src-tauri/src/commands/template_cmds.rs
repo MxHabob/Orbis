@@ -26,7 +26,6 @@ fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 // ═══════════════════════════════════════════════════════════════
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct TemplateDto {
     pub id: String,
     pub name: String,
@@ -84,7 +83,6 @@ fn template_dto(t: ReportTemplate) -> TemplateDto {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct CreateTemplateInput {
     pub name: String,
     pub name_ar: Option<String>,
@@ -105,7 +103,6 @@ pub struct CreateTemplateInput {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct UpdateTemplateInput {
     pub name: Option<String>,
     pub name_ar: Option<String>,
@@ -118,7 +115,6 @@ pub struct UpdateTemplateInput {
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct VersionDto {
     pub id: String,
     pub template_id: String,
@@ -140,7 +136,6 @@ fn version_dto(v: ReportTemplateVersion) -> VersionDto {
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct ReportDefinitionDto {
     pub id: String,
     pub code: String,
@@ -176,7 +171,6 @@ fn definition_dto(d: ReportDefinition) -> ReportDefinitionDto {
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct ValidationResult {
     pub valid: bool,
     pub errors: Vec<ValidationIssue>,
@@ -184,7 +178,6 @@ pub struct ValidationResult {
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct ValidationIssue {
     pub node_id: Option<String>,
     pub path: String,
@@ -193,7 +186,6 @@ pub struct ValidationIssue {
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct BindingDto {
     pub id: String,
     pub report_definition_id: String,

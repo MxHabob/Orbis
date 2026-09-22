@@ -307,11 +307,8 @@ pub struct CurrencyDto {
 pub struct CreateAccountInput {
     pub code: String,
     pub name: String,
-    #[serde(rename = "nameAr")]
     pub name_ar: Option<String>,
-    #[serde(rename = "accountType")]
     pub account_type: String,
-    #[serde(rename = "parentId")]
     pub parent_id: Option<String>,
     pub currency: Option<String>,
 }
@@ -320,73 +317,48 @@ pub struct CreateAccountInput {
 pub struct CreateFeeTemplateInput {
     pub code: Option<String>,
     pub name: String,
-    #[serde(rename = "nameAr")]
     pub name_ar: Option<String>,
     pub category: Option<String>,
-    #[serde(rename = "defaultAmount")]
     pub default_amount: Decimal,
     pub currency: Option<String>,
-    #[serde(rename = "revenueAccountId")]
     pub revenue_account_id: String,
-    #[serde(rename = "receivableAccountId")]
     pub receivable_account_id: String,
-    #[serde(rename = "isMandatory")]
     pub is_mandatory: Option<bool>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct GenerateFeeInput {
-    #[serde(rename = "periodId")]
     pub period_id: String,
-    #[serde(rename = "studentId")]
     pub student_id: String,
-    #[serde(rename = "enrollmentId")]
     pub enrollment_id: Option<String>,
-    #[serde(rename = "feeTemplateId")]
     pub fee_template_id: String,
-    #[serde(rename = "discountAmount")]
     pub discount_amount: Option<Decimal>,
-    #[serde(rename = "dueDate")]
     pub due_date: String,
 }
 
 #[derive(Deserialize, Default, Debug)]
 pub struct FeeFilterInput {
-    #[serde(rename = "periodId")]
     pub period_id: Option<String>,
-    #[serde(rename = "studentId")]
     pub student_id: Option<String>,
-    #[serde(rename = "enrollmentId")]
     pub enrollment_id: Option<String>,
-    #[serde(rename = "feeTemplateId")]
     pub fee_template_id: Option<String>,
     pub status: Option<String>,
-    #[serde(rename = "isOverdue")]
     pub is_overdue: Option<bool>,
     pub page: Option<u64>,
-    #[serde(rename = "pageSize")]
     pub page_size: Option<u64>,
-    #[serde(rename = "sortBy")]
     pub sort_by: Option<String>,
-    #[serde(rename = "sortDir")]
     pub sort_dir: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct ProcessPaymentInput {
-    #[serde(rename = "feeId")]
     pub fee_id: Option<String>,
-    #[serde(rename = "studentId")]
     pub student_id: Option<String>,
-    #[serde(rename = "enrollmentId")]
     pub enrollment_id: Option<String>,
-    #[serde(rename = "accountId")]
     pub account_id: String,
     pub amount: Decimal,
     pub method: String,
-    #[serde(rename = "payerName")]
     pub payer_name: Option<String>,
-    #[serde(rename = "payerPhone")]
     pub payer_phone: Option<String>,
     pub reference: Option<String>,
     pub source: Option<String>,
@@ -394,23 +366,15 @@ pub struct ProcessPaymentInput {
 
 #[derive(Deserialize, Default, Debug)]
 pub struct PaymentFilterInput {
-    #[serde(rename = "feeId")]
     pub fee_id: Option<String>,
-    #[serde(rename = "studentId")]
     pub student_id: Option<String>,
-    #[serde(rename = "enrollmentId")]
     pub enrollment_id: Option<String>,
     pub method: Option<String>,
-    #[serde(rename = "fromDate")]
     pub from_date: Option<String>,
-    #[serde(rename = "toDate")]
     pub to_date: Option<String>,
     pub page: Option<u64>,
-    #[serde(rename = "pageSize")]
     pub page_size: Option<u64>,
-    #[serde(rename = "sortBy")]
     pub sort_by: Option<String>,
-    #[serde(rename = "sortDir")]
     pub sort_dir: Option<String>,
 }
 
@@ -418,18 +382,15 @@ pub struct PaymentFilterInput {
 pub struct CreateDiscountTemplateInput {
     pub code: Option<String>,
     pub name: String,
-    #[serde(rename = "nameAr")]
     pub name_ar: Option<String>,
-    #[serde(rename = "discountType")]
     pub discount_type: String,
     pub value: Decimal,
-    #[serde(rename = "eligibilityRules")]
     pub eligibility_rules: Option<serde_json::Value>,
-    #[serde(rename = "isApprovalRequired", default)]
+    #[serde(default)]
     pub is_approval_required: bool,
-    #[serde(rename = "isAutoApply", default)]
+    #[serde(default)]
     pub is_auto_apply: bool,
-    #[serde(rename = "isStackable", default)]
+    #[serde(default)]
     pub is_stackable: bool,
     #[serde(default)]
     pub priority: u32,

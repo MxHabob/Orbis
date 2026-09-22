@@ -24,9 +24,7 @@ pub struct AcademicYearDto {
 #[derive(Deserialize)]
 pub struct CreateYearInput {
     pub name: String,
-    #[serde(rename = "startDate")]
     pub start_date: String,
-    #[serde(rename = "endDate")]
     pub end_date: String,
 }
 
@@ -49,16 +47,11 @@ pub struct AcademicPeriodDto {
 
 #[derive(Deserialize)]
 pub struct CreatePeriodInput {
-    #[serde(rename = "yearId")]
     pub year_id: String,
-    #[serde(rename = "parentId")]
     pub parent_id: Option<String>,
     pub name: String,
-    #[serde(rename = "periodType")]
     pub period_type: String,
-    #[serde(rename = "startDate")]
     pub start_date: String,
-    #[serde(rename = "endDate")]
     pub end_date: String,
 }
 

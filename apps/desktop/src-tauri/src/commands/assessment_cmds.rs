@@ -24,7 +24,6 @@ pub struct AssessmentSchemeDto {
 pub struct CreateSchemeInput {
     pub name: String,
     pub description: Option<String>,
-    #[serde(rename = "maxScore")]
     pub max_score: f64,
     pub formula: Option<serde_json::Value>,
 }
@@ -34,7 +33,6 @@ pub struct UpdateSchemeInput {
     pub id: String,
     pub name: Option<String>,
     pub description: Option<String>,
-    #[serde(rename = "maxScore")]
     pub max_score: Option<f64>,
     pub formula: Option<serde_json::Value>,
 }
@@ -57,22 +55,16 @@ pub struct GradeDto {
 
 #[derive(Deserialize)]
 pub struct RecordGradeInput {
-    #[serde(rename = "periodId")]
     pub period_id: String,
-    #[serde(rename = "studentId")]
     pub student_id: String,
-    #[serde(rename = "enrollmentId")]
     pub enrollment_id: Option<String>,
-    #[serde(rename = "classSubjectId")]
     pub class_subject_id: String,
-    #[serde(rename = "componentId")]
     pub component_id: Option<String>,
     pub score: Decimal,
-    #[serde(rename = "maxScore")]
     pub max_score: Option<Decimal>,
-    #[serde(rename = "isExcused", default)]
+    #[serde(default)]
     pub is_excused: bool,
-    #[serde(rename = "isExempt", default)]
+    #[serde(default)]
     pub is_exempt: bool,
     pub notes: Option<String>,
 }
@@ -91,9 +83,7 @@ pub struct AttendanceDto {
 
 #[derive(Deserialize)]
 pub struct MarkAttendanceInput {
-    #[serde(rename = "studentId")]
     pub student_id: String,
-    #[serde(rename = "classId")]
     pub class_id: String,
     pub date: String,
     pub status: String,
@@ -102,11 +92,8 @@ pub struct MarkAttendanceInput {
 
 #[derive(Deserialize)]
 pub struct CalculateGradesInput {
-    #[serde(rename = "schemeId")]
     pub scheme_id: String,
-    #[serde(rename = "studentId")]
     pub student_id: String,
-    #[serde(rename = "classSubjectId")]
     pub class_subject_id: Option<String>,
 }
 
@@ -118,9 +105,7 @@ pub struct CalculationResultDto {
 
 #[derive(Deserialize, Default)]
 pub struct GradeFilter {
-    #[serde(rename = "studentId")]
     pub student_id: Option<String>,
-    #[serde(rename = "classSubjectId")]
     pub class_subject_id: Option<String>,
 }
 
@@ -348,9 +333,7 @@ pub struct CumulativeGpaRecordDto {
 
 #[derive(Deserialize)]
 pub struct CalculateGpaInput {
-    #[serde(rename = "studentId")]
     pub student_id: String,
-    #[serde(rename = "periodId")]
     pub period_id: String,
 }
 
@@ -395,7 +378,6 @@ pub struct ScoreItemInput {
 #[derive(Deserialize)]
 pub struct CalculateRankingsInput {
     pub items: Vec<ScoreItemInput>,
-    #[serde(rename = "tiePolicy")]
     pub tie_policy: Option<String>,
 }
 
@@ -439,27 +421,19 @@ pub async fn assessment_calculate_rankings(
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BehaviorRecordDto {
     pub id: String,
-    #[serde(rename = "studentId")]
     pub student_id: String,
-    #[serde(rename = "orgId")]
     pub org_id: String,
-    #[serde(rename = "reporterId")]
     pub reporter_id: String,
-    #[serde(rename = "recordType")]
     pub record_type: String,
     pub description: String,
     pub points: i32,
-    #[serde(rename = "createdAt")]
     pub created_at: String,
-    #[serde(rename = "updatedAt")]
     pub updated_at: String,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct RecordBehaviorInput {
-    #[serde(rename = "studentId")]
     pub student_id: String,
-    #[serde(rename = "recordType")]
     pub record_type: String,
     pub description: String,
     pub points: i32,

@@ -30,11 +30,9 @@ pub struct SubjectDto {
 pub struct CreateSubjectInput {
     pub code: String,
     pub name: String,
-    #[serde(rename = "unitId")]
     pub unit_id: Option<String>,
-    #[serde(rename = "creditHours")]
     pub credit_hours: Option<Decimal>,
-    #[serde(rename = "isCore", default)]
+    #[serde(default)]
     pub is_core: bool,
 }
 
@@ -56,9 +54,7 @@ pub struct ClassDto {
 
 #[derive(Deserialize)]
 pub struct CreateClassInput {
-    #[serde(rename = "unitId")]
     pub unit_id: String,
-    #[serde(rename = "periodId")]
     pub period_id: String,
     pub name: String,
     pub level: String,
@@ -76,15 +72,10 @@ pub struct ClassSubjectDto {
 
 #[derive(Deserialize)]
 pub struct AssignClassSubjectInput {
-    #[serde(rename = "classId")]
     pub class_id: String,
-    #[serde(rename = "subjectId")]
     pub subject_id: String,
-    #[serde(rename = "periodId")]
     pub period_id: String,
-    #[serde(rename = "primaryTeacherId")]
     pub primary_teacher_id: String,
-    #[serde(rename = "weeklyHours")]
     pub weekly_hours: Option<i32>,
 }
 

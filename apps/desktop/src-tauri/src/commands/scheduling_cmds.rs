@@ -22,7 +22,7 @@ pub struct RoomDto {
 pub struct CreateRoomInput {
     pub name: String,
     pub capacity: i32,
-    #[serde(rename = "roomType", alias = "room_type", default = "default_room_type")]
+    #[serde(default = "default_room_type")]
     pub room_type: String,
 }
 
@@ -42,15 +42,10 @@ pub struct TimeSlotDto {
 
 #[derive(Deserialize)]
 pub struct CreateTimeSlotInput {
-    #[serde(rename = "periodId")]
     pub period_id: String,
-    #[serde(rename = "dayOfWeek")]
     pub day_of_week: i16,
-    #[serde(rename = "slotIndex")]
     pub slot_index: i32,
-    #[serde(rename = "startTime")]
     pub start_time: String,
-    #[serde(rename = "endTime")]
     pub end_time: String,
 }
 
@@ -65,21 +60,15 @@ pub struct ScheduledLessonDto {
 
 #[derive(Deserialize)]
 pub struct ScheduleLessonInput {
-    #[serde(rename = "classSubjectId")]
     pub class_subject_id: String,
-    #[serde(rename = "timeSlotId")]
     pub time_slot_id: String,
-    #[serde(rename = "roomId")]
     pub room_id: Option<String>,
-    #[serde(rename = "teacherId")]
     pub teacher_id: Option<String>,
 }
 
 #[derive(Deserialize, Default)]
 pub struct LessonFilter {
-    #[serde(rename = "classSubjectId")]
     pub class_subject_id: Option<String>,
-    #[serde(rename = "periodId")]
     pub period_id: Option<String>,
 }
 

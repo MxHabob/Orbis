@@ -52,22 +52,16 @@ pub struct OverrideRequestDto {
 
 #[derive(Deserialize)]
 pub struct SubmitOverrideRequestInput {
-    #[serde(rename = "overrideType")]
     pub override_type: String,
-    #[serde(rename = "riskLevel", default = "default_risk")]
+    #[serde(default = "default_risk")]
     pub risk_level: String,
-    #[serde(rename = "entityType")]
     pub entity_type: String,
-    #[serde(rename = "entityId")]
     pub entity_id: String,
-    #[serde(rename = "fieldName")]
     pub field_name: Option<String>,
-    #[serde(rename = "oldValue")]
     pub old_value: Option<String>,
-    #[serde(rename = "newValue")]
     pub new_value: Option<String>,
     pub reason: String,
-    #[serde(rename = "approvalChain", default)]
+    #[serde(default)]
     pub approval_chain: Vec<ApprovalStepDto>,
     pub metadata: Option<serde_json::Value>,
 }
@@ -78,14 +72,12 @@ fn default_risk() -> String {
 
 #[derive(Deserialize)]
 pub struct ApproveOverrideInput {
-    #[serde(rename = "requestId")]
     pub request_id: String,
     pub notes: Option<String>,
 }
 
 #[derive(Deserialize)]
 pub struct RejectOverrideInput {
-    #[serde(rename = "requestId")]
     pub request_id: String,
     pub reason: String,
 }

@@ -33,13 +33,9 @@ pub struct PromotionJobDto {
 
 #[derive(Serialize, Deserialize)]
 pub struct StudentProgressionItemInput {
-    #[serde(rename = "studentId")]
     pub student_id: String,
-    #[serde(rename = "enrollmentId")]
     pub enrollment_id: String,
-    #[serde(rename = "sourceClassId")]
     pub source_class_id: Option<String>,
-    #[serde(rename = "targetClassId")]
     pub target_class_id: Option<String>,
     pub decision: String,
     #[serde(default)]
@@ -48,11 +44,8 @@ pub struct StudentProgressionItemInput {
 
 #[derive(Deserialize)]
 pub struct PromoteCohortInput {
-    #[serde(rename = "sourcePeriodId")]
     pub source_period_id: String,
-    #[serde(rename = "targetPeriodId")]
     pub target_period_id: String,
-    #[serde(rename = "jobName")]
     pub job_name: String,
     pub items: Vec<StudentProgressionItemInput>,
 }
