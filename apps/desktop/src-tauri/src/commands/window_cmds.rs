@@ -4,6 +4,7 @@ use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
 pub(crate) async fn do_open_agent_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<(), String> {
     if let Some(existing) = app.get_webview_window("orbis-agent") {
+        let _ = existing.unminimize();
         existing.show().map_err(|e| e.to_string())?;
         existing.set_focus().map_err(|e| e.to_string())?;
         return Ok(());
@@ -14,22 +15,19 @@ pub(crate) async fn do_open_agent_window<R: tauri::Runtime>(app: &tauri::AppHand
         "orbis-agent",
         WebviewUrl::App("agent".into()),
     )
-    .title("Orbis Agent")
-    .inner_size(420.0, 650.0)
+    .title("Orbis AI Agent")
+    .inner_size(460.0, 720.0)
+    .min_inner_size(360.0, 500.0)
     .resizable(true)
     .shadow(true)
     .decorations(true)
-    .visible(false)
-    .on_page_load(|webview, payload| {
-        if payload.event() == tauri::webview::PageLoadEvent::Finished {
-            let _ = webview.show();
-            let _ = webview.set_focus();
-        }
-    });
+    .visible(true);
     if let Some(ref main) = main_window {
         builder = builder.parent(main).map_err(|e| e.to_string())?;
     }
-    builder.build().map_err(|e| e.to_string())?;
+    let win = builder.build().map_err(|e| e.to_string())?;
+    let _ = win.show();
+    let _ = win.set_focus();
     Ok(())
 }
 
