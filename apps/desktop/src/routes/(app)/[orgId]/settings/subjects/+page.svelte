@@ -9,7 +9,7 @@ import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { AdjustmentsHorizontal, BookOpen, Plus, Search, Clock } from "@orbis/icons";
+import { AdjustmentsHorizontal, BookOpen, Calculator, Clock, Heart, Plus, Search } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
 import SearchField from "$lib/shared/components/search-field.svelte";

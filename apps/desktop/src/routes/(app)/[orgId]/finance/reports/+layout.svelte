@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-import { BuildingLibrary, ChartBar, DocumentChartBar } from "@orbis/icons";
+import { BuildingLibrary, ChartBar, DocumentChartBar, Scale } from "@orbis/icons";
 import type { Snippet } from "svelte";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } =

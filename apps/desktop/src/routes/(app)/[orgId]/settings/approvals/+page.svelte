@@ -30,7 +30,7 @@ import { Textarea } from "@orbis/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Separator } from "@orbis/ui/separator";
-import { AdjustmentsHorizontal, ArrowUpCircle, CheckCircle, ClockRotateRight, InfoCircle, UserBadgeCheck, XMark } from "@orbis/icons";
+import { AdjustmentsHorizontal, ArrowUpCircle, CheckCircle, CheckSquare, ClockRotateRight, InfoCircle, UserBadgeCheck, XMark } from "@orbis/icons";
 import type { AcademicOverrideRequest, ApprovalAction } from "@orbis/sdk";
 
 let { data }: { data: { orgId: string } } = $props();

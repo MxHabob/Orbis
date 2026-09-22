@@ -7,7 +7,7 @@ import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { MetricProgress } from "@orbis/ui";
-import { AdjustmentsHorizontal, AppNotification, BookOpen, ChartBar, ChatBubble, CheckCircle, DocumentPage, InfoCircle, Share, Sparkles, Users } from "@orbis/icons";
+import { AdjustmentsHorizontal, AppNotification, BookOpen, ChartBar, ChatBubble, CheckCircle, CheckSquare, DocumentPage, InfoCircle, Share, Sparkles, Users } from "@orbis/icons";
 import { fade } from "svelte/transition";
 import { academicContext } from "$lib/stores";
 import { getLocale } from "$lib/paraglide/runtime";

@@ -16,7 +16,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { AdjustmentsHorizontal, Document, Grid, Plus, QuestionMarkCircle } from "@orbis/icons";
+import { AdjustmentsHorizontal, CheckSquare, Document, Grid, Plus, QuestionMarkCircle } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade } from "svelte/transition";

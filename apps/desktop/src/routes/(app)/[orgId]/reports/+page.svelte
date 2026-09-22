@@ -34,7 +34,7 @@ import {
   DialogFooter,
 } from "@orbis/ui/dialog";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, BookOpen, ChartBar, CheckCircle, ClockRotateRight, Document, DocumentPage, Download, Eye, Keyframes, Play, Refresh, Search, Sparkles, Users, Banknotes } from "@orbis/icons";
+import { AdjustmentsHorizontal, Banknotes, BookOpen, ChartBar, CheckCircle, ClockRotateRight, Document, DocumentChartBar, DocumentPage, Download, Eye, Keyframes, Play, Refresh, Search, Sparkles, Users } from "@orbis/icons";
 
 import MetricsView from "$lib/features/metrics/metrics-view.svelte";
 
