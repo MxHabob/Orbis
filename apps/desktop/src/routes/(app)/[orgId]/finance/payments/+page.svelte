@@ -34,7 +34,7 @@ import { Calendar, CheckSquare, ChevronLeft, ChevronRight, Document, DocumentPag
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 
-import ReportViewer from "$lib/shared/components/report-viewer.svelte";
+import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -1080,7 +1080,7 @@ const filteredPayments = $derived.by(() => {
     </div>
   {/if}
 
-  <ReportViewer
+  <PdfReportViewer
     bind:open={printReportOpen}
     templateId={printTemplateId}
     parameters={printParameters}

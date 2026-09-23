@@ -4,6 +4,7 @@ export { systemStore } from "./system.svelte";
 export { themeStore } from "./theme.svelte";
 export { uiStore } from "./ui.svelte";
 export { confirmStore } from "./confirm.svelte";
+export { useUnsavedGuard } from "./unsaved-guard.svelte";
 
 // ── Academic Context (unified store — single source of truth)
 export { academicContext } from "./academic-context.svelte";

@@ -1,6 +1,6 @@
-//! Finance routes — Accounts, FeeTemplates, StudentFees, Payments, Currencies.
+//! Finance routes — Accounts, FeeTemplates, StudentFees, Payments, Currencies, Journal Entries, Installments, Refunds.
 
-use axum::{extract::{State, Query}, routing::{get, post}, Json, Router};
+use axum::{extract::{State, Query, Path}, routing::{get, post}, Json, Router};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use chrono::{DateTime, Utc, NaiveDate};
@@ -12,6 +12,7 @@ use super::extractors::AuthContext;
 use crate::state::AppState;
 use orbis_domain::entities::account::AccountType;
 use orbis_domain::entities::payment::PaymentMethod;
+use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};
 
 #[derive(Serialize, ToSchema)]
 pub struct AccountDto {
@@ -129,11 +130,122 @@ pub struct CurrencyDto {
     pub symbol: String,
 }
 
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
+pub struct JournalEntryLineDto {
+    pub id: Uuid,
+    pub account_id: Uuid,
+    pub debit_amount: Decimal,
+    pub credit_amount: Decimal,
+    pub description: Option<String>,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<Uuid>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
+pub struct JournalEntryDto {
+    pub id: Uuid,
+    pub org_id: Uuid,
+    pub reference_number: String,
+    pub accounting_date: NaiveDate,
+    pub amount: Decimal,
+    pub currency_code: String,
+    pub exchange_rate: Decimal,
+    pub base_amount: Decimal,
+    pub debit_account_id: Uuid,
+    pub credit_account_id: Uuid,
+    pub description: String,
+    pub description_ar: Option<String>,
+    pub source_type: String,
+    pub source_id: Option<Uuid>,
+    pub status: String,
+    pub lines: Vec<JournalEntryLineDto>,
+    pub is_reversed: bool,
+    pub reversed_by: Option<Uuid>,
+    pub reversal_reason: Option<String>,
+    pub created_by: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct CreateJournalEntryLineRequest {
+    pub account_id: Uuid,
+    pub debit_amount: Decimal,
+    pub credit_amount: Decimal,
+    pub description: Option<String>,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<Uuid>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct CreateJournalEntryRequest {
+    pub reference_number: Option<String>,
+    pub accounting_date: Option<NaiveDate>,
+    pub amount: Decimal,
+    pub currency_code: Option<String>,
+    pub exchange_rate: Option<Decimal>,
+    pub debit_account_id: Uuid,
+    pub credit_account_id: Uuid,
+    pub description: String,
+    pub description_ar: Option<String>,
+    pub lines: Option<Vec<CreateJournalEntryLineRequest>>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct ReverseJournalRequest {
+    pub reason: String,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct RefundStudentFeeRequest {
+    pub refund_amount: Decimal,
+    pub notes: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct SplitFeeRequest {
+    pub num_installments: u32,
+    pub due_dates: Vec<NaiveDate>,
+}
+
 #[derive(Deserialize)]
 pub struct FeeQuery { pub enrollment_id: Option<Uuid>, pub student_id: Option<Uuid> }
 
 #[derive(Deserialize)]
 pub struct PaymentQuery { pub fee_id: Option<Uuid>, pub student_id: Option<Uuid> }
+
+fn map_journal_entry_to_dto(entry: JournalEntry) -> JournalEntryDto {
+    JournalEntryDto {
+        id: entry.id,
+        org_id: entry.org_id,
+        reference_number: entry.reference_number,
+        accounting_date: entry.accounting_date,
+        amount: entry.amount,
+        currency_code: entry.currency_code,
+        exchange_rate: entry.exchange_rate,
+        base_amount: entry.base_amount,
+        debit_account_id: entry.debit_account_id,
+        credit_account_id: entry.credit_account_id,
+        description: entry.description,
+        description_ar: entry.description_ar,
+        source_type: entry.source_type,
+        source_id: entry.source_id,
+        status: entry.status.to_string(),
+        lines: entry.lines.into_iter().map(|l| JournalEntryLineDto {
+            id: l.id,
+            account_id: l.account_id,
+            debit_amount: l.debit_amount,
+            credit_amount: l.credit_amount,
+            description: l.description,
+            entity_type: l.entity_type,
+            entity_id: l.entity_id,
+        }).collect(),
+        is_reversed: entry.is_reversed,
+        reversed_by: entry.reversed_by,
+        reversal_reason: entry.reversal_reason,
+        created_by: entry.created_by,
+        created_at: entry.created_at,
+    }
+}
 
 // ── Handlers ────────────────────────────────────────────────────
 
@@ -392,11 +504,190 @@ pub async fn list_currencies(
     Ok(ApiResponse::ok(dtos))
 }
 
+#[utoipa::path(get, path = "/api/v1/journal-entries",
+    responses((status = 200, body = Vec<JournalEntryDto>)), security(("bearer" = [])), tag = "Finance")]
+pub async fn list_journal_entries(
+    ctx: AuthContext, State(state): State<AppState>,
+) -> Result<Json<ApiResponse<Vec<JournalEntryDto>>>, ApiError> {
+    let entries = state.journal_entry_repo.find_by_org(ctx.tenant_id).await?;
+    let dtos = entries.into_iter().map(map_journal_entry_to_dto).collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(get, path = "/api/v1/journal-entries/{id}",
+    responses((status = 200, body = JournalEntryDto)), security(("bearer" = [])), tag = "Finance")]
+pub async fn get_journal_entry(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<JournalEntryDto>>, ApiError> {
+    let entry = state.journal_entry_repo.find_by_id(id).await?
+        .ok_or_else(|| ApiError::not_found(format!("Journal entry {} not found", id)))?;
+
+    if entry.org_id != ctx.tenant_id {
+        return Err(ApiError::unauthorized("Organization mismatch"));
+    }
+
+    Ok(ApiResponse::ok(map_journal_entry_to_dto(entry)))
+}
+
+#[utoipa::path(post, path = "/api/v1/journal-entries", request_body = CreateJournalEntryRequest,
+    responses((status = 201, body = JournalEntryDto)), security(("bearer" = [])), tag = "Finance")]
+pub async fn create_journal_entry(
+    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateJournalEntryRequest>,
+) -> Result<Json<ApiResponse<JournalEntryDto>>, ApiError> {
+    let now = Utc::now();
+    let user_id = ctx.user_id();
+
+    let lines: Vec<JournalEntryLine> = match p.lines {
+        Some(ls) if !ls.is_empty() => ls.into_iter().map(|l| {
+            JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: l.account_id,
+                debit_amount: l.debit_amount,
+                credit_amount: l.credit_amount,
+                description: l.description,
+                entity_type: l.entity_type,
+                entity_id: l.entity_id,
+            }
+        }).collect(),
+        _ => vec![
+            JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: p.debit_account_id,
+                debit_amount: p.amount,
+                credit_amount: Decimal::ZERO,
+                description: Some(p.description.clone()),
+                entity_type: None,
+                entity_id: None,
+            },
+            JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: p.credit_account_id,
+                debit_amount: Decimal::ZERO,
+                credit_amount: p.amount,
+                description: Some(p.description.clone()),
+                entity_type: None,
+                entity_id: None,
+            },
+        ],
+    };
+
+    let entry = JournalEntry {
+        id: Uuid::new_v4(),
+        org_id: ctx.tenant_id,
+        reference_number: p.reference_number.unwrap_or_else(|| format!("JV-{}", Utc::now().timestamp_millis())),
+        accounting_date: p.accounting_date.unwrap_or_else(|| now.date_naive()),
+        amount: p.amount,
+        currency_code: p.currency_code.unwrap_or_else(|| "SAR".into()),
+        exchange_rate: p.exchange_rate.unwrap_or(Decimal::ONE),
+        base_amount: p.amount * p.exchange_rate.unwrap_or(Decimal::ONE),
+        debit_account_id: p.debit_account_id,
+        credit_account_id: p.credit_account_id,
+        description: p.description,
+        description_ar: p.description_ar,
+        source_type: "manual".into(),
+        source_id: None,
+        status: JournalPostingStatus::Posted,
+        lines,
+        is_reversed: false,
+        reversed_by: None,
+        reversal_reason: None,
+        created_by: user_id,
+        created_at: now,
+    };
+
+    entry.validate_balance().map_err(ApiError::bad_request)?;
+    state.journal_entry_repo.save(&entry).await?;
+
+    Ok(ApiResponse::ok(map_journal_entry_to_dto(entry)))
+}
+
+#[utoipa::path(post, path = "/api/v1/journal-entries/{id}/reverse", request_body = ReverseJournalRequest,
+    responses((status = 200, body = JournalEntryDto)), security(("bearer" = [])), tag = "Finance")]
+pub async fn reverse_journal_entry(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<ReverseJournalRequest>,
+) -> Result<Json<ApiResponse<JournalEntryDto>>, ApiError> {
+    let reversing = state.finance_service.reverse_journal_entry(
+        &ctx,
+        ctx.tenant_id,
+        id,
+        p.reason,
+    ).await?;
+
+    Ok(ApiResponse::ok(map_journal_entry_to_dto(reversing)))
+}
+
+#[utoipa::path(post, path = "/api/v1/student-fees/{id}/split", request_body = SplitFeeRequest,
+    responses((status = 200, body = Vec<StudentFeeDto>)), security(("bearer" = [])), tag = "Finance")]
+pub async fn split_fee(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<SplitFeeRequest>,
+) -> Result<Json<ApiResponse<Vec<StudentFeeDto>>>, ApiError> {
+    let created = state.finance_service.split_fee_into_installments(
+        &ctx,
+        ctx.tenant_id,
+        id,
+        p.num_installments,
+        p.due_dates,
+    ).await?;
+
+    let dtos = created.into_iter().map(|f| StudentFeeDto {
+        id: f.id,
+        org_id: f.org_id,
+        period_id: f.period_id,
+        student_id: f.student_id,
+        enrollment_id: f.enrollment_id,
+        fee_template_id: f.fee_template_id,
+        original_amount: f.original_amount,
+        discount_amount: f.discount_amount,
+        net_amount: f.net_amount,
+        paid_amount: f.paid_amount,
+        balance_due: f.balance_due,
+        status: f.status.to_string(),
+        due_date: f.due_date,
+    }).collect();
+
+    Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(post, path = "/api/v1/student-fees/{id}/refund", request_body = RefundStudentFeeRequest,
+    responses((status = 200, body = StudentFeeDto)), security(("bearer" = [])), tag = "Finance")]
+pub async fn refund_fee(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<RefundStudentFeeRequest>,
+) -> Result<Json<ApiResponse<StudentFeeDto>>, ApiError> {
+    let f = state.finance_service.refund_student_fee(
+        &ctx,
+        ctx.tenant_id,
+        id,
+        p.refund_amount,
+        p.notes,
+    ).await?;
+
+    Ok(ApiResponse::ok(StudentFeeDto {
+        id: f.id,
+        org_id: f.org_id,
+        period_id: f.period_id,
+        student_id: f.student_id,
+        enrollment_id: f.enrollment_id,
+        fee_template_id: f.fee_template_id,
+        original_amount: f.original_amount,
+        discount_amount: f.discount_amount,
+        net_amount: f.net_amount,
+        paid_amount: f.paid_amount,
+        balance_due: f.balance_due,
+        status: f.status.to_string(),
+        due_date: f.due_date,
+    }))
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/accounts", post(create_account).get(list_accounts))
         .route("/api/v1/fee-templates", post(create_fee_template).get(list_fee_templates))
         .route("/api/v1/student-fees", post(generate_fee).get(list_fees))
+        .route("/api/v1/student-fees/{id}/split", post(split_fee))
+        .route("/api/v1/student-fees/{id}/refund", post(refund_fee))
         .route("/api/v1/payments", post(process_payment).get(list_payments))
         .route("/api/v1/currencies", get(list_currencies))
+        .route("/api/v1/journal-entries", post(create_journal_entry).get(list_journal_entries))
+        .route("/api/v1/journal-entries/{id}", get(get_journal_entry))
+        .route("/api/v1/journal-entries/{id}/reverse", post(reverse_journal_entry))
 }

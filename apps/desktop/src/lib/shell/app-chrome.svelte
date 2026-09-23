@@ -26,6 +26,7 @@ import { slide } from "svelte/transition";
 import { page } from "$app/state";
 import { onMount } from "svelte";
 import AskOrbisSidebar from "$lib/features/ai-agent/ui/views/sidebar.svelte";
+import { useQueryClient } from "@tanstack/svelte-query";
 
 let {
   orgId,
@@ -37,6 +38,8 @@ let {
   children: Snippet;
 } = $props();
 
+const queryClient = useQueryClient();
+
 // Bootstrap academic context, workflow inbox, and Tauri event listeners.
 // Runs once per session — idempotent, non-blocking.
 onMount(() => {
@@ -44,9 +47,32 @@ onMount(() => {
 });
 
 function handleKeyDown(e: KeyboardEvent) {
+  // Ctrl/Cmd + / -> Toggle Ask Orbis AI
   if ((e.ctrlKey || e.metaKey) && e.key === "/") {
     e.preventDefault();
     uiStore.toggleAskOrbis();
+    return;
+  }
+
+  // Ctrl/Cmd + K -> Toggle global quick search
+  if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+    e.preventDefault();
+    uiStore.toggleSearch();
+    return;
+  }
+
+  // Ctrl/Cmd + S -> Save action for active form
+  if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
+    e.preventDefault();
+    window.dispatchEvent(new CustomEvent("orbis:save"));
+    return;
+  }
+
+  // F5 -> Invalidate active queries / soft refresh
+  if (e.key === "F5") {
+    e.preventDefault();
+    queryClient.invalidateQueries();
+    return;
   }
 }
 </script>
@@ -81,4 +107,3 @@ function handleKeyDown(e: KeyboardEvent) {
 		<UpgradeDialog bind:open={uiStore.showUpgradeDialog} />
 	{/await}
 {/if}
-

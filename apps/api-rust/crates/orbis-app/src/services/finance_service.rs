@@ -133,6 +133,11 @@ impl FinanceService {
                         "Payment amount ({}) exceeds fee balance due ({})", amount, fee.balance_due
                     )));
                 }
+                if !org_settings.finance.allow_partial_payments && amount < fee.balance_due {
+                    return Err(DomainError::Validation(format!(
+                        "Partial payments are not permitted by organization policy. Full balance of {} is required.", fee.balance_due
+                    )));
+                }
                 student_resolved_id = Some(fee.student_id);
                 enrollment_resolved_id = fee.enrollment_id;
                 fee.apply_payment(amount);
@@ -267,6 +272,13 @@ impl FinanceService {
         let now = Utc::now();
         let fee_id = Uuid::new_v4();
 
+        let org_settings = self.policy_repo.get_settings(org_id).await?;
+        let due_days = if org_settings.finance.invoice_due_days > 0 {
+            org_settings.finance.invoice_due_days as i64
+        } else {
+            30
+        };
+
         let fee = StudentFee {
             id: fee_id,
             org_id,
@@ -280,7 +292,7 @@ impl FinanceService {
             paid_amount: Decimal::ZERO,
             balance_due: net_amount,
             status: FeeStatus::Pending,
-            due_date: due_date.unwrap_or_else(|| (now + chrono::Duration::days(30)).date_naive()),
+            due_date: due_date.unwrap_or_else(|| (now + chrono::Duration::days(due_days)).date_naive()),
             discount_details: None,
             installment_number: None,
             notes: None,

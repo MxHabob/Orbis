@@ -412,6 +412,42 @@ export interface JournalEntryDto {
   created_at: string;
 }
 
+export interface CreateJournalEntryLineRequest {
+  account_id: string;
+  debit_amount: number | string;
+  credit_amount: number | string;
+  description?: string | null;
+  entity_type?: string | null;
+  entity_id?: string | null;
+}
+
+export interface CreateJournalEntryRequest {
+  reference_number?: string;
+  accounting_date?: string;
+  amount: number | string;
+  currency_code?: string;
+  exchange_rate?: number | string;
+  debit_account_id: string;
+  credit_account_id: string;
+  description: string;
+  description_ar?: string;
+  lines?: CreateJournalEntryLineRequest[];
+}
+
+export interface ReverseJournalRequest {
+  reason: string;
+}
+
+export interface SplitFeeRequest {
+  num_installments: number;
+  due_dates: string[];
+}
+
+export interface RefundStudentFeeRequest {
+  refund_amount: number | string;
+  notes?: string;
+}
+
 export interface DiscountTemplateDto {
   id: string;
   org_id: string;
@@ -1142,6 +1178,19 @@ export interface OrbisApiClient {
   listCurrencies(): Promise<CurrencyDto[]>;
   listJournalEntries(): Promise<JournalEntryDto[]>;
   getJournalEntry(id: string): Promise<JournalEntryDto>;
+  createJournalEntry(req: CreateJournalEntryRequest): Promise<JournalEntryDto>;
+  reverseJournalEntry(
+    id: string,
+    req: ReverseJournalRequest,
+  ): Promise<JournalEntryDto>;
+  splitStudentFee(
+    id: string,
+    req: SplitFeeRequest,
+  ): Promise<StudentFeeDto[]>;
+  refundStudentFee(
+    id: string,
+    req: RefundStudentFeeRequest,
+  ): Promise<StudentFeeDto>;
   listDiscountTemplates(): Promise<DiscountTemplateDto[]>;
   createDiscountTemplate(
     req: CreateDiscountTemplateRequest,

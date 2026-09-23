@@ -5,18 +5,42 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 -->
 <script lang="ts">
   import { page } from "$app/state";
+  import { goto } from "$app/navigation";
   import { api } from "$lib/api";
-  import { createClassesQuery } from "$lib/features/academics";
-  import { createEnrollmentQuery } from "$lib/features/students";
+  import { createClassesQuery, createPeriodsQuery } from "$lib/features/academics";
+  import { createEnrollmentQuery, createEnrollmentsQuery } from "$lib/features/students";
   import * as m from "$lib/paraglide/messages";
   import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
   import MainViewport from "$lib/shell/main-viewport.svelte";
   import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-  import { AdjustmentsHorizontal, BookOpen, Document, DocumentPage, EllipsisHorizontal, User, UserBadgeCheck, Users, Phone } from "@orbis/icons";
+  import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+  import {
+    AcademicCap,
+    ArrowsRightLeft,
+    Banknotes,
+    BookOpen,
+    Document,
+    DocumentPage,
+    EllipsisHorizontal,
+    Phone,
+    Printer,
+    User,
+    UserBadgeCheck,
+    Users,
+  } from "@orbis/icons";
   import { toast } from "@orbis/ui";
+  import { academicContext, confirmStore } from "$lib/stores";
   import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui/avatar";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
+  import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+  } from "@orbis/ui/dialog";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -42,14 +66,31 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     () => studentId,
   );
   const classesQuery = createClassesQuery(() => orgId);
+  const periodsQuery = createPeriodsQuery(() => orgId);
 
-  const student = $derived(studentQuery.data);
+  const student = $derived(studentQuery.data as any);
   const currentClass = $derived(
     student
-      ? classesQuery.data?.find(
-          (c) => String(c.id) === String(student.class_id),
+      ? (classesQuery.data ?? []).find(
+          (c: any) => String(c.id) === String(student.class_id),
         )
       : null,
+  );
+
+  // Enrollment history for this student
+  const actualStudentId = $derived(
+    student?.student_id || student?.student?.id || studentId,
+  );
+  const enrollmentsQuery = createEnrollmentsQuery(
+    () => orgId,
+    () => ({ studentId: actualStudentId }),
+  );
+  const enrollmentHistory = $derived(
+    (enrollmentsQuery.data ?? []).filter(
+      (e: any) =>
+        String(e.student_id || e.student?.id) === String(actualStudentId) ||
+        String(e.id) === String(studentId),
+    ),
   );
 
   const basePath = $derived(`/${orgId}/students/${studentId}`);
@@ -57,7 +98,13 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
   let isWithdrawing = $state(false);
 
   async function withdrawStudent() {
-    if (!confirm(m.common_student_layout_withdraw_confirm?.())) return;
+    const confirmed = await confirmStore.prompt({
+      title: m.common_student_layout_withdraw_title?.() || m.common_action_withdraw(),
+      description: m.common_student_layout_withdraw_confirm?.() || "",
+      confirmText: m.common_action_withdraw(),
+      variant: "destructive",
+    });
+    if (!confirmed) return;
     isWithdrawing = true;
     try {
       await api.updateStudentStatus({ student_id: studentId, status: "withdrawn" });
@@ -73,6 +120,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
   }
 
   let showTransferDialog = $state(false);
+  let showPrintCertificate = $state(false);
   let transferTargetClassId = $state("");
   let isTransferring = $state(false);
 
@@ -98,6 +146,16 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     } finally {
       isTransferring = false;
     }
+  }
+
+  function getClassName(clsId: string) {
+    const cls = (classesQuery.data ?? []).find((c: any) => String(c.id) === String(clsId));
+    return cls ? String(cls.name || cls.name_ar || clsId) : clsId;
+  }
+
+  function getPeriodName(prdId: string) {
+    const prd = (periodsQuery.data ?? []).find((p: any) => String(p.id) === String(prdId));
+    return prd ? String(prd.name || prd.name_ar || prdId) : prdId;
   }
 
   const menuItems = $derived([
@@ -211,13 +269,29 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            class="w-48 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none"
+            class="w-52 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none"
           >
             <DropdownMenuItem
               class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
-              onclick={() => showTransferDialog = true}
+              onclick={() => (showPrintCertificate = true)}
             >
-              <Users size={12} class="text-muted-foreground shrink-0" />
+              <Printer size={12} class="text-muted-foreground shrink-0" />
+              <span>طباعة شهادة قيد / تسجيل</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
+              onclick={() => goto(`/${orgId}/finance/payments?studentId=${studentId}`)}
+            >
+              <Banknotes size={12} class="text-muted-foreground shrink-0" />
+              <span>تسجيل دفعة مالية</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
+              onclick={() => (showTransferDialog = true)}
+            >
+              <ArrowsRightLeft size={12} class="text-muted-foreground shrink-0" />
               <span>{m.common_student_layout_transfer_class()}</span>
             </DropdownMenuItem>
 
@@ -241,9 +315,9 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
   <div class="flex-1 w-full overflow-hidden">
     <MainViewport
       name="student-detail-viewport"
-      leftWidth={{ default: 240, min: 200 }}
+      leftWidth={{ default: 250, min: 210 }}
     >
-      <!-- Left Sidebar (Avatar and basic student info) -->
+      <!-- Left Sidebar (Avatar, basic student info, enrollment history) -->
       {#snippet left()}
         <div
           class="h-full p-4 flex flex-col gap-5 overflow-y-auto scrollbar-hide text-start bg-transparent select-none"
@@ -252,14 +326,14 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
             <!-- Squared Avatar Display -->
             <div class="w-full flex justify-center">
               <Avatar
-                class="w-[85%] max-w-[180px] min-w-[120px] aspect-square h-auto rounded-xl"
+                class="w-[85%] max-w-[180px] min-w-[120px] aspect-square h-auto rounded-xl shadow-xs border border-border/50"
               >
                 <AvatarImage
-                  src={student.a}
+                  src={student.avatar_url || student.avatar || student.a}
                   alt={student.full_name ? String(student.full_name) : ""}
                 />
                 <AvatarFallback
-                  class="text-5xl font-bold rounded-xl flex items-center justify-center"
+                  class="text-5xl font-bold rounded-xl flex items-center justify-center bg-muted text-muted-foreground"
                 >
                   {String(student.full_name || "S").slice(0, 1)}
                 </AvatarFallback>
@@ -268,7 +342,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 
             <!-- Student Metadata List -->
             <div
-              class="flex flex-col gap-4 border-t border-border/40 pt-4 w-full text-start"
+              class="flex flex-col gap-3.5 border-t border-border/40 pt-4 w-full text-start"
             >
               {#if student.student_number || student.id}
                 <div class="flex flex-col gap-0.5">
@@ -360,6 +434,52 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
                 </div>
               {/if}
             </div>
+
+            <!-- Enrollment History Section -->
+            <div class="flex flex-col gap-2.5 border-t border-border/40 pt-4 w-full text-start">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] text-foreground font-bold tracking-wide flex items-center gap-1.5">
+                  <AcademicCap size={13} class="text-primary" />
+                  سجل القيود والفصول
+                </span>
+                <span class="text-[9px] text-muted-foreground font-mono">
+                  {enrollmentHistory.length}
+                </span>
+              </div>
+
+              {#if enrollmentHistory.length > 0}
+                <div class="flex flex-col gap-1.5">
+                  {#each enrollmentHistory as enr}
+                    <div
+                      class="flex flex-col gap-1 p-2 rounded-lg border text-start transition-colors {String(enr.id) === String(studentId)
+                        ? 'border-primary/40 bg-primary/5'
+                        : 'border-border/50 bg-muted/20'}"
+                    >
+                      <div class="flex items-center justify-between gap-1">
+                        <span class="text-[11px] font-semibold text-foreground truncate">
+                          {getClassName(enr.class_id)}
+                        </span>
+                        <Badge
+                          variant={enr.status === "enrolled" || enr.status === "active" ? "default" : "secondary"}
+                          class="text-[8px] py-0 px-1 h-3.5"
+                        >
+                          {enr.status || "enrolled"}
+                        </Badge>
+                      </div>
+                      {#if enr.period_id}
+                        <span class="text-[9px] text-muted-foreground">
+                          {getPeriodName(enr.period_id)}
+                        </span>
+                      {/if}
+                    </div>
+                  {/each}
+                </div>
+              {:else}
+                <div class="text-[10px] text-muted-foreground py-1 text-center bg-muted/10 rounded-md border border-dashed border-border/60">
+                  لا توجد قيود سابقة
+                </div>
+              {/if}
+            </div>
           {:else}
             <!-- Skeleton for sidebar -->
             <div class="w-full flex justify-start">
@@ -399,31 +519,65 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
   </div>
 </div>
 
-{#if showTransferDialog}
-  <!-- Transfer Class Dialog Overlay -->
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onclick={() => showTransferDialog = false}>
-    <div class="bg-popover border border-border rounded-xl p-6 w-80 shadow-lg" onclick={(e) => e.stopPropagation()}>
-      <h3 class="text-sm font-bold mb-4">{m.common_student_layout_transfer_class()}</h3>
-      <label class="text-[10px] text-muted-foreground mb-1 block">{m.common_form_label_class?.() ?? "Target Class"}</label>
+<!-- Class Transfer Dialog using canonical UI Dialog component -->
+<Dialog bind:open={showTransferDialog}>
+  <DialogContent class="sm:max-w-[420px]">
+    <DialogHeader>
+      <DialogTitle class="text-sm font-bold flex items-center gap-2">
+        <ArrowsRightLeft size={16} class="text-primary" />
+        {m.common_student_layout_transfer_class()}
+      </DialogTitle>
+      <DialogDescription class="text-xs text-muted-foreground">
+        اختر الشعبة أو الفصل الجديد لنقل الطالب وتحديث القيد الأكاديمي.
+      </DialogDescription>
+    </DialogHeader>
+
+    <div class="py-3 flex flex-col gap-2">
+      <label for="target-class-select" class="text-[11px] font-semibold text-foreground">
+        {m.common_form_label_class?.() ?? "Target Class"}
+      </label>
       <select
-        class="w-full border border-border rounded-md px-3 py-2 text-xs bg-background mb-4"
+        id="target-class-select"
+        class="w-full border border-border rounded-md px-3 py-2 text-xs bg-background focus:outline-hidden focus:ring-1 focus:ring-ring"
         bind:value={transferTargetClassId}
       >
-        <option value="">—</option>
+        <option value="">— اختر الفصل الجديد —</option>
         {#each (classesQuery.data ?? []) as cls}
-          <option value={String(cls.id)}>{cls.name}</option>
+          <option value={String(cls.id)}>{cls.name || cls.name_ar}</option>
         {/each}
       </select>
-      <div class="flex gap-2 justify-end">
-        <Button variant="outline" class="text-xs h-8" onclick={() => showTransferDialog = false}>
-          {m.common_btn_cancel()}
-        </Button>
-        <Button class="text-xs h-8" onclick={transferClass} disabled={isTransferring || !transferTargetClassId}>
-          {m.common_student_layout_transfer_class()}
-        </Button>
-      </div>
     </div>
-  </div>
-{/if}
+
+    <DialogFooter class="gap-2 sm:gap-0">
+      <Button
+        variant="outline"
+        size="sm"
+        class="text-xs h-8"
+        onclick={() => (showTransferDialog = false)}
+      >
+        {m.common_btn_cancel()}
+      </Button>
+      <Button
+        size="sm"
+        class="text-xs h-8 gap-1.5"
+        onclick={transferClass}
+        disabled={isTransferring || !transferTargetClassId}
+      >
+        <ArrowsRightLeft size={12} />
+        {m.common_student_layout_transfer_class()}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
+<!-- Print Certificate Dialog -->
+<PdfReportViewer
+  bind:open={showPrintCertificate}
+  templateId="student.enrollment_certificate"
+  parameters={{
+    student_id: actualStudentId,
+    enrollment_id: studentId,
+    period_id: academicContext.effectivePeriodId,
+  }}
+  reportTitle="طباعة شهادة قيد طالب"
+/>

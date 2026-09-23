@@ -7,7 +7,7 @@ import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { academicContext } from "$lib/stores";
 import AssessmentSchemeSheet from "$lib/features/assessment/assessment-scheme-sheet.svelte";
-import ReportViewer from "$lib/shared/components/report-viewer.svelte";
+import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
 
 let { children } = $props();
 
@@ -132,7 +132,7 @@ const menuItems = $derived([
   <AssessmentSchemeSheet bind:open={showConfigSheet} {classSubjectId} periodId={academicContext.effectivePeriodId || ""} />
 {/if}
 
-<ReportViewer
+<PdfReportViewer
   bind:open={showPrintDialog}
   templateId="33333333-3333-3333-3333-333333333333"
   parameters={{ class_subject_id: classSubjectId, period_id: academicContext.effectivePeriodId }}

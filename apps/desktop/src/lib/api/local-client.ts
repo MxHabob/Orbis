@@ -633,6 +633,37 @@ export class LocalClient implements OrbisApiClient {
   async getJournalEntry(id: string): Promise<JournalEntryDto> {
     return unwrap(await invoke("finance_get_journal_entry", { id }));
   }
+  async createJournalEntry(
+    req: CreateJournalEntryRequest,
+  ): Promise<JournalEntryDto> {
+    return unwrap(
+      await invoke("finance_create_journal_entry", { request: req }),
+    );
+  }
+  async reverseJournalEntry(
+    id: string,
+    req: ReverseJournalRequest,
+  ): Promise<JournalEntryDto> {
+    return unwrap(
+      await invoke("finance_reverse_journal_entry", { id, request: req }),
+    );
+  }
+  async splitStudentFee(
+    id: string,
+    req: SplitFeeRequest,
+  ): Promise<StudentFeeDto[]> {
+    return unwrap(
+      await invoke("finance_split_student_fee", { id, request: req }),
+    );
+  }
+  async refundStudentFee(
+    id: string,
+    req: RefundStudentFeeRequest,
+  ): Promise<StudentFeeDto> {
+    return unwrap(
+      await invoke("finance_refund_student_fee", { id, request: req }),
+    );
+  }
   async listDiscountTemplates(): Promise<DiscountTemplateDto[]> {
     return unwrap(await invoke("finance_list_discount_templates"));
   }

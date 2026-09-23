@@ -1,5 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { confirmStore } from "$lib/stores";
 /**
  * AssetPanel — Image/logo/stamp library.
  * Browse, upload, and drag assets onto the canvas.
@@ -81,8 +82,14 @@ async function insertAssetAsImage(doc: any) {
 
 // ── Remove asset ─────────────────────────────────────────────
 
-function removeAsset(doc: any) {
-  if (confirm(m.template_confirm_delete_asset?.() || "Are you sure?")) {
+async function removeAsset(doc: any) {
+  const confirmed = await confirmStore.prompt({
+    title: m.template_confirm_delete_asset?.() || "Delete asset?",
+    description: m.template_confirm_delete_asset?.() || "Are you sure?",
+    confirmText: m.common_action_delete(),
+    variant: "destructive",
+  });
+  if (confirmed) {
     deleteMutation.mutate(doc.id);
   }
 }

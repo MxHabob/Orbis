@@ -703,10 +703,33 @@ export class RemoteClient implements OrbisApiClient {
     return this.get("/api/v1/currencies");
   }
   async listJournalEntries(): Promise<JournalEntryDto[]> {
-    return this.get("/api/v1/finance/journal-entries");
+    return this.get("/api/v1/journal-entries");
   }
   async getJournalEntry(id: string): Promise<JournalEntryDto> {
-    return this.get(`/api/v1/finance/journal-entries/${id}`);
+    return this.get(`/api/v1/journal-entries/${id}`);
+  }
+  async createJournalEntry(
+    req: CreateJournalEntryRequest,
+  ): Promise<JournalEntryDto> {
+    return this.post("/api/v1/journal-entries", req);
+  }
+  async reverseJournalEntry(
+    id: string,
+    req: ReverseJournalRequest,
+  ): Promise<JournalEntryDto> {
+    return this.post(`/api/v1/journal-entries/${id}/reverse`, req);
+  }
+  async splitStudentFee(
+    id: string,
+    req: SplitFeeRequest,
+  ): Promise<StudentFeeDto[]> {
+    return this.post(`/api/v1/student-fees/${id}/split`, req);
+  }
+  async refundStudentFee(
+    id: string,
+    req: RefundStudentFeeRequest,
+  ): Promise<StudentFeeDto> {
+    return this.post(`/api/v1/student-fees/${id}/refund`, req);
   }
   async listDiscountTemplates(): Promise<DiscountTemplateDto[]> {
     return this.get("/api/v1/finance/discount-templates");
