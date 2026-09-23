@@ -30,18 +30,27 @@ pub struct TimeSlotDto {
     pub id: Uuid,
     pub period_id: Uuid,
     pub day_of_week: i16,
+    pub slot_index: i32,
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
     pub start_time: chrono::NaiveTime,
     pub end_time: chrono::NaiveTime,
-    pub slot_index: i32,
+    pub is_break: bool,
+    pub break_type: Option<String>,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct CreateTimeSlotRequest {
     pub period_id: Uuid,
     pub day_of_week: i16,
+    pub slot_index: i32,
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
     pub start_time: chrono::NaiveTime,
     pub end_time: chrono::NaiveTime,
-    pub slot_index: i32,
+    #[serde(default)]
+    pub is_break: bool,
+    pub break_type: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -102,8 +111,21 @@ async fn get_room(
 async fn create_time_slot(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateTimeSlotRequest>,
 ) -> Result<Json<ApiResponse<TimeSlotDto>>, ApiError> {
-    let t = state.scheduling_service.create_time_slot(&ctx, p.period_id, p.day_of_week, p.start_time, p.end_time, p.slot_index).await?;
-    Ok(ApiResponse::ok(TimeSlotDto { id: t.id, period_id: t.period_id, day_of_week: t.day_of_week, start_time: t.start_time, end_time: t.end_time, slot_index: t.slot_index }))
+    let t = state.scheduling_service.create_time_slot(
+        &ctx, p.period_id, p.day_of_week, p.slot_index, p.name, p.name_ar, p.start_time, p.end_time, p.is_break, p.break_type,
+    ).await?;
+    Ok(ApiResponse::ok(TimeSlotDto {
+        id: t.id,
+        period_id: t.period_id,
+        day_of_week: t.day_of_week,
+        slot_index: t.slot_index,
+        name: t.name,
+        name_ar: t.name_ar,
+        start_time: t.start_time,
+        end_time: t.end_time,
+        is_break: t.is_break,
+        break_type: t.break_type,
+    }))
 }
 
 #[utoipa::path(get, path = "/api/v1/time-slots", responses((status = 200, body = Vec<TimeSlotDto>)),
@@ -115,7 +137,18 @@ async fn list_time_slots(
         Some(pid) => state.scheduling_service.list_time_slots(pid).await?,
         None => vec![],
     };
-    let dtos = slots.into_iter().map(|t| TimeSlotDto { id: t.id, period_id: t.period_id, day_of_week: t.day_of_week, start_time: t.start_time, end_time: t.end_time, slot_index: t.slot_index }).collect();
+    let dtos = slots.into_iter().map(|t| TimeSlotDto {
+        id: t.id,
+        period_id: t.period_id,
+        day_of_week: t.day_of_week,
+        slot_index: t.slot_index,
+        name: t.name,
+        name_ar: t.name_ar,
+        start_time: t.start_time,
+        end_time: t.end_time,
+        is_break: t.is_break,
+        break_type: t.break_type,
+    }).collect();
     Ok(ApiResponse::ok(dtos))
 }
 

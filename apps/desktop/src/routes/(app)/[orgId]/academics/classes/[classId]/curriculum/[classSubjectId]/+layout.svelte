@@ -2,6 +2,7 @@
 import { page } from "$app/state";
 import { createQuery } from "@tanstack/svelte-query";
 import { api } from "$lib/api";
+import type { ClassSubjectDto, SubjectDto, UserDto } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -19,21 +20,26 @@ const isArabic = $derived(getLocale() === "ar");
 let showConfigSheet = $state(false);
 let showPrintDialog = $state(false);
 
+export interface ClassSubjectWithCatalog extends ClassSubjectDto {
+  catalog?: SubjectDto;
+  teacher_name?: string | null;
+}
+
 // Subject Offering Details
 const subjectQuery = createQuery(() => ({
   queryKey: ["subject-info-sub-layout", classId, classSubjectId],
-  queryFn: async () => {
+  queryFn: async (): Promise<ClassSubjectWithCatalog> => {
     const offerings = await api.listClassSubjects(
       classId,
       academicContext.effectivePeriodId || "",
     );
     const offering = offerings.find(
-      (o: any) => String(o.id) === classSubjectId,
+      (o: ClassSubjectDto) => String(o.id) === classSubjectId,
     );
     if (!offering) throw new Error("Subject not found");
     const catalog = await api.listSubjects();
     const catSub = catalog.find(
-      (s: any) => String(s.id) === String(offering.subject_id),
+      (s: SubjectDto) => String(s.id) === String(offering.subject_id),
     );
     return { ...offering, catalog: catSub };
   },
@@ -42,23 +48,23 @@ const subjectQuery = createQuery(() => ({
 
 const usersQuery = createQuery(() => ({
   queryKey: ["all-users-subject-sub-layout"],
-  queryFn: () => api.listUsers(),
+  queryFn: (): Promise<UserDto[]> => api.listUsers(),
   staleTime: 10 * 60 * 1000,
 }));
 
 const subjectInfo = $derived(subjectQuery.data);
-const users = $derived((usersQuery.data || []) as any[]);
+const users = $derived(usersQuery.data ?? []);
 
 const teacherDisplayName = $derived.by(() => {
   if (!subjectInfo) return "";
   if (subjectInfo.teacher_name) return subjectInfo.teacher_name;
   const tid = subjectInfo.primary_teacher_id;
   if (!tid) return isArabic ? "غير مسند لمعلم" : "Unassigned";
-  const foundUser = users.find((u) => String(u.id) === String(tid));
+  const foundUser = users.find((u: UserDto) => String(u.id) === String(tid));
   if (foundUser)
     return isArabic
-      ? foundUser.name_ar || foundUser.full_name || foundUser.name
-      : foundUser.full_name || foundUser.name || foundUser.name_ar;
+      ? foundUser.full_name_ar || foundUser.full_name
+      : foundUser.full_name || foundUser.full_name_ar;
   if (String(tid).startsWith("dev-"))
     return isArabic ? "معلم تجريبي" : "Demo Teacher";
   return isArabic ? "معلم المادة" : "Subject Teacher";

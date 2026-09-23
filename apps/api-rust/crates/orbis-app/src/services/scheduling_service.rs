@@ -114,9 +114,13 @@ impl SchedulingService {
         ctx: &RequestContext,
         period_id: Uuid,
         day_of_week: i16,
+        slot_index: i32,
+        name: Option<String>,
+        name_ar: Option<String>,
         start_time: NaiveTime,
         end_time: NaiveTime,
-        slot_index: i32,
+        is_break: bool,
+        break_type: Option<String>,
     ) -> Result<TimeSlot, DomainError> {
         self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
 
@@ -127,9 +131,13 @@ impl SchedulingService {
             id: slot_id,
             period_id,
             day_of_week,
+            slot_index,
+            name,
+            name_ar,
             start_time,
             end_time,
-            slot_index,
+            is_break,
+            break_type,
             created_at: now,
             updated_at: now,
         };

@@ -4,6 +4,7 @@ import SessionCard from "./session-card.svelte";
 import TimeGutter from "./time-gutter.svelte";
 import CalendarHeader from "./calendar-header.svelte";
 import BreakRow from "./break-row.svelte";
+import { enrichTimeSlots, type EnrichedTimeSlot } from "./utils";
 
 interface Props {
   timeSlots: any[];
@@ -52,6 +53,12 @@ let {
 }: Props = $props();
 
 const isArabic = $derived(locale === "ar");
+
+const enrichedSlots = $derived<EnrichedTimeSlot[]>(
+  timeSlots.length > 0 && timeSlots[0]?.display_name !== undefined
+    ? timeSlots
+    : enrichTimeSlots(timeSlots, locale)
+);
 
 // Build quick map of lessons by day and slot
 const lessonMatrix = $derived.by(() => {
@@ -138,11 +145,11 @@ function handleDrop(e: DragEvent, day: number, slotId: string) {
     <!-- Body: Time Gutter + Days Columns -->
     <div class="flex min-w-[700px] flex-1">
       <!-- Time Gutter Axis -->
-      <TimeGutter {timeSlots} {locale} {compact} />
+      <TimeGutter timeSlots={enrichedSlots} {locale} {compact} />
 
       <!-- Day Columns Grid Container -->
       <div class="flex flex-1 flex-col min-w-0">
-        {#each timeSlots as slot (slot.id)}
+        {#each enrichedSlots as slot (slot.id)}
           {@const isBreak = Boolean(slot.is_break)}
           {#if isBreak}
             <!-- Break row spanning all days -->

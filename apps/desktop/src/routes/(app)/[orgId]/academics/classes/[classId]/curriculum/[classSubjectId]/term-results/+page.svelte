@@ -2,11 +2,22 @@
 import { page } from "$app/state";
 import { createQuery } from "@tanstack/svelte-query";
 import { api, extractErrorMessage } from "$lib/api";
+import type { GradeDto } from "$lib/api/types";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { AdjustmentsHorizontal, CheckCircle, DocumentCheck, Grid, InfoCircle, Refresh, XMark } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
 import { getLocale } from "$lib/paraglide/runtime";
+
+export interface EnrichedGradeDto extends GradeDto {
+  student_name?: string | null;
+  student_name_ar?: string | null;
+  student_number?: string | null;
+  max_score?: number | null;
+  obtained_score?: number | null;
+  grade_value?: string | null;
+  is_passed?: number | boolean | null;
+}
 
 const classSubjectId = $derived(String(page.params.classSubjectId || ""));
 const selectedPeriodId = $derived(academicContext.effectivePeriodId || "");
@@ -14,18 +25,21 @@ const isArabic = $derived(getLocale() === "ar");
 
 const termResultsQuery = createQuery(() => ({
   queryKey: ["term-results-enriched", selectedPeriodId, classSubjectId],
-  queryFn: () => api.listGrades({ classSubjectId }).catch(() => []),
+  queryFn: async (): Promise<EnrichedGradeDto[]> => {
+    const res = await api.listGrades({ classSubjectId });
+    return (res || []) as EnrichedGradeDto[];
+  },
   enabled: !!selectedPeriodId && !!classSubjectId,
 }));
 
-const termResults = $derived((termResultsQuery.data || []) as any[]);
+const termResults = $derived(termResultsQuery.data ?? []);
 
 function getStudentName(enrollmentId: string): string {
-  const s = termResults.find((r: any) => r.enrollment_id === enrollmentId);
+  const s = termResults.find((r) => r.enrollment_id === enrollmentId);
   if (!s) return "-";
   return isArabic
-    ? s.student_name_ar || s.student_name || s.student_number
-    : s.student_name || s.student_name_ar || s.student_number;
+    ? s.student_name_ar || s.student_name || s.student_number || "-"
+    : s.student_name || s.student_name_ar || s.student_number || "-";
 }
 </script>
 

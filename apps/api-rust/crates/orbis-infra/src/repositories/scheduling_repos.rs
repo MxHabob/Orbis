@@ -57,7 +57,9 @@ impl TimeSlotRepository for SchedulingRepoImpl {
         let model = TimeSlotEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(|m| DomainTimeSlot {
             id: m.id, period_id: m.period_id, day_of_week: m.day_of_week,
-            start_time: m.start_time, end_time: m.end_time, slot_index: m.slot_index,
+            slot_index: m.slot_index, name: m.name, name_ar: m.name_ar,
+            start_time: m.start_time, end_time: m.end_time,
+            is_break: m.is_break, break_type: m.break_type,
             created_at: m.created_at, updated_at: m.updated_at
         }))
     }
@@ -66,7 +68,9 @@ impl TimeSlotRepository for SchedulingRepoImpl {
         let models = TimeSlotEntity::find().filter(time_slot::Column::PeriodId.eq(period_id)).all(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(models.into_iter().map(|m| DomainTimeSlot {
             id: m.id, period_id: m.period_id, day_of_week: m.day_of_week,
-            start_time: m.start_time, end_time: m.end_time, slot_index: m.slot_index,
+            slot_index: m.slot_index, name: m.name, name_ar: m.name_ar,
+            start_time: m.start_time, end_time: m.end_time,
+            is_break: m.is_break, break_type: m.break_type,
             created_at: m.created_at, updated_at: m.updated_at
         }).collect())
     }
@@ -74,9 +78,10 @@ impl TimeSlotRepository for SchedulingRepoImpl {
     async fn save(&self, slot: &DomainTimeSlot) -> Result<(), DomainError> {
         let active = time_slot::ActiveModel {
             id: Set(slot.id), period_id: Set(slot.period_id), day_of_week: Set(slot.day_of_week),
+            slot_index: Set(slot.slot_index), name: Set(slot.name.clone()), name_ar: Set(slot.name_ar.clone()),
             start_time: Set(slot.start_time), end_time: Set(slot.end_time),
-            slot_index: Set(slot.slot_index), created_at: Set(slot.created_at),
-            updated_at: Set(slot.updated_at),
+            is_break: Set(slot.is_break), break_type: Set(slot.break_type.clone()),
+            created_at: Set(slot.created_at), updated_at: Set(slot.updated_at),
         };
 
         if TimeSlotEntity::find_by_id(slot.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {

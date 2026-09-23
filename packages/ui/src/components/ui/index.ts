@@ -154,4 +154,7 @@ export {
   TimeGutter,
   CalendarHeader,
   BreakRow,
+  enrichTimeSlots,
+  formatTimeSlotTime,
 } from "./timetable/index.js";
+export type { EnrichedTimeSlot } from "./timetable/index.js";

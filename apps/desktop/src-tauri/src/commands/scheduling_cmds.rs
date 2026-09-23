@@ -36,8 +36,12 @@ pub struct TimeSlotDto {
     pub period_id: String,
     pub day_of_week: i16,
     pub slot_index: i32,
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
     pub start_time: String,
     pub end_time: String,
+    pub is_break: bool,
+    pub break_type: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -45,8 +49,13 @@ pub struct CreateTimeSlotInput {
     pub period_id: String,
     pub day_of_week: i16,
     pub slot_index: i32,
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
     pub start_time: String,
     pub end_time: String,
+    #[serde(default)]
+    pub is_break: bool,
+    pub break_type: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -125,7 +134,9 @@ pub async fn scheduling_create_time_slot(request: CreateTimeSlotInput, state: St
         .or_else(|_| NaiveTime::parse_from_str(&request.end_time, "%H:%M"))
         .map_err(|_| "Invalid end_time format (expected HH:MM:SS or HH:MM)")?;
 
-    let t = state.scheduling_service.create_time_slot(&ctx, period_id, request.day_of_week, start_time, end_time, request.slot_index)
+    let t = state.scheduling_service.create_time_slot(
+        &ctx, period_id, request.day_of_week, request.slot_index, request.name, request.name_ar, start_time, end_time, request.is_break, request.break_type,
+    )
         .await
         .map_err(|e| e.to_string())?;
 
@@ -134,8 +145,12 @@ pub async fn scheduling_create_time_slot(request: CreateTimeSlotInput, state: St
         period_id: t.period_id.to_string(),
         day_of_week: t.day_of_week,
         slot_index: t.slot_index,
+        name: t.name,
+        name_ar: t.name_ar,
         start_time: t.start_time.to_string(),
         end_time: t.end_time.to_string(),
+        is_break: t.is_break,
+        break_type: t.break_type,
     }))
 }
 
@@ -148,8 +163,12 @@ pub async fn scheduling_list_time_slots(period_id: String, state: State<'_, AppS
         period_id: t.period_id.to_string(),
         day_of_week: t.day_of_week,
         slot_index: t.slot_index,
+        name: t.name,
+        name_ar: t.name_ar,
         start_time: t.start_time.to_string(),
         end_time: t.end_time.to_string(),
+        is_break: t.is_break,
+        break_type: t.break_type,
     }).collect()))
 }
 

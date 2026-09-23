@@ -210,7 +210,7 @@ const breakTypeLabels: Record<string, () => string> = {
       <div class="flex items-center justify-between border-b border-border/50 pb-2 shrink-0">
         <h4 class="text-xs font-bold text-foreground">{m.common_onboarding_schedule_title()}</h4>
         <span class="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary font-mono">
-          {onboardingState.academics.timeSlots.length} {m.common_word_active ? m.common_word_active() : "فترات"}
+          {onboardingState.academics.timeSlots.length} فترات
         </span>
       </div>
 

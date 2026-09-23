@@ -1538,16 +1538,20 @@ impl OnboardingPort for OnboardingAdapterImpl {
 
             txn.execute(Statement::from_sql_and_values(
                 txn.get_database_backend(),
-                "INSERT INTO time_slots (id, period_id, day_of_week, start_time, end_time, slot_index, created_at, updated_at) \
-                 SELECT $1, $2, $3, $4, $5, $6, $7, $8 \
-                 WHERE NOT EXISTS (SELECT 1 FROM time_slots WHERE period_id = $2 AND start_time = $4 AND end_time = $5 AND day_of_week = $3)",
+                "INSERT INTO time_slots (id, period_id, day_of_week, slot_index, name, name_ar, start_time, end_time, is_break, break_type, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12 \
+                 WHERE NOT EXISTS (SELECT 1 FROM time_slots WHERE period_id = $2 AND start_time = $7 AND end_time = $8 AND day_of_week = $3)",
                 vec![
                     ts.id.into(),
                     first_period_id.into(),
                     (ts.day_of_week as i16).into(),
+                    (slot_idx as i32 + 1).into(),
+                    ts.name.clone().into(),
+                    ts.name_ar.clone().into(),
                     start_time_str.into(),
                     end_time_str.into(),
-                    (slot_idx as i32 + 1).into(),
+                    (if ts.is_break { 1i32 } else { 0i32 }).into(),
+                    ts.break_type.clone().into(),
                     now.clone().into(), now.clone().into(),
                 ]
             )).await.ok();
