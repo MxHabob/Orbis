@@ -80,7 +80,7 @@ const subjectsQuery = createQuery(() => ({
 
 const usersQuery = createQuery(() => ({
   queryKey: ["users", data.orgId],
-  queryFn: () => api.listUsers(null),
+  queryFn: () => api.listUsers(),
   enabled: !!data.orgId,
   staleTime: 5 * 60 * 1000,
 }));
@@ -164,7 +164,7 @@ $effect(() => {
 // Time Slots Query
 const timeSlotsQuery = createQuery(() => ({
   queryKey: ["time-slots", data.orgId, activePeriodId],
-  queryFn: () => api.listTimeSlots(),
+  queryFn: () => api.listTimeSlots(activePeriodId),
   enabled: !!data.orgId && !!activePeriodId,
   staleTime: 5 * 60 * 1000,
 }));
@@ -179,7 +179,7 @@ const timeSlots = $derived(
 // Schedule Query for active period
 const periodScheduleQuery = createQuery(() => ({
   queryKey: ["period-schedule", data.orgId, activePeriodId],
-  queryFn: () => api.listScheduledLessons(activePeriodId),
+  queryFn: () => api.listScheduledLessons({ periodId: activePeriodId }),
   enabled: !!data.orgId && !!activePeriodId,
   staleTime: 60 * 1000,
 }));

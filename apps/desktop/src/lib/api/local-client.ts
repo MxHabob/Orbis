@@ -392,20 +392,36 @@ export class LocalClient implements OrbisApiClient {
       await invoke("scheduling_create_time_slot", { request: req }),
     );
   }
-  async listTimeSlots(periodId: string): Promise<TimeSlotDto[]> {
-    return unwrap(await invoke("scheduling_list_time_slots", { periodId }));
+  async listTimeSlots(periodId?: string): Promise<TimeSlotDto[]> {
+    return unwrap(
+      await invoke("scheduling_list_time_slots", {
+        periodId: periodId || null,
+      }),
+    );
   }
   async scheduleLesson(
     req: ScheduleLessonRequest,
   ): Promise<ScheduledLessonDto> {
     return unwrap(await invoke("scheduling_schedule_lesson", { request: req }));
   }
-  async listScheduledLessons(filter?: {
-    classSubjectId?: string;
-    periodId?: string;
-  }): Promise<ScheduledLessonDto[]> {
+  async listScheduledLessons(
+    filterOrPeriodId?:
+      | string
+      | {
+          classSubjectId?: string;
+          periodId?: string;
+        },
+    classSubjectId?: string,
+  ): Promise<ScheduledLessonDto[]> {
+    const filter =
+      typeof filterOrPeriodId === "string"
+        ? { period_id: filterOrPeriodId, class_subject_id: classSubjectId }
+        : {
+            period_id: filterOrPeriodId?.periodId,
+            class_subject_id: filterOrPeriodId?.classSubjectId,
+          };
     return unwrap(
-      await invoke("scheduling_list_lessons", { filter: filter ?? {} }),
+      await invoke("scheduling_list_lessons", { filter }),
     );
   }
 

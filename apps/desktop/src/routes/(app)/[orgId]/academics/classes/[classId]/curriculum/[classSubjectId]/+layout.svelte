@@ -42,7 +42,7 @@ const subjectQuery = createQuery(() => ({
 
 const usersQuery = createQuery(() => ({
   queryKey: ["all-users-subject-sub-layout"],
-  queryFn: () => api.listUsers(null),
+  queryFn: () => api.listUsers(),
   staleTime: 10 * 60 * 1000,
 }));
 

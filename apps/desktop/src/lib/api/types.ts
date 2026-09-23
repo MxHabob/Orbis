@@ -1108,12 +1108,17 @@ export interface OrbisApiClient {
   listRooms(): Promise<RoomDto[]>;
   getRoom(id: string): Promise<RoomDto>;
   createTimeSlot(req: CreateTimeSlotRequest): Promise<TimeSlotDto>;
-  listTimeSlots(periodId: string): Promise<TimeSlotDto[]>;
+  listTimeSlots(periodId?: string): Promise<TimeSlotDto[]>;
   scheduleLesson(req: ScheduleLessonRequest): Promise<ScheduledLessonDto>;
-  listScheduledLessons(filter?: {
-    classSubjectId?: string;
-    periodId?: string;
-  }): Promise<ScheduledLessonDto[]>;
+  listScheduledLessons(
+    filterOrPeriodId?:
+      | string
+      | {
+          classSubjectId?: string;
+          periodId?: string;
+        },
+    classSubjectId?: string,
+  ): Promise<ScheduledLessonDto[]>;
 
   // ── Assessment ──────────────────────────────────────────────
   createAssessmentScheme(

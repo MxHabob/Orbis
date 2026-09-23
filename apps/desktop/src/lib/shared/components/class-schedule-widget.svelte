@@ -27,7 +27,7 @@ const scheduleQuery = createQuery(() => ({
 
 const timeSlotsQuery = createQuery(() => ({
   queryKey: ["time-slots", periodId],
-  queryFn: () => api.listTimeSlots(),
+  queryFn: () => api.listTimeSlots(periodId),
   enabled: !!periodId,
   staleTime: 5 * 60 * 1000,
 }));
@@ -40,7 +40,7 @@ const subjectsQuery = createQuery(() => ({
 
 const usersQuery = createQuery(() => ({
   queryKey: ["all-users"],
-  queryFn: () => api.listUsers(null),
+  queryFn: () => api.listUsers(),
   staleTime: 5 * 60 * 1000,
 }));
 

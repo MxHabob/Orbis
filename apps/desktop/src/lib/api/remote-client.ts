@@ -496,7 +496,7 @@ export class RemoteClient implements OrbisApiClient {
   async createTimeSlot(req: CreateTimeSlotRequest): Promise<TimeSlotDto> {
     return this.post("/api/v1/time-slots", req);
   }
-  async listTimeSlots(periodId: string): Promise<TimeSlotDto[]> {
+  async listTimeSlots(periodId?: string): Promise<TimeSlotDto[]> {
     return this.get("/api/v1/time-slots", { period_id: periodId });
   }
   async scheduleLesson(
@@ -504,10 +504,19 @@ export class RemoteClient implements OrbisApiClient {
   ): Promise<ScheduledLessonDto> {
     return this.post("/api/v1/scheduled-lessons", req);
   }
-  async listScheduledLessons(filter?: {
-    classSubjectId?: string;
-    periodId?: string;
-  }): Promise<ScheduledLessonDto[]> {
+  async listScheduledLessons(
+    filterOrPeriodId?:
+      | string
+      | {
+          classSubjectId?: string;
+          periodId?: string;
+        },
+    classSubjectId?: string,
+  ): Promise<ScheduledLessonDto[]> {
+    const filter =
+      typeof filterOrPeriodId === "string"
+        ? { periodId: filterOrPeriodId, classSubjectId }
+        : filterOrPeriodId;
     return this.get("/api/v1/scheduled-lessons", {
       class_subject_id: filter?.classSubjectId,
       period_id: filter?.periodId,
