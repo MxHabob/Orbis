@@ -112,15 +112,15 @@ function handleGridAction(event: GridActionEvent) {
     <div class="flex flex-col gap-0.5 text-start">
       <h1 class="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
         <DocumentPage class="text-primary" size={18} />
-        <span>{m.common_ft_title?.() || "Fee Templates"}</span>
+        <span>{m.settings_nav_fee_templates ? m.settings_nav_fee_templates() : "Fee Templates"}</span>
       </h1>
       <p class="text-xs text-muted-foreground">
-        {m.common_ft_desc?.() || "Manage fee templates for student enrollment"}
+        {m.settings_nav_fee_templates_desc ? m.settings_nav_fee_templates_desc() : "Manage fee templates for student enrollment"}
       </p>
     </div>
     <Button size="sm" onclick={handleCreate} class="text-xs font-bold shrink-0">
       <Plus size={14} class="me-1" />
-      {m.common_ft_add?.() || "Add Template"}
+      {m.settings_fee_templates_add ? m.settings_fee_templates_add() : "Add Template"}
     </Button>
   </div>
 
