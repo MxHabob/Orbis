@@ -1,181 +1,132 @@
 <!--
 @component SubjectsManager
-Lists all academic subjects with themed visual icons, credit hours,
-and triggers the subject creation side sheet.
+Lists all academic subjects with OrbisGrid, CRUD via SubjectCreateSheet.
+Matches the design, layout, and UX of the Rooms manager page.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { createQuery, useQueryClient } from "@tanstack/svelte-query";
-import { api, extractErrorMessage } from "$lib/api";
+import { onMount } from "svelte";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
-import { Skeleton } from "@orbis/ui/skeleton";
-import { BookOpen, Calculator, Clock, Component, GlobeAlt, Heart, Plus, Sparkles } from "@orbis/icons";
-import { fade } from "svelte/transition";
-import SearchField from "$lib/shared/components/search-field.svelte";
+import { Input } from "@orbis/ui/input";
+import { toast } from "@orbis/ui";
+import { l } from "$lib/core/i18n";
+import { getLocale } from "$lib/paraglide/runtime";
+import { Plus, Search, Refresh } from "@orbis/icons";
 import SubjectCreateSheet from "$lib/features/academics/components/subject-create-sheet.svelte";
+import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
+import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
+import { subjectFilterFields } from "$lib/core/filter-configs";
 
 let { orgId }: { orgId: string } = $props();
-const queryClient = useQueryClient();
 
-const subjectsQuery = createQuery(() => ({
-  queryKey: ["subjects", orgId],
-  queryFn: () => api.listSubjects(),
-  enabled: !!orgId,
-  staleTime: 3 * 60 * 1000,
-}));
-
+// State
+let subjects = $state<any[]>([]);
+let isLoading = $state(true);
 let searchQuery = $state("");
-let isModalOpen = $state(false);
+let isSheetOpen = $state(false);
+let activeFilter = $state<UniversalFilter>({
+  logic: "AND",
+  conditions: [],
+  groups: [],
+});
 
-const subjects = $derived((subjectsQuery.data as any[] | undefined) ?? []);
-const isLoading = $derived(subjectsQuery.isLoading);
-const error = $derived(
-  subjectsQuery.error ? extractErrorMessage(subjectsQuery.error) : null,
+async function loadSubjects() {
+  isLoading = true;
+  try {
+    subjects = await api.listSubjects();
+  } catch (e) {
+    toast.error((e as any)?.message || "Failed to load subjects");
+  } finally {
+    isLoading = false;
+  }
+}
+
+onMount(() => {
+  if (orgId) loadSubjects();
+});
+
+const gridSource = $derived(
+  subjects.map((s, i) => ({
+    ...s,
+    __idx: i + 1,
+    name: l(s.name_ar, s.name) || s.name || s.name_ar || "—",
+    name_en: s.name || "—",
+    code: s.code || "—",
+    credit_hours: s.credit_hours ?? s.periods_per_week ?? 3,
+    status: s.is_active !== false ? "active" : "inactive",
+  })),
 );
 
-const filteredSubjects = $derived(
-  subjects.filter((sub) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase().trim();
-    return (
-      String(sub.name || "")
-        .toLowerCase()
-        .includes(query) ||
-      String(sub.name_ar || "")
-        .toLowerCase()
-        .includes(query) ||
-      String(sub.code || "")
-        .toLowerCase()
-        .includes(query)
-    );
-  }),
-);
+const columns: OrbisColumnDef[] = [
+  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
+  { id: "name", prop: "name", header: m.common_word_subject(), name: m.common_word_subject(), width: 220, size: 220, readonly: true, pin: "left", cellClass: "font-medium" },
+  { id: "name_en", prop: "name_en", header: m.common_subject_label_name_en(), name: m.common_subject_label_name_en(), width: 180, size: 180, readonly: true },
+  { id: "code", prop: "code", header: m.common_subject_label_code(), name: m.common_subject_label_code(), width: 120, size: 120, readonly: true, cellClass: "font-mono font-medium" },
+  { id: "credit_hours", prop: "credit_hours", header: m.common_subject_label_periods(), name: m.common_subject_label_periods(), width: 130, size: 130, readonly: true, align: "center", type: "number" },
+  { id: "status", prop: "status", header: m.common_word_status(), name: m.common_word_status(), width: 100, size: 100, type: "badge", align: "center", readonly: true },
+];
 
-function getSubjectTheme(nameStr: string) {
-  const nameLower = nameStr.toLowerCase();
-  if (nameLower.includes("math")) {
-    return {
-      icon: Calculator,
-      bg: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-    };
+function openCreateSheet() {
+  isSheetOpen = true;
+}
+
+function handleGridAction(event: GridActionEvent) {
+  if (event.actionId === "dblclick" || event.actionId === "edit") {
+    isSheetOpen = true;
   }
-  if (nameLower.includes("science")) {
-    return {
-      icon: BookOpen,
-      bg: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-    };
-  }
-  if (nameLower.includes("english")) {
-    return {
-      icon: GlobeAlt,
-      bg: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
-    };
-  }
-  if (nameLower.includes("islam")) {
-    return {
-      icon: Heart,
-      bg: "bg-amber-500/10 text-amber-500 border-amber-500/20",
-    };
-  }
-  if (nameLower.includes("art")) {
-    return {
-      icon: Component,
-      bg: "bg-pink-500/10 text-pink-500 border-pink-500/20",
-    };
-  }
-  if (nameLower.includes("computer")) {
-    return {
-      icon: Sparkles,
-      bg: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
-    };
-  }
-  return { icon: BookOpen, bg: "bg-primary/10 text-primary border-primary/20" };
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6">
-	<!-- Header & Search Controls -->
-	<div class="flex items-center justify-between gap-4 font-sans select-none">
-		<!-- Search -->
-		<SearchField
-			placeholder={m.settings_subjects_search_placeholder_custom()}
-			bind:value={searchQuery}
-			class="max-w-md bg-background/50"
-		/>
+<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide font-sans">
+  <div class="flex items-center justify-between gap-4 flex-nowrap shrink-0">
+    <div class="relative flex-1 max-w-xs">
+      <Search
+        size={14}
+        class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+      />
+      <Input
+        type="text"
+        placeholder={m.settings_subjects_search_placeholder_custom()}
+        bind:value={searchQuery}
+        class="h-8 ps-8 text-xs bg-card border-border/60"
+      />
+    </div>
 
-		<!-- Add button -->
-		<Button variant="lime" class="text-xs px-4 font-semibold shrink-0" onclick={() => isModalOpen = true}>
-			<Plus size={14} class="me-1.5" />
-			{m.common_exams_subjects_add()}
-		</Button>
-	</div>
+    <div class="flex items-center gap-2">
+      <FilterTrigger
+        bind:filter={activeFilter}
+        fields={subjectFilterFields}
+      />
+      <Button variant="ghost" size="icon-sm" onclick={loadSubjects} class="text-muted-foreground">
+        <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
+      </Button>
+      <Button variant="lime" class="text-xs h-8 px-4 font-semibold shrink-0" onclick={openCreateSheet}>
+        <Plus size={14} class="me-1.5" />
+        {m.common_exams_subjects_add()}
+      </Button>
+    </div>
+  </div>
 
-	<!-- Main Subject View Content -->
-	{#if isLoading}
-		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-			<Skeleton class="h-28 w-full" />
-			<Skeleton class="h-28 w-full" />
-			<Skeleton class="h-28 w-full" />
-			<Skeleton class="h-28 w-full" />
-		</div>
-	{:else if error}
-		<div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-center gap-3">
-			<p class="text-xs text-destructive font-semibold">{m.common_subjects_load_error()}</p>
-			<p class="text-xs text-muted-foreground">{error}</p>
-			<Button variant="outline" class="text-xs" onclick={() => subjectsQuery.refetch()}>{m.common_retry()}</Button>
-		</div>
-	{:else if filteredSubjects.length === 0}
-		<div class="flex flex-col items-center justify-center py-16 text-muted-foreground rounded-xl gap-4">
-			<BookOpen size={48} class="text-muted-foreground/30" />
-			<div class="flex flex-col gap-1 text-center">
-				<p class="text-xs font-semibold">{m.common_subjects_empty_title()}</p>
-				<p class="text-[10px] text-muted-foreground/80">
-					{searchQuery ? m.common_subjects_empty_desc_search() : m.common_subjects_empty_desc_general()}
-				</p>
-			</div>
-			{#if !searchQuery}
-				<Button variant="lime" class="text-xs mt-2" onclick={() => isModalOpen = true}>
-					{m.common_exams_subjects_add()}
-				</Button>
-			{/if}
-		</div>
-	{:else}
-		<!-- Subjects Grid -->
-		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" in:fade={{ duration: 200 }}>
-			{#each filteredSubjects as sub (sub.id)}
-				{@const theme = getSubjectTheme(sub.name || sub.name_ar || "")}
-				<div class="card-tactile bg-card flex items-start gap-4 p-4 h-28 select-none group relative transition-all duration-150">
-					<!-- Subject Icon Block -->
-					<div class="h-12 w-12 rounded-lg border flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105 {theme.bg}">
-						<theme.icon size={22} />
-					</div>
-
-					<!-- Subject Text Info -->
-					<div class="flex flex-col text-start justify-between h-full flex-1 min-w-0">
-						<div class="flex flex-col">
-							<span class="text-xs font-bold text-foreground truncate">
-								{sub.name_ar || sub.name || sub.id}
-							</span>
-							{#if sub.name && sub.name_ar}
-								<span class="text-[9px] text-muted-foreground font-mono truncate">{sub.name}</span>
-							{/if}
-						</div>
-
-						<div class="flex items-center justify-between text-[9px] text-muted-foreground mt-1.5 border-t border-border/40 pt-1.5">
-							<span class="px-1.5 py-0.2 rounded border border-border bg-background font-mono">
-								{sub.code || `SUB-${String(sub.id).slice(0, 3).toUpperCase()}`}
-							</span>
-							<span class="flex items-center gap-1">
-								<Clock size={9} />
-								<span>{m.common_subjects_periods_count({ count: sub.credit_hours || 3 })}</span>
-							</span>
-						</div>
-					</div>
-				</div>
-			{/each}
-		</div>
-	{/if}
+  <div class="flex-1 min-h-0">
+    <OrbisGrid
+      {columns}
+      source={gridSource}
+      loading={isLoading}
+      clientQuery
+      search={searchQuery}
+      filter={activeFilter}
+      emptyTitle={m.common_subjects_empty_title()}
+      emptyDescription={m.common_subjects_empty_desc_general()}
+      rtl={getLocale() === "ar"}
+      readonly
+      onaction={handleGridAction}
+    />
+  </div>
 </div>
 
-<!-- Subject Creation Side Sheet Component -->
-<SubjectCreateSheet bind:open={isModalOpen} {orgId} onSuccess={() => queryClient.invalidateQueries({ queryKey: ["subjects"] })} />
+<SubjectCreateSheet
+  bind:open={isSheetOpen}
+  {orgId}
+  onSuccess={loadSubjects}
+/>

@@ -276,3 +276,36 @@ export const auditFilterFields: FieldDefinition[] = [
   { id: "user_name", label: "User", type: "string" },
   { id: "created_at", label: "Timestamp", type: "date" },
 ];
+
+// ── Subjects ─────────────────────────────────────────────────────────────
+export const subjectFilterFields: FieldDefinition[] = [
+  { id: "name", label: "Subject Name", type: "string" },
+  { id: "code", label: "Code", type: "string" },
+  { id: "credit_hours", label: "Credit Hours", type: "number" },
+  {
+    id: "status",
+    label: "Status",
+    type: "select",
+    options: [
+      { label: "Active", value: "active" },
+      { label: "Inactive", value: "inactive" },
+    ],
+  },
+];
+
+// ── Currencies ───────────────────────────────────────────────────────────
+export const currencyFilterFields: FieldDefinition[] = [
+  { id: "code", label: "Currency Code", type: "string" },
+  { id: "name", label: "Currency Name", type: "string" },
+  { id: "symbol", label: "Symbol", type: "string" },
+  {
+    id: "status",
+    label: "Status",
+    type: "select",
+    options: [
+      { label: "Active", value: "active" },
+      { label: "Inactive", value: "inactive" },
+    ],
+  },
+];
+
