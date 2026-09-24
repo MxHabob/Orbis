@@ -10,12 +10,16 @@ import { Skeleton } from "@orbis/ui/skeleton";
 import { Button } from "@orbis/ui/button";
 import { MetricProgress } from "@orbis/ui";
 import {
+  AcademicCap,
   AppNotification,
+  BookOpen,
+  Calendar,
   ChartBar,
   ChatBubble,
   CheckCircle,
   CheckSquare,
   DocumentPage,
+  GlobeAlt,
   InfoCircle,
   Share,
   Users,
@@ -24,6 +28,7 @@ import { fade } from "svelte/transition";
 import { academicContext } from "$lib/stores";
 import { toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
+import { l } from "$lib/core/i18n";
 
 import {
   createClassQuery,
@@ -31,11 +36,15 @@ import {
   createClassAttendanceQuery,
 } from "$lib/features/academics";
 
-import QuickActionButton from "$lib/shared/components/quick-action-button.svelte";
+import RelatedActions, {
+  type ActionGroup,
+  type FooterAction,
+} from "$lib/shared/components/related-actions.svelte";
 import ClassScheduleWidget from "$lib/shared/components/class-schedule-widget.svelte";
 import ClassSubjectsWidget from "$lib/shared/components/class-subjects-widget.svelte";
 import ClassRecommendationsWidget from "$lib/shared/components/class-recommendations-widget.svelte";
 import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
+    import QuickActionButton from "$lib/shared/components/quick-action-button.svelte";
 
 let { orgId, classId }: { orgId: string; classId: string } = $props();
 
@@ -114,11 +123,62 @@ function handleShareLink() {
 function handleNotifications() {
   toast.success(m.common_notifications_enabled());
 }
+
+const relatedActionGroups = $derived<ActionGroup[]>(classData ? [
+  {
+    id: "academic_operations",
+    title: l("العمليات الأكاديمية", "Academic Operations"),
+    icon: AcademicCap,
+    defaultExpanded: true,
+    subLinks: [
+      {
+        id: "class_roster",
+        label: l("قائمة وسجل طلاب الفصل", "Class Roster & Students"),
+        icon: Users,
+        href: `/${orgId}/academics/classes/${classId}/students`,
+        badge: students.length,
+      },
+      {
+        id: "class_curriculum",
+        label: l("الخطة والمنهج الدراسي", "Curriculum & Subjects"),
+        icon: BookOpen,
+        href: `/${orgId}/academics/classes/${classId}/curriculum`,
+      },
+      {
+        id: "class_schedule",
+        label: l("جدول الحصص الأسبوعي", "Weekly Schedule"),
+        icon: Calendar,
+        href: `/${orgId}/academics/schedule?classId=${classId}`,
+      },
+    ],
+  },
+  {
+    id: "classroom_records",
+    title: l("السجلات الميدانية والتقييم", "Classroom Records & Grading"),
+    icon: CheckSquare,
+    defaultExpanded: true,
+    subLinks: [
+      {
+        id: "daily_attendance",
+        label: l("تحضير حضور وغياب الفصل", "Daily Attendance"),
+        icon: CheckSquare,
+        href: `/${orgId}/academics/attendance?classId=${classId}`,
+      },
+      {
+        id: "grades_exams",
+        label: l("إدخال ورصد الدرجات والتقييم", "Grades & Assessment Entry"),
+        icon: DocumentPage,
+        href: `/${orgId}/academics/exams?classId=${classId}`,
+      },
+    ],
+  },
+] : []);
+
 </script>
 
 <div class="h-full w-full flex flex-col font-sans gap-4 pb-6 text-start">
-  <!-- Quick Actions Row -->
-  <div class="flex flex-wrap items-center gap-2 animate-fade-in">
+  <!-- Top Bar with Primary Query / Share Actions -->
+  <div class="flex flex-wrap items-center justify-between gap-2 animate-fade-in">
     {#if classData}
       <AskOrbisButton
         query={m.academics_class_evaluation_ai_ask_orbis_query({ name: classDisplayName })}
@@ -129,36 +189,17 @@ function handleNotifications() {
       />
     {/if}
 
-    <QuickActionButton 
-      label={m.common_nav_notifications()} 
-      icon={AppNotification} 
-      onclick={handleNotifications}
-    />
-    <QuickActionButton 
-      label={m.common_action_share()} 
-      icon={Share} 
-      onclick={handleShareLink}
-    />
-    <QuickActionButton 
-      label={m.common_nav_attendance()} 
-      icon={Users} 
-      onclick={() => toast.info(m.common_nav_attendance())}
-    />
-    <QuickActionButton 
-      label={m.common_assessment_option_homework()} 
-      icon={DocumentPage} 
-      onclick={() => toast.info(m.common_assessment_option_homework())}
-    />
-    <QuickActionButton 
-      label={m.common_nav_documents()} 
-      icon={CheckSquare} 
-      onclick={() => toast.info(m.common_nav_documents())}
-    />
-    <QuickActionButton 
-      label={m.common_nav_announcements()} 
-      icon={ChatBubble} 
-      onclick={() => toast.info(m.common_nav_announcements())}
-    />
+    <div class="flex items-center gap-1.5 ms-auto">
+      <Button
+        variant="outline"
+        size="sm"
+        class="h-8 px-2.5 text-xs font-semibold gap-1.5"
+        onclick={handleShareLink}
+      >
+        <Share size={12} />
+        {m.common_action_share()}
+      </Button>
+    </div>
   </div>
 
   {#if isLoading}
@@ -227,6 +268,11 @@ function handleNotifications() {
         </div>
       </div>
 
+      <!-- Contextual Related Actions (Full Width Footer) -->
+      <RelatedActions
+        title={l("العمليات والإجراءات المرتبطة", "Related support")}
+        groups={relatedActionGroups}
+      />
     </div>
   {/if}
 </div>

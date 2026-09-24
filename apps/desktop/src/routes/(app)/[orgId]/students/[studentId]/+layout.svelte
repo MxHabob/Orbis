@@ -14,6 +14,11 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
   import MainViewport from "$lib/shell/main-viewport.svelte";
   import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
   import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+  import RelatedActions, {
+    type ActionGroup,
+    type FooterAction,
+  } from "$lib/shared/components/related-actions.svelte";
+  import { l } from "$lib/core/i18n";
   import {
     AcademicCap,
     ArrowsRightLeft,
@@ -22,6 +27,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     Document,
     DocumentPage,
     EllipsisHorizontal,
+    GlobeAlt,
     Phone,
     Printer,
     User,
@@ -195,6 +201,71 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
       icon: DocumentPage,
     },
   ]);
+
+  const relatedActionGroups = $derived<ActionGroup[]>(student ? [
+    {
+      id: "academic_actions",
+      title: l("الإجراءات الأكاديمية", "Academic Operations"),
+      icon: AcademicCap,
+      defaultExpanded: true,
+      subLinks: [
+        {
+          id: "print_cert",
+          label: l("طباعة شهادة قيد / تسجيل", "Print Enrollment Certificate"),
+          icon: Printer,
+          onclick: () => (showPrintCertificate = true),
+        },
+        {
+          id: "transfer_class",
+          label: m.common_student_layout_transfer_class(),
+          icon: ArrowsRightLeft,
+          onclick: () => (showTransferDialog = true),
+        },
+        ...(currentClass?.id ? [{
+          id: "class_curriculum",
+          label: l("الخطة والمنهج الدراسي", "Class Curriculum"),
+          icon: BookOpen,
+          href: `/${orgId}/academics/classes/${currentClass.id}/curriculum`,
+        }] : []),
+      ],
+    },
+    {
+      id: "financial_actions",
+      title: l("الحركات والعمليات المالية", "Financial Operations"),
+      icon: Banknotes,
+      defaultExpanded: true,
+      subLinks: [
+        {
+          id: "record_payment",
+          label: l("تسجيل سند قبض / دفعة", "Record Payment"),
+          icon: Banknotes,
+          href: `/${orgId}/finance/payments?studentId=${actualStudentId}`,
+        },
+        {
+          id: "account_statement",
+          label: l("كشف حساب الطالب", "Account Statement"),
+          icon: Document,
+          href: `/${orgId}/finance/statement?studentId=${actualStudentId}`,
+        },
+        {
+          id: "student_fees",
+          label: m.students_detail_tab_fees(),
+          icon: DocumentPage,
+          href: `/${orgId}/students/${studentId}/fees`,
+        },
+      ],
+    },
+  ] : []);
+
+  const relatedFooterActions = $derived<FooterAction[]>(student ? [
+    {
+      id: "withdraw_action",
+      label: m.common_inspector_withdraw(),
+      icon: UserBadgeCheck,
+      onclick: withdrawStudent,
+      disabled: isWithdrawing,
+    },
+  ] : []);
 </script>
 
 <div class="h-full w-full flex flex-col overflow-hidden bg-background">
@@ -479,6 +550,18 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
                   لا توجد قيود سابقة
                 </div>
               {/if}
+            </div>
+
+            <!-- Contextual Related Actions -->
+            <div class="flex flex-col gap-2 border-t border-border/40 pt-4 w-full text-start">
+              <span class="text-[10px] text-foreground font-bold tracking-wide flex items-center gap-1.5">
+                <GlobeAlt size={13} class="text-primary" />
+                {l("العمليات والإجراءات المرتبطة", "Related Actions")}
+              </span>
+              <RelatedActions
+                groups={relatedActionGroups}
+                footerActions={relatedFooterActions}
+              />
             </div>
           {:else}
             <!-- Skeleton for sidebar -->
