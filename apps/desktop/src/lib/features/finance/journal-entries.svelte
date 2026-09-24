@@ -8,7 +8,15 @@ import type { JournalEntryDto, AccountDto, CurrencyDto } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Badge } from "@orbis/ui/badge";
-import { Card, CardContent } from "@orbis/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardAction,
+  CardFooter,
+} from "@orbis/ui/card";
 import {
   Select,
   SelectTrigger,
@@ -139,79 +147,83 @@ const filteredEntries = $derived(
 );
 </script>
 
-<div class="p-6 max-w-7xl mx-auto space-y-6 text-start">
-  <!-- Hero Card -->
-  <div class="relative overflow-hidden rounded-2xl border border-border/80 bg-linear-to-b from-card to-card/60 p-6 shadow-sm backdrop-blur-md">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div class="flex items-center gap-3.5">
-        <div class="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs">
-          <Scale class="w-6 h-6" />
+<div class="p-6 max-w-7xl mx-auto space-y-6 text-start font-sans">
+  <!-- Hero / Summary Card -->
+  <Card>
+    <CardHeader>
+      <div class="flex items-center gap-3 text-start">
+        <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+          <Scale class="w-4 h-4" />
         </div>
-        <div>
-          <h1 class="text-xl font-bold text-foreground tracking-tight">
+        <div class="flex flex-col">
+          <CardTitle>
             دفتر قيود اليومية العامة (Journal Entries)
-          </h1>
-          <p class="text-xs text-muted-foreground mt-0.5">
+          </CardTitle>
+          <CardDescription>
             تسجيل وترحيل قيود المحاسبة المزدوجة، التسويات المالية، ومتابعة الأرصدة الافتتاحية
-          </p>
+          </CardDescription>
         </div>
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={handleExportCsv}
-          disabled={filteredEntries.length === 0}
-          class="h-9 text-xs font-semibold gap-1.5"
-        >
-          <DocumentChartBar class="w-4 h-4" />
-          تصدير CSV
-        </Button>
+      <CardAction>
+        <div class="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={handleExportCsv}
+            disabled={filteredEntries.length === 0}
+            class="h-8 text-xs font-semibold gap-1.5"
+          >
+            <DocumentChartBar class="w-3.5 h-3.5" />
+            تصدير CSV
+          </Button>
 
-        <Button
-          variant="default"
-          size="sm"
-          onclick={() => (isCreateOpen = true)}
-          class="h-9 text-xs font-bold gap-1.5 shadow-sm"
-        >
-          <Plus class="w-4 h-4" />
-          إنشاء قيد محاسبي جديد
-        </Button>
-      </div>
-    </div>
+          <Button
+            variant="default"
+            size="sm"
+            onclick={() => (isCreateOpen = true)}
+            class="h-8 text-xs font-bold gap-1.5 shadow-sm"
+          >
+            <Plus class="w-3.5 h-3.5" />
+            إنشاء قيد محاسبي جديد
+          </Button>
+        </div>
+      </CardAction>
+    </CardHeader>
 
-    <!-- Quick Stats -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 pt-4 border-t border-border/60">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-          <Scale class="w-4 h-4" />
-        </div>
-        <div>
-          <div class="text-lg font-bold text-foreground font-mono leading-none">{totalEntriesCount}</div>
-          <div class="text-[11px] text-muted-foreground mt-0.5">إجمالي سندات القيود</div>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-          <CheckCircle class="w-4 h-4" />
-        </div>
-        <div>
-          <div class="text-lg font-bold text-foreground font-mono leading-none">
-            {formatCurrency(totalDebitVolume)}
+    <!-- Quick Stats in CardContent -->
+    <CardContent class="p-6 pt-4 border-t border-border">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-6">
+        <div class="flex items-center gap-3 text-start">
+          <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+            <Scale class="w-4 h-4" />
           </div>
-          <div class="text-[11px] text-muted-foreground mt-0.5">إجمالي حركة القيود المرحلة</div>
+          <div>
+            <div class="text-xl font-bold text-foreground font-mono leading-none">{totalEntriesCount}</div>
+            <div class="text-xs text-muted-foreground mt-1">إجمالي سندات القيود</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 text-start">
+          <div class="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+            <CheckCircle class="w-4 h-4" />
+          </div>
+          <div>
+            <div class="text-xl font-bold text-foreground font-mono leading-none">
+              {formatCurrency(totalDebitVolume)}
+            </div>
+            <div class="text-xs text-muted-foreground mt-1">إجمالي حركة القيود المرحلة</div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
+    </CardContent>
+  </Card>
 
   <!-- Filters & Grid Card -->
-  <Card class="border border-border/80 shadow-xs">
-    <div class="p-4 border-b border-border/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-      <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+  <Card>
+    <CardHeader>
+      <div class="flex flex-wrap items-center gap-2.5 w-full">
         <div class="relative w-full sm:w-64">
           <Search class="absolute start-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
@@ -239,7 +251,7 @@ const filteredEntries = $derived(
           </SelectContent>
         </Select>
       </div>
-    </div>
+    </CardHeader>
 
     <!-- Data Grid -->
     <CardContent class="p-0">
@@ -296,7 +308,7 @@ const filteredEntries = $derived(
                     variant="ghost"
                     size="sm"
                     onclick={() => openEntryDetails(je)}
-                    class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                    class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
                   >
                     <Eye class="w-3.5 h-3.5" />
                   </Button>
@@ -340,45 +352,49 @@ const filteredEntries = $derived(
         </SheetHeader>
 
         <!-- Entry Summary Meta -->
-        <div class="p-4 rounded-xl bg-muted/40 border border-border/60 space-y-2 text-xs">
-          <div class="flex justify-between">
-            <span class="text-muted-foreground">البيان:</span>
-            <span class="font-bold text-foreground">{selectedEntry.description_ar || selectedEntry.description}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-muted-foreground">إجمالي القيد:</span>
-            <span class="font-mono font-bold text-foreground">{formatCurrency(Number(selectedEntry.amount || 0), selectedEntry.currency)}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-muted-foreground">الحالة:</span>
-            <Badge variant="secondary" class="text-[10px]">{selectedEntry.status}</Badge>
-          </div>
-        </div>
+        <Card>
+          <CardContent class="p-4 space-y-2 text-xs">
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">البيان:</span>
+              <span class="font-bold text-foreground">{selectedEntry.description_ar || selectedEntry.description}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">إجمالي القيد:</span>
+              <span class="font-mono font-bold text-foreground">{formatCurrency(Number(selectedEntry.amount || 0), selectedEntry.currency)}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">الحالة:</span>
+              <Badge variant="secondary" class="text-[10px]">{selectedEntry.status}</Badge>
+            </div>
+          </CardContent>
+        </Card>
 
         <!-- Lines Details -->
         {#if selectedEntry.lines && selectedEntry.lines.length > 0}
           <div class="space-y-2">
             <div class="text-xs font-bold text-foreground">أسطر القيد المحاسبي:</div>
-            <div class="rounded-xl border border-border/70 divide-y overflow-hidden">
-              {#each selectedEntry.lines as line}
-                <div class="p-3 text-xs flex justify-between items-center bg-card">
-                  <div>
-                    <div class="font-bold text-foreground">{getAccountName(line.account_id)}</div>
-                    {#if line.description}
-                      <div class="text-[10px] text-muted-foreground">{line.description}</div>
-                    {/if}
+            <Card>
+              <CardContent class="p-0 divide-y divide-border">
+                {#each selectedEntry.lines as line}
+                  <div class="p-3 text-xs flex justify-between items-center">
+                    <div>
+                      <div class="font-bold text-foreground">{getAccountName(line.account_id)}</div>
+                      {#if line.description}
+                        <div class="text-[10px] text-muted-foreground">{line.description}</div>
+                      {/if}
+                    </div>
+                    <div class="text-end font-mono">
+                      {#if Number(line.debit_amount) > 0}
+                        <div class="text-emerald-600 font-bold">مدين: {formatCurrency(Number(line.debit_amount), selectedEntry.currency)}</div>
+                      {/if}
+                      {#if Number(line.credit_amount) > 0}
+                        <div class="text-blue-600 font-bold">دائن: {formatCurrency(Number(line.credit_amount), selectedEntry.currency)}</div>
+                      {/if}
+                    </div>
                   </div>
-                  <div class="text-end font-mono">
-                    {#if Number(line.debit_amount) > 0}
-                      <div class="text-emerald-600 font-bold">مدين: {formatCurrency(Number(line.debit_amount), selectedEntry.currency)}</div>
-                    {/if}
-                    {#if Number(line.credit_amount) > 0}
-                      <div class="text-blue-600 font-bold">دائن: {formatCurrency(Number(line.credit_amount), selectedEntry.currency)}</div>
-                    {/if}
-                  </div>
-                </div>
-              {/each}
-            </div>
+                {/each}
+              </CardContent>
+            </Card>
           </div>
         {/if}
       </div>

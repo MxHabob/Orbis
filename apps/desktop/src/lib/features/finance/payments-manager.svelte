@@ -4,7 +4,7 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api, queryClient } from "$lib/api";
 import {
-  Card,
+    Badge,
   Grid,
   TableBody,
   TableCell,
@@ -12,6 +12,15 @@ import {
   TableHeader,
   TableRow,
 } from "@orbis/ui";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+  CardAction,
+} from "@orbis/ui/card";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -543,96 +552,98 @@ const filteredPayments = $derived.by(() => {
 <div class="h-full flex flex-col overflow-hidden bg-background p-4 font-sans text-start">
   <!-- Main Content Scroll Area (Form + Grid) -->
   <div class="flex-1 overflow-y-auto py-3 space-y-4">
-    <!-- Redesigned DocumentPage Voucher Input Form Card -->
-    <Card class="border border-border/60 shadow-sm overflow-hidden bg-card">
+    <!-- Voucher Input Form Card -->
+    <Card>
       <!-- Voucher Header & Shared Controls -->
-      <div class="bg-muted/45 border-b border-border/60 p-4 flex flex-wrap items-center justify-between gap-4 select-none">
-        <div class="flex items-center gap-1.5">
-          <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">{m.common_payment_label_receipt()}</span>
-          <span class="text-[11px] font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+      <CardHeader>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.common_payment_label_receipt()}</span>
+          <Badge variant="lime" class="text-[11px] font-mono font-bold px-2 py-0.5">
             {receiptNumber || "قبض جديد"}
-          </span>
+          </Badge>
         </div>
 
-        <div class="flex flex-wrap items-center gap-4">
-          <!-- Treasury select -->
-          <div class="flex flex-col gap-1 text-start">
-            <Label class="text-[9px] font-bold text-muted-foreground">{m.common_ledger_tab_cash_account()}</Label>
-            <Select type="single" bind:value={treasuryId}>
-              <SelectTrigger class="h-8 text-xs bg-background/50 w-48 border-border/60 cursor-pointer text-start">
-                {treasuryItems.find(t => t.value === treasuryId)?.label || "اختر الصندوق..."}
-              </SelectTrigger>
-              <SelectContent>
-                {#each treasuryItems as tr}
-                  <SelectItem value={tr.value}>{tr.label}</SelectItem>
-                {/each}
-                {#if treasuryItems.length === 0}
-                  <SelectItem value="">{m.finance_payments_collections_cash_account_full()}</SelectItem>
-                {/if}
-              </SelectContent>
-            </Select>
-          </div>
+        <CardAction>
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Treasury select -->
+            <div class="flex flex-col gap-1 text-start">
+              <Label class="text-[9px] font-bold text-muted-foreground">{m.common_ledger_tab_cash_account()}</Label>
+              <Select type="single" bind:value={treasuryId}>
+                <SelectTrigger class="h-8 text-xs w-44 border-border cursor-pointer text-start">
+                  {treasuryItems.find(t => t.value === treasuryId)?.label || "اختر الصندوق..."}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each treasuryItems as tr}
+                    <SelectItem value={tr.value}>{tr.label}</SelectItem>
+                  {/each}
+                  {#if treasuryItems.length === 0}
+                    <SelectItem value="">{m.finance_payments_collections_cash_account_full()}</SelectItem>
+                  {/if}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <!-- Method select -->
-          <div class="flex flex-col gap-1 text-start">
-            <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_fees_col_method()}</Label>
-            <Select type="single" bind:value={paymentMethod}>
-              <SelectTrigger class="h-8 text-xs bg-background/50 w-32 border-border/60 cursor-pointer text-start">
-                {paymentMethods.find(m => m.value === paymentMethod)?.label || "اختر الطريقة..."}
-              </SelectTrigger>
-              <SelectContent>
-                {#each paymentMethods as pm}
-                  <SelectItem value={pm.value}>{pm.label}</SelectItem>
-                {/each}
-              </SelectContent>
-            </Select>
-          </div>
+            <!-- Method select -->
+            <div class="flex flex-col gap-1 text-start">
+              <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_fees_col_method()}</Label>
+              <Select type="single" bind:value={paymentMethod}>
+                <SelectTrigger class="h-8 text-xs w-28 border-border cursor-pointer text-start">
+                  {paymentMethods.find(m => m.value === paymentMethod)?.label || "اختر الطريقة..."}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each paymentMethods as pm}
+                    <SelectItem value={pm.value}>{pm.label}</SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <!-- Currency select -->
-          <div class="flex flex-col gap-1 text-start">
-            <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_ledger_currency()}</Label>
-            <Select type="single" bind:value={currency}>
-              <SelectTrigger class="h-8 text-xs bg-background/50 w-24 border-border/60 cursor-pointer">
-                {currency}
-              </SelectTrigger>
-              <SelectContent>
-                {#each currencies as curr}
-                  <SelectItem value={curr.code}>{curr.code}</SelectItem>
-                {/each}
-              </SelectContent>
-            </Select>
-          </div>
+            <!-- Currency select -->
+            <div class="flex flex-col gap-1 text-start">
+              <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_ledger_currency()}</Label>
+              <Select type="single" bind:value={currency}>
+                <SelectTrigger class="h-8 text-xs w-20 border-border cursor-pointer">
+                  {currency}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each currencies as curr}
+                    <SelectItem value={curr.code}>{curr.code}</SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <!-- Date picker -->
-          <div class="flex flex-col gap-1 text-start">
-            <Label class="text-[9px] font-bold text-muted-foreground">{m.common_overview_date()}</Label>
-            <Input 
-              type="date" 
-              bind:value={paymentDate} 
-              class="h-8 text-xs font-mono bg-background/50 border-border/60 w-36" 
-            />
-          </div>
-
-          <!-- Check Info (if method is Check) -->
-          {#if paymentMethod === 'Check'}
-            <div in:slide={{ duration: 150 }} class="flex flex-col gap-1 text-start">
-              <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_payments_check_info()}</Label>
+            <!-- Date picker -->
+            <div class="flex flex-col gap-1 text-start">
+              <Label class="text-[9px] font-bold text-muted-foreground">{m.common_overview_date()}</Label>
               <Input 
-                type="text" 
-                bind:value={checkInfo} 
-                class="h-8 text-xs bg-background/50 border-border/60 w-44" 
-                placeholder="رقم الشيك والبنك..." 
+                type="date" 
+                bind:value={paymentDate} 
+                class="h-8 text-xs font-mono border-border w-32" 
               />
             </div>
-          {/if}
-        </div>
-      </div>
 
-      <div class="p-4 md:p-6 flex flex-col gap-4">
+            <!-- Check Info (if method is Check) -->
+            {#if paymentMethod === 'Check'}
+              <div in:slide={{ duration: 150 }} class="flex flex-col gap-1 text-start">
+                <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_payments_check_info()}</Label>
+                <Input 
+                  type="text" 
+                  bind:value={checkInfo} 
+                  class="h-8 text-xs border-border w-40" 
+                  placeholder="رقم الشيك والبنك..." 
+                />
+              </div>
+            {/if}
+          </div>
+        </CardAction>
+      </CardHeader>
+
+      <CardContent class="p-4 md:p-6 flex flex-col gap-4">
         <!-- Dynamic Row Grid -->
-        <div class="border border-border/60 rounded-xl bg-muted/10 p-4 shadow-sm flex flex-col gap-2">
+        <div class="border border-border rounded-lg bg-muted/10 p-4 shadow-xs flex flex-col gap-2">
           <!-- Headers -->
-          <div class="hidden md:grid grid-cols-[30px_1.2fr_2.5fr_1fr_40px] gap-4 px-2 text-xs font-bold text-muted-foreground select-none pb-2 border-b border-border/40">
+          <div class="hidden md:grid grid-cols-[30px_1.2fr_2.5fr_1fr_40px] gap-4 px-2 text-xs font-bold text-muted-foreground select-none pb-2 border-b border-border">
             <div class="text-center">#</div>
             <div>{m.finance_payments_account_name_notes()}</div>
             <div>{m.finance_payments_due_paid_fees()}</div>
@@ -643,7 +654,7 @@ const filteredPayments = $derived.by(() => {
           <!-- Input Rows -->
           <div class="flex flex-col gap-3 md:gap-2">
             {#each paymentRows as row, index}
-              <div class="grid grid-cols-1 md:grid-cols-[30px_1.2fr_2.5fr_1fr_40px] gap-4 items-start bg-muted/30 md:bg-transparent p-4 md:p-0 rounded-lg border border-border/45 md:border-none">
+              <div class="grid grid-cols-1 md:grid-cols-[30px_1.2fr_2.5fr_1fr_40px] gap-4 items-start bg-muted/20 md:bg-transparent p-4 md:p-0 rounded-lg border border-border md:border-none">
                 <!-- Row Number -->
                 <div class="text-start md:text-center font-mono text-xs font-bold text-muted-foreground pt-2">
                   <span class="md:hidden">{m.finance_payments_row()}</span>{index + 1}
@@ -659,7 +670,7 @@ const filteredPayments = $derived.by(() => {
                       selectedItem={studentItems.find((item) => item.value === row.studentEnrollmentId)}
                       items={studentItems}
                       onSelect={(item) => { handleStudentChange(index, item ? item.value : ""); }}
-                      class="w-full text-xs h-9 bg-background border-border/60"
+                      class="w-full text-xs h-8.5 bg-background border-border"
                     />
                   </div>
                   <div class="flex flex-col gap-1">
@@ -667,7 +678,7 @@ const filteredPayments = $derived.by(() => {
                     <Input
                       type="text"
                       bind:value={row.notes}
-                      class="h-9 text-xs w-full bg-background border-border/60"
+                      class="h-8.5 text-xs w-full bg-background border-border"
                       placeholder="ملاحظات التحصيل لهذا الطالب..."
                     />
                   </div>
@@ -686,7 +697,7 @@ const filteredPayments = $derived.by(() => {
                       {row.studentEnrollmentId ? "لا توجد رسوم مستحقة غير مدفوعة لهذا الطالب" : "الرجاء اختيار طالب لعرض رسومه"}
                     </div>
                   {:else}
-                    <div class="flex flex-col gap-2 bg-background border border-border/65 p-2 rounded-lg max-h-48 overflow-y-auto">
+                    <div class="flex flex-col gap-2 bg-background border border-border p-2 rounded-lg max-h-48 overflow-y-auto">
                       {#each row.availableFees as f}
                         <div class="flex items-center justify-between gap-3 text-xs border-b border-border/30 last:border-b-0 pb-1.5 last:pb-0">
                           <!-- Checkbox & Label -->
@@ -710,7 +721,7 @@ const filteredPayments = $derived.by(() => {
                               disabled={!row.selectedFees.has(String(f.id))}
                               value={row.feeAmounts[String(f.id)] || ""}
                               oninput={(e) => handleFeeAmountChange(index, String(f.id), Number(e.currentTarget.value))}
-                              class="h-8 text-xs font-mono text-emerald-500 font-extrabold text-end w-full bg-background border-border/60"
+                              class="h-8 text-xs font-mono text-emerald-500 font-extrabold text-end w-full bg-background border-border"
                               placeholder="0.00"
                             />
                           </div>
@@ -723,7 +734,7 @@ const filteredPayments = $derived.by(() => {
                 <!-- Row Total Paid -->
                 <div class="flex flex-col gap-1 items-stretch md:items-center">
                   <span class="text-[10px] font-bold text-muted-foreground md:hidden text-center">{m.finance_payments_total_paid()}</span>
-                  <div class="bg-background border border-border px-2 py-2 rounded-lg h-9 flex items-center justify-center font-mono font-extrabold text-emerald-500 text-xs w-full text-center">
+                  <div class="bg-background border border-border px-2 py-2 rounded-lg h-8.5 flex items-center justify-center font-mono font-extrabold text-emerald-500 text-xs w-full text-center">
                     {formatCurrency(calculateRowTotal(row), currency)}
                   </div>
                 </div>
@@ -743,83 +754,87 @@ const filteredPayments = $derived.by(() => {
             {/each}
           </div>
         </div>
+      </CardContent>
 
-        <!-- Add Row and Action Ribbon -->
-        <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-border/40 select-none">
+      <!-- Add Row and Action Ribbon in CardFooter -->
+      <CardFooter class="justify-between flex-wrap gap-4 py-3">
+        <Button
+          variant="outline"
+          size="sm"
+          onclick={addPaymentRow}
+          class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer border-border text-foreground hover:bg-muted"
+        >
+          <Plus size={14} />
+          <span>{m.finance_payments_add_row()}</span>
+        </Button>
+        
+        <div class="flex items-center gap-2.5">
+          <Button
+            variant="default"
+            size="sm"
+            onclick={handleAdd}
+            class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-8 px-5 flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-[0.98] transition-all"
+          >
+            <Plus size={14} />
+            <span>{m.finance_payments_post_receipts()}</span>
+          </Button>
+          
+          <Button
+            variant="destructive"
+            size="sm"
+            onclick={handleVoid}
+            disabled={!selectedPayment}
+            class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all"
+          >
+            <Trash size={14} />
+            <span>{m.finance_payments_void_receipt()}</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
-            onclick={addPaymentRow}
-            class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer border-border text-foreground hover:bg-muted"
+            onclick={clearForm}
+            class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all border-border text-foreground hover:bg-muted"
           >
-            <Plus size={14} />
-            <span>{m.finance_payments_add_row()}</span>
+            <SignOut size={14} />
+            <span>{m.finance_payments_clear_fields()}</span>
           </Button>
-          
-          <div class="flex items-center gap-3">
-            <Button
-              variant="default"
-              size="sm"
-              onclick={handleAdd}
-              class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-8 px-5 flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-[0.98] transition-all"
-            >
-              <Plus size={14} />
-              <span>{m.finance_payments_post_receipts()}</span>
-            </Button>
-            
-            <Button
-              variant="destructive"
-              size="sm"
-              onclick={handleVoid}
-              disabled={!selectedPayment}
-              class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all"
-            >
-              <Trash size={14} />
-              <span>{m.finance_payments_void_receipt()}</span>
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onclick={clearForm}
-              class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all border-border text-foreground hover:bg-muted"
-            >
-              <SignOut size={14} />
-              <span>{m.finance_payments_clear_fields()}</span>
-            </Button>
-          </div>
         </div>
-      </div>
+      </CardFooter>
     </Card>
 
     <!-- Statistics summary row -->
     {#if !isLoading && payments.length > 0}
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" in:fade={{ duration: 150 }}>
-        <div class="border border-border/60 bg-card/20 flex items-center justify-between p-3 rounded-xl h-16 select-none">
-          <div class="flex flex-col gap-0.5 text-start">
-            <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider font-semibold">
-              إجمالي المقبوضات المحصلة
-            </span>
-            <span class="text-sm font-bold text-emerald-500 font-mono">{formatCurrency(stats.total, "YER")}</span>
-          </div>
-          <div class="h-6 w-6 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-            <Document size={12} />
-          </div>
-        </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" in:fade={{ duration: 150 }}>
+        <Card>
+          <CardContent class="p-4 flex items-center justify-between">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                إجمالي المقبوضات المحصلة
+              </span>
+              <span class="text-base font-bold text-emerald-500 font-mono">{formatCurrency(stats.total, "YER")}</span>
+            </div>
+            <div class="h-8 w-8 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
+              <Document size={14} />
+            </div>
+          </CardContent>
+        </Card>
 
-        <div class="border border-border/60 bg-card/20 flex items-center justify-between p-3 rounded-xl h-16 select-none">
-          <div class="flex flex-col gap-0.5 text-start">
-            <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider font-semibold">
-              عدد سندات المقبوضات
-            </span>
-            <span class="text-sm font-bold text-foreground font-mono">
-              {stats.count} سند
-            </span>
-          </div>
-          <div class="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center text-primary">
-            <TaskList size={12} />
-          </div>
-        </div>
+        <Card>
+          <CardContent class="p-4 flex items-center justify-between">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                عدد سندات المقبوضات
+              </span>
+              <span class="text-base font-bold text-foreground font-mono">
+                {stats.count} سند
+              </span>
+            </div>
+            <div class="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <TaskList size={14} />
+            </div>
+          </CardContent>
+        </Card>
       </div>
     {/if}
 

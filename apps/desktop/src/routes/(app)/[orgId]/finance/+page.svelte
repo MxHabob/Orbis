@@ -6,7 +6,7 @@ let { data }: { data: { orgId: string } } = $props();
 </script>
 
 <svelte:head>
-  <title>{m.common_sidebar_finance()} | Orbis</title>
+  <title>Orbis</title>
 </svelte:head>
 
 <FinanceOverview orgId={data.orgId} />

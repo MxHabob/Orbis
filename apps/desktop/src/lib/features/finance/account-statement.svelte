@@ -10,10 +10,28 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import { Skeleton } from "@orbis/ui/skeleton";
-import type { OrbisColumnDef } from "@orbis/svelte-grid";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+  CardContent,
+  CardFooter,
+} from "@orbis/ui/card";
+import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import AccountTree from "$lib/features/finance/components/account-tree.svelte";
-import { ArrowLeft, ArrowRight } from "@orbis/icons";
+import {
+  ArrowLeft,
+  ArrowRight,
+  DocumentChartBar,
+  Refresh,
+  Scale,
+  Search,
+  BuildingLibrary,
+} from "@orbis/icons";
+import { exportToCsv } from "$lib/shared/utils/export";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -247,6 +265,7 @@ function statementRows() {
 const source = $derived(
   activeView === "single" ? statementRows() : accountRows(),
 );
+
 const columns = $derived.by((): OrbisColumnDef[] => {
   if (activeView === "single") {
     return [
@@ -258,11 +277,12 @@ const columns = $derived.by((): OrbisColumnDef[] => {
         width: 48,
         size: 48,
         readonly: true,
+        align: "center",
       },
       {
         id: "date",
         prop: "date",
-        header: "Date",
+        header: "التاريخ",
         name: "Date",
         width: 115,
         size: 115,
@@ -271,17 +291,17 @@ const columns = $derived.by((): OrbisColumnDef[] => {
       {
         id: "reference",
         prop: "reference",
-        header: "Reference",
+        header: "رقم المرجع",
         name: "Reference",
         width: 125,
         size: 125,
         readonly: true,
-        cellClass: "font-mono",
+        cellClass: "font-mono font-bold",
       },
       {
         id: "description",
         prop: "description",
-        header: "Description",
+        header: "البيان والشرح",
         name: "Description",
         width: 260,
         size: 260,
@@ -290,32 +310,35 @@ const columns = $derived.by((): OrbisColumnDef[] => {
       {
         id: "debit",
         prop: "debit",
-        header: "Debit",
+        header: "مدين (Debit)",
         name: "Debit",
         width: 130,
         size: 130,
         readonly: true,
-        cellClass: "orbis-cell-number",
+        align: "end",
+        cellClass: "font-mono text-emerald-600 font-semibold",
       },
       {
         id: "credit",
         prop: "credit",
-        header: "Credit",
+        header: "دائن (Credit)",
         name: "Credit",
         width: 130,
         size: 130,
         readonly: true,
-        cellClass: "orbis-cell-number",
+        align: "end",
+        cellClass: "font-mono text-rose-600 font-semibold",
       },
       {
         id: "balance",
         prop: "balance",
-        header: "Running balance",
+        header: "الرصيد التراكمي",
         name: "Running balance",
         width: 145,
         size: 145,
         readonly: true,
-        cellClass: "orbis-cell-number",
+        align: "end",
+        cellClass: "font-mono font-bold",
       },
     ];
   }
@@ -323,22 +346,24 @@ const columns = $derived.by((): OrbisColumnDef[] => {
     {
       id: `${currency.code}_debit`,
       prop: `${currency.code}_debit`,
-      header: `${currency.name} - Debit`,
+      header: `${currency.name} - مدين`,
       name: `${currency.name} - Debit`,
       width: 125,
       size: 125,
       readonly: true,
-      cellClass: "orbis-cell-number",
+      align: "end",
+      cellClass: "font-mono text-emerald-600 font-semibold",
     },
     {
       id: `${currency.code}_credit`,
       prop: `${currency.code}_credit`,
-      header: `${currency.name} - Credit`,
+      header: `${currency.name} - دائن`,
       name: `${currency.name} - Credit`,
       width: 125,
       size: 125,
       readonly: true,
-      cellClass: "orbis-cell-number",
+      align: "end",
+      cellClass: "font-mono text-rose-600 font-semibold",
     },
   ]);
   return [
@@ -350,6 +375,7 @@ const columns = $derived.by((): OrbisColumnDef[] => {
       width: 48,
       size: 48,
       readonly: true,
+      align: "center",
     },
     {
       id: "account_name",
@@ -368,13 +394,13 @@ const columns = $derived.by((): OrbisColumnDef[] => {
       width: 105,
       size: 105,
       readonly: true,
-      cellClass: "font-mono",
+      cellClass: "font-mono font-bold",
     },
     ...currencyColumns,
     {
       id: "account_type",
       prop: "account_type",
-      header: "Type",
+      header: "النوع",
       name: "Type",
       width: 110,
       size: 110,
@@ -388,58 +414,240 @@ function selectAccount(account: any) {
   activeView = "single";
 }
 
+function handleExport() {
+  const filename =
+    activeView === "single"
+      ? `Account_Statement_${selectedAccountItem?.label || selectedAccountId}`
+      : `Chart_Of_Accounts_Balances_${orgId}`;
+
+  const exportCols =
+    activeView === "single"
+      ? [
+          { header: "#", accessor: (r: any) => r.__idx },
+          { header: "التاريخ", accessor: (r: any) => r.date },
+          { header: "رقم المرجع", accessor: (r: any) => r.reference },
+          { header: "البيان", accessor: (r: any) => r.description },
+          { header: "مدين", accessor: (r: any) => r.debit },
+          { header: "دائن", accessor: (r: any) => r.credit },
+          { header: "الرصيد", accessor: (r: any) => r.balance },
+        ]
+      : [
+          { header: "#", accessor: (r: any) => r.__idx },
+          { header: "اسم الحساب", accessor: (r: any) => r.account_name },
+          { header: "رمز الحساب", accessor: (r: any) => r.account_code },
+          { header: "نوع الحساب", accessor: (r: any) => r.account_type },
+        ];
+
+  exportToCsv(filename, source, exportCols);
+}
+
 function exitPage() {
   goto(`/${orgId}/finance`);
 }
+
+const rtl = $derived(getLocale() === "ar");
 </script>
 
-<div class="flex h-full min-h-0 w-full flex-col overflow-hidden text-foreground">
-  <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-6 lg:flex-row">
-    <aside class="flex w-full shrink-0 flex-col gap-3 lg:w-64">
-      <AccountTree categories={treeCategories} bind:selectedIds={selectedIds} />
-      <div class="flex flex-col gap-3 border-t border-border/70 pt-3">
-        <div class="flex flex-col gap-1"><CurrencySelector title={m.common_ledger_currency()} description="" compact includeAll allLabel={m.common_ledger_all_currencies()} currentCurrency={selectedCurrency} onchange={(currency) => selectedCurrency = currency} /></div>
-        <div class="grid grid-cols-2 gap-2">
-          <label class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground">Period
-            <select bind:value={period} class="h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground"><option value="all">All periods</option><option value="day">Today</option><option value="month">This month</option><option value="year">This year</option></select>
-          </label>
-          <label class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground">As of
-            <Input type="date" bind:value={asOfDate} class="h-8 px-2 text-xs" />
-          </label>
+<div class="flex h-full min-h-0 w-full flex-col overflow-hidden text-foreground bg-background p-4 sm:p-6 font-sans">
+  <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden lg:flex-row">
+    <!-- Sidebar: Filter & Account Tree Card -->
+    <Card class="flex w-full shrink-0 flex-col overflow-hidden lg:w-72">
+      <CardHeader class="py-3 px-4">
+        <div class="flex items-center gap-2">
+          <div class="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center text-primary shrink-0">
+            <BuildingLibrary class="w-3.5 h-3.5" />
+          </div>
+          <div class="flex flex-col">
+            <CardTitle class="text-xs font-bold uppercase tracking-wider">
+              {m.finance_ledger_chart_of_accounts()}
+            </CardTitle>
+            <CardDescription class="text-[10px]">
+              تصفية الشجرة والفترات المحاسبية
+            </CardDescription>
+          </div>
         </div>
-        <label class="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">Show active accounts
-          <input type="checkbox" checked={movementFilter === "active"} onchange={(event) => movementFilter = (event.currentTarget as HTMLInputElement).checked ? "active" : "all"} class="accent-primary" />
-        </label>
-        <select bind:value={balanceFilter} class="h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground"><option value="all">All balances</option><option value="debit">Debit balances</option><option value="credit">Credit balances</option></select>
-      </div>
-      <Button variant="ghost" class="justify-start text-xs text-muted-foreground" onclick={exitPage}>{#if getLocale() === "ar"}<ArrowRight size={14} class="me-2" />{:else}<ArrowLeft size={14} class="me-2" />{/if}Back to finance</Button>
-    </aside>
+      </CardHeader>
 
-    <main class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-      <div class="mb-3 flex shrink-0 items-center justify-between gap-3">
-        <div class="flex items-center gap-1 rounded-md border border-border bg-card p-1">
-          <button type="button" class="rounded px-3 py-1.5 text-xs font-semibold transition-colors {activeView === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}" onclick={() => activeView = "all"}>All accounts</button>
-          <button type="button" class="rounded px-3 py-1.5 text-xs font-semibold transition-colors {activeView === 'single' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}" onclick={() => activeView = "single"}>Single account</button>
+      <CardContent class="p-3 flex-1 overflow-y-auto space-y-3">
+        <AccountTree categories={treeCategories} bind:selectedIds={selectedIds} />
+
+        <div class="flex flex-col gap-2.5 border-t border-border/70 pt-3">
+          <div class="flex flex-col gap-1">
+            <CurrencySelector
+              title={m.common_ledger_currency()}
+              description=""
+              compact
+              includeAll
+              allLabel={m.common_ledger_all_currencies()}
+              currentCurrency={selectedCurrency}
+              onchange={(currency) => (selectedCurrency = currency)}
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground">
+              الفترة
+              <select
+                bind:value={period}
+                class="h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground focus:ring-1 focus:ring-ring outline-none"
+              >
+                <option value="all">كل الفترات</option>
+                <option value="day">اليوم</option>
+                <option value="month">هذا الشهر</option>
+                <option value="year">هذا العام</option>
+              </select>
+            </label>
+
+            <label class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground">
+              حتى تاريخ
+              <Input
+                type="date"
+                bind:value={asOfDate}
+                class="h-8 px-2 text-xs"
+              />
+            </label>
+          </div>
+
+          <label class="flex items-center justify-between gap-2 text-[10px] text-muted-foreground cursor-pointer select-none">
+            <span>إظهار الحسابات النشطة فقط</span>
+            <input
+              type="checkbox"
+              checked={movementFilter === "active"}
+              onchange={(event) =>
+                (movementFilter = (event.currentTarget as HTMLInputElement).checked
+                  ? "active"
+                  : "all")}
+              class="accent-primary h-3.5 w-3.5 rounded border-border"
+            />
+          </label>
+
+          <select
+            bind:value={balanceFilter}
+            class="h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground focus:ring-1 focus:ring-ring outline-none"
+          >
+            <option value="all">جميع الأرصدة</option>
+            <option value="debit">الأرصدة المدينة فقط</option>
+            <option value="credit">الأرصدة الدائنة فقط</option>
+          </select>
         </div>
-        {#if activeView === "single"}
-          <ComboboxDropdown
-            class="w-64"
-            placeholder="Search account..."
-            searchPlaceholder="Search by account name or code..."
-            items={accountItems}
-            selectedItem={selectedAccountItem}
-            onSelect={(item) => selectAccount(accounts.find((account) => account.id === item.value))}
-          />
+      </CardContent>
+
+      <CardFooter class="border-t border-border/50 py-2 px-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          class="w-full justify-start text-xs text-muted-foreground hover:text-foreground"
+          onclick={exitPage}
+        >
+          {#if getLocale() === "ar"}
+            <ArrowRight size={14} class="me-2" />
+          {:else}
+            <ArrowLeft size={14} class="me-2" />
+          {/if}
+          العودة للمركز المالي
+        </Button>
+      </CardFooter>
+    </Card>
+
+    <!-- Main Content: Statement Grid Card -->
+    <Card class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <CardHeader class="py-3 px-4">
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1">
+            <button
+              type="button"
+              class="rounded-md px-3 py-1 text-xs font-semibold transition-colors cursor-pointer {activeView === 'all' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+              onclick={() => (activeView = "all")}
+            >
+              جميع الحسابات
+            </button>
+            <button
+              type="button"
+              class="rounded-md px-3 py-1 text-xs font-semibold transition-colors cursor-pointer {activeView === 'single' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+              onclick={() => (activeView = "single")}
+            >
+              كشف حساب تفصيلي
+            </button>
+          </div>
+
+          {#if activeView === "single"}
+            <ComboboxDropdown
+              class="w-64"
+              placeholder="اختر الحساب المحاسبي..."
+              searchPlaceholder="بحث باسم أو رمز الحساب..."
+              items={accountItems}
+              selectedItem={selectedAccountItem}
+              onSelect={(item) =>
+                selectAccount(
+                  accounts.find((account) => account.id === item.value),
+                )}
+            />
+          {/if}
+        </div>
+
+        <CardAction>
+          <div class="flex items-center gap-2">
+            <div class="relative w-48 sm:w-60">
+              <Search class="absolute start-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+              <Input
+                type="search"
+                placeholder="بحث في السجلات..."
+                bind:value={searchQuery}
+                class="h-8 ps-8 text-xs w-full bg-card"
+              />
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onclick={handleExport}
+              disabled={source.length === 0}
+              class="h-8 text-xs font-semibold gap-1.5"
+            >
+              <DocumentChartBar class="w-3.5 h-3.5" />
+              تصدير CSV
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onclick={loadData}
+              class="h-8 w-8 text-muted-foreground"
+            >
+              <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
+            </Button>
+          </div>
+        </CardAction>
+      </CardHeader>
+
+      <CardContent class="p-0 flex-1 min-h-0 flex flex-col overflow-hidden">
+        {#if error}
+          <div class="flex flex-1 flex-col items-center justify-center gap-3 text-center p-6">
+            <p class="text-sm font-semibold text-destructive">{m.finance_error_loading()}</p>
+            <p class="max-w-md text-xs text-muted-foreground">{error}</p>
+            <Button variant="outline" size="sm" onclick={loadData}>{m.common_retry()}</Button>
+          </div>
+        {:else if isLoading}
+          <div class="flex flex-col gap-2 p-4">
+            {#each Array(8) as _}
+              <Skeleton class="h-9 w-full" />
+            {/each}
+          </div>
+        {:else}
+          <div class="flex-1 min-h-0 w-full h-full">
+            <OrbisGrid
+              {columns}
+              {source}
+              search={searchQuery}
+              clientQuery
+              {rtl}
+              readonly
+              emptyTitle="لا توجد بيانات متاحة"
+              emptyDescription="لم يتم العثور على حركات أو أرصدة مطابقة لمعايير البحث المحددة"
+            />
+          </div>
         {/if}
-      </div>
-
-      {#if error}
-        <div class="flex flex-1 flex-col items-center justify-center gap-3 text-center"><p class="text-sm font-semibold text-destructive">{m.finance_error_loading()}</p><p class="max-w-md text-xs text-muted-foreground">{error}</p><Button variant="outline" size="sm" onclick={loadData}>{m.common_retry()}</Button></div>
-      {:else if isLoading}
-        <div class="flex flex-col gap-2">{#each Array(7) as _}<Skeleton class="h-9 w-full" />{/each}</div>
-      {:else}
-        <DataTable columns={columns} source={source} searchable searchValue={searchQuery} onSearch={(query) => searchQuery = query} searchPlaceholder="Search account by name or code..." refreshable onRefresh={loadData} exportable rtl={getLocale() === "ar"} height="100%" rowSize={38} theme="compact" />
-      {/if}
-    </main>
+      </CardContent>
+    </Card>
   </div>
 </div>

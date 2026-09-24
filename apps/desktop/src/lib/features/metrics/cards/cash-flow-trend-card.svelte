@@ -1,6 +1,14 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardAction,
+  CardContent,
+  CardFooter,
+} from "@orbis/ui/card";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
