@@ -12,6 +12,13 @@ Manages assessment schemes (weighted grade composition structures).
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
   import { Separator } from "@orbis/ui/separator";
+  import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardAction,
+    CardContent,
+  } from "@orbis/ui/card";
   import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 
   let { orgId }: { orgId: string } = $props();
@@ -244,9 +251,7 @@ Manages assessment schemes (weighted grade composition structures).
   ];
 </script>
 
-<div
-  class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide"
->
+<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide text-start">
   {#if schemesQuery.isLoading}
     <SettingsFormSkeleton />
   {:else if schemesQuery.error}
@@ -262,135 +267,113 @@ Manages assessment schemes (weighted grade composition structures).
     </div>
   {:else}
     <!-- Header -->
-    <div
-      class="flex items-center justify-between pb-5 border-b border-border/40 w-full select-none"
-    >
+    <div class="flex items-center justify-between pb-4 border-b border-border/60 w-full select-none">
       <div class="flex items-center gap-2">
         <Keyframes size={18} class="text-primary" />
-        <h1 class="text-sm font-semibold text-foreground">
+        <h1 class="text-sm font-bold text-foreground">
           هياكل التقييم والأوزان
         </h1>
       </div>
       <Button
         size="sm"
-        class="px-4 h-8 text-xs cursor-pointer"
+        class="px-4 h-8 text-xs cursor-pointer gap-1.5"
         onclick={() => (showCreateDialog = true)}
       >
-        <Plus size={14} class="me-1" />
+        <Plus size={14} />
         إضافة هيكل
       </Button>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- Schemes List (Left Panel) -->
-      <div class="flex flex-col gap-2">
-        {#each schemes as scheme (scheme.id)}
-          <div
-            role="button"
-            tabindex="0"
-            class="text-start w-full px-4 py-3 rounded-lg border transition-all cursor-pointer {selectedSchemeId === scheme.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/40 hover:border-border hover:bg-muted/30'}"
-            onclick={() => (activeSchemeId = scheme.id)}
-            onkeydown={(e) =>
-              (e.key === "Enter" || e.key === " ") &&
-              (activeSchemeId = scheme.id)}
-          >
-            <div class="flex items-center justify-between">
-              <div class="flex flex-col gap-0.5">
-                <span class="text-xs font-semibold text-foreground"
-                  >{scheme.name}</span
-                >
-                {#if scheme.description}
-                  <span class="text-[10px] text-muted-foreground line-clamp-1"
-                    >{scheme.description}</span
+      <Card class="flex flex-col overflow-hidden">
+        <CardHeader class="py-3 px-4">
+          <CardTitle class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider text-start select-none">
+            الهياكل المتاحة ({schemes.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent class="p-2 flex flex-col gap-1.5">
+          {#each schemes as scheme (scheme.id)}
+            <div
+              role="button"
+              tabindex="0"
+              class="text-start w-full px-3.5 py-2.5 rounded-lg border transition-all cursor-pointer {selectedSchemeId === scheme.id ? 'border-primary bg-primary/5 shadow-xs' : 'border-transparent hover:border-border hover:bg-muted/40'}"
+              onclick={() => (activeSchemeId = scheme.id)}
+              onkeydown={(e) =>
+                (e.key === "Enter" || e.key === " ") &&
+                (activeSchemeId = scheme.id)}
+            >
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex flex-col gap-0.5 min-w-0 flex-1">
+                  <span class="text-xs font-semibold text-foreground truncate">
+                    {scheme.name}
+                  </span>
+                  {#if scheme.description}
+                    <span class="text-[10px] text-muted-foreground line-clamp-1">
+                      {scheme.description}
+                    </span>
+                  {/if}
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                  <button
+                    class="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteScheme(scheme.id);
+                    }}
+                    title="حذف الهيكل"
                   >
-                {/if}
-              </div>
-              <div class="flex items-center gap-1">
-                <button
-                  class="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteScheme(scheme.id);
-                  }}
-                >
-                  <Trash size={12} />
-                </button>
-                <ChevronRight size={14} class="text-muted-foreground" />
+                    <Trash size={12} />
+                  </button>
+                  <ChevronRight size={13} class="text-muted-foreground rtl:rotate-180" />
+                </div>
               </div>
             </div>
-          </div>
-        {:else}
-          <div class="text-center py-8 text-muted-foreground text-xs">
-            لا توجد هياكل تقييم. أضف هيكل جديد للبدء.
-          </div>
-        {/each}
-      </div>
+          {:else}
+            <div class="text-center py-8 text-muted-foreground text-xs">
+              لا توجد هياكل تقييم. أضف هيكل جديد للبدء.
+            </div>
+          {/each}
+        </CardContent>
+      </Card>
 
       <!-- Components Panel (Right) -->
       <div class="md:col-span-2">
         {#if selectedScheme}
-          <div class="border border-border/40 rounded-lg p-5">
-            <div class="flex items-center justify-between mb-4">
+          <Card class="overflow-hidden">
+            <CardHeader class="py-3 px-6 flex flex-row items-center justify-between">
               <div class="flex items-center gap-2">
-                <Scale size={16} class="text-primary" />
-                <h2 class="text-sm font-semibold">{selectedScheme.name}</h2>
+                <Scale size={15} class="text-primary" />
+                <CardTitle class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider text-start select-none">
+                  {selectedScheme.name}
+                </CardTitle>
               </div>
-              <div class="flex items-center gap-2">
-                <Badge
-                  variant={totalWeight === 100 ? "default" : "destructive"}
-                  class="text-[10px]"
-                >
-                  الوزن الإجمالي: {totalWeight}%
-                </Badge>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  class="h-7 text-[10px] cursor-pointer"
-                  onclick={openAddComponent}
-                >
-                  <Plus size={12} class="me-1" />
-                  إضافة مكوّن
-                </Button>
-              </div>
-            </div>
+              <CardAction>
+                <div class="flex items-center gap-2">
+                  <Badge
+                    variant={totalWeight === 100 ? "default" : "destructive"}
+                    class="text-[10px] font-mono"
+                  >
+                    الوزن الإجمالي: {totalWeight}%
+                  </Badge>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    class="h-7 text-[10px] cursor-pointer gap-1"
+                    onclick={openAddComponent}
+                  >
+                    <Plus size={11} />
+                    إضافة مكوّن
+                  </Button>
+                </div>
+              </CardAction>
+            </CardHeader>
 
-            <Separator class="mb-4 bg-border/40" />
-
-            <!-- Weight visual bar -->
-            {#if schemeComponents.length > 0}
-              <div class="flex rounded-md overflow-hidden h-3 mb-5 bg-muted/30">
-                {#each schemeComponents as comp, i}
-                  {@const colors = [
-                    "bg-blue-500",
-                    "bg-emerald-500",
-                    "bg-amber-500",
-                    "bg-purple-500",
-                    "bg-rose-500",
-                    "bg-cyan-500",
-                  ]}
-                  <div
-                    class="{colors[i % colors.length]} transition-all"
-                    style="width: {comp.weight}%"
-                    title="{comp.name}: {comp.weight}%"
-                  ></div>
-                {/each}
-              </div>
-            {/if}
-
-            <div class="overflow-x-auto">
-              <table class="w-full text-xs">
-                <thead>
-                  <tr class="border-b border-border/40 text-muted-foreground">
-                    <th class="text-start py-2 font-medium">المكوّن</th>
-                    <th class="text-center py-2 font-medium">النوع</th>
-                    <th class="text-center py-2 font-medium">الوزن</th>
-                    <th class="text-center py-2 font-medium">الدرجة القصوى</th>
-                    <th class="text-center py-2 font-medium">درجة النجاح</th>
-                    <th class="text-center py-2 font-medium"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {#each schemeComponents as comp, i (comp.id)}
+            <CardContent class="p-6 flex flex-col gap-4">
+              <!-- Weight visual bar -->
+              {#if schemeComponents.length > 0}
+                <div class="flex rounded-md overflow-hidden h-2.5 bg-muted/40">
+                  {#each schemeComponents as comp, i}
                     {@const colors = [
                       "bg-blue-500",
                       "bg-emerald-500",
@@ -399,68 +382,98 @@ Manages assessment schemes (weighted grade composition structures).
                       "bg-rose-500",
                       "bg-cyan-500",
                     ]}
-                    <tr
-                      class="border-b border-border/20 hover:bg-muted/20 transition-colors group"
-                    >
-                      <td class="py-2.5">
-                        <div class="flex items-center gap-2">
-                          <div
-                            class="w-2 h-2 rounded-full {colors[
-                              i % colors.length
-                            ]}"
-                          ></div>
-                          <span class="font-semibold text-foreground"
-                            >{comp.name}</span
-                          >
-                        </div>
-                      </td>
-                      <td class="py-2.5 text-center">
-                        <Badge variant="outline" class="text-[9px]"
-                          >{getTypeLabel(comp.component_type)}</Badge
-                        >
-                      </td>
-                      <td class="py-2.5 text-center font-mono font-semibold"
-                        >{comp.weight}%</td
-                      >
-                      <td class="py-2.5 text-center font-mono"
-                        >{comp.max_score}</td
-                      >
-                      <td class="py-2.5 text-center font-mono"
-                        >{comp.passing_score ?? "—"}</td
-                      >
-                      <td class="py-2.5 text-center">
-                        <div
-                          class="flex items-center gap-0.5 justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <button
-                            class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                            onclick={() => openEditComponent(comp)}
-                          >
-                            <Pencil size={12} />
-                          </button>
-                          <button
-                            class="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                            onclick={() => handleDeleteComponent(comp.id)}
-                          >
-                            <Trash size={12} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  {:else}
-                    <tr>
-                      <td
-                        colspan="6"
-                        class="text-center py-6 text-muted-foreground"
-                      >
-                        لا توجد مكوّنات. أضف مكوّن تقييم جديد.
-                      </td>
-                    </tr>
+                    <div
+                      class="{colors[i % colors.length]} transition-all"
+                      style="width: {comp.weight}%"
+                      title="{comp.name}: {comp.weight}%"
+                    ></div>
                   {/each}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                </div>
+              {/if}
+
+              <div class="overflow-x-auto rounded-lg border border-border">
+                <table class="w-full text-xs">
+                  <thead>
+                    <tr class="border-b border-border bg-muted/40 text-muted-foreground select-none">
+                      <th class="text-start py-2.5 px-4 font-semibold">المكوّن</th>
+                      <th class="text-center py-2.5 px-3 font-semibold">النوع</th>
+                      <th class="text-center py-2.5 px-3 font-semibold">الوزن</th>
+                      <th class="text-center py-2.5 px-3 font-semibold">الدرجة القصوى</th>
+                      <th class="text-center py-2.5 px-3 font-semibold">درجة النجاح</th>
+                      <th class="text-center py-2.5 px-3 font-semibold"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-border">
+                    {#each schemeComponents as comp, i (comp.id)}
+                      {@const colors = [
+                        "bg-blue-500",
+                        "bg-emerald-500",
+                        "bg-amber-500",
+                        "bg-purple-500",
+                        "bg-rose-500",
+                        "bg-cyan-500",
+                      ]}
+                      <tr class="hover:bg-muted/20 transition-colors group">
+                        <td class="py-2.5 px-4">
+                          <div class="flex items-center gap-2">
+                            <div
+                              class="w-2 h-2 rounded-full {colors[
+                                i % colors.length
+                              ]}"
+                            ></div>
+                            <span class="font-semibold text-foreground">
+                              {comp.name}
+                            </span>
+                          </div>
+                        </td>
+                        <td class="py-2.5 px-3 text-center">
+                          <Badge variant="outline" class="text-[9px]">
+                            {getTypeLabel(comp.component_type)}
+                          </Badge>
+                        </td>
+                        <td class="py-2.5 px-3 text-center font-mono font-bold text-foreground">
+                          {comp.weight}%
+                        </td>
+                        <td class="py-2.5 px-3 text-center font-mono text-muted-foreground">
+                          {comp.max_score}
+                        </td>
+                        <td class="py-2.5 px-3 text-center font-mono text-muted-foreground">
+                          {comp.passing_score ?? "—"}
+                        </td>
+                        <td class="py-2.5 px-3 text-center">
+                          <div class="flex items-center gap-1 justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                              onclick={() => openEditComponent(comp)}
+                              title="تعديل المكوّن"
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            <button
+                              class="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                              onclick={() => handleDeleteComponent(comp.id)}
+                              title="حذف المكوّن"
+                            >
+                              <Trash size={12} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    {:else}
+                      <tr>
+                        <td
+                          colspan="6"
+                          class="text-center py-6 text-muted-foreground"
+                        >
+                          لا توجد مكوّنات. أضف مكوّن تقييم جديد.
+                        </td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         {:else}
           <div
             class="flex items-center justify-center h-full text-muted-foreground text-xs py-16"
