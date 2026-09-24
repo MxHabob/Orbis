@@ -15,6 +15,13 @@ import {
   TableHeader,
   TableRow,
 } from "@orbis/ui";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardAction,
+  CardContent,
+} from "@orbis/ui/card";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -219,100 +226,110 @@ async function handleUploadFile() {
       </Button>
     </div>
   {:else}
-    <div class="border border-border rounded-lg bg-card overflow-hidden">
-      <Grid>
-        <TableHeader>
-          <TableRow class="hover:bg-transparent">
-            <TableHead class="text-start">{m.common_docs_col_name()}</TableHead>
-            <TableHead class="text-start">{m.common_word_type()}</TableHead>
-            <TableHead class="text-start">{m.common_word_status()}</TableHead>
-            <TableHead class="text-start">{m.common_docs_col_date()}</TableHead>
-            <TableHead class="text-end px-6"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {#each documents as doc (doc.id)}
-            {@const isUploaded = doc.item_type === 'file' && doc.url}
-            <TableRow class="hover:bg-accent/20">
-              <TableCell class="text-start">
-                <div class="flex items-center gap-2.5">
-                  <div class="p-1.5 bg-primary/5 text-primary rounded-md">
-                    <DocumentPage size={14} />
+    <Card class="overflow-hidden">
+      <CardHeader class="py-3 px-4 flex flex-row items-center justify-between">
+        <div class="flex items-center gap-2">
+          <Clip size={14} class="text-primary" />
+          <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
+            {m.common_docs_title()}
+          </CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent class="p-0">
+        <Grid>
+          <TableHeader>
+            <TableRow class="hover:bg-transparent">
+              <TableHead class="text-start">{m.common_docs_col_name()}</TableHead>
+              <TableHead class="text-start">{m.common_word_type()}</TableHead>
+              <TableHead class="text-start">{m.common_word_status()}</TableHead>
+              <TableHead class="text-start">{m.common_docs_col_date()}</TableHead>
+              <TableHead class="text-end px-6"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {#each documents as doc (doc.id)}
+              {@const isUploaded = doc.item_type === 'file' && doc.url}
+              <TableRow class="hover:bg-accent/20">
+                <TableCell class="text-start">
+                  <div class="flex items-center gap-2.5">
+                    <div class="p-1.5 bg-primary/5 text-primary rounded-md">
+                      <DocumentPage size={14} />
+                    </div>
+                    <div class="flex flex-col text-start">
+                      <span class="font-bold text-foreground">{doc.title || doc.name}</span>
+                      {#if doc.description}
+                        <span class="text-[9px] text-muted-foreground">{doc.description}</span>
+                      {/if}
+                    </div>
                   </div>
-                  <div class="flex flex-col text-start">
-                    <span class="font-bold text-foreground">{doc.title || doc.name}</span>
-                    {#if doc.description}
-                      <span class="text-[9px] text-muted-foreground">{doc.description}</span>
-                    {/if}
-                  </div>
-                </div>
-              </TableCell>
-              
-              <TableCell class="text-start font-mono text-[10px] text-muted-foreground">
-                {#if isUploaded}
-                  <span class="uppercase font-semibold text-foreground/85">{doc.extension || 'FILE'}</span>
-                {:else}
-                  <span class="opacity-60">{m.common_docs_status_requirement()}</span>
-                {/if}
-              </TableCell>
-              
-              <TableCell class="text-start">
-                {#if isUploaded}
-                  <span class="badge-brand-success py-0.5 px-2 text-[9px] flex items-center w-fit gap-1 font-semibold">
-                    <CheckCircle size={10} />
-                    {m.common_docs_status_uploaded()}
-                  </span>
-                {:else}
-                  <span class="badge-brand-destructive py-0.5 px-2 text-[9px] flex items-center w-fit gap-1 font-semibold">
-                    <InfoCircle size={10} />
-                    {m.common_docs_status_pending()}
-                  </span>
-                {/if}
-              </TableCell>
-
-              <TableCell class="font-mono text-muted-foreground text-start">
-                {formatDate(doc.created_at) || '-'}
-              </TableCell>
-
-              <TableCell class="text-end px-6">
-                <div class="flex items-center justify-end gap-1.5">
+                </TableCell>
+                
+                <TableCell class="text-start font-mono text-[10px] text-muted-foreground">
                   {#if isUploaded}
+                    <span class="uppercase font-semibold text-foreground/85">{doc.extension || 'FILE'}</span>
+                  {:else}
+                    <span class="opacity-60">{m.common_docs_status_requirement()}</span>
+                  {/if}
+                </TableCell>
+                
+                <TableCell class="text-start">
+                  {#if isUploaded}
+                    <span class="badge-brand-success py-0.5 px-2 text-[9px] flex items-center w-fit gap-1 font-semibold">
+                      <CheckCircle size={10} />
+                      {m.common_docs_status_uploaded()}
+                    </span>
+                  {:else}
+                    <span class="badge-brand-destructive py-0.5 px-2 text-[9px] flex items-center w-fit gap-1 font-semibold">
+                      <InfoCircle size={10} />
+                      {m.common_docs_status_pending()}
+                    </span>
+                  {/if}
+                </TableCell>
+
+                <TableCell class="font-mono text-muted-foreground text-start">
+                  {formatDate(doc.created_at) || '-'}
+                </TableCell>
+
+                <TableCell class="text-end px-6">
+                  <div class="flex items-center justify-end gap-1.5">
+                    {#if isUploaded}
+                      <Button 
+                        href={doc.url}
+                        target="_blank"
+                        variant="ghost" 
+                        size="sm"
+                        class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
+                        title={m.common_docs_action_open_file()}
+                      >
+                        <ArrowForward size={12} />
+                      </Button>
+                    {:else}
+                      <Button 
+                        variant="outline" 
+                        class="text-[10px] h-7 px-2 gap-1.5 cursor-pointer hover:bg-primary/5 hover:text-primary hover:border-primary/50"
+                        onclick={() => openUploadModal(doc)}
+                      >
+                        <ArrowUpTray size={11} />
+                        {m.common_docs_btn_upload()}
+                      </Button>
+                    {/if}
                     <Button 
-                      href={doc.url}
-                      target="_blank"
                       variant="ghost" 
                       size="sm"
-                      class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
-                      title={m.common_docs_action_open_file()}
+                      class="h-7 w-7 p-0 text-destructive hover:bg-destructive/5 hover:text-destructive cursor-pointer"
+                      onclick={() => handleDelete(doc.id)}
+                      title={m.common_action_delete()}
                     >
-                      <ArrowForward size={12} />
+                      <Trash size={12} />
                     </Button>
-                  {:else}
-                    <Button 
-                      variant="outline" 
-                      class="text-[10px] h-7 px-2 gap-1.5 cursor-pointer hover:bg-primary/5 hover:text-primary hover:border-primary/50"
-                      onclick={() => openUploadModal(doc)}
-                    >
-                      <ArrowUpTray size={11} />
-                      {m.common_docs_btn_upload()}
-                    </Button>
-                  {/if}
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    class="h-7 w-7 p-0 text-destructive hover:bg-destructive/5 hover:text-destructive cursor-pointer"
-                    onclick={() => handleDelete(doc.id)}
-                    title={m.common_action_delete()}
-                  >
-                    <Trash size={12} />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          {/each}
-        </TableBody>
-      </Grid>
-    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            {/each}
+          </TableBody>
+        </Grid>
+      </CardContent>
+    </Card>
   {/if}
 </div>
 

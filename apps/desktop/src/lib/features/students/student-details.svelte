@@ -16,6 +16,15 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import { Badge } from "@orbis/ui/badge";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+  CardContent,
+  CardFooter,
+} from "@orbis/ui/card";
 import AttendanceTrendsCard from "$lib/features/metrics/cards/attendance-trends-card.svelte";
 import GradeDistributionCard from "$lib/features/metrics/cards/grade-distribution-card.svelte";
 import { AcademicCap } from "@orbis/icons";
@@ -365,15 +374,17 @@ async function saveStudentDetails(e: Event) {
       <!-- Profile Form -->
       <form onsubmit={saveStudentDetails} in:fade={{ duration: 100 }} class="flex flex-col gap-6">
       
-      <div class="border border-border rounded-xl overflow-hidden flex flex-col">
-        
+      <Card class="w-full">
         <!-- Card Header -->
-        <div class="bg-muted/30 px-6 py-4 border-b border-border flex items-center justify-between text-xs font-bold text-foreground text-start select-none">
-          <span>{m.common_form_student_info()}</span>
-        </div>
+        <CardHeader class="py-3 px-6">
+          <CardTitle class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider text-start select-none">
+            {m.common_form_student_info()}
+          </CardTitle>
+        </CardHeader>
 
         <!-- Card Body -->
-        <div class="flex flex-col">
+        <CardContent class="p-0">
+          <div class="flex flex-col divide-y divide-border">
           
           <!-- Row 1: Student Active Status -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
@@ -547,11 +558,10 @@ async function saveStudentDetails(e: Event) {
               <Input type="text" class="text-xs h-9" bind:value={address} />
             </div>
           </div>
-
-        </div>
+        </CardContent>
 
         <!-- Card Footer Actions -->
-        <div class="flex justify-end gap-3 px-6 py-4 bg-muted/20 border-t border-border">
+        <CardFooter class="flex justify-end gap-3 px-6 py-4 bg-muted/20 border-t border-border">
           <Button type="button" variant="ghost" size="sm" onclick={() => { initialized = false; }}>
             {m.common_switcher_reset()}
           </Button>
@@ -564,9 +574,8 @@ async function saveStudentDetails(e: Event) {
           >
             {isSaving ? "..." : m.settings_user_detail_btn_save_details()}
           </Button>
-        </div>
-
-      </div>
+        </CardFooter>
+      </Card>
 
     </form>
     </div>

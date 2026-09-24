@@ -1,8 +1,13 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Button } from "@orbis/ui/button";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Label } from "@orbis/ui/label";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@orbis/ui/card";
 
 import type { StudentFormState } from "../form-state.svelte";
 
@@ -27,12 +32,14 @@ const docTypes = $derived.by(() => {
 });
 </script>
 
-<div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
-  <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-    {m.common_form_documents_title()}
-  </div>
+<Card class="w-full">
+  <CardHeader class="py-3 px-6">
+    <CardTitle class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider text-start select-none">
+      {m.common_form_documents_title()}
+    </CardTitle>
+  </CardHeader>
 
-  <div class="p-6">
+  <CardContent class="p-6">
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each docTypes as doc (doc.id)}
         {@const isChecked = state.document.submittedDocs.includes(doc.id)}
@@ -52,5 +59,5 @@ const docTypes = $derived.by(() => {
         </div>
       {/each}
     </div>
-  </div>
-</div>
+  </CardContent>
+</Card>

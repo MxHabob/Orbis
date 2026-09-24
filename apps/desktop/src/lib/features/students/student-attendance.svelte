@@ -1,10 +1,18 @@
 <!--
   @component StudentAttendance
-  Student attendance statistics and history log with OrbisGrid.
+  Student attendance statistics and history log with OrbisGrid inside standardized Cards.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { api } from "$lib/api";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+  CardContent,
+} from "@orbis/ui/card";
 import { Calendar, ClockRotateRight, UserBadgeCheck, UserMinus } from "@orbis/icons";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -78,59 +86,79 @@ const rtl = $derived(getLocale() === "ar");
 <div class="flex flex-col gap-6 text-xs text-start font-sans">
   <!-- Attendance Stats -->
   {#if report}
-    <div class="grid grid-cols-4 gap-3 shrink-0 select-none">
-      <div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0 select-none">
+      <Card class="flex items-center justify-between p-4">
         <div class="flex flex-col">
-          <span class="text-[9px] text-muted-foreground">{m.academics_attendance_present_days()}</span>
-          <span class="text-sm font-bold mt-0.5 text-emerald-500">{formatNumber(report.present_count || 0)} {m.academics_attendance_day_unit()}</span>
+          <span class="text-[9px] text-muted-foreground font-semibold">{m.academics_attendance_present_days()}</span>
+          <span class="text-sm font-bold font-mono mt-0.5 text-emerald-600 dark:text-emerald-400">
+            {formatNumber(report.present_count || 0)} {m.academics_attendance_day_unit()}
+          </span>
         </div>
-        <UserBadgeCheck size={16} class="text-emerald-500" />
-      </div>
-      <div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
+        <UserBadgeCheck size={18} class="text-emerald-500" />
+      </Card>
+
+      <Card class="flex items-center justify-between p-4">
         <div class="flex flex-col">
-          <span class="text-[9px] text-muted-foreground">{m.academics_attendance_absent_days()}</span>
-          <span class="text-sm font-bold mt-0.5 text-destructive">{formatNumber(report.absent_count || 0)} {m.academics_attendance_day_unit()}</span>
+          <span class="text-[9px] text-muted-foreground font-semibold">{m.academics_attendance_absent_days()}</span>
+          <span class="text-sm font-bold font-mono mt-0.5 text-destructive">
+            {formatNumber(report.absent_count || 0)} {m.academics_attendance_day_unit()}
+          </span>
         </div>
-        <UserMinus size={16} class="text-destructive" />
-      </div>
-      <div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
+        <UserMinus size={18} class="text-destructive" />
+      </Card>
+
+      <Card class="flex items-center justify-between p-4">
         <div class="flex flex-col">
-          <span class="text-[9px] text-muted-foreground">{m.academics_attendance_late_cases()}</span>
-          <span class="text-sm font-bold mt-0.5 text-amber-500">{formatNumber(report.late_count || 0)} {m.academics_attendance_times_unit()}</span>
+          <span class="text-[9px] text-muted-foreground font-semibold">{m.academics_attendance_late_cases()}</span>
+          <span class="text-sm font-bold font-mono mt-0.5 text-amber-500">
+            {formatNumber(report.late_count || 0)} {m.academics_attendance_times_unit()}
+          </span>
         </div>
-        <ClockRotateRight size={16} class="text-amber-500" />
-      </div>
-      <div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
+        <ClockRotateRight size={18} class="text-amber-500" />
+      </Card>
+
+      <Card class="flex items-center justify-between p-4">
         <div class="flex flex-col">
-          <span class="text-[9px] text-muted-foreground">{m.common_card_attendance_rate()}</span>
-          <span class="text-sm font-bold mt-0.5 text-gradient-brand">{formatPercent(report.rate ?? 100.0)}</span>
+          <span class="text-[9px] text-muted-foreground font-semibold">{m.common_card_attendance_rate()}</span>
+          <span class="text-sm font-bold font-mono mt-0.5 text-primary">{formatPercent(report.rate ?? 100.0)}</span>
         </div>
-        <Calendar size={16} class="text-primary" />
-      </div>
+        <Calendar size={18} class="text-primary" />
+      </Card>
     </div>
   {/if}
 
-  <!-- Attendance Log -->
-  <div class="flex flex-col gap-2">
-    <div class="flex items-center justify-between px-1">
-      <span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider">{m.academics_attendance_log_title()}</span>
-      <FilterTrigger
-        bind:filter={activeFilter}
-        fields={attendanceFilterFields}
-      />
-    </div>
-    <div class="h-[350px]">
-      <OrbisGrid
-        {columns}
-        source={gridSource}
-        loading={isLoading}
-        clientQuery
-        filter={activeFilter}
-        emptyTitle={l("لا توجد سجلات حضور", "No attendance records")}
-        emptyDescription={l("لم يتم تسجيل أي حضور لهذا الطالب بعد", "No attendance recorded for this student yet.")}
-        {rtl}
-        readonly
-      />
-    </div>
-  </div>
+  <!-- Attendance Log Card -->
+  <Card class="overflow-hidden">
+    <CardHeader class="py-3 px-4 flex flex-row items-center justify-between">
+      <div class="flex items-center gap-2">
+        <Calendar size={14} class="text-primary" />
+        <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
+          {m.academics_attendance_log_title()}
+        </CardTitle>
+      </div>
+
+      <CardAction>
+        <FilterTrigger
+          bind:filter={activeFilter}
+          fields={attendanceFilterFields}
+        />
+      </CardAction>
+    </CardHeader>
+
+    <CardContent class="p-0">
+      <div class="h-[350px] w-full">
+        <OrbisGrid
+          {columns}
+          source={gridSource}
+          loading={isLoading}
+          clientQuery
+          filter={activeFilter}
+          emptyTitle={l("لا توجد سجلات حضور", "No attendance records")}
+          emptyDescription={l("لم يتم تسجيل أي حضور لهذا الطالب بعد", "No attendance recorded for this student yet.")}
+          {rtl}
+          readonly
+        />
+      </div>
+    </CardContent>
+  </Card>
 </div>

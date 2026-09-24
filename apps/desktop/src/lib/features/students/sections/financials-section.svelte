@@ -1,6 +1,4 @@
 <script lang="ts">
-import { DocumentPage } from "@orbis/icons";
-
 import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui/label";
 import { Input } from "@orbis/ui/input";
@@ -8,6 +6,13 @@ import { Button } from "@orbis/ui/button";
 import { Switch } from "@orbis/ui/switch";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Separator } from "@orbis/ui/separator";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardAction,
+  CardContent,
+} from "@orbis/ui/card";
 import {
   Select,
   SelectTrigger,
@@ -26,110 +31,116 @@ let { state }: { state: StudentFormState } = $props();
   <div class="lg:col-span-2 flex flex-col gap-6">
     
     <!-- Discounts Container -->
-    <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
-      <div class="bg-muted/50 px-6 py-3 border-b border-border flex justify-between items-center select-none">
-        <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase">
+    <Card class="w-full">
+      <CardHeader class="py-3 px-6 flex flex-row items-center justify-between">
+        <CardTitle class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider text-start select-none">
           {m.common_form_discount_section()}
-        </span>
-        <div class="flex items-center gap-2">
-          <Label class="text-[10px] font-semibold text-muted-foreground cursor-pointer" for="applyDiscountSwitch">
-            {m.common_form_apply_discount()}
-          </Label>
-          <Switch id="applyDiscountSwitch" bind:checked={state.financial.applyDiscount} />
-        </div>
-      </div>
+        </CardTitle>
+        <CardAction>
+          <div class="flex items-center gap-2">
+            <Label class="text-[10px] font-semibold text-muted-foreground cursor-pointer" for="applyDiscountSwitch">
+              {m.common_form_apply_discount()}
+            </Label>
+            <Switch id="applyDiscountSwitch" bind:checked={state.financial.applyDiscount} />
+          </div>
+        </CardAction>
+      </CardHeader>
 
       {#if state.financial.applyDiscount}
-        <div class="flex flex-col">
-          <!-- Discount Type -->
-          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-            <div class="flex flex-col gap-1 text-start">
-              <Label class="text-xs font-semibold text-foreground">
-                {m.common_dt_form_type ? m.common_dt_form_type() : "Discount Type"}
-              </Label>
-              <span class="text-[11px] text-muted-foreground leading-relaxed">
-                {m.common_form_discount_type_desc ? m.common_form_discount_type_desc() : "Apply discount from a pre-configured template or specify a custom amount"}
-              </span>
-            </div>
-            <div class="w-full md:w-[480px] shrink-0 flex gap-2">
-              <Button
-                variant="ghost"
-                type="button"
-                class="flex-1 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.financial.discountType === 'template' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
-                onclick={() => state.financial.discountType = 'template'}
-              >
-                <span>{m.common_form_discount_type_template()}</span>
-              </Button>
-              <Button 
-                variant="ghost"
-                type="button"
-                class="flex-1 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.financial.discountType === 'custom' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
-                onclick={() => state.financial.discountType = 'custom'}
-              >
-                <span>{m.common_form_discount_type_custom()}</span>
-              </Button>
-            </div>
-          </div>
-
-          <!-- Discount Selection / Input -->
-          {#if state.financial.discountType === 'template'}
-            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
+        <CardContent class="p-0">
+          <div class="flex flex-col divide-y divide-border">
+            <!-- Discount Type -->
+            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
               <div class="flex flex-col gap-1 text-start">
                 <Label class="text-xs font-semibold text-foreground">
-                  {m.common_form_discount_template_label ? m.common_form_discount_template_label() : "Discount Template"}
+                  {m.common_dt_form_type ? m.common_dt_form_type() : "Discount Type"}
                 </Label>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">
-                  {m.common_form_discount_template_desc ? m.common_form_discount_template_desc() : "Select one of the approved discount templates in the system"}
+                  {m.common_form_discount_type_desc ? m.common_form_discount_type_desc() : "Apply discount from a pre-configured template or specify a custom amount"}
                 </span>
               </div>
-              <div class="w-full md:w-[480px] shrink-0">
-                <Select bind:value={state.financial.selectedDiscountTemplateId} type="single">
-                  <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background">
-                    <span class="truncate">
-                      {state.financial.discountTemplates.find(d => d.id === state.financial.selectedDiscountTemplateId)?.name || (m.common_form_discount_template_placeholder ? m.common_form_discount_template_placeholder() : "Select template...")}
-                    </span>
-                  </SelectTrigger>
-                  <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
-                    {#each state.financial.discountTemplates as tpl}
-                      <SelectItem value={tpl.id} class="text-xs text-start cursor-pointer justify-start">
-                        {tpl.name} ({tpl.calculation_method === 'percentage' ? `${tpl.value}%` : formatCurrency(Number(tpl.value))})
-                      </SelectItem>
-                    {/each}
-                  </SelectContent>
-                </Select>
+              <div class="w-full md:w-[480px] shrink-0 flex gap-2">
+                <Button
+                  variant="ghost"
+                  type="button"
+                  class="flex-1 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.financial.discountType === 'template' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
+                  onclick={() => state.financial.discountType = 'template'}
+                >
+                  <span>{m.common_form_discount_type_template()}</span>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  type="button"
+                  class="flex-1 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.financial.discountType === 'custom' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
+                  onclick={() => state.financial.discountType = 'custom'}
+                >
+                  <span>{m.common_form_discount_type_custom()}</span>
+                </Button>
               </div>
             </div>
-          {:else}
-            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
-              <div class="flex flex-col gap-1 text-start">
-                <Label for="customDiscount" class="text-xs font-semibold text-foreground">{m.common_form_discount_custom_amount()}</Label>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">
-                  {m.common_form_discount_custom_desc ? m.common_form_discount_custom_desc() : "Enter direct discount amount"}
-                </span>
+
+            <!-- Discount Selection / Input -->
+            {#if state.financial.discountType === 'template'}
+              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
+                <div class="flex flex-col gap-1 text-start">
+                  <Label class="text-xs font-semibold text-foreground">
+                    {m.common_form_discount_template_label ? m.common_form_discount_template_label() : "Discount Template"}
+                  </Label>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">
+                    {m.common_form_discount_template_desc ? m.common_form_discount_template_desc() : "Select one of the approved discount templates in the system"}
+                  </span>
+                </div>
+                <div class="w-full md:w-[480px] shrink-0">
+                  <Select bind:value={state.financial.selectedDiscountTemplateId} type="single">
+                    <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background">
+                      <span class="truncate">
+                        {state.financial.discountTemplates.find(d => d.id === state.financial.selectedDiscountTemplateId)?.name || (m.common_form_discount_template_placeholder ? m.common_form_discount_template_placeholder() : "Select template...")}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
+                      {#each state.financial.discountTemplates as tpl}
+                        <SelectItem value={tpl.id} class="text-xs text-start cursor-pointer justify-start">
+                          {tpl.name} ({tpl.calculation_method === 'percentage' ? `${tpl.value}%` : formatCurrency(Number(tpl.value))})
+                        </SelectItem>
+                      {/each}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div class="w-full md:w-[480px] shrink-0">
-                <Input 
-                  id="customDiscount"
-                  type="number"
-                  min="0"
-                  placeholder={m.common_form_discount_custom_placeholder ? m.common_form_discount_custom_placeholder() : "e.g. 50000"}
-                  class="h-9 w-full bg-background font-mono"
-                  bind:value={state.financial.customDiscountAmount}
-                />
+            {:else}
+              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
+                <div class="flex flex-col gap-1 text-start">
+                  <Label for="customDiscount" class="text-xs font-semibold text-foreground">{m.common_form_discount_custom_amount()}</Label>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">
+                    {m.common_form_discount_custom_desc ? m.common_form_discount_custom_desc() : "Enter direct discount amount"}
+                  </span>
+                </div>
+                <div class="w-full md:w-[480px] shrink-0">
+                  <Input 
+                    id="customDiscount"
+                    type="number"
+                    min="0"
+                    placeholder={m.common_form_discount_custom_placeholder ? m.common_form_discount_custom_placeholder() : "e.g. 50000"}
+                    class="h-9 w-full bg-background font-mono"
+                    bind:value={state.financial.customDiscountAmount}
+                  />
+                </div>
               </div>
-            </div>
-          {/if}
-        </div>
+            {/if}
+          </div>
+        </CardContent>
       {/if}
-    </div>
+    </Card>
 
     <!-- Optional Fees Container -->
-    <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
-      <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-        {m.common_form_optional_fees_section()}
-      </div>
+    <Card class="w-full">
+      <CardHeader class="py-3 px-6">
+        <CardTitle class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider text-start select-none">
+          {m.common_form_optional_fees_section()}
+        </CardTitle>
+      </CardHeader>
 
-      <div class="p-6">
+      <CardContent class="p-6">
         {#if state.optionalFeesList.length === 0}
           <p class="text-xs text-muted-foreground text-center py-4">
             {m.common_form_no_optional_fees ? m.common_form_no_optional_fees() : "No optional fees registered in the system currently."}
@@ -172,19 +183,21 @@ let { state }: { state: StudentFormState } = $props();
             {/each}
           </div>
         {/if}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
   </div>
 
-  <!-- Live DocumentPage Calculator Summary Column -->
+  <!-- Live Calculator Summary Column -->
   <div class="flex flex-col gap-6">
-    <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/20 sticky top-6">
-      <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-        {m.common_form_summary_section()}
-      </div>
+    <Card class="w-full sticky top-6">
+      <CardHeader class="py-3 px-6">
+        <CardTitle class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider text-start select-none">
+          {m.common_form_summary_section()}
+        </CardTitle>
+      </CardHeader>
 
-      <div class="p-6 flex flex-col gap-4 text-start">
+      <CardContent class="p-6 flex flex-col gap-4 text-start">
         <!-- Mandatory Fees -->
         <div class="flex justify-between items-center text-xs">
           <span class="text-muted-foreground">{m.common_form_summary_mandatory()}:</span>
@@ -227,7 +240,7 @@ let { state }: { state: StudentFormState } = $props();
             {/each}
           </div>
         {/if}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   </div>
 </div>
