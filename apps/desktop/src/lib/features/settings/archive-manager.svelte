@@ -18,13 +18,11 @@ import {
 import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
 import ArchiveDocumentCard from "$lib/features/documents/archive-document-card.svelte";
 import ArchiveFilters from "$lib/features/documents/archive-filters.svelte";
-import ArchiveLoading from "$lib/features/documents/archive-loading.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
-import { DataTable, CheckboxCell } from "$lib/tables";
 import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
 import { confirmStore } from "$lib/stores";
 import { AdjustmentsHorizontal, ArrowPath, ArrowUpTray, Document, Grid, QueueList } from "@orbis/icons";
-import type { Documents } from "@orbis/sdk";
+import type { DocumentDto } from "@orbis/sdk";
 import { createOperationToast } from "$lib/shared/components/operation-toast";
 
 let { orgId }: { orgId: string } = $props();
@@ -51,7 +49,7 @@ let fileInput: HTMLInputElement | undefined = $state();
 let searchQuery = $state("");
 let debouncedSearchQuery = $state("");
 let isPreviewOpen = $state(false);
-let selectedDocument = $state<Documents | null>(null);
+let selectedDocument = $state<DocumentDto | null>(null);
 let selectedDocumentUrl = $state("");
 let archiveScroller: HTMLDivElement | undefined = $state();
 
@@ -171,11 +169,11 @@ let groupedDocs = $derived(
       acc[cat].push(doc);
       return acc;
     },
-    {} as Record<string, Documents[]>,
+    {} as Record<string, DocumentDto[]>,
   ),
 );
 let groupedEntries = $derived(
-  Object.entries(groupedDocs) as [string, Documents[]][],
+  Object.entries(groupedDocs) as [string, DocumentDto[]][],
 );
 let allVisibleSelected = $derived(
   documents.length > 0 &&
@@ -284,7 +282,7 @@ function handleTableAction(event: GridActionEvent) {
   toggleDocument(id, !selectedIds.has(id));
 }
 
-async function openPreview(doc: Documents) {
+async function openPreview(doc: DocumentDto) {
   selectedDocument = doc;
   selectedDocumentUrl = await resolveDocumentUrl(getDocumentSource(doc));
   isPreviewOpen = true;

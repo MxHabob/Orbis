@@ -1,7 +1,7 @@
 <!--
   @component ClassStudents
   Feature component for the Class Students view.
-  Uses @orbis/svelte-grid / DataTable for scalable, high-performance rendering.
+  Uses @orbis/svelte-grid for scalable, high-performance rendering.
 -->
 <script lang="ts">
 import { Badge } from "@orbis/ui/badge";
@@ -11,8 +11,7 @@ import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { extractErrorMessage } from "$lib/api";
 import { createClassStudentsQuery } from "$lib/features/academics";
-import { DataTable, BadgeCell } from "$lib/tables";
-import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
+import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
 import { goto } from "$app/navigation";
 
 let { orgId, classId }: { orgId: string; classId: string } = $props();
@@ -40,6 +39,7 @@ const columns: OrbisColumnDef[] = [
     name: m.common_student_name(),
     width: 260,
     size: 260,
+    type: "avatar",
     cellClass: "font-semibold text-foreground",
   },
   {
@@ -76,7 +76,8 @@ const columns: OrbisColumnDef[] = [
     name: m.common_status(),
     width: 120,
     size: 120,
-    cell: BadgeCell,
+    type: "badge",
+    align: "center",
   },
   {
     id: "enrolled_date",
@@ -159,12 +160,13 @@ function refetch() {
     </div>
   {:else}
     <div class="flex-1 w-full overflow-hidden border border-border/70 rounded-xl bg-card">
-      <DataTable
+      <OrbisGrid
         {columns}
         source={gridSource}
         loading={isLoading}
         height="100%"
         rowSize={44}
+        readonly
         onaction={handleGridAction}
         emptyTitle={m.common_students_empty_title()}
       />

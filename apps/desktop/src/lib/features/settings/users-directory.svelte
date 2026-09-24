@@ -3,6 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
 import {
   Select,
   SelectTrigger,
@@ -10,19 +11,17 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
-import { localizeHref } from "$lib/paraglide/runtime";
+import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { l } from "$lib/core/i18n";
-import { Plus, Users } from "@orbis/icons";
+import { Plus, Users, Search, Refresh } from "@orbis/icons";
 
 import type { User } from "$lib/api";
-import { DataTable, ActionOverlay } from "$lib/tables";
-import { users as usersDef, withIndex } from "$lib/tables/definitions";
+import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
 import { createUsersPaginatedQuery } from "$lib/features/settings/queries";
-import type { UniversalFilter } from "@orbis/ui/filter-builder";
-import { userFilterFields } from "$lib/tables/definitions/filter-configs";
+import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
+import { userFilterFields } from "$lib/core/filter-configs";
 import { useQueryClient } from "@tanstack/svelte-query";
 import { goto } from "$app/navigation";
-import type { GridActionEvent, ActionItem } from "@orbis/svelte-grid";
 
 let { orgId }: { orgId: string } = $props();
 const queryClient = useQueryClient();
@@ -30,7 +29,6 @@ const queryClient = useQueryClient();
 // ── State ──────────────────────────────────────────────────────────────
 let searchQuery = $state("");
 let selectedRole = $state("all");
-let overlayEl = $state<any>();
 let activeFilter = $state<UniversalFilter>({
   logic: "AND",
   conditions: [],
@@ -57,58 +55,60 @@ function loadUsers() {
   usersQuery.refetch();
 }
 
-// ── Filtering ───────────────────────────────────────────────────────────
-const filteredUsers = $derived(
-  users.filter((user) => {
-    const q = searchQuery.toLowerCase();
-    const matchesSearch =
-      !q ||
-      (user.full_name || "").toLowerCase().includes(q) ||
-      (user.name_ar || "").toLowerCase().includes(q) ||
-      (user.email || "").toLowerCase().includes(q);
+// ── Filtering & Grid Source ──────────────────────────────────────────────
+const effectiveFilter = $derived.by<UniversalFilter>(() => {
+  const conds = [...(activeFilter?.conditions || [])];
+  if (selectedRole && selectedRole !== "all") {
+    conds.push({
+      id: "role-filter",
+      field: "role",
+      operator: "eq",
+      value: selectedRole,
+    });
+  }
+  return {
+    logic: activeFilter?.logic || "AND",
+    conditions: conds,
+    groups: activeFilter?.groups || [],
+  };
+});
 
-    const matchesRole =
-      selectedRole === "all" ||
-      user.roles?.some((r) => r.toLowerCase() === selectedRole.toLowerCase());
-
-    return matchesSearch && matchesRole;
-  }),
-);
-
-// ── Grid Source ─────────────────────────────────────────────────────────
 const gridSource = $derived(
-  withIndex(
-    filteredUsers.map((u) => ({
-      ...u,
-      full_name: l(u.name_ar, u.full_name) || u.full_name || "—",
-      role: u.roles?.[0] || "staff",
-      status: u.is_deleted ? "inactive" : "active",
-    })),
-  ),
+  users.map((u, i) => ({
+    ...u,
+    __idx: i + 1,
+    full_name: l(u.name_ar, u.full_name) || u.full_name || "—",
+    role: u.roles?.[0] || "staff",
+    status: u.is_deleted ? "inactive" : "active",
+  })),
 );
 
 // ── Columns ─────────────────────────────────────────────────────────────
-const columns = $derived(
-  usersDef.columns(
-    {
-      idx: "#",
-      name: m.common_col_name(),
-      email: m.common_word_email(),
-      phone: m.common_bulk_col_phone(),
-      role: m.common_user_form_role(),
-      status: m.common_word_status?.() || "Status",
-      actions: m.common_je_col_actions?.() || "Actions",
-    },
-    userActions,
-  ),
-);
+const columns: OrbisColumnDef[] = [
+  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
+  { id: "full_name", prop: "full_name", header: m.common_col_name(), name: m.common_col_name(), width: 220, size: 220, type: "avatar", readonly: true, pin: "left" },
+  { id: "email", prop: "email", header: m.common_word_email(), name: m.common_word_email(), width: 200, size: 200, readonly: true },
+  { id: "phone", prop: "phone", header: m.common_bulk_col_phone(), name: m.common_bulk_col_phone(), width: 140, size: 140, readonly: true, cellClass: "font-mono" },
+  { id: "role", prop: "role", header: m.common_user_form_role(), name: m.common_user_form_role(), width: 110, size: 110, readonly: true, align: "center" },
+  { id: "status", prop: "status", header: m.common_word_status?.() || "Status", name: "Status", width: 100, size: 100, type: "badge", align: "center", readonly: true },
+  {
+    id: "actions",
+    prop: "actions",
+    header: m.common_je_col_actions?.() || "Actions",
+    name: "Actions",
+    width: 90,
+    size: 90,
+    type: "action",
+    align: "center",
+    readonly: true,
+    meta: { items: userActions },
+  },
+];
 
 // ── Handlers ───────────────────────────────────────────────────────────
 async function handleAction(event: GridActionEvent) {
   const user = event.row as User;
-  if (event.actionId === "__menu__") {
-    overlayEl?.show(event);
-  } else if (event.actionId === "edit" || event.actionId === "dblclick") {
+  if (event.actionId === "edit" || event.actionId === "dblclick") {
     goto(localizeHref(`/${orgId}/settings/users/${user.id}`));
   } else if (event.actionId === "delete") {
     const confirmed = await confirmStore.prompt({
@@ -137,13 +137,25 @@ async function handleAction(event: GridActionEvent) {
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide">
+<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide font-sans">
   <!-- Header: Filters + Add Button -->
   <div class="flex items-center justify-between gap-4 flex-nowrap shrink-0">
-    <h1 class="text-lg font-bold text-foreground truncate">{m.settings_users_title()}</h1>
-    <div class="flex items-center gap-2 flex-nowrap shrink-0">
-      <!-- Role AdjustmentsHorizontal -->
-      <div class="w-40 text-start">
+    <div class="flex items-center gap-3 flex-1">
+      <div class="relative flex-1 max-w-xs">
+        <Search
+          size={14}
+          class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+        />
+        <Input
+          type="text"
+          placeholder={m.settings_users_search_placeholder()}
+          bind:value={searchQuery}
+          class="h-8 ps-8 text-xs bg-card border-border/60"
+        />
+      </div>
+
+      <!-- Role Filter -->
+      <div class="w-36 text-start shrink-0">
         <Select type="single" value={selectedRole} onValueChange={(v) => (selectedRole = v ?? "all")}>
           <SelectTrigger class="h-8 w-full text-xs bg-card border-border/60">
             {#if selectedRole === "all"}
@@ -170,7 +182,16 @@ async function handleAction(event: GridActionEvent) {
           </SelectContent>
         </Select>
       </div>
+    </div>
 
+    <div class="flex items-center gap-2 flex-nowrap shrink-0">
+      <FilterTrigger
+        bind:filter={activeFilter}
+        fields={userFilterFields}
+      />
+      <Button variant="ghost" size="icon-sm" onclick={loadUsers} class="text-muted-foreground">
+        <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
+      </Button>
       <Button variant="lime" class="text-xs h-8 px-4 font-semibold" href={localizeHref(`/${orgId}/settings/users/new`)}>
         <Plus size={14} class="me-1.5" />
         {m.settings_users_add()}
@@ -178,25 +199,19 @@ async function handleAction(event: GridActionEvent) {
     </div>
   </div>
 
-  <!-- DataTable -->
+  <!-- OrbisGrid -->
   <div class="flex-1 min-h-0 flex flex-col">
-    <DataTable
-      columns={columns}
+    <OrbisGrid
+      {columns}
       source={gridSource}
       loading={isLoading}
-      searchable
-      searchPlaceholder={m.settings_users_search_placeholder()}
-      bind:searchValue={searchQuery}
-      refreshable
-      onRefresh={loadUsers}
-      printable={true}
-      printType="user"
-      filterable
-      filterFields={userFilterFields}
-      bind:filterValue={activeFilter}
-      emptyIcon={Users}
+      clientQuery
+      search={searchQuery}
+      filter={effectiveFilter}
       emptyTitle={m.settings_users_empty()}
       emptyDescription={m.settings_users_empty_desc()}
+      rtl={getLocale() === "ar"}
+      readonly
       onaction={handleAction}
     />
     {#if usersQuery.hasNextPage && selectedRole === 'all' && searchQuery === ''}
@@ -217,6 +232,4 @@ async function handleAction(event: GridActionEvent) {
       </div>
     {/if}
   </div>
-
-  <ActionOverlay bind:this={overlayEl} actions={userActions} onselect={handleAction} />
 </div>

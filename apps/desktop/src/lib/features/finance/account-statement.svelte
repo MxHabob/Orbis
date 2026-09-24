@@ -10,7 +10,6 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { DataTable } from "$lib/tables";
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import AccountTree from "$lib/features/finance/components/account-tree.svelte";

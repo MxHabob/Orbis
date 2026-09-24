@@ -48,6 +48,19 @@ export function formatCell(
     const hit = col.options.find((o) => String(o.value) === String(value));
     return hit?.label ?? String(value);
   }
+  if (Array.isArray(value)) {
+    return value.map((v) => (typeof v === "object" && v ? v.name || v.label || v.title || JSON.stringify(v) : String(v))).join(", ");
+  }
+  if (typeof value === "object" && value !== null) {
+    const obj = value as Record<string, unknown>;
+    if (obj.name != null) return String(obj.name);
+    if (obj.title != null) return String(obj.title);
+    if (obj.label != null) return String(obj.label);
+    if (locale === "ar" && obj.name_ar != null) return String(obj.name_ar);
+    if (obj.name_en != null) return String(obj.name_en);
+    if (locale === "ar" && obj.ar != null) return String(obj.ar);
+    if (obj.en != null) return String(obj.en);
+  }
   return String(value);
 }
 

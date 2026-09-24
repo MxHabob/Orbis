@@ -4,8 +4,7 @@
  * Dynamically switches columns based on selected data type.
  */
 
-import type { OrbisColumnDef, CellValidation } from "@orbis/svelte-grid";
-import { indexColumn } from "$lib/tables";
+import { indexColumn, type OrbisColumnDef } from "@orbis/svelte-grid";
 
 export type BulkInputType = "students" | "teachers" | "grades";
 
@@ -29,110 +28,65 @@ export function getColumnsForType(
         columns: [
           indexColumn("#"),
           {
+            id: "full_name",
             prop: "full_name",
+            header: labels.full_name ?? "Full Name",
             name: labels.full_name ?? "Full Name",
+            width: 200,
             size: 200,
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("full_name")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get("full_name"),
-                };
-              }
-              return {};
-            },
+            editor: "text",
           },
           {
+            id: "email",
             prop: "email",
+            header: labels.email ?? "Email",
             name: labels.email ?? "Email",
+            width: 220,
             size: 220,
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("email")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get("email"),
-                };
-              }
-              return {};
-            },
+            editor: "text",
           },
           {
+            id: "phone",
             prop: "phone",
+            header: labels.phone ?? "Phone",
             name: labels.phone ?? "Phone",
+            width: 150,
             size: 150,
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("phone")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get("phone"),
-                };
-              }
-              return {};
-            },
+            editor: "text",
           },
           {
+            id: "national_id",
             prop: "national_id",
+            header: labels.national_id ?? "National ID",
             name: labels.national_id ?? "National ID",
+            width: 150,
             size: 150,
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("national_id")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get(
-                    "national_id",
-                  ),
-                };
-              }
-              return {};
-            },
+            editor: "text",
           },
           {
+            id: "sex",
             prop: "sex",
+            header: labels.sex ?? "Sex",
             name: labels.sex ?? "Sex",
+            width: 90,
             size: 90,
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("sex")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get("sex"),
-                };
-              }
-              return {};
-            },
+            editor: "combo",
+            options: [
+              { value: "male", label: "Male" },
+              { value: "female", label: "Female" },
+            ],
+            align: "center",
           },
           {
+            id: "date_of_birth",
             prop: "date_of_birth",
+            header: labels.dob ?? "Date of Birth",
             name: labels.dob ?? "Date of Birth",
+            width: 140,
             size: 140,
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("date_of_birth")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get(
-                    "date_of_birth",
-                  ),
-                };
-              }
-              return {};
-            },
+            type: "date",
+            editor: "datepicker",
+            align: "center",
           },
         ],
         requiredFields: ["full_name", "email"],
@@ -152,96 +106,63 @@ export function getColumnsForType(
         columns: [
           indexColumn("#"),
           {
+            id: "full_name",
             prop: "full_name",
+            header: labels.full_name ?? "Full Name",
             name: labels.full_name ?? "Full Name",
+            width: 200,
             size: 200,
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("full_name")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get("full_name"),
-                };
-              }
-              return {};
-            },
+            editor: "text",
           },
           {
+            id: "email",
             prop: "email",
+            header: labels.email ?? "Email",
             name: labels.email ?? "Email",
+            width: 220,
             size: 220,
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("email")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get("email"),
-                };
-              }
-              return {};
-            },
+            editor: "text",
           },
           {
+            id: "phone",
             prop: "phone",
+            header: labels.phone ?? "Phone",
             name: labels.phone ?? "Phone",
+            width: 150,
             size: 150,
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("phone")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get("phone"),
-                };
-              }
-              return {};
-            },
+            editor: "text",
           },
           {
+            id: "national_id",
             prop: "national_id",
+            header: labels.national_id ?? "National ID",
             name: labels.national_id ?? "National ID",
+            width: 150,
             size: 150,
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("national_id")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get(
-                    "national_id",
-                  ),
-                };
-              }
-              return {};
-            },
+            editor: "text",
           },
           {
+            id: "sex",
             prop: "sex",
+            header: labels.sex ?? "Sex",
             name: labels.sex ?? "Sex",
+            width: 90,
             size: 90,
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("sex")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get("sex"),
-                };
-              }
-              return {};
-            },
+            editor: "combo",
+            options: [
+              { value: "male", label: "Male" },
+              { value: "female", label: "Female" },
+            ],
+            align: "center",
           },
           {
+            id: "specialization",
             prop: "specialization",
+            header: labels.specialization ?? "Specialization",
             name: labels.specialization ?? "Specialization",
+            width: 180,
             size: 180,
+            editor: "text",
           },
         ],
         requiredFields: ["full_name", "email"],
@@ -261,102 +182,62 @@ export function getColumnsForType(
         columns: [
           indexColumn("#"),
           {
+            id: "student_email",
             prop: "student_email",
+            header: labels.student_email ?? "Student Email",
             name: labels.student_email ?? "Student Email",
+            width: 220,
             size: 220,
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("student_email")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get(
-                    "student_email",
-                  ),
-                };
-              }
-              return {};
-            },
+            editor: "text",
           },
           {
+            id: "subject_name",
             prop: "subject_name",
+            header: labels.subject ?? "Subject",
             name: labels.subject ?? "Subject",
+            width: 170,
             size: 170,
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("subject_name")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get(
-                    "subject_name",
-                  ),
-                };
-              }
-              return {};
-            },
+            editor: "text",
           },
           {
+            id: "score",
             prop: "score",
+            header: labels.score ?? "Score",
             name: labels.score ?? "Score",
+            width: 100,
             size: 100,
+            type: "number",
             editor: "number",
-            editorConfig: { min: 0, max: 999, step: 0.5 },
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("score")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get("score"),
-                };
-              }
-              return {};
-            },
+            align: "end",
           },
           {
+            id: "max_score",
             prop: "max_score",
+            header: labels.max_score ?? "Max Score",
             name: labels.max_score ?? "Max Score",
+            width: 110,
             size: 110,
+            type: "number",
             editor: "number",
-            editorConfig: { min: 1, max: 999, step: 1 },
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("max_score")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get("max_score"),
-                };
-              }
-              return {};
-            },
+            align: "end",
           },
           {
+            id: "exam_type",
             prop: "exam_type",
+            header: labels.exam_type ?? "Exam Type",
             name: labels.exam_type ?? "Exam Type",
+            width: 130,
             size: 130,
+            editor: "text",
           },
           {
+            id: "semester",
             prop: "semester",
+            header: labels.semester ?? "Semester",
             name: labels.semester ?? "Semester",
+            width: 130,
             size: 130,
-            cellProperties: (row: Record<string, unknown>) => {
-              if (
-                row.__errors &&
-                (row.__errors as Map<string, string>).has("semester")
-              ) {
-                return {
-                  class: "orbis-cell-error",
-                  title: (row.__errors as Map<string, string>).get("semester"),
-                };
-              }
-              return {};
-            },
+            editor: "text",
           },
         ],
         requiredFields: ["student_email", "subject_name", "score", "semester"],

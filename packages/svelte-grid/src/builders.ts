@@ -1,23 +1,25 @@
-import type { OrbisColumnDef } from "@orbis/svelte-grid";
-import { AvatarCell, BadgeCell } from "..";
+import type { OrbisColumnDef } from "./types";
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Generic Column Builders
+// Canonical Grid Column Builders (Native to @orbis/svelte-grid)
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Build a standard index column (row number)
+ * Build a standard frozen index / row-number column.
  */
 export function indexColumn(label = "#"): OrbisColumnDef {
   return {
-    id: "__rowIndex",
-    prop: "__rowIndex",
+    id: "__idx",
+    prop: "__idx",
     header: label,
     name: label,
-    width: 50,
+    width: 48,
+    size: 48,
     readonly: true,
-    cellClass: "orbis-cell-index",
+    pin: "left",
+    align: "center",
     sort: false,
+    cellClass: "font-mono text-muted-foreground",
   };
 }
 
@@ -31,33 +33,38 @@ export function selectionColumn(): OrbisColumnDef {
     header: "",
     name: "",
     width: 40,
+    size: 40,
     editor: "checkbox",
+    type: "boolean",
+    align: "center",
     sort: false,
   };
 }
 
 /**
- * Build a student name column with avatar Svelte component
+ * Build an avatar/name column that auto-renders avatar image and initials.
  */
 export function studentNameColumn(
-  opts: { label?: string; locale?: string; size?: number } = {},
+  opts: { label?: string; locale?: string; size?: number; prop?: string } = {},
 ): OrbisColumnDef {
-  const { label = "Student", locale = "en", size = 180 } = opts;
-  const colId = locale === "ar" ? "student_name_ar" : "student_name";
+  const { label = "Student", locale = "en", size = 200, prop } = opts;
+  const colId = prop || (locale === "ar" ? "student_name_ar" : "student_name");
   return {
     id: colId,
     prop: colId,
     header: label,
     name: label,
     width: size,
+    size,
+    type: "avatar",
     readonly: true,
-    cell: AvatarCell,
+    pin: "left",
     sort: true,
   };
 }
 
 /**
- * Build a numeric score column with validation
+ * Build a numeric score column with formatting and validation.
  */
 export function scoreColumn(opts: {
   prop: string;
@@ -73,41 +80,45 @@ export function scoreColumn(opts: {
     header: name,
     name,
     width: size,
+    size,
+    type: "number",
     editor: readonly
       ? undefined
       : {
           type: "text",
-          config: {
-            min: 0,
-            max: maxScore,
-          },
+          config: { min: 0, max: maxScore },
         },
     sort: true,
-    cellClass: "font-mono text-center",
+    align: "end",
+    cellClass: "font-mono",
   };
 }
 
 /**
- * Build a read-only text column
+ * Build a standard text column.
  */
 export function textColumn(opts: {
   prop: string;
   name: string;
   size?: number;
+  align?: "start" | "center" | "end";
 }): OrbisColumnDef {
-  const { prop, name, size = 120 } = opts;
+  const { prop, name, size = 120, align = "start" } = opts;
   return {
     id: prop,
     prop,
     header: name,
     name,
     width: size,
+    size,
+    type: "text",
+    align,
     sort: true,
   };
 }
 
 /**
- * Build a badge-style status column
+ * Build a color-coded status badge column.
  */
 export function statusColumn(opts: {
   prop: string;
@@ -121,13 +132,15 @@ export function statusColumn(opts: {
     header: name,
     name,
     width: size,
-    cell: BadgeCell,
+    size,
+    type: "badge",
+    align: "center",
     sort: true,
   };
 }
 
 /**
- * Build a percentage column with color coding
+ * Build a percentage column.
  */
 export function percentageColumn(opts: {
   prop: string;
@@ -141,6 +154,9 @@ export function percentageColumn(opts: {
     header: name,
     name,
     width: size,
+    size,
+    type: "percentage",
+    align: "end",
     sort: true,
     cellClass: "font-medium",
   };
@@ -151,15 +167,25 @@ export function percentageColumn(opts: {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
+ * Add row index numbers to data array
+ */
+export function withIndex<T extends Record<string, unknown>>(
+  data: T[],
+): (T & { __idx: number; __rowIndex: number })[] {
+  return data.map((row, i) => ({
+    ...row,
+    __idx: i + 1,
+    __rowIndex: i + 1,
+  }));
+}
+
+/**
  * Add row index numbers to flat data array
  */
 export function addRowIndices<T extends Record<string, unknown>>(
   data: T[],
-): (T & { __rowIndex: number })[] {
-  return data.map((row, i) => ({
-    ...row,
-    __rowIndex: i + 1,
-  }));
+): (T & { __rowIndex: number; __idx: number })[] {
+  return withIndex(data);
 }
 
 /**
@@ -231,8 +257,14 @@ export function buildAttendanceColumns(opts: {
       prop: "__presentCount",
       name: labels.present || "✓",
       size: 50,
+      align: "center",
     }),
-    textColumn({ prop: "__absentCount", name: labels.absent || "✗", size: 50 }),
+    textColumn({
+      prop: "__absentCount",
+      name: labels.absent || "✗",
+      size: 50,
+      align: "center",
+    }),
     percentageColumn({
       prop: "__attendanceRate",
       name: labels.rate || "%",
@@ -316,6 +348,7 @@ export function buildFeesColumns(opts: {
       header: labels.totalFees || "Total Fees",
       name: labels.totalFees || "Total Fees",
       width: 110,
+      type: "currency",
       readonly: true,
       sort: true,
     },
@@ -325,6 +358,7 @@ export function buildFeesColumns(opts: {
       header: labels.paid || "Paid",
       name: labels.paid || "Paid",
       width: 100,
+      type: "currency",
       readonly: true,
       sort: true,
     },
@@ -334,6 +368,7 @@ export function buildFeesColumns(opts: {
       header: labels.discount || "Discount",
       name: labels.discount || "Discount",
       width: 100,
+      type: "currency",
       readonly: true,
       sort: true,
     },
@@ -343,6 +378,7 @@ export function buildFeesColumns(opts: {
       header: labels.balance || "Balance",
       name: labels.balance || "Balance",
       width: 110,
+      type: "currency",
       readonly: true,
       sort: true,
     },

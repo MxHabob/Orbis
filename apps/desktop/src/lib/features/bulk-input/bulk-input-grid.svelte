@@ -1,23 +1,15 @@
 <!--
 @component BulkInputGrid
-Wraps OrbisGrid with bulk input logic: dynamic columns, paste handling,
-real-time validation, and error highlighting.
+Bulk input matrix powered directly by @orbis/svelte-grid.
+Eliminates duplicate paste event wrappers and leverages OrbisGrid's native
+clipboard, range selection, and cell validation lifecycle.
 -->
 <script lang="ts">
-import { Pencil } from "@orbis/icons";
-
 import { OrbisGrid } from "@orbis/svelte-grid";
-import type { CellEditEvent } from "@orbis/svelte-grid";
+import type { CellEditEvent, BulkResult } from "@orbis/svelte-grid";
 import { getLocale } from "$lib/paraglide/runtime";
 import { type BulkInputType, getColumnsForType } from "./config";
-import { getDataProps } from "./config";
 import { validateRows, type RowValidationResult } from "./validator";
-import {
-  parseTSV,
-  mapTSVToRows,
-  normalizeSex,
-  normalizeDate,
-} from "./paste-handler";
 
 // ── Props ──────────────────────────────────────────────────────────
 interface Props {
@@ -38,10 +30,8 @@ let {
   onvalidationchange,
 }: Props = $props();
 
-const locale = getLocale();
-const isRtl = locale === "ar";
+const isRtl = $derived(getLocale() === "ar");
 
-let gridWrapper = $state<HTMLElement | null>(null);
 let config = $derived(getColumnsForType(type, labels));
 
 // ── Validation ─────────────────────────────────────────────────────
@@ -52,6 +42,7 @@ function runValidation() {
   validationTimeout = setTimeout(() => {
     const results = validateRows(type, rows);
     validationResults = results;
+    onvalidationchange?.(results);
 
     // Apply errors to rows for cell styling
     for (let i = 0; i < rows.length; i++) {
@@ -60,124 +51,44 @@ function runValidation() {
         rows[i].__errors = result.errors;
       }
     }
-
-    // Trigger reactivity
-    rows = [...rows];
-    onvalidationchange?.(results);
-  }, 300);
+  }, 200);
 }
 
-// ── Cell Pencil Handler ──────────────────────────────────────────────
+// ── Cell Edit Handler ──────────────────────────────────────────────
 function handleCellEdit(event: CellEditEvent) {
   const { rowIndex, columnId: prop, newValue } = event;
-  if (rowIndex >= 0 && rowIndex < rows.length) {
-    rows[rowIndex][prop] = newValue;
+  if (rowIndex < 0 || rowIndex >= rows.length) return;
 
-    // Auto-append rows when editing near the end
-    if (rowIndex >= rows.length - 3) {
-      appendEmptyRows(5);
+  rows[rowIndex][prop] = newValue;
+
+  // Append empty row if editing near the end
+  if (rowIndex >= rows.length - 3) {
+    const newRows = [...rows];
+    for (let i = 0; i < 5; i++) {
+      newRows.push(config.emptyRow());
     }
-
-    runValidation();
-    onrowschange?.(rows);
-  }
-}
-
-// ── Paste Handler ──────────────────────────────────────────────────
-function handlePaste(data: string[][], startRow: number, startCol: number) {
-  // RevoGrid handles the paste internally, but we also need
-  // to handle the raw clipboard event for full-row paste
-}
-
-// Listen for raw clipboard paste on the grid container
-function handleClipboardPaste(e: ClipboardEvent) {
-  const text = e.clipboardData?.getData("text/plain");
-  if (!text || !text.includes("\t")) return; // Not tabular data
-
-  e.preventDefault();
-  e.stopPropagation();
-
-  let pastedData = parseTSV(text);
-  if (pastedData.length === 0) return;
-
-  const dataProps = getDataProps(type);
-  const pastedRows = mapTSVToRows(pastedData, dataProps);
-  if (pastedRows.length === 0) return;
-
-  // Find the first empty slot or append
-  let insertAt = rows.findIndex((r) =>
-    dataProps.every((p: string) => !String(r[p] ?? "").trim()),
-  );
-  if (insertAt === -1) insertAt = rows.length;
-
-  // Merge pasted rows into existing rows array
-  const newRows = [...rows];
-  for (let i = 0; i < pastedRows.length; i++) {
-    const targetIdx = insertAt + i;
-    if (targetIdx < newRows.length) {
-      // Overwrite existing empty row
-      const updatedRow = { ...newRows[targetIdx] };
-      for (const prop of dataProps) {
-        let val = pastedRows[i][prop] ?? "";
-        if (prop === "sex") {
-          val = normalizeSex(val);
-        } else if (prop === "date_of_birth") {
-          val = normalizeDate(val);
-        }
-        updatedRow[prop] = val;
-      }
-      updatedRow.__errors = new Map<string, string>();
-      newRows[targetIdx] = updatedRow;
-    } else {
-      // Append new row
-      const emptyRow = { ...config.emptyRow() };
-      for (const prop of dataProps) {
-        let val = pastedRows[i][prop] ?? "";
-        if (prop === "sex") {
-          val = normalizeSex(val);
-        } else if (prop === "date_of_birth") {
-          val = normalizeDate(val);
-        }
-        emptyRow[prop] = val;
-      }
-      emptyRow.__rowIndex = targetIdx + 1;
-      newRows.push(emptyRow);
-    }
+    rows = newRows;
+  } else {
+    rows = [...rows];
   }
 
-  // Ensure there are always some empty rows at the bottom
-  while (newRows.length < insertAt + pastedRows.length + 5) {
-    const emptyRow = config.emptyRow();
-    emptyRow.__rowIndex = newRows.length + 1;
-    newRows.push(emptyRow);
-  }
-
-  rows = newRows;
-  onrowschange?.(rows);
   runValidation();
+  onrowschange?.(rows);
 }
 
-// ── Helper: Append Empty Rows ──────────────────────────────────────
-function appendEmptyRows(count: number) {
-  const newRows = [...rows];
-  for (let i = 0; i < count; i++) {
-    const emptyRow = config.emptyRow();
-    emptyRow.__rowIndex = newRows.length + 1;
-    newRows.push(emptyRow);
-  }
-  rows = newRows;
+function handlePasteResult(_result: BulkResult) {
+  rows = [...rows];
+  runValidation();
+  onrowschange?.(rows);
 }
 
 // ── Initialize with empty rows ─────────────────────────────────────
 $effect(() => {
-  // When type changes, this effect re-runs
   const _ = type;
   if (rows.length === 0) {
     const initial: Record<string, unknown>[] = [];
     for (let i = 0; i < 20; i++) {
-      const emptyRow = config.emptyRow();
-      emptyRow.__rowIndex = i + 1;
-      initial.push(emptyRow);
+      initial.push(config.emptyRow());
     }
     rows = initial;
     onrowschange?.(rows);
@@ -185,28 +96,18 @@ $effect(() => {
 });
 </script>
 
-<svelte:document onpaste={(e) => {
-  if (gridWrapper && (gridWrapper === document.activeElement || gridWrapper.contains(document.activeElement))) {
-    handleClipboardPaste(e);
-  }
-}} />
-
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  bind:this={gridWrapper}
-  class="bulk-grid-wrapper flex-grow min-h-0 h-full"
->
+<div class="bulk-grid-wrapper flex-grow min-h-0 h-full w-full">
   <OrbisGrid
     columns={config.columns}
     bind:source={rows}
     height="100%"
     rtl={isRtl}
     readonly={false}
-    clipboard
-    range
+    clipboard={true}
+    range={true}
     createEmptyRow={() => config.emptyRow()}
     oncelledit={handleCellEdit}
-    onpasteResult={() => runValidation()}
+    onpasteResult={handlePasteResult}
   />
 </div>
 

@@ -9,13 +9,12 @@ import { slide } from "svelte/transition";
 import { academicContext, authStore } from "$lib/stores";
 import { getLocale } from "$lib/paraglide/runtime";
 
-import { ControlGrid } from "$lib/features/academics";
 import {
   buildGradeColumns,
   transformMatrixToSource,
   recalculateRowTotals,
-} from "$lib/tables";
-import type { GradeMatrixResponse } from "$lib/tables";
+  type GradeMatrixResponse,
+} from "./grade-helpers";
 import type { CellEditEvent } from "@orbis/svelte-grid";
 
 let { orgId }: { orgId: string } = $props();

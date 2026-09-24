@@ -1,6 +1,6 @@
 <!--
   @component StudentBehavior
-  Behavior incidents log and AI assist evaluation summary.
+  Behavior incidents log and AI assist evaluation summary using OrbisGrid.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -12,11 +12,9 @@ import { toast } from "@orbis/ui";
 import { getLocale } from "$lib/paraglide/runtime";
 
 import { formatDate } from "$lib/core/i18n";
-import { DataTable } from "$lib/tables";
-import { studentBehavior as sbDef, withIndex } from "$lib/tables/definitions";
-import { applyFilter } from "@orbis/ui/filter-builder";
-import type { UniversalFilter } from "@orbis/ui/filter-builder";
-import { behaviorFilterFields } from "$lib/tables/definitions/filter-configs";
+import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
+import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
+import { behaviorFilterFields } from "$lib/core/filter-configs";
 
 let { orgId, studentId }: { orgId: string; studentId: string } = $props();
 
@@ -91,42 +89,37 @@ let activeFilter = $state<UniversalFilter>({
   groups: [],
 });
 
-const filteredRecords = $derived(applyFilter(records, activeFilter));
-
 const gridSource = $derived(
-  withIndex(
-    filteredRecords.map((rec) => ({
-      ...rec,
-      created_at: formatDate(rec.createdAt || rec.created_at) || "—",
-      record_type:
-        String(rec.recordType || rec.record_type || "").toLowerCase() === "positive"
-          ? "positive"
-          : "negative",
-      category: rec.category || rec.recordType || rec.record_type || "—",
-      description: rec.description || "—",
-      points: rec.points ?? 0,
-      status:
-        String(rec.recordType || rec.record_type || "").toLowerCase() === "positive"
-          ? "approved"
-          : "failed",
-    })),
-  ),
+  records.map((rec, i) => ({
+    ...rec,
+    __idx: i + 1,
+    created_at: formatDate(rec.createdAt || rec.created_at) || "—",
+    record_type:
+      String(rec.recordType || rec.record_type || "").toLowerCase() === "positive"
+        ? "positive"
+        : "negative",
+    category: rec.category || rec.recordType || rec.record_type || "—",
+    description: rec.description || "—",
+    points: rec.points ?? 0,
+    status:
+      String(rec.recordType || rec.record_type || "").toLowerCase() === "positive"
+        ? "active"
+        : "inactive",
+  })),
 );
 
-const columns = $derived(
-  sbDef.columns({
-    idx: "#",
-    date: m.common_overview_date(),
-    type: m.academics_behavior_col_type(),
-    description: m.academics_behavior_col_details(),
-    status: m.academics_behavior_col_reporter(),
-  }),
-);
+const columns: OrbisColumnDef[] = [
+  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
+  { id: "created_at", prop: "created_at", header: m.common_overview_date(), name: m.common_overview_date(), width: 130, size: 130, readonly: true, cellClass: "font-mono" },
+  { id: "status", prop: "status", header: m.academics_behavior_col_type(), name: m.academics_behavior_col_type(), width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  { id: "points", prop: "points", header: "Points", name: "Points", width: 80, size: 80, readonly: true, align: "center", type: "number", cellClass: "font-bold" },
+  { id: "description", prop: "description", header: m.academics_behavior_col_details(), name: m.academics_behavior_col_details(), width: 260, size: 260, readonly: true },
+];
 
 const rtl = $derived(getLocale() === "ar");
 </script>
 
-<div class="flex flex-col gap-6 text-xs text-start">
+<div class="flex flex-col gap-6 text-xs text-start font-sans">
   <!-- AI Assist Widget -->
   <div class="border border-border/80 bg-linear-to-l from-brand-purple/5 to-brand-indigo/5 p-4 rounded-xl shadow-sm flex flex-col gap-3">
     <div class="flex items-center justify-between">
@@ -150,25 +143,32 @@ const rtl = $derived(getLocale() === "ar");
   <div class="flex flex-col gap-2">
     <div class="flex items-center justify-between px-1">
       <span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider">{m.academics_behavior_records_title()}</span>
-      <Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => (showAddModal = true)}>
-        <Plus size={12} class="me-1" />
-        {m.academics_behavior_add_record()}
-      </Button>
+      <div class="flex items-center gap-2">
+        <FilterTrigger
+          bind:filter={activeFilter}
+          fields={behaviorFilterFields}
+        />
+        <Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => (showAddModal = true)}>
+          <Plus size={12} class="me-1" />
+          {m.academics_behavior_add_record()}
+        </Button>
+      </div>
     </div>
 
-    <DataTable
-      {columns}
-      source={gridSource}
-      loading={isLoading}
-      filterable={true}
-      filterFields={behaviorFilterFields}
-      bind:filterValue={activeFilter}
-      emptyIcon={UserBadgeCheck}
-      emptyTitle={m.academics_behavior_empty_title()}
-      emptyDescription={m.academics_behavior_empty_desc()}
-      {rtl}
-      height="300px"
-    />
+    <div class="h-[300px]">
+      <OrbisGrid
+        {columns}
+        source={gridSource}
+        loading={isLoading}
+        clientQuery
+        filter={activeFilter}
+        emptyIcon={UserBadgeCheck}
+        emptyTitle={m.academics_behavior_empty_title()}
+        emptyDescription={m.academics_behavior_empty_desc()}
+        {rtl}
+        readonly
+      />
+    </div>
   </div>
 </div>
 

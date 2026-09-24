@@ -1,7 +1,7 @@
 <!--
   @component ClassSubjectResults
   Feature component displaying term results and calculated grades for a class subject.
-  Uses @orbis/svelte-grid / DataTable for high performance.
+  Uses @orbis/svelte-grid directly for high performance.
 -->
 <script lang="ts">
 import { createQuery } from "@tanstack/svelte-query";
@@ -11,8 +11,7 @@ import { Button } from "@orbis/ui/button";
 import { DocumentCheck, InfoCircle, Refresh } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
-import { DataTable, BadgeCell } from "$lib/tables";
-import type { OrbisColumnDef } from "@orbis/svelte-grid";
+import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 
 export interface EnrichedGradeDto extends GradeDto {
   student_name?: string | null;
@@ -53,6 +52,7 @@ const columns: OrbisColumnDef[] = [
     name: m.common_student_name(),
     width: 240,
     size: 240,
+    type: "avatar",
     cellClass: "font-semibold text-foreground",
   },
   {
@@ -63,6 +63,7 @@ const columns: OrbisColumnDef[] = [
     width: 120,
     size: 120,
     align: "center",
+    type: "number",
     cellClass: "font-mono text-muted-foreground",
   },
   {
@@ -73,6 +74,7 @@ const columns: OrbisColumnDef[] = [
     width: 130,
     size: 130,
     align: "center",
+    type: "number",
     cellClass: "font-bold font-mono text-foreground",
   },
   {
@@ -83,7 +85,7 @@ const columns: OrbisColumnDef[] = [
     width: 100,
     size: 100,
     align: "center",
-    cell: BadgeCell,
+    type: "badge",
   },
   {
     id: "status",
@@ -93,7 +95,7 @@ const columns: OrbisColumnDef[] = [
     width: 120,
     size: 120,
     align: "center",
-    cell: BadgeCell,
+    type: "badge",
   },
 ];
 
@@ -146,12 +148,13 @@ const gridSource = $derived(
         </Button>
       </div>
     {:else}
-      <DataTable
+      <OrbisGrid
         {columns}
         source={gridSource}
         loading={isLoading}
         height="100%"
         rowSize={44}
+        readonly
         emptyTitle={m.common_no_term_results()}
       />
     {/if}

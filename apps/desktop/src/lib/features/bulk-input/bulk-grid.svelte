@@ -1,26 +1,13 @@
 <!--
 @component BulkGrid
-Enterprise-grade data grid for bulk data entry.
-Wraps OrbisGrid with proper paste handling, validation overlays, and auto-expand.
-
-Key design: Uses OrbisGrid's native onpaste callback (which fires from RevoGrid's
-beforepaste event) to expand rows when needed, and oncelledit for data model sync.
-RevoGrid handles the actual cell population internally.
+High-performance data grid for bulk entry powered directly by @orbis/svelte-grid.
+Eliminates duplicate wrapper handlers and relies on OrbisGrid's native clipboard,
+keyboard navigation, and cell editing capabilities.
 -->
 <script lang="ts">
-import { Pencil } from "@orbis/icons";
-
 import { OrbisGrid } from "@orbis/svelte-grid";
-import type { CellEditEvent, OrbisColumnDef } from "@orbis/svelte-grid";
-import { addRowIndices } from "$lib/tables";
+import type { CellEditEvent, OrbisColumnDef, BulkResult } from "@orbis/svelte-grid";
 import { getLocale } from "$lib/paraglide/runtime";
-import {
-  parseTSV,
-  mapTSVToRows,
-  isHeaderRow,
-  normalizeSex,
-  normalizeDate,
-} from "./paste-handler";
 
 // ── Props ──────────────────────────────────────────────────────────
 interface Props {
@@ -42,216 +29,43 @@ interface Props {
 
 let {
   columns,
-  dataProps,
+  dataProps: _dataProps,
   rows = $bindable([]),
-  headerPatterns = [],
+  headerPatterns: _headerPatterns = [],
   minEmptyRows = 5,
   createEmptyRow,
   onrowschange,
 }: Props = $props();
 
-const isRtl = getLocale() === "ar";
+const isRtl = $derived(getLocale() === "ar");
 
-let gridWrapper = $state<HTMLElement | null>(null);
-let gridRef = $state<any>(null);
-
-// ── Indexed source for display ─────────────────────────────────────
-let indexedSource = $derived(addRowIndices(rows));
-
-// ── Cell Pencil Handler ──────────────────────────────────────────────
-// Called by OrbisGrid after RevoGrid applies edits (including from paste)
+// ── Cell Edit Handler ──────────────────────────────────────────────
 function handleCellEdit(event: CellEditEvent) {
   const { rowIndex, columnId: prop, newValue } = event;
   if (rowIndex < 0 || rowIndex >= rows.length) return;
 
   rows[rowIndex][prop] = newValue;
 
-  // Auto-append rows when editing near the end
+  // Auto-append empty rows when editing near the end
   if (rowIndex >= rows.length - 3) {
-    appendEmptyRows(minEmptyRows);
+    const newRows = [...rows];
+    for (let i = 0; i < minEmptyRows; i++) {
+      newRows.push(createEmptyRow());
+    }
+    rows = newRows;
+  } else {
+    rows = [...rows];
   }
 
+  onrowschange?.(rows);
+}
+
+function handlePasteResult(_result: BulkResult) {
   rows = [...rows];
   onrowschange?.(rows);
 }
 
-// ── Paste Handler ──────────────────────────────────────────────────
-// Called by OrbisGrid's onpaste when data is pasted from clipboard.
-// RevoGrid handles the actual cell population — we just need to:
-// 1. Ensure enough rows exist for the pasted data
-// 2. Sync back the data from RevoGrid's internal model to our rows
-function handlePaste(data: string[][], startRow: number, _startCol: number) {
-  if (!data || data.length === 0) return;
-
-  // Calculate how many additional rows we need
-  const endRow = startRow + data.length;
-  const currentLen = rows.length;
-
-  if (endRow > currentLen) {
-    // Expand rows to accommodate pasted data
-    const newRows = [...rows];
-    for (let i = currentLen; i < endRow + minEmptyRows; i++) {
-      newRows.push(createEmptyRow());
-    }
-    rows = newRows;
-  }
-
-  // RevoGrid will handle cell population via afteredit events.
-  // However, afteredit fires asynchronously, so we also manually
-  // sync the pasted data into our model to ensure consistency.
-  const newRows = [...rows];
-  for (let r = 0; r < data.length; r++) {
-    const targetIdx = startRow + r;
-    if (targetIdx >= newRows.length) break;
-
-    for (let c = 0; c < data[r].length; c++) {
-      // Map column index to property name (skip index column at 0)
-      const propIdx = c; // columns[0] is #, data doesn't include it
-      if (propIdx < dataProps.length) {
-        const val = data[r][c]?.trim() ?? "";
-        newRows[targetIdx][dataProps[propIdx]] = val;
-      }
-    }
-
-    // Reset errors for modified rows
-    if (newRows[targetIdx].__errors instanceof Map) {
-      (newRows[targetIdx].__errors as Map<string, string>).clear();
-    }
-  }
-
-  // Ensure empty tail
-  ensureEmptyTail(newRows);
-  rows = newRows;
-  onrowschange?.(rows);
-}
-
-// Also handle raw clipboard paste as fallback when grid isn't focused
-function handleClipboardPaste(e: ClipboardEvent) {
-  const text = e.clipboardData?.getData("text/plain");
-  if (!text) return;
-
-  // Take complete control over the paste operation
-  e.preventDefault();
-  e.stopPropagation();
-
-  let pastedData = parseTSV(text);
-  if (pastedData.length === 0) return;
-
-  // Detect and skip header row
-  if (pastedData.length > 1 && headerPatterns.length > 0) {
-    if (isHeaderRow(pastedData[0], headerPatterns)) {
-      pastedData = pastedData.slice(1);
-    }
-  }
-
-  // Convert 2D TSV to standard row objects
-  const pastedRows = mapTSVToRows(pastedData, dataProps);
-  if (pastedRows.length === 0) return;
-
-  // ── Find active cell coordinates ──
-  let startRow = findFirstEmptyRow();
-  let startColProp = dataProps[0];
-
-  const api = gridRef?.getGridElement();
-  if (api) {
-    const { focusCell } = api.getState();
-    if (focusCell) {
-      const rowId = focusCell.row;
-      const colId = focusCell.column;
-      if (rowId !== undefined && rowId !== null) {
-        const foundRow = indexedSource.find(
-          (r: any) => String(r.id) === String(rowId),
-        );
-        if (foundRow && foundRow.__rowIndex !== undefined) {
-          startRow = foundRow.__rowIndex - 1;
-        }
-      }
-      if (colId !== undefined && colId !== null) {
-        startColProp = colId;
-      }
-    }
-  }
-
-  const startColIdx = dataProps.indexOf(startColProp);
-  const newRows = [...rows];
-
-  for (let r = 0; r < pastedRows.length; r++) {
-    const targetRowIdx = startRow + r;
-
-    // Ensure row exists in grid
-    if (targetRowIdx >= newRows.length) {
-      newRows.push(createEmptyRow());
-    }
-
-    // Write pasted columns matching the starting column offset
-    const maxCols = Math.min(dataProps.length - startColIdx, dataProps.length);
-    const updatedRow = { ...newRows[targetRowIdx] };
-
-    for (let c = 0; c < maxCols; c++) {
-      const sourceColProp = dataProps[c]; // raw column property name
-      const targetColProp = dataProps[startColIdx + c]; // offset destination property
-
-      if (pastedRows[r][sourceColProp] !== undefined && targetColProp) {
-        let val = pastedRows[r][sourceColProp];
-
-        // Normalize val based on the target column property
-        if (targetColProp === "sex") {
-          val = normalizeSex(val);
-        } else if (targetColProp === "date_of_birth") {
-          val = normalizeDate(val);
-        }
-
-        updatedRow[targetColProp] = val;
-      }
-    }
-
-    // Reset validation errors for updated row
-    if (updatedRow.__errors instanceof Map) {
-      updatedRow.__errors = new Map<string, string>();
-    }
-
-    newRows[targetRowIdx] = updatedRow;
-  }
-
-  // Maintain minimum tail of empty rows
-  ensureEmptyTail(newRows);
-
-  rows = newRows;
-  onrowschange?.(rows);
-}
-
-// ── Helpers ────────────────────────────────────────────────────────
-function findFirstEmptyRow(): number {
-  const idx = rows.findIndex((r) =>
-    dataProps.every((p) => !String(r[p] ?? "").trim()),
-  );
-  return idx === -1 ? rows.length : idx;
-}
-
-function ensureEmptyTail(arr: Record<string, unknown>[]) {
-  let emptyCount = 0;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (dataProps.every((p) => !String(arr[i][p] ?? "").trim())) {
-      emptyCount++;
-    } else {
-      break;
-    }
-  }
-  while (emptyCount < minEmptyRows) {
-    arr.push(createEmptyRow());
-    emptyCount++;
-  }
-}
-
-function appendEmptyRows(count: number) {
-  const newRows = [...rows];
-  for (let i = 0; i < count; i++) {
-    newRows.push(createEmptyRow());
-  }
-  rows = newRows;
-}
-
-// ── Initialize with empty rows ─────────────────────────────────────
+// ── Initialize with empty rows if empty ───────────────────────────
 $effect(() => {
   if (rows.length === 0) {
     const initial: Record<string, unknown>[] = [];
@@ -264,31 +78,20 @@ $effect(() => {
 });
 </script>
 
-<svelte:document onpaste={(e) => {
-  if (gridWrapper && (gridWrapper === document.activeElement || gridWrapper.contains(document.activeElement))) {
-    handleClipboardPaste(e);
-  }
-}} />
-
-<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="flex flex-col gap-1 w-full max-w-full min-w-0 overflow-hidden flex-grow min-h-0 h-full">
-  <div
-    bind:this={gridWrapper}
-    class="bulk-grid-wrapper flex-grow min-h-0 h-full"
-  >
+  <div class="bulk-grid-wrapper flex-grow min-h-0 h-full">
     <OrbisGrid
-      bind:this={gridRef}
       {columns}
       bind:source={rows}
       height="100%"
       rtl={isRtl}
       readonly={false}
-      clipboard
-      range
+      clipboard={true}
+      range={true}
       rowIdKey="id"
-      createEmptyRow={createEmptyRow}
+      {createEmptyRow}
       oncelledit={handleCellEdit}
-      onpasteResult={() => onrowschange?.(rows)}
+      onpasteResult={handlePasteResult}
     />
   </div>
 </div>

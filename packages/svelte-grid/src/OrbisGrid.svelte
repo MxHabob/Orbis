@@ -1,6 +1,7 @@
 <script lang="ts">
 import { setContext } from "svelte";
 import type {
+  ActionItem,
   BulkResult,
   CellEditEvent,
   CellRange,
@@ -52,6 +53,9 @@ import {
 interface Props {
   columns: OrbisColumnDef[];
   source: GridRow[];
+  loading?: boolean;
+  emptyTitle?: string;
+  emptyDescription?: string;
   height?: string;
   rtl?: boolean;
   readonly?: boolean;
@@ -74,7 +78,10 @@ interface Props {
 
 let {
   columns,
-  source = $bindable(),
+  source = $bindable([]),
+  loading = false,
+  emptyTitle = "No data",
+  emptyDescription = "",
   height = "100%",
   rtl = false,
   readonly = false,
@@ -126,12 +133,17 @@ setContext("orbis-grid-onaction", (event: GridActionEvent) => {
   onaction?.(event);
 });
 
+const shouldRunClientQuery = $derived(
+  clientQuery || Boolean(search) || Boolean(filter) || sorts.length > 0,
+);
+
 const visibleCols = $derived(columns.filter((c) => !c.hidden));
 const displayRows = $derived(
-  clientQuery
+  shouldRunClientQuery
     ? queryClient(source, visibleCols, { filter, search, sorts })
     : source,
 );
+
 const rowWindow = $derived(
   visibleWindow(
     scrollTop,
@@ -141,13 +153,16 @@ const rowWindow = $derived(
     10,
   ),
 );
+
 const totalWidth = $derived(
   visibleCols.reduce(
     (sum, col) => sum + (columnWidths[columnId(col)] ?? columnWidth(col)),
     0,
   ),
 );
+
 const totalHeight = $derived(displayRows.length * rowSize);
+
 const colWindow = $derived.by(() => {
   if (visibleCols.length < 24)
     return {
@@ -164,6 +179,7 @@ const colWindow = $derived.by(() => {
     4,
   );
 });
+
 const windowedCols = $derived(
   visibleCols.slice(colWindow.start, colWindow.end),
 );
@@ -251,7 +267,7 @@ function startEdit(row: number, col: number, seed?: string) {
   const column = visibleCols[col];
   if (!column || readonly || column.readonly) return;
   const type = column.type;
-  if (type === "boolean" || column.editor === "checkbox") {
+  if (type === "boolean" || column.editor === "checkbox" || column.id === "__selected") {
     const current = displayRows[row]
       ? getCellValue(displayRows[row]!, column)
       : false;
@@ -362,6 +378,8 @@ function maybeAutoScroll(e: PointerEvent) {
 function handlePointer(row: number, col: number, e: PointerEvent) {
   if (e.button !== 0) return;
   if ((e.target as HTMLElement | null)?.closest(".resize-handle")) return;
+  if ((e.target as HTMLElement | null)?.closest(".orbis-checkbox-btn")) return;
+  if ((e.target as HTMLElement | null)?.closest(".orbis-action-btn")) return;
   e.preventDefault();
   root?.focus();
   if (e.ctrlKey || e.metaKey) {
@@ -482,6 +500,7 @@ function handleKeydown(e: KeyboardEvent) {
 }
 
 function onHeaderClick(col: OrbisColumnDef, e: MouseEvent) {
+  if ((e.target as HTMLElement | null)?.closest(".orbis-checkbox-btn")) return;
   if (!isColumnSortable(col)) return;
   sorts = toggleSort(sorts, columnId(col), e.shiftKey);
 }
@@ -503,7 +522,7 @@ function onContext(row: number, col: number, e: MouseEvent) {
       context: "cell",
       hasSelection: !!hasSelection,
       canEdit: !readonly,
-      filtered: clientQuery && !!filter,
+      filtered: shouldRunClientQuery && Boolean(filter),
     }),
   };
 }
@@ -650,6 +669,107 @@ function cellClass(
   return parts.join(" ");
 }
 
+function getBadgeVariant(val: unknown): "lime" | "destructive" | "secondary" | "outline" {
+  const s = String(val ?? "").toLowerCase().trim();
+  if (
+    [
+      "active", "present", "paid", "approved", "open", "success",
+      "ناجح", "حاضر", "نشط", "مدفوع", "passing", "true", "1",
+    ].includes(s)
+  )
+    return "lime";
+  if (
+    [
+      "inactive", "absent", "overdue", "failed", "closed", "locked",
+      "withdrawn", "error", "راسب", "غائب", "غير نشط", "معلق", "false", "0",
+    ].includes(s)
+  )
+    return "destructive";
+  if (
+    [
+      "pending", "late", "partial", "warning", "متأخر", "جزئي", "قيد الانتظار",
+    ].includes(s)
+  )
+    return "secondary";
+  return "outline";
+}
+
+function getInitials(name: string): string {
+  if (!name) return "";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  const first = parts[0]?.slice(0, 1) || "";
+  const last = parts[parts.length - 1]?.slice(0, 1) || "";
+  return (first + last).toUpperCase();
+}
+
+function getAvatarSrc(row: GridRow): string {
+  return String(row.avatar_url || row.avatar || row.photo_url || row.image || "");
+}
+
+function isIndexColumn(col: OrbisColumnDef): boolean {
+  const id = columnId(col);
+  return id === "__idx" || id === "__rowIndex";
+}
+
+function isCheckboxColumn(col: OrbisColumnDef): boolean {
+  const id = columnId(col);
+  return id === "__selected" || col.type === "boolean" || col.editor === "checkbox";
+}
+
+function isBadgeColumn(col: OrbisColumnDef, row?: GridRow): boolean {
+  const id = columnId(col);
+  if (col.type === "badge" || col.type === "status") return true;
+  if (
+    id === "status" ||
+    id === "payment_status" ||
+    id === "attendance" ||
+    id === "state" ||
+    id === "role" ||
+    id === "grade_letter"
+  )
+    return true;
+  if (row) {
+    const val = getCellValue(row, col);
+    if (
+      typeof val === "string" &&
+      [
+        "active", "inactive", "present", "absent", "late", "excused", "paid",
+        "pending", "overdue", "partial", "draft", "posted", "unposted",
+        "approved", "rejected", "success", "failed", "warning", "open", "closed",
+        "ناجح", "راسب", "حاضر", "غائب", "متأخر", "معذور", "نشط", "غير نشط",
+        "مدفوع", "معلق", "جزئي", "مسودة", "مرحل", "ملغى", "مقبول", "مرفوض"
+      ].includes(val.toLowerCase().trim())
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function isAvatarColumn(col: OrbisColumnDef, row?: GridRow): boolean {
+  const id = columnId(col);
+  if (col.type === "avatar") return true;
+  if (
+    id === "student_name" ||
+    id === "full_name" ||
+    id === "user" ||
+    id === "user_name" ||
+    id === "student" ||
+    id === "teacher"
+  ) {
+    return true;
+  }
+  if (row && (row.avatar_url || row.avatar || row.photo_url || row.image)) {
+    return true;
+  }
+  return false;
+}
+
+function isActionColumn(col: OrbisColumnDef): boolean {
+  return col.type === "action" || (Array.isArray(col.meta?.items) && col.meta.items.length > 0);
+}
+
 let sizedFor = $state("");
 $effect(() => {
   void source;
@@ -743,149 +863,280 @@ export function scrollToColumnProp(prop: string) {
     </div>
   {/if}
 
-  <div
-    class="orbis-grid-body"
-    onscroll={onScroll}
-    {@attach (el) => {
-      const node = el as HTMLDivElement;
-      bodyEl = node;
-      measure();
-      const ro = new ResizeObserver(measure);
-      ro.observe(node);
-      return () => {
-        ro.disconnect();
-        if (bodyEl === node) bodyEl = null;
-      };
-    }}
-  >
-    <div class="orbis-spacer" style:height="{HEADER_H + totalHeight}px" style:width="{totalWidth}px">
-      <div class="orbis-grid-head" role="row" style:padding-inline-start="{colWindow.offset}px">
-        {#each windowedCols as col, i (columnId(col) || i)}
-          {@const c = colWindow.start + i}
-          {@const id = columnId(col)}
-          {@const Header = col.headerCell}
-          <div
-            class="orbis-hcell"
-            class:pinned={isColumnPinnedLeft(col)}
-            role="columnheader"
-            aria-colindex={c + 1}
-            aria-sort={sorts.find((s) => s.id === id)?.dir === "desc" ? "descending" : sorts.find((s) => s.id === id) ? "ascending" : "none"}
-            style:width="{widthOf(col)}px"
-            onclick={(e) => onHeaderClick(col, e)}
-          >
-            {#if Header}
-              <Header row={{}} column={{ ...col, id, meta: { ...col.meta, isSelectionHeader: id === "__selected", selectedAll: displayRows.length > 0 && displayRows.every((row, idx) => isRowSelected(selection, rowKey(row, idx), displayRows.length)) } }} />
-            {:else}
-              <span class="hlabel">{columnHeader(col)}</span>
-            {/if}
-            <button
-              type="button"
-              class="resize-handle"
-              aria-label="Resize column"
-              onpointerdown={(e) => onResizeStart(col, e)}
-            ></button>
+  {#if loading}
+    <div class="orbis-skeleton-wrap">
+      <div class="orbis-grid-head" role="row">
+        {#each visibleCols as col}
+          <div class="orbis-hcell" style:width="{widthOf(col)}px">
+            <div class="orbis-skeleton-bar" style:width="{Math.min(widthOf(col) * 0.7, 90)}px"></div>
           </div>
         {/each}
       </div>
-      <div class="orbis-window" style:transform="translateY({HEADER_H + rowWindow.offset}px)">
-        {#each { length: rowWindow.count } as _, i}
-          {@const r = rowWindow.start + i}
-          {@const row = displayRows[r]}
-          {#if row}
+      {#each Array(8) as _, i}
+        <div class="orbis-skeleton-row" style:opacity="{1 - i * 0.1}">
+          {#each visibleCols as col, j}
             <div
-              class="orbis-row"
-              class:selected={isRowSelected(selection, rowKey(row, r), displayRows.length)}
-              role="row"
-              aria-rowindex={r + 1}
-              aria-selected={isRowSelected(selection, rowKey(row, r), displayRows.length)}
-              data-row={rowKey(row, r)}
-              style:padding-inline-start="{colWindow.offset}px"
+              class="orbis-skeleton-bar"
+              style:width="{Math.min(widthOf(col) * (j === 0 ? 0.4 : 0.75), 110)}px"
+            ></div>
+          {/each}
+        </div>
+      {/each}
+    </div>
+  {:else if displayRows.length === 0}
+    <div class="orbis-empty-wrap">
+      <div class="orbis-empty-title">{emptyTitle}</div>
+      {#if emptyDescription}
+        <div class="orbis-empty-desc">{emptyDescription}</div>
+      {/if}
+    </div>
+  {:else}
+    <div
+      class="orbis-grid-body"
+      onscroll={onScroll}
+      {@attach (el) => {
+        const node = el as HTMLDivElement;
+        bodyEl = node;
+        measure();
+        const ro = new ResizeObserver(measure);
+        ro.observe(node);
+        return () => {
+          ro.disconnect();
+          if (bodyEl === node) bodyEl = null;
+        };
+      }}
+    >
+      <div class="orbis-spacer" style:height="{HEADER_H + totalHeight}px" style:width="{totalWidth}px">
+        <div class="orbis-grid-head" role="row" style:padding-inline-start="{colWindow.offset}px">
+          {#each windowedCols as col, i (columnId(col) || i)}
+            {@const c = colWindow.start + i}
+            {@const id = columnId(col)}
+            {@const Header = col.headerCell}
+            {@const isSelectCol = id === "__selected"}
+            <div
+              class="orbis-hcell"
+              class:pinned={isColumnPinnedLeft(col)}
+              role="columnheader"
+              aria-colindex={c + 1}
+              aria-sort={sorts.find((s) => s.id === id)?.dir === "desc" ? "descending" : sorts.find((s) => s.id === id) ? "ascending" : "none"}
+              style:width="{widthOf(col)}px"
+              onclick={(e) => onHeaderClick(col, e)}
             >
-              {#each windowedCols as col, i (columnId(col) || i)}
-                {@const c = colWindow.start + i}
-                {@const id = columnId(col)}
-                {@const Cell = col.cell}
-                {@const isEdit = editing?.row === r && editing?.col === c}
-                <div
-                  class={cellClass(row, col, r, c)}
-                  role="gridcell"
-                  tabindex="-1"
-                  data-grid-r={r}
-                  data-grid-c={c}
-                  aria-colindex={c + 1}
-                  aria-selected={selection.active?.row === r && selection.active?.col === c}
-                  style:width="{widthOf(col)}px"
-                  title={row.__errors instanceof Map ? row.__errors.get(id) : undefined}
-                  onpointerdown={(e) => handlePointer(r, c, e)}
-                  ondblclick={(e) => handleDblClick(r, c, e)}
-                  oncontextmenu={(e) => onContext(r, c, e)}
+              {#if Header}
+                <Header row={{}} column={{ ...col, id }} />
+              {:else if isSelectCol}
+                {@const isAllSelected = displayRows.length > 0 && displayRows.every((row, idx) => isRowSelected(selection, rowKey(row, idx), displayRows.length))}
+                <button
+                  type="button"
+                  class="orbis-checkbox-btn"
+                  class:checked={isAllSelected}
+                  aria-label="Select all"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    if (isAllSelected) {
+                      selection = emptySelection();
+                    } else {
+                      selection = selectScope(displayRows.map((row, idx) => rowKey(row, idx)), "filtered", [], []);
+                    }
+                    onselection?.(selection);
+                    onaction?.({ actionId: "select-all", row: {}, rowIndex: -1, prop: id, originalEvent: e });
+                  }}
                 >
-                  {#if isEdit && editing}
-                    {#if col.options?.length}
-                      <select
-                        class="orbis-editor"
-                        bind:this={editorEl}
-                        bind:value={editing.draft}
-                        onblur={() => {
-                          if (skipBlur) {
-                            skipBlur = false;
-                            return;
-                          }
-                          commitEdit();
-                        }}
-                        onkeydown={(e) => {
-                          if (e.key === "Escape") {
-                            e.preventDefault();
-                            cancelEdit();
-                          }
+                  {#if isAllSelected}
+                    <svg class="orbis-check-icon" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M12.207 4.793a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0l-2.5-2.5a1 1 0 0 1 1.414 0z"/>
+                    </svg>
+                  {/if}
+                </button>
+              {:else}
+                <span class="hlabel">{columnHeader(col)}</span>
+              {/if}
+              <button
+                type="button"
+                class="resize-handle"
+                aria-label="Resize column"
+                onpointerdown={(e) => onResizeStart(col, e)}
+              ></button>
+            </div>
+          {/each}
+        </div>
+        <div class="orbis-window" style:transform="translateY({HEADER_H + rowWindow.offset}px)">
+          {#each { length: rowWindow.count } as _, i}
+            {@const r = rowWindow.start + i}
+            {@const row = displayRows[r]}
+            {#if row}
+              <div
+                class="orbis-row"
+                class:selected={isRowSelected(selection, rowKey(row, r), displayRows.length)}
+                role="row"
+                aria-rowindex={r + 1}
+                aria-selected={isRowSelected(selection, rowKey(row, r), displayRows.length)}
+                data-row={rowKey(row, r)}
+                style:padding-inline-start="{colWindow.offset}px"
+              >
+                {#each windowedCols as col, i (columnId(col) || i)}
+                  {@const c = colWindow.start + i}
+                  {@const id = columnId(col)}
+                  {@const Cell = col.cell}
+                  {@const isEdit = editing?.row === r && editing?.col === c}
+                  <div
+                    class={cellClass(row, col, r, c)}
+                    role="gridcell"
+                    tabindex="-1"
+                    data-grid-r={r}
+                    data-grid-c={c}
+                    aria-colindex={c + 1}
+                    aria-selected={selection.active?.row === r && selection.active?.col === c}
+                    style:width="{widthOf(col)}px"
+                    title={row.__errors instanceof Map ? row.__errors.get(id) : undefined}
+                    onpointerdown={(e) => handlePointer(r, c, e)}
+                    ondblclick={(e) => handleDblClick(r, c, e)}
+                    oncontextmenu={(e) => onContext(r, c, e)}
+                  >
+                    {#if isEdit && editing}
+                      {#if col.options?.length}
+                        <select
+                          class="orbis-editor"
+                          bind:this={editorEl}
+                          bind:value={editing.draft}
+                          onblur={() => {
+                            if (skipBlur) {
+                              skipBlur = false;
+                              return;
+                            }
+                            commitEdit();
+                          }}
+                          onkeydown={(e) => {
+                            if (e.key === "Escape") {
+                              e.preventDefault();
+                              cancelEdit();
+                            }
+                            e.stopPropagation();
+                          }}
+                        >
+                          {#each col.options as opt}
+                            <option value={String(opt.value)}>{opt.label}</option>
+                          {/each}
+                        </select>
+                      {:else}
+                        <input
+                          class="orbis-editor"
+                          type={editorInputType(col)}
+                          bind:this={editorEl}
+                          bind:value={editing.draft}
+                          onblur={() => {
+                            if (skipBlur) {
+                              skipBlur = false;
+                              return;
+                            }
+                            commitEdit();
+                          }}
+                          onkeydown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              commitEdit(e.shiftKey ? -1 : 1, 0);
+                            } else if (e.key === "Tab") {
+                              e.preventDefault();
+                              commitEdit(0, e.shiftKey ? (rtl ? 1 : -1) : rtl ? -1 : 1);
+                            } else if (e.key === "Escape") {
+                              e.preventDefault();
+                              cancelEdit();
+                            }
+                            e.stopPropagation();
+                          }}
+                        />
+                      {/if}
+                    {:else if Cell}
+                      <Cell {row} column={{ ...col, id }} />
+                    {:else if isIndexColumn(col)}
+                      <span class="orbis-index-text">{getCellValue(row, col) ?? (r + 1)}</span>
+                    {:else if isCheckboxColumn(col)}
+                      {@const isChecked = id === "__selected" ? isRowSelected(selection, rowKey(row, r), displayRows.length) || row.__selected === true : getCellValue(row, col) === true || getCellValue(row, col) === 1 || getCellValue(row, col) === "true"}
+                      <button
+                        type="button"
+                        class="orbis-checkbox-btn"
+                        class:checked={isChecked}
+                        onclick={(e) => {
                           e.stopPropagation();
+                          if (id === "__selected") {
+                            selection = toggleId(selection, rowKey(row, r));
+                            onselection?.(selection);
+                            onaction?.({ actionId: "toggle-select", row, rowIndex: r, prop: id, originalEvent: e });
+                          } else {
+                            commitOverlay(r, col, !isChecked);
+                          }
                         }}
                       >
-                        {#each col.options as opt}
-                          <option value={String(opt.value)}>{opt.label}</option>
+                        {#if isChecked}
+                          <svg class="orbis-check-icon" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M12.207 4.793a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0l-2.5-2.5a1 1 0 0 1 1.414 0z"/>
+                          </svg>
+                        {/if}
+                      </button>
+                    {:else if isAvatarColumn(col, row)}
+                      {@const val = String(getCellValue(row, col) ?? "")}
+                      {@const src = getAvatarSrc(row)}
+                      <div class="orbis-avatar-cell">
+                        <div class="orbis-avatar-circle">
+                          {#if src}
+                            <img src={src} alt={val} class="orbis-avatar-img" />
+                          {:else}
+                            <span class="orbis-avatar-fallback">{getInitials(val)}</span>
+                          {/if}
+                        </div>
+                        <span class="orbis-avatar-text">{val}</span>
+                      </div>
+                    {:else if isBadgeColumn(col, row)}
+                      {@const val = getCellValue(row, col)}
+                      {@const formatted = formatCell(row, col, rtl ? "ar" : "en")}
+                      <span class="orbis-badge orbis-badge-{getBadgeVariant(val)}">
+                        {formatted || "—"}
+                      </span>
+                    {:else if Array.isArray(getCellValue(row, col))}
+                      {@const arr = getCellValue(row, col) as unknown[]}
+                      <div class="orbis-tags-group">
+                        {#each arr as item}
+                          <span class="orbis-badge orbis-badge-outline">{typeof item === 'object' && item ? (item as any).name || (item as any).label || JSON.stringify(item) : String(item)}</span>
                         {/each}
-                      </select>
+                      </div>
+                    {:else if isActionColumn(col)}
+                      {@const items = (col.meta?.items as ActionItem[]) || []}
+                      <div class="orbis-actions-group">
+                        {#each items as action}
+                          {#if !action.visible || action.visible(row)}
+                            <button
+                              type="button"
+                              class="orbis-action-btn orbis-action-{action.variant || 'ghost'}"
+                              disabled={action.disabled?.(row)}
+                              title={action.label || action.id}
+                              onclick={(e) => {
+                                e.stopPropagation();
+                                onaction?.({ actionId: action.id, row, rowIndex: r, prop: id, originalEvent: e });
+                              }}
+                            >
+                              {#if action.icon === "Pencil" || action.id === "edit"}
+                                <svg class="orbis-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                              {:else if action.icon === "Trash2" || action.icon === "Trash" || action.id === "delete"}
+                                <svg class="orbis-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                              {:else}
+                                <span>{action.label || action.id}</span>
+                              {/if}
+                            </button>
+                          {/if}
+                        {/each}
+                      </div>
                     {:else}
-                      <input
-                        class="orbis-editor"
-                        type={editorInputType(col)}
-                        bind:this={editorEl}
-                        bind:value={editing.draft}
-                        onblur={() => {
-                          if (skipBlur) {
-                            skipBlur = false;
-                            return;
-                          }
-                          commitEdit();
-                        }}
-                        onkeydown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            commitEdit(e.shiftKey ? -1 : 1, 0);
-                          } else if (e.key === "Tab") {
-                            e.preventDefault();
-                            commitEdit(0, e.shiftKey ? (rtl ? 1 : -1) : rtl ? -1 : 1);
-                          } else if (e.key === "Escape") {
-                            e.preventDefault();
-                            cancelEdit();
-                          }
-                          e.stopPropagation();
-                        }}
-                      />
+                      <span class="orbis-text">{formatCell(row, col, rtl ? "ar" : "en")}</span>
                     {/if}
-                  {:else if Cell}
-                    <Cell {row} column={{ ...col, id }} />
-                  {:else}
-                    <span class="orbis-text">{formatCell(row, col)}</span>
-                  {/if}
-                </div>
-              {/each}
-            </div>
-          {/if}
-        {/each}
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          {/each}
+        </div>
       </div>
     </div>
-  </div>
+  {/if}
 </div>
 
 {#if menu}
@@ -1072,6 +1323,10 @@ export function scrollToColumnProp(prop: string) {
     white-space: nowrap;
     width: 100%;
   }
+  .orbis-index-text {
+    font-family: var(--font-mono, monospace);
+    color: var(--muted-foreground);
+  }
   .orbis-editor {
     width: 100%;
     height: calc(100% - 2px);
@@ -1086,6 +1341,208 @@ export function scrollToColumnProp(prop: string) {
   .orbis-editor:focus {
     box-shadow: inset 0 0 0 1px var(--ring);
   }
+
+  /* Badges */
+  .orbis-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    line-height: 1;
+    text-transform: capitalize;
+    white-space: nowrap;
+  }
+  .orbis-badge-lime {
+    background: color-mix(in oklab, #84cc16 18%, transparent);
+    color: #4d7c0f;
+    border: 1px solid color-mix(in oklab, #84cc16 30%, transparent);
+  }
+  .orbis-badge-destructive {
+    background: color-mix(in oklab, var(--destructive) 15%, transparent);
+    color: var(--destructive);
+    border: 1px solid color-mix(in oklab, var(--destructive) 30%, transparent);
+  }
+  .orbis-badge-secondary {
+    background: var(--secondary);
+    color: var(--secondary-foreground);
+    border: 1px solid var(--border);
+  }
+  .orbis-badge-outline {
+    background: transparent;
+    color: var(--foreground);
+    border: 1px solid var(--border);
+  }
+  .orbis-tags-group {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    overflow: hidden;
+    max-width: 100%;
+  }
+
+  /* Avatar Cell */
+  .orbis-avatar-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-width: 0;
+  }
+  .orbis-avatar-circle {
+    width: 1.375rem;
+    height: 1.375rem;
+    border-radius: 9999px;
+    background: var(--muted);
+    color: var(--muted-foreground);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    font-size: 0.5625rem;
+    font-weight: 700;
+    border: 1px solid var(--border);
+  }
+  .orbis-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .orbis-avatar-fallback {
+    text-transform: uppercase;
+  }
+  .orbis-avatar-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+    color: var(--foreground);
+  }
+
+  /* Checkbox Button */
+  .orbis-checkbox-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    border-radius: var(--radius-sm, 3px);
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    color: var(--primary-foreground);
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.15s ease;
+  }
+  .orbis-checkbox-btn:hover {
+    border-color: var(--primary);
+  }
+  .orbis-checkbox-btn.checked {
+    background: var(--primary);
+    border-color: var(--primary);
+  }
+  .orbis-check-icon {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  /* Actions Group */
+  .orbis-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .orbis-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border-radius: var(--radius-sm, 3px);
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    font-size: 0.6875rem;
+    transition: all 0.15s ease;
+  }
+  .orbis-action-btn:hover:not(:disabled) {
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
+  .orbis-action-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .orbis-action-btn.orbis-action-destructive:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--destructive) 15%, transparent);
+    color: var(--destructive);
+  }
+  .orbis-action-btn.orbis-action-lime:hover:not(:disabled) {
+    background: color-mix(in oklab, #84cc16 18%, transparent);
+    color: #4d7c0f;
+  }
+  .orbis-action-icon {
+    width: 0.8125rem;
+    height: 0.8125rem;
+  }
+
+  /* Skeleton Loading State */
+  .orbis-skeleton-wrap {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  .orbis-skeleton-row {
+    display: flex;
+    align-items: center;
+    height: var(--row-h, 36px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 0.75rem;
+    gap: 1rem;
+  }
+  .orbis-skeleton-bar {
+    height: 0.625rem;
+    border-radius: var(--radius-sm, 4px);
+    background: linear-gradient(90deg, var(--muted) 25%, color-mix(in oklab, var(--accent) 70%, var(--muted)) 50%, var(--muted) 75%);
+    background-size: 200% 100%;
+    animation: orbis-shimmer 1.8s infinite;
+  }
+  @keyframes orbis-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Empty State */
+  .orbis-empty-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 2rem;
+    gap: 0.375rem;
+    color: var(--muted-foreground);
+    text-align: center;
+  }
+  .orbis-empty-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+  .orbis-empty-desc {
+    font-size: 0.75rem;
+    max-width: 20rem;
+  }
+
   .orbis-menu {
     position: fixed;
     z-index: 80;

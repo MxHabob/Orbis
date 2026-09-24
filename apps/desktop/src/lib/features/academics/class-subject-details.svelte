@@ -1,7 +1,7 @@
 <!--
   @component ClassSubjectDetails
   Feature component for the Coursework Gradebook spreadsheet.
-  Provides interactive cell editing, total recalculation, and batch grade saving.
+  Provides interactive cell editing, total recalculation, and batch grade saving using OrbisGrid.
 -->
 <script lang="ts">
 import { api } from "$lib/api";
@@ -11,12 +11,11 @@ import { toast } from "@orbis/ui";
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { academicContext } from "$lib/stores";
-import type { CellEditEvent } from "@orbis/svelte-grid";
+import { OrbisGrid, type CellEditEvent } from "@orbis/svelte-grid";
 import {
-  DataTable,
   buildGradeColumns,
   recalculateRowTotals,
-} from "$lib/tables";
+} from "$lib/features/exams/grade-helpers";
 
 let { orgId, classId, classSubjectId }: { orgId: string; classId: string; classSubjectId: string } = $props();
 
@@ -176,9 +175,9 @@ async function handleSaveAll() {
         </p>
       </div>
     {:else}
-      <DataTable
+      <OrbisGrid
         columns={gridColumns}
-        source={gridSource}
+        bind:source={gridSource}
         loading={isMatrixLoading}
         height="100%"
         readonly={!canEnterGrades}

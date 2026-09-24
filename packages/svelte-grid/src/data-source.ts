@@ -1,6 +1,5 @@
 /**
  * Thin Data Source helpers for Orbis grids.
- * TanStack Query remains the server-state cache; this only shapes list/bulk I/O.
  */
 import type {
   BulkResult,
@@ -8,8 +7,8 @@ import type {
   DataQuery,
   GridDataSource,
   GridRow,
-} from "@orbis/svelte-grid";
-import { shouldUseServerFilter } from "@orbis/svelte-grid";
+} from "./types";
+import { shouldUseServerFilter } from "./engine/query";
 
 export { shouldUseServerFilter };
 

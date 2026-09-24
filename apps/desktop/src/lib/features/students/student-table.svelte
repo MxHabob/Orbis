@@ -1,19 +1,17 @@
 <!--
 @component StudentTable
-Renders the list of students using the DataTable infrastructure.
+Renders the list of students using OrbisGrid directly.
 Matches the column layout and styling of the React dashboard precisely.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { DataTable, AvatarCell, BadgeCell, CheckboxCell } from "$lib/tables";
 import type { Enrollment } from "$lib/api";
-
 import { formatDate, l } from "$lib/core/i18n";
-import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
-import { BookOpen } from "@orbis/icons";
+import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
-import { studentsStore } from "$lib/features/students";
+import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
+import { studentFilterFields } from "$lib/core/filter-configs";
 
 let {
   students,
@@ -32,7 +30,6 @@ let {
 } = $props();
 
 // ── Helpers ────────────────────────────────────────────────────────
-
 function getClassName(classId: string): string {
   const cls = classes.find((c) => c.id === classId);
   return cls
@@ -41,7 +38,6 @@ function getClassName(classId: string): string {
 }
 
 // ── Column Definitions ─────────────────────────────────────────────
-
 const baseColumns: OrbisColumnDef[] = [
   {
     id: "full_name",
@@ -50,7 +46,9 @@ const baseColumns: OrbisColumnDef[] = [
     name: m.common_word_student(),
     width: 280,
     size: 280,
-    cell: AvatarCell,
+    type: "avatar",
+    readonly: true,
+    pin: "left",
   },
   {
     id: "student_number",
@@ -59,8 +57,8 @@ const baseColumns: OrbisColumnDef[] = [
     name: m.common_table_student_number(),
     width: 150,
     size: 150,
-    cellClass:
-      "inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[10px] font-mono font-medium text-foreground bg-background",
+    readonly: true,
+    cellClass: "font-mono text-muted-foreground",
   },
   {
     id: "class_name",
@@ -69,6 +67,7 @@ const baseColumns: OrbisColumnDef[] = [
     name: m.common_table_class(),
     width: 160,
     size: 160,
+    readonly: true,
   },
   {
     id: "status",
@@ -77,7 +76,9 @@ const baseColumns: OrbisColumnDef[] = [
     name: m.common_word_status(),
     width: 120,
     size: 120,
-    cell: BadgeCell,
+    type: "badge",
+    align: "center",
+    readonly: true,
   },
   {
     id: "sex_display",
@@ -86,6 +87,8 @@ const baseColumns: OrbisColumnDef[] = [
     name: m.common_form_sex(),
     width: 110,
     size: 110,
+    readonly: true,
+    align: "center",
   },
   {
     id: "enrollment_date_display",
@@ -94,6 +97,7 @@ const baseColumns: OrbisColumnDef[] = [
     name: m.common_table_enrolled_at(),
     width: 150,
     size: 150,
+    readonly: true,
     cellClass: "text-xs text-muted-foreground",
   },
 ];
@@ -108,16 +112,13 @@ const columns = $derived.by<OrbisColumnDef[]>(() => {
       name: "",
       width: 48,
       size: 48,
-      cell: CheckboxCell,
+      type: "boolean",
+      align: "center",
       sort: false,
     });
   }
   return cols;
 });
-
-import { applyFilter } from "@orbis/ui/filter-builder";
-import type { UniversalFilter } from "@orbis/ui/filter-builder";
-import { studentFilterFields } from "$lib/tables/definitions/filter-configs";
 
 let activeFilter = $state<UniversalFilter>({
   logic: "AND",
@@ -125,10 +126,8 @@ let activeFilter = $state<UniversalFilter>({
   groups: [],
 });
 
-const filteredStudents = $derived(applyFilter(students || [], activeFilter));
-
 let gridSource = $derived(
-  filteredStudents.map((student, i) => {
+  (students || []).map((student, i) => {
     const rawSex = String(
       student.sex || (student as any).gender || "",
     ).toLowerCase();
@@ -179,17 +178,27 @@ function handleGridAction(event: GridActionEvent) {
 }
 </script>
 
-<DataTable
-  {columns}
-  source={gridSource}
-  height="100%"
-  rowSize={44}
-  rtl={getLocale() === "ar"}
-  onaction={handleGridAction}
-  filterable={true}
-  filterFields={studentFilterFields}
-  bind:filterValue={activeFilter}
-  emptyIcon={BookOpen}
-  emptyTitle={m.common_table_no_students()}
-  emptyDescription={m.common_table_no_students_hint()}
-/>
+<div class="h-full w-full flex flex-col gap-3">
+  <div class="flex items-center justify-end shrink-0">
+    <FilterTrigger
+      bind:filter={activeFilter}
+      fields={studentFilterFields}
+    />
+  </div>
+
+  <div class="flex-1 min-h-0">
+    <OrbisGrid
+      {columns}
+      source={gridSource}
+      height="100%"
+      rowSize={44}
+      rtl={getLocale() === "ar"}
+      clientQuery
+      filter={activeFilter}
+      onaction={handleGridAction}
+      emptyTitle={m.common_table_no_students()}
+      emptyDescription={m.common_table_no_students_hint()}
+      readonly
+    />
+  </div>
+</div>

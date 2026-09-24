@@ -1,7 +1,7 @@
 <!--
   @component ClassCurriculum
   Feature component for Class Materials and Curriculum view.
-  Uses @orbis/svelte-grid / DataTable to display subjects assigned to a class.
+  Uses @orbis/svelte-grid directly to display subjects assigned to a class.
 -->
 <script lang="ts">
 import { createQuery } from "@tanstack/svelte-query";
@@ -10,8 +10,7 @@ import { Button } from "@orbis/ui/button";
 import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { academicContext } from "$lib/stores";
-import { DataTable, BadgeCell } from "$lib/tables";
-import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
+import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
 import { goto } from "$app/navigation";
 import ClassSubjectSheet from "$lib/features/academics/components/class-subject-sheet.svelte";
 
@@ -77,7 +76,8 @@ const columns: OrbisColumnDef[] = [
     name: m.common_status(),
     width: 110,
     size: 110,
-    cell: BadgeCell,
+    type: "badge",
+    align: "center",
   },
 ];
 
@@ -128,15 +128,18 @@ function handleGridAction(event: GridActionEvent) {
       </Button>
     </div>
   {:else}
-    <DataTable
-      {columns}
-      source={gridSource}
-      loading={isLoading}
-      height="100%"
-      rowSize={48}
-      onaction={handleGridAction}
-      emptyTitle={m.common_empty_classes_desc()}
-    />
+    <div class="flex-1 min-h-0">
+      <OrbisGrid
+        {columns}
+        source={gridSource}
+        loading={isLoading}
+        height="100%"
+        rowSize={48}
+        readonly
+        onaction={handleGridAction}
+        emptyTitle={m.common_empty_classes_desc()}
+      />
+    </div>
   {/if}
 
   <ClassSubjectSheet

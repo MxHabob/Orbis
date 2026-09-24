@@ -16,10 +16,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
-import { Checkbox } from "@orbis/ui/checkbox";
-import { Label } from "@orbis/ui/label";
-import { AdjustmentsHorizontal, AlignHorizontal, ArrowLeft, ArrowUpTray, FloppyDisk, Info, Trash } from "@orbis/icons";
+import { ArrowLeft, ArrowUpTray, Trash } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 
 import { localizeHref } from "$lib/paraglide/runtime";
@@ -32,12 +29,10 @@ import OverrideRequestDialog from "$lib/shared/components/override-request-dialo
 
 import BulkGrid from "./bulk-grid.svelte";
 import BulkSummary from "./bulk-summary.svelte";
-import { STUDENT_HEADER_PATTERNS } from "./paste-handler";
 import {
   buildStudentColumns,
   createEmptyStudentRow,
   STUDENT_DATA_PROPS,
-  EXTENDED_PROPS,
 } from "./students/student-columns";
 import {
   validateStudentRows,
@@ -165,18 +160,8 @@ const labels: Record<string, string> = {
   medical: m.common_bulk_col_medical(),
 };
 
-// Columns (reactive to extended column toggle)
-let columns = $derived(buildStudentColumns(labels, visibleExtended, classes));
-
-function toggleExtended(prop: string) {
-  const newSet = new Set(visibleExtended);
-  if (newSet.has(prop)) {
-    newSet.delete(prop);
-  } else {
-    newSet.add(prop);
-  }
-  visibleExtended = newSet;
-}
+// Columns (all columns visible)
+let columns = $derived(buildStudentColumns(labels, undefined, classes));
 
 // Data Handlers
 function handleRowsChange(_: Record<string, unknown>[]) {
@@ -350,33 +335,6 @@ async function handleSubmit() {
       </div>
 
       <div class="flex items-center gap-2 flex-nowrap shrink-0">
-        <!-- Column Toggle -->
-        <Popover>
-          <PopoverTrigger>
-            <Button variant="outline" size="sm" class="text-xs cursor-pointer">
-              <AlignHorizontal size={13} class="me-1.5" />
-              {m.common_bulk_extra_columns()}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent class="w-56 p-3" align="end">
-            <div class="flex flex-col gap-2.5">
-              <span class="text-xs font-semibold text-foreground mb-1">
-                {m.common_bulk_toggle_columns()}
-              </span>
-              {#each EXTENDED_PROPS as prop}
-                <div class="flex items-center gap-2">
-                  <Checkbox
-                    checked={visibleExtended.has(prop)}
-                    onclick={() => toggleExtended(prop)}
-                  />
-                  <Label class="text-xs text-muted-foreground cursor-pointer">
-                    {labels[prop] ?? prop}
-                  </Label>
-                </div>
-              {/each}
-            </div>
-          </PopoverContent>
-        </Popover>
         <Button
           variant="outline"
           size="sm"
@@ -414,7 +372,7 @@ async function handleSubmit() {
       {columns}
       dataProps={[...STUDENT_DATA_PROPS]}
       bind:rows
-      headerPatterns={STUDENT_HEADER_PATTERNS}
+      // headerPatterns={STUDENT_HEADER_PATTERNS}
       createEmptyRow={createEmptyStudentRow}
       onrowschange={handleRowsChange}
     />

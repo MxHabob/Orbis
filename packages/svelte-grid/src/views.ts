@@ -1,7 +1,7 @@
 /**
- * Optional local view snapshots (filters/sort/columns). Not a backend views service.
+ * Optional local view snapshots (filters/sort/columns).
  */
-import type { GridFilter, SortSpec } from "@orbis/svelte-grid";
+import type { GridFilter, SortSpec } from "./types";
 
 export interface TableViewState {
   id: string;

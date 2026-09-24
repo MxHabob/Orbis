@@ -6,7 +6,6 @@ import {
 } from "$lib/features/finance";
 import { extractErrorMessage } from "$lib/api";
 import { formatCurrency } from "$lib/core/i18n";
-import { DataTable } from "$lib/tables";
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import { MetricProgress } from "@orbis/ui";
 import { fade } from "svelte/transition";
@@ -118,7 +117,7 @@ const trialColumns = $derived.by((): OrbisColumnDef[] => [
 const trialSource = $derived(
   leafAccounts.map((account) => {
     const row: Record<string, unknown> = {
-      account: `${account.code || "-"} - ${account.name_ar || account.name || "-"}`,
+      account: `${account.code || "-"} - ${account.name || "-"}`,
     };
     for (const currency of activeCurrencies) {
       const amount = balance(account, currency.code);
@@ -165,7 +164,7 @@ function reportSource(groups: string[][]) {
     for (const account of accountsByType(type)) {
       const row: Record<string, unknown> = {
         section: group[0],
-        account: `${account.code || "-"} - ${account.name_ar || account.name || "-"}`,
+        account: `${account.code || "-"} - ${account.name || "-"}`,
       };
       for (const currency of activeCurrencies) {
         const amount = balance(account, currency.code);

@@ -1,6 +1,6 @@
 <!--
   @component StudentAttendance
-  Student attendance statistics and history log.
+  Student attendance statistics and history log with OrbisGrid.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -10,12 +10,10 @@ import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
 import { formatNumber, formatPercent, formatDate, l } from "$lib/core/i18n";
-import { DataTable } from "$lib/tables";
-import { studentAttendance as saDef, withIndex } from "$lib/tables/definitions";
+import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import { academicContext } from "$lib/stores";
-import { applyFilter } from "@orbis/ui/filter-builder";
-import type { UniversalFilter } from "@orbis/ui/filter-builder";
-import { attendanceFilterFields } from "$lib/tables/definitions/filter-configs";
+import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
+import { attendanceFilterFields } from "$lib/core/filter-configs";
 
 let { orgId, studentId }: { orgId: string; studentId: string } = $props();
 
@@ -50,40 +48,34 @@ let activeFilter = $state<UniversalFilter>({
   groups: [],
 });
 
-const filteredAttendance = $derived(
-  applyFilter(report?.logs || [], activeFilter),
-);
-
 const gridSource = $derived(
-  withIndex(
-    filteredAttendance.map((log: any) => ({
-      ...log,
-      date: formatDate(log.date) || "—",
-      status: String(log.status || "")
-        .toLowerCase()
-        .replace("حاضر", "present")
-        .replace("غائب", "absent")
-        .replace("متأخر", "late"),
-      subject_name: log.subject_name || "—",
-      notes: log.notes || "—",
-      recorded_by_name: log.recorded_by_name || "—",
-    })),
-  ),
+  (report?.logs || []).map((log: any, i: number) => ({
+    ...log,
+    __idx: i + 1,
+    date: formatDate(log.date) || "—",
+    status: String(log.status || "")
+      .toLowerCase()
+      .replace("حاضر", "present")
+      .replace("غائب", "absent")
+      .replace("متأخر", "late"),
+    subject_name: log.subject_name || "—",
+    notes: log.notes || "—",
+    recorded_by_name: log.recorded_by_name || "—",
+  })),
 );
 
-const columns = $derived(
-  saDef.columns({
-    idx: "#",
-    date: m.common_overview_date(),
-    status: m.common_word_status(),
-    notes: m.academics_attendance_col_notes(),
-  }),
-);
+const columns: OrbisColumnDef[] = [
+  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
+  { id: "date", prop: "date", header: m.common_overview_date(), name: m.common_overview_date(), width: 130, size: 130, readonly: true, cellClass: "font-mono" },
+  { id: "status", prop: "status", header: m.common_word_status(), name: m.common_word_status(), width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  { id: "subject_name", prop: "subject_name", header: m.common_search_group_subjects(), name: "Subject", width: 140, size: 140, readonly: true },
+  { id: "notes", prop: "notes", header: m.academics_attendance_col_notes(), name: m.academics_attendance_col_notes(), width: 220, size: 220, readonly: true },
+];
 
 const rtl = $derived(getLocale() === "ar");
 </script>
 
-<div class="flex flex-col gap-6 text-xs text-start">
+<div class="flex flex-col gap-6 text-xs text-start font-sans">
   <!-- Attendance Stats -->
   {#if report}
     <div class="grid grid-cols-4 gap-3 shrink-0 select-none">
@@ -120,19 +112,25 @@ const rtl = $derived(getLocale() === "ar");
 
   <!-- Attendance Log -->
   <div class="flex flex-col gap-2">
-    <span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider px-1">{m.academics_attendance_log_title()}</span>
-    <DataTable
-      {columns}
-      source={gridSource}
-      loading={isLoading}
-      filterable={true}
-      filterFields={attendanceFilterFields}
-      bind:filterValue={activeFilter}
-      emptyIcon={Calendar}
-      emptyTitle={l("لا توجد سجلات حضور", "No attendance records")}
-      emptyDescription={l("لم يتم تسجيل أي حضور لهذا الطالب بعد", "No attendance recorded for this student yet.")}
-      {rtl}
-      height="350px"
-    />
+    <div class="flex items-center justify-between px-1">
+      <span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider">{m.academics_attendance_log_title()}</span>
+      <FilterTrigger
+        bind:filter={activeFilter}
+        fields={attendanceFilterFields}
+      />
+    </div>
+    <div class="h-[350px]">
+      <OrbisGrid
+        {columns}
+        source={gridSource}
+        loading={isLoading}
+        clientQuery
+        filter={activeFilter}
+        emptyTitle={l("لا توجد سجلات حضور", "No attendance records")}
+        emptyDescription={l("لم يتم تسجيل أي حضور لهذا الطالب بعد", "No attendance recorded for this student yet.")}
+        {rtl}
+        readonly
+      />
+    </div>
   </div>
 </div>

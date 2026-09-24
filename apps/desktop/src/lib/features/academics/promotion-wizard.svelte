@@ -23,9 +23,7 @@ import { Label } from "@orbis/ui/label";
 import { Switch } from "@orbis/ui/switch";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Badge } from "@orbis/ui/badge";
-import { Separator } from "@orbis/ui/separator";
-import { DataTable, BadgeCell } from "$lib/tables";
-import type { OrbisColumnDef } from "@orbis/svelte-grid";
+import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import {
   AlertDialog,
   AlertDialogContent,

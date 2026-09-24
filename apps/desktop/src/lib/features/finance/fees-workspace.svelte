@@ -9,16 +9,15 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
-import { Document, Plus, QuestionMarkCircle, CheckSquare } from "@orbis/icons";
+import { Input } from "@orbis/ui/input";
+import { Document, Plus, QuestionMarkCircle, CheckSquare, Search, Refresh } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
 import FeeAssignSheet from "$lib/features/finance/components/fee-assign-sheet.svelte";
-import { DataTable } from "$lib/tables";
-import { fees as feesDef, withIndex } from "$lib/tables/definitions";
-import { applyFilter } from "@orbis/ui/filter-builder";
-import type { UniversalFilter } from "@orbis/ui/filter-builder";
-import { studentFeeFilterFields } from "$lib/tables/definitions/filter-configs";
+import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
+import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
+import { studentFeeFilterFields } from "$lib/core/filter-configs";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -57,30 +56,11 @@ let activeFilter = $state<UniversalFilter>({
   groups: [],
 });
 
-// Derived Filtered List
-const filteredFees = $derived(
-  applyFilter(
-    fees.filter((f) => {
-      let matchesSearch = true;
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase().trim();
-        const studentName = String(f.student_name || "").toLowerCase();
-        const studentNum = String(f.student_number || "").toLowerCase();
-        const desc = String(f.description || "").toLowerCase();
-        matchesSearch =
-          studentName.includes(q) || studentNum.includes(q) || desc.includes(q);
-      }
-      return matchesSearch;
-    }),
-    activeFilter,
-  ),
-);
-
 // Calculations
 const stats = $derived.by(() => {
   let invoiced = 0;
   let collected = 0;
-  for (const f of filteredFees) {
+  for (const f of fees) {
     invoiced += Number(f.amount || 0);
     collected += Number(f.paid_amount || 0);
   }
@@ -100,52 +80,71 @@ function getStatusLabel(statusStr: string) {
 
 // Grid Source
 const gridSource = $derived(
-  withIndex(
-    filteredFees.map((f) => ({
-      ...f,
-      student_name: f.student_name || f.enrollment_id || "—",
-      student_avatar: f.student_avatar || f.avatar || null,
-      template_name: f.description || m.common_ft_category_tuition(),
-      total_amount: formatCurrency(Number(f.amount || 0), f.currency || "YER"),
-      paid_amount: formatCurrency(
-        Number(f.paid_amount || 0),
-        f.currency || "YER",
-      ),
-      balance: formatCurrency(
-        Math.max(0, Number(f.amount || 0) - Number(f.paid_amount || 0)),
-        f.currency || "YER",
-      ),
-      payment_status: getStatusLabel(f.status || "unpaid"),
-    })),
-  ),
+  fees.map((f, i) => ({
+    ...f,
+    __idx: i + 1,
+    student_name: f.student_name || f.enrollment_id || "—",
+    student_avatar: f.student_avatar || f.avatar || null,
+    template_name: f.description || m.common_ft_category_tuition(),
+    total_amount: formatCurrency(Number(f.amount || 0), f.currency || "YER"),
+    paid_amount: formatCurrency(
+      Number(f.paid_amount || 0),
+      f.currency || "YER",
+    ),
+    balance: formatCurrency(
+      Math.max(0, Number(f.amount || 0) - Number(f.paid_amount || 0)),
+      f.currency || "YER",
+    ),
+    payment_status: getStatusLabel(f.status || "unpaid"),
+  })),
 );
 
 // Columns
-const columns = $derived(
-  feesDef.columns({
-    idx: "#",
-    student: m.common_word_student(),
-    template: m.finance_fees_col_description(),
-    total: m.common_ft_col_amount(),
-    paid: m.finance_fees_total_collected(),
-    balance: m.finance_fees_total_due(),
-    status: m.finance_fees_col_status(),
-  }),
-);
+const columns: OrbisColumnDef[] = [
+  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
+  { id: "student_name", prop: "student_name", header: m.common_word_student(), name: m.common_word_student(), width: 220, size: 220, type: "avatar", readonly: true, pin: "left" },
+  { id: "template_name", prop: "template_name", header: m.finance_fees_col_description(), name: m.finance_fees_col_description(), width: 180, size: 180, readonly: true },
+  { id: "total_amount", prop: "total_amount", header: m.common_ft_col_amount(), name: m.common_ft_col_amount(), width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono font-medium" },
+  { id: "paid_amount", prop: "paid_amount", header: m.finance_fees_total_collected(), name: m.finance_fees_total_collected(), width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono text-emerald-600 font-medium" },
+  { id: "balance", prop: "balance", header: m.finance_fees_total_due(), name: m.finance_fees_total_due(), width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono text-rose-600 font-bold" },
+  { id: "payment_status", prop: "payment_status", header: m.finance_fees_col_status(), name: m.finance_fees_col_status(), width: 110, size: 110, type: "badge", align: "center", readonly: true },
+];
 
 const rtl = $derived(getLocale() === "ar");
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 font-sans">
-  <div class="flex items-center justify-end gap-4 shrink-0 select-none">
-    <Button 
-      variant="lime" 
-      class="text-xs h-8 px-3 shrink-0" 
-      onclick={() => isSheetOpen = true}
-    >
-      <Plus size={14} class="me-1.5" />
-      {m.finance_fees_assign_button()}
-    </Button>
+<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-5 font-sans">
+  <div class="flex items-center justify-between gap-4 shrink-0 select-none">
+    <div class="relative flex-1 max-w-xs">
+      <Search
+        size={14}
+        class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+      />
+      <Input
+        type="text"
+        placeholder={m.finance_fees_search_placeholder()}
+        bind:value={searchQuery}
+        class="h-8 ps-8 text-xs bg-card border-border/60"
+      />
+    </div>
+
+    <div class="flex items-center gap-2 shrink-0">
+      <FilterTrigger
+        bind:filter={activeFilter}
+        fields={studentFeeFilterFields}
+      />
+      <Button variant="ghost" size="icon-sm" onclick={loadFees} class="text-muted-foreground">
+        <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
+      </Button>
+      <Button 
+        variant="lime" 
+        class="text-xs h-8 px-3 shrink-0" 
+        onclick={() => isSheetOpen = true}
+      >
+        <Plus size={14} class="me-1.5" />
+        {m.finance_fees_assign_button()}
+      </Button>
+    </div>
   </div>
 
   <!-- Statistics summary row -->
@@ -194,22 +193,17 @@ const rtl = $derived(getLocale() === "ar");
 
   <!-- Main Billing Grid -->
   <div class="flex-1 min-h-0">
-    <DataTable
+    <OrbisGrid
       {columns}
       source={gridSource}
       loading={isLoading}
-      searchable
-      searchPlaceholder={m.finance_fees_search_placeholder()}
-      bind:searchValue={searchQuery}
-      filterable={true}
-      filterFields={studentFeeFilterFields}
-      bind:filterValue={activeFilter}
-      emptyIcon={Document}
+      clientQuery
+      search={searchQuery}
+      filter={activeFilter}
+      {rtl}
+      readonly
       emptyTitle={m.finance_fees_empty_title()}
       emptyDescription={m.finance_fees_empty_desc()}
-      {rtl}
-      refreshable
-      onRefresh={loadFees}
     />
   </div>
 </div>

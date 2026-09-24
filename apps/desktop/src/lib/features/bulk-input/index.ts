@@ -5,4 +5,3 @@ export { default as BulkGrid } from "./bulk-grid.svelte";
 export { default as BulkSummary } from "./bulk-summary.svelte";
 export * from "./config";
 export * from "./validator";
-export * from "./paste-handler";

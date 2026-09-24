@@ -1,24 +1,20 @@
 <!--
 @component DiscountTemplatesManager
-Lists all discount/scholarship templates with DataTable, CRUD via DiscountTemplateSheet.
+Lists all discount/scholarship templates with OrbisGrid, CRUD via DiscountTemplateSheet.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
-import { Plus, ReceiptPercent } from "@orbis/icons";
+import { Plus, ReceiptPercent, Refresh } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { toast } from "@orbis/ui";
 import DiscountTemplateSheet from "$lib/features/finance/components/discount-template-sheet.svelte";
-
-import { DataTable } from "$lib/tables";
-import { discountTemplates as dtDef, withIndex } from "$lib/tables/definitions";
-import type { UniversalFilter } from "@orbis/ui/filter-builder";
-import { discountTemplateFilterFields } from "$lib/tables/definitions/filter-configs";
-import { applyFilter } from "@orbis/ui/filter-builder";
-import type { GridActionEvent } from "@orbis/svelte-grid";
+import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
+import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
+import { discountTemplateFilterFields } from "$lib/core/filter-configs";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -63,29 +59,24 @@ function getTypeLabel(typeStr: string): string {
   return typeStr;
 }
 
-const filteredTemplates = $derived(applyFilter(templates, activeFilter));
-
 const gridSource = $derived(
-  withIndex(
-    filteredTemplates.map((tpl) => ({
-      ...tpl,
-      name: tpl.name_ar || tpl.name || "—",
-      discount_type: getTypeLabel(tpl.discount_type || tpl.type || ""),
-      value: getFormattedValue(tpl),
-      status: tpl.is_active === 1 ? "active" : "inactive",
-    })),
-  ),
+  templates.map((tpl, i) => ({
+    ...tpl,
+    __idx: i + 1,
+    name: tpl.name_ar || tpl.name || "—",
+    discount_type: getTypeLabel(tpl.discount_type || tpl.type || ""),
+    value: getFormattedValue(tpl),
+    status: tpl.is_active === 1 ? "active" : "inactive",
+  })),
 );
 
-const columns = $derived(
-  dtDef.columns({
-    idx: "#",
-    name: m.common_ft_col_name?.() || "Template",
-    type: m.common_word_type?.() || "Type",
-    value: m.common_dt_col_value?.() || "Value",
-    status: m.common_word_status?.() || "Status",
-  }),
-);
+const columns: OrbisColumnDef[] = [
+  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
+  { id: "name", prop: "name", header: m.common_ft_col_name?.() || "Template", name: "Template", width: 220, size: 220, readonly: true, cellClass: "font-medium" },
+  { id: "discount_type", prop: "discount_type", header: m.common_word_type?.() || "Type", name: "Type", width: 130, size: 130, readonly: true },
+  { id: "value", prop: "value", header: m.common_dt_col_value?.() || "Value", name: "Value", width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono font-bold" },
+  { id: "status", prop: "status", header: m.common_word_status?.() || "Status", name: "Status", width: 110, size: 110, type: "badge", align: "center", readonly: true },
+];
 
 function handleCreate() {
   selectedTemplate = null;
@@ -100,8 +91,8 @@ function handleGridAction(event: GridActionEvent) {
 }
 </script>
 
-<div class="h-full flex flex-col overflow-hidden p-6">
-  <div class="flex items-center justify-between pb-4 flex-nowrap shrink-0">
+<div class="h-full flex flex-col overflow-hidden p-6 gap-4">
+  <div class="flex items-center justify-between pb-2 flex-nowrap shrink-0">
     <div class="flex flex-col gap-0.5 text-start">
       <h1 class="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
         <ReceiptPercent class="text-primary" size={18} />
@@ -111,26 +102,32 @@ function handleGridAction(event: GridActionEvent) {
         {m.common_dt_desc?.() || "Manage discount and scholarship templates"}
       </p>
     </div>
-    <Button size="sm" onclick={handleCreate} class="text-xs font-bold shrink-0">
-      <Plus size={14} class="me-1" />
-      {m.common_dt_add?.() || "Add Template"}
-    </Button>
+    <div class="flex items-center gap-2">
+      <FilterTrigger
+        bind:filter={activeFilter}
+        fields={discountTemplateFilterFields}
+      />
+      <Button variant="ghost" size="icon-sm" onclick={loadTemplates} class="text-muted-foreground">
+        <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
+      </Button>
+      <Button size="sm" onclick={handleCreate} class="text-xs font-bold shrink-0">
+        <Plus size={14} class="me-1" />
+        {m.common_dt_add?.() || "Add Template"}
+      </Button>
+    </div>
   </div>
 
   <div class="flex-1 min-h-0">
-    <DataTable
+    <OrbisGrid
       {columns}
       source={gridSource}
       loading={isLoading}
-      filterable={true}
-      filterFields={discountTemplateFilterFields}
-      bind:filterValue={activeFilter}
-      emptyIcon={ReceiptPercent}
+      clientQuery
+      filter={activeFilter}
       emptyTitle={m.common_dt_empty?.() || "No discount templates"}
       emptyDescription={m.common_dt_empty_desc?.() || "Create standard discounts or scholarships"}
       rtl={getLocale() === "ar"}
-      refreshable
-      onRefresh={loadTemplates}
+      readonly
       onaction={handleGridAction}
     />
   </div>
