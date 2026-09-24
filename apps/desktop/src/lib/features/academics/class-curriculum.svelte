@@ -47,8 +47,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "subject_name",
     prop: "subject_name",
-    header: m.common_search_group_subjects ? m.common_search_group_subjects() : "Subject",
-    name: m.common_search_group_subjects ? m.common_search_group_subjects() : "Subject",
+    header: m.common_search_group_subjects(),
+    name: m.common_search_group_subjects(),
     width: 240,
     size: 240,
     cellClass: "font-medium",
@@ -56,16 +56,16 @@ const columns: OrbisColumnDef[] = [
   {
     id: "teacher_display",
     prop: "teacher_display",
-    header: m.common_teacher ? m.common_teacher() : "Teacher",
-    name: m.common_teacher ? m.common_teacher() : "Teacher",
+    header: m.common_teacher(),
+    name: m.common_teacher(),
     width: 220,
     size: 220,
   },
   {
     id: "weekly_hours",
     prop: "weekly_hours",
-    header: m.common_hours_per_week ? m.common_hours_per_week() : "Hours / Week",
-    name: m.common_hours_per_week ? m.common_hours_per_week() : "Hours / Week",
+    header: m.common_hours_per_week(),
+    name: m.common_hours_per_week(),
     width: 130,
     size: 130,
     align: "center",
@@ -73,8 +73,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "status",
     prop: "status",
-    header: m.common_status ? m.common_status() : "Status",
-    name: m.common_status ? m.common_status() : "Status",
+    header: m.common_status(),
+    name: m.common_status(),
     width: 110,
     size: 110,
     cell: BadgeCell,
@@ -106,7 +106,7 @@ function handleGridAction(event: GridActionEvent) {
   <div class="flex items-center justify-between pb-3">
     <div>
       <h1 class="text-lg font-bold tracking-tight text-foreground">
-        {m.academics_overview_card_classes_desc ? m.academics_overview_card_classes_desc() : "Materials & Curriculum"}
+        {m.common_search_group_subjects()}
       </h1>
     </div>
     <Button
@@ -115,16 +115,16 @@ function handleGridAction(event: GridActionEvent) {
       class="h-8 gap-1.5 text-xs font-semibold"
       onclick={() => (showSubjectSheet = true)}
     >
-      {m.common_search_add ? m.common_search_add() : "Assign Subject"}
+      {m.common_search_add()}
     </Button>
   </div>
 
   {#if error}
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2 font-sans">
-      <h3 class="font-semibold text-xs">{m.common_error_occurred ? m.common_error_occurred() : "Failed to load subjects"}</h3>
+      <h3 class="font-semibold text-xs">{m.common_error_occurred()}</h3>
       <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
       <Button variant="outline" size="sm" class="h-8 mt-2 text-xs" onclick={() => subjectsQuery.refetch()}>
-        {m.common_retry ? m.common_retry() : "Retry"}
+        {m.common_retry()}
       </Button>
     </div>
   {:else}
@@ -135,7 +135,7 @@ function handleGridAction(event: GridActionEvent) {
       height="100%"
       rowSize={48}
       onaction={handleGridAction}
-      emptyTitle={m.common_empty_classes_desc ? m.common_empty_classes_desc() : "No subjects assigned"}
+      emptyTitle={m.common_empty_classes_desc()}
     />
   {/if}
 

@@ -174,11 +174,11 @@ const allLessons = $derived(periodScheduleQuery.data ?? []);
 
 // Weekdays definition (Sunday - Thursday / Saturday - Wednesday based on regional setup)
 const weekdays = [
-  { day: 1, label: m.common_day_sunday ? m.common_day_sunday() : "Sunday" },
-  { day: 2, label: m.common_day_monday ? m.common_day_monday() : "Monday" },
-  { day: 3, label: m.common_day_tuesday ? m.common_day_tuesday() : "Tuesday" },
-  { day: 4, label: m.common_day_wednesday ? m.common_day_wednesday() : "Wednesday" },
-  { day: 5, label: m.common_day_thursday ? m.common_day_thursday() : "Thursday" },
+  { day: 1, label: m.common_day_sunday() },
+  { day: 2, label: m.common_day_monday() },
+  { day: 3, label: m.common_day_tuesday() },
+  { day: 4, label: m.common_day_wednesday() },
+  { day: 5, label: m.common_day_thursday() },
 ];
 
 // Conflict Detection
@@ -278,7 +278,7 @@ const draftLessons = $derived.by(() => {
 // Name Resolution Helpers
 function getSubjectName(subjectId: string): string {
   const sub = subjects.find((s) => String(s.id) === String(subjectId));
-  return sub ? sub.name_ar || sub.name : (m.common_search_group_subjects ? m.common_search_group_subjects() : "Subject");
+  return sub ? sub.name_ar || sub.name : m.common_search_group_subjects();
 }
 
 function getTeacherName(teacherId: string): string {
@@ -378,9 +378,7 @@ async function handleMoveLesson(
       room_id: lesson.room_id || undefined,
     } as any);
 
-    toast.success(
-      m.academics_schedule_lesson_moved ? m.academics_schedule_lesson_moved() : "Lesson moved successfully",
-    );
+    toast.success(m.academics_schedule_lesson_moved());
     refetchSchedule();
   } catch (err) {
     toast.error(extractErrorMessage(err));
@@ -388,9 +386,7 @@ async function handleMoveLesson(
 }
 
 async function handleDeleteLesson(lessonId: string) {
-  toast.success(
-    m.academics_schedule_lesson_deleted ? m.academics_schedule_lesson_deleted() : "Lesson removed from schedule",
-  );
+  toast.success(m.academics_schedule_lesson_deleted());
   refetchSchedule();
 }
 
@@ -446,7 +442,7 @@ const error = $derived(
         </div>
       {:else if error}
         <ErrorState
-          title={m.academics_schedule_load_error ? m.academics_schedule_load_error() : "Failed to load schedule"}
+          title={m.academics_schedule_load_error()}
           message={error instanceof Error ? error.message : "Error"}
           onRetry={refetchSchedule}
         />
@@ -457,15 +453,15 @@ const error = $derived(
           </div>
           <div class="flex flex-col gap-1">
             <h3 class="font-bold text-sm text-foreground">
-              {m.academics_schedule_no_slots ? m.academics_schedule_no_slots() : "No Time Slots Configured"}
+              {m.academics_schedule_no_slots()}
             </h3>
             <p class="text-xs text-muted-foreground leading-relaxed">
-              {m.academics_schedule_no_slots_desc ? m.academics_schedule_no_slots_desc() : "Add instructional periods to begin scheduling classes."}
+              {m.academics_schedule_no_slots_desc()}
             </p>
           </div>
           <Button size="sm" onclick={() => (isTimeSlotsSheetOpen = true)} class="gap-1.5 text-xs font-semibold">
             <ClockRotateRight size={13} />
-            <span>{m.academics_schedule_config_slots_btn ? m.academics_schedule_config_slots_btn() : "Configure Time Slots"}</span>
+            <span>{m.academics_schedule_config_slots_btn()}</span>
           </Button>
         </div>
       {:else}
@@ -477,9 +473,9 @@ const error = $derived(
               <span class="font-bold text-foreground">{getTeacherName(selectedTeacherId)}</span>
             </div>
             <div class="flex items-center gap-4 text-[11px] text-muted-foreground">
-              <span>{m.common_schedule_teaching_load ? m.common_schedule_teaching_load() : "Teaching Load"}: <strong class="text-foreground">{teacherWorkload.teachingCount}</strong></span>
-              <span>{m.common_schedule_free_periods ? m.common_schedule_free_periods() : "Free Periods"}: <strong class="text-emerald-600 dark:text-emerald-400">{teacherWorkload.freeCount}</strong></span>
-              <span>{m.common_search_group_rooms ? m.common_search_group_rooms() : "Rooms"}: <strong class="text-foreground">{teacherWorkload.assignedRooms}</strong></span>
+              <span>{m.common_schedule_teaching_load()}: <strong class="text-foreground">{teacherWorkload.teachingCount}</strong></span>
+              <span>{m.common_schedule_free_periods()}: <strong class="text-emerald-600 dark:text-emerald-400">{teacherWorkload.freeCount}</strong></span>
+              <span>{m.common_search_group_rooms()}: <strong class="text-foreground">{teacherWorkload.assignedRooms}</strong></span>
             </div>
           </div>
         {:else if roomOccupancy}
@@ -488,12 +484,12 @@ const error = $derived(
               <Pin size={14} class="text-emerald-500" />
               <span class="font-bold text-foreground">{getRoomName(selectedRoomId)}</span>
               {#if roomOccupancy.capacity}
-                <Badge variant="outline" class="h-4 text-[9px]">{m.academics_class_label_capacity ? m.academics_class_label_capacity() : "Capacity"}: {roomOccupancy.capacity}</Badge>
+                <Badge variant="outline" class="h-4 text-[9px]">{m.academics_class_label_capacity()}: {roomOccupancy.capacity}</Badge>
               {/if}
             </div>
             <div class="flex items-center gap-4 text-[11px] text-muted-foreground">
-              <span>{m.common_schedule_occupied_periods ? m.common_schedule_occupied_periods() : "Occupied Periods"}: <strong class="text-foreground">{roomOccupancy.occupiedCount}</strong></span>
-              <span>{m.common_schedule_occupancy_rate ? m.common_schedule_occupancy_rate() : "Occupancy Rate"}: <strong class="text-primary">{roomOccupancy.occupancyRate}%</strong></span>
+              <span>{m.common_schedule_occupied_periods()}: <strong class="text-foreground">{roomOccupancy.occupiedCount}</strong></span>
+              <span>{m.common_schedule_occupancy_rate()}: <strong class="text-primary">{roomOccupancy.occupancyRate}%</strong></span>
             </div>
           </div>
         {/if}

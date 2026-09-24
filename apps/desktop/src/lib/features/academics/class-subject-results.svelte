@@ -49,8 +49,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "student_name",
     prop: "student_name",
-    header: m.common_student_name ? m.common_student_name() : "Student Name",
-    name: m.common_student_name ? m.common_student_name() : "Student Name",
+    header: m.common_student_name(),
+    name: m.common_student_name(),
     width: 240,
     size: 240,
     cellClass: "font-semibold text-foreground",
@@ -58,8 +58,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "max_score",
     prop: "max_score",
-    header: m.common_assessment_max_score ? m.common_assessment_max_score() : "Max Score",
-    name: m.common_assessment_max_score ? m.common_assessment_max_score() : "Max Score",
+    header: m.common_assessment_max_score(),
+    name: m.common_assessment_max_score(),
     width: 120,
     size: 120,
     align: "center",
@@ -68,8 +68,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "obtained_score",
     prop: "obtained_score",
-    header: m.common_assessment_obtained_score ? m.common_assessment_obtained_score() : "Obtained Score",
-    name: m.common_assessment_obtained_score ? m.common_assessment_obtained_score() : "Obtained Score",
+    header: m.common_assessment_obtained_score(),
+    name: m.common_assessment_obtained_score(),
     width: 130,
     size: 130,
     align: "center",
@@ -78,8 +78,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "grade_value",
     prop: "grade_value",
-    header: m.common_grade ? m.common_grade() : "Grade",
-    name: m.common_grade ? m.common_grade() : "Grade",
+    header: m.common_grade(),
+    name: m.common_grade(),
     width: 100,
     size: 100,
     align: "center",
@@ -88,8 +88,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "status",
     prop: "status",
-    header: m.common_status ? m.common_status() : "Status",
-    name: m.common_status ? m.common_status() : "Status",
+    header: m.common_status(),
+    name: m.common_status(),
     width: 120,
     size: 120,
     align: "center",
@@ -116,7 +116,7 @@ const gridSource = $derived(
       <div class="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
         <DocumentCheck size={14} class="text-primary opacity-80" />
         <span>
-          {termResults.length} {m.common_term_results_recorded ? m.common_term_results_recorded() : "recorded term results"}
+          {termResults.length} {m.common_term_results_recorded()}
         </span>
       </div>
     </div>
@@ -130,7 +130,7 @@ const gridSource = $derived(
         disabled={isLoading}
       >
         <Refresh size={12} class={isLoading ? "animate-spin" : ""} />
-        <span>{m.common_retry ? m.common_retry() : "Refresh"}</span>
+        <span>{m.common_retry()}</span>
       </Button>
     </div>
   </div>
@@ -142,7 +142,7 @@ const gridSource = $derived(
         <InfoCircle size={24} />
         <span class="font-semibold">{extractErrorMessage(error)}</span>
         <Button variant="outline" size="sm" class="h-8 mt-2 text-xs" onclick={() => termResultsQuery.refetch()}>
-          {m.common_retry ? m.common_retry() : "Retry"}
+          {m.common_retry()}
         </Button>
       </div>
     {:else}
@@ -152,7 +152,7 @@ const gridSource = $derived(
         loading={isLoading}
         height="100%"
         rowSize={44}
-        emptyTitle={m.common_no_term_results ? m.common_no_term_results() : "No term results calculated yet"}
+        emptyTitle={m.common_no_term_results()}
       />
     {/if}
   </div>

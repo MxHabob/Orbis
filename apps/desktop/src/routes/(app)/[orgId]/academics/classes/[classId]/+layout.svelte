@@ -65,12 +65,12 @@ const backHref = $derived.by(() => {
 
 const backLabel = $derived.by(() => {
   if (classSubjectId) {
-    return m.common_search_group_classes ? m.common_search_group_classes() : "Class Subjects";
+    return m.common_search_group_classes();
   }
   if (isStudentsPage || isCurriculumListPage) {
-    return m.common_nav_dashboard ? m.common_nav_dashboard() : "Class Dashboard";
+    return m.common_nav_dashboard();
   }
-  return m.common_card_active_classes ? m.common_card_active_classes() : "Classes List";
+  return m.common_card_active_classes();
 });
 </script>
 
@@ -100,11 +100,11 @@ const backLabel = $derived.by(() => {
         <!-- Subpage Context Title -->
         {#if isStudentsPage}
           <h1 class="text-base font-bold text-foreground truncate">
-            {m.academics_class_detail_tab_students ? m.academics_class_detail_tab_students() : "Students"}
+            {m.academics_class_detail_tab_students()}
           </h1>
         {:else if isCurriculumListPage}
           <h1 class="text-base font-bold text-foreground truncate">
-            {m.academics_overview_card_classes_desc ? m.academics_overview_card_classes_desc() : "Curriculum & Subjects"}
+            {m.common_search_group_subjects()}
           </h1>
         {/if}
 
@@ -136,7 +136,7 @@ const backLabel = $derived.by(() => {
       </div>
     {:else}
       <span class="text-sm text-muted-foreground">
-        {m.error_not_found ? m.error_not_found() : "Not found"}
+        {m.error_not_found()}
       </span>
     {/if}
   </DetailPageHeader>

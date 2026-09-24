@@ -22,10 +22,10 @@ const error = $derived(reportsQuery.error);
 <div class="p-6 flex flex-col gap-6 font-sans text-start select-none">
   <div>
     <h1 class="text-xl font-bold">
-      {m.common_nav_reports ? m.common_nav_reports() : "Academic Reports"}
+      {m.common_nav_reports()}
     </h1>
     <p class="text-sm text-muted-foreground mt-1">
-      {m.template_placeholder_description ? m.template_placeholder_description() : "Select a report template to preview, export, or print."}
+      {m.academics_reports_desc()}
     </p>
   </div>
 
@@ -46,14 +46,14 @@ const error = $derived(reportsQuery.error);
         onclick={() => reportsQuery.refetch()}
       >
         <Refresh size={13} />
-        <span>{m.common_retry ? m.common_retry() : "Retry"}</span>
+        <span>{m.common_retry()}</span>
       </Button>
     </div>
   {:else if reports.length === 0}
     <div class="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground border border-border/40 rounded-xl p-8 bg-card/40">
       <DocumentPage size={36} class="opacity-40" />
       <p class="text-sm">
-        {m.finance_report_no_accounts ? m.finance_report_no_accounts() : "No report definitions found."}
+        {m.academics_reports_empty()}
       </p>
     </div>
   {:else}

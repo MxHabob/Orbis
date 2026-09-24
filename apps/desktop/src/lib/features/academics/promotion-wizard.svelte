@@ -51,10 +51,10 @@ let { orgId }: { orgId: string } = $props();
 
 let currentStep = $state(0);
 const steps = [
-  { key: "config", label: () => m.common_word_settings ? m.common_word_settings() : "الإعدادات" },
-  { key: "mapping", label: () => "تعيين الفصول والشعب" },
-  { key: "preview", label: () => m.common_action_preview ? m.common_action_preview() : "معاينة النتائج" },
-  { key: "execute", label: () => "تنفيذ الترفيع" },
+  { key: "config", label: () => m.common_word_settings() },
+  { key: "mapping", label: () => m.common_promo_mapping() },
+  { key: "preview", label: () => m.common_action_preview() },
+  { key: "execute", label: () => m.common_promo_execute() },
 ];
 
 const progressValue = $derived(((currentStep + 1) / steps.length) * 100);
@@ -659,7 +659,7 @@ const previewGridRows = $derived(
       <AlertDialogDescription>{m.common_promo_execute_confirm()}</AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <AlertDialogCancel>{m.common_action_cancel?.() ?? "Cancel"}</AlertDialogCancel>
+      <AlertDialogCancel>{m.common_action_cancel()}</AlertDialogCancel>
       <AlertDialogAction onclick={executePromotion}>{m.common_promo_execute()}</AlertDialogAction>
     </AlertDialogFooter>
   </AlertDialogContent>

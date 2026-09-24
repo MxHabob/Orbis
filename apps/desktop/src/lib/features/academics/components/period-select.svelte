@@ -45,14 +45,8 @@ const selectedPeriod = $derived(
 const displayLabel = $derived(
   value === "all" || value === "" || !value
     ? showAllOption
-      ? allOptionLabel ||
-        (m.common_ledger_period_all
-          ? m.common_ledger_period_all()
-          : "جميع الفترات")
-      : placeholder ||
-        (m.common_metrics_period
-          ? m.common_metrics_period()
-          : "اختر الفترة الدراسية...")
+      ? allOptionLabel || m.common_ledger_period_all()
+      : placeholder || m.common_metrics_period()
     : selectedPeriod
       ? getPeriodLabel(selectedPeriod)
       : value,
@@ -85,7 +79,7 @@ function handleValueChange(newVal: string | undefined) {
         value="all"
         class="text-xs text-start justify-start cursor-pointer"
       >
-        {allOptionLabel || (m.common_ledger_period_all ? m.common_ledger_period_all() : "جميع الفترات")}
+        {allOptionLabel || m.common_ledger_period_all()}
       </SelectItem>
     {/if}
     {#each periods as p (p.id)}

@@ -48,7 +48,7 @@ async function loadGradeMatrix() {
     gridSource = [];
     isDirty = false;
   } catch (e: any) {
-    toast.error(e?.message || (m.common_error_occurred ? m.common_error_occurred() : "Error loading grade matrix"));
+    toast.error(e?.message || m.common_error_occurred());
   } finally {
     isMatrixLoading = false;
   }
@@ -95,7 +95,7 @@ async function handleSaveAll() {
     }
 
     if (studentsToSave.length === 0) {
-      toast.info(m.common_no_changes_to_save ? m.common_no_changes_to_save() : "No changes to save");
+      toast.info(m.common_no_changes_to_save());
       return;
     }
 
@@ -108,10 +108,10 @@ async function handleSaveAll() {
       } as any);
     }
 
-    toast.success(m.common_grades_save_success ? m.common_grades_save_success() : "Grades saved successfully");
+    toast.success(m.common_grades_save_success());
     isDirty = false;
   } catch (e: any) {
-    toast.error(e?.message || (m.common_grades_save_error ? m.common_grades_save_error() : "Failed to save grades"));
+    toast.error(e?.message || m.common_grades_save_error());
   } finally {
     isSaving = false;
   }
@@ -124,17 +124,17 @@ async function handleSaveAll() {
     <div class="flex items-center gap-2">
       <div class="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
         <span>
-          {gridSource.length} {m.common_students_count_label ? m.common_students_count_label() : "students enrolled"}
+          {gridSource.length} {m.common_students_count_label()}
         </span>
       </div>
 
       {#if isDirty}
         <Badge variant="outline" class="bg-amber-500/10 text-[10px] text-amber-600 border-amber-500/30 font-bold animate-pulse">
-          {m.common_unsaved_changes ? m.common_unsaved_changes() : "Unsaved changes"}
+          {m.common_unsaved_changes()}
         </Badge>
       {:else if gridSource.length > 0}
         <Badge variant="outline" class="bg-emerald-500/10 text-[10px] text-emerald-600 border-emerald-500/20 font-medium">
-          {m.common_all_saved ? m.common_all_saved() : "All changes saved"}
+          {m.common_all_saved()}
         </Badge>
       {/if}
     </div>
@@ -147,9 +147,9 @@ async function handleSaveAll() {
         class="h-8 px-2.5 text-xs font-semibold gap-1.5 cursor-pointer shadow-2xs" 
         onclick={loadGradeMatrix} 
         disabled={isMatrixLoading}
-        title={m.common_retry ? m.common_retry() : "Refresh"}
+        title={m.common_retry()}
       >
-        <span>{m.common_retry ? m.common_retry() : "Refresh"}</span>
+        <span>{m.common_retry()}</span>
       </Button>
 
       <Button 
@@ -159,7 +159,7 @@ async function handleSaveAll() {
         disabled={!isDirty || isSaving || !canEnterGrades} 
         onclick={handleSaveAll}
       >
-        <span>{m.common_save_changes ? m.common_save_changes() : "Save Changes"}</span>
+        <span>{m.common_save_changes()}</span>
       </Button>
     </div>
   </div>
@@ -169,10 +169,10 @@ async function handleSaveAll() {
     {#if !gridColumns.length && !isMatrixLoading}
       <div class="flex flex-col h-full items-center justify-center p-8 text-center bg-muted/5 gap-2">
         <p class="text-xs font-bold text-foreground">
-          {m.common_assessment_no_scheme ? m.common_assessment_no_scheme() : "No assessment scheme configured for this period"}
+          {m.common_assessment_no_scheme()}
         </p>
         <p class="text-[11px] text-muted-foreground max-w-sm">
-          {m.common_assessment_configure_hint ? m.common_assessment_configure_hint() : "Click 'Assessments Scheme' above to configure components and weights."}
+          {m.common_assessment_configure_hint()}
         </p>
       </div>
     {:else}
@@ -183,7 +183,7 @@ async function handleSaveAll() {
         height="100%"
         readonly={!canEnterGrades}
         oncelledit={handleCellEdit}
-        emptyTitle={m.common_students_empty_title ? m.common_students_empty_title() : "No students in the register"}
+        emptyTitle={m.common_students_empty_title()}
       />
     {/if}
   </div>

@@ -13,16 +13,11 @@ import { localizeHref } from "$lib/paraglide/runtime";
 
 const orgId = $derived(page.params.orgId || "");
 const status = $derived(page.status || 500);
-const errorMessage = $derived(
-  page.error?.message ||
-    (m.common_unexpected_error_message
-      ? m.common_unexpected_error_message()
-      : "An unexpected error occurred in Academics."),
-);
+const errorMessage = $derived(page.error?.message || m.common_unexpected_error_message());
 </script>
 
 <svelte:head>
-  <title>{m.academics_layout_panel_title ? m.academics_layout_panel_title() : "Academics"} | Orbis</title>
+  <title>{m.academics_layout_panel_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full flex flex-col items-center justify-center p-6 text-start font-sans">
@@ -33,10 +28,10 @@ const errorMessage = $derived(
       </div>
       <div class="min-w-0">
         <h2 class="text-sm font-bold text-foreground">
-          {status} — {m.common_error_occurred ? m.common_error_occurred() : "Error Occurred"}
+          {status} — {m.common_error_occurred()}
         </h2>
         <p class="text-xs text-muted-foreground mt-0.5 truncate">
-          {m.common_error_occurred ? m.common_error_occurred() : "Unable to load the requested academics view"}
+          {m.common_error_occurred()}
         </p>
       </div>
     </div>
@@ -54,7 +49,7 @@ const errorMessage = $derived(
           href={localizeHref(`/${orgId}/academics`)}
         >
           <ArrowLeft size={13} class="rtl:rotate-180" />
-          <span>{m.common_nav_overview ? m.common_nav_overview() : "Academics Overview"}</span>
+          <span>{m.common_nav_overview()}</span>
         </Button>
       {/if}
 
@@ -65,7 +60,7 @@ const errorMessage = $derived(
         onclick={() => invalidateAll()}
       >
         <Refresh size={13} />
-        <span>{m.common_retry ? m.common_retry() : "Retry"}</span>
+        <span>{m.common_retry()}</span>
       </Button>
     </div>
   </div>

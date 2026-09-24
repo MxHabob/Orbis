@@ -68,12 +68,12 @@ const teacherDisplayName = $derived.by(() => {
   if (!subjectInfo) return "";
   if (subjectInfo.teacher_name) return subjectInfo.teacher_name;
   const tid = subjectInfo.primary_teacher_id;
-  if (!tid) return m.common_unassigned ? m.common_unassigned() : "Unassigned";
+  if (!tid) return m.common_unassigned();
   const foundUser = users.find((u: UserDto) => String(u.id) === String(tid));
   if (foundUser) {
     return foundUser.full_name_ar || foundUser.full_name;
   }
-  return m.common_teacher ? m.common_teacher() : "Teacher";
+  return m.common_teacher();
 });
 
 const basePath = $derived(
@@ -83,11 +83,11 @@ const basePath = $derived(
 const menuItems = $derived([
   {
     path: "",
-    label: m.common_coursework_gradebook ? m.common_coursework_gradebook() : "Gradebook",
+    label: m.common_coursework_gradebook(),
   },
   {
     path: "term-results",
-    label: m.common_term_results ? m.common_term_results() : "Term Results",
+    label: m.common_term_results(),
   },
 ]);
 </script>
@@ -105,7 +105,7 @@ const menuItems = $derived([
           <span class="font-medium text-foreground">{teacherDisplayName}</span>
           {#if subjectInfo.weekly_hours}
             <span class="opacity-30">•</span>
-            <span>{subjectInfo.weekly_hours} {m.common_hours_per_week ? m.common_hours_per_week() : "hrs/wk"}</span>
+            <span>{subjectInfo.weekly_hours} {m.common_hours_per_week()}</span>
           {/if}
         </div>
       {/if}
@@ -116,7 +116,7 @@ const menuItems = $derived([
         class="h-8 gap-1.5 text-xs font-semibold"
         onclick={() => showConfigSheet = true}
       >
-        <span>{m.common_assessment_scheme ? m.common_assessment_scheme() : "Assessments Scheme"}</span>
+        <span>{m.common_assessment_scheme()}</span>
       </Button>
 
       <Button
@@ -125,7 +125,7 @@ const menuItems = $derived([
         class="h-8 gap-1.5 text-xs font-semibold"
         onclick={() => showPrintDialog = true}
       >
-        <span class="hidden sm:inline">{m.common_action_print ? m.common_action_print() : "Print"}</span>
+        <span class="hidden sm:inline">{m.common_action_print()}</span>
       </Button>
     </div>
   </div>
@@ -144,5 +144,5 @@ const menuItems = $derived([
   bind:open={showPrintDialog}
   templateId="33333333-3333-3333-3333-333333333333"
   parameters={{ class_subject_id: classSubjectId, period_id: academicContext.effectivePeriodId }}
-  reportTitle={m.common_print_gradebook ? m.common_print_gradebook() : "Print Gradebook"}
+  reportTitle={m.common_print_gradebook()}
 />

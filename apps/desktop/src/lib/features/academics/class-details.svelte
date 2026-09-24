@@ -48,7 +48,7 @@ const studentsQuery = createClassStudentsQuery(() => classId);
 const attendanceQuery = createClassAttendanceQuery(
   () => classId,
   () => today,
-);
+  );
 
 const classData = $derived(classQuery.data);
 const students = $derived(studentsQuery.data ?? []);
@@ -107,16 +107,12 @@ function refetchAll() {
 function handleShareLink() {
   if (typeof window !== "undefined") {
     navigator.clipboard.writeText(window.location.href);
-    toast.success(
-      m.common_copied_to_clipboard ? m.common_copied_to_clipboard() : "Class link copied to clipboard",
-    );
+    toast.success(m.common_copied_to_clipboard());
   }
 }
 
 function handleNotifications() {
-  toast.success(
-    m.common_notifications_enabled ? m.common_notifications_enabled() : "Notifications enabled for this class",
-  );
+  toast.success(m.common_notifications_enabled());
 }
 </script>
 
@@ -125,8 +121,8 @@ function handleNotifications() {
   <div class="flex flex-wrap items-center gap-2 animate-fade-in">
     {#if classData}
       <AskOrbisButton
-        query={m.academics_class_evaluation_ai_ask_orbis_query ? m.academics_class_evaluation_ai_ask_orbis_query({ name: classDisplayName }) : `Analyze performance for ${classDisplayName}`}
-        label={m.academics_class_evaluation_ask_orbis_btn ? m.academics_class_evaluation_ask_orbis_btn({ name: classDisplayName }) : "اسأل Orbis"}
+        query={m.academics_class_evaluation_ai_ask_orbis_query({ name: classDisplayName })}
+        label={m.academics_class_evaluation_ask_orbis_btn({ name: classDisplayName })}
         variant="default"
         size="sm"
         class="h-9 px-3.5 text-xs font-bold gap-1.5 shadow-sm"
@@ -134,34 +130,34 @@ function handleNotifications() {
     {/if}
 
     <QuickActionButton 
-      label={m.common_nav_notifications ? m.common_nav_notifications() : "Notifications"} 
+      label={m.common_nav_notifications()} 
       icon={AppNotification} 
       onclick={handleNotifications}
     />
     <QuickActionButton 
-      label={m.common_action_share ? m.common_action_share() : "Share"} 
+      label={m.common_action_share()} 
       icon={Share} 
       onclick={handleShareLink}
     />
     <QuickActionButton 
-      label={m.common_nav_attendance ? m.common_nav_attendance() : "Attendance"} 
+      label={m.common_nav_attendance()} 
       icon={Users} 
-      onclick={() => toast.info(m.common_nav_attendance ? m.common_nav_attendance() : "Attendance")}
+      onclick={() => toast.info(m.common_nav_attendance())}
     />
     <QuickActionButton 
-      label={m.common_assessment_option_homework ? m.common_assessment_option_homework() : "Assignments"} 
+      label={m.common_assessment_option_homework()} 
       icon={DocumentPage} 
-      onclick={() => toast.info(m.common_assessment_option_homework ? m.common_assessment_option_homework() : "Assignments")}
+      onclick={() => toast.info(m.common_assessment_option_homework())}
     />
     <QuickActionButton 
-      label={m.common_nav_documents ? m.common_nav_documents() : "Files"} 
+      label={m.common_nav_documents()} 
       icon={CheckSquare} 
-      onclick={() => toast.info(m.common_nav_documents ? m.common_nav_documents() : "Files")}
+      onclick={() => toast.info(m.common_nav_documents())}
     />
     <QuickActionButton 
-      label={m.common_nav_announcements ? m.common_nav_announcements() : "Announcements"} 
+      label={m.common_nav_announcements()} 
       icon={ChatBubble} 
-      onclick={() => toast.info(m.common_nav_announcements ? m.common_nav_announcements() : "Announcements")}
+      onclick={() => toast.info(m.common_nav_announcements())}
     />
   </div>
 
@@ -174,9 +170,9 @@ function handleNotifications() {
   {:else if error}
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2 font-sans">
       <InfoCircle size={24} />
-      <h3 class="font-semibold text-xs">{m.academics_class_overview_load_failed ? m.academics_class_overview_load_failed() : "Failed to load class metrics"}</h3>
+      <h3 class="font-semibold text-xs">{m.academics_class_overview_load_failed()}</h3>
       <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
-      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.common_retry ? m.common_retry() : "Retry"}</Button>
+      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.common_retry()}</Button>
     </div>
   {:else}
     <div class="flex flex-col animate-fade-in text-start gap-4" in:fade={{ duration: 150 }}>
@@ -184,24 +180,24 @@ function handleNotifications() {
       <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
         <MetricProgress
           card={true}
-          title={m.common_nav_attendance ? m.common_nav_attendance() : "Attendance"}
+          title={m.common_nav_attendance()}
           subtitle={totalAttendance > 0 
             ? `${attendanceRate}%`
-            : (m.common_attendance_empty_title ? m.common_attendance_empty_title() : "No attendance recorded today")}
+            : m.common_attendance_empty_title()}
           displayValue={totalAttendance > 0 ? `${attendanceRate}%` : "—"}
           icon={Users}
           segments={totalAttendance > 0 ? [
-            { label: m.common_attendance_status_present ? m.common_attendance_status_present() : "Present", value: presentPct, tone: "success" },
-            { label: m.common_attendance_status_absent ? m.common_attendance_status_absent() : "Absent", value: absentPct, tone: "destructive" },
-            { label: m.common_attendance_status_late ? m.common_attendance_status_late() : "Late", value: latePct, tone: "warning" },
-            { label: m.common_attendance_status_excused ? m.common_attendance_status_excused() : "Excused", value: excusedPct, tone: "info" },
+            { label: m.common_attendance_status_present(), value: presentPct, tone: "success" },
+            { label: m.common_attendance_status_absent(), value: absentPct, tone: "destructive" },
+            { label: m.common_attendance_status_late(), value: latePct, tone: "warning" },
+            { label: m.common_attendance_status_excused(), value: excusedPct, tone: "info" },
           ] : []}
         />
 
         <MetricProgress
           card={true}
-          title={m.common_classes_enrolled_students ? m.common_classes_enrolled_students() : "Enrolled Students"}
-          subtitle={`${students.length} ${m.common_word_student ? m.common_word_student() : "students"}`}
+          title={m.common_classes_enrolled_students()}
+          subtitle={`${students.length} ${m.common_word_student()}`}
           displayValue={String(students.length)}
           icon={Users}
           segments={[]}
@@ -209,7 +205,7 @@ function handleNotifications() {
 
         <MetricProgress
           card={true}
-          title={m.academics_class_label_capacity ? m.academics_class_label_capacity() : "Class Capacity"}
+          title={m.academics_class_label_capacity()}
           subtitle={classData?.capacity ? `${classData.capacity}` : "—"}
           displayValue={classData?.capacity ? `${Math.round((students.length / classData.capacity) * 100)}%` : "—"}
           icon={CheckCircle}

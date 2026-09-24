@@ -17,26 +17,22 @@ const basePath = $derived(`/${data.orgId}/academics/exams`);
 const menuItems = $derived([
   {
     path: "",
-    label: m.common_nav_overview ? m.common_nav_overview() : "نظرة عامة",
+    label: m.common_nav_overview(),
     icon: ChartBar,
   },
   {
     path: "sessions",
-    label: m.common_exams_sessions_title
-      ? m.common_exams_sessions_title()
-      : "جلسات الاختبار",
+    label: m.common_exams_sessions_title(),
     icon: TaskList,
   },
   {
     path: "control",
-    label: m.common_control_label
-      ? m.common_control_label()
-      : "الكنترول ورصد الدرجات",
+    label: m.common_control_label(),
     icon: UserBadgeCheck,
   },
   {
     path: "reports",
-    label: m.common_nav_reports ? m.common_nav_reports() : "التقارير",
+    label: m.common_nav_reports(),
     icon: DocumentPage,
   },
 ]);

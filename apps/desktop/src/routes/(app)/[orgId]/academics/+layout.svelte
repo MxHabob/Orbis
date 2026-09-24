@@ -40,7 +40,7 @@ const navItems = $derived([
   },
   {
     path: "exams",
-    label: m.common_nav_exams ? m.common_nav_exams() : "الامتحانات",
+    label: m.common_nav_exams(),
     icon: DocumentCheck,
   },
   {
@@ -50,7 +50,7 @@ const navItems = $derived([
   },
   {
     path: "reports",
-    label: m.common_nav_reports ? m.common_nav_reports() : "التقارير",
+    label: m.common_nav_reports(),
     icon: ChartBar,
   },
 ]);

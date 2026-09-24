@@ -36,8 +36,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "student_name",
     prop: "student_name",
-    header: m.common_student_name ? m.common_student_name() : "Student",
-    name: m.common_student_name ? m.common_student_name() : "Student",
+    header: m.common_student_name(),
+    name: m.common_student_name(),
     width: 260,
     size: 260,
     cellClass: "font-semibold text-foreground",
@@ -45,8 +45,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "student_number",
     prop: "student_number",
-    header: m.common_student_id ? m.common_student_id() : "Student ID",
-    name: m.common_student_id ? m.common_student_id() : "Student ID",
+    header: m.common_student_id(),
+    name: m.common_student_id(),
     width: 140,
     size: 140,
     cellClass: "font-mono text-muted-foreground",
@@ -54,8 +54,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "national_id",
     prop: "national_id",
-    header: m.common_national_id ? m.common_national_id() : "National ID",
-    name: m.common_national_id ? m.common_national_id() : "National ID",
+    header: m.common_national_id(),
+    name: m.common_national_id(),
     width: 150,
     size: 150,
     cellClass: "font-mono text-muted-foreground",
@@ -63,8 +63,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "gender",
     prop: "gender",
-    header: m.common_gender ? m.common_gender() : "Gender",
-    name: m.common_gender ? m.common_gender() : "Gender",
+    header: m.common_gender(),
+    name: m.common_gender(),
     width: 110,
     size: 110,
     align: "center",
@@ -72,8 +72,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "status",
     prop: "status",
-    header: m.common_status ? m.common_status() : "Status",
-    name: m.common_status ? m.common_status() : "Status",
+    header: m.common_status(),
+    name: m.common_status(),
     width: 120,
     size: 120,
     cell: BadgeCell,
@@ -81,8 +81,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "enrolled_date",
     prop: "enrolled_date",
-    header: m.common_enrolled_date ? m.common_enrolled_date() : "Enrolled Date",
-    name: m.common_enrolled_date ? m.common_enrolled_date() : "Enrolled Date",
+    header: m.common_enrolled_date(),
+    name: m.common_enrolled_date(),
     width: 140,
     size: 140,
     cellClass: "font-mono text-muted-foreground",
@@ -124,26 +124,26 @@ function refetch() {
           class="flex items-center gap-1 text-[11px] font-bold text-muted-foreground hover:text-primary transition-colors"
         >
           <span>&larr;</span>
-          <span>{m.common_nav_dashboard ? m.common_nav_dashboard() : "Class Dashboard"}</span>
+          <span>{m.common_nav_dashboard()}</span>
         </a>
       </div>
       <div class="flex items-center gap-2">
         <Users size={17} class="text-primary" />
         <h2 class="text-sm font-bold">
-          {m.academics_class_detail_tab_students ? m.academics_class_detail_tab_students() : "Class Students"}
+          {m.academics_class_detail_tab_students()}
         </h2>
         <Badge variant="secondary" class="text-[9px] py-0 px-1.5 h-4.5 rounded font-sans ml-2">
           {students.length}
         </Badge>
       </div>
       <p class="mt-1 text-[10px] text-muted-foreground">
-        {m.academics_class_students_desc ? m.academics_class_students_desc() : "Master student roster and aggregate performance metrics."}
+        {m.academics_class_students_desc()}
       </p>
     </div>
     <div class="flex gap-2">
       <Button variant="outline" size="sm" class="h-8 gap-1.5 text-xs font-semibold" onclick={refetch}>
         <Refresh size={12} class={isLoading ? "animate-spin" : ""} />
-        {m.common_retry ? m.common_retry() : "Refresh"}
+        {m.common_retry()}
       </Button>
     </div>
   </div>
@@ -151,10 +151,10 @@ function refetch() {
   {#if error}
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2 font-sans">
       <InfoCircle size={24} />
-      <h3 class="font-semibold text-xs">{m.common_error_occurred ? m.common_error_occurred() : "Failed to load students"}</h3>
+      <h3 class="font-semibold text-xs">{m.common_error_occurred()}</h3>
       <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
       <Button variant="outline" size="sm" class="h-8 mt-2 text-xs" onclick={refetch}>
-        {m.common_retry ? m.common_retry() : "Retry"}
+        {m.common_retry()}
       </Button>
     </div>
   {:else}
@@ -166,7 +166,7 @@ function refetch() {
         height="100%"
         rowSize={44}
         onaction={handleGridAction}
-        emptyTitle={m.common_students_empty_title ? m.common_students_empty_title() : "No students enrolled in this class"}
+        emptyTitle={m.common_students_empty_title()}
       />
     </div>
   {/if}
