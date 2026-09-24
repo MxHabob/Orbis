@@ -131,7 +131,6 @@ Allows administrators to manage academic periods, terms, semesters, and locking 
     if (!confirmed) return;
 
     try {
-      toast.success(m.common_deleted ? m.common_deleted() : "Deleted");
       toast.success(m.common_action_delete());
       loadPeriods();
     } catch (e: unknown) {

@@ -140,7 +140,7 @@ async function saveTemplate() {
 
     store.markSaved();
     toast.success(
-      m.common_td_saved_success?.() || "Template saved successfully",
+      l("تم حفظ القالب بنجاح", "Template saved successfully"),
     );
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Failed to save template";

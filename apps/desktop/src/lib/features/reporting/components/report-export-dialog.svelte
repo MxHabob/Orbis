@@ -8,9 +8,10 @@ import {
   DialogFooter,
 } from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui/button";
-import { AdjustmentsHorizontal, ArrowPath, DocumentChartBar, Download } from "@orbis/icons";
+import { ArrowPath, DocumentChartBar, Download } from "@orbis/icons";
 import { api } from "$lib/api";
 import { toast } from "@orbis/ui";
+import { l } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
 
 interface Props {
@@ -25,12 +26,10 @@ let {
   definitionId,
   filters,
   onOpenChange,
-} = $props<Props>();
+}: Props = $props();
 
+let selectedFormat = $state("csv");
 let isExporting = $state(false);
-// svc-reporting currently exposes CSV only. Keep the UI aligned with the
-// active backend path until PDF/XLSX are implemented there.
-let selectedFormat = $state<"csv">("csv");
 
 async function handleExport() {
   if (!definitionId) return;
@@ -54,7 +53,7 @@ async function handleExport() {
     a.click();
     window.URL.revokeObjectURL(url);
 
-    toast.success(m.common_success());
+    toast.success(l("تم التصدير بنجاح", "Report exported successfully"));
     onOpenChange(false);
   } catch (e: any) {
     toast.error(e.message || "Export failed");
@@ -67,9 +66,9 @@ async function handleExport() {
 <Dialog bind:open {onOpenChange}>
   <DialogContent class="sm:max-w-106.25">
     <DialogHeader>
-      <DialogTitle>{m.common_export()}</DialogTitle>
+      <DialogTitle>{m.common_action_export ? m.common_action_export() : "Export"}</DialogTitle>
       <DialogDescription>
-        Choose the format to export your report.
+        {l("اختر صيغة تصدير التقرير", "Choose the format to export your report.")}
       </DialogDescription>
     </DialogHeader>
 
@@ -85,7 +84,7 @@ async function handleExport() {
 
     <DialogFooter>
       <Button variant="outline" onclick={() => onOpenChange(false)} disabled={isExporting}>
-        {m.common_cancel()}
+        {m.common_action_cancel ? m.common_action_cancel() : "Cancel"}
       </Button>
       <Button onclick={handleExport} disabled={isExporting}>
         {#if isExporting}
@@ -93,7 +92,7 @@ async function handleExport() {
         {:else}
           <Download class="mr-2 h-4 w-4" />
         {/if}
-        {m.common_export()}
+        {m.common_action_export ? m.common_action_export() : "Export"}
       </Button>
     </DialogFooter>
   </DialogContent>
