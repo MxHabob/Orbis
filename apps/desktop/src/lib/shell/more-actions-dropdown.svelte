@@ -1,5 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { l } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
 import {
   DropdownMenu,
@@ -71,13 +72,13 @@ const iconClass = "text-muted-foreground shrink-0";
             variant="outline" 
             size="icon-sm" 
             class="relative cursor-pointer rounded-[10px]"
-            aria-label={m.common_sidebar_more_actions?.() ?? "More Options"}
+            aria-label={l("خيارات إضافية", "More Options")}
           >
             <EllipsisHorizontal size={16} strokeWidth={1.8} class="text-foreground" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={12}>
-          {m.common_sidebar_more_actions?.() ?? "More Options"}
+          {l("خيارات إضافية", "More Options")}
         </TooltipContent>
       </Tooltip>
     {/snippet}
@@ -89,29 +90,29 @@ const iconClass = "text-muted-foreground shrink-0";
       <DropdownMenuSubTrigger class={subTriggerClass}>
         <div class="flex items-center gap-2.5">
           <QuestionMarkCircle size={14} class={iconClass} />
-          <span>{m.common_sidebar_help_resources?.() ?? "Resources"}</span>
+          <span>{l("المصادر", "Resources")}</span>
         </div>
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent side="left" align="end" sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://www.mulverse.com')}>
             <GlobeAlt size={13} class={iconClass} />
-            <span>{m.common_sidebar_help_welcome_page?.() ?? "Welcome Page"}</span>
+            <span>{l("صفحة الترحيب", "Welcome Page")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://docs.orbis.edu')}>
             <DocumentPage size={13} class={iconClass} />
-            <span>{m.common_sidebar_help_documentation?.() ?? "Documentation"}</span>
+            <span>{l("التوثيق", "Documentation")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://docs.orbis.edu/api')}>
             <CodeBracket size={13} class={iconClass} />
-            <span>{m.common_sidebar_help_api_docs?.() ?? "API Docs"}</span>
+            <span>{l("واجهة التطبيقات البرمجية", "API Docs")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://help.orbis.edu')}>
             <QuestionMarkCircle size={13} class={iconClass} />
-            <span>{m.common_sidebar_help_help_center?.() ?? "Help Center"}</span>
+            <span>{l("مركز المساعدة", "Help Center")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/support')}>
             <Headphone size={13} class={iconClass} />
-            <span>{m.common_sidebar_help_contact_support?.() ?? "Contact Support"}</span>
+            <span>{l("الدعم الفني", "Contact Support")}</span>
           </DropdownMenuItem>
       </DropdownMenuSubContent>
     </DropdownMenuSub>
@@ -121,23 +122,23 @@ const iconClass = "text-muted-foreground shrink-0";
       <DropdownMenuSubTrigger class={subTriggerClass}>
         <div class="flex items-center gap-2.5">
           <Users size={14} class={iconClass} />
-          <span>{m.common_sidebar_help_community?.() ?? "Community"}</span>
+          <span>{l("المجتمع", "Community")}</span>
         </div>
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent side="left" align="end" sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://discord.gg/e64gRQZhP')}>
             <ChatBubbles size={13} class={iconClass} />
-            <span>{m.common_sidebar_help_discord?.() ?? "Discord"}</span>
+            <span>Discord</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://x.com/mulverseco')}>
             <svg class="h-3.5 w-3.5 {iconClass}" viewBox="0 0 24 24" fill="currentColor">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
             </svg>
-            <span>{m.common_sidebar_help_twitter?.() ?? "Twitter / X"}</span>
+            <span>Twitter / X</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://github.com/mulverseco')}>
             <Github size={13} class={iconClass} />
-            <span>{m.common_sidebar_help_github?.() ?? "GitHub"}</span>
+            <span>GitHub</span>
           </DropdownMenuItem>
       </DropdownMenuSubContent>
     </DropdownMenuSub>
@@ -147,17 +148,17 @@ const iconClass = "text-muted-foreground shrink-0";
       <DropdownMenuSubTrigger class={subTriggerClass}>
         <div class="flex items-center gap-2.5">
           <Scale size={14} class={iconClass} />
-          <span>{m.common_sidebar_help_legal?.() ?? "Legal"}</span>
+          <span>{l("قانوني", "Legal")}</span>
         </div>
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent side="left" align="end" sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/terms')}>
             <DocumentPage size={13} class={iconClass} />
-            <span>{m.common_sidebar_help_terms?.() ?? "Terms of Service"}</span>
+            <span>{l("شروط الخدمة", "Terms of Service")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/privacy')}>
             <Lock size={13} class={iconClass} />
-            <span>{m.common_login_privacy_policy?.() ?? "Privacy Policy"}</span>
+            <span>{m.common_login_privacy_policy ? m.common_login_privacy_policy() : l("سياسة الخصوصية", "Privacy Policy")}</span>
           </DropdownMenuItem>
       </DropdownMenuSubContent>
     </DropdownMenuSub>
@@ -167,13 +168,13 @@ const iconClass = "text-muted-foreground shrink-0";
     <!-- Give Feedback -->
     <DropdownMenuItem class={menuItemClass} onclick={() => (isBackupCliOpen = true)}>
       <AppNotification size={14} class={iconClass} />
-      <span>{m.common_action_back?.() ?? "Give feedback"}</span>
+      <span>{l("تقديم ملاحظات", "Give feedback")}</span>
     </DropdownMenuItem>
 
     <!-- Tour Navigation -->
     <DropdownMenuItem class={menuItemClass} onclick={() => alert('Tour is coming soon!')}>
       <GlobeAlt size={14} class={iconClass} />
-      <span>{m.common_sidebar_help_tour?.() ?? "Tour the new navigation"}</span>
+      <span>{l("جولة استكشافية", "Tour the new navigation")}</span>
     </DropdownMenuItem>
   </DropdownMenuContent>
   </DropdownMenuPortal>

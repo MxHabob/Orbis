@@ -9,7 +9,7 @@ import { Calendar, ClockRotateRight, UserBadgeCheck, UserMinus } from "@orbis/ic
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
-import { formatNumber, formatPercent, formatDate } from "$lib/core/i18n";
+import { formatNumber, formatPercent, formatDate, l } from "$lib/core/i18n";
 import { DataTable } from "$lib/tables";
 import { studentAttendance as saDef, withIndex } from "$lib/tables/definitions";
 import { academicContext } from "$lib/stores";
@@ -129,8 +129,8 @@ const rtl = $derived(getLocale() === "ar");
       filterFields={attendanceFilterFields}
       bind:filterValue={activeFilter}
       emptyIcon={Calendar}
-      emptyTitle={m.academics_attendance_empty_title()}
-      emptyDescription={m.academics_attendance_empty_subtitle()}
+      emptyTitle={l("لا توجد سجلات حضور", "No attendance records")}
+      emptyDescription={l("لم يتم تسجيل أي حضور لهذا الطالب بعد", "No attendance recorded for this student yet.")}
       {rtl}
       height="350px"
     />

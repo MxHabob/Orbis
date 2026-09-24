@@ -213,10 +213,10 @@ const rtl = $derived(getLocale() === "ar");
 
       <div class="flex gap-2 justify-end mt-2">
         <Button variant="outline" class="text-xs h-8" onclick={() => (showAddModal = false)}>
-          {m.common_btn_cancel()}
+          {m.common_action_cancel ? m.common_action_cancel() : "Cancel"}
         </Button>
         <Button class="text-xs h-8" onclick={handleAddRecord} disabled={isSaving || !newDescription.trim()}>
-          {isSaving ? m.common_promo_running() : m.common_btn_save()}
+          {isSaving ? (m.common_promo_running ? m.common_promo_running() : "Saving...") : (m.common_action_save ? m.common_action_save() : "Save")}
         </Button>
       </div>
     </div>
