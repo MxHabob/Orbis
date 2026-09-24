@@ -1,17 +1,26 @@
 <!--
   @component ClassCurriculum
   Feature component for Class Materials and Curriculum view.
-  Uses @orbis/svelte-grid directly to display subjects assigned to a class.
+  Uses @orbis/svelte-grid directly inside a standardized Card container.
 -->
 <script lang="ts">
 import { createQuery } from "@tanstack/svelte-query";
 import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+  CardContent,
+} from "@orbis/ui/card";
 import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { academicContext } from "$lib/stores";
 import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
 import { goto } from "$app/navigation";
+import { BookOpen, Plus, Refresh } from "@orbis/icons";
 import ClassSubjectSheet from "$lib/features/academics/components/class-subject-sheet.svelte";
 
 let { orgId, classId }: { orgId: string; classId: string } = $props();
@@ -50,7 +59,7 @@ const columns: OrbisColumnDef[] = [
     name: m.common_search_group_subjects(),
     width: 240,
     size: 240,
-    cellClass: "font-medium",
+    cellClass: "font-semibold text-foreground",
   },
   {
     id: "teacher_display",
@@ -59,6 +68,7 @@ const columns: OrbisColumnDef[] = [
     name: m.common_teacher(),
     width: 220,
     size: 220,
+    cellClass: "text-muted-foreground",
   },
   {
     id: "weekly_hours",
@@ -68,6 +78,7 @@ const columns: OrbisColumnDef[] = [
     width: 130,
     size: 130,
     align: "center",
+    cellClass: "font-mono font-medium",
   },
   {
     id: "status",
@@ -103,44 +114,71 @@ function handleGridAction(event: GridActionEvent) {
 </script>
 
 <div class="flex flex-col gap-4 text-start h-full font-sans">
-  <div class="flex items-center justify-between pb-3">
-    <div>
-      <h1 class="text-lg font-bold tracking-tight text-foreground">
-        {m.common_search_group_subjects()}
-      </h1>
-    </div>
-    <Button
-      variant="default"
-      size="sm"
-      class="h-8 gap-1.5 text-xs font-semibold"
-      onclick={() => (showSubjectSheet = true)}
-    >
-      {m.common_search_add()}
-    </Button>
-  </div>
+  <Card class="flex-1 flex flex-col min-h-0 overflow-hidden">
+    <CardHeader class="py-3 px-4 flex flex-row items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+          <BookOpen class="w-4 h-4" />
+        </div>
+        <div class="flex flex-col text-start">
+          <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
+            {m.common_search_group_subjects()}
+          </CardTitle>
+          <CardDescription class="text-[10px]">
+            المواد والمقررات الدراسية المخصصة لهذا الفصل
+          </CardDescription>
+        </div>
+      </div>
 
-  {#if error}
-    <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2 font-sans">
-      <h3 class="font-semibold text-xs">{m.common_error_occurred()}</h3>
-      <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
-      <Button variant="outline" size="sm" class="h-8 mt-2 text-xs" onclick={() => subjectsQuery.refetch()}>
-        {m.common_retry()}
-      </Button>
-    </div>
-  {:else}
-    <div class="flex-1 min-h-0">
-      <OrbisGrid
-        {columns}
-        source={gridSource}
-        loading={isLoading}
-        height="100%"
-        rowSize={48}
-        readonly
-        onaction={handleGridAction}
-        emptyTitle={m.common_empty_classes_desc()}
-      />
-    </div>
-  {/if}
+      <CardAction>
+        <div class="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            class="text-muted-foreground"
+            onclick={() => subjectsQuery.refetch()}
+          >
+            <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
+          </Button>
+
+          <Button
+            variant="default"
+            size="sm"
+            class="h-8 gap-1.5 text-xs font-bold shadow-sm"
+            onclick={() => (showSubjectSheet = true)}
+          >
+            <Plus size={14} />
+            {m.common_search_add()}
+          </Button>
+        </div>
+      </CardAction>
+    </CardHeader>
+
+    <CardContent class="p-0 flex-1 min-h-0 flex flex-col overflow-hidden">
+      {#if error}
+        <div class="flex flex-1 flex-col items-center justify-center py-16 text-destructive gap-2 font-sans p-6">
+          <h3 class="font-semibold text-xs">{m.common_error_occurred()}</h3>
+          <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
+          <Button variant="outline" size="sm" class="h-8 mt-2 text-xs" onclick={() => subjectsQuery.refetch()}>
+            {m.common_retry()}
+          </Button>
+        </div>
+      {:else}
+        <div class="flex-1 min-h-0 w-full h-full">
+          <OrbisGrid
+            {columns}
+            source={gridSource}
+            loading={isLoading}
+            height="100%"
+            rowSize={44}
+            readonly
+            onaction={handleGridAction}
+            emptyTitle={m.common_empty_classes_desc()}
+          />
+        </div>
+      {/if}
+    </CardContent>
+  </Card>
 
   <ClassSubjectSheet
     bind:open={showSubjectSheet}

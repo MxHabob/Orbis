@@ -1,13 +1,21 @@
 <!--
   @component ClassSubjectResults
   Feature component displaying term results and calculated grades for a class subject.
-  Uses @orbis/svelte-grid directly for high performance.
+  Uses @orbis/svelte-grid inside a standardized Card container.
 -->
 <script lang="ts">
 import { createQuery } from "@tanstack/svelte-query";
 import { api, extractErrorMessage } from "$lib/api";
 import type { GradeDto } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+  CardContent,
+} from "@orbis/ui/card";
 import { DocumentCheck, InfoCircle, Refresh } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
@@ -17,7 +25,6 @@ export interface EnrichedGradeDto extends GradeDto {
   student_name?: string | null;
   student_name_ar?: string | null;
   student_number?: string | null;
-  max_score?: number | null;
   obtained_score?: number | null;
   grade_value?: string | null;
   is_passed?: number | boolean | null;
@@ -112,51 +119,62 @@ const gridSource = $derived(
 </script>
 
 <div class="flex flex-col h-full w-full gap-2.5 font-sans">
-  <!-- Action Toolbar -->
-  <div class="flex items-center justify-between shrink-0 px-0.5">
-    <div class="flex items-center gap-2">
-      <div class="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-        <DocumentCheck size={14} class="text-primary opacity-80" />
-        <span>
-          {termResults.length} {m.common_term_results_recorded()}
-        </span>
+  <Card class="flex-1 flex flex-col min-h-0 overflow-hidden">
+    <!-- Action Toolbar inside CardHeader -->
+    <CardHeader class="py-3 px-4 flex flex-row items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+          <DocumentCheck class="w-4 h-4" />
+        </div>
+        <div class="flex flex-col text-start">
+          <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
+            النتائج النهائية للمادة
+          </CardTitle>
+          <CardDescription class="text-[10px]">
+            {termResults.length} {m.common_term_results_recorded()}
+          </CardDescription>
+        </div>
       </div>
-    </div>
 
-    <div class="flex items-center gap-2">
-      <Button 
-        variant="outline" 
-        size="sm" 
-        class="h-8 px-2.5 gap-1.5 cursor-pointer text-xs font-semibold shadow-2xs" 
-        onclick={() => termResultsQuery.refetch()} 
-        disabled={isLoading}
-      >
-        <Refresh size={12} class={isLoading ? "animate-spin" : ""} />
-        <span>{m.common_retry()}</span>
-      </Button>
-    </div>
-  </div>
+      <CardAction>
+        <div class="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            class="h-8 px-2.5 gap-1.5 cursor-pointer text-xs font-semibold shadow-2xs" 
+            onclick={() => termResultsQuery.refetch()} 
+            disabled={isLoading}
+          >
+            <Refresh size={12} class={isLoading ? "animate-spin" : ""} />
+            <span>{m.common_retry()}</span>
+          </Button>
+        </div>
+      </CardAction>
+    </CardHeader>
 
-  <!-- Grid Container -->
-  <div class="flex-1 overflow-hidden border border-border/70 rounded-xl shadow-xs bg-card">
-    {#if error}
-      <div class="flex h-full flex-col items-center justify-center text-xs text-destructive gap-2 p-6">
-        <InfoCircle size={24} />
-        <span class="font-semibold">{extractErrorMessage(error)}</span>
-        <Button variant="outline" size="sm" class="h-8 mt-2 text-xs" onclick={() => termResultsQuery.refetch()}>
-          {m.common_retry()}
-        </Button>
-      </div>
-    {:else}
-      <OrbisGrid
-        {columns}
-        source={gridSource}
-        loading={isLoading}
-        height="100%"
-        rowSize={44}
-        readonly
-        emptyTitle={m.common_no_term_results()}
-      />
-    {/if}
-  </div>
+    <!-- Grid Container inside CardContent -->
+    <CardContent class="p-0 flex-1 min-h-0 flex flex-col overflow-hidden">
+      {#if error}
+        <div class="flex flex-1 flex-col items-center justify-center text-xs text-destructive gap-2 p-6">
+          <InfoCircle size={24} />
+          <span class="font-semibold">{extractErrorMessage(error)}</span>
+          <Button variant="outline" size="sm" class="h-8 mt-2 text-xs" onclick={() => termResultsQuery.refetch()}>
+            {m.common_retry()}
+          </Button>
+        </div>
+      {:else}
+        <div class="flex-1 min-h-0 w-full h-full">
+          <OrbisGrid
+            {columns}
+            source={gridSource}
+            loading={isLoading}
+            height="100%"
+            rowSize={44}
+            readonly
+            emptyTitle={m.common_no_term_results()}
+          />
+        </div>
+      {/if}
+    </CardContent>
+  </Card>
 </div>

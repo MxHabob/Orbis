@@ -1,11 +1,19 @@
 <!--
   @component ClassStudents
   Feature component for the Class Students view.
-  Uses @orbis/svelte-grid for scalable, high-performance rendering.
+  Uses @orbis/svelte-grid inside a standardized Card container.
 -->
 <script lang="ts">
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+  CardContent,
+} from "@orbis/ui/card";
 import { InfoCircle, Refresh, Users } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
@@ -117,59 +125,66 @@ function refetch() {
 </script>
 
 <div class="flex flex-col gap-4 text-start h-full font-sans">
-  <div class="flex items-start justify-between gap-3 border-b border-border/60 pb-3">
-    <div>
-      <div class="flex items-center gap-2 mb-1.5">
-        <a
-          href={localizeHref(`/${orgId}/academics/classes/${classId}`)}
-          class="flex items-center gap-1 text-[11px] font-bold text-muted-foreground hover:text-primary transition-colors"
-        >
-          <span>&larr;</span>
-          <span>{m.common_nav_dashboard()}</span>
-        </a>
+  <Card class="flex-1 flex flex-col min-h-0 overflow-hidden">
+    <CardHeader class="py-3 px-4 flex flex-row items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+          <Users class="w-4 h-4" />
+        </div>
+        <div class="flex flex-col text-start">
+          <div class="flex items-center gap-2">
+            <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
+              {m.academics_class_detail_tab_students()}
+            </CardTitle>
+            <Badge variant="secondary" class="text-[9px] py-0 px-1.5 h-4.5 rounded font-mono">
+              {students.length}
+            </Badge>
+          </div>
+          <CardDescription class="text-[10px]">
+            {m.academics_class_students_desc()}
+          </CardDescription>
+        </div>
       </div>
-      <div class="flex items-center gap-2">
-        <Users size={17} class="text-primary" />
-        <h2 class="text-sm font-bold">
-          {m.academics_class_detail_tab_students()}
-        </h2>
-        <Badge variant="secondary" class="text-[9px] py-0 px-1.5 h-4.5 rounded font-sans ml-2">
-          {students.length}
-        </Badge>
-      </div>
-      <p class="mt-1 text-[10px] text-muted-foreground">
-        {m.academics_class_students_desc()}
-      </p>
-    </div>
-    <div class="flex gap-2">
-      <Button variant="outline" size="sm" class="h-8 gap-1.5 text-xs font-semibold" onclick={refetch}>
-        <Refresh size={12} class={isLoading ? "animate-spin" : ""} />
-        {m.common_retry()}
-      </Button>
-    </div>
-  </div>
 
-  {#if error}
-    <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2 font-sans">
-      <InfoCircle size={24} />
-      <h3 class="font-semibold text-xs">{m.common_error_occurred()}</h3>
-      <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
-      <Button variant="outline" size="sm" class="h-8 mt-2 text-xs" onclick={refetch}>
-        {m.common_retry()}
-      </Button>
-    </div>
-  {:else}
-    <div class="flex-1 w-full overflow-hidden border border-border/70 rounded-xl bg-card">
-      <OrbisGrid
-        {columns}
-        source={gridSource}
-        loading={isLoading}
-        height="100%"
-        rowSize={44}
-        readonly
-        onaction={handleGridAction}
-        emptyTitle={m.common_students_empty_title()}
-      />
-    </div>
-  {/if}
+      <CardAction>
+        <div class="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            class="h-8 gap-1.5 text-xs font-semibold"
+            onclick={refetch}
+          >
+            <Refresh size={12} class={isLoading ? "animate-spin" : ""} />
+            {m.common_retry()}
+          </Button>
+        </div>
+      </CardAction>
+    </CardHeader>
+
+    <CardContent class="p-0 flex-1 min-h-0 flex flex-col overflow-hidden">
+      {#if error}
+        <div class="flex flex-1 flex-col items-center justify-center py-16 text-destructive gap-2 font-sans p-6">
+          <InfoCircle size={24} />
+          <h3 class="font-semibold text-xs">{m.common_error_occurred()}</h3>
+          <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
+          <Button variant="outline" size="sm" class="h-8 mt-2 text-xs" onclick={refetch}>
+            {m.common_retry()}
+          </Button>
+        </div>
+      {:else}
+        <div class="flex-1 min-h-0 w-full h-full">
+          <OrbisGrid
+            {columns}
+            source={gridSource}
+            loading={isLoading}
+            height="100%"
+            rowSize={44}
+            readonly
+            onaction={handleGridAction}
+            emptyTitle={m.common_students_empty_title()}
+          />
+        </div>
+      {/if}
+    </CardContent>
+  </Card>
 </div>

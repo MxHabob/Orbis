@@ -3,7 +3,26 @@ import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
-import { ArrowRight, BookOpen, Calendar, ChartBar, Info, InfoCircle, Sparkles, TaskList, UserBadgeCheck } from "@orbis/icons";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+  CardContent,
+  CardFooter,
+} from "@orbis/ui/card";
+import {
+  ArrowRight,
+  BookOpen,
+  Calendar,
+  ChartBar,
+  Info,
+  InfoCircle,
+  Sparkles,
+  TaskList,
+  UserBadgeCheck,
+} from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 
 import {
@@ -33,7 +52,12 @@ const promotionJobs = $derived(promotionJobsQuery.data ?? []);
 
 // Find active period / term
 const activePeriod = $derived(
-  periods.find((c) => c.status === "active" || c.status === "active_teaching" || c.status === "grade_submission") || periods[0],
+  periods.find(
+    (c) =>
+      c.status === "active" ||
+      c.status === "active_teaching" ||
+      c.status === "grade_submission",
+  ) || periods[0],
 );
 
 const activePeriodId = $derived(activePeriod ? String(activePeriod.id) : "");
@@ -231,13 +255,22 @@ const advisorInsights = $derived.by(() => {
   class="h-full w-full overflow-y-auto bg-background/30 scrollbar-hide p-6 select-none font-sans flex flex-col gap-6"
 >
   <!-- Sleek Header with Active Year Indicator -->
-  <div class="flex items-center justify-end border-b border-border/40 pb-4">
+  <div class="flex items-center justify-between border-b border-border/40 pb-4">
+    <div class="flex flex-col text-start">
+      <h2 class="text-base font-bold text-foreground">
+        {m.common_nav_academics()}
+      </h2>
+      <p class="text-xs text-muted-foreground">
+        {m.academics_overview_sections_title()} والمؤشرات الأكاديمية
+      </p>
+    </div>
+
     <!-- Active Academic Year Pills -->
     <div class="flex items-center gap-2">
       {#if activeYearName}
         <Badge
           variant="outline"
-          class="text-[9px] px-2 py-0.5 font-bold flex items-center gap-1.5 border-border/60 bg-card/60"
+          class="text-[9px] px-2 py-0.5 font-bold flex items-center gap-1.5 border-border/60 bg-card"
         >
           <Calendar size={10} class="text-primary" />
           <span>{activeYearName}</span>
@@ -254,7 +287,7 @@ const advisorInsights = $derived.by(() => {
       {#if activePeriodName}
         <Badge
           variant="outline"
-          class="text-[9px] px-2 py-0.5 font-bold flex items-center gap-1.5 border-border/60 bg-card/60"
+          class="text-[9px] px-2 py-0.5 font-bold flex items-center gap-1.5 border-border/60 bg-card"
         >
           <span
             class="h-1.5 w-1.5 rounded-full {isGradeEntryOpen
@@ -269,11 +302,11 @@ const advisorInsights = $derived.by(() => {
 
   {#if isLoading}
     <!-- Split Grid Loading Skeleton -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
       <!-- Left Directory List Skeleton -->
       <div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-3">
         <Skeleton class="h-4 w-32 mb-2 rounded" />
-        {#each Array(7) as _}
+        {#each Array(5) as _}
           <div
             class="flex items-center justify-between p-3.5 border-b border-border/30"
           >
@@ -290,27 +323,8 @@ const advisorInsights = $derived.by(() => {
       </div>
 
       <!-- Right Diagnostics Sidebar Skeleton -->
-      <div
-        class="lg:col-span-5 xl:col-span-4 flex flex-col gap-5 border border-border/50 bg-card/20 rounded-xl p-5"
-      >
-        <Skeleton class="h-3 w-40 mb-1 rounded" />
-        <div class="grid grid-cols-2 gap-4 pb-4 border-b border-border/40">
-          {#each Array(4) as _}
-            <div class="flex flex-col gap-1">
-              <Skeleton class="h-2.5 w-16 rounded" />
-              <Skeleton class="h-4 w-8 rounded" />
-            </div>
-          {/each}
-        </div>
-        <Skeleton class="h-3 w-32 mb-1 rounded" />
-        <div class="flex flex-col gap-3">
-          {#each Array(4) as _}
-            <div class="flex items-start gap-2.5">
-              <Skeleton class="h-4 w-4 rounded-full shrink-0" />
-              <Skeleton class="h-3 w-full rounded" />
-            </div>
-          {/each}
-        </div>
+      <div class="lg:col-span-5 xl:col-span-4">
+        <Skeleton class="h-72 w-full rounded-xl" />
       </div>
     </div>
   {:else if error}
@@ -325,30 +339,34 @@ const advisorInsights = $derived.by(() => {
       <Button
         variant="outline"
         onclick={refetchAll}
-        class="text-[10px] mt-2 h-8">{m.common_retry()}</Button
+        class="text-[10px] mt-2 h-8"
       >
+        {m.common_retry()}
+      </Button>
     </div>
   {:else}
     <!-- Main Content Split Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
-      <!-- 1. LEFT COLUMN: Directory Index List (Notion Database style) -->
-      <div class="lg:col-span-7 xl:col-span-8 flex flex-col">
-        <h3
-          class="text-[10px] font-bold text-muted-foreground/80 tracking-wider uppercase mb-3 text-start"
-        >
-          {m.academics_overview_sections_title()}
-        </h3>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
+      <!-- 1. LEFT COLUMN: Directory Index List Card -->
+      <Card class="lg:col-span-7 xl:col-span-8 flex flex-col overflow-hidden">
+        <CardHeader class="py-3 px-4">
+          <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
+            {m.academics_overview_sections_title()}
+          </CardTitle>
+          <CardDescription class="text-[10px]">
+            لوحة الإدارة والعمليات الأكاديمية المركزية
+          </CardDescription>
+        </CardHeader>
 
-        <div class="flex flex-col">
+        <CardContent class="p-0 divide-y divide-border/40">
           {#each directoryItems as item (item.path)}
             <a
               href={localizeHref(item.path)}
-              class="group flex items-center justify-between py-2.5 px-3 border-b border-border/30 hover:bg-muted/40 rounded-lg transition-colors duration-150 select-none cursor-pointer"
+              class="group flex items-center justify-between p-3.5 hover:bg-muted/40 transition-colors duration-150 select-none cursor-pointer"
             >
               <div class="flex items-center gap-3.5 min-w-0 text-start">
-                <!-- Sleek Monolithic icon box -->
                 <div
-                  class="h-8 w-8 rounded-lg bg-muted/65 text-muted-foreground flex items-center justify-center shrink-0 group-hover:bg-primary/10 group-hover:text-primary transition-colors duration-150"
+                  class="h-8.5 w-8.5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-150"
                 >
                   <item.icon size={16} />
                 </div>
@@ -359,114 +377,109 @@ const advisorInsights = $derived.by(() => {
                     {item.title}
                   </span>
                   <span
-                    class="text-[9.5px] text-muted-foreground/90 leading-normal truncate mt-0.5 max-w-sm sm:max-w-md md:max-w-lg"
+                    class="text-[10px] text-muted-foreground leading-normal truncate mt-0.5 max-w-sm sm:max-w-md md:max-w-lg"
                   >
                     {item.desc}
                   </span>
                 </div>
               </div>
 
-              <div class="flex items-center gap-2 shrink-0">
+              <div class="flex items-center gap-2.5 shrink-0">
                 {#if item.badge}
                   <span
-                    class="text-[8.5px] font-mono font-medium text-muted-foreground/80 bg-muted/50 border border-border/40 px-2 py-0.5 rounded select-none"
+                    class="text-[9px] font-mono font-medium text-muted-foreground bg-muted/60 border border-border/40 px-2 py-0.5 rounded select-none"
                   >
                     {item.badge}
                   </span>
                 {/if}
                 <ArrowRight
-                  size={12}
+                  size={13}
                   class="text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity duration-150 rtl:rotate-180"
                 />
               </div>
             </a>
           {/each}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <!-- 2. RIGHT COLUMN: Academic Health & Diagnostics (Linear Sidebar style) -->
-      <div
-        class="lg:col-span-5 xl:col-span-4 flex flex-col gap-5 border border-border/50 bg-card/10 rounded-xl p-5 select-none text-start"
-      >
-        <!-- Sidebar Section: KPI Summary -->
-        <div>
-          <h4
-            class="text-[9.5px] font-bold text-muted-foreground/80 tracking-wider uppercase border-b border-border/30 pb-2 mb-3"
-          >
+      <!-- 2. RIGHT COLUMN: Academic Health & Diagnostics Card -->
+      <Card class="lg:col-span-5 xl:col-span-4 flex flex-col select-none text-start overflow-hidden">
+        <CardHeader class="py-3 px-4">
+          <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
             {m.academics_overview_sidebar_title()}
-          </h4>
+          </CardTitle>
+          <CardDescription class="text-[10px]">
+            إحصاءات وتشخيص الذكاء الاصطناعي الأكاديمي
+          </CardDescription>
+        </CardHeader>
 
-          <div class="grid grid-cols-2 gap-4 pb-4 border-b border-border/30">
+        <CardContent class="p-4 space-y-4">
+          <!-- Sidebar Section: KPI Summary -->
+          <div class="grid grid-cols-2 gap-3 pb-3 border-b border-border/40">
             {#each kpiStats as stat}
-              <div class="flex flex-col text-start">
-                <span class="text-[9.5px] text-muted-foreground/80"
-                  >{stat.label}</span
-                >
-                <span
-                  class="text-sm font-bold text-foreground font-mono mt-0.5 leading-none"
-                  >{stat.value}</span
-                >
+              <div class="flex flex-col p-2 rounded-lg bg-card border border-border/40 text-start">
+                <span class="text-[9px] text-muted-foreground font-semibold">
+                  {stat.label}
+                </span>
+                <span class="text-base font-bold text-foreground font-mono mt-0.5 leading-none">
+                  {stat.value}
+                </span>
               </div>
             {/each}
           </div>
-        </div>
 
-        <!-- Sidebar Section: Orbis AI Advisor System Diagnostics -->
-        <div class="flex flex-col gap-3">
-          <div
-            class="flex items-center gap-2 text-foreground font-semibold text-[11px] pb-1"
-          >
-            <Sparkles size={13} class="text-primary animate-pulse" />
-            <span>{m.academics_overview_advisor_title()}</span>
-          </div>
-
+          <!-- Sidebar Section: Orbis AI Advisor System Diagnostics -->
           <div class="flex flex-col gap-2.5">
-            {#each advisorInsights as insight (insight.id)}
-              <div
-                class="flex items-start gap-2.5 p-2 rounded-lg bg-card/30 border border-border/20 text-[10px] leading-relaxed text-muted-foreground"
-              >
-                <!-- Status icon or color dot -->
-                <div class="shrink-0 mt-0.5">
-                  {#if insight.variant === "warning"}
-                    <span class="relative flex h-2 w-2">
-                      <span
-                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"
-                      ></span>
-                      <span
-                        class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"
-                      ></span>
-                    </span>
-                  {:else if insight.variant === "success"}
-                    <span
-                      class="inline-flex rounded-full h-2 w-2 bg-emerald-500"
-                    ></span>
-                  {:else}
-                    <span
-                      class="inline-flex rounded-full h-2 w-2 bg-muted-foreground/40"
-                    ></span>
-                  {/if}
-                </div>
+            <div class="flex items-center gap-1.5 text-foreground font-bold text-[11px]">
+              <Sparkles size={13} class="text-primary animate-pulse" />
+              <span>{m.academics_overview_advisor_title()}</span>
+            </div>
 
-                <div class="flex flex-col min-w-0">
-                  <span class="text-foreground/90 font-medium"
-                    >{insight.text}</span
-                  >
+            <div class="flex flex-col gap-2">
+              {#each advisorInsights as insight (insight.id)}
+                <div
+                  class="flex items-start gap-2.5 p-2 rounded-lg bg-muted/30 border border-border/30 text-[10px] leading-relaxed text-muted-foreground"
+                >
+                  <div class="shrink-0 mt-0.5">
+                    {#if insight.variant === "warning"}
+                      <span class="relative flex h-2 w-2">
+                        <span
+                          class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"
+                        ></span>
+                        <span
+                          class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"
+                        ></span>
+                      </span>
+                    {:else if insight.variant === "success"}
+                      <span
+                        class="inline-flex rounded-full h-2 w-2 bg-emerald-500"
+                      ></span>
+                    {:else}
+                      <span
+                        class="inline-flex rounded-full h-2 w-2 bg-muted-foreground/40"
+                      ></span>
+                    {/if}
+                  </div>
+
+                  <div class="flex flex-col min-w-0">
+                    <span class="text-foreground/90 font-medium">
+                      {insight.text}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            {/each}
+              {/each}
+            </div>
           </div>
-        </div>
+        </CardContent>
 
         <!-- System Information Footer -->
-        <div
-          class="pt-2 border-t border-border/30 flex items-center gap-2 text-[9px] text-muted-foreground/75"
-        >
+        <CardFooter class="border-t border-border/40 py-2.5 px-4 flex items-center gap-2 text-[9px] text-muted-foreground">
           <Info size={11} />
           <div class="flex items-center gap-1.5">
             <span>{activeYearName || m.common_nav_academics()}{#if activePeriodName} • {activePeriodName}{/if}</span>
           </div>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
   {/if}
 </div>

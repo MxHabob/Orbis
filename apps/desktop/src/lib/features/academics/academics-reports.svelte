@@ -5,6 +5,14 @@
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+  CardContent,
+} from "@orbis/ui/card";
 import { ChartBar, DocumentPage, InfoCircle, Refresh } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
@@ -20,13 +28,25 @@ const error = $derived(reportsQuery.error);
 </script>
 
 <div class="p-6 flex flex-col gap-6 font-sans text-start select-none">
-  <div>
-    <h1 class="text-xl font-bold">
-      {m.common_nav_reports()}
-    </h1>
-    <p class="text-sm text-muted-foreground mt-1">
-      {m.academics_reports_desc()}
-    </p>
+  <div class="flex items-center justify-between border-b border-border/40 pb-4">
+    <div>
+      <h1 class="text-base font-bold text-foreground">
+        {m.common_nav_reports()}
+      </h1>
+      <p class="text-xs text-muted-foreground mt-0.5">
+        {m.academics_reports_desc()}
+      </p>
+    </div>
+
+    <Button
+      variant="outline"
+      size="sm"
+      class="h-8 gap-1.5 text-xs font-semibold"
+      onclick={() => reportsQuery.refetch()}
+    >
+      <Refresh size={13} class={isLoading ? "animate-spin" : ""} />
+      <span>{m.common_retry()}</span>
+    </Button>
   </div>
 
   {#if isLoading}
@@ -61,13 +81,27 @@ const error = $derived(reportsQuery.error);
       {#each reports as report (report.id)}
         <a
           href={localizeHref(`/${orgId}/academics/reports/${report.id}`)}
-          class="flex flex-col gap-2 p-6 rounded-xl border border-border/70 bg-card hover:border-primary hover:shadow-md transition-all group"
+          class="no-underline group block"
         >
-          <ChartBar class="h-8 w-8 text-primary mb-2 transition-transform group-hover:scale-105" />
-          <h3 class="font-medium text-foreground group-hover:text-primary transition-colors">{report.name}</h3>
-          {#if report.description}
-            <p class="text-xs text-muted-foreground line-clamp-2">{report.description}</p>
-          {/if}
+          <Card class="hover:border-primary/60 transition-all group-hover:shadow-md cursor-pointer h-full flex flex-col justify-between">
+            <CardHeader class="py-3 px-4">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:scale-105 transition-transform shrink-0">
+                  <ChartBar class="h-4 w-4" />
+                </div>
+                <CardTitle class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                  {report.name}
+                </CardTitle>
+              </div>
+            </CardHeader>
+            {#if report.description}
+              <CardContent class="p-4 pt-1">
+                <CardDescription class="text-xs text-muted-foreground line-clamp-2">
+                  {report.description}
+                </CardDescription>
+              </CardContent>
+            {/if}
+          </Card>
         </a>
       {/each}
     </div>
