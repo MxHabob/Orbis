@@ -11,7 +11,7 @@ import { Badge } from "@orbis/ui/badge";
 import { Label } from "@orbis/ui/label";
 import { toast } from "@orbis/ui";
 import { ArrowForward, LinkSlash, UserBadgeCheck } from "@orbis/icons";
-import SettingsCard from "$lib/shared/components/settings-card.svelte";
+import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 
 interface Props {
@@ -110,25 +110,28 @@ function handleDisconnectProvider(provider: "google" | "microsoft") {
 }
 </script>
 
-<SettingsCard title={m.common_account_identities_section()}>
-  {#snippet headerAction()}
+<Card>
+  <CardHeader>
+    <CardTitle>{m.common_account_identities_section()}</CardTitle>
     {#if orgId}
-      <a
-        href={localizeHref(integrationsUrl)}
-        class="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium"
-      >
-        <span>{m.common_account_identities_configure_in_integrations()}</span>
-        <ArrowForward class="w-3 h-3" />
-      </a>
+      <div class="flex items-center gap-2 shrink-0 ms-auto">
+        <a
+          href={localizeHref(integrationsUrl)}
+          class="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium"
+        >
+          <span>{m.common_account_identities_configure_in_integrations()}</span>
+          <ArrowForward class="w-3 h-3" />
+        </a>
+      </div>
     {/if}
-  {/snippet}
-
-  <!-- Google Workspace Identity Row -->
-  <SettingsRow
-    description={isGoogleLinked
-      ? m.common_account_identities_google_linked_desc({ email: googleEmail || "Google Workspace" })
-      : m.common_account_identities_google_desc()}
-  >
+  </CardHeader>
+  <CardContent>
+    <!-- Google Workspace Identity Row -->
+    <SettingsRow
+      description={isGoogleLinked
+        ? m.common_account_identities_google_linked_desc({ email: googleEmail || "Google Workspace" })
+        : m.common_account_identities_google_desc()}
+    >
     {#snippet headerSlot()}
       <div class="flex items-center gap-2">
         <!-- Google Colored SVG Icon -->
@@ -249,4 +252,5 @@ function handleDisconnectProvider(provider: "google" | "microsoft") {
       {/if}
     {/snippet}
   </SettingsRow>
-</SettingsCard>
+  </CardContent>
+</Card>

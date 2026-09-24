@@ -11,6 +11,14 @@ import { Label } from "@orbis/ui/label";
 import { Switch } from "@orbis/ui/switch";
 import { Badge } from "@orbis/ui/badge";
 import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardAction,
+} from "@orbis/ui/card";
+import {
   Select,
   SelectTrigger,
   SelectContent,
@@ -100,38 +108,54 @@ function parseOrgRegistration(rawOrg: any) {
     allowNoGuardian: pol.allow_no_guardian !== undefined ? Boolean(pol.allow_no_guardian) : false,
     allowDuplicateNationalId: pol.allow_duplicate_national_id !== undefined ? Boolean(pol.allow_duplicate_national_id) : false,
     autoAssignFees: pol.auto_assign_fees !== undefined ? Boolean(pol.auto_assign_fees) : true,
-    maxClassCapacity: pol.max_class_capacity !== undefined ? (pol.max_class_capacity == null ? null : Number(pol.max_class_capacity)) : 30,
-    requiredDocuments: Array.isArray(reg.required_documents_list) && reg.required_documents_list.length > 0 ? reg.required_documents_list : defaultDocuments,
-    formFields: Array.isArray(reg.form_fields_list) && reg.form_fields_list.length > 0 ? reg.form_fields_list : defaultFormFields,
+    maxClassCapacity: pol.max_class_capacity ? Number(pol.max_class_capacity) : 30,
+    requiredDocuments: Array.isArray(reg.required_documents_list) && reg.required_documents_list.length > 0
+      ? reg.required_documents_list
+      : Array.isArray(reg.required_documents) && reg.required_documents.length > 0
+      ? reg.required_documents.map((d: string, idx: number) => ({ id: `doc_${idx}`, nameAr: d, nameEn: d, isRequired: true }))
+      : defaultDocuments,
+    formFields: Array.isArray(reg.form_fields_list) && reg.form_fields_list.length > 0
+      ? reg.form_fields_list
+      : defaultFormFields,
   };
 }
 
-const initialState = parseOrgRegistration(org);
+const parsed = parseOrgRegistration(org);
 
-// Active tab
-let activeTab = $state<"policies" | "documents" | "fields">("policies");
+// Editable Form State
+let institutionType = $state<string>(parsed.institutionType);
+let studentNumberPrefix = $state<string>(parsed.studentNumberPrefix);
+let studentNumberYearFormat = $state<string>(parsed.studentNumberYearFormat);
+let studentNumberDigits = $state<number>(parsed.studentNumberDigits);
+let requiresApproval = $state<boolean>(parsed.requiresApproval);
+let allowNoGuardian = $state<boolean>(parsed.allowNoGuardian);
+let allowDuplicateNationalId = $state<boolean>(parsed.allowDuplicateNationalId);
+let autoAssignFees = $state<boolean>(parsed.autoAssignFees);
+let maxClassCapacity = $state<number>(parsed.maxClassCapacity);
+let requiredDocuments = $state<DocItem[]>(JSON.parse(JSON.stringify(parsed.requiredDocuments)));
+let formFields = $state<FieldConfig[]>(JSON.parse(JSON.stringify(parsed.formFields)));
 
-// Institution Type Presets
-let institutionType = $state(initialState.institutionType);
-
-// Student Number Pattern
-let studentNumberPrefix = $state(initialState.studentNumberPrefix);
-let studentNumberYearFormat = $state(initialState.studentNumberYearFormat);
-let studentNumberDigits = $state(initialState.studentNumberDigits);
-
-// Admission Policies
-let requiresApproval = $state(initialState.requiresApproval);
-let allowNoGuardian = $state(initialState.allowNoGuardian);
-let allowDuplicateNationalId = $state(initialState.allowDuplicateNationalId);
-let autoAssignFees = $state(initialState.autoAssignFees);
-let maxClassCapacity = $state<number | null>(initialState.maxClassCapacity);
-let ageCalculationDate = $state("start_of_year");
-
-let requiredDocuments = $state<DocItem[]>(JSON.parse(JSON.stringify(initialState.requiredDocuments)));
+// Document Addition Transient State
 let newDocNameAr = $state("");
 let newDocNameEn = $state("");
 
-let formFields = $state<FieldConfig[]>(JSON.parse(JSON.stringify(initialState.formFields)));
+// Active Tab
+let activeTab = $state<"policies" | "documents" | "fields">("policies");
+
+// Initial state snapshot for dirty checking
+const initialState = {
+  institutionType: parsed.institutionType,
+  studentNumberPrefix: parsed.studentNumberPrefix,
+  studentNumberYearFormat: parsed.studentNumberYearFormat,
+  studentNumberDigits: parsed.studentNumberDigits,
+  requiresApproval: parsed.requiresApproval,
+  allowNoGuardian: parsed.allowNoGuardian,
+  allowDuplicateNationalId: parsed.allowDuplicateNationalId,
+  autoAssignFees: parsed.autoAssignFees,
+  maxClassCapacity: parsed.maxClassCapacity,
+  requiredDocuments: JSON.parse(JSON.stringify(parsed.requiredDocuments)),
+  formFields: JSON.parse(JSON.stringify(parsed.formFields)),
+};
 
 const isDirty = $derived.by(() => {
   return (
@@ -171,37 +195,6 @@ const studentNumberPreview = $derived.by(() => {
   return `${studentNumberPrefix}-${yearStr}${seq}`;
 });
 
-// Apply presets based on institution type
-function applyPreset(type: string) {
-  institutionType = type;
-  if (type === "school") {
-    studentNumberPrefix = "SCH";
-    studentNumberDigits = 4;
-    allowNoGuardian = false;
-    requiresApproval = true;
-    maxClassCapacity = 30;
-  } else if (type === "university") {
-    studentNumberPrefix = "UNIV";
-    studentNumberDigits = 5;
-    allowNoGuardian = true;
-    requiresApproval = true;
-    maxClassCapacity = 60;
-  } else if (type === "institute") {
-    studentNumberPrefix = "INST";
-    studentNumberDigits = 4;
-    allowNoGuardian = true;
-    requiresApproval = false;
-    maxClassCapacity = 25;
-  } else if (type === "quran_center") {
-    studentNumberPrefix = "QRN";
-    studentNumberDigits = 4;
-    allowNoGuardian = false;
-    requiresApproval = false;
-    maxClassCapacity = 20;
-  }
-  toast.success(l("تم تطبيق إعدادات النموذج الافتراضي للمؤسسة", "Applied institution profile preset"));
-}
-
 // Add new document
 function addDocument() {
   if (!newDocNameAr.trim() && !newDocNameEn.trim()) {
@@ -228,7 +221,7 @@ function removeDocument(id: string) {
   requiredDocuments = requiredDocuments.filter((d) => d.id !== id);
 }
 
-// FloppyDisk form
+// Save form
 function handleFormSave() {
   const activeFieldsList = formFields.filter((f) => f.isActive).map((f) => f.key);
   const requiredFieldsList = formFields.filter((f) => f.isActive && f.isRequired).map((f) => f.key);
@@ -263,41 +256,41 @@ function handleFormSave() {
 
 <div class="flex flex-col gap-6 text-start pb-20">
   <!-- Top Profile Selector Banner -->
-  <div class="p-4 rounded-xl border border-border/70 bg-card shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-        <BookOpen class="w-5 h-5" />
+  <Card>
+    <CardHeader>
+      <div class="flex items-center gap-3 text-start">
+        <div class="w-7 h-7 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+          <BookOpen class="w-4 h-4" />
+        </div>
+        <div class="flex flex-col">
+          <CardTitle>
+            {l("نوع المؤسسة التعليمية والنمط الافتراضي", "Educational Institution Type")}
+          </CardTitle>
+          <CardDescription>
+            {l("تخصيص قواعد القبول والترقيم والمستندات وفق طبيعة المؤسسة", "Customize admission and numbering schemas by institution profile")}
+          </CardDescription>
+        </div>
       </div>
-      <div>
-        <h3 class="text-sm font-bold text-foreground">
-          {l("نوع المؤسسة التعليمية والنمط الافتراضي", "Educational Institution Type")}
-        </h3>
-        <p class="text-xs text-muted-foreground mt-0.5">
-          {l("تخصيص قواعد القبول والترقيم والمستندات وفق طبيعة المؤسسة", "Customize admission and numbering schemas by institution profile")}
-        </p>
-      </div>
-    </div>
-
-    <!-- Locked Profile Badge -->
-    <div class="shrink-0 flex items-center gap-2">
-      <Badge variant="outline" class="px-3.5 py-1.5 h-8 text-xs font-bold gap-1.5 bg-muted/40 border-border/80 text-foreground">
-        <Lock class="w-3.5 h-3.5 text-muted-foreground" />
-        <span>
-          {#if institutionType === "school"}
-            {l("مدرسة تعليم عام (K-12)", "K-12 School")}
-          {:else if institutionType === "university"}
-            {l("جامعة / كلية أكاديمية", "University / College")}
-          {:else if institutionType === "institute"}
-            {l("معهد تدريبي / مهني", "Training Institute")}
-          {:else if institutionType === "quran_center"}
-            {l("مركز تحفيظ قرآن كريم", "Quranic Center")}
-          {:else}
-            {institutionType}
-          {/if}
-        </span>
-      </Badge>
-    </div>
-  </div>
+      <CardAction>
+        <Badge variant="outline" class="px-3 py-1 h-7 text-xs font-bold gap-1.5 bg-muted/40 border-border text-foreground">
+          <Lock class="w-3 h-3 text-muted-foreground" />
+          <span>
+            {#if institutionType === "school"}
+              {l("مدرسة تعليم عام (K-12)", "K-12 School")}
+            {:else if institutionType === "university"}
+              {l("جامعة / كلية أكاديمية", "University / College")}
+            {:else if institutionType === "institute"}
+              {l("معهد تدريبي / مهني", "Training Institute")}
+            {:else if institutionType === "quran_center"}
+              {l("مركز تحفيظ قرآن كريم", "Quranic Center")}
+            {:else}
+              {institutionType}
+            {/if}
+          </span>
+        </Badge>
+      </CardAction>
+    </CardHeader>
+  </Card>
 
   <!-- Tabs Navigation -->
   <Tabs value={activeTab} onValueChange={(v) => (activeTab = v as any)}>
@@ -322,27 +315,27 @@ function handleFormSave() {
     <!-- TAB 1: Policies & Student Numbering -->
     <TabsContent value="policies" class="space-y-6 pt-4">
       <!-- Student Numbering Card -->
-      <div class="p-5 rounded-xl border border-border/70 bg-card shadow-2xs space-y-4">
-        <div class="flex items-center justify-between border-b border-border/40 pb-3">
-          <div>
-            <h4 class="text-xs font-bold text-foreground">
+      <Card>
+        <CardHeader>
+          <div class="flex flex-col text-start">
+            <CardTitle>
               {l("نمط توليد الرقم الأكاديمي للطالب", "Student ID Numbering Format")}
-            </h4>
-            <p class="text-[11px] text-muted-foreground mt-0.5">
+            </CardTitle>
+            <CardDescription>
               {l("التركيبة التلقائية المعتمدة لتوليد الرقم الجامعي أو المدرسي للطلاب الجدد", "Automated sequence schema for new admissions")}
-            </p>
+            </CardDescription>
           </div>
+          <CardAction>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-muted-foreground">{l("معاينة الرقم:", "Preview:")}</span>
+              <Badge variant="lime" class="font-mono text-xs px-2.5 py-0.5 font-bold">
+                {studentNumberPreview}
+              </Badge>
+            </div>
+          </CardAction>
+        </CardHeader>
 
-          <!-- Live Preview Badge -->
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-muted-foreground">{l("معاينة الرقم:", "Preview:")}</span>
-            <Badge variant="lime" class="font-mono text-xs px-2.5 py-0.5 font-bold">
-              {studentNumberPreview}
-            </Badge>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <CardContent class="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-start">
           <!-- Prefix -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-xs font-semibold text-foreground">
@@ -401,19 +394,23 @@ function handleFormSave() {
               </SelectContent>
             </Select>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <!-- Admission Policies Toggles Card -->
-      <div class="p-5 rounded-xl border border-border/70 bg-card shadow-2xs space-y-4">
-        <h4 class="text-xs font-bold text-foreground border-b border-border/40 pb-2">
-          {l("ضوابط وإجراءات القبول والتسجيل", "Admission Governance Rules")}
-        </h4>
+      <Card>
+        <CardHeader>
+          <div class="flex flex-col text-start">
+            <CardTitle>
+              {l("ضوابط وإجراءات القبول والتسجيل", "Admission Governance Rules")}
+            </CardTitle>
+          </div>
+        </CardHeader>
 
-        <div class="flex flex-col divide-y divide-border/40">
+        <CardContent class="p-6 flex flex-col divide-y divide-border">
           <!-- Approval Workflow -->
-          <div class="py-3 flex items-center justify-between gap-4">
-            <div class="flex flex-col gap-0.5">
+          <div class="py-3 flex items-center justify-between gap-4 first:pt-0">
+            <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
                 {l("اشتراط موافقة المسجل الأكاديمي / الإدارة", "Require Academic Registrar Approval")}
               </span>
@@ -426,7 +423,7 @@ function handleFormSave() {
 
           <!-- Allow No Guardian -->
           <div class="py-3 flex items-center justify-between gap-4">
-            <div class="flex flex-col gap-0.5">
+            <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
                 {l("السماح بالتسجيل بدون ولي أمر (تسجيل مستقل)", "Allow Independent Enrollment (No Guardian)")}
               </span>
@@ -439,7 +436,7 @@ function handleFormSave() {
 
           <!-- Prevent Duplicate National ID -->
           <div class="py-3 flex items-center justify-between gap-4">
-            <div class="flex flex-col gap-0.5">
+            <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
                 {l("التحقق الصارم من عدم تكرار الرقم الوطني / الهوية", "Strict Unique National ID Enforcement")}
               </span>
@@ -455,7 +452,7 @@ function handleFormSave() {
 
           <!-- Auto Assign Tuition Fees -->
           <div class="py-3 flex items-center justify-between gap-4">
-            <div class="flex flex-col gap-0.5">
+            <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
                 {l("إسناد الرسوم الدراسية تلقائياً فور اعتماد القيد", "Auto-Assign Tuition Fee Template on Enrollment")}
               </span>
@@ -467,8 +464,8 @@ function handleFormSave() {
           </div>
 
           <!-- Max Capacity -->
-          <div class="py-3 flex items-center justify-between gap-4">
-            <div class="flex flex-col gap-0.5">
+          <div class="py-3 flex items-center justify-between gap-4 last:pb-0">
+            <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
                 {l("السعة القصوى الافتراضية للفصل / الشعبة", "Default Class Capacity Limit")}
               </span>
@@ -484,152 +481,159 @@ function handleFormSave() {
               class="h-8 w-24 text-xs font-mono text-center"
             />
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </TabsContent>
 
     <!-- TAB 2: Required Documents -->
     <TabsContent value="documents" class="space-y-4 pt-4">
-      <!-- Add Document Row -->
-      <div class="p-4 rounded-xl border border-border/70 bg-card shadow-2xs space-y-3">
-        <span class="text-xs font-bold text-foreground">
-          {l("إضافة مستند أو وثيقة مطلوبة جديدة", "Add New Required Admission Document")}
-        </span>
+      <!-- Add Document Card -->
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {l("إضافة مستند أو وثيقة مطلوبة جديدة", "Add New Required Admission Document")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent class="p-6">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Input
+              placeholder={l("اسم المستند بالعربية (مثال: كشف درجات)", "Arabic Document Name")}
+              bind:value={newDocNameAr}
+              class="h-8 text-xs text-end"
+            />
+            <Input
+              placeholder={l("English Document Name", "English Document Name")}
+              bind:value={newDocNameEn}
+              class="h-8 text-xs"
+            />
+            <Button
+              variant="lime"
+              size="sm"
+              class="h-8 text-xs font-bold gap-1.5"
+              onclick={addDocument}
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>{l("إضافة المستند", "Add Document")}</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Input
-            placeholder={l("اسم المستند بالعربية (مثال: كشف درجات)", "Arabic Document Name")}
-            bind:value={newDocNameAr}
-            class="h-8 text-xs text-end"
-          />
-          <Input
-            placeholder={l("English Document Name", "English Document Name")}
-            bind:value={newDocNameEn}
-            class="h-8 text-xs"
-          />
-          <Button
-            variant="lime"
-            size="sm"
-            class="h-8 text-xs font-bold gap-1.5"
-            onclick={addDocument}
-          >
-            <Plus class="w-3.5 h-3.5" />
-            <span>{l("إضافة المستند", "Add Document")}</span>
-          </Button>
-        </div>
-      </div>
-
-      <!-- Documents Grid -->
-      <div class="rounded-xl border border-border/70 bg-card overflow-hidden shadow-2xs">
-        <Grid>
-          <TableHeader class="bg-muted/40">
-            <TableRow>
-              <TableHead class="text-start font-bold text-xs">{l("اسم الوثيقة والمستند المطلوب", "Document Title")}</TableHead>
-              <TableHead class="text-start font-bold text-xs w-48">{l("الحالة الإلزامية", "Requirement")}</TableHead>
-              <TableHead class="text-end font-bold text-xs w-20">{l("حذف", "Action")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {#each requiredDocuments as doc (doc.id)}
-              <TableRow class="hover:bg-muted/10 transition-colors">
-                <TableCell class="py-3">
-                  <div class="flex flex-col gap-0.5">
-                    <span class="text-xs font-bold text-foreground">{l(doc.nameAr, doc.nameEn)}</span>
-                    <span class="text-[10px] text-muted-foreground">{doc.nameEn}</span>
-                  </div>
-                </TableCell>
-
-                <TableCell class="py-3">
-                  <button
-                    type="button"
-                    onclick={() => (doc.isRequired = !doc.isRequired)}
-                    class="cursor-pointer select-none"
-                  >
-                    {#if doc.isRequired}
-                      <Badge variant="lime" class="text-[10px] font-bold">
-                        {l("إلزامي للقبول", "Mandatory")}
-                      </Badge>
-                    {:else}
-                      <Badge variant="secondary" class="text-[10px] font-semibold">
-                        {l("اختياري / تكميلي", "Optional")}
-                      </Badge>
-                    {/if}
-                  </button>
-                </TableCell>
-
-                <TableCell class="py-3 text-end">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    class="h-7 w-7 p-0 text-muted-foreground hover:text-destructive cursor-pointer"
-                    onclick={() => removeDocument(doc.id)}
-                  >
-                    <Trash class="w-3.5 h-3.5" />
-                  </Button>
-                </TableCell>
+      <!-- Documents Grid Card -->
+      <Card>
+        <CardContent class="p-0">
+          <Grid>
+            <TableHeader class="bg-muted/40">
+              <TableRow>
+                <TableHead class="text-start font-bold text-xs">{l("اسم الوثيقة والمستند المطلوب", "Document Title")}</TableHead>
+                <TableHead class="text-start font-bold text-xs w-48">{l("الحالة الإلزامية", "Requirement")}</TableHead>
+                <TableHead class="text-end font-bold text-xs w-20">{l("حذف", "Action")}</TableHead>
               </TableRow>
-            {/each}
-          </TableBody>
-        </Grid>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {#each requiredDocuments as doc (doc.id)}
+                <TableRow class="hover:bg-muted/10 transition-colors">
+                  <TableCell class="py-3 text-start">
+                    <div class="flex flex-col gap-0.5">
+                      <span class="text-xs font-bold text-foreground">{l(doc.nameAr, doc.nameEn)}</span>
+                      <span class="text-[10px] text-muted-foreground">{doc.nameEn}</span>
+                    </div>
+                  </TableCell>
+
+                  <TableCell class="py-3 text-start">
+                    <button
+                      type="button"
+                      onclick={() => (doc.isRequired = !doc.isRequired)}
+                      class="cursor-pointer select-none"
+                    >
+                      {#if doc.isRequired}
+                        <Badge variant="lime" class="text-[10px] font-bold">
+                          {l("إلزامي للقبول", "Mandatory")}
+                        </Badge>
+                      {:else}
+                        <Badge variant="secondary" class="text-[10px] font-semibold">
+                          {l("اختياري / تكميلي", "Optional")}
+                        </Badge>
+                      {/if}
+                    </button>
+                  </TableCell>
+
+                  <TableCell class="py-3 text-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      class="h-7 w-7 p-0 text-muted-foreground hover:text-destructive cursor-pointer"
+                      onclick={() => removeDocument(doc.id)}
+                    >
+                      <Trash class="w-3.5 h-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              {/each}
+            </TableBody>
+          </Grid>
+        </CardContent>
+      </Card>
     </TabsContent>
 
     <!-- TAB 3: Form Fields Matrix -->
     <TabsContent value="fields" class="space-y-4 pt-4">
-      <div class="rounded-xl border border-border/70 bg-card overflow-hidden shadow-2xs">
-        <Grid>
-          <TableHeader class="bg-muted/40">
-            <TableRow>
-              <TableHead class="text-start font-bold text-xs">{l("حقل استمارة التسجيل", "Field Name")}</TableHead>
-              <TableHead class="text-center font-bold text-xs w-36">{l("مفعل بالاستمارة", "Active")}</TableHead>
-              <TableHead class="text-center font-bold text-xs w-36">{l("إلزامي التعبئة", "Required")}</TableHead>
-              <TableHead class="text-center font-bold text-xs w-36">{l("منع التكرار", "Unique")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {#each formFields as field (field.key)}
-              <TableRow class="hover:bg-muted/10 transition-colors">
-                <!-- Field Title -->
-                <TableCell class="py-3">
-                  <div class="flex flex-col gap-0.5">
-                    <span class="text-xs font-bold text-foreground">{l(field.nameAr, field.nameEn)}</span>
-                    <span class="text-[10px] font-mono text-muted-foreground">{field.key}</span>
-                  </div>
-                </TableCell>
+      <Card>
+        <CardContent class="p-0">
+          <Grid>
+            <TableHeader class="bg-muted/40">
+              <TableRow>
+                <TableHead class="text-start font-bold text-xs">{l("حقل استمارة التسجيل", "Field Name")}</TableHead>
+                <TableHead class="text-center font-bold text-xs w-36">{l("مفعل بالاستمارة", "Active")}</TableHead>
+                <TableHead class="text-center font-bold text-xs w-36">{l("إلزامي التعبئة", "Required")}</TableHead>
+                <TableHead class="text-center font-bold text-xs w-36">{l("منع التكرار", "Unique")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {#each formFields as field (field.key)}
+                <TableRow class="hover:bg-muted/10 transition-colors">
+                  <!-- Field Title -->
+                  <TableCell class="py-3 text-start">
+                    <div class="flex flex-col gap-0.5">
+                      <span class="text-xs font-bold text-foreground">{l(field.nameAr, field.nameEn)}</span>
+                      <span class="text-[10px] font-mono text-muted-foreground">{field.key}</span>
+                    </div>
+                  </TableCell>
 
-                <!-- Active Toggle -->
-                <TableCell class="py-3 text-center">
-                  <Switch bind:checked={field.isActive} />
-                </TableCell>
+                  <!-- Active Toggle -->
+                  <TableCell class="py-3 text-center">
+                    <Switch bind:checked={field.isActive} />
+                  </TableCell>
 
-                <!-- Required Toggle -->
-                <TableCell class="py-3 text-center">
-                  <Switch
-                    bind:checked={field.isRequired}
-                    disabled={!field.isActive}
-                  />
-                </TableCell>
-
-                <!-- Prevent Duplicate Toggle -->
-                <TableCell class="py-3 text-center">
-                  {#if field.supportsDuplicate}
+                  <!-- Required Toggle -->
+                  <TableCell class="py-3 text-center">
                     <Switch
-                      bind:checked={field.preventDuplicate}
+                      bind:checked={field.isRequired}
                       disabled={!field.isActive}
                     />
-                  {:else}
-                    <span class="text-[10px] text-muted-foreground/50">—</span>
-                  {/if}
-                </TableCell>
-              </TableRow>
-            {/each}
-          </TableBody>
-        </Grid>
-      </div>
+                  </TableCell>
+
+                  <!-- Prevent Duplicate Toggle -->
+                  <TableCell class="py-3 text-center">
+                    {#if field.supportsDuplicate}
+                      <Switch
+                        bind:checked={field.preventDuplicate}
+                        disabled={!field.isActive}
+                      />
+                    {:else}
+                      <span class="text-[10px] text-muted-foreground/50">—</span>
+                    {/if}
+                  </TableCell>
+                </TableRow>
+              {/each}
+            </TableBody>
+          </Grid>
+        </CardContent>
+      </Card>
     </TabsContent>
   </Tabs>
 
-  <!-- Bottom FloppyDisk Bar -->
+  <!-- Bottom Save Bar -->
   <SettingsBottomBar
     {isDirty}
     {isSaving}

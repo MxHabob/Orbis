@@ -7,6 +7,14 @@ import { Switch } from "@orbis/ui/switch";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
 import { Separator } from "@orbis/ui/separator";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardAction,
+} from "@orbis/ui/card";
 import { toast } from "@orbis/ui";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
@@ -211,27 +219,29 @@ const workflowCategories = $derived([
   <form onsubmit={(e) => { e.preventDefault(); saveAllSettings(); }} class="flex flex-col gap-6 w-full">
 
     <!-- ── Section 1: Autopilot Operational Mode ─────────────────── -->
-    <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card">
-      <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center justify-between">
+    <Card>
+      <CardHeader>
         <div class="flex items-center gap-2 text-start">
-          <Bolt size={15} class="text-primary" />
-          <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
+          <Bolt size={14} class="text-primary" />
+          <CardTitle>
             {m.ai_center_settings_section_autopilot_mode()}
-          </span>
+          </CardTitle>
         </div>
-        <div class="flex items-center gap-2.5">
-          <span class="text-xs font-medium text-muted-foreground">
-            {autopilotSettings.enabled ? m.ai_center_settings_autopilot_active() : m.ai_center_settings_autopilot_disabled()}
-          </span>
-          <Switch
-            checked={autopilotSettings.enabled}
-            onCheckedChange={(v) => (autopilotSettings.enabled = v)}
-            disabled={isSaving}
-          />
-        </div>
-      </div>
+        <CardAction>
+          <div class="flex items-center gap-2.5">
+            <span class="text-xs font-medium text-muted-foreground">
+              {autopilotSettings.enabled ? m.ai_center_settings_autopilot_active() : m.ai_center_settings_autopilot_disabled()}
+            </span>
+            <Switch
+              checked={autopilotSettings.enabled}
+              onCheckedChange={(v) => (autopilotSettings.enabled = v)}
+              disabled={isSaving}
+            />
+          </div>
+        </CardAction>
+      </CardHeader>
 
-      <div class="p-6 flex flex-col gap-6">
+      <CardContent class="p-6 flex flex-col gap-6">
         <!-- Interactive Mode Cards -->
         <div class="flex flex-col gap-1 text-start">
           <Label class="text-xs font-semibold text-foreground">
@@ -250,7 +260,7 @@ const workflowCategories = $derived([
               type="button"
               onclick={() => { autopilotSettings.execution_mode = mode.id as any; }}
               disabled={!autopilotSettings.enabled || isSaving}
-              class="flex flex-col text-start p-4 rounded-xl border transition-all text-start relative cursor-pointer {isSelected ? 'border-primary bg-primary/5 shadow-xs ring-1 ring-primary/30' : 'border-border bg-card hover:border-border/80 hover:bg-muted/30'} {!autopilotSettings.enabled ? 'opacity-50 cursor-not-allowed' : ''}"
+              class="flex flex-col text-start p-4 rounded-xl border transition-all relative cursor-pointer {isSelected ? 'border-primary bg-primary/5 shadow-xs ring-1 ring-primary/30' : 'border-border bg-muted/20 hover:border-border/80 hover:bg-muted/40'} {!autopilotSettings.enabled ? 'opacity-50 cursor-not-allowed' : ''}"
             >
               <div class="flex items-center justify-between w-full mb-3">
                 <div class="p-2 rounded-lg {isSelected ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}">
@@ -308,163 +318,173 @@ const workflowCategories = $derived([
             />
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- ── Section 2: Autonomous Workflows ────────────────────────── -->
-    <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card">
-      <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center gap-2 text-start">
-        <Sparkles size={15} class="text-primary" />
-        <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
-          {m.ai_center_settings_section_workflows()}
-        </span>
-      </div>
+    <Card>
+      <CardHeader>
+        <div class="flex items-center gap-2 text-start">
+          <Sparkles size={14} class="text-primary" />
+          <CardTitle>
+            {m.ai_center_settings_section_workflows()}
+          </CardTitle>
+        </div>
+      </CardHeader>
 
-      <div class="flex flex-col divide-y divide-border">
-        {#each workflowCategories as category}
-          <div class="flex flex-col">
-            <!-- Category Subheader -->
-            <div class="px-6 py-2.5 bg-muted/20 text-start text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/40">
-              {category.categoryTitle}
-            </div>
-
-            <!-- Category Items -->
-            {#each category.items as item (item.id)}
-              {@const Icon = item.icon}
-              <div class="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors border-b border-border last:border-b-0">
-                <div class="flex items-start gap-3 text-start">
-                  <div class="p-1.5 rounded-md bg-muted text-muted-foreground shrink-0 mt-0.5">
-                    <Icon size={15} />
-                  </div>
-                  <div class="flex flex-col gap-0.5">
-                    <div class="flex items-center gap-2">
-                      <span class="text-xs font-semibold text-foreground">{item.label}</span>
-                      {#if item.risk === "critical"}
-                        <Badge variant="destructive" class="text-[9px] px-1.5 py-0 h-4 font-mono font-bold">
-                          {m.ai_center_settings_risk_critical()}
-                        </Badge>
-                      {:else if item.risk === "high"}
-                        <Badge class="text-[9px] px-1.5 py-0 h-4 font-mono font-bold bg-amber-500/10 text-amber-500 border-amber-500/30">
-                          {m.ai_center_settings_risk_high()}
-                        </Badge>
-                      {/if}
-                    </div>
-                    <span class="text-[11px] text-muted-foreground leading-relaxed">{item.desc}</span>
-                  </div>
-                </div>
-
-                <Switch
-                  checked={autopilotSettings[item.id]}
-                  onCheckedChange={(v) => (autopilotSettings[item.id] = v)}
-                  disabled={!autopilotSettings.enabled || isSaving}
-                />
+      <CardContent class="p-0">
+        <div class="flex flex-col divide-y divide-border">
+          {#each workflowCategories as category}
+            <div class="flex flex-col">
+              <!-- Category Subheader -->
+              <div class="px-6 py-2.5 bg-muted/30 text-start text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border">
+                {category.categoryTitle}
               </div>
-            {/each}
-          </div>
-        {/each}
-      </div>
-    </div>
+
+              <!-- Category Items -->
+              {#each category.items as item (item.id)}
+                {@const Icon = item.icon}
+                <div class="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors border-b border-border last:border-b-0">
+                  <div class="flex items-start gap-3 text-start">
+                    <div class="p-1.5 rounded-md bg-muted text-muted-foreground shrink-0 mt-0.5">
+                      <Icon size={15} />
+                    </div>
+                    <div class="flex flex-col gap-0.5">
+                      <div class="flex items-center gap-2">
+                        <span class="text-xs font-semibold text-foreground">{item.label}</span>
+                        {#if item.risk === "critical"}
+                          <Badge variant="destructive" class="text-[9px] px-1.5 py-0 h-4 font-mono font-bold">
+                            {m.ai_center_settings_risk_critical()}
+                          </Badge>
+                        {:else if item.risk === "high"}
+                          <Badge class="text-[9px] px-1.5 py-0 h-4 font-mono font-bold bg-amber-500/10 text-amber-500 border-amber-500/30">
+                            {m.ai_center_settings_risk_high()}
+                          </Badge>
+                        {/if}
+                      </div>
+                      <span class="text-[11px] text-muted-foreground leading-relaxed">{item.desc}</span>
+                    </div>
+                  </div>
+
+                  <Switch
+                    checked={autopilotSettings[item.id]}
+                    onCheckedChange={(v) => (autopilotSettings[item.id] = v)}
+                    disabled={!autopilotSettings.enabled || isSaving}
+                  />
+                </div>
+              {/each}
+            </div>
+          {/each}
+        </div>
+      </CardContent>
+    </Card>
 
     <!-- ── Section 3: Safety Gates & Risk Controls ────────────────── -->
-    <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card">
-      <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center gap-2 text-start">
-        <UserBadgeCheck size={15} class="text-primary" />
-        <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
-          {m.ai_center_settings_section_safety()}
-        </span>
-      </div>
+    <Card>
+      <CardHeader>
+        <div class="flex items-center gap-2 text-start">
+          <UserBadgeCheck size={14} class="text-primary" />
+          <CardTitle>
+            {m.ai_center_settings_section_safety()}
+          </CardTitle>
+        </div>
+      </CardHeader>
 
-      <div class="flex flex-col divide-y divide-border">
-        <!-- High Risk Gate -->
-        <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
-          <div class="flex flex-col gap-1 text-start">
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold text-foreground">
-                {m.ai_center_settings_safety_high_risk()}
+      <CardContent class="p-0">
+        <div class="flex flex-col divide-y divide-border">
+          <!-- High Risk Gate -->
+          <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
+            <div class="flex flex-col gap-1 text-start">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-foreground">
+                  {m.ai_center_settings_safety_high_risk()}
+                </span>
+                <Badge class="text-[9px] px-1.5 py-0 h-4 font-mono font-bold bg-amber-500/10 text-amber-500 border-amber-500/30">
+                  {m.ai_center_settings_risk_mandatory()}
+                </Badge>
+              </div>
+              <span class="text-[11px] text-muted-foreground leading-relaxed">
+                {m.ai_center_settings_safety_high_risk_desc()}
               </span>
-              <Badge class="text-[9px] px-1.5 py-0 h-4 font-mono font-bold bg-amber-500/10 text-amber-500 border-amber-500/30">
-                {m.ai_center_settings_risk_mandatory()}
-              </Badge>
             </div>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">
-              {m.ai_center_settings_safety_high_risk_desc()}
-            </span>
+            <Switch
+              checked={safetySettings.require_approval_high_risk}
+              onCheckedChange={(v) => (safetySettings.require_approval_high_risk = v)}
+              disabled={isSaving}
+            />
           </div>
-          <Switch
-            checked={safetySettings.require_approval_high_risk}
-            onCheckedChange={(v) => (safetySettings.require_approval_high_risk = v)}
-            disabled={isSaving}
-          />
-        </div>
 
-        <!-- Critical Risk Gate -->
-        <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
-          <div class="flex flex-col gap-1 text-start">
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold text-foreground">
-                {m.ai_center_settings_safety_critical_risk()}
+          <!-- Critical Risk Gate -->
+          <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
+            <div class="flex flex-col gap-1 text-start">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-foreground">
+                  {m.ai_center_settings_safety_critical_risk()}
+                </span>
+                <Badge variant="destructive" class="text-[9px] px-1.5 py-0 h-4 font-mono font-bold">
+                  {m.ai_center_settings_risk_critical()}
+                </Badge>
+              </div>
+              <span class="text-[11px] text-muted-foreground leading-relaxed">
+                {m.ai_center_settings_safety_critical_risk_desc()}
               </span>
-              <Badge variant="destructive" class="text-[9px] px-1.5 py-0 h-4 font-mono font-bold">
-                {m.ai_center_settings_risk_critical()}
-              </Badge>
             </div>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">
-              {m.ai_center_settings_safety_critical_risk_desc()}
-            </span>
+            <Switch
+              checked={safetySettings.require_approval_critical_risk}
+              onCheckedChange={(v) => (safetySettings.require_approval_critical_risk = v)}
+              disabled={isSaving}
+            />
           </div>
-          <Switch
-            checked={safetySettings.require_approval_critical_risk}
-            onCheckedChange={(v) => (safetySettings.require_approval_critical_risk = v)}
-            disabled={isSaving}
-          />
-        </div>
 
-        <!-- Block Irreversible Actions -->
-        <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
-          <div class="flex flex-col gap-1 text-start">
-            <span class="text-xs font-semibold text-foreground">
-              {m.ai_center_settings_safety_block_irreversible()}
-            </span>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">
-              {m.ai_center_settings_safety_block_irreversible_desc()}
-            </span>
+          <!-- Block Irreversible Actions -->
+          <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
+            <div class="flex flex-col gap-1 text-start">
+              <span class="text-xs font-semibold text-foreground">
+                {m.ai_center_settings_safety_block_irreversible()}
+              </span>
+              <span class="text-[11px] text-muted-foreground leading-relaxed">
+                {m.ai_center_settings_safety_block_irreversible_desc()}
+              </span>
+            </div>
+            <Switch
+              checked={safetySettings.block_irreversible_actions}
+              onCheckedChange={(v) => (safetySettings.block_irreversible_actions = v)}
+              disabled={isSaving}
+            />
           </div>
-          <Switch
-            checked={safetySettings.block_irreversible_actions}
-            onCheckedChange={(v) => (safetySettings.block_irreversible_actions = v)}
-            disabled={isSaving}
-          />
-        </div>
 
-        <!-- Audit Trail -->
-        <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
-          <div class="flex flex-col gap-1 text-start">
-            <span class="text-xs font-semibold text-foreground">
-              {m.ai_center_settings_safety_audit_trail()}
-            </span>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">
-              {m.ai_center_settings_safety_audit_trail_desc()}
-            </span>
+          <!-- Audit Trail -->
+          <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
+            <div class="flex flex-col gap-1 text-start">
+              <span class="text-xs font-semibold text-foreground">
+                {m.ai_center_settings_safety_audit_trail()}
+              </span>
+              <span class="text-[11px] text-muted-foreground leading-relaxed">
+                {m.ai_center_settings_safety_audit_trail_desc()}
+              </span>
+            </div>
+            <Switch
+              checked={safetySettings.audit_all_ai_actions}
+              onCheckedChange={(v) => (safetySettings.audit_all_ai_actions = v)}
+              disabled={isSaving}
+            />
           </div>
-          <Switch
-            checked={safetySettings.audit_all_ai_actions}
-            onCheckedChange={(v) => (safetySettings.audit_all_ai_actions = v)}
-            disabled={isSaving}
-          />
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- ── Section 4: Insight Engine & Anomaly Detection ─────────── -->
-    <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card">
-      <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center gap-2 text-start">
-        <Search size={15} class="text-primary" />
-        <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
-          {m.ai_center_settings_section_insight()}
-        </span>
-      </div>
+    <Card>
+      <CardHeader>
+        <div class="flex items-center gap-2 text-start">
+          <Search size={14} class="text-primary" />
+          <CardTitle>
+            {m.ai_center_settings_section_insight()}
+          </CardTitle>
+        </div>
+      </CardHeader>
 
-      <div class="p-6 flex flex-col gap-6">
+      <CardContent class="p-6 flex flex-col gap-6">
         <!-- Inputs Row -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="flex flex-col gap-1.5 text-start">
@@ -555,19 +575,21 @@ const workflowCategories = $derived([
             />
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- ── Section 5: Explainability & Reasoning Scope ────────────── -->
-    <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card">
-      <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center gap-2 text-start">
-        <Search size={15} class="text-primary" />
-        <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
-          {m.ai_center_settings_section_memory()}
-        </span>
-      </div>
+    <Card>
+      <CardHeader>
+        <div class="flex items-center gap-2 text-start">
+          <Search size={14} class="text-primary" />
+          <CardTitle>
+            {m.ai_center_settings_section_memory()}
+          </CardTitle>
+        </div>
+      </CardHeader>
 
-      <div class="p-6 flex flex-col gap-6">
+      <CardContent class="p-6 flex flex-col gap-6">
         <div class="flex flex-col divide-y divide-border">
           <div class="pb-4 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
@@ -620,8 +642,8 @@ const workflowCategories = $derived([
             />
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
   </form>
 

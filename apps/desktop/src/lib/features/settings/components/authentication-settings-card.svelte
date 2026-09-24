@@ -2,6 +2,14 @@
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@orbis/ui/card";
 import { api, extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
 
@@ -94,13 +102,15 @@ function reset() {
 }
 </script>
 
-<section class="border border-border rounded-md overflow-hidden flex flex-col">
-  <div class="bg-muted/50 px-6 py-3 border-b border-border text-start">
-    <h2 class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase">أمان الدخول والجلسات</h2>
-    <p class="text-xs text-muted-foreground mt-1">سياسة محاولات الدخول ومدد الجلسات الخاصة بالمنظمة</p>
-  </div>
+<Card>
+  <CardHeader>
+    <div class="flex flex-col">
+      <CardTitle>أمان الدخول والجلسات</CardTitle>
+      <CardDescription>سياسة محاولات الدخول ومدد الجلسات الخاصة بالمنظمة</CardDescription>
+    </div>
+  </CardHeader>
 
-  <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5 text-start">
+  <CardContent class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5 text-start">
     <div class="flex flex-col gap-2">
       <Label for="auth-max-failed-logins" class="text-xs font-semibold">الحد الأقصى للمحاولات الفاشلة</Label>
       <Input id="auth-max-failed-logins" type="number" min="1" max="20" value={values.max_failed_logins} oninput={(event: Event) => setNumber("max_failed_logins", (event.currentTarget as HTMLInputElement).value, 1)} disabled={isSaving} class="h-9 text-xs" />
@@ -120,12 +130,12 @@ function reset() {
       <Label for="auth-refresh-days" class="text-xs font-semibold">مدة رمز التجديد بالأيام</Label>
       <Input id="auth-refresh-days" type="number" min="1" max="730" value={values.refresh_token_days} oninput={(event: Event) => setNumber("refresh_token_days", (event.currentTarget as HTMLInputElement).value, 1)} disabled={isSaving} class="h-9 text-xs" />
     </div>
-  </div>
+  </CardContent>
 
   {#if isDirty}
-    <div class="px-6 py-3 border-t border-border flex justify-end gap-2">
+    <CardFooter class="justify-end gap-2">
       <Button type="button" variant="outline" size="sm" onclick={reset}>إلغاء</Button>
       <Button type="button" size="sm" onclick={save} disabled={isSaving}>حفظ إعدادات المصادقة</Button>
-    </div>
+    </CardFooter>
   {/if}
-</section>
+</Card>

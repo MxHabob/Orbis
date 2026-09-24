@@ -3,6 +3,14 @@ import { api } from "$lib/api";
 import * as m from "$lib/paraglide/messages";
 import { Check, CheckCircle, ChevronDown, Lock, Sparkles, UserBadgeCheck, XMark } from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardAction,
+} from "@orbis/ui/card";
 import { onMount } from "svelte";
 
 let { orgId }: { orgId: string } = $props();
@@ -108,82 +116,78 @@ const domainLabels: Record<string, string> = {
     <!-- Risk Summary Cards (Full Grid Width) -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       {#each [{ level: "low", label: "منخفض المخاطر", count: riskSummary.low, icon: UserBadgeCheck }, { level: "medium", label: "متوسط المخاطر", count: riskSummary.medium, icon: UserBadgeCheck }, { level: "high", label: "مرتفع المخاطر", count: riskSummary.high, icon: UserBadgeCheck }, { level: "critical", label: "حرج للغاية", count: riskSummary.critical, icon: UserBadgeCheck }] as card}
-        <div
-          class="border border-border rounded-xl p-4 bg-card flex flex-col justify-between shadow-sm"
-        >
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[11px] font-semibold text-muted-foreground"
-              >{card.label}</span
-            >
-            <card.icon size={15} class="text-muted-foreground/70" />
-          </div>
-          <p class="text-xl font-bold font-mono text-foreground">
-            {card.count}
-          </p>
-        </div>
+        <Card>
+          <CardContent class="p-4 flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-semibold text-muted-foreground"
+                >{card.label}</span
+              >
+              <card.icon size={15} class="text-muted-foreground/70" />
+            </div>
+            <p class="text-xl font-bold font-mono text-foreground">
+              {card.count}
+            </p>
+          </CardContent>
+        </Card>
       {/each}
     </div>
 
     <!-- Approval Gates Pill List -->
-    <div
-      class="bg-card border border-border rounded-xl p-5 shadow-sm space-y-3"
-    >
-      <div
-        class="flex items-center justify-between border-b border-border/40 pb-2.5"
-      >
-        <h2
-          class="text-xs font-semibold text-foreground flex items-center gap-2"
-        >
+    <Card>
+      <CardHeader>
+        <div class="flex items-center gap-2">
           <Lock size={14} class="text-primary" />
-          <span
-            >{m.ai_center_permissions_gates
+          <CardTitle>
+            {m.ai_center_permissions_gates
               ? m.ai_center_permissions_gates()
-              : "بوابات الاعتماد والموافقة البشرية"}</span
-          >
-        </h2>
-        <span class="text-[10px] font-mono text-muted-foreground"
-          >{approvalCount} من {actions.length} تتطلب الإذن</span
-        >
-      </div>
-      {#if approvalCount > 0}
-        <div class="flex flex-wrap gap-2">
-          {#each actions.filter((a) => a.requires_approval) as action}
-            <span
-              class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-medium bg-muted text-foreground border border-border"
-            >
-              <Lock size={9} class="text-primary" />
-              {action.code}
-            </span>
-          {/each}
+              : "بوابات الاعتماد والموافقة البشرية"}
+          </CardTitle>
         </div>
-      {:else}
-        <p class="text-xs text-muted-foreground">
-          لا توجد بوابات اعتماد معينة حالياً.
-        </p>
-      {/if}
-    </div>
+        <CardAction>
+          <span class="text-[10px] font-mono text-muted-foreground">
+            {approvalCount} من {actions.length} تتطلب الإذن
+          </span>
+        </CardAction>
+      </CardHeader>
+      <CardContent class="p-6">
+        {#if approvalCount > 0}
+          <div class="flex flex-wrap gap-2">
+            {#each actions.filter((a) => a.requires_approval) as action}
+              <span
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-medium bg-muted text-foreground border border-border"
+              >
+                <Lock size={9} class="text-primary" />
+                {action.code}
+              </span>
+            {/each}
+          </div>
+        {:else}
+          <p class="text-xs text-muted-foreground text-start">
+            لا توجد بوابات اعتماد معينة حالياً.
+          </p>
+        {/if}
+      </CardContent>
+    </Card>
 
     <!-- Domains Accordion -->
     <div class="space-y-3">
       <h2
-        class="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-0.5"
+        class="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-0.5 text-start"
       >
         المجالات التشغيلية وإجراءاتها
       </h2>
       {#if domains.length > 0}
         {#each domains as domain}
           {@const domainActions = actions.filter((a) => a.domain === domain)}
-          <div
-            class="bg-card border border-border rounded-xl overflow-hidden shadow-sm transition-all"
-          >
+          <Card>
             <button
               type="button"
-              class="w-full px-5 py-3.5 flex items-center justify-between hover:bg-muted/30 transition-colors cursor-pointer"
+              class="w-full px-5 py-3.5 flex items-center justify-between hover:bg-muted/30 transition-colors cursor-pointer bg-muted/40 border-b border-border"
               onclick={() =>
                 (expandedDomain = expandedDomain === domain ? null : domain)}
             >
               <div class="flex items-center gap-2.5">
-                <Sparkles size={15} class="text-primary" />
+                <Sparkles size={14} class="text-primary" />
                 <span class="text-xs font-semibold text-foreground"
                   >{domainLabels[domain] ?? domain}</span
                 >
@@ -201,9 +205,9 @@ const domainLabels: Record<string, string> = {
             </button>
 
             {#if expandedDomain === domain}
-              <div class="border-t border-border/40 bg-background/40">
+              <CardContent class="p-0">
                 <table class="w-full text-xs text-start">
-                  <thead class="bg-muted/40 border-b border-border/30">
+                  <thead class="bg-muted/20 border-b border-border">
                     <tr>
                       <th
                         class="text-start px-4 py-2.5 font-semibold text-muted-foreground"
@@ -227,14 +231,14 @@ const domainLabels: Record<string, string> = {
                       >
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-border/20">
+                  <tbody class="divide-y divide-border">
                     {#each domainActions as action}
                       <tr class="hover:bg-muted/20 transition-colors">
                         <td
-                          class="px-4 py-2.5 font-mono text-[11px] font-semibold text-foreground"
+                          class="px-4 py-2.5 font-mono text-[11px] font-semibold text-foreground text-start"
                           >{action.code}</td
                         >
-                        <td class="px-4 py-2.5 text-foreground"
+                        <td class="px-4 py-2.5 text-foreground text-start"
                           >{action.name}</td
                         >
                         <td class="px-4 py-2.5 text-center">
@@ -252,92 +256,74 @@ const domainLabels: Record<string, string> = {
                         </td>
                         <td class="px-4 py-2.5 text-center">
                           {#if action.is_reversible}
-                            <CheckCircle
-                              size={12}
-                              class="inline text-primary"
-                            />
+                            <Check size={12} class="inline text-primary" />
                           {:else}
-                            <span class="text-muted-foreground/30">—</span>
+                            <XMark size={12} class="inline text-destructive" />
                           {/if}
                         </td>
                       </tr>
                     {/each}
                   </tbody>
                 </table>
-              </div>
+              </CardContent>
             {/if}
-          </div>
+          </Card>
         {/each}
-      {:else}
-        <div
-          class="bg-card border border-border rounded-xl p-8 flex flex-col items-center text-center"
-        >
-          <UserBadgeCheck size={24} class="text-muted-foreground/60 mb-2" />
-          <p class="text-xs font-semibold text-foreground">
-            لا توجد إجراءات مسجلة حالياً في مصفوفة الصلاحيات
-          </p>
-          <p class="text-[11px] text-muted-foreground mt-0.5">
-            يتم تسجيل وتصنيف الأوامر الصادرة من الوكلاء تلقائياً عند تنفيذ
-            العمليات.
-          </p>
-        </div>
       {/if}
     </div>
 
-    <!-- Pending Approvals -->
-    <div class="space-y-3">
-      <h2
-        class="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-0.5"
-      >
-        طلبات الاعتماد المعلقة
-      </h2>
-      {#if pendingApprovals.length > 0}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {#each pendingApprovals as approval (approval.id)}
-            <div
-              class="bg-card border border-border rounded-xl p-4 flex items-center justify-between shadow-sm"
-            >
-              <div>
-                <code class="text-xs font-mono font-semibold text-foreground"
-                  >{approval.action_code}</code
-                >
-                <p class="text-[11px] text-muted-foreground mt-0.5">
-                  {approval.reasoning}
+    <!-- Pending Approvals Section -->
+    {#if pendingApprovals.length > 0}
+      <Card class="border-amber-500/30">
+        <CardHeader class="bg-amber-500/10 border-b border-amber-500/20">
+          <div class="flex items-center gap-2">
+            <Lock size={14} class="text-amber-500" />
+            <CardTitle class="text-amber-500">
+              إجراءات بانتظار الموافقة البشرية ({pendingApprovals.length})
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent class="p-0 divide-y divide-border">
+          {#each pendingApprovals as item}
+            <div class="p-4 flex items-center justify-between gap-4">
+              <div class="space-y-1 text-start">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-xs font-semibold text-foreground"
+                    >{item.action_code}</span
+                  >
+                  <span
+                    class="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                    >{item.risk_level}</span
+                  >
+                </div>
+                <p class="text-xs text-muted-foreground">{item.reasoning}</p>
+                <p class="text-[10px] text-muted-foreground font-mono">
+                  {item.executed_at}
                 </p>
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 shrink-0">
                 <Button
                   size="sm"
                   variant="outline"
-                  class="text-xs"
-                  onclick={() => handleReject(approval.id)}
+                  class="text-xs text-destructive hover:bg-destructive/10"
+                  onclick={() => handleReject(item.id)}
                 >
-                  <XMark size={12} class="ml-1" /> رفض
+                  <XMark size={12} class="me-1" />
+                  رفض
                 </Button>
                 <Button
                   size="sm"
-                  class="text-xs font-semibold"
-                  onclick={() => handleApprove(approval.id)}
+                  class="text-xs"
+                  onclick={() => handleApprove(item.id)}
                 >
-                  <Check size={12} class="ml-1" /> اعتماد الإجراء
+                  <Check size={12} class="me-1" />
+                  اعتماد وتنفيذ
                 </Button>
               </div>
             </div>
           {/each}
-        </div>
-      {:else}
-        <div
-          class="bg-card border border-border rounded-xl p-8 flex flex-col items-center text-center"
-        >
-          <CheckCircle size={22} class="text-primary mb-2" />
-          <p class="text-xs font-semibold text-foreground">
-            لا توجد طلبات موافقة معلقة حالياً
-          </p>
-          <p class="text-[11px] text-muted-foreground mt-0.5">
-            سيتم إخطارك فور صدور إجراء عالي المخاطر يحتاج إذن المدير.
-          </p>
-        </div>
-      {/if}
-    </div>
+        </CardContent>
+      </Card>
+    {/if}
   </div>
 </div>

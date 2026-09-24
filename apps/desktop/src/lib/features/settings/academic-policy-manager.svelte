@@ -20,9 +20,16 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@orbis/ui/card";
 import { toast } from "@orbis/ui";
 
-import { AdjustmentsHorizontal, BookOpen, Grid, Lock, Pencil, UserBadgeCheck, Scale } from "@orbis/icons";
+import { BookOpen, Lock, Scale, UserBadgeCheck } from "@orbis/icons";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
@@ -100,12 +107,15 @@ async function handleSave(e?: Event) {
       exclude_withdrawn: form.exclude_withdrawn ? 1 : 0,
     };
 
-    await updateMutation.mutateAsync({ orgId, payload });
-    initialSnapshot = JSON.stringify(form);
+    await $updateMutation.mutateAsync({
+      orgId,
+      policy: payload,
+    });
 
+    initialSnapshot = JSON.stringify(form);
     toast.success(
-      m.settings_general_save_success
-        ? m.settings_general_save_success()
+      m.settings_policy_save_success
+        ? m.settings_policy_save_success()
         : "تم حفظ السياسات الأكاديمية بنجاح",
     );
   } catch (err: unknown) {
@@ -139,27 +149,27 @@ async function handleSave(e?: Event) {
       </Button>
     </div>
   {:else}
-    <form onsubmit={handleSave} class="flex flex-col gap-8 w-full max-w-6xl">
+    <form onsubmit={handleSave} class="flex flex-col gap-6 w-full max-w-6xl">
       <!-- Top Action Bar -->
-      <div class="flex items-center justify-between gap-3 w-full select-none pb-4 border-b border-border/40">
+      <div class="flex items-center justify-between gap-3 w-full select-none pb-2 border-b border-border">
         <div class="flex flex-col text-start">
           <h1 class="text-sm font-semibold text-foreground">السياسات والضوابط الأكاديمية</h1>
-          <p class="text-xs text-muted-foreground">إعدادات النظم الدراسية، درجات النجاح، رصد الدرجات، وضوابط التسجيل والترفيع.</p>
+          <p class="text-xs text-muted-foreground mt-0.5">إعدادات النظم الدراسية، درجات النجاح، رصد الدرجات، وضوابط التسجيل والترفيع.</p>
         </div>
       </div>
 
       <!-- Two-Column Settings Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- 1. Grading & Evaluation Defaults Section -->
-        <div class="flex flex-col gap-5 text-start bg-card border border-border/50 rounded-xl p-5 shadow-2xs">
-          <div class="border-b border-border/60 pb-3 flex items-center gap-2">
-            <Scale size={16} class="text-primary" />
-            <h2 class="text-xs font-semibold text-foreground">
-              نظام الدرجات والتقييم الأساسي
-            </h2>
-          </div>
+        <Card>
+          <CardHeader>
+            <div class="flex items-center gap-2">
+              <Scale size={14} class="text-primary" />
+              <CardTitle>نظام الدرجات والتقييم الأساسي</CardTitle>
+            </div>
+          </CardHeader>
 
-          <div class="flex flex-col gap-4">
+          <CardContent class="p-6 flex flex-col gap-5 text-start">
             <!-- Grading System -->
             <div class="flex flex-col gap-1.5 text-start">
               <Label class="text-xs font-semibold">نظام الدرجات الافتراضي للمؤسسة</Label>
@@ -217,23 +227,25 @@ async function handleSave(e?: Event) {
               />
               <span class="text-[10px] text-muted-foreground">نسبة حضور الطالب الإلزامية لاجتياز العام الدراسي والتأهل للترفيع.</span>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         <!-- 2. Enrollment Rules Section -->
-        <div class="flex flex-col gap-5 text-start bg-card border border-border/50 rounded-xl p-5 shadow-2xs">
-          <div class="border-b border-border/60 pb-3 flex items-center gap-2">
-            <UserBadgeCheck size={16} class="text-primary" />
-            <h2 class="text-xs font-semibold text-foreground">
-              {m.common_policy_card_enrollment
-                ? m.common_policy_card_enrollment()
-                : "قواعد وضوابط التسجيل"}
-            </h2>
-          </div>
+        <Card>
+          <CardHeader>
+            <div class="flex items-center gap-2">
+              <UserBadgeCheck size={14} class="text-primary" />
+              <CardTitle>
+                {m.common_policy_card_enrollment
+                  ? m.common_policy_card_enrollment()
+                  : "قواعد وضوابط التسجيل"}
+              </CardTitle>
+            </div>
+          </CardHeader>
 
-          <div class="flex flex-col gap-3.5">
+          <CardContent class="p-6 flex flex-col gap-4 text-start">
             <!-- Allow Late Enrollment -->
-            <div class="flex items-center justify-between py-2 border-b border-border/20">
+            <div class="flex items-center justify-between py-2 border-b border-border">
               <div class="flex flex-col text-start gap-0.5 pe-4">
                 <span class="text-xs font-semibold text-foreground">
                   {m.common_policy_field_allow_late
@@ -252,7 +264,7 @@ async function handleSave(e?: Event) {
             </div>
 
             <!-- Late Enrollment Requires Approval -->
-            <div class="flex items-center justify-between py-2 border-b border-border/20">
+            <div class="flex items-center justify-between py-2 border-b border-border">
               <div class="flex flex-col text-start gap-0.5 pe-4">
                 <span class="text-xs font-semibold text-foreground">
                   {m.common_policy_field_late_approval
@@ -288,21 +300,21 @@ async function handleSave(e?: Event) {
                 disabled={isSaving}
               />
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         <!-- 3. Grade Entry & Locking Policies Section -->
-        <div class="flex flex-col gap-5 text-start bg-card border border-border/50 rounded-xl p-5 shadow-2xs">
-          <div class="border-b border-border/60 pb-3 flex items-center gap-2">
-            <Lock size={16} class="text-primary" />
-            <h2 class="text-xs font-semibold text-foreground">
-              ضوابط رصد وقفل الدرجات
-            </h2>
-          </div>
+        <Card>
+          <CardHeader>
+            <div class="flex items-center gap-2">
+              <Lock size={14} class="text-primary" />
+              <CardTitle>ضوابط رصد وقفل الدرجات</CardTitle>
+            </div>
+          </CardHeader>
 
-          <div class="flex flex-col gap-3.5">
+          <CardContent class="p-6 flex flex-col gap-4 text-start">
             <!-- Grade Entry Auto Close -->
-            <div class="flex items-center justify-between py-2 border-b border-border/20">
+            <div class="flex items-center justify-between py-2 border-b border-border">
               <div class="flex flex-col text-start gap-0.5 pe-4">
                 <span class="text-xs font-semibold text-foreground">الإغلاق التلقائي لرصد الدرجات</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
@@ -316,8 +328,8 @@ async function handleSave(e?: Event) {
               />
             </div>
 
-            <!-- Allow Grade Pencil After Close -->
-            <div class="flex items-center justify-between py-2 border-b border-border/20">
+            <!-- Allow Grade Edit After Close -->
+            <div class="flex items-center justify-between py-2 border-b border-border">
               <div class="flex flex-col text-start gap-0.5 pe-4">
                 <span class="text-xs font-semibold text-foreground">السماح بتعديل الدرجات بعد الإغلاق</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
@@ -331,7 +343,7 @@ async function handleSave(e?: Event) {
               />
             </div>
 
-            <!-- Grade Pencil Requires Approval -->
+            <!-- Grade Edit Requires Approval -->
             <div class="flex items-center justify-between py-2">
               <div class="flex flex-col text-start gap-0.5 pe-4">
                 <span class="text-xs font-semibold text-foreground">تعديل الدرجة يتطلب موافقة واعتماد</span>
@@ -345,21 +357,21 @@ async function handleSave(e?: Event) {
                 disabled={isSaving || !form.allow_grade_edit_after_close}
               />
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         <!-- 4. Promotion & Graduation Rules Section -->
-        <div class="flex flex-col gap-5 text-start bg-card border border-border/50 rounded-xl p-5 shadow-2xs">
-          <div class="border-b border-border/60 pb-3 flex items-center gap-2">
-            <BookOpen size={16} class="text-primary" />
-            <h2 class="text-xs font-semibold text-foreground">
-              ضوابط الترفيع الأكاديمي والتخرج
-            </h2>
-          </div>
+        <Card>
+          <CardHeader>
+            <div class="flex items-center gap-2">
+              <BookOpen size={14} class="text-primary" />
+              <CardTitle>ضوابط الترفيع الأكاديمي والتخرج</CardTitle>
+            </div>
+          </CardHeader>
 
-          <div class="flex flex-col gap-3.5">
+          <CardContent class="p-6 flex flex-col gap-4 text-start">
             <!-- Auto Graduate Final Level -->
-            <div class="flex items-center justify-between py-2 border-b border-border/20">
+            <div class="flex items-center justify-between py-2 border-b border-border">
               <div class="flex flex-col text-start gap-0.5 pe-4">
                 <span class="text-xs font-semibold text-foreground">تخريج طلاب الصف النهائي تلقائياً</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
@@ -387,8 +399,8 @@ async function handleSave(e?: Event) {
                 disabled={isSaving}
               />
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </form>
     <SettingsBottomBar

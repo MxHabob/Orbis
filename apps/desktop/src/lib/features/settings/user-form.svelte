@@ -10,6 +10,13 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@orbis/ui/card";
 import { toast } from "@orbis/ui";
 
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
@@ -146,26 +153,26 @@ async function handleSubmit(e: SubmitEvent) {
       <form onsubmit={handleSubmit} class="flex flex-col gap-6 text-start">
         
         <!-- Section 1: Personal Information -->
-        <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
-          <div class="flex flex-col gap-1 text-start border-b border-border/60 pb-4">
-            <h2 class="text-sm font-semibold text-foreground">{m.common_user_form_personal_info()}</h2>
-          </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>{m.common_user_form_personal_info()}</CardTitle>
+          </CardHeader>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <CardContent class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField id="usr_name_ar" label={m.common_word_fullname()} error={fieldError("name_ar")}>
               {#snippet children()}
-                <Input id="usr_name_ar" type="text" bind:value={nameAr} placeholder={m.common_user_form_full_name_placeholder()} disabled={isSubmitting} class="bg-background/50 h-9 text-xs" />
+                <Input id="usr_name_ar" type="text" bind:value={nameAr} placeholder={m.common_user_form_full_name_placeholder()} disabled={isSubmitting} class="h-9 text-xs" />
               {/snippet}
             </FormField>
             <FormField id="usr_full_name" label={m.common_user_form_name_en()} error={fieldError("full_name")} required>
               {#snippet children()}
-                <Input id="usr_full_name" type="text" bind:value={fullName} placeholder={m.common_form_full_name_en_placeholder()} required disabled={isSubmitting} class="bg-background/50 h-9 text-xs font-mono" />
+                <Input id="usr_full_name" type="text" bind:value={fullName} placeholder={m.common_form_full_name_en_placeholder()} required disabled={isSubmitting} class="h-9 text-xs font-mono" />
               {/snippet}
             </FormField>
             <FormField id="usr_sex" label={m.common_form_sex()} error={fieldError("sex")} required>
               {#snippet children()}
                 <Select type="single" value={sex} onValueChange={(v: string | undefined) => (sex = v ?? "male")} disabled={isSubmitting}>
-                  <SelectTrigger id="usr_sex" class="h-9 w-full text-xs bg-background/50">{sex === "male" ? m.common_form_male() : m.common_form_female()}</SelectTrigger>
+                  <SelectTrigger id="usr_sex" class="h-9 w-full text-xs">{sex === "male" ? m.common_form_male() : m.common_form_female()}</SelectTrigger>
                   <SelectContent>
                     <SelectItem value="male" class="text-xs">{m.common_form_male()}</SelectItem>
                     <SelectItem value="female" class="text-xs">{m.common_form_female()}</SelectItem>
@@ -175,38 +182,38 @@ async function handleSubmit(e: SubmitEvent) {
             </FormField>
             <FormField id="usr_dob" label={m.common_bulk_col_dob()} error={fieldError("date_of_birth")}>
               {#snippet children()}
-                <Input id="usr_dob" type="date" bind:value={dob} disabled={isSubmitting} class="bg-background/50 h-9 text-xs" />
+                <Input id="usr_dob" type="date" bind:value={dob} disabled={isSubmitting} class="h-9 text-xs" />
               {/snippet}
             </FormField>
             <FormField id="usr_nid" label={m.common_user_form_national_id()} error={fieldError("national_id")}>
               {#snippet children()}
-                <Input id="usr_nid" type="text" bind:value={nationalId} placeholder="100020003" disabled={isSubmitting} class="bg-background/50 h-9 text-xs font-mono" />
+                <Input id="usr_nid" type="text" bind:value={nationalId} placeholder="100020003" disabled={isSubmitting} class="h-9 text-xs font-mono" />
               {/snippet}
             </FormField>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         <!-- Section 2: Account & Role -->
-        <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
-          <div class="flex flex-col gap-1 text-start border-b border-border/60 pb-4">
-            <h2 class="text-sm font-semibold text-foreground">{m.common_user_form_account_info()}</h2>
-          </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>{m.common_user_form_account_info()}</CardTitle>
+          </CardHeader>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <CardContent class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField id="usr_email" label={m.common_word_email()} error={fieldError("email")} required>
               {#snippet children()}
-                <Input id="usr_email" type="email" bind:value={email} placeholder={m.common_user_form_email_placeholder()} required disabled={isSubmitting} class="bg-background/50 h-9 text-xs font-mono" />
+                <Input id="usr_email" type="email" bind:value={email} placeholder={m.common_user_form_email_placeholder()} required disabled={isSubmitting} class="h-9 text-xs font-mono" />
               {/snippet}
             </FormField>
             <FormField id="usr_password" label={m.common_user_form_password()} error={fieldError("password")} required>
               {#snippet children()}
-                <Input id="usr_password" type="password" bind:value={password} placeholder={m.common_user_form_password_placeholder()} required disabled={isSubmitting} class="bg-background/50 h-9 text-xs" />
+                <Input id="usr_password" type="password" bind:value={password} placeholder={m.common_user_form_password_placeholder()} required disabled={isSubmitting} class="h-9 text-xs" />
               {/snippet}
             </FormField>
             <FormField id="usr_role" label={m.common_user_form_role()} error={fieldError("primary_role")} required>
               {#snippet children()}
                 <Select type="single" value={role} onValueChange={(v: string | undefined) => (role = v ?? "teacher")} disabled={isSubmitting}>
-                  <SelectTrigger id="usr_role" class="h-9 w-full text-xs bg-background/50">{getRoleLabel(role)}</SelectTrigger>
+                  <SelectTrigger id="usr_role" class="h-9 w-full text-xs">{getRoleLabel(role)}</SelectTrigger>
                   <SelectContent>
                     <SelectItem value="admin" class="text-xs">{m.common_users_filter_admin()}</SelectItem>
                     <SelectItem value="teacher" class="text-xs">{m.common_schedule_page_teacher()}</SelectItem>
@@ -217,28 +224,28 @@ async function handleSubmit(e: SubmitEvent) {
                 </Select>
               {/snippet}
             </FormField>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         <!-- Section 3: Contact Information -->
-        <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
-          <div class="flex flex-col gap-1 text-start border-b border-border/60 pb-4">
-            <h2 class="text-sm font-semibold text-foreground">{m.common_user_form_contact_info()}</h2>
-          </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>{m.common_user_form_contact_info()}</CardTitle>
+          </CardHeader>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <CardContent class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField id="usr_phone" label={m.common_word_phone()} error={fieldError("phone")}>
               {#snippet children()}
-                <Input id="usr_phone" type="tel" bind:value={phone} placeholder="770000000" disabled={isSubmitting} class="bg-background/50 h-9 text-xs font-mono" />
+                <Input id="usr_phone" type="tel" bind:value={phone} placeholder="770000000" disabled={isSubmitting} class="h-9 text-xs font-mono" />
               {/snippet}
             </FormField>
             <FormField id="usr_address" label={m.common_word_address()} error={fieldError("address")}>
               {#snippet children()}
-                <Input id="usr_address" type="text" bind:value={address} placeholder={m.common_user_form_address_placeholder()} disabled={isSubmitting} class="bg-background/50 h-9 text-xs" />
+                <Input id="usr_address" type="text" bind:value={address} placeholder={m.common_user_form_address_placeholder()} disabled={isSubmitting} class="h-9 text-xs" />
               {/snippet}
             </FormField>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         <!-- Bottom Actions Bar -->
         <div class="flex justify-end gap-3 pb-8">

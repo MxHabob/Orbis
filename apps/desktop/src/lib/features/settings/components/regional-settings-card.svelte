@@ -7,10 +7,10 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
+import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
 import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
-import SettingsCard from "$lib/shared/components/settings-card.svelte";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 
 interface Props {
@@ -40,63 +40,68 @@ const dateFormats = [
 ];
 </script>
 
-<SettingsCard title={m.settings_general_section_regional()}>
-  <!-- Currency -->
-  <CurrencySelector
-    title={m.finance_ledger_currency()}
-    description={m.settings_general_currency_desc()}
-    bind:currentCurrency={currency}
-    disabled={isSaving}
-  />
+<Card>
+  <CardHeader>
+    <CardTitle>{m.settings_general_section_regional()}</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <!-- Currency -->
+    <CurrencySelector
+      title={m.finance_ledger_currency()}
+      description={m.settings_general_currency_desc()}
+      bind:currentCurrency={currency}
+      disabled={isSaving}
+    />
 
-  <!-- Timezone -->
-  <TimezoneSettings
-    title={m.common_general_timezone()}
-    description={m.settings_general_timezone_desc()}
-    bind:currentTimezone={timezone}
-  />
+    <!-- Timezone -->
+    <TimezoneSettings
+      title={m.common_general_timezone()}
+      description={m.settings_general_timezone_desc()}
+      bind:currentTimezone={timezone}
+    />
 
-  <!-- Locale / Language -->
-  <LocaleSettings
-    title={m.settings_general_locale()}
-    description={m.settings_general_locale_desc()}
-    bind:currentLocale={locale}
-    onchange={onLanguageChange}
-  />
+    <!-- Locale / Language -->
+    <LocaleSettings
+      title={m.settings_general_locale()}
+      description={m.settings_general_locale_desc()}
+      bind:currentLocale={locale}
+      onchange={onLanguageChange}
+    />
 
-  <!-- Date Format -->
-  <SettingsRow
-    title={m.settings_general_date_format()}
-    description={m.settings_general_date_format_desc()}
-  >
-    {#snippet children()}
-      <Select type="single" value={dateFormat} onValueChange={(v: string | undefined) => (dateFormat = v ?? "")} disabled={isSaving}>
-        <SelectTrigger class="h-9 w-full">
-          {dateFormats.find(df => df.value === dateFormat)?.label || dateFormat}
-        </SelectTrigger>
-        <SelectContent>
-          {#each dateFormats as df}
-            <SelectItem value={df.value}>{df.label}</SelectItem>
-          {/each}
-        </SelectContent>
-      </Select>
-    {/snippet}
-  </SettingsRow>
+    <!-- Date Format -->
+    <SettingsRow
+      title={m.settings_general_date_format()}
+      description={m.settings_general_date_format_desc()}
+    >
+      {#snippet children()}
+        <Select type="single" value={dateFormat} onValueChange={(v: string | undefined) => (dateFormat = v ?? "")} disabled={isSaving}>
+          <SelectTrigger class="h-9 w-full">
+            {dateFormats.find(df => df.value === dateFormat)?.label || dateFormat}
+          </SelectTrigger>
+          <SelectContent>
+            {#each dateFormats as df}
+              <SelectItem value={df.value}>{df.label}</SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
+      {/snippet}
+    </SettingsRow>
 
-  <!-- Hijri Calendar Toggle -->
-  <SettingsRow
-    title={m.settings_general_hijri()}
-    description={m.settings_general_hijri_desc()}
-    labelFor="hijri_enabled"
-    controlClass="justify-start md:justify-start"
-    last
-  >
-    {#snippet children()}
-      <Switch
-        id="hijri_enabled"
-        bind:checked={hijriEnabled}
-        disabled={isSaving}
-      />
-    {/snippet}
-  </SettingsRow>
-</SettingsCard>
+    <!-- Hijri Calendar Toggle -->
+    <SettingsRow
+      title={m.settings_general_hijri()}
+      description={m.settings_general_hijri_desc()}
+      labelFor="hijri_enabled"
+      controlClass="justify-start md:justify-start"
+      last
+    >
+      {#snippet children()}
+        <Switch
+          id="hijri_enabled"
+          bind:checked={hijriEnabled}
+          disabled={isSaving}
+        />
+      {/snippet}
+    </SettingsRow>
+  </CardContent>
+</Card>

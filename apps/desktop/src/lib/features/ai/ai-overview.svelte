@@ -5,6 +5,15 @@ import { api } from "$lib/api";
 import { fade } from "svelte/transition";
 import { ArrowRight, Bolt, ChartBar, CheckCircle, ClockRotateRight, Cube, InfoCircle, Sparkles, UserBadgeCheck } from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+  CardAction,
+} from "@orbis/ui/card";
 import { localizeHref } from "$lib/paraglide/runtime";
 import AiPerformanceTrendCard from "$lib/features/ai/components/overview/ai-performance-trend-card.svelte";
 
@@ -90,78 +99,84 @@ const healthInfo = $derived(healthConfig[healthStatus]);
   {:else}
     <div class="flex flex-col gap-6" in:fade={{ duration: 150 }}>
       
-      <!-- 1. Full-Width SVG AI ChartBar Trend Chart at top -->
+      <!-- 1. Full-Width SVG AI Chart Trend Chart at top -->
       <AiPerformanceTrendCard {orgId} {isLoading} />
 
       <!-- 2. Middle Section: AI Agents Grid & System Autopilot Health Card -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         <!-- Agents List Card (2 cols) -->
-        <div class="lg:col-span-2 bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col justify-between space-y-4">
-          <div class="flex items-center justify-between border-b border-border/40 pb-3">
+        <Card class="lg:col-span-2 flex flex-col justify-between">
+          <CardHeader>
             <div class="flex items-center gap-2">
-              <Sparkles size={16} class="text-primary" />
-              <h2 class="text-sm font-bold text-foreground">
+              <Sparkles size={14} class="text-primary" />
+              <CardTitle>
                 {m.ai_center_overview_agents_title ? m.ai_center_overview_agents_title() : "وكلاء الذكاء الاصطناعي النشطين"}
-              </h2>
+              </CardTitle>
             </div>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-muted text-muted-foreground font-semibold">
-              {activeSessions.length} جلسة مفعّلة
-            </span>
-          </div>
+            <CardAction>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-muted text-muted-foreground font-semibold">
+                {activeSessions.length} جلسة مفعّلة
+              </span>
+            </CardAction>
+          </CardHeader>
 
-          {#if activeSessions.length > 0}
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {#each activeSessions as session}
-                <div class="border border-border/60 rounded-lg p-3.5 flex items-start justify-between bg-background/40 hover:border-border transition-colors">
-                  <div class="flex items-start gap-3">
-                    <div class="w-9 h-9 rounded-lg border border-border flex items-center justify-center shrink-0 bg-primary/10 text-primary">
-                      <Sparkles size={18} />
+          <CardContent class="p-6">
+            {#if activeSessions.length > 0}
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {#each activeSessions as session}
+                  <div class="border border-border rounded-lg p-3.5 flex items-start justify-between bg-muted/20 hover:border-foreground/20 transition-colors">
+                    <div class="flex items-start gap-3">
+                      <div class="w-8 h-8 rounded-lg border border-border flex items-center justify-center shrink-0 bg-primary/10 text-primary">
+                        <Sparkles size={16} />
+                      </div>
+                      <div class="text-start">
+                        <h3 class="text-xs font-bold text-foreground mb-0.5">{session.title || session.id}</h3>
+                        <p class="text-[10px] text-muted-foreground">{session.agent_id || "وكيل ذكي"}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 class="text-xs font-bold text-foreground mb-0.5">{session.title || session.id}</h3>
-                      <p class="text-[10px] text-muted-foreground">{session.agent_id || "وكيل ذكي"}</p>
-                    </div>
+                    <span class="px-2 py-0.5 text-[9px] font-bold rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0">
+                      نشط
+                    </span>
                   </div>
-                  <span class="px-2 py-0.5 text-[9px] font-bold rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0">
-                    نشط
-                  </span>
-                </div>
-              {/each}
-            </div>
-          {:else}
-            <div class="border border-border/40 rounded-lg p-6 flex flex-col items-center text-center bg-background/20 space-y-1.5">
-              <Sparkles size={24} class="text-muted-foreground" />
-              <p class="text-xs font-bold text-foreground">لا توجد جلسات وكلاء نشطة حالياً</p>
-              <p class="text-[11px] text-muted-foreground">يتم إنشاء وتفعيل جلسات الوكلاء تلقائياً عند تنفيذ المهام والاستفسارات.</p>
-            </div>
-          {/if}
+                {/each}
+              </div>
+            {:else}
+              <div class="border border-border rounded-lg p-6 flex flex-col items-center text-center bg-muted/10 space-y-1.5">
+                <Sparkles size={24} class="text-muted-foreground" />
+                <p class="text-xs font-bold text-foreground">لا توجد جلسات وكلاء نشطة حالياً</p>
+                <p class="text-[11px] text-muted-foreground">يتم إنشاء وتفعيل جلسات الوكلاء تلقائياً عند تنفيذ المهام والاستفسارات.</p>
+              </div>
+            {/if}
+          </CardContent>
 
-          <div class="pt-2 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground font-medium">
+          <CardFooter class="justify-between text-[10px] text-muted-foreground font-medium">
             <span>محركات المعالجة المحلية والسحابية تعمل وفقاً للسياسات المعتمدة.</span>
             <a href={localizeHref(`/${orgId}/ai-center/settings`)} class="text-primary hover:underline flex items-center gap-1 font-semibold">
               <span>تكوين النماذج</span>
               <ArrowRight size={10} class="rtl:rotate-180" />
             </a>
-          </div>
-        </div>
+          </CardFooter>
+        </Card>
 
         <!-- System & Autopilot Status Card (1 col) -->
-        <div class="bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col justify-between space-y-4">
-          <div class="flex items-center justify-between border-b border-border/40 pb-3">
+        <Card class="flex flex-col justify-between">
+          <CardHeader>
             <div class="flex items-center gap-2">
-              <Bolt size={16} class="text-primary" />
-              <h2 class="text-sm font-bold text-foreground">
+              <Bolt size={14} class="text-primary" />
+              <CardTitle>
                 {m.ai_center_overview_health ? m.ai_center_overview_health() : "حالة محرك الذكاء الاصطناعي"}
-              </h2>
+              </CardTitle>
             </div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded {healthInfo.bg} {healthInfo.color}">
-              {healthInfo.label}
-            </span>
-          </div>
+            <CardAction>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded {healthInfo.bg} {healthInfo.color}">
+                {healthInfo.label}
+              </span>
+            </CardAction>
+          </CardHeader>
 
-          <div class="space-y-3">
-            <div class="flex items-center justify-between p-2.5 rounded-lg border border-border/40 bg-background/50">
+          <CardContent class="p-6 space-y-3">
+            <div class="flex items-center justify-between p-2.5 rounded-md border border-border bg-muted/20">
               <div class="flex items-center gap-2">
                 <ChartBar size={14} class="text-muted-foreground" />
                 <span class="text-xs text-foreground font-medium">{m.ai_center_overview_sessions ? m.ai_center_overview_sessions() : "الجلسات النشطة"}</span>
@@ -169,7 +184,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
               <span class="text-sm font-mono font-bold text-foreground">{sessionCount}</span>
             </div>
 
-            <div class="flex items-center justify-between p-2.5 rounded-lg border border-border/40 bg-background/50">
+            <div class="flex items-center justify-between p-2.5 rounded-md border border-border bg-muted/20">
               <div class="flex items-center gap-2">
                 <Bolt size={14} class="text-muted-foreground" />
                 <span class="text-xs text-foreground font-medium">{m.ai_center_overview_autopilot ? m.ai_center_overview_autopilot() : "وضع الطيار الآلي"}</span>
@@ -177,22 +192,24 @@ const healthInfo = $derived(healthConfig[healthStatus]);
               <span class="text-xs font-bold text-foreground bg-muted px-2 py-0.5 rounded border border-border">{autopilotMode}</span>
             </div>
 
-            <div class="flex items-center justify-between p-2.5 rounded-lg border border-border/40 bg-background/50">
+            <div class="flex items-center justify-between p-2.5 rounded-md border border-border bg-muted/20">
               <div class="flex items-center gap-2">
                 <Cube size={14} class="text-muted-foreground" />
                 <span class="text-xs text-foreground font-medium">{m.ai_center_overview_integrations ? m.ai_center_overview_integrations() : "التكاملات المتصلة"}</span>
               </div>
               <span class="text-sm font-mono font-bold text-foreground">{connectedAppsCount}</span>
             </div>
-          </div>
+          </CardContent>
 
-          <a href={localizeHref(`/${orgId}/ai-center/permissions`)} class="w-full">
-            <Button size="sm" variant="outline" class="w-full text-xs font-semibold justify-between">
-              <span>إدارة مصفوفة الصلاحيات</span>
-              <UserBadgeCheck size={12} />
-            </Button>
-          </a>
-        </div>
+          <CardFooter>
+            <a href={localizeHref(`/${orgId}/ai-center/permissions`)} class="w-full">
+              <Button size="sm" variant="outline" class="w-full text-xs font-semibold justify-between">
+                <span>إدارة مصفوفة الصلاحيات</span>
+                <UserBadgeCheck size={12} />
+              </Button>
+            </a>
+          </CardFooter>
+        </Card>
 
       </div>
 
@@ -200,87 +217,97 @@ const healthInfo = $derived(healthConfig[healthStatus]);
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         <!-- Recent Action Logs Timeline (2 cols) -->
-        <div class="lg:col-span-2 bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
-          <div class="flex items-center justify-between border-b border-border/40 pb-3">
+        <Card class="lg:col-span-2">
+          <CardHeader>
             <div class="flex items-center gap-2">
-              <ClockRotateRight size={16} class="text-primary" />
-              <h2 class="text-sm font-bold text-foreground">
+              <ClockRotateRight size={14} class="text-primary" />
+              <CardTitle>
                 {m.ai_center_overview_recent_activity ? m.ai_center_overview_recent_activity() : "أحدث الأنشطة والأوامر المنفذة"}
-              </h2>
+              </CardTitle>
             </div>
-            <a href={localizeHref(`/${orgId}/ai-center/logs`)} class="text-xs text-primary hover:underline flex items-center gap-1 font-semibold">
-              <span>عرض الكل</span>
-              <ArrowRight size={10} class="rtl:rotate-180" />
-            </a>
-          </div>
+            <CardAction>
+              <a href={localizeHref(`/${orgId}/ai-center/logs`)} class="text-xs text-primary hover:underline flex items-center gap-1 font-semibold">
+                <span>عرض الكل</span>
+                <ArrowRight size={10} class="rtl:rotate-180" />
+              </a>
+            </CardAction>
+          </CardHeader>
 
-          {#if recentLogs.length > 0}
-            <div class="divide-y divide-border/30 border border-border/40 rounded-lg overflow-hidden bg-background/30">
-              {#each recentLogs as log}
-                <div class="px-4 py-3 flex items-center justify-between hover:bg-muted/20 transition-colors">
-                  <div class="flex items-center gap-3">
-                    <span class="w-2 h-2 rounded-full {log.status === 'completed' ? 'bg-primary' : log.status === 'failed' ? 'bg-destructive' : 'bg-muted-foreground/60'} shrink-0"></span>
-                    <div>
-                      <code class="text-[11px] font-mono font-semibold text-foreground bg-muted px-1.5 py-0.5 rounded">{log.task_type || log.action_code || log.action || "مهمة أتمتة"}</code>
-                      <p class="text-[11px] text-muted-foreground mt-1 truncate max-w-sm">{log.last_error || log.reason || log.reasoning || (log.status === 'completed' ? 'تم تنفيذ المهمة بنجاح.' : 'مجدولة للتنفيذ القادم.')}</p>
+          <CardContent class="p-6">
+            {#if recentLogs.length > 0}
+              <div class="divide-y divide-border border border-border rounded-md overflow-hidden bg-muted/10">
+                {#each recentLogs as log}
+                  <div class="px-4 py-3 flex items-center justify-between hover:bg-muted/20 transition-colors">
+                    <div class="flex items-center gap-3">
+                      <span class="w-2 h-2 rounded-full {log.status === 'completed' ? 'bg-primary' : log.status === 'failed' ? 'bg-destructive' : 'bg-muted-foreground/60'} shrink-0"></span>
+                      <div class="text-start">
+                        <code class="text-[11px] font-mono font-semibold text-foreground bg-muted px-1.5 py-0.5 rounded">{log.task_type || log.action_code || log.action || "مهمة أتمتة"}</code>
+                        <p class="text-[11px] text-muted-foreground mt-1 truncate max-w-sm">{log.last_error || log.reason || log.reasoning || (log.status === 'completed' ? 'تم تنفيذ المهمة بنجاح.' : 'مجدولة للتنفيذ القادم.')}</p>
+                      </div>
                     </div>
+                    <span class="text-[10px] text-muted-foreground font-mono shrink-0">{log.scheduled_at || log.executed_at || "—"}</span>
                   </div>
-                  <span class="text-[10px] text-muted-foreground font-mono shrink-0">{log.scheduled_at || log.executed_at || "—"}</span>
-                </div>
-              {/each}
-            </div>
-          {:else}
-            <div class="border border-border/40 rounded-lg p-6 flex flex-col items-center text-center bg-background/20">
-              <ClockRotateRight size={20} class="text-muted-foreground mb-2" />
-              <p class="text-xs font-semibold text-foreground">لا توجد سجلات تنفيذية جديدة</p>
-              <p class="text-[11px] text-muted-foreground mt-0.5">ستظهر السجلات هنا فور قيام الوكلاء بتنفيذ مهام أو توصيات تلقائية.</p>
-            </div>
-          {/if}
-        </div>
+                {/each}
+              </div>
+            {:else}
+              <div class="border border-border rounded-md p-6 flex flex-col items-center text-center bg-muted/10">
+                <ClockRotateRight size={20} class="text-muted-foreground mb-2" />
+                <p class="text-xs font-semibold text-foreground">لا توجد سجلات تنفيذية جديدة</p>
+                <p class="text-[11px] text-muted-foreground mt-0.5">ستظهر السجلات هنا فور قيام الوكلاء بتنفيذ مهام أو توصيات تلقائية.</p>
+              </div>
+            {/if}
+          </CardContent>
+        </Card>
 
         <!-- Connected Providers Quick List (1 col) -->
-        <div class="bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col justify-between space-y-4">
-          <div class="flex items-center justify-between border-b border-border/40 pb-3">
+        <Card class="flex flex-col justify-between">
+          <CardHeader>
             <div class="flex items-center gap-2">
-              <Cube size={16} class="text-primary" />
-              <h2 class="text-sm font-bold text-foreground">
+              <Cube size={14} class="text-primary" />
+              <CardTitle>
                 {m.ai_center_overview_connected_providers ? m.ai_center_overview_connected_providers() : "المزودات المربوطة"}
-              </h2>
+              </CardTitle>
             </div>
-            <a href={localizeHref(`/${orgId}/ai-center/integrations`)} class="text-xs text-primary hover:underline font-semibold">
-              المتجر
-            </a>
-          </div>
+            <CardAction>
+              <a href={localizeHref(`/${orgId}/ai-center/integrations`)} class="text-xs text-primary hover:underline font-semibold">
+                المتجر
+              </a>
+            </CardAction>
+          </CardHeader>
 
-          {#if connectedIntegrations.length > 0}
-            <div class="space-y-2.5">
-              {#each connectedIntegrations as item}
-                <div class="p-3 border border-border/40 rounded-lg bg-background/40 flex items-center justify-between">
-                  <div class="flex items-center gap-2.5">
-                    <Cube size={16} class="text-primary" />
-                    <div>
-                      <h4 class="text-xs font-bold text-foreground">{item.provider_name || item.name || item.id}</h4>
-                      <p class="text-[10px] text-muted-foreground">{item.category || item.provider || "خدمة متصلة"}</p>
+          <CardContent class="p-6">
+            {#if connectedIntegrations.length > 0}
+              <div class="space-y-2.5">
+                {#each connectedIntegrations as item}
+                  <div class="p-3 border border-border rounded-md bg-muted/20 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5 text-start">
+                      <Cube size={15} class="text-primary" />
+                      <div>
+                        <h4 class="text-xs font-bold text-foreground">{item.provider_name || item.name || item.id}</h4>
+                        <p class="text-[10px] text-muted-foreground">{item.category || item.provider || "خدمة متصلة"}</p>
+                      </div>
                     </div>
+                    <span class="w-2 h-2 rounded-full bg-primary" title="متصل"></span>
                   </div>
-                  <span class="w-2 h-2 rounded-full bg-primary" title="متصل"></span>
-                </div>
-              {/each}
-            </div>
-          {:else}
-            <div class="border border-border/40 rounded-lg p-6 flex flex-col items-center text-center bg-background/20 space-y-1.5">
-              <Cube size={20} class="text-muted-foreground" />
-              <p class="text-xs font-bold text-foreground">لا توجد خدمات مربوطة حالياً</p>
-              <p class="text-[11px] text-muted-foreground">يمكنك ربط وتكتاف أجهزة المزودين من خلال متجر التكاملات.</p>
-            </div>
-          {/if}
+                {/each}
+              </div>
+            {:else}
+              <div class="border border-border rounded-md p-6 flex flex-col items-center text-center bg-muted/10 space-y-1.5">
+                <Cube size={20} class="text-muted-foreground" />
+                <p class="text-xs font-bold text-foreground">لا توجد خدمات مربوطة حالياً</p>
+                <p class="text-[11px] text-muted-foreground">يمكنك ربط المزودين من خلال متجر التكاملات.</p>
+              </div>
+            {/if}
+          </CardContent>
 
-          <a href={localizeHref(`/${orgId}/ai-center/settings`)} class="w-full">
-            <Button size="sm" variant="ghost" class="w-full text-xs font-semibold justify-center">
-              <span>إدارة تكوين المزودات والنماذج</span>
-            </Button>
-          </a>
-        </div>
+          <CardFooter>
+            <a href={localizeHref(`/${orgId}/ai-center/settings`)} class="w-full">
+              <Button size="sm" variant="ghost" class="w-full text-xs font-semibold justify-center">
+                <span>إدارة تكوين المزودات والنماذج</span>
+              </Button>
+            </a>
+          </CardFooter>
+        </Card>
 
       </div>
 

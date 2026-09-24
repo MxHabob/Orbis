@@ -6,7 +6,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import SettingsCard from "$lib/shared/components/settings-card.svelte";
+import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
 
@@ -33,37 +33,42 @@ const themes = [
 ];
 </script>
 
-<SettingsCard title={m.common_account_preferences_section()}>
-  <!-- Theme -->
-  <SettingsRow
-    title={m.settings_appearance_theme ? m.settings_appearance_theme() : "Theme"}
-    description={m.common_account_preferences_theme_desc()}
-  >
-    {#snippet children()}
-      <Select
-        type="single"
-        value={selectedTheme}
-        onValueChange={(v: string | undefined) => onThemeChange(v as "light" | "dark" | "system")}
-        disabled={isSavingDetails}
-      >
-        <SelectTrigger class="h-9 w-full">
-          {themes.find(t => t.value === selectedTheme)?.label || selectedTheme}
-        </SelectTrigger>
-        <SelectContent>
-          {#each themes as t}
-            <SelectItem value={t.value}>{t.label}</SelectItem>
-          {/each}
-        </SelectContent>
-      </Select>
-    {/snippet}
-  </SettingsRow>
+<Card>
+  <CardHeader>
+    <CardTitle>{m.common_account_preferences_section()}</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <!-- Theme -->
+    <SettingsRow
+      title={m.settings_appearance_theme ? m.settings_appearance_theme() : "Theme"}
+      description={m.common_account_preferences_theme_desc()}
+    >
+      {#snippet children()}
+        <Select
+          type="single"
+          value={selectedTheme}
+          onValueChange={(v: string | undefined) => onThemeChange(v as "light" | "dark" | "system")}
+          disabled={isSavingDetails}
+        >
+          <SelectTrigger class="h-9 w-full">
+            {themes.find(t => t.value === selectedTheme)?.label || selectedTheme}
+          </SelectTrigger>
+          <SelectContent>
+            {#each themes as t}
+              <SelectItem value={t.value}>{t.label}</SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
+      {/snippet}
+    </SettingsRow>
 
-  <!-- Language -->
-  <LocaleSettings
-    title={m.settings_appearance_language ? m.settings_appearance_language() : "Language"}
-    description={m.common_account_preferences_lang_desc()}
-    bind:currentLocale={selectedLanguage}
-    last
-    onchange={onLanguageChange}
-  />
-</SettingsCard>
+    <!-- Language -->
+    <LocaleSettings
+      title={m.settings_appearance_language ? m.settings_appearance_language() : "Language"}
+      description={m.common_account_preferences_lang_desc()}
+      bind:currentLocale={selectedLanguage}
+      last
+      onchange={onLanguageChange}
+    />
+  </CardContent>
+</Card>

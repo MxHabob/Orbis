@@ -3,6 +3,15 @@ import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
 import { ArrowRight, ChartBar, Sparkles } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+  CardAction,
+} from "@orbis/ui/card";
 
 let {
   orgId,
@@ -67,121 +76,125 @@ function handleMouseLeave() {
 }
 </script>
 
-<div class="h-full w-full p-6 bg-card border border-border rounded-xl flex flex-col justify-between text-start relative overflow-hidden shadow-sm min-h-[280px] font-sans">
+<Card class="font-sans">
   {#if isLoading}
-    <div class="grow w-full relative flex items-center justify-center">
+    <CardContent class="p-6 h-64 flex items-center justify-center">
       <Skeleton class="h-full w-full rounded-lg animate-pulse" />
-    </div>
+    </CardContent>
   {:else}
     <!-- Top Row Header + Legend -->
-    <div class="flex items-start justify-between w-full select-none mb-3 z-10">
-      <div class="flex flex-col text-start">
-        <div class="flex items-center gap-2">
-          <Sparkles size={16} class="text-primary" />
-          <span class="text-sm font-bold text-foreground">
+    <CardHeader>
+      <div class="flex items-center gap-2">
+        <Sparkles size={14} class="text-primary" />
+        <div class="flex flex-col text-start">
+          <CardTitle>
             {m.ai_center_overview_trend_title ? m.ai_center_overview_trend_title() : "نشاط وأداء الذكاء الاصطناعي"}
-          </span>
+          </CardTitle>
+          <CardDescription>
+            {m.ai_center_overview_trend_subtitle ? m.ai_center_overview_trend_subtitle() : "معدل سرعة المعالجة والطلبات عبر الوكلاء والمحركات"}
+          </CardDescription>
         </div>
-        <span class="text-[11px] text-muted-foreground mt-0.5">
-          {m.ai_center_overview_trend_subtitle ? m.ai_center_overview_trend_subtitle() : "معدل سرعة المعالجة والطلبات عبر الوكلاء والمحركات"}
-        </span>
       </div>
 
       <!-- Legends -->
-      <div class="flex items-center gap-4 text-[10px] text-muted-foreground font-semibold">
-        <div class="flex items-center gap-1.5">
-          <span class="h-2.5 w-2.5 rounded-sm bg-primary inline-block shadow-sm"></span>
-          <span>الطلبات (Requests)</span>
+      <CardAction>
+        <div class="flex items-center gap-4 text-[10px] text-muted-foreground font-semibold">
+          <div class="flex items-center gap-1.5">
+            <span class="h-2.5 w-2.5 rounded-sm bg-primary inline-block shadow-sm"></span>
+            <span>الطلبات (Requests)</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="h-2.5 w-2.5 rounded-sm bg-muted-foreground/40 inline-block shadow-sm"></span>
+            <span>زمن الاستجابة (Latency)</span>
+          </div>
         </div>
-        <div class="flex items-center gap-1.5">
-          <span class="h-2.5 w-2.5 rounded-sm bg-muted-foreground/40 inline-block shadow-sm"></span>
-          <span>زمن الاستجابة (Latency)</span>
-        </div>
-      </div>
-    </div>
+      </CardAction>
+    </CardHeader>
 
     <!-- Chart Visual Area -->
-    <div
-      class="grow relative w-full h-40 select-none mt-2 flex flex-col justify-between z-10"
-      onmouseleave={handleMouseLeave}
-      role="region"
-      aria-label="مخطط أداء الذكاء الاصطناعي"
-    >
-      <!-- Grid lines -->
-      <div class="absolute inset-0 flex flex-col justify-between pb-8 pt-4 pointer-events-none">
-        {#each Array(4) as _, i}
-          <div class="flex items-center w-full h-0">
-            <span class="w-12 text-end text-[9px] font-bold text-muted-foreground/60 font-mono pe-2">
-              {Math.round(Math.max(10, maxVal) - i * (maxVal / 3))}
-            </span>
-            <div class="grow border-t border-dashed border-border/40"></div>
-          </div>
-        {/each}
-      </div>
-
-      <!-- Bars Container -->
+    <CardContent class="p-6 relative">
       <div
-        class="absolute inset-0 flex items-end justify-between ps-12 pe-2 pb-8 pt-4 cursor-crosshair"
-        onmousemove={handleMouseMove}
-        role="group"
+        class="relative w-full h-44 select-none flex flex-col justify-between"
+        onmouseleave={handleMouseLeave}
+        role="region"
+        aria-label="مخطط أداء الذكاء الاصطناعي"
       >
-        {#each bars as bar, idx}
-          {@const isActive = hoveredIdx === idx}
-          <div class="grow flex flex-col items-center justify-end h-full relative group/col">
-            {#if isActive}
-              <div class="absolute inset-x-1 top-0 bottom-0 bg-primary/10 rounded-md pointer-events-none border border-primary/20"></div>
-            {/if}
-
-            <div class="flex items-end gap-1.5 h-full pb-1 z-10">
-              <div
-                class="w-3 sm:w-4 rounded-t-sm bg-primary transition-all duration-150"
-                style="height: {bar.reqPct}%"
-              ></div>
-              <div
-                class="w-3 sm:w-4 rounded-t-sm bg-muted-foreground/30 transition-all duration-150"
-                style="height: {bar.latPct}%"
-              ></div>
+        <!-- Grid lines -->
+        <div class="absolute inset-0 flex flex-col justify-between pb-8 pt-4 pointer-events-none">
+          {#each Array(4) as _, i}
+            <div class="flex items-center w-full h-0">
+              <span class="w-12 text-end text-[9px] font-bold text-muted-foreground/60 font-mono pe-2">
+                {Math.round(Math.max(10, maxVal) - i * (maxVal / 3))}
+              </span>
+              <div class="grow border-t border-dashed border-border/40"></div>
             </div>
+          {/each}
+        </div>
 
-            <div class="absolute -bottom-5.5 text-[10px] font-bold text-muted-foreground font-mono">
-              {bar.label}
-            </div>
-          </div>
-        {/each}
-      </div>
-
-      <!-- Tooltip -->
-      {#if hoveredIdx !== null && tooltipPos}
-        {@const activeBar = bars[hoveredIdx]}
+        <!-- Bars Container -->
         <div
-          class="absolute z-30 p-2.5 text-[10px] border bg-popover backdrop-blur border-border text-popover-foreground rounded-lg shadow-xl pointer-events-none flex flex-col gap-1 min-w-[140px]"
-          style="left: {tooltipPos.x + 10}px; top: {tooltipPos.y - 60}px;"
+          class="absolute inset-0 flex items-end justify-between ps-12 pe-2 pb-8 pt-4 cursor-crosshair"
+          onmousemove={handleMouseMove}
+          role="group"
         >
-          <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{activeBar.label}</span>
-          <div class="flex items-center justify-between gap-3">
-            <span class="text-muted-foreground">عدد الطلبات:</span>
-            <span class="font-bold font-mono text-primary">{activeBar.requests} req</span>
-          </div>
-          <div class="flex items-center justify-between gap-3">
-            <span class="text-muted-foreground">زمن الاستجابة:</span>
-            <span class="font-bold font-mono text-foreground">{activeBar.latencyMs} ms</span>
-          </div>
-        </div>
-      {/if}
+          {#each bars as bar, idx}
+            {@const isActive = hoveredIdx === idx}
+            <div class="grow flex flex-col items-center justify-end h-full relative group/col">
+              {#if isActive}
+                <div class="absolute inset-x-1 top-0 bottom-0 bg-primary/10 rounded-md pointer-events-none border border-primary/20"></div>
+              {/if}
 
-      <!-- Zero ChartBar Overlay -->
-      {#if displayData.every((d) => d.requests === 0)}
-        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <div class="px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur-xs border border-border/60 text-[10px] text-muted-foreground font-medium flex items-center gap-1.5 shadow-xs">
-            <ChartBar size={12} class="text-primary" />
-            <span>جاهز للاستخدام — يبدأ المخطط بالرسم فور تنفيذ الوكلاء للعمليات والاستفسارات</span>
-          </div>
+              <div class="flex items-end gap-1.5 h-full pb-1 z-10">
+                <div
+                  class="w-3 sm:w-4 rounded-t-sm bg-primary transition-all duration-150"
+                  style="height: {bar.reqPct}%"
+                ></div>
+                <div
+                  class="w-3 sm:w-4 rounded-t-sm bg-muted-foreground/30 transition-all duration-150"
+                  style="height: {bar.latPct}%"
+                ></div>
+              </div>
+
+              <div class="absolute -bottom-5.5 text-[10px] font-bold text-muted-foreground font-mono">
+                {bar.label}
+              </div>
+            </div>
+          {/each}
         </div>
-      {/if}
-    </div>
+
+        <!-- Tooltip -->
+        {#if hoveredIdx !== null && tooltipPos}
+          {@const activeBar = bars[hoveredIdx]}
+          <div
+            class="absolute z-30 p-2.5 text-[10px] border bg-popover backdrop-blur border-border text-popover-foreground rounded-lg shadow-xl pointer-events-none flex flex-col gap-1 min-w-[140px]"
+            style="left: {tooltipPos.x + 10}px; top: {tooltipPos.y - 60}px;"
+          >
+            <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{activeBar.label}</span>
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-muted-foreground">عدد الطلبات:</span>
+              <span class="font-bold font-mono text-primary">{activeBar.requests} req</span>
+            </div>
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-muted-foreground">زمن الاستجابة:</span>
+              <span class="font-bold font-mono text-foreground">{activeBar.latencyMs} ms</span>
+            </div>
+          </div>
+        {/if}
+
+        <!-- Zero Overlay -->
+        {#if displayData.every((d) => d.requests === 0)}
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+            <div class="px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur-xs border border-border/60 text-[10px] text-muted-foreground font-medium flex items-center gap-1.5 shadow-xs">
+              <ChartBar size={12} class="text-primary" />
+              <span>جاهز للاستخدام — يبدأ المخطط بالرسم فور تنفيذ الوكلاء للعمليات والاستفسارات</span>
+            </div>
+          </div>
+        {/if}
+      </div>
+    </CardContent>
 
     <!-- Footer link -->
-    <div class="border-t border-border/40 pt-2.5 flex items-center justify-between w-full select-none text-[10px] font-medium z-10">
+    <CardFooter class="justify-between text-[10px] font-medium">
       <div class="flex items-center gap-2 text-muted-foreground">
         <ChartBar size={12} class="text-primary" />
         <span>مراقبة الأداء والاستجابة الفعلية للنظام.</span>
@@ -190,6 +203,6 @@ function handleMouseLeave() {
         <span>عرض سجل الأنشطة الكامل</span>
         <ArrowRight size={11} class="transition-transform group-hover:translate-x-0.5 rtl:rotate-180" />
       </a>
-    </div>
+    </CardFooter>
   {/if}
-</div>
+</Card>

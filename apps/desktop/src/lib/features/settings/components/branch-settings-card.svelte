@@ -4,6 +4,15 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+  CardAction,
+} from "@orbis/ui/card";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -58,13 +67,7 @@ function readPolicy(): BranchPolicy {
           }
         })()
       : org?.settings || {};
-  const policy = settings.branch_policy || {};
-  return {
-    ...defaultPolicy(),
-    ...policy,
-    max_branches:
-      policy.max_branches == null ? null : Number(policy.max_branches),
-  };
+  return { ...defaultPolicy(), ...(settings.branch_policy || {}) };
 }
 
 let policy = $state<BranchPolicy>(defaultPolicy());
@@ -73,9 +76,9 @@ let maxBranchesInput = $state("");
 $effect(() => {
   if (org && !savedPolicy) {
     policy = readPolicy();
+    savedPolicy = { ...policy };
     maxBranchesInput =
       policy.max_branches == null ? "" : String(policy.max_branches);
-    savedPolicy = { ...policy };
   }
 });
 
@@ -84,33 +87,45 @@ const isDirty = $derived(
     JSON.stringify(policy) !== JSON.stringify(savedPolicy),
 );
 
-const activeBranchCount = $derived(branches.length);
+const activeBranchCount = $derived(
+  branches.filter((branch) => branch.is_active === 1).length,
+);
 
 onMount(async () => {
   try {
-    const units = await api.listOrgUnits();
-    branches = units.filter(
-      (unit: Branch) => unit.is_active === 1 && unit.unit_type === "branch",
+    isLoadingBranches = true;
+    const res = await api.getOrgUnits({
+      unit_type: "branch",
+      is_active: true,
+    });
+    branches = (res?.items || []).filter(
+      (item: any) => item.unit_type === "branch",
     );
-  } catch {
-    branches = [];
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
   } finally {
     isLoadingBranches = false;
   }
 });
 
-function updateMaxBranches(value: string) {
-  maxBranchesInput = value;
-  const normalized = value.trim();
-  policy.max_branches =
-    normalized === ""
-      ? null
-      : Math.max(1, Number.parseInt(normalized, 10) || 1);
+function updateMaxBranches(raw: string) {
+  maxBranchesInput = raw;
+  if (!raw.trim()) {
+    policy.max_branches = null;
+    return;
+  }
+  const parsed = Number.parseInt(raw, 10);
+  policy.max_branches = Number.isNaN(parsed) || parsed < 1 ? null : parsed;
 }
 
 async function savePolicy() {
-  if (policy.max_branches !== null && policy.max_branches < activeBranchCount) {
-    toast.error("الحد الأقصى لا يمكن أن يقل عن عدد الفروع الحالية");
+  if (
+    policy.max_branches !== null &&
+    activeBranchCount > policy.max_branches
+  ) {
+    toast.error(
+      `الحد الأقصى للفروع (${policy.max_branches}) أقل من عدد الفروع النشطة حالياً (${activeBranchCount})`,
+    );
     return;
   }
   if (
@@ -141,19 +156,21 @@ function resetPolicy() {
 }
 </script>
 
-<section class="border border-border rounded-md overflow-hidden flex flex-col">
-  <div class="bg-muted/50 px-6 py-3 border-b border-border flex items-center justify-between gap-4">
-    <div class="text-start">
-      <h2 class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase">إدارة الفروع</h2>
-      <p class="text-xs text-muted-foreground mt-1">سياسة الفروع ونطاق ظهور البيانات داخل المؤسسة</p>
+<Card>
+  <CardHeader>
+    <div class="flex flex-col text-start">
+      <CardTitle>إدارة الفروع</CardTitle>
+      <CardDescription>سياسة الفروع ونطاق ظهور البيانات داخل المؤسسة</CardDescription>
     </div>
-    <div class="text-end shrink-0">
-      <span class="text-2xl font-semibold tabular-nums">{activeBranchCount}</span>
-      <span class="block text-[10px] text-muted-foreground">فرع نشط</span>
-    </div>
-  </div>
+    <CardAction>
+      <div class="text-end shrink-0">
+        <span class="text-2xl font-semibold tabular-nums">{activeBranchCount}</span>
+        <span class="block text-[10px] text-muted-foreground">فرع نشط</span>
+      </div>
+    </CardAction>
+  </CardHeader>
 
-  <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5 text-start">
+  <CardContent class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5 text-start">
     <div class="flex items-center justify-between gap-4 md:col-span-2">
       <div>
         <Label for="branches-enabled" class="text-xs font-semibold">تفعيل إدارة الفروع</Label>
@@ -207,12 +224,12 @@ function resetPolicy() {
         </SelectContent>
       </Select>
     </div>
-  </div>
+  </CardContent>
 
   {#if isDirty}
-    <div class="px-6 py-3 border-t border-border flex items-center justify-end gap-2">
+    <CardFooter class="justify-end gap-2">
       <Button type="button" variant="outline" size="sm" onclick={resetPolicy} disabled={isSavingPolicy}>إلغاء</Button>
       <Button type="button" size="sm" onclick={savePolicy} disabled={isSaving || isSavingPolicy}>حفظ إعدادات الفروع</Button>
-    </div>
+    </CardFooter>
   {/if}
-</section>
+</Card>

@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { Card } from "@orbis/ui/card";
+import { Card, CardContent, CardFooter } from "@orbis/ui/card";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import SearchField from "$lib/shared/components/search-field.svelte";
@@ -179,8 +179,8 @@ function formatTime(dtStr: string): string {
           {@const isFailed = log.status === "failed"}
           {@const isPending = log.status === "pending" || log.status === "executing"}
 
-          <Card class="p-5 h-full flex flex-col justify-between bg-card border-border/60 hover:border-border transition-colors">
-            <div>
+          <Card class="h-full flex flex-col justify-between hover:border-foreground/30 transition-colors">
+            <CardContent class="p-5 flex flex-col flex-1 text-start">
               <!-- Top: Icon + UI Status Badges -->
               <div class="flex items-center justify-between gap-3 mb-4">
                 <div class="w-9 h-9 rounded-lg border border-border flex items-center justify-center shrink-0 {log.source === 'autopilot' ? 'bg-primary/10 text-primary' : 'bg-brand-lime/10 text-brand-lime'}">
@@ -229,18 +229,18 @@ function formatTime(dtStr: string): string {
                   <span class="line-clamp-2">{log.lastError}</span>
                 </div>
               {/if}
-            </div>
+            </CardContent>
 
             <!-- Footer: Source & Timestamp Tag -->
-            <div class="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground font-mono">
-              <Badge variant="outline" class="text-[10px] font-medium text-muted-foreground border-border/60 bg-muted/20">
+            <CardFooter class="py-2.5 px-5 justify-between text-[10px] text-muted-foreground font-mono">
+              <Badge variant="outline" class="text-[10px] font-medium text-muted-foreground border-border bg-muted/40">
                 {log.source === "autopilot" ? "الطيار الآلي" : "وكيل ذكي"}
               </Badge>
 
               <span>
                 {formatTime(log.timestamp)}
               </span>
-            </div>
+            </CardFooter>
           </Card>
         {/each}
       </div>

@@ -4,7 +4,7 @@ import { Button } from "@orbis/ui/button";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Label } from "@orbis/ui/label";
 import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
-import SettingsCard from "$lib/shared/components/settings-card.svelte";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@orbis/ui/card";
 
 interface Props {
   avatarUrl: string | null;
@@ -25,8 +25,11 @@ let {
 }: Props = $props();
 </script>
 
-<SettingsCard title={m.common_account_avatar_section()}>
-  <div class="px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-6 text-start select-none">
+<Card>
+  <CardHeader>
+    <CardTitle>{m.common_account_avatar_section()}</CardTitle>
+  </CardHeader>
+  <CardContent class="px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-6 text-start select-none">
     <div class="flex-1 flex items-center justify-start gap-4">
       <AvatarUpload
         bind:avatarUrl={avatarUrl}
@@ -51,9 +54,8 @@ let {
         </span>
       </div>
     </div>
-  </div>
-
-  {#snippet footer()}
+  </CardContent>
+  <CardFooter>
     <Button
       type="button"
       class="font-semibold text-xs h-8 px-4"
@@ -62,5 +64,5 @@ let {
     >
       {isSavingAvatar ? m.common_state_saving() : m.common_action_save()}
     </Button>
-  {/snippet}
-</SettingsCard>
+  </CardFooter>
+</Card>

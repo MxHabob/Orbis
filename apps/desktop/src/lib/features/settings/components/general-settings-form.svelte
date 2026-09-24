@@ -9,6 +9,7 @@ import {
   BranchSettingsCard,
   AuthenticationSettingsCard,
 } from "$lib/features/settings";
+import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
@@ -192,46 +193,52 @@ function handleSaveAvatar(e: Event) {
 
       <AuthenticationSettingsCard {org} {isSaving} />
 
-            <div class="border border-border rounded-md overflow-hidden flex flex-col">
-              <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-                {m.settings_entitlement_title()}
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x rtl:md:divide-x-reverse divide-border">
-                <div class="px-6 py-5 flex flex-col gap-1 text-start">
-                  <span class="text-xs font-semibold text-foreground">{m.settings_entitlement_users()}</span>
-                  <span class="text-2xl font-semibold tabular-nums">{systemStore.entitlement?.max_users ?? m.settings_entitlement_unlimited()}</span>
-                  <span class="text-[11px] text-muted-foreground">{m.settings_entitlement_max_allowed()}</span>
-                </div>
-                <div class="px-6 py-5 flex flex-col gap-1 text-start">
-                  <span class="text-xs font-semibold text-foreground">{m.settings_entitlement_students()}</span>
-                  <span class="text-2xl font-semibold tabular-nums">{systemStore.entitlement?.max_students ?? m.settings_entitlement_unlimited()}</span>
-                  <span class="text-[11px] text-muted-foreground">{m.settings_entitlement_max_allowed()}</span>
-                </div>
-                <div class="px-6 py-5 flex flex-col gap-1 text-start">
-                  <span class="text-xs font-semibold text-foreground">{m.settings_entitlement_plan()}</span>
-                  <span class="text-2xl font-semibold capitalize">{systemStore.entitlement?.plan ?? systemStore.entitlement?.status ?? m.settings_entitlement_status_active()}</span>
-                  <span class="text-[11px] text-muted-foreground">{m.settings_entitlement_current_status()}</span>
-                </div>
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {m.settings_entitlement_title()}
+          </CardTitle>
+        </CardHeader>
+        <CardContent class="p-0">
+          <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x rtl:md:divide-x-reverse divide-border">
+            <div class="px-6 py-5 flex flex-col gap-1 text-start">
+              <span class="text-xs font-semibold text-foreground">{m.settings_entitlement_users()}</span>
+              <span class="text-2xl font-semibold tabular-nums">{systemStore.entitlement?.max_users ?? m.settings_entitlement_unlimited()}</span>
+              <span class="text-[11px] text-muted-foreground">{m.settings_entitlement_max_allowed()}</span>
             </div>
+            <div class="px-6 py-5 flex flex-col gap-1 text-start">
+              <span class="text-xs font-semibold text-foreground">{m.settings_entitlement_students()}</span>
+              <span class="text-2xl font-semibold tabular-nums">{systemStore.entitlement?.max_students ?? m.settings_entitlement_unlimited()}</span>
+              <span class="text-[11px] text-muted-foreground">{m.settings_entitlement_max_allowed()}</span>
+            </div>
+            <div class="px-6 py-5 flex flex-col gap-1 text-start">
+              <span class="text-xs font-semibold text-foreground">{m.settings_entitlement_plan()}</span>
+              <span class="text-2xl font-semibold capitalize">{systemStore.entitlement?.plan ?? systemStore.entitlement?.status ?? m.settings_entitlement_status_active()}</span>
+              <span class="text-[11px] text-muted-foreground">{m.settings_entitlement_current_status()}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            {#if org.features}
-              {@const features = typeof org.features === "string" ? (() => { try { return JSON.parse(org.features); } catch { return {}; } })() : org.features}
-              {#if Object.keys(features || {}).length > 0}
-                <div class="border border-border rounded-md overflow-hidden flex flex-col">
-                  <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-                    {m.settings_entitlement_features_title()}
-                  </div>
-                  <div class="px-6 py-5 flex flex-wrap gap-2">
-                    {#each Object.entries(features) as [feature, enabled]}
-                      {#if enabled}
-                        <span class="rounded-md border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium">{feature}</span>
-                      {/if}
-                    {/each}
-                  </div>
-                </div>
-              {/if}
-            {/if}
+      {#if org.features}
+        {@const features = typeof org.features === "string" ? (() => { try { return JSON.parse(org.features); } catch { return {}; } })() : org.features}
+        {#if Object.keys(features || {}).length > 0}
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {m.settings_entitlement_features_title()}
+              </CardTitle>
+            </CardHeader>
+            <CardContent class="px-6 py-5 flex flex-wrap gap-2">
+              {#each Object.entries(features) as [feature, enabled]}
+                {#if enabled}
+                  <span class="rounded-md border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium">{feature}</span>
+                {/if}
+              {/each}
+            </CardContent>
+          </Card>
+        {/if}
+      {/if}
     </form>
 
     <AvatarSettingsCard

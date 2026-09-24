@@ -9,7 +9,7 @@ import type { OrbisApp } from "@orbis/app-store";
 import { getCategoryName, getCategoryNameAr } from "@orbis/app-store";
 import AppIcon from "./app-icon.svelte";
 import { Badge } from "@orbis/ui/badge";
-import { Card } from "@orbis/ui/card";
+import { Card, CardContent, CardFooter } from "@orbis/ui/card";
 import { l } from "$lib/core/i18n";
 
 let {
@@ -21,9 +21,9 @@ let {
 } = $props();
 </script>
 
-<a {href} class="block h-full">
-  <Card class="p-5 h-full flex flex-col justify-between bg-card border-border/60">
-    <div>
+<a {href} class="block h-full group">
+  <Card class="h-full flex flex-col justify-between hover:border-foreground/30 transition-colors">
+    <CardContent class="p-5 flex flex-col flex-1 text-start">
       <!-- Top: Icon + UI Badges -->
       <div class="flex items-center justify-between gap-3 mb-4">
         <div class="w-12 h-7 flex items-center justify-start text-foreground shrink-0">
@@ -62,14 +62,13 @@ let {
       <p class="text-xs text-muted-foreground leading-relaxed flex-1 line-clamp-2">
         {l(app.short_description_ar, app.short_description)}
       </p>
-    </div>
+    </CardContent>
 
     <!-- Footer: Category Tag -->
-    <div class="mt-4 pt-3 border-t border-border/40">
-      <Badge variant="outline" class="text-[10px] font-mono font-medium text-muted-foreground border-border/60 bg-muted/20">
+    <CardFooter class="py-2.5 px-5">
+      <Badge variant="outline" class="text-[10px] font-mono font-medium text-muted-foreground border-border bg-muted/40">
         {l(getCategoryNameAr(app.category), getCategoryName(app.category))}
       </Badge>
-    </div>
+    </CardFooter>
   </Card>
 </a>
-
