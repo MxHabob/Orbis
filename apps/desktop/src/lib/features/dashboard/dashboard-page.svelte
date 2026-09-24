@@ -1,11 +1,15 @@
+<!--
+  @component DashboardPage
+  Canonical feature page for Organization Overview / Dashboard.
+-->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { createDashboardStatsQuery } from "../queries";
+import { createDashboardStatsQuery } from "./queries";
 import { extractErrorMessage } from "$lib/api";
-import WelcomeSection from "./welcome-section.svelte";
-import QuickActions from "./quick-actions.svelte";
-import WidgetCards from "./widget-cards.svelte";
-import DesktopBanner from "./desktop-banner.svelte";
+import WelcomeSection from "./components/welcome-section.svelte";
+import QuickActions from "./components/quick-actions.svelte";
+import WidgetCards from "./components/widget-cards.svelte";
+import DesktopBanner from "./components/desktop-banner.svelte";
 
 import { DashboardSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
@@ -19,7 +23,7 @@ const isLoading = $derived(statsQuery.isLoading);
 const error = $derived(statsQuery.error ? extractErrorMessage(statsQuery.error) : null);
 </script>
 
-<div class="flex flex-col min-h-[calc(100vh-120px)] max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 gap-6">
+<div class="flex flex-col h-full min-h-0 flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 gap-6 overflow-y-auto">
 	{#if isLoading}
 		<DashboardSkeleton />
 	{:else if error}

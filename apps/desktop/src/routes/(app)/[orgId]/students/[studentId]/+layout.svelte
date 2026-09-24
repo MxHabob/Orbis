@@ -150,12 +150,12 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 
   function getClassName(clsId: string) {
     const cls = (classesQuery.data ?? []).find((c: any) => String(c.id) === String(clsId));
-    return cls ? String(cls.name || cls.name_ar || clsId) : clsId;
+    return cls ? String(cls.name || clsId) : clsId;
   }
 
   function getPeriodName(prdId: string) {
     const prd = (periodsQuery.data ?? []).find((p: any) => String(p.id) === String(prdId));
-    return prd ? String(prd.name || prd.name_ar || prdId) : prdId;
+    return prd ? String(prd.name || prdId) : prdId;
   }
 
   const menuItems = $derived([
@@ -207,14 +207,14 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
       <h1
         class="text-lg font-bold tracking-tight text-foreground truncate shrink min-w-0"
       >
-        {student.full_name || student.name_ar || ""}
+        {student.full_name || ""}
       </h1>
       <Badge
         variant="secondary"
         class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0"
       >
         {currentClass
-          ? String(currentClass.name || currentClass.name_ar || "")
+          ? String(currentClass.name || "")
           : m.common_status_not_enrolled()}
       </Badge>
     {:else}
@@ -226,10 +226,10 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
       {#if student}
         <AskOrbisButton
           query={m.academics_student_evaluation_ai_ask_orbis_query({
-            name: student.full_name || student.name_ar || "",
+            name: student.full_name || "",
           })}
           label={m.academics_student_evaluation_ask_orbis_btn({
-            name: student.full_name || student.name_ar || "",
+            name: student.full_name || "",
           })}
           variant="outline"
           size="sm"
@@ -329,7 +329,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
                 class="w-[85%] max-w-[180px] min-w-[120px] aspect-square h-auto rounded-xl shadow-xs border border-border/50"
               >
                 <AvatarImage
-                  src={student.avatar_url || student.avatar || student.a}
+                  src={student.avatar_url || undefined}
                   alt={student.full_name ? String(student.full_name) : ""}
                 />
                 <AvatarFallback

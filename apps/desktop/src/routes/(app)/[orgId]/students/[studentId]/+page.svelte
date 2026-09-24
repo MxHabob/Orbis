@@ -37,7 +37,7 @@ const studentQuery = createEnrollmentQuery(
 );
 const classesQuery = createClassesQuery(() => orgId);
 
-const student = $derived(studentQuery.data as any);
+const student = $derived(studentQuery.data);
 const classes = $derived(classesQuery.data ?? []);
 const isLoading = $derived(studentQuery.isLoading || classesQuery.isLoading);
 
@@ -59,7 +59,7 @@ const selectedClassName = $derived(
   (() => {
     const cls = classes.find((c: any) => String(c.id) === classId);
     return cls
-      ? l(cls.name_ar, cls.name) || String(cls.id)
+      ? cls.name || String(cls.id)
       : m.common_form_select_class();
   })(),
 );

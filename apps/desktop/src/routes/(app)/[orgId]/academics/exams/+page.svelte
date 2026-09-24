@@ -31,18 +31,17 @@ const periods = $derived(periodsQuery.data ?? []);
 // Active academic year & period
 const activeYearName = $derived(academicContext.yearLabelAr);
 const activePeriod = $derived(
-  periods.find((p) => p.status === "active") || periods[0],
+  periods.find((p) => p.status === "active" || p.status === "active_teaching" || p.status === "grade_submission") || periods[0],
 );
 const activePeriodId = $derived(activePeriod ? String(activePeriod.id) : "");
-const activePeriodName = $derived(
-  activePeriod ? activePeriod.name_ar || activePeriod.name : null,
-);
+const activePeriodName = $derived(activePeriod ? activePeriod.name : null);
 
 // Grade Entry Status
 const isGradeEntryOpen = $derived(
   activePeriod
-    ? activePeriod.grade_entry_status === "open" ||
-        activePeriod.is_grade_entry_open === 1
+    ? activePeriod.status === "grade_submission" ||
+        activePeriod.status === "active_teaching" ||
+        activePeriod.status === "open"
     : false,
 );
 
@@ -54,7 +53,7 @@ const examSessionsQuery = createQuery(() => ({
   staleTime: 2 * 60 * 1000,
 }));
 
-const examSessions = $derived((examSessionsQuery.data as any[]) ?? []);
+const examSessions = $derived(examSessionsQuery.data ?? []);
 
 const isLoading = $derived(
   periodsQuery.isLoading || examSessionsQuery.isLoading,

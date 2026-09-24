@@ -25,15 +25,11 @@ import { extractErrorMessage } from "$lib/api";
 
 let { data }: { data: { orgId: string } } = $props();
 
-// Dynamic Period ID
-const activePeriodId = $derived(activePeriod ? String(activePeriod.id) : "");
-
 // TanStack Queries
 const classesQuery = createClassesQuery(() => data.orgId);
 const subjectsQuery = createSubjectsQuery(() => data.orgId);
 const periodsQuery = createPeriodsQuery(() => data.orgId);
 const promotionJobsQuery = createPromotionJobsQuery(() => data.orgId);
-const examSessionsQuery = createExamSessionsQuery(() => activePeriodId);
 
 // Derived Data
 const classes = $derived(classesQuery.data ?? []);
@@ -41,6 +37,16 @@ const subjects = $derived(subjectsQuery.data ?? []);
 const periods = $derived(periodsQuery.data ?? []);
 const currentYear = $derived(academicContext.currentYear);
 const promotionJobs = $derived(promotionJobsQuery.data ?? []);
+
+// Find active period / term
+const activePeriod = $derived(
+  periods.find((c) => c.status === "active" || c.status === "active_teaching" || c.status === "grade_submission") || periods[0],
+);
+
+const activePeriodId = $derived(activePeriod ? String(activePeriod.id) : "");
+const activePeriodName = $derived(activePeriod ? activePeriod.name : null);
+
+const examSessionsQuery = createExamSessionsQuery(() => activePeriodId);
 const examSessions = $derived(examSessionsQuery.data ?? []);
 
 const isLoading = $derived(
@@ -56,7 +62,15 @@ const error = $derived(
     subjectsQuery.error ||
     periodsQuery.error ||
     promotionJobsQuery.error ||
-    examSessionsQuery.error,
+    examSessionsQuery.error
+    ? extractErrorMessage(
+        classesQuery.error ||
+          subjectsQuery.error ||
+          periodsQuery.error ||
+          promotionJobsQuery.error ||
+          examSessionsQuery.error,
+      )
+    : null,
 );
 
 function refetchAll() {
@@ -69,20 +83,12 @@ function refetchAll() {
 
 const activeYearName = $derived(academicContext.yearLabelAr);
 
-// Find active period / term
-const activePeriod = $derived(
-  periods.find((c) => c.status === "active") || periods[0],
-);
-
-const activePeriodName = $derived(
-  activePeriod ? activePeriod.name || activePeriod.name : null,
-);
-
 // Grade entry status (based on active period/term)
 const isGradeEntryOpen = $derived(
   activePeriod
-    ? activePeriod.grade_entry_status === "open" ||
-        activePeriod.is_grade_entry_open === 1
+    ? activePeriod.status === "grade_submission" ||
+        activePeriod.status === "active_teaching" ||
+        activePeriod.status === "open"
     : false,
 );
 
