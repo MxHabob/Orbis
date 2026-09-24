@@ -96,12 +96,12 @@ const gridSource = $derived(
 const columns = $derived(
   auditDef.columns({
     idx: "#",
-    user: m.common_audit_col_member?.() || "Member",
-    action: m.common_audit_col_action?.() || "Action",
-    timestamp: m.common_audit_col_time?.() || "Time",
-    ip: m.common_audit_col_ip?.() || "IP",
-    details: "Details",
-    entity: "Entity",
+    user: m.common_audit_col_member?.() || l("المستخدم", "Member"),
+    action: m.common_audit_col_action?.() || l("العملية", "Action"),
+    timestamp: l("الوقت", "Time"),
+    ip: l("عنوان IP", "IP"),
+    details: l("التفاصيل", "Details"),
+    entity: l("العنصر", "Entity"),
   }),
 );
 </script>
@@ -110,7 +110,7 @@ const columns = $derived(
   <!-- Header -->
   <div class="flex items-center justify-between gap-4 flex-nowrap shrink-0">
     <h1 class="text-lg font-bold text-foreground truncate">
-      {m.common_nav_audit?.() || "Audit Logs"}
+      {m.common_nav_audit?.() || l("سجل التدقيق", "Audit Logs")}
     </h1>
   </div>
 
@@ -124,8 +124,8 @@ const columns = $derived(
       filterFields={auditFilterFields}
       bind:filterValue={activeFilter}
       emptyIcon={ClockRotateRight}
-      emptyTitle={m.common_audit_empty?.() || "No audit logs found"}
-      emptyDescription={m.common_audit_empty_desc?.() || "No operations have been recorded yet."}
+      emptyTitle={l("لا توجد سجلات تدقيق", "No audit logs found")}
+      emptyDescription={l("لم يتم تسجيل أي عمليات بعد.", "No operations have been recorded yet.")}
       rtl={getLocale() === "ar"}
       refreshable
       onRefresh={loadData}
