@@ -138,6 +138,10 @@ export const ar = {
   pref_notify_announcements_desc: "إشعارات الفعاليات والمناسبات المدرسية",
 
   // Auth & Branding
+  auth_app_title: "أوربس",
+  auth_app_tagline: "منصة إدارة العمليات والتعليم الذكية",
+  auth_login_headline: "تسجيل الدخول",
+  auth_login_tagline: "أدخل بيانات حسابك للمتابعة",
   auth_sign_in: "تسجيل الدخول",
   auth_welcome_back: "أهلاً بعودتك",
   auth_welcome_sub: "أدخل بياناتك للمتابعة إلى بوابة أوربس",
@@ -147,6 +151,11 @@ export const ar = {
   auth_submit: "تسجيل الدخول",
   auth_mfa_title: "رمز التحقق الثنائي (MFA)",
   auth_mfa_subtitle: "أدخل رمز الأمان المكون من 6 أرقام المرسل إلى هاتفك",
+  auth_mfa_digit_prompt: "أدخل رمز الأمان المكون من 6 أرقام",
+  auth_mfa_backup_code: "استخدام رمز استرداد بديل",
+  auth_mfa_standard_code: "استخدام تطبيق المصادقة",
+  auth_mfa_backup_ph: "أدخل الرمز الاحتياطي",
+  auth_mfa_resend: "إعادة إرسال الرمز",
   auth_verify: "تحقق وتأكيد",
   auth_signing_in: "جاري تسجيل الدخول...",
   auth_brand_subtitle: "منصة الإدارة التعليمية والعمليات الموحدة",
@@ -166,6 +175,43 @@ export const ar = {
   auth_no_account: "هل ترغب بتسجيل طالب جديد؟",
   auth_register_link: "تقديم طلب تسجيل طالب",
   auth_org_portal: "مدارس جيل المعرفة",
+
+  // Register & Account Creation
+  auth_register_title: "إنشاء حساب جديد",
+  auth_register_subtitle: "انضم إلى منظومة أوربس التعليمية",
+  auth_full_name: "الاسم الكامل",
+  auth_full_name_ph: "مثال: د. محمد المنصور",
+  auth_confirm_password: "تأكيد كلمة المرور",
+  auth_password_mismatch: "كلمات المرور غير متطابقة",
+  auth_role_label: "الدور / الصفة",
+  auth_role_teacher: "معلم",
+  auth_role_student: "طالب",
+  auth_role_parent: "ولي أمر",
+  auth_role_admin: "إداري / مشرف",
+  auth_have_account: "لديك حساب بالفعل؟",
+  auth_create_account_btn: "إنشاء الحساب",
+  auth_register_success: "تم إنشاء الحساب بنجاح",
+
+  // Forgot Password
+  auth_forgot_title: "استعادة كلمة المرور",
+  auth_forgot_subtitle: "أدخل بريدك الإلكتروني المسجل لإرسال رابط الاستعادة",
+  auth_forgot_send_btn: "إرسال رابط الاستعادة",
+  auth_forgot_success_title: "تم إرسال التعليمات",
+  auth_forgot_success_msg: "لقد قمنا بإرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.",
+  auth_back_to_sign_in: "العودة لتسجيل الدخول",
+
+  // Security & Device Setup Flow (Reference 1)
+  auth_setup_title: "تأمين الحساب والجهاز",
+  auth_setup_subtitle: "إعداد مفاتيح الحماية والتشفير",
+  auth_setup_step_device: "مفتاح أمان الجهاز",
+  auth_setup_step_device_sub: "تشفير الجلسة محلياً عبر Keychain الآمن",
+  auth_setup_step_2fa: "الحماية الثنائية 2FA",
+  auth_setup_step_2fa_sub: "طبقة التحقق المتقدم للهوية مفعلة",
+  auth_setup_step_recovery: "مفتاح الاسترداد",
+  auth_setup_step_recovery_sub: "حماية الوصول الدائم للحساب",
+  auth_setup_step_ready: "حسابك جاهز بالكامل!",
+  auth_setup_step_ready_sub: "مرحباً بك في منصة أوربس",
+  auth_setup_continue: "الدخول إلى المنصة",
 
   // Student Admission & Registration (Parent applying for child)
   admission_title: "طلب تسجيل طالب جديد",

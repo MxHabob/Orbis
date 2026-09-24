@@ -144,6 +144,10 @@ export const en: Record<TranslationKey, string> = {
     "Updates for school activities, holidays, and news",
 
   // Auth & Branding
+  auth_app_title: "Orbis",
+  auth_app_tagline: "Smart Educational & Operations Platform",
+  auth_login_headline: "Sign In",
+  auth_login_tagline: "Enter your institutional credentials to continue",
   auth_sign_in: "Sign In",
   auth_welcome_back: "Welcome Back",
   auth_welcome_sub: "Enter your credentials to continue to Orbis Portal",
@@ -152,7 +156,12 @@ export const en: Record<TranslationKey, string> = {
   auth_forgot_password: "Forgot Password?",
   auth_submit: "Sign In",
   auth_mfa_title: "Two-Factor Authentication (MFA)",
-  auth_mfa_subtitle: "Enter the 6-digit verification code sent to your phone",
+  auth_mfa_subtitle: "Enter the 6-digit verification code sent to your device",
+  auth_mfa_digit_prompt: "Enter your 6-digit security code",
+  auth_mfa_backup_code: "Use a backup recovery code",
+  auth_mfa_standard_code: "Use authenticator app",
+  auth_mfa_backup_ph: "Enter recovery code",
+  auth_mfa_resend: "Resend Code",
   auth_verify: "Verify & Confirm",
   auth_signing_in: "Signing in...",
   auth_brand_subtitle: "Unified Educational & Operations Platform",
@@ -172,6 +181,43 @@ export const en: Record<TranslationKey, string> = {
   auth_no_account: "Looking to register a new student?",
   auth_register_link: "Submit Student Admission Application",
   auth_org_portal: "Jeel Al Marifah Schools",
+
+  // Register & Account Creation
+  auth_register_title: "Create Account",
+  auth_register_subtitle: "Join the Orbis Educational Platform",
+  auth_full_name: "Full Name",
+  auth_full_name_ph: "e.g. Dr. Alex Morgan",
+  auth_confirm_password: "Confirm Password",
+  auth_password_mismatch: "Passwords do not match",
+  auth_role_label: "Account Role",
+  auth_role_teacher: "Teacher",
+  auth_role_student: "Student",
+  auth_role_parent: "Parent",
+  auth_role_admin: "Administrator",
+  auth_have_account: "Already have an account?",
+  auth_create_account_btn: "Create Account",
+  auth_register_success: "Account created successfully",
+
+  // Forgot Password
+  auth_forgot_title: "Reset Password",
+  auth_forgot_subtitle: "Enter your email to receive password reset instructions",
+  auth_forgot_send_btn: "Send Recovery Link",
+  auth_forgot_success_title: "Instructions Sent",
+  auth_forgot_success_msg: "We have sent password reset instructions to your email address.",
+  auth_back_to_sign_in: "Back to Sign In",
+
+  // Security & Device Setup Flow (Reference 1)
+  auth_setup_title: "Secure Your Account",
+  auth_setup_subtitle: "Configuring security keys and session encryption",
+  auth_setup_step_device: "Device Security Key",
+  auth_setup_step_device_sub: "Enclave session key registered via Keychain",
+  auth_setup_step_2fa: "Two-Factor Key (2FA)",
+  auth_setup_step_2fa_sub: "Advanced identity challenge layer activated",
+  auth_setup_step_recovery: "Recovery Key",
+  auth_setup_step_recovery_sub: "Guaranteed access recovery configured",
+  auth_setup_step_ready: "Your account is ready!",
+  auth_setup_step_ready_sub: "Welcome to the Orbis platform",
+  auth_setup_continue: "Enter Dashboard",
 
   // Student Admission & Registration (Parent applying for child)
   admission_title: "New Student Registration",
