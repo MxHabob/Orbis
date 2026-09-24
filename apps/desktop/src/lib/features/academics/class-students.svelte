@@ -1,44 +1,113 @@
+<!--
+  @component ClassStudents
+  Feature component for the Class Students view.
+  Uses @orbis/svelte-grid / DataTable for scalable, high-performance rendering.
+-->
 <script lang="ts">
-import { createQuery } from "@tanstack/svelte-query";
-import { api, extractErrorMessage } from "$lib/api";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
-import { Skeleton } from "@orbis/ui/skeleton";
 import { InfoCircle, Refresh, Users } from "@orbis/icons";
-import { localizeHref, getLocale } from "$lib/paraglide/runtime";
+import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
+import { extractErrorMessage } from "$lib/api";
+import { createClassStudentsQuery } from "$lib/features/academics";
+import { DataTable, BadgeCell } from "$lib/tables";
+import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
+import { goto } from "$app/navigation";
 
 let { orgId, classId }: { orgId: string; classId: string } = $props();
 
-const isArabic = $derived(getLocale() === "ar");
-
-const studentsQuery = createQuery(() => ({
-  queryKey: ["class-students-enriched-natural", classId],
-  queryFn: () =>
-    api
-      .listStudents()
-      .then((res) =>
-        (res.items || []).filter(
-          (s: any) => String(s.current_class_id) === String(classId),
-        ),
-      )
-      .catch(() => []),
-  enabled: !!classId,
-  staleTime: 5 * 60 * 1000,
-}));
-
-const students = $derived((studentsQuery.data || []) as any[]);
+const studentsQuery = createClassStudentsQuery(() => classId);
+const students = $derived(studentsQuery.data ?? []);
 const isLoading = $derived(studentsQuery.isLoading);
 const error = $derived(studentsQuery.error);
 
 function studentName(student: any): string {
   return (
-    student.full_name ||
     student.name_ar ||
+    student.full_name ||
     student.name ||
     student.student_id ||
     "-"
   );
+}
+
+const columns: OrbisColumnDef[] = [
+  {
+    id: "student_name",
+    prop: "student_name",
+    header: m.common_student_name ? m.common_student_name() : "Student",
+    name: m.common_student_name ? m.common_student_name() : "Student",
+    width: 260,
+    size: 260,
+    cellClass: "font-semibold text-foreground",
+  },
+  {
+    id: "student_number",
+    prop: "student_number",
+    header: m.common_student_id ? m.common_student_id() : "Student ID",
+    name: m.common_student_id ? m.common_student_id() : "Student ID",
+    width: 140,
+    size: 140,
+    cellClass: "font-mono text-muted-foreground",
+  },
+  {
+    id: "national_id",
+    prop: "national_id",
+    header: m.common_national_id ? m.common_national_id() : "National ID",
+    name: m.common_national_id ? m.common_national_id() : "National ID",
+    width: 150,
+    size: 150,
+    cellClass: "font-mono text-muted-foreground",
+  },
+  {
+    id: "gender",
+    prop: "gender",
+    header: m.common_gender ? m.common_gender() : "Gender",
+    name: m.common_gender ? m.common_gender() : "Gender",
+    width: 110,
+    size: 110,
+    align: "center",
+  },
+  {
+    id: "status",
+    prop: "status",
+    header: m.common_status ? m.common_status() : "Status",
+    name: m.common_status ? m.common_status() : "Status",
+    width: 120,
+    size: 120,
+    cell: BadgeCell,
+  },
+  {
+    id: "enrolled_date",
+    prop: "enrolled_date",
+    header: m.common_enrolled_date ? m.common_enrolled_date() : "Enrolled Date",
+    name: m.common_enrolled_date ? m.common_enrolled_date() : "Enrolled Date",
+    width: 140,
+    size: 140,
+    cellClass: "font-mono text-muted-foreground",
+  },
+];
+
+const gridSource = $derived(
+  students.map((student) => ({
+    ...student,
+    student_name: studentName(student),
+    student_number: student.student_number || student.student_id || student.id,
+    national_id: student.national_id || "—",
+    gender: student.gender || "—",
+    status: student.status || "active",
+    enrolled_date: student.created_at
+      ? new Date(student.created_at).toLocaleDateString()
+      : "—",
+  })),
+);
+
+function handleGridAction(event: GridActionEvent) {
+  if (event.actionId === "dblclick" && event.row.id) {
+    const studentId = event.row.student_id || event.row.id;
+    goto(localizeHref(`/${orgId}/students/${studentId}`));
+  }
 }
 
 function refetch() {
@@ -46,7 +115,7 @@ function refetch() {
 }
 </script>
 
-<div class="flex flex-col gap-5 text-start h-full font-sans">
+<div class="flex flex-col gap-4 text-start h-full font-sans">
   <div class="flex items-start justify-between gap-3 border-b border-border/60 pb-3">
     <div>
       <div class="flex items-center gap-2 mb-1.5">
@@ -55,25 +124,26 @@ function refetch() {
           class="flex items-center gap-1 text-[11px] font-bold text-muted-foreground hover:text-primary transition-colors"
         >
           <span>&larr;</span>
-          <span>{isArabic ? "لوحة تحكم الفصل" : "Class Dashboard"}</span>
+          <span>{m.common_nav_dashboard ? m.common_nav_dashboard() : "Class Dashboard"}</span>
         </a>
       </div>
       <div class="flex items-center gap-2">
         <Users size={17} class="text-primary" />
-        <h2 class="text-sm font-bold">{m.academics_class_detail_tab_students ? m.academics_class_detail_tab_students() : "Class Students"}</h2>
+        <h2 class="text-sm font-bold">
+          {m.academics_class_detail_tab_students ? m.academics_class_detail_tab_students() : "Class Students"}
+        </h2>
         <Badge variant="secondary" class="text-[9px] py-0 px-1.5 h-4.5 rounded font-sans ml-2">
           {students.length}
         </Badge>
       </div>
-      <p class="mt-1 text-[10px] text-muted-foreground">{isArabic ? "سجل طلاب الفصل والمؤشرات الأكاديمية" : "Master student roster and aggregate performance metrics."}</p>
+      <p class="mt-1 text-[10px] text-muted-foreground">
+        {m.academics_class_students_desc ? m.academics_class_students_desc() : "Master student roster and aggregate performance metrics."}
+      </p>
     </div>
     <div class="flex gap-2">
       <Button variant="outline" size="sm" class="h-8 gap-1.5 text-xs font-semibold" onclick={refetch}>
         <Refresh size={12} class={isLoading ? "animate-spin" : ""} />
         {m.common_retry ? m.common_retry() : "Refresh"}
-      </Button>
-      <Button variant="default" size="sm" class="h-8 gap-1.5 text-xs font-semibold">
-        {m.common_search_add ? m.common_search_add() : "Add Student"}
       </Button>
     </div>
   </div>
@@ -81,70 +151,23 @@ function refetch() {
   {#if error}
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2 font-sans">
       <InfoCircle size={24} />
-      <h3 class="font-semibold text-xs">Failed to load students</h3>
+      <h3 class="font-semibold text-xs">{m.common_error_occurred ? m.common_error_occurred() : "Failed to load students"}</h3>
       <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
-    </div>
-  {:else if isLoading}
-    <div class="flex flex-col gap-3">
-      {#each Array(5) as _}
-        <Skeleton class="h-12 w-full rounded" />
-      {/each}
+      <Button variant="outline" size="sm" class="h-8 mt-2 text-xs" onclick={refetch}>
+        {m.common_retry ? m.common_retry() : "Retry"}
+      </Button>
     </div>
   {:else}
-    <div class="overflow-x-auto border border-border/70 rounded-md bg-card shadow-sm">
-      <table class="w-full min-w-[800px] text-xs">
-        <thead class="border-b border-border/70 bg-muted/30 text-muted-foreground text-[10px] uppercase tracking-wider">
-          <tr>
-            <th class="px-4 py-3 text-start font-semibold">Student</th>
-            <th class="px-4 py-3 text-start font-semibold">Status</th>
-            <th class="px-4 py-3 text-start font-semibold">National ID</th>
-            <th class="px-4 py-3 text-start font-semibold">Gender</th>
-            <th class="px-4 py-3 text-start font-semibold">Enrolled Date</th>
-            <th class="px-4 py-3 text-end font-semibold">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each students as student (student.id)}
-            <tr class="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
-              <td class="px-4 py-3">
-                <a href={localizeHref(`/${orgId}/students/${student.student_id || student.id}`)} class="flex flex-col group">
-                  <span class="font-bold text-foreground group-hover:text-primary transition-colors">{studentName(student)}</span>
-                  <span class="text-[9px] text-muted-foreground mt-0.5 font-mono">{student.student_number || student.student_id || student.id}</span>
-                </a>
-              </td>
-              <td class="px-4 py-3">
-                <Badge variant={student.status === "active" ? "secondary" : "outline"} class="text-[9px] font-bold uppercase">
-                  {student.status || "active"}
-                </Badge>
-              </td>
-              <td class="px-4 py-3 font-mono text-muted-foreground">
-                {student.national_id || "—"}
-              </td>
-              <td class="px-4 py-3 capitalize text-muted-foreground">
-                {student.gender || "—"}
-              </td>
-              <td class="px-4 py-3 text-muted-foreground font-mono text-[11px]">
-                {student.created_at ? new Date(student.created_at).toLocaleDateString() : "—"}
-              </td>
-              <td class="px-4 py-3 text-end">
-                <a
-                  href={localizeHref(`/${orgId}/students/${student.student_id || student.id}`)}
-                  class="inline-flex items-center justify-center h-8 px-2.5 rounded text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                >
-                  {isArabic ? "عرض الملف" : "View"}
-                </a>
-              </td>
-            </tr>
-          {/each}
-          {#if students.length === 0}
-            <tr>
-              <td colspan="6" class="py-12 text-center text-xs text-muted-foreground">
-                No students enrolled in this class.
-              </td>
-            </tr>
-          {/if}
-        </tbody>
-      </table>
+    <div class="flex-1 w-full overflow-hidden border border-border/70 rounded-xl bg-card">
+      <DataTable
+        {columns}
+        source={gridSource}
+        loading={isLoading}
+        height="100%"
+        rowSize={44}
+        onaction={handleGridAction}
+        emptyTitle={m.common_students_empty_title ? m.common_students_empty_title() : "No students enrolled in this class"}
+      />
     </div>
   {/if}
 </div>

@@ -1,3 +1,9 @@
+<!--
+  @component ClassSubjectLayout
+  SvelteKit Layout for specific Subject Offering under a Class.
+  Provides tab navigation between Coursework Gradebook and Term Results,
+  along with assessments scheme configuration and PDF print triggers.
+-->
 <script lang="ts">
 import { page } from "$app/state";
 import { createQuery } from "@tanstack/svelte-query";
@@ -5,17 +11,20 @@ import { api } from "$lib/api";
 import type { ClassSubjectDto, SubjectDto, UserDto } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 import { academicContext } from "$lib/stores";
 import AssessmentSchemeSheet from "$lib/features/assessment/assessment-scheme-sheet.svelte";
 import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+import type { Snippet } from "svelte";
+import type { LayoutData } from "./$types";
 
-let { children } = $props();
+let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
-const orgId = $derived(String(page.params.orgId || ""));
-const classId = $derived(String(page.params.classId || ""));
-const classSubjectId = $derived(String(page.params.classSubjectId || ""));
-const isArabic = $derived(getLocale() === "ar");
+const orgId = $derived(data.orgId || String(page.params.orgId || ""));
+const classId = $derived(data.classId || String(page.params.classId || ""));
+const classSubjectId = $derived(
+  data.classSubjectId || String(page.params.classSubjectId || ""),
+);
 
 let showConfigSheet = $state(false);
 let showPrintDialog = $state(false);
@@ -59,15 +68,12 @@ const teacherDisplayName = $derived.by(() => {
   if (!subjectInfo) return "";
   if (subjectInfo.teacher_name) return subjectInfo.teacher_name;
   const tid = subjectInfo.primary_teacher_id;
-  if (!tid) return isArabic ? "غير مسند لمعلم" : "Unassigned";
+  if (!tid) return m.common_unassigned ? m.common_unassigned() : "Unassigned";
   const foundUser = users.find((u: UserDto) => String(u.id) === String(tid));
-  if (foundUser)
-    return isArabic
-      ? foundUser.full_name_ar || foundUser.full_name
-      : foundUser.full_name || foundUser.full_name_ar;
-  if (String(tid).startsWith("dev-"))
-    return isArabic ? "معلم تجريبي" : "Demo Teacher";
-  return isArabic ? "معلم المادة" : "Subject Teacher";
+  if (foundUser) {
+    return foundUser.full_name_ar || foundUser.full_name;
+  }
+  return m.common_teacher ? m.common_teacher() : "Teacher";
 });
 
 const basePath = $derived(
@@ -77,20 +83,18 @@ const basePath = $derived(
 const menuItems = $derived([
   {
     path: "",
-    label: isArabic ? "دفتر الدرجات" : "Coursework Gradebook",
+    label: m.common_coursework_gradebook ? m.common_coursework_gradebook() : "Gradebook",
   },
   {
     path: "term-results",
-    label: isArabic ? "نتائج الترم" : "Term Results",
+    label: m.common_term_results ? m.common_term_results() : "Term Results",
   },
 ]);
 </script>
 
 <div class="flex h-full w-full flex-col font-sans text-start gap-4">
-  
   <!-- Sub-Toolbar: SecondaryMenu Tabs & Subject Action Controls -->
   <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 pb-3 shrink-0">
-    
     <!-- Secondary Menu Tab Switcher -->
     <SecondaryMenu items={menuItems} {basePath} />
 
@@ -101,7 +105,7 @@ const menuItems = $derived([
           <span class="font-medium text-foreground">{teacherDisplayName}</span>
           {#if subjectInfo.weekly_hours}
             <span class="opacity-30">•</span>
-               <span>{subjectInfo.weekly_hours} {isArabic ? "ساعات/أسبوع" : "hrs/wk"}</span>
+            <span>{subjectInfo.weekly_hours} {m.common_hours_per_week ? m.common_hours_per_week() : "hrs/wk"}</span>
           {/if}
         </div>
       {/if}
@@ -112,7 +116,7 @@ const menuItems = $derived([
         class="h-8 gap-1.5 text-xs font-semibold"
         onclick={() => showConfigSheet = true}
       >
-        <span>{isArabic ? "إعداد التقييمات" : "Assessments Scheme"}</span>
+        <span>{m.common_assessment_scheme ? m.common_assessment_scheme() : "Assessments Scheme"}</span>
       </Button>
 
       <Button
@@ -121,17 +125,15 @@ const menuItems = $derived([
         class="h-8 gap-1.5 text-xs font-semibold"
         onclick={() => showPrintDialog = true}
       >
-        <span class="hidden sm:inline">{isArabic ? "طباعة" : "Print"}</span>
+        <span class="hidden sm:inline">{m.common_action_print ? m.common_action_print() : "Print"}</span>
       </Button>
     </div>
-
   </div>
 
   <!-- Main Content Space -->
   <div class="flex-1 w-full overflow-hidden flex flex-col">
     {@render children()}
   </div>
-
 </div>
 
 {#if showConfigSheet}
@@ -142,5 +144,5 @@ const menuItems = $derived([
   bind:open={showPrintDialog}
   templateId="33333333-3333-3333-3333-333333333333"
   parameters={{ class_subject_id: classSubjectId, period_id: academicContext.effectivePeriodId }}
-  reportTitle={isArabic ? "طباعة سجل الدرجات" : "Print Gradebook"}
+  reportTitle={m.common_print_gradebook ? m.common_print_gradebook() : "Print Gradebook"}
 />

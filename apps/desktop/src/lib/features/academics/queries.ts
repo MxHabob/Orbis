@@ -12,27 +12,18 @@ import {
   type TimeSlotDto,
   type ScheduledLessonDto,
   type PrerequisiteCheckResultDto,
+  type RoomDto,
+  type AttendanceDto,
+  type GradeDto,
+  type ReportDefinitionDto,
 } from "$lib/api";
 
-/** All academic periods for current year. */
+/** All academic periods for current organization/year. */
 export function createPeriodsQuery(orgId: () => string) {
   return createQuery<AcademicPeriodDto[]>(() => ({
     queryKey: queryKeys.calendar.periods(orgId()),
     queryFn: () => api.listAcademicPeriods(),
     enabled: !!orgId(),
-    staleTime: 10 * 60 * 1000,
-  }));
-}
-
-/** Periods for a specific year. */
-export function createPeriodsByYearQuery(
-  orgId: () => string,
-  periodId: () => string,
-) {
-  return createQuery<AcademicPeriodDto[]>(() => ({
-    queryKey: queryKeys.calendar.periods(orgId()),
-    queryFn: () => api.listAcademicPeriods(),
-    enabled: !!orgId() && !!periodId(),
     staleTime: 10 * 60 * 1000,
   }));
 }
@@ -47,7 +38,46 @@ export function createClassesQuery(orgId: () => string) {
   }));
 }
 
-/** Subjects for an organization. */
+/** Single class by ID. */
+export function createClassQuery(classId: () => string | undefined) {
+  return createQuery<ClassDto>(() => ({
+    queryKey: queryKeys.academic.class(classId() ?? ""),
+    queryFn: () => api.getClass(classId()!),
+    enabled: !!classId(),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+/** Students enrolled in a specific class. */
+export function createClassStudentsQuery(classId: () => string | undefined) {
+  return createQuery<any[]>(() => ({
+    queryKey: [...queryKeys.student.all, "class-students", classId() ?? ""],
+    queryFn: async () => {
+      const res = await api.listStudents();
+      const currentClassId = classId();
+      return (res.items || []).filter(
+        (s: any) => String(s.current_class_id) === String(currentClassId),
+      );
+    },
+    enabled: !!classId(),
+    staleTime: 3 * 60 * 1000,
+  }));
+}
+
+/** Attendance records for a class on a specific date. */
+export function createClassAttendanceQuery(
+  classId: () => string | undefined,
+  date: () => string | undefined,
+) {
+  return createQuery<AttendanceDto[]>(() => ({
+    queryKey: queryKeys.assessment.attendance(classId() ?? "", date() ?? ""),
+    queryFn: () => api.listAttendance(classId()!, date()!),
+    enabled: !!classId() && !!date(),
+    staleTime: 2 * 60 * 1000,
+  }));
+}
+
+/** Subjects catalog for an organization. */
 export function createSubjectsQuery(orgId: () => string) {
   return createQuery<SubjectDto[]>(() => ({
     queryKey: queryKeys.academic.subjects(orgId()),
@@ -57,20 +87,40 @@ export function createSubjectsQuery(orgId: () => string) {
   }));
 }
 
-/** Class subjects / assignments. */
+/** Single subject by ID. */
+export function createSubjectQuery(subjectId: () => string | undefined) {
+  return createQuery<SubjectDto>(() => ({
+    queryKey: queryKeys.academic.subject(subjectId() ?? ""),
+    queryFn: () => api.getSubject(subjectId()!),
+    enabled: !!subjectId(),
+    staleTime: 10 * 60 * 1000,
+  }));
+}
+
+/** Class subjects / assignments for a specific class and period. */
 export function createClassSubjectsQuery(
   classId: () => string | undefined,
   periodId: () => string | undefined,
 ) {
   return createQuery<ClassSubjectDto[]>(() => ({
-    queryKey: queryKeys.academic.classSubjects(classId()!, periodId()!),
+    queryKey: queryKeys.academic.classSubjects(classId() ?? "", periodId() ?? ""),
     queryFn: () => api.listClassSubjects(classId()!, periodId()!),
     enabled: !!classId() && !!periodId(),
     staleTime: 5 * 60 * 1000,
   }));
 }
 
-/** Assessments for a class-subject. */
+/** All rooms available in the organization. */
+export function createRoomsQuery(orgId: () => string) {
+  return createQuery<RoomDto[]>(() => ({
+    queryKey: queryKeys.scheduling.rooms(orgId()),
+    queryFn: () => api.listRooms(),
+    enabled: !!orgId(),
+    staleTime: 10 * 60 * 1000,
+  }));
+}
+
+/** Assessments schemes for an organization. */
 export function createAssessmentsQuery(
   params: () => {
     periodId?: string;
@@ -85,15 +135,24 @@ export function createAssessmentsQuery(
   }));
 }
 
+/** Grades for a class subject. */
+export function createGradesQuery(classSubjectId: () => string | undefined) {
+  return createQuery<GradeDto[]>(() => ({
+    queryKey: queryKeys.assessment.grades({ classSubjectId: classSubjectId() }),
+    queryFn: () => api.listGrades({ classSubjectId: classSubjectId() }),
+    enabled: !!classSubjectId(),
+    staleTime: 1 * 60 * 1000,
+  }));
+}
+
 /** Time slots for an academic period. */
 export function createTimeSlotsQuery(
-  orgId: () => string | undefined,
   periodId: () => string | undefined,
 ) {
   return createQuery<TimeSlotDto[]>(() => ({
-    queryKey: queryKeys.scheduling.timeSlots(periodId()!),
+    queryKey: queryKeys.scheduling.timeSlots(periodId() ?? ""),
     queryFn: () => api.listTimeSlots(periodId()!),
-    enabled: !!orgId() && !!periodId(),
+    enabled: !!periodId(),
     staleTime: 10 * 60 * 1000,
   }));
 }
@@ -139,6 +198,15 @@ export function createPrerequisitesQuery(
   }));
 }
 
+/** Report definitions for academics domain */
+export function createReportDefinitionsQuery(domain: () => string = () => "academics") {
+  return createQuery<ReportDefinitionDto[]>(() => ({
+    queryKey: queryKeys.report.definitions(domain()),
+    queryFn: () => api.listReportDefinitions(domain()),
+    staleTime: 10 * 60 * 1000,
+  }));
+}
+
 /** Calculate student rankings using authoritative backend engine */
 export function createCalculateRankingsMutation() {
   return createMutation(() => ({
@@ -164,6 +232,3 @@ export function createGenerateReportMutation() {
     },
   }));
 }
-
-
-

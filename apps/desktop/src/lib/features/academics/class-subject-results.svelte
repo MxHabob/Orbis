@@ -1,12 +1,18 @@
+<!--
+  @component ClassSubjectResults
+  Feature component displaying term results and calculated grades for a class subject.
+  Uses @orbis/svelte-grid / DataTable for high performance.
+-->
 <script lang="ts">
 import { createQuery } from "@tanstack/svelte-query";
 import { api, extractErrorMessage } from "$lib/api";
 import type { GradeDto } from "$lib/api/types";
-import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
-import { CheckCircle, DocumentCheck, InfoCircle, Refresh, XMark } from "@orbis/icons";
+import { DocumentCheck, InfoCircle, Refresh } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
-import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
+import { DataTable, BadgeCell } from "$lib/tables";
+import type { OrbisColumnDef } from "@orbis/svelte-grid";
 
 export interface EnrichedGradeDto extends GradeDto {
   student_name?: string | null;
@@ -21,7 +27,6 @@ export interface EnrichedGradeDto extends GradeDto {
 let { orgId, classId, classSubjectId }: { orgId: string; classId: string; classSubjectId: string } = $props();
 
 const selectedPeriodId = $derived(academicContext.effectivePeriodId || "");
-const isArabic = $derived(getLocale() === "ar");
 
 const termResultsQuery = createQuery(() => ({
   queryKey: ["term-results-enriched", selectedPeriodId, classSubjectId],
@@ -33,27 +38,85 @@ const termResultsQuery = createQuery(() => ({
 }));
 
 const termResults = $derived(termResultsQuery.data ?? []);
+const isLoading = $derived(termResultsQuery.isLoading);
+const error = $derived(termResultsQuery.error);
 
-function getStudentName(enrollmentId: string): string {
-  const s = termResults.find((r) => r.enrollment_id === enrollmentId);
-  if (!s) return "-";
-  return isArabic
-    ? s.student_name_ar || s.student_name || s.student_number || "-"
-    : s.student_name || s.student_name_ar || s.student_number || "-";
+function getStudentName(r: EnrichedGradeDto): string {
+  return r.student_name_ar || r.student_name || r.student_number || "-";
 }
+
+const columns: OrbisColumnDef[] = [
+  {
+    id: "student_name",
+    prop: "student_name",
+    header: m.common_student_name ? m.common_student_name() : "Student Name",
+    name: m.common_student_name ? m.common_student_name() : "Student Name",
+    width: 240,
+    size: 240,
+    cellClass: "font-semibold text-foreground",
+  },
+  {
+    id: "max_score",
+    prop: "max_score",
+    header: m.common_assessment_max_score ? m.common_assessment_max_score() : "Max Score",
+    name: m.common_assessment_max_score ? m.common_assessment_max_score() : "Max Score",
+    width: 120,
+    size: 120,
+    align: "center",
+    cellClass: "font-mono text-muted-foreground",
+  },
+  {
+    id: "obtained_score",
+    prop: "obtained_score",
+    header: m.common_assessment_obtained_score ? m.common_assessment_obtained_score() : "Obtained Score",
+    name: m.common_assessment_obtained_score ? m.common_assessment_obtained_score() : "Obtained Score",
+    width: 130,
+    size: 130,
+    align: "center",
+    cellClass: "font-bold font-mono text-foreground",
+  },
+  {
+    id: "grade_value",
+    prop: "grade_value",
+    header: m.common_grade ? m.common_grade() : "Grade",
+    name: m.common_grade ? m.common_grade() : "Grade",
+    width: 100,
+    size: 100,
+    align: "center",
+    cell: BadgeCell,
+  },
+  {
+    id: "status",
+    prop: "status",
+    header: m.common_status ? m.common_status() : "Status",
+    name: m.common_status ? m.common_status() : "Status",
+    width: 120,
+    size: 120,
+    align: "center",
+    cell: BadgeCell,
+  },
+];
+
+const gridSource = $derived(
+  termResults.map((r) => ({
+    ...r,
+    student_name: getStudentName(r),
+    max_score: r.max_score ?? 100,
+    obtained_score: r.obtained_score ?? 0,
+    grade_value: r.grade_value || "-",
+    status: r.is_passed === 1 || r.is_passed === true ? "passed" : "failed",
+  })),
+);
 </script>
 
 <div class="flex flex-col h-full w-full gap-2.5 font-sans">
-  
-  <!-- Action Toolbar (No duplicate titles) -->
+  <!-- Action Toolbar -->
   <div class="flex items-center justify-between shrink-0 px-0.5">
     <div class="flex items-center gap-2">
       <div class="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
         <DocumentCheck size={14} class="text-primary opacity-80" />
         <span>
-          {isArabic 
-            ? `${termResults.length} نتيجة مسجلة لهذا الترم` 
-            : `${termResults.length} calculated student results`}
+          {termResults.length} {m.common_term_results_recorded ? m.common_term_results_recorded() : "recorded term results"}
         </span>
       </div>
     </div>
@@ -64,75 +127,33 @@ function getStudentName(enrollmentId: string): string {
         size="sm" 
         class="h-8 px-2.5 gap-1.5 cursor-pointer text-xs font-semibold shadow-2xs" 
         onclick={() => termResultsQuery.refetch()} 
-        disabled={termResultsQuery.isLoading}
+        disabled={isLoading}
       >
-        <Refresh size={12} class={termResultsQuery.isLoading ? "animate-spin" : ""} />
-        <span>{isArabic ? "تحديث" : "Refresh"}</span>
+        <Refresh size={12} class={isLoading ? "animate-spin" : ""} />
+        <span>{m.common_retry ? m.common_retry() : "Refresh"}</span>
       </Button>
     </div>
   </div>
 
   <!-- Grid Container -->
-  <div class="flex-1 overflow-auto border border-border/70 rounded-xl shadow-xs bg-card">
-    {#if termResultsQuery.isLoading}
-      <div class="flex h-full items-center justify-center text-xs text-muted-foreground animate-pulse">
-        {isArabic ? "جاري تحميل نتائج الترم..." : "Loading term results..."}
-      </div>
-    {:else if termResultsQuery.error}
+  <div class="flex-1 overflow-hidden border border-border/70 rounded-xl shadow-xs bg-card">
+    {#if error}
       <div class="flex h-full flex-col items-center justify-center text-xs text-destructive gap-2 p-6">
         <InfoCircle size={24} />
-        <span class="font-semibold">{extractErrorMessage(termResultsQuery.error)}</span>
-      </div>
-    {:else if termResults.length === 0}
-      <div class="flex flex-col h-full items-center justify-center p-8 text-center bg-muted/5 gap-2">
-        <DocumentCheck size={28} class="text-muted-foreground opacity-40 mb-1" />
-        <p class="text-xs font-bold text-foreground">
-          {isArabic ? "لم يتم احتساب نتائج الترم بعد" : "No term results calculated yet"}
-        </p>
-        <p class="text-[11px] text-muted-foreground max-w-sm">
-          {isArabic ? "يتم احتساب نتائج الترم تلقائياً عند اعتماد درجات التقييمات الشهرية." : "Term results are computed once coursework grades are finalized."}
-        </p>
+        <span class="font-semibold">{extractErrorMessage(error)}</span>
+        <Button variant="outline" size="sm" class="h-8 mt-2 text-xs" onclick={() => termResultsQuery.refetch()}>
+          {m.common_retry ? m.common_retry() : "Retry"}
+        </Button>
       </div>
     {:else}
-      <table class="w-full min-w-160 text-xs border-collapse">
-        <thead class="border-b border-border/70 bg-muted/40 text-muted-foreground sticky top-0 text-[11px] font-bold">
-          <tr>
-            <th class="px-4 py-3 text-start">{isArabic ? "اسم الطالب" : "Student Name"}</th>
-            <th class="px-4 py-3 text-start">{isArabic ? "الدرجة العظمى" : "Max Score"}</th>
-            <th class="px-4 py-3 text-start">{isArabic ? "الدرجة المستحقة" : "Obtained Score"}</th>
-            <th class="px-4 py-3 text-start">{isArabic ? "التقدير" : "Grade"}</th>
-            <th class="px-4 py-3 text-center">{isArabic ? "الحالة" : "Status"}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each termResults as r (r.id)}
-            <tr class="border-b border-border/40 hover:bg-muted/20 transition-colors">
-              <td class="px-4 py-3 font-bold text-foreground">{getStudentName(r.enrollment_id)}</td>
-              <td class="px-4 py-3 text-muted-foreground font-mono">{r.max_score}</td>
-              <td class="px-4 py-3 font-bold text-foreground font-mono">{r.obtained_score}</td>
-              <td class="px-4 py-3">
-                <Badge variant="outline" class="text-[10px] font-bold px-2 py-0.5">
-                  {r.grade_value || "-"}
-                </Badge>
-              </td>
-              <td class="px-4 py-3 text-center">
-                {#if r.is_passed === 1}
-                  <Badge variant="secondary" class="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-bold">
-                    <CheckCircle size={11} class="me-1 inline" />
-                    {isArabic ? "ناجح" : "Passed"}
-                  </Badge>
-                {:else}
-                  <Badge variant="destructive" class="text-[10px] font-bold">
-                    <XMark size={11} class="me-1 inline" />
-                    {isArabic ? "راسب" : "Failed"}
-                  </Badge>
-                {/if}
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
+      <DataTable
+        {columns}
+        source={gridSource}
+        loading={isLoading}
+        height="100%"
+        rowSize={44}
+        emptyTitle={m.common_no_term_results ? m.common_no_term_results() : "No term results calculated yet"}
+      />
     {/if}
   </div>
-
 </div>

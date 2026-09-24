@@ -58,7 +58,7 @@ function statusIcon(status: string) {
     case "executing":
       return ArrowPath;
     case "rolled_back":
-      return Undo2;
+      return UndoAction;
     default:
       return ClockRotateRight;
   }
@@ -172,7 +172,7 @@ function statusLabel(status: string) {
                   onclick={() => rollbackTarget = job}
                   class="text-muted-foreground hover:text-foreground hover:bg-muted select-none"
                 >
-                  <Undo2 class="size-4" />
+                  <UndoAction class="size-4" />
                 </Button>
               {/if}
             </div>

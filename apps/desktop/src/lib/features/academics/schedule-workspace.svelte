@@ -1,3 +1,8 @@
+<!--
+  @component ScheduleWorkspace
+  Feature component for Timetable and Schedule workspace.
+  Supports Class, Teacher, Room, Subject, and Matrix perspectives.
+-->
 <script lang="ts">
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
@@ -10,6 +15,7 @@ import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
 import { ClockRotateRight, Pin, User } from "@orbis/icons";
+import * as m from "$lib/paraglide/messages";
 
 // Feature Components
 import {
@@ -25,7 +31,6 @@ import ErrorState from "$lib/shared/components/error-state.svelte";
 let { orgId }: { orgId: string } = $props();
 
 const queryClient = useQueryClient();
-const isArabic = $derived(getLocale() === "ar");
 
 // Selection & View State
 let activePeriodId = $state<string>("");
@@ -149,19 +154,7 @@ $effect(() => {
   }
 });
 
-$effect(() => {
-  if (rooms.length > 0 && !selectedRoomId) {
-    selectedRoomId = String(rooms[0].id);
-  }
-});
-
-$effect(() => {
-  if (subjects.length > 0 && !selectedSubjectId) {
-    selectedSubjectId = String(subjects[0].id);
-  }
-});
-
-// Time Slots Query
+// Time Slots & Lessons Query for active period
 const timeSlotsQuery = createQuery(() => ({
   queryKey: ["time-slots", orgId, activePeriodId],
   queryFn: () => api.listTimeSlots(activePeriodId),
@@ -169,134 +162,109 @@ const timeSlotsQuery = createQuery(() => ({
   staleTime: 5 * 60 * 1000,
 }));
 
-const timeSlots = $derived(
-  (timeSlotsQuery.data ?? []).filter(
-    (slot: any) =>
-      !slot.period_id || String(slot.period_id) === String(activePeriodId),
-  ),
-);
-
-// Schedule Query for active period
 const periodScheduleQuery = createQuery(() => ({
   queryKey: ["period-schedule", orgId, activePeriodId],
-  queryFn: () => api.listScheduledLessons({ periodId: activePeriodId }),
+  queryFn: () => api.listScheduledLessons(activePeriodId),
   enabled: !!orgId && !!activePeriodId,
-  staleTime: 60 * 1000,
+  staleTime: 2 * 60 * 1000,
 }));
 
-const allLessons = $derived((periodScheduleQuery.data ?? []) as any[]);
+const timeSlots = $derived(timeSlotsQuery.data ?? []);
+const allLessons = $derived(periodScheduleQuery.data ?? []);
 
-// Detect duplicate slots / collisions across loaded lessons
+// Weekdays definition (Sunday - Thursday / Saturday - Wednesday based on regional setup)
+const weekdays = [
+  { day: 1, label: m.common_day_sunday ? m.common_day_sunday() : "Sunday" },
+  { day: 2, label: m.common_day_monday ? m.common_day_monday() : "Monday" },
+  { day: 3, label: m.common_day_tuesday ? m.common_day_tuesday() : "Tuesday" },
+  { day: 4, label: m.common_day_wednesday ? m.common_day_wednesday() : "Wednesday" },
+  { day: 5, label: m.common_day_thursday ? m.common_day_thursday() : "Thursday" },
+];
+
+// Conflict Detection
 const conflictLessonIds = $derived.by(() => {
   const ids = new Set<string>();
-  const seenTeacherSlots = new Map<string, string>();
-  const seenClassSlots = new Map<string, string>();
-  const seenRoomSlots = new Map<string, string>();
+  const teacherOccupancy = new Map<string, string>();
+  const roomOccupancy = new Map<string, string>();
+  const classOccupancy = new Map<string, string>();
 
-  for (const l of allLessons) {
-    const slotKey = `${l.day_of_week}_${l.time_slot_id}`;
-    if (l.teacher_id) {
-      const teacherKey = `${l.teacher_id}_${slotKey}`;
-      if (seenTeacherSlots.has(teacherKey)) {
-        ids.add(String(l.id));
-        ids.add(seenTeacherSlots.get(teacherKey)!);
+  for (const lesson of allLessons) {
+    const key = `${lesson.day_of_week}_${lesson.time_slot_id}`;
+    if (lesson.teacher_id) {
+      const tKey = `${key}_${lesson.teacher_id}`;
+      if (teacherOccupancy.has(tKey)) {
+        ids.add(lesson.id);
+        ids.add(teacherOccupancy.get(tKey)!);
       } else {
-        seenTeacherSlots.set(teacherKey, String(l.id));
+        teacherOccupancy.set(tKey, lesson.id);
       }
     }
-    if (l.class_id) {
-      const classKey = `${l.class_id}_${slotKey}`;
-      if (seenClassSlots.has(classKey)) {
-        ids.add(String(l.id));
-        ids.add(seenClassSlots.get(classKey)!);
+
+    if (lesson.room_id) {
+      const rKey = `${key}_${lesson.room_id}`;
+      if (roomOccupancy.has(rKey)) {
+        ids.add(lesson.id);
+        ids.add(roomOccupancy.get(rKey)!);
       } else {
-        seenClassSlots.set(classKey, String(l.id));
+        roomOccupancy.set(rKey, lesson.id);
       }
     }
-    if (l.room_id) {
-      const roomKey = `${l.room_id}_${slotKey}`;
-      if (seenRoomSlots.has(roomKey)) {
-        ids.add(String(l.id));
-        ids.add(seenRoomSlots.get(roomKey)!);
+
+    if (lesson.class_id) {
+      const cKey = `${key}_${lesson.class_id}`;
+      if (classOccupancy.has(cKey)) {
+        ids.add(lesson.id);
+        ids.add(classOccupancy.get(cKey)!);
       } else {
-        seenRoomSlots.set(roomKey, String(l.id));
+        classOccupancy.set(cKey, lesson.id);
       }
     }
   }
+
   return ids;
 });
 
-// AdjustmentsHorizontal lessons based on active view mode and selections
+// Filtered Lessons by View Mode
 const filteredLessons = $derived.by(() => {
-  let list = allLessons;
   if (viewMode === "class") {
-    list = allLessons.filter((l) => String(l.class_id) === selectedClassId);
-  } else if (viewMode === "teacher") {
-    list = allLessons.filter((l) => String(l.teacher_id) === selectedTeacherId);
-  } else if (viewMode === "room") {
-    list = allLessons.filter((l) => String(l.room_id) === selectedRoomId);
-  } else if (viewMode === "subject") {
-    list = allLessons.filter((l) => String(l.subject_id) === selectedSubjectId);
+    if (!selectedClassId) return [];
+    return allLessons.filter(
+      (l) => String(l.class_id) === String(selectedClassId),
+    );
   }
 
-  // Text search filter
-  const query = searchTerm.trim().toLowerCase();
-  if (query) {
-    list = list.filter((l) => {
-      const sub = getSubjectName(l.subject_id).toLowerCase();
-      const teach = getTeacherName(l.teacher_id).toLowerCase();
-      const cls = getClassName(l.class_id).toLowerCase();
-      const rm = getRoomName(l.room_id).toLowerCase();
-      return (
-        sub.includes(query) ||
-        teach.includes(query) ||
-        cls.includes(query) ||
-        rm.includes(query)
-      );
-    });
+  if (viewMode === "teacher") {
+    if (!selectedTeacherId) return [];
+    return allLessons.filter(
+      (l) => String(l.teacher_id) === String(selectedTeacherId),
+    );
   }
 
-  return list;
+  if (viewMode === "room") {
+    if (!selectedRoomId) return [];
+    return allLessons.filter(
+      (l) => String(l.room_id) === String(selectedRoomId),
+    );
+  }
+
+  if (viewMode === "subject") {
+    if (!selectedSubjectId) return [];
+    return allLessons.filter(
+      (l) => String(l.subject_id) === String(selectedSubjectId),
+    );
+  }
+
+  return allLessons;
 });
 
-// Calculate Weekdays from configured slots or lessons
-const weekdays = $derived.by(() => {
-  const configuredDays = new Set<number>();
-
-  for (const slot of timeSlots) {
-    if (!slot.applicable_days) continue;
-    for (const val of String(slot.applicable_days).split(",")) {
-      const d = Number(val.trim());
-      if (Number.isInteger(d) && d >= 1 && d <= 7) configuredDays.add(d);
-    }
-  }
-
-  for (const l of allLessons) {
-    const d = Number(l.day_of_week);
-    if (Number.isInteger(d) && d >= 1 && d <= 7) configuredDays.add(d);
-  }
-
-  const days = configuredDays.size > 0 ? [...configuredDays] : [1, 2, 3, 4, 5];
-  const weekOrder = [7, 1, 2, 3, 4, 5, 6];
-  return days
-    .sort((a, b) => weekOrder.indexOf(a) - weekOrder.indexOf(b))
-    .map((day) => ({
-      value: day,
-      label: new Intl.DateTimeFormat(getLocale(), { weekday: "short" }).format(
-        new Date(Date.UTC(2023, 0, day)),
-      ),
-      isToday: false,
-    }));
-});
-
-// Draft solution lessons from solver job
+// Draft Lessons for AI Scheduler Preview
 const draftLessons = $derived.by(() => {
-  if (!previewDraft || !activeSolveJob?.best_solution) return [];
+  if (!previewDraft || !activeSolveJob?.solution) return [];
   try {
     const sol =
-      typeof activeSolveJob.best_solution === "string"
-        ? JSON.parse(activeSolveJob.best_solution)
-        : activeSolveJob.best_solution;
+      typeof activeSolveJob.solution === "string"
+        ? JSON.parse(activeSolveJob.solution)
+        : activeSolveJob.solution;
     const assignments = sol.assignments || [];
     return assignments.map((a: any) => ({
       ...a,
@@ -310,37 +278,23 @@ const draftLessons = $derived.by(() => {
 // Name Resolution Helpers
 function getSubjectName(subjectId: string): string {
   const sub = subjects.find((s) => String(s.id) === String(subjectId));
-  return sub
-    ? isArabic
-      ? sub.name_ar || sub.name
-      : sub.name || sub.name_ar
-    : isArabic
-      ? "مادة غير معروفة"
-      : "Subject";
+  return sub ? sub.name_ar || sub.name : (m.common_search_group_subjects ? m.common_search_group_subjects() : "Subject");
 }
 
 function getTeacherName(teacherId: string): string {
   const teach = teachers.find((t) => String(t.id) === String(teacherId));
-  return teach
-    ? isArabic
-      ? teach.name_ar || teach.full_name
-      : teach.full_name || teach.name_ar
-    : "";
+  return teach ? teach.name_ar || teach.full_name : "";
 }
 
 function getClassName(clsId: string): string {
   const cls = classes.find((c) => String(c.id) === String(clsId));
-  return cls
-    ? isArabic
-      ? cls.name_ar || cls.name
-      : cls.name || cls.name_ar
-    : "";
+  return cls ? cls.name_ar || cls.name : "";
 }
 
 function getRoomName(roomId?: string): string {
   if (!roomId) return "";
   const rm = rooms.find((r) => String(r.id) === String(roomId));
-  return rm ? (isArabic ? rm.name_ar || rm.name : rm.name || rm.name_ar) : "";
+  return rm ? rm.name_ar || rm.name : "";
 }
 
 function getSubjectColor(subjectId: string): string {
@@ -425,7 +379,7 @@ async function handleMoveLesson(
     } as any);
 
     toast.success(
-      isArabic ? "تم نقل الحصة بنجاح" : "Lesson moved successfully",
+      m.academics_schedule_lesson_moved ? m.academics_schedule_lesson_moved() : "Lesson moved successfully",
     );
     refetchSchedule();
   } catch (err) {
@@ -435,7 +389,7 @@ async function handleMoveLesson(
 
 async function handleDeleteLesson(lessonId: string) {
   toast.success(
-    isArabic ? "تم حذف الحصة من الجدول" : "Lesson removed from schedule",
+    m.academics_schedule_lesson_deleted ? m.academics_schedule_lesson_deleted() : "Lesson removed from schedule",
   );
   refetchSchedule();
 }
@@ -458,7 +412,7 @@ const error = $derived(
 );
 </script>
 
-<div class="h-full w-full flex flex-col items-stretch overflow-hidden">
+<div class="h-full w-full flex flex-col items-stretch overflow-hidden font-sans">
   <!-- Top Horizontal Command & Toolbar -->
   <ScheduleToolbar
     bind:activePeriodId
@@ -492,7 +446,7 @@ const error = $derived(
         </div>
       {:else if error}
         <ErrorState
-          title={isArabic ? "تعذر تحميل الجدول الدراسي" : "Failed to load schedule"}
+          title={m.academics_schedule_load_error ? m.academics_schedule_load_error() : "Failed to load schedule"}
           message={error instanceof Error ? error.message : "Error"}
           onRetry={refetchSchedule}
         />
@@ -503,17 +457,15 @@ const error = $derived(
           </div>
           <div class="flex flex-col gap-1">
             <h3 class="font-bold text-sm text-foreground">
-              {isArabic ? "لم يتم تعريف حصص دراسية" : "No Time Slots Configured"}
+              {m.academics_schedule_no_slots ? m.academics_schedule_no_slots() : "No Time Slots Configured"}
             </h3>
             <p class="text-xs text-muted-foreground leading-relaxed">
-              {isArabic
-                ? "يرجى إضافة الحصص وأوقات الأجراس لهذه الفترة الأكاديمية لبدء جدولة الدروس."
-                : "Add instructional periods and bells to begin scheduling classes."}
+              {m.academics_schedule_no_slots_desc ? m.academics_schedule_no_slots_desc() : "Add instructional periods to begin scheduling classes."}
             </p>
           </div>
           <Button size="sm" onclick={() => (isTimeSlotsSheetOpen = true)} class="gap-1.5 text-xs font-semibold">
             <ClockRotateRight size={13} />
-            <span>{isArabic ? "إعداد جدول الحصص الآن" : "Configure Time Slots"}</span>
+            <span>{m.academics_schedule_config_slots_btn ? m.academics_schedule_config_slots_btn() : "Configure Time Slots"}</span>
           </Button>
         </div>
       {:else}
@@ -525,9 +477,9 @@ const error = $derived(
               <span class="font-bold text-foreground">{getTeacherName(selectedTeacherId)}</span>
             </div>
             <div class="flex items-center gap-4 text-[11px] text-muted-foreground">
-              <span>{isArabic ? "الحصص الأسبوعية" : "Teaching Load"}: <strong class="text-foreground">{teacherWorkload.teachingCount}</strong></span>
-              <span>{isArabic ? "الحصص الشاغرة" : "Free Periods"}: <strong class="text-emerald-600 dark:text-emerald-400">{teacherWorkload.freeCount}</strong></span>
-              <span>{isArabic ? "القاعات المعينة" : "Rooms"}: <strong class="text-foreground">{teacherWorkload.assignedRooms}</strong></span>
+              <span>{m.common_schedule_teaching_load ? m.common_schedule_teaching_load() : "Teaching Load"}: <strong class="text-foreground">{teacherWorkload.teachingCount}</strong></span>
+              <span>{m.common_schedule_free_periods ? m.common_schedule_free_periods() : "Free Periods"}: <strong class="text-emerald-600 dark:text-emerald-400">{teacherWorkload.freeCount}</strong></span>
+              <span>{m.common_search_group_rooms ? m.common_search_group_rooms() : "Rooms"}: <strong class="text-foreground">{teacherWorkload.assignedRooms}</strong></span>
             </div>
           </div>
         {:else if roomOccupancy}
@@ -536,12 +488,12 @@ const error = $derived(
               <Pin size={14} class="text-emerald-500" />
               <span class="font-bold text-foreground">{getRoomName(selectedRoomId)}</span>
               {#if roomOccupancy.capacity}
-                <Badge variant="outline" class="h-4 text-[9px]">{isArabic ? `السعة: ${roomOccupancy.capacity}` : `Capacity: ${roomOccupancy.capacity}`}</Badge>
+                <Badge variant="outline" class="h-4 text-[9px]">{m.academics_class_label_capacity ? m.academics_class_label_capacity() : "Capacity"}: {roomOccupancy.capacity}</Badge>
               {/if}
             </div>
             <div class="flex items-center gap-4 text-[11px] text-muted-foreground">
-              <span>{isArabic ? "الحصص المشغولة" : "Occupied Periods"}: <strong class="text-foreground">{roomOccupancy.occupiedCount}</strong></span>
-              <span>{isArabic ? "نسبة الإشغال" : "Occupancy Rate"}: <strong class="text-primary">{roomOccupancy.occupancyRate}%</strong></span>
+              <span>{m.common_schedule_occupied_periods ? m.common_schedule_occupied_periods() : "Occupied Periods"}: <strong class="text-foreground">{roomOccupancy.occupiedCount}</strong></span>
+              <span>{m.common_schedule_occupancy_rate ? m.common_schedule_occupancy_rate() : "Occupancy Rate"}: <strong class="text-primary">{roomOccupancy.occupancyRate}%</strong></span>
             </div>
           </div>
         {/if}

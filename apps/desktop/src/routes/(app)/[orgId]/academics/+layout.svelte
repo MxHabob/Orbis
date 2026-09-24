@@ -11,8 +11,9 @@ import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import ArchivedBanner from "$lib/features/academics/archived-banner.svelte";
 import type { Snippet } from "svelte";
+import type { LayoutData } from "./$types";
 
-let { data, children }: { data: { orgId: string }; children: Snippet } =
+let { data, children }: { data: LayoutData; children: Snippet } =
   $props();
 
 const classesQuery = createClassesQuery(() => data.orgId);

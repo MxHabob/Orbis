@@ -24,14 +24,8 @@ import { Switch } from "@orbis/ui/switch";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Badge } from "@orbis/ui/badge";
 import { Separator } from "@orbis/ui/separator";
-import {
-  Grid,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableCell,
-} from "@orbis/ui/table";
+import { DataTable, BadgeCell } from "$lib/tables";
+import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -219,6 +213,35 @@ function decisionLabel(d: string) {
       return d;
   }
 }
+
+const previewColumns: OrbisColumnDef[] = [
+  {
+    id: "student_name",
+    prop: "student_name",
+    header: m.common_word_student(),
+    name: m.common_word_student(),
+    width: 280,
+    size: 280,
+    cellClass: "font-semibold text-foreground",
+  },
+  {
+    id: "decision",
+    prop: "decision",
+    header: m.common_promo_decision(),
+    name: m.common_promo_decision(),
+    width: 160,
+    size: 160,
+    cell: BadgeCell,
+  },
+];
+
+const previewGridRows = $derived(
+  (previewDetails || []).map((detail, idx) => ({
+    id: detail.student_id || `promo-preview-${idx}`,
+    student_name: detail.student_name || "—",
+    decision: detail.decision || "promoted",
+  }))
+);
 </script>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide pb-10">
@@ -521,39 +544,12 @@ function decisionLabel(d: string) {
             </CardTitle>
           </CardHeader>
           <CardContent class="p-0">
-            <div class="overflow-x-auto">
-              <Grid>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead class="text-start">{m.common_word_student()}</TableHead>
-                    <TableHead class="text-start">{m.common_promo_decision()}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {#each previewDetails.slice(0, 50) as detail}
-                    <TableRow>
-                      <TableCell class="text-start font-sans">
-                        <div>
-                          <div class="font-medium text-sm text-foreground">{detail.student_name}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell class="text-start font-sans">
-                        <Badge variant={decisionVariant(detail.decision)}>
-                          {decisionLabel(detail.decision)}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  {/each}
-                  {#if previewDetails.length > 50}
-                    <TableRow>
-                      <TableCell colspan={6} class="text-center text-sm text-muted-foreground py-4 font-sans">
-                        +{previewDetails.length - 50} more students...
-                      </TableCell>
-                    </TableRow>
-                  {/if}
-                </TableBody>
-              </Grid>
-            </div>
+            <DataTable
+              columns={previewColumns}
+              source={previewGridRows}
+              minHeight="260px"
+              maxHeight="440px"
+            />
           </CardContent>
         </Card>
       </div>

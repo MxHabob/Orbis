@@ -1,89 +1,45 @@
+<!--
+  @component ClassLayout
+  SvelteKit Layout for Class routes (/academics/classes/[classId]/*).
+  Provides the cohesive header shell with breadcrumb navigation,
+  class capacity badges, and sub-page context.
+-->
 <script lang="ts">
 import { page } from "$app/state";
-import { createQuery } from "@tanstack/svelte-query";
-import { api } from "$lib/api";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { BookOpen, ChevronRight, Users } from "@orbis/icons";
-import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { Users } from "@orbis/icons";
+import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
-import { academicContext } from "$lib/stores";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import CapacityIndicator from "$lib/shared/components/capacity-indicator.svelte";
+import {
+  createClassQuery,
+  createClassStudentsQuery,
+} from "$lib/features/academics";
+import type { Snippet } from "svelte";
+import type { LayoutData } from "./$types";
 
-let { children } = $props();
+let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
-const classId = $derived(String(page.params.classId || ""));
+const classId = $derived(data.classId || String(page.params.classId || ""));
+const orgId = $derived(data.orgId || String(page.params.orgId || ""));
 const classSubjectId = $derived(
   page.params.classSubjectId ? String(page.params.classSubjectId) : null,
 );
-const orgId = $derived(String(page.params.orgId || ""));
-const periodId = $derived(academicContext.effectivePeriodId);
-const isArabic = $derived(getLocale() === "ar");
 
-// Class Info Query
-const classQuery = createQuery(() => ({
-  queryKey: ["class-detail-master-layout", classId, periodId],
-  queryFn: () => api.getClass(classId),
-  enabled: !!classId,
-}));
+// Class Info Query using consolidated feature query
+const classQuery = createClassQuery(() => classId);
+const studentsQuery = createClassStudentsQuery(() => classId);
 
-const studentsQuery = createQuery(() => ({
-  queryKey: ["class-students-count-master-layout", classId, periodId],
-  queryFn: () =>
-    api
-      .listStudents()
-      .then((res) =>
-        (res.items || []).filter(
-          (s: any) => String(s.current_class_id) === String(classId),
-        ),
-      )
-      .catch(() => []),
-  enabled: !!classId,
-}));
-
-// Subject Info Query (only when classSubjectId is present)
-const subjectQuery = createQuery(() => ({
-  queryKey: ["class-subject-title-layout", classId, classSubjectId, periodId],
-  queryFn: async () => {
-    if (!classSubjectId) return null;
-    const offerings = await api.listClassSubjects(classId, periodId || "");
-    const offering = offerings.find(
-      (o: any) => String(o.id) === String(classSubjectId),
-    );
-    if (!offering) return null;
-    const catalog = await api.listSubjects();
-    const catSub = catalog.find(
-      (s: any) => String(s.id) === String(offering.subject_id),
-    );
-    return { ...offering, catalog: catSub };
-  },
-  enabled: !!classId && !!classSubjectId,
-}));
-
-const classData = $derived(classQuery.data as any);
-const subjectData = $derived(subjectQuery.data as any);
-const isLoading = $derived(
-  classQuery.isLoading || (!!classSubjectId && subjectQuery.isLoading),
-);
-const studentsCount = $derived(((studentsQuery.data || []) as any[]).length);
+const classData = $derived(classQuery.data);
+const students = $derived(studentsQuery.data ?? []);
+const isLoading = $derived(classQuery.isLoading);
+const studentsCount = $derived(students.length);
 
 const classDisplayName = $derived.by(() => {
   if (!classData) return "";
-  return isArabic
-    ? classData.name_ar || classData.name
-    : classData.name || classData.name_ar;
-});
-
-const subjectDisplayName = $derived.by(() => {
-  if (!subjectData) return "";
-  return isArabic
-    ? subjectData.catalog?.name_ar ||
-        subjectData.catalog?.name ||
-        subjectData.subject_id
-    : subjectData.catalog?.name ||
-        subjectData.catalog?.name_ar ||
-        subjectData.subject_id;
+  return classData.name_ar || classData.name;
 });
 
 const currentPath = $derived(page.url.pathname);
@@ -109,19 +65,17 @@ const backHref = $derived.by(() => {
 
 const backLabel = $derived.by(() => {
   if (classSubjectId) {
-    return isArabic ? "مواد الفصل" : "Class Subjects";
+    return m.common_search_group_classes ? m.common_search_group_classes() : "Class Subjects";
   }
   if (isStudentsPage || isCurriculumListPage) {
-    return isArabic ? "لوحة تحكم الفصل" : "Class Dashboard";
+    return m.common_nav_dashboard ? m.common_nav_dashboard() : "Class Dashboard";
   }
-  return isArabic ? "قائمة الفصول" : "Classes List";
+  return m.common_card_active_classes ? m.common_card_active_classes() : "Classes List";
 });
 </script>
 
-<div
-  class="h-full w-full flex flex-col overflow-hidden bg-background font-sans text-start"
->
-  <!-- Unified Breadcrumb Header: Class Name / Subject Name -->
+<div class="h-full w-full flex flex-col overflow-hidden bg-background font-sans text-start">
+  <!-- Unified Breadcrumb Header -->
   <DetailPageHeader {backHref} {backLabel}>
     {#if isLoading}
       <Skeleton class="h-6 w-36" />
@@ -133,47 +87,24 @@ const backLabel = $derived.by(() => {
           <a
             href={localizeHref(`/${orgId}/academics/classes/${classId}`)}
             class="text-base font-bold text-muted-foreground hover:text-primary transition-colors truncate shrink-0"
-            title={isArabic
-              ? "الانتقال إلى لوحة تحكم الفصل"
-              : "Go to Class Dashboard"}
           >
             {classDisplayName || classId}
           </a>
           <span class="text-muted-foreground/60 text-sm font-semibold">/</span>
         {:else}
-          <h1
-            class="text-lg font-bold tracking-tight text-foreground truncate shrink min-w-0"
-          >
+          <h1 class="text-lg font-bold tracking-tight text-foreground truncate shrink min-w-0">
             {classDisplayName || classId}
           </h1>
         {/if}
 
-        <!-- Subpage Context: Specific Subject Name or Section -->
-        {#if classSubjectId && subjectData}
-          <div class="flex items-center gap-2 min-w-0">
-            <h1 class="text-base font-bold text-foreground truncate">
-              {subjectDisplayName}
-            </h1>
-            <Badge
-              variant={subjectData.is_active === 0 ? "outline" : "secondary"}
-              class="text-[9px] py-0 px-1.5 h-4.5 rounded font-sans uppercase shrink-0"
-            >
-              {subjectData.is_active === 0
-                ? isArabic
-                  ? "غير نشط"
-                  : "Inactive"
-                : isArabic
-                  ? "نشط"
-                  : "Active"}
-            </Badge>
-          </div>
-        {:else if isStudentsPage}
+        <!-- Subpage Context Title -->
+        {#if isStudentsPage}
           <h1 class="text-base font-bold text-foreground truncate">
-            {isArabic ? "الطلاب" : "Students"}
+            {m.academics_class_detail_tab_students ? m.academics_class_detail_tab_students() : "Students"}
           </h1>
         {:else if isCurriculumListPage}
           <h1 class="text-base font-bold text-foreground truncate">
-            {isArabic ? "المواد والمناهج" : "Curriculum & Subjects"}
+            {m.academics_overview_card_classes_desc ? m.academics_overview_card_classes_desc() : "Curriculum & Subjects"}
           </h1>
         {/if}
 
@@ -193,20 +124,20 @@ const backLabel = $derived.by(() => {
               size="sm"
             />
           </div>
-          {#if classData.level}
+          {#if classData.grade_level}
             <Badge
               variant="outline"
               class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0 font-sans"
             >
-              {classData.level}
+              {classData.grade_level}
             </Badge>
           {/if}
         {/if}
       </div>
     {:else}
-      <span class="text-sm text-muted-foreground"
-        >{m.error_not_found ? m.error_not_found() : "Not found"}</span
-      >
+      <span class="text-sm text-muted-foreground">
+        {m.error_not_found ? m.error_not_found() : "Not found"}
+      </span>
     {/if}
   </DetailPageHeader>
 

@@ -1,15 +1,35 @@
+<!--
+  @component ClassDetails
+  Feature component for the Class Dashboard view.
+  Displays class quick actions, real attendance metrics, scheduled lessons,
+  class subject offerings, and pedagogical insights.
+-->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { createQuery } from "@tanstack/svelte-query";
-import { api, extractErrorMessage } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Button } from "@orbis/ui/button";
 import { MetricProgress } from "@orbis/ui";
-import { AppNotification, ChartBar, ChatBubble, CheckCircle, CheckSquare, DocumentPage, InfoCircle, Share, Users } from "@orbis/icons";
+import {
+  AppNotification,
+  ChartBar,
+  ChatBubble,
+  CheckCircle,
+  CheckSquare,
+  DocumentPage,
+  InfoCircle,
+  Share,
+  Users,
+} from "@orbis/icons";
 import { fade } from "svelte/transition";
 import { academicContext } from "$lib/stores";
-import { getLocale } from "$lib/paraglide/runtime";
 import { toast } from "@orbis/ui";
+import { extractErrorMessage } from "$lib/api";
+
+import {
+  createClassQuery,
+  createClassStudentsQuery,
+  createClassAttendanceQuery,
+} from "$lib/features/academics";
 
 import QuickActionButton from "$lib/shared/components/quick-action-button.svelte";
 import ClassScheduleWidget from "$lib/shared/components/class-schedule-widget.svelte";
@@ -20,89 +40,82 @@ import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
 let { orgId, classId }: { orgId: string; classId: string } = $props();
 
 const periodId = $derived(academicContext.effectivePeriodId);
-const isArabic = $derived(getLocale() === "ar");
+const today = $derived(new Date().toISOString().slice(0, 10));
 
-// ── TanStack Queries ──────────────────────────────────────────────────────────
-const classQuery = createQuery(() => ({
-  queryKey: ["class-detail-page", classId, periodId],
-  queryFn: () => api.getClass(classId),
-  enabled: !!classId,
-}));
+// ── Feature Queries ──────────────────────────────────────────────────────────
+const classQuery = createClassQuery(() => classId);
+const studentsQuery = createClassStudentsQuery(() => classId);
+const attendanceQuery = createClassAttendanceQuery(
+  () => classId,
+  () => today,
+);
 
-const classData = $derived(classQuery.data as any);
+const classData = $derived(classQuery.data);
+const students = $derived(studentsQuery.data ?? []);
+const attendanceRecords = $derived(attendanceQuery.data ?? []);
+
 const classDisplayName = $derived.by(() => {
   if (!classData) return "";
-  return isArabic
-    ? classData.name_ar || classData.name
-    : classData.name || classData.name_ar;
+  return classData.name_ar || classData.name;
 });
 
-const classMetricsQuery = createQuery(() => ({
-  queryKey: ["class-metrics", classId, periodId],
-  queryFn: () => Promise.resolve([]),
-  enabled: !!classId && !!periodId,
-  staleTime: 5 * 60 * 1000,
-}));
+const isLoading = $derived(
+  classQuery.isLoading || studentsQuery.isLoading || attendanceQuery.isLoading,
+);
+const error = $derived(
+  classQuery.error || studentsQuery.error || attendanceQuery.error,
+);
 
-const isLoading = $derived(classMetricsQuery.isLoading);
-const error = $derived(classMetricsQuery.error);
+// Attendance Calculations based on real attendance records
+const totalAttendance = $derived(attendanceRecords.length);
+const presentCount = $derived(
+  attendanceRecords.filter((r) => r.status === "present").length,
+);
+const absentCount = $derived(
+  attendanceRecords.filter((r) => r.status === "absent").length,
+);
+const lateCount = $derived(
+  attendanceRecords.filter((r) => r.status === "late").length,
+);
+const excusedCount = $derived(
+  attendanceRecords.filter((r) => r.status === "excused").length,
+);
 
-const attendanceRate = $derived.by(() => {
-  const metrics = (classMetricsQuery.data || []) as any[];
-  if (metrics.length === 0) return 0;
-  const m = metrics[0];
-  if (!m || !m.total_attendance_records || m.total_attendance_records === 0)
-    return 0;
-  return Math.round((m.present_records / m.total_attendance_records) * 100);
-});
-
-const presentCount = $derived.by(
-  () => ((classMetricsQuery.data || [])[0] as any)?.present_records || 0,
-);
-const absentCount = $derived.by(
-  () => ((classMetricsQuery.data || [])[0] as any)?.absent_records || 0,
-);
-const lateCount = $derived.by(
-  () => ((classMetricsQuery.data || [])[0] as any)?.late_records || 0,
-);
-const excusedCount = $derived.by(
-  () => ((classMetricsQuery.data || [])[0] as any)?.excused_records || 0,
-);
-const totalRecords = $derived(
-  presentCount + absentCount + lateCount + excusedCount,
+const attendanceRate = $derived(
+  totalAttendance > 0 ? Math.round((presentCount / totalAttendance) * 100) : 0,
 );
 
 const presentPct = $derived(
-  totalRecords > 0 ? (presentCount / totalRecords) * 100 : 0,
+  totalAttendance > 0 ? (presentCount / totalAttendance) * 100 : 0,
 );
 const absentPct = $derived(
-  totalRecords > 0 ? (absentCount / totalRecords) * 100 : 0,
+  totalAttendance > 0 ? (absentCount / totalAttendance) * 100 : 0,
 );
 const latePct = $derived(
-  totalRecords > 0 ? (lateCount / totalRecords) * 100 : 0,
+  totalAttendance > 0 ? (lateCount / totalAttendance) * 100 : 0,
 );
 const excusedPct = $derived(
-  totalRecords > 0 ? (excusedCount / totalRecords) * 100 : 0,
+  totalAttendance > 0 ? (excusedCount / totalAttendance) * 100 : 0,
 );
 
 function refetchAll() {
-  classMetricsQuery.refetch();
+  classQuery.refetch();
+  studentsQuery.refetch();
+  attendanceQuery.refetch();
 }
 
 function handleShareLink() {
-  navigator.clipboard.writeText(window.location.href);
-  toast.success(
-    isArabic
-      ? "تم نسخ رابط الفصل إلى الحافظة"
-      : "Class link copied to clipboard",
-  );
+  if (typeof window !== "undefined") {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success(
+      m.common_copied_to_clipboard ? m.common_copied_to_clipboard() : "Class link copied to clipboard",
+    );
+  }
 }
 
 function handleNotifications() {
   toast.success(
-    isArabic
-      ? "تم تفعيل الإشعارات لهذا الفصل"
-      : "Notifications enabled for this class",
+    m.common_notifications_enabled ? m.common_notifications_enabled() : "Notifications enabled for this class",
   );
 }
 </script>
@@ -121,34 +134,34 @@ function handleNotifications() {
     {/if}
 
     <QuickActionButton 
-      label={isArabic ? "الإشعارات" : "Notifications"} 
+      label={m.common_nav_notifications ? m.common_nav_notifications() : "Notifications"} 
       icon={AppNotification} 
       onclick={handleNotifications}
     />
     <QuickActionButton 
-      label={isArabic ? "مشاركة الرابط" : "Share"} 
+      label={m.common_action_share ? m.common_action_share() : "Share"} 
       icon={Share} 
       onclick={handleShareLink}
     />
     <QuickActionButton 
-      label={isArabic ? "تسجيل الحضور" : "Attendance"} 
+      label={m.common_nav_attendance ? m.common_nav_attendance() : "Attendance"} 
       icon={Users} 
-      onclick={() => toast.info(isArabic ? "فتح سجل الحضور..." : "Opening attendance register...")}
+      onclick={() => toast.info(m.common_nav_attendance ? m.common_nav_attendance() : "Attendance")}
     />
     <QuickActionButton 
-      label={isArabic ? "الواجبات" : "Assignments"} 
+      label={m.common_assessment_option_homework ? m.common_assessment_option_homework() : "Assignments"} 
       icon={DocumentPage} 
-      onclick={() => toast.info(isArabic ? "إدارة الواجبات..." : "Manage assignments...")}
+      onclick={() => toast.info(m.common_assessment_option_homework ? m.common_assessment_option_homework() : "Assignments")}
     />
     <QuickActionButton 
-      label={isArabic ? "الملفات" : "Files"} 
+      label={m.common_nav_documents ? m.common_nav_documents() : "Files"} 
       icon={CheckSquare} 
-      onclick={() => toast.info(isArabic ? "مستندات الفصل..." : "Class documents...")}
+      onclick={() => toast.info(m.common_nav_documents ? m.common_nav_documents() : "Files")}
     />
     <QuickActionButton 
-      label={isArabic ? "الإعلانات" : "Announcements"} 
+      label={m.common_nav_announcements ? m.common_nav_announcements() : "Announcements"} 
       icon={ChatBubble} 
-      onclick={() => toast.info(isArabic ? "إرسال إعلان للطلاب وأولياء الأمور..." : "Post class announcement...")}
+      onclick={() => toast.info(m.common_nav_announcements ? m.common_nav_announcements() : "Announcements")}
     />
   </div>
 
@@ -167,61 +180,55 @@ function handleNotifications() {
     </div>
   {:else}
     <div class="flex flex-col animate-fade-in text-start gap-4" in:fade={{ duration: 150 }}>
-      
       <!-- Top Metrics Row using official @orbis/ui MetricProgress -->
       <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
         <MetricProgress
           card={true}
-          title={isArabic ? "نسبة الحضور الأسبوعي" : "Student Weekly Attendance"}
-          subtitle={attendanceRate > 0 ? (isArabic ? `${attendanceRate}% من الطلاب حاضرون هذا الأسبوع` : `${attendanceRate}% of students were present this week`) : (isArabic ? "لا توجد سجلات حضور مسجلة" : "No attendance data yet")}
-          displayValue={`${attendanceRate}%`}
+          title={m.common_nav_attendance ? m.common_nav_attendance() : "Attendance"}
+          subtitle={totalAttendance > 0 
+            ? `${attendanceRate}%`
+            : (m.common_attendance_empty_title ? m.common_attendance_empty_title() : "No attendance recorded today")}
+          displayValue={totalAttendance > 0 ? `${attendanceRate}%` : "—"}
           icon={Users}
-          segments={[
-            { label: isArabic ? "حاضر" : "Present", value: presentPct, tone: "success" },
-            { label: isArabic ? "غائب" : "Absent", value: absentPct, tone: "destructive" },
-            { label: isArabic ? "متأخر" : "Late", value: latePct, tone: "warning" },
-            { label: isArabic ? "معذور" : "Excused", value: excusedPct, tone: "info" },
-          ]}
+          segments={totalAttendance > 0 ? [
+            { label: m.common_attendance_status_present ? m.common_attendance_status_present() : "Present", value: presentPct, tone: "success" },
+            { label: m.common_attendance_status_absent ? m.common_attendance_status_absent() : "Absent", value: absentPct, tone: "destructive" },
+            { label: m.common_attendance_status_late ? m.common_attendance_status_late() : "Late", value: latePct, tone: "warning" },
+            { label: m.common_attendance_status_excused ? m.common_attendance_status_excused() : "Excused", value: excusedPct, tone: "info" },
+          ] : []}
         />
 
         <MetricProgress
           card={true}
-          title={isArabic ? "المستوى الأكاديمي العام" : "Student Performance"}
-          subtitle={isArabic ? "لا توجد بيانات أداء" : "No performance data"}
-          displayValue="0%"
-          icon={ChartBar}
+          title={m.common_classes_enrolled_students ? m.common_classes_enrolled_students() : "Enrolled Students"}
+          subtitle={`${students.length} ${m.common_word_student ? m.common_word_student() : "students"}`}
+          displayValue={String(students.length)}
+          icon={Users}
           segments={[]}
         />
 
         <MetricProgress
           card={true}
-          title={isArabic ? "إنجاز المنهاج الدراسي" : "Curriculum Progress"}
-          subtitle={isArabic ? "لا توجد بيانات للمنهاج" : "No curriculum data"}
-          displayValue="0%"
+          title={m.academics_class_label_capacity ? m.academics_class_label_capacity() : "Class Capacity"}
+          subtitle={classData?.capacity ? `${classData.capacity}` : "—"}
+          displayValue={classData?.capacity ? `${Math.round((students.length / classData.capacity) * 100)}%` : "—"}
           icon={CheckCircle}
           segments={[]}
         />
-
       </div>
 
       <!-- Main Operational Workspace (70/30 Split) -->
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-10">
-        
-        <!-- Left Column: Primary Content (70%) -->
+        <!-- Left Column: Timetable Grid (70%) -->
         <div class="lg:col-span-7 flex min-w-0 flex-col gap-4">
-          <!-- Timetable Component (Compact & Scaled) -->
           <ClassScheduleWidget {classId} {periodId} />
         </div>
 
-        <!-- Right Column: Secondary Content (30%) -->
+        <!-- Right Column: Subjects & AI Insights (30%) -->
         <div class="lg:col-span-3 flex min-w-0 flex-col gap-4">
-          <!-- Class Subjects List -->
           <ClassSubjectsWidget {classId} {periodId} />
-
-          <!-- AI Recommendations -->
           <ClassRecommendationsWidget {classId} {periodId} />
         </div>
-
       </div>
 
     </div>
