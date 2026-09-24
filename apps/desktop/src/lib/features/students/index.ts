@@ -1,2 +1,12 @@
+export { default as StudentDirectory } from "./student-directory.svelte";
+export { default as StudentForm } from "./student-form.svelte";
+export { default as StudentTable } from "./student-table.svelte";
+export { default as StudentDetails } from "./student-details.svelte";
+export { default as StudentAttendance } from "./student-attendance.svelte";
+export { default as StudentBehavior } from "./student-behavior.svelte";
+export { default as StudentDocuments } from "./student-documents.svelte";
+export { default as StudentFees } from "./student-fees.svelte";
+export { default as StudentGrades } from "./student-grades.svelte";
+export { default as StudentGuardians } from "./student-guardians.svelte";
 export { studentsStore } from "./store.svelte";
 export * from "./queries";

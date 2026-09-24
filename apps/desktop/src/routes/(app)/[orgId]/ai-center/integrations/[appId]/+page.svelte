@@ -16,8 +16,8 @@ import {
 import type { OrbisApp } from "@orbis/app-store";
 import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
-import AppIcon from "$lib/features/ai-center/components/integrations/app-icon.svelte";
-import AppConnectForm from "$lib/features/ai-center/components/integrations/app-connect-form.svelte";
+import AppIcon from "$lib/features/ai/components/integrations/app-icon.svelte";
+import AppConnectForm from "$lib/features/ai/components/integrations/app-connect-form.svelte";
 import { l } from "$lib/core/i18n";
     import { toast } from "@orbis/ui/sonner";
 

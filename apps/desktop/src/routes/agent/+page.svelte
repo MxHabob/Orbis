@@ -1,5 +1,5 @@
 <script lang="ts">
-import AskOrbisSidebar from "$lib/features/ai-agent/ui/views/sidebar.svelte";
+import AskOrbisSidebar from "$lib/features/ai/views/sidebar.svelte";
 </script>
 
 <div class="flex flex-col h-screen w-screen overflow-hidden bg-card text-card-foreground">
