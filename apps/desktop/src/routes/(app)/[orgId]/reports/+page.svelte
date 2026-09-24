@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
+import { page } from "$app/state";
 import { api, extractErrorMessage } from "$lib/api";
 import { academicContext } from "$lib/stores";
 import { l, isAr, formatDate } from "$lib/core/i18n";
@@ -34,22 +34,52 @@ import {
   DialogFooter,
 } from "@orbis/ui/dialog";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, Banknotes, BookOpen, Calendar, ChartBar, CheckCircle, ClockRotateRight, Document, DocumentChartBar, DocumentPage, Download, Eye, Keyframes, Play, Refresh, Search, Sparkles, Users } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  Banknotes,
+  BookOpen,
+  Calendar,
+  ChartBar,
+  CheckCircle,
+  ClockRotateRight,
+  Document,
+  DocumentChartBar,
+  DocumentPage,
+  Download,
+  Eye,
+  Keyframes,
+  Play,
+  Refresh,
+  Search,
+  Sparkles,
+  Users,
+} from "@orbis/icons";
 
 import MetricsView from "$lib/features/metrics/metrics-view.svelte";
+import { createReportDefinitionsQuery, createGenerateReportMutation } from "$lib/features/reporting/queries";
+import { createTemplatesQuery } from "$lib/features/templates/queries";
+import { createPeriodsQuery, createClassesQuery } from "$lib/features/academics/queries";
 
 let { data }: { data: { orgId: string } } = $props();
+
+const orgId = $derived(data?.orgId || page.params.orgId || "");
 
 let activeMainTab = $state<"reports" | "analytics">("reports");
 let selectedCategory = $state<string>("all");
 let searchQuery = $state<string>("");
 
-// Reports & Templates state
-let reportDefinitions = $state<ReportDefinitionDto[]>([]);
-let templates = $state<TemplateDto[]>([]);
-let periods = $state<AcademicPeriodDto[]>([]);
-let classes = $state<ClassDto[]>([]);
-let isLoading = $state(true);
+// TanStack Query layer for deterministic caching and lifecycle
+const defsQuery = createReportDefinitionsQuery(() => orgId);
+const templatesQuery = createTemplatesQuery(() => orgId);
+const periodsQuery = createPeriodsQuery(() => orgId);
+const classesQuery = createClassesQuery(() => orgId);
+const generateMutation = createGenerateReportMutation();
+
+const reportDefinitions = $derived(defsQuery.data ?? []);
+const templates = $derived(templatesQuery.data ?? []);
+const periods = $derived(periodsQuery.data ?? []);
+const classes = $derived(classesQuery.data ?? []);
+const isLoading = $derived(defsQuery.isLoading || templatesQuery.isLoading || periodsQuery.isLoading || classesQuery.isLoading);
 
 // Report Generation Execution State
 let selectedDefinition = $state<ReportDefinitionDto | null>(null);
@@ -66,36 +96,6 @@ let currentJobId = $state<string>("");
 // Preview State
 let isPreviewOpen = $state(false);
 let previewBlobUrl = $state<string>("");
-
-onMount(async () => {
-  await loadData();
-});
-
-async function loadData() {
-  isLoading = true;
-  try {
-    const [defs, tmpls, pers, cls] = await Promise.all([
-      api.listReportDefinitions().catch(() => []),
-      api.listTemplates().catch(() => []),
-      api.listAcademicPeriods().catch(() => []),
-      api.listClasses().catch(() => []),
-    ]);
-
-    reportDefinitions = defs || [];
-    templates = tmpls || [];
-    periods = pers || [];
-    classes = cls || [];
-
-    if (periods.length > 0 && !selectedPeriodId) {
-      selectedPeriodId = academicContext.effectivePeriodId || periods[0].id;
-    }
-  } catch (e) {
-    console.error("Failed to load reporting data:", e);
-    toast.error("فشل تحميل تعريفات وقوالب التقارير");
-  } finally {
-    isLoading = false;
-  }
-}
 
 // Category filter
 const categories = [
@@ -132,6 +132,9 @@ function openGenerateSheet(def: ReportDefinitionDto) {
   isGenerating = false;
   jobStatus = "";
   currentJobId = "";
+  if (!selectedPeriodId && periods.length > 0) {
+    selectedPeriodId = academicContext.effectivePeriodId || periods[0].id;
+  }
   isSheetOpen = true;
 }
 
@@ -157,14 +160,14 @@ async function handleExecuteReport() {
       class_id: selectedClassId || undefined,
       date_from: dateFrom || undefined,
       date_to: dateTo || undefined,
-      org_id: data.orgId,
+      org_id: orgId,
     };
 
-    const jobId = await api.generateReport(
-      matchingTemplate.id,
-      selectedFormat,
-      params,
-    );
+    const jobId = await generateMutation.mutateAsync({
+      reportCode: matchingTemplate.id,
+      format: selectedFormat,
+      parameters: params,
+    });
     currentJobId = jobId;
 
     // Poll job status
@@ -252,7 +255,7 @@ function handleDownloadCurrent() {
       </div>
 
       <!-- Main Tabs Switcher -->
-      <Tabs value={activeMainTab} onValueChange={(v: any) => (activeMainTab = v)}>
+      <Tabs value={activeMainTab} onValueChange={(v) => (activeMainTab = v as "reports" | "analytics")}>
         <TabsList class="bg-muted/40 p-1 rounded-xl border border-border/60">
           <TabsTrigger value="reports" class="text-xs font-semibold gap-1.5 px-3 py-1.5 rounded-lg">
             <DocumentChartBar class="w-3.5 h-3.5" />
@@ -269,7 +272,7 @@ function handleDownloadCurrent() {
 
   {#if activeMainTab === "analytics"}
     <div class="w-full">
-      <MetricsView orgId={data.orgId} />
+      <MetricsView orgId={orgId} />
     </div>
   {:else}
     <!-- Categories Navigation & Search -->

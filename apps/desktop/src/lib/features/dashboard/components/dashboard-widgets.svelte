@@ -1,6 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api } from "$lib/api/client";
+import { createDashboardStatsQuery } from "../queries";
+import { extractErrorMessage } from "$lib/api";
 import WelcomeSection from "./welcome-section.svelte";
 import QuickActions from "./quick-actions.svelte";
 import WidgetCards from "./widget-cards.svelte";
@@ -12,42 +13,23 @@ import { SetupProgress } from "$lib/features/setup-cards";
 
 let { orgId }: { orgId: string } = $props();
 
-let stats = $state<any>(null);
-let isLoading = $state(true);
-let error = $state<string | null>(null);
-
-async function fetchStats() {
-  isLoading = true;
-  error = null;
-  try {
-    stats = await api.getDashboard();
-  } catch (e) {
-    error = e instanceof Error ? e.message : String(e);
-    console.error("Error loading dashboard stats:", e);
-  } finally {
-    isLoading = false;
-  }
-}
-
-// Fetch statistics whenever the organization ID changes
-$effect(() => {
-  if (orgId) {
-    fetchStats();
-  }
-});
+const statsQuery = createDashboardStatsQuery(() => orgId);
+const stats = $derived(statsQuery.data ?? null);
+const isLoading = $derived(statsQuery.isLoading);
+const error = $derived(statsQuery.error ? extractErrorMessage(statsQuery.error) : null);
 </script>
 
-<div class="flex flex-col justify-center min-h-[calc(100vh-120px)] max-w-3xl mx-auto w-full select-none">
+<div class="flex flex-col min-h-[calc(100vh-120px)] max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 gap-6">
 	{#if isLoading}
 		<DashboardSkeleton />
 	{:else if error}
 		<ErrorState 
 			title={m.common_error_load_overview()} 
 			message={error} 
-			onRetry={fetchStats} 
+			onRetry={() => statsQuery.refetch()} 
 		/>
 	{:else}
-		<div class="flex flex-col items-center text-center pt-6 pb-10 w-full">
+		<div class="flex flex-col items-center text-center pt-2 pb-6 w-full">
 			<WelcomeSection type="both" {stats} {orgId} />
 		</div>
 		<SetupProgress {orgId} />

@@ -312,7 +312,7 @@ let baseCurrencyCode = $derived(
                 </TableCell>
                 <TableCell class="text-end text-xs font-bold font-mono">
                   {#if c.is_base === true || c.is_base === 1}
-                    <span class="text-foreground select-none">1.0000</span>
+                    <span class="text-foreground">1.0000</span>
                   {:else if editingRateCode === c.code}
                     <div class="flex items-center justify-end gap-1.5" transition:fade={{ duration: 100 }}>
                       <Input

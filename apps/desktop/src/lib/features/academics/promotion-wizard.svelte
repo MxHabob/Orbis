@@ -14,7 +14,6 @@ import { onMount } from "svelte";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@orbis/ui/card";
@@ -43,7 +42,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@orbis/ui/alert-dialog";
-import { Skeleton } from "@orbis/ui/skeleton";
 import { Progress } from "@orbis/ui/progress";
 import { AdjustmentsHorizontal, ArrowLeft, ArrowPath, ArrowRight, BookOpen, Check, Play, Plus, Trash, User, UserBadgeCheck, UserMinus, Users } from "@orbis/icons";
 import type {
@@ -59,10 +57,10 @@ let { orgId }: { orgId: string } = $props();
 
 let currentStep = $state(0);
 const steps = [
-  { key: "config", label: m.common_word_settings },
-  { key: "mapping", label: m.common_promo_step_mapping },
-  { key: "preview", label: m.common_action_preview },
-  { key: "execute", label: m.common_calendar_execute },
+  { key: "config", label: () => m.common_word_settings ? m.common_word_settings() : "الإعدادات" },
+  { key: "mapping", label: () => "تعيين الفصول والشعب" },
+  { key: "preview", label: () => m.common_action_preview ? m.common_action_preview() : "معاينة النتائج" },
+  { key: "execute", label: () => "تنفيذ الترفيع" },
 ];
 
 const progressValue = $derived(((currentStep + 1) / steps.length) * 100);

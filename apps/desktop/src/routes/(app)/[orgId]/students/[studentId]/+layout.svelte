@@ -68,7 +68,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
   const classesQuery = createClassesQuery(() => orgId);
   const periodsQuery = createPeriodsQuery(() => orgId);
 
-  const student = $derived(studentQuery.data as any);
+  const student = $derived(studentQuery.data);
   const currentClass = $derived(
     student
       ? (classesQuery.data ?? []).find(
@@ -79,7 +79,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 
   // Enrollment history for this student
   const actualStudentId = $derived(
-    student?.student_id || student?.student?.id || studentId,
+    student?.student_id || studentId,
   );
   const enrollmentsQuery = createEnrollmentsQuery(
     () => orgId,
@@ -99,16 +99,16 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 
   async function withdrawStudent() {
     const confirmed = await confirmStore.prompt({
-      title: m.common_student_layout_withdraw_title?.() || m.common_action_withdraw(),
-      description: m.common_student_layout_withdraw_confirm?.() || "",
-      confirmText: m.common_action_withdraw(),
+      title: m.common_action_delete ? `${m.common_action_delete()} (انسحاب الطالب)` : "انسحاب الطالب",
+      description: "هل أنت متأكد من تسجيل انسحاب هذا الطالب؟ سيتم تحديث حالة القيد الأكاديمي إلى منسحب.",
+      confirmText: "تأكيد الانسحاب",
       variant: "destructive",
     });
     if (!confirmed) return;
     isWithdrawing = true;
     try {
       await api.updateStudentStatus({ student_id: studentId, status: "withdrawn" });
-      toast.success(m.common_students_status_updated());
+      toast.success("تم تحديث حالة الطالب بنجاح");
       queryClient.invalidateQueries({ queryKey: ["enrollments", orgId] });
       queryClient.invalidateQueries({ queryKey: ["student", studentId] });
     } catch (e: any) {
@@ -320,7 +320,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
       <!-- Left Sidebar (Avatar, basic student info, enrollment history) -->
       {#snippet left()}
         <div
-          class="h-full p-4 flex flex-col gap-5 overflow-y-auto scrollbar-hide text-start bg-transparent select-none"
+          class="h-full p-4 flex flex-col gap-5 overflow-y-auto scrollbar-hide text-start bg-transparent"
         >
           {#if student}
             <!-- Squared Avatar Display -->
@@ -534,7 +534,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 
     <div class="py-3 flex flex-col gap-2">
       <label for="target-class-select" class="text-[11px] font-semibold text-foreground">
-        {m.common_form_label_class?.() ?? "Target Class"}
+        الفصل الدراسي المستهدف
       </label>
       <select
         id="target-class-select"
@@ -543,7 +543,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
       >
         <option value="">— اختر الفصل الجديد —</option>
         {#each (classesQuery.data ?? []) as cls}
-          <option value={String(cls.id)}>{cls.name || cls.name_ar}</option>
+          <option value={String(cls.id)}>{cls.name}</option>
         {/each}
       </select>
     </div>
@@ -555,7 +555,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
         class="text-xs h-8"
         onclick={() => (showTransferDialog = false)}
       >
-        {m.common_btn_cancel()}
+        {m.common_action_cancel()}
       </Button>
       <Button
         size="sm"

@@ -91,7 +91,7 @@ const navItems = $derived([
   {
     href: `/${orgId}/ai-center`,
     icon: Sparkles,
-    label: "AI Center",
+    label: m.common_autopilot_popover_ai_center(),
     match: "prefix",
   },
   {

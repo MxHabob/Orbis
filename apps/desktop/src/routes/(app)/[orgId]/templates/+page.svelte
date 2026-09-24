@@ -20,21 +20,20 @@ import SearchField from "$lib/shared/components/search-field.svelte";
 import { DocumentPage, Plus, Refresh } from "@orbis/icons";
 import { fade } from "svelte/transition";
 
-// Component imports
 import {
   TemplateGrid,
   CreateTemplateDialog,
   DeleteTemplateDialog,
 } from "$lib/features/templates";
+import {
+  createTemplatesQuery,
+  createCreateTemplateMutation,
+  createDeleteTemplateMutation,
+  createPublishTemplateMutation,
+  createArchiveTemplateMutation,
+} from "$lib/features/templates/queries";
 import { confirmStore } from "$lib/stores";
-
-// State runes
-let templates = $state<TemplateDto[]>([]);
-let dataSchemas = $state<Record<string, any>>({});
-let loading = $state(true);
-let searchQuery = $state("");
-let filterEntityType = $state("all");
-let filterDocType = $state("all");
+import { extractErrorMessage } from "$lib/api";
 
 // Dialog & Modals State
 let isCreateDialogOpen = $state(false);
@@ -44,45 +43,40 @@ let newTemplateDesc = $state("");
 let newTemplateEntityType = $state("enrollment");
 let newTemplateDocType = $state("CERTIFICATE");
 let newTemplatePreset = $state("blank");
+let dataSchemas = $state<Record<string, Record<string, unknown>>>({});
+let searchQuery = $state("");
+let filterEntityType = $state("all");
+let filterDocType = $state("all");
 
 // Dynamic parameters from route
 const orgId: string = $derived(page.params.orgId ?? "");
 
-// Load templates from database
-async function loadTemplates() {
-  if (!orgId) return;
-  loading = true;
-  try {
-    const listFilter: any = {};
-    if (filterEntityType !== "all") listFilter.entity_type = filterEntityType;
-    if (filterDocType !== "all") listFilter.document_type = filterDocType;
+// TanStack Query
+const templatesQuery = createTemplatesQuery(
+  () => orgId,
+  () => ({
+    documentType: filterDocType !== "all" ? filterDocType : undefined,
+    entityType: filterEntityType !== "all" ? filterEntityType : undefined,
+  }),
+);
 
-    const response = await api.listTemplates(listFilter);
-    let result = response || [];
-    if (searchQuery.trim() !== "") {
-      const q = searchQuery.trim().toLowerCase();
-      result = result.filter(
-        (t) =>
-          t.name.toLowerCase().includes(q) ||
-          (t.name_ar && t.name_ar.includes(q)) ||
-          (t.description && t.description.toLowerCase().includes(q)),
-      );
-    }
-    templates = result;
-  } catch (e: unknown) {
-    console.error("Failed to load templates:", e);
-    const msg = (e as any)?.message || "Failed to load templates";
-    toast.error(msg);
-  } finally {
-    loading = false;
-  }
-}
+const createMutation = createCreateTemplateMutation();
+const deleteMutation = createDeleteTemplateMutation();
+const publishMutation = createPublishTemplateMutation();
+const archiveMutation = createArchiveTemplateMutation();
 
-// React to query changes
-$effect(() => {
-  if (orgId) {
-    loadTemplates();
-  }
+const rawTemplates = $derived(templatesQuery.data ?? []);
+const loading = $derived(templatesQuery.isLoading);
+
+const filteredTemplates = $derived.by(() => {
+  if (!searchQuery.trim()) return rawTemplates;
+  const q = searchQuery.trim().toLowerCase();
+  return rawTemplates.filter(
+    (t) =>
+      t.name.toLowerCase().includes(q) ||
+      (t.name_ar && t.name_ar.includes(q)) ||
+      (t.description && t.description.toLowerCase().includes(q)),
+  );
 });
 
 // Handle Template Creation
@@ -216,7 +210,7 @@ async function handleCreateTemplate() {
       locale: isAr() ? "ar" : "en",
     };
 
-    const response = await api.createTemplate(createRequest);
+    const response = await createMutation.mutateAsync(createRequest);
 
     toast.success("Template created successfully");
     isCreateDialogOpen = false;
@@ -225,7 +219,7 @@ async function handleCreateTemplate() {
     goto(`/${orgId}/templates/${response.id}`);
   } catch (e: unknown) {
     console.error("Failed to create template:", e);
-    const msg = (e as any)?.message || "Failed to create template";
+    const msg = extractErrorMessage(e) || "Failed to create template";
     toast.error(msg);
   }
 }
@@ -243,12 +237,11 @@ async function confirmDelete(id: string) {
   if (!confirmed) return;
 
   try {
-    await api.deleteTemplate(id);
+    await deleteMutation.mutateAsync(id);
     toast.success("Template deleted successfully");
-    loadTemplates();
   } catch (e: unknown) {
     console.error("Failed to delete template:", e);
-    const msg = (e as any)?.message || "Failed to delete template";
+    const msg = extractErrorMessage(e) || "Failed to delete template";
     toast.error(msg);
   }
 }
@@ -256,12 +249,11 @@ async function confirmDelete(id: string) {
 // Handle Template Publishing/Activation
 async function publishTemplate(id: string) {
   try {
-    await api.publishTemplate(id);
+    await publishMutation.mutateAsync(id);
     toast.success(m.settings_templates_publish_success());
-    loadTemplates();
   } catch (e: unknown) {
     console.error("Failed to publish template:", e);
-    const msg = (e as any)?.message || "Failed to publish template";
+    const msg = extractErrorMessage(e) || "Failed to publish template";
     toast.error(msg);
   }
 }
@@ -269,12 +261,11 @@ async function publishTemplate(id: string) {
 // Handle Template Archiving
 async function archiveTemplate(id: string) {
   try {
-    await api.archiveTemplate(id);
+    await archiveMutation.mutateAsync(id);
     toast.success(m.settings_templates_archive_success());
-    loadTemplates();
   } catch (e: unknown) {
     console.error("Failed to archive template:", e);
-    const msg = (e as any)?.message || "Failed to archive template";
+    const msg = extractErrorMessage(e) || "Failed to archive template";
     toast.error(msg);
   }
 }
@@ -282,12 +273,11 @@ async function archiveTemplate(id: string) {
 // Handle Template Restoring
 async function restoreTemplate(id: string) {
   try {
-    await api.publishTemplate(id);
+    await publishMutation.mutateAsync(id);
     toast.success(m.settings_templates_restore_success());
-    loadTemplates();
   } catch (e: unknown) {
     console.error("Failed to restore template:", e);
-    const msg = (e as any)?.message || "Failed to restore template";
+    const msg = extractErrorMessage(e) || "Failed to restore template";
     toast.error(msg);
   }
 }
@@ -299,45 +289,44 @@ async function restoreTemplate(id: string) {
 
 <div class="h-full w-full overflow-y-auto bg-background/30 scrollbar-hide">
   <div class="w-full p-6 md:p-8 flex flex-col gap-8">
-    <div class="flex flex-wrap items-center justify-between gap-4 select-none" in:fade={{ delay: 50, duration: 200 }}>
+    <div class="flex flex-wrap items-center justify-between gap-4" in:fade={{ delay: 50, duration: 200 }}>
       
       <div class="flex flex-wrap items-center gap-3 shrink-0">
         <div class="w-full sm:w-72">
           <SearchField
             bind:value={searchQuery}
-            oninput={loadTemplates}
             placeholder={m.settings_templates_search_placeholder()}
           />
         </div>
 
-          <Select type="single" bind:value={filterEntityType} onValueChange={loadTemplates}>
-            <SelectTrigger class="h-9 text-xs bg-background/40 border-border/40 hover:bg-muted/40 transition-colors">
-              {({ all: m.settings_templates_filter_entity_all(), enrollment: m.common_bulk_card_students_tag_enrollment(), payment: m.settings_templates_filter_entity_payment(), exam: m.settings_templates_filter_entity_exam(), user: m.common_agent_default_user_name(), organization: m.settings_templates_filter_entity_organization() } as any)[filterEntityType] || m.common_print_multi_up_entity_type()}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{m.settings_templates_filter_entity_all()}</SelectItem>
-              <SelectItem value="enrollment">{m.common_bulk_card_students_tag_enrollment()}</SelectItem>
-              <SelectItem value="payment">{m.settings_templates_filter_entity_payment()}</SelectItem>
-              <SelectItem value="exam">{m.settings_templates_filter_entity_exam()}</SelectItem>
-              <SelectItem value="user">{m.common_agent_default_user_name()}</SelectItem>
-              <SelectItem value="organization">{m.settings_templates_filter_entity_organization()}</SelectItem>
-            </SelectContent>
-          </Select>
+        <Select type="single" bind:value={filterEntityType}>
+          <SelectTrigger class="h-9 text-xs bg-background/40 border-border/40 hover:bg-muted/40 transition-colors">
+            {({ all: m.settings_templates_filter_entity_all(), enrollment: m.common_bulk_card_students_tag_enrollment(), payment: m.settings_templates_filter_entity_payment(), exam: m.settings_templates_filter_entity_exam(), user: m.common_agent_default_user_name(), organization: m.settings_templates_filter_entity_organization() } as Record<string, string>)[filterEntityType] || m.common_print_multi_up_entity_type()}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{m.settings_templates_filter_entity_all()}</SelectItem>
+            <SelectItem value="enrollment">{m.common_bulk_card_students_tag_enrollment()}</SelectItem>
+            <SelectItem value="payment">{m.settings_templates_filter_entity_payment()}</SelectItem>
+            <SelectItem value="exam">{m.settings_templates_filter_entity_exam()}</SelectItem>
+            <SelectItem value="user">{m.common_agent_default_user_name()}</SelectItem>
+            <SelectItem value="organization">{m.settings_templates_filter_entity_organization()}</SelectItem>
+          </SelectContent>
+        </Select>
 
-          <Select type="single" bind:value={filterDocType} onValueChange={loadTemplates}>
-            <SelectTrigger class="h-9 text-xs bg-background/40 border-border/40 hover:bg-muted/40 transition-colors">
-              {({ all: m.settings_templates_filter_doc_all(), CERTIFICATE: m.settings_templates_filter_doc_certificate(), ID_CARD: m.settings_templates_filter_doc_id_card(), RECEIPT: m.finance_layout_nav_payments(), EXAM_CARD: m.settings_templates_filter_doc_exam_card(), REPORT: m.common_nav_reports() } as any)[filterDocType] || m.settings_permissions_col_doc_type()}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{m.settings_templates_filter_doc_all()}</SelectItem>
-              <SelectItem value="CERTIFICATE">{m.settings_templates_filter_doc_certificate()}</SelectItem>
-              <SelectItem value="ID_CARD">{m.settings_templates_filter_doc_id_card()}</SelectItem>
-              <SelectItem value="RECEIPT">{m.finance_layout_nav_payments()}</SelectItem>
-              <SelectItem value="EXAM_CARD">{m.settings_templates_filter_doc_exam_card()}</SelectItem>
-              <SelectItem value="REPORT">{m.common_nav_reports()}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <Select type="single" bind:value={filterDocType}>
+          <SelectTrigger class="h-9 text-xs bg-background/40 border-border/40 hover:bg-muted/40 transition-colors">
+            {({ all: m.settings_templates_filter_doc_all(), CERTIFICATE: m.settings_templates_filter_doc_certificate(), ID_CARD: m.settings_templates_filter_doc_id_card(), RECEIPT: m.finance_layout_nav_payments(), EXAM_CARD: m.settings_templates_filter_doc_exam_card(), REPORT: m.common_nav_reports() } as Record<string, string>)[filterDocType] || m.settings_permissions_col_doc_type()}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{m.settings_templates_filter_doc_all()}</SelectItem>
+            <SelectItem value="CERTIFICATE">{m.settings_templates_filter_doc_certificate()}</SelectItem>
+            <SelectItem value="ID_CARD">{m.settings_templates_filter_doc_id_card()}</SelectItem>
+            <SelectItem value="RECEIPT">{m.finance_layout_nav_payments()}</SelectItem>
+            <SelectItem value="EXAM_CARD">{m.settings_templates_filter_doc_exam_card()}</SelectItem>
+            <SelectItem value="REPORT">{m.common_nav_reports()}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       <!-- Right side (in LTR) / Left side (in RTL): Action Button -->
       <div class="flex items-center shrink-0">
@@ -350,7 +339,7 @@ async function restoreTemplate(id: string) {
 
     <!-- Templates Grid -->
     <TemplateGrid
-      {templates}
+      templates={filteredTemplates}
       {loading}
       {orgId}
       onconfirmdelete={confirmDelete}

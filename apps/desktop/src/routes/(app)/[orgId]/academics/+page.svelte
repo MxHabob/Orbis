@@ -25,12 +25,15 @@ import { extractErrorMessage } from "$lib/api";
 
 let { data }: { data: { orgId: string } } = $props();
 
+// Dynamic Period ID
+const activePeriodId = $derived(activePeriod ? String(activePeriod.id) : "");
+
 // TanStack Queries
 const classesQuery = createClassesQuery(() => data.orgId);
 const subjectsQuery = createSubjectsQuery(() => data.orgId);
 const periodsQuery = createPeriodsQuery(() => data.orgId);
 const promotionJobsQuery = createPromotionJobsQuery(() => data.orgId);
-const examSessionsQuery = createExamSessionsQuery(() => data.orgId);
+const examSessionsQuery = createExamSessionsQuery(() => activePeriodId);
 
 // Derived Data
 const classes = $derived(classesQuery.data ?? []);
@@ -72,7 +75,7 @@ const activePeriod = $derived(
 );
 
 const activePeriodName = $derived(
-  activePeriod ? activePeriod.name_ar || activePeriod.name : null,
+  activePeriod ? activePeriod.name || activePeriod.name : null,
 );
 
 // Grade entry status (based on active period/term)
@@ -207,7 +210,7 @@ const advisorInsights = $derived.by(() => {
     insights.push({
       id: "exams-active",
       text: m.academics_overview_insight_exams_active({
-        session: activeExamSession.name_ar || activeExamSession.name,
+        session: activeExamSession.name || "",
       }),
       variant: "success" as const,
       icon: TaskList,
@@ -460,7 +463,9 @@ const advisorInsights = $derived.by(() => {
           class="pt-2 border-t border-border/30 flex items-center gap-2 text-[9px] text-muted-foreground/75"
         >
           <Info size={11} />
-          <span>System Status: Optimal. Next diagnostics in 10m.</span>
+          <div class="flex items-center gap-1.5">
+            <span>{activeYearName || m.common_nav_academics()}{#if activePeriodName} • {activePeriodName}{/if}</span>
+          </div>
         </div>
       </div>
     </div>

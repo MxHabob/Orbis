@@ -5,7 +5,7 @@ import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { Dialog, DialogContent } from "@orbis/ui/dialog";
 import { uiStore, authStore } from "$lib/stores";
-import { api } from "$lib/api";
+import { api, queryKeys, type EnrollmentDto, type ClassDto, type SubjectDto } from "$lib/api";
 import { queryClient } from "$lib/api";
 
 import { matchStudent } from "$lib/shared/utils/search";
@@ -15,9 +15,9 @@ let searchQuery = $state("");
 let inputEl = $state<HTMLInputElement | null>(null);
 
 // In-memory data sets
-let students = $state<any[]>([]);
-let classes = $state<any[]>([]);
-let subjects = $state<any[]>([]);
+let students = $state<EnrollmentDto[]>([]);
+let classes = $state<ClassDto[]>([]);
+let subjects = $state<SubjectDto[]>([]);
 
 let selectedIndex = $state(0);
 
@@ -39,18 +39,15 @@ async function loadSearchData() {
   if (!currentOrgId) return;
 
   // Use TanStack cache if available — avoids redundant IPC calls
-  const cachedStudents = queryClient.getQueryData<any[]>([
-    "enrollments",
-    currentOrgId,
-  ]);
-  const cachedClasses = queryClient.getQueryData<any[]>([
-    "classes",
-    currentOrgId,
-  ]);
-  const cachedSubjects = queryClient.getQueryData<any[]>([
-    "subjects",
-    currentOrgId,
-  ]);
+  const cachedStudents = queryClient.getQueryData<EnrollmentDto[]>(
+    queryKeys.student.enrollments(currentOrgId),
+  );
+  const cachedClasses = queryClient.getQueryData<ClassDto[]>(
+    queryKeys.academic.classes(currentOrgId),
+  );
+  const cachedSubjects = queryClient.getQueryData<SubjectDto[]>(
+    queryKeys.academic.subjects(currentOrgId),
+  );
 
   if (cachedStudents && cachedClasses && cachedSubjects) {
     students = cachedStudents;
@@ -61,20 +58,20 @@ async function loadSearchData() {
 
   try {
     const [studentsData, classesData, subjectsData] = await Promise.all([
-      cachedStudents ?? api.listEnrollments(currentOrgId).catch(() => []),
-      cachedClasses ?? api.listClasses(currentOrgId).catch(() => []),
-      cachedSubjects ?? api.listSubjects(currentOrgId).catch(() => []),
+      cachedStudents ?? api.listEnrollments().catch(() => []),
+      cachedClasses ?? api.listClasses().catch(() => []),
+      cachedSubjects ?? api.listSubjects().catch(() => []),
     ]);
     students = studentsData;
     classes = classesData;
     subjects = subjectsData;
     // Populate cache for future use
     if (!cachedStudents)
-      queryClient.setQueryData(["enrollments", currentOrgId], studentsData);
+      queryClient.setQueryData(queryKeys.student.enrollments(currentOrgId), studentsData);
     if (!cachedClasses)
-      queryClient.setQueryData(["classes", currentOrgId], classesData);
+      queryClient.setQueryData(queryKeys.academic.classes(currentOrgId), classesData);
     if (!cachedSubjects)
-      queryClient.setQueryData(["subjects", currentOrgId], subjectsData);
+      queryClient.setQueryData(queryKeys.academic.subjects(currentOrgId), subjectsData);
   } catch (e) {
     console.error("Failed to load search data:", e);
   }

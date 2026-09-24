@@ -14,15 +14,15 @@ import { toast } from "@orbis/ui";
 import { ArrowRight, Calendar, ChartBar, Clipboard, ClipboardCheck, Document, DocumentPage, Download, Eye, Grid, Hashtag, Home, Info, InfoCircle, Printer, Sparkles, UserBadgeCheck } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
 import { createPeriodsQuery } from "$lib/features/academics";
-import { createQuery } from "@tanstack/svelte-query";
-import { readable } from "svelte/store";
-import { api, extractErrorMessage } from "$lib/api";
+import { createExamSessionsQuery } from "$lib/features/exams/queries";
+import { createTemplatesQuery } from "$lib/features/templates/queries";
+import { api, extractErrorMessage, type ExamSessionDto, type TemplateDto } from "$lib/api";
 import { localizeHref } from "$lib/paraglide/runtime";
 
 let { data }: { data: { orgId: string } } = $props();
 
 let selectedReportId = $state<string>("timetable");
-let reportData = $state<any>(null);
+let reportData = $state<Record<string, unknown> | null>(null);
 let isGenerating = $state(false);
 
 // Queries
@@ -48,28 +48,16 @@ const isGradeEntryOpen = $derived(
 );
 
 // Exam Sessions Query
-const examSessionsQuery = createQuery(() => ({
-  queryKey: ["exam-sessions", data.orgId, activePeriodId],
-  queryFn: () => api.listExamSessions(activePeriodId),
-  enabled: !!data.orgId && !!activePeriodId,
-  staleTime: 2 * 60 * 1000,
-}));
-
-const examSessions = $derived((examSessionsQuery.data as any[]) ?? []);
+const examSessionsQuery = createExamSessionsQuery(() => activePeriodId);
+const examSessions = $derived<ExamSessionDto[]>(examSessionsQuery.data ?? []);
 
 // System Document Templates Query
-const documentTemplatesQuery = createQuery(() => ({
-  queryKey: ["document-templates", data.orgId],
-  queryFn: () =>
-    api.listTemplates({
-      documentType: "EXAM_REGISTER",
-    }),
-  enabled: !!data.orgId,
-  staleTime: 5 * 60 * 1000,
-}));
-
-const documentTemplates = $derived(
-  (documentTemplatesQuery.data as any[]) ?? [],
+const documentTemplatesQuery = createTemplatesQuery(
+  () => data.orgId,
+  () => ({ documentType: "EXAM_REGISTER" }),
+);
+const documentTemplates = $derived<TemplateDto[]>(
+  documentTemplatesQuery.data ?? [],
 );
 
 const isLoading = $derived(

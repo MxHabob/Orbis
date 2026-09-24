@@ -25,7 +25,7 @@ export function createMarkAttendanceMutation() {
     mutationFn: (req: MarkAttendanceRequest) => api.markAttendance(req),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.assessment.attendance(vars.classId, vars.date),
+        queryKey: queryKeys.assessment.attendance(vars.class_id, vars.date),
       });
     },
   }));

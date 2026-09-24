@@ -1,11 +1,14 @@
-/**
- * Finance domain queries — fees, accounts, payments, journal entries, discount templates.
- * Wraps OrbisApiClient with TanStack Query for automatic caching.
- */
 import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
 import {
   api,
   queryKeys,
+  type AccountDto,
+  type StudentFeeDto,
+  type PaymentDto,
+  type CurrencyDto,
+  type JournalEntryDto,
+  type DiscountTemplateDto,
+  type FeeTemplateDto,
   type StudentFeeFilterParams,
   type PaymentFilterParams,
   type CreateDiscountTemplateRequest,
@@ -20,12 +23,12 @@ export function createCashAccountsQuery(
   orgId: () => string,
   enabled: () => boolean = () => true,
 ) {
-  return createQuery(() => ({
-    queryKey: queryKeys.finance.accounts(),
+  return createQuery<AccountDto[]>(() => ({
+    queryKey: queryKeys.finance.accounts(orgId()),
     queryFn: async () => {
       const accounts = await api.listAccounts();
-      return accounts.filter((account: any) =>
-        ["cash", "bank"].includes(account.account_type || account.sub_type),
+      return accounts.filter((account: AccountDto) =>
+        ["cash", "bank"].includes(account.account_type || (account as { sub_type?: string }).sub_type || ""),
       );
     },
     enabled: !!orgId() && enabled(),
@@ -38,8 +41,8 @@ export function createPaymentsQuery(
   orgId: () => string,
   filter?: () => PaymentFilterParams | undefined,
 ) {
-  return createQuery(() => ({
-    queryKey: queryKeys.finance.payments(filter?.()),
+  return createQuery<PaymentDto[]>(() => ({
+    queryKey: queryKeys.finance.payments(orgId(), filter?.()),
     queryFn: () => api.listPayments(filter?.()),
     enabled: !!orgId(),
     staleTime: 2 * 60 * 1000,
@@ -48,8 +51,8 @@ export function createPaymentsQuery(
 
 /** Ledger accounts query. */
 export function createAccountsQuery(orgId: () => string) {
-  return createQuery(() => ({
-    queryKey: queryKeys.finance.accounts(),
+  return createQuery<AccountDto[]>(() => ({
+    queryKey: queryKeys.finance.accounts(orgId()),
     queryFn: () => api.listAccounts(),
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
@@ -59,8 +62,8 @@ export function createAccountsQuery(orgId: () => string) {
 /** Transaction/leaf accounts query. */
 export function createTransactionAccountsQuery(orgId: string | (() => string)) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
-  return createQuery(() => ({
-    queryKey: queryKeys.finance.accounts(),
+  return createQuery<AccountDto[]>(() => ({
+    queryKey: queryKeys.finance.accounts(getOrgId()),
     queryFn: () => api.listAccounts(),
     enabled: !!getOrgId(),
     staleTime: 5 * 60 * 1000,
@@ -70,8 +73,8 @@ export function createTransactionAccountsQuery(orgId: string | (() => string)) {
 /** Fee templates query. */
 export function createFeeTemplatesQuery(orgId: string | (() => string)) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
-  return createQuery(() => ({
-    queryKey: queryKeys.finance.feeTemplates(),
+  return createQuery<FeeTemplateDto[]>(() => ({
+    queryKey: queryKeys.finance.feeTemplates(getOrgId()),
     queryFn: () => api.listFeeTemplates(),
     enabled: !!getOrgId(),
     staleTime: 5 * 60 * 1000,
@@ -86,8 +89,8 @@ export function createStudentFeesQuery(
 ) {
   const getFilter = typeof filter === "function" ? filter : () => (typeof filter === "object" ? filter : undefined);
   const getEnabled = typeof enabled === "function" ? enabled : () => (typeof enabled === "boolean" ? enabled : true);
-  return createQuery(() => ({
-    queryKey: queryKeys.finance.studentFees(getFilter()),
+  return createQuery<StudentFeeDto[]>(() => ({
+    queryKey: queryKeys.finance.studentFees(orgOrEnrollmentId(), getFilter()),
     queryFn: () => api.listStudentFees(getFilter()),
     enabled: !!orgOrEnrollmentId() && getEnabled(),
     staleTime: 2 * 60 * 1000,
@@ -96,7 +99,7 @@ export function createStudentFeesQuery(
 
 /** Currencies query. */
 export function createCurrenciesQuery(orgId: () => string) {
-  return createQuery(() => ({
+  return createQuery<CurrencyDto[]>(() => ({
     queryKey: queryKeys.finance.currencies(),
     queryFn: () => api.listCurrencies(),
     enabled: !!orgId(),
@@ -106,8 +109,8 @@ export function createCurrenciesQuery(orgId: () => string) {
 
 /** Journal entries query. */
 export function createJournalEntriesQuery(orgId: () => string) {
-  return createQuery(() => ({
-    queryKey: queryKeys.finance.journalEntries(),
+  return createQuery<JournalEntryDto[]>(() => ({
+    queryKey: queryKeys.finance.journalEntries(orgId()),
     queryFn: () => api.listJournalEntries(),
     enabled: !!orgId(),
     staleTime: 2 * 60 * 1000,
@@ -116,7 +119,7 @@ export function createJournalEntriesQuery(orgId: () => string) {
 
 /** Single journal entry query. */
 export function createJournalEntryQuery(id: () => string) {
-  return createQuery(() => ({
+  return createQuery<JournalEntryDto>(() => ({
     queryKey: queryKeys.finance.journalEntry(id()),
     queryFn: () => api.getJournalEntry(id()),
     enabled: !!id(),
@@ -126,8 +129,8 @@ export function createJournalEntryQuery(id: () => string) {
 
 /** Discount templates query. */
 export function createDiscountTemplatesQuery(orgId: () => string) {
-  return createQuery(() => ({
-    queryKey: queryKeys.finance.discountTemplates(),
+  return createQuery<DiscountTemplateDto[]>(() => ({
+    queryKey: queryKeys.finance.discountTemplates(orgId()),
     queryFn: () => api.listDiscountTemplates(),
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,

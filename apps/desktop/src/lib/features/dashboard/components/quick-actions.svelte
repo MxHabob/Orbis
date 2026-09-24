@@ -55,7 +55,7 @@ const ACTIONS = $derived.by(() => {
     {
       label: m.common_control_label ? m.common_control_label() : "Control",
       icon: UserBadgeCheck,
-      href: `/${orgId}/academics/control`,
+      href: `/${orgId}/academics/exams/control`,
       show: phase === "grade_entry" || phase === "exams",
     },
     {

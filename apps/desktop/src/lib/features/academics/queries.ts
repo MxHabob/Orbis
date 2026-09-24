@@ -1,14 +1,23 @@
-/**
- * Academic domain queries — periods, classes, subjects, schedules.
- * Wraps OrbisApiClient with TanStack Query for automatic caching.
- */
-import { createQuery } from "@tanstack/svelte-query";
-import { api, queryKeys } from "$lib/api";
+import { createQuery, createMutation } from "@tanstack/svelte-query";
+import {
+  api,
+  queryKeys,
+  type CalculateRankingsRequest,
+  type RankingItemDto,
+  type ClassDto,
+  type SubjectDto,
+  type AcademicPeriodDto,
+  type ClassSubjectDto,
+  type AssessmentSchemeDto,
+  type TimeSlotDto,
+  type ScheduledLessonDto,
+  type PrerequisiteCheckResultDto,
+} from "$lib/api";
 
 /** All academic periods for current year. */
 export function createPeriodsQuery(orgId: () => string) {
-  return createQuery(() => ({
-    queryKey: queryKeys.calendar.periods(),
+  return createQuery<AcademicPeriodDto[]>(() => ({
+    queryKey: queryKeys.calendar.periods(orgId()),
     queryFn: () => api.listAcademicPeriods(),
     enabled: !!orgId(),
     staleTime: 10 * 60 * 1000,
@@ -20,8 +29,8 @@ export function createPeriodsByYearQuery(
   orgId: () => string,
   periodId: () => string,
 ) {
-  return createQuery(() => ({
-    queryKey: queryKeys.calendar.periods(),
+  return createQuery<AcademicPeriodDto[]>(() => ({
+    queryKey: queryKeys.calendar.periods(orgId()),
     queryFn: () => api.listAcademicPeriods(),
     enabled: !!orgId() && !!periodId(),
     staleTime: 10 * 60 * 1000,
@@ -30,8 +39,8 @@ export function createPeriodsByYearQuery(
 
 /** Classes for an organization. */
 export function createClassesQuery(orgId: () => string) {
-  return createQuery(() => ({
-    queryKey: queryKeys.academic.classes(),
+  return createQuery<ClassDto[]>(() => ({
+    queryKey: queryKeys.academic.classes(orgId()),
     queryFn: () => api.listClasses(),
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
@@ -40,8 +49,8 @@ export function createClassesQuery(orgId: () => string) {
 
 /** Subjects for an organization. */
 export function createSubjectsQuery(orgId: () => string) {
-  return createQuery(() => ({
-    queryKey: queryKeys.academic.subjects(),
+  return createQuery<SubjectDto[]>(() => ({
+    queryKey: queryKeys.academic.subjects(orgId()),
     queryFn: () => api.listSubjects(),
     enabled: !!orgId(),
     staleTime: 10 * 60 * 1000,
@@ -53,7 +62,7 @@ export function createClassSubjectsQuery(
   classId: () => string | undefined,
   periodId: () => string | undefined,
 ) {
-  return createQuery(() => ({
+  return createQuery<ClassSubjectDto[]>(() => ({
     queryKey: queryKeys.academic.classSubjects(classId()!, periodId()!),
     queryFn: () => api.listClassSubjects(classId()!, periodId()!),
     enabled: !!classId() && !!periodId(),
@@ -68,7 +77,7 @@ export function createAssessmentsQuery(
     classSubjectId?: string;
   },
 ) {
-  return createQuery(() => ({
+  return createQuery<AssessmentSchemeDto[]>(() => ({
     queryKey: queryKeys.assessment.schemes(),
     queryFn: () => api.listAssessmentSchemes(),
     enabled: !!params().periodId,
@@ -81,7 +90,7 @@ export function createTimeSlotsQuery(
   orgId: () => string | undefined,
   periodId: () => string | undefined,
 ) {
-  return createQuery(() => ({
+  return createQuery<TimeSlotDto[]>(() => ({
     queryKey: queryKeys.scheduling.timeSlots(periodId()!),
     queryFn: () => api.listTimeSlots(periodId()!),
     enabled: !!orgId() && !!periodId(),
@@ -95,7 +104,7 @@ export function createClassScheduleQuery(
   periodId: () => string | undefined,
   classId: () => string | undefined,
 ) {
-  return createQuery(() => ({
+  return createQuery<ScheduledLessonDto[]>(() => ({
     queryKey: queryKeys.scheduling.lessons({ periodId: periodId() }),
     queryFn: () => api.listScheduledLessons({ periodId: periodId() }),
     enabled: !!orgId() && !!periodId() && !!classId(),
@@ -109,7 +118,7 @@ export function createTeacherScheduleQuery(
   periodId: () => string | undefined,
   teacherId: () => string | undefined,
 ) {
-  return createQuery(() => ({
+  return createQuery<ScheduledLessonDto[]>(() => ({
     queryKey: queryKeys.scheduling.lessons({ periodId: periodId() }),
     queryFn: () => api.listScheduledLessons({ periodId: periodId() }),
     enabled: !!orgId() && !!periodId() && !!teacherId(),
@@ -122,7 +131,7 @@ export function createPrerequisitesQuery(
   studentId: () => string,
   subjectId: () => string,
 ) {
-  return createQuery(() => ({
+  return createQuery<PrerequisiteCheckResultDto[]>(() => ({
     queryKey: queryKeys.academic.prerequisites(studentId(), subjectId()),
     queryFn: () => api.checkPrerequisites(studentId(), subjectId()),
     enabled: !!studentId() && !!subjectId(),
@@ -132,28 +141,29 @@ export function createPrerequisitesQuery(
 
 /** Calculate student rankings using authoritative backend engine */
 export function createCalculateRankingsMutation() {
-  return {
-    mutateAsync: async (params: {
-      items: Array<{ id: string; score: number }>;
-      tiePolicy?: "standard_competition" | "dense" | "fractional";
-    }) => {
-      return (api as any).calculateRankings?.(params);
+  return createMutation(() => ({
+    mutationFn: (params: CalculateRankingsRequest): Promise<RankingItemDto[]> => {
+      return api.calculateRankings(params);
     },
-  };
+  }));
 }
 
 /** Generate student certificates & grade sheets */
 export function createGenerateReportMutation() {
-  return {
-    mutateAsync: async (params: {
+  return createMutation(() => ({
+    mutationFn: (params: {
       reportCode: string;
       format?: string;
-      parameters?: Record<string, any>;
-      locale?: string;
+      parameters?: Record<string, unknown>;
     }) => {
-      return (api as any).generateReport?.(params);
+      return api.generateReport(
+        params.reportCode,
+        params.format || "PDF",
+        params.parameters || {},
+      );
     },
-  };
+  }));
 }
+
 
 

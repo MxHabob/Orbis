@@ -13,18 +13,23 @@
     type AvatarHat,
   } from "@orbis/avatar-engine";
 
+  import type { DashboardCountsDto } from "$lib/api/types";
+
   let {
     type,
     stats,
     orgId,
-  }: { type?: "greeting" | "summary" | "both"; stats?: any; orgId: string } =
-    $props();
+  }: {
+    type?: "greeting" | "summary" | "both";
+    stats?: DashboardCountsDto | null;
+    orgId: string;
+  } = $props();
 
   const avatarController = new AvatarController();
 
   // Greeting Logic
   let hourState = $state(new Date().getHours());
-  let greetingInterval: any;
+  let greetingInterval: ReturnType<typeof setInterval> | undefined;
 
   onMount(() => {
     greetingInterval = setInterval(() => {
@@ -349,7 +354,7 @@
               class="relative h-[2px] w-4 rounded-full bg-primary/10 overflow-hidden"
             >
               <div
-                class="absolute inset-0 bg-primary/40 rounded-full origin-left"
+                class="absolute inset-0 bg-primary/40 rounded-full origin-left rtl:origin-right"
                 style="transform: scaleX({i === index ? progress : 0});"
               ></div>
             </div>

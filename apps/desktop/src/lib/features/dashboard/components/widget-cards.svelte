@@ -3,8 +3,9 @@ import * as m from "$lib/paraglide/messages";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatNumber, formatPercent } from "$lib/core/i18n";
+import type { DashboardCountsDto } from "$lib/api/types";
 
-let { stats, orgId }: { stats: any; orgId: string } = $props();
+let { stats, orgId }: { stats: DashboardCountsDto | null; orgId: string } = $props();
 
 const studentVal = $derived(formatNumber(stats?.total_students ?? 0));
 const studentDetail = $derived(
