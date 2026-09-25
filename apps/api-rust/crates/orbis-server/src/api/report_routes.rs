@@ -1225,7 +1225,7 @@ pub async fn list_audit_logs(
 ) -> Result<Json<ApiResponse<Vec<AuditLogDto>>>, ApiError> {
     let entries = state
         .report_audit_repo
-        .list_by_org(auth.org_id, filter.limit, filter.offset)
+        .list_by_org(auth.tenant_id, filter.limit, filter.offset)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
 

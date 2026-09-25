@@ -6,6 +6,14 @@ use orbis_domain::entities::report::{ParamValue, OutputFormat, ReportLocale, Bat
 
 use super::make_ctx;
 
+#[derive(serde::Serialize)]
+pub struct ApiResponse<T> {
+    pub data: T,
+}
+
+fn ok<T: serde::Serialize>(data: T) -> ApiResponse<T> {
+    ApiResponse { data }
+}
 
 // ── Commands ────────────────────────────────────────────────────
 
@@ -267,7 +275,7 @@ pub async fn audit_list_logs(
     limit: Option<u64>,
     offset: Option<u64>,
     state: State<'_, AppState>,
-) -> Result<crate::commands::ApiResponse<Vec<AuditLogDto>>, String> {
+) -> Result<ApiResponse<Vec<AuditLogDto>>, String> {
     let ctx = make_ctx(&state);
     let mut entries = state.report_audit_repo
         .list_by_org(ctx.tenant_id, limit, offset)
@@ -297,5 +305,5 @@ pub async fn audit_list_logs(
         created_at: e.created_at.to_rfc3339(),
     }).collect();
 
-    Ok(crate::commands::ok(dtos))
+    Ok(ok(dtos))
 }

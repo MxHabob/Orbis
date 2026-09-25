@@ -824,14 +824,43 @@ export interface IntegrationStatusResponse {
   config?: IntegrationDto | null;
 }
 
-// ── Connection Types (Desktop-only, pre-database) ─────────────
+// ── Connection & Database Management Types (Desktop / Hybrid) ─────────────
 
 export type ConnectionMode = "local" | "remote";
 
+export interface LocalConfig {
+  db_filename: string;
+  custom_path?: string;
+  wal_mode?: boolean;
+  busy_timeout_ms?: number;
+}
+
+export interface RemoteConfig {
+  server_url: string;
+  host?: string;
+  port?: number;
+  database_name?: string;
+  username?: string;
+  password?: string;
+  ssl_mode?: string;
+  api_key?: string;
+}
+
+export interface DatabaseSettingsDto {
+  auto_backup_enabled: boolean;
+  auto_backup_interval_hours: number;
+  backup_dir?: string;
+  max_backup_files: number;
+  last_backup_timestamp?: string;
+  last_backup_path?: string;
+  integrity_check_on_startup: boolean;
+}
+
 export interface ConnectionConfig {
   mode: ConnectionMode;
-  local?: { db_filename: string };
-  remote?: { server_url: string; api_key?: string };
+  local?: LocalConfig;
+  remote?: RemoteConfig;
+  settings?: DatabaseSettingsDto;
 }
 
 export interface ConnectionValidation {
@@ -839,6 +868,7 @@ export interface ConnectionValidation {
   mode: string;
   message: string;
   resolved_url?: string;
+  resolved_path?: string;
 }
 
 export interface RemoteHealthResult {
@@ -848,6 +878,79 @@ export interface RemoteHealthResult {
   api_version?: string;
   latency_ms: number;
   error?: string;
+}
+
+export interface DatabaseStatusDto {
+  mode: "local" | "remote";
+  state: "connected" | "disconnected" | "connecting" | "migration_required" | "warning" | "error" | "not_found";
+  database_name: string;
+  connection_target: string;
+  file_size_bytes?: number;
+  file_size_formatted?: string;
+  schema_version: string;
+  applied_migrations_count: number;
+  total_migrations_count: number;
+  pending_migrations: string[];
+  is_compatible: boolean;
+  journal_mode?: string;
+  integrity_status?: string;
+  last_backup_timestamp?: string;
+  last_backup_path?: string;
+  last_connected_at?: string;
+  error_message?: string;
+}
+
+export interface BackupResultDto {
+  success: boolean;
+  backup_path: string;
+  file_size_bytes: number;
+  file_size_formatted: string;
+  duration_ms: number;
+  timestamp: string;
+  integrity_verified: boolean;
+  message: string;
+}
+
+export interface BackupInspectionDto {
+  is_valid: boolean;
+  file_path: string;
+  file_size_bytes: number;
+  file_size_formatted: string;
+  schema_version: string;
+  applied_migrations_count: number;
+  is_compatible: boolean;
+  error?: string;
+}
+
+export interface RestoreResultDto {
+  success: boolean;
+  message: string;
+  pre_restore_backup_path?: string;
+  applied_migrations: string[];
+  duration_ms: number;
+}
+
+export interface IntegrityResultDto {
+  is_healthy: boolean;
+  status: string;
+  details: string[];
+  checked_at: string;
+}
+
+export interface OptimizeResultDto {
+  success: boolean;
+  message: string;
+  size_before_bytes: number;
+  size_after_bytes: number;
+  space_freed_bytes: number;
+  space_freed_formatted: string;
+}
+
+export interface MigrationResultDto {
+  success: boolean;
+  applied_migrations: string[];
+  total_applied: number;
+  message: string;
 }
 
 export interface ConnectResult {
@@ -1289,13 +1392,42 @@ export interface OrbisApiClient {
   bootstrapInitialSetup(req: InitialSetupRequest): Promise<OrganizationReadiness>;
   completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult>;
 
-  // ── Connection (Desktop-only) ───────────────────────────────
+  // ── Connection & Database Management ─────────────────────────
   connectionGetConfig(): Promise<ConnectionConfig>;
-  connectionSetConfig(mode: ConnectionMode, serverUrl?: string, dbFilename?: string): Promise<ConnectionConfig>;
+  connectionSetConfig(params: {
+    mode: ConnectionMode;
+    serverUrl?: string;
+    dbFilename?: string;
+    customPath?: string;
+    host?: string;
+    port?: number;
+    databaseName?: string;
+    username?: string;
+    password?: string;
+    sslMode?: string;
+    walMode?: boolean;
+    busyTimeoutMs?: number;
+  }): Promise<ConnectionConfig>;
+  connectionReset(): Promise<ConnectionConfig>;
   connectionValidate(): Promise<ConnectionValidation>;
   connectionCheckRemoteHealth(serverUrl: string): Promise<RemoteHealthResult>;
   connectionConnect(): Promise<ConnectResult>;
   connectionOpenWindow(): Promise<void>;
+
+  databaseGetStatus(): Promise<DatabaseStatusDto>;
+  databaseCreateLocal(params: { customDir?: string; filename: string }): Promise<DatabaseStatusDto>;
+  databaseOpenExisting(filePath: string): Promise<DatabaseStatusDto>;
+  databaseBackup(destinationPath?: string): Promise<BackupResultDto>;
+  databaseValidateBackupFile(filePath: string): Promise<BackupInspectionDto>;
+  databaseRestore(backupFilePath: string): Promise<RestoreResultDto>;
+  databaseRunMigrations(): Promise<MigrationResultDto>;
+  databaseCheckIntegrity(): Promise<IntegrityResultDto>;
+  databaseOptimize(): Promise<OptimizeResultDto>;
+  databaseGetSettings(): Promise<DatabaseSettingsDto>;
+  databaseUpdateSettings(settings: DatabaseSettingsDto): Promise<DatabaseSettingsDto>;
+  databasePickFile(params?: { filterName?: string; extensions?: string[] }): Promise<string | null>;
+  databasePickFolder(): Promise<string | null>;
+  databasePickSavePath(params?: { defaultFilename?: string; filterName?: string; extensions?: string[] }): Promise<string | null>;
 
   // ── AI Platform ─────────────────────────────────────────────
   aiChat(req: AiChatRequest): Promise<AiChatResponse>;

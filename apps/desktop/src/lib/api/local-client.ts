@@ -138,6 +138,14 @@ import type {
   RemoteHealthResult,
   ConnectResult,
   AuditLogDto,
+  DatabaseStatusDto,
+  BackupResultDto,
+  BackupInspectionDto,
+  RestoreResultDto,
+  IntegrityResultDto,
+  OptimizeResultDto,
+  MigrationResultDto,
+  DatabaseSettingsDto,
 } from "./types";
 
 function unwrap<T>(response: { data: T } | T): T {
@@ -886,16 +894,41 @@ export class LocalClient implements OrbisApiClient {
     return invoke<OnboardingResult>("onboarding_complete", { request: req });
   }
 
-  // ── Connection (Desktop-only) ───────────────────────────────
+  // ── Connection & Database Management ─────────────────────────
   async connectionGetConfig(): Promise<ConnectionConfig> {
     return invoke<ConnectionConfig>("connection_get_config");
   }
-  async connectionSetConfig(mode: ConnectionMode, serverUrl?: string, dbFilename?: string): Promise<ConnectionConfig> {
+  async connectionSetConfig(params: {
+    mode: ConnectionMode;
+    serverUrl?: string;
+    dbFilename?: string;
+    customPath?: string;
+    host?: string;
+    port?: number;
+    databaseName?: string;
+    username?: string;
+    password?: string;
+    sslMode?: string;
+    walMode?: boolean;
+    busyTimeoutMs?: number;
+  }): Promise<ConnectionConfig> {
     return invoke<ConnectionConfig>("connection_set_config", {
-      mode,
-      serverUrl: serverUrl ?? null,
-      dbFilename: dbFilename ?? null,
+      mode: params.mode,
+      serverUrl: params.serverUrl ?? null,
+      dbFilename: params.dbFilename ?? null,
+      customPath: params.customPath ?? null,
+      host: params.host ?? null,
+      port: params.port ?? null,
+      databaseName: params.databaseName ?? null,
+      username: params.username ?? null,
+      password: params.password ?? null,
+      sslMode: params.sslMode ?? null,
+      walMode: params.walMode ?? null,
+      busyTimeoutMs: params.busyTimeoutMs ?? null,
     });
+  }
+  async connectionReset(): Promise<ConnectionConfig> {
+    return invoke<ConnectionConfig>("connection_reset");
   }
   async connectionValidate(): Promise<ConnectionValidation> {
     return invoke<ConnectionValidation>("connection_validate");
@@ -908,6 +941,61 @@ export class LocalClient implements OrbisApiClient {
   }
   async connectionOpenWindow(): Promise<void> {
     return invoke<void>("open_connection_window");
+  }
+
+  async databaseGetStatus(): Promise<DatabaseStatusDto> {
+    return unwrap(await invoke<{ data: DatabaseStatusDto }>("database_get_status"));
+  }
+  async databaseCreateLocal(params: { customDir?: string; filename: string }): Promise<DatabaseStatusDto> {
+    return unwrap(await invoke<{ data: DatabaseStatusDto }>("database_create_local", {
+      customDir: params.customDir ?? null,
+      filename: params.filename,
+    }));
+  }
+  async databaseOpenExisting(filePath: string): Promise<DatabaseStatusDto> {
+    return unwrap(await invoke<{ data: DatabaseStatusDto }>("database_open_existing", { filePath }));
+  }
+  async databaseBackup(destinationPath?: string): Promise<BackupResultDto> {
+    return unwrap(await invoke<{ data: BackupResultDto }>("database_backup", {
+      destinationPath: destinationPath ?? null,
+    }));
+  }
+  async databaseValidateBackupFile(filePath: string): Promise<BackupInspectionDto> {
+    return unwrap(await invoke<{ data: BackupInspectionDto }>("database_validate_backup_file", { filePath }));
+  }
+  async databaseRestore(backupFilePath: string): Promise<RestoreResultDto> {
+    return unwrap(await invoke<{ data: RestoreResultDto }>("database_restore", { backupFilePath }));
+  }
+  async databaseRunMigrations(): Promise<MigrationResultDto> {
+    return unwrap(await invoke<{ data: MigrationResultDto }>("database_run_migrations"));
+  }
+  async databaseCheckIntegrity(): Promise<IntegrityResultDto> {
+    return unwrap(await invoke<{ data: IntegrityResultDto }>("database_check_integrity"));
+  }
+  async databaseOptimize(): Promise<OptimizeResultDto> {
+    return unwrap(await invoke<{ data: OptimizeResultDto }>("database_optimize"));
+  }
+  async databaseGetSettings(): Promise<DatabaseSettingsDto> {
+    return unwrap(await invoke<{ data: DatabaseSettingsDto }>("database_get_settings"));
+  }
+  async databaseUpdateSettings(settings: DatabaseSettingsDto): Promise<DatabaseSettingsDto> {
+    return unwrap(await invoke<{ data: DatabaseSettingsDto }>("database_update_settings", { settings }));
+  }
+  async databasePickFile(params?: { filterName?: string; extensions?: string[] }): Promise<string | null> {
+    return invoke<string | null>("database_pick_file", {
+      filterName: params?.filterName ?? null,
+      extensions: params?.extensions ?? null,
+    });
+  }
+  async databasePickFolder(): Promise<string | null> {
+    return invoke<string | null>("database_pick_folder");
+  }
+  async databasePickSavePath(params?: { defaultFilename?: string; filterName?: string; extensions?: string[] }): Promise<string | null> {
+    return invoke<string | null>("database_pick_save_path", {
+      defaultFilename: params?.defaultFilename ?? null,
+      filterName: params?.filterName ?? null,
+      extensions: params?.extensions ?? null,
+    });
   }
 
   // ── AI Platform ─────────────────────────────────────────────

@@ -468,7 +468,7 @@ pub async fn finance_list_fee_templates(
 
     if items.is_empty() {
         let now = chrono::Utc::now().to_rfc3339();
-        let curr = state.org_repo.find_by_id(ctx.tenant_id).await.ok().flatten().map(|o| o.base_currency_code).unwrap_or_else(|| "SAR".into());
+        let curr = state.org_repo.find_by_id(ctx.tenant_id).await.ok().flatten().and_then(|o| o.base_currency_code).unwrap_or_else(|| "SAR".to_string());
         let _ = orbis_infra::adapters::bootstrap_adapter::seed_fee_templates(&state.db, ctx.tenant_id, &curr, &now).await;
         if let Ok(reloaded) = state.finance_service.list_fee_templates(ctx.tenant_id).await {
             items = reloaded;

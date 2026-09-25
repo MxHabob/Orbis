@@ -33,7 +33,9 @@ export { default as UsersDirectory } from "./users-directory.svelte";
 export { default as UserForm } from "./user-form.svelte";
 export { default as UserProfile } from "./user-profile.svelte";
 export { default as UserPreferences } from "./user-preferences.svelte";
-export { default as UserRoles } from "./user-roles.svelte";
 export { default as UserSessions } from "./user-sessions.svelte";
+export { default as DatabaseManagementView } from "./database/database-management-view.svelte";
+export { default as CreateDatabaseDialog } from "./database/create-database-dialog.svelte";
+export { DatabaseManagerController } from "./database/database-manager.svelte";
 
 export * from "./queries";

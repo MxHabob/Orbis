@@ -15,6 +15,7 @@ import {
   Calendar,
   CheckCircle,
   ClockRotateRight,
+  Database,
   DocumentPage,
   GlobeAlt,
   Keyframes,
@@ -151,6 +152,11 @@ const navGroups = $derived([
         path: "archive",
         label: m.settings_nav_archive(),
         icon: ArchiveBox,
+      },
+      {
+        path: "database",
+        label: m.settings_nav_database(),
+        icon: Database,
       },
       {
         path: "audit",

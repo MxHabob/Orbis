@@ -17,6 +17,7 @@ pub mod report_cmds;
 pub mod template_cmds;
 pub mod window_cmds;
 pub mod connection_cmds;
+pub mod database_cmds;
 pub mod bootstrap_cmds;
 pub mod ai_cmds;
 pub mod autopilot_cmds;
@@ -212,9 +213,25 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         // ── Connection ──────────────────────────────────────────
         connection_cmds::connection_get_config,
         connection_cmds::connection_set_config,
+        connection_cmds::connection_reset,
         connection_cmds::connection_validate,
         connection_cmds::connection_check_remote_health,
         connection_cmds::connection_connect,
+        // ── Database Management ─────────────────────────────────
+        database_cmds::database_get_status,
+        database_cmds::database_create_local,
+        database_cmds::database_open_existing,
+        database_cmds::database_backup,
+        database_cmds::database_validate_backup_file,
+        database_cmds::database_restore,
+        database_cmds::database_run_migrations,
+        database_cmds::database_check_integrity,
+        database_cmds::database_optimize,
+        database_cmds::database_get_settings,
+        database_cmds::database_update_settings,
+        database_cmds::database_pick_file,
+        database_cmds::database_pick_folder,
+        database_cmds::database_pick_save_path,
         // ── Bootstrap & System ──────────────────────────────────
         bootstrap_cmds::system_health,
         bootstrap_cmds::system_has_organization,
