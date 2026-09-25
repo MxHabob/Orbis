@@ -14,11 +14,16 @@ import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
-import { Trash } from "@orbis/icons";
+import { Lock, ShieldCheck, Trash } from "@orbis/icons";
+import { l } from "$lib/core/i18n";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
+import RelatedActions, {
+  type ActionGroup,
+  type FooterAction,
+} from "$lib/shared/components/related-actions.svelte";
 import type { Snippet } from "svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
@@ -120,6 +125,55 @@ const menuItems = $derived([
     label: m.settings_user_detail_tab_settings(),
   },
 ]);
+
+const relatedActionGroups = $derived<ActionGroup[]>(user ? [
+  {
+    id: "account_security",
+    title: l("أمان الحساب والجلسات", "Account Security & Access"),
+    icon: Lock,
+    defaultExpanded: true,
+    subLinks: [
+      {
+        id: "reset_password",
+        label: m.settings_user_detail_btn_reset_pass(),
+        onclick: () => (showResetModal = true),
+      },
+      {
+        id: "active_sessions",
+        label: m.settings_security_sessions(),
+        href: `/${orgId}/settings/users/${userId}/sessions`,
+      },
+    ],
+  },
+  {
+    id: "permissions_audit",
+    title: l("الصلاحيات والتدقيق", "Roles & Audit"),
+    icon: ShieldCheck,
+    defaultExpanded: true,
+    subLinks: [
+      {
+        id: "user_roles",
+        label: m.settings_nav_permissions(),
+        href: `/${orgId}/settings/users/${userId}/roles`,
+      },
+      {
+        id: "user_audit",
+        label: l("سجل عمليات هذا المستخدم", "User Audit Logs"),
+        href: `/${orgId}/settings/audit?userId=${userId}`,
+      },
+    ],
+  },
+] : []);
+
+const relatedFooterActions = $derived<FooterAction[]>(user ? [
+  {
+    id: "delete_user",
+    label: m.settings_user_detail_btn_delete(),
+    icon: Trash,
+    variant: "destructive",
+    onclick: handleDeleteUser,
+  },
+] : []);
 </script>
 
 <svelte:head>
@@ -230,6 +284,15 @@ const menuItems = $derived([
             <div class="w-full flex-1">
               {@render children()}
             </div>
+
+            <!-- Contextual Related Actions (Full Width Footer) -->
+            {#if user}
+              <RelatedActions
+                title={l("العمليات والإجراءات المرتبطة", "Related support")}
+                groups={relatedActionGroups}
+                footerActions={relatedFooterActions}
+              />
+            {/if}
           </div>
         </div>
       {/snippet}

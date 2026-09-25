@@ -41,14 +41,14 @@ import {
   UndoAction,
   XMark,
 } from "@orbis/icons";
-import type { PromotionJob } from "@orbis/sdk";
+import type { PromotionJobDto } from "@orbis/sdk";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 
 const jobsQuery = createPromotionJobsQuery(() => orgId);
 const rollbackMutation = createRollbackMutation();
 
-let rollbackTarget = $state<PromotionJob | null>(null);
+let rollbackTarget = $state<PromotionJobDto | null>(null);
 
 async function handleRollback() {
   if (!rollbackTarget) return;

@@ -13,6 +13,9 @@ Allows administrators to manage academic periods, terms, semesters, and locking 
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
   import { Skeleton } from "@orbis/ui/skeleton";
+  import RelatedActions, {
+    type ActionGroup,
+  } from "$lib/shared/components/related-actions.svelte";
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
 
@@ -57,6 +60,32 @@ Allows administrators to manage academic periods, terms, semesters, and locking 
   let rootPeriods = $derived(
     periods.filter((p) => !p.parent_id || p.parent_id === ""),
   );
+
+  const relatedActionGroups = $derived<ActionGroup[]>([
+    {
+      id: "academic_promotion_policies",
+      title: l("السياسات والعمليات المرتبطة", "Academic Policies & Promotion"),
+      icon: AcademicCap,
+      defaultExpanded: true,
+      subLinks: [
+        {
+          id: "promotion_wizard",
+          label: l("معالج ترحيل الطلاب وترفيع الفصول", "Student Promotion Wizard"),
+          href: `/${orgId}/academics/promotion`,
+        },
+        {
+          id: "academic_policy",
+          label: l("السياسات واللوائح الأكاديمية", "Academic Policy & Grading"),
+          href: `/${orgId}/settings/academic-policy`,
+        },
+        {
+          id: "registration_rules",
+          label: l("قواعد وشروط التسجيل والقبول", "Registration & Enrollment Rules"),
+          href: `/${orgId}/settings/registration`,
+        },
+      ],
+    },
+  ]);
 
   function getChildren(parentId: string) {
     return periods.filter((p) => p.parent_id === parentId && p.id !== parentId);
@@ -341,6 +370,12 @@ Allows administrators to manage academic periods, terms, semesters, and locking 
       {/each}
     </div>
   {/if}
+
+  <!-- Contextual Related Actions (Full Width Footer) -->
+  <RelatedActions
+    title={l("العمليات والإجراءات المرتبطة", "Related support")}
+    groups={relatedActionGroups}
+  />
 </div>
 
 <!-- Sheets -->

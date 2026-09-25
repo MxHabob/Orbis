@@ -551,18 +551,6 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
                 </div>
               {/if}
             </div>
-
-            <!-- Contextual Related Actions -->
-            <div class="flex flex-col gap-2 border-t border-border/40 pt-4 w-full text-start">
-              <span class="text-[10px] text-foreground font-bold tracking-wide flex items-center gap-1.5">
-                <GlobeAlt size={13} class="text-primary" />
-                {l("العمليات والإجراءات المرتبطة", "Related Actions")}
-              </span>
-              <RelatedActions
-                groups={relatedActionGroups}
-                footerActions={relatedFooterActions}
-              />
-            </div>
           {:else}
             <!-- Skeleton for sidebar -->
             <div class="w-full flex justify-start">
@@ -587,7 +575,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
         <div
           class="h-full w-full overflow-y-auto p-6 scrollbar-hide text-start"
         >
-          <div class="flex flex-col gap-6 w-full h-full">
+          <div class="flex flex-col gap-6 w-full min-h-full">
             <!-- Tabs using shared SecondaryMenu -->
             <SecondaryMenu items={menuItems} {basePath} />
 
@@ -595,6 +583,15 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
             <div class="w-full flex-1">
               {@render children()}
             </div>
+
+            <!-- Contextual Related Actions (Footer across page width) -->
+            {#if student}
+              <RelatedActions
+                title={l("العمليات والإجراءات المرتبطة", "Related support")}
+                groups={relatedActionGroups}
+                footerActions={relatedFooterActions}
+              />
+            {/if}
           </div>
         </div>
       {/snippet}
