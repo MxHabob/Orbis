@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use orbis_app::ports::reporting::*;
 use orbis_domain::entities::report::*;
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Set};
 use uuid::Uuid;
 
 use crate::models::report::{
@@ -474,5 +474,30 @@ impl ReportAuditRepository for ReportAuditRepoImpl {
         };
         active.insert(&self.db).await.map_err(db_err)?;
         Ok(())
+    }
+
+    async fn list_by_org(&self, org_id: Uuid, limit: Option<u64>, offset: Option<u64>) -> Result<Vec<ReportAuditEntry>, DomainError> {
+        let mut query = report_audit_log::Entity::find()
+            .filter(report_audit_log::Column::OrgId.eq(org_id))
+            .order_by_desc(report_audit_log::Column::CreatedAt);
+
+        if let Some(l) = limit {
+            query = query.limit(l);
+        }
+        if let Some(o) = offset {
+            query = query.offset(o);
+        }
+
+        let models = query.all(&self.db).await.map_err(db_err)?;
+        Ok(models.into_iter().map(|m| ReportAuditEntry {
+            id: m.id,
+            org_id: m.org_id,
+            actor_id: m.actor_id,
+            action: m.action,
+            entity_type: m.entity_type,
+            entity_id: m.entity_id,
+            details: m.details,
+            created_at: m.created_at.into(),
+        }).collect())
     }
 }

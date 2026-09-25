@@ -138,6 +138,7 @@ import type {
   ConnectionValidation,
   RemoteHealthResult,
   ConnectResult,
+  AuditLogDto,
 } from "./types";
 
 export class ApiRequestError extends Error {
@@ -905,6 +906,11 @@ export class RemoteClient implements OrbisApiClient {
   }
   async batchPrint(req: BatchPrintParams): Promise<string> {
     return this.post("/api/v1/reports/batch-print", req);
+  }
+  async listAuditLogs(limit?: number, offset?: number): Promise<AuditLogDto[]> {
+    return this.get("/api/v1/reports/audit-logs", {
+      params: { limit, offset },
+    });
   }
 
   // ── System & Bootstrap ──────────────────────────────────────

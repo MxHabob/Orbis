@@ -146,6 +146,26 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
         info!("Note: Roles seeding warning: {}", e);
     }
 
+    // ── 5.5 Chart of Accounts (COA) ──────────────────────────────────────────────
+    if let Err(e) = seed_chart_of_accounts(db, org_id_uuid, &payload.currency, &now).await {
+        info!("Note: COA seeding warning: {}", e);
+    }
+
+    // ── 5.6 Standard Fee Templates ───────────────────────────────────────────────
+    if let Err(e) = seed_fee_templates(db, org_id_uuid, &payload.currency, &now).await {
+        info!("Note: Fee templates seeding warning: {}", e);
+    }
+
+    // ── 5.7 Standard Discount Templates ──────────────────────────────────────────
+    if let Err(e) = seed_discount_templates(db, org_id_uuid, &now).await {
+        info!("Note: Discount templates seeding warning: {}", e);
+    }
+
+    // ── 5.8 Default Organization Settings ────────────────────────────────────────
+    if let Err(e) = seed_org_settings(db, org_id_uuid, &payload.currency, &blueprint).await {
+        info!("Note: Org settings seeding warning: {}", e);
+    }
+
     // ── 6. Default Document & Report Templates (System templates) ─────────────────
     if let Err(e) = seed_default_reports(db, org_id_uuid, &now).await {
         info!("Note: Report seeding warning: {}", e);
@@ -156,7 +176,12 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
         info!("Note: Assessment scheme seeding warning: {}", e);
     }
 
-    info!("Minimal technical bootstrap completed for org_id={} type={}", org_id, payload.org_type);
+    // ── 8. Initial Audit Log Entries ──────────────────────────────────────────────
+    if let Err(e) = seed_initial_audit_logs(db, org_id_uuid, admin_id_uuid, &now).await {
+        info!("Note: Audit log seeding warning: {}", e);
+    }
+
+    info!("Full technical bootstrap completed for org_id={} type={}", org_id, payload.org_type);
 
     Ok(BootstrapResult {
         org_id,
@@ -346,8 +371,7 @@ async fn seed_assessment_schemes<C: ConnectionTrait>(
     Ok(())
 }
 
-#[allow(dead_code)]
-async fn seed_fee_templates<C: ConnectionTrait>(
+pub async fn seed_fee_templates<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
     currency: &str,
@@ -388,7 +412,9 @@ async fn seed_fee_templates<C: ConnectionTrait>(
         let fid = Uuid::new_v4();
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
-            "INSERT INTO fee_templates (id, org_id, code, name, name_ar, category, default_amount, currency_code, revenue_account_id, receivable_account_id, frequency, is_mandatory, is_active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 1, $13, $14)",
+            "INSERT INTO fee_templates (id, org_id, code, name, name_ar, category, default_amount, currency_code, revenue_account_id, receivable_account_id, frequency, is_mandatory, is_active, created_at, updated_at) \
+             SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 1, $13, $14 \
+             WHERE NOT EXISTS (SELECT 1 FROM fee_templates WHERE org_id = $2 AND code = $3)",
             vec![
                 fid.into(), org_id.into(), code.into(),
                 name_en.into(), name_ar.into(), cat.into(),
@@ -404,8 +430,7 @@ async fn seed_fee_templates<C: ConnectionTrait>(
     Ok(())
 }
 
-#[allow(dead_code)]
-async fn seed_discount_templates<C: ConnectionTrait>(
+pub async fn seed_discount_templates<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
     now: &str,
@@ -422,7 +447,9 @@ async fn seed_discount_templates<C: ConnectionTrait>(
         let did = Uuid::new_v4();
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
-            "INSERT INTO discount_templates (id, org_id, code, name, name_ar, discount_type, value, is_approval_required, is_auto_apply, is_stackable, priority, is_active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 1, $12, $13) ON CONFLICT DO NOTHING",
+            "INSERT INTO discount_templates (id, org_id, code, name, name_ar, discount_type, value, is_approval_required, is_auto_apply, is_stackable, priority, is_active, created_at, updated_at) \
+             SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 1, $12, $13 \
+             WHERE NOT EXISTS (SELECT 1 FROM discount_templates WHERE org_id = $2 AND code = $3)",
             vec![
                 did.into(), org_id.into(), code.into(),
                 name_en.into(), name_ar.into(), d_type.into(),
@@ -1020,9 +1047,7 @@ fn slug(name: &str) -> String {
         .to_string()
 }
 
-// ── Default Reports Seeding Implementation ──────────────────────
-
-async fn seed_default_reports<C: ConnectionTrait>(
+pub async fn seed_default_reports<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
     now: &str,
@@ -1035,6 +1060,7 @@ async fn seed_default_reports<C: ConnectionTrait>(
             "Master Template",
             "الترويسة والتذييل الرسمي للمؤسسة",
             "system",
+            "organization",
             "MASTER",
             crate::adapters::report_defaults::MASTER_TEMPLATE_HTML,
         ),
@@ -1043,6 +1069,7 @@ async fn seed_default_reports<C: ConnectionTrait>(
             "Student Term Report Card",
             "كشف درجات الطالب للفصل الدراسي",
             "academic",
+            "student",
             "REPORT",
             crate::adapters::report_defaults::TABULAR_REPORT_HTML,
         ),
@@ -1051,6 +1078,7 @@ async fn seed_default_reports<C: ConnectionTrait>(
             "Official Academic Transcript",
             "السجل الأكاديمي الشامل",
             "academic",
+            "student",
             "TRANSCRIPT",
             crate::adapters::report_defaults::TRANSCRIPT_REPORT_HTML,
         ),
@@ -1058,6 +1086,7 @@ async fn seed_default_reports<C: ConnectionTrait>(
             "finance.payment-receipt",
             "Payment Receipt",
             "سند قبض مالي إلكتروني",
+            "finance",
             "finance",
             "RECEIPT",
             crate::adapters::report_defaults::PAYMENT_RECEIPT_HTML,
@@ -1067,6 +1096,7 @@ async fn seed_default_reports<C: ConnectionTrait>(
             "Student Fee Invoice & Statement",
             "فاتورة الرسوم وكشف حساب الطالب",
             "finance",
+            "finance",
             "INVOICE",
             crate::adapters::report_defaults::STUDENT_INVOICE_HTML,
         ),
@@ -1075,6 +1105,7 @@ async fn seed_default_reports<C: ConnectionTrait>(
             "Student ID Card",
             "بطاقة هوية الطالب",
             "identification",
+            "student",
             "ID_CARD",
             crate::adapters::report_defaults::STUDENT_ID_CARD_HTML,
         ),
@@ -1083,6 +1114,7 @@ async fn seed_default_reports<C: ConnectionTrait>(
             "Faculty & Staff ID Card",
             "بطاقة هوية الكادر التعليمي والإداري",
             "identification",
+            "staff",
             "STAFF_CARD",
             crate::adapters::report_defaults::STAFF_ID_CARD_HTML,
         ),
@@ -1091,6 +1123,7 @@ async fn seed_default_reports<C: ConnectionTrait>(
             "Class Timetable",
             "الجدول الدراسي الأسبوعي للفصل",
             "academic",
+            "class",
             "SCHEDULE",
             crate::adapters::report_defaults::CLASS_TIMETABLE_HTML,
         ),
@@ -1099,17 +1132,20 @@ async fn seed_default_reports<C: ConnectionTrait>(
             "Certificate of Enrollment",
             "شهادة قيد دراسي وتأكيد انتظام",
             "academic",
+            "enrollment",
             "CERTIFICATE",
             crate::adapters::report_defaults::ENROLLMENT_CERTIFICATE_HTML,
         ),
     ];
 
-    for (code, name_en, name_ar, domain, doc_type, html_content) in templates {
+    for (code, name_en, name_ar, domain, entity_type, doc_type, html_content) in templates {
         // 1. Definition
         let def_id = Uuid::new_v4();
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
-            "INSERT INTO report_definitions (id, org_id, code, name, name_ar, domain, category, data_provider_key, is_system, is_active, parameters_json, required_permissions, supported_formats, sort_order, version, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1, 1, '[]', '[]', '[\"pdf\", \"html\"]', 0, 1, $9, $10) ON CONFLICT(org_id, code) DO NOTHING",
+            "INSERT INTO report_definitions (id, org_id, code, name, name_ar, domain, category, data_provider_key, is_system, is_active, parameters_json, required_permissions, supported_formats, sort_order, version, created_at, updated_at) \
+             SELECT $1, $2, $3, $4, $5, $6, $7, $8, 1, 1, '[]', '[]', '[\"pdf\", \"html\"]', 0, 1, $9, $10 \
+             WHERE NOT EXISTS (SELECT 1 FROM report_definitions WHERE org_id = $2 AND code = $3)",
             vec![
                 def_id.into(), org_id.into(), code.into(),
                 name_en.into(), name_ar.into(), domain.into(), doc_type.into(), code.into(),
@@ -1130,10 +1166,12 @@ async fn seed_default_reports<C: ConnectionTrait>(
         let nil_user_id = Uuid::nil();
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
-            "INSERT INTO report_templates (id, org_id, code, name, name_ar, document_type, entity_type, status, version, published_version, page_size, orientation, margins_json, document_json, locale, is_system, is_default, created_by, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, 'system', 'published', 1, 1, 'A4', 'portrait', '{\"top\":15,\"bottom\":15,\"left\":15,\"right\":15}', $7, 'ar', 1, 1, $8, $9, $10) ON CONFLICT(org_id, code) DO NOTHING",
+            "INSERT INTO report_templates (id, org_id, code, name, name_ar, document_type, entity_type, status, version, published_version, page_size, orientation, margins_json, document_json, locale, is_system, is_default, created_by, created_at, updated_at) \
+             SELECT $1, $2, $3, $4, $5, $6, $7, 'published', 1, 1, 'A4', 'portrait', '{\"top\":15,\"bottom\":15,\"left\":15,\"right\":15}', $8, 'ar', 1, 1, $9, $10, $11 \
+             WHERE NOT EXISTS (SELECT 1 FROM report_templates WHERE org_id = $2 AND code = $3)",
             vec![
                 tmpl_id.into(), org_id.into(), code.into(),
-                name_en.into(), name_ar.into(), doc_type.into(),
+                name_en.into(), name_ar.into(), doc_type.into(), entity_type.into(),
                 html_content.into(),
                 nil_user_id.into(),
                 now.to_string().into(), now.to_string().into(),
@@ -1152,7 +1190,9 @@ async fn seed_default_reports<C: ConnectionTrait>(
         let binding_id = Uuid::new_v4();
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
-            "INSERT INTO report_template_bindings (id, report_definition_id, template_id, locale, format, is_default, created_at) SELECT $1, $2, $3, 'ar', 'pdf', 1, $4 WHERE NOT EXISTS (SELECT 1 FROM report_template_bindings WHERE report_definition_id = $2 AND format = 'pdf')",
+            "INSERT INTO report_template_bindings (id, report_definition_id, template_id, locale, format, is_default, created_at) \
+             SELECT $1, $2, $3, 'ar', 'pdf', 1, $4 \
+             WHERE NOT EXISTS (SELECT 1 FROM report_template_bindings WHERE report_definition_id = $2 AND format = 'pdf')",
             vec![
                 binding_id.into(), real_def_id.into(), real_tmpl_id.into(),
                 now.to_string().into(),
@@ -1162,10 +1202,46 @@ async fn seed_default_reports<C: ConnectionTrait>(
         let binding_id_html = Uuid::new_v4();
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
-            "INSERT INTO report_template_bindings (id, report_definition_id, template_id, locale, format, is_default, created_at) SELECT $1, $2, $3, 'ar', 'html', 1, $4 WHERE NOT EXISTS (SELECT 1 FROM report_template_bindings WHERE report_definition_id = $2 AND format = 'html')",
+            "INSERT INTO report_template_bindings (id, report_definition_id, template_id, locale, format, is_default, created_at) \
+             SELECT $1, $2, $3, 'ar', 'html', 1, $4 \
+             WHERE NOT EXISTS (SELECT 1 FROM report_template_bindings WHERE report_definition_id = $2 AND format = 'html')",
             vec![
                 binding_id_html.into(), real_def_id.into(), real_tmpl_id.into(),
                 now.to_string().into(),
+            ]
+        )).await.ok();
+    }
+
+    Ok(())
+}
+
+pub async fn seed_initial_audit_logs<C: ConnectionTrait>(
+    db: &C,
+    org_id: Uuid,
+    admin_id: Uuid,
+    now: &str,
+) -> Result<(), DomainError> {
+    let initial_events = vec![
+        ("organization.bootstrap", "Organization", org_id, serde_json::json!({"action": "Organization created and initialized with core blueprint"})),
+        ("iam.admin_initialized", "User", admin_id, serde_json::json!({"role": "super_admin", "status": "active"})),
+        ("iam.roles_permissions_seeded", "Role", org_id, serde_json::json!({"roles_count": 15, "scope": "comprehensive"})),
+        ("finance.chart_of_accounts_seeded", "Account", org_id, serde_json::json!({"standard": "Educational COA", "status": "active"})),
+        ("finance.discount_templates_seeded", "DiscountTemplate", org_id, serde_json::json!({"templates": ["DISC_SIBLING", "DISC_MERIT", "DISC_STAFF", "DISC_EARLY", "DISC_AID"]})),
+        ("finance.fee_templates_seeded", "FeeTemplate", org_id, serde_json::json!({"templates": ["FEE_TUITION", "FEE_REG", "FEE_BUS", "FEE_BOOKS", "FEE_TECH", "FEE_ACT"]})),
+        ("reporting.default_templates_seeded", "ReportTemplate", org_id, serde_json::json!({"templates_count": 9, "format": "AST/DocForge/Vector"}))
+    ];
+
+    for (action, entity_type, entity_id, details) in initial_events {
+        let log_id = Uuid::new_v4();
+        db.execute(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "INSERT INTO report_audit_log (id, org_id, actor_id, action, entity_type, entity_id, details, created_at) \
+             SELECT $1, $2, $3, $4, $5, $6, $7, $8 \
+             WHERE NOT EXISTS (SELECT 1 FROM report_audit_log WHERE org_id = $2 AND action = $4 AND entity_type = $5 AND entity_id = $6)",
+            vec![
+                log_id.into(), org_id.into(), admin_id.into(),
+                action.into(), entity_type.into(), entity_id.into(),
+                details.to_string().into(), now.to_string().into(),
             ]
         )).await.ok();
     }
@@ -1565,62 +1641,74 @@ impl OnboardingPort for OnboardingAdapterImpl {
         }
 
         // 10. Fee Templates
-        let rec_row = txn.query_one(Statement::from_sql_and_values(
-            txn.get_database_backend(),
-            "SELECT id FROM accounts WHERE org_id = $1 AND code = '110401' LIMIT 1",
-            vec![org_id.into()]
-        )).await.ok().flatten();
-        let rec_id: Uuid = match rec_row {
-            Some(r) => r.try_get("", "id").unwrap_or_else(|_| Uuid::new_v4()),
-            None => Uuid::new_v4(),
-        };
-        let rev_row = txn.query_one(Statement::from_sql_and_values(
-            txn.get_database_backend(),
-            "SELECT id FROM accounts WHERE org_id = $1 AND code = '410101' LIMIT 1",
-            vec![org_id.into()]
-        )).await.ok().flatten();
-        let rev_id: Uuid = match rev_row {
-            Some(r) => r.try_get("", "id").unwrap_or(rec_id),
-            None => rec_id,
-        };
-
-        for f in &data.fee_templates {
-            txn.execute(Statement::from_sql_and_values(
+        if data.fee_templates.is_empty() {
+            if let Err(e) = seed_fee_templates(&txn, org_id, &data.base_currency_code, &now).await {
+                info!("Default fee templates onboarding seeding note: {}", e);
+            }
+        } else {
+            let rec_row = txn.query_one(Statement::from_sql_and_values(
                 txn.get_database_backend(),
-                "INSERT INTO fee_templates (id, org_id, code, name, name_ar, category, default_amount, currency_code, revenue_account_id, receivable_account_id, frequency, is_mandatory, is_active, created_at, updated_at) \
-                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 1, $13, $14 \
-                 WHERE NOT EXISTS (SELECT 1 FROM fee_templates WHERE org_id = $2 AND code = $3)",
-                vec![
-                    f.id.into(), org_id.into(), f.code.clone().into(),
-                    f.name.clone().into(), f.name_ar.clone().into(),
-                    f.category.clone().into(), f.default_amount.into(),
-                    f.currency_code.clone().into(),
-                    rev_id.into(), rec_id.into(),
-                    f.frequency.clone().into(),
-                    (if f.is_mandatory { 1i32 } else { 0i32 }).into(),
-                    now.clone().into(), now.clone().into(),
-                ]
-            )).await.ok();
+                "SELECT id FROM accounts WHERE org_id = $1 AND code = '110401' LIMIT 1",
+                vec![org_id.into()]
+            )).await.ok().flatten();
+            let rec_id: Uuid = match rec_row {
+                Some(r) => r.try_get("", "id").unwrap_or_else(|_| Uuid::new_v4()),
+                None => Uuid::new_v4(),
+            };
+            let rev_row = txn.query_one(Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                "SELECT id FROM accounts WHERE org_id = $1 AND code = '410101' LIMIT 1",
+                vec![org_id.into()]
+            )).await.ok().flatten();
+            let rev_id: Uuid = match rev_row {
+                Some(r) => r.try_get("", "id").unwrap_or(rec_id),
+                None => rec_id,
+            };
+
+            for f in &data.fee_templates {
+                txn.execute(Statement::from_sql_and_values(
+                    txn.get_database_backend(),
+                    "INSERT INTO fee_templates (id, org_id, code, name, name_ar, category, default_amount, currency_code, revenue_account_id, receivable_account_id, frequency, is_mandatory, is_active, created_at, updated_at) \
+                     SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 1, $13, $14 \
+                     WHERE NOT EXISTS (SELECT 1 FROM fee_templates WHERE org_id = $2 AND code = $3)",
+                    vec![
+                        f.id.into(), org_id.into(), f.code.clone().into(),
+                        f.name.clone().into(), f.name_ar.clone().into(),
+                        f.category.clone().into(), f.default_amount.into(),
+                        f.currency_code.clone().into(),
+                        rev_id.into(), rec_id.into(),
+                        f.frequency.clone().into(),
+                        (if f.is_mandatory { 1i32 } else { 0i32 }).into(),
+                        now.clone().into(), now.clone().into(),
+                    ]
+                )).await.ok();
+            }
         }
 
         // 11. Discount Templates
-        for d in &data.discount_templates {
-            txn.execute(Statement::from_sql_and_values(
-                txn.get_database_backend(),
-                "INSERT INTO discount_templates (id, org_id, code, name, name_ar, discount_type, value, is_approval_required, is_auto_apply, is_stackable, priority, is_active, created_at, updated_at) \
-                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 1, $12, $13 \
-                 WHERE NOT EXISTS (SELECT 1 FROM discount_templates WHERE org_id = $2 AND code = $3)",
-                vec![
-                    d.id.into(), org_id.into(), d.code.clone().into(),
-                    d.name.clone().into(), d.name_ar.clone().into(),
-                    d.discount_type.clone().into(), d.value.into(),
-                    (if d.is_approval_required { 1i32 } else { 0i32 }).into(),
-                    (if d.is_auto_apply { 1i32 } else { 0i32 }).into(),
-                    (if d.is_stackable { 1i32 } else { 0i32 }).into(),
-                    d.priority.into(),
-                    now.clone().into(), now.clone().into(),
-                ]
-            )).await.ok();
+        if data.discount_templates.is_empty() {
+            if let Err(e) = seed_discount_templates(&txn, org_id, &now).await {
+                info!("Default discount templates onboarding seeding note: {}", e);
+            }
+        } else {
+            for d in &data.discount_templates {
+                txn.execute(Statement::from_sql_and_values(
+                    txn.get_database_backend(),
+                    "INSERT INTO discount_templates (id, org_id, code, name, name_ar, discount_type, value, is_approval_required, is_auto_apply, is_stackable, priority, is_active, created_at, updated_at) \
+                     SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 1, $12, $13 \
+                     WHERE NOT EXISTS (SELECT 1 FROM discount_templates WHERE org_id = $2 AND code = $3)",
+                    vec![
+                        d.id.into(), org_id.into(), d.code.clone().into(),
+                        d.name.clone().into(), d.name_ar.clone().into(),
+                        d.discount_type.clone().into(), d.value.into(),
+                        (if d.is_approval_required { 1i32 } else { 0i32 }).into(),
+                        (if d.is_auto_apply { 1i32 } else { 0i32 }).into(),
+                        (if d.is_stackable { 1i32 } else { 0i32 }).into(),
+                        d.priority.into(),
+                        now.clone().into(), now.clone().into(),
+                    ]
+                )).await.ok();
+            }
         }
 
         // 12. Assessment Schemes
@@ -1643,6 +1731,20 @@ impl OnboardingPort for OnboardingAdapterImpl {
         if let Err(e) = seed_roles_and_permissions(&txn, org_id, admin_user_id, &now).await {
             info!("Roles & permissions onboarding seeding note: {}", e);
         }
+
+        // 14. Default Reports & Templates Seeding
+        if let Err(e) = seed_default_reports(&txn, org_id, &now).await {
+            info!("Default reports onboarding seeding note: {}", e);
+        }
+
+        // 15. Record Onboarding Audit Log
+        let ob_log_id = Uuid::new_v4();
+        txn.execute(Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            "INSERT INTO report_audit_log (id, org_id, actor_id, action, entity_type, entity_id, details, created_at) \
+             VALUES ($1, $2, $3, 'onboarding.completed', 'Organization', $2, '{\"status\": \"operational\"}', $4)",
+            vec![ob_log_id.into(), org_id.into(), admin_user_id.into(), now.clone().into()]
+        )).await.ok();
 
         txn.commit().await
             .map_err(|e| DomainError::Internal(format!("Failed to commit onboarding transaction: {e}")))?;

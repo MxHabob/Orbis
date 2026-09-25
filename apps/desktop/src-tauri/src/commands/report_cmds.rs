@@ -247,3 +247,55 @@ body {{ margin: 0; padding: 0; font-family: 'Noto Sans Arabic', 'Segoe UI', sans
     html.push_str("</body></html>");
     Ok(html)
 }
+
+#[derive(serde::Serialize)]
+pub struct AuditLogDto {
+    pub id: String,
+    pub org_id: String,
+    pub user_id: Option<String>,
+    pub action: String,
+    pub entity_type: String,
+    pub entity_id: Option<String>,
+    pub ip_address: Option<String>,
+    pub metadata: Option<String>,
+    pub details: Option<serde_json::Value>,
+    pub created_at: String,
+}
+
+#[tauri::command]
+pub async fn audit_list_logs(
+    limit: Option<u64>,
+    offset: Option<u64>,
+    state: State<'_, AppState>,
+) -> Result<crate::commands::ApiResponse<Vec<AuditLogDto>>, String> {
+    let ctx = make_ctx(&state);
+    let mut entries = state.report_audit_repo
+        .list_by_org(ctx.tenant_id, limit, offset)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // Self-healing: if no audit logs exist yet for this org, seed initial audit logs
+    if entries.is_empty() && offset.unwrap_or(0) == 0 {
+        let now = chrono::Utc::now().to_rfc3339();
+        let admin_id = ctx.actor.id().unwrap_or_default();
+        let _ = orbis_infra::adapters::bootstrap_adapter::seed_initial_audit_logs(&state.db, ctx.tenant_id, admin_id, &now).await;
+        if let Ok(reloaded) = state.report_audit_repo.list_by_org(ctx.tenant_id, limit, offset).await {
+            entries = reloaded;
+        }
+    }
+
+    let dtos = entries.into_iter().map(|e| AuditLogDto {
+        id: e.id.to_string(),
+        org_id: e.org_id.to_string(),
+        user_id: Some(e.actor_id.to_string()),
+        action: e.action,
+        entity_type: e.entity_type,
+        entity_id: Some(e.entity_id.to_string()),
+        ip_address: Some("127.0.0.1".to_string()),
+        metadata: e.details.as_ref().map(|d| serde_json::to_string_pretty(d).unwrap_or_default()),
+        details: e.details,
+        created_at: e.created_at.to_rfc3339(),
+    }).collect();
+
+    Ok(crate::commands::ok(dtos))
+}

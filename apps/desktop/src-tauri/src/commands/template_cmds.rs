@@ -279,7 +279,7 @@ pub async fn template_list(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<TemplateDto>>, String> {
     let ctx = make_ctx(&state);
-    let templates = state.report_template_repo
+    let mut templates = state.report_template_repo
         .list_by_org(
             ctx.tenant_id,
             status.as_deref(),
@@ -288,6 +288,15 @@ pub async fn template_list(
         )
         .await
         .map_err(|e| e.to_string())?;
+
+    if templates.is_empty() && document_type.is_none() && entity_type.is_none() && status.is_none() {
+        let now = chrono::Utc::now().to_rfc3339();
+        let _ = orbis_infra::adapters::bootstrap_adapter::seed_default_reports(&state.db, ctx.tenant_id, &now).await;
+        if let Ok(reloaded) = state.report_template_repo.list_by_org(ctx.tenant_id, None, None, None).await {
+            templates = reloaded;
+        }
+    }
+
     Ok(ok(templates.into_iter().map(template_dto).collect()))
 }
 
@@ -654,10 +663,19 @@ pub async fn report_list_definitions(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<ReportDefinitionDto>>, String> {
     let ctx = make_ctx(&state);
-    let defs = state.report_definition_repo
+    let mut defs = state.report_definition_repo
         .list_by_org(ctx.tenant_id, domain.as_deref(), category.as_deref())
         .await
         .map_err(|e| e.to_string())?;
+
+    if defs.is_empty() && domain.is_none() && category.is_none() {
+        let now = chrono::Utc::now().to_rfc3339();
+        let _ = orbis_infra::adapters::bootstrap_adapter::seed_default_reports(&state.db, ctx.tenant_id, &now).await;
+        if let Ok(reloaded) = state.report_definition_repo.list_by_org(ctx.tenant_id, None, None).await {
+            defs = reloaded;
+        }
+    }
+
     Ok(ok(defs.into_iter().map(definition_dto).collect()))
 }
 

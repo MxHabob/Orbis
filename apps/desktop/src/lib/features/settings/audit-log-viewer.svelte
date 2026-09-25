@@ -38,8 +38,8 @@ async function loadData() {
   isLoading = true;
   try {
     const [logsList, usersList] = await Promise.all([
-      Promise.resolve([]),
-      api.listUsers(),
+      api.listAuditLogs(),
+      api.listUsers().catch(() => []),
     ]);
     auditLogs = logsList.sort(
       (a: any, b: any) =>
@@ -57,6 +57,13 @@ async function loadData() {
 onMount(() => {
   if (orgId) loadData();
 });
+
+function handleGridAction(event: any) {
+  if (event.actionId === "dblclick" || event.actionId === "click" || event.actionId === "view" || event.actionId === "edit") {
+    selectedLog = event.row;
+    isDetailsOpen = true;
+  }
+}
 
 function getUserName(userId: string | null): string {
   if (!userId) return "System";
@@ -127,6 +134,7 @@ const columns: OrbisColumnDef[] = [
       emptyDescription={l("لم يتم تسجيل أي عمليات بعد.", "No operations have been recorded yet.")}
       rtl={getLocale() === "ar"}
       readonly
+      onaction={handleGridAction}
     />
   </div>
 </div>

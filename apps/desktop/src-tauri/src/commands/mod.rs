@@ -181,11 +181,12 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         workflow_cmds::workflow_reject_override,
         workflow_cmds::workflow_list_overrides,
         workflow_cmds::workflow_get_override,
-        // ── Report Generation ───────────────────────────────────
+        // ── Report Generation & Audit Logs ─────────────────────
         report_cmds::generate_report,
         report_cmds::get_report_job_status,
         report_cmds::download_report_file,
         report_cmds::batch_print,
+        report_cmds::audit_list_logs,
         // ── Template Management ─────────────────────────────────
         template_cmds::template_create,
         template_cmds::template_get,

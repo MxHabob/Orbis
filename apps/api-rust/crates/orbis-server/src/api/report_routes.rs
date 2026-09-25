@@ -1198,6 +1198,56 @@ pub async fn get_provider_schema(
     }))
 }
 
+#[derive(Serialize, ToSchema)]
+pub struct AuditLogDto {
+    pub id: Uuid,
+    pub org_id: Uuid,
+    pub user_id: Option<Uuid>,
+    pub action: String,
+    pub entity_type: String,
+    pub entity_id: Option<Uuid>,
+    pub ip_address: Option<String>,
+    pub metadata: Option<String>,
+    pub details: Option<serde_json::Value>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Deserialize, IntoParams)]
+pub struct AuditLogFilter {
+    pub limit: Option<u64>,
+    pub offset: Option<u64>,
+}
+
+pub async fn list_audit_logs(
+    State(state): State<AppState>,
+    auth: AuthContext,
+    Query(filter): Query<AuditLogFilter>,
+) -> Result<Json<ApiResponse<Vec<AuditLogDto>>>, ApiError> {
+    let entries = state
+        .report_audit_repo
+        .list_by_org(auth.org_id, filter.limit, filter.offset)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+
+    let dtos = entries
+        .into_iter()
+        .map(|e| AuditLogDto {
+            id: e.id,
+            org_id: e.org_id,
+            user_id: Some(e.actor_id),
+            action: e.action,
+            entity_type: e.entity_type,
+            entity_id: Some(e.entity_id),
+            ip_address: Some("127.0.0.1".into()),
+            metadata: e.details.as_ref().map(|d| serde_json::to_string_pretty(d).unwrap_or_default()),
+            details: e.details,
+            created_at: e.created_at,
+        })
+        .collect();
+
+    Ok(ApiResponse::ok(dtos))
+}
+
 // ═══════════════════════════════════════════════════════════════
 // ROUTER
 // ═══════════════════════════════════════════════════════════════
@@ -1220,4 +1270,5 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/reports/jobs/:id/download", get(download_report_file))
         .route("/api/v1/reports/batch-print", post(batch_print))
         .route("/api/v1/reports/schema/:key", get(get_provider_schema))
+        .route("/api/v1/reports/audit-logs", get(list_audit_logs))
 }

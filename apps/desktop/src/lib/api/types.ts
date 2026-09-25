@@ -805,6 +805,19 @@ export interface ReportDefinitionDto {
   is_active: boolean;
 }
 
+export interface AuditLogDto {
+  id: string;
+  org_id?: string;
+  user_id?: string | null;
+  action: string;
+  entity_type: string;
+  entity_id?: string | null;
+  ip_address?: string | null;
+  metadata?: string | null;
+  details?: Record<string, unknown> | null;
+  created_at: string;
+}
+
 export interface IntegrationStatusResponse {
   connected: boolean;
   is_enabled: boolean;
@@ -1256,7 +1269,7 @@ export interface OrbisApiClient {
   ): Promise<ReportDefinitionDto[]>;
   getReportDefinition(code: string): Promise<ReportDefinitionDto>;
 
-  // ── Report Execution & Printing ─────────────────────────────
+  // ── Report Execution & Printing & Audit Logs ───────────────
   generateReport(
     templateId: string,
     format: string,
@@ -1265,6 +1278,7 @@ export interface OrbisApiClient {
   getReportJobStatus(jobId: string): Promise<ReportJobStatusDto>;
   downloadReportFile(jobId: string): Promise<Uint8Array>;
   batchPrint(req: BatchPrintParams): Promise<string>;
+  listAuditLogs(limit?: number, offset?: number): Promise<AuditLogDto[]>;
 
   // ── System & Bootstrap ──────────────────────────────────────
   systemHealth(): Promise<HealthResponse>;

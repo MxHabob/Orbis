@@ -137,6 +137,7 @@ import type {
   ConnectionValidation,
   RemoteHealthResult,
   ConnectResult,
+  AuditLogDto,
 } from "./types";
 
 function unwrap<T>(response: { data: T } | T): T {
@@ -857,6 +858,9 @@ export class LocalClient implements OrbisApiClient {
   }
   async batchPrint(req: BatchPrintParams): Promise<string> {
     return unwrap(await invoke("batch_print", { ...req }));
+  }
+  async listAuditLogs(limit?: number, offset?: number): Promise<AuditLogDto[]> {
+    return unwrap(await invoke("audit_list_logs", { limit, offset }));
   }
 
   // ── System & Bootstrap ──────────────────────────────────────

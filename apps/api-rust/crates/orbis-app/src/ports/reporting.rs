@@ -52,6 +52,7 @@ pub trait ReportJobRepository: Send + Sync {
 #[async_trait]
 pub trait ReportAuditRepository: Send + Sync {
     async fn save(&self, entry: &ReportAuditEntry) -> Result<(), DomainError>;
+    async fn list_by_org(&self, org_id: Uuid, limit: Option<u64>, offset: Option<u64>) -> Result<Vec<ReportAuditEntry>, DomainError>;
 }
 
 // ═══════════════════════════════════════════════════════════════
