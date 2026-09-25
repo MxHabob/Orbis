@@ -41,7 +41,7 @@ pub(crate) async fn do_open_connection_window<R: tauri::Runtime>(app: &tauri::Ap
     let mut builder = WebviewWindowBuilder::new(
         app,
         "orbis-connection",
-        WebviewUrl::App("setup/connection".into()),
+        WebviewUrl::App("connection".into()),
     )
     .title("Orbis Connection")
     .inner_size(780.0, 560.0)
