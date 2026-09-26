@@ -6,10 +6,19 @@
 
 import type { OrbisApp, AppCategory } from "./types";
 
+// ── AI Providers ────────────────────────────────────────────────
+import geminiAi from "./gemini-ai/config";
+import openai from "./openai/config";
+import anthropic from "./anthropic/config";
+import deepseek from "./deepseek/config";
+import groq from "./groq/config";
+import mistral from "./mistral/config";
+import ollama from "./ollama/config";
+import openrouter from "./openrouter/config";
+
 // ── App Imports ─────────────────────────────────────────────────
 import authen from "./authen/config";
 import orbisAi from "./orbis-ai/config";
-import geminiAi from "./gemini-ai/config";
 import hikvisionCamera from "./hikvision-camera/config";
 import smtpEmail from "./smtp-email/config";
 import whatsappBusiness from "./whatsapp-business/config";
@@ -39,9 +48,18 @@ import sadad from "./sadad/config";
 // ── Exported App Collection ─────────────────────────────────────
 
 export const apps: OrbisApp[] = [
-  // First & Second Apps
+  // Native & Core Apps
   authen,
   orbisAi,
+  // AI Providers & LLMs
+  geminiAi,
+  openai,
+  anthropic,
+  deepseek,
+  groq,
+  mistral,
+  ollama,
+  openrouter,
   // Payment Gateways
   moyasar,
   mada,
@@ -50,8 +68,6 @@ export const apps: OrbisApp[] = [
   hyperpay,
   stripe,
   sadad,
-  // AI Providers
-  geminiAi,
   // Surveillance
   hikvisionCamera,
   // Communication

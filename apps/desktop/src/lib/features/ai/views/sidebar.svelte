@@ -46,6 +46,8 @@ let activeSessionId = $state<string | null>(null);
 let viewMode = $state<"chat" | "cockpit">("chat");
 let isThinking = $state(false);
 let inputValue = $state(page.url.searchParams.get("ask_orbis") || "");
+let selectedModel = $state<string>("");
+let selectedProvider = $state<string>("");
 let chatContainer = $state<HTMLDivElement>();
 let sidebarDiv = $state<HTMLDivElement>();
 
@@ -210,6 +212,7 @@ async function executeChatStream(current: AiChatSession, assistantMsgId: string)
     const response = await api.aiChat({
       messages: aiMessages,
       screen_context: (aiContext.context as Record<string, unknown>) || null,
+      model: selectedModel ? selectedModel : undefined,
     });
 
     const targetIdx = current.messages.findIndex((m) => m.id === assistantMsgId);
@@ -436,12 +439,17 @@ function handleLinkClick(href: string) {
     sessions={sessions}
     currentSessionId={activeSessionId}
     pendingActionsCount={pendingActions.length}
+    bind:selectedModel={selectedModel}
+    bind:selectedProvider={selectedProvider}
     onToggleView={() => viewMode = viewMode === "chat" ? "cockpit" : "chat"}
     onClose={handleClose}
     onOpenStandalone={openStandaloneWindow}
     onSelectSession={handleSelectSession}
     onDeleteSession={handleDeleteSession}
     onNewChat={() => handleNewChat()}
+    onOpenSettings={() => {
+      goto(`/${currentOrgId}/ai-center/integrations`);
+    }}
   />
 
   {#if viewMode === "cockpit"}
@@ -474,13 +482,19 @@ function handleLinkClick(href: string) {
       />
     {/if}
 
-    <!-- Chat Input Area -->
+    <!-- Chat Input Area with Integrated Model Picker -->
     <ChatInput
       bind:value={inputValue}
       isThinking={isThinking}
       messagesLength={messages.length}
+      bind:selectedModel={selectedModel}
+      bind:selectedProvider={selectedProvider}
+      orgId={currentOrgId}
       onsubmit={submitMessage}
       onnewchat={() => handleNewChat()}
+      onOpenSettings={() => {
+        goto(`/${currentOrgId}/ai-center/integrations`);
+      }}
     />
   {/if}
 </div>

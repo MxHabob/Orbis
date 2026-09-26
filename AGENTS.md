@@ -101,17 +101,21 @@ A section is **NEVER** complete merely because its route renders. A section is c
 
 ## 6. CONTINUATION STATE
 
-- **Subsystem:** Audit Metadata, Audit Trail, Scope & Concurrency (Full Stack: Backend + Infra + Bootstrap/Onboarding + Desktop UI)
-- **State:** Complete end-to-end integration of Audit Trail, Scope awareness, Concurrency Conflict Handling, Bootstrap/Onboarding seeder alignment, and Desktop UI components.
+- **Subsystem:** Universal AI/LLM Gateway Adapter & Dynamic Provider/Model Selection (Full Stack: Rust Backend + Infra + App Store + Desktop UI)
+- **State:** Complete consolidation of `gemini.rs` and `orbis_ai.rs` into a unified, high-performance, multi-protocol `LlmAdapter`. Zero forced defaults, full App Store AI providers expansion, and dynamic UI model selection directly in Desktop AI toolbar.
 - **Completed Components:**
-  - `orbis-domain`: `DomainEvent::audit_fields()` implemented for mapping domain events to audit trails; `ConcurrencyConflict` added to `DomainError`; audit metadata (`created_by`, `updated_by`, `org_unit_id`, `version`) mapped consistently.
-  - `orbis-infra`: All SeaORM models, repository mappers, `BootstrapAdapterImpl` (`bootstrap_full_inner`, `seed_chart_of_accounts`, `seed_default_user_groups`, `seed_org_units`), and `OnboardingAdapterImpl` (`persist_onboarding`, `persist_initial_setup`) aligned with audit (`created_by`, `updated_by`), scope (`org_unit_id`), and concurrency (`version`) fields.
-  - `orbis-server`: `finance_routes.rs` and `ApiError` updated to handle `ConcurrencyConflict` (HTTP 409).
+  - `orbis-infra`:
+    - `LlmAdapter` (`llm_adapter.rs`): Multi-protocol (OpenAI-compatible, Google Gemini, Anthropic Claude) universal adapter with strict model resolution (zero guessed defaults), max token limits, and HTTP connection pooling.
+    - `IntegrationResolver`: Updated to dynamically resolve provider protocol, custom endpoint, credentials, and tenant-configured model without hardcoded defaults.
+    - Legacy Removal: Completely deleted legacy duplicate files `gemini.rs` and `orbis_ai.rs`.
+  - `orbis-domain` & `orbis-app`:
+    - `AiChatRequest`: Enhanced with optional `model` field.
+    - `AiOrchestrationService`: Replaced hardcoded model strings with dynamic model delegation.
+  - `packages/app-store`:
+    - Added full spectrum of AI Providers: Google Gemini, OpenAI (GPT-4o, o1, o3-mini, GPT-4.5), Anthropic Claude (Claude 3.7 Sonnet, 3.5 Sonnet, 3.5 Haiku), DeepSeek (V3, R1), Groq Cloud (Llama 3.3 70B, DeepSeek R1 Distill), Mistral AI (Large, Small, Codestral), Ollama/Local AI, and OpenRouter with authentic official SVG logos.
   - `apps/desktop`:
-    - `user-sidebar-menu.svelte`: Enhanced with active branch and user details on hover tooltip and in the dropdown menu header.
-    - `audit-timeline.svelte`: Canonical `<AuditTimeline>` component for paginated, reactive entity change history with full RTL Arabic support.
-    - `confirmStore.promptVersionConflict()`: Integrated directly into the canonical `confirmStore` for seamless optimistic concurrency control (HTTP 409) resolution with zero duplicate dialog components.
-    - Integrated across `employee-form.svelte`, `student-details.svelte`, and `journal-entries.svelte`.
-    - `OrbisApiClient`, `LocalClient`, and `RemoteClient`: Extended with `getEntityAudit`.
+    - `provider-model-picker.svelte`: Cleanly integrated at the chat input toolbar next to Send; dynamically sources connected providers and models from `@orbis/app-store` as the single source of truth without code duplication.
+    - `agent-header.svelte`: Dynamically updates the Avatar (official provider vector logo) and Title/Model chip based on the active connected AI provider.
+    - `sidebar.svelte`: Seamlessly coordinates model selection and queries.
 - **Verification:** `bun x tsc --noEmit`, `cargo check --workspace`, `cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml`, and `cargo test --workspace` (73/73 tests) pass with 0 errors.
 

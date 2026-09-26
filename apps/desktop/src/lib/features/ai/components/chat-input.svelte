@@ -5,18 +5,28 @@ import * as m from "$lib/paraglide/messages";
 import { Textarea } from "@orbis/ui/textarea";
 import { getLocale } from "$lib/paraglide/runtime";
 
+import ProviderModelPicker from "./provider-model-picker.svelte";
+
 let {
   value = $bindable(""),
   isThinking = false,
   messagesLength = 0,
+  selectedModel = $bindable(""),
+  selectedProvider = $bindable(""),
+  orgId = "",
   onsubmit,
   onnewchat,
+  onOpenSettings,
 }: {
   value?: string;
   isThinking?: boolean;
   messagesLength?: number;
+  selectedModel?: string;
+  selectedProvider?: string;
+  orgId?: string;
   onsubmit: (query: string) => void;
   onnewchat: (agentType?: string) => void;
+  onOpenSettings?: () => void;
 } = $props();
 
 const isRtl = $derived(getLocale() === "ar");
@@ -136,6 +146,14 @@ function handleCommandSelect(prompt: string) {
         >
           <Plus class="h-4 w-4" />
         </Button>
+
+        <!-- AI Provider & Model Picker (Right next to Input Toolbar) -->
+        <ProviderModelPicker
+          bind:selectedModel={selectedModel}
+          bind:selectedProvider={selectedProvider}
+          orgId={orgId}
+          onOpenSettings={onOpenSettings}
+        />
       </div>
 
       <div class="flex items-center gap-2">

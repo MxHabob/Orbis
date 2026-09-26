@@ -198,3 +198,40 @@ export function useConfigureAutopilot() {
     },
   }));
 }
+
+// ── AI Providers & Model Management ──────────────────────────
+
+export function createConnectedAiProvidersQuery(orgId?: string | (() => string | undefined)) {
+  const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
+  return createQuery(() => ({
+    queryKey: queryKeys.integration.list(getOrgId()),
+    queryFn: async () => {
+      const integrations = await api.listIntegrations();
+      return integrations.filter((item) => {
+        const cat = (item.category || "").toLowerCase();
+        return (
+          cat === "ai" ||
+          cat === "llm" ||
+          cat === "ai-provider" ||
+          cat === "ai_provider" ||
+          cat === "ai-gateway" ||
+          cat === "ai-service"
+        );
+      });
+    },
+    staleTime: 30 * 1000,
+  }));
+}
+
+export function useSwitchActiveAiProvider() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: async ({ providerName, isEnabled }: { providerName: string; isEnabled: boolean }) => {
+      return api.toggleIntegration(providerName, isEnabled);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.integration.all });
+    },
+  }));
+}
+
