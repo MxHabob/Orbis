@@ -175,15 +175,12 @@ impl LlmAdapter {
             "content": user_prompt.trim()
         }));
 
-        let mut payload = json!({
+        let payload = json!({
             "model": model,
             "messages": messages,
-            "temperature": temperature.clamp(0.0, 2.0)
+            "temperature": temperature.clamp(0.0, 2.0),
+            "max_tokens": self.config.max_tokens.unwrap_or(2048)
         });
-
-        if let Some(max_tokens) = self.config.max_tokens {
-            payload["max_tokens"] = json!(max_tokens);
-        }
 
         let mut req = self.client.post(&endpoint).json(&payload);
         if let Some(ref key) = self.config.api_key {
@@ -288,12 +285,9 @@ impl LlmAdapter {
         let mut payload = json!({
             "model": model,
             "messages": messages_payload,
-            "temperature": temperature.clamp(0.0, 2.0)
+            "temperature": temperature.clamp(0.0, 2.0),
+            "max_tokens": self.config.max_tokens.unwrap_or(2048)
         });
-
-        if let Some(max_tokens) = self.config.max_tokens {
-            payload["max_tokens"] = json!(max_tokens);
-        }
 
         if !tools.is_empty() {
             let tools_json: Vec<serde_json::Value> = tools
@@ -371,6 +365,8 @@ impl LlmAdapter {
             base.to_string()
         } else if base.ends_with("/v1") {
             format!("{}/chat/completions", base)
+        } else if base.contains("openrouter.ai") {
+            format!("{}/api/v1/chat/completions", base)
         } else {
             format!("{}/v1/chat/completions", base)
         }
@@ -394,13 +390,10 @@ impl LlmAdapter {
                 "parts": [{"text": user_prompt.trim()}]
             }],
             "generationConfig": {
-                "temperature": temperature.clamp(0.0, 2.0)
+                "temperature": temperature.clamp(0.0, 2.0),
+                "maxOutputTokens": self.config.max_tokens.unwrap_or(2048)
             }
         });
-
-        if let Some(max_tokens) = self.config.max_tokens {
-            payload["generationConfig"]["maxOutputTokens"] = json!(max_tokens);
-        }
 
         let sys_trimmed = system_prompt.trim();
         if !sys_trimmed.is_empty() {
@@ -506,13 +499,10 @@ impl LlmAdapter {
         let mut payload = json!({
             "contents": contents,
             "generationConfig": {
-                "temperature": temperature.clamp(0.0, 2.0)
+                "temperature": temperature.clamp(0.0, 2.0),
+                "maxOutputTokens": self.config.max_tokens.unwrap_or(2048)
             }
         });
-
-        if let Some(max_tokens) = self.config.max_tokens {
-            payload["generationConfig"]["maxOutputTokens"] = json!(max_tokens);
-        }
 
         let sys_trimmed = system_prompt.trim();
         if !sys_trimmed.is_empty() {
@@ -627,7 +617,7 @@ impl LlmAdapter {
         let url = self.build_anthropic_url();
         let mut payload = json!({
             "model": model,
-            "max_tokens": self.config.max_tokens.unwrap_or(4096),
+            "max_tokens": self.config.max_tokens.unwrap_or(2048),
             "messages": [{
                 "role": "user",
                 "content": user_prompt.trim()
@@ -742,7 +732,7 @@ impl LlmAdapter {
 
         let mut payload = json!({
             "model": model,
-            "max_tokens": self.config.max_tokens.unwrap_or(4096),
+            "max_tokens": self.config.max_tokens.unwrap_or(2048),
             "messages": messages_payload,
             "temperature": temperature.clamp(0.0, 1.0)
         });

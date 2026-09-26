@@ -117,5 +117,5 @@ A section is **NEVER** complete merely because its route renders. A section is c
     - `provider-model-picker.svelte`: Cleanly integrated at the chat input toolbar next to Send; dynamically sources connected providers and models from `@orbis/app-store` as the single source of truth without code duplication.
     - `agent-header.svelte`: Dynamically updates the Avatar (official provider vector logo) and Title/Model chip based on the active connected AI provider.
     - `sidebar.svelte`: Seamlessly coordinates model selection and queries.
-- **Verification:** `bun x tsc --noEmit`, `cargo check --workspace`, `cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml`, and `cargo test --workspace` (73/73 tests) pass with 0 errors.
+- **Verification:** `bun x tsc --noEmit`, `cargo check --workspace`, `cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml`, and `cargo test --workspace` (75/75 tests) pass with 0 errors.
 

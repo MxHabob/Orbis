@@ -121,6 +121,8 @@ impl IntegrationResolver {
                             (LlmProviderProtocol::OpenAiCompatible, "https://api.groq.com/openai")
                         } else if provider == "mistral" {
                             (LlmProviderProtocol::OpenAiCompatible, "https://api.mistral.ai")
+                        } else if provider == "openrouter" {
+                            (LlmProviderProtocol::OpenAiCompatible, "https://openrouter.ai/api/v1")
                         } else if provider == "orbis" || provider == "ollama" || provider == "local" || provider == "vllm" || provider == "lmstudio" {
                             (LlmProviderProtocol::OpenAiCompatible, "http://localhost:11434")
                         } else {
@@ -130,12 +132,19 @@ impl IntegrationResolver {
                 };
 
                 let endpoint_url = custom_endpoint.unwrap_or_else(|| default_base_url.to_string());
+                let is_openrouter = provider == "openrouter" || endpoint_url.contains("openrouter.ai");
 
                 let mut adapter_config = LlmAdapterConfig::new(protocol, endpoint_url)
                     .with_api_key(api_key)
                     .with_default_model(configured_model)
                     .with_max_tokens(max_tokens)
                     .with_timeout_secs(timeout_secs);
+
+                if is_openrouter {
+                    adapter_config = adapter_config
+                        .with_header("HTTP-Referer", "https://orbis.app")
+                        .with_header("X-Title", "Orbis OS");
+                }
 
                 if let Some(org_id) = settings.and_then(|s| s.get("organization_id")).and_then(|v| v.as_str()) {
                     if !org_id.trim().is_empty() {

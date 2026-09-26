@@ -111,13 +111,19 @@ async function handleConnect(values: Record<string, unknown>) {
       }
     }
 
-    await api.connectIntegration(providerName, {
+    await api.connectApp({
+      provider_name: providerName,
+      category: app?.category || "ai-provider",
+      env: "production",
       secrets,
       settings,
     });
 
     await queryClient.invalidateQueries({
       queryKey: ["integration-status", orgId, providerName],
+    });
+    await queryClient.invalidateQueries({
+      queryKey: ["integration"],
     });
     toast.success(
       l(`تم ربط ${app?.name ?? providerName} بنجاح`, `Connected ${app?.name ?? providerName} successfully`),
@@ -132,9 +138,12 @@ async function handleConnect(values: Record<string, unknown>) {
 
 async function handleDisconnect() {
   try {
-    await api.disconnectIntegration(providerName);
+    await api.disconnectApp(providerName);
     await queryClient.invalidateQueries({
       queryKey: ["integration-status", orgId, providerName],
+    });
+    await queryClient.invalidateQueries({
+      queryKey: ["integration"],
     });
     toast.success(
       l(`تم قطع الاتصال مع ${app?.name ?? providerName}`, `Disconnected ${app?.name ?? providerName}`),
