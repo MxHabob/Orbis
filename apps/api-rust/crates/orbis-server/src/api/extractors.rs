@@ -65,6 +65,8 @@ impl FromRequestParts<AppState> for AuthContext {
                     tenant_id: org_id,
                     actor: Actor::User(user_id),
                     request_id: request_id.to_string(),
+                    source: orbis_app::context::ActionSource::Api,
+                    org_unit_path: None,
                 }))
             }
             None => {
@@ -81,6 +83,8 @@ impl FromRequestParts<AppState> for AuthContext {
                         tenant_id: dev_org_id,
                         actor: Actor::System,
                         request_id: request_id.to_string(),
+                        source: orbis_app::context::ActionSource::Api,
+                        org_unit_path: None,
                     }));
                 }
 

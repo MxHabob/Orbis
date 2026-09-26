@@ -151,6 +151,8 @@ impl OrganizationService {
             descendant_count: 0,
             sort_order: Some(0),
             is_active: true,
+            created_by: ctx.user_id(),
+            updated_by: ctx.user_id(),
             created_at: now,
             updated_at: now,
         };

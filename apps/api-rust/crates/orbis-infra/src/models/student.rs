@@ -30,6 +30,9 @@ pub struct Model {
     pub is_deleted: bool,
     pub deleted_at: Option<DateTimeUtc>,
     pub meta: Option<Json>,
+    pub org_unit_id: Option<Uuid>,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
 }

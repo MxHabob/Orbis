@@ -138,6 +138,8 @@ fn into_domain(m: org_unit::Model) -> DomainOrgUnit {
         descendant_count: m.descendant_count,
         sort_order: m.sort_order,
         is_active: m.is_active,
+        created_by: m.created_by,
+        updated_by: m.updated_by,
         created_at: m.created_at,
         updated_at: m.updated_at,
     }

@@ -11,6 +11,8 @@ pub struct Group {
     pub description: Option<String>,
     pub is_system: bool,
     pub status: String, // "active", "inactive"
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

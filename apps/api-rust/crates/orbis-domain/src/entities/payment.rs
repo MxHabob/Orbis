@@ -51,4 +51,6 @@ pub struct Payment {
     pub paid_at: DateTime<Utc>,
     pub created_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub org_unit_id: Option<Uuid>,
 }

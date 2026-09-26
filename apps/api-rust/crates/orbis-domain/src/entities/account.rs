@@ -43,6 +43,9 @@ pub struct Account {
     pub is_system_account: bool,
     pub is_active: bool,
     pub balances: serde_json::Value,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
+    pub version: i32,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

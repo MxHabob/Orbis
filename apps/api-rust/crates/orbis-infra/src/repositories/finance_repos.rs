@@ -68,6 +68,9 @@ impl AccountRepository for FinanceRepoImpl {
             currency_code: Set(a.currency_code.clone()),
             is_active: Set(a.is_active),
             balances: Set(a.balances.clone()),
+            created_by: Set(a.created_by),
+            updated_by: Set(a.updated_by),
+            version: Set(a.version),
             created_at: Set(a.created_at.into()),
             updated_at: Set(a.updated_at.into()),
         };
@@ -106,6 +109,9 @@ fn map_account_model_to_domain(m: account::Model) -> DomainAccount {
         is_system_account: false,
         is_active: m.is_active,
         balances: m.balances,
+        created_by: m.created_by,
+        updated_by: m.updated_by,
+        version: m.version,
         created_at: m.created_at.into(),
         updated_at: m.updated_at.into(),
     }
@@ -139,6 +145,10 @@ fn map_journal_entry_model_to_domain(m: journal_entry::Model) -> DomainJournalEn
         reversal_reason: m.reversal_reason,
         created_by: m.created_by,
         created_at: m.created_at.into(),
+        updated_at: m.updated_at.map(Into::into).unwrap_or_else(|| m.created_at.into()),
+        updated_by: m.updated_by,
+        org_unit_id: m.org_unit_id,
+        version: m.version,
     }
 }
 
@@ -179,7 +189,11 @@ impl JournalEntryRepository for FinanceRepoImpl {
             reversed_by: Set(entry.reversed_by),
             reversal_reason: Set(entry.reversal_reason.clone()),
             created_by: Set(entry.created_by),
+            updated_by: Set(entry.updated_by),
+            org_unit_id: Set(entry.org_unit_id),
+            version: Set(entry.version),
             created_at: Set(entry.created_at.into()),
+            updated_at: Set(Some(entry.updated_at.into())),
         };
 
         if JournalEntryEntity::find_by_id(entry.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
@@ -363,6 +377,7 @@ impl StudentFeeRepository for FinanceRepoImpl {
             discount_details: m.discount_details,
             installment_number: m.installment_number.map(|n| n as u32),
             notes: m.notes,
+            created_by: m.created_by,
             created_at: m.created_at.into(),
             updated_at: m.updated_at.into(),
         }))
@@ -422,6 +437,7 @@ impl StudentFeeRepository for FinanceRepoImpl {
             discount_details: Set(fee.discount_details.clone()),
             installment_number: Set(fee.installment_number.map(|n| n as i32)),
             notes: Set(fee.notes.clone()),
+            created_by: Set(fee.created_by),
             created_at: Set(fee.created_at.into()),
             updated_at: Set(fee.updated_at.into()),
         };
@@ -499,7 +515,9 @@ impl PaymentRepository for FinanceRepoImpl {
             notes: Set(p.notes.clone()),
             paid_at: Set(p.paid_at.into()),
             created_by: Set(p.created_by),
+            org_unit_id: Set(p.org_unit_id),
             created_at: Set(p.created_at.into()),
+            updated_at: Set(Some(p.updated_at.into())),
         };
 
         if PaymentEntity::find_by_id(p.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
@@ -663,6 +681,7 @@ fn map_student_fee_model_to_domain(m: student_fee::Model) -> DomainStudentFee {
         discount_details: m.discount_details,
         installment_number: m.installment_number.map(|n| n as u32),
         notes: m.notes,
+        created_by: m.created_by,
         created_at: m.created_at.into(),
         updated_at: m.updated_at.into(),
     }
@@ -697,5 +716,7 @@ fn map_payment_model_to_domain(m: payment::Model) -> DomainPayment {
         paid_at: m.paid_at.into(),
         created_by: m.created_by,
         created_at: m.created_at.into(),
+        updated_at: m.updated_at.map(Into::into).unwrap_or_else(|| m.created_at.into()),
+        org_unit_id: m.org_unit_id,
     }
 }

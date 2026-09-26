@@ -87,6 +87,9 @@ pub struct Student {
     pub is_deleted: bool,
     pub deleted_at: Option<DateTime<Utc>>,
     pub meta: serde_json::Value,
+    pub org_unit_id: Option<Uuid>,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

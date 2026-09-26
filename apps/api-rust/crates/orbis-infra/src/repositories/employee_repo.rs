@@ -50,6 +50,9 @@ impl EmployeeRepoImpl {
             work_shift: m.work_shift,
             notes: m.notes,
             is_deleted: m.is_deleted,
+            deleted_at: m.deleted_at,
+            created_by: m.created_by,
+            updated_by: m.updated_by,
             created_at: m.created_at,
             updated_at: m.updated_at,
         }
@@ -100,6 +103,8 @@ impl EmployeeRepoImpl {
             failed_login_attempts: m.failed_login_attempts,
             locked_until: m.locked_until,
             is_deleted: m.is_deleted,
+            created_by: m.created_by,
+            updated_by: m.updated_by,
             created_at: m.created_at,
             updated_at: m.updated_at,
         }
@@ -243,6 +248,8 @@ impl EmployeeRepository for EmployeeRepoImpl {
                         description: gm.description,
                         is_system: gm.is_system,
                         status: gm.status,
+                        created_by: gm.created_by,
+                        updated_by: gm.updated_by,
                         created_at: gm.created_at,
                         updated_at: gm.updated_at,
                     });
@@ -461,6 +468,9 @@ impl EmployeeRepository for EmployeeRepoImpl {
             work_shift: Set(employee.work_shift.clone()),
             notes: Set(employee.notes.clone()),
             is_deleted: Set(employee.is_deleted),
+            deleted_at: Set(employee.deleted_at),
+            created_by: Set(employee.created_by),
+            updated_by: Set(employee.updated_by),
             created_at: Set(employee.created_at),
             updated_at: Set(employee.updated_at),
         };

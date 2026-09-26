@@ -255,6 +255,9 @@ impl EmployeeService {
             work_shift: input.work_shift,
             notes: input.notes,
             is_deleted: false,
+            deleted_at: None,
+            created_by: ctx.user_id(),
+            updated_by: ctx.user_id(),
             created_at: now,
             updated_at: now,
         };

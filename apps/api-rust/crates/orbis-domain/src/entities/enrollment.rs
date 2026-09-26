@@ -82,6 +82,8 @@ pub struct Enrollment {
     pub withdrawn_at: Option<DateTime<Utc>>,
     pub withdrawal_reason: Option<String>,
     pub meta: serde_json::Value,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -111,6 +113,8 @@ impl Enrollment {
             withdrawn_at: None,
             withdrawal_reason: None,
             meta: serde_json::json!({}),
+            created_by: None,
+            updated_by: None,
             created_at: now,
             updated_at: now,
         }

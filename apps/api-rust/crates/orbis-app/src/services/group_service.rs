@@ -84,6 +84,8 @@ impl GroupService {
             description: input.description,
             is_system: false,
             status: "active".to_string(),
+            created_by: ctx.user_id(),
+            updated_by: ctx.user_id(),
             created_at: now,
             updated_at: now,
         };
@@ -268,6 +270,8 @@ impl GroupService {
                     description: desc,
                     is_system: true,
                     status: "active".to_string(),
+                    created_by: None,
+                    updated_by: None,
                     created_at: now,
                     updated_at: now,
                 };

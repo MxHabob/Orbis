@@ -22,5 +22,7 @@ pub enum DomainError {
     AlreadyInitialized,
     #[error("Bootstrap failed: {0}")]
     BootstrapFailed(String),
+    #[error("Concurrency conflict: {0}")]
+    ConcurrencyConflict(String),
 }
 

@@ -12,6 +12,7 @@ pub struct Attendance {
     pub attendance_date: NaiveDate,
     pub status: String, // Present, Absent, Late, Excused
     pub notes: Option<String>,
+    pub marked_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

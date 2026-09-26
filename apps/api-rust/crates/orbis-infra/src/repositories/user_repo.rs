@@ -34,6 +34,8 @@ impl UserRepository for UserRepoImpl {
             failed_login_attempts: m.failed_login_attempts,
             locked_until: m.locked_until,
             is_deleted: m.is_deleted,
+            created_by: m.created_by,
+            updated_by: m.updated_by,
             created_at: m.created_at,
             updated_at: m.updated_at,
         }))
@@ -61,6 +63,8 @@ impl UserRepository for UserRepoImpl {
             failed_login_attempts: m.failed_login_attempts,
             locked_until: m.locked_until,
             is_deleted: m.is_deleted,
+            created_by: m.created_by,
+            updated_by: m.updated_by,
             created_at: m.created_at,
             updated_at: m.updated_at,
         }))
@@ -89,6 +93,8 @@ impl UserRepository for UserRepoImpl {
             failed_login_attempts: m.failed_login_attempts,
             locked_until: m.locked_until,
             is_deleted: m.is_deleted,
+            created_by: m.created_by,
+            updated_by: m.updated_by,
             created_at: m.created_at,
             updated_at: m.updated_at,
         }).collect())
@@ -110,6 +116,8 @@ impl UserRepository for UserRepoImpl {
             failed_login_attempts: Set(user.failed_login_attempts),
             locked_until: Set(user.locked_until),
             is_deleted: Set(user.is_deleted),
+            created_by: Set(user.created_by),
+            updated_by: Set(user.updated_by),
             created_at: Set(user.created_at),
             updated_at: Set(user.updated_at),
         };

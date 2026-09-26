@@ -33,6 +33,8 @@ impl GroupRepoImpl {
             description: m.description,
             is_system: m.is_system,
             status: m.status,
+            created_by: m.created_by,
+            updated_by: m.updated_by,
             created_at: m.created_at,
             updated_at: m.updated_at,
         }
@@ -133,6 +135,8 @@ impl GroupRepository for GroupRepoImpl {
             description: Set(group.description.clone()),
             is_system: Set(group.is_system),
             status: Set(group.status.clone()),
+            created_by: Set(group.created_by),
+            updated_by: Set(group.updated_by),
             created_at: Set(group.created_at),
             updated_at: Set(group.updated_at),
         };

@@ -36,6 +36,8 @@ pub(crate) fn make_ctx(state: &crate::state::AppState) -> orbis_app::context::Re
         tenant_id,
         actor,
         request_id: uuid::Uuid::new_v4().to_string(),
+        source: orbis_app::context::ActionSource::TauriIpc,
+        org_unit_path: None,
     }
 }
 

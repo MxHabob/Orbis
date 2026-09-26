@@ -20,6 +20,7 @@ pub struct Model {
     pub is_exempt: Option<bool>,
     pub change_reason: Option<String>,
     pub recorded_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
     pub notes: Option<String>,
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,

@@ -97,6 +97,7 @@ impl AssessmentService {
             is_exempt: false,
             change_reason: None,
             recorded_by: ctx.user_id(),
+            updated_by: None,
             notes: None,
             created_at: now,
             updated_at: now,
@@ -280,6 +281,7 @@ impl AssessmentService {
             attendance_date: date,
             status: status.clone(),
             notes,
+            marked_by: ctx.user_id(),
             created_at: now,
             updated_at: now,
         };

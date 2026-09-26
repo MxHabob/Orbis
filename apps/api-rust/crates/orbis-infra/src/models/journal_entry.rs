@@ -24,6 +24,10 @@ pub struct Model {
     pub reversal_reason: Option<String>,
     pub created_by: Option<Uuid>,
     pub created_at: DateTimeWithTimeZone,
+    pub updated_at: Option<DateTimeWithTimeZone>,
+    pub updated_by: Option<Uuid>,
+    pub org_unit_id: Option<Uuid>,
+    pub version: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

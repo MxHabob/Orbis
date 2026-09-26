@@ -83,6 +83,7 @@ impl SchedulingService {
             name,
             capacity,
             room_type,
+            org_unit_id: None,
             created_at: now,
             updated_at: now,
         };

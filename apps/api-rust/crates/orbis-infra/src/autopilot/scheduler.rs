@@ -36,6 +36,8 @@ impl AutopilotScheduler {
                             tenant_id: org.id,
                             actor: Actor::Autopilot,
                             request_id: Uuid::new_v4().to_string(),
+                            source: orbis_app::context::ActionSource::Autopilot,
+                            org_unit_path: None,
                         };
 
                         if let Err(e) = self.service.run_tick(&ctx, org.id, false).await {

@@ -13,6 +13,9 @@ pub struct Model {
     pub currency_code: String,
     pub is_active: bool,
     pub balances: Json,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
+    pub version: i32,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }

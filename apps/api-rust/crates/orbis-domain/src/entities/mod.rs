@@ -1,3 +1,4 @@
+pub mod audit;
 pub mod organization;
 pub mod academic_policy;
 pub mod org_unit;

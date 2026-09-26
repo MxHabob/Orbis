@@ -73,3 +73,89 @@ pub enum DomainEvent {
     UserPasswordReset { user_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
     CredentialDeliveryAttempted { user_id: Uuid, channel: String, success: bool, timestamp: DateTime<Utc> },
 }
+
+impl DomainEvent {
+    /// Maps a domain event to audit trail fields: `(action, entity_type, entity_id)`.
+    ///
+    /// Returns `None` for events that should not generate audit entries (e.g.,
+    /// derived calculations, credential delivery attempts).
+    pub fn audit_fields(&self) -> Option<(&'static str, &'static str, Uuid)> {
+        match self {
+            // Organization
+            DomainEvent::OrganizationCreated { org_id, .. } => Some(("organization.created", "organization", *org_id)),
+            DomainEvent::OrganizationUpdated { org_id, .. } => Some(("organization.updated", "organization", *org_id)),
+            DomainEvent::OrgUnitCreated { unit_id, .. } => Some(("org_unit.created", "org_unit", *unit_id)),
+            DomainEvent::OrgUnitUpdated { unit_id, .. } => Some(("org_unit.updated", "org_unit", *unit_id)),
+
+            // User / Auth
+            DomainEvent::UserCreated { user_id, .. } => Some(("user.created", "user", *user_id)),
+            DomainEvent::UserLoggedIn { .. } => None, // Tracked via Session; not audit-worthy
+            DomainEvent::UserRegistered { user_id, .. } => Some(("user.registered", "user", *user_id)),
+            DomainEvent::UserEmailVerified { user_id } => Some(("user.email_verified", "user", *user_id)),
+
+            // Academic
+            DomainEvent::AcademicYearCreated { year_id, .. } => Some(("academic_year.created", "academic_year", *year_id)),
+            DomainEvent::AcademicPeriodCreated { period_id, .. } => Some(("academic_period.created", "academic_period", *period_id)),
+            DomainEvent::AcademicPeriodStateChanged { period_id, .. } => Some(("academic_period.state_changed", "academic_period", *period_id)),
+            DomainEvent::SubjectCreated { subject_id, .. } => Some(("subject.created", "subject", *subject_id)),
+            DomainEvent::ClassCreated { class_id, .. } => Some(("class.created", "class", *class_id)),
+            DomainEvent::ClassSubjectAssigned { class_subject_id, .. } => Some(("class_subject.assigned", "class_subject", *class_subject_id)),
+
+            // Student
+            DomainEvent::StudentRegistered { student_id, .. } => Some(("student.created", "student", *student_id)),
+            DomainEvent::StudentEnrolled { enrollment_id, .. } => Some(("enrollment.created", "enrollment", *enrollment_id)),
+            DomainEvent::StudentStudyModeChanged { student_id, .. } => Some(("student.study_mode_changed", "student", *student_id)),
+            DomainEvent::StudentStatusChanged { student_id, .. } => Some(("student.status_changed", "student", *student_id)),
+            DomainEvent::StudentProfileUpdated { student_id, .. } => Some(("student.updated", "student", *student_id)),
+            DomainEvent::StudentClassTransferred { enrollment_id, .. } => Some(("enrollment.transferred", "enrollment", *enrollment_id)),
+            DomainEvent::StudentWithdrawn { enrollment_id, .. } => Some(("enrollment.withdrawn", "enrollment", *enrollment_id)),
+            DomainEvent::GuardianAssigned { student_guardian_id, .. } => Some(("guardian.assigned", "student_guardian", *student_guardian_id)),
+            DomainEvent::CohortPromoted { job_id, .. } => Some(("promotion.completed", "promotion_job", *job_id)),
+
+            // Scheduling
+            DomainEvent::RoomCreated { room_id, .. } => Some(("room.created", "room", *room_id)),
+            DomainEvent::TimeSlotCreated { time_slot_id, .. } => Some(("time_slot.created", "time_slot", *time_slot_id)),
+            DomainEvent::LessonScheduled { .. } => None, // Bulk operation — audit the solver job instead
+            DomainEvent::TimetableSolved { job_id, .. } => Some(("timetable.solved", "solver_job", *job_id)),
+
+            // Assessment
+            DomainEvent::GradeRecorded { grade_id, .. } => Some(("grade.recorded", "grade", *grade_id)),
+            DomainEvent::GpaCalculated { .. } => None, // Derived calculation — no audit
+            DomainEvent::AttendanceMarked { attendance_id, .. } => Some(("attendance.marked", "attendance", *attendance_id)),
+            DomainEvent::BehaviorLogged { record_id, .. } => Some(("behavior.logged", "behavior_record", *record_id)),
+
+            // Exams
+            DomainEvent::ExamSessionCreated { session_id, .. } => Some(("exam_session.created", "exam_session", *session_id)),
+            DomainEvent::ExamScheduled { schedule_id, .. } => Some(("exam.scheduled", "exam_schedule", *schedule_id)),
+            DomainEvent::SeatingNumberAssigned { .. } => None, // Bulk operation
+
+            // Finance
+            DomainEvent::StudentFeeGenerated { fee_id, .. } => Some(("student_fee.generated", "student_fee", *fee_id)),
+            DomainEvent::PaymentReceived { payment_id, .. } => Some(("payment.received", "payment", *payment_id)),
+            DomainEvent::JournalEntryPosted { entry_id, .. } => Some(("journal_entry.posted", "journal_entry", *entry_id)),
+
+            // Overrides
+            DomainEvent::OverrideSubmitted { request_id, .. } => Some(("override.submitted", "override_request", *request_id)),
+            DomainEvent::OverrideApproved { request_id, .. } => Some(("override.approved", "override_request", *request_id)),
+            DomainEvent::OverrideRejected { request_id, .. } => Some(("override.rejected", "override_request", *request_id)),
+
+            // Documents
+            DomainEvent::DocumentUploaded { document_id, .. } => Some(("document.uploaded", "document", *document_id)),
+            DomainEvent::DocumentDeleted { document_id, .. } => Some(("document.deleted", "document", *document_id)),
+
+            // Employee & Groups
+            DomainEvent::EmployeeCreated { employee_id, .. } => Some(("employee.created", "employee", *employee_id)),
+            DomainEvent::EmployeeUpdated { employee_id, .. } => Some(("employee.updated", "employee", *employee_id)),
+            DomainEvent::EmployeeStatusChanged { employee_id, .. } => Some(("employee.status_changed", "employee", *employee_id)),
+            DomainEvent::GroupCreated { group_id, .. } => Some(("group.created", "group", *group_id)),
+            DomainEvent::GroupUpdated { group_id, .. } => Some(("group.updated", "group", *group_id)),
+            DomainEvent::GroupDeleted { group_id, .. } => Some(("group.deleted", "group", *group_id)),
+            DomainEvent::UserGroupAssigned { group_id, .. } => Some(("user_group.assigned", "group", *group_id)),
+            DomainEvent::UserGroupRemoved { group_id, .. } => Some(("user_group.removed", "group", *group_id)),
+            DomainEvent::UserAccountProvisioned { user_id, .. } => Some(("user.provisioned", "user", *user_id)),
+            DomainEvent::UserAccountStatusChanged { user_id, .. } => Some(("user.status_changed", "user", *user_id)),
+            DomainEvent::UserPasswordReset { user_id, .. } => Some(("user.password_reset", "user", *user_id)),
+            DomainEvent::CredentialDeliveryAttempted { .. } => None, // Operational — not an auditable entity change
+        }
+    }
+}

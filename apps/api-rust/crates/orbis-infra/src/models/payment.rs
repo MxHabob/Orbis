@@ -24,6 +24,8 @@ pub struct Model {
     pub paid_at: DateTimeWithTimeZone,
     pub created_by: Option<Uuid>,
     pub created_at: DateTimeWithTimeZone,
+    pub updated_at: Option<DateTimeWithTimeZone>,
+    pub org_unit_id: Option<Uuid>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

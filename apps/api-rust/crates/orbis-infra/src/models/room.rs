@@ -10,6 +10,7 @@ pub struct Model {
     pub name: String,
     pub capacity: i32,
     pub room_type: String,
+    pub org_unit_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

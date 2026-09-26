@@ -90,6 +90,9 @@ pub struct Employee {
     pub work_shift: Option<String>,
     pub notes: Option<String>,
     pub is_deleted: bool,
+    pub deleted_at: Option<DateTime<Utc>>,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

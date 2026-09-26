@@ -60,6 +60,9 @@ pub struct Organization {
     pub deleted_by: Option<Uuid>,
     pub current_period_id: Option<String>, // Usually references an academic period ID from Calendar Context
     pub metadata: Option<serde_json::Value>,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
+    pub version: i32,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -102,6 +105,9 @@ impl Organization {
             deleted_by: None,
             current_period_id: None,
             metadata: None,
+            created_by: None,
+            updated_by: None,
+            version: 1,
             created_at: now,
             updated_at: now,
         })

@@ -26,6 +26,8 @@ pub struct Model {
     pub descendant_count: i32,
     pub sort_order: Option<i32>,
     pub is_active: bool,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

@@ -45,6 +45,7 @@ pub struct StudentFee {
     pub discount_details: Option<serde_json::Value>,
     pub installment_number: Option<u32>,
     pub notes: Option<String>,
+    pub created_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

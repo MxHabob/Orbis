@@ -35,6 +35,9 @@ fn map_org_model_to_domain(m: organization::Model) -> DomainOrganization {
         deleted_by: m.deleted_by,
         current_period_id: m.current_period_id,
         metadata: m.metadata,
+        created_by: m.created_by,
+        updated_by: m.updated_by,
+        version: m.version,
         created_at: m.created_at,
         updated_at: m.updated_at,
     }
@@ -105,6 +108,9 @@ impl OrganizationRepository for OrgRepoImpl {
             deleted_by: Set(org.deleted_by),
             current_period_id: Set(org.current_period_id.clone()),
             metadata: Set(org.metadata.clone()),
+            created_by: Set(org.created_by),
+            updated_by: Set(org.updated_by),
+            version: Set(org.version),
             created_at: Set(org.created_at),
             updated_at: Set(org.updated_at),
             ..Default::default()

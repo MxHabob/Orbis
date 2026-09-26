@@ -57,6 +57,10 @@ pub struct JournalEntry {
     pub reversal_reason: Option<String>,
     pub created_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub updated_by: Option<Uuid>,
+    pub org_unit_id: Option<Uuid>,
+    pub version: i32,
 }
 
 impl JournalEntry {

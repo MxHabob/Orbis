@@ -219,6 +219,8 @@ async fn login(
         tenant_id: Uuid::default(),
         actor: orbis_domain::iam::actor::Actor::System,
         request_id: Uuid::new_v4().to_string(),
+        source: orbis_app::context::ActionSource::Api,
+        org_unit_path: None,
     };
 
     let res = state.auth_service.login(&ctx, &payload.email, &payload.password).await?;

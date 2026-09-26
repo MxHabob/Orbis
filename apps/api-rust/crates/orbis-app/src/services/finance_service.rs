@@ -195,6 +195,10 @@ impl FinanceService {
             reversal_reason: None,
             created_by: ctx.user_id(),
             created_at: now,
+            updated_at: now,
+            updated_by: ctx.user_id(),
+            org_unit_id: None,
+            version: 1,
         };
 
         if let Err(e) = entry.validate_balance() {
@@ -225,6 +229,8 @@ impl FinanceService {
             paid_at: now,
             created_by: ctx.user_id(),
             created_at: now,
+            updated_at: now,
+            org_unit_id: None,
         };
         self.payment_repo.save(&payment).await?;
 
@@ -296,6 +302,7 @@ impl FinanceService {
             discount_details: None,
             installment_number: None,
             notes: None,
+            created_by: ctx.user_id(),
             created_at: now,
             updated_at: now,
         };
@@ -390,6 +397,9 @@ impl FinanceService {
             is_system_account: false,
             is_active: true,
             balances: serde_json::json!({}),
+            created_by: ctx.user_id(),
+            updated_by: ctx.user_id(),
+            version: 1,
             created_at: now,
             updated_at: now,
         };
@@ -479,6 +489,10 @@ impl FinanceService {
             reversal_reason: None,
             created_by: Some(user_id),
             created_at: now,
+            updated_at: now,
+            updated_by: Some(user_id),
+            org_unit_id: original_entry.org_unit_id,
+            version: 1,
         };
 
         self.journal_repo.save(&reversing_entry).await?;
@@ -576,6 +590,7 @@ impl FinanceService {
                 discount_details: None,
                 installment_number: Some((i + 1) as u32),
                 notes: Some(format!("Installment {} of {}", i + 1, num_installments)),
+                created_by: ctx.user_id(),
                 created_at: now,
                 updated_at: now,
             };

@@ -29,6 +29,9 @@ pub struct Model {
     pub deleted_by: Option<Uuid>,
     pub current_period_id: Option<String>,
     pub metadata: Option<serde_json::Value>,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
+    pub version: i32,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

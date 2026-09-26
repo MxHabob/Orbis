@@ -19,6 +19,8 @@ pub struct Model {
     pub withdrawn_at: Option<DateTimeWithTimeZone>,
     pub withdrawal_reason: Option<String>,
     pub meta: Option<Json>,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }

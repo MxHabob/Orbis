@@ -221,6 +221,8 @@ impl IdentityProvisioningService {
             failed_login_attempts: 0,
             locked_until: None,
             is_deleted: false,
+            created_by: ctx.user_id(),
+            updated_by: ctx.user_id(),
             created_at: now,
             updated_at: now,
         };

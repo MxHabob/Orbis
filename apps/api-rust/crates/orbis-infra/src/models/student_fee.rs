@@ -20,6 +20,7 @@ pub struct Model {
     pub discount_details: Option<Json>,
     pub installment_number: Option<i32>,
     pub notes: Option<String>,
+    pub created_by: Option<Uuid>,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }

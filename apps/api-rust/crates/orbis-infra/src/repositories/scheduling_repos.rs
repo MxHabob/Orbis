@@ -23,7 +23,7 @@ impl RoomRepository for SchedulingRepoImpl {
         let model = RoomEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(|m| DomainRoom {
             id: m.id, org_id: m.org_id, name: m.name, capacity: m.capacity,
-            room_type: m.room_type, created_at: m.created_at, updated_at: m.updated_at
+            room_type: m.room_type, org_unit_id: m.org_unit_id, created_at: m.created_at, updated_at: m.updated_at
         }))
     }
 
@@ -31,7 +31,7 @@ impl RoomRepository for SchedulingRepoImpl {
         let models = RoomEntity::find().filter(room::Column::OrgId.eq(org_id)).all(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(models.into_iter().map(|m| DomainRoom {
             id: m.id, org_id: m.org_id, name: m.name, capacity: m.capacity,
-            room_type: m.room_type, created_at: m.created_at, updated_at: m.updated_at
+            room_type: m.room_type, org_unit_id: m.org_unit_id, created_at: m.created_at, updated_at: m.updated_at
         }).collect())
     }
 
@@ -39,6 +39,7 @@ impl RoomRepository for SchedulingRepoImpl {
         let active = room::ActiveModel {
             id: Set(room.id), org_id: Set(room.org_id), name: Set(room.name.clone()),
             capacity: Set(room.capacity), room_type: Set(room.room_type.clone()),
+            org_unit_id: Set(room.org_unit_id),
             created_at: Set(room.created_at), updated_at: Set(room.updated_at),
         };
 

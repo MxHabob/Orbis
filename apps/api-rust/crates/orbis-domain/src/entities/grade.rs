@@ -21,6 +21,7 @@ pub struct Grade {
     pub is_exempt: bool, // For Auditor students
     pub change_reason: Option<String>,
     pub recorded_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
     pub notes: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

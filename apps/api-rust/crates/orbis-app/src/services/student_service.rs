@@ -172,6 +172,9 @@ impl StudentService {
             is_deleted: false,
             deleted_at: None,
             meta: serde_json::json!({}),
+            org_unit_id: None,
+            created_by: ctx.user_id(),
+            updated_by: ctx.user_id(),
             created_at: now,
             updated_at: now,
         };

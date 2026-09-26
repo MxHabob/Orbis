@@ -12,6 +12,8 @@ pub struct Model {
     pub description: Option<String>,
     pub is_system: bool,
     pub status: String,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
 }
