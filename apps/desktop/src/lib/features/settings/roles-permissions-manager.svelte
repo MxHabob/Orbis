@@ -2,24 +2,17 @@
 @component RolesPermissionsManager
 Allows administrators to manage system and custom roles, configure granular permissions,
 and inspect role assignments according to the Orbis IAM Domain model.
+Powered by OrbisGrid and Design System Card primitives.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { confirmStore } from "$lib/stores";
-import { Check, Clipboard, Pencil, Plus, Refresh, Trash, UserBadgeCheck } from "@orbis/icons";
-import {
-  Grid,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  toast,
-} from "@orbis/ui";
-import { Badge } from "@orbis/ui/badge";
+import { Clipboard, Pencil, Plus, Refresh, Search, Trash, UserBadgeCheck } from "@orbis/icons";
+import { toast } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { fade } from "svelte/transition";
 import { l } from "$lib/core/i18n";
@@ -27,6 +20,12 @@ import { useQueryClient } from "@tanstack/svelte-query";
 import type { RoleDto } from "$lib/api/types";
 import RoleCreationSheet from "./components/role-creation-sheet.svelte";
 import { countRolePermissions } from "$lib/core/iam";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type GridActionEvent,
+  type ActionItem,
+} from "@orbis/svelte-grid";
 
 let { orgId }: { orgId: string } = $props();
 const queryClient = useQueryClient();
@@ -34,6 +33,8 @@ const queryClient = useQueryClient();
 // State
 let roles = $state<RoleDto[]>([]);
 let isLoading = $state(true);
+let searchQuery = $state("");
+let filterType = $state<"all" | "system" | "custom">("all");
 
 // Sheet State
 let isSheetOpen = $state(false);
@@ -53,6 +54,84 @@ async function loadRoles() {
 }
 
 onMount(loadRoles);
+
+// Statistics
+const totalCount = $derived(roles.length);
+const systemCount = $derived(roles.filter((r) => r.is_system).length);
+const customCount = $derived(roles.filter((r) => !r.is_system).length);
+
+// Filtered Data Source for OrbisGrid
+const filteredRoles = $derived.by(() => {
+  let list = roles;
+  if (filterType === "system") {
+    list = list.filter((r) => r.is_system);
+  } else if (filterType === "custom") {
+    list = list.filter((r) => !r.is_system);
+  }
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase().trim();
+    list = list.filter(
+      (r) =>
+        r.id.toLowerCase().includes(q) ||
+        r.name.toLowerCase().includes(q) ||
+        (r.name_ar && r.name_ar.toLowerCase().includes(q))
+    );
+  }
+  return list;
+});
+
+const gridSource = $derived(
+  filteredRoles.map((r, i) => ({
+    ...r,
+    __idx: i + 1,
+    permCount: countRolePermissions(r.permissions, r.id),
+    roleType: r.is_system ? "system" : "custom",
+    typeBadge: r.is_system ? l("نظام قياسي", "System") : l("مخصص", "Custom"),
+    permBadge: `${countRolePermissions(r.permissions, r.id)} ${l("صلاحية", "perms")}`,
+    name_display: l(r.name_ar, r.name) || r.name || r.id,
+  }))
+);
+
+// Actions Configuration
+const roleActions: ActionItem[] = [
+  { id: "edit", label: l("تعديل الصلاحيات", "Edit Permissions"), icon: "Pencil" },
+  { id: "duplicate", label: l("نسخ الدور", "Duplicate Role"), icon: "Clipboard" },
+  { id: "delete", label: l("حذف الدور", "Delete Role"), icon: "Trash2", variant: "destructive" },
+];
+
+// Columns Definition
+const columns: OrbisColumnDef[] = [
+  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 50, size: 50, readonly: true, pin: "left", align: "center" },
+  { id: "id", prop: "id", header: l("المعرف", "Role ID"), name: "Role ID", width: 160, size: 160, readonly: true, pin: "left", cellClass: "font-mono font-bold text-foreground text-xs" },
+  { id: "name_ar", prop: "name_ar", header: l("الاسم بالعربية", "Arabic Name"), name: "Arabic Name", width: 200, size: 200, readonly: true, cellClass: "font-semibold text-xs text-foreground" },
+  { id: "name", prop: "name", header: l("الاسم بالإنجليزية", "English Name"), name: "English Name", width: 200, size: 200, readonly: true, cellClass: "text-muted-foreground text-xs" },
+  { id: "typeBadge", prop: "typeBadge", header: l("نوع الدور", "Type"), name: "Type", width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  { id: "permBadge", prop: "permBadge", header: l("الصلاحيات", "Permissions"), name: "Permissions", width: 120, size: 120, align: "center", readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  {
+    id: "actions",
+    prop: "actions",
+    header: m.common_je_col_actions ? m.common_je_col_actions() : "الإجراءات",
+    name: "Actions",
+    width: 90,
+    size: 90,
+    type: "actions",
+    align: "center",
+    pin: "right",
+    actions: roleActions,
+  },
+];
+
+function handleGridAction(event: GridActionEvent) {
+  const { action, row } = event;
+  const original = roles.find((r) => r.id === row.id) || row;
+  if (action === "edit") {
+    openEditRole(original as RoleDto);
+  } else if (action === "duplicate") {
+    openDuplicateRole(original as RoleDto);
+  } else if (action === "delete") {
+    handleDeleteRole(original as RoleDto);
+  }
+}
 
 function openCreateRole() {
   editingRole = null;
@@ -109,24 +188,54 @@ async function handleRoleSaved() {
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
-  <!-- Top Header Bar -->
-  <div class="flex items-center justify-between gap-4 pb-5 select-none border-b border-border/40 font-sans">
+<div class="h-full w-full overflow-hidden flex flex-col p-6 gap-4 text-start">
+  <!-- Top Settings Toolbar -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
     <div class="flex items-center gap-2">
-      {#if !isLoading}
-        <span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
-          {roles.length} {l("أدوار", "roles")}
-        </span>
-      {/if}
+      <!-- Search Input -->
+      <div class="relative w-48 sm:w-64">
+        <Search size={14} class="absolute start-2.5 top-2.5 text-muted-foreground" />
+        <Input
+          type="search"
+          placeholder={l("بحث عن دور...", "Search roles...")}
+          class="ps-8 h-9 text-xs bg-card"
+          bind:value={searchQuery}
+        />
+      </div>
+
+      <!-- Filter Pill Buttons -->
+      <div class="flex rounded-lg border border-border/60 p-0.5 bg-card text-xs">
+        <button
+          type="button"
+          class="px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer {filterType === 'all' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
+          onclick={() => (filterType = "all")}
+        >
+          {l("الكل", "All")} ({totalCount})
+        </button>
+        <button
+          type="button"
+          class="px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer {filterType === 'system' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
+          onclick={() => (filterType = "system")}
+        >
+          {l("نظام", "System")} ({systemCount})
+        </button>
+        <button
+          type="button"
+          class="px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer {filterType === 'custom' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
+          onclick={() => (filterType = "custom")}
+        >
+          {l("مخصص", "Custom")} ({customCount})
+        </button>
+      </div>
     </div>
 
     <!-- Actions -->
     <div class="flex items-center gap-2">
       <Button
         variant="outline"
-        size="sm"
+        size="icon"
         onclick={loadRoles}
-        class="h-9 w-9 p-0 flex items-center justify-center cursor-pointer"
+        class="h-9 w-9 cursor-pointer"
         title={m.common_control_refresh ? m.common_control_refresh() : "تحديث"}
       >
         <Refresh size={13} class={isLoading ? "animate-spin" : ""} />
@@ -144,125 +253,40 @@ async function handleRoleSaved() {
     </div>
   </div>
 
-  <!-- Content Section: Standard Grid -->
-  <div class="w-full">
+  <!-- OrbisGrid Content -->
+  <div class="flex-1 min-h-0 w-full overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs">
     {#if isLoading}
-      <div class="flex flex-col gap-3">
-        {#each Array(4) as _}
-          <Skeleton class="h-14 w-full rounded-lg" />
+      <div class="p-6 flex flex-col gap-3">
+        {#each Array(6) as _}
+          <Skeleton class="h-10 w-full rounded-md" />
         {/each}
       </div>
-    {:else if roles.length === 0}
-      <!-- Empty state -->
-      <div class="border border-dashed border-border/80 rounded-2xl p-16 flex flex-col items-center justify-center text-center gap-3 select-none my-4">
-        <div class="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
+    {:else if filteredRoles.length === 0}
+      <div class="p-16 flex flex-col items-center justify-center text-center gap-3 select-none">
+        <div class="size-14 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
           <UserBadgeCheck size={28} />
         </div>
         <h3 class="text-sm font-bold text-foreground">
-          {l("لا توجد أدوار مسجلة", "No roles found")}
+          {l("لا توجد أدوار مطابقة للبحث", "No matching roles found")}
         </h3>
         <p class="text-xs text-muted-foreground max-w-xs">
-          {l("يمكنك البدء بإضافة دور مخصص جديد للنظام", "You can create a new custom role")}
+          {searchQuery ? l("جرب تعديل عبارة البحث أو الفلتر", "Try adjusting your search query or filter") : l("يمكنك البدء بإضافة دور مخصص جديد للنظام", "You can create a new custom role")}
         </p>
       </div>
     {:else}
-      <div in:fade={{ duration: 150 }} class="overflow-hidden">
-        <Grid>
-          <TableHeader class="bg-muted/40 select-none">
-            <TableRow>
-              <TableHead class="text-start font-bold text-xs">{l("معرف الدور (Code)", "Role ID")}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{l("الاسم بالعربية", "Arabic Name")}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{l("الاسم بالإنجليزية", "English Name")}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{l("نوع الدور", "Type")}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{l("عدد الصلاحيات", "Permissions")}</TableHead>
-              <TableHead class="text-end font-bold text-xs w-36">{m.common_je_col_actions ? m.common_je_col_actions() : "الإجراءات"}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {#each roles as role (role.id)}
-              {@const permCount = countRolePermissions(role.permissions, role.id)}
-              <TableRow class="hover:bg-muted/10 transition-all duration-150">
-                <!-- ID / Code -->
-                <TableCell class="text-start font-mono text-xs text-foreground font-bold">
-                  {role.id}
-                </TableCell>
-
-                <!-- Arabic Name -->
-                <TableCell class="text-start text-xs font-semibold">
-                  {role.name_ar || "—"}
-                </TableCell>
-
-                <!-- English Name -->
-                <TableCell class="text-start text-xs text-muted-foreground">
-                  {role.name || "—"}
-                </TableCell>
-
-                <!-- Type Badge -->
-                <TableCell class="text-start text-xs">
-                  {#if role.is_system}
-                    <Badge variant="secondary" class="text-[9px] font-semibold">
-                      {l("نظام قياسي", "System")}
-                    </Badge>
-                  {:else}
-                    <Badge variant="success" class="text-[9px] font-bold">
-                      {l("مخصص", "Custom")}
-                    </Badge>
-                  {/if}
-                </TableCell>
-
-                <!-- Permissions Count -->
-                <TableCell class="text-start text-xs">
-                  <Badge variant="outline" class="text-[9px] font-mono font-bold text-muted-foreground">
-                    {permCount} {l("صلاحية", "perms")}
-                  </Badge>
-                </TableCell>
-
-                <!-- Actions -->
-                <TableCell class="text-end text-xs">
-                  <div class="flex items-center justify-end gap-1.5">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onclick={() => openEditRole(role)}
-                      class="h-7 w-7 cursor-pointer hover:text-primary hover:bg-primary/5"
-                      title={l("تعديل الصلاحيات", "Edit Permissions")}
-                    >
-                      <Pencil size={12} />
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onclick={() => openDuplicateRole(role)}
-                      class="h-7 w-7 cursor-pointer hover:text-foreground hover:bg-muted/50"
-                      title={l("نسخ الدور", "Duplicate Role")}
-                    >
-                      <Clipboard size={12} />
-                    </Button>
-
-                    {#if !role.is_system}
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onclick={() => handleDeleteRole(role)}
-                        class="h-7 w-7 cursor-pointer text-destructive hover:bg-destructive/10 border-destructive/20"
-                        title={m.common_action_delete ? m.common_action_delete() : "حذف"}
-                      >
-                        <Trash size={12} />
-                      </Button>
-                    {:else}
-                      <span class="w-7"></span>
-                    {/if}
-                  </div>
-                </TableCell>
-              </TableRow>
-            {/each}
-          </TableBody>
-        </Grid>
+      <div in:fade={{ duration: 150 }} class="h-full w-full">
+        <OrbisGrid
+          {columns}
+          source={gridSource}
+          onaction={handleGridAction}
+          loading={isLoading}
+          class="h-full border-0"
+        />
       </div>
     {/if}
   </div>
 </div>
+
 
 <!-- Role Creation / Pencil Sheet -->
 <RoleCreationSheet

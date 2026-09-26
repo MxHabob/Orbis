@@ -103,11 +103,9 @@ A section is **NEVER** complete merely because its route renders. A section is c
 
 - **Subsystem:** Employee Affairs, User Groups & IAM Roles
 - **State:** 100% DB-driven role architecture without hardcoded role arrays or static fallbacks.
-- **Backend Parity:** `iam_list_roles`, `iam_save_role`, and `iam_delete_role` fully implemented and verified in both `src-tauri` (Tauri IPC) and `orbis-server` (REST API).
-- **Frontend Reactive Sync:** `RoleSelect`, `RolesPermissionsManager`, `RoleCreationSheet`, and `UserRoles` dynamically query `api.listRoles()` and automatically invalidate `["roles"]` cache upon adding, modifying, or deleting roles.
-- **Components Created & Cleaned:**
-  - `<RoleSelect>`: 100% DB-driven role selector without static lists.
-  - `<NationalitySelect>`: Country/nationality selector powered by `@orbis/location/countries-intl`.
-  - `<UserAvatar>`: Standardized using `@orbis/ui/avatar` primitives.
-  - `<ProvisionAccountSheet>`, `<ManageEmployeeGroupsSheet>`, `<ManageUserGroupsSheet>`: Standalone slide-over Sheet drawers.
-- **Verification:** `bun x tsc --noEmit`, `cargo check --workspace`, `cargo check (src-tauri)`, and `cargo test --workspace` all pass with 0 errors.
+- **Settings Layout Parity:** Settings Roles & Permissions (`RolesPermissionsManager`) follows the canonical Settings design system (Search + Filter Pills + Refresh + Add Role + `OrbisGrid`) without redundant matrix cards or extra headers.
+- **Employee Profile 2D Matrix:** Employee dossier (`employee-profile.svelte`) features an upgraded 2D Effective Permissions Matrix matching the Financial/IAM design standards:
+  - Interactive search filtering (`permSearch`), scope toggles (`All` / `Granted` / `Ungranted`), and domain chips.
+  - Granular 2D resource and action matrix with emerald/primary granted chips, progress bars, and domain stats.
+- **Backend & Client Parity:** `iam_list_roles`, `iam_save_role`, and `iam_delete_role` fully implemented and verified in both `src-tauri` (Tauri IPC) and `orbis-server` (REST API). Automatic cache invalidation (`["roles"]`) across mutations.
+- **Verification:** `bun x tsc --noEmit`, `cargo check --workspace`, `cargo check (src-tauri)`, and `cargo test --workspace` (all 73 unit tests) pass with 0 errors.
