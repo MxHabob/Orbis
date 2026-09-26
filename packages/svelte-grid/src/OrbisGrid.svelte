@@ -64,6 +64,7 @@ interface Props {
   range?: boolean;
   clipboard?: boolean;
   autoSize?: boolean;
+  autoFit?: boolean;
   clientQuery?: boolean;
   search?: string;
   filter?: import("./types").GridFilter | null;
@@ -90,6 +91,7 @@ let {
   range = true,
   clipboard = true,
   autoSize = false,
+  autoFit = true,
   clientQuery = false,
   search = "",
   filter = null,
@@ -154,11 +156,114 @@ const rowWindow = $derived(
   ),
 );
 
+const computedWidthMap = $derived.by<Record<string, number>>(() => {
+  const map: Record<string, number> = {};
+  if (!visibleCols.length) return map;
+
+  let totalBase = 0;
+  let totalFlex = 0;
+
+  const colDetails = visibleCols.map((col) => {
+    const id = columnId(col);
+    const userW = columnWidths[id];
+    const isDedicatedFixed =
+      id === "__idx" ||
+      id === "__selected" ||
+      col.prop === "__idx" ||
+      col.prop === "__selected" ||
+      col.type === "action" ||
+      id === "actions" ||
+      col.prop === "actions" ||
+      col.flex === 0 ||
+      col.flexgrow === 0;
+
+    const baseW =
+      userW ??
+      col.width ??
+      col.size ??
+      (isDedicatedFixed
+        ? id === "__idx"
+          ? 48
+          : id === "__selected"
+            ? 40
+            : 90
+        : col.type === "avatar"
+          ? 220
+          : col.type === "badge" || col.type === "status"
+            ? 110
+            : 140);
+
+    const minW =
+      col.minWidth ??
+      (id === "__idx"
+        ? 48
+        : id === "__selected"
+          ? 40
+          : col.type === "action" || id === "actions"
+            ? 80
+            : 60);
+
+    const maxW = col.maxWidth ?? Infinity;
+    const hasManualResize = userW !== undefined;
+    const flex = hasManualResize
+      ? 0
+      : (col.flex ?? col.flexgrow ?? (isDedicatedFixed ? 0 : col.type === "avatar" ? 2 : 1));
+
+    const finalBaseW = Math.max(minW, baseW);
+    totalBase += finalBaseW;
+    totalFlex += flex;
+
+    return {
+      id,
+      col,
+      baseW: finalBaseW,
+      minW,
+      maxW,
+      flex,
+      hasManualResize,
+    };
+  });
+
+  const availableW = viewportW;
+  const shouldAutoFit = autoFit || autoSize;
+  const extraW = shouldAutoFit && availableW > totalBase ? availableW - totalBase : 0;
+
+  if (extraW > 0 && totalFlex > 0) {
+    let allocatedExtra = 0;
+    for (let i = 0; i < colDetails.length; i++) {
+      const item = colDetails[i]!;
+      if (item.flex > 0) {
+        const share = Math.floor((extraW * item.flex) / totalFlex);
+        const targetW = Math.min(item.maxW, Math.max(item.minW, item.baseW + share));
+        map[item.id] = targetW;
+        allocatedExtra += targetW - item.baseW;
+      } else {
+        map[item.id] = item.baseW;
+      }
+    }
+    const remainder = Math.floor(extraW - allocatedExtra);
+    if (remainder > 0) {
+      const firstFlex = colDetails.find((d) => d.flex > 0);
+      if (firstFlex && map[firstFlex.id] !== undefined) {
+        map[firstFlex.id] = Math.min(firstFlex.maxW, map[firstFlex.id]! + remainder);
+      }
+    }
+  } else {
+    for (const item of colDetails) {
+      map[item.id] = item.baseW;
+    }
+  }
+
+  return map;
+});
+
+function widthOf(col: OrbisColumnDef): number {
+  const id = columnId(col);
+  return computedWidthMap[id] ?? columnWidths[id] ?? columnWidth(col);
+}
+
 const totalWidth = $derived(
-  visibleCols.reduce(
-    (sum, col) => sum + (columnWidths[columnId(col)] ?? columnWidth(col)),
-    0,
-  ),
+  visibleCols.reduce((sum, col) => sum + widthOf(col), 0),
 );
 
 const totalHeight = $derived(displayRows.length * rowSize);
@@ -189,10 +294,6 @@ function rowKey(row: GridRow, index: number): string {
   return id == null ? `__i${index}` : String(id);
 }
 
-function widthOf(col: OrbisColumnDef): number {
-  return columnWidths[columnId(col)] ?? columnWidth(col);
-}
-
 function offsetOf(index: number): number {
   let x = 0;
   for (let i = 0; i < index; i++) x += widthOf(visibleCols[i]!);
@@ -200,9 +301,10 @@ function offsetOf(index: number): number {
 }
 
 function measure() {
-  if (!bodyEl) return;
-  viewportH = bodyEl.clientHeight;
-  viewportW = bodyEl.clientWidth;
+  const target = bodyEl || root;
+  if (!target) return;
+  if (target.clientHeight > 0) viewportH = target.clientHeight;
+  if (target.clientWidth > 0) viewportW = target.clientWidth;
 }
 
 function onScroll() {
@@ -606,6 +708,30 @@ function onResizeStart(col: OrbisColumnDef, e: PointerEvent) {
   resizing = { id: columnId(col), startX: e.clientX, startW: widthOf(col) };
 }
 
+function onResizeDblClick(col: OrbisColumnDef, e: MouseEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+  const id = columnId(col);
+  const headerStr = columnHeader(col);
+  let maxChars = headerStr.length;
+  const sample = displayRows.slice(0, 100);
+  for (const row of sample) {
+    const val = getCellValue(row, col);
+    if (val != null) {
+      const str = String(val);
+      if (str.length > maxChars) maxChars = str.length;
+    }
+  }
+  const fitted = Math.min(
+    col.maxWidth ?? 600,
+    Math.max(col.minWidth ?? 60, Math.round(maxChars * 9 + 40)),
+  );
+  columnWidths = {
+    ...columnWidths,
+    [id]: fitted,
+  };
+}
+
 function onPointerMove(e: PointerEvent) {
   if (resizing) {
     const delta = rtl
@@ -852,6 +978,17 @@ export function scrollToColumnProp(prop: string) {
   aria-colcount={visibleCols.length}
   onkeydown={handleKeydown}
   onfocus={() => measure()}
+  {@attach (el) => {
+    const node = el as HTMLDivElement;
+    root = node;
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(node);
+    return () => {
+      ro.disconnect();
+      if (root === node) root = null;
+    };
+  }}
 >
   {#if pasteBanner}
     <div class="orbis-paste-banner" role="status">
@@ -956,6 +1093,7 @@ export function scrollToColumnProp(prop: string) {
                 class="resize-handle"
                 aria-label="Resize column"
                 onpointerdown={(e) => onResizeStart(col, e)}
+                ondblclick={(e) => onResizeDblClick(col, e)}
               ></button>
             </div>
           {/each}
@@ -1283,6 +1421,12 @@ export function scrollToColumnProp(prop: string) {
     overflow: auto;
     position: relative;
     background: var(--card);
+  }
+  .orbis-spacer {
+    position: relative;
+    min-width: 100%;
+    display: flex;
+    flex-direction: column;
   }
   .orbis-window {
     will-change: transform;

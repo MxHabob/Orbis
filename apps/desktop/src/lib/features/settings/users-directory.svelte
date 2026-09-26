@@ -86,22 +86,23 @@ const gridSource = $derived(
 
 // ── Columns ─────────────────────────────────────────────────────────────
 const columns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "full_name", prop: "full_name", header: m.common_col_name(), name: m.common_col_name(), width: 220, size: 220, type: "avatar", readonly: true, pin: "left" },
-  { id: "email", prop: "email", header: m.common_word_email(), name: m.common_word_email(), width: 200, size: 200, readonly: true },
-  { id: "phone", prop: "phone", header: m.common_bulk_col_phone(), name: m.common_bulk_col_phone(), width: 140, size: 140, readonly: true, cellClass: "font-mono" },
-  { id: "role", prop: "role", header: m.common_user_form_role(), name: m.common_user_form_role(), width: 110, size: 110, readonly: true, align: "center" },
-  { id: "status", prop: "status", header: m.common_word_status?.() || "Status", name: "Status", width: 100, size: 100, type: "badge", align: "center", readonly: true },
+  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, minWidth: 48, readonly: true, pin: "left", align: "center", flex: 0 },
+  { id: "full_name", prop: "full_name", header: m.common_col_name(), name: m.common_col_name(), width: 220, minWidth: 180, type: "avatar", readonly: true, pin: "left", flex: 2 },
+  { id: "email", prop: "email", header: m.common_word_email(), name: m.common_word_email(), width: 200, minWidth: 160, readonly: true, flex: 1.5 },
+  { id: "phone", prop: "phone", header: m.common_bulk_col_phone(), name: m.common_bulk_col_phone(), width: 140, minWidth: 120, readonly: true, cellClass: "font-mono", flex: 1 },
+  { id: "role", prop: "role", header: m.common_user_form_role(), name: m.common_user_form_role(), width: 110, minWidth: 100, readonly: true, align: "center", flex: 1 },
+  { id: "status", prop: "status", header: m.common_word_status?.() || "Status", name: "Status", width: 100, minWidth: 90, type: "badge", align: "center", readonly: true, flex: 0 },
   {
     id: "actions",
     prop: "actions",
     header: m.common_je_col_actions?.() || "Actions",
     name: "Actions",
     width: 90,
-    size: 90,
+    minWidth: 80,
     type: "action",
     align: "center",
     readonly: true,
+    flex: 0,
     meta: { items: userActions },
   },
 ];

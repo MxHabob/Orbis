@@ -82,6 +82,9 @@ export interface OrbisColumnDef {
   id?: string;
   header?: string;
   width?: number;
+  minWidth?: number;
+  maxWidth?: number;
+  flex?: number;
   flexgrow?: number;
   hidden?: boolean;
   sort?: boolean | ((a: unknown, b: unknown) => number);
@@ -100,6 +103,7 @@ export interface OrbisColumnDef {
   cellProperties?: (row: GridRow) => Record<string, unknown>;
   sortable?: boolean;
   resize?: boolean;
+  resizable?: boolean;
   options?: EnumOption[];
   editorConfig?: Record<string, unknown>;
   type?: ColumnType;
