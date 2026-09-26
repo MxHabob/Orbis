@@ -552,19 +552,35 @@ pub async fn save_role(
     let role_id = request.id.clone();
     let now = chrono::Utc::now();
 
-    let active_role = role::ActiveModel {
-        id: Set(role_id.clone()),
-        org_id: Set(ctx.tenant_id),
-        name: Set(request.name.clone()),
-        name_ar: Set(request.name_ar.clone()),
-        is_system: Set(false),
-        created_at: Set(now),
-        updated_at: Set(now),
-    };
+    let existing = role::Entity::find()
+        .filter(role::Column::OrgId.eq(ctx.tenant_id))
+        .filter(role::Column::Id.eq(&role_id))
+        .one(&state.db)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
 
-    let _ = active_role.insert(&state.db).await;
+    let is_system = existing.as_ref().map(|e| e.is_system).unwrap_or(false);
 
-    if let Some(perms) = request.permissions {
+    if let Some(existing_model) = existing {
+        let mut active: role::ActiveModel = existing_model.into();
+        active.name = Set(request.name.clone());
+        active.name_ar = Set(request.name_ar.clone());
+        active.updated_at = Set(now);
+        let _ = active.update(&state.db).await.map_err(|e| ApiError::internal(e.to_string()))?;
+    } else {
+        let active_role = role::ActiveModel {
+            id: Set(role_id.clone()),
+            org_id: Set(ctx.tenant_id),
+            name: Set(request.name.clone()),
+            name_ar: Set(request.name_ar.clone()),
+            is_system: Set(false),
+            created_at: Set(now),
+            updated_at: Set(now),
+        };
+        let _ = active_role.insert(&state.db).await.map_err(|e| ApiError::internal(e.to_string()))?;
+    }
+
+    if let Some(perms) = request.permissions.clone() {
         let _ = role_permission::Entity::delete_many()
             .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
             .filter(role_permission::Column::RoleId.eq(&role_id))
@@ -591,9 +607,58 @@ pub async fn save_role(
         id: role_id,
         name: request.name,
         name_ar: request.name_ar,
-        is_system: false,
-        permissions: std::collections::HashMap::new(),
+        is_system,
+        permissions: request.permissions.unwrap_or_default(),
     }))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/v1/iam/roles/{id}",
+    responses((status = 200, description = "Role deleted", body = bool)),
+    params(("id" = String, Path, description = "Role identifier")),
+    security(("bearer" = [])),
+    tag = "IAM"
+)]
+pub async fn delete_role(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<String>,
+) -> Result<Json<ApiResponse<bool>>, ApiError> {
+    use orbis_infra::models::{role, role_permission, user_role_assignment};
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+
+    // Prevent deletion of system roles
+    if let Ok(Some(r)) = role::Entity::find()
+        .filter(role::Column::OrgId.eq(ctx.tenant_id))
+        .filter(role::Column::Id.eq(&id))
+        .one(&state.db)
+        .await
+    {
+        if r.is_system {
+            return Err(ApiError::bad_request("Cannot delete system roles"));
+        }
+    }
+
+    let _ = user_role_assignment::Entity::delete_many()
+        .filter(user_role_assignment::Column::OrgId.eq(ctx.tenant_id))
+        .filter(user_role_assignment::Column::RoleId.eq(&id))
+        .exec(&state.db)
+        .await;
+
+    let _ = role_permission::Entity::delete_many()
+        .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
+        .filter(role_permission::Column::RoleId.eq(&id))
+        .exec(&state.db)
+        .await;
+
+    let _ = role::Entity::delete_many()
+        .filter(role::Column::OrgId.eq(ctx.tenant_id))
+        .filter(role::Column::Id.eq(&id))
+        .exec(&state.db)
+        .await;
+
+    Ok(ApiResponse::ok(true))
 }
 
 #[utoipa::path(
@@ -910,5 +975,6 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/iam/users", post(register_user).get(list_users))
         .route("/api/v1/iam/users/:id", get(get_user).put(update_user))
         .route("/api/v1/iam/roles", get(list_roles).post(save_role))
+        .route("/api/v1/iam/roles/:id", axum::routing::delete(delete_role))
         .route("/api/v1/iam/permissions", get(list_permissions).post(save_permissions))
 }

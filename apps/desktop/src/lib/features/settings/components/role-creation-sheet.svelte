@@ -23,12 +23,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@orbis/ui/accordion";
+import { useQueryClient } from "@tanstack/svelte-query";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
 import type { RoleDto } from "$lib/api/types";
 import {
   IAM_DOMAINS,
-  SYSTEM_ROLE_DEFINITIONS,
   type IamResourceDef,
   countRolePermissions,
 } from "$lib/core/iam";
@@ -43,6 +43,7 @@ let {
   onsave?: (role: RoleDto) => Promise<void> | void;
 } = $props();
 
+const queryClient = useQueryClient();
 const isEditMode = $derived(Boolean(editingRole));
 
 // Form values
@@ -61,10 +62,6 @@ $effect(() => {
       roleNameAr = editingRole.name_ar || "";
       
       let sourcePerms = editingRole.permissions;
-      if ((!sourcePerms || Object.keys(sourcePerms).length === 0) && editingRole.id) {
-        const sys = SYSTEM_ROLE_DEFINITIONS.find((r) => r.id === editingRole.id);
-        if (sys) sourcePerms = sys.defaultPermissions;
-      }
 
       if (sourcePerms?.["*"]?.includes("*") || editingRole.id === "super_admin") {
         const fullPerms: Record<string, string[]> = {};
@@ -169,6 +166,7 @@ async function handleSubmit(e: SubmitEvent) {
     };
 
     const savedRole = await api.saveRole(payload);
+    await queryClient.invalidateQueries({ queryKey: ["roles"] });
 
     toast.success(
       isEditMode

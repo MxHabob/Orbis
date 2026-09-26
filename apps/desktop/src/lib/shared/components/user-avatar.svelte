@@ -1,158 +1,71 @@
+<!--
+  @component UserAvatar
+  Canonical user avatar component using @orbis/ui/avatar primitives.
+  Supports image loading, initials extraction, and deterministic color assignment.
+-->
 <script lang="ts">
-import { onDestroy } from "svelte";
-import {
-  Avatar,
-  AvatarController,
-  ALL_AVATAR_HATS,
-  type AvatarHat,
-} from "@orbis/avatar-engine";
-import type { AvatarState } from "@orbis/avatar-engine/src/core/avatar-state-machine.js";
+import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui/avatar";
 import { authStore } from "$lib/stores";
 import type { UserDto } from "$lib/api/types";
 
-/**
- * Resolves the appropriate avatar hat based on user role, preferences, or explicit hat name.
- */
-export function resolveUserHat(
-  roleOrHat?: string | null,
-  customHat?: AvatarHat | null
-): AvatarHat {
-  if (customHat && customHat !== "random") return customHat;
-  if (!roleOrHat) return "graduation";
-
-  const lower = String(roleOrHat).toLowerCase().trim();
-
-  // If already a recognized hat name
-  if (ALL_AVATAR_HATS.includes(lower as AvatarHat) || lower === "none") {
-    return lower as AvatarHat;
-  }
-
-  // Role-based hat associations
-  if (
-    lower.includes("super_admin") ||
-    lower.includes("superadmin") ||
-    lower.includes("admin") ||
-    lower.includes("owner") ||
-    lower.includes("principal") ||
-    lower.includes("مدير")
-  ) {
-    return "crown";
-  }
-
-  if (
-    lower.includes("teacher") ||
-    lower.includes("instructor") ||
-    lower.includes("educator") ||
-    lower.includes("professor") ||
-    lower.includes("معلم") ||
-    lower.includes("أستاذ")
-  ) {
-    return "graduation";
-  }
-
-  if (
-    lower.includes("registrar") ||
-    lower.includes("officer") ||
-    lower.includes("staff") ||
-    lower.includes("coordinator") ||
-    lower.includes("مسجل") ||
-    lower.includes("شؤون")
-  ) {
-    return "firefighter";
-  }
-
-  if (
-    lower.includes("accountant") ||
-    lower.includes("finance") ||
-    lower.includes("billing") ||
-    lower.includes("cashier") ||
-    lower.includes("محاسب") ||
-    lower.includes("مالي")
-  ) {
-    return "wizard";
-  }
-
-  if (
-    lower.includes("auditor") ||
-    lower.includes("inspector") ||
-    lower.includes("reviewer") ||
-    lower.includes("تدقيق")
-  ) {
-    return "detective";
-  }
-
-  if (
-    lower.includes("support") ||
-    lower.includes("agent") ||
-    lower.includes("helpdesk") ||
-    lower.includes("دعم")
-  ) {
-    return "headset";
-  }
-
-  if (lower.includes("pilot") || lower.includes("autopilot")) {
-    return "pilot";
-  }
-
-  if (
-    lower.includes("student") ||
-    lower.includes("pupil") ||
-    lower.includes("طالب")
-  ) {
-    return "graduation";
-  }
-
-  return "graduation";
+interface Props {
+  user?: UserDto | { name?: string; full_name?: string; email?: string; avatar_url?: string } | null;
+  name?: string | null;
+  avatarUrl?: string | null;
+  role?: string | null;
+  size?: "sm" | "default" | "lg";
+  class?: string;
 }
 
 let {
   user = null,
+  name = null,
+  avatarUrl = null,
   role = null,
-  hat = null,
-  state: avatarState = null,
-  width = "100%",
-  height = "100%",
-  controller = undefined,
+  size = "default",
   class: className = "",
-}: {
-  user?: UserDto | null;
-  role?: string | null;
-  hat?: AvatarHat | null;
-  state?: AvatarState | null;
-  width?: string;
-  height?: string;
-  controller?: AvatarController;
-  class?: string;
-} = $props();
+}: Props = $props();
 
-const targetUser = $derived(user || authStore.user);
+const targetUser = $derived(user || (!name ? authStore.user : null));
 
-const effectiveHat = $derived.by<AvatarHat>(() => {
-  if (hat) return hat;
-  const userRole = role || targetUser?.roles || (targetUser as any)?.role || "viewer";
-  return resolveUserHat(userRole);
+const displayName = $derived.by(() => {
+  if (name) return name;
+  if (!targetUser) return "User";
+  return (targetUser as any).full_name || (targetUser as any).name || (targetUser as any).email || "User";
 });
 
-// Create single managed controller if state prop is provided
-const defaultController = avatarState ? new AvatarController(avatarState) : undefined;
-const activeController = $derived(controller ?? defaultController);
+const src = $derived(avatarUrl || (targetUser as any)?.avatar_url || undefined);
 
-$effect(() => {
-  if (!controller && defaultController && avatarState && defaultController.state !== avatarState) {
-    defaultController.transitionTo(avatarState);
+const initials = $derived.by(() => {
+  const clean = displayName.trim();
+  if (!clean) return "U";
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) {
+    return parts[0].substring(0, 2).toUpperCase();
   }
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 });
 
-onDestroy(() => {
-  defaultController?.destroy();
-});
+// Deterministic pleasing color based on name hash
+function getHue(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash % 360);
+}
+
+const hue = $derived(getHue(displayName));
 </script>
 
-<div class="inline-flex items-center justify-center select-none {className}">
-  <Avatar
-    hat={effectiveHat}
-    {width}
-    {height}
-    controller={activeController}
-  />
-</div>
+<Avatar {size} class="shrink-0 {className}">
+  {#if src}
+    <AvatarImage src={src} alt={displayName} />
+  {/if}
+  <AvatarFallback
+    class="font-semibold text-white tracking-wider flex items-center justify-center"
+    style="background: hsl({hue}, 60%, 45%);"
+  >
+    {initials}
+  </AvatarFallback>
+</Avatar>

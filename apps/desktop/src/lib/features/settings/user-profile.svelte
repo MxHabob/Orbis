@@ -1,24 +1,27 @@
+<!--
+  @component UserProfile
+  User profile management in Settings.
+  Integrates demographic data, dynamic role assignment, user status toggles,
+  and User Groups management via side Sheet.
+-->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
-import { api } from "$lib/api";
-import type { User } from "$lib/api";
+import { api, type GroupDetailDto, type User } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Checkbox } from "@orbis/ui/checkbox";
+import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
 import { l } from "$lib/core/i18n";
+import { Pencil, UserGroup } from "@orbis/icons";
 import { createUserQuery } from "$lib/features/settings/queries";
-import { useQueryClient } from "@tanstack/svelte-query";
+import { useQueryClient, createQuery } from "@tanstack/svelte-query";
+import RoleSelect from "$lib/shared/components/role-select.svelte";
+import ManageUserGroupsSheet from "./components/manage-user-groups-sheet.svelte";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 
@@ -31,46 +34,36 @@ const user = $derived((userQuery.data as User | null) ?? null);
 const isLoading = $derived(userQuery.isLoading);
 let isSaving = $state(false);
 
+// Groups query
+const groupsQuery = createQuery<GroupDetailDto[]>(() => ({
+  queryKey: ["groups", orgId],
+  queryFn: () => api.listGroups(),
+  staleTime: 5 * 60 * 1000,
+}));
+
+const allGroups = $derived(groupsQuery.data ?? []);
+
+// Compute assigned groups for this user
+const userAssignedGroups = $derived.by<GroupDetailDto[]>(() => {
+  if (!allGroups.length || !userId) return [];
+  return allGroups.filter((g) =>
+    g.members?.some((m) => m.user_id === userId)
+  );
+});
+
+const userAssignedGroupIds = $derived(userAssignedGroups.map((g) => g.id));
+
+// Manage Groups Drawer Sheet State
+let groupsSheetOpen = $state(false);
+
 // Form fields
 let fullName = $state("");
 let nameAr = $state("");
 let nameEn = $state("");
 let email = $state("");
 let phone = $state("");
-let role = $state("teacher");
+let role = $state("staff");
 let isActiveState = $state(true);
-
-const systemRoles = [
-  {
-    value: "super_admin",
-    labelAr: "مدير عام النظام",
-    labelEn: "Super Administrator",
-  },
-  { value: "admin", labelAr: "مدير النظام", labelEn: "System Administrator" },
-  {
-    value: "principal",
-    labelAr: "مدير المدرسة / المنشأة",
-    labelEn: "School Principal",
-  },
-  {
-    value: "teacher",
-    labelAr: "معلم / هيئة تدريس",
-    labelEn: "Teacher / Faculty",
-  },
-  {
-    value: "registrar",
-    labelAr: "مسجل أكاديمي",
-    labelEn: "Academic Registrar",
-  },
-  {
-    value: "accountant",
-    labelAr: "محاسب مالي",
-    labelEn: "Financial Accountant",
-  },
-  { value: "staff", labelAr: "كادر إداري", labelEn: "Administrative Staff" },
-  { value: "student", labelAr: "طالب", labelEn: "Student" },
-  { value: "guardian", labelAr: "ولي أمر", labelEn: "Parent / Guardian" },
-];
 
 let initializedUserId = $state<string | null>(null);
 $effect(() => {
@@ -86,6 +79,10 @@ $effect(() => {
     fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
   initializedUserId = userId;
 });
+
+function openManageGroups() {
+  groupsSheetOpen = true;
+}
 
 function resetForm() {
   if (!user) return;
@@ -196,6 +193,7 @@ async function saveProfile() {
   </div>
 {:else}
   <div in:fade={{ duration: 100 }} class="flex flex-col gap-6 text-start">
+    <!-- Status Switch -->
     <div class="flex items-center gap-3">
       <Checkbox
         id="user_enabled"
@@ -210,6 +208,7 @@ async function saveProfile() {
       </Label>
     </div>
 
+    <!-- Main Profile Fields -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- Full Name -->
       <div class="flex flex-col gap-1.5 text-start">
@@ -238,28 +237,12 @@ async function saveProfile() {
         <Input id="nameAr" type="text" bind:value={nameAr} />
       </div>
 
-      <!-- Primary Role -->
+      <!-- Dynamic Primary Role Select -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="role" class="text-xs font-medium text-muted-foreground">
           {m.settings_user_detail_label_primary_role ? m.settings_user_detail_label_primary_role() : l("الدور الرئيسي", "Primary Role")}
         </Label>
-        <Select
-          type="single"
-          value={role}
-          onValueChange={(v) => (role = v ?? "")}
-        >
-          <SelectTrigger class="h-9 w-full text-xs">
-            {@const selected = systemRoles.find((r) => r.value === role)}
-            {selected ? l(selected.labelAr, selected.labelEn) : role}
-          </SelectTrigger>
-          <SelectContent>
-            {#each systemRoles as r}
-              <SelectItem value={r.value}>
-                {l(r.labelAr, r.labelEn)}
-              </SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
+        <RoleSelect bind:value={role} />
       </div>
 
       <!-- Phone -->
@@ -279,15 +262,54 @@ async function saveProfile() {
       </div>
     </div>
 
+    <!-- Assigned User Groups Card -->
+    <div class="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-4 mt-2 shadow-2xs">
+      <div class="flex items-center justify-between border-b border-border/50 pb-2.5">
+        <div class="flex items-center gap-2">
+          <UserGroup size={16} class="text-primary" />
+          <h3 class="text-xs font-bold text-foreground uppercase tracking-wider">{l("مجموعات المستخدمين المسندة", "Assigned User Groups")}</h3>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          class="text-xs h-7 gap-1.5 cursor-pointer"
+          onclick={openManageGroups}
+        >
+          <Pencil size={12} />
+          <span>{l("إدارة المجموعات", "Manage Groups")}</span>
+        </Button>
+      </div>
+
+      {#if groupsQuery.isLoading}
+        <div class="flex gap-2 py-2">
+          <Skeleton class="h-6 w-24 rounded-full" />
+          <Skeleton class="h-6 w-28 rounded-full" />
+        </div>
+      {:else if userAssignedGroups.length === 0}
+        <span class="text-xs text-muted-foreground italic py-1">
+          {l("لا توجد مجموعات مسندة لهذا المستخدم حالياً.", "No groups currently assigned to this user.")}
+        </span>
+      {:else}
+        <div class="flex flex-wrap gap-2 py-1">
+          {#each userAssignedGroups as grp}
+            <Badge variant="secondary" class="text-xs py-1 px-2.5 font-medium flex items-center gap-1.5">
+              <UserGroup size={12} />
+              <span>{l(grp.name_ar, grp.name) || grp.name}</span>
+            </Badge>
+          {/each}
+        </div>
+      {/if}
+    </div>
+
     <!-- Actions Toolbar -->
-    <div class="flex justify-end gap-3 border-t border-border/40 pt-6 mt-4">
+    <div class="flex justify-end gap-3 border-t border-border/40 pt-6 mt-2">
       <Button variant="ghost" size="sm" onclick={resetForm}>
         {m.common_switcher_reset ? m.common_switcher_reset() : l("إعادة تعيين", "Reset")}
       </Button>
       <Button
         variant="lime"
         size="sm"
-        class="font-bold px-6"
+        class="font-bold px-6 cursor-pointer"
         onclick={saveProfile}
         disabled={isSaving}
       >
@@ -295,4 +317,14 @@ async function saveProfile() {
       </Button>
     </div>
   </div>
+
+  <!-- Manage User Groups Drawer Sheet Component -->
+  <ManageUserGroupsSheet
+    bind:open={groupsSheetOpen}
+    {orgId}
+    {userId}
+    userName={user?.full_name || fullName}
+    assignedGroupIds={userAssignedGroupIds}
+    onsaved={() => groupsQuery.refetch()}
+  />
 {/if}

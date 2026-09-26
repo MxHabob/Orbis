@@ -50,9 +50,10 @@ import {
   createRegisterEmployeeMutation,
   createUpdateEmployeeMutation,
 } from "./queries";
-import { createGroupsQuery } from "$lib/features/groups/queries";
+import { GroupSelector } from "$lib/features/groups";
 import CredentialDeliveryModal from "./components/credential-delivery-modal.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import NationalitySelect from "$lib/shared/components/nationality-select.svelte";
 
 interface Props {
   orgId: string;
@@ -96,15 +97,11 @@ let notes = $state(employee?.notes || "");
 // Identity Provisioning State (Create Mode)
 let enableAccount = $state(mode === "create");
 let preferredUsername = $state("");
-let deliveryChannel = $state<"manual" | "email" | "sms" | "whatsapp" | "auto">("manual");
 let selectedGroupIds = $state<string[]>([]);
 let customPassword = $state("");
 let showCustomPassword = $state(false);
 
 // Queries & Mutations
-const groupsQuery = createGroupsQuery(() => orgId);
-const availableGroups = $derived(groupsQuery.data ?? []);
-
 const registerMutation = createRegisterEmployeeMutation();
 const updateMutation = createUpdateEmployeeMutation();
 
@@ -171,7 +168,7 @@ async function handleSubmit() {
         ? {
             enabled: true,
             preferred_username: preferredUsername.trim() || undefined,
-            delivery_channel: deliveryChannel,
+            delivery_channel: "auto",
             group_ids: selectedGroupIds,
             custom_password: customPassword.trim() || undefined,
           }
@@ -460,12 +457,9 @@ function handleCredentialModalClose() {
 
             <div class="flex flex-col gap-1.5">
               <Label class="text-xs font-medium">{m.employees_nationality?.() || "الجنسية"}</Label>
-              <Input
-                type="text"
-                placeholder="Saudi"
-                class="text-xs"
+              <NationalitySelect
                 bind:value={nationality}
-                oninput={markDirty}
+                onchange={markDirty}
               />
             </div>
           </div>
@@ -634,7 +628,7 @@ function handleCredentialModalClose() {
 
           {#if enableAccount}
             <div class="flex flex-col gap-5 pt-2">
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="flex flex-col gap-1.5">
                   <Label class="text-xs font-medium">{l("اسم المستخدم المفضل (اختياري)", "Preferred Username (Optional)")}</Label>
                   <Input
@@ -647,73 +641,29 @@ function handleCredentialModalClose() {
                   <span class="text-[10px] text-muted-foreground">{l("في حال تركه فارغاً، سيتم توليده تلقائياً من البريد أو الاسم والرقم الوظيفي.", "Auto-generated from email/name if left empty.")}</span>
                 </div>
 
-                <div class="flex flex-col gap-1.5">
-                  <Label class="text-xs font-medium">{m.employees_delivery_channel?.() || "طريقة تسليم بيانات الدخول"}</Label>
-                  <Select type="single" value={deliveryChannel} onValueChange={(v) => { if (v) { deliveryChannel = v as any; markDirty(); } }}>
-                    <SelectTrigger class="text-xs h-9">
-                      {deliveryChannel}
-                    </SelectTrigger>
-                    <SelectContent class="text-xs font-sans">
-                      <SelectItem value="manual">{m.employees_delivery_manual?.() || "عرض على الشاشة لمرة واحدة (يدوي)"}</SelectItem>
-                      <SelectItem value="email">{m.employees_delivery_email?.() || "إرسال عبر البريد الإلكتروني"}</SelectItem>
-                      <SelectItem value="sms">{m.employees_delivery_sms?.() || "إرسال عبر الرسائل القصيرة"}</SelectItem>
-                      <SelectItem value="whatsapp">{m.employees_delivery_whatsapp?.() || "إرسال عبر واتساب"}</SelectItem>
-                      <SelectItem value="auto">{m.employees_delivery_auto?.() || "الوضع التلقائي للنظام"}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div class="flex flex-col gap-1.5 justify-center p-3 rounded-lg border border-border/50 bg-muted/20 text-xs text-muted-foreground">
+                  <span class="font-medium text-foreground text-[11px]">{l("تكامل التسليم التلقائي", "Automated Delivery")}</span>
+                  <span class="text-[10px] leading-relaxed">
+                    {l("يتم تسليم بيانات الاعتماد تلقائياً بناءً على خدمات التكامل وسياسات المنظمة، أو عرضها على الشاشة لمرة واحدة.", "Credentials are delivered automatically via active integrations and policies, or displayed one-time on screen.")}
+                  </span>
                 </div>
               </div>
 
               <!-- Assigned User Groups Selection -->
               <div class="flex flex-col gap-2.5 pt-2">
-                <div class="flex items-center justify-between">
-                  <Label class="text-xs font-bold text-foreground flex items-center gap-1.5">
-                    <UserGroup size={14} class="text-primary" />
-                    {m.employees_user_groups?.() || "مجموعات المستخدمين المسندة"}
-                  </Label>
-                  <span class="text-xs text-muted-foreground">
-                    {formatNumber(selectedGroupIds.length)} {l("مجموعة محددة", "selected")}
-                  </span>
-                </div>
+                <Label class="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <UserGroup size={14} class="text-primary" />
+                  {m.employees_user_groups?.() || "مجموعات المستخدمين المسندة"}
+                </Label>
                 <span class="text-[11px] text-muted-foreground">
                   {m.employees_user_groups_desc?.() || "حدد المجموعات لمنح الصلاحيات والأدوار للموظف تلقائياً."}
                 </span>
 
-                {#if groupsQuery.isLoading}
-                  <div class="p-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
-                    <ArrowPath size={14} class="animate-spin text-primary" />
-                    <span>{l("جاري تحميل مجموعات المستخدمين...", "Loading groups...")}</span>
-                  </div>
-                {:else if availableGroups.length === 0}
-                  <div class="p-4 rounded-lg bg-muted/40 text-center text-xs text-muted-foreground">
-                    {l("لا توجد مجموعات معرفة حالياً. يمكنك إنشاء مجموعات من إعدادات النظام.", "No user groups available.")}
-                  </div>
-                {:else}
-                  <div class="grid grid-cols-2 gap-3 max-h-56 overflow-y-auto p-1 border border-border/60 rounded-lg bg-muted/20">
-                    {#each availableGroups as group (group.id)}
-                      {@const isSelected = selectedGroupIds.includes(group.id)}
-                      <button
-                        type="button"
-                        class="flex items-start gap-2.5 p-3 rounded-lg border text-start transition-all cursor-pointer {isSelected ? 'border-primary bg-primary/10 text-foreground shadow-2xs' : 'border-border/60 bg-card text-muted-foreground hover:border-border'}"
-                        onclick={() => toggleGroupSelection(group.id)}
-                      >
-                        <div class="flex size-6 shrink-0 items-center justify-center rounded-md {isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}">
-                          <CheckCircle size={13} />
-                        </div>
-                        <div class="flex flex-col min-w-0">
-                          <span class="text-xs font-semibold text-foreground truncate">
-                            {group.name_ar || group.name}
-                          </span>
-                          {#if group.description}
-                            <span class="text-[10px] text-muted-foreground line-clamp-1">
-                              {group.description}
-                            </span>
-                          {/if}
-                        </div>
-                      </button>
-                    {/each}
-                  </div>
-                {/if}
+                <GroupSelector
+                  {orgId}
+                  bind:selectedGroupIds
+                  onchange={markDirty}
+                />
               </div>
             </div>
           {/if}

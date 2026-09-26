@@ -19,11 +19,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@orbis/ui/dialog";
-import { AdjustmentsHorizontal, Check, Lock, Plus, UserBadgeCheck } from "@orbis/icons";
+import { Check, Plus, UserBadgeCheck } from "@orbis/icons";
 import { l } from "$lib/core/i18n";
 import {
   IAM_DOMAINS,
-  SYSTEM_ROLE_DEFINITIONS,
   getActionsForResource,
   getResourceLabel,
   getActionBadgeVariant,

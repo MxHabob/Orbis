@@ -313,6 +313,9 @@ export class RemoteClient implements OrbisApiClient {
   async saveRole(req: SaveRoleRequest): Promise<RoleDto> {
     return this.post("/api/v1/iam/roles", req);
   }
+  async deleteRole(id: string): Promise<boolean> {
+    return this.del(`/api/v1/iam/roles/${id}`);
+  }
   async listPermissions(): Promise<PermissionRuleDto[]> {
     return this.get("/api/v1/iam/permissions");
   }

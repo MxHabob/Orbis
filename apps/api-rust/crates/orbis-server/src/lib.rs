@@ -58,6 +58,7 @@ use api::{
         api::iam_routes::update_user,
         api::iam_routes::list_roles,
         api::iam_routes::save_role,
+        api::iam_routes::delete_role,
         api::iam_routes::list_permissions,
         api::iam_routes::save_permissions,
         // Organization & Bootstrap

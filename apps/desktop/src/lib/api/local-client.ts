@@ -234,6 +234,9 @@ export class LocalClient implements OrbisApiClient {
   async saveRole(req: SaveRoleRequest): Promise<RoleDto> {
     return unwrap(await invoke("iam_save_role", { request: req }));
   }
+  async deleteRole(id: string): Promise<boolean> {
+    return unwrap(await invoke("iam_delete_role", { roleId: id }));
+  }
   async listPermissions(): Promise<PermissionRuleDto[]> {
     return unwrap(await invoke("iam_list_permissions"));
   }

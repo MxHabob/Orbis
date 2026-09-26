@@ -146,6 +146,11 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
         info!("Note: Roles seeding warning: {}", e);
     }
 
+    // ── 5.1 System Default User Groups ──────────────────────────────────────────
+    if let Err(e) = seed_default_user_groups(db, org_id_uuid, &now).await {
+        info!("Note: User groups seeding warning: {}", e);
+    }
+
     // ── 5.5 Chart of Accounts (COA) ──────────────────────────────────────────────
     if let Err(e) = seed_chart_of_accounts(db, org_id_uuid, &payload.currency, &now).await {
         info!("Note: COA seeding warning: {}", e);
@@ -572,6 +577,118 @@ pub async fn seed_roles_and_permissions<C: ConnectionTrait>(
                     now.to_string().into(),
                 ]
             )).await.ok();
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn seed_default_user_groups<C: ConnectionTrait>(
+    db: &C,
+    org_id: Uuid,
+    now: &str,
+) -> Result<(), DomainError> {
+    let default_groups = vec![
+        (
+            "School Leadership",
+            "القيادة المدرسية والإدارة",
+            "صلاحيات الإشراف الإداري والأكاديمي الشامل، إدارة الوحدات والسياسات العامة.",
+            vec![
+                "organization:read", "org_unit:read", "user:read", "employee:read", "group:read",
+                "student:read", "period:read", "class:read", "grade:analytics", "grade:report",
+                "dashboard:read", "audit:read", "attendance:analytics", "attendance:report",
+            ],
+        ),
+        (
+            "Teaching Faculty",
+            "هيئة التدريس والمعلمين",
+            "صلاحيات إدخال ورصد الدرجات والغياب اليومي، متابعة الجداول والحصص الدراسية.",
+            vec![
+                "class:read", "subject:read", "timetable:read",
+                "attendance:read", "attendance:write",
+                "grade:read", "grade:write", "grade:submit",
+                "assessment:read", "student:read",
+            ],
+        ),
+        (
+            "Admissions & Student Affairs",
+            "شؤون الطلاب والقبول",
+            "إدارة ملفات الطلاب وأولياء الأمور، التسجيل، السجلات الأكاديمية والوثائق الرسمية.",
+            vec![
+                "student:read", "student:write", "student:create", "student:update",
+                "enrollment:read", "enrollment:write", "enrollment:approve",
+                "guardian:read", "guardian:write",
+                "document:read", "document:write", "attendance:read",
+            ],
+        ),
+        (
+            "HR & Employee Affairs",
+            "الموارد البشرية وشؤون الموظفين",
+            "إدارة السجلات الوظيفية للكادر التعليمي والإداري، العقود، والصلاحيات والمجموعات.",
+            vec![
+                "employee:read", "employee:write", "employee:create", "employee:update",
+                "group:read", "group:assign", "org_unit:read", "audit:read",
+            ],
+        ),
+        (
+            "Finance & Accounting",
+            "الشؤون المالية والحسابات",
+            "إدارة الرسوم الدراسية، الفواتير، سندات القبض، الخصومات والتقارير المالية.",
+            vec![
+                "finance:read", "finance:write", "finance:manage",
+                "invoice:read", "invoice:write", "payment:read", "payment:write",
+                "fee:read", "fee:write", "discount:read", "discount:write",
+                "report:read", "report:generate",
+            ],
+        ),
+        (
+            "Examination Board",
+            "لجنة الامتحانات والكنترول",
+            "إدارة الاختبارات والتقييمات الفصلية، مراجعة واعتماد وتثبيت النتائج النهائية.",
+            vec![
+                "assessment:read", "assessment:write", "assessment:publish",
+                "grade:read", "grade:write", "grade:approve", "grade:lock",
+                "period:read", "class:read", "student:read", "report:generate",
+            ],
+        ),
+    ];
+
+    for (name_en, name_ar, desc, perms) in default_groups {
+        let group_id = Uuid::new_v4();
+        db.execute(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "INSERT INTO groups (id, org_id, name, name_ar, description, is_system, status, created_at, updated_at) \
+             SELECT $1, $2, $3, $4, $5, 1, 'active', $6, $7 \
+             WHERE NOT EXISTS (SELECT 1 FROM groups WHERE org_id = $2 AND name = $3)",
+            vec![
+                group_id.into(), org_id.into(),
+                name_en.into(), name_ar.into(), desc.into(),
+                now.to_string().into(), now.to_string().into(),
+            ]
+        )).await.ok();
+
+        let actual_group_row = db.query_one(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "SELECT id FROM groups WHERE org_id = $1 AND name = $2 LIMIT 1",
+            vec![org_id.into(), name_en.into()]
+        )).await.ok().flatten();
+
+        if let Some(row) = actual_group_row {
+            if let Ok(gid) = row.try_get::<Uuid>("", "id") {
+                for perm in perms {
+                    let perm_id = Uuid::new_v4();
+                    db.execute(Statement::from_sql_and_values(
+                        db.get_database_backend(),
+                        "INSERT INTO group_permissions (id, org_id, group_id, permission, created_at) \
+                         SELECT $1, $2, $3, $4, $5 \
+                         WHERE NOT EXISTS (SELECT 1 FROM group_permissions WHERE org_id = $2 AND group_id = $3 AND permission = $4)",
+                        vec![
+                            perm_id.into(), org_id.into(), gid.into(),
+                            perm.into(), now.to_string().into(),
+                        ]
+                    )).await.ok();
+                }
+            }
         }
     }
 
@@ -1730,6 +1847,11 @@ impl OnboardingPort for OnboardingAdapterImpl {
         let admin_user_id = admin_user_row.and_then(|r| r.try_get::<Uuid>("", "id").ok()).unwrap_or_else(Uuid::new_v4);
         if let Err(e) = seed_roles_and_permissions(&txn, org_id, admin_user_id, &now).await {
             info!("Roles & permissions onboarding seeding note: {}", e);
+        }
+
+        // 13.5 System Default User Groups Seeding
+        if let Err(e) = seed_default_user_groups(&txn, org_id, &now).await {
+            info!("User groups onboarding seeding note: {}", e);
         }
 
         // 14. Default Reports & Templates Seeding

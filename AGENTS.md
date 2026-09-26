@@ -98,3 +98,16 @@ A section is **NEVER** complete merely because its route renders. A section is c
 | `DataTable` | `$lib/tables/core/` | Search/filter/pagination wrapper around `OrbisGrid` |
 
 ---
+
+## 6. CONTINUATION STATE
+
+- **Subsystem:** Employee Affairs, User Groups & IAM Roles
+- **State:** 100% DB-driven role architecture without hardcoded role arrays or static fallbacks.
+- **Backend Parity:** `iam_list_roles`, `iam_save_role`, and `iam_delete_role` fully implemented and verified in both `src-tauri` (Tauri IPC) and `orbis-server` (REST API).
+- **Frontend Reactive Sync:** `RoleSelect`, `RolesPermissionsManager`, `RoleCreationSheet`, and `UserRoles` dynamically query `api.listRoles()` and automatically invalidate `["roles"]` cache upon adding, modifying, or deleting roles.
+- **Components Created & Cleaned:**
+  - `<RoleSelect>`: 100% DB-driven role selector without static lists.
+  - `<NationalitySelect>`: Country/nationality selector powered by `@orbis/location/countries-intl`.
+  - `<UserAvatar>`: Standardized using `@orbis/ui/avatar` primitives.
+  - `<ProvisionAccountSheet>`, `<ManageEmployeeGroupsSheet>`, `<ManageUserGroupsSheet>`: Standalone slide-over Sheet drawers.
+- **Verification:** `bun x tsc --noEmit`, `cargo check --workspace`, `cargo check (src-tauri)`, and `cargo test --workspace` all pass with 0 errors.

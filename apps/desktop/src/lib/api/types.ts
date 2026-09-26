@@ -1156,6 +1156,7 @@ export interface OrbisApiClient {
   updateUser(id: string, req: UpdateUserRequest): Promise<UserDto>;
   listRoles(): Promise<RoleDto[]>;
   saveRole(req: SaveRoleRequest): Promise<RoleDto>;
+  deleteRole(id: string): Promise<boolean>;
   listPermissions(): Promise<PermissionRuleDto[]>;
   savePermissions(req: PermissionRuleDto[]): Promise<boolean>;
 

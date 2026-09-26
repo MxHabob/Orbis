@@ -13,7 +13,7 @@ import {
 import { toast } from "@orbis/ui";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { l } from "$lib/core/i18n";
-import { Plus, Users, Search, Refresh } from "@orbis/icons";
+import { Search, Refresh, ShieldCheck } from "@orbis/icons";
 
 import type { User } from "$lib/api";
 import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
@@ -22,6 +22,7 @@ import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { userFilterFields } from "$lib/core/filter-configs";
 import { useQueryClient } from "@tanstack/svelte-query";
 import { goto } from "$app/navigation";
+import RoleSelect from "$lib/shared/components/role-select.svelte";
 
 let { orgId }: { orgId: string } = $props();
 const queryClient = useQueryClient();
@@ -155,32 +156,12 @@ async function handleAction(event: GridActionEvent) {
       </div>
 
       <!-- Role Filter -->
-      <div class="w-36 text-start shrink-0">
-        <Select type="single" value={selectedRole} onValueChange={(v) => (selectedRole = v ?? "all")}>
-          <SelectTrigger class="h-8 w-full text-xs bg-card border-border/60">
-            {#if selectedRole === "all"}
-              {m.common_filter_all()}
-            {:else if selectedRole === "admin"}
-              {m.common_users_filter_admin()}
-            {:else if selectedRole === "teacher"}
-              {m.common_schedule_page_teacher()}
-            {:else if selectedRole === "parent"}
-              {m.common_users_filter_guardian()}
-            {:else if selectedRole === "student"}
-              {m.common_word_student_single()}
-            {:else}
-              {m.settings_users_filter_role_staff()}
-            {/if}
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{m.common_filter_all()}</SelectItem>
-            <SelectItem value="admin">{m.common_users_filter_admin()}</SelectItem>
-            <SelectItem value="teacher">{m.common_schedule_page_teacher()}</SelectItem>
-            <SelectItem value="parent">{m.common_users_filter_guardian()}</SelectItem>
-            <SelectItem value="student">{m.common_word_student_single()}</SelectItem>
-            <SelectItem value="staff">Staff</SelectItem>
-          </SelectContent>
-        </Select>
+      <div class="w-44 text-start shrink-0">
+        <RoleSelect
+          bind:value={selectedRole}
+          allowAll
+          size="sm"
+        />
       </div>
     </div>
 
@@ -192,9 +173,13 @@ async function handleAction(event: GridActionEvent) {
       <Button variant="ghost" size="icon-sm" onclick={loadUsers} class="text-muted-foreground">
         <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
       </Button>
-      <Button variant="lime" class="text-xs h-8 px-4 font-semibold" href={localizeHref(`/${orgId}/settings/users/new`)}>
-        <Plus size={14} class="me-1.5" />
-        {m.settings_users_add()}
+      <Button
+        variant="outline"
+        class="text-xs h-8 px-3 font-medium gap-1.5 cursor-pointer"
+        onclick={() => goto(localizeHref(`/${orgId}/employees`))}
+      >
+        <ShieldCheck size={14} class="text-primary" />
+        <span>{l("شؤون الموظفين", "Employee Affairs")}</span>
       </Button>
     </div>
   </div>

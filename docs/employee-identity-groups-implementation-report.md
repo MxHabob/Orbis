@@ -165,17 +165,27 @@ graph TD
   - `queries.ts`: TanStack Query functions for user groups.
   - `groups-manager.svelte`: Group catalog grid cards with system badges, member counts, permission counts, create/edit/delete dialogs.
   - `group-detail-view.svelte`: Dual-tab inspector with members list, removal actions, and full 2D IAM Permission Matrix across 10 functional domains.
+  - `components/group-selector.svelte`: Reusable searchable multi-select component for user groups with instant badge visualization and toggle controls.
   - `bulk-assign-dialog.svelte`: Searchable multi-user selection dialog for batch assignment.
+- **`shared/components/`**:
+  - `user-avatar.svelte`: Rewritten to use canonical `@orbis/ui/avatar` (`Avatar`, `AvatarImage`, `AvatarFallback`) with initials and deterministic color generation.
+  - `role-select.svelte`: Reusable dynamic role dropdown querying real backend roles from `api.listRoles()`.
+  - `nationality-select.svelte`: Dedicated country/nationality selector powered by `@orbis/location/countries-intl` with search, flag emojis, and bilingual Arabic/English demonyms.
+- **`Modular Standalone Sheets`**:
+  - `provision-account-sheet.svelte`: Standalone slide-over Sheet for domain user account provisioning with automated integration delivery.
+  - `manage-employee-groups-sheet.svelte`: Standalone slide-over Sheet for assigning user groups to employees.
+  - `manage-user-groups-sheet.svelte`: Standalone slide-over Sheet for assigning user groups to system users from Settings.
 
-### 4.3 Route Integration
+### 4.3 Route Integration & Legacy Cleanup
 - `routes/(app)/[orgId]/employees/+page.svelte` (Employee Directory)
-- `routes/(app)/[orgId]/employees/new/+page.svelte` (New Employee Registration)
-- `routes/(app)/[orgId]/employees/[id]/+page.svelte` (Employee 360 Dossier)
+- `routes/(app)/[orgId]/employees/new/+page.svelte` (New Employee Registration with `NationalitySelect`)
+- `routes/(app)/[orgId]/employees/[id]/+page.svelte` (Employee 360 Dossier with `ProvisionAccountSheet` and `ManageEmployeeGroupsSheet`)
 - `routes/(app)/[orgId]/employees/[id]/edit/+page.svelte` (Edit Employee)
 - `routes/(app)/[orgId]/settings/groups/+page.svelte` (User Groups Manager)
 - `routes/(app)/[orgId]/settings/groups/[id]/+page.svelte` (Group Detail & Permission Matrix)
-- Updated `app-sidebar.svelte` with `employees` navigation.
-- Updated `settings/+layout.svelte` with `groups` navigation.
+- `routes/(app)/[orgId]/settings/users/+page.svelte` (Updated Users Directory with domain provisioning guidance and dynamic `RoleSelect`)
+- `routes/(app)/[orgId]/settings/users/[id]/+page.svelte` (User Profile with `RoleSelect` and `ManageUserGroupsSheet`)
+- Completely deleted legacy standalone user creation pages and sheets (`settings/users/new` and `user-form.svelte`).
 
 ### 4.4 Localization (i18n)
 - 100% bilingual support in `apps/desktop/messages/ar.json` and `apps/desktop/messages/en.json`.
@@ -194,12 +204,13 @@ graph TD
 
 ---
 
-## 6. Security Invariants Verification
+## 6. Security & Architectural Invariants Verification
 
-- [x] Passwords generated via CSPRNG (`rand::thread_rng().sample_iter(...)`).
-- [x] Passwords hashed using Argon2 (`password_hash::PasswordHasher`).
-- [x] No plaintext passwords stored in database models or table columns.
-- [x] Passwords never logged in tracing or server logs.
-- [x] One-time presentation modal alerts user to save credentials immediately.
-- [x] Force password reset on first login flag (`must_change_password: true`) enforced.
-- [x] Dual-transport parity verified across all operations.
+- [x] Auto-seeding of system default groups moved to the authoritative Bootstrap / Onboarding adapter (`bootstrap_adapter.rs`).
+- [x] Notification delivery dynamically routes via active tenant integrations (Email/WhatsApp/SMS) and policies, falling back safely to in-memory one-time presentation without fixed manual dropdowns.
+- [x] All hardcoded role arrays replaced with dynamic `<RoleSelect>` querying backend roles.
+- [x] `UserAvatar` rewritten to standard `@orbis/ui/avatar` primitives.
+- [x] Lightweight operations (managing groups, provisioning) converted to side `<Sheet>` drawers.
+- [x] Standalone "Create User" legacy views and forms completely deleted from disk.
+- [x] Passwords generated via CSPRNG and hashed using Argon2; never persisted in plaintext or logged.
+- [x] Dual-transport parity verified across all desktop and server operations.

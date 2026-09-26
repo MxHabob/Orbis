@@ -641,6 +641,7 @@ pub async fn iam_list_roles(state: State<'_, AppState>) -> Result<ApiResponse<Ve
     }
 
     let mut result_roles = Vec::new();
+
     if let Ok(db_roles) = role::Entity::find()
         .filter(role::Column::OrgId.eq(ctx.tenant_id))
         .all(&state.db)
@@ -670,21 +671,36 @@ pub async fn iam_save_role(request: SaveRoleRequest, state: State<'_, AppState>)
     let role_id = request.id.clone();
     let now = chrono::Utc::now();
 
-    // Insert or update role
-    let active_role = role::ActiveModel {
-        id: Set(role_id.clone()),
-        org_id: Set(ctx.tenant_id),
-        name: Set(request.name.clone()),
-        name_ar: Set(request.name_ar.clone()),
-        is_system: Set(false),
-        created_at: Set(now),
-        updated_at: Set(now),
-    };
+    let existing = role::Entity::find()
+        .filter(role::Column::OrgId.eq(ctx.tenant_id))
+        .filter(role::Column::Id.eq(&role_id))
+        .one(&state.db)
+        .await
+        .unwrap_or(None);
 
-    let _ = active_role.insert(&state.db).await;
+    let is_system = existing.as_ref().map(|e| e.is_system).unwrap_or(false);
+
+    if let Some(existing_model) = existing {
+        let mut active: role::ActiveModel = existing_model.into();
+        active.name = Set(request.name.clone());
+        active.name_ar = Set(request.name_ar.clone());
+        active.updated_at = Set(now);
+        let _ = active.update(&state.db).await;
+    } else {
+        let active_role = role::ActiveModel {
+            id: Set(role_id.clone()),
+            org_id: Set(ctx.tenant_id),
+            name: Set(request.name.clone()),
+            name_ar: Set(request.name_ar.clone()),
+            is_system: Set(false),
+            created_at: Set(now),
+            updated_at: Set(now),
+        };
+        let _ = active_role.insert(&state.db).await;
+    }
 
     // If permissions provided, save them
-    if let Some(perms) = request.permissions {
+    if let Some(perms) = request.permissions.clone() {
         let _ = role_permission::Entity::delete_many()
             .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
             .filter(role_permission::Column::RoleId.eq(&role_id))
@@ -711,9 +727,48 @@ pub async fn iam_save_role(request: SaveRoleRequest, state: State<'_, AppState>)
         id: role_id,
         name: request.name,
         name_ar: request.name_ar,
-        is_system: false,
-        permissions: std::collections::HashMap::new(),
+        is_system,
+        permissions: request.permissions.unwrap_or_default(),
     }))
+}
+
+#[tauri::command]
+pub async fn iam_delete_role(role_id: String, state: State<'_, AppState>) -> Result<ApiResponse<bool>, String> {
+    let ctx = make_ctx(&state);
+    use orbis_infra::models::{role, role_permission, user_role_assignment};
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+
+    // Prevent deletion of system roles
+    if let Ok(Some(r)) = role::Entity::find()
+        .filter(role::Column::OrgId.eq(ctx.tenant_id))
+        .filter(role::Column::Id.eq(&role_id))
+        .one(&state.db)
+        .await
+    {
+        if r.is_system {
+            return Err("Cannot delete system roles".to_string());
+        }
+    }
+
+    let _ = user_role_assignment::Entity::delete_many()
+        .filter(user_role_assignment::Column::OrgId.eq(ctx.tenant_id))
+        .filter(user_role_assignment::Column::RoleId.eq(&role_id))
+        .exec(&state.db)
+        .await;
+
+    let _ = role_permission::Entity::delete_many()
+        .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
+        .filter(role_permission::Column::RoleId.eq(&role_id))
+        .exec(&state.db)
+        .await;
+
+    let _ = role::Entity::delete_many()
+        .filter(role::Column::OrgId.eq(ctx.tenant_id))
+        .filter(role::Column::Id.eq(&role_id))
+        .exec(&state.db)
+        .await;
+
+    Ok(ok(true))
 }
 
 #[tauri::command]

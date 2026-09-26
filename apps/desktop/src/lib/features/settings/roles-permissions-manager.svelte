@@ -23,14 +23,13 @@ import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { fade } from "svelte/transition";
 import { l } from "$lib/core/i18n";
+import { useQueryClient } from "@tanstack/svelte-query";
 import type { RoleDto } from "$lib/api/types";
 import RoleCreationSheet from "./components/role-creation-sheet.svelte";
-import {
-  SYSTEM_ROLE_DEFINITIONS,
-  countRolePermissions,
-} from "$lib/core/iam";
+import { countRolePermissions } from "$lib/core/iam";
 
 let { orgId }: { orgId: string } = $props();
+const queryClient = useQueryClient();
 
 // State
 let roles = $state<RoleDto[]>([]);
@@ -44,28 +43,7 @@ async function loadRoles() {
   isLoading = true;
   try {
     const fetchedRoles = await api.listRoles();
-
-    // Merge system role definitions if not already in DB or if perms are empty
-    const merged: RoleDto[] = [];
-    for (const sys of SYSTEM_ROLE_DEFINITIONS) {
-      const existing = fetchedRoles.find((r) => r.id === sys.id);
-      const hasPerms = existing?.permissions && Object.keys(existing.permissions).length > 0;
-      merged.push({
-        id: sys.id,
-        name: sys.nameEn,
-        name_ar: sys.nameAr,
-        is_system: true,
-        permissions: hasPerms ? existing!.permissions : sys.defaultPermissions,
-      });
-    }
-
-    for (const r of fetchedRoles) {
-      if (!merged.some((m) => m.id === r.id)) {
-        merged.push(r);
-      }
-    }
-
-    roles = merged;
+    roles = fetchedRoles;
   } catch (e) {
     console.error("Error loading roles:", e);
     toast.error(l("فشل تحميل قائمة الأدوار والصلاحيات", "Failed to load roles"));
@@ -116,11 +94,18 @@ async function handleDeleteRole(roleToDelete: RoleDto) {
   if (!confirmed) return;
 
   try {
+    await api.deleteRole(roleToDelete.id);
+    await queryClient.invalidateQueries({ queryKey: ["roles"] });
     roles = roles.filter((r) => r.id !== roleToDelete.id);
     toast.success(l("تم حذف الدور بنجاح", "Role deleted successfully"));
   } catch (e: any) {
     toast.error(e?.message || l("فشل حذف الدور", "Failed to delete role"));
   }
+}
+
+async function handleRoleSaved() {
+  await queryClient.invalidateQueries({ queryKey: ["roles"] });
+  await loadRoles();
 }
 </script>
 
@@ -283,7 +268,5 @@ async function handleDeleteRole(roleToDelete: RoleDto) {
 <RoleCreationSheet
   bind:open={isSheetOpen}
   {editingRole}
-  onsave={async () => {
-    await loadRoles();
-  }}
+  onsave={handleRoleSaved}
 />

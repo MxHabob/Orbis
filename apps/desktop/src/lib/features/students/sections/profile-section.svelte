@@ -13,6 +13,7 @@ import {
 import type { StudentFormState } from "../form-state.svelte";
 import { ClassSelect } from "$lib/features/academics";
 import DateOfBirthField from "../components/date-of-birth-field.svelte";
+import NationalitySelect from "$lib/shared/components/nationality-select.svelte";
 
 let { state }: { state: StudentFormState } = $props();
 </script>
@@ -150,12 +151,9 @@ let { state }: { state: StudentFormState } = $props();
             <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_nationality_desc()}</span>
           </div>
           <div class="w-full md:w-120 shrink-0">
-            <Input 
-              id="nationality"
-              type="text" 
-              placeholder={m.common_form_nationality_placeholder()} 
-              class="h-9 w-full bg-background" 
+            <NationalitySelect
               bind:value={state.personal.nationality}
+              placeholder={m.common_form_nationality_placeholder()}
             />
           </div>
         </div>

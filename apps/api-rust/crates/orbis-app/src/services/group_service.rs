@@ -192,6 +192,94 @@ impl GroupService {
         self.group_repo.list_by_org(org_id).await
     }
 
+    /// Seed standard system default user groups for an organization
+    pub async fn seed_default_groups(&self, org_id: Uuid) -> Result<Vec<GroupDetail>, DomainError> {
+        let defaults = vec![
+            (
+                "School Leadership",
+                Some("القيادة المدرسية والإدارة".to_string()),
+                Some("صلاحيات الإشراف الإداري والأكاديمي الشامل، إدارة الوحدات والسياسات العامة.".to_string()),
+                vec![
+                    "organization:read", "org_unit:read", "user:read", "employee:read", "group:read",
+                    "student:read", "period:read", "class:read", "grade:analytics", "grade:report",
+                    "dashboard:read", "audit:read", "attendance:analytics", "attendance:report",
+                ],
+            ),
+            (
+                "Teaching Faculty",
+                Some("هيئة التدريس والمعلمين".to_string()),
+                Some("إدخال ومتابعة الدرجات والتقييمات، رصد الحضور والغياب، واستعراض الجداول الدراسية.".to_string()),
+                vec![
+                    "class:read", "subject:read", "schedule:read", "assessment:read", "assessment:write",
+                    "grade:read", "grade:write", "grade:entry_manage", "student:read", "attendance:read",
+                    "attendance:write", "behavior:read", "behavior:write",
+                ],
+            ),
+            (
+                "Admissions & Student Affairs",
+                Some("شؤون الطلاب والقبول".to_string()),
+                Some("إدارة ملفات الطلاب، القيد والتسجيل، ترفيع الفصول، وأولياء الأمور.".to_string()),
+                vec![
+                    "student:read", "student:write", "student:create", "student:update", "guardian:read",
+                    "guardian:write", "enrollment:read", "enrollment:write", "enrollment:promote",
+                    "enrollment:transfer", "period:read", "class:read",
+                ],
+            ),
+            (
+                "HR & Employee Affairs",
+                Some("الموارد البشرية وشؤون الموظفين".to_string()),
+                Some("تسجيل ملفات الموظفين، متابعة العقود، وإدارة بيانات الكادر التعليمي والإداري.".to_string()),
+                vec![
+                    "employee:read", "employee:write", "employee:create", "employee:update", "user:read",
+                    "user:password_write", "group:read", "group:assign", "org_unit:read",
+                ],
+            ),
+            (
+                "Finance & Accounting",
+                Some("الشؤون المالية والحسابات".to_string()),
+                Some("إدارة الرسوم الدراسية، سندات القبض والصرف، وقوالب الخصم والتقارير المالية.".to_string()),
+                vec![
+                    "finance:read", "finance:write", "finance:payment", "student:read", "organization:read",
+                ],
+            ),
+            (
+                "Examination Board",
+                Some("لجنة الامتحانات والكنترول".to_string()),
+                Some("إدارة جلسات الامتحانات، أرقام الجلوس، الأرقام السرية، وتوزيع الملاحظين وقاعات الاختبار.".to_string()),
+                vec![
+                    "exam_session:read", "exam_session:write", "exam_session:activate", "seating_number:generate",
+                    "seating_number:read", "secret_number:generate", "secret_number:read", "secret_number:reveal",
+                    "exam_hall:read", "exam_hall:write", "exam_hall:allocate", "proctor:read", "proctor:assign",
+                    "student_order:read", "student_order:rebuild", "exam_schedule:read", "exam_schedule:write",
+                    "grade:read", "grade:report",
+                ],
+            ),
+        ];
+
+        let now = Utc::now();
+        for (name, name_ar, desc, perms) in defaults {
+            if self.group_repo.find_by_name(org_id, name).await?.is_none() {
+                let group_id = Uuid::new_v4();
+                let grp = Group {
+                    id: group_id,
+                    org_id,
+                    name: name.to_string(),
+                    name_ar,
+                    description: desc,
+                    is_system: true,
+                    status: "active".to_string(),
+                    created_at: now,
+                    updated_at: now,
+                };
+                let _ = self.group_repo.save(&grp).await;
+                let perm_strings: Vec<String> = perms.into_iter().map(|s| s.to_string()).collect();
+                let _ = self.group_repo.set_group_permissions(org_id, group_id, &perm_strings).await;
+            }
+        }
+
+        self.group_repo.list_by_org(org_id).await
+    }
+
     /// Get Group detail by ID
     pub async fn get_group(
         &self,

@@ -9,10 +9,7 @@ import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
 import { l } from "$lib/core/i18n";
-import {
-  SYSTEM_ROLE_DEFINITIONS,
-  countRolePermissions,
-} from "$lib/core/iam";
+import { countRolePermissions } from "$lib/core/iam";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 
@@ -38,38 +35,15 @@ async function loadRoles() {
       api.getUser(userId).catch(() => null) as Promise<any>,
     ]);
 
-    const roles: typeof availableRoles = [];
-
-    // 1. Add system roles
-    for (const sys of SYSTEM_ROLE_DEFINITIONS) {
-      const apiRole = fetchedRoles.find((r) => r.id === sys.id);
-      roles.push({
-        id: sys.id,
-        nameEn: sys.nameEn,
-        nameAr: sys.nameAr,
-        descEn: sys.descEn,
-        descAr: sys.descAr,
-        isSystem: true,
-        permCount: countRolePermissions(apiRole?.permissions || sys.defaultPermissions),
-      });
-    }
-
-    // 2. Add custom roles
-    for (const r of fetchedRoles) {
-      if (!roles.some((existing) => existing.id === r.id)) {
-        roles.push({
-          id: r.id,
-          nameEn: r.name,
-          nameAr: r.name_ar || r.name,
-          descEn: (r as any).description || "Custom role",
-          descAr: (r as any).description || "دور مخصص في المؤسسة",
-          isSystem: false,
-          permCount: countRolePermissions(r.permissions),
-        });
-      }
-    }
-
-    availableRoles = roles;
+    availableRoles = fetchedRoles.map((r) => ({
+      id: r.id,
+      nameEn: r.name,
+      nameAr: r.name_ar || r.name,
+      descEn: (r as any).description || (r.is_system ? "System role" : "Custom role"),
+      descAr: (r as any).description || (r.is_system ? "دور نظام أساسي" : "دور مخصص في المؤسسة"),
+      isSystem: Boolean(r.is_system),
+      permCount: countRolePermissions(r.permissions),
+    }));
 
     // Load active roles for this user
     checkedRoles = Array.isArray(userDetails?.roles) ? [...userDetails.roles] : [];

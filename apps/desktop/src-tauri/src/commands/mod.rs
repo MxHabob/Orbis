@@ -58,6 +58,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         iam_cmds::iam_update_user,
         iam_cmds::iam_list_roles,
         iam_cmds::iam_save_role,
+        iam_cmds::iam_delete_role,
         iam_cmds::iam_list_permissions,
         iam_cmds::iam_save_permissions,
         // ── Organization ────────────────────────────────────────

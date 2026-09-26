@@ -16,6 +16,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@orbis/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from "@orbis/ui/sheet";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import {
@@ -52,10 +60,9 @@ import {
   createEmployeeQuery,
   createResetEmployeePasswordMutation,
   createUpdateEmployeeStatusMutation,
-  createProvisionEmployeeAccountMutation,
-  createAssignEmployeeGroupsMutation,
 } from "./queries";
-import { createGroupsQuery } from "$lib/features/groups/queries";
+import ProvisionAccountSheet from "./components/provision-account-sheet.svelte";
+import ManageEmployeeGroupsSheet from "./components/manage-employee-groups-sheet.svelte";
 import CredentialDeliveryModal from "./components/credential-delivery-modal.svelte";
 import UserAvatar from "$lib/shared/components/user-avatar.svelte";
 import ConfirmDialog from "$lib/shared/components/confirm-dialog.svelte";
@@ -77,25 +84,12 @@ const employee = $derived(employeeQuery.data);
 // Mutations
 const resetPasswordMutation = createResetEmployeePasswordMutation();
 const statusMutation = createUpdateEmployeeStatusMutation();
-const provisionMutation = createProvisionEmployeeAccountMutation();
-const assignGroupsMutation = createAssignEmployeeGroupsMutation();
 
-// Groups query
-const groupsQuery = createGroupsQuery(() => orgId);
-const availableGroups = $derived(groupsQuery.data ?? []);
-
-// Modals
+// Modals & Sheets
 let credentialModalOpen = $state(false);
 let provisioningResult = $state<AccountProvisioningResultDto | null>(null);
-
 let provisionDialogOpen = $state(false);
-let preferredUsername = $state("");
-let deliveryChannel = $state<"manual" | "email" | "sms" | "whatsapp" | "auto">("manual");
-let provisionSelectedGroups = $state<string[]>([]);
-
 let groupsDialogOpen = $state(false);
-let editingGroupIds = $state<string[]>([]);
-
 let statusDialogOpen = $state(false);
 let nextStatus = $state<string>("");
 
@@ -107,43 +101,6 @@ async function handleResetPassword() {
     provisioningResult = result;
     credentialModalOpen = true;
     toast.success(m.employees_password_reset_success?.() || "تمت إعادة ضبط كلمة المرور بنجاح");
-  } catch (err) {
-    toast.error(extractErrorMessage(err));
-  }
-}
-
-// Provision Account Handler
-async function handleProvisionSubmit() {
-  if (!employee) return;
-  try {
-    const payload: ProvisionEmployeeAccountInput = {
-      preferred_username: preferredUsername.trim() || undefined,
-      delivery_channel: deliveryChannel,
-      group_ids: provisionSelectedGroups,
-    };
-    const result = await provisionMutation.mutateAsync({ id: employee.id, req: payload });
-    provisionDialogOpen = false;
-    provisioningResult = result;
-    credentialModalOpen = true;
-    toast.success(m.employees_account_provisioned?.() || "تم إنشاء حساب المستخدم بنجاح");
-  } catch (err) {
-    toast.error(extractErrorMessage(err));
-  }
-}
-
-// Manage Groups Handler
-function openManageGroups() {
-  if (!employee) return;
-  editingGroupIds = [...employee.groups];
-  groupsDialogOpen = true;
-}
-
-async function handleSaveGroups() {
-  if (!employee) return;
-  try {
-    await assignGroupsMutation.mutateAsync({ id: employee.id, groupIds: editingGroupIds });
-    groupsDialogOpen = false;
-    toast.success(l("تم تحديث مجموعات الموظف بنجاح", "Groups updated successfully"));
   } catch (err) {
     toast.error(extractErrorMessage(err));
   }
@@ -547,100 +504,27 @@ function getStatusBadgeVariant(status: string): "default" | "outline" | "seconda
     </div>
   {/if}
 
-  <!-- Provision Account Dialog -->
-  <Dialog bind:open={provisionDialogOpen}>
-    <DialogContent class="max-w-md p-6 text-start">
-      <DialogHeader>
-        <DialogTitle class="text-base font-bold flex items-center gap-2">
-          <ShieldCheck size={18} class="text-primary" />
-          {m.employees_provision_account?.() || "تهيئة حساب مستخدم جديد"}
-        </DialogTitle>
-      </DialogHeader>
+  <!-- Provision Account Sheet -->
+  <ProvisionAccountSheet
+    bind:open={provisionDialogOpen}
+    {orgId}
+    employeeId={employee.id}
+    employeeName={employee.full_name || employee.first_name}
+    onprovisioned={(result) => {
+      provisioningResult = result;
+      credentialModalOpen = true;
+    }}
+  />
 
-      <div class="flex flex-col gap-4 py-3 text-xs">
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-xs font-medium">{l("اسم المستخدم المفضل", "Preferred Username")}</Label>
-          <Input
-            type="text"
-            placeholder="e.g. employee.username"
-            class="text-xs font-mono"
-            bind:value={preferredUsername}
-          />
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-xs font-medium">{m.employees_delivery_channel?.() || "طريقة التسليم"}</Label>
-          <select class="h-9 rounded-md border border-border bg-background px-3 text-xs" bind:value={deliveryChannel}>
-            <option value="manual">{m.employees_delivery_manual?.() || "عرض على الشاشة لمرة واحدة (يدوي)"}</option>
-            <option value="email">{m.employees_delivery_email?.() || "إرسال عبر البريد الإلكتروني"}</option>
-            <option value="sms">{m.employees_delivery_sms?.() || "إرسال عبر الرسائل القصيرة"}</option>
-            <option value="whatsapp">{m.employees_delivery_whatsapp?.() || "إرسال عبر واتساب"}</option>
-            <option value="auto">{m.employees_delivery_auto?.() || "تلقائي"}</option>
-          </select>
-        </div>
-      </div>
-
-      <DialogFooter class="flex items-center justify-end gap-2 pt-3 border-t border-border">
-        <Button variant="outline" size="sm" class="text-xs cursor-pointer" onclick={() => (provisionDialogOpen = false)}>
-          {m.common_action_cancel?.() || "إلغاء"}
-        </Button>
-        <Button size="sm" class="text-xs cursor-pointer" disabled={provisionMutation.isPending} onclick={handleProvisionSubmit}>
-          {#if provisionMutation.isPending}
-            <ArrowPath size={13} class="animate-spin me-1.5" />
-          {/if}
-          {l("إنشاء الحساب وتوليد كلمة المرور", "Create Account")}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
-
-  <!-- Manage User Groups Dialog -->
-  <Dialog bind:open={groupsDialogOpen}>
-    <DialogContent class="max-w-md p-6 text-start">
-      <DialogHeader>
-        <DialogTitle class="text-base font-bold flex items-center gap-2">
-          <UserGroup size={18} class="text-primary" />
-          {l("إسناد مجموعات المستخدمين", "Manage User Groups")}
-        </DialogTitle>
-      </DialogHeader>
-
-      <div class="flex flex-col gap-3 py-3 text-xs max-h-60 overflow-y-auto">
-        {#each availableGroups as grp}
-          {@const isSelected = editingGroupIds.includes(grp.id)}
-          <button
-            type="button"
-            class="flex items-center justify-between p-2.5 rounded-lg border text-start cursor-pointer {isSelected ? 'border-primary bg-primary/10' : 'border-border/60 hover:border-border'}"
-            onclick={() => {
-              if (isSelected) {
-                editingGroupIds = editingGroupIds.filter((id) => id !== grp.id);
-              } else {
-                editingGroupIds = [...editingGroupIds, grp.id];
-              }
-            }}
-          >
-            <span class="font-medium text-foreground">{grp.name_ar || grp.name}</span>
-            <div class="flex size-5 items-center justify-center rounded-sm {isSelected ? 'bg-primary text-primary-foreground' : 'border border-border'}">
-              {#if isSelected}
-                <CheckCircle size={12} />
-              {/if}
-            </div>
-          </button>
-        {/each}
-      </div>
-
-      <DialogFooter class="flex items-center justify-end gap-2 pt-3 border-t border-border">
-        <Button variant="outline" size="sm" class="text-xs cursor-pointer" onclick={() => (groupsDialogOpen = false)}>
-          {m.common_action_cancel?.() || "إلغاء"}
-        </Button>
-        <Button size="sm" class="text-xs cursor-pointer" disabled={assignGroupsMutation.isPending} onclick={handleSaveGroups}>
-          {#if assignGroupsMutation.isPending}
-            <ArrowPath size={13} class="animate-spin me-1.5" />
-          {/if}
-          {l("حفظ التعيينات", "Save Groups")}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
+  <!-- Manage User Groups Sheet -->
+  <ManageEmployeeGroupsSheet
+    bind:open={groupsDialogOpen}
+    {orgId}
+    employeeId={employee.id}
+    employeeName={employee.full_name || employee.first_name}
+    currentGroupIds={employee.groups}
+    onsaved={() => employeeQuery.refetch()}
+  />
 
   <!-- Credential Delivery Modal -->
   <CredentialDeliveryModal
