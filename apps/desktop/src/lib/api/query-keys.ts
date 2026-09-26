@@ -82,6 +82,32 @@ export const queryKeys = {
       [...queryKeys.student.all, "guardians", studentId] as const,
   },
 
+  // ── Employee Affairs ────────────────────────────────────────
+  employee: {
+    all: ["employee"] as const,
+    list: (orgIdOrFilter?: string | Record<string, unknown>, filter?: Record<string, unknown>) => {
+      if (typeof orgIdOrFilter === "string") {
+        return [...queryKeys.employee.all, "list", orgIdOrFilter, filter ?? {}] as const;
+      }
+      return [...queryKeys.employee.all, "list", "current", orgIdOrFilter ?? {}] as const;
+    },
+    detail: (id: string) =>
+      [...queryKeys.employee.all, "detail", id] as const,
+    stats: (orgId?: string) =>
+      [...queryKeys.employee.all, "stats", orgId ?? "current"] as const,
+  },
+
+  // ── User Groups ─────────────────────────────────────────────
+  group: {
+    all: ["group"] as const,
+    list: (orgId?: string) =>
+      [...queryKeys.group.all, "list", orgId ?? "current"] as const,
+    detail: (id: string) =>
+      [...queryKeys.group.all, "detail", id] as const,
+    members: (groupId: string) =>
+      [...queryKeys.group.all, "members", groupId] as const,
+  },
+
   // ── Scheduling ──────────────────────────────────────────────
   scheduling: {
     all: ["scheduling"] as const,

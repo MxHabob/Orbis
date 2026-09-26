@@ -128,6 +128,12 @@ pub struct AppState {
     pub entitlement_provider: Arc<dyn EntitlementProvider>,
     pub solver_sidecar: Arc<crate::features::solver_sidecar::SolverSidecarManager>,
     pub app_data_dir: std::path::PathBuf,
+    // ── Employee Affairs & User Groups ─────────────────────────
+    pub employee_repo: Arc<dyn orbis_app::ports::repositories::EmployeeRepository>,
+    pub group_repo: Arc<dyn orbis_app::ports::repositories::GroupRepository>,
+    pub identity_provisioning_service: Arc<orbis_app::services::IdentityProvisioningService>,
+    pub employee_service: Arc<orbis_app::services::EmployeeService>,
+    pub group_service: Arc<orbis_app::services::GroupService>,
 }
 
 
@@ -412,6 +418,39 @@ impl AppState {
 
         let solver_sidecar = Arc::new(crate::features::solver_sidecar::SolverSidecarManager::new());
 
+        // ── Employee Affairs & User Groups Wiring ───────────────────
+        let employee_repo = Arc::new(orbis_infra::repositories::employee_repo::EmployeeRepoImpl { db: db.clone() });
+        let group_repo = Arc::new(orbis_infra::repositories::group_repo::GroupRepoImpl { db: db.clone() });
+
+        let identity_provisioning_service = Arc::new(orbis_app::services::IdentityProvisioningService::new(
+            user_repo.clone(),
+            person_repo.clone(),
+            identity_repo.clone(),
+            group_repo.clone(),
+            Some(integration_repo.clone()),
+            Some(session_repo.clone()),
+            Some(org_repo.clone()),
+            None,
+            password_hasher.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let employee_service = Arc::new(orbis_app::services::EmployeeService::new(
+            employee_repo.clone(),
+            person_repo.clone(),
+            group_repo.clone(),
+            identity_provisioning_service.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let group_service = Arc::new(orbis_app::services::GroupService::new(
+            group_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
         let state = Self {
             db,
             active_session,
@@ -499,6 +538,12 @@ impl AppState {
             entitlement_provider,
             solver_sidecar,
             app_data_dir: app_data_dir.to_path_buf(),
+            // ── Employee Affairs & User Groups ─────────────────────────
+            employee_repo,
+            group_repo,
+            identity_provisioning_service,
+            employee_service,
+            group_service,
         };
 
         // Spawn Autopilot Background Scheduler (checks every 60 seconds)

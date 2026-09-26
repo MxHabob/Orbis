@@ -5,6 +5,8 @@ pub mod iam_cmds;
 pub mod calendar_cmds;
 pub mod academic_cmds;
 pub mod student_cmds;
+pub mod employee_cmds;
+pub mod group_cmds;
 pub mod scheduling_cmds;
 pub mod assessment_cmds;
 pub mod exam_cmds;
@@ -104,6 +106,27 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         student_cmds::student_get_enrollment,
         student_cmds::student_assign_guardian,
         student_cmds::student_list_guardians,
+        // ── Employee Affairs ────────────────────────────────────
+        employee_cmds::employee_register_employee,
+        employee_cmds::employee_list_employees,
+        employee_cmds::employee_get_employee,
+        employee_cmds::employee_get_employee_stats,
+        employee_cmds::employee_update_employee,
+        employee_cmds::employee_update_employee_status,
+        employee_cmds::employee_provision_account,
+        employee_cmds::employee_assign_groups,
+        employee_cmds::employee_reset_password,
+        // ── User Groups ─────────────────────────────────────────
+        group_cmds::group_create_group,
+        group_cmds::group_list_groups,
+        group_cmds::group_get_group,
+        group_cmds::group_update_group,
+        group_cmds::group_delete_group,
+        group_cmds::group_get_members,
+        group_cmds::group_add_member,
+        group_cmds::group_remove_member,
+        group_cmds::group_bulk_assign,
+        group_cmds::group_set_permissions,
         // ── Student Cohort Progression ──────────────────────────
         progression_cmds::progression_evaluate_cohort,
         progression_cmds::progression_promote_cohort,

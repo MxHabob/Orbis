@@ -18,6 +18,7 @@ use orbis_domain::{
         device::UserDevice,
         discount_template::DiscountTemplate,
         document::Document,
+        employee::{Employee, EmployeeDetail},
         enrollment::{Enrollment, EnrollmentStatus},
         exam_proctor::ExamProctor,
         exam_schedule::ExamSchedule,
@@ -25,6 +26,7 @@ use orbis_domain::{
         exchange_rate::ExchangeRate,
         fee_template::FeeTemplate,
         grade::Grade,
+        group::{Group, GroupDetail, GroupMemberInfo, UserGroupMembership},
         identity::UserIdentity,
         integration::{IntegrationConfig, IntegrationSecret},
         journal_entry::JournalEntry,
@@ -93,6 +95,22 @@ pub trait UserRepository: Send + Sync {
 #[async_trait]
 pub trait PersonRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Person>, DomainError>;
+    async fn find_by_national_id(&self, org_id: Option<Uuid>, national_id: &str) -> Result<Option<Person>, DomainError> {
+        let _ = (org_id, national_id);
+        Ok(None)
+    }
+    async fn find_by_email(&self, org_id: Option<Uuid>, email: &str) -> Result<Option<Person>, DomainError> {
+        let _ = (org_id, email);
+        Ok(None)
+    }
+    async fn find_by_phone(&self, org_id: Option<Uuid>, phone: &str) -> Result<Option<Person>, DomainError> {
+        let _ = (org_id, phone);
+        Ok(None)
+    }
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Person>, DomainError> {
+        let _ = org_id;
+        Ok(vec![])
+    }
     async fn save(&self, person: &Person) -> Result<(), DomainError>;
 }
 
@@ -568,3 +586,60 @@ pub trait AutopilotTaskRepository: Send + Sync {
     /// Find overdue tasks in Pending status where scheduled_at < now
     async fn find_overdue_tasks(&self, org_id: Uuid) -> Result<Vec<AutopilotTask>, DomainError>;
 }
+
+// =========================================================================
+// Employee Repository Port
+// =========================================================================
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct EmployeeFilter {
+    pub search: Option<String>,
+    pub employee_type: Option<String>,
+    pub department: Option<String>,
+    pub org_unit_id: Option<Uuid>,
+    pub status: Option<String>,
+    pub limit: Option<u64>,
+    pub offset: Option<u64>,
+}
+
+#[async_trait]
+pub trait EmployeeRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Employee>, DomainError>;
+    async fn find_by_person_id(&self, org_id: Uuid, person_id: Uuid) -> Result<Option<Employee>, DomainError>;
+    async fn find_by_user_id(&self, org_id: Uuid, user_id: Uuid) -> Result<Option<Employee>, DomainError>;
+    async fn find_by_employee_number(&self, org_id: Uuid, employee_number: &str) -> Result<Option<Employee>, DomainError>;
+    async fn find_detail_by_id(&self, id: Uuid) -> Result<Option<EmployeeDetail>, DomainError>;
+    async fn list(&self, org_id: Uuid, filter: EmployeeFilter) -> Result<PaginatedList<EmployeeDetail>, DomainError>;
+    async fn list_by_type(&self, org_id: Uuid, employee_type: &str) -> Result<Vec<Employee>, DomainError>;
+    async fn count_by_status(&self, org_id: Uuid) -> Result<std::collections::HashMap<String, i64>, DomainError>;
+    async fn save(&self, employee: &Employee) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
+}
+
+// =========================================================================
+// Group Repository Port
+// =========================================================================
+
+#[async_trait]
+pub trait GroupRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Group>, DomainError>;
+    async fn find_by_name(&self, org_id: Uuid, name: &str) -> Result<Option<Group>, DomainError>;
+    async fn find_detail_by_id(&self, id: Uuid) -> Result<Option<GroupDetail>, DomainError>;
+    async fn list_by_org(&self, org_id: Uuid) -> Result<Vec<GroupDetail>, DomainError>;
+    async fn save(&self, group: &Group) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
+
+    // Membership
+    async fn get_members(&self, group_id: Uuid) -> Result<Vec<GroupMemberInfo>, DomainError>;
+    async fn get_user_groups(&self, user_id: Uuid) -> Result<Vec<Group>, DomainError>;
+    async fn add_member(&self, membership: &UserGroupMembership) -> Result<(), DomainError>;
+    async fn remove_member(&self, user_id: Uuid, group_id: Uuid) -> Result<(), DomainError>;
+    async fn bulk_add_members(&self, memberships: &[UserGroupMembership]) -> Result<u64, DomainError>;
+    async fn is_member(&self, user_id: Uuid, group_id: Uuid) -> Result<bool, DomainError>;
+
+    // Permissions
+    async fn get_group_permissions(&self, group_id: Uuid) -> Result<Vec<String>, DomainError>;
+    async fn set_group_permissions(&self, org_id: Uuid, group_id: Uuid, permissions: &[String]) -> Result<(), DomainError>;
+    async fn get_user_group_permissions(&self, user_id: Uuid) -> Result<Vec<String>, DomainError>;
+}
+

@@ -62,6 +62,19 @@ export const Permissions = {
   UserRoleWrite: "user:role_write",
   UserPasswordWrite: "user:password_write",
 
+  // --- User Groups ---
+  GroupRead: "group:read",
+  GroupWrite: "group:write",
+  GroupDelete: "group:delete",
+  GroupAssign: "group:assign",
+
+  // --- Employees & Staff ---
+  EmployeeRead: "employee:read",
+  EmployeeWrite: "employee:write",
+  EmployeeCreate: "employee:create",
+  EmployeeUpdate: "employee:update",
+  EmployeeDelete: "employee:delete",
+
   // --- Academic Period & Calendar ---
   PeriodRead: "period:read",
   PeriodWrite: "period:write",
@@ -238,6 +251,43 @@ export const IAM_DOMAINS: IamDomainDef[] = [
           { key: "delete", labelEn: "Suspend / Delete", labelAr: "تعطيل وحذف الحسابات" },
           { key: "role_write", labelEn: "Assign Roles", labelAr: "تعيين وتعديل الأدوار" },
           { key: "password_write", labelEn: "Reset Password", labelAr: "إعادة ضبط كلمة المرور" },
+        ],
+      },
+      {
+        key: "group",
+        labelEn: "User Groups & Roles",
+        labelAr: "مجموعات المستخدمين والأدوار",
+        descEn: "User groups, collective permissions, and membership assignments",
+        descAr: "مجموعات المستخدمين، الصلاحيات الجماعية، وتعيين الأعضاء",
+        actions: [
+          { key: "read", labelEn: "View Groups", labelAr: "عرض المجموعات" },
+          { key: "write", labelEn: "Create / Pencil Groups", labelAr: "إنشاء وتعديل المجموعات" },
+          { key: "delete", labelEn: "Delete Groups", labelAr: "حذف المجموعات" },
+          { key: "assign", labelEn: "Assign Members", labelAr: "إسناد الأعضاء للمجموعات" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "employees",
+    nameEn: "Employee Affairs",
+    nameAr: "شؤون الموظفين والكادر",
+    descEn: "Staff dossiers, employment contracts, job hierarchy, and status management.",
+    descAr: "ملفات الموظفين، عقود العمل، الهيكل الوظيفي، وإدارة حالات العمل.",
+    iconName: "UserGroup",
+    resources: [
+      {
+        key: "employee",
+        labelEn: "Employee Dossiers",
+        labelAr: "سجلات الموظفين",
+        descEn: "Personal records, job titles, departments, and account provisioning",
+        descAr: "السجلات الشخصية، المسميات الوظيفية، الأقسام، وربط الحسابات",
+        actions: [
+          { key: "read", labelEn: "View Employees", labelAr: "عرض الموظفين" },
+          { key: "write", labelEn: "Create / Pencil Employees", labelAr: "إنشاء وتعديل بيانات الموظفين" },
+          { key: "create", labelEn: "Register New Employee", labelAr: "تسجيل موظف جديد" },
+          { key: "update", labelEn: "Update Employee Dossier", labelAr: "تحديث ملف الموظف" },
+          { key: "delete", labelEn: "Delete Employee Record", labelAr: "حذف سجل الموظف" },
         ],
       },
     ],

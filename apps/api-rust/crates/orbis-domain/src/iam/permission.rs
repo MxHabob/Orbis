@@ -136,6 +136,19 @@ pub enum Permission {
     PromotionWrite,
     PromotionExecute,
 
+    // --- Employees ---
+    EmployeeRead,
+    EmployeeWrite,
+    EmployeeCreate,
+    EmployeeUpdate,
+    EmployeeDelete,
+
+    // --- Groups ---
+    GroupRead,
+    GroupWrite,
+    GroupDelete,
+    GroupAssign,
+
     // --- Special System Roles ---
     AutopilotBypass, // System-level permission
 }
@@ -246,6 +259,15 @@ impl Permission {
             Permission::PromotionRead => "promotion:read",
             Permission::PromotionWrite => "promotion:write",
             Permission::PromotionExecute => "promotion:execute",
+            Permission::EmployeeRead => "employee:read",
+            Permission::EmployeeWrite => "employee:write",
+            Permission::EmployeeCreate => "employee:create",
+            Permission::EmployeeUpdate => "employee:update",
+            Permission::EmployeeDelete => "employee:delete",
+            Permission::GroupRead => "group:read",
+            Permission::GroupWrite => "group:write",
+            Permission::GroupDelete => "group:delete",
+            Permission::GroupAssign => "group:assign",
             Permission::AutopilotBypass => "system:autopilot",
         }
     }
@@ -268,9 +290,12 @@ impl Permission {
             Permission::NotificationRead, Permission::NotificationWrite, Permission::DashboardRead, Permission::AuditRead, Permission::ImportData, Permission::ExportData,
             Permission::FinanceRead, Permission::FinanceWrite, Permission::ProcessPayment,
             Permission::PromotionRead, Permission::PromotionWrite, Permission::PromotionExecute,
+            Permission::EmployeeRead, Permission::EmployeeWrite, Permission::EmployeeCreate, Permission::EmployeeUpdate, Permission::EmployeeDelete,
+            Permission::GroupRead, Permission::GroupWrite, Permission::GroupDelete, Permission::GroupAssign,
             Permission::AutopilotBypass,
         ];
 
         all_perms.into_iter().find(|p| p.as_str() == val)
     }
 }
+

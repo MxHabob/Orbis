@@ -93,5 +93,11 @@ pub struct AppState {
     pub bootstrap_service: Arc<orbis_app::services::BootstrapService>,
     pub onboarding_service: Arc<orbis_app::services::OnboardingService>,
     pub system_service: Arc<orbis_app::services::SystemService>,
+    // ── Employee Affairs & User Groups ─────────────────────────
+    pub employee_repo: Arc<dyn orbis_app::ports::repositories::EmployeeRepository>,
+    pub group_repo: Arc<dyn orbis_app::ports::repositories::GroupRepository>,
+    pub identity_provisioning_service: Arc<orbis_app::services::IdentityProvisioningService>,
+    pub employee_service: Arc<orbis_app::services::EmployeeService>,
+    pub group_service: Arc<orbis_app::services::GroupService>,
 }
 

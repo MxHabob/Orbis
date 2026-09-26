@@ -1219,6 +1219,29 @@ export interface OrbisApiClient {
   assignGuardian(req: AssignGuardianRequest): Promise<GuardianDto>;
   listGuardians(studentId: string): Promise<GuardianDto[]>;
 
+  // ── Employee Affairs ────────────────────────────────────────
+  registerEmployee(req: RegisterEmployeeRequest): Promise<RegisterEmployeeResponseDto>;
+  listEmployees(filter?: EmployeeFilterInput): Promise<PaginatedEmployeesDto>;
+  getEmployee(id: string): Promise<EmployeeDetailDto>;
+  getEmployeeStats(): Promise<Record<string, number>>;
+  updateEmployee(id: string, req: UpdateEmployeeRequest): Promise<EmployeeDetailDto>;
+  updateEmployeeStatus(id: string, status: string): Promise<EmployeeDetailDto>;
+  provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountInput): Promise<AccountProvisioningResultDto>;
+  assignEmployeeGroups(id: string, groupIds: string[]): Promise<boolean>;
+  resetEmployeePassword(id: string): Promise<AccountProvisioningResultDto>;
+
+  // ── User Groups ─────────────────────────────────────────────
+  createGroup(req: CreateGroupRequest): Promise<GroupDetailDto>;
+  listGroups(): Promise<GroupDetailDto[]>;
+  getGroup(id: string): Promise<GroupDetailDto>;
+  updateGroup(id: string, req: UpdateGroupRequest): Promise<GroupDetailDto>;
+  deleteGroup(id: string): Promise<boolean>;
+  getGroupMembers(id: string): Promise<GroupMemberInfoDto[]>;
+  addGroupMember(id: string, userId: string): Promise<boolean>;
+  removeGroupMember(id: string, userId: string): Promise<boolean>;
+  bulkAssignGroup(req: BulkAssignGroupRequest): Promise<number>;
+  setGroupPermissions(id: string, permissions: string[]): Promise<boolean>;
+
   // ── Scheduling ──────────────────────────────────────────────
   createRoom(req: CreateRoomRequest): Promise<RoomDto>;
   listRooms(): Promise<RoomDto[]>;
@@ -1562,4 +1585,225 @@ export interface ListTasksResponse {
   total_count: number;
   items: AutopilotTaskDto[];
 }
+
+// ── Employee Affairs Interfaces ───────────────────────────────
+
+export interface EmployeeDetailDto {
+  id: string;
+  org_id: string;
+  person_id: string;
+  user_id?: string | null;
+  employee_number: string;
+  employee_type: string;
+  job_title?: string | null;
+  department?: string | null;
+  org_unit_id?: string | null;
+  org_unit_name?: string | null;
+  hire_date: string;
+  status: string;
+  employment_type: string;
+  work_shift?: string | null;
+  notes?: string | null;
+
+  // Person demographic fields
+  national_id?: string | null;
+  passport_number?: string | null;
+  first_name: string;
+  middle_name?: string | null;
+  last_name: string;
+  first_name_ar?: string | null;
+  middle_name_ar?: string | null;
+  last_name_ar?: string | null;
+  display_name?: string | null;
+  full_name: string;
+  full_name_ar?: string | null;
+  gender?: string | null;
+  birth_date?: string | null;
+  place_of_birth?: string | null;
+  nationality?: string | null;
+  blood_type?: string | null;
+  medical_notes?: string | null;
+  special_needs_notes?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  avatar_url?: string | null;
+
+  // Linked user account
+  username?: string | null;
+  user_status?: string | null;
+  roles: string[];
+  groups: string[];
+  effective_permissions: string[];
+
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AccountProvisioningResultDto {
+  user_id: string;
+  username: string;
+  temporary_password?: string | null;
+  must_change_password: boolean;
+  delivery_channel: string;
+  delivery_status: string;
+}
+
+export interface RegisterEmployeeResponseDto {
+  employee: EmployeeDetailDto;
+  provisioning?: AccountProvisioningResultDto | null;
+}
+
+export interface PaginatedEmployeesDto {
+  items: EmployeeDetailDto[];
+  total_count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface AccountProvisioningConfigInput {
+  enabled: boolean;
+  preferred_username?: string | null;
+  role?: string | null;
+  group_ids?: string[];
+  delivery_channel?: "email" | "sms" | "whatsapp" | "manual" | "auto" | null;
+  custom_password?: string | null;
+}
+
+export interface RegisterEmployeeRequest {
+  person_id?: string | null;
+  employee_number?: string | null;
+  employee_type: string;
+  job_title?: string | null;
+  department?: string | null;
+  org_unit_id?: string | null;
+  hire_date?: string | null;
+  status?: string | null;
+  employment_type?: string | null;
+  work_shift?: string | null;
+  notes?: string | null;
+
+  first_name: string;
+  middle_name?: string | null;
+  last_name: string;
+  first_name_ar?: string | null;
+  middle_name_ar?: string | null;
+  last_name_ar?: string | null;
+  display_name?: string | null;
+  national_id?: string | null;
+  passport_number?: string | null;
+  gender?: string | null;
+  birth_date?: string | null;
+  place_of_birth?: string | null;
+  nationality?: string | null;
+  blood_type?: string | null;
+  medical_notes?: string | null;
+  special_needs_notes?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  avatar_url?: string | null;
+
+  account?: AccountProvisioningConfigInput | null;
+}
+
+export interface UpdateEmployeeRequest {
+  employee_type?: string | null;
+  job_title?: string | null;
+  department?: string | null;
+  org_unit_id?: string | null;
+  hire_date?: string | null;
+  status?: string | null;
+  employment_type?: string | null;
+  work_shift?: string | null;
+  notes?: string | null;
+
+  first_name?: string | null;
+  middle_name?: string | null;
+  last_name?: string | null;
+  first_name_ar?: string | null;
+  middle_name_ar?: string | null;
+  last_name_ar?: string | null;
+  display_name?: string | null;
+  national_id?: string | null;
+  passport_number?: string | null;
+  gender?: string | null;
+  birth_date?: string | null;
+  place_of_birth?: string | null;
+  nationality?: string | null;
+  blood_type?: string | null;
+  medical_notes?: string | null;
+  special_needs_notes?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  avatar_url?: string | null;
+}
+
+export interface EmployeeFilterInput {
+  query?: string;
+  employee_type?: string;
+  department?: string;
+  status?: string;
+  org_unit_id?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface ProvisionEmployeeAccountInput {
+  preferred_username?: string | null;
+  role?: string | null;
+  group_ids?: string[];
+  delivery_channel?: string | null;
+}
+
+// ── User Groups Interfaces ────────────────────────────────────
+
+export interface GroupDetailDto {
+  id: string;
+  org_id: string;
+  name: string;
+  name_ar?: string | null;
+  description?: string | null;
+  is_system: boolean;
+  status: string;
+  member_count: number;
+  permissions: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GroupMemberInfoDto {
+  user_id: string;
+  person_id: string;
+  full_name: string;
+  full_name_ar?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  avatar_url?: string | null;
+  user_status: string;
+  joined_at: string;
+}
+
+export interface CreateGroupRequest {
+  name: string;
+  name_ar?: string | null;
+  description?: string | null;
+  permissions?: string[];
+}
+
+export interface UpdateGroupRequest {
+  name?: string | null;
+  name_ar?: string | null;
+  description?: string | null;
+  status?: string | null;
+  permissions?: string[];
+}
+
+export interface BulkAssignGroupRequest {
+  group_id: string;
+  user_ids: string[];
+}
+
 

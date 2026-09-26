@@ -113,6 +113,19 @@ import type {
   StudentFeeFilterParams,
   PaymentFilterParams,
   PrerequisiteCheckResultDto,
+  EmployeeDetailDto,
+  AccountProvisioningResultDto,
+  RegisterEmployeeResponseDto,
+  PaginatedEmployeesDto,
+  RegisterEmployeeRequest,
+  UpdateEmployeeRequest,
+  EmployeeFilterInput,
+  ProvisionEmployeeAccountInput,
+  GroupDetailDto,
+  GroupMemberInfoDto,
+  CreateGroupRequest,
+  UpdateGroupRequest,
+  BulkAssignGroupRequest,
   ApprovalStepDto,
   OverrideRequestDto,
   SubmitOverrideRequestInput,
@@ -382,6 +395,67 @@ export class LocalClient implements OrbisApiClient {
   }
   async listGuardians(studentId: string): Promise<GuardianDto[]> {
     return unwrap(await invoke("student_list_guardians", { studentId }));
+  }
+
+  // ── Employee Affairs ────────────────────────────────────────
+  async registerEmployee(req: RegisterEmployeeRequest): Promise<RegisterEmployeeResponseDto> {
+    return unwrap(await invoke("employee_register_employee", { request: req }));
+  }
+  async listEmployees(filter?: EmployeeFilterInput): Promise<PaginatedEmployeesDto> {
+    return unwrap(await invoke("employee_list_employees", { filter: filter ?? {} }));
+  }
+  async getEmployee(id: string): Promise<EmployeeDetailDto> {
+    return unwrap(await invoke("employee_get_employee", { id }));
+  }
+  async getEmployeeStats(): Promise<Record<string, number>> {
+    return unwrap(await invoke("employee_get_employee_stats"));
+  }
+  async updateEmployee(id: string, req: UpdateEmployeeRequest): Promise<EmployeeDetailDto> {
+    return unwrap(await invoke("employee_update_employee", { id, request: req }));
+  }
+  async updateEmployeeStatus(id: string, status: string): Promise<EmployeeDetailDto> {
+    return unwrap(await invoke("employee_update_employee_status", { id, status }));
+  }
+  async provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountInput): Promise<AccountProvisioningResultDto> {
+    return unwrap(await invoke("employee_provision_account", { id, request: req }));
+  }
+  async assignEmployeeGroups(id: string, groupIds: string[]): Promise<boolean> {
+    return unwrap(await invoke("employee_assign_groups", { id, groupIds }));
+  }
+  async resetEmployeePassword(id: string): Promise<AccountProvisioningResultDto> {
+    return unwrap(await invoke("employee_reset_password", { id }));
+  }
+
+  // ── User Groups ─────────────────────────────────────────────
+  async createGroup(req: CreateGroupRequest): Promise<GroupDetailDto> {
+    return unwrap(await invoke("group_create_group", { request: req }));
+  }
+  async listGroups(): Promise<GroupDetailDto[]> {
+    return unwrap(await invoke("group_list_groups"));
+  }
+  async getGroup(id: string): Promise<GroupDetailDto> {
+    return unwrap(await invoke("group_get_group", { id }));
+  }
+  async updateGroup(id: string, req: UpdateGroupRequest): Promise<GroupDetailDto> {
+    return unwrap(await invoke("group_update_group", { id, request: req }));
+  }
+  async deleteGroup(id: string): Promise<boolean> {
+    return unwrap(await invoke("group_delete_group", { id }));
+  }
+  async getGroupMembers(id: string): Promise<GroupMemberInfoDto[]> {
+    return unwrap(await invoke("group_get_members", { id }));
+  }
+  async addGroupMember(id: string, userId: string): Promise<boolean> {
+    return unwrap(await invoke("group_add_member", { id, userId }));
+  }
+  async removeGroupMember(id: string, userId: string): Promise<boolean> {
+    return unwrap(await invoke("group_remove_member", { id, userId }));
+  }
+  async bulkAssignGroup(req: BulkAssignGroupRequest): Promise<number> {
+    return unwrap(await invoke("group_bulk_assign", { request: req }));
+  }
+  async setGroupPermissions(id: string, permissions: string[]): Promise<boolean> {
+    return unwrap(await invoke("group_set_permissions", { id, permissions }));
   }
 
   // ── Scheduling ──────────────────────────────────────────────

@@ -17,6 +17,9 @@ pub mod onboarding_service;
 pub mod system_service;
 pub mod ai_service;
 pub mod autopilot_service;
+pub mod identity_provisioning_service;
+pub mod employee_service;
+pub mod group_service;
 
 pub use student_service::{StudentService, RegisterStudentInput};
 pub use progression_service::ProgressionService;
@@ -37,3 +40,6 @@ pub use onboarding_service::{OnboardingService, CompleteOrganizationOnboardingRe
 pub use system_service::{SystemService, HealthResponse, OrganizationReadiness, OrgLifecycleState};
 pub use ai_service::AiOrchestrationService;
 pub use autopilot_service::{AutopilotService, AutopilotDiagnostics};
+pub use identity_provisioning_service::{IdentityProvisioningService, ProvisionAccountInput, ResetPasswordResult};
+pub use employee_service::{EmployeeService, RegisterEmployeeInput, UpdateEmployeeInput, RegisterEmployeeResult, AccountProvisioningConfig};
+pub use group_service::{GroupService, CreateGroupInput, UpdateGroupInput, BulkAssignGroupInput};

@@ -24,6 +24,7 @@ import {
   Scale,
   Settings,
   ShieldCheck,
+  UserGroup,
   Users,
 } from "@orbis/icons";
 import MainViewport from "$lib/shell/main-viewport.svelte";
@@ -60,6 +61,11 @@ const navGroups = $derived([
         path: "users",
         label: m.settings_nav_users(),
         icon: Users,
+      },
+      {
+        path: "groups",
+        label: m.groups_nav_title ? m.groups_nav_title() : "User Groups",
+        icon: UserGroup,
       },
       {
         path: "permissions",

@@ -14,7 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@orbis/ui";
-import { Banknotes, BookOpen, DocumentPage, Grid, Settings, Sparkles, Users } from "@orbis/icons";
+import { Banknotes, BookOpen, DocumentPage, Grid, Settings, Sparkles, UserGroup, Users } from "@orbis/icons";
 import OrgSidebarSwitcher from "./org-sidebar-switcher.svelte";
 import UserSidebarMenu from "./user-sidebar-menu.svelte";
 import OnboardingPopover from "./onboarding-popover.svelte";
@@ -68,6 +68,12 @@ const navItems = $derived([
     href: `/${orgId}/students`,
     icon: Users,
     label: m.common_word_students(),
+    match: "prefix",
+  },
+  {
+    href: `/${orgId}/employees`,
+    icon: UserGroup,
+    label: m.employees_nav_title ? m.employees_nav_title() : "Employee Affairs",
     match: "prefix",
   },
   {

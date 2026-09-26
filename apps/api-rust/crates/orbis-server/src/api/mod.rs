@@ -176,6 +176,8 @@ pub mod org_routes;
 pub mod calendar_routes;
 pub mod academic_routes;
 pub mod student_routes;
+pub mod employee_routes;
+pub mod group_routes;
 pub mod scheduling_routes;
 pub mod assessment_routes;
 pub mod exam_routes;

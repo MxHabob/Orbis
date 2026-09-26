@@ -114,6 +114,19 @@ import type {
   StudentFeeFilterParams,
   PaymentFilterParams,
   PrerequisiteCheckResultDto,
+  EmployeeDetailDto,
+  AccountProvisioningResultDto,
+  RegisterEmployeeResponseDto,
+  PaginatedEmployeesDto,
+  RegisterEmployeeRequest,
+  UpdateEmployeeRequest,
+  EmployeeFilterInput,
+  ProvisionEmployeeAccountInput,
+  GroupDetailDto,
+  GroupMemberInfoDto,
+  CreateGroupRequest,
+  UpdateGroupRequest,
+  BulkAssignGroupRequest,
   ApprovalStepDto,
   OverrideRequestDto,
   SubmitOverrideRequestInput,
@@ -219,6 +232,9 @@ export class RemoteClient implements OrbisApiClient {
   }
   private put<T>(path: string, body?: unknown): Promise<T> {
     return this.request<T>("PUT", path, body);
+  }
+  private patch<T>(path: string, body?: unknown): Promise<T> {
+    return this.request<T>("PATCH", path, body);
   }
   private del<T>(path: string): Promise<T> {
     return this.request<T>("DELETE", path);
@@ -494,6 +510,75 @@ export class RemoteClient implements OrbisApiClient {
   }
   async listGuardians(studentId: string): Promise<GuardianDto[]> {
     return this.get("/api/v1/student-guardians", { student_id: studentId });
+  }
+
+  // ── Employee Affairs ────────────────────────────────────────
+  async registerEmployee(req: RegisterEmployeeRequest): Promise<RegisterEmployeeResponseDto> {
+    return this.post("/api/v1/employees", req);
+  }
+  async listEmployees(filter?: EmployeeFilterInput): Promise<PaginatedEmployeesDto> {
+    return this.get("/api/v1/employees", {
+      query: filter?.query,
+      employee_type: filter?.employee_type,
+      department: filter?.department,
+      status: filter?.status,
+      org_unit_id: filter?.org_unit_id,
+      page: filter?.page,
+      page_size: filter?.page_size,
+    });
+  }
+  async getEmployee(id: string): Promise<EmployeeDetailDto> {
+    return this.get(`/api/v1/employees/${id}`);
+  }
+  async getEmployeeStats(): Promise<Record<string, number>> {
+    return this.get("/api/v1/employees/stats");
+  }
+  async updateEmployee(id: string, req: UpdateEmployeeRequest): Promise<EmployeeDetailDto> {
+    return this.patch(`/api/v1/employees/${id}`, req);
+  }
+  async updateEmployeeStatus(id: string, status: string): Promise<EmployeeDetailDto> {
+    return this.patch(`/api/v1/employees/${id}/status`, { status });
+  }
+  async provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountInput): Promise<AccountProvisioningResultDto> {
+    return this.post(`/api/v1/employees/${id}/account`, req);
+  }
+  async assignEmployeeGroups(id: string, groupIds: string[]): Promise<boolean> {
+    return this.post(`/api/v1/employees/${id}/groups`, { group_ids: groupIds });
+  }
+  async resetEmployeePassword(id: string): Promise<AccountProvisioningResultDto> {
+    return this.post(`/api/v1/employees/${id}/reset-password`, {});
+  }
+
+  // ── User Groups ─────────────────────────────────────────────
+  async createGroup(req: CreateGroupRequest): Promise<GroupDetailDto> {
+    return this.post("/api/v1/groups", req);
+  }
+  async listGroups(): Promise<GroupDetailDto[]> {
+    return this.get("/api/v1/groups");
+  }
+  async getGroup(id: string): Promise<GroupDetailDto> {
+    return this.get(`/api/v1/groups/${id}`);
+  }
+  async updateGroup(id: string, req: UpdateGroupRequest): Promise<GroupDetailDto> {
+    return this.patch(`/api/v1/groups/${id}`, req);
+  }
+  async deleteGroup(id: string): Promise<boolean> {
+    return this.del(`/api/v1/groups/${id}`);
+  }
+  async getGroupMembers(id: string): Promise<GroupMemberInfoDto[]> {
+    return this.get(`/api/v1/groups/${id}/members`);
+  }
+  async addGroupMember(id: string, userId: string): Promise<boolean> {
+    return this.post(`/api/v1/groups/${id}/members`, { user_id: userId });
+  }
+  async removeGroupMember(id: string, userId: string): Promise<boolean> {
+    return this.del(`/api/v1/groups/${id}/members/${userId}`);
+  }
+  async bulkAssignGroup(req: BulkAssignGroupRequest): Promise<number> {
+    return this.post("/api/v1/groups/bulk-assign", req);
+  }
+  async setGroupPermissions(id: string, permissions: string[]): Promise<boolean> {
+    return this.put(`/api/v1/groups/${id}/permissions`, { permissions });
   }
 
   // ── Scheduling ──────────────────────────────────────────────

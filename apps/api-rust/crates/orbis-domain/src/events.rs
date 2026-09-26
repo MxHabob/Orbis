@@ -58,4 +58,18 @@ pub enum DomainEvent {
 
     DocumentUploaded { document_id: Uuid, entity_type: Option<String>, entity_id: Option<Uuid>, timestamp: DateTime<Utc> },
     DocumentDeleted { document_id: Uuid, timestamp: DateTime<Utc> },
+
+    // --- Employee & Groups & Identity Provisioning ---
+    EmployeeCreated { employee_id: Uuid, person_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    EmployeeUpdated { employee_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    EmployeeStatusChanged { employee_id: Uuid, old_status: String, new_status: String, timestamp: DateTime<Utc> },
+    GroupCreated { group_id: Uuid, org_id: Uuid, name: String, timestamp: DateTime<Utc> },
+    GroupUpdated { group_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    GroupDeleted { group_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    UserGroupAssigned { user_id: Uuid, group_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    UserGroupRemoved { user_id: Uuid, group_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    UserAccountProvisioned { user_id: Uuid, person_id: Uuid, org_id: Uuid, actor_type: String, timestamp: DateTime<Utc> },
+    UserAccountStatusChanged { user_id: Uuid, org_id: Uuid, old_status: String, new_status: String, timestamp: DateTime<Utc> },
+    UserPasswordReset { user_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    CredentialDeliveryAttempted { user_id: Uuid, channel: String, success: bool, timestamp: DateTime<Utc> },
 }

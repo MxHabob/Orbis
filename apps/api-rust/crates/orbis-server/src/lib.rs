@@ -9,7 +9,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use api::{
     iam_routes, org_routes, calendar_routes, academic_routes,
-    student_routes, override_routes, progression_routes, scheduling_routes, assessment_routes, exam_routes,
+    student_routes, employee_routes, group_routes, override_routes, progression_routes, scheduling_routes, assessment_routes, exam_routes,
     finance_routes, document_routes, integration_routes, report_routes, ai_routes,
     autopilot_routes,
 };
@@ -109,6 +109,27 @@ use api::{
         api::student_routes::change_study_mode,
         api::student_routes::assign_guardian,
         api::student_routes::list_guardians,
+        // Employee Affairs
+        api::employee_routes::register_employee,
+        api::employee_routes::list_employees,
+        api::employee_routes::get_employee,
+        api::employee_routes::get_employee_stats,
+        api::employee_routes::update_employee,
+        api::employee_routes::update_employee_status,
+        api::employee_routes::provision_account,
+        api::employee_routes::assign_groups,
+        api::employee_routes::reset_employee_password,
+        // User Groups
+        api::group_routes::create_group,
+        api::group_routes::list_groups,
+        api::group_routes::get_group,
+        api::group_routes::update_group,
+        api::group_routes::delete_group,
+        api::group_routes::get_group_members,
+        api::group_routes::add_group_member,
+        api::group_routes::remove_group_member,
+        api::group_routes::bulk_assign_group,
+        api::group_routes::set_group_permissions,
         // Override & Workflow
         api::override_routes::submit_override,
         api::override_routes::list_overrides,
@@ -342,6 +363,24 @@ use api::{
             api::progression_routes::StudentProgressionItemInput,
             api::progression_routes::PromoteCohortRequest,
             api::progression_routes::EvaluateCohortRequest,
+            // Employee Affairs
+            api::employee_routes::EmployeeDetailDto,
+            api::employee_routes::AccountProvisioningResultDto,
+            api::employee_routes::RegisterEmployeeResponseDto,
+            api::employee_routes::RegisterEmployeeRequest,
+            api::employee_routes::UpdateEmployeeRequest,
+            api::employee_routes::UpdateEmployeeStatusRequest,
+            api::employee_routes::ProvisionEmployeeAccountRequest,
+            api::employee_routes::AssignEmployeeGroupsRequest,
+            api::employee_routes::PaginatedEmployeesDto,
+            // User Groups
+            api::group_routes::GroupDetailDto,
+            api::group_routes::GroupMemberInfoDto,
+            api::group_routes::CreateGroupRequest,
+            api::group_routes::UpdateGroupRequest,
+            api::group_routes::AddGroupMemberRequest,
+            api::group_routes::BulkAssignGroupRequest,
+            api::group_routes::SetGroupPermissionsRequest,
         )
     ),
     modifiers(),
@@ -360,6 +399,8 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(calendar_routes::routes())
         .merge(academic_routes::routes())
         .merge(student_routes::routes())
+        .merge(employee_routes::routes())
+        .merge(group_routes::routes())
         .merge(override_routes::routes())
         .merge(progression_routes::routes())
         .merge(scheduling_routes::routes())

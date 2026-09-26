@@ -273,6 +273,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         organization_service.clone(),
     ).with_autopilot_service(autopilot_service.clone()));
 
+    // ── Employee Affairs & User Groups Wiring ───────────────────
+    let employee_repo = Arc::new(orbis_infra::repositories::employee_repo::EmployeeRepoImpl { db: db.clone() });
+    let group_repo = Arc::new(orbis_infra::repositories::group_repo::GroupRepoImpl { db: db.clone() });
+
+    let identity_provisioning_service = Arc::new(orbis_app::services::IdentityProvisioningService::new(
+        user_repo.clone(),
+        person_repo.clone(),
+        identity_repo.clone(),
+        group_repo.clone(),
+        Some(integration_repo.clone()),
+        Some(session_repo.clone()),
+        Some(org_repo.clone()),
+        None,
+        password_hasher.clone(),
+        event_bus.clone(),
+        permission_checker.clone(),
+    ));
+
+    let employee_service = Arc::new(orbis_app::services::EmployeeService::new(
+        employee_repo.clone(),
+        person_repo.clone(),
+        group_repo.clone(),
+        identity_provisioning_service.clone(),
+        event_bus.clone(),
+        permission_checker.clone(),
+    ));
+
+    let group_service = Arc::new(orbis_app::services::GroupService::new(
+        group_repo.clone(),
+        event_bus.clone(),
+        permission_checker.clone(),
+    ));
+
     // Build AppState
     let state = AppState {
         db: db.clone(),
@@ -381,6 +414,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 db: db.clone(),
             }),
         )),
+        // ── Employee Affairs & User Groups ─────────────────────────
+        employee_repo,
+        group_repo,
+        identity_provisioning_service,
+        employee_service,
+        group_service,
     };
 
     // Spawn Autopilot Background Scheduler (checks every 60 seconds)

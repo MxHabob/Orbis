@@ -1,0 +1,426 @@
+<!--
+  @component GroupDetailView
+  Group detail inspection, member management, and 2D IAM Permission Matrix editor.
+-->
+<script lang="ts">
+import * as m from "$lib/paraglide/messages";
+import { goto } from "$app/navigation";
+import { Button } from "@orbis/ui/button";
+import { Badge } from "@orbis/ui/badge";
+import {
+  ArrowLeft,
+  ArrowPath,
+  CheckCircle,
+  Keyframes,
+  LockClosed,
+  Pencil,
+  Plus,
+  ShieldCheck,
+  Trash,
+  User,
+  UserGroup,
+  Users,
+  XMark,
+} from "@orbis/icons";
+import { toast } from "@orbis/ui";
+import { localizeHref } from "$lib/paraglide/runtime";
+import { formatNumber, formatDate, l } from "$lib/core/i18n";
+import { extractErrorMessage } from "$lib/api";
+import type { GroupDetailDto, GroupMemberInfoDto } from "$lib/api/types";
+import {
+  createGroupQuery,
+  createGroupMembersQuery,
+  createRemoveGroupMemberMutation,
+  createSetGroupPermissionsMutation,
+} from "./queries";
+import { IAM_DOMAINS, type IamDomainDef, type IamResourceDef } from "$lib/core/iam";
+import BulkAssignDialog from "./bulk-assign-dialog.svelte";
+import UserAvatar from "$lib/shared/components/user-avatar.svelte";
+import ConfirmDialog from "$lib/shared/components/confirm-dialog.svelte";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+
+interface Props {
+  orgId: string;
+  groupId: string;
+}
+
+let { orgId, groupId }: Props = $props();
+
+let activeTab = $state<"members" | "permissions">("members");
+
+// Queries
+const groupQuery = createGroupQuery(() => groupId);
+const membersQuery = createGroupMembersQuery(() => groupId);
+
+// Mutations
+const removeMemberMutation = createRemoveGroupMemberMutation();
+const setPermissionsMutation = createSetGroupPermissionsMutation();
+
+const group = $derived(groupQuery.data);
+const members = $derived(membersQuery.data ?? []);
+
+// Permissions Matrix State
+let selectedPermissions = $state<Set<string>>(new Set());
+let isPermissionsDirty = $state(false);
+let isInitialized = $state(false);
+
+// Initialize selected permissions when groupQuery resolves
+$effect(() => {
+  if (group && !isInitialized) {
+    selectedPermissions = new Set(group.permissions);
+    isInitialized = true;
+  }
+});
+
+// Bulk assign dialog state
+let bulkAssignOpen = $state(false);
+
+// Remove member state
+let removeDialogOpen = $state(false);
+let targetMember = $state<GroupMemberInfoDto | null>(null);
+
+function togglePermission(perm: string) {
+  const next = new Set(selectedPermissions);
+  if (next.has(perm)) {
+    next.delete(perm);
+  } else {
+    next.add(perm);
+  }
+  selectedPermissions = next;
+  isPermissionsDirty = true;
+}
+
+function selectAllInDomain(domain: IamDomainDef) {
+  const next = new Set(selectedPermissions);
+  for (const res of domain.resources) {
+    for (const act of res.actions) {
+      next.add(`${res.key}:${act.key}`);
+    }
+  }
+  selectedPermissions = next;
+  isPermissionsDirty = true;
+}
+
+function clearAllInDomain(domain: IamDomainDef) {
+  const next = new Set(selectedPermissions);
+  for (const res of domain.resources) {
+    for (const act of res.actions) {
+      next.delete(`${res.key}:${act.key}`);
+    }
+  }
+  selectedPermissions = next;
+  isPermissionsDirty = true;
+}
+
+async function handleSavePermissions() {
+  if (!group) return;
+  try {
+    await setPermissionsMutation.mutateAsync({
+      id: group.id,
+      permissions: Array.from(selectedPermissions),
+    });
+    toast.success(m.groups_permissions_saved?.() || "تم تحديث صلاحيات المجموعة بنجاح");
+    isPermissionsDirty = false;
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
+  }
+}
+
+function promptRemoveMember(member: GroupMemberInfoDto) {
+  targetMember = member;
+  removeDialogOpen = true;
+}
+
+async function confirmRemoveMember() {
+  if (!targetMember) return;
+  try {
+    await removeMemberMutation.mutateAsync({
+      groupId,
+      userId: targetMember.user_id,
+    });
+    toast.success(l("تم استبعاد العضو من المجموعة بنجاح", "Member removed from group successfully"));
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
+  } finally {
+    removeDialogOpen = false;
+    targetMember = null;
+  }
+}
+</script>
+
+<div class="h-full w-full flex flex-col overflow-hidden bg-background">
+  {#if groupQuery.isLoading}
+    <div class="h-full w-full flex flex-col items-center justify-center gap-3 text-muted-foreground">
+      <ArrowPath size={24} class="animate-spin text-primary" />
+      <span class="text-xs">{l("جاري تحميل بيانات المجموعة...", "Loading group...")}</span>
+    </div>
+  {:else if groupQuery.error || !group}
+    <div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">
+      <p class="text-xs text-destructive font-semibold">{extractErrorMessage(groupQuery.error) || "Group not found"}</p>
+      <Button variant="outline" size="sm" class="text-xs" onclick={() => goto(localizeHref(`/${orgId}/settings/groups`))}>
+        {l("العودة لقائمة المجموعات", "Back to Groups")}
+      </Button>
+    </div>
+  {:else}
+    <!-- Header Bar -->
+    <div class="border-b border-border bg-card px-6 py-4 flex items-center justify-between shrink-0 shadow-2xs">
+      <div class="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          class="size-8 cursor-pointer"
+          onclick={() => goto(localizeHref(`/${orgId}/settings/groups`))}
+        >
+          <ArrowLeft size={16} />
+        </Button>
+
+        <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <UserGroup size={20} />
+        </div>
+
+        <div class="flex flex-col">
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-bold text-foreground truncate">
+              {group.name_ar || group.name}
+            </h1>
+            {#if group.is_system}
+              <Badge variant="secondary" class="text-[10px]">
+                {m.groups_system_badge?.() || "نظام"}
+              </Badge>
+            {/if}
+          </div>
+          <span class="text-xs text-muted-foreground">
+            {group.description || l("إدارة أعضاء وصلاحيات المجموعة", "Manage members and permissions")}
+          </span>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/60">
+        <button
+          type="button"
+          class="px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 {activeTab === 'members' ? 'bg-card text-foreground shadow-2xs font-semibold' : 'text-muted-foreground hover:text-foreground'}"
+          onclick={() => (activeTab = "members")}
+        >
+          <Users size={13} />
+          <span>{m.groups_tab_members?.({ count: formatNumber(members.length) }) || `الأعضاء (${members.length})`}</span>
+        </button>
+
+        <button
+          type="button"
+          class="px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 {activeTab === 'permissions' ? 'bg-card text-foreground shadow-2xs font-semibold' : 'text-muted-foreground hover:text-foreground'}"
+          onclick={() => (activeTab = "permissions")}
+        >
+          <Keyframes size={13} />
+          <span>{m.groups_tab_permissions?.() || "مصفوفة الصلاحيات"}</span>
+          {#if isPermissionsDirty}
+            <span class="size-1.5 rounded-full bg-amber-500"></span>
+          {/if}
+        </button>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="flex-1 min-h-0 overflow-y-auto p-6">
+      <div class="max-w-5xl mx-auto flex flex-col gap-6 pb-20">
+
+        <!-- TAB 1: MEMBERS MANAGEMENT -->
+        {#if activeTab === "members"}
+          <div class="flex flex-col gap-4 bg-card border border-border rounded-xl p-5 shadow-xs">
+            <div class="flex items-center justify-between border-b border-border/60 pb-3">
+              <div class="flex items-center gap-2">
+                <Users size={16} class="text-primary" />
+                <h2 class="text-xs font-bold text-foreground uppercase tracking-wider">{l("قائمة المستخدمين الأعضاء في المجموعة", "Group Members")}</h2>
+              </div>
+
+              <Button
+                variant="default"
+                size="sm"
+                class="text-xs cursor-pointer gap-1.5"
+                onclick={() => (bulkAssignOpen = true)}
+              >
+                <Plus size={13} />
+                <span>{m.groups_bulk_assign?.() || "إسناد مستخدمين للمجموعة"}</span>
+              </Button>
+            </div>
+
+            {#if membersQuery.isLoading}
+              <div class="p-8 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+                <ArrowPath size={14} class="animate-spin text-primary" />
+                <span>{l("جاري تحميل الأعضاء...", "Loading members...")}</span>
+              </div>
+            {:else if members.length === 0}
+              <div class="p-8 text-center text-xs text-muted-foreground flex flex-col items-center justify-center gap-2">
+                <UserGroup size={24} class="text-muted-foreground/60" />
+                <span>{l("لا يوجد أعضاء في هذه المجموعة حالياً.", "No members in this group.")}</span>
+                <Button variant="outline" size="sm" class="text-xs mt-2" onclick={() => (bulkAssignOpen = true)}>
+                  {m.groups_bulk_assign?.() || "إسناد أعضاء الآن"}
+                </Button>
+              </div>
+            {:else}
+              <div class="divide-y divide-border/40 border border-border/60 rounded-lg overflow-hidden">
+                {#each members as member (member.user_id)}
+                  <div class="flex items-center justify-between p-3 bg-card hover:bg-muted/20 transition-colors">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <UserAvatar
+                        name={member.full_name || member.full_name_ar || member.email}
+                        avatarUrl={member.avatar_url ?? undefined}
+                        size="sm"
+                      />
+                      <div class="flex flex-col min-w-0">
+                        <span class="text-xs font-semibold text-foreground truncate">
+                          {member.full_name || member.full_name_ar || member.email}
+                        </span>
+                        <div class="flex items-center gap-3 text-[11px] font-mono text-muted-foreground">
+                          {#if member.email}
+                            <span>{member.email}</span>
+                          {/if}
+                          {#if member.phone}
+                            <span>• {member.phone}</span>
+                          {/if}
+                          <span>• {l("انضم", "Joined")}: {formatDate(member.joined_at, "date")}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      class="text-xs text-destructive hover:text-destructive cursor-pointer gap-1"
+                      onclick={() => promptRemoveMember(member)}
+                    >
+                      <XMark size={13} />
+                      <span>{m.groups_remove_member?.() || "استبعاد"}</span>
+                    </Button>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {/if}
+
+        <!-- TAB 2: 2D PERMISSIONS MATRIX -->
+        {#if activeTab === "permissions"}
+          <div class="flex flex-col gap-6">
+            <div class="flex items-center justify-between p-4 rounded-xl border border-primary/20 bg-primary/5">
+              <div class="flex items-center gap-3">
+                <ShieldCheck size={20} class="text-primary" />
+                <div class="flex flex-col">
+                  <span class="text-xs font-bold text-foreground">{l("الصلاحيات الممنوحة للمجموعة", "Assigned Permissions")}</span>
+                  <span class="text-[11px] text-muted-foreground">{l("تمنح هذه الصلاحيات تلقائياً لكافة أعضاء المجموعة عبر منظومة الصلاحيات الفعالة (Effective Permissions).", "Granted to all group members via Effective Permissions.")}</span>
+                </div>
+              </div>
+              <Badge variant="default" class="font-mono text-xs">
+                {selectedPermissions.size} {l("صلاحية نشطة", "active perms")}
+              </Badge>
+            </div>
+
+            <!-- Permissions Domains -->
+            {#each IAM_DOMAINS as domain (domain.id)}
+              <div class="flex flex-col gap-3 bg-card border border-border rounded-xl p-5 shadow-xs">
+                <!-- Domain Header -->
+                <div class="flex items-center justify-between border-b border-border/60 pb-3">
+                  <div class="flex flex-col">
+                    <h3 class="text-sm font-bold text-foreground flex items-center gap-2">
+                      <Keyframes size={15} class="text-primary" />
+                      {domain.nameAr || domain.nameEn}
+                    </h3>
+                    <span class="text-[11px] text-muted-foreground">{domain.descAr || domain.descEn}</span>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      class="text-[11px] text-primary hover:underline cursor-pointer"
+                      onclick={() => selectAllInDomain(domain)}
+                    >
+                      {l("تحديد الكل في هذا المجال", "Select all")}
+                    </button>
+                    <span class="text-muted-foreground">•</span>
+                    <button
+                      type="button"
+                      class="text-[11px] text-muted-foreground hover:underline cursor-pointer"
+                      onclick={() => clearAllInDomain(domain)}
+                    >
+                      {l("إلغاء التحديد", "Clear all")}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Domain Resources Grid -->
+                <div class="flex flex-col gap-4 pt-1">
+                  {#each domain.resources as res (res.key)}
+                    <div class="flex flex-col gap-2 p-3 rounded-lg bg-muted/20 border border-border/40">
+                      <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-foreground">{res.labelAr || res.labelEn}</span>
+                        <span class="text-[10px] font-mono text-muted-foreground">{res.key}</span>
+                      </div>
+
+                      <div class="flex flex-wrap gap-2 pt-1">
+                        {#each res.actions as act (act.key)}
+                          {@const permKey = `${res.key}:${act.key}`}
+                          {@const isGranted = selectedPermissions.has(permKey)}
+                          <button
+                            type="button"
+                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs transition-all cursor-pointer {isGranted ? 'border-primary bg-primary/10 text-foreground font-semibold shadow-2xs' : 'border-border/60 bg-card text-muted-foreground hover:border-border'}"
+                            onclick={() => togglePermission(permKey)}
+                          >
+                            <div class="flex size-4 items-center justify-center rounded-xs {isGranted ? 'bg-primary text-primary-foreground' : 'border border-border'}">
+                              {#if isGranted}
+                                <CheckCircle size={11} />
+                              {/if}
+                            </div>
+                            <span>{act.labelAr || act.labelEn}</span>
+                          </button>
+                        {/each}
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/each}
+          </div>
+        {/if}
+
+      </div>
+    </div>
+
+    <!-- Permissions Save Bottom Bar -->
+    {#if activeTab === "permissions"}
+      <SettingsBottomBar
+        visible={true}
+        isSaving={setPermissionsMutation.isPending}
+        isDirty={isPermissionsDirty}
+        saveLabel={m.settings_action_save_changes?.() || "حفظ الصلاحيات"}
+        onsave={handleSavePermissions}
+        onreset={() => {
+          if (group) {
+            selectedPermissions = new Set(group.permissions);
+            isPermissionsDirty = false;
+          }
+        }}
+        resetLabel={m.settings_action_discard_changes?.() || "تراجع"}
+      />
+    {/if}
+  {/if}
+
+  <!-- Bulk Assign Users Dialog -->
+  <BulkAssignDialog
+    bind:open={bulkAssignOpen}
+    {orgId}
+    groupId={groupId}
+    groupName={group?.name_ar || group?.name || ""}
+    existingMemberUserIds={members.map((m) => m.user_id)}
+    oncomplete={() => membersQuery.refetch()}
+  />
+
+  <!-- Remove Member Confirm Dialog -->
+  <ConfirmDialog
+    bind:open={removeDialogOpen}
+    title={l("تأكيد استبعاد العضو", "Remove Member")}
+    description={m.groups_remove_confirm?.() || "هل أنت متأكد من استبعاد هذا المستخدم من المجموعة؟"}
+    confirmText={m.groups_remove_member?.() || "استبعاد"}
+    variant="destructive"
+    onConfirm={confirmRemoveMember}
+  />
+</div>

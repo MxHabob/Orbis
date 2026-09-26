@@ -23,3 +23,5 @@ pub mod device_repo;
 pub mod override_repos;
 pub mod progression_repos;
 pub mod system_repo;
+pub mod employee_repo;
+pub mod group_repo;
