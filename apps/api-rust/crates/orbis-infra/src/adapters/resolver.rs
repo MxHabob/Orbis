@@ -13,11 +13,10 @@ use std::sync::Arc;
 use crate::adapters::{
     authen::AuthenAdapter,
     email::EmailAdapter,
-    gemini::GeminiAdapter,
     hikvision::HikvisionAdapter,
+    llm_adapter::{LlmAdapter, LlmAdapterConfig, LlmProviderProtocol},
     mada::MadaAdapter,
     moyasar::MoyasarAdapter,
-    orbis_ai::OrbisAiAdapter,
     solver_adapter::RemoteTimefoldSolver,
     whatsapp::WhatsAppAdapter,
 };
@@ -57,6 +56,7 @@ impl IntegrationResolver {
             )),
         }
     }
+
     async fn resolve_llm_adapter(&self, ctx: &RequestContext) -> Result<Box<dyn LlmGatewayPort>, DomainError> {
         let configs = self.integration_repo.find_configs_by_org(ctx.tenant_id).await?;
         let active_ai = configs.into_iter().find(|c| {
@@ -66,73 +66,142 @@ impl IntegrationResolver {
         match active_ai {
             Some(config) => {
                 let secrets = self.integration_repo.get_secrets_by_config(config.id).await?;
-                let provider = config.provider_name.to_lowercase();
+                let provider = config.provider_name.trim().to_lowercase();
+                let settings = config.settings.as_ref();
 
-                if provider == "gemini" || provider == "gemini-ai" || provider == "google" || provider == "google-gemini" {
-                    let api_key = secrets
-                        .into_iter()
-                        .find(|s| s.key_name == "api_key")
-                        .map(|s| s.secret_key)
-                        .or_else(|| std::env::var("GEMINI_API_KEY").ok())
-                        .unwrap_or_default();
-                    Ok(Box::new(GeminiAdapter::new(api_key)))
-                } else if provider == "openai" || provider == "deepseek" || provider == "groq" || provider == "mistral" {
-                    let api_key = secrets
-                        .into_iter()
-                        .find(|s| s.key_name == "api_key" || s.key_name == "secret_key")
-                        .map(|s| s.secret_key)
-                        .or_else(|| std::env::var("OPENAI_API_KEY").ok());
-                    let default_url = if provider == "deepseek" {
-                        "https://api.deepseek.com"
-                    } else if provider == "groq" {
-                        "https://api.groq.com/openai"
-                    } else {
-                        "https://api.openai.com"
-                    };
-                    let endpoint_url = config
-                        .settings
-                        .as_ref()
-                        .and_then(|s| s.get("endpoint_url"))
-                        .and_then(|v| v.as_str())
-                        .filter(|s| !s.trim().is_empty())
-                        .unwrap_or(default_url)
-                        .to_string();
-                    Ok(Box::new(OrbisAiAdapter::with_api_key(endpoint_url, api_key)))
-                } else if provider == "orbis" || provider == "ollama" || provider == "local" || provider == "vllm" || provider == "lmstudio" {
-                    let endpoint_url = config
-                        .settings
-                        .as_ref()
-                        .and_then(|s| s.get("endpoint_url"))
-                        .and_then(|v| v.as_str())
-                        .filter(|s| !s.trim().is_empty())
-                        .unwrap_or("http://localhost:11434")
-                        .to_string();
-                    let api_key = secrets
-                        .into_iter()
-                        .find(|s| s.key_name == "api_key")
-                        .map(|s| s.secret_key);
-                    Ok(Box::new(OrbisAiAdapter::with_api_key(endpoint_url, api_key)))
-                } else {
-                    Err(DomainError::Validation(format!(
-                        "Unsupported AI Provider: '{}'. Supported providers: gemini, openai, deepseek, groq, orbis (local ollama).",
-                        config.provider_name
-                    )))
+                // Extract settings without forcing arbitrary defaults
+                let custom_endpoint = settings
+                    .and_then(|s| s.get("endpoint_url"))
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty());
+
+                let configured_model = settings
+                    .and_then(|s| s.get("default_model").or_else(|| s.get("model")))
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty());
+
+                let max_tokens = settings
+                    .and_then(|s| s.get("max_tokens"))
+                    .and_then(|v| v.as_u64())
+                    .map(|n| n as u32);
+
+                let timeout_secs = settings
+                    .and_then(|s| s.get("timeout_secs"))
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(60);
+
+                let protocol_override = settings
+                    .and_then(|s| s.get("protocol"))
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.trim().to_lowercase());
+
+                // Find API secret key
+                let api_key = secrets
+                    .into_iter()
+                    .find(|s| s.key_name == "api_key" || s.key_name == "secret_key" || s.key_name == "token")
+                    .map(|s| s.secret_key)
+                    .filter(|k| !k.trim().is_empty());
+
+                // Resolve protocol and standard base endpoint
+                let (protocol, default_base_url) = match protocol_override.as_deref() {
+                    Some("gemini") => (LlmProviderProtocol::Gemini, "https://generativelanguage.googleapis.com"),
+                    Some("anthropic") | Some("claude") => (LlmProviderProtocol::AnthropicClaude, "https://api.anthropic.com"),
+                    Some("openai") | Some("openai_compatible") => (LlmProviderProtocol::OpenAiCompatible, "https://api.openai.com"),
+                    _ => {
+                        // Infer from provider name
+                        if provider == "gemini" || provider == "gemini-ai" || provider == "google" || provider == "google-gemini" {
+                            (LlmProviderProtocol::Gemini, "https://generativelanguage.googleapis.com")
+                        } else if provider == "anthropic" || provider == "claude" {
+                            (LlmProviderProtocol::AnthropicClaude, "https://api.anthropic.com")
+                        } else if provider == "deepseek" {
+                            (LlmProviderProtocol::OpenAiCompatible, "https://api.deepseek.com")
+                        } else if provider == "groq" {
+                            (LlmProviderProtocol::OpenAiCompatible, "https://api.groq.com/openai")
+                        } else if provider == "mistral" {
+                            (LlmProviderProtocol::OpenAiCompatible, "https://api.mistral.ai")
+                        } else if provider == "orbis" || provider == "ollama" || provider == "local" || provider == "vllm" || provider == "lmstudio" {
+                            (LlmProviderProtocol::OpenAiCompatible, "http://localhost:11434")
+                        } else {
+                            (LlmProviderProtocol::OpenAiCompatible, "https://api.openai.com")
+                        }
+                    }
+                };
+
+                let endpoint_url = custom_endpoint.unwrap_or_else(|| default_base_url.to_string());
+
+                let mut adapter_config = LlmAdapterConfig::new(protocol, endpoint_url)
+                    .with_api_key(api_key)
+                    .with_default_model(configured_model)
+                    .with_max_tokens(max_tokens)
+                    .with_timeout_secs(timeout_secs);
+
+                if let Some(org_id) = settings.and_then(|s| s.get("organization_id")).and_then(|v| v.as_str()) {
+                    if !org_id.trim().is_empty() {
+                        adapter_config = adapter_config.with_header("OpenAI-Organization", org_id.trim());
+                    }
                 }
+
+                let adapter = LlmAdapter::new(adapter_config)?;
+                Ok(Box::new(adapter))
             }
             None => {
-                // Auto Fallback: If environment keys exist, use them; otherwise fallback to local Ollama default
+                // Environment variables fallback if configured on the host
                 if let Ok(gemini_key) = std::env::var("GEMINI_API_KEY") {
                     if !gemini_key.trim().is_empty() {
-                        return Ok(Box::new(GeminiAdapter::new(gemini_key)));
+                        let env_model = std::env::var("GEMINI_MODEL").ok();
+                        let config = LlmAdapterConfig::new(
+                            LlmProviderProtocol::Gemini,
+                            "https://generativelanguage.googleapis.com",
+                        )
+                        .with_api_key(Some(gemini_key))
+                        .with_default_model(env_model);
+                        let adapter = LlmAdapter::new(config)?;
+                        return Ok(Box::new(adapter));
                     }
                 }
+
                 if let Ok(openai_key) = std::env::var("OPENAI_API_KEY") {
                     if !openai_key.trim().is_empty() {
-                        return Ok(Box::new(OrbisAiAdapter::with_api_key("https://api.openai.com".into(), Some(openai_key))));
+                        let env_url = std::env::var("OPENAI_BASE_URL").unwrap_or_else(|_| "https://api.openai.com".to_string());
+                        let env_model = std::env::var("OPENAI_MODEL").ok();
+                        let config = LlmAdapterConfig::new(LlmProviderProtocol::OpenAiCompatible, env_url)
+                            .with_api_key(Some(openai_key))
+                            .with_default_model(env_model);
+                        let adapter = LlmAdapter::new(config)?;
+                        return Ok(Box::new(adapter));
                     }
                 }
-                // Fallback to local Ollama / Orbis Local AI
-                Ok(Box::new(OrbisAiAdapter::new("http://localhost:11434".into())))
+
+                if let Ok(anthropic_key) = std::env::var("ANTHROPIC_API_KEY") {
+                    if !anthropic_key.trim().is_empty() {
+                        let env_model = std::env::var("ANTHROPIC_MODEL").ok();
+                        let config = LlmAdapterConfig::new(
+                            LlmProviderProtocol::AnthropicClaude,
+                            "https://api.anthropic.com",
+                        )
+                        .with_api_key(Some(anthropic_key))
+                        .with_default_model(env_model);
+                        let adapter = LlmAdapter::new(config)?;
+                        return Ok(Box::new(adapter));
+                    }
+                }
+
+                // If local Ollama is running / specified in env
+                if let Ok(ollama_url) = std::env::var("OLLAMA_HOST").or_else(|_| std::env::var("OLLAMA_URL")) {
+                    if !ollama_url.trim().is_empty() {
+                        let env_model = std::env::var("OLLAMA_MODEL").ok();
+                        let config = LlmAdapterConfig::new(LlmProviderProtocol::OpenAiCompatible, ollama_url)
+                            .with_default_model(env_model);
+                        let adapter = LlmAdapter::new(config)?;
+                        return Ok(Box::new(adapter));
+                    }
+                }
+
+                Err(DomainError::Validation(
+                    "No active AI / LLM integration configured for this organization. Please enable and configure an AI provider in the App Store.".into(),
+                ))
             }
         }
     }

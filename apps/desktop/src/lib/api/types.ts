@@ -1526,6 +1526,7 @@ export interface AiChatRequest {
   messages: AiMessage[];
   screen_context?: Record<string, unknown> | null;
   agent_type?: string | null;
+  model?: string | null;
 }
 
 export interface AiChatResponse {

@@ -255,12 +255,14 @@ impl AiOrchestrationService {
         const MAX_REACT_TURNS: usize = 5;
         let mut final_response = String::new();
 
+        let target_model = request.model.as_deref().unwrap_or("");
+
         for _turn in 0..MAX_REACT_TURNS {
             let llm_output = self
                 .llm_gateway
                 .chat_with_tools(
                     ctx,
-                    "gpt-4o",
+                    target_model,
                     &system_prompt,
                     &conversation_history,
                     &tools,

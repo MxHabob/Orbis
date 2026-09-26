@@ -51,6 +51,8 @@ pub struct AiChatRequest {
     pub messages: Vec<AiMessage>,
     pub screen_context: Option<serde_json::Value>,
     pub agent_type: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

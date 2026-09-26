@@ -1,10 +1,9 @@
 pub mod report_adapter;
-pub mod gemini;
+pub mod llm_adapter;
 pub mod mada;
 pub mod moyasar;
 pub mod hikvision;
 pub mod authen;
-pub mod orbis_ai;
 pub mod iam;
 pub mod identity;
 pub mod email;
@@ -14,3 +13,4 @@ pub mod bootstrap_adapter;
 pub mod report_defaults;
 pub mod solver_adapter;
 pub mod entitlement_adapter;
+
