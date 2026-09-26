@@ -230,18 +230,23 @@ const kpiStats = $derived([
   {
     label: l("محرك التخزين", "Engine Mode"),
     value: controller.isLocal ? "SQLite (Embedded)" : "PostgreSQL",
+    sub: controller.isLocal ? l("مدمج محلياً", "Local Embedded") : l("خادم مركزي", "Remote Cloud"),
   },
   {
     label: l("حجم البيانات", "Storage Size"),
     value: controller.status?.file_size_formatted || "—",
+    sub: controller.status?.journal_mode ? `WAL: ${controller.status.journal_mode}` : l("مفهرسة وجاهزة", "Indexed"),
   },
   {
     label: l("إصدار المخطط", "Schema Version"),
-    value: controller.status?.schema_version || "v1.0.0",
+    value: controller.status?.applied_migrations_count ? `v${controller.status.applied_migrations_count}.0` : (controller.status?.schema_version || "v1.0.0"),
+    sub: controller.status?.schema_version ? controller.status.schema_version.replace(/^m\d+_\d+_/, "").replace(/_/g, " ") : l("محدث", "Current"),
+    fullTitle: controller.status?.schema_version || "v1.0.0",
   },
   {
     label: l("الترحيلات المطبقة", "Applied Migrations"),
     value: `${controller.status?.applied_migrations_count ?? 0} / ${controller.status?.total_migrations_count ?? 0}`,
+    sub: (controller.status?.pending_migrations.length ?? 0) > 0 ? l(`${controller.status?.pending_migrations.length} معلق`, `${controller.status?.pending_migrations.length} Pending`) : l("مكتمل 100%", "100% Synced"),
   },
 ]);
 
@@ -1172,11 +1177,14 @@ const advisorInsights = $derived.by(() => {
             {l("مؤشرات محرك البيانات", "Database Engine KPIs")}
           </h4>
           
-          <div class="grid grid-cols-2 gap-4 pb-4 border-b border-border/30">
+          <div class="grid grid-cols-2 gap-3.5 pb-4 border-b border-border/30">
             {#each kpiStats as stat}
-              <div class="flex flex-col text-start">
-                <span class="text-[9.5px] text-muted-foreground/80">{stat.label}</span>
-                <span class="text-sm font-bold text-foreground font-mono mt-0.5 leading-none">{stat.value}</span>
+              <div class="flex flex-col min-w-0 text-start overflow-hidden" title={stat.fullTitle || stat.value}>
+                <span class="text-[9.5px] text-muted-foreground/80 truncate">{stat.label}</span>
+                <span class="text-xs font-bold text-foreground font-mono mt-0.5 leading-snug truncate">{stat.value}</span>
+                {#if stat.sub}
+                  <span class="text-[8.5px] text-muted-foreground/70 truncate mt-0.5 font-sans">{stat.sub}</span>
+                {/if}
               </div>
             {/each}
           </div>
