@@ -1098,7 +1098,7 @@ export function scrollToColumnProp(prop: string) {
             </div>
           {/each}
         </div>
-        <div class="orbis-window" style:transform="translateY({HEADER_H + rowWindow.offset}px)">
+        <div class="orbis-window" style:transform="translateY({rowWindow.offset}px)">
           {#each { length: rowWindow.count } as _, i}
             {@const r = rowWindow.start + i}
             {@const row = displayRows[r]}
