@@ -9,7 +9,6 @@
   - SettingsBottomBar with zero-latency dirty detection.
 -->
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -30,14 +29,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import {
-  Grid,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@orbis/ui/table";
+import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import {
   AdjustmentsHorizontal,
@@ -240,7 +232,7 @@ const studentNumberPreview = $derived.by(() => {
 
 // Filtered Documents
 const filteredDocuments = $derived.by(() => {
-  if (selectedClassFilter === "all") return requiredDocuments;
+  if (selectedClassFilter === "all" || !selectedClassFilter) return requiredDocuments;
   return requiredDocuments.filter(d => d.gradeLevelId === selectedClassFilter || !d.gradeLevelId);
 });
 
@@ -268,6 +260,125 @@ async function removeDocument(doc: DocItem) {
     }
   }
   requiredDocuments = requiredDocuments.filter((d) => d.id !== doc.id && d.code !== doc.code);
+}
+
+// ── OrbisGrid Source & Columns for Document Requirements Studio ──
+const documentActions: ActionItem[] = [
+  { id: "toggle-mandatory", label: l("تبديل الإلزامية", "Toggle Mandatory"), icon: "CheckCircle" },
+  { id: "toggle-blocks", label: l("تبديل الحجب", "Toggle Blocks"), icon: "Lock" },
+  { id: "delete", label: l("حذف", "Delete"), icon: "Trash2", variant: "destructive" },
+];
+
+const docGridSource = $derived(
+  filteredDocuments.map((doc, idx) => {
+    const mappedClass = dbClasses.find(c => String(c.id) === doc.gradeLevelId);
+    return {
+      ...doc,
+      __idx: idx + 1,
+      doc_name: l(doc.nameAr, doc.nameEn),
+      class_name: mappedClass ? (mappedClass.name || mappedClass.level) : l("كافة الصفوف", "All Classes"),
+      condition_label: doc.condition === "all_students"
+        ? l("كافة الطلاب", "All Students")
+        : doc.condition === "national_only"
+        ? l("وطنيون فقط", "Nationals Only")
+        : doc.condition === "foreign_only"
+        ? l("وافدون فقط", "Expats Only")
+        : doc.condition === "transfer_students"
+        ? l("طلاب محولون", "Transfers")
+        : doc.condition,
+      is_required_display: doc.isRequired ? l("إلزامي", "Mandatory") : l("اختياري", "Optional"),
+      blocks_display: doc.blocksEnrollment ? l("يحجب القيد", "Blocks") : l("لا يحجب", "No Block"),
+    };
+  })
+);
+
+const docGridColumns = $derived<OrbisColumnDef[]>([
+  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center" },
+  { id: "doc_name", prop: "doc_name", header: l("اسم الوثيقة والمستند", "Document Title"), name: l("اسم الوثيقة والمستند", "Document Title"), width: 220, size: 220, readonly: true, cellClass: "font-semibold" },
+  { id: "code", prop: "code", header: l("الرمز", "Code"), name: l("الرمز", "Code"), width: 110, size: 110, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "class_name", prop: "class_name", header: l("الصف / المرحلة", "Class / Grade"), name: l("الصف / المرحلة", "Class / Grade"), width: 150, size: 150, readonly: true },
+  { id: "condition_label", prop: "condition_label", header: l("شرط القبول", "Condition"), name: l("شرط القبول", "Condition"), width: 130, size: 130, readonly: true },
+  { id: "is_required_display", prop: "is_required_display", header: l("الإلزامية", "Mandatory"), name: l("الإلزامية", "Mandatory"), width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  { id: "blocks_display", prop: "blocks_display", header: l("أثر الحجب", "Blocks"), name: l("أثر الحجب", "Blocks"), width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  {
+    id: "actions",
+    prop: "actions",
+    header: l("إجراءات", "Actions"),
+    name: l("إجراءات", "Actions"),
+    width: 140,
+    size: 140,
+    type: "action",
+    align: "center",
+    readonly: true,
+    meta: { items: documentActions },
+  },
+]);
+
+function handleDocGridAction(event: GridActionEvent) {
+  const row = event.row as unknown as DocItem;
+  if (!row) return;
+
+  if (event.actionId === "toggle-mandatory") {
+    requiredDocuments = requiredDocuments.map(d => d.id === row.id || d.code === row.code ? { ...d, isRequired: !d.isRequired } : d);
+  } else if (event.actionId === "toggle-blocks") {
+    requiredDocuments = requiredDocuments.map(d => d.id === row.id || d.code === row.code ? { ...d, blocksEnrollment: !d.blocksEnrollment } : d);
+  } else if (event.actionId === "delete") {
+    removeDocument(row);
+  }
+}
+
+// ── OrbisGrid Source & Columns for Form Fields Matrix ──
+const fieldActions: ActionItem[] = [
+  { id: "toggle-active", label: l("تفعيل / تعطيل", "Toggle Active") },
+  { id: "toggle-required", label: l("إلزامي / اختياري", "Toggle Required") },
+  { id: "toggle-duplicate", label: l("تبديل منع التكرار", "Toggle Unique") },
+];
+
+const fieldGridSource = $derived(
+  formFields.map((field, idx) => ({
+    ...field,
+    __idx: idx + 1,
+    field_name: l(field.nameAr, field.nameEn),
+    active_display: field.isActive ? l("مفعل بالاستمارة", "Active") : l("معطل", "Disabled"),
+    required_display: field.isActive ? (field.isRequired ? l("إلزامي التعبئة", "Required") : l("اختياري", "Optional")) : "—",
+    duplicate_display: field.supportsDuplicate ? (field.preventDuplicate ? l("صارم (فريد)", "Strict Unique") : l("يسمح بالتكرار", "Allow Duplicate")) : "—",
+  }))
+);
+
+const fieldGridColumns = $derived<OrbisColumnDef[]>([
+  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center" },
+  { id: "field_name", prop: "field_name", header: l("حقل الاستمارة", "Field Name"), name: l("حقل الاستمارة", "Field Name"), width: 220, size: 220, readonly: true, cellClass: "font-semibold" },
+  { id: "key", prop: "key", header: l("المعرف البرمجي", "Key"), name: l("المعرف البرمجي", "Key"), width: 160, size: 160, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "active_display", prop: "active_display", header: l("الحالة", "Status"), name: l("الحالة", "Status"), width: 130, size: 130, type: "badge", align: "center", readonly: true },
+  { id: "required_display", prop: "required_display", header: l("الإلزامية", "Required"), name: l("الإلزامية", "Required"), width: 130, size: 130, type: "badge", align: "center", readonly: true },
+  { id: "duplicate_display", prop: "duplicate_display", header: l("منع التكرار", "Unique"), name: l("منع التكرار", "Unique"), width: 140, size: 140, type: "badge", align: "center", readonly: true },
+  {
+    id: "actions",
+    prop: "actions",
+    header: l("إجراءات الضبط", "Settings Actions"),
+    name: l("إجراءات الضبط", "Settings Actions"),
+    width: 150,
+    size: 150,
+    type: "action",
+    align: "center",
+    readonly: true,
+    meta: { items: fieldActions },
+  },
+]);
+
+function handleFieldGridAction(event: GridActionEvent) {
+  const row = event.row as unknown as FieldConfig;
+  if (!row) return;
+
+  if (event.actionId === "toggle-active") {
+    formFields = formFields.map(f => f.key === row.key ? { ...f, isActive: !f.isActive } : f);
+  } else if (event.actionId === "toggle-required") {
+    formFields = formFields.map(f => f.key === row.key ? { ...f, isRequired: !f.isRequired } : f);
+  } else if (event.actionId === "toggle-duplicate") {
+    if (row.supportsDuplicate) {
+      formFields = formFields.map(f => f.key === row.key ? { ...f, preventDuplicate: !f.preventDuplicate } : f);
+    }
+  }
 }
 
 // Save form
@@ -534,15 +645,14 @@ function handleFormSave() {
       </Card>
     </TabsContent>
 
-    <!-- TAB 2: Class/Grade Requirements Studio -->
+    <!-- TAB 2: Class/Grade Requirements Studio with OrbisGrid -->
     <TabsContent value="documents" class="space-y-4 pt-4">
-      
       <!-- Studio Header Actions Bar -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-2">
           <Funnel class="w-4 h-4 text-muted-foreground" />
           <span class="text-xs font-semibold text-muted-foreground">{l("تصفية حسب الصف / المرحلة:", "Filter Class / Grade:")}</span>
-          <div class="w-52">
+          <div class="w-56">
             <ClassSelect
               bind:value={selectedClassFilter}
               classes={dbClasses}
@@ -564,180 +674,33 @@ function handleFormSave() {
         </Button>
       </div>
 
-      <!-- Requirements Grid Card -->
-      <Card class="border-border/80 shadow-xs">
-        <CardContent class="p-0">
-          <Grid>
-            <TableHeader class="bg-muted/40">
-              <TableRow>
-                <TableHead class="text-start font-bold text-xs">{l("اسم الوثيقة والمستند المطلوب", "Document Title")}</TableHead>
-                <TableHead class="text-start font-bold text-xs w-44">{l("الصف / المرحلة", "Class / Grade")}</TableHead>
-                <TableHead class="text-start font-bold text-xs w-36">{l("شرط القبول", "Condition")}</TableHead>
-                <TableHead class="text-center font-bold text-xs w-32">{l("الإلزامية", "Mandatory")}</TableHead>
-                <TableHead class="text-center font-bold text-xs w-36">{l("أثر الحجب", "Blocks")}</TableHead>
-                <TableHead class="text-end font-bold text-xs w-16">{l("حذف", "Action")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {#each filteredDocuments as doc (doc.id)}
-                {@const mappedClass = dbClasses.find(c => String(c.id) === doc.gradeLevelId)}
-                <TableRow class="hover:bg-muted/10 transition-colors">
-                  <!-- Name & Code -->
-                  <TableCell class="py-3 text-start">
-                    <div class="flex flex-col gap-0.5">
-                      <span class="text-xs font-bold text-foreground">{l(doc.nameAr, doc.nameEn)}</span>
-                      <span class="text-[10px] font-mono text-muted-foreground">{doc.code || doc.nameEn}</span>
-                    </div>
-                  </TableCell>
-
-                  <!-- Class / Grade Level -->
-                  <TableCell class="py-3 text-start">
-                    {#if mappedClass}
-                      <Badge variant="outline" class="text-[10px] font-semibold">
-                        {mappedClass.name || mappedClass.level }
-                      </Badge>
-                    {:else}
-                      <Badge variant="secondary" class="text-[10px] font-semibold">
-                        {l("كافة الصفوف", "All Classes")}
-                      </Badge>
-                    {/if}
-                  </TableCell>
-
-                  <!-- Condition Badge -->
-                  <TableCell class="py-3 text-start">
-                    <span class="text-[11px] text-muted-foreground">
-                      {#if doc.condition === "all_students"}
-                        {l("كافة الطلاب", "All")}
-                      {:else if doc.condition === "national_only"}
-                        {l("وطنيون فقط", "Nationals")}
-                      {:else if doc.condition === "foreign_only"}
-                        {l("وافدون فقط", "Expats")}
-                      {:else if doc.condition === "transfer_students"}
-                        {l("طلاب محولون", "Transfers")}
-                      {:else}
-                        {doc.condition}
-                      {/if}
-                    </span>
-                  </TableCell>
-
-                  <!-- Mandatory Toggle -->
-                  <TableCell class="py-3 text-center">
-                    <button
-                      type="button"
-                      onclick={() => (doc.isRequired = !doc.isRequired)}
-                      class="cursor-pointer select-none"
-                    >
-                      {#if doc.isRequired}
-                        <Badge variant="lime" class="text-[10px] font-bold">
-                          {l("إلزامي", "Mandatory")}
-                        </Badge>
-                      {:else}
-                        <Badge variant="secondary" class="text-[10px] font-semibold">
-                          {l("اختياري", "Optional")}
-                        </Badge>
-                      {/if}
-                    </button>
-                  </TableCell>
-
-                  <!-- Blocks Enrollment Toggle -->
-                  <TableCell class="py-3 text-center">
-                    <button
-                      type="button"
-                      onclick={() => (doc.blocksEnrollment = !doc.blocksEnrollment)}
-                      class="cursor-pointer select-none"
-                    >
-                      {#if doc.blocksEnrollment}
-                        <Badge variant="destructive" class="text-[10px] font-bold">
-                          {l("يحجب القيد", "Blocks")}
-                        </Badge>
-                      {:else}
-                        <Badge variant="outline" class="text-[10px] text-muted-foreground font-medium">
-                          {l("لا يحجب", "No Block")}
-                        </Badge>
-                      {/if}
-                    </button>
-                  </TableCell>
-
-                  <!-- Remove Action -->
-                  <TableCell class="py-3 text-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      class="h-7 w-7 p-0 text-muted-foreground hover:text-destructive cursor-pointer"
-                      onclick={() => removeDocument(doc)}
-                    >
-                      <Trash class="w-3.5 h-3.5" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              {/each}
-              {#if filteredDocuments.length === 0}
-                <TableRow>
-                  <TableCell colspan={6} class="py-8 text-center text-xs text-muted-foreground">
-                    {l("لا توجد متطلبات وثائق مسجلة لهذا الصف حالياً.", "No document requirements configured for this selection.")}
-                  </TableCell>
-                </TableRow>
-              {/if}
-            </TableBody>
-          </Grid>
-        </CardContent>
-      </Card>
+      <!-- Requirements OrbisGrid Container -->
+      <div class="rounded-xl border border-border/80 bg-background overflow-hidden">
+        <OrbisGrid
+          columns={docGridColumns}
+          source={docGridSource}
+          height="min(55vh, 480px)"
+          rowSize={44}
+          rtl={true}
+          onaction={handleDocGridAction}
+          emptyTitle={l("لا توجد متطلبات وثائق مسجلة", "No Document Requirements Configured")}
+        />
+      </div>
     </TabsContent>
 
-    <!-- TAB 3: Form Fields Matrix -->
+    <!-- TAB 3: Form Fields Matrix with OrbisGrid -->
     <TabsContent value="fields" class="space-y-4 pt-4">
-      <Card class="border-border/80 shadow-xs">
-        <CardContent class="p-0">
-          <Grid>
-            <TableHeader class="bg-muted/40">
-              <TableRow>
-                <TableHead class="text-start font-bold text-xs">{l("حقل استمارة التسجيل", "Field Name")}</TableHead>
-                <TableHead class="text-center font-bold text-xs w-36">{l("مفعل بالاستمارة", "Active")}</TableHead>
-                <TableHead class="text-center font-bold text-xs w-36">{l("إلزامي التعبئة", "Required")}</TableHead>
-                <TableHead class="text-center font-bold text-xs w-36">{l("منع التكرار", "Unique")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {#each formFields as field (field.key)}
-                <TableRow class="hover:bg-muted/10 transition-colors">
-                  <!-- Field Title -->
-                  <TableCell class="py-3 text-start">
-                    <div class="flex flex-col gap-0.5">
-                      <span class="text-xs font-bold text-foreground">{l(field.nameAr, field.nameEn)}</span>
-                      <span class="text-[10px] font-mono text-muted-foreground">{field.key}</span>
-                    </div>
-                  </TableCell>
-
-                  <!-- Active Toggle -->
-                  <TableCell class="py-3 text-center">
-                    <Switch bind:checked={field.isActive} />
-                  </TableCell>
-
-                  <!-- Required Toggle -->
-                  <TableCell class="py-3 text-center">
-                    <Switch
-                      bind:checked={field.isRequired}
-                      disabled={!field.isActive}
-                    />
-                  </TableCell>
-
-                  <!-- Prevent Duplicate Toggle -->
-                  <TableCell class="py-3 text-center">
-                    {#if field.supportsDuplicate}
-                      <Switch
-                        bind:checked={field.preventDuplicate}
-                        disabled={!field.isActive}
-                      />
-                    {:else}
-                      <span class="text-[10px] text-muted-foreground/50">—</span>
-                    {/if}
-                  </TableCell>
-                </TableRow>
-              {/each}
-            </TableBody>
-          </Grid>
-        </CardContent>
-      </Card>
+      <div class="rounded-xl border border-border/80 bg-background overflow-hidden">
+        <OrbisGrid
+          columns={fieldGridColumns}
+          source={fieldGridSource}
+          height="min(60vh, 520px)"
+          rowSize={44}
+          rtl={true}
+          onaction={handleFieldGridAction}
+          emptyTitle={l("لا توجد حقول معرفة", "No Form Fields")}
+        />
+      </div>
     </TabsContent>
   </Tabs>
 
@@ -756,3 +719,4 @@ function handleFormSave() {
     onreset={resetToInitial}
   />
 </div>
+

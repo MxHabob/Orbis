@@ -124,17 +124,29 @@ export function formatDate(
     return formatRelativeTime(d, locale);
   }
 
+  const hasGranularFields = Boolean(
+    options &&
+      ("year" in options ||
+        "month" in options ||
+        "day" in options ||
+        "hour" in options ||
+        "minute" in options ||
+        "second" in options ||
+        "weekday" in options),
+  );
+
   const baseOptions: Intl.DateTimeFormatOptions = {
-    ...(type === "date" && { dateStyle: "medium" as const }),
-    ...(type === "datetime" && {
+    ...(!hasGranularFields && type === "date" && { dateStyle: "medium" as const }),
+    ...(!hasGranularFields && type === "datetime" && {
       dateStyle: "medium" as const,
       timeStyle: "short" as const,
       timeZone: timezone,
     }),
-    ...(type === "time" && {
+    ...(!hasGranularFields && type === "time" && {
       timeStyle: "short" as const,
       timeZone: timezone,
     }),
+    ...(hasGranularFields && { timeZone: timezone }),
     ...options,
   };
 
