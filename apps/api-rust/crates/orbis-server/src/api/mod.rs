@@ -163,6 +163,7 @@ impl From<DomainError> for ApiError {
             DomainError::Forbidden(_) => Self::forbidden(err.to_string()),
             DomainError::AlreadyInitialized => Self::conflict("System has already been initialized"),
             DomainError::BootstrapFailed(msg) => Self::bad_request(format!("Bootstrap failed: {msg}")),
+            DomainError::ConcurrencyConflict(_) => Self::conflict(err.to_string()),
             DomainError::Internal(_) => Self::internal(err.to_string()),
         }
     }

@@ -593,6 +593,10 @@ pub async fn create_journal_entry(
         reversal_reason: None,
         created_by: user_id,
         created_at: now,
+        updated_at: now,
+        updated_by: user_id,
+        org_unit_id: None,
+        version: 1,
     };
 
     entry.validate_balance().map_err(ApiError::bad_request)?;
