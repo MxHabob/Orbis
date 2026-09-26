@@ -1,10 +1,8 @@
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
-import { AdjustmentsHorizontal, ArrowLeft, ArrowRight, Plus, Sparkles } from "@orbis/icons";
+import { ArrowLeft, ArrowRight, Plus, Sparkles } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
-import { Textarea } from "@orbis/ui/textarea";
 import { getLocale } from "$lib/paraglide/runtime";
-
 import ProviderModelPicker from "./provider-model-picker.svelte";
 
 let {
@@ -68,26 +66,26 @@ const showCommands = $derived(value === "/");
 const commandOptions = [
   {
     id: "students",
-    label: "البحث عن الطلاب ومعلوماتهم",
-    desc: "البحث بالاسم أو الرقم القومي وعرض تفاصيل الطالب وحالته الأكاديمية والمالية",
-    prompt: "ابحث عن الطلاب في النظام وقدم ملخصاً عن حالتهم الأكاديمية",
+    label: "إحصائيات وحالة الطلاب",
+    desc: "البحث عن الطلاب ومعلوماتهم الأكاديمية والمالية",
+    prompt: "ما هي إحصائيات الطلاب وحالتهم الأكاديمية والمالية الحالية؟",
   },
   {
     id: "finance",
     label: "الملخص المالي والرسوم",
-    desc: "عرض إجمالي الرسوم المحصلة وغير المدفوعة والمطالبات المتأخرة",
-    prompt: "قدم ملخصاً شاملاً عن الوضع المالي والرسوم المستحقة وغير المدفوعة",
+    desc: "عرض الرسوم المحصلة وغير المدفوعة والمطالبات المتأخرة",
+    prompt: "قدم تقريراً مالياً شاملاً عن الرسوم المحصلة والمتبقية",
   },
   {
     id: "academic",
     label: "الفصول والجدول الدراسي",
-    desc: "عرض قائمة الفصول الدراسية والمواد والجدول الأسبوعي",
-    prompt: "ما هي الفصول والمواد الدراسية النشطة في الفصل الحالي؟",
+    desc: "عرض الفصول والمواد الدراسية النشطة والجدول الأسبوعي",
+    prompt: "ما هي الفصول والمواد الدراسية النشطة في هذا الفصل؟",
   },
   {
     id: "report",
-    label: "إنشاء تقرير إداري شامل",
-    desc: "توليد تقرير عن الطلاب أو الأداء أو الحضور أو العمليات",
+    label: "توليد تقرير إداري شامل",
+    desc: "تحليل مؤشرات الأداء، الحضور والغياب، والتقييمات",
     prompt: "أنشئ تقريراً إحصائياً شاملاً عن أداء المدرسة هذا الفصل",
   },
 ];
@@ -101,53 +99,60 @@ function handleCommandSelect(prompt: string) {
 }
 </script>
 
-<div class="relative shrink-0 select-none px-3 py-3 border-t border-border/60 bg-card/60 backdrop-blur-sm">
-  <!-- Quick Commands Menu -->
+<div class="relative shrink-0 select-none px-3.5 pb-3.5 pt-1.5 bg-gradient-to-t from-card via-card/90 to-transparent">
+  <!-- Quick Commands Popup Menu -->
   {#if showCommands}
-    <div class="absolute bottom-[calc(100%-8px)] inset-s-3 inset-e-3 p-2 mb-2 bg-popover border border-border/80 shadow-2xl rounded-xl z-30 flex flex-col gap-1 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">
-      <div class="text-[10px] text-muted-foreground px-2 py-1 uppercase font-bold tracking-wider flex items-center gap-1">
+    <div class="absolute bottom-[calc(100%+4px)] inset-s-3.5 inset-e-3.5 p-2 bg-card/95 border border-border/80 shadow-2xl rounded-2xl z-30 flex flex-col gap-1 backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-2 duration-150 ring-1 ring-black/5 dark:ring-white/10">
+      <div class="text-[10px] text-muted-foreground px-2 py-1 uppercase font-bold tracking-wider flex items-center gap-1.5 border-b border-border/40 pb-1.5">
         <Sparkles size={11} class="text-primary" />
-        أوامر سريعة مقترحة
+        {isRtl ? "أوامر ذكية مقترحة" : "Quick Actions"}
       </div>
       {#each commandOptions as cmd}
         <button 
           type="button" 
-          class="w-full text-start px-3 py-2 flex flex-col gap-0.5 hover:bg-muted/80 rounded-lg transition-colors cursor-pointer group"
+          class="w-full text-start px-2.5 py-2 flex flex-col gap-0.5 hover:bg-muted/80 rounded-xl transition-colors cursor-pointer group"
           onclick={() => handleCommandSelect(cmd.prompt)}
         >
-          <span class="text-[12.5px] font-semibold text-foreground group-hover:text-primary transition-colors">{cmd.label}</span>
-          <span class="text-[10px] text-muted-foreground">{cmd.desc}</span>
+          <span class="text-[12px] font-bold text-foreground group-hover:text-primary transition-colors">{cmd.label}</span>
+          <span class="text-[10px] text-muted-foreground leading-tight">{cmd.desc}</span>
         </button>
       {/each}
     </div>
   {/if}
 
-  <form onsubmit={handleSubmit} class="flex flex-col gap-2">
-    <Textarea
+  <!-- Unified 2026 Floating Input Capsule -->
+  <form 
+    onsubmit={handleSubmit} 
+    class="flex flex-col bg-background/95 border border-border/80 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15 rounded-2xl p-2 shadow-xs transition-all"
+  >
+    <!-- Textarea Input Area -->
+    <textarea
       bind:this={inputEl}
       value={value}
       disabled={isThinking}
       onkeydown={handleKeyDown}
       oninput={handleInput}
-      placeholder="اسأل Orbis عن أي شيء في النظام أو اكتب / للأوامر..."
+      placeholder={isRtl ? "اسأل Orbis عن أي شيء... أو اكتب / للأوامر" : "Ask Orbis anything... or type / for commands"}
       rows="2"
-      class="w-full min-h-12 max-h-36 resize-none overflow-y-auto text-[13px] leading-5 rounded-xl px-3 py-2.5 outline-none shadow-xs border-border/80 focus:border-primary/60 bg-background"
-    ></Textarea>
+      class="w-full min-h-[44px] max-h-32 resize-none overflow-y-auto text-[13px] leading-relaxed px-2 py-1 outline-none border-0 bg-transparent text-foreground placeholder:text-muted-foreground/60 scrollbar-thin"
+    ></textarea>
 
-    <div class="flex items-center justify-between px-1">
-      <div class="flex items-center gap-1.5">
+    <!-- Bottom Actions Toolbar -->
+    <div class="flex items-center justify-between gap-1.5 pt-1.5 border-t border-border/40 min-w-0">
+      <!-- Left side: New chat + Provider/Model Picker -->
+      <div class="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
         <Button
           type="button"
           variant="ghost"
           size="icon-xs"
-          class="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
-          title="محادثة جديدة"
+          class="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 cursor-pointer shrink-0"
+          title={isRtl ? "محادثة جديدة" : "New Chat"}
           onclick={() => handleNewChat()}
         >
           <Plus class="h-4 w-4" />
         </Button>
 
-        <!-- AI Provider & Model Picker (Right next to Input Toolbar) -->
+        <!-- Responsive Provider & Model Selector -->
         <ProviderModelPicker
           bind:selectedModel={selectedModel}
           bind:selectedProvider={selectedProvider}
@@ -156,22 +161,19 @@ function handleCommandSelect(prompt: string) {
         />
       </div>
 
-      <div class="flex items-center gap-2">
-        <span class="text-[10px] text-muted-foreground/60 hidden sm:inline-block">
-          اضغط Enter للإرسال
-        </span>
-
+      <!-- Right side: Send Button -->
+      <div class="flex items-center gap-1.5 shrink-0">
         <Button
           type="submit"
-          aria-label="إرسال"
+          aria-label={isRtl ? "إرسال" : "Send"}
           disabled={!value.trim() || isThinking}
-          class="h-7.5 w-7.5 rounded-lg shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-40 disabled:bg-muted transition-all cursor-pointer flex items-center justify-center p-0"
+          class="h-7.5 w-7.5 rounded-xl shadow-sm bg-primary hover:bg-primary/90 active:scale-95 text-primary-foreground disabled:opacity-30 disabled:bg-muted disabled:text-muted-foreground transition-all cursor-pointer flex items-center justify-center p-0 shrink-0"
           size="icon"
         >
           {#if isRtl}
-            <ArrowLeft class="h-4 w-4" />
+            <ArrowLeft class="h-3.5 w-3.5" />
           {:else}
-            <ArrowRight class="h-4 w-4" />
+            <ArrowRight class="h-3.5 w-3.5" />
           {/if}
         </Button>
       </div>
