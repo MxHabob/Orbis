@@ -5,10 +5,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum OverrideType {
+    AdmissionApproval,
     GradeChange,
     PrerequisiteBypass,
     LateEnrollment,
     CapacityOverride,
+    AgeBypass,
     CreditOverload,
     DiscountOverride,
     AcademicStandingOverride,
@@ -18,10 +20,12 @@ pub enum OverrideType {
 impl std::fmt::Display for OverrideType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            OverrideType::AdmissionApproval => write!(f, "admission_approval"),
             OverrideType::GradeChange => write!(f, "grade_change"),
             OverrideType::PrerequisiteBypass => write!(f, "prerequisite_bypass"),
             OverrideType::LateEnrollment => write!(f, "late_enrollment"),
             OverrideType::CapacityOverride => write!(f, "capacity_override"),
+            OverrideType::AgeBypass => write!(f, "age_bypass"),
             OverrideType::CreditOverload => write!(f, "credit_overload"),
             OverrideType::DiscountOverride => write!(f, "discount_override"),
             OverrideType::AcademicStandingOverride => write!(f, "standing_override"),

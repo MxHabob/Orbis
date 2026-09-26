@@ -98,6 +98,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         academic_cmds::academic_check_prerequisites,
         // ── Student ─────────────────────────────────────────────
         student_cmds::student_register_student,
+        student_cmds::student_check_duplicate,
         student_cmds::student_list_students,
         student_cmds::student_get_student,
         student_cmds::student_update_student_status,
@@ -196,6 +197,10 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         document_cmds::document_list,
         document_cmds::document_get,
         document_cmds::document_delete,
+        document_cmds::document_create_requirement,
+        document_cmds::document_list_requirements,
+        document_cmds::document_delete_requirement,
+        document_cmds::document_evaluate_student_requirements,
         // ── Integration ─────────────────────────────────────────
         integration_cmds::integration_connect_app,
         integration_cmds::integration_list,

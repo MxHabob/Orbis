@@ -1,12 +1,16 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use super::admission::AdmissionConfiguration;
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct OrganizationSettings {
     #[serde(default)]
     pub academic: AcademicSettings,
     #[serde(default)]
     pub enrollment: EnrollmentSettings,
+    #[serde(default, alias = "registration")]
+    pub admission: AdmissionConfiguration,
     #[serde(default)]
     pub finance: FinanceSettings,
     #[serde(default)]

@@ -4,15 +4,16 @@ export class FinancialInfoState {
   orgId: string;
   studentId?: string;
 
-  discountTemplates = $state<any[]>([]);
   feeTemplates = $state<any[]>([]);
+  discountTemplates = $state<any[]>([]);
   applyDiscount = $state(false);
-  discountType = $state("template"); // template | custom
+  discountType = $state<"template" | "custom">("template");
   selectedDiscountTemplateId = $state("");
   customDiscountAmount = $state<number | null>(null);
   selectedOptionalFees = $state<
     Record<string, { checked: boolean; amount: number }>
   >({});
+  isLoading = $state(false);
 
   constructor(orgId: string, studentId?: string) {
     this.orgId = orgId;
@@ -20,20 +21,31 @@ export class FinancialInfoState {
   }
 
   async init() {
-    const feeTpls = await api.listFeeTemplates().catch(() => []);
-    this.feeTemplates = feeTpls || [];
-    this.discountTemplates = [];
+    this.isLoading = true;
+    try {
+      const [feeTpls, discountTpls] = await Promise.all([
+        api.listFeeTemplates().catch(() => []),
+        api.listDiscountTemplates ? api.listDiscountTemplates().catch(() => []) : Promise.resolve([]),
+      ]);
 
-    const feeMap: Record<string, { checked: boolean; amount: number }> = {};
-    for (const fTpl of this.feeTemplates) {
-      if (fTpl.is_mandatory === 0) {
-        feeMap[String(fTpl.id)] = {
-          checked: false,
-          amount: Number(fTpl.default_amount) || 0,
-        };
+      this.feeTemplates = feeTpls || [];
+      this.discountTemplates = discountTpls || [];
+
+      const feeMap: Record<string, { checked: boolean; amount: number }> = {};
+      for (const fTpl of this.feeTemplates) {
+        if (fTpl.is_mandatory === 0 || fTpl.is_mandatory === false) {
+          feeMap[String(fTpl.id)] = {
+            checked: false,
+            amount: Number(fTpl.default_amount) || 0,
+          };
+        }
       }
+      this.selectedOptionalFees = feeMap;
+    } catch (err) {
+      console.error("Failed to initialize financial info state:", err);
+    } finally {
+      this.isLoading = false;
     }
-    this.selectedOptionalFees = feeMap;
   }
 
   async populate(originalStudent: any) {

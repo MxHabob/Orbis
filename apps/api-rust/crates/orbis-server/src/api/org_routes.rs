@@ -443,6 +443,7 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 grade_entry_auto_close_days: s.autopilot.grade_entry_auto_close_days,
                 allow_grade_edit_after_close: s.autopilot.allow_grade_edit_after_close,
             },
+            admission: Default::default(),
         }
     }
 }

@@ -1,3 +1,7 @@
+<!--
+  @component LocationSection
+  Residential Address & Previous Academic Institution Details.
+-->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui/label";
@@ -8,6 +12,7 @@ import {
   CardTitle,
   CardContent,
 } from "@orbis/ui/card";
+import { Home } from "@orbis/icons";
 
 import type { StudentFormState } from "../form-state.svelte";
 
@@ -15,10 +20,13 @@ let { state }: { state: StudentFormState } = $props();
 </script>
 
 <Card class="w-full">
-  <CardHeader class="py-3 px-6">
-    <CardTitle class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider text-start select-none">
-      {m.common_form_location_title()}
-    </CardTitle>
+  <CardHeader class="py-3 px-6 border-b border-border/40">
+    <div class="flex items-center gap-2">
+      <Home class="w-4 h-4 text-primary" />
+      <CardTitle class="text-xs font-bold text-foreground uppercase tracking-wider text-start select-none">
+        {m.common_form_location_title()}
+      </CardTitle>
+    </div>
   </CardHeader>
 
   <CardContent class="p-0">
@@ -30,7 +38,7 @@ let { state }: { state: StudentFormState } = $props();
             <Label for="previousSchool" class="text-xs font-semibold text-foreground">{m.common_form_previous_school()}</Label>
             <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_previous_school_placeholder()}</span>
           </div>
-          <div class="w-full md:w-[480px] shrink-0">
+          <div class="w-full md:w-120 shrink-0">
             <Input 
               id="previousSchool"
               type="text" 
@@ -48,7 +56,7 @@ let { state }: { state: StudentFormState } = $props();
           <Label for="governorate" class="text-xs font-semibold text-foreground">{m.common_form_governorate()}</Label>
           <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_governorate_placeholder()}</span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0">
+        <div class="w-full md:w-120 shrink-0">
           <Input 
             id="governorate"
             type="text" 
@@ -65,7 +73,7 @@ let { state }: { state: StudentFormState } = $props();
           <Label for="district" class="text-xs font-semibold text-foreground">{m.common_form_district()}</Label>
           <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_district_placeholder()}</span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0">
+        <div class="w-full md:w-120 shrink-0">
           <Input 
             id="district"
             type="text" 
@@ -86,7 +94,7 @@ let { state }: { state: StudentFormState } = $props();
             </Label>
             <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_address_placeholder()}</span>
           </div>
-          <div class="w-full md:w-[480px] shrink-0">
+          <div class="w-full md:w-120 shrink-0">
             <Input 
               id="address"
               type="text" 

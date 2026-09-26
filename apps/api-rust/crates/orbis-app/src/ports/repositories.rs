@@ -18,6 +18,7 @@ use orbis_domain::{
         device::UserDevice,
         discount_template::DiscountTemplate,
         document::Document,
+        document_requirement::DocumentRequirement,
         employee::{Employee, EmployeeDetail},
         enrollment::{Enrollment, EnrollmentStatus},
         exam_proctor::ExamProctor,
@@ -192,6 +193,10 @@ pub trait StudentRepository: Send + Sync {
     async fn list(&self, org_id: Uuid, filter: StudentFilter) -> Result<PaginatedList<StudentDetail>, DomainError>;
     async fn find_by_student_number(&self, org_id: Uuid, number: &str) -> Result<Option<Student>, DomainError>;
     async fn find_by_national_id(&self, org_id: Uuid, national_id: &str) -> Result<Option<Student>, DomainError>;
+    async fn find_by_person_id(&self, person_id: Uuid) -> Result<Option<Student>, DomainError> {
+        let _ = person_id;
+        Ok(None)
+    }
     async fn save(&self, student: &Student) -> Result<(), DomainError>;
     async fn update_status(&self, id: Uuid, status: &str) -> Result<(), DomainError>;
     async fn update_status_batch(&self, ids: &[Uuid], status: &str) -> Result<usize, DomainError>;
@@ -642,4 +647,28 @@ pub trait GroupRepository: Send + Sync {
     async fn set_group_permissions(&self, org_id: Uuid, group_id: Uuid, permissions: &[String]) -> Result<(), DomainError>;
     async fn get_user_group_permissions(&self, user_id: Uuid) -> Result<Vec<String>, DomainError>;
 }
+
+// =========================================================================
+// Document Requirement Repository Port
+// =========================================================================
+
+#[async_trait]
+pub trait DocumentRequirementRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<DocumentRequirement>, DomainError>;
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DocumentRequirement>, DomainError>;
+    async fn find_by_target(&self, org_id: Uuid, target_type: &str, target_id: Option<Uuid>) -> Result<Vec<DocumentRequirement>, DomainError>;
+    async fn save(&self, req: &DocumentRequirement) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
+}
+
+// =========================================================================
+// Sequence Counter Repository Port
+// =========================================================================
+
+#[async_trait]
+pub trait SequenceCounterRepository: Send + Sync {
+    async fn next_sequence(&self, org_id: Uuid, sequence_type: &str, academic_year: i32) -> Result<u64, DomainError>;
+    async fn seed_if_empty(&self, org_id: Uuid, sequence_type: &str, academic_year: i32, initial_val: i64) -> Result<(), DomainError>;
+}
+
 

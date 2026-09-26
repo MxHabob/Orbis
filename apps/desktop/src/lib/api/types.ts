@@ -1208,6 +1208,7 @@ export interface OrbisApiClient {
 
   // ── Student ─────────────────────────────────────────────────
   registerStudent(req: RegisterStudentInput): Promise<StudentDetailDto>;
+  checkDuplicate(req: CheckDuplicateInput): Promise<DuplicateCheckResultDto>;
   listStudents(filter?: StudentFilterParams): Promise<PaginatedList<StudentDetailDto>>;
   getStudent(id: string): Promise<StudentDetailDto>;
   updateStudentStatus(req: UpdateStudentStatusInput): Promise<StudentDto>;
@@ -1346,6 +1347,17 @@ export interface OrbisApiClient {
   listDocuments(): Promise<DocumentDto[]>;
   getDocument(id: string): Promise<DocumentDto>;
   deleteDocument(id: string): Promise<void>;
+  createDocumentRequirement(req: CreateDocumentRequirementRequest): Promise<DocumentRequirementDto>;
+  listDocumentRequirements(): Promise<DocumentRequirementDto[]>;
+  deleteDocumentRequirement(id: string): Promise<void>;
+  evaluateStudentDocumentRequirements(
+    studentId: string,
+    params?: {
+      grade_level_id?: string;
+      is_national?: boolean;
+      is_transfer?: boolean;
+    },
+  ): Promise<StudentDocumentFulfillmentDto[]>;
 
   // ── Integration ─────────────────────────────────────────────
   connectApp(req: ConnectAppRequest): Promise<IntegrationDto>;
@@ -1813,5 +1825,67 @@ export interface BulkAssignGroupRequest {
   group_id: string;
   user_ids: string[];
 }
+
+// ── Student Duplicate Check Interfaces ────────────────────────
+
+export interface CheckDuplicateInput {
+  national_id?: string;
+  phone?: string;
+  email?: string;
+  exclude_student_id?: string;
+}
+
+export interface DuplicateMatchDto {
+  field: string;
+  value: string;
+  matched_person_id: string;
+  matched_person_name: string;
+  student_id?: string;
+  student_number?: string;
+}
+
+export interface DuplicateCheckResultDto {
+  has_duplicate: boolean;
+  matches: DuplicateMatchDto[];
+}
+
+// ── Document Requirement Interfaces ───────────────────────────
+
+export interface DocumentRequirementDto {
+  id: string;
+  org_id: string;
+  target_type: string;
+  target_id?: string;
+  code: string;
+  name_ar: string;
+  name_en: string;
+  is_mandatory: boolean;
+  blocks_enrollment: boolean;
+  condition: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateDocumentRequirementRequest {
+  target_type: string;
+  target_id?: string;
+  code: string;
+  name_ar: string;
+  name_en?: string;
+  is_mandatory: boolean;
+  blocks_enrollment: boolean;
+  condition?: string;
+}
+
+export interface StudentDocumentFulfillmentDto {
+  requirement: DocumentRequirementDto;
+  is_fulfilled: boolean;
+  is_applicable: boolean;
+  document_id?: string;
+  document_name?: string;
+  file_path?: string;
+  uploaded_at?: string;
+}
+
 
 

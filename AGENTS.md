@@ -34,3 +34,12 @@ Every agent starting a session in this repository MUST:
   - `packages/ui`: Shared UI components.
   - `packages/svelte-grid`: High-performance virtualized canvas/DOM hybrid grid (`OrbisGrid`).
   - `packages/sdk`: Pure TypeScript client generated deterministically via `@hey-api/openapi-ts`.
+
+---
+
+## 3. CONTINUATION STATE
+
+- **Current Status:** `REGISTRATION_ERP_REDESIGN_COMPLETE`
+- **Master Reference Document:** `docs/registration_erp_architecture_plan.md`
+- **Accomplished:** Full ground-up rebuild of Registration Settings Form and Student Registration Form State with modern Form Controls, real-time debounced authoritative duplicate checking, dynamic field matrix, dynamic requirement fulfillment evaluations, and live tuition calculator.
+- **Verification:** `cargo check --workspace` & `bun x tsc -p apps/desktop/tsconfig.json --noEmit` verified with 0 errors.

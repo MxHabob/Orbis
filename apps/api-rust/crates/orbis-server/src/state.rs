@@ -47,6 +47,8 @@ pub struct AppState {
     pub student_fee_repo: Arc<dyn StudentFeeRepository>,
     pub payment_repo: Arc<dyn PaymentRepository>,
     pub document_repo: Arc<dyn DocumentRepository>,
+    pub doc_requirement_repo: Arc<dyn orbis_app::ports::repositories::DocumentRequirementRepository>,
+    pub sequence_repo: Arc<dyn orbis_app::ports::repositories::SequenceCounterRepository>,
     pub integration_repo: Arc<dyn IntegrationRepository>,
     pub workflow_repo: Arc<dyn WorkflowRepository>,
     pub currency_repo: Arc<dyn CurrencyRepository>,

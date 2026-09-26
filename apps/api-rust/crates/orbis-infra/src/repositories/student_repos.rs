@@ -148,6 +148,16 @@ impl StudentRepository for StudentRepoImpl {
         Ok(model.map(map_student_model_to_domain))
     }
 
+    async fn find_by_person_id(&self, person_id: Uuid) -> Result<Option<DomainStudent>, DomainError> {
+        let model = StudentEntity::find()
+            .filter(student::Column::PersonId.eq(person_id))
+            .filter(student::Column::IsDeleted.eq(false))
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(model.map(map_student_model_to_domain))
+    }
+
     async fn save(&self, s: &DomainStudent) -> Result<(), DomainError> {
         let active = student::ActiveModel {
             id: Set(s.id),

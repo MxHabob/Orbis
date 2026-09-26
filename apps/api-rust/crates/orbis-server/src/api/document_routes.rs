@@ -196,8 +196,182 @@ async fn delete_document(
     Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct DocumentRequirementDto {
+    pub id: Uuid,
+    pub org_id: Uuid,
+    pub target_type: String,
+    pub target_id: Option<Uuid>,
+    pub code: String,
+    pub name_ar: String,
+    pub name_en: String,
+    pub is_mandatory: bool,
+    pub blocks_enrollment: bool,
+    pub condition: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct CreateDocumentRequirementRequest {
+    pub target_type: String,
+    pub target_id: Option<Uuid>,
+    pub code: String,
+    pub name_ar: String,
+    pub name_en: Option<String>,
+    pub is_mandatory: bool,
+    pub blocks_enrollment: bool,
+    pub condition: Option<String>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct StudentDocumentFulfillmentDto {
+    pub requirement: DocumentRequirementDto,
+    pub is_fulfilled: bool,
+    pub is_applicable: bool,
+    pub document_id: Option<Uuid>,
+    pub document_name: Option<String>,
+    pub file_path: Option<String>,
+    pub uploaded_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Deserialize)]
+pub struct EvaluateRequirementsQuery {
+    pub grade_level_id: Option<Uuid>,
+    pub is_national: Option<bool>,
+    pub is_transfer: Option<bool>,
+}
+
+// ── Document Requirement Handlers ───────────────────────────────
+
+#[utoipa::path(post, path = "/api/v1/document-requirements", request_body = CreateDocumentRequirementRequest,
+    responses((status = 201, body = DocumentRequirementDto)), security(("bearer" = [])), tag = "Document")]
+async fn create_document_requirement(
+    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateDocumentRequirementRequest>,
+) -> Result<Json<ApiResponse<DocumentRequirementDto>>, ApiError> {
+    use orbis_domain::entities::document_requirement::{RequirementTargetType, DocumentCondition};
+    
+    let target_type = match p.target_type.as_str() {
+        "stage" => RequirementTargetType::Stage,
+        "grade_level" => RequirementTargetType::GradeLevel,
+        "program" => RequirementTargetType::Program,
+        _ => RequirementTargetType::Global,
+    };
+
+    let condition = match p.condition.as_deref().unwrap_or("all_students") {
+        "non_national_only" => DocumentCondition::NonNationalOnly,
+        "transfer_students_only" => DocumentCondition::TransferStudentsOnly,
+        "special_needs_only" => DocumentCondition::SpecialNeedsOnly,
+        _ => DocumentCondition::AllStudents,
+    };
+
+    let input = orbis_app::services::CreateDocumentRequirementInput {
+        target_type,
+        target_id: p.target_id,
+        code: p.code,
+        name_ar: p.name_ar,
+        name_en: p.name_en.unwrap_or_default(),
+        is_mandatory: p.is_mandatory,
+        blocks_enrollment: p.blocks_enrollment,
+        condition,
+    };
+
+    let req = state.document_service.create_document_requirement(&ctx, ctx.tenant_id, input).await?;
+    Ok(ApiResponse::ok(DocumentRequirementDto {
+        id: req.id,
+        org_id: req.org_id,
+        target_type: req.target_type.to_string(),
+        target_id: req.target_id,
+        code: req.code,
+        name_ar: req.name_ar,
+        name_en: req.name_en,
+        is_mandatory: req.is_mandatory,
+        blocks_enrollment: req.blocks_enrollment,
+        condition: req.condition.to_string(),
+        created_at: req.created_at,
+        updated_at: req.updated_at,
+    }))
+}
+
+#[utoipa::path(get, path = "/api/v1/document-requirements",
+    responses((status = 200, body = Vec<DocumentRequirementDto>)), security(("bearer" = [])), tag = "Document")]
+async fn list_document_requirements(
+    ctx: AuthContext, State(state): State<AppState>,
+) -> Result<Json<ApiResponse<Vec<DocumentRequirementDto>>>, ApiError> {
+    let reqs = state.document_service.list_document_requirements_by_org(ctx.tenant_id).await?;
+    let dtos = reqs.into_iter().map(|req| DocumentRequirementDto {
+        id: req.id,
+        org_id: req.org_id,
+        target_type: req.target_type.to_string(),
+        target_id: req.target_id,
+        code: req.code,
+        name_ar: req.name_ar,
+        name_en: req.name_en,
+        is_mandatory: req.is_mandatory,
+        blocks_enrollment: req.blocks_enrollment,
+        condition: req.condition.to_string(),
+        created_at: req.created_at,
+        updated_at: req.updated_at,
+    }).collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(delete, path = "/api/v1/document-requirements/{id}", params(("id" = Uuid, Path, description = "Requirement ID")),
+    responses((status = 204, description = "Deleted")), security(("bearer" = [])), tag = "Document")]
+async fn delete_document_requirement(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<axum::http::StatusCode, ApiError> {
+    state.document_service.delete_document_requirement(&ctx, id).await?;
+    Ok(axum::http::StatusCode::NO_CONTENT)
+}
+
+#[utoipa::path(get, path = "/api/v1/students/{id}/document-requirements", params(("id" = Uuid, Path, description = "Student ID")),
+    responses((status = 200, body = Vec<StudentDocumentFulfillmentDto>)), security(("bearer" = [])), tag = "Document")]
+async fn evaluate_student_requirements(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(student_id): Path<Uuid>,
+    axum::extract::Query(q): axum::extract::Query<EvaluateRequirementsQuery>,
+) -> Result<Json<ApiResponse<Vec<StudentDocumentFulfillmentDto>>>, ApiError> {
+    let fulfillments = state.document_service.evaluate_student_requirements(
+        ctx.tenant_id,
+        student_id,
+        q.grade_level_id,
+        q.is_national.unwrap_or(true),
+        q.is_transfer.unwrap_or(false),
+    ).await?;
+
+    let dtos = fulfillments.into_iter().map(|f| StudentDocumentFulfillmentDto {
+        requirement: DocumentRequirementDto {
+            id: f.requirement.id,
+            org_id: f.requirement.org_id,
+            target_type: f.requirement.target_type.to_string(),
+            target_id: f.requirement.target_id,
+            code: f.requirement.code,
+            name_ar: f.requirement.name_ar,
+            name_en: f.requirement.name_en,
+            is_mandatory: f.requirement.is_mandatory,
+            blocks_enrollment: f.requirement.blocks_enrollment,
+            condition: f.requirement.condition.to_string(),
+            created_at: f.requirement.created_at,
+            updated_at: f.requirement.updated_at,
+        },
+        is_fulfilled: f.is_fulfilled,
+        is_applicable: f.is_applicable,
+        document_id: f.uploaded_document.as_ref().map(|d| d.id),
+        document_name: f.uploaded_document.as_ref().map(|d| d.name.clone()),
+        file_path: f.uploaded_document.as_ref().map(|d| d.file_path.clone()),
+        uploaded_at: f.uploaded_document.as_ref().map(|d| d.created_at),
+    }).collect();
+
+    Ok(ApiResponse::ok(dtos))
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/documents", post(upload_document).get(list_documents))
         .route("/api/v1/documents/:id", get(get_document).delete(delete_document))
+        .route("/api/v1/document-requirements", post(create_document_requirement).get(list_document_requirements))
+        .route("/api/v1/document-requirements/:id", axum::routing::delete(delete_document_requirement))
+        .route("/api/v1/students/:id/document-requirements", get(evaluate_student_requirements))
 }

@@ -1,3 +1,8 @@
+<!--
+  @component FamilySection
+  High-speed, responsive Family & Guardians management section for student registration.
+  Uses Orbis ERP standard form controls, real-time parent search, and multi-guardian support.
+-->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui/label";
@@ -18,7 +23,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-
+import { Plus, Trash, User } from "@orbis/icons";
+import { l } from "$lib/core/i18n";
 import type { StudentFormState } from "../form-state.svelte";
 
 let { state }: { state: StudentFormState } = $props();
@@ -26,31 +32,47 @@ let { state }: { state: StudentFormState } = $props();
 
 <div class="flex flex-col gap-6">
   <!-- Section Title & Add Button -->
-  <div class="flex justify-between items-center px-2">
+  <div class="flex justify-between items-center px-1">
     <div class="flex flex-col text-start gap-0.5">
       <span class="text-xs font-semibold text-muted-foreground">{m.common_form_guardian_desc()}</span>
     </div>
-    <Button type="button" variant="outline" size="sm" onclick={() => state.guardian.addGuardianField()} class="h-8 text-xs">
-      {m.common_form_guardian_add()}
+    <Button 
+      type="button" 
+      variant="outline" 
+      size="sm" 
+      onclick={() => state.guardian.addGuardian()} 
+      class="h-8 text-xs font-semibold gap-1.5 cursor-pointer"
+    >
+      <Plus class="w-3.5 h-3.5" />
+      <span>{m.common_form_guardian_add()}</span>
     </Button>
   </div>
 
   {#each state.guardian.linkedGuardians as guardian, index}
     <Card class="w-full">
       <!-- Guardian Block Header -->
-      <CardHeader class="py-3 px-6 flex flex-row items-center justify-between">
-        <CardTitle class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider text-start select-none">
-          {m.common_form_guardian_number()} {index + 1}
-        </CardTitle>
+      <CardHeader class="py-3 px-6 flex flex-row items-center justify-between border-b border-border/40">
+        <div class="flex items-center gap-2">
+          <User class="w-4 h-4 text-primary" />
+          <CardTitle class="text-xs font-bold text-foreground uppercase tracking-wider text-start select-none">
+            {m.common_form_guardian_number()} {index + 1}
+            {#if guardian.is_primary}
+              <Badge variant="lime" class="ms-2 text-[10px] font-bold">
+                {m.common_form_guardian_role_primary()}
+              </Badge>
+            {/if}
+          </CardTitle>
+        </div>
         <CardAction>
-          {#if index > 0}
+          {#if state.guardian.linkedGuardians.length > 1}
             <Button 
               type="button" 
               variant="ghost" 
-              class="text-destructive hover:bg-destructive/10 h-7 px-2.5 text-xs font-semibold" 
-              onclick={() => state.guardian.removeGuardianField(index)}
+              class="text-destructive hover:bg-destructive/10 h-7 px-2.5 text-xs font-semibold gap-1 cursor-pointer" 
+              onclick={() => state.guardian.removeGuardian(index)}
             >
-              {m.common_form_guardian_remove()}
+              <Trash class="w-3.5 h-3.5" />
+              <span>{m.common_form_guardian_remove()}</span>
             </Button>
           {/if}
         </CardAction>
@@ -64,7 +86,7 @@ let { state }: { state: StudentFormState } = $props();
               <Label class="text-xs font-semibold text-foreground">{m.common_form_guardian_search_label()}</Label>
               <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_search_placeholder()}</span>
             </div>
-            <div class="w-full md:w-[480px] shrink-0 relative">
+            <div class="w-full md:w-120 shrink-0 relative">
               <Input 
                 placeholder={m.common_form_guardian_search_placeholder_ext()} 
                 class="h-9 w-full bg-background"
@@ -79,7 +101,7 @@ let { state }: { state: StudentFormState } = $props();
                       class="w-full text-start p-2 hover:bg-accent/40 rounded text-xs flex justify-between items-center text-foreground font-medium cursor-pointer"
                       onclick={() => state.guardian.selectExistingParent(parent, index)}
                     >
-                      <span>{parent.full_name} ({parent.phone || m.common_form_guardian_no_phone()})</span>
+                      <span>{parent.full_name || parent.name} ({parent.phone || m.common_form_guardian_no_phone()})</span>
                       <Badge variant="secondary" class="text-[9px]">{m.common_form_guardian_registered()}</Badge>
                     </button>
                   {/each}
@@ -97,7 +119,7 @@ let { state }: { state: StudentFormState } = $props();
               </Label>
               <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_fullname_desc()}</span>
             </div>
-            <div class="w-full md:w-[480px] shrink-0">
+            <div class="w-full md:w-120 shrink-0">
               <Input bind:value={guardian.full_name} class="h-9 w-full bg-background" placeholder={m.common_guardians_col_name()} />
             </div>
           </div>
@@ -111,7 +133,7 @@ let { state }: { state: StudentFormState } = $props();
               </Label>
               <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_phone_desc()}</span>
             </div>
-            <div class="w-full md:w-[480px] shrink-0">
+            <div class="w-full md:w-120 shrink-0">
               <Input bind:value={guardian.phone} class="h-9 w-full bg-background font-mono text-left" placeholder="777000000" />
             </div>
           </div>
@@ -122,16 +144,33 @@ let { state }: { state: StudentFormState } = $props();
               <Label class="text-xs font-semibold text-foreground">{m.common_bulk_col_guardian_rel()}</Label>
               <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_rel_desc()}</span>
             </div>
-            <div class="w-full md:w-[480px] shrink-0">
-              <Select bind:value={guardian.relationship} type="single">
-                <SelectTrigger class="h-9 w-full bg-background flex justify-between items-center">
-                  <span>{guardian.relationship === "father" ? m.common_guardians_relationship_father() : guardian.relationship === "mother" ? m.common_guardians_relationship_mother() : guardian.relationship === "uncle" ? m.students_family_uncle() : m.common_guardians_relationship_other()}</span>
+            <div class="w-full md:w-120 shrink-0">
+              <Select 
+                type="single"
+                value={guardian.relationship}
+                onValueChange={(val) => {
+                  guardian.relationship = val || "other";
+                  guardian.relationship_ar = val === "father" ? "أب" : val === "mother" ? "أم" : val === "uncle" ? "عم" : "آخر";
+                }}
+              >
+                <SelectTrigger class="h-9 w-full bg-background flex justify-between items-center text-xs">
+                  <span>
+                    {#if guardian.relationship === "father"}
+                      {m.common_guardians_relationship_father()}
+                    {:else if guardian.relationship === "mother"}
+                      {m.common_guardians_relationship_mother()}
+                    {:else if guardian.relationship === "uncle"}
+                      {m.students_family_uncle()}
+                    {:else}
+                      {m.common_guardians_relationship_other()}
+                    {/if}
+                  </span>
                 </SelectTrigger>
                 <SelectContent class="text-start">
-                  <SelectItem value="father" onclick={() => guardian.relationship_ar = m.common_guardians_relationship_father()}>أب</SelectItem>
-                  <SelectItem value="mother" onclick={() => guardian.relationship_ar = m.common_guardians_relationship_mother()}>أم</SelectItem>
-                  <SelectItem value="uncle" onclick={() => guardian.relationship_ar = m.students_family_uncle()}>عم</SelectItem>
-                  <SelectItem value="other" onclick={() => guardian.relationship_ar = m.students_family_relative_other()}>آخر</SelectItem>
+                  <SelectItem value="father" class="text-xs">{m.common_guardians_relationship_father()}</SelectItem>
+                  <SelectItem value="mother" class="text-xs">{m.common_guardians_relationship_mother()}</SelectItem>
+                  <SelectItem value="uncle" class="text-xs">{m.students_family_uncle()}</SelectItem>
+                  <SelectItem value="other" class="text-xs">{m.common_guardians_relationship_other()}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -143,7 +182,7 @@ let { state }: { state: StudentFormState } = $props();
               <Label class="text-xs font-semibold text-foreground">{m.common_form_guardian_national_id_label()}</Label>
               <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_nid_desc()}</span>
             </div>
-            <div class="w-full md:w-[480px] shrink-0">
+            <div class="w-full md:w-120 shrink-0">
               <Input bind:value={guardian.national_id} class="h-9 w-full bg-background font-mono" placeholder={m.common_form_guardian_national_id_label()} />
             </div>
           </div>
@@ -154,7 +193,7 @@ let { state }: { state: StudentFormState } = $props();
               <Label class="text-xs font-semibold text-foreground">{m.common_form_guardian_job_label()}</Label>
               <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_job_desc()}</span>
             </div>
-            <div class="w-full md:w-[480px] shrink-0">
+            <div class="w-full md:w-120 shrink-0">
               <Input bind:value={guardian.occupation} class="h-9 w-full bg-background" placeholder={m.common_form_guardian_job_placeholder()} />
             </div>
           </div>
@@ -165,7 +204,7 @@ let { state }: { state: StudentFormState } = $props();
               <Label class="text-xs font-semibold text-foreground">{m.common_form_guardian_perms_label()}</Label>
               <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_perms_desc()}</span>
             </div>
-            <div class="w-full md:w-[480px] shrink-0 flex flex-col gap-4">
+            <div class="w-full md:w-120 shrink-0 flex flex-col gap-4">
               <div class="grid grid-cols-3 gap-3">
                 <div class="flex items-center gap-2">
                   <Checkbox id={`primary_${index}`} checked={guardian.is_primary} onCheckedChange={(val) => guardian.is_primary = !!val} />

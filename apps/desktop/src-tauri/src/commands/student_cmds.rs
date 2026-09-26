@@ -427,7 +427,7 @@ pub async fn student_register_student(
     let input = ServiceRegisterStudentInput {
         person_id,
         user_id,
-        student_number: request.student_number,
+        student_number: if request.student_number.trim().is_empty() { None } else { Some(request.student_number) },
         first_name: request.first_name,
         middle_name: request.middle_name,
         last_name: request.last_name,
@@ -450,14 +450,15 @@ pub async fn student_register_student(
         initial_period_id,
         initial_class_id,
         study_mode,
+        bypass_capacity_check: None,
     };
 
-    let detail = state.student_service
+    let result = state.student_service
         .register_student(&ctx, ctx.tenant_id, input)
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(student_detail_to_dto(detail)))
+    Ok(ok(student_detail_to_dto(result.student)))
 }
 
 #[tauri::command]
@@ -695,3 +696,62 @@ pub async fn student_list_guardians(
 
     Ok(ok(items.into_iter().map(guardian_to_dto).collect()))
 }
+
+#[derive(Deserialize, Debug)]
+pub struct CheckDuplicateInput {
+    pub national_id: Option<String>,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+    pub exclude_student_id: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DuplicateMatchDto {
+    pub field: String,
+    pub value: String,
+    pub matched_person_id: String,
+    pub matched_person_name: String,
+    pub student_id: Option<String>,
+    pub student_number: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DuplicateCheckResultDto {
+    pub has_duplicate: bool,
+    pub matches: Vec<DuplicateMatchDto>,
+}
+
+#[tauri::command]
+pub async fn student_check_duplicate(
+    request: CheckDuplicateInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<DuplicateCheckResultDto>, String> {
+    let ctx = make_ctx(&state);
+    let exclude_student_id = request.exclude_student_id.and_then(|id| Uuid::parse_str(&id).ok());
+    let input = orbis_app::services::student_service::DuplicateCheckInput {
+        national_id: request.national_id,
+        phone: request.phone,
+        email: request.email,
+        exclude_student_id,
+    };
+
+    let res = state.student_service
+        .check_duplicate(&ctx, ctx.tenant_id, input)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let matches = res.matches.into_iter().map(|m| DuplicateMatchDto {
+        field: m.field,
+        value: m.value,
+        matched_person_id: m.matched_person_id.to_string(),
+        matched_person_name: m.matched_person_name,
+        student_id: m.student_id.map(|id| id.to_string()),
+        student_number: m.student_number,
+    }).collect();
+
+    Ok(ok(DuplicateCheckResultDto {
+        has_duplicate: res.has_duplicate,
+        matches,
+    }))
+}
+

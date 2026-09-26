@@ -56,6 +56,8 @@ pub mod employee;
 pub mod group;
 pub mod user_group_membership;
 pub mod group_permission;
+pub mod document_requirement;
+pub mod sequence_counter;
 
 pub use promotion_job as progression_job;
 pub use promotion_detail as progression_detail;

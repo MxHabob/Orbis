@@ -4,6 +4,7 @@ pub mod m20240101_000001_initial_schema;
 pub mod m20240102_000001_backfill_admin_permissions;
 pub mod m20240103_000001_normalized_schema;
 pub mod m20240104_000001_employee_groups_schema;
+pub mod m20240105_000001_registration_schema;
 
 pub struct Migrator;
 
@@ -15,6 +16,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20240102_000001_backfill_admin_permissions::Migration),
             Box::new(m20240103_000001_normalized_schema::Migration),
             Box::new(m20240104_000001_employee_groups_schema::Migration),
+            Box::new(m20240105_000001_registration_schema::Migration),
         ]
     }
 }

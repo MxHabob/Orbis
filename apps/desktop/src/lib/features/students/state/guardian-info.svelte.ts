@@ -1,4 +1,4 @@
-import { api } from "$lib/api";
+import { api, type UserDto } from "$lib/api";
 
 export interface GuardianLink {
   id?: string;
@@ -36,8 +36,11 @@ export class GuardianState {
     },
   ]);
 
-  parentSearchResults = $state<any[]>([]);
+  parentSearchResults = $state<UserDto[]>([]);
   activeSearchIndex = $state<number | null>(null);
+  isSearching = $state(false);
+
+  private searchDebounceTimer?: ReturnType<typeof setTimeout>;
 
   constructor(orgId: string, studentId?: string) {
     this.orgId = orgId;
@@ -62,8 +65,8 @@ export class GuardianState {
           is_emergency_contact:
             g.is_emergency_contact === 1 || g.is_emergency_contact === true,
           is_payer: g.is_payer === 1 || g.is_payer === true,
-          payment_share_percent: g.payment_share_percent,
-          occupation: g.occupation,
+          payment_share_percent: g.payment_share_percent ?? 100,
+          occupation: g.occupation || "",
         }));
       }
     } catch (e) {
@@ -79,8 +82,8 @@ export class GuardianState {
         phone: "",
         email: "",
         national_id: "",
-        relationship: "",
-        relationship_ar: "",
+        relationship: "other",
+        relationship_ar: "آخر",
         is_primary: false,
         is_emergency_contact: false,
         is_payer: false,
@@ -90,10 +93,77 @@ export class GuardianState {
     ];
   }
 
-  searchParent(query: string, index: number) {}
-  selectExistingParent(parent: any, index: number) {}
-
   removeGuardian(index: number) {
+    if (this.linkedGuardians.length <= 1) {
+      // Keep at least one guardian structure ready
+      this.linkedGuardians = [
+        {
+          full_name: "",
+          phone: "",
+          email: "",
+          national_id: "",
+          relationship: "father",
+          relationship_ar: "الأب",
+          is_primary: true,
+          is_emergency_contact: true,
+          is_payer: true,
+          payment_share_percent: 100,
+          occupation: "",
+        },
+      ];
+      return;
+    }
     this.linkedGuardians = this.linkedGuardians.filter((_, i) => i !== index);
+  }
+
+  async searchParent(query: string, index: number) {
+    this.activeSearchIndex = index;
+    const trimmed = (query || "").trim().toLowerCase();
+
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+    }
+
+    if (!trimmed || trimmed.length < 2) {
+      this.parentSearchResults = [];
+      return;
+    }
+
+    this.searchDebounceTimer = setTimeout(async () => {
+      this.isSearching = true;
+      try {
+        const users = await api.listUsers().catch(() => []);
+        const filtered = (users || []).filter((u: UserDto) => {
+          const nameMatch = (u.full_name || "").toLowerCase().includes(trimmed) || 
+                            (u.full_name_ar || "").toLowerCase().includes(trimmed);
+          const emailMatch = (u.email || "").toLowerCase().includes(trimmed);
+          const phoneMatch = (u.phone || "").includes(trimmed);
+          return nameMatch || emailMatch || phoneMatch;
+        });
+        this.parentSearchResults = filtered.slice(0, 8);
+      } catch (err) {
+        console.error("Failed to search registered parents:", err);
+        this.parentSearchResults = [];
+      } finally {
+        this.isSearching = false;
+      }
+    }, 250);
+  }
+
+  selectExistingParent(parent: UserDto, index: number) {
+    if (!this.linkedGuardians[index]) return;
+
+    this.linkedGuardians[index] = {
+      ...this.linkedGuardians[index],
+      user_id: parent.id,
+      full_name: parent.full_name_ar || parent.full_name || parent.email || "",
+      email: parent.email || "",
+      phone: parent.phone || this.linkedGuardians[index].phone || "",
+      national_id: parent.national_id || this.linkedGuardians[index].national_id || "",
+      occupation: this.linkedGuardians[index].occupation || "",
+    };
+
+    this.parentSearchResults = [];
+    this.activeSearchIndex = null;
   }
 }

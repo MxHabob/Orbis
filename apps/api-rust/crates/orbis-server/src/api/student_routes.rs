@@ -190,6 +190,30 @@ pub struct GuardianQuery {
     pub student_id: Uuid,
 }
 
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct DuplicateCheckRequest {
+    pub national_id: Option<String>,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+    pub exclude_student_id: Option<Uuid>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct DuplicateMatchDto {
+    pub field: String,
+    pub value: String,
+    pub matched_person_id: Uuid,
+    pub matched_person_name: String,
+    pub student_id: Option<Uuid>,
+    pub student_number: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct DuplicateCheckResponse {
+    pub has_duplicate: bool,
+    pub matches: Vec<DuplicateMatchDto>,
+}
+
 // ── Handlers ────────────────────────────────────────────────────
 
 #[utoipa::path(post, path = "/api/v1/students", request_body = RegisterStudentRequest,
@@ -203,7 +227,7 @@ pub async fn register_student(
     let input = orbis_app::services::RegisterStudentInput {
         person_id: p.person_id,
         user_id: p.user_id,
-        student_number: p.student_number,
+        student_number: if p.student_number.trim().is_empty() { None } else { Some(p.student_number) },
         first_name: p.first_name,
         middle_name: None,
         last_name: p.last_name,
@@ -226,10 +250,11 @@ pub async fn register_student(
         initial_period_id: None,
         initial_class_id: None,
         study_mode: None,
+        bypass_capacity_check: None,
     };
 
-    let detail = state.student_service.register_student(&ctx, ctx.tenant_id, input).await?;
-    Ok(ApiResponse::ok(detail.into()))
+    let result = state.student_service.register_student(&ctx, ctx.tenant_id, input).await?;
+    Ok(ApiResponse::ok(result.student.into()))
 }
 
 #[utoipa::path(get, path = "/api/v1/students",
@@ -425,9 +450,41 @@ pub async fn list_guardians(
     Ok(ApiResponse::ok(dtos))
 }
 
+#[utoipa::path(post, path = "/api/v1/students/check-duplicate", request_body = DuplicateCheckRequest,
+    responses((status = 200, body = DuplicateCheckResponse)),
+    security(("bearer" = [])), tag = "Student")]
+pub async fn check_duplicate(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<DuplicateCheckRequest>,
+) -> Result<Json<ApiResponse<DuplicateCheckResponse>>, ApiError> {
+    let input = orbis_app::services::student_service::DuplicateCheckInput {
+        national_id: p.national_id,
+        phone: p.phone,
+        email: p.email,
+        exclude_student_id: p.exclude_student_id,
+    };
+
+    let result = state.student_service.check_duplicate(&ctx, ctx.tenant_id, input).await?;
+    let matches = result.matches.into_iter().map(|m| DuplicateMatchDto {
+        field: m.field,
+        value: m.value,
+        matched_person_id: m.matched_person_id,
+        matched_person_name: m.matched_person_name,
+        student_id: m.student_id,
+        student_number: m.student_number,
+    }).collect();
+
+    Ok(ApiResponse::ok(DuplicateCheckResponse {
+        has_duplicate: result.has_duplicate,
+        matches,
+    }))
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/students", post(register_student).get(list_students))
+        .route("/api/v1/students/check-duplicate", post(check_duplicate))
         .route("/api/v1/students/:id", get(get_student))
         .route("/api/v1/students/:id/status", patch(update_student_status))
         .route("/api/v1/enrollments", post(enroll_student).get(list_enrollments))

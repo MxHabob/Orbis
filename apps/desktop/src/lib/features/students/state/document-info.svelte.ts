@@ -1,12 +1,14 @@
-import * as m from "$lib/paraglide/messages";
-import { api } from "$lib/api";
+import { api, type StudentDocumentFulfillmentDto, type DocumentRequirementDto } from "$lib/api";
 
 export class DocumentInfoState {
   orgId: string;
   studentId?: string;
 
   orgRequiredDocuments = $state<string[]>([]);
+  requirements = $state<DocumentRequirementDto[]>([]);
+  fulfillments = $state<StudentDocumentFulfillmentDto[]>([]);
   submittedDocs = $state<string[]>([]);
+  isLoading = $state(false);
 
   constructor(orgId: string, studentId?: string) {
     this.orgId = orgId;
@@ -25,30 +27,46 @@ export class DocumentInfoState {
     this.orgRequiredDocuments = docs || [];
   }
 
+  async loadRequirements(gradeLevelId?: string, isNational = true, isTransfer = false) {
+    this.isLoading = true;
+    try {
+      if (this.studentId) {
+        this.fulfillments = await api.evaluateStudentDocumentRequirements(this.studentId, {
+          grade_level_id: gradeLevelId,
+          is_national: isNational,
+          is_transfer: isTransfer,
+        });
+      } else {
+        this.requirements = await api.listDocumentRequirements().catch(() => []);
+      }
+    } catch (err) {
+      console.error("Failed to load document requirements:", err);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
   async populate(originalStudent: any) {
     if (!originalStudent || !this.studentId) return;
 
     try {
-      const studentDocs = await api.listDocuments();
+      await this.loadRequirements();
+      const studentDocs = await api.listDocuments().catch(() => []);
 
-      const submitted: any[] = [];
-      const requiredDocNames =
-        this.orgRequiredDocuments.length > 0
-          ? this.orgRequiredDocuments
-          : ["birth_certificate", "national_id", "previous_record"];
-
-      for (const rDoc of requiredDocNames) {
-        const hasDoc = studentDocs.some((d: any) => {
-          const title = String(d.title || d.name || "").toLowerCase();
-          const rName = rDoc.toLowerCase();
-          return (
-            title === rName || title.includes(rName) || rName.includes(title)
-          );
-        });
-        if (hasDoc) {
-          submitted.push(rDoc);
+      const submitted: string[] = [];
+      for (const f of this.fulfillments) {
+        if (f.is_fulfilled) {
+          submitted.push(f.requirement.code);
         }
       }
+
+      for (const d of studentDocs) {
+        const name = d.name || "";
+        if (name && !submitted.includes(name)) {
+          submitted.push(name);
+        }
+      }
+
       this.submittedDocs = submitted;
     } catch (docErr) {
       console.error("Failed to load student documents:", docErr);

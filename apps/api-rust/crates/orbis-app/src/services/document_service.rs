@@ -2,12 +2,15 @@ use std::sync::Arc;
 use uuid::Uuid;
 use chrono::Utc;
 use orbis_domain::entities::document::Document;
+use orbis_domain::entities::document_requirement::{
+    DocumentRequirement, RequirementTargetType, DocumentCondition,
+};
 use orbis_domain::events::DomainEvent;
 use orbis_domain::errors::DomainError;
 use orbis_domain::iam::permission::Permission;
 
 use crate::context::RequestContext;
-use crate::ports::repositories::DocumentRepository;
+use crate::ports::repositories::{DocumentRepository, DocumentRequirementRepository};
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 
@@ -34,8 +37,29 @@ pub struct CreateDocumentInput {
     pub preview_path: Option<String>,
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct CreateDocumentRequirementInput {
+    pub target_type: RequirementTargetType,
+    pub target_id: Option<Uuid>,
+    pub code: String,
+    pub name_ar: String,
+    pub name_en: String,
+    pub is_mandatory: bool,
+    pub blocks_enrollment: bool,
+    pub condition: DocumentCondition,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct StudentDocumentFulfillment {
+    pub requirement: DocumentRequirement,
+    pub is_fulfilled: bool,
+    pub uploaded_document: Option<Document>,
+    pub is_applicable: bool,
+}
+
 pub struct DocumentService {
     pub document_repo: Arc<dyn DocumentRepository>,
+    pub doc_requirement_repo: Arc<dyn DocumentRequirementRepository>,
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
 }
@@ -43,11 +67,13 @@ pub struct DocumentService {
 impl DocumentService {
     pub fn new(
         document_repo: Arc<dyn DocumentRepository>,
+        doc_requirement_repo: Arc<dyn DocumentRequirementRepository>,
         event_bus: Arc<dyn EventBus>,
         permission_checker: Arc<dyn PermissionCheckerPort>,
     ) -> Self {
         Self {
             document_repo,
+            doc_requirement_repo,
             event_bus,
             permission_checker,
         }
@@ -133,5 +159,109 @@ impl DocumentService {
         self.event_bus.publish(ctx, &event).await?;
 
         Ok(())
+    }
+
+    // ── Document Requirements ────────────────────────────────────────
+
+    /// Create or save a document requirement
+    pub async fn create_document_requirement(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        input: CreateDocumentRequirementInput,
+    ) -> Result<DocumentRequirement, DomainError> {
+        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+
+        let req = DocumentRequirement::new(
+            org_id,
+            input.target_type,
+            input.target_id,
+            input.code,
+            input.name_ar,
+            input.name_en,
+            input.is_mandatory,
+            input.blocks_enrollment,
+            input.condition,
+        );
+
+        self.doc_requirement_repo.save(&req).await?;
+        Ok(req)
+    }
+
+    /// List document requirements for an organization
+    pub async fn list_document_requirements_by_org(&self, org_id: Uuid) -> Result<Vec<DocumentRequirement>, DomainError> {
+        self.doc_requirement_repo.find_by_org(org_id).await
+    }
+
+    /// List document requirements by target (Stage, GradeLevel, Program)
+    pub async fn list_document_requirements_by_target(
+        &self,
+        org_id: Uuid,
+        target_type: &str,
+        target_id: Option<Uuid>,
+    ) -> Result<Vec<DocumentRequirement>, DomainError> {
+        self.doc_requirement_repo.find_by_target(org_id, target_type, target_id).await
+    }
+
+    /// Delete document requirement
+    pub async fn delete_document_requirement(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::DocumentDelete).await?;
+        self.doc_requirement_repo.delete(id).await
+    }
+
+    /// Evaluate document requirements fulfillment for a student
+    pub async fn evaluate_student_requirements(
+        &self,
+        org_id: Uuid,
+        student_id: Uuid,
+        grade_level_id: Option<Uuid>,
+        is_national: bool,
+        is_transfer: bool,
+    ) -> Result<Vec<StudentDocumentFulfillment>, DomainError> {
+        let all_org_reqs = self.doc_requirement_repo.find_by_org(org_id).await?;
+        let student_docs = self.document_repo.find_by_entity("student", student_id).await?;
+
+        let mut results = Vec::new();
+
+        for req in all_org_reqs {
+            // Check target match
+            let is_target_match = match req.target_type {
+                RequirementTargetType::Global => true,
+                RequirementTargetType::GradeLevel => req.target_id == grade_level_id,
+                _ => true,
+            };
+
+            if !is_target_match {
+                continue;
+            }
+
+            // Check condition match
+            let is_applicable = match req.condition {
+                DocumentCondition::AllStudents => true,
+                DocumentCondition::NonNationalOnly => !is_national,
+                DocumentCondition::TransferStudentsOnly => is_transfer,
+                DocumentCondition::SpecialNeedsOnly => true,
+            };
+
+            // Check if student uploaded matching document
+            let uploaded = student_docs.iter().find(|d| {
+                let d_name = d.name.to_lowercase();
+                let r_code = req.code.to_lowercase();
+                let r_name_ar = req.name_ar.to_lowercase();
+                let r_name_en = req.name_en.to_lowercase();
+                d_name == r_code || d_name.contains(&r_name_ar) || d_name.contains(&r_name_en)
+            }).cloned();
+
+            let is_fulfilled = uploaded.is_some();
+
+            results.push(StudentDocumentFulfillment {
+                requirement: req,
+                is_fulfilled,
+                uploaded_document: uploaded,
+                is_applicable,
+            });
+        }
+
+        Ok(results)
     }
 }

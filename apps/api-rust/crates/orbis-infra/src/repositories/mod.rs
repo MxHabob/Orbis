@@ -25,3 +25,4 @@ pub mod progression_repos;
 pub mod system_repo;
 pub mod employee_repo;
 pub mod group_repo;
+pub mod sequence_repo;

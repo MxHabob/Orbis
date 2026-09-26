@@ -2,9 +2,11 @@
   @component RegistrationSettingsForm
   Comprehensive, robust configuration hub for Admission & Registration policies,
   tailored specifically for educational institutions (K-12 schools, universities, institutes, Quranic centers).
+  Follows modern 2026 ERP standards and the Orbis Design System with Form Controls.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { onMount } from "svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -36,6 +38,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import { AdjustmentsHorizontal, BookOpen, CheckCircle, DocumentCheck, FloppyDisk, Home, Lock, Plus, Sparkles, Trash, UserBadgeCheck } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
+import { api, type DocumentRequirementDto } from "$lib/api";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
 let { org, isSaving, onsave } = $props<{
@@ -47,19 +50,21 @@ let { org, isSaving, onsave } = $props<{
 // Required Documents Interface & Defaults
 interface DocItem {
   id: string;
+  code?: string;
   nameAr: string;
   nameEn: string;
   isRequired: boolean;
+  blocksEnrollment?: boolean;
 }
 
 const defaultDocuments: DocItem[] = [
-  { id: "birth_cert", nameAr: "شهادة الميلاد الأصلية المعتمدة", nameEn: "Certified Birth Certificate", isRequired: true },
-  { id: "national_id", nameAr: "بطاقة الهوية الوطنية / جواز السفر", nameEn: "National ID / Passport", isRequired: true },
-  { id: "academic_transcript", nameAr: "كشف درجات / شهادة آخر مؤهل دراسي", nameEn: "Previous Academic Transcript", isRequired: true },
-  { id: "health_record", nameAr: "كشف اللياقة الطبية وسجل التطعيمات", nameEn: "Medical Fitness & Immunization", isRequired: false },
-  { id: "photos", nameAr: "صور شخصية حديثة (4x6)", nameEn: "Recent Personal Photographs", isRequired: true },
-  { id: "guardian_id", nameAr: "صورة هوية ولي الأمر", nameEn: "Guardian National ID Copy", isRequired: true },
-  { id: "transfer_cert", nameAr: "استمارة نقل أو إخلاء طرف للطلاب المحولين", nameEn: "Transfer / Clearance Certificate", isRequired: false },
+  { id: "birth_cert", code: "birth_cert", nameAr: "شهادة الميلاد الأصلية المعتمدة", nameEn: "Certified Birth Certificate", isRequired: true, blocksEnrollment: true },
+  { id: "national_id", code: "national_id", nameAr: "بطاقة الهوية الوطنية / جواز السفر", nameEn: "National ID / Passport", isRequired: true, blocksEnrollment: true },
+  { id: "academic_transcript", code: "academic_transcript", nameAr: "كشف درجات / شهادة آخر مؤهل دراسي", nameEn: "Previous Academic Transcript", isRequired: true, blocksEnrollment: false },
+  { id: "health_record", code: "health_record", nameAr: "كشف اللياقة الطبية وسجل التطعيمات", nameEn: "Medical Fitness & Immunization", isRequired: false, blocksEnrollment: false },
+  { id: "photos", code: "photos", nameAr: "صور شخصية حديثة (4x6)", nameEn: "Recent Personal Photographs", isRequired: true, blocksEnrollment: false },
+  { id: "guardian_id", code: "guardian_id", nameAr: "صورة هوية ولي الأمر", nameEn: "Guardian National ID Copy", isRequired: true, blocksEnrollment: false },
+  { id: "transfer_cert", code: "transfer_cert", nameAr: "استمارة نقل أو إخلاء طرف للطلاب المحولين", nameEn: "Transfer / Clearance Certificate", isRequired: false, blocksEnrollment: false },
 ];
 
 // Application Form Fields Configuration Interface & Defaults
@@ -112,7 +117,7 @@ function parseOrgRegistration(rawOrg: any) {
     requiredDocuments: Array.isArray(reg.required_documents_list) && reg.required_documents_list.length > 0
       ? reg.required_documents_list
       : Array.isArray(reg.required_documents) && reg.required_documents.length > 0
-      ? reg.required_documents.map((d: string, idx: number) => ({ id: `doc_${idx}`, nameAr: d, nameEn: d, isRequired: true }))
+      ? reg.required_documents.map((d: string, idx: number) => ({ id: `doc_${idx}`, nameAr: d, nameEn: d, isRequired: true, blocksEnrollment: false }))
       : defaultDocuments,
     formFields: Array.isArray(reg.form_fields_list) && reg.form_fields_list.length > 0
       ? reg.form_fields_list
@@ -138,6 +143,9 @@ let formFields = $state<FieldConfig[]>(JSON.parse(JSON.stringify(parsed.formFiel
 // Document Addition Transient State
 let newDocNameAr = $state("");
 let newDocNameEn = $state("");
+let newDocCode = $state("");
+let newDocIsMandatory = $state(true);
+let newDocBlocksEnrollment = $state(false);
 
 // Active Tab
 let activeTab = $state<"policies" | "documents" | "fields">("policies");
@@ -173,6 +181,26 @@ const isDirty = $derived.by(() => {
   );
 });
 
+onMount(async () => {
+  try {
+    const backendReqs = await api.listDocumentRequirements().catch(() => []);
+    if (backendReqs && backendReqs.length > 0) {
+      // Merge backend requirements into requiredDocuments
+      const mapped: DocItem[] = backendReqs.map((r: DocumentRequirementDto) => ({
+        id: r.id,
+        code: r.code,
+        nameAr: r.name_ar || r.name_en || r.code,
+        nameEn: r.name_en || r.name_ar || r.code,
+        isRequired: r.is_mandatory,
+        blocksEnrollment: r.blocks_enrollment,
+      }));
+      requiredDocuments = mapped;
+    }
+  } catch (err) {
+    console.error("Failed to load document requirements:", err);
+  }
+});
+
 function resetToInitial() {
   institutionType = initialState.institutionType;
   studentNumberPrefix = initialState.studentNumberPrefix;
@@ -196,29 +224,63 @@ const studentNumberPreview = $derived.by(() => {
 });
 
 // Add new document
-function addDocument() {
+async function addDocument() {
   if (!newDocNameAr.trim() && !newDocNameEn.trim()) {
     toast.error(l("الرجاء إدخال اسم المستند", "Document name is required"));
     return;
   }
-  const id = `doc_${Date.now()}`;
-  requiredDocuments = [
-    ...requiredDocuments,
-    {
-      id,
-      nameAr: newDocNameAr.trim() || newDocNameEn.trim(),
-      nameEn: newDocNameEn.trim() || newDocNameAr.trim(),
-      isRequired: true,
-    },
-  ];
+
+  const generatedCode = (newDocCode.trim() || newDocNameEn.trim() || newDocNameAr.trim())
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]/g, "") || `doc_${Date.now()}`;
+
+  const docItem: DocItem = {
+    id: `doc_${Date.now()}`,
+    code: generatedCode,
+    nameAr: newDocNameAr.trim() || newDocNameEn.trim(),
+    nameEn: newDocNameEn.trim() || newDocNameAr.trim(),
+    isRequired: newDocIsMandatory,
+    blocksEnrollment: newDocBlocksEnrollment,
+  };
+
+  // Try creating in backend requirement table if available
+  try {
+    const created = await api.createDocumentRequirement({
+      code: generatedCode,
+      name_ar: docItem.nameAr,
+      name_en: docItem.nameEn,
+      is_mandatory: docItem.isRequired,
+      blocks_enrollment: docItem.blocksEnrollment ?? false,
+      condition: "all_students",
+    }).catch(() => null);
+
+    if (created) {
+      docItem.id = created.id;
+    }
+  } catch (err) {
+    console.warn("Direct requirement creation skipped:", err);
+  }
+
+  requiredDocuments = [...requiredDocuments, docItem];
   newDocNameAr = "";
   newDocNameEn = "";
+  newDocCode = "";
+  newDocIsMandatory = true;
+  newDocBlocksEnrollment = false;
   toast.success(l("تمت إضافة المستند المطلوب", "Document added"));
 }
 
 // Remove document
-function removeDocument(id: string) {
-  requiredDocuments = requiredDocuments.filter((d) => d.id !== id);
+async function removeDocument(doc: DocItem) {
+  if (doc.id && !doc.id.startsWith("doc_")) {
+    try {
+      await api.deleteDocumentRequirement(doc.id).catch(() => null);
+    } catch (err) {
+      console.warn("Backend requirement deletion skipped:", err);
+    }
+  }
+  requiredDocuments = requiredDocuments.filter((d) => d.id !== doc.id && d.code !== doc.code);
 }
 
 // Save form
@@ -259,7 +321,7 @@ function handleFormSave() {
   <Card>
     <CardHeader>
       <div class="flex items-center gap-3 text-start">
-        <div class="w-7 h-7 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+        <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
           <BookOpen class="w-4 h-4" />
         </div>
         <div class="flex flex-col">
@@ -344,7 +406,7 @@ function handleFormSave() {
             <Input
               bind:value={studentNumberPrefix}
               placeholder="e.g. STU"
-              class="h-8 text-xs font-mono uppercase"
+              class="h-9 text-xs font-mono uppercase"
             />
           </div>
 
@@ -358,7 +420,7 @@ function handleFormSave() {
               value={studentNumberYearFormat}
               onValueChange={(v) => (studentNumberYearFormat = v ?? "YEAR")}
             >
-              <SelectTrigger class="h-8 text-xs">
+              <SelectTrigger class="h-9 text-xs">
                 {studentNumberYearFormat === "YEAR"
                   ? l("العام كاملاً (مثال: 2026)", "Full 4-digit Year (2026)")
                   : studentNumberYearFormat === "YEAR2"
@@ -383,14 +445,14 @@ function handleFormSave() {
               value={String(studentNumberDigits)}
               onValueChange={(v) => (studentNumberDigits = Number(v || 4))}
             >
-              <SelectTrigger class="h-8 text-xs font-mono">
+              <SelectTrigger class="h-9 text-xs font-mono">
                 {studentNumberDigits} {l("خانات", "digits")} (مثال: {"1".padStart(studentNumberDigits, "0")})
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="3" class="text-xs font-mono">3 خانات (001)</SelectItem>
-                <SelectItem value="4" class="text-xs font-mono">4 خانات (0001)</SelectItem>
-                <SelectItem value="5" class="text-xs font-mono">5 خانات (00001)</SelectItem>
-                <SelectItem value="6" class="text-xs font-mono">6 خانات (000001)</SelectItem>
+                <SelectItem value="3" class="text-xs font-mono">3 {l("خانات", "digits")} (001)</SelectItem>
+                <SelectItem value="4" class="text-xs font-mono">4 {l("خانات", "digits")} (0001)</SelectItem>
+                <SelectItem value="5" class="text-xs font-mono">5 {l("خانات", "digits")} (00001)</SelectItem>
+                <SelectItem value="6" class="text-xs font-mono">6 {l("خانات", "digits")} (000001)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -478,7 +540,7 @@ function handleFormSave() {
               bind:value={maxClassCapacity}
               min={5}
               max={200}
-              class="h-8 w-24 text-xs font-mono text-center"
+              class="h-9 w-24 text-xs font-mono text-center"
             />
           </div>
         </CardContent>
@@ -495,21 +557,27 @@ function handleFormSave() {
           </CardTitle>
         </CardHeader>
         <CardContent class="p-6">
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <Input
               placeholder={l("اسم المستند بالعربية (مثال: كشف درجات)", "Arabic Document Name")}
               bind:value={newDocNameAr}
-              class="h-8 text-xs text-end"
+              class="h-9 text-xs text-start"
             />
             <Input
               placeholder={l("English Document Name", "English Document Name")}
               bind:value={newDocNameEn}
-              class="h-8 text-xs"
+              class="h-9 text-xs"
             />
+            <div class="flex items-center gap-3">
+              <label class="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                <Switch bind:checked={newDocBlocksEnrollment} />
+                <span>{l("يمنع القيد", "Blocks")}</span>
+              </label>
+            </div>
             <Button
               variant="lime"
               size="sm"
-              class="h-8 text-xs font-bold gap-1.5"
+              class="h-9 text-xs font-bold gap-1.5"
               onclick={addDocument}
             >
               <Plus class="w-3.5 h-3.5" />
@@ -527,6 +595,7 @@ function handleFormSave() {
               <TableRow>
                 <TableHead class="text-start font-bold text-xs">{l("اسم الوثيقة والمستند المطلوب", "Document Title")}</TableHead>
                 <TableHead class="text-start font-bold text-xs w-48">{l("الحالة الإلزامية", "Requirement")}</TableHead>
+                <TableHead class="text-start font-bold text-xs w-36">{l("أثر حجب التسجيل", "Block Enrollment")}</TableHead>
                 <TableHead class="text-end font-bold text-xs w-20">{l("حذف", "Action")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -558,12 +627,30 @@ function handleFormSave() {
                     </button>
                   </TableCell>
 
+                  <TableCell class="py-3 text-start">
+                    <button
+                      type="button"
+                      onclick={() => (doc.blocksEnrollment = !doc.blocksEnrollment)}
+                      class="cursor-pointer select-none"
+                    >
+                      {#if doc.blocksEnrollment}
+                        <Badge variant="destructive" class="text-[10px] font-bold">
+                          {l("يحجب الاعتماد", "Blocks Enrollment")}
+                        </Badge>
+                      {:else}
+                        <Badge variant="outline" class="text-[10px] text-muted-foreground font-medium">
+                          {l("لا يحجب", "No Block")}
+                        </Badge>
+                      {/if}
+                    </button>
+                  </TableCell>
+
                   <TableCell class="py-3 text-end">
                     <Button
                       variant="ghost"
                       size="sm"
                       class="h-7 w-7 p-0 text-muted-foreground hover:text-destructive cursor-pointer"
-                      onclick={() => removeDocument(doc.id)}
+                      onclick={() => removeDocument(doc)}
                     >
                       <Trash class="w-3.5 h-3.5" />
                     </Button>

@@ -119,3 +119,74 @@ impl DocumentRepository for DocumentRepoImpl {
         Ok(())
     }
 }
+
+use orbis_app::ports::repositories::DocumentRequirementRepository;
+use orbis_domain::entities::document_requirement::DocumentRequirement as DomainDocRequirement;
+use crate::models::document_requirement::{self as doc_req_model, Entity as DocRequirementEntity};
+
+pub struct DocumentRequirementRepoImpl {
+    pub db: DatabaseConnection,
+}
+
+impl DocumentRequirementRepoImpl {
+    pub fn new(db: DatabaseConnection) -> Self {
+        Self { db }
+    }
+}
+
+#[async_trait]
+impl DocumentRequirementRepository for DocumentRequirementRepoImpl {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainDocRequirement>, DomainError> {
+        let model = DocRequirementEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(model.map(|m| m.into()))
+    }
+
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainDocRequirement>, DomainError> {
+        let models = DocRequirementEntity::find()
+            .filter(doc_req_model::Column::OrgId.eq(org_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| m.into()).collect())
+    }
+
+    async fn find_by_target(&self, org_id: Uuid, target_type: &str, target_id: Option<Uuid>) -> Result<Vec<DomainDocRequirement>, DomainError> {
+        let mut query = DocRequirementEntity::find()
+            .filter(doc_req_model::Column::OrgId.eq(org_id))
+            .filter(doc_req_model::Column::TargetType.eq(target_type));
+
+        if let Some(tid) = target_id {
+            query = query.filter(doc_req_model::Column::TargetId.eq(tid));
+        }
+
+        let models = query.all(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| m.into()).collect())
+    }
+
+    async fn save(&self, req: &DomainDocRequirement) -> Result<(), DomainError> {
+        let active: doc_req_model::ActiveModel = req.into();
+        let exists = DocRequirementEntity::find_by_id(req.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        if exists.is_some() {
+            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        } else {
+            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        }
+        Ok(())
+    }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        DocRequirementEntity::delete_by_id(id)
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
+}
+

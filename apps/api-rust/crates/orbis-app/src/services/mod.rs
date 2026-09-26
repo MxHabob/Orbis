@@ -31,7 +31,7 @@ pub use auth_service::{AuthService, LoginResponse, VerifiedSessionResponse, Goog
 pub use organization_service::OrganizationService;
 pub use calendar_service::CalendarService;
 pub use scheduling_service::SchedulingService;
-pub use document_service::{DocumentService, CreateDocumentInput};
+pub use document_service::{DocumentService, CreateDocumentInput, CreateDocumentRequirementInput, StudentDocumentFulfillment};
 pub use integration_service::IntegrationService;
 pub use workflow_service::{WorkflowService, SubmitOverrideInput};
 pub use report_service::{ReportService, GenerateReportInput, OrgContextResolver};

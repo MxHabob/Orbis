@@ -94,6 +94,11 @@ import type {
   StudentDto,
   StudentDetailDto,
   RegisterStudentInput,
+  CheckDuplicateInput,
+  DuplicateCheckResultDto,
+  DocumentRequirementDto,
+  CreateDocumentRequirementRequest,
+  StudentDocumentFulfillmentDto,
   StudentFilterParams,
   EnrollmentFilterParams,
   UpdateStudentStatusInput,
@@ -363,6 +368,9 @@ export class LocalClient implements OrbisApiClient {
   // ── Student ─────────────────────────────────────────────────
   async registerStudent(req: RegisterStudentInput): Promise<StudentDetailDto> {
     return unwrap(await invoke("student_register_student", { request: req }));
+  }
+  async checkDuplicate(req: CheckDuplicateInput): Promise<DuplicateCheckResultDto> {
+    return unwrap(await invoke("student_check_duplicate", { request: req }));
   }
   async listStudents(filter?: StudentFilterParams): Promise<PaginatedList<StudentDetailDto>> {
     return unwrap(await invoke("student_list_students", { filter: filter ?? {} }));
@@ -793,6 +801,36 @@ export class LocalClient implements OrbisApiClient {
   }
   async deleteDocument(id: string): Promise<void> {
     await invoke("document_delete", { id });
+  }
+  async createDocumentRequirement(
+    req: CreateDocumentRequirementRequest,
+  ): Promise<DocumentRequirementDto> {
+    return unwrap(
+      await invoke("document_create_requirement", { request: req }),
+    );
+  }
+  async listDocumentRequirements(): Promise<DocumentRequirementDto[]> {
+    return unwrap(await invoke("document_list_requirements"));
+  }
+  async deleteDocumentRequirement(id: string): Promise<void> {
+    await invoke("document_delete_requirement", { id });
+  }
+  async evaluateStudentDocumentRequirements(
+    studentId: string,
+    params?: {
+      grade_level_id?: string;
+      is_national?: boolean;
+      is_transfer?: boolean;
+    },
+  ): Promise<StudentDocumentFulfillmentDto[]> {
+    return unwrap(
+      await invoke("document_evaluate_student_requirements", {
+        studentId,
+        gradeLevelId: params?.grade_level_id ?? null,
+        isNational: params?.is_national ?? null,
+        isTransfer: params?.is_transfer ?? null,
+      }),
+    );
   }
 
   // ── Integration ─────────────────────────────────────────────

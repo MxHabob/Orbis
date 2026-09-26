@@ -1,4 +1,6 @@
 pub mod audit;
+pub mod admission;
+pub mod document_requirement;
 pub mod organization;
 pub mod academic_policy;
 pub mod org_unit;

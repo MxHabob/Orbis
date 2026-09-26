@@ -78,6 +78,8 @@ pub struct AppState {
     pub student_fee_repo: Arc<dyn StudentFeeRepository>,
     pub payment_repo: Arc<dyn PaymentRepository>,
     pub document_repo: Arc<dyn DocumentRepository>,
+    pub doc_req_repo: Arc<dyn orbis_app::ports::repositories::DocumentRequirementRepository>,
+    pub sequence_repo: Arc<dyn orbis_app::ports::repositories::SequenceCounterRepository>,
     pub integration_repo: Arc<dyn IntegrationRepository>,
     pub workflow_repo: Arc<dyn WorkflowRepository>,
     pub report_definition_repo: Arc<dyn ReportDefinitionRepository>,
@@ -150,6 +152,8 @@ impl AppState {
         use sea_orm_migration::MigratorTrait;
         Migrator::up(&db, None).await.map_err(|e| e.to_string())?;
 
+        let active_session = Arc::new(std::sync::RwLock::new(None));
+
         let org_repo = Arc::new(orbis_infra::repositories::org_repo::OrgRepoImpl { db: db.clone() });
         let org_unit_repo = Arc::new(orbis_infra::repositories::org_unit_repo::OrgUnitRepoImpl { db: db.clone() });
         let user_repo = Arc::new(orbis_infra::repositories::user_repo::UserRepoImpl { db: db.clone() });
@@ -215,7 +219,8 @@ impl AppState {
         let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl);
         let oidc_service = Arc::new(orbis_infra::adapters::identity::GoogleIdentityAdapter::new());
 
-        let active_session = Arc::new(std::sync::RwLock::new(None));
+        let sequence_repo = Arc::new(orbis_infra::repositories::sequence_repo::SequenceCounterRepoImpl::new(db.clone()));
+        let doc_req_repo = Arc::new(orbis_infra::repositories::document_repos::DocumentRequirementRepoImpl::new(db.clone()));
 
         // Build Domain Services
         let student_service = Arc::new(orbis_app::services::StudentService::new(
@@ -223,6 +228,12 @@ impl AppState {
             person_repo.clone(),
             student_repo.clone(),
             student_repo.clone(),
+            settings_repo.clone(),
+            sequence_repo.clone(),
+            academic_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            override_repo.clone(),
             event_bus.clone(),
             permission_checker.clone(),
         ));
@@ -325,6 +336,7 @@ impl AppState {
 
         let document_service = Arc::new(orbis_app::services::DocumentService::new(
             document_repo.clone(),
+            doc_req_repo.clone(),
             event_bus.clone(),
             permission_checker.clone(),
         ));
@@ -491,6 +503,8 @@ impl AppState {
             student_fee_repo: finance_repo.clone(),
             payment_repo: finance_repo.clone(),
             document_repo,
+            doc_req_repo,
+            sequence_repo,
             integration_repo,
             workflow_repo,
             report_definition_repo,

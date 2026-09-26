@@ -101,12 +101,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let org_context_resolver = Arc::new(DbOrgContextResolver { db: db.clone() });
 
+    let sequence_repo = Arc::new(orbis_infra::repositories::sequence_repo::SequenceCounterRepoImpl::new(db.clone()));
+    let doc_req_repo = Arc::new(orbis_infra::repositories::document_repos::DocumentRequirementRepoImpl::new(db.clone()));
+
     // Build Domain Services
     let student_service = Arc::new(orbis_app::services::StudentService::new(
         student_repo.clone(),
         person_repo.clone(),
         student_repo.clone(),
         student_repo.clone(),
+        settings_repo.clone(),
+        sequence_repo.clone(),
+        academic_repo.clone(),
+        finance_repo.clone(),
+        finance_repo.clone(),
+        override_repo.clone(),
         event_bus.clone(),
         permission_checker.clone(),
     ));
@@ -209,6 +218,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let document_service = Arc::new(orbis_app::services::DocumentService::new(
         document_repo.clone(),
+        doc_req_repo.clone(),
         event_bus.clone(),
         permission_checker.clone(),
     ));
@@ -346,6 +356,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         student_fee_repo: finance_repo.clone(),
         payment_repo: finance_repo.clone(),
         document_repo,
+        doc_requirement_repo: doc_req_repo,
+        sequence_repo,
         integration_repo,
         workflow_repo,
         currency_repo: finance_repo.clone(),

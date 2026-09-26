@@ -1,3 +1,8 @@
+<!--
+  @component ProfileSection
+  Core Student Personal Information section.
+  Features live duplicate checks, dynamic active field flags, and bilingual field support.
+-->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui/label";
@@ -9,6 +14,8 @@ import {
   CardTitle,
   CardContent,
 } from "@orbis/ui/card";
+import { User } from "@orbis/icons";
+import { l } from "$lib/core/i18n";
 
 import type { StudentFormState } from "../form-state.svelte";
 import { ClassSelect } from "$lib/features/academics";
@@ -19,10 +26,13 @@ let { state }: { state: StudentFormState } = $props();
 </script>
 
 <Card class="w-full">
-  <CardHeader class="py-3 px-6">
-    <CardTitle class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider text-start select-none">
-      {m.common_form_student_info()}
-    </CardTitle>
+  <CardHeader class="py-3 px-6 border-b border-border/40">
+    <div class="flex items-center gap-2">
+      <User class="w-4 h-4 text-primary" />
+      <CardTitle class="text-xs font-bold text-foreground uppercase tracking-wider text-start select-none">
+        {m.common_form_student_info()}
+      </CardTitle>
+    </div>
   </CardHeader>
 
   <CardContent class="p-0">
@@ -68,29 +78,7 @@ let { state }: { state: StudentFormState } = $props();
         </div>
       </div>
 
-      {#if !state.isEditMode}
-        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-          <div class="flex flex-col gap-1 text-start">
-            <Label for="studentPassword" class="text-xs font-semibold text-foreground">
-              {m.common_user_form_password()}
-              <span class="text-destructive">*</span>
-            </Label>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_user_form_password_placeholder()}</span>
-          </div>
-          <div class="w-full md:w-120 shrink-0">
-            <Input
-              id="studentPassword"
-              type="password"
-              placeholder={m.common_user_form_password_placeholder()}
-              class="h-9 w-full bg-background font-mono"
-              bind:value={state.registrationForm.values.password}
-              autocomplete="new-password"
-            />
-          </div>
-        </div>
-      {/if}
-
-      <!-- National ID / Passport -->
+      <!-- National ID / Civil Number -->
       {#if state.activeFields.national_id}
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
           <div class="flex flex-col gap-1 text-start">
@@ -100,19 +88,19 @@ let { state }: { state: StudentFormState } = $props();
             </Label>
             <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_nid_desc()}</span>
           </div>
-          <div class="w-full md:w-120 shrink-0 flex flex-col gap-1">
+          <div class="w-full md:w-120 shrink-0 flex flex-col gap-1.5">
             <Input 
               id="nationalId"
               type="text" 
               placeholder="1000234900" 
-              class="h-9 w-full bg-background font-mono" 
+              class="h-9 w-full bg-background font-mono text-start {state.duplicateWarnings.national_id ? 'border-destructive focus-visible:ring-destructive' : ''}" 
               bind:value={state.personal.nationalId}
-              onblur={() => state.triggerDuplicateCheck("national_id", state.personal.nationalId)}
+              oninput={() => state.triggerDuplicateCheck("national_id", state.personal.nationalId)}
             />
             {#if state.duplicateWarnings.national_id}
-              <span class="text-[10px] text-destructive font-semibold text-start">
-                {state.duplicateWarnings.national_id}
-              </span>
+              <div class="flex items-center gap-1.5 text-[11px] text-destructive font-medium text-start">
+                <span>{state.duplicateWarnings.national_id}</span>
+              </div>
             {/if}
           </div>
         </div>
@@ -133,7 +121,7 @@ let { state }: { state: StudentFormState } = $props();
               id="passportNumber"
               type="text" 
               placeholder={m.common_form_passport_number_placeholder()} 
-              class="h-9 w-full bg-background font-mono" 
+              class="h-9 w-full bg-background font-mono uppercase" 
               bind:value={state.personal.passportNumber}
             />
           </div>
@@ -216,16 +204,16 @@ let { state }: { state: StudentFormState } = $props();
             <Button
               variant="ghost"
               type="button"
-              class="flex-1 flex items-center justify-center gap-2 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.personal.sex === 'male' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
-              onclick={() => state.personal.sex = 'male'}
+              class="flex-1 flex items-center justify-center gap-2 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.personal.sex === 'male' ? 'border-primary bg-primary/10 font-bold text-primary shadow-xs' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
+              onclick={() => (state.personal.sex = 'male')}
             >
               <span>{m.common_form_male()}</span>
             </Button>
             <Button 
               variant="ghost" 
               type="button"
-              class="flex-1 flex items-center justify-center gap-2 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.personal.sex === 'female' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
-              onclick={() => state.personal.sex = 'female'}
+              class="flex-1 flex items-center justify-center gap-2 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.personal.sex === 'female' ? 'border-primary bg-primary/10 font-bold text-primary shadow-xs' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
+              onclick={() => (state.personal.sex = 'female')}
             >
               <span>{m.common_form_female()}</span>
             </Button>
@@ -233,7 +221,7 @@ let { state }: { state: StudentFormState } = $props();
         </div>
       {/if}
 
-      <!-- Requested Class -->
+      <!-- Requested Class / Section -->
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
         <div class="flex flex-col gap-1 text-start">
           <Label for="classSelect" class="text-xs font-semibold text-foreground flex items-center gap-1">
@@ -264,7 +252,7 @@ let { state }: { state: StudentFormState } = $props();
             id="studentNumber"
             type="text" 
             placeholder={m.common_form_student_number_placeholder()} 
-            class="h-9 w-full bg-background" 
+            class="h-9 w-full bg-background font-mono uppercase" 
             disabled={!state.isEditMode}
             bind:value={state.personal.studentNumber}
           />
@@ -281,19 +269,19 @@ let { state }: { state: StudentFormState } = $props();
             </Label>
             <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_phone_desc()}</span>
           </div>
-          <div class="w-full md:w-120 shrink-0 flex flex-col gap-1">
+          <div class="w-full md:w-120 shrink-0 flex flex-col gap-1.5">
             <Input 
               id="phone"
               type="tel" 
               placeholder={m.common_form_student_phone_placeholder()} 
-              class="h-9 w-full bg-background font-mono text-left" 
+              class="h-9 w-full bg-background font-mono text-left {state.duplicateWarnings.phone ? 'border-destructive focus-visible:ring-destructive' : ''}" 
               bind:value={state.personal.phone}
-              onblur={() => state.triggerDuplicateCheck("phone", state.personal.phone)}
+              oninput={() => state.triggerDuplicateCheck("phone", state.personal.phone)}
             />
             {#if state.duplicateWarnings.phone}
-              <span class="text-[10px] text-destructive font-semibold text-start">
-                {state.duplicateWarnings.phone}
-              </span>
+              <div class="flex items-center gap-1.5 text-[11px] text-destructive font-medium text-start">
+                <span>{state.duplicateWarnings.phone}</span>
+              </div>
             {/if}
           </div>
         </div>
@@ -309,19 +297,19 @@ let { state }: { state: StudentFormState } = $props();
             </Label>
             <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_email_desc()}</span>
           </div>
-          <div class="w-full md:w-120 shrink-0 flex flex-col gap-1">
+          <div class="w-full md:w-120 shrink-0 flex flex-col gap-1.5">
             <Input 
               id="email"
               type="email" 
               placeholder="student@example.com" 
-              class="h-9 w-full bg-background font-mono text-left" 
+              class="h-9 w-full bg-background font-mono text-left {state.duplicateWarnings.email ? 'border-destructive focus-visible:ring-destructive' : ''}" 
               bind:value={state.personal.email}
-              onblur={() => state.triggerDuplicateCheck("email", state.personal.email)}
+              oninput={() => state.triggerDuplicateCheck("email", state.personal.email)}
             />
             {#if state.duplicateWarnings.email}
-              <span class="text-[10px] text-destructive font-semibold text-start">
-                {state.duplicateWarnings.email}
-              </span>
+              <div class="flex items-center gap-1.5 text-[11px] text-destructive font-medium text-start">
+                <span>{state.duplicateWarnings.email}</span>
+              </div>
             {/if}
           </div>
         </div>
@@ -332,10 +320,10 @@ let { state }: { state: StudentFormState } = $props();
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label for="bloodType" class="text-xs font-semibold text-foreground">
-              فصيلة الدم
+              {l("فصيلة الدم", "Blood Type")}
               {#if state.requiredFields.blood_type}<span class="text-destructive">*</span>{/if}
             </Label>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">فصيلة دم الطالب للحالات الطبية والإسعافية</span>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">{l("فصيلة دم الطالب للحالات الطبية والإسعافية", "Student blood type for medical records")}</span>
           </div>
           <div class="w-full md:w-120 shrink-0">
             <Input 
@@ -354,16 +342,16 @@ let { state }: { state: StudentFormState } = $props();
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label for="emergencyContact" class="text-xs font-semibold text-foreground">
-              جهة اتصال للطوارئ (الاسم والهاتف)
+              {l("جهة اتصال للطوارئ (الاسم والهاتف)", "Emergency Contact")}
               {#if state.requiredFields.emergency_contact}<span class="text-destructive">*</span>{/if}
             </Label>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">اسم وتلفون الشخص المسؤول للتواصل في حالات الطوارئ</span>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">{l("اسم وتلفون الشخص المسؤول للتواصل في حالات الطوارئ", "Contact person name and phone in case of emergency")}</span>
           </div>
           <div class="w-full md:w-120 shrink-0">
             <Input 
               id="emergencyContact"
               type="text" 
-              placeholder="الاسم - رقم الهاتف" 
+              placeholder={l("الاسم - رقم الهاتف", "Name - Phone")} 
               class="h-9 w-full bg-background" 
               bind:value={state.personal.emergencyContact}
             />
@@ -376,16 +364,16 @@ let { state }: { state: StudentFormState } = $props();
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label for="medicalNotes" class="text-xs font-semibold text-foreground">
-              الملاحظات والبيانات الطبية
+              {l("الملاحظات والبيانات الطبية", "Medical Notes")}
               {#if state.requiredFields.medical_notes}<span class="text-destructive">*</span>{/if}
             </Label>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">أي حساسية، أمراض مزمنة أو تعليمات صحية خاصة للطالب</span>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">{l("أي حساسية، أمراض مزمنة أو تعليمات صحية خاصة للطالب", "Any allergies, chronic conditions or special medical advice")}</span>
           </div>
           <div class="w-full md:w-120 shrink-0">
             <Input 
               id="medicalNotes"
               type="text" 
-              placeholder="أدخل الملاحظات أو الحالة الطبية إن وجدت..." 
+              placeholder={l("أدخل الملاحظات أو الحالة الطبية إن وجدت...", "Enter medical notes or conditions if any...")} 
               class="h-9 w-full bg-background" 
               bind:value={state.personal.medicalNotes}
             />

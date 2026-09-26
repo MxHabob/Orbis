@@ -95,6 +95,11 @@ import type {
   StudentDto,
   StudentDetailDto,
   RegisterStudentInput,
+  CheckDuplicateInput,
+  DuplicateCheckResultDto,
+  DocumentRequirementDto,
+  CreateDocumentRequirementRequest,
+  StudentDocumentFulfillmentDto,
   StudentFilterParams,
   EnrollmentFilterParams,
   UpdateStudentStatusInput,
@@ -443,6 +448,11 @@ export class RemoteClient implements OrbisApiClient {
     req: RegisterStudentInput,
   ): Promise<StudentDetailDto> {
     return this.post("/api/v1/students", req);
+  }
+  async checkDuplicate(
+    req: CheckDuplicateInput,
+  ): Promise<DuplicateCheckResultDto> {
+    return this.post("/api/v1/students/check-duplicate", req);
   }
   async listStudents(
     filter?: StudentFilterParams,
@@ -862,6 +872,34 @@ export class RemoteClient implements OrbisApiClient {
   }
   async deleteDocument(id: string): Promise<void> {
     await this.del(`/api/v1/documents/${id}`);
+  }
+  async createDocumentRequirement(
+    req: CreateDocumentRequirementRequest,
+  ): Promise<DocumentRequirementDto> {
+    return this.post("/api/v1/documents/requirements", req);
+  }
+  async listDocumentRequirements(): Promise<DocumentRequirementDto[]> {
+    return this.get("/api/v1/documents/requirements");
+  }
+  async deleteDocumentRequirement(id: string): Promise<void> {
+    await this.del(`/api/v1/documents/requirements/${id}`);
+  }
+  async evaluateStudentDocumentRequirements(
+    studentId: string,
+    params?: {
+      grade_level_id?: string;
+      is_national?: boolean;
+      is_transfer?: boolean;
+    },
+  ): Promise<StudentDocumentFulfillmentDto[]> {
+    return this.get(
+      `/api/v1/documents/students/${studentId}/requirements/evaluate`,
+      {
+        grade_level_id: params?.grade_level_id,
+        is_national: params?.is_national,
+        is_transfer: params?.is_transfer,
+      },
+    );
   }
 
   // ── Integration ─────────────────────────────────────────────

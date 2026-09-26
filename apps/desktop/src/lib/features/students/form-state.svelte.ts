@@ -1,4 +1,3 @@
-import { FloppyDisk } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { api, queryKeys } from "$lib/api";
@@ -46,15 +45,21 @@ export class StudentFormState {
     previous_school: true,
     documents: true,
   });
-  preventDuplicates = $state<Record<string, boolean>>({});
+  preventDuplicates = $state<Record<string, boolean>>({
+    national_id: true,
+    phone: false,
+    email: false,
+  });
   registrationStatus = $state("draft");
 
-  // Warnings
+  // Warnings for duplicate values
   duplicateWarnings = $state<{
     national_id?: string;
     email?: string;
     phone?: string;
   }>({});
+
+  private duplicateCheckTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 
   // Class data for computations
   classes = $state<any[]>([]);
@@ -103,11 +108,43 @@ export class StudentFormState {
       const [org] = await Promise.all([
         api.getCurrentOrg().catch(() => null),
         this.financial.init(),
+        this.document.loadRequirements(),
       ]);
 
       if (org) {
         const organization = org as any;
         this.orgName = String(organization.name || organization.name_ar || "");
+
+        // Parse organization registration configuration
+        let settingsObj: any = {};
+        try {
+          settingsObj = typeof organization.settings === "string" 
+            ? JSON.parse(organization.settings) 
+            : organization.settings || {};
+        } catch {
+          settingsObj = {};
+        }
+
+        const reg = settingsObj.registration || settingsObj.registration_config || {};
+        if (reg.form_fields_list && Array.isArray(reg.form_fields_list)) {
+          const activeMap: Record<string, boolean> = {};
+          const requiredMap: Record<string, boolean> = {};
+          const duplicateMap: Record<string, boolean> = {};
+
+          for (const field of reg.form_fields_list) {
+            activeMap[field.key] = field.isActive !== false;
+            requiredMap[field.key] = field.isActive !== false && field.isRequired === true;
+            duplicateMap[field.key] = field.isActive !== false && field.preventDuplicate === true;
+          }
+
+          this.activeFields = { ...this.activeFields, ...activeMap };
+          this.requiredFields = { ...this.requiredFields, ...requiredMap };
+          this.preventDuplicates = { ...this.preventDuplicates, ...duplicateMap };
+        }
+
+        if (reg.required_documents_list && Array.isArray(reg.required_documents_list)) {
+          this.document.setRequiredDocuments(reg.required_documents_list.map((d: any) => d.nameAr || d.nameEn));
+        }
       }
 
       // Load document templates for printing
@@ -151,31 +188,51 @@ export class StudentFormState {
     }
   }
 
-  // Live duplicate check triggers
-  async triggerDuplicateCheck(
+  // Live debounced duplicate check triggers using authoritative backend API
+  triggerDuplicateCheck(
     field: "national_id" | "email" | "phone",
     value: string,
   ) {
-    if (!value.trim() || !this.preventDuplicates[field]) return;
-    try {
-      const users = await api.listUsers();
-      const match = users.find((u: any) => u[field] === value.trim());
-      if (match) {
-        this.duplicateWarnings = {
-          ...this.duplicateWarnings,
-          [field]: m.common_form_guardian_duplicate_warning({
-            name: match.full_name,
-          }),
-        };
-      } else {
-        this.duplicateWarnings = {
-          ...this.duplicateWarnings,
-          [field]: undefined,
-        };
-      }
-    } catch (err) {
-      console.error("Duplicate check error:", err);
+    if (this.duplicateCheckTimers[field]) {
+      clearTimeout(this.duplicateCheckTimers[field]);
     }
+
+    const trimmed = (value || "").trim();
+    if (!trimmed) {
+      this.duplicateWarnings = {
+        ...this.duplicateWarnings,
+        [field]: undefined,
+      };
+      return;
+    }
+
+    this.duplicateCheckTimers[field] = setTimeout(async () => {
+      try {
+        const res = await api.checkDuplicate({
+          [field]: trimmed,
+          exclude_student_id: this.studentId,
+        });
+
+        if (res.has_duplicate && res.matches.length > 0) {
+          const match = res.matches.find((m) => m.field === field) || res.matches[0];
+          const studentInfo = match.student_number ? ` (${match.student_number})` : "";
+          this.duplicateWarnings = {
+            ...this.duplicateWarnings,
+            [field]: l(
+              `هذه القيمة مسجلة مسبقاً للشخص "${match.matched_person_name}"${studentInfo}`,
+              `Already registered to "${match.matched_person_name}"${studentInfo}`,
+            ),
+          };
+        } else {
+          this.duplicateWarnings = {
+            ...this.duplicateWarnings,
+            [field]: undefined,
+          };
+        }
+      } catch (err) {
+        console.error("Duplicate check error:", err);
+      }
+    }, 300);
   }
 
   // Financial Computations proxy
@@ -204,7 +261,7 @@ export class StudentFormState {
 
       if (t.applicable_levels) {
         try {
-          const rules = JSON.parse(t.applicable_levels);
+          const rules = typeof t.applicable_levels === "string" ? JSON.parse(t.applicable_levels) : t.applicable_levels;
           let targetLevels: string[] = [];
           if (Array.isArray(rules)) {
             targetLevels = rules.map(String);
@@ -264,7 +321,7 @@ export class StudentFormState {
 
   get optionalFeesList() {
     return this.financial.feeTemplates.filter(
-      (t) => t.is_mandatory === 0 && t.is_active === 1,
+      (t) => (t.is_mandatory === 0 || t.is_mandatory === false) && (t.is_active === 1 || t.is_active === true),
     );
   }
 
@@ -285,7 +342,7 @@ export class StudentFormState {
     );
   }
 
-  // FloppyDisk operation
+  // Save operation
   async handleSave(queryClient?: any) {
     if (!this.personal.nameAr.trim()) {
       toast.error(m.common_form_error_name_required());
@@ -293,6 +350,16 @@ export class StudentFormState {
     }
     if (!this.personal.classId) {
       toast.error(m.common_form_error_class_required());
+      return;
+    }
+
+    // Check duplicate blockers
+    if (
+      this.duplicateWarnings.national_id ||
+      this.duplicateWarnings.phone ||
+      this.duplicateWarnings.email
+    ) {
+      toast.error(l("يرجى معالجة تنبيهات تكرار البيانات قبل المتابعة", "Please resolve duplicate warnings before proceeding"));
       return;
     }
 
@@ -345,7 +412,7 @@ export class StudentFormState {
         toast.success(m.common_form_success_update());
       }
 
-      // 3. FloppyDisk guardians
+      // 2. Save / link guardians
       for (const guardian of this.guardian.linkedGuardians) {
         if (!guardian.full_name.trim()) continue;
         let guardianUserId = guardian.user_id;
@@ -373,7 +440,7 @@ export class StudentFormState {
         }
       }
 
-      // 4. Assign optional fees
+      // 3. Assign optional fees
       const today = new Date().toISOString().slice(0, 10);
       for (const key in this.financial.selectedOptionalFees) {
         if (this.financial.selectedOptionalFees[key].checked) {
@@ -411,7 +478,7 @@ export class StudentFormState {
   // Document print/download logic
   async handleDownloadRegistrationForm() {
     if (!this.selectedTemplateId) {
-      toast.error("يرجى اختيار قالب الطباعة أولاً");
+      toast.error(l("يرجى اختيار قالب الطباعة أولاً", "Please select a print template first"));
       return;
     }
     this.isDownloadingForm = true;
@@ -419,7 +486,7 @@ export class StudentFormState {
       const templateRecord = await api.getTemplate(this.selectedTemplateId);
       if (!templateRecord) {
         toast.error(
-          `القالب '${this.selectedTemplateId}' غير موجود في قاعدة البيانات`,
+          l(`القالب '${this.selectedTemplateId}' غير موجود في قاعدة البيانات`, `Template '${this.selectedTemplateId}' not found`),
         );
         return;
       }
@@ -462,14 +529,14 @@ export class StudentFormState {
         document.body.removeChild(link);
         URL.revokeObjectURL(pdfUrl);
 
-        toast.success("تم توليد وتحميل المستند بنجاح");
+        toast.success(l("تم توليد وتحميل المستند بنجاح", "Document generated and downloaded successfully"));
       } else {
-        toast.error("Failed to generate PDF document");
+        toast.error(l("فشل توليد ملف PDF", "Failed to generate PDF document"));
       }
     } catch (e: any) {
       console.error("Failed to download registration form:", e);
       toast.error(
-        `خطأ أثناء تحميل الاستمارة: ${(e as any)?.message || String(e)}`,
+        `${l("خطأ أثناء تحميل الاستمارة:", "Error downloading form:")} ${(e as any)?.message || String(e)}`,
       );
     } finally {
       this.isDownloadingForm = false;

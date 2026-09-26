@@ -101,6 +101,7 @@ use api::{
         api::academic_routes::list_class_subjects,
         // Student
         api::student_routes::register_student,
+        api::student_routes::check_duplicate,
         api::student_routes::list_students,
         api::student_routes::get_student,
         api::student_routes::update_student_status,
@@ -188,6 +189,10 @@ use api::{
         api::document_routes::list_documents,
         api::document_routes::get_document,
         api::document_routes::delete_document,
+        api::document_routes::create_document_requirement,
+        api::document_routes::list_document_requirements,
+        api::document_routes::delete_document_requirement,
+        api::document_routes::evaluate_student_requirements,
         // Integration
         api::integration_routes::connect_app,
         api::integration_routes::list_integrations,
@@ -276,6 +281,9 @@ use api::{
             // Student
             api::student_routes::StudentDto,
             api::student_routes::RegisterStudentRequest,
+            api::student_routes::DuplicateCheckRequest,
+            api::student_routes::DuplicateMatchDto,
+            api::student_routes::DuplicateCheckResponse,
             api::student_routes::EnrollmentDto,
             api::student_routes::EnrollStudentRequest,
             api::student_routes::ChangeStudyModeRequest,
@@ -332,6 +340,9 @@ use api::{
             // Document
             api::document_routes::DocumentDto,
             api::document_routes::UploadDocumentRequest,
+            api::document_routes::DocumentRequirementDto,
+            api::document_routes::CreateDocumentRequirementRequest,
+            api::document_routes::StudentDocumentFulfillmentDto,
             // Integration
             api::integration_routes::IntegrationDto,
             api::integration_routes::IntegrationStatusDto,
