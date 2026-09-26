@@ -38,6 +38,7 @@ import { createClassesQuery } from "$lib/features/academics";
 import { api, extractErrorMessage } from "$lib/api";
 import { queryClient } from "$lib/api";
 import { academicContext } from "$lib/stores";
+import AuditTimeline from "$lib/shared/components/audit-timeline.svelte";
 
 let { orgId, studentId }: { orgId: string; studentId: string } = $props();
 
@@ -578,6 +579,11 @@ async function saveStudentDetails(e: Event) {
       </Card>
 
     </form>
+
+    <!-- Audit Timeline History -->
+    <div class="mt-4">
+      <AuditTimeline entityType="student" entityId={studentId} />
+    </div>
     </div>
   {/if}
 </div>

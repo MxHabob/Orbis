@@ -95,6 +95,23 @@ class ConfirmStore {
     }
     this.isOpen = false;
   }
+
+  /**
+   * Prompts the user with a standardized version conflict (optimistic lock 409) dialog.
+   * Returns true if the user confirmed reloading data.
+   */
+  async promptVersionConflict(message?: string): Promise<boolean> {
+    return this.prompt({
+      title: "تعارض في تحديث البيانات",
+      description:
+        message ||
+        "تم تعديل هذا السجل بواسطة مستخدم آخر بالتزامن. للحفاظ على سلامة البيانات، يرجى تأكيد إعادة تحميل أحدث نسخة من الخادم.",
+      confirmText: "إعادة تحميل البيانات",
+      cancelText: "إلغاء",
+      variant: "default",
+      forceCustomDialog: true,
+    });
+  }
 }
 
 export const confirmStore = new ConfirmStore();

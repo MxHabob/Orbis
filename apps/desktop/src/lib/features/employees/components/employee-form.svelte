@@ -44,6 +44,7 @@ import type {
 } from "$lib/api/types";
 import NationalitySelect from "$lib/shared/components/nationality-select.svelte";
 import { GroupSelector } from "$lib/features/groups";
+import AuditTimeline from "$lib/shared/components/audit-timeline.svelte";
 
 interface Props {
   orgId: string;
@@ -720,6 +721,21 @@ async function handleSubmit() {
                 </div>
               </div>
             {/if}
+          </AccordionContent>
+        </AccordionItem>
+      {/if}
+
+      <!-- Accordion Item: Audit Trail (Preview Mode) -->
+      {#if mode === "preview" && employee?.id}
+        <AccordionItem value="audit" class="rounded-lg border border-border/60 bg-card px-4 py-1">
+          <AccordionTrigger class="text-sm font-semibold hover:no-underline py-3">
+            <div class="flex items-center gap-2">
+              <span class="text-primary text-base">📋</span>
+              <span>{l("سجل العمليات والتدقيق", "Audit Trail & History")}</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent class="pt-2 pb-4">
+            <AuditTimeline entityType="employee" entityId={employee.id} />
           </AccordionContent>
         </AccordionItem>
       {/if}

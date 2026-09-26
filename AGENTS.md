@@ -101,12 +101,17 @@ A section is **NEVER** complete merely because its route renders. A section is c
 
 ## 6. CONTINUATION STATE
 
-- **Subsystem:** Audit Metadata, Audit Trail, Scope & Concurrency (Backend + Infra + Server + Desktop)
-- **State:** Full end-to-end integration of Audit Trail, Event emission, Concurrency control, and Scope filtering across all domain entities, SeaORM models, and repositories.
+- **Subsystem:** Audit Metadata, Audit Trail, Scope & Concurrency (Full Stack: Backend + Infra + Bootstrap/Onboarding + Desktop UI)
+- **State:** Complete end-to-end integration of Audit Trail, Scope awareness, Concurrency Conflict Handling, Bootstrap/Onboarding seeder alignment, and Desktop UI components.
 - **Completed Components:**
   - `orbis-domain`: `DomainEvent::audit_fields()` implemented for mapping domain events to audit trails; `ConcurrencyConflict` added to `DomainError`; audit metadata (`created_by`, `updated_by`, `org_unit_id`, `version`) mapped consistently.
-  - `orbis-infra`: All SeaORM models and repository mappers (`scheduling_repos.rs`, `student_repos.rs`, `assessment_repos.rs`, `finance_repos.rs`, `employee_repo.rs`, `group_repo.rs`) aligned with audit and concurrency fields.
-  - `orbis-server`: `finance_routes.rs` and `ApiError` updated to handle `ConcurrencyConflict` (HTTP 409) and journal entry audit metadata.
-  - `apps/desktop/src-tauri`: Native IPC commands fully synchronized.
-- **Verification:** `bun x tsc --noEmit`, `cargo check --workspace`, and `cargo test --workspace` (all 73 tests) pass with 0 errors.
+  - `orbis-infra`: All SeaORM models, repository mappers, `BootstrapAdapterImpl` (`bootstrap_full_inner`, `seed_chart_of_accounts`, `seed_default_user_groups`, `seed_org_units`), and `OnboardingAdapterImpl` (`persist_onboarding`, `persist_initial_setup`) aligned with audit (`created_by`, `updated_by`), scope (`org_unit_id`), and concurrency (`version`) fields.
+  - `orbis-server`: `finance_routes.rs` and `ApiError` updated to handle `ConcurrencyConflict` (HTTP 409).
+  - `apps/desktop`:
+    - `user-sidebar-menu.svelte`: Enhanced with active branch and user details on hover tooltip and in the dropdown menu header.
+    - `audit-timeline.svelte`: Canonical `<AuditTimeline>` component for paginated, reactive entity change history with full RTL Arabic support.
+    - `confirmStore.promptVersionConflict()`: Integrated directly into the canonical `confirmStore` for seamless optimistic concurrency control (HTTP 409) resolution with zero duplicate dialog components.
+    - Integrated across `employee-form.svelte`, `student-details.svelte`, and `journal-entries.svelte`.
+    - `OrbisApiClient`, `LocalClient`, and `RemoteClient`: Extended with `getEntityAudit`.
+- **Verification:** `bun x tsc --noEmit`, `cargo check --workspace`, `cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml`, and `cargo test --workspace` (73/73 tests) pass with 0 errors.
 

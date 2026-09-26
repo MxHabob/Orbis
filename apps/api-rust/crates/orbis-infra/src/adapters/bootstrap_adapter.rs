@@ -77,7 +77,7 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     // ── 1. Organization ────────────────────────────────────────
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO organizations (id, name, name_ar, slug, timezone, locale, base_currency_code, is_hijri_enabled, is_active, is_verified, is_deleted, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, 1, 1, 0, $8, $9)",
+        "INSERT INTO organizations (id, name, name_ar, slug, timezone, locale, base_currency_code, is_hijri_enabled, is_active, is_verified, is_deleted, created_by, updated_by, version, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, 1, 1, 0, $8, $9, 1, $10, $11)",
         vec![
             org_id_uuid.into(),
             payload.org_name.clone().into(),
@@ -86,6 +86,8 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
             payload.timezone.clone().unwrap_or_else(|| "Asia/Riyadh".into()).into(),
             payload.locale.clone().unwrap_or_else(|| "ar".into()).into(),
             payload.currency.clone().into(),
+            admin_id_uuid.into(),
+            admin_id_uuid.into(),
             now.clone().into(),
             now.clone().into(),
         ]
@@ -114,13 +116,15 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     // ── 2. Admin User ──────────────────────────────────────────
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO users (id, person_id, org_id, email, password_hash, is_email_verified, is_phone_verified, is_mfa_enabled, status, login_count, failed_login_attempts, is_deleted, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, 1, 0, 0, 'active', 0, 0, 0, $6, $7)",
+        "INSERT INTO users (id, person_id, org_id, email, password_hash, is_email_verified, is_phone_verified, is_mfa_enabled, status, login_count, failed_login_attempts, is_deleted, created_by, updated_by, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, 1, 0, 0, 'active', 0, 0, 0, $6, $7, $8, $9)",
         vec![
             admin_id_uuid.into(),
             person_id_uuid.into(),
             org_id_uuid.into(),
             payload.admin_username.clone().into(),
             payload.admin_password_hash.clone().into(),
+            admin_id_uuid.into(),
+            admin_id_uuid.into(),
             now.clone().into(),
             now.clone().into(),
         ]
@@ -147,12 +151,12 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     }
 
     // ── 5.1 System Default User Groups ──────────────────────────────────────────
-    if let Err(e) = seed_default_user_groups(db, org_id_uuid, &now).await {
+    if let Err(e) = seed_default_user_groups(db, org_id_uuid, admin_id_uuid, &now).await {
         info!("Note: User groups seeding warning: {}", e);
     }
 
     // ── 5.5 Chart of Accounts (COA) ──────────────────────────────────────────────
-    if let Err(e) = seed_chart_of_accounts(db, org_id_uuid, &payload.currency, &now).await {
+    if let Err(e) = seed_chart_of_accounts(db, org_id_uuid, admin_id_uuid, &payload.currency, &now).await {
         info!("Note: COA seeding warning: {}", e);
     }
 
@@ -201,14 +205,15 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
 async fn seed_org_units<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
+    admin_id: Option<Uuid>,
     _org_type: &str,
     now: &str,
 ) -> Result<Uuid, DomainError> {
     let root_id = Uuid::new_v4();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO org_units (id, org_id, parent_id, path, depth, name, name_ar, code, unit_type, data_isolation, children_count, descendant_count, sort_order, is_active, created_at, updated_at) VALUES ($1, $2, NULL, 'root', 0, 'Main Campus', 'المقر الرئيسي', 'HQ', 'campus', 'none', 0, 0, 1, 1, $3, $4)",
-        vec![root_id.into(), org_id.into(), now.to_string().into(), now.to_string().into()]
+        "INSERT INTO org_units (id, org_id, parent_id, path, depth, name, name_ar, code, unit_type, data_isolation, children_count, descendant_count, sort_order, is_active, created_by, updated_by, created_at, updated_at) VALUES ($1, $2, NULL, 'root', 0, 'Main Campus', 'المقر الرئيسي', 'HQ', 'campus', 'none', 0, 0, 1, 1, $3, $4, $5, $6)",
+        vec![root_id.into(), org_id.into(), admin_id.into(), admin_id.into(), now.to_string().into(), now.to_string().into()]
     )).await.map_err(|e| DomainError::Internal(format!("Failed to seed root org_unit: {e}")))?;
 
     // Note: Child organizational units (Branches, Buildings, Stages, Departments)
@@ -586,6 +591,7 @@ pub async fn seed_roles_and_permissions<C: ConnectionTrait>(
 pub async fn seed_default_user_groups<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
+    admin_id: Uuid,
     now: &str,
 ) -> Result<(), DomainError> {
     let default_groups = vec![
@@ -657,12 +663,13 @@ pub async fn seed_default_user_groups<C: ConnectionTrait>(
         let group_id = Uuid::new_v4();
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
-            "INSERT INTO groups (id, org_id, name, name_ar, description, is_system, status, created_at, updated_at) \
-             SELECT $1, $2, $3, $4, $5, 1, 'active', $6, $7 \
+            "INSERT INTO groups (id, org_id, name, name_ar, description, is_system, status, created_by, updated_by, created_at, updated_at) \
+             SELECT $1, $2, $3, $4, $5, 1, 'active', $6, $7, $8, $9 \
              WHERE NOT EXISTS (SELECT 1 FROM groups WHERE org_id = $2 AND name = $3)",
             vec![
                 group_id.into(), org_id.into(),
                 name_en.into(), name_ar.into(), desc.into(),
+                admin_id.into(), admin_id.into(),
                 now.to_string().into(), now.to_string().into(),
             ]
         )).await.ok();
@@ -842,6 +849,7 @@ fn flatten_acc_nodes(
 async fn seed_chart_of_accounts<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
+    admin_id: Uuid,
     currency: &str,
     now: &str,
 ) -> Result<(), DomainError> {
@@ -854,11 +862,12 @@ async fn seed_chart_of_accounts<C: ConnectionTrait>(
     for (id, oid, code, _name, name_ar, db_type, parent_id, _path, _depth, curr, timestamp) in rows {
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
-            "INSERT INTO accounts (id, org_id, code, name, account_type, parent_id, currency_code, is_active, balances, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, '{}', $8, $9)",
+            "INSERT INTO accounts (id, org_id, code, name, account_type, parent_id, currency_code, is_active, balances, created_by, updated_by, version, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, '{}', $8, $9, 1, $10, $11)",
             vec![
                 id.into(), oid.into(), code.clone().into(), name_ar.into(),
                 db_type.into(),
                 parent_id.into(), curr.into(),
+                admin_id.into(), admin_id.into(),
                 timestamp.clone().into(), timestamp.into(),
             ]
         )).await.map_err(|e| DomainError::Internal(format!("Failed to seed account {code}: {e}")))?;
@@ -1565,15 +1574,24 @@ impl OnboardingPort for OnboardingAdapterImpl {
         let now = Utc::now().to_rfc3339();
         let org_id = data.org_id;
 
+        // Lookup admin user id for audit metadata
+        let admin_user_row = txn.query_one(Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            "SELECT id FROM users WHERE org_id = $1 LIMIT 1",
+            vec![org_id.into()]
+        )).await.ok().flatten();
+        let admin_user_id = admin_user_row.and_then(|r| r.try_get::<Uuid>("", "id").ok()).unwrap_or_else(Uuid::new_v4);
+
         // 1. Update Organization Profile & Settings
         txn.execute(Statement::from_sql_and_values(
             txn.get_database_backend(),
-            "UPDATE organizations SET base_currency_code = $1, timezone = $2, locale = $3, settings = $4, updated_at = $5 WHERE id = $6",
+            "UPDATE organizations SET base_currency_code = $1, timezone = $2, locale = $3, settings = $4, updated_by = $5, version = version + 1, updated_at = $6 WHERE id = $7",
             vec![
                 data.base_currency_code.clone().into(),
                 data.timezone.into(),
                 data.locale.into(),
                 data.settings.to_string().into(),
+                admin_user_id.into(),
                 now.clone().into(),
                 org_id.into(),
             ]
@@ -1583,10 +1601,10 @@ impl OnboardingPort for OnboardingAdapterImpl {
         let campus_id = Uuid::new_v4();
         txn.execute(Statement::from_sql_and_values(
             txn.get_database_backend(),
-            "INSERT INTO org_units (id, org_id, parent_id, path, depth, name, name_ar, code, unit_type, data_isolation, children_count, descendant_count, sort_order, is_active, created_at, updated_at) \
-             SELECT $1, $2, NULL, 'root', 0, 'Main Campus', 'المقر الرئيسي', 'HQ', 'campus', 'none', 0, 0, 1, 1, $3, $4 \
+            "INSERT INTO org_units (id, org_id, parent_id, path, depth, name, name_ar, code, unit_type, data_isolation, children_count, descendant_count, sort_order, is_active, created_by, updated_by, created_at, updated_at) \
+             SELECT $1, $2, NULL, 'root', 0, 'Main Campus', 'المقر الرئيسي', 'HQ', 'campus', 'none', 0, 0, 1, 1, $3, $3, $4, $5 \
              WHERE NOT EXISTS (SELECT 1 FROM org_units WHERE org_id = $2 AND depth = 0)",
-            vec![campus_id.into(), org_id.into(), now.clone().into(), now.clone().into()]
+            vec![campus_id.into(), org_id.into(), admin_user_id.into(), now.clone().into(), now.clone().into()]
         )).await.map_err(|e| DomainError::Internal(format!("Failed to seed root campus: {e}")))?;
 
         let root_unit_row = txn.query_one(Statement::from_sql_and_values(
@@ -1597,16 +1615,18 @@ impl OnboardingPort for OnboardingAdapterImpl {
         let real_campus_id: Uuid = root_unit_row.try_get("", "id").unwrap_or(campus_id);
 
         for b in &data.buildings {
+            let parent_id = b.parent_unit_id.unwrap_or(real_campus_id);
             txn.execute(Statement::from_sql_and_values(
                 txn.get_database_backend(),
-                "INSERT INTO org_units (id, org_id, parent_id, path, depth, name, name_ar, code, unit_type, data_isolation, children_count, descendant_count, sort_order, is_active, created_at, updated_at) \
-                 SELECT $1, $2, $3, 'root.' || $4, 1, $5, $6, $4, 'building', 'none', 0, 0, 1, 1, $7, $8 \
+                "INSERT INTO org_units (id, org_id, parent_id, path, depth, name, name_ar, code, unit_type, data_isolation, children_count, descendant_count, sort_order, is_active, created_by, updated_by, created_at, updated_at) \
+                 SELECT $1, $2, $3, 'root.' || $4, 1, $5, $6, $4, 'building', 'none', 0, 0, 1, 1, $7, $7, $8, $9 \
                  WHERE NOT EXISTS (SELECT 1 FROM org_units WHERE org_id = $2 AND code = $4)",
                 vec![
-                    b.id.into(), org_id.into(), real_campus_id.into(),
+                    b.id.into(), org_id.into(), parent_id.into(),
                     b.code.clone().into(),
                     b.name.clone().into(),
                     b.name_ar.clone().unwrap_or_else(|| b.name.clone()).into(),
+                    admin_user_id.into(),
                     now.clone().into(), now.clone().into(),
                 ]
             )).await.map_err(|e| DomainError::Internal(format!("Failed to create building unit: {e}")))?;
@@ -1614,14 +1634,16 @@ impl OnboardingPort for OnboardingAdapterImpl {
 
         // 3. Rooms
         for rm in &data.rooms {
+            let room_unit_id = rm.building_unit_id.unwrap_or(real_campus_id);
             txn.execute(Statement::from_sql_and_values(
                 txn.get_database_backend(),
-                "INSERT INTO rooms (id, org_id, name, room_type, capacity, created_at, updated_at) \
-                 SELECT $1, $2, $3, $4, $5, $6, $7 \
+                "INSERT INTO rooms (id, org_id, name, room_type, capacity, org_unit_id, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, $7, $8 \
                  WHERE NOT EXISTS (SELECT 1 FROM rooms WHERE org_id = $2 AND name = $3)",
                 vec![
                     rm.id.into(), org_id.into(), rm.name.clone().into(),
                     rm.room_type.clone().into(), rm.capacity.into(),
+                    room_unit_id.into(),
                     now.clone().into(), now.clone().into(),
                 ]
             )).await.map_err(|e| DomainError::Internal(format!("Failed to insert room: {e}")))?;
@@ -1752,7 +1774,7 @@ impl OnboardingPort for OnboardingAdapterImpl {
 
         // 9. Chart of Accounts (COA) initialization if requested
         if data.initialize_chart_of_accounts {
-            if let Err(e) = seed_chart_of_accounts(&txn, org_id, &data.base_currency_code, &now).await {
+            if let Err(e) = seed_chart_of_accounts(&txn, org_id, admin_user_id, &data.base_currency_code, &now).await {
                 info!("COA onboarding initialization note: {}", e);
             }
         }
@@ -1839,18 +1861,12 @@ impl OnboardingPort for OnboardingAdapterImpl {
         }
 
         // 13. Roles & Granular Permissions Seeding
-        let admin_user_row = txn.query_one(Statement::from_sql_and_values(
-            txn.get_database_backend(),
-            "SELECT id FROM users WHERE org_id = $1 LIMIT 1",
-            vec![org_id.into()]
-        )).await.ok().flatten();
-        let admin_user_id = admin_user_row.and_then(|r| r.try_get::<Uuid>("", "id").ok()).unwrap_or_else(Uuid::new_v4);
         if let Err(e) = seed_roles_and_permissions(&txn, org_id, admin_user_id, &now).await {
             info!("Roles & permissions onboarding seeding note: {}", e);
         }
 
         // 13.5 System Default User Groups Seeding
-        if let Err(e) = seed_default_user_groups(&txn, org_id, &now).await {
+        if let Err(e) = seed_default_user_groups(&txn, org_id, admin_user_id, &now).await {
             info!("User groups onboarding seeding note: {}", e);
         }
 

@@ -43,6 +43,8 @@ import { toast } from "@orbis/ui";
 import { CheckCircle, DocumentChartBar, Eye, Plus, Scale, Search } from "@orbis/icons";
 import CreateJournalDialog from "$lib/features/finance/components/create-journal-dialog.svelte";
 import { exportToCsv } from "$lib/shared/utils/export";
+import AuditTimeline from "$lib/shared/components/audit-timeline.svelte";
+import { confirmStore } from "$lib/stores";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -77,8 +79,8 @@ async function loadData() {
     currencies = (currenciesList || []).map((c) => ({
       code: c.code,
       name: isAr()
-        ? c.name_ar || c.name || c.code
-        : c.name || c.name_ar || c.code,
+        ? c.name || c.code
+        : c.name || c.code,
     }));
   } catch (e) {
     console.error("Failed to load journal data:", e);
@@ -225,7 +227,7 @@ const filteredEntries = $derived(
     <CardHeader>
       <div class="flex flex-wrap items-center gap-2.5 w-full">
         <div class="relative w-full sm:w-64">
-          <Search class="absolute start-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Search class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
             type="search"
             placeholder="بحث برقم السند أو البيان..."
@@ -397,6 +399,10 @@ const filteredEntries = $derived(
             </Card>
           </div>
         {/if}
+        <!-- Audit Timeline for Journal Entry -->
+        <div class="pt-2">
+          <AuditTimeline entityType="journal_entry" entityId={selectedEntry.id} />
+        </div>
       </div>
 
       <SheetFooter class="pt-4 border-t mt-4 flex justify-end">
