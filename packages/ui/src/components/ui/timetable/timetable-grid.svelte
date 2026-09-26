@@ -157,17 +157,18 @@ function handleDrop(e: DragEvent, day: number, slotId: string) {
           {:else}
             <!-- Lesson Row for this TimeSlot across Weekdays -->
             <div class="flex flex-1 border-b border-border/40 last:border-b-0 min-h-[76px]">
-              {#each weekdays as day (day.value)}
-                {@const key = `${day.value}:${slot.id}`}
+              {#each weekdays as day, idx (day.value ?? day.day ?? idx)}
+                {@const dayValue = day.value ?? day.day ?? (idx + 1)}
+                {@const key = `${dayValue}:${slot.id}`}
                 {@const cellLessons = lessonMatrix.get(key) || []}
                 {@const isOver = dragOverCellKey === key}
 
                 <!-- Cell Drop Target -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
-                  ondragover={(e) => handleDragOver(e, day.value, String(slot.id))}
+                  ondragover={(e) => handleDragOver(e, dayValue, String(slot.id))}
                   ondragleave={handleDragLeave}
-                  ondrop={(e) => handleDrop(e, day.value, String(slot.id))}
+                  ondrop={(e) => handleDrop(e, dayValue, String(slot.id))}
                   class="group relative flex-1 min-w-0 border-e border-border/40 p-1 text-center transition-colors last:border-e-0 flex flex-col gap-1 {isOver
                     ? 'bg-primary/10 ring-2 ring-primary ring-inset'
                     : 'hover:bg-muted/20'}"
@@ -197,7 +198,7 @@ function handleDrop(e: DragEvent, day: number, slotId: string) {
                     <button
                       type="button"
                       class="min-h-16 flex-1 w-full flex items-center justify-center rounded-md text-primary opacity-0 transition-opacity hover:bg-primary/10 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      onclick={() => onCellClick?.(day.value, String(slot.id))}
+                      onclick={() => onCellClick?.(dayValue, String(slot.id))}
                       aria-label={isArabic ? "إضافة حصة" : "Add lesson"}
                       title={isArabic ? "إضافة حصة" : "Add lesson"}
                     >

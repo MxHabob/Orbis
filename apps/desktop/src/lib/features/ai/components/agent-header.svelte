@@ -102,9 +102,7 @@
     {/if}
 
     <!-- Dynamic SVG Logo Avatar -->
-    <div
-      class="w-6.5 h-6.5 rounded-lg border border-border/80 bg-background/90 flex items-center justify-center p-1 shrink-0 shadow-2xs"
-    >
+    <div class="w-6.5 h-6.5 rounded-lg flex items-center justify-center shrink-0">
       {#if currentApp?.logo}
         {@html currentApp.logo(currentApp.id)}
       {:else}

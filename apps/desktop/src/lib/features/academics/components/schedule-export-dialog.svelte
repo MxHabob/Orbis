@@ -235,7 +235,8 @@ function handlePrint() {
                   </td>
                 {:else}
                   {#each weekdays as day}
-                    {@const l = getLessonInSlot(day.value, String(slot.id))}
+                    {@const dayValue = day.value ?? day.day}
+                    {@const l = getLessonInSlot(dayValue, String(slot.id))}
                     <td class="p-2 border-e border-border last:border-e-0 align-top">
                       {#if l}
                         <div class="font-bold text-[11px] text-foreground">{getSubjectName(l.subject_id)}</div>

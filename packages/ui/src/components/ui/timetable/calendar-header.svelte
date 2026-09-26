@@ -1,6 +1,7 @@
 <script lang="ts">
 interface Weekday {
-  value: number; // 1 = Sunday, 2 = Monday, etc.
+  value?: number;
+  day?: number; // 1 = Sunday, 2 = Monday, etc.
   label: string;
   isToday?: boolean;
   dateLabel?: string;
@@ -26,13 +27,14 @@ const isArabic = $derived(locale === "ar");
 </script>
 
 <div class="flex flex-1 min-w-0 border-b border-border/60 bg-muted/10">
-  {#each weekdays as day (day.value)}
-    {@const isSelected = activeDay === day.value}
-    {@const count = lessonsByDay[day.value] ?? 0}
+  {#each weekdays as day, idx (day.value ?? day.day ?? idx)}
+    {@const dayValue = day.value ?? day.day ?? (idx + 1)}
+    {@const isSelected = activeDay === dayValue}
+    {@const count = lessonsByDay[dayValue] ?? 0}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      onclick={() => onDaySelect?.(day.value)}
+      onclick={() => onDaySelect?.(dayValue)}
       class="flex-1 min-w-0 h-10 flex items-center justify-center gap-2 px-3 border-e border-border/40 text-center transition-colors last:border-e-0 {day.isToday
         ? 'bg-primary/5 font-bold'
         : isSelected

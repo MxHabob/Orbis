@@ -173,13 +173,13 @@ const timeSlots = $derived(timeSlotsQuery.data ?? []);
 const allLessons = $derived(periodScheduleQuery.data ?? []);
 
 // Weekdays definition (Sunday - Thursday / Saturday - Wednesday based on regional setup)
-const weekdays = [
-  { day: 1, label: m.common_day_sunday() },
-  { day: 2, label: m.common_day_monday() },
-  { day: 3, label: m.common_day_tuesday() },
-  { day: 4, label: m.common_day_wednesday() },
-  { day: 5, label: m.common_day_thursday() },
-];
+const weekdays = $derived([
+  { value: 1, day: 1, label: m.common_day_sunday() },
+  { value: 2, day: 2, label: m.common_day_monday() },
+  { value: 3, day: 3, label: m.common_day_tuesday() },
+  { value: 4, day: 4, label: m.common_day_wednesday() },
+  { value: 5, day: 5, label: m.common_day_thursday() },
+]);
 
 // Conflict Detection
 const conflictLessonIds = $derived.by(() => {
