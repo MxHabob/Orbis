@@ -1406,6 +1406,12 @@ export interface OrbisApiClient {
   downloadReportFile(jobId: string): Promise<Uint8Array>;
   batchPrint(req: BatchPrintParams): Promise<string>;
   listAuditLogs(limit?: number, offset?: number): Promise<AuditLogDto[]>;
+  getEntityAudit(
+    entityType: string,
+    entityId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<AuditLogDto[]>;
 
   // ── System & Bootstrap ──────────────────────────────────────
   systemHealth(): Promise<HealthResponse>;

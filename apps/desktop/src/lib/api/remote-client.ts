@@ -1008,6 +1008,24 @@ export class RemoteClient implements OrbisApiClient {
       params: { limit, offset },
     });
   }
+  async getEntityAudit(
+    entityType: string,
+    entityId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<AuditLogDto[]> {
+    try {
+      return await this.get(`/api/v1/audit/events/entity/${entityType}/${entityId}`, {
+        params: { limit, offset },
+      });
+    } catch {
+      const logs = await this.listAuditLogs(limit ?? 50, offset ?? 0);
+      return logs.filter(
+        (l) =>
+          l.entity_type === entityType && (!entityId || l.entity_id === entityId),
+      );
+    }
+  }
 
   // ── System & Bootstrap ──────────────────────────────────────
   async systemHealth(): Promise<HealthResponse> {

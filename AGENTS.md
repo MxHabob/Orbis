@@ -101,11 +101,12 @@ A section is **NEVER** complete merely because its route renders. A section is c
 
 ## 6. CONTINUATION STATE
 
-- **Subsystem:** Employee Affairs, User Groups & IAM Roles
-- **State:** 100% DB-driven role architecture without hardcoded role arrays or static fallbacks.
-- **OrbisGrid & Sheet Architecture in Employee Affairs:**
-  - `employee-directory.svelte`: Fully migrated to high-performance `<OrbisGrid>` with typed column definitions (`__selected`, `__idx`, `full_name`, `employee_number`, `job_dept`, `type_display`, `status`, `account_display`, `hire_date_display`, `actions`), row action dispatcher, filter pills, and multi-selection synchronization.
-  - `EmployeeSheet` (`components/employee-sheet.svelte`): Canonical multi-mode slide-over Sheet component supporting `preview` (instant 360 overview + quick actions), `create` (multi-tab structured form with `NationalitySelect`, `GroupSelector`, and unified identity provisioning), and `edit` (targeted updates).
-  - Legacy cleanup: Removed superseded `confirm-dialog.svelte`; all status changes and destructive actions use global `confirmStore.prompt(...)`.
+- **Subsystem:** Audit Metadata, Audit Trail, Scope & Concurrency (Backend + Infra + Server + Desktop)
+- **State:** Full end-to-end integration of Audit Trail, Event emission, Concurrency control, and Scope filtering across all domain entities, SeaORM models, and repositories.
+- **Completed Components:**
+  - `orbis-domain`: `DomainEvent::audit_fields()` implemented for mapping domain events to audit trails; `ConcurrencyConflict` added to `DomainError`; audit metadata (`created_by`, `updated_by`, `org_unit_id`, `version`) mapped consistently.
+  - `orbis-infra`: All SeaORM models and repository mappers (`scheduling_repos.rs`, `student_repos.rs`, `assessment_repos.rs`, `finance_repos.rs`, `employee_repo.rs`, `group_repo.rs`) aligned with audit and concurrency fields.
+  - `orbis-server`: `finance_routes.rs` and `ApiError` updated to handle `ConcurrencyConflict` (HTTP 409) and journal entry audit metadata.
+  - `apps/desktop/src-tauri`: Native IPC commands fully synchronized.
 - **Verification:** `bun x tsc --noEmit`, `cargo check --workspace`, and `cargo test --workspace` (all 73 tests) pass with 0 errors.
 
