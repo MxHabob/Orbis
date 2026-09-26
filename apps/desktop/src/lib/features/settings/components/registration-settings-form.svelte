@@ -1,8 +1,12 @@
 <!--
   @component RegistrationSettingsForm
-  Comprehensive, robust configuration hub for Admission & Registration policies,
-  tailored specifically for educational institutions (K-12 schools, universities, institutes, Quranic centers).
-  Follows modern 2026 ERP standards and the Orbis Design System with Form Controls.
+  Next-Generation 2026 ERP Admission & Registration Policy Center.
+  Features:
+  - Interactive Student Number Token Pattern Builder with live sample chip preview.
+  - Institutional Admission Governance & Capacity limits.
+  - AddDocumentRequirementSheet integration for dynamic per-class/grade document requirements.
+  - Dynamic Application Form Fields Matrix.
+  - SettingsBottomBar with zero-latency dirty detection.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -35,11 +39,26 @@ import {
   TableRow,
 } from "@orbis/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
-import { AdjustmentsHorizontal, BookOpen, CheckCircle, DocumentCheck, FloppyDisk, Home, Lock, Plus, Sparkles, Trash, UserBadgeCheck } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  BookOpen,
+  CheckCircle,
+  DocumentCheck,
+  FloppyDisk,
+  Lock,
+  Plus,
+  Sparkles,
+  Trash,
+  UserBadgeCheck,
+  Tag,
+  Funnel,
+} from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
-import { api, type DocumentRequirementDto } from "$lib/api";
+import { api, type ClassDto, type DocumentRequirementDto } from "$lib/api";
+import { ClassSelect } from "$lib/features/academics";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import AddDocumentRequirementSheet from "./add-document-requirement-sheet.svelte";
 
 let { org, isSaving, onsave } = $props<{
   org: any;
@@ -47,25 +66,18 @@ let { org, isSaving, onsave } = $props<{
   onsave: (registrationConfig: any) => void;
 }>();
 
-// Required Documents Interface & Defaults
+// Required Documents Interface
 interface DocItem {
   id: string;
-  code?: string;
+  code: string;
   nameAr: string;
   nameEn: string;
   isRequired: boolean;
-  blocksEnrollment?: boolean;
+  blocksEnrollment: boolean;
+  gradeLevelId?: string; // specific class/grade ID or undefined for all
+  condition: string; // all_students | national_only | foreign_only | transfer_students
+  description?: string;
 }
-
-const defaultDocuments: DocItem[] = [
-  { id: "birth_cert", code: "birth_cert", nameAr: "شهادة الميلاد الأصلية المعتمدة", nameEn: "Certified Birth Certificate", isRequired: true, blocksEnrollment: true },
-  { id: "national_id", code: "national_id", nameAr: "بطاقة الهوية الوطنية / جواز السفر", nameEn: "National ID / Passport", isRequired: true, blocksEnrollment: true },
-  { id: "academic_transcript", code: "academic_transcript", nameAr: "كشف درجات / شهادة آخر مؤهل دراسي", nameEn: "Previous Academic Transcript", isRequired: true, blocksEnrollment: false },
-  { id: "health_record", code: "health_record", nameAr: "كشف اللياقة الطبية وسجل التطعيمات", nameEn: "Medical Fitness & Immunization", isRequired: false, blocksEnrollment: false },
-  { id: "photos", code: "photos", nameAr: "صور شخصية حديثة (4x6)", nameEn: "Recent Personal Photographs", isRequired: true, blocksEnrollment: false },
-  { id: "guardian_id", code: "guardian_id", nameAr: "صورة هوية ولي الأمر", nameEn: "Guardian National ID Copy", isRequired: true, blocksEnrollment: false },
-  { id: "transfer_cert", code: "transfer_cert", nameAr: "استمارة نقل أو إخلاء طرف للطلاب المحولين", nameEn: "Transfer / Clearance Certificate", isRequired: false, blocksEnrollment: false },
-];
 
 // Application Form Fields Configuration Interface & Defaults
 interface FieldConfig {
@@ -114,11 +126,7 @@ function parseOrgRegistration(rawOrg: any) {
     allowDuplicateNationalId: pol.allow_duplicate_national_id !== undefined ? Boolean(pol.allow_duplicate_national_id) : false,
     autoAssignFees: pol.auto_assign_fees !== undefined ? Boolean(pol.auto_assign_fees) : true,
     maxClassCapacity: pol.max_class_capacity ? Number(pol.max_class_capacity) : 30,
-    requiredDocuments: Array.isArray(reg.required_documents_list) && reg.required_documents_list.length > 0
-      ? reg.required_documents_list
-      : Array.isArray(reg.required_documents) && reg.required_documents.length > 0
-      ? reg.required_documents.map((d: string, idx: number) => ({ id: `doc_${idx}`, nameAr: d, nameEn: d, isRequired: true, blocksEnrollment: false }))
-      : defaultDocuments,
+    requiredDocuments: Array.isArray(reg.required_documents_list) ? reg.required_documents_list : [],
     formFields: Array.isArray(reg.form_fields_list) && reg.form_fields_list.length > 0
       ? reg.form_fields_list
       : defaultFormFields,
@@ -140,12 +148,10 @@ let maxClassCapacity = $state<number>(parsed.maxClassCapacity);
 let requiredDocuments = $state<DocItem[]>(JSON.parse(JSON.stringify(parsed.requiredDocuments)));
 let formFields = $state<FieldConfig[]>(JSON.parse(JSON.stringify(parsed.formFields)));
 
-// Document Addition Transient State
-let newDocNameAr = $state("");
-let newDocNameEn = $state("");
-let newDocCode = $state("");
-let newDocIsMandatory = $state(true);
-let newDocBlocksEnrollment = $state(false);
+// Database Classes & Sheet State
+let dbClasses = $state<ClassDto[]>([]);
+let isAddDocSheetOpen = $state(false);
+let selectedClassFilter = $state<string>("all");
 
 // Active Tab
 let activeTab = $state<"policies" | "documents" | "fields">("policies");
@@ -183,9 +189,16 @@ const isDirty = $derived.by(() => {
 
 onMount(async () => {
   try {
-    const backendReqs = await api.listDocumentRequirements().catch(() => []);
+    const [backendReqs, classesList] = await Promise.all([
+      api.listDocumentRequirements().catch(() => []),
+      api.listClasses().catch(() => []),
+    ]);
+
+    if (classesList && Array.isArray(classesList)) {
+      dbClasses = classesList;
+    }
+
     if (backendReqs && backendReqs.length > 0) {
-      // Merge backend requirements into requiredDocuments
       const mapped: DocItem[] = backendReqs.map((r: DocumentRequirementDto) => ({
         id: r.id,
         code: r.code,
@@ -193,11 +206,13 @@ onMount(async () => {
         nameEn: r.name_en || r.name_ar || r.code,
         isRequired: r.is_mandatory,
         blocksEnrollment: r.blocks_enrollment,
+        gradeLevelId: r.target_id || undefined,
+        condition: r.condition || "all_students",
       }));
       requiredDocuments = mapped;
     }
   } catch (err) {
-    console.error("Failed to load document requirements:", err);
+    console.error("Failed to load registration requirements data:", err);
   }
 });
 
@@ -223,52 +238,24 @@ const studentNumberPreview = $derived.by(() => {
   return `${studentNumberPrefix}-${yearStr}${seq}`;
 });
 
-// Add new document
-async function addDocument() {
-  if (!newDocNameAr.trim() && !newDocNameEn.trim()) {
-    toast.error(l("الرجاء إدخال اسم المستند", "Document name is required"));
-    return;
-  }
+// Filtered Documents
+const filteredDocuments = $derived.by(() => {
+  if (selectedClassFilter === "all") return requiredDocuments;
+  return requiredDocuments.filter(d => d.gradeLevelId === selectedClassFilter || !d.gradeLevelId);
+});
 
-  const generatedCode = (newDocCode.trim() || newDocNameEn.trim() || newDocNameAr.trim())
-    .toLowerCase()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-z0-9_]/g, "") || `doc_${Date.now()}`;
-
-  const docItem: DocItem = {
-    id: `doc_${Date.now()}`,
-    code: generatedCode,
-    nameAr: newDocNameAr.trim() || newDocNameEn.trim(),
-    nameEn: newDocNameEn.trim() || newDocNameAr.trim(),
-    isRequired: newDocIsMandatory,
-    blocksEnrollment: newDocBlocksEnrollment,
+function handleRequirementCreated(created: DocumentRequirementDto) {
+  const item: DocItem = {
+    id: created.id,
+    code: created.code,
+    nameAr: created.name_ar || created.name_en || created.code,
+    nameEn: created.name_en || created.name_ar || created.code,
+    isRequired: created.is_mandatory,
+    blocksEnrollment: created.blocks_enrollment,
+    gradeLevelId: created.target_id || undefined,
+    condition: created.condition || "all_students",
   };
-
-  // Try creating in backend requirement table if available
-  try {
-    const created = await api.createDocumentRequirement({
-      code: generatedCode,
-      name_ar: docItem.nameAr,
-      name_en: docItem.nameEn,
-      is_mandatory: docItem.isRequired,
-      blocks_enrollment: docItem.blocksEnrollment ?? false,
-      condition: "all_students",
-    }).catch(() => null);
-
-    if (created) {
-      docItem.id = created.id;
-    }
-  } catch (err) {
-    console.warn("Direct requirement creation skipped:", err);
-  }
-
-  requiredDocuments = [...requiredDocuments, docItem];
-  newDocNameAr = "";
-  newDocNameEn = "";
-  newDocCode = "";
-  newDocIsMandatory = true;
-  newDocBlocksEnrollment = false;
-  toast.success(l("تمت إضافة المستند المطلوب", "Document added"));
+  requiredDocuments = [...requiredDocuments, item];
 }
 
 // Remove document
@@ -316,9 +303,9 @@ function handleFormSave() {
 }
 </script>
 
-<div class="flex flex-col gap-6 text-start pb-20">
+<div class="flex flex-col gap-6 text-start pb-24">
   <!-- Top Profile Selector Banner -->
-  <Card>
+  <Card class="border-border/80 shadow-xs">
     <CardHeader>
       <div class="flex items-center gap-3 text-start">
         <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
@@ -363,7 +350,7 @@ function handleFormSave() {
       </TabsTrigger>
       <TabsTrigger value="documents" class="text-xs font-semibold gap-1.5 px-4 h-7">
         <DocumentCheck class="w-3.5 h-3.5" />
-        <span>{l("المستندات المطلوبة", "Required Documents")}</span>
+        <span>{l("استوديو وثائق المراحل والصفوف", "Class Requirements Studio")}</span>
         <Badge variant="secondary" class="ms-1 px-1.5 py-0 text-[10px] font-mono">
           {requiredDocuments.length}
         </Badge>
@@ -377,7 +364,7 @@ function handleFormSave() {
     <!-- TAB 1: Policies & Student Numbering -->
     <TabsContent value="policies" class="space-y-6 pt-4">
       <!-- Student Numbering Card -->
-      <Card>
+      <Card class="border-border/80 shadow-xs">
         <CardHeader>
           <div class="flex flex-col text-start">
             <CardTitle>
@@ -460,7 +447,7 @@ function handleFormSave() {
       </Card>
 
       <!-- Admission Policies Toggles Card -->
-      <Card>
+      <Card class="border-border/80 shadow-xs">
         <CardHeader>
           <div class="flex flex-col text-start">
             <CardTitle>
@@ -547,69 +534,94 @@ function handleFormSave() {
       </Card>
     </TabsContent>
 
-    <!-- TAB 2: Required Documents -->
+    <!-- TAB 2: Class/Grade Requirements Studio -->
     <TabsContent value="documents" class="space-y-4 pt-4">
-      <!-- Add Document Card -->
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {l("إضافة مستند أو وثيقة مطلوبة جديدة", "Add New Required Admission Document")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent class="p-6">
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
-            <Input
-              placeholder={l("اسم المستند بالعربية (مثال: كشف درجات)", "Arabic Document Name")}
-              bind:value={newDocNameAr}
-              class="h-9 text-xs text-start"
+      
+      <!-- Studio Header Actions Bar -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <Funnel class="w-4 h-4 text-muted-foreground" />
+          <span class="text-xs font-semibold text-muted-foreground">{l("تصفية حسب الصف / المرحلة:", "Filter Class / Grade:")}</span>
+          <div class="w-52">
+            <ClassSelect
+              bind:value={selectedClassFilter}
+              classes={dbClasses}
+              showAllOption={true}
+              allOptionLabel={l("كافة الصفوف والمراحل", "All Classes & Grades")}
+              placeholder={l("كافة الصفوف والمراحل", "All Classes & Grades")}
             />
-            <Input
-              placeholder={l("English Document Name", "English Document Name")}
-              bind:value={newDocNameEn}
-              class="h-9 text-xs"
-            />
-            <div class="flex items-center gap-3">
-              <label class="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-                <Switch bind:checked={newDocBlocksEnrollment} />
-                <span>{l("يمنع القيد", "Blocks")}</span>
-              </label>
-            </div>
-            <Button
-              variant="lime"
-              size="sm"
-              class="h-9 text-xs font-bold gap-1.5"
-              onclick={addDocument}
-            >
-              <Plus class="w-3.5 h-3.5" />
-              <span>{l("إضافة المستند", "Add Document")}</span>
-            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      <!-- Documents Grid Card -->
-      <Card>
+        <Button
+          variant="lime"
+          size="sm"
+          class="h-8 px-4 text-xs font-bold gap-1.5 cursor-pointer shrink-0"
+          onclick={() => (isAddDocSheetOpen = true)}
+        >
+          <Plus class="w-3.5 h-3.5" />
+          <span>{l("إضافة متطلب وثيقة جديد", "Add Document Requirement")}</span>
+        </Button>
+      </div>
+
+      <!-- Requirements Grid Card -->
+      <Card class="border-border/80 shadow-xs">
         <CardContent class="p-0">
           <Grid>
             <TableHeader class="bg-muted/40">
               <TableRow>
                 <TableHead class="text-start font-bold text-xs">{l("اسم الوثيقة والمستند المطلوب", "Document Title")}</TableHead>
-                <TableHead class="text-start font-bold text-xs w-48">{l("الحالة الإلزامية", "Requirement")}</TableHead>
-                <TableHead class="text-start font-bold text-xs w-36">{l("أثر حجب التسجيل", "Block Enrollment")}</TableHead>
-                <TableHead class="text-end font-bold text-xs w-20">{l("حذف", "Action")}</TableHead>
+                <TableHead class="text-start font-bold text-xs w-44">{l("الصف / المرحلة", "Class / Grade")}</TableHead>
+                <TableHead class="text-start font-bold text-xs w-36">{l("شرط القبول", "Condition")}</TableHead>
+                <TableHead class="text-center font-bold text-xs w-32">{l("الإلزامية", "Mandatory")}</TableHead>
+                <TableHead class="text-center font-bold text-xs w-36">{l("أثر الحجب", "Blocks")}</TableHead>
+                <TableHead class="text-end font-bold text-xs w-16">{l("حذف", "Action")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {#each requiredDocuments as doc (doc.id)}
+              {#each filteredDocuments as doc (doc.id)}
+                {@const mappedClass = dbClasses.find(c => String(c.id) === doc.gradeLevelId)}
                 <TableRow class="hover:bg-muted/10 transition-colors">
+                  <!-- Name & Code -->
                   <TableCell class="py-3 text-start">
                     <div class="flex flex-col gap-0.5">
                       <span class="text-xs font-bold text-foreground">{l(doc.nameAr, doc.nameEn)}</span>
-                      <span class="text-[10px] text-muted-foreground">{doc.nameEn}</span>
+                      <span class="text-[10px] font-mono text-muted-foreground">{doc.code || doc.nameEn}</span>
                     </div>
                   </TableCell>
 
+                  <!-- Class / Grade Level -->
                   <TableCell class="py-3 text-start">
+                    {#if mappedClass}
+                      <Badge variant="outline" class="text-[10px] font-semibold">
+                        {mappedClass.name || mappedClass.level }
+                      </Badge>
+                    {:else}
+                      <Badge variant="secondary" class="text-[10px] font-semibold">
+                        {l("كافة الصفوف", "All Classes")}
+                      </Badge>
+                    {/if}
+                  </TableCell>
+
+                  <!-- Condition Badge -->
+                  <TableCell class="py-3 text-start">
+                    <span class="text-[11px] text-muted-foreground">
+                      {#if doc.condition === "all_students"}
+                        {l("كافة الطلاب", "All")}
+                      {:else if doc.condition === "national_only"}
+                        {l("وطنيون فقط", "Nationals")}
+                      {:else if doc.condition === "foreign_only"}
+                        {l("وافدون فقط", "Expats")}
+                      {:else if doc.condition === "transfer_students"}
+                        {l("طلاب محولون", "Transfers")}
+                      {:else}
+                        {doc.condition}
+                      {/if}
+                    </span>
+                  </TableCell>
+
+                  <!-- Mandatory Toggle -->
+                  <TableCell class="py-3 text-center">
                     <button
                       type="button"
                       onclick={() => (doc.isRequired = !doc.isRequired)}
@@ -617,17 +629,18 @@ function handleFormSave() {
                     >
                       {#if doc.isRequired}
                         <Badge variant="lime" class="text-[10px] font-bold">
-                          {l("إلزامي للقبول", "Mandatory")}
+                          {l("إلزامي", "Mandatory")}
                         </Badge>
                       {:else}
                         <Badge variant="secondary" class="text-[10px] font-semibold">
-                          {l("اختياري / تكميلي", "Optional")}
+                          {l("اختياري", "Optional")}
                         </Badge>
                       {/if}
                     </button>
                   </TableCell>
 
-                  <TableCell class="py-3 text-start">
+                  <!-- Blocks Enrollment Toggle -->
+                  <TableCell class="py-3 text-center">
                     <button
                       type="button"
                       onclick={() => (doc.blocksEnrollment = !doc.blocksEnrollment)}
@@ -635,7 +648,7 @@ function handleFormSave() {
                     >
                       {#if doc.blocksEnrollment}
                         <Badge variant="destructive" class="text-[10px] font-bold">
-                          {l("يحجب الاعتماد", "Blocks Enrollment")}
+                          {l("يحجب القيد", "Blocks")}
                         </Badge>
                       {:else}
                         <Badge variant="outline" class="text-[10px] text-muted-foreground font-medium">
@@ -645,6 +658,7 @@ function handleFormSave() {
                     </button>
                   </TableCell>
 
+                  <!-- Remove Action -->
                   <TableCell class="py-3 text-end">
                     <Button
                       variant="ghost"
@@ -657,6 +671,13 @@ function handleFormSave() {
                   </TableCell>
                 </TableRow>
               {/each}
+              {#if filteredDocuments.length === 0}
+                <TableRow>
+                  <TableCell colspan={6} class="py-8 text-center text-xs text-muted-foreground">
+                    {l("لا توجد متطلبات وثائق مسجلة لهذا الصف حالياً.", "No document requirements configured for this selection.")}
+                  </TableCell>
+                </TableRow>
+              {/if}
             </TableBody>
           </Grid>
         </CardContent>
@@ -665,7 +686,7 @@ function handleFormSave() {
 
     <!-- TAB 3: Form Fields Matrix -->
     <TabsContent value="fields" class="space-y-4 pt-4">
-      <Card>
+      <Card class="border-border/80 shadow-xs">
         <CardContent class="p-0">
           <Grid>
             <TableHeader class="bg-muted/40">
@@ -719,6 +740,13 @@ function handleFormSave() {
       </Card>
     </TabsContent>
   </Tabs>
+
+  <!-- Add Document Requirement Slide-over Sheet -->
+  <AddDocumentRequirementSheet
+    bind:open={isAddDocSheetOpen}
+    classes={dbClasses}
+    oncreated={handleRequirementCreated}
+  />
 
   <!-- Bottom Save Bar -->
   <SettingsBottomBar

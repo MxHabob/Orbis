@@ -41,5 +41,9 @@ Every agent starting a session in this repository MUST:
 
 - **Current Status:** `REGISTRATION_ERP_REDESIGN_COMPLETE`
 - **Master Reference Document:** `docs/registration_erp_architecture_plan.md`
-- **Accomplished:** Full ground-up rebuild of Registration Settings Form and Student Registration Form State with modern Form Controls, real-time debounced authoritative duplicate checking, dynamic field matrix, dynamic requirement fulfillment evaluations, and live tuition calculator.
-- **Verification:** `cargo check --workspace` & `bun x tsc -p apps/desktop/tsconfig.json --noEmit` verified with 0 errors.
+- **Accomplished:**
+  - Rebuilt [`ApprovalsManager`](file:///d:/projects/Orbis/apps/desktop/src/lib/features/settings/approvals-manager.svelte) from the ground up directly against backend Clean Architecture workflow routes, supporting Student Admission Approvals, Capacity Overrides, Grade Modifications, and multi-step approval progress without reliance on legacy desktop roles.
+  - Implemented the full floating Admission Command Bar in [`student-form.svelte`](file:///d:/projects/Orbis/apps/desktop/src/lib/features/students/student-form.svelte) with all registration actions (`draft`, `pending_review` submission to workflow approvals, `approved` direct enrollment) and removed duplicate header buttons.
+  - Automatically submits academic override requests on `pending_review` registration submission.
+  - Verified base currency binding and zero fallback document arrays.
+- **Verification:** `cargo check --manifest-path apps/api-rust/Cargo.toml` & `bun x tsc -p apps/desktop/tsconfig.json --noEmit` verified with 0 errors.

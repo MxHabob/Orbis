@@ -123,10 +123,12 @@ pub async fn submit_override(
     Json(p): Json<SubmitOverrideRequest>,
 ) -> Result<Json<ApiResponse<OverrideRequestDto>>, ApiError> {
     let override_type = match p.override_type.as_str() {
+        "admission_approval" => OverrideType::AdmissionApproval,
         "grade_change" | "post_lock_grade_change" => OverrideType::GradeChange,
         "prerequisite_bypass" => OverrideType::PrerequisiteBypass,
         "late_enrollment" => OverrideType::LateEnrollment,
         "capacity_override" => OverrideType::CapacityOverride,
+        "age_bypass" => OverrideType::AgeBypass,
         "credit_overload" => OverrideType::CreditOverload,
         "discount_override" => OverrideType::DiscountOverride,
         "standing_override" | "academic_standing_override" => OverrideType::AcademicStandingOverride,

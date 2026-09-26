@@ -3,8 +3,7 @@ import { goto } from "$app/navigation";
 import { api, queryKeys } from "$lib/api";
 import { toast } from "@orbis/ui";
 
-import { l } from "$lib/core/i18n";
-import { formatDate } from "$lib/core/i18n";
+import { l, formatDate, formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { studentRegistrationSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
@@ -14,16 +13,24 @@ import { GuardianState } from "./state/guardian-info.svelte";
 import { FinancialInfoState } from "./state/financial-info.svelte";
 import { DocumentInfoState } from "./state/document-info.svelte";
 import { effectiveContext } from "$lib/stores/effective-context.svelte";
+import { orgContext } from "$lib/stores/org-context.svelte";
 
 export class StudentFormState {
   orgId: string;
   studentId?: string;
   isEditMode = $state(false);
+
+  // Sub-states
   personal: PersonalInfoState;
   guardian: GuardianState;
   financial: FinancialInfoState;
   document: DocumentInfoState;
   originalStudent: any = null;
+
+  // Configuration from Org Settings
+  currency = $state(orgContext.baseCurrency || "YER");
+  studyMode = $state<"regular" | "part_time" | "distance_learning" | "homeschooled" | "auditor" | "visiting" | "exchange" | "special_needs">("regular");
+  avatarUrl = $state<string | null>(null);
 
   requiredFields = $state<Record<string, boolean>>({
     national_id: true,
@@ -61,13 +68,14 @@ export class StudentFormState {
 
   private duplicateCheckTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 
-  // Class data for computations
+  // Class & Academic Data
   classes = $state<any[]>([]);
 
   // Page level indicators
   isSaving = $state(false);
   orgName = $state("");
   isDownloadingForm = $state(false);
+
   registrationForm = new FormController({
     initialValues: {
       name: "",
@@ -114,6 +122,10 @@ export class StudentFormState {
       if (org) {
         const organization = org as any;
         this.orgName = String(organization.name || organization.name_ar || "");
+        const baseCurr = organization.base_currency_code || organization.currency || orgContext.baseCurrency;
+        if (baseCurr) {
+          this.currency = baseCurr;
+        }
 
         // Parse organization registration configuration
         let settingsObj: any = {};
@@ -172,6 +184,7 @@ export class StudentFormState {
 
         if (originalStudent) {
           this.registrationStatus = originalStudent.status || "active";
+          this.studyMode = originalStudent.study_mode || "regular";
           this.personal.populate(originalStudent);
           await this.financial.populate(originalStudent);
           await this.guardian.populate();
@@ -235,18 +248,17 @@ export class StudentFormState {
     }, 300);
   }
 
-  // Financial Computations proxy
+  // Selected Class details & Capacity
+  get selectedClass() {
+    return this.classes.find((c) => String(c.id) === this.personal.classId) || null;
+  }
+
   get classLevel() {
-    return (
-      this.classes.find((c) => String(c.id) === this.personal.classId)?.level ||
-      ""
-    );
+    return this.selectedClass?.level || "";
   }
 
   get selectedClassName() {
-    const cls = this.classes.find(
-      (c) => String(c.id) === this.personal.classId,
-    );
+    const cls = this.selectedClass;
     if (!cls) return m.common_form_select_class();
     return l(cls.name_ar, cls.name) || String(cls.id);
   }
@@ -402,7 +414,7 @@ export class StudentFormState {
           email: this.personal.email.trim() || undefined,
           initial_period_id: effectiveContext.currentPeriodId || this.orgId,
           initial_class_id: this.personal.classId || undefined,
-          study_mode: "regular",
+          study_mode: this.studyMode,
         });
 
         targetStudentId = detail.student.id;
@@ -457,9 +469,27 @@ export class StudentFormState {
           }
         }
       }
+      // 4. If saving as pending_review, automatically create an admission approval request
+      if (this.registrationStatus === "pending_review" && targetStudentId) {
+        try {
+          await api.submitOverride({
+            override_type: "admission_approval",
+            risk_level: "medium",
+            entity_type: "student",
+            entity_id: targetStudentId,
+            reason: `طلب مراجعة واعتماد قيد الطالب: ${this.personal.nameAr || this.personal.nameEn} (${this.selectedClassName})`,
+            field_name: "registration_approval",
+            new_value: "approved",
+            old_value: "pending_review",
+          });
+        } catch (overrideErr) {
+          console.warn("Auto-submit admission approval request error:", overrideErr);
+        }
+      }
 
       if (queryClient) {
         queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+        queryClient.invalidateQueries({ queryKey: queryKeys.workflow.all });
       }
 
       goto(localizeHref(`/${this.orgId}/students`));
@@ -507,10 +537,10 @@ export class StudentFormState {
         address: this.personal.address,
         documents: this.document.submittedDocs.join(", "),
         current_date: formatDate(new Date()),
-        mandatory_fees: this.mandatoryTotal.toString(),
-        optional_fees: this.optionalTotal.toString(),
-        discount_fees: this.discountTotal.toString(),
-        net_fees: this.netTotal.toString(),
+        mandatory_fees: formatCurrency(this.mandatoryTotal, this.currency),
+        optional_fees: formatCurrency(this.optionalTotal, this.currency),
+        discount_fees: formatCurrency(this.discountTotal, this.currency),
+        net_fees: formatCurrency(this.netTotal, this.currency),
       };
 
       const pdfBytes = await api.previewTemplate(docJson, printVariables, "ar");

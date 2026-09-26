@@ -19,11 +19,12 @@ import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.s
 import ArchiveDocumentCard from "$lib/features/documents/archive-document-card.svelte";
 import ArchiveFilters from "$lib/features/documents/archive-filters.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
-import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
+import { type OrbisColumnDef, type GridActionEvent, OrbisGrid } from "@orbis/svelte-grid";
 import { confirmStore } from "$lib/stores";
 import { AdjustmentsHorizontal, ArrowPath, ArrowUpTray, Document, Grid, QueueList } from "@orbis/icons";
 import type { DocumentDto } from "@orbis/sdk";
 import { createOperationToast } from "$lib/shared/components/operation-toast";
+    import ArchiveLoading from "../documents/archive-loading.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -163,7 +164,7 @@ let archiveSchoolYears = $derived(
 );
 let groupedDocs = $derived(
   documents.reduce(
-    (acc: Record<string, Documents[]>, doc: Documents) => {
+    (acc: Record<string, DocumentDto[]>, doc: DocumentDto) => {
       const cat = doc.category || "uncategorized";
       if (!acc[cat]) acc[cat] = [];
       acc[cat].push(doc);
@@ -202,7 +203,6 @@ let archiveTableColumns = $derived<OrbisColumnDef[]>([
     name: "",
     width: 44,
     size: 44,
-    cell: CheckboxCell,
     sort: false,
   },
   {
@@ -396,7 +396,7 @@ async function handleFileSelect(event: Event) {
         </div>
       {/each}
     {:else}
-      <DataTable
+      <OrbisGrid
         columns={archiveTableColumns}
         source={tableSource}
         height="min(70vh, 620px)"

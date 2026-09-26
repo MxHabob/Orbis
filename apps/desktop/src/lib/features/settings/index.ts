@@ -7,6 +7,7 @@ export { default as GeneralSettingsForm } from "./components/general-settings-fo
 export { default as BranchSettingsCard } from "./components/branch-settings-card.svelte";
 export { default as AuthenticationSettingsCard } from "./components/authentication-settings-card.svelte";
 export { default as RegistrationSettingsForm } from "./components/registration-settings-form.svelte";
+export { default as AddDocumentRequirementSheet } from "./components/add-document-requirement-sheet.svelte";
 export { default as AddCurrencyDialog } from "./components/add-currency-dialog.svelte";
 export { default as RoleCreationSheet } from "./components/role-creation-sheet.svelte";
 export { default as PermissionRuleDialog } from "./components/permission-rule-dialog.svelte";

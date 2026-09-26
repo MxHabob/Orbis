@@ -1,44 +1,109 @@
 <!--
   @component ProfileSection
-  Core Student Personal Information section.
-  Features live duplicate checks, dynamic active field flags, and bilingual field support.
+  Academic Identity & Student Personal Profile.
+  Includes Avatar upload, NationalitySelect, CapacityIndicator with class select,
+  Study Mode segmented control, and live authoritative duplicate checks.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui/label";
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
+import { Badge } from "@orbis/ui/badge";
 import {
   Card,
   CardHeader,
   CardTitle,
+  CardDescription,
   CardContent,
 } from "@orbis/ui/card";
-import { User } from "@orbis/icons";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
+import { User, Sparkles, BookOpen } from "@orbis/icons";
 import { l } from "$lib/core/i18n";
 
 import type { StudentFormState } from "../form-state.svelte";
 import { ClassSelect } from "$lib/features/academics";
 import DateOfBirthField from "../components/date-of-birth-field.svelte";
 import NationalitySelect from "$lib/shared/components/nationality-select.svelte";
+import CapacityIndicator from "$lib/shared/components/capacity-indicator.svelte";
+import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
 
 let { state }: { state: StudentFormState } = $props();
+
+const studyModes = [
+  { value: "regular", labelAr: "انتظام كلي (دراسة اعتيادية)", labelEn: "Regular Full-Time" },
+  { value: "part_time", labelAr: "انتظام جزئي", labelEn: "Part-Time" },
+  { value: "distance_learning", labelAr: "تعليم عن بعد / إلكتروني", labelEn: "Distance Learning" },
+  { value: "homeschooled", labelAr: "تعليم منزلي", labelEn: "Homeschooled" },
+  { value: "auditor", labelAr: "طالب مستمع", labelEn: "Auditor" },
+  { value: "visiting", labelAr: "طالب زائر", labelEn: "Visiting Student" },
+  { value: "exchange", labelAr: "تبادل طلابي", labelEn: "Student Exchange" },
+  { value: "special_needs", labelAr: "تربية خاصة ورعاية تخصصية", labelEn: "Special Needs Education" },
+];
 </script>
 
-<Card class="w-full">
-  <CardHeader class="py-3 px-6 border-b border-border/40">
+<Card class="w-full border-border/80 shadow-xs">
+  <CardHeader class="py-3 px-6 border-b border-border/40 flex flex-row items-center justify-between">
     <div class="flex items-center gap-2">
       <User class="w-4 h-4 text-primary" />
       <CardTitle class="text-xs font-bold text-foreground uppercase tracking-wider text-start select-none">
-        {m.common_form_student_info()}
+        {l("الهوية الأكاديمية والبيانات الشخصية", "Academic Identity & Personal Profile")}
       </CardTitle>
     </div>
+    <span class="text-[11px] text-muted-foreground">
+      {l("الحقول المميزة بـ (*) إلزامية", "Fields marked with (*) are required")}
+    </span>
   </CardHeader>
 
   <CardContent class="p-0">
     <div class="flex flex-col divide-y divide-border">
+      
+      <!-- Student Avatar & Study Mode -->
+      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-4 text-start">
+          <AvatarUpload
+            bind:avatarUrl={state.avatarUrl}
+            entityId={state.studentId || "new-student"}
+            fallbackText={state.personal.nameAr || state.personal.nameEn || "ST"}
+            size={60}
+          />
+          <div class="flex flex-col gap-0.5">
+            <span class="text-xs font-bold text-foreground">{l("الصورة الشخصية للطالب", "Student Profile Photo")}</span>
+            <span class="text-[11px] text-muted-foreground">{l("تستخدم في البطاقة المدرسية وسجل القيد", "Used for student ID pass and official records")}</span>
+          </div>
+        </div>
+
+        <!-- Study Mode Selector -->
+        <div class="flex flex-col gap-1.5 text-start w-full md:w-72">
+          <Label class="text-xs font-semibold text-foreground">{l("نوع ونمط الدراسة الأكاديمي", "Study Mode & Enrollment Track")}</Label>
+          <Select
+            type="single"
+            value={state.studyMode}
+            onValueChange={(v) => (state.studyMode = (v || "regular") as any)}
+          >
+            <SelectTrigger class="h-9 text-xs bg-background">
+              {studyModes.find(m => m.value === state.studyMode) 
+                ? l(studyModes.find(m => m.value === state.studyMode)!.labelAr, studyModes.find(m => m.value === state.studyMode)!.labelEn)
+                : state.studyMode}
+            </SelectTrigger>
+            <SelectContent class="text-start max-h-64 overflow-y-auto" align="end">
+              {#each studyModes as mode (mode.value)}
+                <SelectItem value={mode.value} class="text-xs">
+                  {l(mode.labelAr, mode.labelEn)}
+                </SelectItem>
+              {/each}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <!-- Arabic Name -->
-      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex flex-col gap-1 text-start">
           <Label for="nameAr" class="text-xs font-semibold text-foreground flex items-center gap-1">
             {m.common_form_full_name_ar()}
@@ -59,7 +124,7 @@ let { state }: { state: StudentFormState } = $props();
       </div>
 
       <!-- English Name -->
-      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex flex-col gap-1 text-start">
           <Label for="nameEn" class="text-xs font-semibold text-foreground">
             {m.common_form_full_name_en()}
@@ -78,9 +143,38 @@ let { state }: { state: StudentFormState } = $props();
         </div>
       </div>
 
+      <!-- Target Class & Section with CapacityIndicator -->
+      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex flex-col gap-1 text-start">
+          <Label for="classSelect" class="text-xs font-semibold text-foreground flex items-center gap-1">
+            {m.common_form_target_class()}
+            <span class="text-destructive">*</span>
+          </Label>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_class_desc()}</span>
+        </div>
+        <div class="w-full md:w-120 shrink-0 flex flex-col gap-2">
+          <ClassSelect
+            id="classSelect"
+            bind:value={state.personal.classId}
+            classes={state.classes}
+          />
+          {#if state.selectedClass}
+            <div class="flex items-center justify-between px-1">
+              <span class="text-[10px] text-muted-foreground">{l("سعة الشعبة:", "Capacity:")}</span>
+              <CapacityIndicator 
+                current={state.selectedClass.student_count || 0} 
+                max={state.selectedClass.capacity || 30} 
+                size="sm"
+                class="w-44"
+              />
+            </div>
+          {/if}
+        </div>
+      </div>
+
       <!-- National ID / Civil Number -->
       {#if state.activeFields.national_id}
-        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label for="nationalId" class="text-xs font-semibold text-foreground">
               {m.common_form_profile_nid_label()} 
@@ -108,7 +202,7 @@ let { state }: { state: StudentFormState } = $props();
 
       <!-- Passport Number -->
       {#if state.activeFields.passport_number}
-        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label for="passportNumber" class="text-xs font-semibold text-foreground">
               {m.common_form_passport_number()}
@@ -128,9 +222,9 @@ let { state }: { state: StudentFormState } = $props();
         </div>
       {/if}
 
-      <!-- Nationality -->
+      <!-- Nationality (Shared Component) -->
       {#if state.activeFields.nationality}
-        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label for="nationality" class="text-xs font-semibold text-foreground">
               {m.common_form_nationality()}
@@ -149,7 +243,7 @@ let { state }: { state: StudentFormState } = $props();
 
       <!-- Place of Birth -->
       {#if state.activeFields.place_of_birth}
-        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label for="placeOfBirth" class="text-xs font-semibold text-foreground">
               {m.common_form_place_of_birth()}
@@ -171,7 +265,7 @@ let { state }: { state: StudentFormState } = $props();
 
       <!-- Birth Date -->
       {#if state.activeFields.birth_date}
-        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label class="text-xs font-semibold text-foreground">
               {m.common_bulk_col_dob()}
@@ -192,7 +286,7 @@ let { state }: { state: StudentFormState } = $props();
 
       <!-- Gender -->
       {#if state.activeFields.sex}
-        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label class="text-xs font-semibold text-foreground">
               {m.common_form_sex()}
@@ -221,47 +315,9 @@ let { state }: { state: StudentFormState } = $props();
         </div>
       {/if}
 
-      <!-- Requested Class / Section -->
-      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-        <div class="flex flex-col gap-1 text-start">
-          <Label for="classSelect" class="text-xs font-semibold text-foreground flex items-center gap-1">
-            {m.common_form_target_class()}
-            <span class="text-destructive">*</span>
-          </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_class_desc()}</span>
-        </div>
-        <div class="w-full md:w-120 shrink-0">
-          <ClassSelect
-            id="classSelect"
-            bind:value={state.personal.classId}
-            classes={state.classes}
-          />
-        </div>
-      </div>
-
-      <!-- Academic Student Number -->
-      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-        <div class="flex flex-col gap-1 text-start">
-          <Label for="studentNumber" class="text-xs font-semibold text-foreground">
-            {m.common_form_student_number()}
-          </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_number_desc()}</span>
-        </div>
-        <div class="w-full md:w-120 shrink-0">
-          <Input 
-            id="studentNumber"
-            type="text" 
-            placeholder={m.common_form_student_number_placeholder()} 
-            class="h-9 w-full bg-background font-mono uppercase" 
-            disabled={!state.isEditMode}
-            bind:value={state.personal.studentNumber}
-          />
-        </div>
-      </div>
-
       <!-- Student Phone -->
       {#if state.activeFields.phone}
-        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label for="phone" class="text-xs font-semibold text-foreground">
               {m.common_form_student_phone()}
@@ -289,7 +345,7 @@ let { state }: { state: StudentFormState } = $props();
 
       <!-- Student Email -->
       {#if state.activeFields.email}
-        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label for="email" class="text-xs font-semibold text-foreground">
               {m.common_form_student_email()}
@@ -317,7 +373,7 @@ let { state }: { state: StudentFormState } = $props();
 
       <!-- Blood Type -->
       {#if state.activeFields.blood_type}
-        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label for="bloodType" class="text-xs font-semibold text-foreground">
               {l("فصيلة الدم", "Blood Type")}
@@ -339,7 +395,7 @@ let { state }: { state: StudentFormState } = $props();
 
       <!-- Emergency Contact -->
       {#if state.activeFields.emergency_contact}
-        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label for="emergencyContact" class="text-xs font-semibold text-foreground">
               {l("جهة اتصال للطوارئ (الاسم والهاتف)", "Emergency Contact")}
