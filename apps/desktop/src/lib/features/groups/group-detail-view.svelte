@@ -38,7 +38,7 @@ import {
 import { IAM_DOMAINS, type IamDomainDef, type IamResourceDef } from "$lib/core/iam";
 import BulkAssignDialog from "./bulk-assign-dialog.svelte";
 import UserAvatar from "$lib/shared/components/user-avatar.svelte";
-import ConfirmDialog from "$lib/shared/components/confirm-dialog.svelte";
+import { confirmStore } from "$lib/stores";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
 interface Props {
@@ -231,24 +231,28 @@ async function handleSavePermissions() {
   }
 }
 
-function promptRemoveMember(member: GroupMemberInfoDto) {
-  targetMember = member;
-  removeDialogOpen = true;
-}
+async function promptRemoveMember(member: GroupMemberInfoDto) {
 
-async function confirmRemoveMember() {
-  if (!targetMember) return;
+  const confirmed = await confirmStore.prompt({
+    title: l("تأكيد استبعاد العضو", "Remove Member"),
+    description: l(
+      `هل أنت متأكد من رغبتك في استبعاد "${member.full_name}" من هذه المجموعة؟`,
+      `Are you sure you want to remove "${member.full_name}" from this group?`
+    ),
+    confirmText: m.groups_remove_member?.() || "استبعاد",
+    variant: "destructive",
+  });
+
+  if (!confirmed) return;
+
   try {
     await removeMemberMutation.mutateAsync({
       groupId,
-      userId: targetMember.user_id,
+      userId: member.user_id,
     });
     toast.success(l("تم استبعاد العضو من المجموعة بنجاح", "Member removed from group successfully"));
   } catch (err) {
     toast.error(extractErrorMessage(err));
-  } finally {
-    removeDialogOpen = false;
-    targetMember = null;
   }
 }
 </script>
@@ -447,7 +451,7 @@ async function confirmRemoveMember() {
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <!-- Search Input -->
                 <div class="relative flex-1 max-w-sm">
-                  <Search size={14} class="absolute start-2.5 top-2.5 text-muted-foreground pointer-events-none" />
+                  <Search size={14} class="absolute inset-s-2.5 top-2.5 text-muted-foreground pointer-events-none" />
                   <Input
                     type="search"
                     placeholder={l("بحث في الصلاحيات، المجالات، والعمليات...", "Search permissions, domains...")}
@@ -647,15 +651,5 @@ async function confirmRemoveMember() {
     groupName={group?.name_ar || group?.name || ""}
     existingMemberUserIds={members.map((m) => m.user_id)}
     oncomplete={() => membersQuery.refetch()}
-  />
-
-  <!-- Remove Member Confirm Dialog -->
-  <ConfirmDialog
-    bind:open={removeDialogOpen}
-    title={l("تأكيد استبعاد العضو", "Remove Member")}
-    description={m.groups_remove_confirm?.() || "هل أنت متأكد من استبعاد هذا المستخدم من المجموعة؟"}
-    confirmText={m.groups_remove_member?.() || "استبعاد"}
-    variant="destructive"
-    onConfirm={confirmRemoveMember}
   />
 </div>

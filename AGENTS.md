@@ -103,10 +103,9 @@ A section is **NEVER** complete merely because its route renders. A section is c
 
 - **Subsystem:** Employee Affairs, User Groups & IAM Roles
 - **State:** 100% DB-driven role architecture without hardcoded role arrays or static fallbacks.
-- **Settings & User Groups Parity:** 
-  - `RolesPermissionsManager` and `GroupsManager` follow the canonical Settings design system (Search + Filter Pills + Refresh + Create Action) without redundant matrix cards or extra headers.
-  - `GroupDetailView` features an upgraded interactive 2D Group Permissions Matrix with live search, scope filters (`All` / `Granted` / `Ungranted`), domain chips, coverage progress bars, and emerald active action badges.
-- **Employee Dossier & Directory:** 
-  - `employee-profile.svelte` integrates the upgraded 2D Effective Permissions Matrix with full search/domain filtering.
-  - `employee-form.svelte` and `employee-directory.svelte` utilize dynamic `NationalitySelect`, `GroupSelector`, and `RoleSelect` components without hardcoded values.
-- **Verification:** `bun x tsc --noEmit`, `cargo check --workspace`, `cargo check (src-tauri)`, and `cargo test --workspace` (all 73 unit tests) pass with 0 errors.
+- **OrbisGrid & Sheet Architecture in Employee Affairs:**
+  - `employee-directory.svelte`: Fully migrated to high-performance `<OrbisGrid>` with typed column definitions (`__selected`, `__idx`, `full_name`, `employee_number`, `job_dept`, `type_display`, `status`, `account_display`, `hire_date_display`, `actions`), row action dispatcher, filter pills, and multi-selection synchronization.
+  - `EmployeeSheet` (`components/employee-sheet.svelte`): Canonical multi-mode slide-over Sheet component supporting `preview` (instant 360 overview + quick actions), `create` (multi-tab structured form with `NationalitySelect`, `GroupSelector`, and unified identity provisioning), and `edit` (targeted updates).
+  - Legacy cleanup: Removed superseded `confirm-dialog.svelte`; all status changes and destructive actions use global `confirmStore.prompt(...)`.
+- **Verification:** `bun x tsc --noEmit`, `cargo check --workspace`, and `cargo test --workspace` (all 73 tests) pass with 0 errors.
+
