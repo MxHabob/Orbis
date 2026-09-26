@@ -101,21 +101,14 @@ A section is **NEVER** complete merely because its route renders. A section is c
 
 ## 6. CONTINUATION STATE
 
-- **Subsystem:** Universal AI/LLM Gateway Adapter & Dynamic Provider/Model Selection (Full Stack: Rust Backend + Infra + App Store + Desktop UI)
-- **State:** Complete consolidation of `gemini.rs` and `orbis_ai.rs` into a unified, high-performance, multi-protocol `LlmAdapter`. Zero forced defaults, full App Store AI providers expansion, and dynamic UI model selection directly in Desktop AI toolbar.
+- **Subsystem:** Database Management System Redesign & Exams Dashboard Layout Alignment (Desktop Settings)
+- **State:** Redesigned `DatabaseManagementView` to match the exact design system, layout, and visual aesthetic of `ExamsDashboard` (`exams-dashboard.svelte`).
 - **Completed Components:**
-  - `orbis-infra`:
-    - `LlmAdapter` (`llm_adapter.rs`): Multi-protocol (OpenAI-compatible, Google Gemini, Anthropic Claude) universal adapter with strict model resolution (zero guessed defaults), max token limits, and HTTP connection pooling.
-    - `IntegrationResolver`: Updated to dynamically resolve provider protocol, custom endpoint, credentials, and tenant-configured model without hardcoded defaults.
-    - Legacy Removal: Completely deleted legacy duplicate files `gemini.rs` and `orbis_ai.rs`.
-  - `orbis-domain` & `orbis-app`:
-    - `AiChatRequest`: Enhanced with optional `model` field.
-    - `AiOrchestrationService`: Replaced hardcoded model strings with dynamic model delegation.
-  - `packages/app-store`:
-    - Added full spectrum of AI Providers: Google Gemini, OpenAI (GPT-4o, o1, o3-mini, GPT-4.5), Anthropic Claude (Claude 3.7 Sonnet, 3.5 Sonnet, 3.5 Haiku), DeepSeek (V3, R1), Groq Cloud (Llama 3.3 70B, DeepSeek R1 Distill), Mistral AI (Large, Small, Codestral), Ollama/Local AI, and OpenRouter with authentic official SVG logos.
-  - `apps/desktop`:
-    - `provider-model-picker.svelte`: Cleanly integrated at the chat input toolbar next to Send; dynamically sources connected providers and models from `@orbis/app-store` as the single source of truth without code duplication.
-    - `agent-header.svelte`: Dynamically updates the Avatar (official provider vector logo) and Title/Model chip based on the active connected AI provider.
-    - `sidebar.svelte`: Seamlessly coordinates model selection and queries.
-- **Verification:** `bun x tsc --noEmit`, `cargo check --workspace`, `cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml`, and `cargo test --workspace` (75/75 tests) pass with 0 errors.
+  - `apps/desktop/src/lib/features/settings/database/database-management-view.svelte`:
+    - Integrated the Notion-style Directory Index list with monolithic icon boxes, badges, hover indicators, and sleek navigation.
+    - Added the Linear-style Diagnostics & AI Advisor Sidebar with live KPI tiles, status indicators, health checks, and engine target paths.
+    - Top header ribbon with active engine badges (`SQLite (Embedded)` / `PostgreSQL (Remote)`), connection status pills, and quick action buttons (`Refresh`, `Open DB`, `New DB`).
+    - Integrated split-grid loading skeletons matching `ExamsDashboard`.
+    - Fixed all method bindings (`triggerBackup`, `pickSavePath`, `saveSettings`, etc.) on `DatabaseManagerController`.
+- **Verification:** `bun x tsc --noEmit` and `cargo check --workspace` pass with 0 errors.
 
