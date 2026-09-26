@@ -16,6 +16,7 @@ interface Props {
   locale?: string;
   compact?: boolean;
   conflicts?: any[];
+  conflictLessonIds?: Set<string> | string[];
   class?: string;
   getSubjectName?: (id: string) => string;
   getTeacherName?: (id: string) => string;
@@ -39,6 +40,7 @@ let {
   locale = "ar",
   compact = false,
   conflicts = [],
+  conflictLessonIds: passedConflictLessonIds,
   class: className = "",
   getSubjectName = (id) => id,
   getTeacherName = (id) => id,
@@ -93,6 +95,11 @@ const lessonsByDay = $derived.by(() => {
 // Conflict lesson IDs set
 const conflictLessonIds = $derived.by(() => {
   const set = new Set<string>();
+  if (passedConflictLessonIds) {
+    for (const id of passedConflictLessonIds) {
+      set.add(String(id));
+    }
+  }
   for (const c of conflicts) {
     if (c.lesson_id) set.add(String(c.lesson_id));
     if (c.conflicting_lesson_id) set.add(String(c.conflicting_lesson_id));
@@ -142,21 +149,23 @@ function handleDrop(e: DragEvent, day: number, slotId: string) {
       <CalendarHeader {weekdays} {lessonsByDay} {locale} />
     </div>
 
-    <!-- Body: Time Gutter + Days Columns -->
-    <div class="flex min-w-[700px] flex-1">
-      <!-- Time Gutter Axis -->
-      <TimeGutter timeSlots={enrichedSlots} {locale} {compact} />
-
-      <!-- Day Columns Grid Container -->
-      <div class="flex flex-1 flex-col min-w-0">
-        {#each enrichedSlots as slot (slot.id)}
-          {@const isBreak = Boolean(slot.is_break)}
-          {#if isBreak}
-            <!-- Break row spanning all days -->
+    <!-- Body: Unified row-by-row structure containing Gutter + Columns -->
+    <div class="flex flex-col min-w-[700px] flex-1">
+      {#each enrichedSlots as slot (slot.id)}
+        {@const isBreak = Boolean(slot.is_break)}
+        {#if isBreak}
+          <!-- Break Row: Gutter Cell + Break Banner (physically in the same horizontal row) -->
+          <div class="flex w-full border-b border-border/40 last:border-b-0 min-h-[38px] bg-primary/5">
+            <TimeGutter  {slot} {locale} {compact} />
             <BreakRow {slot} weekdaysCount={weekdays.length} {locale} />
-          {:else}
-            <!-- Lesson Row for this TimeSlot across Weekdays -->
-            <div class="flex flex-1 border-b border-border/40 last:border-b-0 min-h-[76px]">
+          </div>
+        {:else}
+          <!-- Lesson Row: Gutter Cell + Weekday Cells (physically in the same horizontal row) -->
+          <div class="flex w-full border-b border-border/40 last:border-b-0 min-h-[76px]">
+            <TimeGutter {slot} {locale} {compact} />
+
+            <!-- Day Columns in this row -->
+            <div class="flex flex-1 min-w-0">
               {#each weekdays as day, idx (day.value ?? day.day ?? idx)}
                 {@const dayValue = day.value ?? day.day ?? (idx + 1)}
                 {@const key = `${dayValue}:${slot.id}`}
@@ -208,9 +217,9 @@ function handleDrop(e: DragEvent, day: number, slotId: string) {
                 </div>
               {/each}
             </div>
-          {/if}
-        {/each}
-      </div>
+          </div>
+        {/if}
+      {/each}
     </div>
   </div>
 </div>

@@ -90,16 +90,15 @@ export function enrichTimeSlots(rawSlots: any[] = [], locale = "ar"): EnrichedTi
       slot.is_break === true ||
       slot.isBreak === true ||
       slot.is_break === 1 ||
-      slot.slot_type === "break";
+      slot.slot_type === "break" ||
+      Boolean(slot.break_type);
 
     const isNameBreak = Boolean(
       (slot.name_ar && (slot.name_ar.includes("استراحة") || slot.name_ar.includes("فسحة"))) ||
       (slot.name && (slot.name.toLowerCase().includes("break") || slot.name.toLowerCase().includes("recess")))
     );
 
-    const isDurationBreak = duration > 0 && duration <= 25;
-
-    const isBreak = isExplicitBreak || isNameBreak || isDurationBreak;
+    const isBreak = isExplicitBreak || isNameBreak;
 
     let periodNumber = 0;
     if (!isBreak) {
