@@ -103,9 +103,10 @@ A section is **NEVER** complete merely because its route renders. A section is c
 
 - **Subsystem:** Employee Affairs, User Groups & IAM Roles
 - **State:** 100% DB-driven role architecture without hardcoded role arrays or static fallbacks.
-- **Settings Layout Parity:** Settings Roles & Permissions (`RolesPermissionsManager`) follows the canonical Settings design system (Search + Filter Pills + Refresh + Add Role + `OrbisGrid`) without redundant matrix cards or extra headers.
-- **Employee Profile 2D Matrix:** Employee dossier (`employee-profile.svelte`) features an upgraded 2D Effective Permissions Matrix matching the Financial/IAM design standards:
-  - Interactive search filtering (`permSearch`), scope toggles (`All` / `Granted` / `Ungranted`), and domain chips.
-  - Granular 2D resource and action matrix with emerald/primary granted chips, progress bars, and domain stats.
-- **Backend & Client Parity:** `iam_list_roles`, `iam_save_role`, and `iam_delete_role` fully implemented and verified in both `src-tauri` (Tauri IPC) and `orbis-server` (REST API). Automatic cache invalidation (`["roles"]`) across mutations.
+- **Settings & User Groups Parity:** 
+  - `RolesPermissionsManager` and `GroupsManager` follow the canonical Settings design system (Search + Filter Pills + Refresh + Create Action) without redundant matrix cards or extra headers.
+  - `GroupDetailView` features an upgraded interactive 2D Group Permissions Matrix with live search, scope filters (`All` / `Granted` / `Ungranted`), domain chips, coverage progress bars, and emerald active action badges.
+- **Employee Dossier & Directory:** 
+  - `employee-profile.svelte` integrates the upgraded 2D Effective Permissions Matrix with full search/domain filtering.
+  - `employee-form.svelte` and `employee-directory.svelte` utilize dynamic `NationalitySelect`, `GroupSelector`, and `RoleSelect` components without hardcoded values.
 - **Verification:** `bun x tsc --noEmit`, `cargo check --workspace`, `cargo check (src-tauri)`, and `cargo test --workspace` (all 73 unit tests) pass with 0 errors.

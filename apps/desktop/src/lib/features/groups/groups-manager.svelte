@@ -19,15 +19,13 @@ import {
 } from "@orbis/ui/dialog";
 import {
   ArrowPath,
-  CheckCircle,
   Keyframes,
-  LockClosed,
   Pencil,
   Plus,
+  Refresh,
   Search,
-  ShieldCheck,
   Trash,
-  User,
+  UserBadgeCheck,
   UserGroup,
   Users,
 } from "@orbis/icons";
@@ -42,7 +40,7 @@ import {
   createUpdateGroupMutation,
   createDeleteGroupMutation,
 } from "./queries";
-import ConfirmDialog from "$lib/shared/components/confirm-dialog.svelte";
+import { confirmStore } from "$lib/stores";
 
 interface Props {
   orgId: string;
@@ -75,10 +73,6 @@ let editingGroup = $state<GroupDetailDto | null>(null);
 let formName = $state("");
 let formNameAr = $state("");
 let formDesc = $state("");
-
-// Delete Dialog State
-let isDeleteDialogOpen = $state(false);
-let deletingGroup = $state<GroupDetailDto | null>(null);
 
 function openCreateDialog() {
   editingGroup = null;
@@ -126,66 +120,67 @@ async function handleSaveGroup() {
   }
 }
 
-function promptDeleteGroup(group: GroupDetailDto) {
-  deletingGroup = group;
-  isDeleteDialogOpen = true;
-}
+async function promptDeleteGroup(group: GroupDetailDto) {
+  const confirmed = await confirmStore.prompt({
+    title: l("تأكيد حذف مجموعة المستخدمين", "Delete User Group"),
+    description: l(
+      `هل أنت متأكد من رغبتك في حذف المجموعة "${group.name_ar || group.name}"؟ سيفقد الأعضاء الصلاحيات الممنوحة من خلالها.`,
+      `Are you sure you want to delete group "${group.name}"? Members will lose permissions granted via this group.`
+    ),
+    confirmText: l("حذف المجموعة", "Delete Group"),
+    variant: "destructive",
+  });
 
-async function confirmDeleteGroup() {
-  if (!deletingGroup) return;
+  if (!confirmed) return;
+
   try {
-    await deleteMutation.mutateAsync(deletingGroup.id);
+    await deleteMutation.mutateAsync(group.id);
     toast.success(m.groups_delete_success?.() || "تم حذف المجموعة بنجاح");
   } catch (err) {
     toast.error(extractErrorMessage(err));
-  } finally {
-    isDeleteDialogOpen = false;
-    deletingGroup = null;
   }
 }
 </script>
 
-<div class="h-full w-full flex flex-col overflow-hidden bg-background">
-  <!-- Header Bar -->
-  <div class="border-b border-border/80 bg-card px-6 py-4 flex items-center justify-between shrink-0 shadow-2xs">
-    <div class="flex items-center gap-3">
-      <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-        <UserGroup size={20} />
-      </div>
-      <div class="flex flex-col">
-        <h1 class="text-base font-bold text-foreground">
-          {m.groups_title?.() || "مجموعات المستخدمين والأدوار"}
-        </h1>
-        <span class="text-xs text-muted-foreground">
-          {m.groups_desc?.() || "تنظيم المستخدمين في مجموعات وظيفية وإدارة صلاحياتهم المشتركة."}
-        </span>
-      </div>
-    </div>
-
-    <div class="flex items-center gap-2">
-      <Button
-        variant="default"
-        class="text-xs h-9 px-3 cursor-pointer"
-        onclick={openCreateDialog}
-      >
-        <Plus size={14} class="me-1.5" />
-        {m.groups_create_btn?.() || "إنشاء مجموعة جديدة"}
-      </Button>
-    </div>
-  </div>
-
-  <!-- Search & Content Area -->
-  <div class="flex-1 min-h-0 overflow-y-auto p-6 flex flex-col gap-4">
-    <div class="relative w-full max-w-sm shrink-0">
-      <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+<div class="h-full w-full overflow-hidden flex flex-col p-6 gap-4 text-start">
+  <!-- Top Settings Toolbar -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+    <div class="relative w-48 sm:w-64">
+      <Search size={14} class="absolute start-2.5 top-2.5 text-muted-foreground pointer-events-none" />
       <Input
-        type="text"
+        type="search"
         placeholder={l("بحث عن مجموعة...", "Search groups...")}
-        class="input-sunken ps-9 text-xs py-2"
+        class="ps-8 h-9 text-xs bg-card"
         bind:value={searchQuery}
       />
     </div>
 
+    <!-- Actions -->
+    <div class="flex items-center gap-2">
+      <Button
+        variant="outline"
+        size="icon"
+        onclick={() => groupsQuery.refetch()}
+        class="h-9 w-9 cursor-pointer"
+        title={m.common_control_refresh ? m.common_control_refresh() : "تحديث"}
+      >
+        <Refresh size={13} class={groupsQuery.isLoading ? "animate-spin" : ""} />
+      </Button>
+
+      <Button
+        variant="lime"
+        size="sm"
+        onclick={openCreateDialog}
+        class="h-9 text-xs flex items-center gap-1.5 font-bold cursor-pointer"
+      >
+        <Plus size={14} />
+        <span>{m.groups_create_btn?.() || "إنشاء مجموعة"}</span>
+      </Button>
+    </div>
+  </div>
+
+  <!-- Content Area -->
+  <div class="flex-1 min-h-0 overflow-y-auto">
     {#if groupsQuery.isLoading}
       <div class="h-full w-full flex flex-col items-center justify-center p-8 gap-3 text-muted-foreground">
         <ArrowPath size={24} class="animate-spin text-primary" />
@@ -199,15 +194,13 @@ async function confirmDeleteGroup() {
         </Button>
       </div>
     {:else if groups.length === 0}
-      <div class="h-full w-full flex flex-col items-center justify-center p-8 text-center gap-3 bg-card border border-border rounded-xl">
-        <div class="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <UserGroup size={24} />
+      <div class="h-full w-full flex flex-col items-center justify-center p-16 text-center gap-3 select-none border border-border/70 rounded-xl bg-card">
+        <div class="size-14 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
+          <UserGroup size={28} />
         </div>
-        <div class="flex flex-col gap-1">
-          <h3 class="text-sm font-semibold text-foreground">{l("لا توجد مجموعات معرفة", "No groups found")}</h3>
-          <p class="text-xs text-muted-foreground max-w-xs">{l("قم بإنشاء مجموعات مستخدمين لتنظيم الكادر وتوزيع الصلاحيات.", "Create groups to organize staff.")}</p>
-        </div>
-        <Button variant="default" size="sm" class="text-xs mt-2" onclick={openCreateDialog}>
+        <h3 class="text-sm font-bold text-foreground">{l("لا توجد مجموعات معرفة", "No groups found")}</h3>
+        <p class="text-xs text-muted-foreground max-w-xs">{l("قم بإنشاء مجموعات مستخدمين لتنظيم الكادر وتوزيع الصلاحيات.", "Create groups to organize staff.")}</p>
+        <Button variant="lime" size="sm" class="text-xs mt-2 font-bold cursor-pointer" onclick={openCreateDialog}>
           <Plus size={14} class="me-1.5" />
           {m.groups_create_btn?.() || "إنشاء مجموعة"}
         </Button>
@@ -349,14 +342,4 @@ async function confirmDeleteGroup() {
       </DialogFooter>
     </DialogContent>
   </Dialog>
-
-  <!-- Delete Confirm Dialog -->
-  <ConfirmDialog
-    bind:open={isDeleteDialogOpen}
-    title={l("تأكيد حذف مجموعة المستخدمين", "Delete User Group")}
-    description={m.groups_delete_confirm?.() || "هل أنت متأكد من حذف هذه المجموعة؟ سيفقد الأعضاء الصلاحيات الممنوحة من خلالها."}
-    confirmText={l("حذف المجموعة", "Delete Group")}
-    variant="destructive"
-    onConfirm={confirmDeleteGroup}
-  />
 </div>

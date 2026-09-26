@@ -6,6 +6,7 @@
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
 import { Badge } from "@orbis/ui/badge";
 import {
   ArrowLeft,
@@ -15,6 +16,7 @@ import {
   LockClosed,
   Pencil,
   Plus,
+  Search,
   ShieldCheck,
   Trash,
   User,
@@ -64,6 +66,11 @@ let selectedPermissions = $state<Set<string>>(new Set());
 let isPermissionsDirty = $state(false);
 let isInitialized = $state(false);
 
+// Matrix Filter State
+let permSearch = $state("");
+let permFilterScope = $state<"all" | "granted" | "ungranted">("all");
+let selectedDomainId = $state<string>("all");
+
 // Initialize selected permissions when groupQuery resolves
 $effect(() => {
   if (group && !isInitialized) {
@@ -111,6 +118,104 @@ function clearAllInDomain(domain: IamDomainDef) {
   selectedPermissions = next;
   isPermissionsDirty = true;
 }
+
+// 2D Domain Matrix Calculations for Groups
+const domainMatrixData = $derived.by(() => {
+  const q = permSearch.trim().toLowerCase();
+
+  return IAM_DOMAINS.map((domain) => {
+    let domainTotal = 0;
+    let domainGranted = 0;
+
+    const resources = domain.resources.map((res) => {
+      const actions = res.actions.map((act) => {
+        const permKey = `${res.key}:${act.key}`;
+        const isGranted = selectedPermissions.has(permKey);
+        if (isGranted) domainGranted++;
+        domainTotal++;
+        return {
+          ...act,
+          permKey,
+          isGranted,
+        };
+      });
+
+      let filteredActions = actions;
+      if (permFilterScope === "granted") {
+        filteredActions = actions.filter((a) => a.isGranted);
+      } else if (permFilterScope === "ungranted") {
+        filteredActions = actions.filter((a) => !a.isGranted);
+      }
+
+      const resMatchesSearch =
+        !q ||
+        (res.labelAr && res.labelAr.toLowerCase().includes(q)) ||
+        (res.labelEn && res.labelEn.toLowerCase().includes(q)) ||
+        res.key.toLowerCase().includes(q);
+
+      if (q && !resMatchesSearch) {
+        filteredActions = filteredActions.filter(
+          (a) =>
+            a.key.toLowerCase().includes(q) ||
+            (a.labelAr && a.labelAr.toLowerCase().includes(q)) ||
+            (a.labelEn && a.labelEn.toLowerCase().includes(q))
+        );
+      }
+
+      const resGrantedCount = actions.filter((a) => a.isGranted).length;
+
+      return {
+        ...res,
+        actions,
+        filteredActions,
+        grantedCount: resGrantedCount,
+        totalCount: actions.length,
+        isMatch: resMatchesSearch || filteredActions.length > 0,
+      };
+    });
+
+    const isDomainMatch =
+      !q ||
+      (domain.nameAr && domain.nameAr.toLowerCase().includes(q)) ||
+      (domain.nameEn && domain.nameEn.toLowerCase().includes(q)) ||
+      resources.some((r) => r.isMatch);
+
+    const filteredResources = resources.filter((r) => (q ? r.isMatch : r.filteredActions.length > 0));
+
+    return {
+      ...domain,
+      totalCount: domainTotal,
+      grantedCount: domainGranted,
+      percentage: domainTotal > 0 ? Math.round((domainGranted / domainTotal) * 100) : 0,
+      resources,
+      filteredResources,
+      isMatch: isDomainMatch && filteredResources.length > 0,
+    };
+  });
+});
+
+const totalSystemPerms = $derived(
+  domainMatrixData.reduce((acc, d) => acc + d.totalCount, 0)
+);
+const totalGrantedPerms = $derived(
+  domainMatrixData.reduce((acc, d) => acc + d.grantedCount, 0)
+);
+const activeDomainsCount = $derived(
+  domainMatrixData.filter((d) => d.grantedCount > 0).length
+);
+
+const visibleDomains = $derived.by(() => {
+  let list = domainMatrixData;
+  if (selectedDomainId !== "all") {
+    list = list.filter((d) => d.id === selectedDomainId);
+  }
+  if (permSearch.trim()) {
+    list = list.filter((d) => d.isMatch);
+  } else if (permFilterScope !== "all") {
+    list = list.filter((d) => d.filteredResources.length > 0);
+  }
+  return list;
+});
 
 async function handleSavePermissions() {
   if (!group) return;
@@ -299,86 +404,216 @@ async function confirmRemoveMember() {
           </div>
         {/if}
 
-        <!-- TAB 2: 2D PERMISSIONS MATRIX -->
+        <!-- TAB 2: 2D PERMISSIONS MATRIX (Interactive Group Permissions Editor) -->
         {#if activeTab === "permissions"}
           <div class="flex flex-col gap-6">
-            <div class="flex items-center justify-between p-4 rounded-xl border border-primary/20 bg-primary/5">
+            <!-- Matrix Header & Stats Banner -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-xl border border-primary/20 bg-primary/5 shadow-2xs">
               <div class="flex items-center gap-3">
-                <ShieldCheck size={20} class="text-primary" />
+                <div class="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <ShieldCheck size={20} />
+                </div>
                 <div class="flex flex-col">
-                  <span class="text-xs font-bold text-foreground">{l("الصلاحيات الممنوحة للمجموعة", "Assigned Permissions")}</span>
-                  <span class="text-[11px] text-muted-foreground">{l("تمنح هذه الصلاحيات تلقائياً لكافة أعضاء المجموعة عبر منظومة الصلاحيات الفعالة (Effective Permissions).", "Granted to all group members via Effective Permissions.")}</span>
+                  <div class="flex items-center gap-2">
+                    <h2 class="text-sm font-bold text-foreground">
+                      {l("مصفوفة صلاحيات المجموعة", "Group Permissions Matrix")}
+                    </h2>
+                    <Badge variant="default" class="font-mono text-xs">
+                      {totalGrantedPerms} {l("صلاحية نشطة", "active perms")}
+                    </Badge>
+                  </div>
+                  <p class="text-[11px] text-muted-foreground pt-0.5">
+                    {l("تمنح هذه الصلاحيات تلقائياً لكافة أعضاء المجموعة عبر منظومة الصلاحيات الفعالة (Effective Permissions).", "Granted to all group members via Effective Permissions.")}
+                  </p>
                 </div>
               </div>
-              <Badge variant="default" class="font-mono text-xs">
-                {selectedPermissions.size} {l("صلاحية نشطة", "active perms")}
-              </Badge>
+
+              <!-- Matrix Summary Stats -->
+              <div class="flex items-center gap-2 bg-card p-1.5 rounded-lg border border-border/50 text-xs shrink-0">
+                <div class="flex flex-col items-center px-3 py-1">
+                  <span class="text-[10px] text-muted-foreground uppercase">{l("المجالات المغطاة", "Domains")}</span>
+                  <span class="font-mono font-bold text-foreground">{activeDomainsCount} / {IAM_DOMAINS.length}</span>
+                </div>
+                <div class="h-6 w-px bg-border/60"></div>
+                <div class="flex flex-col items-center px-3 py-1">
+                  <span class="text-[10px] text-muted-foreground uppercase">{l("نسبة التغطية", "Coverage")}</span>
+                  <span class="font-mono font-bold text-primary">{totalSystemPerms > 0 ? Math.round((totalGrantedPerms / totalSystemPerms) * 100) : 0}%</span>
+                </div>
+              </div>
             </div>
 
-            <!-- Permissions Domains -->
-            {#each IAM_DOMAINS as domain (domain.id)}
-              <div class="flex flex-col gap-3 bg-card border border-border rounded-xl p-5 shadow-xs">
-                <!-- Domain Header -->
-                <div class="flex items-center justify-between border-b border-border/60 pb-3">
-                  <div class="flex flex-col">
-                    <h3 class="text-sm font-bold text-foreground flex items-center gap-2">
-                      <Keyframes size={15} class="text-primary" />
-                      {domain.nameAr || domain.nameEn}
-                    </h3>
-                    <span class="text-[11px] text-muted-foreground">{domain.descAr || domain.descEn}</span>
-                  </div>
-
-                  <div class="flex items-center gap-2">
-                    <button
-                      type="button"
-                      class="text-[11px] text-primary hover:underline cursor-pointer"
-                      onclick={() => selectAllInDomain(domain)}
-                    >
-                      {l("تحديد الكل في هذا المجال", "Select all")}
-                    </button>
-                    <span class="text-muted-foreground">•</span>
-                    <button
-                      type="button"
-                      class="text-[11px] text-muted-foreground hover:underline cursor-pointer"
-                      onclick={() => clearAllInDomain(domain)}
-                    >
-                      {l("إلغاء التحديد", "Clear all")}
-                    </button>
-                  </div>
+            <!-- Matrix Toolbar: Search + Scope Filter Pills + Domain Tabs -->
+            <div class="flex flex-col gap-3">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <!-- Search Input -->
+                <div class="relative flex-1 max-w-sm">
+                  <Search size={14} class="absolute start-2.5 top-2.5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="search"
+                    placeholder={l("بحث في الصلاحيات، المجالات، والعمليات...", "Search permissions, domains...")}
+                    class="ps-8 h-8 text-xs bg-card"
+                    bind:value={permSearch}
+                  />
                 </div>
 
-                <!-- Domain Resources Grid -->
-                <div class="flex flex-col gap-4 pt-1">
-                  {#each domain.resources as res (res.key)}
-                    <div class="flex flex-col gap-2 p-3 rounded-lg bg-muted/20 border border-border/40">
-                      <div class="flex items-center justify-between">
-                        <span class="text-xs font-semibold text-foreground">{res.labelAr || res.labelEn}</span>
-                        <span class="text-[10px] font-mono text-muted-foreground">{res.key}</span>
-                      </div>
-
-                      <div class="flex flex-wrap gap-2 pt-1">
-                        {#each res.actions as act (act.key)}
-                          {@const permKey = `${res.key}:${act.key}`}
-                          {@const isGranted = selectedPermissions.has(permKey)}
-                          <button
-                            type="button"
-                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs transition-all cursor-pointer {isGranted ? 'border-primary bg-primary/10 text-foreground font-semibold shadow-2xs' : 'border-border/60 bg-card text-muted-foreground hover:border-border'}"
-                            onclick={() => togglePermission(permKey)}
-                          >
-                            <div class="flex size-4 items-center justify-center rounded-xs {isGranted ? 'bg-primary text-primary-foreground' : 'border border-border'}">
-                              {#if isGranted}
-                                <CheckCircle size={11} />
-                              {/if}
-                            </div>
-                            <span>{act.labelAr || act.labelEn}</span>
-                          </button>
-                        {/each}
-                      </div>
-                    </div>
-                  {/each}
+                <!-- Scope Filter Pills -->
+                <div class="flex rounded-lg border border-border/60 p-0.5 bg-card text-xs shrink-0">
+                  <button
+                    type="button"
+                    class="px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer {permFilterScope === 'all' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
+                    onclick={() => (permFilterScope = "all")}
+                  >
+                    {l("الكل", "All")} ({totalSystemPerms})
+                  </button>
+                  <button
+                    type="button"
+                    class="px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer {permFilterScope === 'granted' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
+                    onclick={() => (permFilterScope = "granted")}
+                  >
+                    {l("الممنوحة فقط", "Granted")} ({totalGrantedPerms})
+                  </button>
+                  <button
+                    type="button"
+                    class="px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer {permFilterScope === 'ungranted' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
+                    onclick={() => (permFilterScope = "ungranted")}
+                  >
+                    {l("غير الممنوحة", "Ungranted")} ({totalSystemPerms - totalGrantedPerms})
+                  </button>
                 </div>
               </div>
-            {/each}
+
+              <!-- Domain Selection Chips -->
+              <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+                <button
+                  type="button"
+                  class="px-2.5 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap text-xs border {selectedDomainId === 'all' ? 'bg-primary/10 border-primary text-primary font-bold' : 'border-border/60 bg-muted/20 text-muted-foreground hover:text-foreground'}"
+                  onclick={() => (selectedDomainId = "all")}
+                >
+                  {l("كافة المجالات", "All Domains")}
+                </button>
+                {#each domainMatrixData as d (d.id)}
+                  <button
+                    type="button"
+                    class="px-2.5 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap text-xs border flex items-center gap-1.5 {selectedDomainId === d.id ? 'bg-primary/10 border-primary text-primary font-bold' : 'border-border/60 bg-muted/20 text-muted-foreground hover:text-foreground'}"
+                    onclick={() => (selectedDomainId = d.id)}
+                  >
+                    <span>{d.nameAr || d.nameEn}</span>
+                    {#if d.grantedCount > 0}
+                      <span class="font-mono text-[10px] px-1 py-0.2 rounded-xs {selectedDomainId === d.id ? 'bg-primary text-primary-foreground' : 'bg-primary/20 text-primary font-semibold'}">
+                        {d.grantedCount}
+                      </span>
+                    {/if}
+                  </button>
+                {/each}
+              </div>
+            </div>
+
+            <!-- Domain Matrix Cards -->
+            {#if visibleDomains.length === 0}
+              <div class="p-12 flex flex-col items-center justify-center text-center gap-2 text-muted-foreground border border-dashed border-border rounded-xl bg-card">
+                <Search size={28} class="text-muted-foreground/40 mb-1" />
+                <span class="text-xs font-semibold text-foreground">{l("لا توجد صلاحيات مطابقة للبحث أو الفلتر", "No matching permissions found")}</span>
+                <span class="text-[11px] text-muted-foreground">{l("جرب تغيير عبارة البحث أو اختيار نطاق آخر.", "Try adjusting search terms or filters.")}</span>
+              </div>
+            {:else}
+              <div class="flex flex-col gap-4">
+                {#each visibleDomains as domain (domain.id)}
+                  <div class="flex flex-col gap-3 rounded-xl border border-border/80 bg-card p-5 shadow-xs">
+                    <!-- Domain Header -->
+                    <div class="flex items-center justify-between border-b border-border/60 pb-3">
+                      <div class="flex items-center gap-2.5">
+                        <div class="size-7 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+                          <Keyframes size={14} />
+                        </div>
+                        <div class="flex flex-col">
+                          <div class="flex items-center gap-2">
+                            <h3 class="text-xs font-bold text-foreground">{domain.nameAr || domain.nameEn}</h3>
+                            <span class="text-[10px] font-mono text-muted-foreground">({domain.id})</span>
+                          </div>
+                          <span class="text-[10px] text-muted-foreground">{domain.descAr || domain.descEn}</span>
+                        </div>
+                      </div>
+
+                      <div class="flex items-center gap-3 shrink-0">
+                        <div class="w-20 h-1.5 bg-muted rounded-full overflow-hidden hidden sm:block">
+                          <div
+                            class="h-full bg-primary rounded-full transition-all"
+                            style="width: {domain.percentage}%"
+                          ></div>
+                        </div>
+
+                        <Badge
+                          variant={domain.grantedCount > 0 ? "default" : "outline"}
+                          class="font-mono text-[10px] px-2 py-0.5"
+                        >
+                          {domain.grantedCount} / {domain.totalCount} {l("مفعلة", "active")}
+                        </Badge>
+
+                        <div class="flex items-center gap-2 ps-2 border-s border-border/60">
+                          <button
+                            type="button"
+                            class="text-[11px] text-primary hover:underline cursor-pointer"
+                            onclick={() => selectAllInDomain(domain)}
+                          >
+                            {l("تحديد الكل", "Select all")}
+                          </button>
+                          <span class="text-muted-foreground text-[10px]">•</span>
+                          <button
+                            type="button"
+                            class="text-[11px] text-muted-foreground hover:underline cursor-pointer"
+                            onclick={() => clearAllInDomain(domain)}
+                          >
+                            {l("إلغاء التحديد", "Clear all")}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Resources & 2D Action Matrix -->
+                    <div class="flex flex-col gap-3 pt-1">
+                      {#each domain.filteredResources as res (res.key)}
+                        <div class="flex flex-col gap-2 p-3 rounded-lg bg-muted/20 border border-border/40">
+                          <!-- Resource Title & Key -->
+                          <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                              <span class="text-xs font-semibold text-foreground">{res.labelAr || res.labelEn}</span>
+                              <span class="text-[10px] font-mono text-muted-foreground bg-card px-1.5 py-0.5 rounded-xs border border-border/40">
+                                {res.key}
+                              </span>
+                            </div>
+                            <span class="text-[10px] font-mono text-muted-foreground">
+                              {res.grantedCount} / {res.totalCount}
+                            </span>
+                          </div>
+
+                          <!-- 2D Actions Matrix Grid -->
+                          <div class="flex flex-wrap gap-2 pt-0.5">
+                            {#each res.filteredActions as act (act.key)}
+                              <button
+                                type="button"
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs transition-all cursor-pointer {act.isGranted
+                                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-950 dark:text-emerald-200 font-semibold shadow-2xs'
+                                  : 'border-border/60 bg-card text-muted-foreground hover:border-border'}"
+                                onclick={() => togglePermission(act.permKey)}
+                                title="{res.key}:{act.key} - {act.descAr || act.descEn || ''}"
+                              >
+                                <div class="flex size-4 items-center justify-center rounded-xs {act.isGranted ? 'bg-emerald-600 text-white' : 'border border-border'}">
+                                  {#if act.isGranted}
+                                    <CheckCircle size={11} />
+                                  {/if}
+                                </div>
+                                <span>{act.labelAr || act.labelEn}</span>
+                                <span class="text-[9px] font-mono opacity-70">({act.key})</span>
+                              </button>
+                            {/each}
+                          </div>
+                        </div>
+                      {/each}
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            {/if}
           </div>
         {/if}
 
