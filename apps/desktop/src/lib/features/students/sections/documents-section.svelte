@@ -95,7 +95,7 @@ function handleFilePicked(code: string, event: Event) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
   if (file) {
-    state.document.uploadDocumentFile(code, file);
+    state.document.attachDocumentFile(code, file);
   }
 }
 
@@ -118,7 +118,7 @@ function formatBytes(bytes?: number) {
     {#if docItems.length > 0}
       {@const fulfilledCount = docItems.filter(f => f.isFulfilled).length}
       <Badge variant={fulfilledCount === docItems.length ? "lime" : "outline"} class="text-[10px] font-mono">
-        {fulfilledCount} / {docItems.length} {l("مستند موثق", "archived")}
+        {fulfilledCount} / {docItems.length} {l("مستند مرفق", "attached")}
       </Badge>
     {/if}
   </CardHeader>
@@ -224,7 +224,7 @@ function formatBytes(bytes?: number) {
               </div>
             {:else}
               <span class="text-[11px] text-muted-foreground">
-                {l("لم يتم إرفاق ملف المستند بعد", "No document file uploaded")}
+                {l("لم يتم إرفاق ملف المستند بعد", "No document file attached")}
               </span>
 
               <Button
@@ -239,7 +239,7 @@ function formatBytes(bytes?: number) {
                   <span>{l("جارٍ الرفع...", "Uploading...")}</span>
                 {:else}
                   <ArrowUpTray class="w-3 h-3 text-primary" />
-                  <span>{l("رفع إلى الأرشيف", "Upload to Archive")}</span>
+                  <span>{l("إرفاق المستند", "Attach Document")}</span>
                 {/if}
               </Button>
             {/if}

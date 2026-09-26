@@ -68,6 +68,8 @@ const studyModes = [
         <div class="flex items-center gap-4 text-start">
           <AvatarUpload
             bind:avatarUrl={state.avatarUrl}
+            bind:file={state.avatarFile}
+            deferred={true}
             entityId={state.studentId || "new-student"}
             fallbackText={state.personal.nameAr || state.personal.nameEn || "ST"}
             size={60}

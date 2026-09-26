@@ -13,6 +13,7 @@ import {
 
 let {
   avatarUrl = $bindable(null),
+  file = $bindable<File | null>(null),
   size = 64,
   isLoading = false,
   fallbackText = "",
@@ -20,9 +21,12 @@ let {
   entityType = "user",
   entityId,
   category = "avatar",
+  deferred = false,
   onupload,
+  onchange,
 }: {
   avatarUrl?: string | null;
+  file?: File | null;
   size?: number;
   isLoading?: boolean;
   fallbackText?: string;
@@ -30,7 +34,9 @@ let {
   entityType?: string;
   entityId: string;
   category?: string;
+  deferred?: boolean;
   onupload?: (url: string) => void;
+  onchange?: (file: File) => void;
 } = $props();
 
 import { onMount } from "svelte";
@@ -58,20 +64,28 @@ function triggerFileInput() {
 
 function handleFileChange(event: Event) {
   const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (!file) return;
+  const selectedFile = target.files?.[0];
+  if (!selectedFile) return;
+
+  file = selectedFile;
+  onchange?.(selectedFile);
 
   // Local preview immediately
   const reader = new FileReader();
   reader.onload = () => {
     localPreviewUrl = reader.result as string;
   };
-  reader.readAsDataURL(file);
+  reader.readAsDataURL(selectedFile);
 
-  // Background upload
+  // If deferred, do NOT upload immediately — the parent form handles upload upon save
+  if (deferred) {
+    return;
+  }
+
+  // Direct Background upload for standalone profile views
   uploadMutation.mutate(
     {
-      file,
+      file: selectedFile,
       entity_type: entityType,
       entity_id: entityId,
       category: category,

@@ -39,11 +39,10 @@ Every agent starting a session in this repository MUST:
 
 ## 3. CONTINUATION STATE
 
-- **Current Status:** `REGISTRATION_ERP_REDESIGN_COMPLETE`
+- **Current Status:** `ARCHIVE_AND_SETTINGS_GRID_REFACTOR_COMPLETE`
 - **Master Reference Document:** `docs/registration_erp_architecture_plan.md`
 - **Accomplished:**
-  - Rebuilt [`ApprovalsManager`](file:///d:/projects/Orbis/apps/desktop/src/lib/features/settings/approvals-manager.svelte) from the ground up directly against backend Clean Architecture workflow routes, supporting Student Admission Approvals, Capacity Overrides, Grade Modifications, and multi-step approval progress without reliance on legacy desktop roles.
-  - Implemented the full floating Admission Command Bar in [`student-form.svelte`](file:///d:/projects/Orbis/apps/desktop/src/lib/features/students/student-form.svelte) with all registration actions (`draft`, `pending_review` submission to workflow approvals, `approved` direct enrollment) and removed duplicate header buttons.
-  - Automatically submits academic override requests on `pending_review` registration submission.
-  - Verified base currency binding and zero fallback document arrays.
+  - Rebuilt [`ArchiveManager`](file:///d:/projects/Orbis/apps/desktop/src/lib/features/settings/archive-manager.svelte) from the ground up: integrated student-specific autocomplete document filtering, integrated pre-built [`ClassSelect`](file:///d:/projects/Orbis/apps/desktop/src/lib/features/academics/components/class-select.svelte) and [`PeriodSelect`](file:///d:/projects/Orbis/apps/desktop/src/lib/features/academics/components/period-select.svelte) from Academics, eliminated all `$effect` usage in favor of TanStack queries and declarative derived states.
+  - Refactored [`RegistrationSettingsForm`](file:///d:/projects/Orbis/apps/desktop/src/lib/features/settings/components/registration-settings-form.svelte) with [`OrbisGrid`](file:///d:/projects/Orbis/packages/svelte-grid/src/OrbisGrid.svelte) for both Document Requirements Studio and Form Fields Matrix with interactive actions.
+  - Modernized [`AuditLogViewer`](file:///d:/projects/Orbis/apps/desktop/src/lib/features/settings/audit-log-viewer.svelte) to use TanStack Query (`createQuery`), eliminated manual `loadData` and mock data, bound directly to authoritative backend fields, and hardened [`formatDate`](file:///d:/projects/Orbis/apps/desktop/src/lib/core/i18n/format.ts).
 - **Verification:** `cargo check --manifest-path apps/api-rust/Cargo.toml` & `bun x tsc -p apps/desktop/tsconfig.json --noEmit` verified with 0 errors.

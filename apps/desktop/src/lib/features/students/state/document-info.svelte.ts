@@ -9,6 +9,7 @@ export interface StudentDocAttachment {
   fileSize?: number;
   mimeType?: string;
   url?: string;
+  file?: File;
   isUploaded: boolean;
 }
 
@@ -60,43 +61,67 @@ export class DocumentInfoState {
     }
   }
 
-  async uploadDocumentFile(reqCode: string, file: File) {
+  attachDocumentFile(reqCode: string, file: File) {
     if (!file) return;
-    this.isUploading[reqCode] = true;
 
-    try {
-      const targetEntityId = this.studentId || `temp_student_${Date.now()}`;
-      const doc = await api.uploadDocument({
-        name: file.name,
-        mime_type: file.type || "application/octet-stream",
-        entity_type: "student",
-        entity_id: targetEntityId,
-        category: reqCode,
-        visibility: "private",
-        file_path: file.name,
-        file_size_bytes: file.size,
-      });
+    this.attachments[reqCode] = {
+      requirementCode: reqCode,
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.type,
+      file,
+      isUploaded: false,
+    };
 
-      this.attachments[reqCode] = {
-        requirementCode: reqCode,
-        documentId: doc.id,
-        fileName: file.name,
-        fileSize: file.size,
-        mimeType: file.type,
-        url: doc.url || undefined,
-        isUploaded: true,
-      };
+    if (!this.submittedDocs.includes(reqCode)) {
+      this.submittedDocs = [...this.submittedDocs, reqCode];
+    }
 
-      if (!this.submittedDocs.includes(reqCode)) {
-        this.submittedDocs = [...this.submittedDocs, reqCode];
+    toast.success(
+      l(
+        `تم إرفاق "${file.name}" (سيتم الرفع والأرشفة عند حفظ الطالب)`,
+        `Attached "${file.name}" (will be uploaded upon saving student)`,
+      ),
+    );
+  }
+
+  async uploadPendingAttachments(targetStudentId: string) {
+    if (!targetStudentId) return;
+
+    const pendingKeys = Object.keys(this.attachments).filter((k) => {
+      const att = this.attachments[k];
+      return att && att.file && !att.documentId;
+    });
+
+    for (const key of pendingKeys) {
+      const att = this.attachments[key];
+      if (!att?.file) continue;
+
+      this.isUploading[key] = true;
+      try {
+        const doc = await api.uploadDocument({
+          name: att.fileName || att.file.name,
+          mime_type: att.mimeType || att.file.type || "application/octet-stream",
+          entity_type: "student",
+          entity_id: targetStudentId,
+          category: att.requirementCode,
+          visibility: "private",
+          file_path: att.file.name,
+          file_size_bytes: att.fileSize || att.file.size,
+        });
+
+        this.attachments[key] = {
+          ...att,
+          documentId: doc.id,
+          url: doc.url || undefined,
+          isUploaded: true,
+          file: undefined,
+        };
+      } catch (err) {
+        console.error(`Failed to upload attached document ${key}:`, err);
+      } finally {
+        this.isUploading[key] = false;
       }
-
-      toast.success(l(`تم رفع المستند "${file.name}" وتوثيقه في الأرشيف`, `Document "${file.name}" uploaded to archive`));
-    } catch (err: any) {
-      console.error("Failed to upload document file:", err);
-      toast.error(l("فشل رفع المستند إلى الأرشيف", "Failed to upload document to archive"));
-    } finally {
-      this.isUploading[reqCode] = false;
     }
   }
 

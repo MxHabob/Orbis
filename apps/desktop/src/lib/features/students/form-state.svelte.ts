@@ -96,9 +96,10 @@ export class StudentFormState {
     schema: studentRegistrationSchema,
   });
 
-  // Printing templates
+  // Printing templates & staged media files
   availableTemplates = $state<any[]>([]);
   selectedTemplateId = $state("");
+  avatarFile = $state<File | null>(null);
 
   constructor(orgId: string, studentId?: string) {
     this.orgId = orgId;
@@ -469,7 +470,29 @@ export class StudentFormState {
           }
         }
       }
-      // 4. If saving as pending_review, automatically create an admission approval request
+      // 4. Upload staged document attachments and staged avatar photo with concrete studentId
+      if (targetStudentId) {
+        await this.document.uploadPendingAttachments(targetStudentId);
+
+        if (this.avatarFile) {
+          try {
+            await api.uploadDocument({
+              name: this.avatarFile.name,
+              mime_type: this.avatarFile.type || "image/jpeg",
+              entity_type: "student",
+              entity_id: targetStudentId,
+              category: "avatar",
+              visibility: "public",
+              file_path: this.avatarFile.name,
+              file_size_bytes: this.avatarFile.size,
+            });
+          } catch (avatarErr) {
+            console.warn("Failed to upload staged avatar on student save:", avatarErr);
+          }
+        }
+      }
+
+      // 5. If saving as pending_review, automatically create an admission approval request
       if (this.registrationStatus === "pending_review" && targetStudentId) {
         try {
           await api.submitOverride({
@@ -490,6 +513,7 @@ export class StudentFormState {
       if (queryClient) {
         queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
         queryClient.invalidateQueries({ queryKey: queryKeys.workflow.all });
+        queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
       }
 
       goto(localizeHref(`/${this.orgId}/students`));

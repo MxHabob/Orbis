@@ -160,11 +160,6 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
         info!("Note: COA seeding warning: {}", e);
     }
 
-    // ── 5.6 Standard Fee Templates ───────────────────────────────────────────────
-    if let Err(e) = seed_fee_templates(db, org_id_uuid, &payload.currency, &now).await {
-        info!("Note: Fee templates seeding warning: {}", e);
-    }
-
     // ── 5.7 Standard Discount Templates ──────────────────────────────────────────
     if let Err(e) = seed_discount_templates(db, org_id_uuid, &now).await {
         info!("Note: Discount templates seeding warning: {}", e);
@@ -378,65 +373,6 @@ async fn seed_assessment_schemes<C: ConnectionTrait>(
             now.to_string().into(), now.to_string().into(),
         ]
     )).await.ok();
-    Ok(())
-}
-
-pub async fn seed_fee_templates<C: ConnectionTrait>(
-    db: &C,
-    org_id: Uuid,
-    currency: &str,
-    now: &str,
-) -> Result<(), DomainError> {
-    let rec_row = db.query_one(Statement::from_sql_and_values(
-        db.get_database_backend(),
-        "SELECT id FROM accounts WHERE org_id = $1 AND code = '110401' LIMIT 1",
-        vec![org_id.into()]
-    )).await.ok().flatten();
-
-    let rec_id: Uuid = match rec_row {
-        Some(r) => r.try_get("", "id").unwrap_or_else(|_| Uuid::new_v4()),
-        None => Uuid::new_v4(),
-    };
-
-    let fee_defs = vec![
-        ("FEE_TUITION", "Tuition Fee", "الرسوم الدراسية الأساسية", "tuition", "410101", 5000.0, true, "semester"),
-        ("FEE_REG", "Registration & Admission Fee", "رسوم القبول والتسجيل", "registration", "410201", 500.0, true, "one_time"),
-        ("FEE_BUS", "School Bus Transportation Fee", "رسوم النقل والمواصلات", "transport", "410301", 1200.0, false, "semester"),
-        ("FEE_BOOKS", "Books & Educational Resources", "رسوم الكتب والمصادر التعليمية", "materials", "410401", 600.0, true, "annual"),
-        ("FEE_TECH", "Digital Platform & Technology Fee", "رسوم المنظومة الرقمية والتقنية", "technology", "410501", 300.0, true, "semester"),
-        ("FEE_ACT", "Student Activities & Laboratory Fee", "رسوم الأنشطة الطلابية والمختبرات", "activities", "410601", 250.0, false, "semester"),
-    ];
-
-    for (code, name_en, name_ar, cat, acc_code, amt, is_mand, freq) in fee_defs {
-        let rev_row = db.query_one(Statement::from_sql_and_values(
-            db.get_database_backend(),
-            "SELECT id FROM accounts WHERE org_id = $1 AND code = $2 LIMIT 1",
-            vec![org_id.into(), acc_code.into()]
-        )).await.ok().flatten();
-
-        let rev_id: Uuid = match rev_row {
-            Some(r) => r.try_get("", "id").unwrap_or(rec_id),
-            None => rec_id,
-        };
-
-        let fid = Uuid::new_v4();
-        db.execute(Statement::from_sql_and_values(
-            db.get_database_backend(),
-            "INSERT INTO fee_templates (id, org_id, code, name, name_ar, category, default_amount, currency_code, revenue_account_id, receivable_account_id, frequency, is_mandatory, is_active, created_at, updated_at) \
-             SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 1, $13, $14 \
-             WHERE NOT EXISTS (SELECT 1 FROM fee_templates WHERE org_id = $2 AND code = $3)",
-            vec![
-                fid.into(), org_id.into(), code.into(),
-                name_en.into(), name_ar.into(), cat.into(),
-                amt.into(), currency.into(),
-                rev_id.into(), rec_id.into(),
-                freq.into(),
-                (if is_mand { 1i32 } else { 0i32 }).into(),
-                now.to_string().into(), now.to_string().into()
-            ]
-        )).await.ok();
-    }
-
     Ok(())
 }
 
