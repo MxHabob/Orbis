@@ -111,6 +111,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         student_cmds::student_get_enrollment,
         student_cmds::student_assign_guardian,
         student_cmds::student_list_guardians,
+        student_cmds::student_bulk_register,
         // ── Employee Affairs ────────────────────────────────────
         employee_cmds::employee_register_employee,
         employee_cmds::employee_list_employees,

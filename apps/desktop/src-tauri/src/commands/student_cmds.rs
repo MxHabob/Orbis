@@ -755,3 +755,107 @@ pub async fn student_check_duplicate(
     }))
 }
 
+#[derive(Deserialize, Debug)]
+pub struct BulkRegisterStudentCommandItem {
+    pub row_index: usize,
+    pub registration: RegisterStudentInput,
+    pub guardian_name: Option<String>,
+    pub guardian_phone: Option<String>,
+    pub guardian_relationship: Option<String>,
+}
+
+#[derive(Serialize, Debug)]
+pub struct BulkRegisterStudentCommandResultDto {
+    pub total: usize,
+    pub succeeded: usize,
+    pub failed: usize,
+    pub items: Vec<BulkRegisterItemCommandResultDto>,
+}
+
+#[derive(Serialize, Debug)]
+pub struct BulkRegisterItemCommandResultDto {
+    pub row_index: usize,
+    pub success: bool,
+    pub student_id: Option<String>,
+    pub student_number: Option<String>,
+    pub error: Option<String>,
+}
+
+#[tauri::command]
+pub async fn student_bulk_register(
+    items: Vec<BulkRegisterStudentCommandItem>,
+    atomic: Option<bool>,
+    dry_run: Option<bool>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<BulkRegisterStudentCommandResultDto>, String> {
+    let ctx = make_ctx(&state);
+    let mut domain_items = Vec::with_capacity(items.len());
+
+    for item in items {
+        let input = orbis_app::services::student_service::RegisterStudentInput {
+            person_id: item.registration.person_id.and_then(|id| Uuid::parse_str(&id).ok()),
+            user_id: item.registration.user_id.and_then(|id| Uuid::parse_str(&id).ok()),
+            student_number: if item.registration.student_number.trim().is_empty() { None } else { Some(item.registration.student_number) },
+            first_name: item.registration.first_name,
+            middle_name: item.registration.middle_name,
+            last_name: item.registration.last_name,
+            first_name_ar: item.registration.first_name_ar,
+            middle_name_ar: item.registration.middle_name_ar,
+            last_name_ar: item.registration.last_name_ar,
+            display_name: item.registration.display_name,
+            national_id: item.registration.national_id,
+            passport_number: item.registration.passport_number,
+            gender: item.registration.gender,
+            birth_date: parse_naive_date(item.registration.birth_date.as_deref()),
+            place_of_birth: item.registration.place_of_birth,
+            nationality: item.registration.nationality,
+            blood_type: item.registration.blood_type,
+            medical_notes: item.registration.medical_notes,
+            special_needs_notes: item.registration.special_needs_notes,
+            phone: item.registration.phone,
+            email: item.registration.email,
+            avatar_url: None,
+            initial_period_id: item.registration.initial_period_id.and_then(|id| Uuid::parse_str(&id).ok()),
+            initial_class_id: item.registration.initial_class_id.and_then(|id| Uuid::parse_str(&id).ok()),
+            study_mode: item.registration.study_mode.and_then(|m| match m.to_lowercase().as_str() {
+                "part_time" => Some(orbis_domain::entities::enrollment::StudyMode::PartTime),
+                "distance_learning" => Some(orbis_domain::entities::enrollment::StudyMode::DistanceLearning),
+                _ => Some(orbis_domain::entities::enrollment::StudyMode::Regular),
+            }),
+            bypass_capacity_check: None,
+        };
+
+        domain_items.push(orbis_app::services::student_service::BulkRegisterItemInput {
+            row_index: item.row_index,
+            registration: input,
+            guardian_name: item.guardian_name,
+            guardian_phone: item.guardian_phone,
+            guardian_relationship: item.guardian_relationship,
+        });
+    }
+
+    let res = state.student_service
+        .bulk_register_students(&ctx, ctx.tenant_id, orbis_app::services::student_service::BulkRegisterStudentsInput {
+            items: domain_items,
+            atomic,
+            dry_run,
+        })
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let items_dto = res.items.into_iter().map(|it| BulkRegisterItemCommandResultDto {
+        row_index: it.row_index,
+        success: it.success,
+        student_id: it.student_id.map(|id| id.to_string()),
+        student_number: it.student_number,
+        error: it.error,
+    }).collect();
+
+    Ok(ok(BulkRegisterStudentCommandResultDto {
+        total: res.total,
+        succeeded: res.succeeded,
+        failed: res.failed,
+        items: items_dto,
+    }))
+}
+

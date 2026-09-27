@@ -1,0 +1,411 @@
+import type { OrbisColumnDef } from "@orbis/svelte-grid";
+import { api } from "$lib/api";
+import type {
+  BulkImportProfile,
+  BulkReferenceData,
+  ColumnDefinitionMetadata,
+  BulkCellIssue,
+  BulkPreviewSummary,
+  EmployeePreviewDetails,
+} from "../types";
+
+export interface EmployeeRowData {
+  rowNumber?: number;
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  first_name_ar?: string;
+  middle_name_ar?: string;
+  last_name_ar?: string;
+  national_id?: string;
+  gender: "male" | "female";
+  birth_date?: string;
+  phone?: string;
+  email?: string;
+  employee_number?: string;
+  employee_type: string;
+  job_title?: string;
+  department?: string;
+  hire_date?: string;
+  employment_type?: string;
+  basic_salary?: number;
+  provision_user?: boolean | string;
+  user_group_name?: string;
+  [key: string]: unknown;
+}
+
+export const employeeColumnMetadata: ColumnDefinitionMetadata[] = [
+  {
+    id: "first_name_ar",
+    headerAr: "الاسم الأول (عربي)*",
+    headerEn: "First Name (Arabic)*",
+    required: true,
+    type: "text",
+    example: "محمود",
+  },
+  {
+    id: "middle_name_ar",
+    headerAr: "اسم الأب (عربي)",
+    headerEn: "Middle Name (Arabic)",
+    required: false,
+    type: "text",
+    example: "صالح",
+  },
+  {
+    id: "last_name_ar",
+    headerAr: "اسم العائلة (عربي)*",
+    headerEn: "Last Name (Arabic)*",
+    required: true,
+    type: "text",
+    example: "العمري",
+  },
+  {
+    id: "national_id",
+    headerAr: "الرقم الوطني / الهوية*",
+    headerEn: "National ID*",
+    required: true,
+    type: "text",
+    example: "1087654321",
+  },
+  {
+    id: "gender",
+    headerAr: "الجنس*",
+    headerEn: "Gender*",
+    required: true,
+    type: "enum",
+    allowedValues: ["male", "female", "ذكر", "أنثى"],
+    options: [
+      { value: "male", label: "ذكر (Male)" },
+      { value: "female", label: "أنثى (Female)" },
+    ],
+    example: "male",
+  },
+  {
+    id: "employee_type",
+    headerAr: "النوع الوظيفي*",
+    headerEn: "Employee Type*",
+    required: true,
+    type: "enum",
+    allowedValues: [
+      "teacher",
+      "admin",
+      "principal",
+      "accountant",
+      "receptionist",
+      "supervisor",
+      "worker",
+      "معلم",
+      "إداري",
+      "مدير",
+      "محاسب",
+      "مشرف",
+    ],
+    options: [
+      { value: "teacher", label: "معلم (Teacher)" },
+      { value: "admin", label: "إداري (Admin)" },
+      { value: "principal", label: "مدير (Principal)" },
+      { value: "accountant", label: "محاسب (Accountant)" },
+      { value: "supervisor", label: "مشرف (Supervisor)" },
+      { value: "worker", label: "خدمات مساندة (Worker)" },
+    ],
+    example: "teacher",
+  },
+  {
+    id: "job_title",
+    headerAr: "المسمى الوظيفي",
+    headerEn: "Job Title",
+    required: false,
+    type: "text",
+    example: "معلم رياضيات أول",
+  },
+  {
+    id: "department",
+    headerAr: "القسم / الإدارة",
+    headerEn: "Department",
+    required: false,
+    type: "text",
+    example: "قسم العلوم والرياضيات",
+  },
+  {
+    id: "hire_date",
+    headerAr: "تاريخ التعيين*",
+    headerEn: "Hire Date*",
+    required: true,
+    type: "date",
+    format: "YYYY-MM-DD",
+    example: "2024-09-01",
+  },
+  {
+    id: "employment_type",
+    headerAr: "نوع العقد",
+    headerEn: "Employment Type",
+    required: false,
+    type: "enum",
+    allowedValues: ["full_time", "part_time", "contractor", "دوام كامل", "دوام جزئي", "عقد محدد"],
+    options: [
+      { value: "full_time", label: "دوام كامل (Full-time)" },
+      { value: "part_time", label: "دوام جزئي (Part-time)" },
+      { value: "contractor", label: "عقد (Contractor)" },
+    ],
+    example: "full_time",
+  },
+  {
+    id: "phone",
+    headerAr: "رقم الهاتف",
+    headerEn: "Phone",
+    required: false,
+    type: "text",
+    example: "771122334",
+  },
+  {
+    id: "email",
+    headerAr: "البريد الإلكتروني",
+    headerEn: "Email",
+    required: false,
+    type: "text",
+    example: "mahmoud.omari@orbis.edu",
+  },
+  {
+    id: "provision_user",
+    headerAr: "إنشاء حساب دخول للنظام",
+    headerEn: "Provision User Account",
+    required: false,
+    type: "boolean",
+    example: "نعم",
+  },
+  {
+    id: "user_group_name",
+    headerAr: "مجموعة الصلاحيات",
+    headerEn: "User Group",
+    required: false,
+    type: "reference",
+    referenceSource: "userGroups",
+    example: "المعلمين",
+  },
+];
+
+export const employeeGridColumns: OrbisColumnDef[] = [
+  { id: "__idx", header: "#", width: 50, pin: "left", readonly: true },
+  { id: "status", header: "الحالة / Status", width: 110, pin: "left", type: "badge", readonly: true },
+  { id: "first_name_ar", header: "الاسم الأول*", width: 130 },
+  { id: "middle_name_ar", header: "اسم الأب", width: 120 },
+  { id: "last_name_ar", header: "اسم العائلة*", width: 130 },
+  { id: "national_id", header: "الرقم الوطني*", width: 130 },
+  { id: "gender", header: "الجنس*", width: 90, type: "enum", options: [{ value: "male", label: "ذكر" }, { value: "female", label: "أنثى" }] },
+  { id: "employee_type", header: "النوع الوظيفي*", width: 140 },
+  { id: "job_title", header: "المسمى الوظيفي", width: 150 },
+  { id: "department", header: "القسم", width: 140 },
+  { id: "hire_date", header: "تاريخ التعيين*", width: 120, type: "date" },
+  { id: "phone", header: "الهاتف", width: 120 },
+  { id: "email", header: "البريد الإلكتروني", width: 160 },
+  { id: "provision_user", header: "إنشاء حساب", width: 100, type: "boolean" },
+  { id: "user_group_name", header: "المجموعة", width: 140 },
+];
+
+export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeePreviewDetails> = {
+  id: "employees",
+  displayName: {
+    ar: "استيراد وقيد موظفي وكادر المدرسة",
+    en: "Staff & Employee Bulk Registration",
+  },
+  description: {
+    ar: "إدخال بيانات الموظفين والمعلمين، وتعيين المجموعات وتوليد بيانات الدخول الآمنة آلياً",
+    en: "Bulk register staff, teachers, assign user groups, and automatically provision CSPRNG credentials",
+  },
+  templateVersion: "ORBIS-TPL-EMP-2026.1",
+  columnMetadata: employeeColumnMetadata,
+  gridColumns: employeeGridColumns,
+
+  async buildReferenceData(_orgId: string): Promise<BulkReferenceData> {
+    const groupsRes = await api.listGroups().catch(() => []);
+    const userGroups = (groupsRes || []).map((g: any) => ({
+      id: g.id,
+      name: g.name || "",
+    }));
+
+    return {
+      classes: [],
+      sections: [],
+      levels: [],
+      subjects: [],
+      feeTemplates: [],
+      discountTemplates: [],
+      userGroups,
+      assessmentSchemes: [],
+      academicPeriods: [],
+      enums: {
+        genders: [
+          { value: "male", labelAr: "ذكر", labelEn: "Male" },
+          { value: "female", labelAr: "أنثى", labelEn: "Female" },
+        ],
+        studyModes: [],
+        employeeTypes: [
+          { value: "teacher", labelAr: "معلم", labelEn: "Teacher" },
+          { value: "admin", labelAr: "إداري", labelEn: "Administrator" },
+          { value: "principal", labelAr: "مدير", labelEn: "Principal" },
+          { value: "accountant", labelAr: "محاسب", labelEn: "Accountant" },
+          { value: "supervisor", labelAr: "مشرف", labelEn: "Supervisor" },
+          { value: "worker", labelAr: "خدمات مساندة", labelEn: "Worker" },
+        ],
+        employmentTypes: [
+          { value: "full_time", labelAr: "دوام كامل", labelEn: "Full-time" },
+          { value: "part_time", labelAr: "دوام جزئي", labelEn: "Part-time" },
+          { value: "contractor", labelAr: "عقد محدد", labelEn: "Contractor" },
+        ],
+        bloodTypes: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
+        relationships: [],
+      },
+    };
+  },
+
+  validateCell(colId: string, value: unknown, _row: EmployeeRowData, _refData: BulkReferenceData): BulkCellIssue | null {
+    const strVal = String(value ?? "").trim();
+
+    if (["first_name_ar", "last_name_ar", "national_id", "employee_type", "hire_date"].includes(colId)) {
+      if (!strVal) {
+        return {
+          severity: "BLOCKING_ERROR",
+          columnId: colId,
+          message: "هذا الحقل إلزامي لبيانات الموظف",
+        };
+      }
+    }
+
+    if (colId === "hire_date" && strVal) {
+      const parsed = Date.parse(strVal);
+      if (isNaN(parsed)) {
+        return {
+          severity: "BLOCKING_ERROR",
+          columnId: colId,
+          message: "صيغة تاريخ التعيين غير صالحة، استخدم YYYY-MM-DD",
+        };
+      }
+    }
+
+    return null;
+  },
+
+  validateRow(row: EmployeeRowData, allRows: EmployeeRowData[], rowIndex: number, _refData: BulkReferenceData): BulkCellIssue[] {
+    const issues: BulkCellIssue[] = [];
+
+    if (row.national_id?.trim()) {
+      const nid = row.national_id.trim();
+      const duplicateIndex = allRows.findIndex((r, idx) => idx !== rowIndex && r.national_id?.trim() === nid);
+      if (duplicateIndex !== -1) {
+        issues.push({
+          severity: "BLOCKING_ERROR",
+          columnId: "national_id",
+          message: `الرقم الوطني مكرر في الملف (يتطابق مع الموظف في الصف رقم ${duplicateIndex + 1})`,
+        });
+      }
+    }
+
+    return issues;
+  },
+
+  async generatePreview(rows: EmployeeRowData[], _refData: BulkReferenceData): Promise<BulkPreviewSummary<EmployeePreviewDetails>> {
+    let validCount = 0;
+    let errorCount = 0;
+    let provisionCount = 0;
+    const depts: Record<string, number> = {};
+    const groups: Record<string, number> = {};
+
+    for (const row of rows) {
+      if (!row.first_name_ar || !row.last_name_ar || !row.national_id || !row.employee_type || !row.hire_date) {
+        errorCount++;
+      } else {
+        validCount++;
+        const d = row.department || "عام (General)";
+        depts[d] = (depts[d] || 0) + 1;
+
+        const isProvision = row.provision_user === true || String(row.provision_user).toLowerCase() === "true" || String(row.provision_user) === "نعم";
+        if (isProvision) provisionCount++;
+
+        const g = row.user_group_name || "الافتراضية";
+        groups[g] = (groups[g] || 0) + 1;
+      }
+    }
+
+    return {
+      totalRows: rows.length,
+      validRowsCount: validCount,
+      errorRowsCount: errorCount,
+      warningRowsCount: 0,
+      details: {
+        employeesToCreate: validCount,
+        personsToCreate: validCount,
+        personsToLink: 0,
+        userAccountsToProvision: provisionCount,
+        departmentsSummary: depts,
+        userGroupsSummary: groups,
+      },
+    };
+  },
+
+  async commitChunk(rows: EmployeeRowData[], _orgId: string, refData: BulkReferenceData): Promise<{ success: boolean; errors?: string[] }> {
+    const errors: string[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]!;
+      try {
+        const firstNameAr = row.first_name_ar?.trim() || "موظف";
+        const lastNameAr = row.last_name_ar?.trim() || "جديد";
+        const middleNameAr = row.middle_name_ar?.trim();
+
+        let typeStr = "teacher";
+        const rawType = String(row.employee_type || "").toLowerCase().trim();
+        if (rawType.includes("admin") || rawType.includes("إداري")) typeStr = "admin";
+        if (rawType.includes("principal") || rawType.includes("مدير")) typeStr = "principal";
+        if (rawType.includes("accountant") || rawType.includes("محاسب")) typeStr = "accountant";
+        if (rawType.includes("supervisor") || rawType.includes("مشرف")) typeStr = "supervisor";
+        if (rawType.includes("worker") || rawType.includes("خدمات")) typeStr = "worker";
+
+        const isProvision =
+          row.provision_user === true ||
+          String(row.provision_user).toLowerCase() === "true" ||
+          String(row.provision_user) === "نعم" ||
+          String(row.provision_user) === "1";
+
+        let matchedGroupIds: string[] = [];
+        if (row.user_group_name?.trim()) {
+          const g = refData.userGroups.find((grp) => grp.name.toLowerCase() === row.user_group_name?.toLowerCase());
+          if (g?.id) matchedGroupIds.push(g.id);
+        }
+
+        await api.registerEmployee({
+          first_name: firstNameAr,
+          middle_name: middleNameAr,
+          last_name: lastNameAr,
+          first_name_ar: firstNameAr,
+          middle_name_ar: middleNameAr,
+          last_name_ar: lastNameAr,
+          display_name: `${firstNameAr} ${lastNameAr}`,
+          national_id: row.national_id?.trim() || undefined,
+          gender: row.gender || "male",
+          phone: row.phone?.trim() || undefined,
+          email: row.email?.trim() || undefined,
+          employee_type: typeStr,
+          job_title: row.job_title?.trim() || undefined,
+          department: row.department?.trim() || undefined,
+          hire_date: row.hire_date?.trim() || new Date().toISOString().slice(0, 10),
+          employment_type: (row.employment_type as any) || "full_time",
+          account: isProvision
+            ? {
+                enabled: true,
+                preferred_username: row.email?.trim() || undefined,
+                role: typeStr === "teacher" ? "teacher" : "staff",
+                group_ids: matchedGroupIds,
+              }
+            : undefined,
+        });
+      } catch (err: any) {
+        errors.push(`صف ${row.rowNumber || i + 1}: ${err.message || String(err)}`);
+      }
+    }
+
+    return {
+      success: errors.length === 0,
+      errors: errors.length > 0 ? errors : undefined,
+    };
+  },
+};

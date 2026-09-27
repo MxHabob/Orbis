@@ -39,16 +39,15 @@ Every agent starting a session in this repository MUST:
 
 ## 3. CONTINUATION STATE
 
-- **Current Status:** `HR_PAYROLL_AND_LEDGER_ENHANCEMENTS_COMPLETE`
-- **Master Reference Document:** `docs/registration_erp_architecture_plan.md`
+- **Current Status:** `BULK_ENTRY_FINAL_ARCHITECTURE_APPROVED`
+- **Master Reference Document:** `docs/bulk_entry_final_architecture.md`
 - **Accomplished:**
-  - Completely removed `seed_fee_templates` and default hardcoded fees from both `bootstrap()` and `persist_onboarding()`; fee templates are now only persisted when explicitly provided by the user in the onboarding payload, properly linking to the authoritative COA accounts (`110301` Accounts Receivable, `410301`/`410101` Tuition Revenue).
-  - Made `seed_chart_of_accounts` fully idempotent and re-entrant via recursive tree traversal (`seed_account_tree`), preventing duplicate account insertion and resolving existing parent accounts upon partial failures or re-runs.
-  - Moved `seed_document_requirements` entirely out of `bootstrap()` into `OnboardingService` (`persist_onboarding`), where it dynamically resolves each class from `data.classes` and attaches exact cumulative previous-grade certificates.
-  - Deferred file attachments: Files are held locally in memory during registration and atomically uploaded on form save.
-  - Integrated full Payroll & Compensation (`payroll`) into Employee Affairs (`employee-form.svelte`), reactive live calculations for gross/deductions/net salary, allowances, GOSI, and bank routing.
-  - Upgraded desktop Ledger form (`ledger-form.svelte`) with complete Chart of Accounts tree selector via TanStack Query (`createAccountsQuery`), authoritative base currency from `orgContext` store, auto-suggested sequential codes with manual override, live Account Nature badges (Debit/Credit), and full entity support (Students, Employees, Vendors, Partners).
-  - Fixed Fee Templates `applicable_levels` end-to-end: persisted per-grade targets during onboarding, exposed in `FeeTemplateDto` via Tauri IPC, converted `fee-template-form.svelte` to TanStack Query (`createClassesQuery`) with 100% dynamic level extraction from the database (zero hardcoded dictionaries), and completely eliminated all `$effect` usage in favor of direct deterministic state initialization.
-  - Implemented full Fee Templates CRUD: added `update_fee_template` and `delete_fee_template` across `FeeTemplateRepository`, `FinanceRepoImpl`, `FinanceService`, and Tauri IPC commands (`finance_update_fee_template`, `finance_delete_fee_template`); upgraded `fee-templates-manager.svelte` with TanStack Query, `confirmStore` prompt, and an Actions column (`ActionItem[]`) with Edit/Delete capabilities.
-  - Redesigned Employee Form (`employee-form.svelte`) to follow the exact Sheet / Accordion design system (matching `discount-template-form.svelte` and `fee-template-form.svelte`) with 4 organized sections (Personal & Identity, Employment & Contract, Live Payroll & Allowances, and System Account & Identity Provisioning with CSPRNG Credential Delivery Modal), zero `$effect` usage, and responsive compact form field grids.
-- **Verification:** `cargo check --manifest-path apps/api-rust/Cargo.toml` & `bun x tsc -p apps/desktop/tsconfig.json --noEmit` verified with 0 errors.
+  - Conducted full code-level audit across Rust backend (`orbis-app`, `orbis-domain`, `orbis-infra`, `orbis-server`), Tauri 2.0 plugins (`dialog`, `opener`, `fs`, `window`, `process`), desktop routes, and `OrbisGrid` (`packages/svelte-grid`).
+  - Proved that selecting an Excel file writes 0 records to DB: the entire payload is loaded in-memory directly into `OrbisGrid` for visual inspection, inline correction, and pre-commit impact review.
+  - Specified the 6-Level Multi-Stage Validation Hierarchy (File, Cell, Row, Cross-Row/Batch, Domain Use Case, Database/Tx) with Live Incremental Revalidation.
+  - Designed the dynamic Excel Template Generator with protected reference sheets (Classes, Sections, Levels, Subjects, Fee Templates, User Groups, Enums).
+  - Formulated the typed domain profiles for Students (`StudentService::register_student`), Employees (`EmployeeService::register_employee`), and Grades (`AssessmentService::record_grade` + `CalculationEngine`).
+  - Established chunked-transaction rollback boundaries, natural-key idempotency, structured append-only audit logging in `audit_events`, and zero new database tables.
+  - Documented complete 35 E2E test scenarios, 18-step sequential implementation roadmap, and consolidation matrix.
+  - Authored the master architecture blueprint at `docs/bulk_entry_final_architecture.md`.
+- **Verification:** Architectural status set to `APPROVED`.

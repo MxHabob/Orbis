@@ -164,6 +164,8 @@ import type {
   OptimizeResultDto,
   MigrationResultDto,
   DatabaseSettingsDto,
+  BulkRegisterStudentCommandItem,
+  BulkRegisterStudentCommandResultDto,
 } from "./types";
 
 function unwrap<T>(response: { data: T } | T): T {
@@ -409,6 +411,13 @@ export class LocalClient implements OrbisApiClient {
   }
   async listGuardians(studentId: string): Promise<GuardianDto[]> {
     return unwrap(await invoke("student_list_guardians", { studentId }));
+  }
+  async bulkRegisterStudents( items: BulkRegisterStudentCommandItem[], options?: { atomic?: boolean; dryRun?: boolean }): Promise<BulkRegisterStudentCommandResultDto> {
+    return unwrap(await invoke("student_bulk_register", {
+      items,
+      atomic: options?.atomic ?? true,
+      dryRun: options?.dryRun ?? false,
+    }));
   }
 
   // ── Employee Affairs ────────────────────────────────────────

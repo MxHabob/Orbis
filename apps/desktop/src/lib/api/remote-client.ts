@@ -165,6 +165,8 @@ import type {
   OptimizeResultDto,
   MigrationResultDto,
   DatabaseSettingsDto,
+  BulkRegisterStudentCommandItem,
+  BulkRegisterStudentCommandResultDto,
 } from "./types";
 
 export class ApiRequestError extends Error {
@@ -526,6 +528,16 @@ export class RemoteClient implements OrbisApiClient {
   }
   async listGuardians(studentId: string): Promise<GuardianDto[]> {
     return this.get("/api/v1/student-guardians", { student_id: studentId });
+  }
+  async bulkRegisterStudents(
+    items: BulkRegisterStudentCommandItem[],
+    options?: { atomic?: boolean; dryRun?: boolean }
+  ): Promise<BulkRegisterStudentCommandResultDto> {
+    return this.post("/api/v1/students/bulk-register", {
+      items,
+      atomic: options?.atomic ?? true,
+      dry_run: options?.dryRun ?? false,
+    });
   }
 
   // ── Employee Affairs ────────────────────────────────────────

@@ -273,6 +273,29 @@ export interface RegisterStudentInput {
   studyMode?: string;
 }
 
+export interface BulkRegisterStudentCommandItem {
+  row_index: number;
+  registration: RegisterStudentInput;
+  guardian_name?: string;
+  guardian_phone?: string;
+  guardian_relationship?: string;
+}
+
+export interface BulkRegisterItemCommandResultDto {
+  row_index: number;
+  success: boolean;
+  student_id?: string;
+  student_number?: string;
+  error?: string;
+}
+
+export interface BulkRegisterStudentCommandResultDto {
+  total: number;
+  succeeded: number;
+  failed: number;
+  items: BulkRegisterItemCommandResultDto[];
+}
+
 export interface UpdateStudentStatusInput {
   student_id: string;
   status: string;
@@ -1220,7 +1243,7 @@ export interface OrbisApiClient {
   listEnrollments(filter?: EnrollmentFilterParams): Promise<EnrollmentDto[]>;
   getEnrollment(id: string): Promise<EnrollmentDto>;
   assignGuardian(req: AssignGuardianRequest): Promise<GuardianDto>;
-  listGuardians(studentId: string): Promise<GuardianDto[]>;
+  bulkRegisterStudents(items: BulkRegisterStudentCommandItem[], options?: { atomic?: boolean; dryRun?: boolean }): Promise<BulkRegisterStudentCommandResultDto>;
 
   // ── Employee Affairs ────────────────────────────────────────
   registerEmployee(req: RegisterEmployeeRequest): Promise<RegisterEmployeeResponseDto>;

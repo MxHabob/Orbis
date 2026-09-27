@@ -1,0 +1,66 @@
+<script lang="ts">
+  import type { ChunkProgress } from "../types";
+
+  interface Props {
+    open: boolean;
+    progress: ChunkProgress | null;
+  }
+
+  let { open, progress }: Props = $props();
+
+  const percentage = $derived(
+    progress && progress.totalRows > 0
+      ? Math.min(100, Math.round((progress.processedRows / progress.totalRows) * 100))
+      : 0,
+  );
+</script>
+
+{#if open && progress}
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-150" dir="rtl">
+    <div class="w-full max-w-md rounded-2xl bg-card border border-border shadow-2xl p-6 flex flex-col items-center text-center space-y-5">
+      <!-- Animated Spinner / Icon -->
+      <div class="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary relative">
+        <svg class="h-8 w-8 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </div>
+
+      <!-- Title & Subtitle -->
+      <div>
+        <h3 class="text-lg font-bold text-foreground">جاري اعتماد السجلات وتنفيذ العمليات...</h3>
+        <p class="text-xs text-muted-foreground mt-1">
+          تنفيذ المعاملات المقطعة والمزامنة مع الحسابات وسجلات التدقيق
+        </p>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="w-full space-y-2">
+        <div class="flex justify-between text-xs font-semibold text-muted-foreground px-0.5">
+          <span>المقطع {progress.currentChunk} من {progress.totalChunks}</span>
+          <span class="text-primary font-bold">{percentage}%</span>
+        </div>
+
+        <div class="h-2.5 w-full bg-muted rounded-full overflow-hidden border border-border/50">
+          <div
+            class="h-full bg-primary transition-all duration-300 rounded-full"
+            style="width: {percentage}%"
+          ></div>
+        </div>
+      </div>
+
+      <!-- Live Stats -->
+      <div class="w-full grid grid-cols-2 gap-2 pt-2 border-t border-border text-xs">
+        <div class="p-2.5 rounded-lg bg-muted/40 flex flex-col items-center">
+          <span class="text-muted-foreground">تمت معالجته بنجاح</span>
+          <span class="text-base font-bold text-primary mt-0.5">{progress.committedRows}</span>
+        </div>
+
+        <div class="p-2.5 rounded-lg bg-muted/40 flex flex-col items-center">
+          <span class="text-muted-foreground">تعثر أثناء المعالجة</span>
+          <span class="text-base font-bold text-destructive mt-0.5">{progress.failedRows}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}

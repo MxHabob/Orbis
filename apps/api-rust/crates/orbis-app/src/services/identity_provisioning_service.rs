@@ -7,7 +7,7 @@ use orbis_domain::entities::user::User;
 use orbis_domain::entities::person::Person;
 use orbis_domain::entities::identity::{UserIdentity, IdentityProvider};
 use orbis_domain::entities::group::UserGroupMembership;
-use orbis_domain::entities::identity_provisioning::{
+pub use orbis_domain::entities::identity_provisioning::{
     ActorType, DeliveryChannel, CredentialDeliveryStatus, AccountProvisioningResult,
 };
 use orbis_domain::events::DomainEvent;
