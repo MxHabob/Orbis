@@ -39,10 +39,11 @@ Every agent starting a session in this repository MUST:
 
 ## 3. CONTINUATION STATE
 
-- **Current Status:** `ARCHIVE_AND_SETTINGS_GRID_REFACTOR_COMPLETE`
+- **Current Status:** `BOOTSTRAP_AND_ONBOARDING_REFACTOR_COMPLETE`
 - **Master Reference Document:** `docs/registration_erp_architecture_plan.md`
 - **Accomplished:**
-  - Rebuilt [`ArchiveManager`](file:///d:/projects/Orbis/apps/desktop/src/lib/features/settings/archive-manager.svelte) from the ground up: integrated student-specific autocomplete document filtering, integrated pre-built [`ClassSelect`](file:///d:/projects/Orbis/apps/desktop/src/lib/features/academics/components/class-select.svelte) and [`PeriodSelect`](file:///d:/projects/Orbis/apps/desktop/src/lib/features/academics/components/period-select.svelte) from Academics, eliminated all `$effect` usage in favor of TanStack queries and declarative derived states.
-  - Refactored [`RegistrationSettingsForm`](file:///d:/projects/Orbis/apps/desktop/src/lib/features/settings/components/registration-settings-form.svelte) with [`OrbisGrid`](file:///d:/projects/Orbis/packages/svelte-grid/src/OrbisGrid.svelte) for both Document Requirements Studio and Form Fields Matrix with interactive actions.
-  - Modernized [`AuditLogViewer`](file:///d:/projects/Orbis/apps/desktop/src/lib/features/settings/audit-log-viewer.svelte) to use TanStack Query (`createQuery`), eliminated manual `loadData` and mock data, bound directly to authoritative backend fields, and hardened [`formatDate`](file:///d:/projects/Orbis/apps/desktop/src/lib/core/i18n/format.ts).
+  - Completely removed `seed_fee_templates` and default hardcoded fees from both `bootstrap()` and `persist_onboarding()`; fee templates are now only persisted when explicitly provided by the user in the onboarding payload, properly linking to the authoritative COA accounts (`110301` Accounts Receivable, `410301`/`410101` Tuition Revenue).
+  - Made `seed_chart_of_accounts` fully idempotent and re-entrant via recursive tree traversal (`seed_account_tree`), preventing duplicate account insertion and resolving existing parent accounts upon partial failures or re-runs.
+  - Moved `seed_document_requirements` entirely out of `bootstrap()` into `OnboardingService` (`persist_onboarding`), where it dynamically resolves each class from `data.classes` and attaches exact cumulative previous-grade certificates (Grade 2 has Grade 1; Grade 3 has Grades 1 & 2; Grade 4 has Grades 1, 2, 3; ... Grade 6 has Grades 1-5; Grade 7/8/9 have Primary Completion & previous prep certs; Grades 10/11/12 have Prep Completion & previous secondary certs; University years have cumulative academic transcripts).
+  - Deferred file attachments: Files are held locally in memory during registration and atomically uploaded on form save.
 - **Verification:** `cargo check --manifest-path apps/api-rust/Cargo.toml` & `bun x tsc -p apps/desktop/tsconfig.json --noEmit` verified with 0 errors.

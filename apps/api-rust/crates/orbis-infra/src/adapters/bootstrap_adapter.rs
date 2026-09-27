@@ -12,6 +12,7 @@
 
 use sea_orm::{ConnectionTrait, DatabaseConnection, Statement, TransactionTrait};
 use orbis_domain::errors::DomainError;
+use orbis_app::ports::onboarding::ValidatedOnboardingClass;
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
@@ -166,7 +167,7 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     }
 
     // ── 5.8 Default Organization Settings ────────────────────────────────────────
-    if let Err(e) = seed_org_settings(db, org_id_uuid, &payload.currency, &blueprint).await {
+    if let Err(e) = seed_org_settings(db, org_id_uuid, &payload.currency, &payload.org_type, &blueprint).await {
         info!("Note: Org settings seeding warning: {}", e);
     }
 
@@ -412,6 +413,273 @@ pub async fn seed_discount_templates<C: ConnectionTrait>(
     Ok(())
 }
 
+fn detect_grade_level(name: &str, name_ar: &str, level_str: &str) -> Option<u32> {
+    if let Ok(n) = level_str.trim().parse::<u32>() {
+        return Some(n);
+    }
+    let lower_name = name.to_lowercase();
+    let lower_level = level_str.to_lowercase();
+    let combined = format!("{lower_name} {name_ar} {lower_level}");
+
+    if combined.contains("kg1") || combined.contains("روضة 1") || combined.contains("روضه 1") || combined.contains("تمهيدي 1") || combined.contains("kg 1") {
+        return Some(0);
+    }
+    if combined.contains("kg2") || combined.contains("روضة 2") || combined.contains("روضه 2") || combined.contains("تمهيدي 2") || combined.contains("kg 2") || combined.contains("روضة") || combined.contains("روضه") || combined.contains("تمهيدي") {
+        return Some(0);
+    }
+
+    if combined.contains("12") || combined.contains("ثالث ثانوي") || combined.contains("الثالث الثانوي") || combined.contains("grade 12") || combined.contains("g12") {
+        return Some(12);
+    }
+    if combined.contains("11") || combined.contains("ثاني ثانوي") || combined.contains("الثاني الثانوي") || combined.contains("grade 11") || combined.contains("g11") {
+        return Some(11);
+    }
+    if combined.contains("10") || combined.contains("أول ثانوي") || combined.contains("اول ثانوي") || combined.contains("الأول الثانوي") || combined.contains("grade 10") || combined.contains("g10") {
+        return Some(10);
+    }
+    if combined.contains("9") || combined.contains("تاسع") || combined.contains("التاسع") || combined.contains("ثالث إعدادي") || combined.contains("ثالث متوسط") || combined.contains("grade 9") || combined.contains("g9") {
+        return Some(9);
+    }
+    if combined.contains("8") || combined.contains("ثامن") || combined.contains("الثامن") || combined.contains("ثاني إعدادي") || combined.contains("ثاني متوسط") || combined.contains("grade 8") || combined.contains("g8") {
+        return Some(8);
+    }
+    if combined.contains("7") || combined.contains("سابع") || combined.contains("السابع") || combined.contains("أول إعدادي") || combined.contains("اول اعدادي") || combined.contains("أول متوسط") || combined.contains("grade 7") || combined.contains("g7") {
+        return Some(7);
+    }
+    if combined.contains("6") || combined.contains("سادس") || combined.contains("السادس") || combined.contains("grade 6") || combined.contains("g6") {
+        return Some(6);
+    }
+    if combined.contains("5") || combined.contains("خامس") || combined.contains("الخامس") || combined.contains("grade 5") || combined.contains("g5") {
+        return Some(5);
+    }
+    if combined.contains("4") || combined.contains("رابع") || combined.contains("الرابع") || combined.contains("grade 4") || combined.contains("g4") {
+        return Some(4);
+    }
+    if combined.contains("3") || combined.contains("ثالث") || combined.contains("الثالث") || combined.contains("grade 3") || combined.contains("g3") {
+        return Some(3);
+    }
+    if combined.contains("2") || combined.contains("ثاني") || combined.contains("الثاني") || combined.contains("grade 2") || combined.contains("g2") {
+        return Some(2);
+    }
+    if combined.contains("1") || combined.contains("أول") || combined.contains("اول") || combined.contains("الأول") || combined.contains("grade 1") || combined.contains("g1") {
+        return Some(1);
+    }
+
+    None
+}
+
+pub async fn seed_document_requirements<C: ConnectionTrait>(
+    db: &C,
+    org_id: Uuid,
+    org_type: &str,
+    classes: &[ValidatedOnboardingClass],
+    now: &str,
+) -> Result<(), DomainError> {
+    // 1. Organization-wide Global Document Requirements
+    let mut doc_entries: Vec<(Option<Uuid>, &str, &str, &str, &str, bool, bool, &str)> = Vec::new();
+
+    match org_type {
+        "university" => {
+            doc_entries.push((None, "global", "DOC_UNI_HIGH_SCHOOL_CERT", "Original High School Certificate", "أصل شهادة الثانوية العامة / كشف الدرجات المعتمد", true, true, "all_students"));
+            doc_entries.push((None, "global", "DOC_UNI_STUDENT_ID", "Student National ID Card / Passport", "أصل البطاقة الشخصية / جواز السفر للطالب", true, true, "all_students"));
+            doc_entries.push((None, "global", "DOC_UNI_PHOTOS", "Personal Photos (6 Photos 4x6)", "عدد 6 صور شخصية حديثة بخلفية بيضاء", true, false, "all_students"));
+            doc_entries.push((None, "global", "DOC_UNI_CONDUCT", "Good Conduct Certificate", "شهادة حسن السيرة والسلوك", true, false, "all_students"));
+            doc_entries.push((None, "global", "DOC_UNI_MILITARY", "Military Service Form", "استمارة الخدمة العسكرية / وثيقة الموقف التجنيدي (للذكور)", true, false, "all_students"));
+            doc_entries.push((None, "global", "DOC_UNI_TRANSFER", "University Transfer & Equivalency Form", "استمارة ونموذج المقاصة والتحويل الأكاديمي", true, true, "transfer_students_only"));
+            doc_entries.push((None, "global", "DOC_UNI_INT_PASSPORT", "Valid Passport & Student Visa/Iqama", "جواز السفر وتأشيرة الإقامة الدراسية للوافدين", true, true, "non_national_only"));
+
+            // Dynamic per-academic level transcripts for universities
+            for c in classes {
+                let name_ar = c.name_ar.as_deref().unwrap_or(&c.name);
+                let level_num = detect_grade_level(&c.name, name_ar, &c.level).unwrap_or(1);
+                if level_num >= 2 {
+                    doc_entries.push((
+                        Some(c.id),
+                        "grade_level",
+                        "DOC_UNI_TRANSCRIPT_Y1",
+                        "Year 1 Official Academic Transcript",
+                        "كشف درجات السنة الأولى الجامعية المعتمد",
+                        true, true, "all_students"
+                    ));
+                }
+                if level_num >= 3 {
+                    doc_entries.push((
+                        Some(c.id),
+                        "grade_level",
+                        "DOC_UNI_TRANSCRIPT_Y2",
+                        "Year 2 Official Academic Transcript",
+                        "كشف درجات السنة الثانية الجامعية المعتمد",
+                        true, true, "all_students"
+                    ));
+                }
+                if level_num >= 4 {
+                    doc_entries.push((
+                        Some(c.id),
+                        "grade_level",
+                        "DOC_UNI_TRANSCRIPT_Y3",
+                        "Year 3 Official Academic Transcript",
+                        "كشف درجات السنة الثالثة الجامعية المعتمد",
+                        true, true, "all_students"
+                    ));
+                }
+                if level_num >= 5 {
+                    doc_entries.push((
+                        Some(c.id),
+                        "grade_level",
+                        "DOC_UNI_TRANSCRIPT_Y4",
+                        "Year 4 Official Academic Transcript",
+                        "كشف درجات السنة الرابعة الجامعية المعتمد",
+                        true, true, "all_students"
+                    ));
+                }
+            }
+        },
+        "institute" | "training_center" => {
+            doc_entries.push((None, "global", "DOC_INST_NATIONAL_ID", "National ID Card / Valid Passport", "البطاقة الشخصية / الهوية الوطنية / جواز السفر", true, true, "all_students"));
+            doc_entries.push((None, "global", "DOC_INST_QUALIFICATION", "Last Academic Qualification Certificate", "أصل أو صورة مصدقة لآخر مؤهل دراسي / شهادة دراسية", true, false, "all_students"));
+            doc_entries.push((None, "global", "DOC_INST_PHOTOS", "Personal Photos (4x6)", "عدد 4 صور شخصية حديثة", true, false, "all_students"));
+            doc_entries.push((None, "global", "DOC_INST_GUARDIAN_CONSENT", "Guardian Approval & Consent Letter", "موافقة خطية من ولي الأمر (للمتدربين دون سن الرشد)", false, false, "all_students"));
+            doc_entries.push((None, "global", "DOC_INST_NON_NAT", "Valid Residency / Iqama Copy", "صورة الإقامة السارية للوافدين والمقيمين", true, true, "non_national_only"));
+        },
+        _ => {
+            // General school global requirements
+            doc_entries.push((None, "global", "DOC_SCH_PHOTO", "Personal Photos (4x6)", "صور شخصية حديثة (4×6)", true, false, "all_students"));
+            doc_entries.push((None, "global", "DOC_SCH_TRANSFER", "Official School Transfer Certificate", "استمارة التحويل المدرسي المعتمدة من الإدارة التعليمية", true, true, "transfer_students_only"));
+            doc_entries.push((None, "global", "DOC_NON_NAT_PASSPORT", "Valid Passport & Iqama / Residence Permit", "جواز السفر والإقامة السارية للطالب وولي الأمر", true, true, "non_national_only"));
+
+            // Exact cumulative grade certificates per class
+            for c in classes {
+                let name_ar = c.name_ar.as_deref().unwrap_or(&c.name);
+                let grade = detect_grade_level(&c.name, name_ar, &c.level).unwrap_or(1);
+
+                match grade {
+                    0 => {
+                        // Kindergarten (روضة / تمهيدي)
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_KG_BIRTH_CERT", "Child Official Birth Certificate", "شهادة ميلاد الطفل الرسمية المميكنة", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_KG_FATHER_ID", "Father / Guardian National ID Card", "بطاقة الرقم القومي / الهوية الوطنية لولي الأمر", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_KG_VACCINE", "Child Health Record & Vaccination Card", "كرت التطعيمات والسجل الصحي للطفل", true, false, "all_students"));
+                    },
+                    1 => {
+                        // Grade 1 (الصف الأول الابتدائي)
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G1_BIRTH_CERT", "Original Birth Certificate", "أصل شهادة ميلاد الطفل المعتمدة", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G1_FATHER_ID", "Guardian National ID Copy", "صورة بطاقة الهوية الوطنية / الإقامة لولي الأمر", true, false, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G1_MEDICAL", "School Health Examination", "استمارة الفحص الطبي والتطعيمات", true, false, "all_students"));
+                    },
+                    2 => {
+                        // Grade 2: Birth Cert + Grade 1
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G2_BIRTH_CERT", "Child Birth Certificate Copy", "صورة شهادة الميلاد للطفل", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G2_PREV_G1", "Grade 1 Pass Certificate / Report Card", "شهادة اجتياز الصف الأول الابتدائي / بيان الدرجات", true, true, "all_students"));
+                    },
+                    3 => {
+                        // Grade 3: Birth Cert + Grade 1 + Grade 2
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G3_BIRTH_CERT", "Child Birth Certificate Copy", "صورة شهادة الميلاد للطفل", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G3_PREV_G1", "Grade 1 Pass Certificate", "شهادة اجتياز الصف الأول الابتدائي", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G3_PREV_G2", "Grade 2 Pass Certificate", "شهادة اجتياز الصف الثاني الابتدائي", true, true, "all_students"));
+                    },
+                    4 => {
+                        // Grade 4: Birth Cert + Grade 1 + Grade 2 + Grade 3
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G4_BIRTH_CERT", "Child Birth Certificate Copy", "صورة شهادة الميلاد للطفل", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G4_PREV_G1", "Grade 1 Pass Certificate", "شهادة اجتياز الصف الأول الابتدائي", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G4_PREV_G2", "Grade 2 Pass Certificate", "شهادة اجتياز الصف الثاني الابتدائي", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G4_PREV_G3", "Grade 3 Pass Certificate", "شهادة اجتياز الصف الثالث الابتدائي", true, true, "all_students"));
+                    },
+                    5 => {
+                        // Grade 5: Birth Cert + Grades 1-4
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G5_BIRTH_CERT", "Child Birth Certificate Copy", "صورة شهادة الميلاد للطفل", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G5_PREV_G1", "Grade 1 Pass Certificate", "شهادة اجتياز الصف الأول الابتدائي", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G5_PREV_G2", "Grade 2 Pass Certificate", "شهادة اجتياز الصف الثاني الابتدائي", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G5_PREV_G3", "Grade 3 Pass Certificate", "شهادة اجتياز الصف الثالث الابتدائي", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G5_PREV_G4", "Grade 4 Pass Certificate", "شهادة اجتياز الصف الرابع الابتدائي", true, true, "all_students"));
+                    },
+                    6 => {
+                        // Grade 6: Birth Cert + Grades 1-5
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G6_BIRTH_CERT", "Child Birth Certificate Copy", "صورة شهادة الميلاد للطفل", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G6_PREV_G1", "Grade 1 Pass Certificate", "شهادة اجتياز الصف الأول الابتدائي", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G6_PREV_G2", "Grade 2 Pass Certificate", "شهادة اجتياز الصف الثاني الابتدائي", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G6_PREV_G3", "Grade 3 Pass Certificate", "شهادة اجتياز الصف الثالث الابتدائي", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G6_PREV_G4", "Grade 4 Pass Certificate", "شهادة اجتياز الصف الرابع الابتدائي", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G6_PREV_G5", "Grade 5 Pass Certificate", "شهادة اجتياز الصف الخامس الابتدائي", true, true, "all_students"));
+                    },
+                    7 => {
+                        // Grade 7 / 1st Prep: Primary Completion Cert + Birth Cert
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G7_BIRTH_CERT", "Child Birth Certificate Copy", "صورة شهادة الميلاد للطفل", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G7_PRI_COMPLETION", "Primary Stage Completion Certificate", "أصل شهادة إتمام المرحلة الابتدائية (الصف السادس)", true, true, "all_students"));
+                    },
+                    8 => {
+                        // Grade 8 / 2nd Prep: Primary Completion + Grade 7 Cert
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G8_PRI_COMPLETION", "Primary Stage Completion Certificate", "أصل شهادة إتمام المرحلة الابتدائية (الصف السادس)", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G8_PREV_G7", "Grade 7 Pass Certificate", "شهادة اجتياز الصف الأول الإعدادي (السابع)", true, true, "all_students"));
+                    },
+                    9 => {
+                        // Grade 9 / 3rd Prep: Primary Completion + Grade 7 + Grade 8
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G9_PRI_COMPLETION", "Primary Stage Completion Certificate", "أصل شهادة إتمام المرحلة الابتدائية (الصف السادس)", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G9_PREV_G7", "Grade 7 Pass Certificate", "شهادة اجتياز الصف الأول الإعدادي (السابع)", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G9_PREV_G8", "Grade 8 Pass Certificate", "شهادة اجتياز الصف الثاني الإعدادي (الثامن)", true, true, "all_students"));
+                    },
+                    10 => {
+                        // Grade 10 / 1st Sec: Prep Completion + Student ID / Birth Cert
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G10_ID_OR_BIRTH", "National ID Card or Birth Certificate", "أصل بطاقة الهوية الوطنية أو شهادة الميلاد", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G10_MID_COMPLETION", "Preparatory Stage Completion Certificate", "أصل شهادة إتمام مرحلة التعليم الأساسي / الإعدادية (الصف التاسع)", true, true, "all_students"));
+                    },
+                    11 => {
+                        // Grade 11 / 2nd Sec: Prep Completion + Grade 10 Cert
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G11_MID_COMPLETION", "Preparatory Stage Completion Certificate", "أصل شهادة إتمام مرحلة التعليم الأساسي / الإعدادية (الصف التاسع)", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G11_PREV_G10", "Grade 10 Pass Certificate", "شهادة اجتياز الصف الأول الثانوي (العاشر)", true, true, "all_students"));
+                    },
+                    12 => {
+                        // Grade 12 / 3rd Sec: Prep Completion + Grade 10 + Grade 11
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G12_MID_COMPLETION", "Preparatory Stage Completion Certificate", "أصل شهادة إتمام مرحلة التعليم الأساسي / الإعدادية (الصف التاسع)", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G12_PREV_G10", "Grade 10 Pass Certificate", "شهادة اجتياز الصف الأول الثانوي (العاشر)", true, true, "all_students"));
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_G12_PREV_G11", "Grade 11 Pass Certificate", "شهادة اجتياز الصف الثاني الثانوي (الحادي عشر)", true, true, "all_students"));
+                    },
+                    _ => {
+                        // General grade fallback
+                        doc_entries.push((Some(c.id), "grade_level", "DOC_GEN_PREV_CERT", "Previous Grade Pass Certificate", "شهادة اجتياز الصف السابق المعتمدة", true, true, "all_students"));
+                    }
+                }
+            }
+
+            // Fallback stage templates if classes list was empty during minimal seed
+            if classes.is_empty() {
+                doc_entries.push((None, "stage", "DOC_PRI_PREV_CERT", "Previous Grade Certificate", "شهادة الصف السابق / بيان الدرجات المعتمد", true, true, "all_students"));
+                doc_entries.push((None, "stage", "DOC_MID_PRIMARY_CERT", "Primary Stage Completion Certificate", "شهادة إتمام المرحلة الابتدائية (الصف السادس)", true, true, "all_students"));
+                doc_entries.push((None, "stage", "DOC_SEC_MIDDLE_CERT", "Preparatory / Middle School Certificate", "أصل شهادة إتمام مرحلة التعليم الأساسي / الإعدادية (الصف التاسع)", true, true, "all_students"));
+            }
+        }
+    }
+
+    for (target_id, target_type, base_code, name_en, name_ar, is_mandatory, blocks_enrollment, condition) in doc_entries {
+        let did = Uuid::new_v4();
+        let code = match target_id {
+            Some(tid) => format!("{}_{}", base_code, &tid.to_string()[..8]),
+            None => base_code.to_string(),
+        };
+
+        db.execute(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "INSERT INTO document_requirements (id, org_id, target_type, target_id, code, name_ar, name_en, is_mandatory, blocks_enrollment, condition, created_at, updated_at) \
+             SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12 \
+             WHERE NOT EXISTS (SELECT 1 FROM document_requirements WHERE org_id = $2 AND code = $5)",
+            vec![
+                did.into(),
+                org_id.into(),
+                target_type.into(),
+                target_id.into(),
+                code.into(),
+                name_ar.into(),
+                name_en.into(),
+                (if is_mandatory { 1i32 } else { 0i32 }).into(),
+                (if blocks_enrollment { 1i32 } else { 0i32 }).into(),
+                condition.into(),
+                now.into(),
+                now.into(),
+            ]
+        )).await.ok();
+    }
+
+    Ok(())
+}
+
 async fn seed_currencies<C: ConnectionTrait>(
     db: &C,
     now: &str,
@@ -643,8 +911,16 @@ async fn seed_org_settings<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
     currency: &str,
+    org_type: &str,
     blueprint: &InstitutionBlueprint,
 ) -> Result<(), DomainError> {
+    let (inst_type, id_prefix, id_digits, req_app, no_guardian, max_cap) = match org_type {
+        "university" => ("university", "UNI", 5, true, true, 60),
+        "institute" | "training_center" => ("institute", "TRN", 4, false, true, 25),
+        "quran_center" => ("quran_center", "QRN", 4, false, false, 20),
+        _ => ("school", "STU", 4, false, false, 30),
+    };
+
     let org_settings = serde_json::json!({
         "academic": {
             "default_grading_system": blueprint.grading_system,
@@ -660,13 +936,27 @@ async fn seed_org_settings<C: ConnectionTrait>(
         },
         "enrollment": {
             "registration_enabled": true,
-            "require_admin_approval": true,
+            "require_admin_approval": req_app,
             "allow_waitlist": true,
             "sibling_priority_enabled": true,
-            "max_class_size_default": 25,
+            "max_class_size_default": max_cap,
             "allow_late_enrollment": false,
             "auto_generate_student_id": true,
-            "student_id_prefix": "STD"
+            "student_id_prefix": id_prefix
+        },
+        "registration": {
+            "institution_type": inst_type,
+            "student_number_pattern": format!("{}-{{YEAR}}-{{SEQ:{}}}", id_prefix, id_digits),
+            "student_number_prefix": id_prefix,
+            "student_number_digits": id_digits,
+            "student_number_year_format": "YEAR",
+            "policy_settings": {
+                "requires_approval": req_app,
+                "allow_no_guardian": no_guardian,
+                "allow_duplicate_national_id": false,
+                "auto_assign_fees": true,
+                "max_class_capacity": max_cap
+            }
         },
         "finance": {
             "currency": currency,
@@ -743,43 +1033,53 @@ struct CoaData {
     pub accounts: Vec<AccNode>,
 }
 
-fn flatten_acc_nodes(
+async fn seed_account_tree<C: ConnectionTrait>(
+    db: &C,
     nodes: &[AccNode],
     org_id: Uuid,
     parent_id: Option<Uuid>,
-    parent_path: &str,
-    depth: i32,
+    admin_id: Uuid,
     currency: &str,
     now: &str,
-    out: &mut Vec<(Uuid, Uuid, String, String, String, String, Option<Uuid>, String, i32, String, String)>,
-) {
+) -> Result<(), DomainError> {
     for node in nodes {
-        let acc_id = Uuid::new_v4();
-        let path = if parent_path.is_empty() {
-            node.code.clone()
-        } else {
-            format!("{}.{}", parent_path, node.code)
-        };
-        let db_type = node.acc_type.to_lowercase();
+        let existing_row = db.query_one(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "SELECT id FROM accounts WHERE org_id = $1 AND code = $2 LIMIT 1",
+            vec![org_id.into(), node.code.clone().into()]
+        )).await.map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        out.push((
-            acc_id,
-            org_id,
-            node.code.clone(),
-            node.name_en.clone(),
-            node.name_ar.clone(),
-            db_type,
-            parent_id,
-            path.clone(),
-            depth,
-            currency.to_string(),
-            now.to_string(),
-        ));
+        let current_acc_id = if let Some(row) = existing_row {
+            row.try_get("", "id").unwrap_or_else(|_| Uuid::new_v4())
+        } else {
+            let new_id = Uuid::new_v4();
+            let db_type = node.acc_type.to_lowercase();
+            db.execute(Statement::from_sql_and_values(
+                db.get_database_backend(),
+                "INSERT INTO accounts (id, org_id, code, name, account_type, parent_id, currency_code, is_active, balances, created_by, updated_by, version, created_at, updated_at) \
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, 1, '{}', $8, $9, 1, $10, $11)",
+                vec![
+                    new_id.into(),
+                    org_id.into(),
+                    node.code.clone().into(),
+                    node.name_ar.clone().into(),
+                    db_type.into(),
+                    parent_id.into(),
+                    currency.into(),
+                    admin_id.into(),
+                    admin_id.into(),
+                    now.into(),
+                    now.into(),
+                ]
+            )).await.map_err(|e| DomainError::Internal(format!("Failed to seed account {}: {e}", node.code)))?;
+            new_id
+        };
 
         if let Some(ref children) = node.children {
-            flatten_acc_nodes(children, org_id, Some(acc_id), &path, depth + 1, currency, now, out);
+            Box::pin(seed_account_tree(db, children, org_id, Some(current_acc_id), admin_id, currency, now)).await?;
         }
     }
+    Ok(())
 }
 
 async fn seed_chart_of_accounts<C: ConnectionTrait>(
@@ -792,24 +1092,7 @@ async fn seed_chart_of_accounts<C: ConnectionTrait>(
     let coa: CoaData = serde_json::from_str(COA_JSON)
         .map_err(|e| DomainError::Internal(format!("Failed to parse COA JSON: {e}")))?;
 
-    let mut rows = Vec::new();
-    flatten_acc_nodes(&coa.accounts, org_id, None, "", 1, currency, now, &mut rows);
-
-    for (id, oid, code, _name, name_ar, db_type, parent_id, _path, _depth, curr, timestamp) in rows {
-        db.execute(Statement::from_sql_and_values(
-            db.get_database_backend(),
-            "INSERT INTO accounts (id, org_id, code, name, account_type, parent_id, currency_code, is_active, balances, created_by, updated_by, version, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, '{}', $8, $9, 1, $10, $11)",
-            vec![
-                id.into(), oid.into(), code.clone().into(), name_ar.into(),
-                db_type.into(),
-                parent_id.into(), curr.into(),
-                admin_id.into(), admin_id.into(),
-                timestamp.clone().into(), timestamp.into(),
-            ]
-        )).await.map_err(|e| DomainError::Internal(format!("Failed to seed account {code}: {e}")))?;
-    }
-
-    Ok(())
+    seed_account_tree(db, &coa.accounts, org_id, None, admin_id, currency, now).await
 }
 
 // ── Internal Blueprint Definitions ──────────────────────────────
@@ -1715,15 +1998,11 @@ impl OnboardingPort for OnboardingAdapterImpl {
             }
         }
 
-        // 10. Fee Templates
-        if data.fee_templates.is_empty() {
-            if let Err(e) = seed_fee_templates(&txn, org_id, &data.base_currency_code, &now).await {
-                info!("Default fee templates onboarding seeding note: {}", e);
-            }
-        } else {
+        // 10. Fee Templates (Only persist if explicitly provided by user in onboarding)
+        if !data.fee_templates.is_empty() {
             let rec_row = txn.query_one(Statement::from_sql_and_values(
                 txn.get_database_backend(),
-                "SELECT id FROM accounts WHERE org_id = $1 AND code = '110401' LIMIT 1",
+                "SELECT id FROM accounts WHERE org_id = $1 AND (code = '110301' OR code = '110401' OR account_type = 'asset') ORDER BY CASE WHEN code = '110301' THEN 0 WHEN code = '110401' THEN 1 ELSE 2 END LIMIT 1",
                 vec![org_id.into()]
             )).await.ok().flatten();
             let rec_id: Uuid = match rec_row {
@@ -1732,7 +2011,7 @@ impl OnboardingPort for OnboardingAdapterImpl {
             };
             let rev_row = txn.query_one(Statement::from_sql_and_values(
                 txn.get_database_backend(),
-                "SELECT id FROM accounts WHERE org_id = $1 AND code = '410101' LIMIT 1",
+                "SELECT id FROM accounts WHERE org_id = $1 AND (code = '410301' OR code = '410101' OR account_type = 'revenue') ORDER BY CASE WHEN code IN ('410301', '410101') THEN 0 ELSE 1 END LIMIT 1",
                 vec![org_id.into()]
             )).await.ok().flatten();
             let rev_id: Uuid = match rev_row {
@@ -1809,6 +2088,11 @@ impl OnboardingPort for OnboardingAdapterImpl {
         // 14. Default Reports & Templates Seeding
         if let Err(e) = seed_default_reports(&txn, org_id, &now).await {
             info!("Default reports onboarding seeding note: {}", e);
+        }
+
+        // 14.5 Document Requirements Seeding (Per Profile, Stage, & Grade)
+        if let Err(e) = seed_document_requirements(&txn, org_id, &data.org_type, &data.classes, &now).await {
+            info!("Document requirements onboarding seeding note: {}", e);
         }
 
         // 15. Record Onboarding Audit Log
