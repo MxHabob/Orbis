@@ -1,4 +1,10 @@
-import { api, type StudentDocumentFulfillmentDto, type DocumentRequirementDto, type DocumentDto } from "$lib/api";
+import {
+  api,
+  type StudentDocumentFulfillmentDto,
+  type DocumentRequirementDto,
+  type DocumentDto,
+  type StudentDetailDto,
+} from "$lib/api";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
 
@@ -134,7 +140,7 @@ export class DocumentInfoState {
     this.submittedDocs = this.submittedDocs.filter((d) => d !== reqCode);
   }
 
-  async populate(originalStudent: any) {
+  async populate(originalStudent: StudentDetailDto | null) {
     if (!originalStudent || !this.studentId) return;
 
     try {

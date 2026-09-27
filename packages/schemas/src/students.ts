@@ -13,7 +13,6 @@ export const studentRegistrationSchema = z.object({
     emptyToNull,
     z.string().trim().email("البريد الإلكتروني غير صالح").nullable().optional(),
   ),
-  password: z.string().min(6).max(128).optional(),
   phone: z.preprocess(
     emptyToNull,
     z
@@ -74,7 +73,7 @@ export type StudentRegistrationInput = z.infer<
 >;
 
 export const guardianFormInputSchema = z.object({
-  guardianUserId: z.string().trim().min(1, "يرجى اختيار ولي الأمر من القائمة"),
+  guardianId: z.string().trim().min(1, "يرجى اختيار ولي الأمر من القائمة"),
   fullName: z.string().trim().optional(),
   phone: z.string().trim().optional(),
   email: z.preprocess(

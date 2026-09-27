@@ -1,6 +1,8 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api } from "$lib/api";
+import { api, type CreateClassRequest } from "$lib/api";
+import { academicContext } from "$lib/stores";
+import { createPeriodsQuery } from "$lib/features/academics/queries";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
@@ -19,6 +21,9 @@ let {
   onSuccess: () => void;
   onCancel: () => void;
 } = $props();
+
+const periodsQuery = createPeriodsQuery(() => orgId);
+const periods = $derived(periodsQuery.data ?? []);
 
 // Form state
 const form = new FormController({
@@ -40,14 +45,25 @@ function fieldError(field: string): string | undefined {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (values) => {
-    await api.createClass({
-      ...values,
-      name: values.name || values.name_ar,
-      name_ar: values.name_ar || values.name,
-      code: values.code || undefined,
-      grade_level: values.grade_level || undefined,
-      color: values.color || undefined,
-    } as any);
+    const periodId =
+      academicContext.effectivePeriodId ||
+      (periods[0]?.id ? String(periods[0].id) : "");
+    if (!periodId) {
+      throw new Error("Academic period is required.");
+    }
+    const orgUnits = await api.listOrgUnits();
+    const unitId = orgUnits[0]?.id ? String(orgUnits[0].id) : "";
+    if (!unitId) {
+      throw new Error("Organizational unit is required.");
+    }
+
+    const request: CreateClassRequest = {
+      unit_id: unitId,
+      period_id: periodId,
+      name: values.name_ar || values.name,
+      level: values.grade_level || "1",
+    };
+    await api.createClass(request);
     toast.success(m.academics_class_toast_success());
   });
   if (submitted) {

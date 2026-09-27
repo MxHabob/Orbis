@@ -67,12 +67,6 @@ async function handleSave(status?: string) {
 // Fetch classes via TanStack Query
 const classesQuery = createClassesQuery(() => orgId);
 
-$effect(() => {
-  if (classesQuery.data) {
-    state.classes = classesQuery.data;
-  }
-});
-
 onMount(async () => {
   if (orgId) {
     state.orgId = orgId;

@@ -31,28 +31,22 @@ let {
   onApply,
 }: Props = $props();
 
+import { createQuery } from "@tanstack/svelte-query";
+
 let isLaunching = $state(false);
 let isApplying = $state(false);
-let solveJobs = $state<any[]>([]);
-let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-$effect(() => {
-  if (open && periodId) {
-    loadJobs();
-    pollTimer = setInterval(() => {
-      if (periodId) loadJobs();
-    }, 3000);
-  }
-  return () => {
-    if (pollTimer) {
-      clearInterval(pollTimer);
-      pollTimer = null;
-    }
-  };
-});
+const solveJobsQuery = createQuery(() => ({
+  queryKey: ["solve-jobs-drawer", periodId],
+  queryFn: () => Promise.resolve([] as any[]),
+  enabled: open && !!periodId,
+  refetchInterval: open ? 3000 : false,
+}));
+
+const solveJobs = $derived(solveJobsQuery.data ?? []);
 
 async function loadJobs() {
-  solveJobs = [];
+  solveJobsQuery.refetch();
 }
 
 async function handleStartSolve() {

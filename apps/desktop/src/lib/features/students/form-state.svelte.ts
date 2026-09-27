@@ -1,6 +1,14 @@
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
-import { api, queryKeys, extractErrorMessage, type StudentDetailDto } from "$lib/api";
+import type { QueryClient } from "@tanstack/svelte-query";
+import {
+  api,
+  queryKeys,
+  extractErrorMessage,
+  type StudentDetailDto,
+  type ClassDto,
+  type TemplateDto,
+} from "$lib/api";
 import { toast } from "@orbis/ui";
 
 import { l, formatDate, formatCurrency } from "$lib/core/i18n";
@@ -69,7 +77,7 @@ export class StudentFormState {
   private duplicateCheckTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 
   // Class & Academic Data
-  classes = $state<any[]>([]);
+  classes = $state<ClassDto[]>([]);
 
   // Page level indicators
   isSaving = $state(false);
@@ -81,7 +89,6 @@ export class StudentFormState {
       name: "",
       name_en: null as string | null,
       email: null as string | null,
-      password: "",
       phone: null as string | null,
       gender: null as string | null,
       birth_date: null as string | null,
@@ -97,7 +104,7 @@ export class StudentFormState {
   });
 
   // Printing templates & staged media files
-  availableTemplates = $state<any[]>([]);
+  availableTemplates = $state<TemplateDto[]>([]);
   selectedTemplateId = $state("");
   avatarFile = $state<File | null>(null);
 
@@ -114,11 +121,16 @@ export class StudentFormState {
 
   async init() {
     try {
-      const [org] = await Promise.all([
+      const [org, classRes] = await Promise.all([
         api.getCurrentOrg().catch(() => null),
+        api.listClasses().catch(() => []),
         this.financial.init(),
         this.document.loadRequirements(),
       ]);
+
+      if (classRes && Array.isArray(classRes)) {
+        this.classes = classRes;
+      }
 
       if (org) {
         this.orgName = String(org.name || org.name_ar || "");
@@ -176,7 +188,7 @@ export class StudentFormState {
 
       // In edit mode, load student profile
       if (this.isEditMode && this.studentId) {
-        let originalStudent: any = null;
+        let originalStudent: StudentDetailDto | null = null;
         try {
           originalStudent = await api.getStudent(this.studentId);
         } catch (err) {
@@ -185,19 +197,19 @@ export class StudentFormState {
         this.originalStudent = originalStudent;
 
         if (originalStudent) {
-          this.registrationStatus = originalStudent.student?.status || originalStudent.status || "active";
-          this.studyMode = originalStudent.student?.study_mode || originalStudent.study_mode || "regular";
+          this.registrationStatus = originalStudent.student?.status || "active";
+          this.studyMode = (originalStudent.enrollment?.study_mode as typeof this.studyMode) || "regular";
           this.personal.populate(originalStudent);
           await this.financial.populate(originalStudent);
           await this.guardian.populate();
           await this.document.populate(originalStudent);
         }
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Failed to initialize student form state:", e);
       toast.error(
         m.common_form_initialization_error({
-          error: e.message || String(e),
+          error: extractErrorMessage(e),
         }),
       );
     }
@@ -262,7 +274,7 @@ export class StudentFormState {
   get selectedClassName() {
     const cls = this.selectedClass;
     if (!cls) return m.common_form_select_class();
-    return l(cls.name_ar, cls.name) || String(cls.id);
+    return cls.name || String(cls.id);
   }
 
   get mandatoryFeesList() {
@@ -353,7 +365,7 @@ export class StudentFormState {
   }
 
   // Save operation
-  async handleSave(queryClient?: any) {
+  async handleSave(queryClient?: QueryClient) {
     if (!this.personal.nameAr.trim()) {
       toast.error(m.common_form_error_name_required());
       return;

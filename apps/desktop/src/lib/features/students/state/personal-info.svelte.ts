@@ -1,3 +1,5 @@
+import type { StudentDetailDto } from "$lib/api";
+
 export class PersonalInfoState {
   nameAr = $state("");
   nameEn = $state("");
@@ -35,14 +37,14 @@ export class PersonalInfoState {
   emergencyContact = $state("");
   medicalNotes = $state("");
 
-  populate(originalStudent: any) {
+  populate(originalStudent: StudentDetailDto | null) {
     if (!originalStudent) return;
-    const p = originalStudent.person || originalStudent;
-    const s = originalStudent.student || originalStudent;
-    const e = originalStudent.enrollment || originalStudent;
+    const p = originalStudent.person;
+    const s = originalStudent.student;
+    const e = originalStudent.enrollment;
 
-    this.nameAr = (p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : "") || p.full_name || p.name_ar || "";
-    this.nameEn = p.name_en || "";
+    this.nameAr = (p.first_name_ar && p.last_name_ar ? `${p.first_name_ar} ${p.last_name_ar}` : "") || p.full_name_ar || p.full_name || "";
+    this.nameEn = p.full_name || (p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : "");
     this.nationalId = p.national_id || "";
 
     const birth = p.birth_date
@@ -57,21 +59,16 @@ export class PersonalInfoState {
       }
     }
 
-    this.sex = p.gender || p.sex || "male";
-    this.classId = String(e.class_id || s.class_id || "");
+    this.sex = p.gender || "male";
+    this.classId = String(e?.class_id || "");
     this.studentNumber = s.student_number || "";
     this.email = p.email || "";
-    this.phone = p.phone || p.phone_number || "";
+    this.phone = p.phone || "";
     this.address = p.address || "";
-    this.previousSchool =
-      s.previous_school || originalStudent.previous_school || "";
-    this.district = p.district || "";
-    this.governorate = p.governorate || "";
     this.nationality = p.nationality || "";
     this.placeOfBirth = p.place_of_birth || "";
     this.passportNumber = p.passport_number || "";
     this.bloodType = p.blood_type || "";
-    this.emergencyContact = p.emergency_contact || "";
     this.medicalNotes = p.medical_notes || "";
     this.status = s.status || "active";
   }

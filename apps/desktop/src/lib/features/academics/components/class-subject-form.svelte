@@ -7,7 +7,6 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { Label } from "@orbis/ui/label";
 import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import {
   Select,
@@ -15,8 +14,16 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { api, extractErrorMessage } from "$lib/api";
-import type { ClassSubject, JsonRecord } from "@orbis/sdk";
+import { api } from "$lib/api";
+import type {
+  ClassSubjectDto,
+  ClassDto,
+  SubjectDto,
+  UserDto,
+  AcademicPeriodDto,
+  AssessmentSchemeDto,
+  AssignClassSubjectInput,
+} from "$lib/api";
 import { toast } from "@orbis/ui";
 
 import {
@@ -44,7 +51,7 @@ let {
 }: {
   orgId: string;
   fixedClassId?: string;
-  editData?: ClassSubject | null;
+  editData?: ClassSubjectDto | null;
   onSuccess?: () => void;
   onCancel?: () => void;
 } = $props();
@@ -52,21 +59,16 @@ let {
 const isEditMode = $derived(!!editData);
 
 // Form state
-let classId = $state("");
-let subjectId = $state("");
-let teacherId = $state("");
-let weeklyHours = $state(4);
-let periodId = $state("");
+let classId = $state(
+  fixedClassId || (editData ? String(editData.class_id ?? "") : ""),
+);
+let subjectId = $state(editData ? String(editData.subject_id ?? "") : "");
+let teacherId = $state(
+  editData ? String(editData.primary_teacher_id ?? "") : "",
+);
+let weeklyHours = $state(editData ? Number(editData.weekly_hours ?? 4) : 4);
+let periodId = $state(editData ? String(editData.period_id ?? "") : "");
 let schemeId = $state("");
-
-$effect(() => {
-  classId = fixedClassId || (editData ? String(editData.class_id ?? "") : "");
-  subjectId = editData ? String(editData.subject_id ?? "") : "";
-  teacherId = editData ? String(editData.primary_teacher_id ?? "") : "";
-  weeklyHours = editData ? Number(editData.weekly_hours ?? 4) : 4;
-  periodId = editData ? String(editData.period_id ?? "") : "";
-  schemeId = editData ? String((editData as any).scheme_id ?? "") : "";
-});
 
 // TanStack Queries
 const periodsQuery = createPeriodsQuery(() => orgId);
@@ -75,15 +77,15 @@ const subjectsQuery = createSubjectsQuery(() => orgId);
 const usersQuery = createUsersQuery(() => orgId);
 const schemesQuery = createAssessmentSchemesQuery(() => orgId);
 
-const periods = $derived((periodsQuery.data as JsonRecord[]) ?? []);
-const classes = $derived((classesQuery.data as JsonRecord[]) ?? []);
-const subjects = $derived((subjectsQuery.data as JsonRecord[]) ?? []);
+const periods = $derived((periodsQuery.data as AcademicPeriodDto[]) ?? []);
+const classes = $derived((classesQuery.data as ClassDto[]) ?? []);
+const subjects = $derived((subjectsQuery.data as SubjectDto[]) ?? []);
 const teachers = $derived(
-  ((usersQuery.data as JsonRecord[]) ?? []).filter(
+  ((usersQuery.data as UserDto[]) ?? []).filter(
     (u) => String(u.primary_role ?? u.role) === "teacher",
   ),
 );
-const schemes = $derived((schemesQuery.data as JsonRecord[]) ?? []);
+const schemes = $derived((schemesQuery.data as AssessmentSchemeDto[]) ?? []);
 
 const isLoading = $derived(
   periodsQuery.isLoading ||
@@ -129,20 +131,19 @@ async function handleSubmit() {
     weekly_hours: Number(weeklyHours),
   };
   const submitted = await form.submit(async (values) => {
-    const request = {
+    const request: AssignClassSubjectInput = {
       class_id: values.class_id,
       subject_id: values.subject_id,
       period_id: values.period_id,
       primary_teacher_id: values.teacher_id,
       weekly_hours: values.weekly_hours,
-      scheme_id: schemeId || null,
     };
 
     if (isEditMode && editData?.id) {
-      await api.assignClassSubject(request as any);
+      await api.assignClassSubject(request);
       toast.success(m.common_cs_update_success());
     } else {
-      await api.assignClassSubject(request as any);
+      await api.assignClassSubject(request);
       toast.success(m.common_cs_create_success());
     }
 

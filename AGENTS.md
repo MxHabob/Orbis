@@ -39,14 +39,14 @@ Every agent starting a session in this repository MUST:
 
 ## 3. CONTINUATION STATE
 
-- **Current Status:** `STUDENTS_RECONCILIATION_COMPLETED`
-- **Master Reference Document:** `docs/students_backend_desktop_reconciliation_report.md`
+- **Current Status:** `STUDENTS_RECONCILIATION_COMPLETE`
+- **Master Reference Documents:** [student_backend_desktop_contract_reconciliation.md](file:///d:/projects/Orbis/docs/student_backend_desktop_contract_reconciliation.md), [student_backend_desktop_reconciliation_report.md](file:///d:/projects/Orbis/docs/student_backend_desktop_reconciliation_report.md)
 - **Accomplished:**
-  - Audited backend Clean Architecture domain entities (`Student`, `Person`, `Enrollment`, `StudentGuardian`, `StudentFee`, `Attendance`, `BehaviorRecord`, `DocumentRequirement`).
-  - Added and registered missing Tauri IPC commands (`student_remove_guardian`, `student_delete_student`, `student_restore_student`, `assessment_list_student_attendance`, `document_list_by_entity`).
-  - Expanded and reconciled API client types (`types.ts`), local client (`local-client.ts`), and remote client (`remote-client.ts`) with 100% parity.
-  - Rebuilt Student Directory (`student-directory.svelte`, `student-table.svelte`, `store.svelte.ts`) with canonical `StudentDetailDto` and normalized Arabic search.
-  - Reconciled Student Registration form and state controllers (`student-form.svelte`, `form-state.svelte.ts`, `personal-info.svelte.ts`, `financial-info.svelte.ts`, `document-info.svelte.ts`).
-  - Rebuilt Student Detail Workspace (`[studentId]/+layout.svelte`, `student-details.svelte`) and all sub-feature tabs (Guardians, Grades, Fees, Attendance, Behavior, Documents).
-  - Verified 0 errors across `bun x tsc --noEmit`, `cargo check` in `src-tauri`, and `cargo check --workspace` in `apps/api-rust`.
-- **Next Target Module:** `ACADEMICS` (as per the master contract).
+  - Audited backend Clean Architecture database schema, entities, and application use cases for Students (`Person`, `Student`, `StudentGuardian`, `Enrollment`, `StudentFee`, `DocumentRequirement`, `Document`).
+  - Completely resolved the Person vs. Student vs. User vs. Guardian relationship hierarchy: Guardians are canonical `Person` entities linked via `student_guardians` without synthetic IAM `User` account requirements.
+  - Reconciled schemas in `@orbis/schemas` (`studentRegistrationSchema`, `guardianFormInputSchema`) removing synthetic passwords and aligning with backend `RegisterStudentInput` and `AssignGuardianRequest`.
+  - Fully eliminated all `$effect` usages across the Student subsystem (`guardian-form.svelte`, `student-form.svelte`, `student-details.svelte`), strictly using declarative `$derived` runes, Clean Code, and zero reactivity anti-patterns.
+  - Eliminated all `any` and legacy fields across `form-state.svelte.ts`, `personal-info.svelte.ts`, `document-info.svelte.ts`, `student-grades.svelte`, `student-attendance.svelte`.
+  - Produced comprehensive contract reconciliation document `docs/student_backend_desktop_contract_reconciliation.md`.
+  - Verified 0 errors across `bun x tsc --noEmit` (clean), `cargo check --workspace` in `apps/api-rust` (clean), and production static build `bun run build` (clean 38.87s).
+- **Next Target Module:** `EXAMS` / `FINANCE` (as per the master contract).

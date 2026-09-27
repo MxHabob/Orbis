@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
-import { api, extractErrorMessage } from "$lib/api";
+import { api, extractErrorMessage, type ClassDto, type AcademicPeriodDto, type EnrollmentDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
@@ -22,7 +22,15 @@ import ClassCreateSheet from "$lib/features/academics/components/class-create-sh
 let { orgId }: { orgId: string } = $props();
 const queryClient = useQueryClient();
 
-let activePeriodId = $state("");
+let userSelectedPeriodId = $state<string | null>(null);
+const activePeriodId = $derived(
+  userSelectedPeriodId ||
+    String(
+      periods.find((period) => period.status === "active")?.id ||
+        periods[0]?.id ||
+        "",
+    ),
+);
 
 const classesQuery = createQuery(() => ({
   queryKey: ["classes", orgId],
@@ -38,6 +46,10 @@ const periodsQuery = createQuery(() => ({
   staleTime: 10 * 60 * 1000,
 }));
 
+const periods = $derived(
+  (periodsQuery.data as AcademicPeriodDto[] | undefined) ?? [],
+);
+
 const enrollmentsQuery = createQuery(() => ({
   queryKey: ["classes-enrollments", orgId, activePeriodId],
   queryFn: () => api.listEnrollments({ periodId: activePeriodId || undefined }),
@@ -45,20 +57,13 @@ const enrollmentsQuery = createQuery(() => ({
   staleTime: 3 * 60 * 1000,
 }));
 
-const classes = $derived((classesQuery.data as any[] | undefined) ?? []);
-const periods = $derived(periodsQuery.data ?? []);
-const enrollments = $derived(enrollmentsQuery.data ?? []);
+const classes = $derived((classesQuery.data as ClassDto[] | undefined) ?? []);
+const enrollments = $derived(
+  (enrollmentsQuery.data as EnrollmentDto[] | undefined) ?? [],
+);
 const error = $derived(
   classesQuery.error ? extractErrorMessage(classesQuery.error) : null,
 );
-
-$effect(() => {
-  if (periods.length > 0 && !activePeriodId) {
-    const active =
-      periods.find((period: any) => period.status === "active") ?? periods[0];
-    activePeriodId = String(active.id);
-  }
-});
 
 // Sheet trigger state
 let isModalOpen = $state(false);
@@ -69,9 +74,9 @@ function refetchAll() {
   enrollmentsQuery.refetch();
 }
 
-function getClassMetric(classId: string): any {
+function getClassMetric(classId: string): { active_students: number } {
   const count = enrollments.filter(
-    (e: any) => String(e.class_id) === String(classId),
+    (e) => String(e.class_id) === String(classId),
   ).length;
   return { active_students: count };
 }

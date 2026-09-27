@@ -21,6 +21,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@orbis/ui/accordion";
+import { createPeriodsQuery } from "$lib/features/academics/queries";
 
 let {
   orgId,
@@ -48,8 +49,6 @@ let {
 } = $props();
 
 const isEdit = $derived(!!period);
-
-let periodsList = $state<any[]>([]);
 
 const form = new FormController({
   initialValues: {
@@ -82,23 +81,13 @@ const gradingLabels = $derived({
   gpa: m.common_period_form_grading_gpa(),
 });
 
-async function loadParentOptions() {
-  if (!orgId) return;
-  try {
-    const list = await api.listAcademicPeriods();
-    periodsList = (list || []).filter(
-      (p: any) => !isEdit || String(p.id) !== String(period?.id),
-    );
-  } catch (e) {
-    console.error("Failed to load parent periods:", e);
-  }
-}
 
-$effect(() => {
-  if (orgId) {
-    loadParentOptions();
-  }
-});
+const periodsQuery = createPeriodsQuery(() => orgId);
+const periodsList = $derived(
+  (periodsQuery.data ?? []).filter(
+    (p: any) => !isEdit || String(p.id) !== String(period?.id),
+  ),
+);
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();

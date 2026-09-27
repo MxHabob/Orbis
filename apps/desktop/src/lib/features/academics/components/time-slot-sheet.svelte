@@ -18,7 +18,7 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import { ClockRotateRight, FloppyDisk, Heart, Pencil, Plus, Trash, XMark } from "@orbis/icons";
-import { api, extractErrorMessage } from "$lib/api";
+import { api, extractErrorMessage, type CreateTimeSlotRequest } from "$lib/api";
 import { toast } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { createTimeSlotInputSchema } from "@orbis/schemas";
@@ -131,16 +131,18 @@ async function handleSaveSlot(e: SubmitEvent) {
   try {
     if (editingSlotId) {
       // Update
-      await api.createTimeSlot({
+      const request: CreateTimeSlotRequest = {
         period_id: periodId,
-        slot_number: 1,
+        day_of_week: 1,
+        slot_index: 1,
         name: name.trim() || nameAr.trim(),
         name_ar: nameAr.trim(),
         start_time: startTime,
         end_time: endTime,
-        duration_minutes: calcDuration(startTime, endTime),
         is_break: isBreak,
-      } as any);
+        break_type: isBreak ? breakType : null,
+      };
+      await api.createTimeSlot(request);
       toast.success(m.academics_schedule_time_slot_updated());
     } else {
       // Create
@@ -150,16 +152,18 @@ async function handleSaveSlot(e: SubmitEvent) {
           0,
         ) + 1;
 
-      await api.createTimeSlot({
+      const request: CreateTimeSlotRequest = {
         period_id: periodId,
-        slot_number: slotNumber,
+        day_of_week: 1,
+        slot_index: slotNumber,
         name: name.trim() || nameAr.trim(),
         name_ar: nameAr.trim(),
         start_time: startTime,
         end_time: endTime,
-        duration_minutes: calcDuration(startTime, endTime),
         is_break: isBreak,
-      } as any);
+        break_type: isBreak ? breakType : null,
+      };
+      await api.createTimeSlot(request);
       toast.success(m.academics_schedule_time_slot_added());
     }
 

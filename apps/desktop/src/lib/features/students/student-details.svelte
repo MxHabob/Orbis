@@ -35,7 +35,15 @@ import { fade } from "svelte/transition";
 import { l } from "$lib/core/i18n";
 import { createStudentQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
-import { api, extractErrorMessage, queryKeys } from "$lib/api";
+import {
+  api,
+  extractErrorMessage,
+  queryKeys,
+  type CalculationResultDto,
+  type AttendanceDto,
+  type BehaviorRecordDto,
+  type ClassDto,
+} from "$lib/api";
 import { queryClient } from "$lib/api";
 import { academicContext } from "$lib/stores";
 import AuditTimeline from "$lib/shared/components/audit-timeline.svelte";
@@ -59,7 +67,6 @@ let isSaving = $state(false);
 // Form fields
 let nameAr = $state("");
 let nameEn = $state("");
-let birthDate = $state("");
 let sex = $state("male");
 let classId = $state("");
 let studentNumber = $state("");
@@ -68,9 +75,19 @@ let phone = $state("");
 let address = $state("");
 let isActiveState = $state(true);
 
+let birthDay = $state("");
+let birthMonth = $state("");
+let birthYear = $state("");
+
+const birthDate = $derived(
+  birthDay && birthMonth && birthYear
+    ? `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`
+    : ""
+);
+
 const selectedClassName = $derived(
   (() => {
-    const cls = classes.find((c: any) => String(c.id) === classId);
+    const cls = classes.find((c: ClassDto) => String(c.id) === classId);
     return cls
       ? cls.name || String(cls.id)
       : m.common_form_select_class();
@@ -96,62 +113,44 @@ const monthsList = $derived([
   { value: "12", label: m.common_form_month_12() },
 ]);
 
-let birthDay = $state("");
-let birthMonth = $state("");
-let birthYear = $state("");
-
-$effect(() => {
-  if (birthDay && birthMonth && birthYear) {
-    birthDate = `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`;
-  } else {
-    birthDate = "";
-  }
-});
-
-let initialized = $state(false);
-$effect(() => {
-  if (studentDetail && !initialized) {
-    const p = person;
-    const s = student;
-    const e = enrollment;
-
-    nameAr = (p?.first_name && p?.last_name ? `${p.first_name} ${p.last_name}` : "") || p?.name_ar || p?.full_name || "";
-    nameEn = p?.name_en || "";
-    birthDate = p?.birth_date
-      ? String(p.birth_date).slice(0, 10)
-      : "";
-
-    if (birthDate) {
-      const parts = birthDate.split("-");
-      if (parts.length === 3) {
-        birthYear = parts[0];
-        birthMonth = String(parseInt(parts[1], 10));
-        birthDay = String(parseInt(parts[2], 10));
-      }
-    }
-
-    sex = p?.gender || p?.sex || "male";
-    classId = String(e?.class_id || s?.class_id || "");
-    studentNumber = String(s?.student_number || "");
-    email = String(p?.email || "");
-    phone = String(p?.phone || p?.phone_number || "");
-    address = String(p?.address || "");
-    isActiveState = s?.status === "active";
-    initialized = true;
-  }
-});
-
 // Evaluation State & Loading
 let evaluationLoading = $state(true);
-let gradesReport = $state<any>(null);
-let attendanceReport = $state<any>(null);
-let behaviorRecords = $state<any[]>([]);
+let gradesReport = $state<CalculationResultDto | null>(null);
+let attendanceReport = $state<AttendanceDto | null>(null);
+let behaviorRecords = $state<BehaviorRecordDto[]>([]);
 
 onMount(async () => {
   evaluationLoading = true;
   try {
+    const detail = await api.getStudent(studentId);
+    if (detail) {
+      const p = detail.person;
+      const s = detail.student;
+      const e = detail.enrollment;
+
+      nameAr = (p?.first_name && p?.last_name ? `${p.first_name} ${p.last_name}` : "") || p?.first_name_ar || p?.display_name || p?.full_name || "";
+      nameEn = p?.full_name || "";
+      const rawBirth = p?.birth_date ? String(p.birth_date).slice(0, 10) : "";
+      if (rawBirth) {
+        const parts = rawBirth.split("-");
+        if (parts.length === 3) {
+          birthYear = parts[0];
+          birthMonth = String(parseInt(parts[1], 10));
+          birthDay = String(parseInt(parts[2], 10));
+        }
+      }
+
+      sex = p?.gender || "male";
+      classId = String(e?.class_id || "");
+      studentNumber = String(s?.student_number || "");
+      email = String(p?.email || "");
+      phone = String(p?.phone || "");
+      address = String(p?.address || "");
+      isActiveState = s?.status === "active";
+    }
+
     const periodId =
-      academicContext.effectivePeriodId || enrollment?.period_id || "";
+      academicContext.effectivePeriodId || detail?.enrollment?.period_id || "";
     if (periodId && studentId) {
       const gRes = await api.calculateGpa({ student_id: studentId, period_id: periodId }).catch(() => null);
       gradesReport = gRes;
@@ -331,8 +330,7 @@ async function saveStudentDetails(e: Event) {
 
     queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
     queryClient.invalidateQueries({ queryKey: queryKeys.student.detail(studentId) });
-    initialized = false;
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("Save error:", e);
     toast.error(extractErrorMessage(e));
   } finally {

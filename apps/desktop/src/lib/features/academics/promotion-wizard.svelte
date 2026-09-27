@@ -5,7 +5,6 @@ Steps: Configuration → Class Mapping → Preview → Execute.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-
 import { api } from "$lib/api";
 import { extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
@@ -21,8 +20,6 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Switch } from "@orbis/ui/switch";
-import { Checkbox } from "@orbis/ui/checkbox";
-import { Badge } from "@orbis/ui/badge";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import {
   AlertDialog,
@@ -36,14 +33,7 @@ import {
 } from "@orbis/ui/alert-dialog";
 import { Progress } from "@orbis/ui/progress";
 import { AdjustmentsHorizontal, ArrowLeft, ArrowPath, ArrowRight, BookOpen, Check, Play, Plus, Trash, User, UserBadgeCheck, UserMinus, Users } from "@orbis/icons";
-import type {
-  PromotionConfig,
-  PromotionJob,
-  PromotionDetail,
-  ClassMapping,
-} from "@orbis/sdk";
-
-let { orgId }: { orgId: string } = $props();
+import type { PromotionConfig } from "@orbis/sdk";
 
 // ── Wizard State ────────────────────────────────────────────────
 
@@ -73,12 +63,6 @@ let config = $state<PromotionConfig>({
   carry_over_outstanding_fees: false,
   carry_over_guardians: true,
   class_mapping: [],
-});
-
-$effect(() => {
-  if (academicContext.effectivePeriodId && !config.source_period_id) {
-    config.source_period_id = academicContext.effectivePeriodId;
-  }
 });
 
 let policyLoaded = $state(false);
@@ -269,7 +253,7 @@ const previewGridRows = $derived(
                   <Label for="target_year_name" class="text-xs font-semibold text-foreground">{m.common_promo_target_year()}</Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_year()}</span>
                 </div>
-                <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
                   <Input id="target_year_name" bind:value={config.target_year_name} placeholder={m.common_year_name_placeholder()} class="h-9 w-full bg-background" />
                 </div>
               </div>
@@ -280,7 +264,7 @@ const previewGridRows = $derived(
                   <Label for="target_year_name_ar" class="text-xs font-semibold text-foreground">{m.common_year_name_ar()}</Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_year_ar()}</span>
                 </div>
-                <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
                   <Input id="target_year_name_ar" bind:value={config.target_year_name_ar} class="h-9 w-full bg-background" />
                 </div>
               </div>
@@ -291,7 +275,7 @@ const previewGridRows = $derived(
                   <Label for="target_start_date" class="text-xs font-semibold text-foreground">{m.common_promo_target_start()}</Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_start()}</span>
                 </div>
-                <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
                   <Input id="target_start_date" type="date" bind:value={config.target_start_date} class="h-9 w-full bg-background" />
                 </div>
               </div>
@@ -302,7 +286,7 @@ const previewGridRows = $derived(
                   <Label for="target_end_date" class="text-xs font-semibold text-foreground">{m.common_promo_target_end()}</Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_end()}</span>
                 </div>
-                <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
                   <Input id="target_end_date" type="date" bind:value={config.target_end_date} class="h-9 w-full bg-background" />
                 </div>
               </div>
@@ -313,7 +297,7 @@ const previewGridRows = $derived(
                   <Label for="passing_score" class="text-xs font-semibold text-foreground">{m.common_promo_passing_score()}</Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_passing_score()}</span>
                 </div>
-                <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
                   <Input id="passing_score" type="number" bind:value={config.passing_score} min={0} max={100} class="h-9 w-full bg-background" />
                 </div>
               </div>
@@ -324,7 +308,7 @@ const previewGridRows = $derived(
                   <Label for="min_attendance_rate" class="text-xs font-semibold text-foreground">{m.common_promo_min_attendance()}</Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_min_attendance()}</span>
                 </div>
-                <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
                   <Input id="min_attendance_rate" type="number" bind:value={config.min_attendance_rate} min={0} max={100} class="h-9 w-full bg-background" />
                 </div>
               </div>
@@ -363,7 +347,7 @@ const previewGridRows = $derived(
                     </Label>
                     <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_final_level()}</span>
                   </div>
-                  <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+                  <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
                     <Input id="final_level" bind:value={config.final_level} placeholder={m.common_promo_final_level_placeholder()} class="h-9 w-full bg-background" />
                   </div>
                 </div>
@@ -446,7 +430,7 @@ const previewGridRows = $derived(
                         <Label class="text-xs font-semibold text-foreground">{m.common_promo_source_level()}</Label>
                         <span class="text-[11px] text-muted-foreground">{m.common_promo_desc_source_level()}</span>
                       </div>
-                      <div class="w-full md:w-[480px] shrink-0">
+                      <div class="w-full md:w-120 shrink-0">
                         <Input bind:value={mapping.source_level} placeholder={m.common_promo_source_level_placeholder()} class="h-9 w-full bg-background" />
                       </div>
                     </div>
@@ -457,7 +441,7 @@ const previewGridRows = $derived(
                         <Label class="text-xs font-semibold text-foreground">{m.common_promo_target_level()}</Label>
                         <span class="text-[11px] text-muted-foreground">{m.common_promo_desc_target_level()}</span>
                       </div>
-                      <div class="w-full md:w-[480px] shrink-0">
+                      <div class="w-full md:w-120 shrink-0">
                         <Input bind:value={mapping.target_level} placeholder={m.common_promo_target_level_placeholder()} class="h-9 w-full bg-background" />
                       </div>
                     </div>
@@ -468,7 +452,7 @@ const previewGridRows = $derived(
                         <Label class="text-xs font-semibold text-foreground">{m.common_promo_target_classes()}</Label>
                         <span class="text-[11px] text-muted-foreground">{m.common_promo_desc_target_classes()}</span>
                       </div>
-                      <div class="w-full md:w-[480px] shrink-0">
+                      <div class="w-full md:w-120 shrink-0">
                         <Input
                           value={mapping.target_class_names.join(", ")}
                           oninput={(e) => {
@@ -542,7 +526,7 @@ const previewGridRows = $derived(
             </CardTitle>
           </CardHeader>
           <CardContent class="p-0">
-            <DataTable
+            <OrbisGrid
               columns={previewColumns}
               source={previewGridRows}
               minHeight="260px"

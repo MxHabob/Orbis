@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, extractErrorMessage } from "$lib/api";
+import { api, extractErrorMessage, type ScheduleLessonRequest } from "$lib/api";
 import { l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import { createClassSubjectsQuery } from "$lib/features/academics/queries";
@@ -58,15 +58,15 @@ let {
   onCancel,
 }: Props = $props();
 
-let selectedClassId = $state("");
-let selectedSubjectId = $state("");
-let selectedTeacherId = $state("");
-let selectedRoomId = $state("");
-let selectedDay = $state(1);
-let selectedSlotId = $state("");
-let topic = $state("");
-let homework = $state("");
-let notes = $state("");
+let selectedClassId = $state(String(lesson?.class_id || classId || ""));
+let selectedSubjectId = $state(String(lesson?.subject_id || ""));
+let selectedTeacherId = $state(String(lesson?.teacher_id || ""));
+let selectedRoomId = $state(String(lesson?.room_id || ""));
+let selectedDay = $state(Number(lesson?.day_of_week || dayOfWeek || 1));
+let selectedSlotId = $state(String(lesson?.time_slot_id || timeSlotId || ""));
+let topic = $state(lesson?.topic || "");
+let homework = $state(lesson?.homework || "");
+let notes = $state(lesson?.notes || "");
 let conflictMessage = $state<string | null>(null);
 let isCheckingConflict = $state(false);
 
@@ -123,31 +123,14 @@ const weekdays = $derived(
   }),
 );
 
-$effect(() => {
-  selectedClassId = String(lesson?.class_id || classId || "");
-  selectedSubjectId = String(lesson?.subject_id || "");
-  selectedTeacherId = String(lesson?.teacher_id || "");
-  selectedRoomId = String(lesson?.room_id || "");
-  selectedDay = Number(lesson?.day_of_week || dayOfWeek || 1);
-  selectedSlotId = String(lesson?.time_slot_id || timeSlotId || "");
-  topic = lesson?.topic || "";
-  homework = lesson?.homework || "";
-  notes = lesson?.notes || "";
-});
-
-$effect(() => {
-  if (selectedSubjectId && selectedClassSubject?.primary_teacher_id) {
-    selectedTeacherId = String(selectedClassSubject.primary_teacher_id);
+function handleSubjectChange(value: string | undefined) {
+  selectedSubjectId = value ?? "";
+  const cs = classSubjects.find(
+    (item: any) => String(item.subject_id) === selectedSubjectId,
+  );
+  if (cs?.primary_teacher_id) {
+    selectedTeacherId = String(cs.primary_teacher_id);
   }
-});
-
-$effect(() => {
-  if (selectedClassId && selectedSubjectId && selectedSlotId) checkConflict();
-});
-
-async function checkConflict() {
-  isCheckingConflict = false;
-  conflictMessage = null;
 }
 
 async function handleSubmit(event: SubmitEvent) {
@@ -174,17 +157,13 @@ async function handleSubmit(event: SubmitEvent) {
   }
 
   const submitted = await form.submit(async (values) => {
-    const content = {
-      topic: topic.trim() || undefined,
-      homework: homework.trim() || undefined,
-      notes: notes.trim() || undefined,
-    };
-    await api.scheduleLesson({
-      ...values,
+    const request: ScheduleLessonRequest = {
       class_subject_id: selectedClassSubject.id,
+      time_slot_id: values.time_slot_id,
       room_id: selectedRoomId || undefined,
-      ...content,
-    } as any);
+      teacher_id: values.teacher_id || undefined,
+    };
+    await api.scheduleLesson(request);
     toast.success(
       isEditing
         ? m.common_lesson_edit_success()
@@ -229,7 +208,7 @@ async function handleSubmit(event: SubmitEvent) {
           </FormField>
           <FormField id="lesson-subject" label={m.common_lesson_subject()} error={form.errors.subject_id?.[0]} required>
             {#snippet children()}
-            <Select type="single" value={selectedSubjectId} onValueChange={(value: string | undefined) => (selectedSubjectId = value ?? "")} disabled={isEditing || availableSubjects.length === 0}>
+            <Select type="single" value={selectedSubjectId} onValueChange={handleSubjectChange} disabled={isEditing || availableSubjects.length === 0}>
               <SelectTrigger id="lesson-subject" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><BookOpen size={13} class="text-muted-foreground" /><span>{availableSubjects.find((item) => String(item.id) === selectedSubjectId) ? l(availableSubjects.find((item) => String(item.id) === selectedSubjectId).name_ar, availableSubjects.find((item) => String(item.id) === selectedSubjectId).name) : m.common_lesson_select_subject()}</span></div></SelectTrigger>
               <SelectContent>{#each availableSubjects as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.name)}</SelectItem>{/each}</SelectContent>
             </Select>

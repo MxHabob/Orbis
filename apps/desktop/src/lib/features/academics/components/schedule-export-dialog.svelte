@@ -15,7 +15,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { AdjustmentsHorizontal, DocumentPage, Download, Grid, Keyframes, Pin, User, Users } from "@orbis/icons";
+import { AdjustmentsHorizontal } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 
@@ -57,23 +57,27 @@ let {
   getRoomName,
 }: Props = $props();
 
-let exportType = $state<"class" | "teacher" | "room" | "master">("class");
-let exportTargetId = $state("");
+let userExportType = $state<"class" | "teacher" | "room" | "master" | null>(
+  null,
+);
+let exportType = $derived(
+  userExportType ||
+    (viewMode === "teacher"
+      ? "teacher"
+      : viewMode === "room"
+        ? "room"
+        : "class"),
+);
 
-$effect(() => {
-  if (open) {
-    if (viewMode === "teacher") {
-      exportType = "teacher";
-      exportTargetId = selectedTeacherId;
-    } else if (viewMode === "room") {
-      exportType = "room";
-      exportTargetId = selectedRoomId;
-    } else {
-      exportType = "class";
-      exportTargetId = selectedClassId;
-    }
-  }
-});
+let userExportTargetId = $state<string | null>(null);
+let exportTargetId = $derived(
+  userExportTargetId ||
+    (viewMode === "teacher"
+      ? selectedTeacherId
+      : viewMode === "room"
+        ? selectedRoomId
+        : selectedClassId),
+);
 
 const exportTitle = $derived.by(() => {
   if (exportType === "class") {

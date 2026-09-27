@@ -3,7 +3,7 @@ import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
-import { api, extractErrorMessage } from "$lib/api";
+import { api, extractErrorMessage, type ClassSubjectDto, type ScheduledLessonDto } from "$lib/api";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { toast } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
@@ -141,17 +141,17 @@ const periodScheduleQuery = createQuery(() => ({
   staleTime: 30 * 1000,
 }));
 
-const allLessons = $derived((periodScheduleQuery.data ?? []) as any[]);
+const allLessons = $derived((periodScheduleQuery.data ?? []) as ScheduledLessonDto[]);
 
 // Solve Jobs Query
 const solveJobsQuery = createQuery(() => ({
   queryKey: ["solve-jobs", orgId, activePeriodId],
-  queryFn: () => Promise.resolve([]),
+  queryFn: () => Promise.resolve([] as any[]),
   enabled: !!orgId && !!activePeriodId,
   staleTime: 5 * 1000,
 }));
 
-const solveJobs = $derived((solveJobsQuery.data ?? []) as any[]);
+const solveJobs = $derived(solveJobsQuery.data ?? []);
 
 // ClassSubjects Query for active period
 const allClassSubjectsQuery = createQuery(() => ({
@@ -169,33 +169,28 @@ const allClassSubjectsQuery = createQuery(() => ({
   staleTime: 30 * 1000,
 }));
 
-const allClassSubjects = $derived((allClassSubjectsQuery.data ?? []) as any[]);
+const allClassSubjects = $derived((allClassSubjectsQuery.data ?? []) as ClassSubjectDto[]);
 
-// Auto-select initial period
-$effect(() => {
-  if (periods.length > 0 && !activePeriodId) {
-    const active =
-      periods.find((p: any) => p.status === "active" || p.is_active) ||
-      periods[0];
-    if (active) activePeriodId = String(active.id);
-  }
-});
+const effectiveActivePeriodId = $derived(
+  activePeriodId ||
+    String(
+      periods.find((p: any) => p.status === "active" || p.is_active)?.id ||
+        periods[0]?.id ||
+        "",
+    ),
+);
 
-// Auto-select preview selections
-$effect(() => {
-  if (classes.length > 0 && !previewClassId)
-    previewClassId = String(classes[0].id);
-  if (teachers.length > 0 && !previewTeacherId)
-    previewTeacherId = String(teachers[0].id);
-  if (rooms.length > 0 && !previewRoomId) previewRoomId = String(rooms[0].id);
-});
+const effectivePreviewClassId = $derived(
+  previewClassId || (classes[0]?.id ? String(classes[0].id) : ""),
+);
+const effectivePreviewTeacherId = $derived(
+  previewTeacherId || (teachers[0]?.id ? String(teachers[0].id) : ""),
+);
+const effectivePreviewRoomId = $derived(
+  previewRoomId || (rooms[0]?.id ? String(rooms[0].id) : ""),
+);
 
-// Track latest solve job
-$effect(() => {
-  if (solveJobs.length > 0 && !activeJob) {
-    activeJob = solveJobs[0];
-  }
-});
+const effectiveActiveJob = $derived(activeJob || solveJobs[0] || null);
 
 // Parse draft solution assignments
 const solutionAssignments = $derived.by(() => {
@@ -333,7 +328,15 @@ async function handleApplySolution() {
 
 async function handleUpdateClassSubjectHours(csId: string, hours: number) {
   try {
-    await api.assignClassSubject({ id: csId, weekly_hours: hours } as any);
+    const targetCs = allClassSubjects.find((cs) => cs.id === csId);
+    if (!targetCs) return;
+    await api.assignClassSubject({
+      class_id: targetCs.class_id,
+      subject_id: targetCs.subject_id,
+      period_id: targetCs.period_id,
+      primary_teacher_id: targetCs.primary_teacher_id,
+      weekly_hours: hours,
+    });
     queryClient.invalidateQueries({
       queryKey: ["all-class-subjects-matrix", orgId, activePeriodId],
     });
@@ -348,10 +351,15 @@ async function handleUpdateClassSubjectTeacher(
   teacherId: string,
 ) {
   try {
+    const targetCs = allClassSubjects.find((cs) => cs.id === csId);
+    if (!targetCs) return;
     await api.assignClassSubject({
-      id: csId,
-      primary_teacher_id: teacherId || null,
-    } as any);
+      class_id: targetCs.class_id,
+      subject_id: targetCs.subject_id,
+      period_id: targetCs.period_id,
+      primary_teacher_id: teacherId,
+      weekly_hours: targetCs.weekly_hours,
+    });
     queryClient.invalidateQueries({
       queryKey: ["all-class-subjects-matrix", orgId, activePeriodId],
     });
@@ -400,8 +408,8 @@ function getRoomName(roomId?: string): string {
 }
 
 function getSubjectColor(subjectId: string): string {
-  const sub = subjects.find((s) => String(s.id) === String(subjectId)) as any;
-  if (sub?.color) return sub.color;
+  const sub = subjects.find((s) => String(s.id) === String(subjectId));
+  if (sub && "color" in sub && sub.color) return String(sub.color);
   return "var(--primary)";
 }
 </script>

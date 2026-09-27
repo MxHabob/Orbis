@@ -52,7 +52,7 @@ let activeFilter = $state<UniversalFilter>({
 });
 
 const gridSource = $derived(
-  (report?.grades || []).map((g: any, i: number) => ({
+  (report?.grades || []).map((g, i: number) => ({
     ...g,
     __idx: i + 1,
     subject_name: g.subject_name || g.subject_id || "—",

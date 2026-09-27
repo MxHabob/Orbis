@@ -4,9 +4,8 @@
   Supports Class, Teacher, Room, Subject, and Matrix perspectives.
 -->
 <script lang="ts">
-import { page } from "$app/state";
 import { goto } from "$app/navigation";
-import { api, extractErrorMessage } from "$lib/api";
+import { api, extractErrorMessage, type ScheduleLessonRequest } from "$lib/api";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "@orbis/ui";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
@@ -113,52 +112,19 @@ const teachers = $derived(
   ),
 );
 
-// Auto-select active period
-$effect(() => {
-  if (periods.length > 0 && !activePeriodId) {
-    const active =
-      periods.find((p: any) => p.status === "active" || p.is_active) ||
-      periods[0];
-    if (active) {
-      activePeriodId = String(active.id);
-    }
-  }
-});
-
-// URL query param initializers & defaults
-$effect(() => {
-  if (classes.length > 0 && !selectedClassId) {
-    const param =
-      page.url.searchParams.get("classId") ||
-      page.url.searchParams.get("class");
-    if (param && classes.some((c: any) => String(c.id) === param)) {
-      selectedClassId = param;
-      viewMode = "class";
-    } else {
-      selectedClassId = String(classes[0].id);
-    }
-  }
-});
-
-$effect(() => {
-  if (teachers.length > 0 && !selectedTeacherId) {
-    const param =
-      page.url.searchParams.get("teacherId") ||
-      page.url.searchParams.get("teacher");
-    if (param && teachers.some((t: any) => String(t.id) === param)) {
-      selectedTeacherId = param;
-      viewMode = "teacher";
-    } else {
-      selectedTeacherId = String(teachers[0].id);
-    }
-  }
-});
-
+const effectiveActivePeriodId = $derived(
+  activePeriodId ||
+    String(
+      periods.find((p: any) => p.status === "active" || p.is_active)?.id ||
+        periods[0]?.id ||
+        "",
+    ),
+);
 // Time Slots & Lessons Query for active period
 const timeSlotsQuery = createQuery(() => ({
-  queryKey: ["time-slots", orgId, activePeriodId],
-  queryFn: () => api.listTimeSlots(activePeriodId),
-  enabled: !!orgId && !!activePeriodId,
+  queryKey: ["time-slots", orgId, effectiveActivePeriodId],
+  queryFn: () => api.listTimeSlots(effectiveActivePeriodId),
+  enabled: !!orgId && !!effectiveActivePeriodId,
   staleTime: 5 * 60 * 1000,
 }));
 
@@ -298,8 +264,8 @@ function getRoomName(roomId?: string): string {
 }
 
 function getSubjectColor(subjectId: string): string {
-  const sub = subjects.find((s) => String(s.id) === String(subjectId)) as any;
-  if (sub?.color) return sub.color;
+  const sub = subjects.find((s) => String(s.id) === String(subjectId));
+  if (sub && "color" in sub && sub.color) return String(sub.color);
   return "var(--primary)";
 }
 
@@ -371,12 +337,13 @@ async function handleMoveLesson(
   targetSlotId: string,
 ) {
   try {
-    await api.scheduleLesson({
+    const request: ScheduleLessonRequest = {
       class_subject_id: lesson.class_subject_id,
-      day_of_week: targetDay,
       time_slot_id: targetSlotId,
       room_id: lesson.room_id || undefined,
-    } as any);
+      teacher_id: lesson.teacher_id || undefined,
+    };
+    await api.scheduleLesson(request);
 
     toast.success(m.academics_schedule_lesson_moved());
     refetchSchedule();

@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, extractErrorMessage } from "$lib/api";
+import { api, extractErrorMessage, type CreateTimeSlotRequest } from "$lib/api";
 import { createTimeSlotInputSchema } from "@orbis/schemas";
 import { Button } from "@orbis/ui/button";
 import { Checkbox } from "@orbis/ui/checkbox";
@@ -34,8 +34,12 @@ let {
   onSuccess?: () => void;
 } = $props();
 
-let nameAr = $state("");
-let name = $state("");
+let nameAr = $state(
+  m.academics_schedule_placeholder_period({ number: nextSlotNumber }),
+);
+let name = $state(
+  m.academics_schedule_placeholder_period_en({ number: nextSlotNumber }),
+);
 let startTime = $state("08:00");
 let endTime = $state("08:45");
 let isBreak = $state(false);
@@ -53,21 +57,6 @@ const form = new FormController({
     applicable_days: "1,2,3,4,5",
   },
   schema: createTimeSlotInputSchema,
-});
-
-$effect(() => {
-  if (open) {
-    nameAr = m.academics_schedule_placeholder_period({
-      number: nextSlotNumber,
-    });
-    name = m.academics_schedule_placeholder_period_en({
-      number: nextSlotNumber,
-    });
-    startTime = "08:00";
-    endTime = "08:45";
-    isBreak = false;
-    breakType = "recess";
-  }
 });
 
 function calcDuration(start: string, end: string): number {
@@ -96,10 +85,18 @@ async function handleSubmit(event: SubmitEvent) {
   }
 
   const submitted = await form.submit(async (values) => {
-    await api.createTimeSlot({
-      ...values,
+    const request: CreateTimeSlotRequest = {
+      period_id: values.period_id,
+      day_of_week: 1,
+      slot_index: values.slot_number,
+      name: values.name,
+      name_ar: values.name_ar,
+      start_time: values.start_time,
+      end_time: values.end_time,
+      is_break: values.is_break,
       break_type: isBreak ? breakType : null,
-    } as any);
+    };
+    await api.createTimeSlot(request);
     toast.success(m.academics_schedule_time_slot_added());
     open = false;
     onSuccess?.();

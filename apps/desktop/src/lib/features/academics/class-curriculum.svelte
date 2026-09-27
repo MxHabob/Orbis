@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 import { createQuery } from "@tanstack/svelte-query";
-import { api, extractErrorMessage } from "$lib/api";
+import { api, extractErrorMessage, type ClassSubjectDto, type SubjectDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import {
   Card,
@@ -23,6 +23,12 @@ import { goto } from "$app/navigation";
 import { BookOpen, Plus, Refresh } from "@orbis/icons";
 import ClassSubjectSheet from "$lib/features/academics/components/class-subject-sheet.svelte";
 
+interface EnrichedClassSubject extends ClassSubjectDto {
+  catalog?: SubjectDto;
+  teacher_name?: string;
+  is_active?: boolean;
+}
+
 let { orgId, classId }: { orgId: string; classId: string } = $props();
 
 const periodId = $derived(academicContext.effectivePeriodId);
@@ -30,11 +36,11 @@ let showSubjectSheet = $state(false);
 
 const subjectsQuery = createQuery(() => ({
   queryKey: ["class-subjects-natural", classId, periodId],
-  queryFn: async () => {
+  queryFn: async (): Promise<EnrichedClassSubject[]> => {
     const offerings = await api.listClassSubjects(classId, periodId);
     const catalog = await api.listSubjects();
-    const byId = new Map(catalog.map((s: any) => [String(s.id), s]));
-    return offerings.map((o: any) => ({
+    const byId = new Map(catalog.map((s) => [String(s.id), s]));
+    return offerings.map((o) => ({
       ...o,
       catalog: byId.get(String(o.subject_id)),
     }));
@@ -43,11 +49,11 @@ const subjectsQuery = createQuery(() => ({
   staleTime: 5 * 60 * 1000,
 }));
 
-const subjects = $derived((subjectsQuery.data || []) as any[]);
+const subjects = $derived((subjectsQuery.data || []) as EnrichedClassSubject[]);
 const isLoading = $derived(subjectsQuery.isLoading);
 const error = $derived(subjectsQuery.error);
 
-function subjectName(subject: any): string {
+function subjectName(subject: EnrichedClassSubject): string {
   return subject.catalog?.name_ar || subject.catalog?.name || subject.subject_id;
 }
 

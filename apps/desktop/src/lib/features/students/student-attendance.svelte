@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api } from "$lib/api";
+import { api, type AttendanceDto } from "$lib/api";
 import {
   Card,
   CardHeader,
@@ -63,7 +63,7 @@ let activeFilter = $state<UniversalFilter>({
 });
 
 const gridSource = $derived(
-  attendanceRecords.map((log: any, i: number) => ({
+  attendanceRecords.map((log: AttendanceDto, i: number) => ({
     ...log,
     __idx: i + 1,
     date: formatDate(log.date || log.created_at) || "—",

@@ -5,6 +5,7 @@
   Strictly references canonical guardian identity and executes api.assignGuardian directly.
 -->
 <script lang="ts">
+import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -58,7 +59,7 @@ const isEditMode = $derived(!!editData);
 // Single Source of Truth Form Controller
 const form = new FormController<GuardianFormInput>({
   initialValues: {
-    guardianUserId: editData?.guardian_id ?? "",
+    guardianId: editData?.guardian_id ?? "",
     fullName: "",
     phone: "",
     email: null,
@@ -70,7 +71,7 @@ const form = new FormController<GuardianFormInput>({
     isEmergencyContact: editData?.is_emergency_contact ?? true,
     isAuthorizedPickup: editData?.is_authorized_pickup ?? false,
     isPayer: editData?.is_payer ?? false,
-    paymentSharePercent: 0,
+    paymentSharePercent: editData?.payment_share_percent ?? 0,
   },
   schema: guardianFormInputSchema,
 });
@@ -79,29 +80,27 @@ function fieldError(field: string): string | undefined {
   return form.errors[field]?.[0];
 }
 
-// Populate guardian details when editing
-$effect(() => {
+onMount(async () => {
   if (editData && editData.guardian_id) {
-    form.setField("guardianUserId", editData.guardian_id);
+    form.setField("guardianId", editData.guardian_id);
     form.setField("relationship", editData.relationship ?? "father");
     form.setField("isPrimary", Boolean(editData.is_primary));
     form.setField("isEmergencyContact", Boolean(editData.is_emergency_contact));
     form.setField("isAuthorizedPickup", Boolean(editData.is_authorized_pickup));
     form.setField("isPayer", Boolean(editData.is_payer));
+    form.setField("paymentSharePercent", editData.payment_share_percent ?? 0);
 
-    api
-      .getUser(editData.guardian_id)
-      .then((user: UserDto) => {
-        if (user) {
-          form.setField("fullName", user.full_name ?? "");
-          form.setField("phone", user.phone ?? "");
-          form.setField("email", user.email ?? null);
-          form.setField("nationalId", user.national_id ?? null);
-        }
-      })
-      .catch((e: unknown) => {
-        console.error("Failed to load guardian user details:", e);
-      });
+    try {
+      const user = await api.getUser(editData.guardian_id);
+      if (user) {
+        form.setField("fullName", user.full_name ?? "");
+        form.setField("phone", user.phone ?? "");
+        form.setField("email", user.email ?? null);
+        form.setField("nationalId", user.national_id ?? null);
+      }
+    } catch {
+      // User or person details fetched gracefully
+    }
   }
 });
 
@@ -147,7 +146,7 @@ const selectedRelation = $derived(
 );
 
 function selectUser(u: UserDto) {
-  form.setField("guardianUserId", u.id);
+  form.setField("guardianId", u.id);
   form.setField("fullName", u.full_name ?? u.full_name_ar ?? "");
   form.setField("phone", u.phone ?? "");
   form.setField("email", u.email ?? null);
@@ -157,7 +156,7 @@ function selectUser(u: UserDto) {
 }
 
 function clearSelectedUser() {
-  form.setField("guardianUserId", "");
+  form.setField("guardianId", "");
   form.setField("fullName", "");
   form.setField("phone", "");
   form.setField("email", null);
@@ -179,7 +178,7 @@ async function handleSubmit(e: SubmitEvent) {
 
     const request: AssignGuardianRequest = {
       student_id: studentId,
-      guardian_id: values.guardianUserId,
+      guardian_id: values.guardianId,
       relationship: values.relationship,
       relationship_ar: relationshipAr,
       is_primary: values.isPrimary,
@@ -203,7 +202,7 @@ async function handleSubmit(e: SubmitEvent) {
   } else if (form.formError) {
     toast.error(form.formError);
   } else if (Object.keys(form.errors).length > 0) {
-    toast.error(fieldError("guardianUserId") || m.common_validation_guardian_name_required());
+    toast.error(fieldError("guardianId") || m.common_validation_guardian_name_required());
   }
 }
 </script>
@@ -235,7 +234,7 @@ async function handleSubmit(e: SubmitEvent) {
                 class="h-10 text-sm"
               />
               
-              {#if !form.values.guardianUserId && searchQuery.length > 0}
+              {#if !form.values.guardianId && searchQuery.length > 0}
                 <div class="rounded-lg border border-border/40 bg-card/50 overflow-hidden max-h-40 overflow-y-auto">
                   {#if filteredUsers.length === 0}
                     <div class="p-3 text-xs text-muted-foreground text-center">{m.common_switcher_no_results()}</div>
@@ -256,10 +255,10 @@ async function handleSubmit(e: SubmitEvent) {
                 </div>
               {/if}
 
-              {#if form.values.guardianUserId}
+              {#if form.values.guardianId}
                 <div class="flex items-center justify-between p-2 rounded bg-primary/10 border border-primary/20 text-xs">
                   <span class="text-primary font-medium">
-                    ✓ {m.common_guardians_sheet_selected_label({ name: form.values.fullName || form.values.guardianUserId })}
+                    ✓ {m.common_guardians_sheet_selected_label({ name: form.values.fullName || form.values.guardianId })}
                   </span>
                   <Button
                     type="button"
@@ -275,7 +274,7 @@ async function handleSubmit(e: SubmitEvent) {
           {/if}
 
           <!-- Guardian Identity Details (Read-only verified demographic info) -->
-          {#if form.values.guardianUserId}
+          {#if form.values.guardianId}
             <div class="p-3.5 rounded-lg border border-border/60 bg-muted/20 space-y-2 text-xs">
               <div class="flex justify-between">
                 <span class="text-muted-foreground">{m.common_word_fullname()}:</span>
@@ -402,7 +401,7 @@ async function handleSubmit(e: SubmitEvent) {
     <Button
       type="submit"
       class="flex-1 h-9 text-sm font-semibold"
-      disabled={form.isSubmitting || !form.values.guardianUserId || !form.values.relationship}
+      disabled={form.isSubmitting || !form.values.guardianId || !form.values.relationship}
     >
       {form.isSubmitting ? m.common_state_saving() : m.common_action_save()}
     </Button>

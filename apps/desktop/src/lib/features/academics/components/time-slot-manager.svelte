@@ -53,37 +53,6 @@ function resetForm() {
   endTime = "";
 }
 
-function editSlot(slot: any) {
-  editingId = String(slot.id);
-  nameAr = slot.name_ar || "";
-  name = slot.name || "";
-  startTime = String(slot.start_time || "").slice(0, 5);
-  endTime = String(slot.end_time || "").slice(0, 5);
-  open = true;
-}
-
-function beginCreate() {
-  resetForm();
-  const nextNumber =
-    timeSlots.reduce(
-      (highest, slot) => Math.max(highest, Number(slot.slot_number) || 0),
-      0,
-    ) + 1;
-  nameAr = m.academics_schedule_placeholder_period({ number: nextNumber });
-  name = m.academics_schedule_placeholder_period_en({ number: nextNumber });
-  open = true;
-}
-
-$effect(() => {
-  if (slot) {
-    editingId = String(slot.id);
-    nameAr = slot.name_ar || "";
-    name = slot.name || "";
-    startTime = String(slot.start_time || "").slice(0, 5);
-    endTime = String(slot.end_time || "").slice(0, 5);
-  }
-});
-
 function durationMinutes() {
   const [startHour, startMinute] = startTime.split(":").map(Number);
   const [endHour, endMinute] = endTime.split(":").map(Number);

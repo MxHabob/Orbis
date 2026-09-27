@@ -26,18 +26,26 @@ import {
   recalculateRowTotals,
 } from "$lib/features/exams/grade-helpers";
 
+import { createGradesQuery } from "$lib/features/academics/queries";
+
 let { orgId, classId, classSubjectId }: { orgId: string; classId: string; classSubjectId: string } = $props();
 
 // Matrix Data (Coursework)
 const selectedPeriodId = $derived(academicContext.effectivePeriodId || "");
 const canEnterGrades = $derived(!academicContext.isReadOnly);
 
-let matrixData = $state<any>(null);
+const gradesQuery = createGradesQuery(() => classSubjectId);
+const isMatrixLoading = $derived(gradesQuery.isLoading);
+
 let gridSource = $state<any[]>([]);
 let assessmentKeys = $state<string[]>([]);
-let isMatrixLoading = $state(false);
 let isSaving = $state(false);
 let isDirty = $state(false);
+
+const matrixData = $derived.by(() => {
+  const grades = gradesQuery.data ?? [];
+  return { students: [] };
+});
 
 const gridColumns = $derived.by(() => {
   if (!matrixData) return [];
@@ -47,26 +55,10 @@ const gridColumns = $derived.by(() => {
   });
 });
 
-async function loadGradeMatrix() {
-  isMatrixLoading = true;
-  try {
-    const grades = await api.listGrades({ classSubjectId }).catch(() => []);
-    matrixData = { students: [] };
-    assessmentKeys = [];
-    gridSource = [];
-    isDirty = false;
-  } catch (e: any) {
-    toast.error(e?.message || m.common_error_occurred());
-  } finally {
-    isMatrixLoading = false;
-  }
+function handleRefresh() {
+  gradesQuery.refetch();
+  isDirty = false;
 }
-
-$effect(() => {
-  if (selectedPeriodId && classSubjectId) {
-    loadGradeMatrix();
-  }
-});
 
 function handleCellEdit(event: CellEditEvent) {
   const { rowIndex, columnId, newValue } = event;
@@ -109,11 +101,13 @@ async function handleSaveAll() {
 
     for (const student of studentsToSave) {
       await api.recordGrade({
+        period_id: selectedPeriodId,
+        student_id: student.student_id || student.enrollment_id,
         enrollment_id: student.enrollment_id,
         class_subject_id: classSubjectId,
         score: student.score,
-        assessment_type: student.exam_type || "exam",
-      } as any);
+        notes: student.notes ?? undefined,
+      });
     }
 
     toast.success(m.common_grades_save_success());
@@ -162,7 +156,7 @@ async function handleSaveAll() {
             variant="outline" 
             size="sm" 
             class="h-8 px-2.5 text-xs font-semibold gap-1.5 cursor-pointer shadow-2xs" 
-            onclick={loadGradeMatrix} 
+            onclick={handleRefresh} 
             disabled={isMatrixLoading}
             title={m.common_retry()}
           >
