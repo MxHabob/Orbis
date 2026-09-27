@@ -34,7 +34,6 @@ import type {
   CreateClassRequest,
   AssignClassSubjectRequest,
   EnrollmentDto,
-  GuardianDto,
   StudentDto,
   EnrollStudentRequest,
   AssignGuardianRequest,
@@ -187,6 +186,7 @@ export interface PersonDto {
 export interface StudentDetailDto {
   student: StudentDto;
   person: PersonDto;
+  enrollment?: EnrollmentDto | null;
 }
 
 export interface StudentFilterParams {
@@ -225,10 +225,29 @@ export interface EnrollmentFilterParams {
   sortDir?: string;
 }
 
+export interface GuardianDto {
+  id: string;
+  student_id: string;
+  guardian_id: string;
+  relationship: string;
+  relationship_ar?: string | null;
+  is_primary: boolean;
+  is_emergency_contact: boolean;
+  is_authorized_pickup: boolean;
+  is_payer: boolean;
+  payment_share_percent?: number | null;
+  occupation?: string | null;
+  employer?: string | null;
+  work_phone?: string | null;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface RegisterStudentInput {
   person_id?: string;
   user_id?: string;
-  student_number: string;
+  student_number?: string;
   first_name: string;
   middle_name?: string;
   last_name: string;
@@ -492,40 +511,40 @@ export interface DiscountTemplateDto {
 export interface CreateDiscountTemplateRequest {
   code?: string;
   name: string;
-  nameAr?: string;
-  discountType: string;
+  name_ar?: string;
+  discount_type: string;
   value: number | string;
-  eligibilityRules?: Record<string, unknown>;
-  isApprovalRequired?: boolean;
+  eligibility_rules?: Record<string, unknown>;
+  isApproval_required?: boolean;
   isAutoApply?: boolean;
   isStackable?: boolean;
   priority?: number;
 }
 
 export interface StudentFeeFilterParams {
-  periodId?: string;
-  studentId?: string;
-  enrollmentId?: string;
-  feeTemplateId?: string;
+  period_id?: string;
+  student_id?: string;
+  enrollment_id?: string;
+  feeTemplate_id?: string;
   status?: string;
-  isOverdue?: boolean;
+  is_overdue?: boolean;
   page?: number;
-  pageSize?: number;
-  sortBy?: string;
-  sortDir?: string;
+  page_size?: number;
+  sort_by?: string;
+  sort_dir?: string;
 }
 
 export interface PaymentFilterParams {
-  feeId?: string;
-  studentId?: string;
-  enrollmentId?: string;
+  fee_id?: string;
+  student_id?: string;
+  enrollment_id?: string;
   method?: string;
-  fromDate?: string;
-  toDate?: string;
+  from_date?: string;
+  to_date?: string;
   page?: number;
-  pageSize?: number;
-  sortBy?: string;
-  sortDir?: string;
+  page_size?: number;
+  sort_by?: string;
+  sort_dir?: string;
 }
 
 export interface PrerequisiteCheckResultDto {
@@ -1237,6 +1256,8 @@ export interface OrbisApiClient {
   getStudent(id: string): Promise<StudentDetailDto>;
   updateStudentStatus(req: UpdateStudentStatusInput): Promise<StudentDto>;
   updateStudentProfile(req: UpdateStudentProfileInput): Promise<StudentDetailDto>;
+  deleteStudent(id: string): Promise<boolean>;
+  restoreStudent(id: string): Promise<StudentDto>;
   changeStudyMode(req: ChangeStudyModeInput): Promise<EnrollmentDto>;
   transferClass(req: TransferClassInput): Promise<EnrollmentDto>;
   enrollStudent(req: EnrollStudentRequest): Promise<EnrollmentDto>;
@@ -1244,6 +1265,7 @@ export interface OrbisApiClient {
   getEnrollment(id: string): Promise<EnrollmentDto>;
   assignGuardian(req: AssignGuardianRequest): Promise<GuardianDto>;
   listGuardians(studentId: string): Promise<GuardianDto[]>;
+  removeGuardian(studentId: string, guardianId: string): Promise<boolean>;
   bulkRegisterStudents(items: BulkRegisterStudentCommandItem[], options?: { atomic?: boolean; dryRun?: boolean }): Promise<BulkRegisterStudentCommandResultDto>;
 
   // ── Employee Affairs ────────────────────────────────────────
@@ -1308,6 +1330,7 @@ export interface OrbisApiClient {
   calculateRankings(req: CalculateRankingsRequest): Promise<RankingItemDto[]>;
   markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto>;
   listAttendance(classId: string, date: string): Promise<AttendanceDto[]>;
+  listStudentAttendance(studentId: string): Promise<AttendanceDto[]>;
   recordBehavior(req: RecordBehaviorInput): Promise<BehaviorRecordDto>;
   listStudentBehaviorRecords(studentId: string): Promise<BehaviorRecordDto[]>;
 
@@ -1373,6 +1396,7 @@ export interface OrbisApiClient {
   // ── Document ────────────────────────────────────────────────
   uploadDocument(req: UploadDocumentRequest): Promise<DocumentDto>;
   listDocuments(): Promise<DocumentDto[]>;
+  listDocumentsByEntity(entityType: string, entityId: string): Promise<DocumentDto[]>;
   getDocument(id: string): Promise<DocumentDto>;
   deleteDocument(id: string): Promise<void>;
   createDocumentRequirement(req: CreateDocumentRequirementRequest): Promise<DocumentRequirementDto>;

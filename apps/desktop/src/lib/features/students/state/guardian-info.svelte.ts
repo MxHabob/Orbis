@@ -1,8 +1,8 @@
-import { api, type UserDto } from "$lib/api";
+import { api, type UserDto, type GuardianDto } from "$lib/api";
 
 export interface GuardianLink {
   id?: string;
-  user_id?: string;
+  guardian_id?: string;
   full_name: string;
   phone: string;
   email: string;
@@ -11,6 +11,7 @@ export interface GuardianLink {
   relationship_ar: string;
   is_primary: boolean;
   is_emergency_contact?: boolean;
+  is_authorized_pickup?: boolean;
   is_payer?: boolean;
   payment_share_percent?: number;
   occupation?: string;
@@ -30,6 +31,7 @@ export class GuardianState {
       relationship_ar: "الأب",
       is_primary: true,
       is_emergency_contact: true,
+      is_authorized_pickup: false,
       is_payer: true,
       payment_share_percent: 100,
       occupation: "",
@@ -50,24 +52,33 @@ export class GuardianState {
   async populate() {
     if (!this.studentId) return;
     try {
-      const gList = await api.listGuardians(this.studentId);
+      const gList: GuardianDto[] = await api.listGuardians(this.studentId);
       if (gList && gList.length > 0) {
-        this.linkedGuardians = gList.map((g: any) => ({
-          id: String(g.id),
-          user_id: g.guardian_id ? String(g.guardian_id) : undefined,
-          full_name: g.name || g.name_ar || "",
-          phone: g.phone || "",
-          email: g.email || "",
-          national_id: g.national_id || "",
-          relationship: g.relationship || "",
-          relationship_ar: g.relationship_ar || g.relationship || "",
-          is_primary: g.is_primary === 1 || g.is_primary === true,
-          is_emergency_contact:
-            g.is_emergency_contact === 1 || g.is_emergency_contact === true,
-          is_payer: g.is_payer === 1 || g.is_payer === true,
-          payment_share_percent: g.payment_share_percent ?? 100,
-          occupation: g.occupation || "",
-        }));
+        const guardiansWithUsers = await Promise.all(
+          gList.map(async (g: GuardianDto) => {
+            let u: UserDto | null = null;
+            try {
+              u = await api.getUser(g.guardian_id);
+            } catch {}
+            return {
+              id: g.id,
+              guardian_id: g.guardian_id,
+              full_name: u?.full_name || u?.full_name_ar || "",
+              phone: u?.phone || "",
+              email: u?.email || "",
+              national_id: u?.national_id || "",
+              relationship: g.relationship || "other",
+              relationship_ar: g.relationship_ar || g.relationship || "آخر",
+              is_primary: g.is_primary,
+              is_emergency_contact: g.is_emergency_contact,
+              is_authorized_pickup: g.is_authorized_pickup,
+              is_payer: g.is_payer,
+              payment_share_percent: g.payment_share_percent ?? 100,
+              occupation: g.occupation || "",
+            };
+          }),
+        );
+        this.linkedGuardians = guardiansWithUsers;
       }
     } catch (e) {
       console.warn("Failed to load guardians:", e);
@@ -86,6 +97,7 @@ export class GuardianState {
         relationship_ar: "آخر",
         is_primary: false,
         is_emergency_contact: false,
+        is_authorized_pickup: false,
         is_payer: false,
         payment_share_percent: 0,
         occupation: "",
@@ -95,7 +107,6 @@ export class GuardianState {
 
   removeGuardian(index: number) {
     if (this.linkedGuardians.length <= 1) {
-      // Keep at least one guardian structure ready
       this.linkedGuardians = [
         {
           full_name: "",
@@ -106,6 +117,7 @@ export class GuardianState {
           relationship_ar: "الأب",
           is_primary: true,
           is_emergency_contact: true,
+          is_authorized_pickup: false,
           is_payer: true,
           payment_share_percent: 100,
           occupation: "",
@@ -134,8 +146,9 @@ export class GuardianState {
       try {
         const users = await api.listUsers().catch(() => []);
         const filtered = (users || []).filter((u: UserDto) => {
-          const nameMatch = (u.full_name || "").toLowerCase().includes(trimmed) || 
-                            (u.full_name_ar || "").toLowerCase().includes(trimmed);
+          const nameMatch =
+            (u.full_name || "").toLowerCase().includes(trimmed) ||
+            (u.full_name_ar || "").toLowerCase().includes(trimmed);
           const emailMatch = (u.email || "").toLowerCase().includes(trimmed);
           const phoneMatch = (u.phone || "").includes(trimmed);
           return nameMatch || emailMatch || phoneMatch;
@@ -155,11 +168,12 @@ export class GuardianState {
 
     this.linkedGuardians[index] = {
       ...this.linkedGuardians[index],
-      user_id: parent.id,
+      guardian_id: parent.id,
       full_name: parent.full_name_ar || parent.full_name || parent.email || "",
       email: parent.email || "",
       phone: parent.phone || this.linkedGuardians[index].phone || "",
-      national_id: parent.national_id || this.linkedGuardians[index].national_id || "",
+      national_id:
+        parent.national_id || this.linkedGuardians[index].national_id || "",
       occupation: this.linkedGuardians[index].occupation || "",
     };
 

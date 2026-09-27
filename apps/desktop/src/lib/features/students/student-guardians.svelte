@@ -18,8 +18,7 @@ import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
 import { Pencil, Plus, Trash, Users } from "@orbis/icons";
-import { api, extractErrorMessage } from "$lib/api";
-import type { GuardianLink, JsonRecord } from "@orbis/sdk";
+import { api, extractErrorMessage, queryKeys, type GuardianDto, type UserDto } from "$lib/api";
 import GuardianLinkSheet from "$lib/features/students/components/guardian-link-sheet.svelte";
 
 let { orgId, studentId }: { orgId: string; studentId: string } = $props();
@@ -35,15 +34,15 @@ const relations: Record<string, string> = {
 };
 
 const guardiansQuery = createQuery(() => ({
-  queryKey: ["student-guardians", studentId],
+  queryKey: queryKeys.student.guardians(studentId),
   queryFn: async () => {
-    const links = (await api.listGuardians(studentId)) as unknown as GuardianLink[];
-    const userMap: Record<string, JsonRecord> = {};
+    const links = await api.listGuardians(studentId);
+    const userMap: Record<string, UserDto> = {};
     await Promise.all(
-      links.map(async (link: any) => {
+      links.map(async (link) => {
         try {
-          const u = await api.getUser(String(link.guardian_id));
-          if (u) userMap[String(link.guardian_id)] = u as unknown as JsonRecord;
+          const u = await api.getUser(link.guardian_id);
+          if (u) userMap[link.guardian_id] = u;
         } catch {}
       }),
     );
@@ -57,10 +56,10 @@ const guardians = $derived(guardiansQuery.data?.links ?? []);
 const guardianUsers = $derived(guardiansQuery.data?.userMap ?? {});
 const isLoading = $derived(guardiansQuery.isLoading);
 let sheetOpen = $state(false);
-let editTarget = $state<GuardianLink | null>(null);
+let editTarget = $state<GuardianDto | null>(null);
 
-function getGuardianUser(link: GuardianLink): JsonRecord | null {
-  return guardianUsers[String(link.guardian_id)] ?? null;
+function getGuardianUser(link: GuardianDto): UserDto | null {
+  return guardianUsers[link.guardian_id] ?? null;
 }
 
 function getRelationLabel(r: string | undefined | null): string {
@@ -72,12 +71,12 @@ function openCreate() {
   sheetOpen = true;
 }
 
-function openEdit(link: GuardianLink) {
+function openEdit(link: GuardianDto) {
   editTarget = link;
   sheetOpen = true;
 }
 
-async function handleDelete(link: GuardianLink) {
+async function handleDelete(link: GuardianDto) {
   const confirmed = await confirmStore.prompt({
     title: m.common_action_delete() + "؟",
     description: m.common_guardians_delete_confirm(),
@@ -86,8 +85,11 @@ async function handleDelete(link: GuardianLink) {
   });
   if (!confirmed) return;
   try {
+    await api.removeGuardian(studentId, link.guardian_id);
     toast.success(m.common_guardians_delete_success());
-    await queryClient.invalidateQueries({ queryKey: ["student-guardians", studentId] });
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.student.guardians(studentId),
+    });
   } catch (e: unknown) {
     toast.error(
       `${m.common_guardians_delete_failed()}: ${extractErrorMessage(e)}`,
@@ -169,7 +171,7 @@ async function handleDelete(link: GuardianLink) {
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_fullname_desc()}</span>
                 </div>
                 <div class="w-full md:w-120 shrink-0 text-start font-medium text-sm text-foreground">
-                  {user?.full_name ?? user?.name_ar ?? "—"}
+                  {user?.full_name ?? user?.full_name_ar ?? "—"}
                 </div>
               </div>
 
@@ -179,18 +181,18 @@ async function handleDelete(link: GuardianLink) {
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_phone_desc()}</span>
                 </div>
                 <div class="w-full md:w-120 shrink-0 text-start font-mono text-sm text-foreground">
-                  {user?.phone ?? user?.phone_number ?? "—"}
+                  {user?.phone ?? "—"}
                 </div>
               </div>
 
-              {#if user?.email && !String(user.email).endsWith("@orbis.local")}
+              {#if user?.email && !user.email.endsWith("@orbis.local")}
                 <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
                   <div class="flex flex-col gap-1 text-start">
                     <span class="text-xs font-semibold text-foreground">{m.common_word_email()}</span>
                     <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_guardians_email_desc()}</span>
                   </div>
                   <div class="w-full md:w-120 shrink-0 text-start font-mono text-sm text-foreground">
-                    {String(user.email)}
+                    {user.email}
                   </div>
                 </div>
               {/if}
@@ -201,7 +203,7 @@ async function handleDelete(link: GuardianLink) {
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_rel_desc()}</span>
                 </div>
                 <div class="w-full md:w-120 shrink-0 text-start font-medium text-sm text-foreground">
-                  {getRelationLabel(String(link.relationship || ""))}
+                  {getRelationLabel(link.relationship)}
                 </div>
               </div>
 
@@ -222,8 +224,17 @@ async function handleDelete(link: GuardianLink) {
                 </div>
                 <div class="w-full md:w-120 shrink-0 flex flex-col gap-3">
                   <div class="flex flex-wrap gap-2 justify-start">
-                    {#if link.is_primary === 1 || Boolean(link.is_primary)}
+                    {#if link.is_primary}
                       <Badge variant="brand" class="text-[10px]">{m.common_form_guardian_role_primary()}</Badge>
+                    {/if}
+                    {#if link.is_emergency_contact}
+                      <Badge variant="outline" class="text-[10px]">{m.common_form_guardian_role_emergency()}</Badge>
+                    {/if}
+                    {#if link.is_authorized_pickup}
+                      <Badge variant="outline" class="text-[10px]">مخول بالاستلام</Badge>
+                    {/if}
+                    {#if link.is_payer}
+                      <Badge variant="secondary" class="text-[10px]">{m.common_form_guardian_role_payer()}</Badge>
                     {/if}
                   </div>
                 </div>
@@ -241,5 +252,5 @@ async function handleDelete(link: GuardianLink) {
   {orgId}
   {studentId}
   editData={editTarget}
-  onSuccess={() => queryClient.invalidateQueries({ queryKey: ["student-guardians", studentId] })}
+  onSuccess={() => queryClient.invalidateQueries({ queryKey: queryKeys.student.guardians(studentId) })}
 />

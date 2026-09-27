@@ -1,11 +1,17 @@
-import { api } from "$lib/api";
+import {
+  api,
+  type FeeTemplateDto,
+  type StudentFeeDto,
+  type StudentDetailDto,
+  type DiscountTemplateDto,
+} from "$lib/api";
 
 export class FinancialInfoState {
   orgId: string;
   studentId?: string;
 
-  feeTemplates = $state<any[]>([]);
-  discountTemplates = $state<any[]>([]);
+  feeTemplates = $state<FeeTemplateDto[]>([]);
+  discountTemplates = $state<DiscountTemplateDto[]>([]);
   applyDiscount = $state(false);
   discountType = $state<"template" | "custom">("template");
   selectedDiscountTemplateId = $state("");
@@ -25,16 +31,15 @@ export class FinancialInfoState {
     try {
       const [feeTpls, discountTpls] = await Promise.all([
         api.listFeeTemplates().catch(() => []),
-        api.listDiscountTemplates ? api.listDiscountTemplates().catch(() => []) : Promise.resolve([]),
+        api.listDiscountTemplates().catch(() => []),
       ]);
-
       this.feeTemplates = feeTpls || [];
       this.discountTemplates = discountTpls || [];
 
       const feeMap: Record<string, { checked: boolean; amount: number }> = {};
       for (const fTpl of this.feeTemplates) {
-        if (fTpl.is_mandatory === 0 || fTpl.is_mandatory === false) {
-          feeMap[String(fTpl.id)] = {
+        if (!fTpl.is_mandatory) {
+          feeMap[fTpl.id] = {
             checked: false,
             amount: Number(fTpl.default_amount) || 0,
           };
@@ -48,34 +53,21 @@ export class FinancialInfoState {
     }
   }
 
-  async populate(originalStudent: any) {
+  async populate(originalStudent: StudentDetailDto | null | undefined) {
     if (!originalStudent) return;
-
-    if (originalStudent.discount_template_id) {
-      this.selectedDiscountTemplateId = String(
-        originalStudent.discount_template_id,
-      );
-      this.discountType = "template";
-      this.applyDiscount = true;
-    } else if (originalStudent.custom_discount_amount) {
-      this.customDiscountAmount =
-        Number(originalStudent.custom_discount_amount) || null;
-      this.discountType = "custom";
-      this.applyDiscount = true;
-    }
 
     if (this.studentId) {
       try {
-        const studentFees = await api.listStudentFees({
-          enrollmentId: this.studentId,
+        const studentFees: StudentFeeDto[] = await api.listStudentFees({
+          student_id: this.studentId,
         });
 
-        for (const fee of studentFees as any[]) {
-          const feeTemplateId = fee.fee_template_id as string;
+        for (const fee of studentFees) {
+          const feeTemplateId = fee.fee_template_id;
           if (feeTemplateId && this.selectedOptionalFees[feeTemplateId]) {
             this.selectedOptionalFees[feeTemplateId].checked = true;
             this.selectedOptionalFees[feeTemplateId].amount =
-              Number(fee.amount) || 0;
+              Number(fee.net_amount || fee.original_amount) || 0;
           }
         }
       } catch (feeErr) {

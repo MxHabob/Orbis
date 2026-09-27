@@ -27,22 +27,28 @@ let { orgId, studentId }: { orgId: string; studentId: string } = $props();
 
 const periodId = $derived(academicContext.effectivePeriodId || "");
 
-let report = $state<any>(null);
+let attendanceRecords = $state<any[]>([]);
 let isLoading = $state(true);
+
+const presentCount = $derived(
+  attendanceRecords.filter((r) => String(r.status || "").toLowerCase().includes("present") || String(r.status || "").includes("حاضر")).length,
+);
+const absentCount = $derived(
+  attendanceRecords.filter((r) => String(r.status || "").toLowerCase().includes("absent") || String(r.status || "").includes("غائب")).length,
+);
+const lateCount = $derived(
+  attendanceRecords.filter((r) => String(r.status || "").toLowerCase().includes("late") || String(r.status || "").includes("متأخر")).length,
+);
+const totalDays = $derived(presentCount + absentCount + lateCount);
+const attendanceRate = $derived(totalDays > 0 ? ((presentCount + lateCount * 0.5) / totalDays) * 100 : 100);
 
 onMount(() => loadAttendance());
 
 async function loadAttendance() {
   isLoading = true;
   try {
-    if (!orgId || !studentId || !periodId) return;
-    const enrollments = await api.listEnrollments();
-    const activeEnrollment = enrollments.find(
-      (e: any) => e.student_id === studentId,
-    );
-    if (activeEnrollment) {
-      report = null;
-    }
+    if (!orgId || !studentId) return;
+    attendanceRecords = await api.listStudentAttendance(studentId);
   } catch (e) {
     console.error(e);
   } finally {
@@ -57,17 +63,17 @@ let activeFilter = $state<UniversalFilter>({
 });
 
 const gridSource = $derived(
-  (report?.logs || []).map((log: any, i: number) => ({
+  attendanceRecords.map((log: any, i: number) => ({
     ...log,
     __idx: i + 1,
-    date: formatDate(log.date) || "—",
+    date: formatDate(log.date || log.created_at) || "—",
     status: String(log.status || "")
       .toLowerCase()
       .replace("حاضر", "present")
       .replace("غائب", "absent")
       .replace("متأخر", "late"),
-    subject_name: log.subject_name || "—",
-    notes: log.notes || "—",
+    subject_name: log.subject_name || log.subject_id || "—",
+    notes: log.remarks || log.notes || "—",
     recorded_by_name: log.recorded_by_name || "—",
   })),
 );
@@ -85,47 +91,45 @@ const rtl = $derived(getLocale() === "ar");
 
 <div class="flex flex-col gap-6 text-xs text-start font-sans">
   <!-- Attendance Stats -->
-  {#if report}
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0 select-none">
-      <Card class="flex items-center justify-between p-4">
-        <div class="flex flex-col">
-          <span class="text-[9px] text-muted-foreground font-semibold">{m.academics_attendance_present_days()}</span>
-          <span class="text-sm font-bold font-mono mt-0.5 text-emerald-600 dark:text-emerald-400">
-            {formatNumber(report.present_count || 0)} {m.academics_attendance_day_unit()}
-          </span>
-        </div>
-        <UserBadgeCheck size={18} class="text-emerald-500" />
-      </Card>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0 select-none">
+    <Card class="flex items-center justify-between p-4">
+      <div class="flex flex-col">
+        <span class="text-[9px] text-muted-foreground font-semibold">{m.academics_attendance_present_days()}</span>
+        <span class="text-sm font-bold font-mono mt-0.5 text-emerald-600 dark:text-emerald-400">
+          {formatNumber(presentCount)} {m.academics_attendance_day_unit()}
+        </span>
+      </div>
+      <UserBadgeCheck size={18} class="text-emerald-500" />
+    </Card>
 
-      <Card class="flex items-center justify-between p-4">
-        <div class="flex flex-col">
-          <span class="text-[9px] text-muted-foreground font-semibold">{m.academics_attendance_absent_days()}</span>
-          <span class="text-sm font-bold font-mono mt-0.5 text-destructive">
-            {formatNumber(report.absent_count || 0)} {m.academics_attendance_day_unit()}
-          </span>
-        </div>
-        <UserMinus size={18} class="text-destructive" />
-      </Card>
+    <Card class="flex items-center justify-between p-4">
+      <div class="flex flex-col">
+        <span class="text-[9px] text-muted-foreground font-semibold">{m.academics_attendance_absent_days()}</span>
+        <span class="text-sm font-bold font-mono mt-0.5 text-destructive">
+          {formatNumber(absentCount)} {m.academics_attendance_day_unit()}
+        </span>
+      </div>
+      <UserMinus size={18} class="text-destructive" />
+    </Card>
 
-      <Card class="flex items-center justify-between p-4">
-        <div class="flex flex-col">
-          <span class="text-[9px] text-muted-foreground font-semibold">{m.academics_attendance_late_cases()}</span>
-          <span class="text-sm font-bold font-mono mt-0.5 text-amber-500">
-            {formatNumber(report.late_count || 0)} {m.academics_attendance_times_unit()}
-          </span>
-        </div>
-        <ClockRotateRight size={18} class="text-amber-500" />
-      </Card>
+    <Card class="flex items-center justify-between p-4">
+      <div class="flex flex-col">
+        <span class="text-[9px] text-muted-foreground font-semibold">{m.academics_attendance_late_cases()}</span>
+        <span class="text-sm font-bold font-mono mt-0.5 text-amber-500">
+          {formatNumber(lateCount)} {m.academics_attendance_times_unit()}
+        </span>
+      </div>
+      <ClockRotateRight size={18} class="text-amber-500" />
+    </Card>
 
-      <Card class="flex items-center justify-between p-4">
-        <div class="flex flex-col">
-          <span class="text-[9px] text-muted-foreground font-semibold">{m.common_card_attendance_rate()}</span>
-          <span class="text-sm font-bold font-mono mt-0.5 text-primary">{formatPercent(report.rate ?? 100.0)}</span>
-        </div>
-        <Calendar size={18} class="text-primary" />
-      </Card>
-    </div>
-  {/if}
+    <Card class="flex items-center justify-between p-4">
+      <div class="flex flex-col">
+        <span class="text-[9px] text-muted-foreground font-semibold">{m.common_card_attendance_rate()}</span>
+        <span class="text-sm font-bold font-mono mt-0.5 text-primary">{formatPercent(attendanceRate)}</span>
+      </div>
+      <Calendar size={18} class="text-primary" />
+    </Card>
+  </div>
 
   <!-- Attendance Log Card -->
   <Card class="overflow-hidden">

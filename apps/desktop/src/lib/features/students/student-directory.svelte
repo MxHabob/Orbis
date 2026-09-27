@@ -31,29 +31,29 @@ import { exportToCsv } from "$lib/shared/utils/export";
 let { orgId }: { orgId: string } = $props();
 
 // TanStack Queries
-const enrollmentsQuery = createEnrollmentsQuery(() => orgId);
+const studentsQuery = createStudentsQuery(() => orgId);
 const classesQuery = createClassesQuery(() => orgId);
 
 // Derived data from queries
-const enrollments = $derived(enrollmentsQuery.data ?? []);
+const students = $derived(studentsQuery.data ?? []);
 const classes = $derived(classesQuery.data ?? []);
-const filteredStudents = $derived(studentsStore.filterList(enrollments));
+const filteredStudents = $derived(studentsStore.filterList(students));
 
 let showOverrideDialog = $state(false);
 const isLoading = $derived(
-  enrollmentsQuery.isLoading || classesQuery.isLoading,
+  studentsQuery.isLoading || classesQuery.isLoading,
 );
-const error = $derived(enrollmentsQuery.error || classesQuery.error);
+const error = $derived(studentsQuery.error || classesQuery.error);
 
 // Helper to count students matching a criteria
 function getCountByClass(classId: string): number {
-  return enrollments.filter((s) => s.class_id === classId).length;
+  return students.filter((s) => s.enrollment?.class_id === classId).length;
 }
 
 function getCountByStatus(status: string): number {
-  if (status === "all") return enrollments.length;
-  return enrollments.filter(
-    (s) => String(s.status || "").toLowerCase() === status,
+  if (status === "all") return students.length;
+  return students.filter(
+    (s) => String(s.student?.status || "").toLowerCase() === status,
   ).length;
 }
 
@@ -84,21 +84,30 @@ function handleExportStudents() {
     `Students_Roster_${orgId}`,
     filteredStudents,
     [
-      { header: "رقم الطالب", accessor: (s) => s.student_number || "—" },
+      { header: "رقم الطالب", accessor: (s) => s.student?.student_number || "—" },
       {
         header: "اسم الطالب",
-        accessor: (s) => s.full_name || s.name_ar || s.name_en || "طالب",
+        accessor: (s) =>
+          (s.person?.first_name && s.person?.last_name
+            ? `${s.person.first_name} ${s.person.last_name}`
+            : "") ||
+          s.person?.name_ar ||
+          s.person?.name_en ||
+          s.person?.full_name ||
+          "طالب",
       },
       {
         header: "الفصل",
         accessor: (s) =>
-          classes.find((c) => c.id === s.class_id)?.name || s.class_id || "—",
+          classes.find((c) => c.id === s.enrollment?.class_id)?.name ||
+          s.enrollment?.class_id ||
+          "—",
       },
-      { header: "الحالة", accessor: (s) => s.status || "active" },
+      { header: "الحالة", accessor: (s) => s.student?.status || "active" },
       {
-        header: "تاريخ القيد",
+        header: "تاريخ القبول",
         accessor: (s) =>
-          s.enrollment_date ? formatDate(s.enrollment_date, "date") : "—",
+          s.student?.admitted_at ? formatDate(s.student.admitted_at, "date") : "—",
       },
     ],
   );
@@ -144,7 +153,7 @@ function handleExportStudents() {
             items: [
               {
                 label: m.common_filter_all_classes(),
-                badge: formatNumber(enrollments.length),
+                badge: formatNumber(students.length),
                 isActive: studentsStore.selectedClassId === null,
                 onclick: () => studentsStore.selectedClassId = null
               },
@@ -231,7 +240,7 @@ function handleExportStudents() {
           {:else if error}
             <div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3 bg-card border border-border rounded-lg">
               <p class="text-xs text-destructive font-semibold">{m.students_load_error({ error: extractErrorMessage(error) })}</p>
-              <Button variant="outline" class="text-xs" onclick={() => { enrollmentsQuery.refetch(); classesQuery.refetch(); }}>{m.common_retry()}</Button>
+              <Button variant="outline" class="text-xs" onclick={() => { studentsQuery.refetch(); classesQuery.refetch(); }}>{m.common_retry()}</Button>
             </div>
           {:else}
             <StudentTable
@@ -241,19 +250,6 @@ function handleExportStudents() {
               bind:selectedIds={selectedStudentIds}
               {orgId}
             />
-            {#if enrollmentsQuery.hasNextPage}
-              <div class="p-2 border-t border-border flex justify-center bg-card shrink-0">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  class="text-xs w-full max-w-md"
-                  disabled={enrollmentsQuery.isFetchingNextPage}
-                  onclick={() => enrollmentsQuery.fetchNextPage()}
-                >
-                  {enrollmentsQuery.isFetchingNextPage ? (m.students_loading?.() || 'جاري التحميل...') : (m.students_load_more?.() || 'تحميل المزيد')}
-                </Button>
-              </div>
-            {/if}
           {/if}
         </div>
       </div>
@@ -277,10 +273,10 @@ function handleExportStudents() {
               {formatNumber(selectedStudentIds.size)} {selectedStudentIds.size === 1 ? m.common_word_student() : 'طلاب'} محدد
             </span>
             {#if selectedStudentIds.size === 1}
-              {@const singleStudent = enrollments.find(e => selectedStudentIds.has(e.id))}
+              {@const singleStudent = students.find(s => selectedStudentIds.has(s.student?.id || s.person?.id))}
               {#if singleStudent}
                 <span class="truncate text-[11px] text-muted-foreground">
-                  {singleStudent.full_name || singleStudent.name_ar || ''}
+                  {(singleStudent.person?.first_name && singleStudent.person?.last_name ? `${singleStudent.person.first_name} ${singleStudent.person.last_name}` : '') || singleStudent.person?.name_ar || singleStudent.person?.name_en || ''}
                 </span>
               {/if}
             {/if}
@@ -290,14 +286,14 @@ function handleExportStudents() {
         <!-- Action Buttons -->
         <div class="flex shrink-0 items-center gap-2">
           {#if selectedStudentIds.size === 1}
-            {@const singleStudent = enrollments.find(e => selectedStudentIds.has(e.id))}
+            {@const singleStudent = students.find(s => selectedStudentIds.has(s.student?.id || s.person?.id))}
             {#if singleStudent}
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 class="h-8 px-2.5 text-xs font-medium cursor-pointer gap-1.5"
-                onclick={() => goto(localizeHref(`/${orgId}/students/${singleStudent.id}`))}
+                onclick={() => goto(localizeHref(`/${orgId}/students/${singleStudent.student?.id}`))}
               >
                 <ArrowForward size={13} />
                 <span>الملف الشخصي</span>
@@ -332,7 +328,7 @@ function handleExportStudents() {
 
   <PrintDialog
     bind:open={printDialogOpen}
-    entityType="enrollment"
+    entityType="student"
     entityIds={Array.from(selectedStudentIds)}
   />
 

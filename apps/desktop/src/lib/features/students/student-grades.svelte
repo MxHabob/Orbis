@@ -37,13 +37,7 @@ async function loadGrades() {
   isLoading = true;
   try {
     if (!orgId || !studentId || !periodId) return;
-    const enrollments = await api.listEnrollments();
-    const activeEnrollment = enrollments.find(
-      (e: any) => e.student_id === studentId,
-    );
-    if (activeEnrollment?.id) {
-      report = await api.calculateGpa({ student_id: activeEnrollment.id, period_id: periodId }).catch(() => null);
-    }
+    report = await api.calculateGpa({ student_id: studentId, period_id: periodId }).catch(() => null);
   } catch (e) {
     console.error(e);
   } finally {

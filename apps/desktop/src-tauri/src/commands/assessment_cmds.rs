@@ -297,6 +297,40 @@ pub async fn assessment_list_attendance(class_id: String, date: String, state: S
 }
 
 #[tauri::command]
+pub async fn assessment_list_student_attendance(
+    student_id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<AttendanceDto>>, String> {
+    let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
+    let domain_filter = orbis_domain::queries::filters::AttendanceFilter {
+        student_id: Some(sid),
+        class_id: None,
+        class_subject_id: None,
+        date: None,
+        status: None,
+        pagination: Some(orbis_domain::queries::filters::PaginationParams {
+            page: Some(1),
+            page_size: Some(1000),
+            sort_by: None,
+            sort_dir: None,
+        }),
+    };
+    let ctx = make_ctx(&state);
+    let items = state.attendance_repo.list(ctx.tenant_id, domain_filter).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.items.into_iter().map(|a| AttendanceDto {
+        id: a.id.to_string(),
+        student_id: a.student_id.to_string(),
+        class_id: a.class_id.map(|c| c.to_string()),
+        class_subject_id: a.class_subject_id.map(|c| c.to_string()),
+        scheduled_lesson_id: a.scheduled_lesson_id.map(|s| s.to_string()),
+        date: a.attendance_date.to_string(),
+        status: a.status,
+        note: a.notes,
+    }).collect()))
+}
+
+
+#[tauri::command]
 pub async fn assessment_calculate_grades(request: CalculateGradesInput, state: State<'_, AppState>) -> Result<ApiResponse<CalculationResultDto>, String> {
     let ctx = make_ctx(&state);
     let scheme_id = Uuid::parse_str(&request.scheme_id).map_err(|_| "Invalid schemeId")?;

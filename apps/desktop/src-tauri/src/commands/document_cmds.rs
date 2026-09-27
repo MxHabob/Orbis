@@ -145,6 +145,18 @@ pub async fn document_delete(id: String, state: State<'_, AppState>) -> Result<(
     state.document_service.delete_document(&ctx, uid).await.map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn document_list_by_entity(
+    entity_type: String,
+    entity_id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<DocumentDto>>, String> {
+    let eid = Uuid::parse_str(&entity_id).map_err(|_| "Invalid entity ID")?;
+    let items = state.document_service.list_documents_by_entity(&entity_type, eid).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(doc_dto).collect()))
+}
+
+
 // ── Document Requirements ──────────────────────────────────────
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

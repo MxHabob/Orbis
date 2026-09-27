@@ -33,9 +33,9 @@ import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
 
 import { l } from "$lib/core/i18n";
-import { createEnrollmentQuery } from "$lib/features/students";
+import { createStudentQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
-import { api, extractErrorMessage } from "$lib/api";
+import { api, extractErrorMessage, queryKeys } from "$lib/api";
 import { queryClient } from "$lib/api";
 import { academicContext } from "$lib/stores";
 import AuditTimeline from "$lib/shared/components/audit-timeline.svelte";
@@ -43,13 +43,14 @@ import AuditTimeline from "$lib/shared/components/audit-timeline.svelte";
 let { orgId, studentId }: { orgId: string; studentId: string } = $props();
 
 // TanStack Queries
-const studentQuery = createEnrollmentQuery(
-  () => orgId,
-  () => studentId,
-);
+const studentQuery = createStudentQuery(() => studentId);
 const classesQuery = createClassesQuery(() => orgId);
 
-const student = $derived(studentQuery.data);
+const studentDetail = $derived(studentQuery.data);
+const student = $derived(studentDetail?.student);
+const person = $derived(studentDetail?.person);
+const enrollment = $derived(studentDetail?.enrollment);
+
 const classes = $derived(classesQuery.data ?? []);
 const isLoading = $derived(studentQuery.isLoading || classesQuery.isLoading);
 
@@ -109,11 +110,15 @@ $effect(() => {
 
 let initialized = $state(false);
 $effect(() => {
-  if (student && !initialized) {
-    nameAr = String(student.full_name || student.name_ar || "");
-    nameEn = String(student.name_en || "");
-    birthDate = student.birth_date
-      ? String(student.birth_date).slice(0, 10)
+  if (studentDetail && !initialized) {
+    const p = person;
+    const s = student;
+    const e = enrollment;
+
+    nameAr = (p?.first_name && p?.last_name ? `${p.first_name} ${p.last_name}` : "") || p?.name_ar || p?.full_name || "";
+    nameEn = p?.name_en || "";
+    birthDate = p?.birth_date
+      ? String(p.birth_date).slice(0, 10)
       : "";
 
     if (birthDate) {
@@ -125,13 +130,13 @@ $effect(() => {
       }
     }
 
-    sex = String(student.sex || "male");
-    classId = String(student.class_id || "");
-    studentNumber = String(student.student_number || "");
-    email = String(student.email || "");
-    phone = String(student.phone_number || student.phone || "");
-    address = String(student.address || "");
-    isActiveState = student.status === "active";
+    sex = p?.gender || p?.sex || "male";
+    classId = String(e?.class_id || s?.class_id || "");
+    studentNumber = String(s?.student_number || "");
+    email = String(p?.email || "");
+    phone = String(p?.phone || p?.phone_number || "");
+    address = String(p?.address || "");
+    isActiveState = s?.status === "active";
     initialized = true;
   }
 });
@@ -146,7 +151,7 @@ onMount(async () => {
   evaluationLoading = true;
   try {
     const periodId =
-      academicContext.effectivePeriodId || student?.period_id || "";
+      academicContext.effectivePeriodId || enrollment?.period_id || "";
     if (periodId && studentId) {
       const gRes = await api.calculateGpa({ student_id: studentId, period_id: periodId }).catch(() => null);
       gradesReport = gRes;
@@ -270,7 +275,7 @@ const decisionHelper = $derived.by(() => {
 
 async function saveStudentDetails(e: Event) {
   e.preventDefault();
-  if (!student || !student.student_id) return;
+  if (!studentDetail) return;
   if (!nameAr.trim()) {
     toast.error(m.common_form_error_name_required());
     return;
@@ -289,26 +294,43 @@ async function saveStudentDetails(e: Event) {
     const arParts = nameAr.trim().split(/\s+/);
     const enParts = nameEn.trim().split(/\s+/);
 
+    const firstName = enParts[0] || arParts[0] || "طالب";
+    const lastName = enParts.length > 1 ? enParts[enParts.length - 1] : (arParts.length > 1 ? arParts[arParts.length - 1] : "جديد");
+    const middleName = enParts.length > 2 ? enParts.slice(1, -1).join(" ") : undefined;
+
+    const firstNameAr = arParts[0] || undefined;
+    const lastNameAr = arParts.length > 1 ? arParts[arParts.length - 1] : undefined;
+    const middleNameAr = arParts.length > 2 ? arParts.slice(1, -1).join(" ") : undefined;
+
+    const targetStudentId = student?.id || studentId;
+
     await api.updateStudentProfile({
-      studentId: String(student.student_id),
-      firstNameAr: arParts[0] || undefined,
-      middleNameAr: arParts.length > 2 ? arParts.slice(1, -1).join(" ") : undefined,
-      lastNameAr: arParts.length > 1 ? arParts[arParts.length - 1] : undefined,
-      displayName: nameAr.trim(),
-      firstName: enParts[0] || undefined,
-      middleName: enParts.length > 2 ? enParts.slice(1, -1).join(" ") : undefined,
-      lastName: enParts.length > 1 ? enParts[enParts.length - 1] : undefined,
+      student_id: targetStudentId,
+      first_name: firstName,
+      middle_name: middleName,
+      last_name: lastName,
+      first_name_ar: firstNameAr,
+      middle_name_ar: middleNameAr,
+      last_name_ar: lastNameAr,
+      gender: sex || undefined,
+      birth_date: birthDate || undefined,
       email: email.trim() || undefined,
       phone: phone.trim() || undefined,
-      gender: sex || undefined,
-      birthDate: birthDate || undefined,
       address: address.trim() || undefined,
     });
 
+    const currentStatus = student?.status === "active";
+    if (isActiveState !== currentStatus) {
+      await api.updateStudentStatus({
+        student_id: targetStudentId,
+        status: isActiveState ? "active" : "inactive",
+      });
+    }
+
     toast.success(m.common_form_success_update());
 
-    queryClient.invalidateQueries({ queryKey: ["enrollments", orgId] });
-    queryClient.invalidateQueries({ queryKey: ["student", studentId] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.student.detail(studentId) });
     initialized = false;
   } catch (e: any) {
     console.error("Save error:", e);

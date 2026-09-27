@@ -1,7 +1,8 @@
 <!--
   @component GuardianForm
-  Form for linking a user as a guardian to a student with relationship, contact permissions, and payer status.
-  Supports creating a new parent user inline if they do not exist.
+  Form for assigning/linking an existing person/user as a guardian to a student.
+  Uses FormController with TanStack Form & Zod schema validation as single source of truth.
+  Strictly references canonical guardian identity and executes api.assignGuardian directly.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -16,17 +17,20 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import * as Sheet from "@orbis/ui/sheet";
-import { api, extractErrorMessage } from "$lib/api";
-import type { JsonRecord } from "@orbis/sdk";
+import {
+  api,
+  type AssignGuardianRequest,
+  type GuardianDto,
+  type UserDto,
+} from "$lib/api";
 import { toast } from "@orbis/ui";
-import { guardianFormInputSchema } from "@orbis/schemas";
-import type { GuardianFormInput } from "@orbis/schemas";
-import { createForm } from "@tanstack/svelte-form";
+import {
+  guardianFormInputSchema,
+  type GuardianFormInput,
+} from "@orbis/schemas";
 import { FormField } from "@orbis/ui";
-
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { createUsersQuery } from "$lib/features/settings/queries";
-import { createEnrollmentsQuery } from "$lib/features/students/queries";
-import { Skeleton } from "@orbis/ui/skeleton";
 import { debounce } from "$lib/shared/utils/debounce";
 import {
   Accordion,
@@ -38,162 +42,96 @@ import {
 let {
   orgId,
   studentId,
-  editData,
+  editData = null,
   onSuccess,
   onCancel,
 }: {
   orgId: string;
   studentId: string;
-  editData?: any;
+  editData?: GuardianDto | null;
   onSuccess?: () => void;
   onCancel?: () => void;
 } = $props();
 
 const isEditMode = $derived(!!editData);
 
-// Form state
-let guardianUserId = $state("");
-let fullName = $state("");
-let phone = $state("");
-let email = $state("");
-let nationalId = $state("");
-let relationship = $state("father");
-let job = $state("");
-let isPrimary = $state(false);
-let isEmergencyContact = $state(false);
-let isPayer = $state(false);
-let paymentSharePercent = $state(0);
-let fieldErrors = $state<Record<string, string>>({});
-
-const guardianForm = createForm<
-  GuardianFormInput,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any
->(() => ({
-  defaultValues: {
+// Single Source of Truth Form Controller
+const form = new FormController<GuardianFormInput>({
+  initialValues: {
+    guardianUserId: editData?.guardian_id ?? "",
     fullName: "",
     phone: "",
-    email: "",
-    nationalId: "",
-    relationship: "father",
+    email: null,
+    nationalId: null,
+    relationship: editData?.relationship ?? "father",
+    relationshipAr: null,
+    occupation: null,
+    isPrimary: editData?.is_primary ?? false,
+    isEmergencyContact: editData?.is_emergency_contact ?? true,
+    isAuthorizedPickup: editData?.is_authorized_pickup ?? false,
+    isPayer: editData?.is_payer ?? false,
     paymentSharePercent: 0,
   },
-  validators: {
-    onChange: ({ value }: { value: GuardianFormInput }) => {
-      const result = guardianFormInputSchema.safeParse(value);
-      return result.success ? undefined : result.error.issues[0]?.message;
-    },
-  },
-}));
+  schema: guardianFormInputSchema,
+});
 
-function validateField(field: string) {
-  const result = guardianFormInputSchema.safeParse({
-    fullName,
-    phone,
-    email,
-    nationalId,
-    relationship,
-    paymentSharePercent,
-  });
-  const issue = result.success
-    ? undefined
-    : result.error.issues.find((item) => item.path[0] === field);
-  fieldErrors[field] = issue?.message ?? "";
+function fieldError(field: string): string | undefined {
+  return form.errors[field]?.[0];
 }
 
-function fieldError(field: string) {
-  return fieldErrors[field] ?? "";
-}
-
-function syncField<K extends keyof GuardianFormInput>(
-  field: K,
-  value: GuardianFormInput[K],
-) {
-  guardianForm.setFieldValue(field as any, value as any);
-  validateField(String(field));
-}
-
+// Populate guardian details when editing
 $effect(() => {
-  guardianUserId = editData ? String(editData.guardian_id ?? "") : "";
-  relationship = editData
-    ? String(editData.relationship ?? "father")
-    : "father";
-  job = editData
-    ? String(
-        (editData as unknown as JsonRecord).occupation ??
-          (editData as unknown as JsonRecord).job ??
-          "",
-      )
-    : "";
-  isPrimary = editData
-    ? Boolean(editData.is_primary === 1 || editData.is_primary === true)
-    : false;
-  isEmergencyContact = editData
-    ? Boolean(
-        editData.is_authorized_pickup === 1 ||
-          editData.is_authorized_pickup === true,
-      )
-    : false;
-  isPayer = editData
-    ? Boolean(
-        editData.can_view_finance === 1 || editData.can_view_finance === true,
-      )
-    : false;
-  paymentSharePercent = editData
-    ? Number(editData.payment_share_percent ?? 0)
-    : 0;
-
   if (editData && editData.guardian_id) {
-    api.iam
-      .getUser(String(editData.guardian_id))
-      .then((u) => {
-        if (u) {
-          const user = u as unknown as JsonRecord;
-          fullName = String(user.full_name ?? "");
-          phone = String(user.phone ?? "");
-          email = String(u.email ?? "");
-          nationalId = String(user.national_id ?? "");
+    form.setField("guardianUserId", editData.guardian_id);
+    form.setField("relationship", editData.relationship ?? "father");
+    form.setField("isPrimary", Boolean(editData.is_primary));
+    form.setField("isEmergencyContact", Boolean(editData.is_emergency_contact));
+    form.setField("isAuthorizedPickup", Boolean(editData.is_authorized_pickup));
+    form.setField("isPayer", Boolean(editData.is_payer));
+
+    api
+      .getUser(editData.guardian_id)
+      .then((user: UserDto) => {
+        if (user) {
+          form.setField("fullName", user.full_name ?? "");
+          form.setField("phone", user.phone ?? "");
+          form.setField("email", user.email ?? null);
+          form.setField("nationalId", user.national_id ?? null);
         }
       })
-      .catch((e) => {
-        console.error("Failed to load guardian details:", e);
+      .catch((e: unknown) => {
+        console.error("Failed to load guardian user details:", e);
       });
-  } else {
-    fullName = "";
-    phone = "";
-    email = "";
-    nationalId = "";
   }
 });
 
+// Search functionality for selecting existing parent/contact users in organization
 let localSearch = $state("");
 let searchQuery = $state("");
 const updateSearch = debounce((q: string) => {
-  searchQuery = q;
+  searchQuery = q.trim();
 }, 150);
 
-// TanStack Queries
 const usersQuery = createUsersQuery(() => orgId);
-const enrollmentsQuery = createEnrollmentsQuery(() => orgId);
-
-const allUsers = $derived(
-  ((usersQuery.data as JsonRecord[]) ?? []).filter(
-    (u) => String(u.primary_role ?? u.role) === "parent",
+const parentUsers = $derived(
+  (usersQuery.data ?? []).filter((u: UserDto) =>
+    (u.roles ?? []).includes("parent") || u.status === "active",
   ),
 );
-const enrollments = $derived((enrollmentsQuery.data as any[]) ?? []);
 
-const isLoading = $derived(usersQuery.isLoading || enrollmentsQuery.isLoading);
-let isSaving = $state(false);
+const filteredUsers = $derived(
+  !searchQuery
+    ? []
+    : parentUsers.filter((u: UserDto) => {
+        const q = searchQuery.toLowerCase();
+        const name = (u.full_name ?? u.full_name_ar ?? "").toLowerCase();
+        const emailVal = (u.email ?? "").toLowerCase();
+        const phoneVal = (u.phone ?? "").toLowerCase();
+        return (
+          name.includes(q) || emailVal.includes(q) || phoneVal.includes(q)
+        );
+      }),
+);
 
 const relationships = $derived([
   { value: "father", label: m.common_guardians_relationship_father() },
@@ -204,176 +142,75 @@ const relationships = $derived([
   { value: "other", label: m.common_guardians_relationship_other() },
 ]);
 
-const studentLastName = $derived.by(() => {
-  const student = enrollments.find((s) => String(s.id) === String(studentId));
-  if (!student) return "";
-  const studentName = (student.full_name || student.name_ar || "").trim();
-  const nameParts = studentName.split(/\s+/);
-  return nameParts.length > 0
-    ? nameParts[nameParts.length - 1].toLowerCase()
-    : "";
-});
-
-const filteredUsers = $derived(
-  allUsers
-    .filter((u) => {
-      const q = searchQuery.toLowerCase();
-      if (!q) return true;
-      const name = String(u.full_name ?? u.name_ar ?? "").toLowerCase();
-      const emailVal = String(u.email ?? "").toLowerCase();
-      const phoneVal = String(u.phone ?? u.phone_number ?? "").toLowerCase();
-      return name.includes(q) || emailVal.includes(q) || phoneVal.includes(q);
-    })
-    .sort((a, b) => {
-      if (!studentLastName) return 0;
-
-      const nameA = String(a.full_name ?? a.name_ar ?? "").toLowerCase();
-      const nameB = String(b.full_name ?? b.name_ar ?? "").toLowerCase();
-
-      const partsA = nameA.trim().split(/\s+/);
-      const partsB = nameB.trim().split(/\s+/);
-
-      const lastNameA = partsA.length > 0 ? partsA[partsA.length - 1] : "";
-      const lastNameB = partsB.length > 0 ? partsB[partsB.length - 1] : "";
-
-      const matchA = lastNameA === studentLastName;
-      const matchB = lastNameB === studentLastName;
-
-      if (matchA && !matchB) return -1;
-      if (!matchA && matchB) return 1;
-      return 0;
-    }),
-);
-
 const selectedRelation = $derived(
-  relationships.find((r) => r.value === relationship),
+  relationships.find((r) => r.value === form.values.relationship),
 );
 
-function selectUser(u: JsonRecord) {
-  guardianUserId = String(u.id);
-  fullName = String(u.full_name ?? u.name_ar ?? "");
-  phone = String(u.phone ?? u.phone_number ?? "");
-  email = String(u.email ?? "");
-  nationalId = String(u.national_id ?? "");
+function selectUser(u: UserDto) {
+  form.setField("guardianUserId", u.id);
+  form.setField("fullName", u.full_name ?? u.full_name_ar ?? "");
+  form.setField("phone", u.phone ?? "");
+  form.setField("email", u.email ?? null);
+  form.setField("nationalId", u.national_id ?? null);
   localSearch = "";
-  searchQuery = ""; // Close search results
+  searchQuery = "";
 }
 
 function clearSelectedUser() {
-  guardianUserId = "";
-  fullName = "";
-  phone = "";
-  email = "";
-  nationalId = "";
+  form.setField("guardianUserId", "");
+  form.setField("fullName", "");
+  form.setField("phone", "");
+  form.setField("email", null);
+  form.setField("nationalId", null);
 }
 
-async function handleSubmit() {
-  const validation = guardianFormInputSchema.safeParse({
-    fullName,
-    phone,
-    email,
-    nationalId,
-    relationship,
-    paymentSharePercent,
-  });
-  if (!validation.success) {
-    fieldErrors = {};
-    for (const issue of validation.error.issues) {
-      const field = String(issue.path[0] ?? "form");
-      if (!fieldErrors[field]) fieldErrors[field] = issue.message;
-    }
-    toast.error(m.common_validation_guardian_name_required());
-    return;
-  }
+async function handleSubmit(e: SubmitEvent) {
+  e.preventDefault();
 
-  fieldErrors = {};
-
-  const {
-    fullName: fullNameClean,
-    phone: phoneClean,
-    email: emailClean,
-  } = validation.data;
-
-  isSaving = true;
-  try {
-    let finalGuardianUserId = guardianUserId;
-
-    if (!finalGuardianUserId) {
-      // Generate a secure random password for initial account setup
-      const tempPassword = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-      const guardEmail = emailClean || `parent.${Date.now()}@orbis.local`;
-
-      // Create a new parent user
-      const guardUser = await api.registerUser({
-        email: guardEmail,
-        password_hash: tempPassword,
-        full_name: fullNameClean,
-        primary_role: "parent",
-        phone: phoneClean || null,
-      });
-      finalGuardianUserId = guardUser.id;
-    } else {
-      // Update existing parent user details
-      await api.updateUser(finalGuardianUserId, {
-        full_name: fullNameClean,
-        phone: phoneClean || null,
-      });
-    }
-
+  const success = await form.submit(async (values: GuardianFormInput) => {
     const relationshipAr =
-      relationship === "father"
+      values.relationship === "father"
         ? "أب"
-        : relationship === "mother"
+        : values.relationship === "mother"
           ? "أم"
-          : relationship === "uncle"
+          : values.relationship === "uncle"
             ? "عم"
             : "آخر/قريب";
 
-    // Construct request conforming exactly to CreateGuardianLinkRequest / UpdateGuardianLinkRequest
-    const request: JsonRecord = {
+    const request: AssignGuardianRequest = {
       student_id: studentId,
-      relationship: relationship,
+      guardian_id: values.guardianUserId,
+      relationship: values.relationship,
       relationship_ar: relationshipAr,
-      is_primary: isPrimary,
-      is_authorized_pickup: isEmergencyContact,
-      occupation: job.trim() || null,
-      can_view_grades: true,
-      can_view_attendance: true,
-      can_view_behavior: true,
-      can_view_finance: isPayer,
-      payment_share_percent: isPayer ? paymentSharePercent : 0,
-      can_view_schedule: true,
-      can_receive_notifications: true,
+      is_primary: values.isPrimary,
+      is_authorized_pickup: values.isAuthorizedPickup,
+      is_emergency_contact: values.isEmergencyContact,
+      is_payer: values.isPayer,
+      payment_share_percent: values.isPayer ? values.paymentSharePercent : 0,
     };
 
-    if (isEditMode && editData?.id) {
-      await api.assignGuardian(request as any);
-      toast.success(m.common_guardians_update_success());
-    } else {
-      // Create link requires guardian_id. Let's make sure it is sent correctly.
-      const requestWithGuardian = {
-        ...request,
-        guardian_id: finalGuardianUserId,
-      };
-      await api.assignGuardian(requestWithGuardian as any);
-      toast.success(m.common_guardians_create_success());
-    }
+    await api.assignGuardian(request);
+  });
 
+  if (success) {
+    toast.success(
+      isEditMode
+        ? m.common_guardians_update_success()
+        : m.common_guardians_create_success(),
+    );
+    form.reset();
     onSuccess?.();
-  } catch (e: unknown) {
-    toast.error(extractErrorMessage(e));
-  } finally {
-    isSaving = false;
+  } else if (form.formError) {
+    toast.error(form.formError);
+  } else if (Object.keys(form.errors).length > 0) {
+    toast.error(fieldError("guardianUserId") || m.common_validation_guardian_name_required());
   }
 }
 </script>
 
 <form
   class="flex flex-col h-full overflow-hidden gap-0"
-  onsubmit={(e) => {
-    e.preventDefault();
-    handleSubmit();
-  }}
+  onsubmit={handleSubmit}
 >
   <Sheet.Header class="px-6 py-4 border-b border-border/40 shrink-0 text-start">
     <Sheet.Title class="text-base font-bold text-foreground">
@@ -382,239 +219,181 @@ async function handleSubmit() {
   </Sheet.Header>
 
   <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide">
-    {#if isLoading}
-      <div class="flex flex-col gap-5 animate-pulse">
-        <div class="flex flex-col gap-1.5">
-          <Skeleton class="h-3.5 w-24" />
-          <Skeleton class="h-8 w-full rounded-md" />
-        </div>
-        <div class="flex flex-col gap-1.5">
-          <Skeleton class="h-3.5 w-20" />
-          <Skeleton class="h-9 w-full rounded-md" />
-        </div>
-        <div class="flex flex-col gap-1.5">
-          <Skeleton class="h-3.5 w-28" />
-          <Skeleton class="h-9 w-full rounded-md" />
-        </div>
-        <div class="flex flex-col gap-1.5">
-          <Skeleton class="h-3.5 w-16" />
-          <Skeleton class="h-9 w-full rounded-md" />
-        </div>
-      </div>
-    {:else}
-      <Accordion type="multiple" value={["contact"]} class="flex flex-col gap-5">
-        <AccordionItem value="contact" class="rounded-lg">
-          <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_word_fullname()}</AccordionTrigger>
-          <AccordionContent class="pt-6 space-y-6">
-      <!-- User Search + Select (only show in create mode) -->
-      {#if !isEditMode}
-        <div class="flex flex-col gap-4">
-          <Label class="text-xs font-semibold text-muted-foreground">{m.common_form_guardian_search_label()}</Label>
-          <Input
-            type="text"
-            placeholder={m.common_form_guardian_search_placeholder()}
-            bind:value={localSearch}
-            oninput={() => updateSearch(localSearch)}
-            class="h-10 text-sm mb-2"
-          />
-          
-          {#if !guardianUserId && searchQuery.trim().length > 0}
-            <div class="rounded-lg border border-border/40 bg-card/50 overflow-hidden">
-              {#if searchQuery.trim().length === 0}
-                {#if filteredUsers.length === 0}
-                  <div class="p-3 text-xs text-muted-foreground text-center">{m.common_switcher_no_results()}</div>
-                {:else}
-                  {#each filteredUsers.slice(0, 3) as u (u.id)}
-                    <button
-                      type="button"
-                      class="w-full text-start px-3 py-2 text-xs hover:bg-accent/60 transition-colors flex items-center justify-between border-b border-border/30 last:border-b-0
-                        {guardianUserId === String(u.id) ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground'}"
-                      onclick={() => selectUser(u)}
-                    >
-                      <span>{String(u.full_name ?? u.email ?? u.id)}</span>
-                      {#if u.phone}
-                        <span class="text-[10px] text-muted-foreground font-mono">{String(u.phone)}</span>
-                      {/if}
-                    </button>
-                  {/each}
-                {/if}
-              {:else}
-                <!-- Search query active - show scrollable list -->
-                <div class="max-h-40 overflow-y-auto">
+    <Accordion type="multiple" value={["contact"]} class="flex flex-col gap-5">
+      <AccordionItem value="contact" class="rounded-lg">
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_word_fullname()}</AccordionTrigger>
+        <AccordionContent class="pt-6 space-y-6">
+          <!-- User Search + Select (in create mode) -->
+          {#if !isEditMode}
+            <div class="flex flex-col gap-3">
+              <Label class="text-xs font-semibold text-muted-foreground">{m.common_form_guardian_search_label()}</Label>
+              <Input
+                type="text"
+                placeholder={m.common_form_guardian_search_placeholder()}
+                bind:value={localSearch}
+                oninput={() => updateSearch(localSearch)}
+                class="h-10 text-sm"
+              />
+              
+              {#if !form.values.guardianUserId && searchQuery.length > 0}
+                <div class="rounded-lg border border-border/40 bg-card/50 overflow-hidden max-h-40 overflow-y-auto">
                   {#if filteredUsers.length === 0}
                     <div class="p-3 text-xs text-muted-foreground text-center">{m.common_switcher_no_results()}</div>
                   {:else}
-                    {#each filteredUsers.slice(0, 20) as u (u.id)}
+                    {#each filteredUsers.slice(0, 10) as u (u.id)}
                       <button
                         type="button"
-                        class="w-full text-start px-3 py-2 text-xs hover:bg-accent/60 transition-colors flex items-center justify-between border-b border-border/30 last:border-b-0
-                          {guardianUserId === String(u.id) ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground'}"
+                        class="w-full text-start px-3 py-2 text-xs hover:bg-accent/60 transition-colors flex items-center justify-between border-b border-border/30 last:border-b-0"
                         onclick={() => selectUser(u)}
                       >
-                        <span>{String(u.full_name ?? u.email ?? u.id)}</span>
+                        <span class="font-medium">{u.full_name || u.email || u.id}</span>
                         {#if u.phone}
-                          <span class="text-[10px] text-muted-foreground font-mono">{String(u.phone)}</span>
+                          <span class="text-[10px] text-muted-foreground font-mono">{u.phone}</span>
                         {/if}
                       </button>
                     {/each}
                   {/if}
                 </div>
               {/if}
+
+              {#if form.values.guardianUserId}
+                <div class="flex items-center justify-between p-2 rounded bg-primary/10 border border-primary/20 text-xs">
+                  <span class="text-primary font-medium">
+                    ✓ {m.common_guardians_sheet_selected_label({ name: form.values.fullName || form.values.guardianUserId })}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    class="h-5 px-1.5 text-[10px] text-destructive hover:bg-destructive/10"
+                    onclick={clearSelectedUser}
+                  >
+                    {m.common_guardians_sheet_clear_selection()}
+                  </Button>
+                </div>
+              {/if}
             </div>
           {/if}
 
-          {#if guardianUserId}
-            <div class="flex items-center justify-between p-2 rounded bg-primary/10 border border-primary/20 text-xs mt-1">
-              <span class="text-primary font-medium">
-                ✓ {m.common_guardians_sheet_selected_label({ name: fullName })}
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                class="h-5 px-1.5 text-[10px] text-destructive hover:bg-destructive/10"
-                onclick={clearSelectedUser}
+          <!-- Guardian Identity Details (Read-only verified demographic info) -->
+          {#if form.values.guardianUserId}
+            <div class="p-3.5 rounded-lg border border-border/60 bg-muted/20 space-y-2 text-xs">
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">{m.common_word_fullname()}:</span>
+                <span class="font-semibold text-foreground">{form.values.fullName || "—"}</span>
+              </div>
+              <div class="flex justify-between font-mono">
+                <span class="text-muted-foreground">{m.common_word_phone()}:</span>
+                <span class="text-foreground">{form.values.phone || "—"}</span>
+              </div>
+              {#if form.values.email}
+                <div class="flex justify-between font-mono">
+                  <span class="text-muted-foreground">{m.common_word_email()}:</span>
+                  <span class="text-foreground">{form.values.email}</span>
+                </div>
+              {/if}
+              {#if form.values.nationalId}
+                <div class="flex justify-between font-mono">
+                  <span class="text-muted-foreground">{m.common_form_guardian_national_id_label()}:</span>
+                  <span class="text-foreground">{form.values.nationalId}</span>
+                </div>
+              {/if}
+            </div>
+          {:else}
+            <div class="p-4 rounded-lg border border-dashed border-border/60 text-center text-xs text-muted-foreground">
+              يرجى البحث عن ولي الأمر واختياره لربطه بالطالب
+            </div>
+          {/if}
+
+          <!-- Relation -->
+          <FormField id="guardian-relationship" label={m.common_bulk_col_guardian_rel()} error={fieldError("relationship")} required>
+            {#snippet children()}
+              <Select
+                type="single"
+                value={form.values.relationship}
+                onValueChange={(v: string | undefined) => {
+                  if (v) form.setField("relationship", v);
+                }}
               >
-                {m.common_guardians_sheet_clear_selection()}
-              </Button>
+                <SelectTrigger id="guardian-relationship" class="h-10 text-sm" aria-invalid={Boolean(fieldError("relationship"))}>
+                  {selectedRelation?.label ?? form.values.relationship}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each relationships as r (r.value)}
+                    <SelectItem value={r.value}>{r.label}</SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+            {/snippet}
+          </FormField>
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="permissions" class="rounded-lg">
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.students_guardian_permissions()}</AccordionTrigger>
+        <AccordionContent class="pt-6 space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="flex items-center gap-2">
+              <Checkbox
+                id="primary_chk"
+                checked={form.values.isPrimary}
+                onCheckedChange={(val: boolean | "indeterminate") => form.setField("isPrimary", val === true)}
+              />
+              <Label for="primary_chk" class="text-xs cursor-pointer">{m.common_form_guardian_role_primary()}</Label>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <Checkbox
+                id="emergency_chk"
+                checked={form.values.isEmergencyContact}
+                onCheckedChange={(val: boolean | "indeterminate") => form.setField("isEmergencyContact", val === true)}
+              />
+              <Label for="emergency_chk" class="text-xs cursor-pointer">{m.common_form_guardian_role_emergency()}</Label>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <Checkbox
+                id="pickup_chk"
+                checked={form.values.isAuthorizedPickup}
+                onCheckedChange={(val: boolean | "indeterminate") => form.setField("isAuthorizedPickup", val === true)}
+              />
+              <Label for="pickup_chk" class="text-xs cursor-pointer">مخول بالاستلام</Label>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <Checkbox
+                id="payer_chk"
+                checked={form.values.isPayer}
+                onCheckedChange={(val: boolean | "indeterminate") => form.setField("isPayer", val === true)}
+              />
+              <Label for="payer_chk" class="text-xs cursor-pointer">{m.common_form_guardian_role_payer()}</Label>
+            </div>
+          </div>
+
+          {#if form.values.isPayer}
+            <div class="flex items-center justify-start gap-2 pt-2 border-t border-border/40">
+              <Label class="text-xs text-muted-foreground">{m.common_form_guardian_payment_share()}</Label>
+              <div class="flex items-center gap-1">
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  class="h-8 w-16 text-center font-bold px-1 bg-background"
+                  bind:value={form.values.paymentSharePercent}
+                />
+                <span class="text-xs text-muted-foreground">%</span>
+              </div>
             </div>
           {/if}
-        </div>
-      {/if}
-
-      <!-- Full Name -->
-      <FormField id="guardian-full-name" label={m.common_word_fullname()} error={fieldError("fullName")} required>
-        {#snippet children()}
-          <Input
-            id="guardian-full-name"
-            type="text"
-            bind:value={fullName}
-            placeholder="الاسم الكامل لولي الأمر"
-            class="h-10 text-sm"
-            aria-invalid={!!fieldError("fullName")}
-            oninput={() => syncField("fullName", fullName)}
-          />
-        {/snippet}
-      </FormField>
-
-      <!-- Phone -->
-      <FormField id="guardian-phone" label={m.common_word_phone()} error={fieldError("phone")} required>
-        {#snippet children()}
-          <Input
-            id="guardian-phone"
-            type="text"
-            bind:value={phone}
-            placeholder="777000000"
-            class="h-10 text-sm font-mono text-start"
-            aria-invalid={!!fieldError("phone")}
-            oninput={() => syncField("phone", phone)}
-          />
-        {/snippet}
-      </FormField>
-
-      <!-- Email -->
-      <FormField id="guardian-email" label={m.students_guardian_email_optional()} error={fieldError("email")}>
-        {#snippet children()}
-          <Input
-            id="guardian-email"
-            type="email"
-            bind:value={email}
-            placeholder="example@orbis.local"
-            class="h-10 text-sm text-start"
-            aria-invalid={!!fieldError("email")}
-            oninput={() => syncField("email", email)}
-          />
-        {/snippet}
-      </FormField>
-
-      <!-- National ID -->
-      <FormField id="guardian-national-id" label={m.common_form_guardian_national_id_label()} error={fieldError("nationalId")}>
-        {#snippet children()}
-          <Input
-            id="guardian-national-id"
-            type="text"
-            bind:value={nationalId}
-            placeholder="رقم هوية ولي الأمر"
-            class="h-10 text-sm font-mono"
-            aria-invalid={!!fieldError("nationalId")}
-            oninput={() => syncField("nationalId", nationalId)}
-          />
-        {/snippet}
-      </FormField>
-
-      <!-- Relation -->
-      <FormField id="guardian-relationship" label={m.common_bulk_col_guardian_rel()} error={fieldError("relationship")} required>
-        {#snippet children()}
-          <Select type="single" value={relationship} onValueChange={(v: string | undefined) => { relationship = v ?? "father"; syncField("relationship", relationship); }}>
-            <SelectTrigger id="guardian-relationship" class="h-10 text-sm" aria-invalid={!!fieldError("relationship")}>
-              {selectedRelation?.label ?? relationship}
-            </SelectTrigger>
-            <SelectContent>
-              {#each relationships as r (r.value)}
-                <SelectItem value={r.value}>{r.label}</SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-        {/snippet}
-      </FormField>
-
-      <!-- Job -->
-      <FormField id="guardian-job" label={m.common_guardians_form_job()}>
-        {#snippet children()}
-          <Input
-            id="guardian-job"
-            type="text"
-            bind:value={job}
-            placeholder="المهنة الحالية لولي الأمر"
-            class="h-10 text-sm"
-          />
-        {/snippet}
-      </FormField>
-
-          </AccordionContent>
-        </AccordionItem>
-
-        <AccordionItem value="permissions" class="rounded-lg">
-          <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.students_guardian_permissions()}</AccordionTrigger>
-          <AccordionContent class="pt-6 space-y-6">
-
-        
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div class="flex items-center gap-2">
-            <Checkbox id="primary_chk" checked={isPrimary} onCheckedChange={(val: boolean | "indeterminate") => isPrimary = val === true} />
-            <Label for="primary_chk" class="text-xs cursor-pointer">{m.common_form_guardian_role_primary()}</Label>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <Checkbox id="emergency_chk" checked={isEmergencyContact} onCheckedChange={(val: boolean | "indeterminate") => isEmergencyContact = val === true} />
-            <Label for="emergency_chk" class="text-xs cursor-pointer">{m.common_form_guardian_role_emergency()}</Label>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <Checkbox id="payer_chk" checked={isPayer} onCheckedChange={(val: boolean | "indeterminate") => isPayer = val === true} />
-            <Label for="payer_chk" class="text-xs cursor-pointer">{m.common_form_guardian_role_payer()}</Label>
-          </div>
-        </div>
-
-        {#if isPayer}
-          <div class="flex items-center justify-start gap-2 pt-2 border-t border-border/40">
-            <Label class="text-xs text-muted-foreground">{m.common_form_guardian_payment_share()}</Label>
-            <div class="flex items-center gap-1">
-              <Input type="number" min="0" max="100" class="h-8 w-16 text-center font-bold px-1 bg-background" bind:value={paymentSharePercent} />
-              <span class="text-xs text-muted-foreground">%</span>
-            </div>
-          </div>
-        {/if}
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-    {/if}
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   </div>
 
   <!-- Actions -->
   <div class="px-6 py-3 border-t border-border/40 flex gap-2 shrink-0 bg-background/50">
     <Button
       type="button"
-        variant="ghost"
+      variant="ghost"
       class="flex-1 h-9 text-sm"
       onclick={onCancel}
     >
@@ -623,9 +402,9 @@ async function handleSubmit() {
     <Button
       type="submit"
       class="flex-1 h-9 text-sm font-semibold"
-      disabled={isSaving || isLoading || !fullName || !phone || !relationship}
+      disabled={form.isSubmitting || !form.values.guardianUserId || !form.values.relationship}
     >
-      {isSaving ? m.common_state_saving() : m.common_action_save()}
+      {form.isSubmitting ? m.common_state_saving() : m.common_action_save()}
     </Button>
   </div>
 </form>

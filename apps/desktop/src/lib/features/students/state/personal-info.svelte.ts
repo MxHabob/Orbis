@@ -37,12 +37,16 @@ export class PersonalInfoState {
 
   populate(originalStudent: any) {
     if (!originalStudent) return;
-    this.nameAr = originalStudent.full_name || originalStudent.name_ar || "";
-    this.nameEn = originalStudent.name_en || "";
-    this.nationalId = originalStudent.national_id || "";
+    const p = originalStudent.person || originalStudent;
+    const s = originalStudent.student || originalStudent;
+    const e = originalStudent.enrollment || originalStudent;
 
-    const birth = originalStudent.birth_date
-      ? String(originalStudent.birth_date).slice(0, 10)
+    this.nameAr = (p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : "") || p.full_name || p.name_ar || "";
+    this.nameEn = p.name_en || "";
+    this.nationalId = p.national_id || "";
+
+    const birth = p.birth_date
+      ? String(p.birth_date).slice(0, 10)
       : "";
     if (birth) {
       const parts = birth.split("-");
@@ -53,22 +57,22 @@ export class PersonalInfoState {
       }
     }
 
-    this.sex = originalStudent.sex || "male";
-    this.classId = String(originalStudent.class_id || "");
-    this.studentNumber = originalStudent.student_number || "";
-    this.email = originalStudent.email || "";
-    this.phone = originalStudent.phone_number || originalStudent.phone || "";
-    this.address = originalStudent.address || "";
+    this.sex = p.gender || p.sex || "male";
+    this.classId = String(e.class_id || s.class_id || "");
+    this.studentNumber = s.student_number || "";
+    this.email = p.email || "";
+    this.phone = p.phone || p.phone_number || "";
+    this.address = p.address || "";
     this.previousSchool =
-      originalStudent.previous_school || originalStudent.previousSchool || "";
-    this.district = originalStudent.district || "";
-    this.governorate = originalStudent.governorate || "";
-    this.nationality = originalStudent.nationality || "";
-    this.placeOfBirth = originalStudent.place_of_birth || "";
-    this.passportNumber = originalStudent.passport_number || "";
-    this.bloodType = originalStudent.blood_type || "";
-    this.emergencyContact = originalStudent.emergency_contact || "";
-    this.medicalNotes = originalStudent.medical_notes || "";
-    this.status = originalStudent.status || "active";
+      s.previous_school || originalStudent.previous_school || "";
+    this.district = p.district || "";
+    this.governorate = p.governorate || "";
+    this.nationality = p.nationality || "";
+    this.placeOfBirth = p.place_of_birth || "";
+    this.passportNumber = p.passport_number || "";
+    this.bloodType = p.blood_type || "";
+    this.emergencyContact = p.emergency_contact || "";
+    this.medicalNotes = p.medical_notes || "";
+    this.status = s.status || "active";
   }
 }

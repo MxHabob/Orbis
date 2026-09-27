@@ -111,6 +111,9 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         student_cmds::student_get_enrollment,
         student_cmds::student_assign_guardian,
         student_cmds::student_list_guardians,
+        student_cmds::student_remove_guardian,
+        student_cmds::student_delete_student,
+        student_cmds::student_restore_student,
         student_cmds::student_bulk_register,
         // ── Employee Affairs ────────────────────────────────────
         employee_cmds::employee_register_employee,
@@ -164,6 +167,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         assessment_cmds::assessment_calculate_grades,
         assessment_cmds::assessment_mark_attendance,
         assessment_cmds::assessment_list_attendance,
+        assessment_cmds::assessment_list_student_attendance,
         assessment_cmds::assessment_calculate_gpa,
         assessment_cmds::assessment_calculate_rankings,
         assessment_cmds::assessment_record_behavior,
@@ -200,12 +204,14 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         // ── Document ────────────────────────────────────────────
         document_cmds::document_upload,
         document_cmds::document_list,
+        document_cmds::document_list_by_entity,
         document_cmds::document_get,
         document_cmds::document_delete,
         document_cmds::document_create_requirement,
         document_cmds::document_list_requirements,
         document_cmds::document_delete_requirement,
         document_cmds::document_evaluate_student_requirements,
+
         // ── Integration ─────────────────────────────────────────
         integration_cmds::integration_connect_app,
         integration_cmds::integration_list,

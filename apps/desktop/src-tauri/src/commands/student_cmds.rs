@@ -855,3 +855,48 @@ pub async fn student_bulk_register(
     }))
 }
 
+#[tauri::command]
+pub async fn student_remove_guardian(
+    student_id: String,
+    guardian_id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<bool>, String> {
+    let ctx = make_ctx(&state);
+    let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
+    let gid = Uuid::parse_str(&guardian_id).map_err(|_| "Invalid guardian ID")?;
+    state.student_service
+        .remove_guardian(&ctx, sid, gid)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(true))
+}
+
+#[tauri::command]
+pub async fn student_delete_student(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<bool>, String> {
+    let ctx = make_ctx(&state);
+    let sid = Uuid::parse_str(&id).map_err(|_| "Invalid student ID")?;
+    state.student_service
+        .soft_delete_student(&ctx, sid)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(true))
+}
+
+#[tauri::command]
+pub async fn student_restore_student(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<StudentDto>, String> {
+    let ctx = make_ctx(&state);
+    let sid = Uuid::parse_str(&id).map_err(|_| "Invalid student ID")?;
+    let student = state.student_service
+        .restore_student(&ctx, sid)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(student_to_dto(student)))
+}
+
+

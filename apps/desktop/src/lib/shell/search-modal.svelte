@@ -307,7 +307,7 @@ const filteredItems = $derived.by(() => {
         title: s.full_name || s.name_ar || s.name_en || "Student",
         subtitle: s.student_number || "",
         icon: Users,
-        action: () => goto(`/${currentOrgId}/students/${s.id}/grades`),
+        action: () => goto(`/${currentOrgId}/students/${s.id}`),
         group: m.common_word_students ? m.common_word_students() : "Students",
       }));
     list.push(...matchedStudents.slice(0, 10)); // limit to 10

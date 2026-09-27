@@ -86,7 +86,7 @@ const studyModes = [
           <Select
             type="single"
             value={state.studyMode}
-            onValueChange={(v) => (state.studyMode = (v || "regular") as any)}
+            onValueChange={(v) => { if (v) state.studyMode = v; }}
           >
             <SelectTrigger class="h-9 text-xs bg-background">
               {studyModes.find(m => m.value === state.studyMode) 

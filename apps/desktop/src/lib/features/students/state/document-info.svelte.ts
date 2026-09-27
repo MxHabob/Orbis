@@ -139,7 +139,7 @@ export class DocumentInfoState {
 
     try {
       await this.loadRequirements();
-      const studentDocs = await api.listDocuments().catch(() => []);
+      const studentDocs = await api.listDocumentsByEntity("student", this.studentId).catch(() => []);
 
       const submitted: string[] = [];
       const attachMap: Record<string, StudentDocAttachment> = {};

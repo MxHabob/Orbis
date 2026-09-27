@@ -6,7 +6,12 @@
 import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
-import { api, extractErrorMessage } from "$lib/api";
+import {
+  api,
+  extractErrorMessage,
+  type DocumentDto,
+  type UploadDocumentRequest,
+} from "$lib/api";
 import {
   Grid,
   TableBody,
@@ -19,7 +24,6 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardAction,
   CardContent,
 } from "@orbis/ui/card";
 import { Button } from "@orbis/ui/button";
@@ -28,34 +32,28 @@ import { Label } from "@orbis/ui/label";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { ArrowForward, ArrowUpTray, CheckCircle, Clip, DocumentPage, InfoCircle, Plus, Refresh, Trash, XMark } from "@orbis/icons";
 import { toast } from "@orbis/ui";
-import { createEnrollmentsQuery } from "$lib/features/students";
+import { queryKeys } from "$lib/api";
 import { formatDate } from "$lib/core/i18n";
 
-let { orgId, studentId }: { orgId: string; studentId: string } = $props();
+let { studentId }: { orgId: string; studentId: string } = $props();
 const queryClient = useQueryClient();
 
-const enrollmentsQuery = createEnrollmentsQuery(() => orgId);
-const student = $derived(
-  enrollmentsQuery.data?.find((s) => s.id === studentId),
-);
-const studentUserId = $derived(student?.student_id || "");
-
 const documentsQuery = createQuery(() => ({
-  queryKey: ["student-documents", studentUserId],
-  queryFn: () => api.listDocuments(null, studentUserId, null, null),
-  enabled: !!studentUserId,
+  queryKey: queryKeys.student.documents(studentId),
+  queryFn: () => api.listDocumentsByEntity("student", studentId),
+  enabled: !!studentId,
   staleTime: 3 * 60 * 1000,
 }));
 
-const documents = $derived((documentsQuery.data as any[] | undefined) ?? []);
-const isLoading = $derived(documentsQuery.isLoading || enrollmentsQuery.isLoading);
+const documents = $derived((documentsQuery.data as DocumentDto[] | undefined) ?? []);
+const isLoading = $derived(documentsQuery.isLoading);
 const error = $derived(
   documentsQuery.error ? extractErrorMessage(documentsQuery.error) : null,
 );
 
 let showAddModal = $state(false);
 let showUploadModal = $state(false);
-let selectedDoc = $state<any>(null);
+let selectedDoc = $state<DocumentDto | null>(null);
 
 let newDocName = $state("");
 let newDocTitle = $state("");
@@ -73,11 +71,15 @@ async function handleAddDocument() {
   }
 
   try {
-    const request = {
-      owner_id: studentUserId,
+    const request: UploadDocumentRequest = {
       name: newDocName.trim(),
-      item_type: newDocUrl.trim() ? "file" : "placeholder",
-      key: newDocUrl.trim(),
+      mime_type: "application/pdf",
+      entity_type: "student",
+      entity_id: studentId,
+      category: "general",
+      visibility: "private",
+      file_path: newDocUrl.trim() || newDocName.trim(),
+      description: newDocDescription.trim() || null,
     };
 
     await api.uploadDocument(request);
@@ -90,10 +92,10 @@ async function handleAddDocument() {
     newDocUrl = "";
 
     await queryClient.invalidateQueries({
-      queryKey: ["student-documents", studentUserId],
+      queryKey: queryKeys.student.documents(studentId),
     });
-  } catch (e: any) {
-    toast.error(e.message || String(e));
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
   }
 }
 
@@ -112,14 +114,14 @@ async function handleDelete(docId: string) {
     await api.deleteDocument(docId);
     toast.success(m.common_docs_delete_success());
     await queryClient.invalidateQueries({
-      queryKey: ["student-documents", studentUserId],
+      queryKey: queryKeys.student.documents(studentId),
     });
-  } catch (e: any) {
-    toast.error(e.message || String(e));
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
   }
 }
 
-function openUploadModal(doc: any) {
+function openUploadModal(doc: DocumentDto) {
   selectedDoc = doc;
   uploadFileUrl = "";
   uploadFileSize = "1.5 MB";
@@ -134,38 +136,33 @@ async function handleUploadFile() {
   }
 
   try {
-    await api.deleteDocument(selectedDoc.id);
+    if (selectedDoc?.id) {
+      await api.deleteDocument(selectedDoc.id).catch(() => {});
+    }
 
     const sizeInBytes = uploadFileSize.includes("MB")
       ? Math.round(parseFloat(uploadFileSize) * 1024 * 1024)
       : Math.round(parseFloat(uploadFileSize) * 1024);
 
-    const request = {
-      orgId: selectedDoc.org_id,
-      ownerId: selectedDoc.owner_id,
-      name: selectedDoc.name,
-      title: selectedDoc.title,
-      description: selectedDoc.description,
-      type: "file",
-      visibility: selectedDoc.visibility,
-      storageProvider: "local",
-      url: uploadFileUrl.trim(),
-      processingStatus: "ready",
-      isTemplate: 0,
-      uploadedBy: "system",
-      size: sizeInBytes,
-      extension: uploadFileExt.trim(),
-      tags: selectedDoc.tags,
+    const request: UploadDocumentRequest = {
+      name: selectedDoc?.name || "Uploaded Document",
+      mime_type: uploadFileExt.includes("pdf") ? "application/pdf" : "image/jpeg",
+      entity_type: "student",
+      entity_id: studentId,
+      category: selectedDoc?.category || "general",
+      visibility: "private",
+      file_path: uploadFileUrl.trim(),
+      file_size_bytes: sizeInBytes,
     };
 
     await api.uploadDocument(request);
     toast.success(m.common_docs_upload_success());
     showUploadModal = false;
     await queryClient.invalidateQueries({
-      queryKey: ["student-documents", studentUserId],
+      queryKey: queryKeys.student.documents(studentId),
     });
-  } catch (e: any) {
-    toast.error(e.message || String(e));
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
   }
 }
 </script>
@@ -248,7 +245,7 @@ async function handleUploadFile() {
           </TableHeader>
           <TableBody>
             {#each documents as doc (doc.id)}
-              {@const isUploaded = doc.item_type === 'file' && doc.url}
+              {@const isUploaded = !!doc.url || !!doc.file_path}
               <TableRow class="hover:bg-accent/20">
                 <TableCell class="text-start">
                   <div class="flex items-center gap-2.5">
@@ -256,7 +253,7 @@ async function handleUploadFile() {
                       <DocumentPage size={14} />
                     </div>
                     <div class="flex flex-col text-start">
-                      <span class="font-bold text-foreground">{doc.title || doc.name}</span>
+                      <span class="font-bold text-foreground">{doc.name}</span>
                       {#if doc.description}
                         <span class="text-[9px] text-muted-foreground">{doc.description}</span>
                       {/if}
@@ -292,7 +289,7 @@ async function handleUploadFile() {
 
                 <TableCell class="text-end px-6">
                   <div class="flex items-center justify-end gap-1.5">
-                    {#if isUploaded}
+                    {#if doc.url}
                       <Button 
                         href={doc.url}
                         target="_blank"
@@ -435,7 +432,7 @@ async function handleUploadFile() {
 
       {#if selectedDoc}
         <div class="p-2 border border-border bg-card/45 rounded-lg text-[10px] space-y-0.5">
-          <div><span class="text-muted-foreground">{m.common_docs_detail_doc_label()}</span> <span class="font-bold text-foreground">{selectedDoc.title || selectedDoc.name}</span></div>
+          <div><span class="text-muted-foreground">{m.common_docs_detail_doc_label()}</span> <span class="font-bold text-foreground">{selectedDoc.name}</span></div>
           {#if selectedDoc.description}
             <div><span class="text-muted-foreground">{m.common_docs_detail_desc_label()}</span> <span class="text-foreground">{selectedDoc.description}</span></div>
           {/if}

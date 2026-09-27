@@ -80,6 +80,18 @@ export const queryKeys = {
       [...queryKeys.student.all, "enrollment", id] as const,
     guardians: (studentId: string) =>
       [...queryKeys.student.all, "guardians", studentId] as const,
+    attendance: (studentId: string) =>
+      [...queryKeys.student.all, "attendance", studentId] as const,
+    behavior: (studentId: string) =>
+      [...queryKeys.student.all, "behavior", studentId] as const,
+    documents: (studentId: string) =>
+      [...queryKeys.student.all, "documents", studentId] as const,
+    documentRequirements: (studentId: string) =>
+      [...queryKeys.student.all, "documentRequirements", studentId] as const,
+    fees: (studentId: string) =>
+      [...queryKeys.student.all, "fees", studentId] as const,
+    payments: (studentId: string) =>
+      [...queryKeys.student.all, "payments", studentId] as const,
   },
 
   // ── Employee Affairs ────────────────────────────────────────
@@ -168,35 +180,17 @@ export const queryKeys = {
     all: ["finance"] as const,
     accounts: (orgId?: string) => [...queryKeys.finance.all, "accounts", orgId ?? "current"] as const,
     feeTemplates: (orgId?: string) => [...queryKeys.finance.all, "feeTemplates", orgId ?? "current"] as const,
-    studentFees: (filterOrOrg?: string | {
-      enrollmentId?: string;
-      studentId?: string;
-      status?: string;
-    }, filter?: {
-      enrollmentId?: string;
-      studentId?: string;
-      status?: string;
-    }) => {
+    studentFees: (filterOrOrg?: string | unknown, filter?: unknown) => {
       if (typeof filterOrOrg === "string") {
-        return [...queryKeys.finance.all, "studentFees", filterOrOrg, filter ?? {}] as const;
+        return [...queryKeys.finance.all, "studentFees", filterOrOrg, (filter as Record<string, unknown>) ?? {}] as const;
       }
-      return [...queryKeys.finance.all, "studentFees", "current", filterOrOrg ?? {}] as const;
+      return [...queryKeys.finance.all, "studentFees", "current", (filterOrOrg as Record<string, unknown>) ?? {}] as const;
     },
-    payments: (filterOrOrg?: string | {
-      feeId?: string;
-      studentId?: string;
-      fromDate?: string;
-      toDate?: string;
-    }, filter?: {
-      feeId?: string;
-      studentId?: string;
-      fromDate?: string;
-      toDate?: string;
-    }) => {
+    payments: (filterOrOrg?: string | unknown, filter?: unknown) => {
       if (typeof filterOrOrg === "string") {
-        return [...queryKeys.finance.all, "payments", filterOrOrg, filter ?? {}] as const;
+        return [...queryKeys.finance.all, "payments", filterOrOrg, (filter as Record<string, unknown>) ?? {}] as const;
       }
-      return [...queryKeys.finance.all, "payments", "current", filterOrOrg ?? {}] as const;
+      return [...queryKeys.finance.all, "payments", "current", (filterOrOrg as Record<string, unknown>) ?? {}] as const;
     },
     currencies: () => [...queryKeys.finance.all, "currencies"] as const,
     journalEntries: (orgId?: string) =>

@@ -428,6 +428,15 @@ export class LocalClient implements OrbisApiClient {
   async listGuardians(studentId: string): Promise<GuardianDto[]> {
     return unwrap(await invoke("student_list_guardians", { studentId }));
   }
+  async removeGuardian(studentId: string, guardianId: string): Promise<boolean> {
+    return unwrap(await invoke("student_remove_guardian", { studentId, guardianId }));
+  }
+  async deleteStudent(id: string): Promise<boolean> {
+    return unwrap(await invoke("student_delete_student", { id }));
+  }
+  async restoreStudent(id: string): Promise<StudentDto> {
+    return unwrap(await invoke("student_restore_student", { id }));
+  }
   async bulkRegisterStudents( items: BulkRegisterStudentCommandItem[], options?: { atomic?: boolean; dryRun?: boolean }): Promise<BulkRegisterStudentCommandResultDto> {
     return unwrap(await invoke("student_bulk_register", {
       items,
@@ -635,6 +644,12 @@ export class LocalClient implements OrbisApiClient {
       await invoke("assessment_list_attendance", { classId, date }),
     );
   }
+  async listStudentAttendance(studentId: string): Promise<AttendanceDto[]> {
+    return unwrap(
+      await invoke("assessment_list_student_attendance", { studentId }),
+    );
+  }
+
   async recordBehavior(req: RecordBehaviorInput): Promise<BehaviorRecordDto> {
     return unwrap(
       await invoke("assessment_record_behavior", { request: req }),
@@ -845,6 +860,10 @@ export class LocalClient implements OrbisApiClient {
   async listDocuments(): Promise<DocumentDto[]> {
     return unwrap(await invoke("document_list"));
   }
+  async listDocumentsByEntity(entityType: string, entityId: string): Promise<DocumentDto[]> {
+    return unwrap(await invoke("document_list_by_entity", { entityType, entityId }));
+  }
+
   async getDocument(id: string): Promise<DocumentDto> {
     return unwrap(await invoke("document_get", { id }));
   }

@@ -531,6 +531,15 @@ export class RemoteClient implements OrbisApiClient {
   async listGuardians(studentId: string): Promise<GuardianDto[]> {
     return this.get("/api/v1/student-guardians", { student_id: studentId });
   }
+  async removeGuardian(studentId: string, guardianId: string): Promise<boolean> {
+    return this.del(`/api/v1/students/${studentId}/guardians/${guardianId}`);
+  }
+  async deleteStudent(id: string): Promise<boolean> {
+    return this.del(`/api/v1/students/${id}`);
+  }
+  async restoreStudent(id: string): Promise<StudentDto> {
+    return this.post(`/api/v1/students/${id}/restore`, {});
+  }
   async bulkRegisterStudents(
     items: BulkRegisterStudentCommandItem[],
     options?: { atomic?: boolean; dryRun?: boolean }
@@ -541,6 +550,7 @@ export class RemoteClient implements OrbisApiClient {
       dry_run: options?.dryRun ?? false,
     });
   }
+
 
   // ── Employee Affairs ────────────────────────────────────────
   async registerEmployee(req: RegisterEmployeeRequest): Promise<RegisterEmployeeResponseDto> {
@@ -718,6 +728,10 @@ export class RemoteClient implements OrbisApiClient {
   ): Promise<AttendanceDto[]> {
     return this.get("/api/v1/attendance", { class_id: classId, date });
   }
+  async listStudentAttendance(studentId: string): Promise<AttendanceDto[]> {
+    return this.get(`/api/v1/students/${studentId}/attendance`);
+  }
+
   async recordBehavior(req: RecordBehaviorInput): Promise<BehaviorRecordDto> {
     return this.post("/api/v1/behavior", req);
   }
@@ -839,8 +853,8 @@ export class RemoteClient implements OrbisApiClient {
     filter?: StudentFeeFilterParams,
   ): Promise<StudentFeeDto[]> {
     return this.get("/api/v1/student-fees", {
-      enrollment_id: filter?.enrollmentId,
-      student_id: filter?.studentId,
+      enrollment_id: filter?.enrollment_id,
+      student_id: filter?.student_id,
       status: filter?.status,
     });
   }
@@ -849,10 +863,10 @@ export class RemoteClient implements OrbisApiClient {
   }
   async listPayments(filter?: PaymentFilterParams): Promise<PaymentDto[]> {
     return this.get("/api/v1/payments", {
-      fee_id: filter?.feeId,
-      student_id: filter?.studentId,
-      from_date: filter?.fromDate,
-      to_date: filter?.toDate,
+      fee_id: filter?.fee_id,
+      student_id: filter?.student_id,
+      from_date: filter?.from_date,
+      to_date: filter?.to_date,
     });
   }
   async listCurrencies(): Promise<CurrencyDto[]> {
@@ -903,6 +917,10 @@ export class RemoteClient implements OrbisApiClient {
   async listDocuments(): Promise<DocumentDto[]> {
     return this.get("/api/v1/documents");
   }
+  async listDocumentsByEntity(entityType: string, entityId: string): Promise<DocumentDto[]> {
+    return this.get(`/api/v1/documents/entity/${entityType}/${entityId}`);
+  }
+
   async getDocument(id: string): Promise<DocumentDto> {
     return this.get(`/api/v1/documents/${id}`);
   }

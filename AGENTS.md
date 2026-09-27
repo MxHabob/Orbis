@@ -39,14 +39,14 @@ Every agent starting a session in this repository MUST:
 
 ## 3. CONTINUATION STATE
 
-- **Current Status:** `BULK_ENTRY_STUDIO_IMPLEMENTATION_COMPLETED`
-- **Master Reference Document:** `docs/bulk_entry_final_architecture.md`
+- **Current Status:** `STUDENTS_RECONCILIATION_COMPLETED`
+- **Master Reference Document:** `docs/students_backend_desktop_reconciliation_report.md`
 - **Accomplished:**
-  - Implemented the unified, production-grade `BulkEntryStudio` supporting both Direct Visual Grid Entry (manual typing, row additions, clipboard paste) and Excel/CSV File Import with 0 records written on initial load.
-  - Upgraded Rust Backend (`StudentService::bulk_register_students`, `EmployeeService::bulk_register_employees`) with multi-stage validation, cumulative class capacity tracking, admission policy enforcement, atomic all-or-nothing execution, deterministic sequence numbering, auto-assigned mandatory tuition fees, and guardian linkages.
-  - Implemented Tauri IPC commands (`student_bulk_register`, `employee_bulk_register`) with atomic and dry-run parameters.
-  - Refactored frontend data fetching to use TanStack Query (`createBulkReferenceDataQuery`) eliminating manual `$effect` synchronization.
-  - Consolidated settings bulk entry routes (`/settings/bulk-input`, `/settings/bulk-input/students`, `/settings/bulk-input/employees`, `/settings/bulk-input/grades`) using `@orbis/ui` and system design tokens.
-  - Performed legacy cleanup: deleted obsolete `/import` route and deprecated `src/lib/features/bulk-input` directory.
-  - Verified 0 errors across `bun x tsc` and `cargo check`.
-- **Verification:** Frontend and Rust backend compiled with 0 errors.
+  - Audited backend Clean Architecture domain entities (`Student`, `Person`, `Enrollment`, `StudentGuardian`, `StudentFee`, `Attendance`, `BehaviorRecord`, `DocumentRequirement`).
+  - Added and registered missing Tauri IPC commands (`student_remove_guardian`, `student_delete_student`, `student_restore_student`, `assessment_list_student_attendance`, `document_list_by_entity`).
+  - Expanded and reconciled API client types (`types.ts`), local client (`local-client.ts`), and remote client (`remote-client.ts`) with 100% parity.
+  - Rebuilt Student Directory (`student-directory.svelte`, `student-table.svelte`, `store.svelte.ts`) with canonical `StudentDetailDto` and normalized Arabic search.
+  - Reconciled Student Registration form and state controllers (`student-form.svelte`, `form-state.svelte.ts`, `personal-info.svelte.ts`, `financial-info.svelte.ts`, `document-info.svelte.ts`).
+  - Rebuilt Student Detail Workspace (`[studentId]/+layout.svelte`, `student-details.svelte`) and all sub-feature tabs (Guardians, Grades, Fees, Attendance, Behavior, Documents).
+  - Verified 0 errors across `bun x tsc --noEmit`, `cargo check` in `src-tauri`, and `cargo check --workspace` in `apps/api-rust`.
+- **Next Target Module:** `ACADEMICS` (as per the master contract).

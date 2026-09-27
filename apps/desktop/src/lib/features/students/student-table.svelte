@@ -1,11 +1,10 @@
 <!--
 @component StudentTable
-Renders the list of students using OrbisGrid directly.
-Matches the column layout and styling of the React dashboard precisely.
+Renders the list of students using OrbisGrid with exact backend contract alignment.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import type { Enrollment } from "$lib/api";
+import type { StudentDetailDto, EnrollmentDto, ClassDto } from "$lib/api";
 import { formatDate, l } from "$lib/core/i18n";
 import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
 import { goto } from "$app/navigation";
@@ -14,28 +13,35 @@ import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { studentFilterFields } from "$lib/core/filter-configs";
 
 let {
-  students,
+  students = [],
+  enrollments = [],
   classes = [],
   enableSelection = true,
   selectedIds = $bindable(new Set()),
   onSelectionChange,
   orgId,
 }: {
-  students: Enrollment[];
-  classes?: any[];
+  students: StudentDetailDto[];
+  enrollments?: EnrollmentDto[];
+  classes?: ClassDto[];
   enableSelection?: boolean;
   selectedIds?: Set<string>;
   onSelectionChange?: (ids: Set<string>) => void;
   orgId: string;
 } = $props();
 
-// ── Helpers ────────────────────────────────────────────────────────
-function getClassName(classId: string): string {
-  const cls = classes.find((c) => c.id === classId);
-  return cls
-    ? String(l(cls.name_ar, cls.name) || classId)
-    : m.common_status_not_enrolled();
-}
+// Map student ID to active enrollment and class
+const studentClassMap = $derived.by(() => {
+  const map: Record<string, string> = {};
+  const classLookup = new Map(classes.map(c => [c.id, l(c.name_ar, c.name) || c.name]));
+  for (const e of enrollments) {
+    if (e.class_id && (e.status === "active" || e.status === "pending_approval")) {
+      const clsName = classLookup.get(e.class_id) || e.class_id;
+      map[e.student_id] = clsName;
+    }
+  }
+  return map;
+});
 
 // ── Column Definitions ─────────────────────────────────────────────
 const baseColumns: OrbisColumnDef[] = [
@@ -44,8 +50,8 @@ const baseColumns: OrbisColumnDef[] = [
     prop: "full_name",
     header: m.common_word_student(),
     name: m.common_word_student(),
-    width: 280,
-    size: 280,
+    width: 240,
+    size: 240,
     type: "avatar",
     readonly: true,
     pin: "left",
@@ -55,8 +61,18 @@ const baseColumns: OrbisColumnDef[] = [
     prop: "student_number",
     header: m.common_table_student_number(),
     name: m.common_table_student_number(),
-    width: 150,
-    size: 150,
+    width: 140,
+    size: 140,
+    readonly: true,
+    cellClass: "font-mono font-medium text-foreground",
+  },
+  {
+    id: "national_id",
+    prop: "national_id",
+    header: l("الهوية / الجواز", "National ID / Passport"),
+    name: "National ID",
+    width: 140,
+    size: 140,
     readonly: true,
     cellClass: "font-mono text-muted-foreground",
   },
@@ -65,8 +81,8 @@ const baseColumns: OrbisColumnDef[] = [
     prop: "class_name",
     header: m.common_table_class(),
     name: m.common_table_class(),
-    width: 160,
-    size: 160,
+    width: 150,
+    size: 150,
     readonly: true,
   },
   {
@@ -81,24 +97,35 @@ const baseColumns: OrbisColumnDef[] = [
     readonly: true,
   },
   {
-    id: "sex_display",
-    prop: "sex_display",
+    id: "standing",
+    prop: "standing",
+    header: l("الحالة الأكاديمية", "Academic Standing"),
+    name: "Standing",
+    width: 140,
+    size: 140,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
+  {
+    id: "gender_display",
+    prop: "gender_display",
     header: m.common_form_sex(),
     name: m.common_form_sex(),
-    width: 110,
-    size: 110,
+    width: 100,
+    size: 100,
     readonly: true,
     align: "center",
   },
   {
-    id: "enrollment_date_display",
-    prop: "enrollment_date_display",
+    id: "admitted_at_display",
+    prop: "admitted_at_display",
     header: m.common_table_enrolled_at(),
     name: m.common_table_enrolled_at(),
-    width: 150,
-    size: 150,
+    width: 140,
+    size: 140,
     readonly: true,
-    cellClass: "text-xs text-muted-foreground",
+    cellClass: "text-xs font-mono text-muted-foreground",
   },
 ];
 
@@ -126,34 +153,47 @@ let activeFilter = $state<UniversalFilter>({
   groups: [],
 });
 
+function formatStanding(standing: string): string {
+  switch (standing) {
+    case "good_standing": return l("وضع جيد", "Good Standing");
+    case "honor_list": return l("لوحة الشرف", "Honor List");
+    case "warning_1": return l("إنذار 1", "Warning 1");
+    case "warning_2": return l("إنذار 2", "Warning 2");
+    case "warning_3": return l("إنذار 3", "Warning 3");
+    case "probation": return l("تحت الملاحظة", "Probation");
+    case "dismissed": return l("مفصول أكاديمياً", "Dismissed");
+    default: return standing || "—";
+  }
+}
+
 let gridSource = $derived(
-  (students || []).map((student, i) => {
-    const rawSex = String(
-      student.sex || (student as any).gender || "",
-    ).toLowerCase();
-    const studentName =
-      student.full_name ||
-      (student as any).name ||
-      (student as any).name_ar ||
-      (student as any).name_en ||
-      m.common_word_student();
-    const isSelected = selectedIds.has(String(student.id));
+  (students || []).map((detail, i) => {
+    const s = detail.student;
+    const p = detail.person;
+    const studentName = l(p.full_name_ar, p.full_name) || p.first_name || m.common_word_student();
+    const isSelected = selectedIds.has(String(s.id));
+    const className = studentClassMap[s.id] || m.common_status_not_enrolled();
+
+    const rawGender = String(p.gender || "").toLowerCase();
+    const genderDisplay = rawGender === "male" || rawGender === "ذكر"
+      ? m.common_form_male()
+      : rawGender === "female" || rawGender === "أنثى"
+        ? m.common_form_female()
+        : "—";
 
     return {
-      ...student,
+      id: s.id,
       __idx: i + 1,
       __selected: isSelected,
       full_name: studentName,
-      class_name: getClassName(String(student.class_id)),
-      sex_display:
-        rawSex === "male" || rawSex === "ذكر"
-          ? m.common_form_male()
-          : rawSex === "female" || rawSex === "أنثى"
-            ? m.common_form_female()
-            : "-",
-      enrollment_date_display: student.enrollment_date
-        ? formatDate(student.enrollment_date)
-        : "-",
+      student_number: s.student_number || "—",
+      national_id: p.national_id || p.passport_number || "—",
+      class_name: className,
+      status: s.status || "active",
+      standing: formatStanding(s.standing),
+      gender_display: genderDisplay,
+      admitted_at_display: s.admitted_at ? formatDate(s.admitted_at) : "—",
+      avatar_url: p.avatar_url,
     };
   }),
 );

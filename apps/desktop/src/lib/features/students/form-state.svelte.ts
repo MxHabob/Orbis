@@ -1,6 +1,6 @@
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
-import { api, queryKeys } from "$lib/api";
+import { api, queryKeys, extractErrorMessage, type StudentDetailDto } from "$lib/api";
 import { toast } from "@orbis/ui";
 
 import { l, formatDate, formatCurrency } from "$lib/core/i18n";
@@ -25,7 +25,7 @@ export class StudentFormState {
   guardian: GuardianState;
   financial: FinancialInfoState;
   document: DocumentInfoState;
-  originalStudent: any = null;
+  originalStudent: StudentDetailDto | null = null;
 
   // Configuration from Org Settings
   currency = $state(orgContext.baseCurrency || "YER");
@@ -121,30 +121,30 @@ export class StudentFormState {
       ]);
 
       if (org) {
-        const organization = org as any;
-        this.orgName = String(organization.name || organization.name_ar || "");
-        const baseCurr = organization.base_currency_code || organization.currency || orgContext.baseCurrency;
+        this.orgName = String(org.name || org.name_ar || "");
+        const baseCurr = org.base_currency_code || orgContext.baseCurrency;
         if (baseCurr) {
           this.currency = baseCurr;
         }
 
         // Parse organization registration configuration
-        let settingsObj: any = {};
+        let settingsObj: Record<string, unknown> = {};
         try {
-          settingsObj = typeof organization.settings === "string" 
-            ? JSON.parse(organization.settings) 
-            : organization.settings || {};
+          settingsObj = typeof org.settings === "string" 
+            ? JSON.parse(org.settings) 
+            : (org.settings as Record<string, unknown>) || {};
         } catch {
           settingsObj = {};
         }
 
-        const reg = settingsObj.registration || settingsObj.registration_config || {};
-        if (reg.form_fields_list && Array.isArray(reg.form_fields_list)) {
+        const reg = (settingsObj.registration || settingsObj.registration_config || {}) as Record<string, unknown>;
+        const formFieldsList = (reg.form_fields_list || reg.formFieldsList) as Array<{ key: string; isActive?: boolean; isRequired?: boolean; preventDuplicate?: boolean }> | undefined;
+        if (formFieldsList && Array.isArray(formFieldsList)) {
           const activeMap: Record<string, boolean> = {};
           const requiredMap: Record<string, boolean> = {};
           const duplicateMap: Record<string, boolean> = {};
 
-          for (const field of reg.form_fields_list) {
+          for (const field of formFieldsList) {
             activeMap[field.key] = field.isActive !== false;
             requiredMap[field.key] = field.isActive !== false && field.isRequired === true;
             duplicateMap[field.key] = field.isActive !== false && field.preventDuplicate === true;
@@ -155,8 +155,9 @@ export class StudentFormState {
           this.preventDuplicates = { ...this.preventDuplicates, ...duplicateMap };
         }
 
-        if (reg.required_documents_list && Array.isArray(reg.required_documents_list)) {
-          this.document.setRequiredDocuments(reg.required_documents_list.map((d: any) => d.nameAr || d.nameEn));
+        const reqDocs = (reg.required_documents_list || reg.requiredDocumentsList) as Array<{ nameAr?: string; nameEn?: string; name?: string }> | undefined;
+        if (reqDocs && Array.isArray(reqDocs)) {
+          this.document.setRequiredDocuments(reqDocs.map((d) => d.nameAr || d.nameEn || d.name || ""));
         }
       }
 
@@ -177,15 +178,15 @@ export class StudentFormState {
       if (this.isEditMode && this.studentId) {
         let originalStudent: any = null;
         try {
-          originalStudent = await api.getEnrollment(this.studentId);
+          originalStudent = await api.getStudent(this.studentId);
         } catch (err) {
           console.error("Failed to load student by ID from backend:", err);
         }
         this.originalStudent = originalStudent;
 
         if (originalStudent) {
-          this.registrationStatus = originalStudent.status || "active";
-          this.studyMode = originalStudent.study_mode || "regular";
+          this.registrationStatus = originalStudent.student?.status || originalStudent.status || "active";
+          this.studyMode = originalStudent.student?.study_mode || originalStudent.study_mode || "regular";
           this.personal.populate(originalStudent);
           await this.financial.populate(originalStudent);
           await this.guardian.populate();
@@ -268,9 +269,7 @@ export class StudentFormState {
     const level = this.classLevel;
     const classId = this.personal.classId;
     return this.financial.feeTemplates.filter((t) => {
-      const isMandatory = t.is_mandatory === 1 || t.is_mandatory === true;
-      const isActive = t.is_active === 1 || t.is_active === true;
-      if (!isMandatory || !isActive) return false;
+      if (!t.is_mandatory) return false;
 
       if (t.applicable_levels) {
         try {
@@ -316,8 +315,8 @@ export class StudentFormState {
         (t) => t.id === this.financial.selectedDiscountTemplateId,
       );
       if (tpl) {
-        const val = (tpl.value as number) || 0;
-        if (String(tpl.calculation_method).toLowerCase() === "percentage") {
+        const val = Number(tpl.value) || 0;
+        if (tpl.discount_type === "percentage") {
           return (this.mandatoryTotal * val) / 100;
         } else {
           return val;
@@ -333,9 +332,7 @@ export class StudentFormState {
   }
 
   get optionalFeesList() {
-    return this.financial.feeTemplates.filter(
-      (t) => (t.is_mandatory === 0 || t.is_mandatory === false) && (t.is_active === 1 || t.is_active === true),
-    );
+    return this.financial.feeTemplates.filter((t) => !t.is_mandatory);
   }
 
   get optionalTotal() {
@@ -395,7 +392,7 @@ export class StudentFormState {
         const middleNameAr = namePartsAr.length > 2 ? namePartsAr.slice(1, -1).join(" ") : undefined;
 
         const detail = await api.registerStudent({
-          student_number: this.personal.studentNumber || `STU-${Date.now()}`,
+          student_number: this.personal.studentNumber || undefined,
           first_name: firstName,
           middle_name: middleName,
           last_name: lastName,
@@ -413,60 +410,91 @@ export class StudentFormState {
           medical_notes: this.personal.medicalNotes || undefined,
           phone: this.personal.phone || undefined,
           email: this.personal.email.trim() || undefined,
-          initial_period_id: effectiveContext.currentPeriodId || this.orgId,
+          initial_period_id: effectiveContext.currentPeriodId || undefined,
           initial_class_id: this.personal.classId || undefined,
           study_mode: this.studyMode,
         });
 
         targetStudentId = detail.student.id;
+        if (detail.enrollment?.id) {
+          targetEnrollmentId = detail.enrollment.id;
+        }
         toast.success(m.common_form_success_create());
       } else {
-        targetEnrollmentId = this.studentId!;
+        targetStudentId = this.originalStudent?.student?.id || this.studentId!;
+        targetEnrollmentId = this.originalStudent?.enrollment?.id || this.studentId!;
+
+        const namePartsAr = (this.personal.nameAr || "").trim().split(/\s+/);
+        const namePartsEn = (this.personal.nameEn || "").trim().split(/\s+/);
+
+        const firstName = namePartsEn[0] || namePartsAr[0] || "طالب";
+        const lastName = namePartsEn.length > 1 ? namePartsEn[namePartsEn.length - 1] : (namePartsAr.length > 1 ? namePartsAr[namePartsAr.length - 1] : "جديد");
+        const middleName = namePartsEn.length > 2 ? namePartsEn.slice(1, -1).join(" ") : undefined;
+
+        const firstNameAr = namePartsAr[0] || undefined;
+        const lastNameAr = namePartsAr.length > 1 ? namePartsAr[namePartsAr.length - 1] : undefined;
+        const middleNameAr = namePartsAr.length > 2 ? namePartsAr.slice(1, -1).join(" ") : undefined;
+
+        await api.updateStudentProfile({
+          student_id: targetStudentId,
+          first_name: firstName,
+          middle_name: middleName,
+          last_name: lastName,
+          first_name_ar: firstNameAr,
+          middle_name_ar: middleNameAr,
+          last_name_ar: lastNameAr,
+          national_id: this.personal.nationalId || undefined,
+          passport_number: this.personal.passportNumber || undefined,
+          gender: this.personal.sex || "male",
+          birth_date: this.personal.birthDate || undefined,
+          place_of_birth: this.personal.placeOfBirth || undefined,
+          nationality: this.personal.nationality || undefined,
+          blood_type: this.personal.bloodType || undefined,
+          medical_notes: this.personal.medicalNotes || undefined,
+          phone: this.personal.phone || undefined,
+          email: this.personal.email.trim() || undefined,
+          address: this.personal.address || undefined,
+        });
+
         toast.success(m.common_form_success_update());
       }
 
-      // 2. Save / link guardians
+      // 2. Link existing guardians
       for (const guardian of this.guardian.linkedGuardians) {
-        if (!guardian.full_name.trim()) continue;
-        let guardianUserId = guardian.user_id;
+        if (!guardian.guardian_id || !targetStudentId) continue;
 
-        if (!guardianUserId) {
-          const guardEmail =
-            guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
-          const guardUser = await api.registerUser({
-            email: guardEmail,
-            full_name: guardian.full_name.trim(),
-            role: "parent",
-          });
-          guardianUserId = guardUser.id;
-        }
-
-        if (targetStudentId) {
-          await api
-            .assignGuardian({
-              student_id: targetStudentId,
-              guardian_id: guardianUserId,
-              relationship: guardian.relationship || "parent",
-              is_primary: !!guardian.is_primary,
-            })
-            .catch((err) => console.warn("Assign guardian error:", err));
-        }
+        await api
+          .assignGuardian({
+            student_id: targetStudentId,
+            guardian_id: guardian.guardian_id,
+            relationship: guardian.relationship || "other",
+            relationship_ar: guardian.relationship_ar || "آخر",
+            is_primary: !!guardian.is_primary,
+            is_emergency_contact: !!guardian.is_emergency_contact,
+            is_authorized_pickup: !!guardian.is_authorized_pickup,
+            is_payer: !!guardian.is_payer,
+            payment_share_percent: guardian.payment_share_percent ?? 0,
+          })
+          .catch((err) => console.warn("Assign guardian error:", err));
       }
 
       // 3. Assign optional fees
+      const activePeriod = effectiveContext.currentPeriodId;
       const today = new Date().toISOString().slice(0, 10);
-      for (const key in this.financial.selectedOptionalFees) {
-        if (this.financial.selectedOptionalFees[key].checked) {
-          try {
-            await api.generateStudentFee({
-              student_id: targetStudentId,
-              enrollment_id: targetEnrollmentId,
-              fee_template_id: key,
-              period_id: this.orgId,
-              due_date: today,
-            });
-          } catch (feeErr) {
-            console.error("Failed to assign optional fee:", key, feeErr);
+      if (activePeriod && targetStudentId) {
+        for (const key in this.financial.selectedOptionalFees) {
+          if (this.financial.selectedOptionalFees[key].checked) {
+            try {
+              await api.generateStudentFee({
+                student_id: targetStudentId,
+                enrollment_id: targetEnrollmentId,
+                fee_template_id: key,
+                period_id: activePeriod,
+                due_date: today,
+              });
+            } catch (feeErr) {
+              console.error("Failed to assign optional fee:", key, feeErr);
+            }
           }
         }
       }
@@ -587,10 +615,10 @@ export class StudentFormState {
       } else {
         toast.error(l("فشل توليد ملف PDF", "Failed to generate PDF document"));
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Failed to download registration form:", e);
       toast.error(
-        `${l("خطأ أثناء تحميل الاستمارة:", "Error downloading form:")} ${(e as any)?.message || String(e)}`,
+        `${l("خطأ أثناء تحميل الاستمارة:", "Error downloading form:")} ${extractErrorMessage(e)}`,
       );
     } finally {
       this.isDownloadingForm = false;

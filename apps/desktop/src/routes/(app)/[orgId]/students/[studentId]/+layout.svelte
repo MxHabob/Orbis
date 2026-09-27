@@ -6,9 +6,9 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 <script lang="ts">
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
-  import { api } from "$lib/api";
+  import { api, queryKeys } from "$lib/api";
   import { createClassesQuery, createPeriodsQuery } from "$lib/features/academics";
-  import { createEnrollmentQuery, createEnrollmentsQuery } from "$lib/features/students";
+  import { createStudentQuery, createEnrollmentsQuery } from "$lib/features/students";
   import * as m from "$lib/paraglide/messages";
   import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
   import MainViewport from "$lib/shell/main-viewport.svelte";
@@ -67,26 +67,35 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
   const studentId = $derived(page.params.studentId || "");
 
   // TanStack Queries
-  const studentQuery = createEnrollmentQuery(
-    () => orgId,
-    () => studentId,
-  );
+  const studentQuery = createStudentQuery(() => studentId);
   const classesQuery = createClassesQuery(() => orgId);
   const periodsQuery = createPeriodsQuery(() => orgId);
 
-  const student = $derived(studentQuery.data);
+  const studentDetail = $derived(studentQuery.data);
+  const student = $derived(studentDetail?.student);
+  const person = $derived(studentDetail?.person);
+  const enrollment = $derived(studentDetail?.enrollment);
+
+  const studentFullName = $derived(
+    (person?.first_name && person?.last_name
+      ? `${person.first_name} ${person.last_name}`
+      : "") ||
+      person?.name_ar ||
+      person?.name_en ||
+      person?.full_name ||
+      ""
+  );
+
   const currentClass = $derived(
-    student
+    enrollment?.class_id
       ? (classesQuery.data ?? []).find(
-          (c: any) => String(c.id) === String(student.class_id),
+          (c: any) => String(c.id) === String(enrollment.class_id),
         )
       : null,
   );
 
   // Enrollment history for this student
-  const actualStudentId = $derived(
-    student?.student_id || studentId,
-  );
+  const actualStudentId = $derived(student?.id || studentId);
   const enrollmentsQuery = createEnrollmentsQuery(
     () => orgId,
     () => ({ studentId: actualStudentId }),
@@ -115,8 +124,8 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     try {
       await api.updateStudentStatus({ student_id: studentId, status: "withdrawn" });
       toast.success("تم تحديث حالة الطالب بنجاح");
-      queryClient.invalidateQueries({ queryKey: ["enrollments", orgId] });
-      queryClient.invalidateQueries({ queryKey: ["student", studentId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.detail(studentId) });
     } catch (e: any) {
       console.error("Withdraw error:", e);
       toast.error(e?.message || String(e));
@@ -138,14 +147,14 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     isTransferring = true;
     try {
       await api.transferClass({
-        enrollmentId: studentId,
+        enrollmentId: enrollment?.id || studentId,
         targetClassId: transferTargetClassId,
       });
       toast.success(m.common_form_success_update());
       showTransferDialog = false;
       transferTargetClassId = "";
-      queryClient.invalidateQueries({ queryKey: ["enrollments", orgId] });
-      queryClient.invalidateQueries({ queryKey: ["student", studentId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.detail(studentId) });
     } catch (e: any) {
       console.error("Transfer error:", e);
       toast.error(e?.message || String(e));
@@ -202,7 +211,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     },
   ]);
 
-  const relatedActionGroups = $derived<ActionGroup[]>(student ? [
+  const relatedActionGroups = $derived<ActionGroup[]>(studentDetail ? [
     {
       id: "academic_actions",
       title: l("الإجراءات الأكاديمية", "Academic Operations"),
@@ -257,7 +266,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     },
   ] : []);
 
-  const relatedFooterActions = $derived<FooterAction[]>(student ? [
+  const relatedFooterActions = $derived<FooterAction[]>(studentDetail ? [
     {
       id: "withdraw_action",
       label: m.common_inspector_withdraw(),
@@ -274,11 +283,11 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     backHref={`/${orgId}/students`}
     backLabel={m.students_detail_back_to_directory()}
   >
-    {#if student}
+    {#if studentDetail}
       <h1
         class="text-lg font-bold tracking-tight text-foreground truncate shrink min-w-0"
       >
-        {student.full_name || ""}
+        {studentFullName || "طالب"}
       </h1>
       <Badge
         variant="secondary"
@@ -294,13 +303,13 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     {/if}
 
     {#snippet actions()}
-      {#if student}
+      {#if studentDetail}
         <AskOrbisButton
           query={m.academics_student_evaluation_ai_ask_orbis_query({
-            name: student.full_name || "",
+            name: studentFullName || "",
           })}
           label={m.academics_student_evaluation_ask_orbis_btn({
-            name: student.full_name || "",
+            name: studentFullName || "",
           })}
           variant="outline"
           size="sm"
@@ -315,8 +324,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
             toast.info(
               m.students_detail_call_guardian_toast({
                 phone:
-                  student.phone_number ||
-                  student.phone ||
+                  person?.phone ||
                   m.students_detail_phone_unavailable(),
               }),
             )}
@@ -393,20 +401,20 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
         <div
           class="h-full p-4 flex flex-col gap-5 overflow-y-auto scrollbar-hide text-start bg-transparent"
         >
-          {#if student}
+          {#if studentDetail}
             <!-- Squared Avatar Display -->
             <div class="w-full flex justify-center">
               <Avatar
                 class="w-[85%] max-w-[180px] min-w-[120px] aspect-square h-auto rounded-xl shadow-xs border border-border/50"
               >
                 <AvatarImage
-                  src={student.avatar_url || undefined}
-                  alt={student.full_name ? String(student.full_name) : ""}
+                  src={person?.avatar_url || undefined}
+                  alt={studentFullName || ""}
                 />
                 <AvatarFallback
                   class="text-5xl font-bold rounded-xl flex items-center justify-center bg-muted text-muted-foreground"
                 >
-                  {String(student.full_name || "S").slice(0, 1)}
+                  {String(studentFullName || "S").slice(0, 1)}
                 </AvatarFallback>
               </Avatar>
             </div>
@@ -415,7 +423,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
             <div
               class="flex flex-col gap-3.5 border-t border-border/40 pt-4 w-full text-start"
             >
-              {#if student.student_number || student.id}
+              {#if student?.student_number || student?.id}
                 <div class="flex flex-col gap-0.5">
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
@@ -423,24 +431,24 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
                     {m.common_word_academic_number()}
                   </span>
                   <span class="text-xs font-mono font-bold text-foreground">
-                    {student.student_number || student.id}
+                    {student?.student_number || student?.id}
                   </span>
                 </div>
               {/if}
 
-              {#if student.phone}
+              {#if person?.phone}
                 <div class="flex flex-col gap-0.5">
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
                     >{m.common_word_phone()}</span
                   >
                   <span class="text-xs text-foreground font-mono">
-                    {student.phone}
+                    {person.phone}
                   </span>
                 </div>
               {/if}
 
-              {#if student.email}
+              {#if person?.email}
                 <div class="flex flex-col gap-0.5">
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
@@ -448,59 +456,47 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
                   >
                   <span
                     class="text-xs text-foreground font-mono truncate max-w-full"
-                    title={String(student.email)}
+                    title={String(person.email)}
                   >
-                    {student.email}
+                    {person.email}
                   </span>
                 </div>
               {/if}
 
-              {#if student.sex}
+              {#if person?.gender}
                 <div class="flex flex-col gap-0.5">
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
                     >{m.common_form_sex()}</span
                   >
                   <span class="text-xs text-foreground font-medium">
-                    {student.sex === "male"
+                    {person.gender === "male"
                       ? m.common_form_male()
                       : m.common_form_female()}
                   </span>
                 </div>
               {/if}
 
-              {#if student.birth_date}
+              {#if person?.birth_date}
                 <div class="flex flex-col gap-0.5">
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
                     >{m.common_word_dob()}</span
                   >
                   <span class="text-xs text-foreground font-mono">
-                    {student.birth_date}
+                    {person.birth_date}
                   </span>
                 </div>
               {/if}
 
-              {#if student.guardian_name}
+              {#if student?.status}
                 <div class="flex flex-col gap-0.5">
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
-                    >{m.common_users_filter_guardian()}</span
+                    >{m.common_word_status()}</span
                   >
-                  <span class="text-xs text-foreground font-medium">
-                    {student.guardian_name}
-                  </span>
-                </div>
-              {/if}
-
-              {#if student.guardian_phone}
-                <div class="flex flex-col gap-0.5">
-                  <span
-                    class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
-                    >{m.common_bulk_col_guardian_phone()}</span
-                  >
-                  <span class="text-xs text-foreground font-mono">
-                    {student.guardian_phone}
+                  <span class="text-xs text-foreground font-medium capitalize">
+                    {student.status}
                   </span>
                 </div>
               {/if}
