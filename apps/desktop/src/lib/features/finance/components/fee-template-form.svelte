@@ -38,24 +38,48 @@ let {
   onCancel: () => void;
 } = $props();
 
-// Form state
+function parseInitialApplicableLevels(raw: any): { levels: string[]; applyToAll: boolean } {
+  if (!raw) return { levels: [], applyToAll: true };
+  try {
+    let levels: string[] = [];
+    if (typeof raw === "string") {
+      const parsed = JSON.parse(raw);
+      levels = Array.isArray(parsed) ? parsed : (parsed.levels || (parsed.level ? [parsed.level] : []));
+    } else if (Array.isArray(raw)) {
+      levels = raw;
+    } else if (typeof raw === "object") {
+      const obj = raw as any;
+      levels = Array.isArray(obj.levels) ? obj.levels : (obj.level ? [obj.level] : []);
+    }
+    if (levels.length > 0) {
+      return { levels, applyToAll: false };
+    }
+  } catch (e) {
+    // Ignore parse error
+  }
+  return { levels: [], applyToAll: true };
+}
+
+const initialLevelsData = parseInitialApplicableLevels(template?.applicable_levels);
+let applyToAllGrades = $state(initialLevelsData.applyToAll);
+let selectedLevels = $state<string[]>(initialLevelsData.levels);
+
+// Form state initialized directly from template or defaults
 const form = new FormController({
   initialValues: {
-    name: "",
-    name_ar: null,
-    code: null,
-    category: "tuition",
-    default_amount: 0,
-    revenue_account_id: null,
-    receivable_account_id: null,
-    applicable_levels: null,
-    frequency: "yearly",
-    is_mandatory: true,
+    name: template?.name || "",
+    name_ar: template?.name_ar || null,
+    code: template?.code || null,
+    category: template?.category || "tuition",
+    default_amount: template?.default_amount || 0,
+    revenue_account_id: template?.revenue_account_id || null,
+    receivable_account_id: template?.receivable_account_id || null,
+    applicable_levels: template?.applicable_levels || null,
+    frequency: template?.frequency === "annual" ? "yearly" : (template?.frequency || "yearly"),
+    is_mandatory: template ? (template.is_mandatory === 1 || template.is_mandatory === true) : true,
   },
   schema: feeTemplateInputSchema,
 });
-
-
 
 const queryClient = useQueryClient();
 
@@ -78,14 +102,18 @@ const uniqueLevels = $derived.by(() => {
     }
   }
 
+  // Ensure any selected levels from existing template are visible even before classes finish loading
+  for (const lvl of selectedLevels) {
+    if (!levelMap.has(lvl)) {
+      levelMap.set(lvl, { ar: lvl, en: lvl });
+    }
+  }
+
   return Array.from(levelMap.entries()).map(([lvl, nameObj]) => ({
     level: lvl,
     label: l(nameObj.ar, nameObj.en),
   }));
 });
-
-let applyToAllGrades = $state(true);
-let selectedLevels = $state<string[]>([]);
 
 // Derived categories and frequencies for Orbis Select components
 const categories = $derived([
@@ -155,51 +183,6 @@ const frequencyLabels = $derived(
 const selectedFrequencyLabel = $derived(
   frequencyLabels[form.values.frequency] ?? form.values.frequency,
 );
-
-// Initialize form if in edit mode
-$effect(() => {
-  if (template) {
-    form.values.name = template.name || "";
-    form.values.name_ar = template.name_ar || null;
-    form.values.code = template.code || null;
-    form.values.category = template.category || "tuition";
-    form.values.frequency = template.frequency === "annual" ? "yearly" : (template.frequency || "yearly");
-    form.values.is_mandatory = template.is_mandatory === 1 || template.is_mandatory === true;
-
-    // Load amount directly from default_amount
-    form.values.default_amount = template.default_amount || 0;
-
-    // Load applicable levels (handles JSON string, object, or string array)
-    if (template.applicable_levels) {
-      try {
-        let levels: string[] = [];
-        if (typeof template.applicable_levels === "string") {
-          const parsed = JSON.parse(template.applicable_levels);
-          levels = Array.isArray(parsed) ? parsed : (parsed.levels || (parsed.level ? [parsed.level] : []));
-        } else if (Array.isArray(template.applicable_levels)) {
-          levels = template.applicable_levels;
-        } else if (typeof template.applicable_levels === "object") {
-          const obj = template.applicable_levels as any;
-          levels = Array.isArray(obj.levels) ? obj.levels : (obj.level ? [obj.level] : []);
-        }
-
-        if (levels.length > 0) {
-          selectedLevels = levels;
-          applyToAllGrades = false;
-        } else {
-          selectedLevels = [];
-          applyToAllGrades = true;
-        }
-      } catch (e) {
-        selectedLevels = [];
-        applyToAllGrades = true;
-      }
-    } else {
-      selectedLevels = [];
-      applyToAllGrades = true;
-    }
-  }
-});
 
 async function handleSubmit() {
   const applicableLevels =
