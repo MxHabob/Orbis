@@ -48,20 +48,20 @@ const resolvedOrgId = $derived(
 // Self-contained TanStack Query
 const teachersQuery = createEmployeesQuery(
   () => resolvedOrgId,
-  () => ({ employee_type: "teacher", status: "active" }),
+  () => ({ employee_type: "teacher", status: "active", limit: 300 }),
 );
 
 const teachers = $derived(teachersQuery.data?.items ?? []);
 
 function getTeacherLabel(t: any): string {
   if (!t) return "";
-  const arName = t.name_ar || t.nameAr || t.full_name;
-  const enName = t.name_en || t.nameEn || t.full_name || t.email;
+  const arName = t.full_name_ar || t.name_ar || t.nameAr || t.full_name;
+  const enName = t.full_name || t.name_en || t.nameEn || t.email;
   const localized = l(arName, enName);
   if (localized) return localized;
   const composite = `${t.first_name || ""} ${t.last_name || ""}`.trim();
   if (composite) return composite;
-  return String(t.full_name || t.email || t.employee_number || t.id || "");
+  return String(t.full_name || t.full_name_ar || t.email || t.employee_number || t.id || "");
 }
 
 function getTeacherSubtitle(t: any): string | undefined {

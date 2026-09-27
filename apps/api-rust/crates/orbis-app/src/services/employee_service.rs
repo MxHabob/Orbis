@@ -3,7 +3,7 @@ use uuid::Uuid;
 use chrono::{NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
-use orbis_domain::entities::employee::{Employee, EmployeeDetail, EmployeeStatus, EmploymentType};
+use orbis_domain::entities::employee::{Employee, EmployeeDetail, EmployeeStatus, EmployeeType, EmploymentType};
 use orbis_domain::entities::person::Person;
 use orbis_domain::entities::identity_provisioning::{
     ActorType, DeliveryChannel, AccountProvisioningResult,
@@ -272,13 +272,16 @@ impl EmployeeService {
         let status = input.status.unwrap_or(EmployeeStatus::Active);
         let employment_type = input.employment_type.unwrap_or(EmploymentType::FullTime);
 
+        let emp_type = EmployeeType::from(input.employee_type.as_str());
+        let normalized_employee_type = emp_type.to_string();
+
         let mut employee = Employee {
             id: employee_id,
             org_id,
             person_id,
             user_id: None,
             employee_number: employee_number.clone(),
-            employee_type: input.employee_type.clone(),
+            employee_type: normalized_employee_type,
             job_title: input.job_title,
             department: input.department,
             org_unit_id: input.org_unit_id,
@@ -301,9 +304,9 @@ impl EmployeeService {
             if acc_config.enabled {
                 let default_role = if employee.is_teacher() {
                     "teacher".to_string()
-                } else if input.employee_type.eq_ignore_ascii_case("principal") || input.employee_type.eq_ignore_ascii_case("director") {
+                } else if matches!(emp_type, EmployeeType::Principal) {
                     "principal".to_string()
-                } else if input.employee_type.eq_ignore_ascii_case("accountant") {
+                } else if matches!(emp_type, EmployeeType::Accountant) {
                     "accountant".to_string()
                 } else {
                     "staff".to_string()
@@ -370,7 +373,10 @@ impl EmployeeService {
         let now = Utc::now();
 
         // Update employee fields
-        if let Some(v) = input.employee_type { employee.employee_type = v; }
+        if let Some(v) = input.employee_type {
+            let emp_type = EmployeeType::from(v.as_str());
+            employee.employee_type = emp_type.to_string();
+        }
         if let Some(v) = input.job_title { employee.job_title = Some(v); }
         if let Some(v) = input.department { employee.department = Some(v); }
         if let Some(v) = input.org_unit_id { employee.org_unit_id = Some(v); }

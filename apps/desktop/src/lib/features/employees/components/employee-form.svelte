@@ -79,14 +79,14 @@ let email = $state(employee?.email || "");
 let address = $state(employee?.address || "");
 
 let employeeNumber = $state(employee?.employee_number || "");
-let employeeType = $state(employee?.employee_type || "Teacher");
+let employeeType = $state(employee?.employee_type?.toLowerCase() || "teacher");
 let jobTitle = $state(employee?.job_title || "");
 let department = $state(employee?.department || "");
 let orgUnitId = $state(employee?.org_unit_id || "");
 let hireDate = $state(employee?.hire_date || new Date().toISOString().split("T")[0]);
-let employmentType = $state(employee?.employment_type || "FullTime");
-let workShift = $state(employee?.work_shift || "Morning");
-let status = $state(employee?.status || "active");
+let employmentType = $state(employee?.employment_type?.toLowerCase() || "full_time");
+let workShift = $state(employee?.work_shift?.toLowerCase() || "morning");
+let status = $state(employee?.status?.toLowerCase() || "active");
 
 // Payroll & Compensation State
 let rawPayroll: Record<string, any> = {};
@@ -174,14 +174,14 @@ async function handleSubmit() {
       address: address.trim() || undefined,
 
       employee_number: employeeNumber.trim() || undefined,
-      employee_type: employeeType || "Teacher",
+      employee_type: (employeeType || "teacher").toLowerCase(),
       job_title: jobTitle.trim() || undefined,
       department: department.trim() || undefined,
       org_unit_id: orgUnitId.trim() || undefined,
       hire_date: hireDate || undefined,
-      status: status || "active",
-      employment_type: employmentType,
-      work_shift: workShift,
+      status: (status || "active").toLowerCase(),
+      employment_type: (employmentType || "full_time").toLowerCase(),
+      work_shift: (workShift || "morning").toLowerCase(),
       notes: serializedNotes,
       account: null,
     };
@@ -550,15 +550,15 @@ function handleCancelClick() {
               {#snippet children()}
               <Select type="single" value={employeeType} onValueChange={(v) => { if (v) employeeType = v; }} disabled={isSaving}>
                 <SelectTrigger class="text-xs h-9">
-                  {employeeType === "Teacher" ? (m.employees_type_teacher?.() || "معلم / كادر تعليمي") :
-                   employeeType === "Admin" ? (m.employees_type_admin?.() || "إداري") :
-                   employeeType === "Staff" ? (m.employees_type_staff?.() || "موظف خدمات") : employeeType}
+                  {employeeType === "teacher" ? (m.employees_type_teacher?.() || "معلم / كادر تعليمي") :
+                   employeeType === "admin" ? (m.employees_type_admin?.() || "إداري") :
+                   employeeType === "staff" ? (m.employees_type_staff?.() || "موظف خدمات") : employeeType}
                 </SelectTrigger>
                 <SelectContent class="text-xs font-sans">
-                  <SelectItem value="Teacher">{m.employees_type_teacher?.() || "معلم / كادر تعليمي"}</SelectItem>
-                  <SelectItem value="Admin">{m.employees_type_admin?.() || "إداري"}</SelectItem>
-                  <SelectItem value="Staff">{m.employees_type_staff?.() || "موظف خدمات"}</SelectItem>
-                  <SelectItem value="Other">{m.common_guardians_relationship_other?.() || "أخرى"}</SelectItem>
+                  <SelectItem value="teacher">{m.employees_type_teacher?.() || "معلم / كادر تعليمي"}</SelectItem>
+                  <SelectItem value="admin">{m.employees_type_admin?.() || "إداري"}</SelectItem>
+                  <SelectItem value="staff">{m.employees_type_staff?.() || "موظف خدمات"}</SelectItem>
+                  <SelectItem value="other">{m.common_guardians_relationship_other?.() || "أخرى"}</SelectItem>
                 </SelectContent>
               </Select>
               {/snippet}
@@ -570,13 +570,13 @@ function handleCancelClick() {
               {#snippet children()}
               <Select type="single" value={employmentType} onValueChange={(v) => { if (v) employmentType = v; }} disabled={isSaving}>
                 <SelectTrigger class="text-xs h-9">
-                  {employmentType === "FullTime" ? (m.employees_contract_fulltime?.() || "دوام كامل") :
-                   employmentType === "PartTime" ? (m.employees_contract_parttime?.() || "دوام جزئي") : (m.employees_contract_contract?.() || "عقد محدد")}
+                  {employmentType === "full_time" ? (m.employees_contract_fulltime?.() || "دوام كامل") :
+                   employmentType === "part_time" ? (m.employees_contract_parttime?.() || "دوام جزئي") : (m.employees_contract_contract?.() || "عقد محدد")}
                 </SelectTrigger>
                 <SelectContent class="text-xs font-sans">
-                  <SelectItem value="FullTime">{m.employees_contract_fulltime?.() || "دوام كامل"}</SelectItem>
-                  <SelectItem value="PartTime">{m.employees_contract_parttime?.() || "دوام جزئي"}</SelectItem>
-                  <SelectItem value="Contract">{m.employees_contract_contract?.() || "عقد محدد"}</SelectItem>
+                  <SelectItem value="full_time">{m.employees_contract_fulltime?.() || "دوام كامل"}</SelectItem>
+                  <SelectItem value="part_time">{m.employees_contract_parttime?.() || "دوام جزئي"}</SelectItem>
+                  <SelectItem value="contract">{m.employees_contract_contract?.() || "عقد محدد"}</SelectItem>
                 </SelectContent>
               </Select>
               {/snippet}
@@ -586,13 +586,13 @@ function handleCancelClick() {
               {#snippet children()}
               <Select type="single" value={workShift} onValueChange={(v) => { if (v) workShift = v; }} disabled={isSaving}>
                 <SelectTrigger class="text-xs h-9">
-                  {workShift === "Morning" ? (m.employees_shift_morning?.() || "صباحي") :
-                   workShift === "Evening" ? (m.employees_shift_evening?.() || "مسائي") : (m.employees_shift_flexible?.() || "مرن")}
+                  {workShift === "morning" ? (m.employees_shift_morning?.() || "صباحي") :
+                   workShift === "evening" ? (m.employees_shift_evening?.() || "مسائي") : (m.employees_shift_flexible?.() || "مرن")}
                 </SelectTrigger>
                 <SelectContent class="text-xs font-sans">
-                  <SelectItem value="Morning">{m.employees_shift_morning?.() || "صباحي"}</SelectItem>
-                  <SelectItem value="Evening">{m.employees_shift_evening?.() || "مسائي"}</SelectItem>
-                  <SelectItem value="Flexible">{m.employees_shift_flexible?.() || "مرن"}</SelectItem>
+                  <SelectItem value="morning">{m.employees_shift_morning?.() || "صباحي"}</SelectItem>
+                  <SelectItem value="evening">{m.employees_shift_evening?.() || "مسائي"}</SelectItem>
+                  <SelectItem value="flexible">{m.employees_shift_flexible?.() || "مرن"}</SelectItem>
                 </SelectContent>
               </Select>
               {/snippet}

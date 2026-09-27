@@ -1,3 +1,4 @@
+use sea_orm::sea_query::{Expr, Func};
 use async_trait::async_trait;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, IntoActiveModel, PaginatorTrait, QueryFilter,
@@ -6,7 +7,7 @@ use sea_orm::{
 use uuid::Uuid;
 
 use orbis_app::ports::repositories::{EmployeeFilter, EmployeeRepository};
-use orbis_domain::entities::employee::{Employee, EmployeeDetail, EmployeeStatus, EmploymentType};
+use orbis_domain::entities::employee::{Employee, EmployeeDetail, EmployeeStatus, EmployeeType, EmploymentType};
 use orbis_domain::entities::group::Group;
 use orbis_domain::entities::person::Person;
 use orbis_domain::entities::user::User;
@@ -287,15 +288,25 @@ impl EmployeeRepository for EmployeeRepoImpl {
             .filter(employee::Column::OrgId.eq(org_id))
             .filter(employee::Column::IsDeleted.eq(false));
 
-        if let Some(ref status) = filter.status {
-            if !status.is_empty() && status != "all" {
-                query = query.filter(employee::Column::Status.eq(status));
+        if let Some(ref status_str) = filter.status {
+            let s_clean = status_str.trim();
+            if !s_clean.is_empty() && s_clean != "all" {
+                let status = EmployeeStatus::from(s_clean);
+                let canonical_status = status.to_string();
+                query = query.filter(
+                    Expr::expr(Func::lower(Expr::col(employee::Column::Status))).eq(&canonical_status)
+                );
             }
         }
 
-        if let Some(ref emp_type) = filter.employee_type {
-            if !emp_type.is_empty() && emp_type != "all" {
-                query = query.filter(employee::Column::EmployeeType.eq(emp_type));
+        if let Some(ref emp_type_str) = filter.employee_type {
+            let t_clean = emp_type_str.trim();
+            if !t_clean.is_empty() && t_clean != "all" {
+                let emp_type = EmployeeType::from(t_clean);
+                let canonical_type = emp_type.to_string();
+                query = query.filter(
+                    Expr::expr(Func::lower(Expr::col(employee::Column::EmployeeType))).eq(&canonical_type)
+                );
             }
         }
 
@@ -421,9 +432,11 @@ impl EmployeeRepository for EmployeeRepoImpl {
     }
 
     async fn list_by_type(&self, org_id: Uuid, employee_type: &str) -> Result<Vec<Employee>, DomainError> {
+        let emp_type = EmployeeType::from(employee_type);
+        let canonical_type = emp_type.to_string();
         let models = EmployeeEntity::find()
             .filter(employee::Column::OrgId.eq(org_id))
-            .filter(employee::Column::EmployeeType.eq(employee_type))
+            .filter(Expr::expr(Func::lower(Expr::col(employee::Column::EmployeeType))).eq(&canonical_type))
             .filter(employee::Column::IsDeleted.eq(false))
             .all(&self.db)
             .await

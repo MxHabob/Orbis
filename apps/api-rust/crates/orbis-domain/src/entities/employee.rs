@@ -30,13 +30,66 @@ impl std::fmt::Display for EmployeeStatus {
 
 impl From<&str> for EmployeeStatus {
     fn from(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
+        match s.trim().to_lowercase().as_str() {
             "active" => EmployeeStatus::Active,
             "on_leave" | "onleave" | "leave" => EmployeeStatus::OnLeave,
             "suspended" => EmployeeStatus::Suspended,
             "terminated" => EmployeeStatus::Terminated,
             "resigned" => EmployeeStatus::Resigned,
             _ => EmployeeStatus::Active,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EmployeeType {
+    Teacher,
+    Admin,
+    Staff,
+    Principal,
+    Accountant,
+    Supervisor,
+    Driver,
+    Worker,
+    Custom(String),
+}
+
+impl std::fmt::Display for EmployeeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EmployeeType::Teacher => write!(f, "teacher"),
+            EmployeeType::Admin => write!(f, "admin"),
+            EmployeeType::Staff => write!(f, "staff"),
+            EmployeeType::Principal => write!(f, "principal"),
+            EmployeeType::Accountant => write!(f, "accountant"),
+            EmployeeType::Supervisor => write!(f, "supervisor"),
+            EmployeeType::Driver => write!(f, "driver"),
+            EmployeeType::Worker => write!(f, "worker"),
+            EmployeeType::Custom(s) => write!(f, "{}", s.to_lowercase()),
+        }
+    }
+}
+
+impl EmployeeType {
+    pub fn is_teacher(&self) -> bool {
+        matches!(self, EmployeeType::Teacher)
+    }
+}
+
+impl From<&str> for EmployeeType {
+    fn from(s: &str) -> Self {
+        let clean = s.trim().to_lowercase();
+        match clean.as_str() {
+            "teacher" => EmployeeType::Teacher,
+            "admin" | "administrative" => EmployeeType::Admin,
+            "staff" | "support" => EmployeeType::Staff,
+            "principal" | "director" => EmployeeType::Principal,
+            "accountant" => EmployeeType::Accountant,
+            "supervisor" => EmployeeType::Supervisor,
+            "driver" => EmployeeType::Driver,
+            "worker" => EmployeeType::Worker,
+            _ => EmployeeType::Custom(clean),
         }
     }
 }
@@ -114,9 +167,7 @@ impl Employee {
     }
 
     pub fn is_teacher(&self) -> bool {
-        self.employee_type.eq_ignore_ascii_case("teacher")
+        EmployeeType::from(self.employee_type.as_str()).is_teacher()
             || self.job_title.as_deref().unwrap_or("").to_lowercase().contains("teacher")
-            || self.job_title.as_deref().unwrap_or("").contains("معلم")
-            || self.job_title.as_deref().unwrap_or("").contains("مدرس")
     }
 }

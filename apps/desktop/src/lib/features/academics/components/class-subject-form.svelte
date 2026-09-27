@@ -19,7 +19,7 @@ import { api } from "$lib/api";
 import type {
   ClassSubjectDto,
   AssessmentSchemeDto,
-  AssignClassSubjectInput,
+  AssignClassSubjectRequest,
 } from "$lib/api";
 import { toast } from "@orbis/ui";
 
@@ -85,7 +85,7 @@ async function handleSubmit() {
     weekly_hours: Number(weeklyHours),
   };
   const submitted = await form.submit(async (values) => {
-    const request: AssignClassSubjectInput = {
+    const request: AssignClassSubjectRequest = {
       class_id: values.class_id,
       subject_id: values.subject_id,
       period_id: values.period_id,
@@ -121,6 +121,7 @@ async function handleSubmit() {
       <FormField label={m.common_metrics_period()} error={form.errors.period_id?.[0]} required>
         {#snippet children()}
         <PeriodSelect
+          {orgId}
           bind:value={periodId}
           placeholder={m.academics_studio_select_period()}
           class="h-9 text-sm"
@@ -133,6 +134,7 @@ async function handleSubmit() {
         <FormField label={m.common_word_semester()} error={form.errors.class_id?.[0]} required>
           {#snippet children()}
           <ClassSelect
+            {orgId}
             bind:value={classId}
             placeholder={m.common_cs_form_select_class()}
             class="h-9 text-sm"
@@ -145,6 +147,7 @@ async function handleSubmit() {
       <FormField label={m.common_word_subject()} error={form.errors.subject_id?.[0]} required>
         {#snippet children()}
         <SubjectSelect
+          {orgId}
           bind:value={subjectId}
           placeholder={m.common_cs_form_select_subject()}
           class="h-9 text-sm"
@@ -156,6 +159,7 @@ async function handleSubmit() {
       <FormField label={m.common_cs_col_teacher()} error={form.errors.teacher_id?.[0]} required>
         {#snippet children()}
         <TeacherSelect
+          {orgId}
           bind:value={teacherId}
           placeholder={m.common_cs_form_select_teacher()}
           class="h-9 text-sm"
