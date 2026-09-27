@@ -46,6 +46,7 @@ Every agent starting a session in this repository MUST:
   - Upgraded Rust Backend (`StudentService::bulk_register_students`, `EmployeeService::bulk_register_employees`) with multi-stage validation, cumulative class capacity tracking, admission policy enforcement, atomic all-or-nothing execution, deterministic sequence numbering, auto-assigned mandatory tuition fees, and guardian linkages.
   - Implemented Tauri IPC commands (`student_bulk_register`, `employee_bulk_register`) with atomic and dry-run parameters.
   - Refactored frontend data fetching to use TanStack Query (`createBulkReferenceDataQuery`) eliminating manual `$effect` synchronization.
-  - Consolidated `/settings/bulk-input`, `/settings/bulk-input/students`, `/settings/bulk-input/employees`, `/settings/bulk-input/grades`, and `/import` routes into the unified studio.
+  - Consolidated settings bulk entry routes (`/settings/bulk-input`, `/settings/bulk-input/students`, `/settings/bulk-input/employees`, `/settings/bulk-input/grades`) using `@orbis/ui` and system design tokens.
+  - Performed legacy cleanup: deleted obsolete `/import` route and deprecated `src/lib/features/bulk-input` directory.
   - Verified 0 errors across `bun x tsc` and `cargo check`.
 - **Verification:** Frontend and Rust backend compiled with 0 errors.
