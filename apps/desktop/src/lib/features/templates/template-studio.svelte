@@ -1,5 +1,4 @@
 <script lang="ts">
-import { FloppyDisk, Grid } from "@orbis/icons";
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { api } from "$lib/api/client";
@@ -7,7 +6,12 @@ import type { TemplateDto, UpdateTemplateRequest } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
-import { deserializeDocument, serializeDocument } from "@docforge/core";
+import {
+  createDocument,
+  deserializeDocument,
+  serializeDocument,
+  type TemplateDocument,
+} from "@docforge/core";
 import { createEditorStore } from "./stores/editor-store.svelte";
 import {
   copyNodes,
@@ -66,10 +70,40 @@ async function initEditor() {
     const data = await api.getTemplate(templateId || "");
     templateRecord = data;
 
-    const doc = deserializeDocument(
-      data.documentJson ?? (data as any).document_json,
-    );
-    doc.meta = { ...doc.meta, id: templateId || data.id };
+    const rawJson = data.document_json ?? (data as any).documentJson;
+    let doc: TemplateDocument;
+
+    if (rawJson && typeof rawJson === "string" && rawJson.trim().startsWith("{")) {
+      try {
+        doc = deserializeDocument(rawJson);
+      } catch (deserErr) {
+        console.warn("Failed to deserialize document JSON, generating default:", deserErr);
+        doc = createDocument(
+          data.document_type ?? (data as any).documentType ?? "REPORT",
+          data.entity_type ?? (data as any).entityType ?? "student",
+          (data.locale as "ar" | "en") || "ar",
+        );
+      }
+    } else {
+      doc = createDocument(
+        data.document_type ?? (data as any).documentType ?? "REPORT",
+        data.entity_type ?? (data as any).entityType ?? "student",
+        (data.locale as "ar" | "en") || "ar",
+      );
+    }
+
+    doc.meta.id = templateId || data.id;
+    if (data.name) doc.meta.name = data.name;
+    if (data.name_ar ?? (data as any).nameAr) {
+      doc.meta.nameAr = data.name_ar ?? (data as any).nameAr;
+    }
+    if (data.page_size ?? (data as any).pageSize) {
+      doc.meta.pageSetup.size = (data.page_size ?? (data as any).pageSize) as any;
+    }
+    if (data.orientation) {
+      doc.meta.pageSetup.orientation = data.orientation as any;
+    }
+
     store.loadDocument(doc);
     isLoading = false;
   } catch (e: unknown) {

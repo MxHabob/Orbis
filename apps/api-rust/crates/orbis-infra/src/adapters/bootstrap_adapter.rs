@@ -1407,7 +1407,8 @@ pub async fn seed_default_reports<C: ConnectionTrait>(
             "system",
             "organization",
             "MASTER",
-            crate::adapters::report_defaults::MASTER_TEMPLATE_HTML,
+            "A4",
+            "portrait",
         ),
         (
             "academic.student-term-report-card",
@@ -1416,7 +1417,8 @@ pub async fn seed_default_reports<C: ConnectionTrait>(
             "academic",
             "student",
             "REPORT",
-            crate::adapters::report_defaults::TABULAR_REPORT_HTML,
+            "A4",
+            "portrait",
         ),
         (
             "academic.official-transcript",
@@ -1425,7 +1427,8 @@ pub async fn seed_default_reports<C: ConnectionTrait>(
             "academic",
             "student",
             "TRANSCRIPT",
-            crate::adapters::report_defaults::TRANSCRIPT_REPORT_HTML,
+            "A4",
+            "portrait",
         ),
         (
             "finance.payment-receipt",
@@ -1434,7 +1437,8 @@ pub async fn seed_default_reports<C: ConnectionTrait>(
             "finance",
             "finance",
             "RECEIPT",
-            crate::adapters::report_defaults::PAYMENT_RECEIPT_HTML,
+            "A4",
+            "portrait",
         ),
         (
             "finance.student-invoice",
@@ -1443,7 +1447,8 @@ pub async fn seed_default_reports<C: ConnectionTrait>(
             "finance",
             "finance",
             "INVOICE",
-            crate::adapters::report_defaults::STUDENT_INVOICE_HTML,
+            "A4",
+            "portrait",
         ),
         (
             "identification.student-id-card",
@@ -1452,7 +1457,8 @@ pub async fn seed_default_reports<C: ConnectionTrait>(
             "identification",
             "student",
             "ID_CARD",
-            crate::adapters::report_defaults::STUDENT_ID_CARD_HTML,
+            "ID_CARD",
+            "landscape",
         ),
         (
             "identification.staff-id-card",
@@ -1461,7 +1467,8 @@ pub async fn seed_default_reports<C: ConnectionTrait>(
             "identification",
             "staff",
             "STAFF_CARD",
-            crate::adapters::report_defaults::STAFF_ID_CARD_HTML,
+            "ID_CARD",
+            "landscape",
         ),
         (
             "scheduling.class-timetable",
@@ -1470,7 +1477,8 @@ pub async fn seed_default_reports<C: ConnectionTrait>(
             "academic",
             "class",
             "SCHEDULE",
-            crate::adapters::report_defaults::CLASS_TIMETABLE_HTML,
+            "A4",
+            "landscape",
         ),
         (
             "admission.enrollment-certificate",
@@ -1479,11 +1487,12 @@ pub async fn seed_default_reports<C: ConnectionTrait>(
             "academic",
             "enrollment",
             "CERTIFICATE",
-            crate::adapters::report_defaults::ENROLLMENT_CERTIFICATE_HTML,
+            "A4",
+            "portrait",
         ),
     ];
 
-    for (code, name_en, name_ar, domain, entity_type, doc_type, html_content) in templates {
+    for (code, name_en, name_ar, domain, entity_type, doc_type, page_size, orientation) in templates {
         // 1. Definition
         let def_id = Uuid::new_v4();
         db.execute(Statement::from_sql_and_values(
@@ -1506,18 +1515,47 @@ pub async fn seed_default_reports<C: ConnectionTrait>(
         )).await.map_err(|e| DomainError::Internal(e.to_string()))?.ok_or_else(|| DomainError::NotFound("Report definition not found".into()))?;
         let real_def_id: Uuid = def_row.try_get("", "id").map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        // 2. Template
+        // 2. Template (valid DocForge AST JSON)
+        let doc_json = serde_json::json!({
+            "version": "2.0",
+            "meta": {
+                "name": name_en,
+                "nameAr": name_ar,
+                "documentType": doc_type,
+                "entityType": entity_type,
+                "locale": "ar",
+                "pageSetup": {
+                    "size": page_size,
+                    "orientation": orientation,
+                    "margins": { "top": 15, "bottom": 15, "left": 15, "right": 15 },
+                    "unit": "mm"
+                }
+            },
+            "variables": {},
+            "assets": {},
+            "pages": [
+                {
+                    "type": "Page",
+                    "id": format!("page-{}", Uuid::new_v4()),
+                    "children": []
+                }
+            ],
+            "components": {},
+            "styles": {}
+        }).to_string();
+
         let tmpl_id = Uuid::new_v4();
         let nil_user_id = Uuid::nil();
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
             "INSERT INTO report_templates (id, org_id, code, name, name_ar, document_type, entity_type, status, version, published_version, page_size, orientation, margins_json, document_json, locale, is_system, is_default, created_by, created_at, updated_at) \
-             SELECT $1, $2, $3, $4, $5, $6, $7, 'published', 1, 1, 'A4', 'portrait', '{\"top\":15,\"bottom\":15,\"left\":15,\"right\":15}', $8, 'ar', 1, 1, $9, $10, $11 \
+             SELECT $1, $2, $3, $4, $5, $6, $7, 'published', 1, 1, $8, $9, '{\"top\":15,\"bottom\":15,\"left\":15,\"right\":15}', $10, 'ar', 1, 1, $11, $12, $13 \
              WHERE NOT EXISTS (SELECT 1 FROM report_templates WHERE org_id = $2 AND code = $3)",
             vec![
                 tmpl_id.into(), org_id.into(), code.into(),
                 name_en.into(), name_ar.into(), doc_type.into(), entity_type.into(),
-                html_content.into(),
+                page_size.into(), orientation.into(),
+                doc_json.into(),
                 nil_user_id.into(),
                 now.to_string().into(), now.to_string().into(),
             ]

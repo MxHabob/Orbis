@@ -1,9 +1,8 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
-import type { CreateTemplateRequest, TemplateDto } from "$lib/api/types";
+import type { CreateTemplateRequest } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
-import { Input } from "@orbis/ui/input";
 import {
   Select,
   SelectTrigger,
@@ -15,7 +14,7 @@ import { createDocument } from "@docforge/core";
 
 import { l, isAr } from "$lib/core/i18n";
 import SearchField from "$lib/shared/components/search-field.svelte";
-import { DocumentPage, Plus, Refresh } from "@orbis/icons";
+import { Plus } from "@orbis/icons";
 import { fade } from "svelte/transition";
 
 import TemplateGrid from "./components/template-grid.svelte";
