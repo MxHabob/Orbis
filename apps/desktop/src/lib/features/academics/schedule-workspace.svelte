@@ -351,7 +351,7 @@ const isLoading = $derived(
   periodsQuery.isLoading ||
     classesQuery.isLoading ||
     subjectsQuery.isLoading ||
-    usersQuery.isLoading ||
+    teachersQuery.isLoading ||
     roomsQuery.isLoading ||
     timeSlotsQuery.isLoading ||
     periodScheduleQuery.isLoading,

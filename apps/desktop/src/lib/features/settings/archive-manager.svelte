@@ -85,22 +85,6 @@ let selectedDocument = $state<DocumentDto | null>(null);
 let selectedDocumentUrl = $state("");
 let archiveScroller: HTMLDivElement | undefined = $state();
 
-// Declarative Queries for Domain Resources (Zero $effect)
-const periodsQuery = createQuery(() => ({
-  queryKey: ["academic-periods", orgId],
-  queryFn: () => api.listAcademicPeriods(),
-  staleTime: 5 * 60 * 1000,
-}));
-
-const classesQuery = createQuery(() => ({
-  queryKey: ["classes", orgId],
-  queryFn: () => api.listClasses(),
-  staleTime: 5 * 60 * 1000,
-}));
-
-const academicPeriods = $derived<any[]>(periodsQuery.data || []);
-const dbClasses = $derived<ClassDto[]>(classesQuery.data || []);
-
 // Declarative Student Search Query
 const studentSearchQueryResults = createQuery(() => ({
   queryKey: ["archive-student-search", studentSearchQuery.trim()],
@@ -253,18 +237,6 @@ let availableCategories = $derived.by(() => {
     .sort()
     .map((value) => [value, labels.get(value) || value] as const);
 });
-
-// Academic Period Options
-let archiveSchoolYears = $derived(
-  academicPeriods.filter(
-    (period) =>
-      period.period_type === "academic_year" || period.period_type === "year",
-  ),
-);
-
-let archiveTerms = $derived(
-  academicPeriods.filter((period) => period.period_type === "term"),
-);
 
 let groupedDocs = $derived(
   documents.reduce(
@@ -638,7 +610,6 @@ function clearAllFilters() {
       <div class="w-44">
         <ClassSelect
           bind:value={selectedClassId}
-          classes={dbClasses}
           showAllOption={true}
           allOptionLabel={l("كافة الصفوف", "All Classes")}
           placeholder={l("كافة الصفوف", "All Classes")}
@@ -649,7 +620,7 @@ function clearAllFilters() {
       <div class="w-44">
         <PeriodSelect
           bind:value={selectedSchoolYear}
-          periods={archiveSchoolYears}
+          periodType="academic_year"
           showAllOption={true}
           allOptionLabel={l("كافة الأعوام", "All Academic Years")}
           placeholder={l("كافة الأعوام", "All Academic Years")}
@@ -660,7 +631,7 @@ function clearAllFilters() {
       <div class="w-40">
         <PeriodSelect
           bind:value={selectedTerm}
-          periods={archiveTerms}
+          periodType="term"
           showAllOption={true}
           allOptionLabel={l("كافة الفصول", "All Terms")}
           placeholder={l("كافة الفصول", "All Terms")}

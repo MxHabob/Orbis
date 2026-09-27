@@ -19,8 +19,6 @@ import { OrbisGrid } from "@orbis/svelte-grid";
 interface Props {
   selectedClassId: string;
   selectedSubjectId: string;
-  classes: any[];
-  subjects: any[];
   matrixData: any;
   gridSource: any[];
   gridColumns: any[];
@@ -37,8 +35,6 @@ interface Props {
 let {
   selectedClassId = $bindable(),
   selectedSubjectId = $bindable(),
-  classes,
-  subjects,
   matrixData,
   gridSource,
   gridColumns,
@@ -97,7 +93,6 @@ let {
     <!-- Class Selector -->
     <ClassSelect
       bind:value={selectedClassId}
-      {classes}
       disabled={!selectedPeriodId}
       placeholder={m.common_control_select_class()}
       class="min-w-[180px] text-xs h-9"
@@ -106,8 +101,7 @@ let {
     <!-- Subject Selector -->
     <SubjectSelect
       bind:value={selectedSubjectId}
-      {subjects}
-      disabled={!selectedClassId || subjects.length === 0}
+      disabled={!selectedClassId}
       placeholder={m.common_control_select_subject()}
       class="min-w-[180px] text-xs h-9"
     />

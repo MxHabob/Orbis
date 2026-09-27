@@ -655,7 +655,6 @@ function handleFormSave() {
           <div class="w-56">
             <ClassSelect
               bind:value={selectedClassFilter}
-              classes={dbClasses}
               showAllOption={true}
               allOptionLabel={l("كافة الصفوف والمراحل", "All Classes & Grades")}
               placeholder={l("كافة الصفوف والمراحل", "All Classes & Grades")}
@@ -707,7 +706,6 @@ function handleFormSave() {
   <!-- Add Document Requirement Slide-over Sheet -->
   <AddDocumentRequirementSheet
     bind:open={isAddDocSheetOpen}
-    classes={dbClasses}
     oncreated={handleRequirementCreated}
   />
 

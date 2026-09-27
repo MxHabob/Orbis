@@ -1,36 +1,56 @@
+<!--
+  @component SubjectSelect
+  Self-fetching Searchable Subject Selector powered by TanStack Query & Academic Service.
+  Includes a sticky search bar and optional "Add new subject" creation button.
+-->
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
+import { page } from "$app/state";
 import { l } from "$lib/core/i18n";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
+import { createSubjectsQuery } from "$lib/features/academics/queries";
+import * as m from "$lib/paraglide/messages";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
+import { authStore } from "$lib/stores";
 
-let {
-  value = $bindable<string | null>(null),
-  subjects = [],
-  placeholder = "",
-  disabled = false,
-  id = undefined,
-  showAllOption = false,
-  allOptionLabel = "",
-  class: className = "",
-  onchange = undefined,
-}: {
+interface Props {
   value?: string | null;
-  subjects?: any[];
+  orgId?: string;
   placeholder?: string;
+  searchPlaceholder?: string;
   disabled?: boolean;
   id?: string;
   showAllOption?: boolean;
   allOptionLabel?: string;
+  createLabel?: string;
+  onCreate?: () => void;
   class?: string;
   onchange?: (val: string | null) => void;
-} = $props();
+}
 
-function getSubjectLabel(subj: any) {
+let {
+  value = $bindable<string | null>(null),
+  orgId,
+  placeholder = m.common_cs_form_select_subject?.() || "اختر المادة...",
+  searchPlaceholder = "ابحث عن اسم أو رمز المادة...",
+  disabled = false,
+  id = undefined,
+  showAllOption = false,
+  allOptionLabel = "جميع المواد",
+  createLabel = "إضافة مادة جديدة...",
+  onCreate = undefined,
+  class: className = "",
+  onchange = undefined,
+}: Props = $props();
+
+const resolvedOrgId = $derived(
+  orgId || page.params.orgId || authStore.orgId || "default",
+);
+
+// Self-contained TanStack Query
+const subjectsQuery = createSubjectsQuery(() => resolvedOrgId);
+
+const subjects = $derived(subjectsQuery.data ?? []);
+
+function getSubjectLabel(subj: any): string {
   if (!subj) return "";
   const name = l(
     subj.name_ar || subj.nameAr,
@@ -41,65 +61,28 @@ function getSubjectLabel(subj: any) {
   return String(subj.id || "");
 }
 
-const selectedSubject = $derived(
-  subjects.find((s) => String(s.id) === String(value || "")),
-);
-
-const displayLabel = $derived(
-  value === "all" || value === "" || !value
-    ? showAllOption
-      ? allOptionLabel || "جميع المواد"
-      : placeholder ||
-        (m.common_cs_form_select_subject
-          ? m.common_cs_form_select_subject()
-          : "اختر المادة...")
-    : selectedSubject
-      ? getSubjectLabel(selectedSubject)
-      : value,
-);
-
-function handleValueChange(newVal: string | undefined) {
-  const val = newVal ?? null;
-  value = val;
-  if (onchange) {
-    onchange(val);
-  }
+function getSubjectSubtitle(subj: any): string | undefined {
+  if (subj?.code) return subj.code;
+  if (subj?.credits) return `${subj.credits} ساعة`;
+  return undefined;
 }
 </script>
 
-<Select
-  type="single"
-  value={value ?? ""}
-  onValueChange={handleValueChange}
+<SearchableSelect
+  bind:value
+  items={subjects}
+  {placeholder}
+  {searchPlaceholder}
+  emptyText="لا توجد مواد مطابقة للبحث"
   {disabled}
->
-  <SelectTrigger
-    {id}
-    class="w-full h-9 text-xs text-start flex items-center justify-between bg-background {className}"
-  >
-    <span class="truncate">{displayLabel}</span>
-  </SelectTrigger>
-  <SelectContent class="text-start max-h-56 overflow-y-auto" align="end">
-    {#if showAllOption}
-      <SelectItem
-        value="all"
-        class="text-xs text-start justify-start cursor-pointer"
-      >
-        {allOptionLabel || "جميع المواد"}
-      </SelectItem>
-    {/if}
-    {#each subjects as subj (subj.id)}
-      <SelectItem
-        value={String(subj.id)}
-        class="text-xs text-start justify-start cursor-pointer"
-      >
-        {getSubjectLabel(subj)}
-      </SelectItem>
-    {/each}
-    {#if subjects.length === 0 && !showAllOption}
-      <div class="px-3 py-2 text-xs text-muted-foreground text-start">
-        {m.common_status_undefined() === "غير محدد" ? "لا توجد مواد مضافة" : "No subjects available"}
-      </div>
-    {/if}
-  </SelectContent>
-</Select>
+  {id}
+  {showAllOption}
+  {allOptionLabel}
+  {createLabel}
+  {onCreate}
+  class={className}
+  getItemValue={(s) => String(s?.id ?? "")}
+  getItemLabel={getSubjectLabel}
+  getItemSubtitle={getSubjectSubtitle}
+  {onchange}
+/>

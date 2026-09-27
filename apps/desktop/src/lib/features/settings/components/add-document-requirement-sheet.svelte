@@ -33,11 +33,9 @@ import { ClassSelect } from "$lib/features/academics";
 
 let {
   open = $bindable(false),
-  classes = [],
   oncreated,
 }: {
   open: boolean;
-  classes?: ClassDto[];
   oncreated?: (req: DocumentRequirementDto) => void;
 } = $props();
 
@@ -186,7 +184,6 @@ async function handleSubmit(e?: Event) {
           </Label>
           <ClassSelect
             bind:value={selectedClassId}
-            {classes}
             showAllOption={true}
             allOptionLabel={l("كافة الصفوف والمراحل الدراسية", "All Classes & Grade Levels")}
             placeholder={l("اختر الصف أو المرحلة...", "Select Class / Grade...")}

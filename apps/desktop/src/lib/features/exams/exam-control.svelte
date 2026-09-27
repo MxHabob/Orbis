@@ -16,11 +16,11 @@ import {
   type GradeMatrixResponse,
 } from "./grade-helpers";
 import type { CellEditEvent } from "@orbis/svelte-grid";
+    import { ControlGrid } from "../academics";
 
 let { orgId }: { orgId: string } = $props();
 
 let periods = $derived(academicContext.allPeriods);
-let classes = $state<any[]>([]);
 let subjects = $state<any[]>([]);
 let selectedPeriodId = $state<string>("");
 let selectedClassId = $state<string>("");
@@ -79,13 +79,7 @@ let gridColumns = $derived.by(() => {
 async function loadInitialData() {
   isLoading = true;
   try {
-    const [classList, subjectList] = await Promise.all([
-      api.listClasses(),
-      api.listSubjects(),
-    ]);
-
-    classes = classList;
-    subjects = subjectList;
+    subjects = await api.listSubjects();
 
     // If no period selected yet, use context's effective period
     if (!selectedPeriodId && academicContext.effectivePeriodId) {
@@ -290,8 +284,6 @@ onMount(() => {
     <ControlGrid
       bind:selectedClassId
       bind:selectedSubjectId
-      {classes}
-      {subjects}
       {matrixData}
       {gridSource}
       {gridColumns}

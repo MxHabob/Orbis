@@ -10,7 +10,7 @@ import { Input } from "@orbis/ui/input";
 import { ArrowForward, ArrowUpTray, BookOpen, DocumentChartBar, Plus, Printer, Search, XMark } from "@orbis/icons";
 import { fly } from "svelte/transition";
 import { quintOut } from "svelte/easing";
-import { studentsStore, createEnrollmentsQuery } from "$lib/features/students";
+import { studentsStore, createStudentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import { academicContext } from "$lib/stores";
 import StudentsTableSkeleton from "$lib/shared/skeletons/students-table-skeleton.svelte";

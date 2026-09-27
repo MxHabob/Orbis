@@ -1,36 +1,56 @@
+<!--
+  @component ClassSelect
+  Self-fetching Searchable Class Selector powered by TanStack Query & Academic Service.
+  Includes a sticky search bar and optional "Add new class" creation button.
+-->
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
+import { page } from "$app/state";
 import { l } from "$lib/core/i18n";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
+import { createClassesQuery } from "$lib/features/academics/queries";
+import * as m from "$lib/paraglide/messages";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
+import { authStore } from "$lib/stores";
 
-let {
-  value = $bindable<string | null>(null),
-  classes = [],
-  placeholder = "",
-  disabled = false,
-  id = undefined,
-  showAllOption = false,
-  allOptionLabel = "",
-  class: className = "",
-  onchange = undefined,
-}: {
+interface Props {
   value?: string | null;
-  classes?: any[];
+  orgId?: string;
   placeholder?: string;
+  searchPlaceholder?: string;
   disabled?: boolean;
   id?: string;
   showAllOption?: boolean;
   allOptionLabel?: string;
+  createLabel?: string;
+  onCreate?: () => void;
   class?: string;
   onchange?: (val: string | null) => void;
-} = $props();
+}
 
-function getClassLabel(cls: any) {
+let {
+  value = $bindable<string | null>(null),
+  orgId,
+  placeholder = m.common_form_select_class?.() || "اختر الفصل...",
+  searchPlaceholder = "ابحث عن فصل أو مرحلة...",
+  disabled = false,
+  id = undefined,
+  showAllOption = false,
+  allOptionLabel = m.common_filter_all_classes?.() || "جميع الفصول",
+  createLabel = "إضافة فصل جديد...",
+  onCreate = undefined,
+  class: className = "",
+  onchange = undefined,
+}: Props = $props();
+
+const resolvedOrgId = $derived(
+  orgId || page.params.orgId || authStore.orgId || "default",
+);
+
+// Self-contained TanStack Query
+const classesQuery = createClassesQuery(() => resolvedOrgId);
+
+const classes = $derived(classesQuery.data ?? []);
+
+function getClassLabel(cls: any): string {
   if (!cls) return "";
   const name = l(cls.name_ar || cls.nameAr, cls.name || cls.nameEn);
   if (name) return name;
@@ -42,62 +62,30 @@ function getClassLabel(cls: any) {
   return String(cls.id || "");
 }
 
-const selectedClass = $derived(
-  classes.find((c) => String(c.id) === String(value || "")),
-);
-
-const displayLabel = $derived(
-  value === "all" || value === "" || !value
-    ? showAllOption
-      ? allOptionLabel || m.common_filter_all_classes()
-      : placeholder || m.common_form_select_class()
-    : selectedClass
-      ? getClassLabel(selectedClass)
-      : value,
-);
-
-function handleValueChange(newVal: string | undefined) {
-  const val = newVal ?? null;
-  value = val;
-  if (onchange) {
-    onchange(val);
+function getClassSubtitle(cls: any): string | undefined {
+  if (cls?.code) return cls.code;
+  if (cls?.grade_level || cls?.level) {
+    return l(cls.grade_level_ar || cls.level_ar, cls.grade_level || cls.level);
   }
+  return undefined;
 }
 </script>
 
-<Select
-  type="single"
-  value={value ?? ""}
-  onValueChange={handleValueChange}
+<SearchableSelect
+  bind:value
+  items={classes}
+  {placeholder}
+  {searchPlaceholder}
+  emptyText={m.common_classes_empty_title?.() || "لا توجد فصول مطابقة"}
   {disabled}
->
-  <SelectTrigger
-    {id}
-    class="w-full h-9 text-xs text-start flex items-center justify-between bg-background {className}"
-  >
-    <span class="truncate">{displayLabel}</span>
-  </SelectTrigger>
-  <SelectContent class="text-start max-h-56 overflow-y-auto" align="end">
-    {#if showAllOption}
-      <SelectItem
-        value="all"
-        class="text-xs text-start justify-start cursor-pointer"
-      >
-        {allOptionLabel || m.common_filter_all_classes()}
-      </SelectItem>
-    {/if}
-    {#each classes as cls (cls.id)}
-      <SelectItem
-        value={String(cls.id)}
-        class="text-xs text-start justify-start cursor-pointer"
-      >
-        {getClassLabel(cls)}
-      </SelectItem>
-    {/each}
-    {#if classes.length === 0 && !showAllOption}
-      <div class="px-3 py-2 text-xs text-muted-foreground text-start">
-        {m.common_classes_empty_title()}
-      </div>
-    {/if}
-  </SelectContent>
-</Select>
+  {id}
+  {showAllOption}
+  {allOptionLabel}
+  {createLabel}
+  {onCreate}
+  class={className}
+  getItemValue={(cls) => String(cls?.id ?? "")}
+  getItemLabel={getClassLabel}
+  getItemSubtitle={getClassSubtitle}
+  {onchange}
+/>

@@ -1,36 +1,67 @@
+<!--
+  @component PeriodSelect
+  Self-fetching Searchable Academic Period Selector powered by TanStack Query & Academic Service.
+  Includes a sticky search bar and optional "Add new period" creation button.
+-->
 <script lang="ts">
+import { page } from "$app/state";
+import { formatDate, l } from "$lib/core/i18n";
+import { createPeriodsQuery } from "$lib/features/academics/queries";
 import * as m from "$lib/paraglide/messages";
-import { l } from "$lib/core/i18n";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
+import { authStore } from "$lib/stores";
 
-let {
-  value = $bindable<string | null>(null),
-  periods = [],
-  placeholder = "",
-  disabled = false,
-  id = undefined,
-  showAllOption = false,
-  allOptionLabel = "",
-  class: className = "",
-  onchange = undefined,
-}: {
+interface Props {
   value?: string | null;
-  periods?: any[];
+  orgId?: string;
   placeholder?: string;
+  searchPlaceholder?: string;
+  periodType?: "academic_year" | "term" | "semester" | "quarter" | string;
   disabled?: boolean;
   id?: string;
   showAllOption?: boolean;
   allOptionLabel?: string;
+  createLabel?: string;
+  onCreate?: () => void;
   class?: string;
   onchange?: (val: string | null) => void;
-} = $props();
+}
 
-function getPeriodLabel(p: any) {
+let {
+  value = $bindable<string | null>(null),
+  orgId,
+  placeholder = m.common_metrics_period?.() || "اختر الفترة / الفصل...",
+  searchPlaceholder = "ابحث عن الفترة أو الفصل الدراسي...",
+  periodType = undefined,
+  disabled = false,
+  id = undefined,
+  showAllOption = false,
+  allOptionLabel = m.common_ledger_period_all?.() || "جميع الفترات",
+  createLabel = "إضافة فترة دراسية جديدة...",
+  onCreate = undefined,
+  class: className = "",
+  onchange = undefined,
+}: Props = $props();
+
+const resolvedOrgId = $derived(
+  orgId || page.params.orgId || authStore.orgId || "default",
+);
+
+// Self-contained TanStack Query
+const periodsQuery = createPeriodsQuery(() => resolvedOrgId);
+
+const periods = $derived.by(() => {
+  const all = periodsQuery.data ?? [];
+  if (!periodType) return all;
+  if (periodType === "academic_year" || periodType === "year") {
+    return all.filter(
+      (p) => p.period_type === "academic_year" || p.period_type === "year",
+    );
+  }
+  return all.filter((p) => p.period_type === periodType);
+});
+
+function getPeriodLabel(p: any): string {
   if (!p) return "";
   const name = l(p.name_ar || p.nameAr, p.name || p.nameEn || p.name_en);
   if (name) return name;
@@ -38,62 +69,31 @@ function getPeriodLabel(p: any) {
   return String(p.id || "");
 }
 
-const selectedPeriod = $derived(
-  periods.find((p) => String(p.id) === String(value || "")),
-);
-
-const displayLabel = $derived(
-  value === "all" || value === "" || !value
-    ? showAllOption
-      ? allOptionLabel || m.common_ledger_period_all()
-      : placeholder || m.common_metrics_period()
-    : selectedPeriod
-      ? getPeriodLabel(selectedPeriod)
-      : value,
-);
-
-function handleValueChange(newVal: string | undefined) {
-  const val = newVal ?? null;
-  value = val;
-  if (onchange) {
-    onchange(val);
+function getPeriodSubtitle(p: any): string | undefined {
+  if (p?.is_active || p?.status === "active") return "الفترة الحالية النشطة";
+  if (p?.start_date && p?.end_date) {
+    return `${formatDate(p.start_date, "date")} — ${formatDate(p.end_date, "date")}`;
   }
+  if (p?.start_date) return formatDate(p.start_date, "date");
+  return undefined;
 }
 </script>
 
-<Select
-  type="single"
-  value={value ?? ""}
-  onValueChange={handleValueChange}
+<SearchableSelect
+  bind:value
+  items={periods}
+  {placeholder}
+  {searchPlaceholder}
+  emptyText="لا توجد فترات دراسية مطابقة"
   {disabled}
->
-  <SelectTrigger
-    {id}
-    class="w-full h-9 text-xs text-start flex items-center justify-between bg-background {className}"
-  >
-    <span class="truncate">{displayLabel}</span>
-  </SelectTrigger>
-  <SelectContent class="text-start max-h-56 overflow-y-auto" align="end">
-    {#if showAllOption}
-      <SelectItem
-        value="all"
-        class="text-xs text-start justify-start cursor-pointer"
-      >
-        {allOptionLabel || m.common_ledger_period_all()}
-      </SelectItem>
-    {/if}
-    {#each periods as p (p.id)}
-      <SelectItem
-        value={String(p.id)}
-        class="text-xs text-start justify-start cursor-pointer"
-      >
-        {getPeriodLabel(p)}
-      </SelectItem>
-    {/each}
-    {#if periods.length === 0 && !showAllOption}
-      <div class="px-3 py-2 text-xs text-muted-foreground text-start">
-        {m.common_status_undefined() === "غير محدد" ? "لا توجد فترات مضافة" : "No periods available"}
-      </div>
-    {/if}
-  </SelectContent>
-</Select>
+  {id}
+  {showAllOption}
+  {allOptionLabel}
+  {createLabel}
+  {onCreate}
+  class={className}
+  getItemValue={(p) => String(p?.id ?? "")}
+  getItemLabel={getPeriodLabel}
+  getItemSubtitle={getPeriodSubtitle}
+  {onchange}
+/>

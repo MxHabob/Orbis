@@ -158,7 +158,6 @@ const studyModes = [
           <ClassSelect
             id="classSelect"
             bind:value={state.personal.classId}
-            classes={state.classes}
           />
           {#if state.selectedClass}
             <div class="flex items-center justify-between px-1">

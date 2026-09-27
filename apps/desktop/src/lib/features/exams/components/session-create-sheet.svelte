@@ -42,7 +42,6 @@ let sessionType = $state<"final" | "midterm" | "quiz" | "practical">("final");
 let startDate = $state("");
 let endDate = $state("");
 let periodId = $state("");
-let periodsList = $state<any[]>([]);
 
 const form = new FormController({
   initialValues: {
@@ -65,22 +64,6 @@ $effect(() => {
   startDate = session?.start_date || "";
   endDate = session?.end_date || "";
   periodId = session?.period_id ? String(session.period_id) : "";
-});
-
-// Load academic periods on open
-$effect(() => {
-  if (open && orgId) {
-    api.listAcademicPeriods()
-      .then((res: any) => {
-        periodsList = res || [];
-        if (!periodId && periodsList.length > 0) {
-          periodId = String(periodsList[0].id);
-        }
-      })
-      .catch((e) => {
-        console.error("Failed to load periods:", e);
-      });
-  }
 });
 
 async function handleSubmit() {
@@ -134,7 +117,6 @@ async function handleSubmit() {
         <PeriodSelect
           id="session-period"
           bind:value={periodId}
-          periods={periodsList}
           placeholder={m.exams_session_select_term()}
           class="text-sm"
         />
