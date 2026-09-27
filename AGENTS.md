@@ -39,11 +39,13 @@ Every agent starting a session in this repository MUST:
 
 ## 3. CONTINUATION STATE
 
-- **Current Status:** `BOOTSTRAP_AND_ONBOARDING_REFACTOR_COMPLETE`
+- **Current Status:** `HR_PAYROLL_AND_LEDGER_ENHANCEMENTS_COMPLETE`
 - **Master Reference Document:** `docs/registration_erp_architecture_plan.md`
 - **Accomplished:**
   - Completely removed `seed_fee_templates` and default hardcoded fees from both `bootstrap()` and `persist_onboarding()`; fee templates are now only persisted when explicitly provided by the user in the onboarding payload, properly linking to the authoritative COA accounts (`110301` Accounts Receivable, `410301`/`410101` Tuition Revenue).
   - Made `seed_chart_of_accounts` fully idempotent and re-entrant via recursive tree traversal (`seed_account_tree`), preventing duplicate account insertion and resolving existing parent accounts upon partial failures or re-runs.
-  - Moved `seed_document_requirements` entirely out of `bootstrap()` into `OnboardingService` (`persist_onboarding`), where it dynamically resolves each class from `data.classes` and attaches exact cumulative previous-grade certificates (Grade 2 has Grade 1; Grade 3 has Grades 1 & 2; Grade 4 has Grades 1, 2, 3; ... Grade 6 has Grades 1-5; Grade 7/8/9 have Primary Completion & previous prep certs; Grades 10/11/12 have Prep Completion & previous secondary certs; University years have cumulative academic transcripts).
+  - Moved `seed_document_requirements` entirely out of `bootstrap()` into `OnboardingService` (`persist_onboarding`), where it dynamically resolves each class from `data.classes` and attaches exact cumulative previous-grade certificates.
   - Deferred file attachments: Files are held locally in memory during registration and atomically uploaded on form save.
+  - Integrated full Payroll & Compensation (`payroll`) into Employee Affairs (`employee-form.svelte`), reactive live calculations for gross/deductions/net salary, allowances, GOSI, and bank routing.
+  - Upgraded desktop Ledger form (`ledger-form.svelte`) with complete Chart of Accounts tree selector via TanStack Query (`createAccountsQuery`), authoritative base currency from `orgContext` store, auto-suggested sequential codes with manual override, live Account Nature badges (Debit/Credit), and full entity support (Students, Employees, Vendors, Partners).
 - **Verification:** `cargo check --manifest-path apps/api-rust/Cargo.toml` & `bun x tsc -p apps/desktop/tsconfig.json --noEmit` verified with 0 errors.

@@ -1160,6 +1160,7 @@
   "common_ledger_entity_vendor": "Supplier / Vendor",
   "common_ledger_entity_partner": "Partner",
   "common_ledger_entity_employee": "Employee",
+  "common_ledger_entity_student": "Student",
   "common_ledger_btn_add_account": "Add Account",
   "common_autopilot_popover_title": "Orbis AutoPilot",
   "common_autopilot_popover_run_tick": "Run AutoPilot Tick",

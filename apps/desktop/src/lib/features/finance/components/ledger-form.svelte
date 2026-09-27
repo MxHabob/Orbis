@@ -1,7 +1,9 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
-import { api } from "$lib/api";
+import { api, queryKeys } from "$lib/api";
+import { useQueryClient } from "@tanstack/svelte-query";
+import { createAccountsQuery } from "../queries";
+import { orgContext } from "$lib/stores/org-context.svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -21,7 +23,7 @@ import {
 } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
-import { AdjustmentsHorizontal, ArrowPath, BookOpen, BuildingLibrary, Check, Info, Users } from "@orbis/icons";
+import { ArrowPath, BookOpen, BuildingLibrary, Check, Info, Users } from "@orbis/icons";
 
 let {
   orgId,
@@ -35,15 +37,64 @@ let {
   defaultTab?: "gl" | "cash_account" | "entity";
 } = $props();
 
-// Global data state
-let ledgers = $state<any[]>([]);
-let currencies = $state<any[]>([]);
-let isLoading = $state(true);
-let activeTab = $state<"gl" | "cash_account" | "entity">("gl");
-let isSubmitting = $state(false);
+const queryClient = useQueryClient();
+
+// TanStack Query for Accounts Tree
+const accountsQuery = createAccountsQuery(() => orgId);
+
+const ledgers = $derived(accountsQuery.data ?? []);
+const isLoading = $derived(accountsQuery.isLoading);
+
+// Authoritative Base Currency from Organization Store
+const baseCurrency = $derived(orgContext.baseCurrency || "SAR");
+
+let activeTab = $state<"gl" | "cash_account" | "entity">(defaultTab);
+
+// Form Controllers for each tab (Initialized during component initialization)
+const glForm = new FormController({
+  initialValues: {
+    code: "",
+    name: "",
+    name_ar: "",
+    item_type: "asset",
+    currency: orgContext.baseCurrency || "SAR",
+    parent_id: "",
+    sub_type: undefined as string | undefined,
+  },
+  schema: generalLedgerAccountInputSchema,
+});
+
+const cashForm = new FormController({
+  initialValues: {
+    code: "",
+    name: "",
+    name_ar: "",
+    item_type: "asset" as const,
+    currency: orgContext.baseCurrency || "SAR",
+    sub_type: "cash" as "cash" | "bank",
+  },
+  schema: cashAccountInputSchema,
+});
+
+const entityForm = new FormController({
+  initialValues: {
+    code: "",
+    name: "",
+    name_ar: "",
+    item_type: "liability",
+    currency: orgContext.baseCurrency || "SAR",
+    sub_type: "vendor" as "vendor" | "partner" | "employee" | "student",
+  },
+  schema: entityAccountInputSchema,
+});
+
+const isSubmitting = $derived(
+  glForm.isSubmitting || cashForm.isSubmitting || entityForm.isSubmitting
+);
 
 // GL Account States
 let glParentId = $state("");
+let glCode = $state("");
 let glNameAr = $state("");
 let glNameEn = $state("");
 let glAccountType = $state("asset");
@@ -54,56 +105,58 @@ let trNameEn = $state("");
 let trType = $state<"cash" | "bank">("cash");
 
 // Entity States
-let enType = $state<"vendor" | "partner" | "employee">("vendor");
+let enType = $state<"vendor" | "partner" | "employee" | "student">("vendor");
 let enNameAr = $state("");
 let enNameEn = $state("");
 
-// Load Chart of Accounts & Currencies
-async function loadFormData() {
-  try {
-    isLoading = true;
-    const [ledgerList, currencyList] = await Promise.all([
-      api.listAccounts(),
-      api.listCurrencies(),
-    ]);
-    ledgers = ledgerList;
-    currencies = currencyList;
-  } catch (e) {
-    console.error("Error loading form data:", e);
-    toast.error(m.common_ledger_error_load());
-  } finally {
-    isLoading = false;
-  }
-}
-
-onMount(() => {
-  if (orgId) {
-    activeTab = defaultTab;
-    loadFormData();
-  }
-});
-
-// Organization Base Currency Helper
-const baseCurrency = $derived.by(() => {
-  return currencies.find((c) => c.is_base === 1)?.code || "YER";
-});
-
-// Derived Combobox Items (Only non-root control accounts or level > 1)
+// Derived Combobox Items (All accounts across the Chart of Accounts)
 const parentItems = $derived.by(() => {
-  return ledgers
-    .filter((l) => l.depth > 0) // Exclude root Level 1 accounts
+  return [...ledgers]
+    .sort((a, b) => String(a.code || "").localeCompare(String(b.code || ""), undefined, { numeric: true }))
     .map((l) => ({
       id: l.id,
-      label: `${l.code} - ${l.name_ar || l.name}`,
+      label: `${l.code} - ${l.name}`,
       value: l.id,
       code: l.code,
-      type: l.item_type,
+      type: l.account_type || "asset",
+      depth: l.parent_id ?? 1,
     }));
 });
 
 const selectedParentItem = $derived(
   parentItems.find((item) => item.value === glParentId),
 );
+
+// Suggest next sequential code when parent is selected
+const suggestedCode = $derived.by(() => {
+  if (!glParentId) return "";
+  const parent = ledgers.find((l) => l.id === glParentId);
+  if (!parent) return "";
+
+  const children = ledgers.filter((l) => l.parent_id === glParentId);
+  if (children.length === 0) {
+    return `${parent.code}01`;
+  }
+
+  // Find max numeric child suffix
+  const childCodes = children
+    .map((c) => String(c.code))
+    .filter((code) => code.startsWith(parent.code));
+
+  if (childCodes.length > 0) {
+    childCodes.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const lastCode = childCodes[childCodes.length - 1];
+    const suffix = lastCode.slice(parent.code.length);
+    const num = parseInt(suffix, 10);
+    if (!isNaN(num)) {
+      const nextNum = num + 1;
+      const padded = String(nextNum).padStart(suffix.length, "0");
+      return `${parent.code}${padded}`;
+    }
+  }
+
+  return `${parent.code}${children.length + 1}`;
+});
 
 function handleParentSelect(item: {
   id: string;
@@ -114,7 +167,7 @@ function handleParentSelect(item: {
   // Inherit account type from selected parent
   const parentAcc = ledgers.find((l) => l.id === item.value);
   if (parentAcc) {
-    glAccountType = parentAcc.item_type;
+    glAccountType =parentAcc.account_type || "asset";
   }
 }
 
@@ -123,111 +176,112 @@ function handleTabChange(tab: "gl" | "cash_account" | "entity") {
   activeTab = tab;
 }
 
-async function submitAccount(
-  schema: any,
-  values: Record<string, unknown>,
-): Promise<boolean> {
-  const form = new FormController({ initialValues: values, schema });
-  const submitted = await form.submit(async (payload) => {
-    await api.createAccount(payload as any);
-  });
-  if (!submitted) toast.error(form.formError || m.common_ledger_error_name());
-  return submitted;
-}
-
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-  isSubmitting = true;
 
   try {
     if (activeTab === "gl") {
       if (!glParentId) {
         toast.error(m.common_ledger_error_parent());
-        isSubmitting = false;
         return;
       }
       if (!glNameAr && !glNameEn) {
         toast.error(m.common_ledger_error_name());
-        isSubmitting = false;
         return;
       }
 
       const parent = ledgers.find((l) => l.id === glParentId);
       if (!parent) return;
 
-      const request = {
-        code: "", // Backend will auto-generate code sequentially under parent
-        name: glNameEn || glNameAr,
-        name_ar: glNameAr || glNameEn,
-        item_type: glAccountType,
-        currency: "", // Backend will inherit parent currency
-        parent_id: glParentId,
-        sub_type: undefined,
-      };
+      const finalCode = glCode.trim() || suggestedCode;
 
-      if (!(await submitAccount(generalLedgerAccountInputSchema, request)))
+      glForm.setField("code", finalCode);
+      glForm.setField("name", glNameEn || glNameAr);
+      glForm.setField("name_ar", glNameAr || glNameEn);
+      glForm.setField("item_type", glAccountType);
+      glForm.setField("currency", parent.currency || baseCurrency);
+      glForm.setField("parent_id", glParentId);
+
+      const success = await glForm.submit(async (payload) => {
+        await api.createAccount(payload as any);
+      });
+
+      if (!success) {
+        toast.error(glForm.formError || m.common_ledger_error_name());
         return;
+      }
       toast.success(m.common_ledger_toast_success());
 
       // Reset
+      glForm.reset();
       glParentId = "";
+      glCode = "";
       glNameAr = "";
       glNameEn = "";
     } else if (activeTab === "cash_account") {
       if (!trNameAr && !trNameEn) {
         toast.error(m.common_cash_account_name_required());
-        isSubmitting = false;
         return;
       }
 
-      const request = {
-        name: trNameEn || trNameAr,
-        name_ar: trNameAr || trNameEn,
-        item_type: "asset",
-        currency: baseCurrency,
-        code: "",
-        sub_type: trType,
-        parent_id: undefined,
-      };
+      cashForm.setField("code", "");
+      cashForm.setField("name", trNameEn || trNameAr);
+      cashForm.setField("name_ar", trNameAr || trNameEn);
+      cashForm.setField("item_type", "asset");
+      cashForm.setField("currency", baseCurrency);
+      cashForm.setField("sub_type", trType);
 
-      if (!(await submitAccount(cashAccountInputSchema, request))) return;
+      const success = await cashForm.submit(async (payload) => {
+        await api.createAccount(payload as any);
+      });
+
+      if (!success) {
+        toast.error(cashForm.formError || m.common_cash_account_name_required());
+        return;
+      }
       toast.success(m.common_cash_account_created());
 
       // Reset
+      cashForm.reset();
       trNameAr = "";
       trNameEn = "";
     } else if (activeTab === "entity") {
       if (!enNameAr && !enNameEn) {
         toast.error(m.common_ledger_error_entity_name());
-        isSubmitting = false;
         return;
       }
 
-      const request = {
-        code: "", // Backend will auto-generate code sequentially under appropriate parent
-        name: enNameEn || enNameAr,
-        name_ar: enNameAr || enNameEn,
-        item_type: "", // Backend resolves from parent
-        currency: "", // Backend resolves from parent
-        parent_id: undefined, // Backend resolves from sub_type
-        sub_type: enType,
-      };
+      const itemType = enType === "vendor" ? "liability" : enType === "partner" ? "equity" : enType === "employee" ? "liability" : "asset";
 
-      if (!(await submitAccount(entityAccountInputSchema, request))) return;
+      entityForm.setField("code", "");
+      entityForm.setField("name", enNameEn || enNameAr);
+      entityForm.setField("name_ar", enNameAr || enNameEn);
+      entityForm.setField("item_type", itemType);
+      entityForm.setField("currency", baseCurrency);
+      entityForm.setField("sub_type", enType);
+
+      const success = await entityForm.submit(async (payload) => {
+        await api.createAccount(payload as any);
+      });
+
+      if (!success) {
+        toast.error(entityForm.formError || m.common_ledger_error_entity_name());
+        return;
+      }
       toast.success(m.common_ledger_entity_created());
 
       // Reset
+      entityForm.reset();
       enNameAr = "";
       enNameEn = "";
     }
 
+    // Invalidate TanStack query cache to instantly refresh parent lists & accounts table across the app
+    await queryClient.invalidateQueries({ queryKey: queryKeys.finance.accounts(orgId) });
     onSuccess();
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
     toast.error(m.common_ledger_toast_error_submit({ error: errorMsg }));
-  } finally {
-    isSubmitting = false;
-    loadFormData(); // Refresh lists
   }
 }
 </script>
@@ -277,6 +331,27 @@ async function handleSubmit(e: SubmitEvent) {
           {/snippet}
         </FormField>
 
+        <!-- Account Code (Auto-suggested with custom override) -->
+        <FormField id="gl_code" label={m.common_ledger_col_code()}>
+          {#snippet children()}
+          <div class="flex flex-col gap-1">
+            <Input
+              id="gl_code"
+              type="text"
+              bind:value={glCode}
+              placeholder={suggestedCode || m.common_ledger_col_code()}
+              disabled={isSubmitting || !glParentId}
+              class="font-mono text-xs"
+            />
+            {#if suggestedCode}
+              <span class="text-[10px] text-muted-foreground">
+                {glCode.trim() ? "مخصص يدويًا" : `رمز مقترح تلقائيًا: ${suggestedCode}`}
+              </span>
+            {/if}
+          </div>
+          {/snippet}
+        </FormField>
+
         <!-- Account Names -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField id="gl_name_ar" label={m.common_ledger_label_name_ar()} required={!glNameEn}>
@@ -305,15 +380,23 @@ async function handleSubmit(e: SubmitEvent) {
           </FormField>
         </div>
 
-        <!-- Inherited fields (Type only) -->
+        <!-- Inherited fields & Account Nature -->
         {#if glParentId}
-          <div class="bg-muted/20 p-3 rounded-lg border border-border/50 animate-in fade-in duration-150">
-            <div class="flex flex-col gap-1.5 text-start">
+          <div class="bg-muted/20 p-3 rounded-lg border border-border/50 animate-in fade-in duration-150 grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1 text-start">
               <span class="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
                 {m.common_ledger_label_type()}
               </span>
               <span class="text-xs font-semibold text-foreground capitalize">
                 {glAccountType}
+              </span>
+            </div>
+            <div class="flex flex-col gap-1 text-start">
+              <span class="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                طبيعة الحساب (Nature)
+              </span>
+              <span class="text-xs font-semibold capitalize {['asset', 'expense'].includes(glAccountType.toLowerCase()) ? 'text-blue-500' : 'text-emerald-500'}">
+                {['asset', 'expense'].includes(glAccountType.toLowerCase()) ? 'مدين (Debit)' : 'دائن (Credit)'}
               </span>
             </div>
           </div>
@@ -385,13 +468,14 @@ async function handleSubmit(e: SubmitEvent) {
           <Select bind:value={enType} type="single">
             <SelectTrigger class="w-full text-xs text-start flex items-center justify-between bg-background">
               <span class="truncate">
-                {enType === "vendor" ? m.common_ledger_entity_vendor() : enType === "partner" ? m.common_ledger_entity_partner() : m.common_ledger_entity_employee()}
+                {enType === "vendor" ? m.common_ledger_entity_vendor() : enType === "partner" ? m.common_ledger_entity_partner() : enType === "employee" ? m.common_ledger_entity_employee() : m.common_ledger_entity_student()}
               </span>
             </SelectTrigger>
             <SelectContent class="text-start">
               <SelectItem value="vendor" class="text-xs cursor-pointer">{m.common_ledger_entity_vendor()}</SelectItem>
               <SelectItem value="partner" class="text-xs cursor-pointer">{m.common_ledger_entity_partner()}</SelectItem>
               <SelectItem value="employee" class="text-xs cursor-pointer">{m.common_ledger_entity_employee()}</SelectItem>
+              <SelectItem value="student" class="text-xs cursor-pointer">{m.common_ledger_entity_student()}</SelectItem>
             </SelectContent>
           </Select>
           {/snippet}

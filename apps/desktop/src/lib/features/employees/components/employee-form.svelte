@@ -1,772 +1,923 @@
 <!--
   @component EmployeeForm
-  Canonical Slide-over Form for Creating, Editing, and Previewing Employee dossiers.
-  Follows the exact FeeTemplateForm architecture with FormController and zero wrapper divs.
+  Comprehensive multi-tab form for Registering and Editing Employee dossiers.
+  Integrates Unified Identity Provisioning, User Group assignment, and CSPRNG credential delivery.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { l } from "$lib/core/i18n";
-import { api, extractErrorMessage } from "$lib/api";
-import { FormController } from "$lib/shared/forms/form-controller.svelte";
-import { FormField } from "@orbis/ui";
-import { Button } from "@orbis/ui/button";
+import { goto } from "$app/navigation";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Textarea } from "@orbis/ui/textarea";
-import { Badge } from "@orbis/ui/badge";
 import { Switch } from "@orbis/ui/switch";
 import {
   Select,
-  SelectTrigger,
   SelectContent,
   SelectItem,
+  SelectTrigger,
 } from "@orbis/ui/select";
-import * as Sheet from "@orbis/ui/sheet";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@orbis/ui/accordion";
-import { toast } from "@orbis/ui";
-import {
-  ArrowPath,
+  Banknotes,
   BuildingOffice,
+  CreditCard,
   ShieldCheck,
   User,
+  UserGroup,
 } from "@orbis/icons";
-import { z } from "zod";
+import { toast } from "@orbis/ui";
+import { localizeHref } from "$lib/paraglide/runtime";
+import { extractErrorMessage } from "$lib/api";
 import type {
   EmployeeDetailDto,
   RegisterEmployeeRequest,
   UpdateEmployeeRequest,
   AccountProvisioningResultDto,
-} from "$lib/api/types";
-import NationalitySelect from "$lib/shared/components/nationality-select.svelte";
+} from "../../../api/types";
+import {
+  createRegisterEmployeeMutation,
+  createUpdateEmployeeMutation,
+} from "../queries";
 import { GroupSelector } from "$lib/features/groups";
-import AuditTimeline from "$lib/shared/components/audit-timeline.svelte";
+import NationalitySelect from "$lib/shared/components/nationality-select.svelte";
+import { formatNumber, l } from "$lib/core/i18n";
+    import CredentialDeliveryModal from "./credential-delivery-modal.svelte";
+    import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
 interface Props {
   orgId: string;
-  mode?: "preview" | "create" | "edit";
+  mode?: "create" | "edit";
   employee?: EmployeeDetailDto | null;
-  onSuccess: (emp: EmployeeDetailDto, prov?: AccountProvisioningResultDto | null) => void;
-  onCancel: () => void;
 }
 
-let {
-  orgId,
-  mode = "create",
-  employee = null,
-  onSuccess,
-  onCancel,
-}: Props = $props();
+let { orgId, mode = "create", employee = null }: Props = $props();
 
-const employeeFormSchema = z.object({
-  first_name: z.string().trim().min(1, "الاسم الأول مطلوب / First name is required"),
-  middle_name: z.string().trim().nullable().optional(),
-  last_name: z.string().trim().min(1, "الاسم الأخير مطلوب / Last name is required"),
-  first_name_ar: z.string().trim().nullable().optional(),
-  middle_name_ar: z.string().trim().nullable().optional(),
-  last_name_ar: z.string().trim().nullable().optional(),
-  national_id: z.string().trim().nullable().optional(),
-  passport_number: z.string().trim().nullable().optional(),
-  gender: z.string().nullable().optional(),
-  birth_date: z.string().nullable().optional(),
-  nationality: z.string().nullable().optional(),
-  blood_type: z.string().nullable().optional(),
-  phone: z.string().trim().nullable().optional(),
-  email: z.string().trim().email("بريد إلكتروني غير صالح").nullable().optional().or(z.literal("")),
-  address: z.string().trim().nullable().optional(),
+// Active Form Tab
+let activeTab = $state<"personal" | "employment" | "payroll" | "account">("personal");
 
-  employee_number: z.string().trim().nullable().optional(),
-  employee_type: z.string().default("Teacher"),
-  job_title: z.string().trim().nullable().optional(),
-  department: z.string().trim().nullable().optional(),
-  org_unit_id: z.string().trim().nullable().optional(),
-  hire_date: z.string().nullable().optional(),
-  status: z.string().default("active"),
-  employment_type: z.string().default("FullTime"),
-  work_shift: z.string().default("Morning"),
-  notes: z.string().trim().nullable().optional(),
+// Form State
+let firstName = $state(employee?.first_name || "");
+let middleName = $state(employee?.middle_name || "");
+let lastName = $state(employee?.last_name || "");
+let firstNameAr = $state(employee?.first_name_ar || "");
+let middleNameAr = $state(employee?.middle_name_ar || "");
+let lastNameAr = $state(employee?.last_name_ar || "");
+let nationalId = $state(employee?.national_id || "");
+let passportNumber = $state(employee?.passport_number || "");
+let gender = $state(employee?.gender || "male");
+let birthDate = $state(employee?.birth_date || "");
+let nationality = $state(employee?.nationality || "Saudi");
+let bloodType = $state(employee?.blood_type || "");
+let phone = $state(employee?.phone || "");
+let email = $state(employee?.email || "");
+let address = $state(employee?.address || "");
 
-  enable_account: z.boolean().default(false),
-  preferred_username: z.string().trim().nullable().optional(),
-  selected_group_ids: z.array(z.string()).default([]),
-  custom_password: z.string().nullable().optional(),
-});
+let employeeNumber = $state(employee?.employee_number || "");
+let employeeType = $state(employee?.employee_type || "Teacher");
+let jobTitle = $state(employee?.job_title || "");
+let department = $state(employee?.department || "");
+let orgUnitId = $state(employee?.org_unit_id || "");
+let hireDate = $state(employee?.hire_date || new Date().toISOString().split("T")[0]);
+let employmentType = $state(employee?.employment_type || "FullTime");
+let workShift = $state(employee?.work_shift || "Morning");
+let status = $state(employee?.status || "active");
 
-type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
+// Payroll & Compensation State
+let rawPayroll: Record<string, any> = {};
+try {
+  if (employee?.notes && employee.notes.startsWith("{")) {
+    rawPayroll = JSON.parse(employee.notes);
+  }
+} catch {}
 
-// Form state using canonical FormController
-const form = new FormController<EmployeeFormValues>({
-  initialValues: {
-    first_name: employee?.first_name || "",
-    middle_name: employee?.middle_name || "",
-    last_name: employee?.last_name || "",
-    first_name_ar: employee?.first_name_ar || "",
-    middle_name_ar: employee?.middle_name_ar || "",
-    last_name_ar: employee?.last_name_ar || "",
-    national_id: employee?.national_id || "",
-    passport_number: employee?.passport_number || "",
-    gender: employee?.gender || "male",
-    birth_date: employee?.birth_date || "",
-    nationality: employee?.nationality || "Saudi",
-    blood_type: employee?.blood_type || "",
-    phone: employee?.phone || "",
-    email: employee?.email || "",
-    address: employee?.address || "",
+let basicSalary = $state<number>(rawPayroll.basic_salary ?? 0);
+let housingAllowance = $state<number>(rawPayroll.housing_allowance ?? 0);
+let transportAllowance = $state<number>(rawPayroll.transport_allowance ?? 0);
+let otherAllowances = $state<number>(rawPayroll.other_allowances ?? 0);
+let gosiDeduction = $state<number>(rawPayroll.gosi_deduction ?? 0);
+let otherDeductions = $state<number>(rawPayroll.other_deductions ?? 0);
+let bankName = $state<string>(rawPayroll.bank_name || "");
+let bankIban = $state<string>(rawPayroll.bank_iban || "");
+let paymentMethod = $state<string>(rawPayroll.payment_method || "bank_transfer");
+let textNotes = $state<string>(
+  rawPayroll.text_notes || (employee?.notes && !employee.notes.startsWith("{") ? employee.notes : "")
+);
 
-    employee_number: employee?.employee_number || "",
-    employee_type: employee?.employee_type || "Teacher",
-    job_title: employee?.job_title || "",
-    department: employee?.department || "",
-    org_unit_id: employee?.org_unit_id || "",
-    hire_date: employee?.hire_date || new Date().toISOString().split("T")[0],
-    status: employee?.status || "active",
-    employment_type: employee?.employment_type || "FullTime",
-    work_shift: employee?.work_shift || "Morning",
-    notes: employee?.notes || "",
+// Derived Payroll Totals
+const totalGrossSalary = $derived(
+  (Number(basicSalary) || 0) +
+  (Number(housingAllowance) || 0) +
+  (Number(transportAllowance) || 0) +
+  (Number(otherAllowances) || 0)
+);
 
-    enable_account: mode === "create",
-    preferred_username: "",
-    selected_group_ids: [],
-    custom_password: "",
-  },
-  schema: employeeFormSchema,
-});
+const totalDeductions = $derived(
+  (Number(gosiDeduction) || 0) +
+  (Number(otherDeductions) || 0)
+);
 
-function getEmployeeTypeLabel(type: string): string {
-  switch (type) {
-    case "Teacher":
-      return m.employees_type_teacher?.() || "معلم / كادر تعليمي";
-    case "Admin":
-      return m.employees_type_admin?.() || "إداري";
-    case "Support":
-      return m.employees_type_support?.() || "خدمات مساندة";
-    case "Management":
-      return l("إدارة عليا", "Management");
-    case "Worker":
-      return l("عامل / خدمات", "Worker");
-    default:
-      return type;
+const netPayableSalary = $derived(
+  totalGrossSalary - totalDeductions
+);
+
+// Identity Provisioning State (Create Mode)
+let enableAccount = $state(mode === "create");
+let preferredUsername = $state("");
+let selectedGroupIds = $state<string[]>([]);
+let customPassword = $state("");
+let showCustomPassword = $state(false);
+
+// Queries & Mutations
+const registerMutation = createRegisterEmployeeMutation();
+const updateMutation = createUpdateEmployeeMutation();
+
+const isSaving = $derived(registerMutation.isPending || updateMutation.isPending);
+
+// Credential modal state
+let credentialModalOpen = $state(false);
+let provisioningResult = $state<AccountProvisioningResultDto | null>(null);
+let registeredEmployeeName = $state("");
+let registeredEmployeeId = $state<string | null>(null);
+
+let isDirty = $state(false);
+
+function markDirty() {
+  isDirty = true;
+}
+
+function toggleGroupSelection(groupId: string) {
+  markDirty();
+  if (selectedGroupIds.includes(groupId)) {
+    selectedGroupIds = selectedGroupIds.filter((id) => id !== groupId);
+  } else {
+    selectedGroupIds = [...selectedGroupIds, groupId];
   }
 }
 
-function getContractTypeLabel(type: string): string {
-  switch (type) {
-    case "FullTime":
-      return l("دوام كامل", "Full-time");
-    case "PartTime":
-      return l("دوام جزئي", "Part-time");
-    case "Contractor":
-      return l("عقد محدد", "Contractor");
-    case "Temporary":
-      return l("مؤقت / موسمي", "Temporary");
-    default:
-      return type;
-  }
-}
-
-function getStatusLabel(status: string): string {
-  switch (status) {
-    case "active":
-      return m.employees_status_active?.() || "على رأس العمل";
-    case "on_leave":
-      return m.employees_status_on_leave?.() || "في إجازة";
-    case "suspended":
-      return m.employees_status_suspended?.() || "موقوف مؤقتاً";
-    case "terminated":
-      return m.employees_status_terminated?.() || "منتهي الخدمة";
-    default:
-      return status;
-  }
+function buildNotesPayload(): string {
+  return JSON.stringify({
+    basic_salary: Number(basicSalary) || 0,
+    housing_allowance: Number(housingAllowance) || 0,
+    transport_allowance: Number(transportAllowance) || 0,
+    other_allowances: Number(otherAllowances) || 0,
+    gosi_deduction: Number(gosiDeduction) || 0,
+    other_deductions: Number(otherDeductions) || 0,
+    bank_name: bankName.trim(),
+    bank_iban: bankIban.trim(),
+    payment_method: paymentMethod,
+    text_notes: textNotes.trim(),
+  });
 }
 
 async function handleSubmit() {
-  if (mode === "preview") {
-    onCancel();
+  if (!firstName.trim() && !firstNameAr.trim()) {
+    toast.error(l("يرجى إدخال الاسم الأول على الأقل", "Please enter at least the first name"));
+    activeTab = "personal";
     return;
   }
 
-  const success = await form.submit(async (values) => {
-    if (mode === "create") {
-      const payload: RegisterEmployeeRequest = {
-        first_name: values.first_name.trim(),
-        middle_name: values.middle_name?.trim() || undefined,
-        last_name: values.last_name.trim(),
-        first_name_ar: values.first_name_ar?.trim() || undefined,
-        middle_name_ar: values.middle_name_ar?.trim() || undefined,
-        last_name_ar: values.last_name_ar?.trim() || undefined,
-        national_id: values.national_id?.trim() || undefined,
-        passport_number: values.passport_number?.trim() || undefined,
-        gender: values.gender || undefined,
-        birth_date: values.birth_date || undefined,
-        nationality: values.nationality?.trim() || undefined,
-        blood_type: values.blood_type?.trim() || undefined,
-        phone: values.phone?.trim() || undefined,
-        email: values.email?.trim() || undefined,
-        address: values.address?.trim() || undefined,
+  const serializedNotes = buildNotesPayload();
 
-        employee_number: values.employee_number?.trim() || undefined,
-        employee_type: values.employee_type,
-        job_title: values.job_title?.trim() || undefined,
-        department: values.department?.trim() || undefined,
-        org_unit_id: values.org_unit_id?.trim() || undefined,
-        hire_date: values.hire_date || undefined,
-        status: values.status || "active",
-        employment_type: values.employment_type,
-        work_shift: values.work_shift,
-        notes: values.notes?.trim() || undefined,
+  if (mode === "create") {
+    const payload: RegisterEmployeeRequest = {
+      first_name: firstName.trim() || firstNameAr.trim(),
+      middle_name: middleName.trim() || undefined,
+      last_name: lastName.trim() || lastNameAr.trim() || "Staff",
+      first_name_ar: firstNameAr.trim() || undefined,
+      middle_name_ar: middleNameAr.trim() || undefined,
+      last_name_ar: lastNameAr.trim() || undefined,
+      national_id: nationalId.trim() || undefined,
+      passport_number: passportNumber.trim() || undefined,
+      gender: gender || undefined,
+      birth_date: birthDate || undefined,
+      nationality: nationality.trim() || undefined,
+      blood_type: bloodType || undefined,
+      phone: phone.trim() || undefined,
+      email: email.trim() || undefined,
+      address: address.trim() || undefined,
 
-        account: values.enable_account
-          ? {
-              enabled: true,
-              preferred_username: values.preferred_username?.trim() || undefined,
-              delivery_channel: "auto",
-              group_ids: values.selected_group_ids,
-              custom_password: values.custom_password?.trim() || undefined,
-            }
-          : null,
-      };
+      employee_number: employeeNumber.trim() || undefined,
+      employee_type: employeeType,
+      job_title: jobTitle.trim() || undefined,
+      department: department.trim() || undefined,
+      org_unit_id: orgUnitId.trim() || undefined,
+      hire_date: hireDate || undefined,
+      status: status || "active",
+      employment_type: employmentType,
+      work_shift: workShift,
+      notes: serializedNotes,
 
-      const res = await api.registerEmployee(payload);
+      account: enableAccount
+        ? {
+            enabled: true,
+            preferred_username: preferredUsername.trim() || undefined,
+            delivery_channel: "auto",
+            group_ids: selectedGroupIds,
+            custom_password: customPassword.trim() || undefined,
+          }
+        : null,
+    };
+
+    try {
+      const response = await registerMutation.mutateAsync(payload);
       toast.success(m.employees_save_success?.() || "تم تسجيل الموظف بنجاح");
-      onSuccess(res.employee, res.provisioning);
-    } else if (mode === "edit" && employee) {
-      const payload: UpdateEmployeeRequest = {
-        first_name: values.first_name.trim() || undefined,
-        middle_name: values.middle_name?.trim() || undefined,
-        last_name: values.last_name.trim() || undefined,
-        first_name_ar: values.first_name_ar?.trim() || undefined,
-        middle_name_ar: values.middle_name_ar?.trim() || undefined,
-        last_name_ar: values.last_name_ar?.trim() || undefined,
-        national_id: values.national_id?.trim() || undefined,
-        passport_number: values.passport_number?.trim() || undefined,
-        gender: values.gender || undefined,
-        birth_date: values.birth_date || undefined,
-        nationality: values.nationality?.trim() || undefined,
-        blood_type: values.blood_type?.trim() || undefined,
-        phone: values.phone?.trim() || undefined,
-        email: values.email?.trim() || undefined,
-        address: values.address?.trim() || undefined,
+      isDirty = false;
 
-        employee_type: values.employee_type || undefined,
-        job_title: values.job_title?.trim() || undefined,
-        department: values.department?.trim() || undefined,
-        org_unit_id: values.org_unit_id?.trim() || undefined,
-        hire_date: values.hire_date || undefined,
-        status: values.status || undefined,
-        employment_type: values.employment_type || undefined,
-        work_shift: values.work_shift || undefined,
-        notes: values.notes?.trim() || undefined,
-      };
+      registeredEmployeeName = response.employee.full_name || response.employee.first_name;
+      registeredEmployeeId = response.employee.id;
 
-      const res = await api.updateEmployee(employee.id, payload);
-      toast.success(m.employees_save_success?.() || "تم حفظ بيانات الموظف بنجاح");
-      onSuccess(res, null);
+      if (response.provisioning) {
+        provisioningResult = response.provisioning;
+        credentialModalOpen = true;
+      } else {
+        goto(localizeHref(`/${orgId}/employees/${response.employee.id}`));
+      }
+    } catch (err) {
+      toast.error(extractErrorMessage(err));
     }
-  });
+  } else if (mode === "edit" && employee) {
+    const payload: UpdateEmployeeRequest = {
+      first_name: firstName.trim() || undefined,
+      middle_name: middleName.trim() || undefined,
+      last_name: lastName.trim() || undefined,
+      first_name_ar: firstNameAr.trim() || undefined,
+      middle_name_ar: middleNameAr.trim() || undefined,
+      last_name_ar: lastNameAr.trim() || undefined,
+      national_id: nationalId.trim() || undefined,
+      passport_number: passportNumber.trim() || undefined,
+      gender: gender || undefined,
+      birth_date: birthDate || undefined,
+      nationality: nationality.trim() || undefined,
+      blood_type: bloodType || undefined,
+      phone: phone.trim() || undefined,
+      email: email.trim() || undefined,
+      address: address.trim() || undefined,
 
-  if (!success && form.formError) {
-    toast.error(form.formError);
+      employee_type: employeeType || undefined,
+      job_title: jobTitle.trim() || undefined,
+      department: department.trim() || undefined,
+      org_unit_id: orgUnitId.trim() || undefined,
+      hire_date: hireDate || undefined,
+      status: status || undefined,
+      employment_type: employmentType || undefined,
+      work_shift: workShift || undefined,
+      notes: serializedNotes,
+    };
+
+    try {
+      await updateMutation.mutateAsync({ id: employee.id, req: payload });
+      toast.success(m.employees_save_success?.() || "تم حفظ بيانات الموظف بنجاح");
+      isDirty = false;
+      goto(localizeHref(`/${orgId}/employees/${employee.id}`));
+    } catch (err) {
+      toast.error(extractErrorMessage(err));
+    }
+  }
+}
+
+function handleCredentialModalClose() {
+  credentialModalOpen = false;
+  if (registeredEmployeeId) {
+    goto(localizeHref(`/${orgId}/employees/${registeredEmployeeId}`));
+  } else {
+    goto(localizeHref(`/${orgId}/employees`));
   }
 }
 </script>
 
-<form
-  onsubmit={(e) => {
-    e.preventDefault();
-    handleSubmit();
+<svelte:window
+  onkeydown={(e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+      e.preventDefault();
+      handleSubmit();
+    }
   }}
-  class="flex flex-col h-full overflow-hidden gap-0"
->
-  <Sheet.Header class="px-6 py-4 border-b border-border/40 shrink-0 text-start">
-    <Sheet.Title class="text-base font-bold text-foreground">
-      {#if mode === "create"}
-        {m.employees_new_title?.() || "تسجيل موظف جديد"}
-      {:else if mode === "edit"}
-        {m.employees_edit_title?.() || "تعديل ملف الموظف"}
-      {:else}
-        {m.employees_preview_title?.() || "عرض ملف الموظف"}
-      {/if}
-    </Sheet.Title>
-    <Sheet.Description class="text-xs text-muted-foreground mt-0.5">
-      {#if mode === "create"}
-        {l("إدخال السجل الشخصي والوظيفي وتهيئة بيانات الدخول الموحدة", "Enter personal, employment, and unified identity records.")}
-      {:else}
-        {employee?.full_name || employee?.first_name || ""}
-      {/if}
-    </Sheet.Description>
-  </Sheet.Header>
+/>
 
-  <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
-    <Accordion
-      type="multiple"
-      value={["personal", "employment", ...(mode === "create" ? ["account"] : [])]}
-      class="flex flex-col gap-4"
-    >
-      <!-- Accordion Item 1: Personal Information -->
-      <AccordionItem value="personal" class="rounded-lg border border-border/60 bg-card px-4 py-1">
-        <AccordionTrigger class="text-sm font-semibold hover:no-underline py-3">
-          <div class="flex items-center gap-2">
+<div class="h-full w-full flex flex-col overflow-hidden bg-background">
+  <!-- Top Navigation Ribbon -->
+  <div class="border-b border-border/80 bg-card px-6 py-4 flex items-center justify-between shrink-0 shadow-2xs">
+    <div class="flex items-center gap-3">
+      <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <UserGroup size={20} />
+      </div>
+      <div class="flex flex-col">
+        <h1 class="text-base font-bold text-foreground">
+          {mode === "create" ? (m.employees_new_title?.() || "تسجيل موظف جديد") : (m.employees_edit_title?.() || "تعديل ملف الموظف")}
+        </h1>
+        <span class="text-xs text-muted-foreground">
+          {mode === "create" ? l("إدخال السجل الشخصي والوظيفي وتهيئة بيانات الدخول الموحدة", "Enter personal, employment, and unified identity records.") : (employee?.full_name || employee?.first_name || "")}
+        </span>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/60">
+      <button
+        type="button"
+        class="px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 {activeTab === 'personal' ? 'bg-card text-foreground shadow-2xs font-semibold' : 'text-muted-foreground hover:text-foreground'}"
+        onclick={() => (activeTab = "personal")}
+      >
+        <User size={13} />
+        <span>{m.employees_tab_personal?.() || "البيانات الشخصية"}</span>
+      </button>
+
+      <button
+        type="button"
+        class="px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 {activeTab === 'employment' ? 'bg-card text-foreground shadow-2xs font-semibold' : 'text-muted-foreground hover:text-foreground'}"
+        onclick={() => (activeTab = "employment")}
+      >
+        <BuildingOffice size={13} />
+        <span>{m.employees_tab_employment?.() || "البيانات الوظيفية"}</span>
+      </button>
+
+      <button
+        type="button"
+        class="px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 {activeTab === 'payroll' ? 'bg-card text-foreground shadow-2xs font-semibold' : 'text-muted-foreground hover:text-foreground'}"
+        onclick={() => (activeTab = "payroll")}
+      >
+        <Banknotes size={13} />
+        <span>{l("الرواتب والبدلات", "Payroll & Compensation")}</span>
+      </button>
+
+      {#if mode === "create"}
+        <button
+          type="button"
+          class="px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 {activeTab === 'account' ? 'bg-card text-foreground shadow-2xs font-semibold' : 'text-muted-foreground hover:text-foreground'}"
+          onclick={() => (activeTab = "account")}
+        >
+          <ShieldCheck size={13} />
+          <span>{m.employees_tab_account?.() || "حساب النظام والأمان"}</span>
+          {#if enableAccount}
+            <span class="size-1.5 rounded-full bg-emerald-500"></span>
+          {/if}
+        </button>
+      {/if}
+    </div>
+  </div>
+
+  <!-- Form Body -->
+  <div class="flex-1 min-h-0 overflow-y-auto p-6">
+    <div class="max-w-4xl mx-auto flex flex-col gap-6 pb-20">
+
+      <!-- TAB 1: PERSONAL INFORMATION -->
+      {#if activeTab === "personal"}
+        <div class="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-xs">
+          <div class="flex items-center gap-2 border-b border-border/60 pb-3">
             <User size={16} class="text-primary" />
-            <span>{m.employees_tab_personal?.() || "البيانات الشخصية والهوية"}</span>
-          </div>
-        </AccordionTrigger>
-        <AccordionContent class="pt-2 pb-4 flex flex-col gap-4">
-          <!-- Arabic Names -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <FormField id="emp_fn_ar" label={m.employees_first_name_ar?.() || "الاسم الأول (عربي)"} error={form.errors.first_name_ar?.[0]}>
-              {#snippet children()}
-                <Input
-                  id="emp_fn_ar"
-                  type="text"
-                  placeholder="محمد"
-                  bind:value={form.values.first_name_ar}
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
-
-            <FormField id="emp_mn_ar" label={m.employees_middle_name_ar?.() || "اسم الأب (عربي)"} error={form.errors.middle_name_ar?.[0]}>
-              {#snippet children()}
-                <Input
-                  id="emp_mn_ar"
-                  type="text"
-                  placeholder="عبدالله"
-                  bind:value={form.values.middle_name_ar}
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
-
-            <FormField id="emp_ln_ar" label={m.employees_last_name_ar?.() || "اسم العائلة (عربي)"} error={form.errors.last_name_ar?.[0]}>
-              {#snippet children()}
-                <Input
-                  id="emp_ln_ar"
-                  type="text"
-                  placeholder="الغامدي"
-                  bind:value={form.values.last_name_ar}
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
+            <h2 class="text-sm font-bold text-foreground">{m.employees_tab_personal?.() || "البيانات الشخصية والهوية"}</h2>
           </div>
 
-          <!-- English/Latin Names -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <FormField id="emp_fn_en" label={m.common_first_name?.() || "الاسم الأول (إنجليزي)"} error={form.errors.first_name?.[0]} required>
-              {#snippet children()}
-                <Input
-                  id="emp_fn_en"
-                  type="text"
-                  placeholder="Mohammed"
-                  bind:value={form.values.first_name}
-                  onblur={() => form.markTouched("first_name")}
-                  required
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
-
-            <FormField id="emp_mn_en" label={m.common_middle_name?.() || "اسم الأب (إنجليزي)"} error={form.errors.middle_name?.[0]}>
-              {#snippet children()}
-                <Input
-                  id="emp_mn_en"
-                  type="text"
-                  placeholder="Abdullah"
-                  bind:value={form.values.middle_name}
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
-
-            <FormField id="emp_ln_en" label={m.common_last_name?.() || "اسم العائلة (إنجليزي)"} error={form.errors.last_name?.[0]} required>
-              {#snippet children()}
-                <Input
-                  id="emp_ln_en"
-                  type="text"
-                  placeholder="Al-Ghamdi"
-                  bind:value={form.values.last_name}
-                  onblur={() => form.markTouched("last_name")}
-                  required
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
-          </div>
-
-          <!-- IDs & Demographics Grid -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <FormField id="emp_nat_id" label={m.employees_national_id?.() || "رقم الهوية الوطنية / الإقامة"} error={form.errors.national_id?.[0]}>
-              {#snippet children()}
-                <Input
-                  id="emp_nat_id"
-                  type="text"
-                  placeholder="10XXXXXXXX"
-                  class="font-mono"
-                  bind:value={form.values.national_id}
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
-
-            <FormField id="emp_passport" label={m.employees_passport_number?.() || "رقم جواز السفر"} error={form.errors.passport_number?.[0]}>
-              {#snippet children()}
-                <Input
-                  id="emp_passport"
-                  type="text"
-                  placeholder="P0XXXXXX"
-                  class="font-mono"
-                  bind:value={form.values.passport_number}
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
-
-            <FormField id="emp_gender" label={m.employees_gender?.() || "الجنس"}>
-              {#snippet children()}
-                <Select
-                  type="single"
-                  value={form.values.gender ?? "male"}
-                  onValueChange={(val) => {
-                    if (val) form.values.gender = val;
-                  }}
-                  disabled={mode === "preview" || form.isSubmitting}
-                >
-                  <SelectTrigger class="h-9 text-xs">
-                    {form.values.gender === "female" ? (m.common_gender_female?.() || "أنثى") : (m.common_gender_male?.() || "ذكر")}
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">{m.common_gender_male?.() || "ذكر"}</SelectItem>
-                    <SelectItem value="female">{m.common_gender_female?.() || "أنثى"}</SelectItem>
-                  </SelectContent>
-                </Select>
-              {/snippet}
-            </FormField>
-
-            <FormField id="emp_dob" label={m.employees_birth_date?.() || "تاريخ الميلاد"}>
-              {#snippet children()}
-                <Input
-                  id="emp_dob"
-                  type="date"
-                  bind:value={form.values.birth_date}
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
-          </div>
-
-          <!-- Nationality & Contact Grid -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <FormField id="emp_nat" label={m.employees_nationality?.() || "الجنسية"}>
-              {#snippet children()}
-                <NationalitySelect
-                  bind:value={form.values.nationality}
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
-
-            <FormField id="emp_phone" label={m.common_phone?.() || "رقم الهاتف"} error={form.errors.phone?.[0]}>
-              {#snippet children()}
-                <Input
-                  id="emp_phone"
-                  type="tel"
-                  placeholder="+966 5X XXX XXXX"
-                  class="font-mono"
-                  bind:value={form.values.phone}
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
-
-            <FormField id="emp_email" label={m.common_email?.() || "البريد الإلكتروني"} error={form.errors.email?.[0]}>
-              {#snippet children()}
-                <Input
-                  id="emp_email"
-                  type="email"
-                  placeholder="teacher@school.edu.sa"
-                  class="font-mono"
-                  bind:value={form.values.email}
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
-          </div>
-
-          <FormField id="emp_addr" label={m.common_address?.() || "العنوان السكني"} error={form.errors.address?.[0]}>
-            {#snippet children()}
+          <!-- Names Grid (Bilingual) -->
+          <div class="grid grid-cols-3 gap-4">
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_first_name_ar?.() || "الاسم الأول (بالعربية)"}</Label>
               <Input
-                id="emp_addr"
                 type="text"
-                placeholder="الرياض، حي النخيل"
-                bind:value={form.values.address}
-                disabled={mode === "preview" || form.isSubmitting}
+                placeholder="محمد"
+                class="text-xs"
+                bind:value={firstNameAr}
+                oninput={markDirty}
               />
-            {/snippet}
-          </FormField>
-        </AccordionContent>
-      </AccordionItem>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_middle_name_ar?.() || "اسم الأب (بالعربية)"}</Label>
+              <Input
+                type="text"
+                placeholder="عبدالله"
+                class="text-xs"
+                bind:value={middleNameAr}
+                oninput={markDirty}
+              />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_last_name_ar?.() || "اسم العائلة (بالعربية)"}</Label>
+              <Input
+                type="text"
+                placeholder="الغامدي"
+                class="text-xs"
+                bind:value={lastNameAr}
+                oninput={markDirty}
+              />
+            </div>
+          </div>
 
-      <!-- Accordion Item 2: Employment Information -->
-      <AccordionItem value="employment" class="rounded-lg border border-border/60 bg-card px-4 py-1">
-        <AccordionTrigger class="text-sm font-semibold hover:no-underline py-3">
-          <div class="flex items-center gap-2">
+          <div class="grid grid-cols-3 gap-4">
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_first_name?.() || "First Name (Latin)"}</Label>
+              <Input
+                type="text"
+                placeholder="Mohammed"
+                class="text-xs"
+                bind:value={firstName}
+                oninput={markDirty}
+              />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_middle_name?.() || "Middle Name"}</Label>
+              <Input
+                type="text"
+                placeholder="Abdullah"
+                class="text-xs"
+                bind:value={middleName}
+                oninput={markDirty}
+              />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_last_name?.() || "Last Name"}</Label>
+              <Input
+                type="text"
+                placeholder="Al-Ghamdi"
+                class="text-xs"
+                bind:value={lastName}
+                oninput={markDirty}
+              />
+            </div>
+          </div>
+
+          <!-- Identification & Demographics -->
+          <div class="grid grid-cols-4 gap-4 pt-2">
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_national_id?.() || "الهوية الوطنية / الإقامة"}</Label>
+              <Input
+                type="text"
+                placeholder="10XXXXXXXX"
+                class="text-xs font-mono"
+                bind:value={nationalId}
+                oninput={markDirty}
+              />
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_passport_number?.() || "رقم جواز السفر"}</Label>
+              <Input
+                type="text"
+                placeholder="A1234567"
+                class="text-xs font-mono"
+                bind:value={passportNumber}
+                oninput={markDirty}
+              />
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_gender?.() || "الجنس"}</Label>
+              <Select type="single" value={gender} onValueChange={(v) => { if (v) { gender = v; markDirty(); } }}>
+                <SelectTrigger class="text-xs h-9">
+                  {gender === "male" ? (m.employees_gender_male?.() || "ذكر") : (m.employees_gender_female?.() || "أنثى")}
+                </SelectTrigger>
+                <SelectContent class="text-xs font-sans">
+                  <SelectItem value="male">{m.employees_gender_male?.() || "ذكر"}</SelectItem>
+                  <SelectItem value="female">{m.employees_gender_female?.() || "أنثى"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_birth_date?.() || "تاريخ الميلاد"}</Label>
+              <Input
+                type="date"
+                class="text-xs font-mono"
+                bind:value={birthDate}
+                oninput={markDirty}
+              />
+            </div>
+          </div>
+
+          <!-- Contact & Extra Info -->
+          <div class="grid grid-cols-3 gap-4 pt-2">
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_phone?.() || "رقم الهاتف"}</Label>
+              <Input
+                type="tel"
+                placeholder="+966 5X XXX XXXX"
+                class="text-xs font-mono"
+                bind:value={phone}
+                oninput={markDirty}
+              />
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_email?.() || "البريد الإلكتروني"}</Label>
+              <Input
+                type="email"
+                placeholder="staff@orbis.edu"
+                class="text-xs font-mono"
+                bind:value={email}
+                oninput={markDirty}
+              />
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_nationality?.() || "الجنسية"}</Label>
+              <NationalitySelect
+                bind:value={nationality}
+                onchange={markDirty}
+              />
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1.5 pt-2">
+            <Label class="text-xs font-medium">{m.employees_address?.() || "العنوان السكني"}</Label>
+            <Input
+              type="text"
+              placeholder="الرياض، حي النخيل..."
+              class="text-xs"
+              bind:value={address}
+              oninput={markDirty}
+            />
+          </div>
+        </div>
+      {/if}
+
+      <!-- TAB 2: EMPLOYMENT & JOB -->
+      {#if activeTab === "employment"}
+        <div class="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-xs">
+          <div class="flex items-center gap-2 border-b border-border/60 pb-3">
             <BuildingOffice size={16} class="text-primary" />
-            <span>{m.employees_tab_employment?.() || "البيانات الوظيفية والتعاقدية"}</span>
-          </div>
-        </AccordionTrigger>
-        <AccordionContent class="pt-2 pb-4 flex flex-col gap-4">
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <FormField id="emp_num" label={m.employees_employee_number?.() || "الرقم الوظيفي"} error={form.errors.employee_number?.[0]}>
-              {#snippet children()}
-                <Input
-                  id="emp_num"
-                  type="text"
-                  placeholder="EMP-00123"
-                  class="font-mono"
-                  bind:value={form.values.employee_number}
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
-
-            <FormField id="emp_type" label={m.employees_filter_type?.() || "فئة الموظف"}>
-              {#snippet children()}
-                <Select
-                  type="single"
-                  value={form.values.employee_type}
-                  onValueChange={(val) => {
-                    if (val) form.values.employee_type = val;
-                  }}
-                  disabled={mode === "preview" || form.isSubmitting}
-                >
-                  <SelectTrigger class="h-9 text-xs">
-                    {getEmployeeTypeLabel(form.values.employee_type)}
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Teacher">{m.employees_type_teacher?.() || "معلم / كادر تعليمي"}</SelectItem>
-                    <SelectItem value="Admin">{m.employees_type_admin?.() || "إداري"}</SelectItem>
-                    <SelectItem value="Support">{m.employees_type_support?.() || "خدمات مساندة"}</SelectItem>
-                    <SelectItem value="Management">{l("إدارة عليا", "Management")}</SelectItem>
-                    <SelectItem value="Worker">{l("عامل / خدمات", "Worker")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              {/snippet}
-            </FormField>
-
-            <FormField id="emp_title" label={m.employees_job_title?.() || "المسمى الوظيفي"} error={form.errors.job_title?.[0]}>
-              {#snippet children()}
-                <Input
-                  id="emp_title"
-                  type="text"
-                  placeholder="معلم رياضيات أول"
-                  bind:value={form.values.job_title}
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
+            <h2 class="text-sm font-bold text-foreground">{m.employees_tab_employment?.() || "البيانات والتعيينات الوظيفية"}</h2>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <FormField id="emp_dept" label={m.employees_department?.() || "القسم / الإدارة"} error={form.errors.department?.[0]}>
-              {#snippet children()}
-                <Input
-                  id="emp_dept"
-                  type="text"
-                  placeholder="قسم العلوم والرياضيات"
-                  bind:value={form.values.department}
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
-
-            <FormField id="emp_hire_date" label={m.employees_hire_date?.() || "تاريخ التعيين"}>
-              {#snippet children()}
-                <Input
-                  id="emp_hire_date"
-                  type="date"
-                  bind:value={form.values.hire_date}
-                  disabled={mode === "preview" || form.isSubmitting}
-                />
-              {/snippet}
-            </FormField>
-
-            <FormField id="emp_contract" label={m.employees_employment_type?.() || "نوع العقد"}>
-              {#snippet children()}
-                <Select
-                  type="single"
-                  value={form.values.employment_type}
-                  onValueChange={(val) => {
-                    if (val) form.values.employment_type = val;
-                  }}
-                  disabled={mode === "preview" || form.isSubmitting}
-                >
-                  <SelectTrigger class="h-9 text-xs">
-                    {getContractTypeLabel(form.values.employment_type)}
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="FullTime">{l("دوام كامل", "Full-time")}</SelectItem>
-                    <SelectItem value="PartTime">{l("دوام جزئي", "Part-time")}</SelectItem>
-                    <SelectItem value="Contractor">{l("عقد محدد", "Contractor")}</SelectItem>
-                    <SelectItem value="Temporary">{l("مؤقت / موسمي", "Temporary")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              {/snippet}
-            </FormField>
-
-            <FormField id="emp_status" label={m.employees_filter_status?.() || "الحالة"}>
-              {#snippet children()}
-                <Select
-                  type="single"
-                  value={form.values.status}
-                  onValueChange={(val) => {
-                    if (val) form.values.status = val;
-                  }}
-                  disabled={mode === "preview" || form.isSubmitting}
-                >
-                  <SelectTrigger class="h-9 text-xs">
-                    {getStatusLabel(form.values.status)}
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">{m.employees_status_active?.() || "على رأس العمل"}</SelectItem>
-                    <SelectItem value="on_leave">{m.employees_status_on_leave?.() || "في إجازة"}</SelectItem>
-                    <SelectItem value="suspended">{m.employees_status_suspended?.() || "موقوف مؤقتاً"}</SelectItem>
-                    <SelectItem value="terminated">{m.employees_status_terminated?.() || "منتهي الخدمة"}</SelectItem>
-                  </SelectContent>
-                </Select>
-              {/snippet}
-            </FormField>
-          </div>
-
-          <FormField id="emp_notes" label={m.common_notes?.() || "ملاحظات إضافية"} error={form.errors.notes?.[0]}>
-            {#snippet children()}
-              <Textarea
-                id="emp_notes"
-                placeholder={l("أي ملاحظات وظيفية أو متطلبات خاصة...", "Additional notes...")}
-                class="min-h-[70px] text-xs resize-none"
-                bind:value={form.values.notes}
-                disabled={mode === "preview" || form.isSubmitting}
+          <div class="grid grid-cols-3 gap-4">
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_employee_number?.() || "الرقم الوظيفي"}</Label>
+              <Input
+                type="text"
+                placeholder="EMP-1001"
+                class="text-xs font-mono"
+                bind:value={employeeNumber}
+                oninput={markDirty}
               />
-            {/snippet}
-          </FormField>
-        </AccordionContent>
-      </AccordionItem>
+            </div>
 
-      <!-- Accordion Item 3: Account & Identity (Only on Create) -->
-      {#if mode === "create"}
-        <AccordionItem value="account" class="rounded-lg border border-border/60 bg-card px-4 py-1">
-          <AccordionTrigger class="text-sm font-semibold hover:no-underline py-3">
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_filter_type?.() || "فئة الموظف"}</Label>
+              <Select type="single" value={employeeType} onValueChange={(v) => { if (v) { employeeType = v; markDirty(); } }}>
+                <SelectTrigger class="text-xs h-9">
+                  {employeeType}
+                </SelectTrigger>
+                <SelectContent class="text-xs font-sans">
+                  <SelectItem value="Teacher">{m.employees_type_teacher?.() || "معلم"}</SelectItem>
+                  <SelectItem value="Admin">{m.employees_type_admin?.() || "إداري"}</SelectItem>
+                  <SelectItem value="Specialist">{m.employees_type_specialist?.() || "أخصائي"}</SelectItem>
+                  <SelectItem value="Support">{m.employees_type_support?.() || "خدمات مساندة"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_job_title?.() || "المسمى الوظيفي"}</Label>
+              <Input
+                type="text"
+                placeholder="معلم رياضيات أول"
+                class="text-xs"
+                bind:value={jobTitle}
+                oninput={markDirty}
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4">
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_department?.() || "القسم / الإدارة"}</Label>
+              <Input
+                type="text"
+                placeholder="قسم العلوم والرياضيات"
+                class="text-xs"
+                bind:value={department}
+                oninput={markDirty}
+              />
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_hire_date?.() || "تاريخ التعيين"}</Label>
+              <Input
+                type="date"
+                class="text-xs font-mono"
+                bind:value={hireDate}
+                oninput={markDirty}
+              />
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_filter_status?.() || "الحالة الوظيفية"}</Label>
+              <Select type="single" value={status} onValueChange={(v) => { if (v) { status = v; markDirty(); } }}>
+                <SelectTrigger class="text-xs h-9">
+                  {status}
+                </SelectTrigger>
+                <SelectContent class="text-xs font-sans">
+                  <SelectItem value="active">{m.employees_status_active?.() || "نشط"}</SelectItem>
+                  <SelectItem value="on_leave">{m.employees_status_on_leave?.() || "إجازة"}</SelectItem>
+                  <SelectItem value="suspended">{m.employees_status_suspended?.() || "موقوف"}</SelectItem>
+                  <SelectItem value="terminated">{m.employees_status_terminated?.() || "منتهي الخدمة"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_employment_type?.() || "نوع العقد"}</Label>
+              <Select type="single" value={employmentType} onValueChange={(v) => { if (v) { employmentType = v; markDirty(); } }}>
+                <SelectTrigger class="text-xs h-9">
+                  {employmentType}
+                </SelectTrigger>
+                <SelectContent class="text-xs font-sans">
+                  <SelectItem value="FullTime">{l("دوام كامل (Full Time)", "Full Time")}</SelectItem>
+                  <SelectItem value="PartTime">{l("دوام جزئي (Part Time)", "Part Time")}</SelectItem>
+                  <SelectItem value="Contract">{l("عقد محدد (Contract)", "Contract")}</SelectItem>
+                  <SelectItem value="Temporary">{l("مؤقت (Temporary)", "Temporary")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-xs font-medium">{m.employees_work_shift?.() || "فترة العمل"}</Label>
+              <Select type="single" value={workShift} onValueChange={(v) => { if (v) { workShift = v; markDirty(); } }}>
+                <SelectTrigger class="text-xs h-9">
+                  {workShift}
+                </SelectTrigger>
+                <SelectContent class="text-xs font-sans">
+                  <SelectItem value="Morning">{l("فترة صباحية", "Morning")}</SelectItem>
+                  <SelectItem value="Evening">{l("فترة مسائية", "Evening")}</SelectItem>
+                  <SelectItem value="Rotating">{l("فترات مناوبة", "Rotating")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1.5 pt-2">
+            <Label class="text-xs font-medium">{m.employees_tab_notes?.() || "ملاحظات إدارية"}</Label>
+            <Textarea
+              placeholder={l("ملاحظات إضافية حول الموظف أو العقد...", "Additional notes...")}
+              class="text-xs min-h-20"
+              bind:value={textNotes}
+              oninput={markDirty}
+            />
+          </div>
+        </div>
+      {/if}
+
+      <!-- TAB 3: PAYROLL & COMPENSATION -->
+      {#if activeTab === "payroll"}
+        <div class="flex flex-col gap-6 animate-in fade-in-50 duration-150">
+          <!-- Summary Metric Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="flex flex-col gap-1.5 rounded-xl border border-border/80 bg-card p-4 shadow-2xs">
+              <span class="text-xs text-muted-foreground font-medium">{l("إجمالي الراتب والبدلات", "Gross Salary & Allowances")}</span>
+              <div class="flex items-baseline gap-1">
+                <span class="text-xl font-bold font-mono text-foreground">{formatNumber(totalGrossSalary)}</span>
+                <span class="text-xs text-muted-foreground">SAR / YER</span>
+              </div>
+              <span class="text-[10px] text-muted-foreground">{l("الأساسي + السكن + النقل + البدلات الأخرى", "Basic + Housing + Transport + Allowances")}</span>
+            </div>
+
+            <div class="flex flex-col gap-1.5 rounded-xl border border-destructive/20 bg-destructive/5 p-4 shadow-2xs">
+              <span class="text-xs text-destructive font-medium">{l("إجمالي الاستقطاعات", "Total Deductions")}</span>
+              <div class="flex items-baseline gap-1">
+                <span class="text-xl font-bold font-mono text-destructive">-{formatNumber(totalDeductions)}</span>
+                <span class="text-xs text-destructive/70">SAR / YER</span>
+              </div>
+              <span class="text-[10px] text-destructive/80">{l("التأمينات الاجتماعية + استقطاعات العقد", "GOSI + Other Deductions")}</span>
+            </div>
+
+            <div class="flex flex-col gap-1.5 rounded-xl border border-primary/30 bg-primary/5 p-4 shadow-2xs">
+              <span class="text-xs text-primary font-bold">{l("صافي الراتب المستحق", "Net Payable Salary")}</span>
+              <div class="flex items-baseline gap-1">
+                <span class="text-2xl font-black font-mono text-primary">{formatNumber(netPayableSalary)}</span>
+                <span class="text-xs font-semibold text-primary">SAR / YER</span>
+              </div>
+              <span class="text-[10px] text-primary/80">{l("صافي الراتب المحول شهرياً في المسير", "Net amount disbursed on monthly payroll")}</span>
+            </div>
+          </div>
+
+          <!-- Base Salary & Allowances Block -->
+          <div class="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-xs">
+            <div class="flex items-center gap-2 border-b border-border/60 pb-3">
+              <Banknotes size={16} class="text-primary" />
+              <h2 class="text-sm font-bold text-foreground">{l("هيكل الراتب والبدلات الشهرية", "Monthly Salary & Allowances Structure")}</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex flex-col gap-1.5">
+                <Label class="text-xs font-bold text-foreground">{l("الراتب الأساسي الشهري", "Monthly Basic Salary")}</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  class="text-xs font-mono"
+                  bind:value={basicSalary}
+                  oninput={markDirty}
+                />
+                <span class="text-[10px] text-muted-foreground">{l("الراتب الأساسي المنصوص عليه في عقد العمل.", "Base salary stipulated in the contract.")}</span>
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <Label class="text-xs font-medium">{l("بدل السكن الشهري", "Housing Allowance")}</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  class="text-xs font-mono"
+                  bind:value={housingAllowance}
+                  oninput={markDirty}
+                />
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <Label class="text-xs font-medium">{l("بدل النقل والمواصلات", "Transportation Allowance")}</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  class="text-xs font-mono"
+                  bind:value={transportAllowance}
+                  oninput={markDirty}
+                />
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <Label class="text-xs font-medium">{l("بدلات ومزايا إضافية", "Other Allowances / Benefits")}</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  class="text-xs font-mono"
+                  bind:value={otherAllowances}
+                  oninput={markDirty}
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Deductions & Social Security Block -->
+          <div class="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-xs">
+            <div class="flex items-center gap-2 border-b border-border/60 pb-3">
+              <ShieldCheck size={16} class="text-primary" />
+              <h2 class="text-sm font-bold text-foreground">{l("الاستقطاعات الشهرية والتأمينات الاجتماعية", "Monthly Deductions & Social Security")}</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex flex-col gap-1.5">
+                <Label class="text-xs font-medium">{l("استقطاع التأمينات الاجتماعية (حصة الموظف)", "GOSI / Social Security (Employee Share)")}</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  class="text-xs font-mono"
+                  bind:value={gosiDeduction}
+                  oninput={markDirty}
+                />
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <Label class="text-xs font-medium">{l("استقطاعات أخرى أو ضرائب", "Other Deductions / Withholding Tax")}</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  class="text-xs font-mono"
+                  bind:value={otherDeductions}
+                  oninput={markDirty}
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Banking & Disbursement Details Block -->
+          <div class="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-xs">
+            <div class="flex items-center gap-2 border-b border-border/60 pb-3">
+              <CreditCard size={16} class="text-primary" />
+              <h2 class="text-sm font-bold text-foreground">{l("بيانات الحساب البنكي والتحويل المالي", "Bank Account & Payment Routing")}</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="flex flex-col gap-1.5">
+                <Label class="text-xs font-medium">{l("اسم البنك", "Bank Name")}</Label>
+                <Input
+                  type="text"
+                  placeholder={l("e.g. مصرف الراجحي / البنك الأهلي", "e.g. Al Rajhi Bank")}
+                  class="text-xs"
+                  bind:value={bankName}
+                  oninput={markDirty}
+                />
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <Label class="text-xs font-medium">{l("رقم الحساب الدولي (IBAN)", "IBAN Account Number")}</Label>
+                <Input
+                  type="text"
+                  placeholder="SA00 0000 0000 0000 0000 0000"
+                  class="text-xs font-mono"
+                  bind:value={bankIban}
+                  oninput={markDirty}
+                />
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <Label class="text-xs font-medium">{l("طريقة التحويل والصرف", "Disbursement Method")}</Label>
+                <Select type="single" value={paymentMethod} onValueChange={(v) => { if (v) { paymentMethod = v; markDirty(); } }}>
+                  <SelectTrigger class="text-xs h-9">
+                    {paymentMethod === "bank_transfer" ? l("تحويل بنكي مباشر (WPS)", "Direct Bank Transfer (WPS)") : paymentMethod === "check" ? l("شيك بنكي", "Bank Check") : l("نقداً من الخزينة", "Cash via Treasury")}
+                  </SelectTrigger>
+                  <SelectContent class="text-xs font-sans">
+                    <SelectItem value="bank_transfer">{l("تحويل بنكي مباشر (WPS)", "Direct Bank Transfer (WPS)")}</SelectItem>
+                    <SelectItem value="check">{l("شيك بنكي", "Bank Check")}</SelectItem>
+                    <SelectItem value="cash">{l("نقداً من الخزينة", "Cash via Treasury")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </div>
+      {/if}
+
+      <!-- TAB 4: IDENTITY PROVISIONING & USER GROUPS (CREATE MODE) -->
+      {#if activeTab === "account" && mode === "create"}
+        <div class="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-xs">
+          <div class="flex items-center justify-between border-b border-border/60 pb-3">
             <div class="flex items-center gap-2">
               <ShieldCheck size={16} class="text-primary" />
-              <span>{m.employees_tab_account?.() || "حساب النظام والأمان الموحد"}</span>
-              {#if form.values.enable_account}
-                <Badge variant="secondary" class="ms-2 text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
-                  {l("مفعل", "Enabled")}
-                </Badge>
-              {/if}
-            </div>
-          </AccordionTrigger>
-          <AccordionContent class="pt-2 pb-4 flex flex-col gap-4">
-            <div class="flex items-center justify-between p-3.5 rounded-lg border border-border/70 bg-muted/20">
-              <div class="flex flex-col gap-0.5">
-                <span class="text-xs font-bold text-foreground">{l("إنشاء حساب مستخدم وتهيئة الدخول", "Provision User Account & Unified Login")}</span>
-                <span class="text-[11px] text-muted-foreground">{l("إنشاء حساب تسجيل دخول تلقائي بكلمة مرور آمنة وتعيين المجموعات والصلاحيات", "Automatically generate credentials and configure group permissions.")}</span>
+              <div class="flex flex-col">
+                <h2 class="text-sm font-bold text-foreground">{m.employees_account_provision_switch?.() || "إنشاء حساب مستخدم وربطه تلقائياً"}</h2>
+                <span class="text-xs text-muted-foreground">{m.employees_account_provision_desc?.() || "ينشئ حساب مستخدم مع بيانات اعتماد آمنة لمرة واحدة"}</span>
               </div>
-              <Switch
-                checked={form.values.enable_account}
-                onCheckedChange={(v) => (form.values.enable_account = v)}
-                disabled={form.isSubmitting}
-              />
             </div>
 
-            {#if form.values.enable_account}
-              <div class="flex flex-col gap-4 p-4 rounded-lg border border-border/60 bg-background/50">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <FormField id="emp_pref_user" label={l("اسم المستخدم المفضل (اختياري)", "Preferred Username (Optional)")}>
-                    {#snippet children()}
-                      <Input
-                        id="emp_pref_user"
-                        type="text"
-                        placeholder="m.alghamdi"
-                        class="font-mono"
-                        bind:value={form.values.preferred_username}
-                        disabled={form.isSubmitting}
-                      />
-                    {/snippet}
-                  </FormField>
+            <Switch
+              checked={enableAccount}
+              onCheckedChange={(c) => {
+                enableAccount = c;
+                markDirty();
+              }}
+            />
+          </div>
 
-                  <FormField id="emp_custom_pwd" label={l("كلمة مرور مخصصة (اختياري - يترك فارغاً للتوليد الآمن)", "Custom Password (Optional - Leave empty for CSPRNG)")}>
-                    {#snippet children()}
-                      <Input
-                        id="emp_custom_pwd"
-                        type="password"
-                        placeholder="••••••••••••"
-                        class="font-mono"
-                        bind:value={form.values.custom_password}
-                        disabled={form.isSubmitting}
-                      />
-                    {/snippet}
-                  </FormField>
-                </div>
-
+          {#if enableAccount}
+            <div class="flex flex-col gap-5 pt-2">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="flex flex-col gap-1.5">
-                  <Label class="text-xs font-medium">{l("تعيين مجموعات المستخدمين والصلاحيات", "Assign User Groups & Roles")}</Label>
-                  <GroupSelector
-                    {orgId}
-                    bind:selectedGroupIds={form.values.selected_group_ids}
+                  <Label class="text-xs font-medium">{l("اسم المستخدم المفضل (اختياري)", "Preferred Username (Optional)")}</Label>
+                  <Input
+                    type="text"
+                    placeholder="e.g. m.ghamdi"
+                    class="text-xs font-mono"
+                    bind:value={preferredUsername}
+                    oninput={markDirty}
                   />
+                  <span class="text-[10px] text-muted-foreground">{l("في حال تركه فارغاً، سيتم توليده تلقائياً من البريد أو الاسم والرقم الوظيفي.", "Auto-generated from email/name if left empty.")}</span>
+                </div>
+
+                <div class="flex flex-col gap-1.5 justify-center p-3 rounded-lg border border-border/50 bg-muted/20 text-xs text-muted-foreground">
+                  <span class="font-medium text-foreground text-[11px]">{l("تكامل التسليم التلقائي", "Automated Delivery")}</span>
+                  <span class="text-[10px] leading-relaxed">
+                    {l("يتم تسليم بيانات الاعتماد تلقائياً بناءً على خدمات التكامل وسياسات المنظمة، أو عرضها على الشاشة لمرة واحدة.", "Credentials are delivered automatically via active integrations and policies, or displayed one-time on screen.")}
+                  </span>
                 </div>
               </div>
-            {/if}
-          </AccordionContent>
-        </AccordionItem>
-      {/if}
 
-      <!-- Accordion Item: Audit Trail (Preview Mode) -->
-      {#if mode === "preview" && employee?.id}
-        <AccordionItem value="audit" class="rounded-lg border border-border/60 bg-card px-4 py-1">
-          <AccordionTrigger class="text-sm font-semibold hover:no-underline py-3">
-            <div class="flex items-center gap-2">
-              <span class="text-primary text-base">📋</span>
-              <span>{l("سجل العمليات والتدقيق", "Audit Trail & History")}</span>
+              <!-- Assigned User Groups Selection -->
+              <div class="flex flex-col gap-2.5 pt-2">
+                <Label class="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <UserGroup size={14} class="text-primary" />
+                  {m.employees_user_groups?.() || "مجموعات المستخدمين المسندة"}
+                </Label>
+                <span class="text-[11px] text-muted-foreground">
+                  {m.employees_user_groups_desc?.() || "حدد المجموعات لمنح الصلاحيات والأدوار للموظف تلقائياً."}
+                </span>
+
+                <GroupSelector
+                  {orgId}
+                  bind:selectedGroupIds
+                  onchange={markDirty}
+                />
+              </div>
             </div>
-          </AccordionTrigger>
-          <AccordionContent class="pt-2 pb-4">
-            <AuditTimeline entityType="employee" entityId={employee.id} />
-          </AccordionContent>
-        </AccordionItem>
+          {/if}
+        </div>
       {/if}
-    </Accordion>
+
+    </div>
   </div>
 
-  <!-- Bottom Actions Bar -->
-  <div class="px-6 py-3 border-t border-border/40 flex gap-2 shrink-0 bg-background/50">
-    <Button
-      type="button"
-      variant="ghost"
-      onclick={onCancel}
-      disabled={form.isSubmitting}
-      class="flex-1 h-9 text-sm cursor-pointer"
-    >
-      {mode === "preview" ? (m.common_action_close?.() || "إغلاق") : (m.common_action_cancel?.() || "إلغاء")}
-    </Button>
+  <SettingsBottomBar
+    visible={true}
+    isSaving={isSaving}
+    isDirty={isDirty}
+    saveLabel={mode === "create" ? (m.employees_new_title?.() || "تسجيل الموظف") : (m.settings_action_save_changes?.() || "حفظ التعديلات")}
+    onsave={handleSubmit}
+    onreset={() => goto(localizeHref(`/${orgId}/employees`))}
+    resetLabel={m.common_action_cancel?.() || "إلغاء"}
+  />
 
-    {#if mode !== "preview"}
-      <Button
-        type="submit"
-        disabled={form.isSubmitting}
-        class="flex-1 h-9 text-sm font-semibold cursor-pointer"
-      >
-        {#if form.isSubmitting}
-          <ArrowPath size={14} class="me-1.5 animate-spin" />
-          {m.common_state_saving?.() || "جاري الحفظ..."}
-        {:else}
-          {mode === "create" ? (m.employees_new_title?.() || "تسجيل الموظف") : (m.common_action_save?.() || "حفظ التعديلات")}
-        {/if}
-      </Button>
-    {/if}
-  </div>
-</form>
+  <CredentialDeliveryModal
+    bind:open={credentialModalOpen}
+    provisioning={provisioningResult}
+    employeeName={registeredEmployeeName}
+    onclose={handleCredentialModalClose}
+  />
+</div>

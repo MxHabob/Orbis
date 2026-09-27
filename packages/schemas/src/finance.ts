@@ -75,6 +75,7 @@ const accountName = z
   });
 
 export const generalLedgerAccountInputSchema = accountName.extend({
+  code: z.string().optional(),
   parent_id: z.string().trim().min(1),
   item_type: z.string().trim().min(1),
   currency: z.string(),
@@ -82,15 +83,17 @@ export const generalLedgerAccountInputSchema = accountName.extend({
 });
 
 export const cashAccountInputSchema = accountName.extend({
+  code: z.string().optional(),
   item_type: z.literal("asset"),
   currency: z.string().trim().min(1),
   sub_type: z.enum(["cash", "bank"]),
 });
 
 export const entityAccountInputSchema = accountName.extend({
+  code: z.string().optional(),
   item_type: z.string(),
   currency: z.string(),
-  sub_type: z.enum(["vendor", "partner", "employee"]),
+  sub_type: z.enum(["vendor", "partner", "employee", "student"]),
 });
 
 export type FeeAssignmentInput = z.infer<typeof feeAssignmentInputSchema>;

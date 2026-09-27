@@ -1159,6 +1159,7 @@
   "common_ledger_entity_vendor": "مورد",
   "common_ledger_entity_partner": "شريك",
   "common_ledger_entity_employee": "موظف",
+  "common_ledger_entity_student": "طالب",
   "common_ledger_btn_add_account": "إضافة حساب / صندوق",
   "common_autopilot_popover_title": "مساعد الطيار أوربيس",
   "common_autopilot_popover_run_tick": "تشغيل فحص الأتمتة",
