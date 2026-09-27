@@ -1,6 +1,6 @@
 <!--
   @component CredentialDeliveryModal
-  Displays one-time generated temporary credentials for an employee user account.
+  Displays one-time generated temporary credentials for a user account (Identity & Access Management).
   Adheres strictly to the invariant: temporary passwords are never stored in plaintext
   and cannot be retrieved once dismissed.
 -->
@@ -32,14 +32,14 @@ import { l } from "$lib/core/i18n";
 interface Props {
   open: boolean;
   provisioning?: AccountProvisioningResultDto | null;
-  employeeName?: string;
+  userName?: string;
   onclose?: () => void;
 }
 
 let {
   open = $bindable(false),
   provisioning = null,
-  employeeName = "",
+  userName = "",
   onclose,
 }: Props = $props();
 
@@ -71,11 +71,11 @@ async function copyToClipboard(text: string, type: "password" | "username" | "al
 function handleCopyAll() {
   if (!provisioning) return;
   const text = [
-    `Orbis Workspace Credentials`,
-    `Employee: ${employeeName || "Staff Member"}`,
+    `Orbis Workspace User Credentials`,
+    `User: ${userName || "User"}`,
     `Username: ${provisioning.username}`,
     provisioning.temporary_password ? `Temporary Password: ${provisioning.temporary_password}` : "",
-    `Delivery: ${provisioning.delivery_channel}`,
+    `Delivery: ${provisioning.delivery_channel || "manual"}`,
     `Note: Password must be changed upon first login.`,
   ].filter(Boolean).join("\n");
 
@@ -100,7 +100,7 @@ function handleClose() {
             {m.credentials_modal_title?.() || "بيانات الدخول المؤقتة"}
           </DialogTitle>
           <span class="text-xs text-muted-foreground">
-            {employeeName ? `${employeeName}` : (m.credentials_modal_desc?.() || "تم إنشاء حساب المستخدم وبيانات الدخول لمرة واحدة")}
+            {userName ? `${userName}` : (m.credentials_modal_desc?.() || "تم إنشاء بيانات الدخول لمرة واحدة")}
           </span>
         </div>
       </div>

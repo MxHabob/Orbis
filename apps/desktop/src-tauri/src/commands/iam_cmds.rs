@@ -426,6 +426,38 @@ pub async fn iam_update_user(id: String, request: serde_json::Value, state: Stat
     Ok(ok(user_to_dto(user, person.as_ref(), roles)))
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct UserProvisioningResultDto {
+    pub user_id: String,
+    pub username: String,
+    pub temporary_password: Option<String>,
+    pub delivery_channel: String,
+    pub delivery_status: String,
+}
+
+#[tauri::command]
+pub async fn iam_reset_user_password(
+    user_id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<UserProvisioningResultDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&user_id).map_err(|e| e.to_string())?;
+
+    let res = state.identity_provisioning_service.reset_password(
+        &ctx,
+        uid,
+        Some(orbis_app::services::identity_provisioning_service::DeliveryChannel::Manual),
+    ).await.map_err(|e| e.to_string())?;
+
+    Ok(ok(UserProvisioningResultDto {
+        user_id: res.user_id.to_string(),
+        username: res.username,
+        temporary_password: res.temporary_password,
+        delivery_channel: res.delivery_channel.to_string(),
+        delivery_status: res.delivery_status.to_string(),
+    }))
+}
+
 #[derive(Serialize)]
 pub struct MfaEnrollResponse {
     pub factor_id: String,

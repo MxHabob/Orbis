@@ -1,8 +1,8 @@
 <!--
   @component EmployeeForm
-  Slide-over panel form for Creating and Editing Employee dossiers.
+  Slide-over panel form for Creating and Editing Employee dossiers in HR.
   Designed to fit perfectly within Sheet layouts with Accordion sections,
-  live payroll calculations, and CSPRNG credential delivery.
+  and live payroll & compensation calculations.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -10,7 +10,6 @@ import { goto } from "$app/navigation";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Textarea } from "@orbis/ui/textarea";
-import { Switch } from "@orbis/ui/switch";
 import { Button } from "@orbis/ui/button";
 import {
   Select,
@@ -29,11 +28,6 @@ import { FormField, toast } from "@orbis/ui";
 import {
   Banknotes,
   BuildingOffice,
-  CreditCard,
-  Eye,
-  EyeSlash,
-  LockClosed,
-  ShieldCheck,
   User,
   UserGroup,
 } from "@orbis/icons";
@@ -43,22 +37,19 @@ import type {
   EmployeeDetailDto,
   RegisterEmployeeRequest,
   UpdateEmployeeRequest,
-  AccountProvisioningResultDto,
 } from "../../../api/types";
 import {
   createRegisterEmployeeMutation,
   createUpdateEmployeeMutation,
 } from "../queries";
-import { GroupSelector } from "$lib/features/groups";
 import NationalitySelect from "$lib/shared/components/nationality-select.svelte";
 import { formatNumber, l } from "$lib/core/i18n";
-import CredentialDeliveryModal from "./credential-delivery-modal.svelte";
 
 interface Props {
   orgId: string;
   mode?: "create" | "edit";
   employee?: EmployeeDetailDto | null;
-  onSuccess?: (emp: EmployeeDetailDto, prov?: AccountProvisioningResultDto | null) => void;
+  onSuccess?: (emp: EmployeeDetailDto) => void;
   onCancel?: () => void;
 }
 
@@ -135,33 +126,11 @@ const netPayableSalary = $derived(
   totalGrossSalary - totalDeductions
 );
 
-// Identity Provisioning State (Create Mode)
-let enableAccount = $state(mode === "create");
-let preferredUsername = $state("");
-let selectedGroupIds = $state<string[]>([]);
-let customPassword = $state("");
-let showCustomPassword = $state(false);
-
 // Queries & Mutations
 const registerMutation = createRegisterEmployeeMutation();
 const updateMutation = createUpdateEmployeeMutation();
 
 const isSaving = $derived(registerMutation.isPending || updateMutation.isPending);
-
-// Credential modal state
-let credentialModalOpen = $state(false);
-let provisioningResult = $state<AccountProvisioningResultDto | null>(null);
-let registeredEmployeeName = $state("");
-let registeredEmployeeId = $state<string | null>(null);
-let savedEmployeeResult = $state<EmployeeDetailDto | null>(null);
-
-function toggleGroupSelection(groupId: string) {
-  if (selectedGroupIds.includes(groupId)) {
-    selectedGroupIds = selectedGroupIds.filter((id) => id !== groupId);
-  } else {
-    selectedGroupIds = [...selectedGroupIds, groupId];
-  }
-}
 
 async function handleSubmit() {
   if (!firstNameAr.trim() && !firstName.trim()) {
@@ -214,35 +183,17 @@ async function handleSubmit() {
       employment_type: employmentType,
       work_shift: workShift,
       notes: serializedNotes,
-
-      account: enableAccount
-        ? {
-            enabled: true,
-            preferred_username: preferredUsername.trim() || undefined,
-            delivery_channel: "auto",
-            group_ids: selectedGroupIds,
-            custom_password: customPassword.trim() || undefined,
-          }
-        : null,
+      account: null,
     };
 
     try {
       const response = await registerMutation.mutateAsync(payload);
       toast.success(m.employees_save_success?.() || "تم تسجيل الموظف بنجاح");
 
-      savedEmployeeResult = response.employee;
-      registeredEmployeeName = response.employee.full_name || response.employee.first_name;
-      registeredEmployeeId = response.employee.id;
-
-      if (response.provisioning) {
-        provisioningResult = response.provisioning;
-        credentialModalOpen = true;
+      if (onSuccess) {
+        onSuccess(response.employee);
       } else {
-        if (onSuccess) {
-          onSuccess(response.employee, null);
-        } else {
-          goto(localizeHref(`/${orgId}/employees/${response.employee.id}`));
-        }
+        goto(localizeHref(`/${orgId}/employees/${response.employee.id}`));
       }
     } catch (err) {
       toast.error(extractErrorMessage(err));
@@ -280,24 +231,13 @@ async function handleSubmit() {
       const res = await updateMutation.mutateAsync({ id: employee.id, req: payload });
       toast.success(m.employees_save_success?.() || "تم حفظ بيانات الموظف بنجاح");
       if (onSuccess) {
-        onSuccess(res.employee, null);
+        onSuccess(res.employee);
       } else {
         goto(localizeHref(`/${orgId}/employees/${employee.id}`));
       }
     } catch (err) {
       toast.error(extractErrorMessage(err));
     }
-  }
-}
-
-function handleCredentialModalClose() {
-  credentialModalOpen = false;
-  if (onSuccess && savedEmployeeResult) {
-    onSuccess(savedEmployeeResult, provisioningResult);
-  } else if (registeredEmployeeId) {
-    goto(localizeHref(`/${orgId}/employees/${registeredEmployeeId}`));
-  } else {
-    goto(localizeHref(`/${orgId}/employees`));
   }
 }
 
@@ -349,7 +289,7 @@ function handleCancelClick() {
 
   <!-- Scrollable Form Body with Accordion Layout -->
   <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
-    <Accordion type="multiple" value={["personal", "employment", "payroll", "account"]} class="flex flex-col gap-4">
+    <Accordion type="multiple" value={["personal", "employment", "payroll"]} class="flex flex-col gap-4">
       
       <!-- 1. PERSONAL INFORMATION -->
       <AccordionItem value="personal" class="rounded-lg border border-border/40 bg-card/60">
@@ -864,107 +804,6 @@ function handleCancelClick() {
         </AccordionContent>
       </AccordionItem>
 
-      <!-- 4. SYSTEM ACCOUNT & IDENTITY (Only for create mode or when provisioning) -->
-      {#if mode === "create"}
-        <AccordionItem value="account" class="rounded-lg border border-border/40 bg-card/60">
-          <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline text-foreground">
-            <div class="flex items-center gap-2">
-              <ShieldCheck size={16} class="text-primary" />
-              <span>{m.employees_tab_account?.() || "حساب النظام والأمان والصلاحيات"}</span>
-              {#if enableAccount}
-                <span class="size-2 rounded-full bg-emerald-500"></span>
-              {/if}
-            </div>
-          </AccordionTrigger>
-          <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
-            
-            <!-- Enable switch toggle -->
-            <div class="flex items-center justify-between p-3.5 bg-muted/20 border border-border/30 rounded-lg">
-              <div class="flex flex-col gap-0.5 text-start">
-                <span class="text-xs font-bold text-foreground">
-                  {l("إنشاء حساب مستخدم للنظام", "Provision System User Account")}
-                </span>
-                <span class="text-[11px] text-muted-foreground">
-                  {l("توليد بيانات دخول موحدة للموظف مع تفعيل الصلاحيات", "Auto-provision user login credentials and permissions")}
-                </span>
-              </div>
-              <Switch bind:checked={enableAccount} disabled={isSaving} />
-            </div>
-
-            {#if enableAccount}
-              <!-- Username & Password Config -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FormField label={m.employees_account_username?.() || "اسم المستخدم المفضل (اختياري)"}>
-                  {#snippet children()}
-                  <Input
-                    type="text"
-                    placeholder="m.alghamdi"
-                    class="text-xs font-mono h-9"
-                    bind:value={preferredUsername}
-                    disabled={isSaving}
-                  />
-                  {/snippet}
-                </FormField>
-
-                <div class="flex flex-col gap-1.5 text-start">
-                  <Label class="text-xs font-medium">{l("كلمة المرور المؤقتة", "Temporary Password")}</Label>
-                  {#if !showCustomPassword}
-                    <div class="flex items-center justify-between h-9 px-3 border border-border/40 rounded-lg bg-muted/20 text-xs">
-                      <span class="text-muted-foreground flex items-center gap-1.5">
-                        <LockClosed size={13} class="text-primary" />
-                        {l("توليد عشوائي آمن (CSPRNG)", "Auto-generated secure")}
-                      </span>
-                      <button
-                        type="button"
-                        class="text-[11px] text-primary hover:underline font-medium cursor-pointer"
-                        onclick={() => (showCustomPassword = true)}
-                      >
-                        {l("تخصيص يدوي", "Set manually")}
-                      </button>
-                    </div>
-                  {:else}
-                    <div class="relative">
-                      <Input
-                        type="text"
-                        placeholder="••••••••"
-                        class="text-xs font-mono h-9 pe-16"
-                        bind:value={customPassword}
-                        disabled={isSaving}
-                      />
-                      <button
-                        type="button"
-                        class="absolute end-2 top-2 text-[10px] text-muted-foreground hover:text-foreground cursor-pointer"
-                        onclick={() => {
-                          customPassword = "";
-                          showCustomPassword = false;
-                        }}
-                      >
-                        {l("توليد آلي", "Auto")}
-                      </button>
-                    </div>
-                  {/if}
-                </div>
-              </div>
-
-              <!-- User Groups Selector -->
-              <div class="flex flex-col gap-2 pt-1 text-start">
-                <Label class="text-xs font-bold text-foreground">
-                  {m.employees_account_groups?.() || "تعيين المجموعات والصلاحيات (User Groups)"}
-                </Label>
-                <div class="p-3 bg-muted/20 border border-border/30 rounded-lg">
-                  <GroupSelector
-                    {orgId}
-                    selectedIds={selectedGroupIds}
-                    ontoggle={toggleGroupSelection}
-                  />
-                </div>
-              </div>
-            {/if}
-
-          </AccordionContent>
-        </AccordionItem>
-      {/if}
-
     </Accordion>
   </div>
 
@@ -992,11 +831,3 @@ function handleCancelClick() {
     </Button>
   </div>
 </form>
-
-<!-- CSPRNG Credential Delivery Modal -->
-<CredentialDeliveryModal
-  bind:open={credentialModalOpen}
-  provisioning={provisioningResult}
-  employeeName={registeredEmployeeName}
-  onclose={handleCredentialModalClose}
-/>

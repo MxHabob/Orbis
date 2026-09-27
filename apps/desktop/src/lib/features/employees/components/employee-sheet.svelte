@@ -1,11 +1,11 @@
 <!--
   @component EmployeeSheet
-  Slide-over panel for creating, editing, and previewing employee dossiers,
+  Slide-over panel for creating and editing employee dossiers in HR,
   matching the exact architecture of FeeTemplateSheet and Orbis Design System.
 -->
 <script lang="ts">
 import * as Sheet from "@orbis/ui/sheet";
-import type { EmployeeDetailDto, AccountProvisioningResultDto } from "$lib/api/types";
+import type { EmployeeDetailDto } from "$lib/api/types";
 import EmployeeForm from "./employee-form.svelte";
 
 interface Props {
@@ -13,7 +13,7 @@ interface Props {
   orgId: string;
   mode?: "preview" | "create" | "edit";
   employee?: EmployeeDetailDto | null;
-  onSuccess?: (emp: EmployeeDetailDto, prov?: AccountProvisioningResultDto | null) => void;
+  onSuccess?: (emp: EmployeeDetailDto) => void;
   onCancel?: () => void;
 }
 
@@ -34,9 +34,9 @@ let {
         {orgId}
         {mode}
         {employee}
-        onSuccess={(emp, prov) => {
+        onSuccess={(emp) => {
           open = false;
-          onSuccess?.(emp, prov);
+          onSuccess?.(emp);
         }}
         onCancel={() => {
           open = false;

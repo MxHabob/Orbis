@@ -9,7 +9,7 @@ import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import { confirmStore } from "$lib/stores";
 import { api } from "$lib/api";
-import type { User } from "$lib/api";
+import type { User, AccountProvisioningResultDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
@@ -28,6 +28,7 @@ import type { Snippet } from "svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import UserResetPasswordDialog from "$lib/features/settings/components/user-reset-password-dialog.svelte";
+import CredentialDeliveryModal from "$lib/shared/components/credential-delivery-modal.svelte";
 import { createUserQuery } from "$lib/features/settings/queries";
 import { useQueryClient } from "@tanstack/svelte-query";
 
@@ -58,7 +59,33 @@ function handleAvatarUpload(url: string) {
   );
 }
 
-// Reset password modal
+// CSPRNG Temporary Password Generation
+let credentialModalOpen = $state(false);
+let activeProvisioningResult = $state<AccountProvisioningResultDto | null>(null);
+
+async function handleGenerateTempPassword() {
+  if (!userId) return;
+  const confirmed = await confirmStore.prompt({
+    title: (m.settings_user_detail_btn_reset_pass?.() || "إعادة تعيين كلمة المرور") + "؟",
+    description: l(
+      `هل أنت متأكد من إعادة توليد كلمة مرور مؤقتة للمستخدم (${fullName || email})؟`,
+      `Are you sure you want to generate a new temporary password for ${fullName || email}?`
+    ),
+    confirmText: m.settings_user_detail_btn_reset_pass?.() || "إعادة تعيين",
+  });
+  if (confirmed) {
+    try {
+      const result = await api.resetUserPassword(userId);
+      activeProvisioningResult = result;
+      credentialModalOpen = true;
+      toast.success(m.employees_password_reset_success?.() || "تمت إعادة ضبط كلمة المرور بنجاح");
+    } catch (e: unknown) {
+      toast.error((e as any)?.message || "Failed to reset password");
+    }
+  }
+}
+
+// Reset password modal (manual input)
 let showResetModal = $state(false);
 let newPassword = $state("");
 let confirmPassword = $state("");
@@ -133,6 +160,11 @@ const relatedActionGroups = $derived<ActionGroup[]>(user ? [
     icon: Lock,
     defaultExpanded: true,
     subLinks: [
+      {
+        id: "generate_temp_password",
+        label: l("توليد كلمة مرور مؤقتة (CSPRNG)", "Generate Temp Password"),
+        onclick: handleGenerateTempPassword,
+      },
       {
         id: "reset_password",
         label: m.settings_user_detail_btn_reset_pass(),
@@ -301,3 +333,9 @@ const relatedFooterActions = $derived<FooterAction[]>(user ? [
 </div>
 
 <UserResetPasswordDialog bind:open={showResetModal} fullName={fullName} bind:newPassword bind:confirmPassword isResettingPassword={isResettingPassword} onsubmit={handleResetPassword} oncancel={() => { showResetModal = false; newPassword = ""; confirmPassword = ""; }} />
+
+<CredentialDeliveryModal
+  bind:open={credentialModalOpen}
+  provisioning={activeProvisioningResult}
+  userName={fullName || email}
+/>

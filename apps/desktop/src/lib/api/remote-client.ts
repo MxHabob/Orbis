@@ -312,6 +312,9 @@ export class RemoteClient implements OrbisApiClient {
   async updateUser(id: string, req: UpdateUserRequest): Promise<UserDto> {
     return this.put(`/api/v1/iam/users/${id}`, req);
   }
+  async resetUserPassword(userId: string): Promise<AccountProvisioningResultDto> {
+    return this.post(`/api/v1/iam/users/${userId}/reset-password`, {});
+  }
   async listRoles(): Promise<RoleDto[]> {
     return this.get("/api/v1/iam/roles");
   }

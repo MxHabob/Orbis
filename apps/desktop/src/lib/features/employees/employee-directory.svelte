@@ -29,14 +29,12 @@ import { formatNumber, formatDate, l } from "$lib/core/i18n";
 import { extractErrorMessage } from "$lib/api";
 import { debounce } from "$lib/shared/utils/debounce";
 import { exportToCsv } from "$lib/shared/utils/export";
-import type { EmployeeDetailDto, AccountProvisioningResultDto } from "$lib/api/types";
+import type { EmployeeDetailDto } from "$lib/api/types";
 import {
   createEmployeesQuery,
   createEmployeeStatsQuery,
   createUpdateEmployeeStatusMutation,
-  createResetEmployeePasswordMutation,
 } from "./queries";
-import CredentialDeliveryModal from "./components/credential-delivery-modal.svelte";
 import EmployeeSheet from "./components/employee-sheet.svelte";
 import { confirmStore } from "$lib/stores";
 import {
@@ -83,7 +81,6 @@ const statsQuery = createEmployeeStatsQuery(() => orgId);
 
 // Mutations
 const statusMutation = createUpdateEmployeeStatusMutation();
-const resetPasswordMutation = createResetEmployeePasswordMutation();
 
 // Derived Data
 const employees = $derived(employeesQuery.data?.items ?? []);
@@ -91,11 +88,6 @@ const totalCount = $derived(employeesQuery.data?.total_count ?? 0);
 const stats = $derived(statsQuery.data ?? { total: 0, active: 0, on_leave: 0, suspended: 0, terminated: 0 });
 const isLoading = $derived(employeesQuery.isLoading || statsQuery.isLoading);
 const error = $derived(employeesQuery.error || statsQuery.error);
-
-// Credential modal state
-let credentialModalOpen = $state(false);
-let activeProvisioningResult = $state<AccountProvisioningResultDto | null>(null);
-let activeEmployeeName = $state("");
 
 // Search with debounce
 let localSearch = $state("");
@@ -122,19 +114,6 @@ function toggleSelect(id: string) {
     next.add(id);
   }
   selectedIds = next;
-}
-
-// Reset Password Handler
-async function handleResetPassword(emp: EmployeeDetailDto) {
-  try {
-    const result = await resetPasswordMutation.mutateAsync(emp.id);
-    activeProvisioningResult = result;
-    activeEmployeeName = emp.full_name || emp.full_name_ar || emp.first_name;
-    credentialModalOpen = true;
-    toast.success(m.employees_password_reset_success?.() || "تمت إعادة ضبط كلمة المرور بنجاح");
-  } catch (err) {
-    toast.error(extractErrorMessage(err));
-  }
 }
 
 // Status Change Handler via Global confirmStore
@@ -221,7 +200,6 @@ function getTypeLabel(t: string): string {
 
 // ── OrbisGrid Actions & Columns (Icon-Only Pure Icons) ─────────────────
 const employeeActions: ActionItem[] = [
-  { id: "reset_password", label: m.employees_reset_password?.() || "إعادة تعيين كلمة المرور", icon: "LockClosed" },
   { id: "set_active", label: l("تفعيل الموظف", "Set Active"), icon: "CheckCircle" },
   { id: "set_on_leave", label: l("تعيين في إجازة", "Set On Leave"), icon: "BuildingOffice" },
   { id: "set_suspended", label: l("إيقاف مؤقت", "Suspend"), icon: "ShieldCheck", variant: "destructive" },
@@ -367,8 +345,6 @@ function handleGridAction(event: GridActionEvent) {
     goto(localizeHref(`/${orgId}/employees/${emp.id}`));
   } else if (event.actionId === "edit") {
     openEmployeeSheet(emp, "edit");
-  } else if (event.actionId === "reset_password") {
-    handleResetPassword(emp);
   } else if (event.actionId === "set_active") {
     promptStatusChange(emp, "active");
   } else if (event.actionId === "set_on_leave") {
@@ -646,12 +622,5 @@ function handleGridAction(event: GridActionEvent) {
       employeesQuery.refetch();
       statsQuery.refetch();
     }}
-  />
-
-  <!-- Password Reset / Credential Delivery Modal -->
-  <CredentialDeliveryModal
-    bind:open={credentialModalOpen}
-    provisioning={activeProvisioningResult}
-    employeeName={activeEmployeeName}
   />
 </div>

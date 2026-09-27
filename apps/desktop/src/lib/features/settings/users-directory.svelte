@@ -15,7 +15,7 @@ import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { l } from "$lib/core/i18n";
 import { Search, Refresh, ShieldCheck } from "@orbis/icons";
 
-import type { User } from "$lib/api";
+import type { User, AccountProvisioningResultDto } from "$lib/api";
 import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
 import { createUsersPaginatedQuery } from "$lib/features/settings/queries";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
@@ -23,6 +23,7 @@ import { userFilterFields } from "$lib/core/filter-configs";
 import { useQueryClient } from "@tanstack/svelte-query";
 import { goto } from "$app/navigation";
 import RoleSelect from "$lib/shared/components/role-select.svelte";
+import CredentialDeliveryModal from "$lib/shared/components/credential-delivery-modal.svelte";
 
 let { orgId }: { orgId: string } = $props();
 const queryClient = useQueryClient();
@@ -36,9 +37,15 @@ let activeFilter = $state<UniversalFilter>({
   groups: [],
 });
 
+// Credential modal state
+let credentialModalOpen = $state(false);
+let activeProvisioningResult = $state<AccountProvisioningResultDto | null>(null);
+let activeUserName = $state("");
+
 const userActions: ActionItem[] = [
-  { id: "edit", label: "Edit / View", icon: "Pencil" },
-  { id: "delete", label: "Delete", icon: "Trash2", variant: "destructive" },
+  { id: "edit", label: m.common_action_edit?.() || "تعديل", icon: "Pencil" },
+  { id: "reset_password", label: m.settings_user_detail_btn_reset_pass?.() || "إعادة تعيين كلمة المرور", icon: "LockClosed" },
+  { id: "delete", label: m.common_action_delete?.() || "حذف", icon: "Trash2", variant: "destructive" },
 ];
 
 // ── Data Loading ────────────────────────────────────────────────────────
@@ -97,8 +104,8 @@ const columns: OrbisColumnDef[] = [
     prop: "actions",
     header: m.common_je_col_actions?.() || "Actions",
     name: "Actions",
-    width: 90,
-    minWidth: 80,
+    width: 120,
+    minWidth: 110,
     type: "action",
     align: "center",
     readonly: true,
@@ -112,6 +119,26 @@ async function handleAction(event: GridActionEvent) {
   const user = event.row as User;
   if (event.actionId === "edit" || event.actionId === "dblclick") {
     goto(localizeHref(`/${orgId}/settings/users/${user.id}`));
+  } else if (event.actionId === "reset_password") {
+    const confirmed = await confirmStore.prompt({
+      title: (m.settings_user_detail_btn_reset_pass?.() || "إعادة تعيين كلمة المرور") + "؟",
+      description: l(
+        `هل أنت متأكد من إعادة توليد كلمة مرور مؤقتة للمستخدم (${user.full_name || user.email})؟`,
+        `Are you sure you want to generate a new temporary password for ${user.full_name || user.email}?`
+      ),
+      confirmText: m.settings_user_detail_btn_reset_pass?.() || "إعادة تعيين",
+    });
+    if (confirmed) {
+      try {
+        const result = await api.resetUserPassword(user.id);
+        activeProvisioningResult = result;
+        activeUserName = user.full_name || user.email;
+        credentialModalOpen = true;
+        toast.success(m.employees_password_reset_success?.() || "تمت إعادة تعيين كلمة المرور بنجاح");
+      } catch (e) {
+        toast.error((e as any)?.message || "Failed to reset password");
+      }
+    }
   } else if (event.actionId === "delete") {
     const confirmed = await confirmStore.prompt({
       title: m.common_action_delete() + "؟",
@@ -218,4 +245,11 @@ async function handleAction(event: GridActionEvent) {
       </div>
     {/if}
   </div>
+
+  <!-- Temporary Credentials Modal -->
+  <CredentialDeliveryModal
+    bind:open={credentialModalOpen}
+    provisioning={activeProvisioningResult}
+    userName={activeUserName}
+  />
 </div>
