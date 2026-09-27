@@ -1,8 +1,6 @@
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
-import { ArrowLeft, ArrowRight, Plus, Sparkles } from "@orbis/icons";
-import * as m from "$lib/paraglide/messages";
-import { getLocale } from "$lib/paraglide/runtime";
+import { ArrowRight, Plus, Sparkles } from "@orbis/icons";
 import ProviderModelPicker from "./provider-model-picker.svelte";
 
 let {
@@ -27,7 +25,6 @@ let {
   onOpenSettings?: () => void;
 } = $props();
 
-const isRtl = $derived(getLocale() === "ar");
 let inputEl = $state<HTMLTextAreaElement | null>(null);
 
 function handleInput(e: Event) {
@@ -102,10 +99,10 @@ function handleCommandSelect(prompt: string) {
 <div class="relative shrink-0 select-none px-3.5 pb-3.5 pt-1.5 bg-gradient-to-t from-card via-card/90 to-transparent">
   <!-- Quick Commands Popup Menu -->
   {#if showCommands}
-    <div class="absolute bottom-[calc(100%+4px)] inset-s-3.5 inset-e-3.5 p-2 bg-card/95 border border-border/80 shadow-2xl rounded-2xl z-30 flex flex-col gap-1 backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-2 duration-150 ring-1 ring-black/5 dark:ring-white/10">
+    <div class="absolute bottom-[calc(100%+4px)] inset-x-3.5 p-2 bg-card/95 border border-border/80 shadow-2xl rounded-2xl z-30 flex flex-col gap-1 backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-2 duration-150 ring-1 ring-black/5 dark:ring-white/10">
       <div class="text-[10px] text-muted-foreground px-2 py-1 uppercase font-bold tracking-wider flex items-center gap-1.5 border-b border-border/40 pb-1.5">
         <Sparkles size={11} class="text-primary" />
-        {isRtl ? "أوامر ذكية مقترحة" : "Quick Actions"}
+        أوامر ذكية مقترحة
       </div>
       {#each commandOptions as cmd}
         <button 
@@ -120,7 +117,7 @@ function handleCommandSelect(prompt: string) {
     </div>
   {/if}
 
-  <!-- Unified 2026 Floating Input Capsule -->
+  <!-- Unified Floating Input Capsule -->
   <form 
     onsubmit={handleSubmit} 
     class="flex flex-col bg-background/95 border border-border/80 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15 rounded-2xl p-2 shadow-xs transition-all"
@@ -132,21 +129,21 @@ function handleCommandSelect(prompt: string) {
       disabled={isThinking}
       onkeydown={handleKeyDown}
       oninput={handleInput}
-      placeholder={isRtl ? "اسأل Orbis عن أي شيء... أو اكتب / للأوامر" : "Ask Orbis anything... or type / for commands"}
+      placeholder="اسأل Orbis عن أي شيء... أو اكتب / للأوامر"
       rows="2"
       class="w-full min-h-[44px] max-h-32 resize-none overflow-y-auto text-[13px] leading-relaxed px-2 py-1 outline-none border-0 bg-transparent text-foreground placeholder:text-muted-foreground/60 scrollbar-thin"
     ></textarea>
 
     <!-- Bottom Actions Toolbar -->
     <div class="flex items-center justify-between gap-1.5 pt-1.5 border-t border-border/40 min-w-0">
-      <!-- Left side: New chat + Provider/Model Picker -->
+      <!-- Left/Start side: New chat + Provider/Model Picker -->
       <div class="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
         <Button
           type="button"
           variant="ghost"
           size="icon-xs"
           class="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 cursor-pointer shrink-0"
-          title={isRtl ? "محادثة جديدة" : "New Chat"}
+          title="محادثة جديدة"
           onclick={() => handleNewChat()}
         >
           <Plus class="h-4 w-4" />
@@ -161,20 +158,16 @@ function handleCommandSelect(prompt: string) {
         />
       </div>
 
-      <!-- Right side: Send Button -->
+      <!-- Right/End side: Send Button with RTL CSS auto-rotation -->
       <div class="flex items-center gap-1.5 shrink-0">
         <Button
           type="submit"
-          aria-label={isRtl ? "إرسال" : "Send"}
+          aria-label="إرسال"
           disabled={!value.trim() || isThinking}
           class="h-7.5 w-7.5 rounded-xl shadow-sm bg-primary hover:bg-primary/90 active:scale-95 text-primary-foreground disabled:opacity-30 disabled:bg-muted disabled:text-muted-foreground transition-all cursor-pointer flex items-center justify-center p-0 shrink-0"
           size="icon"
         >
-          {#if isRtl}
-            <ArrowLeft class="h-3.5 w-3.5" />
-          {:else}
-            <ArrowRight class="h-3.5 w-3.5" />
-          {/if}
+          <ArrowRight class="h-3.5 w-3.5 rtl:rotate-180" />
         </Button>
       </div>
     </div>

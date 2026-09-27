@@ -20,8 +20,7 @@ let {
   orgName = null,
   chatContainer = $bindable(),
   onLinkClick,
-  onApproveAction,
-  onRejectAction,
+  onActionResponse,
   onRetry,
   onEditUserMessage,
 }: {
@@ -31,8 +30,7 @@ let {
   orgName: string | null;
   chatContainer?: HTMLDivElement;
   onLinkClick: (href: string) => void;
-  onApproveAction?: (action: ActionWithStatus, msgId: string, actionIdx: number) => void;
-  onRejectAction?: (action: ActionWithStatus, msgId: string, actionIdx: number) => void;
+  onActionResponse?: (action: ActionWithStatus, status: "executed" | "rejected") => void;
   onRetry?: (msgId: string) => void;
   onEditUserMessage?: (msgId: string, newText: string) => void;
 } = $props();
@@ -337,7 +335,7 @@ function handleContentClick(e: MouseEvent) {
                         size="xs"
                         variant="default"
                         class="text-[11px] h-7.5 px-3.5 font-semibold bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white cursor-pointer rounded-lg shadow-2xs"
-                        onclick={() => onApproveAction?.(action, msg.id, aIdx)}
+                        onclick={() => onActionResponse?.(action, "executed")}
                       >
                         <CheckCircle size={12} class="me-1" />
                         الموافقة والتنفيذ
@@ -346,7 +344,7 @@ function handleContentClick(e: MouseEvent) {
                         size="xs"
                         variant="ghost"
                         class="text-[11px] h-7.5 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 cursor-pointer rounded-lg"
-                        onclick={() => onRejectAction?.(action, msg.id, aIdx)}
+                        onclick={() => onActionResponse?.(action, "rejected")}
                       >
                         إلغاء
                       </Button>

@@ -37,7 +37,6 @@ interactive tool inspections, and consequential action approvals.
   const currentOrgId = $derived(
     page.params.orgId || authStore.orgId || "default",
   );
-  const isRtl = $derived(getLocale() === "ar");
 
   // File-based Sessions & Active State
   let sessions = $state<AiChatSession[]>([]);
@@ -432,59 +431,24 @@ interactive tool inspections, and consequential action approvals.
     await executeChatStream(current, assistantMsgId);
   }
 
-  async function handleApproveAction(
+  async function handleActionResponse(
     action: ActionWithStatus,
-    msgId?: string,
-    actionIdx?: number,
+    status: "executed" | "rejected",
   ) {
-    try {
-      toast.promise(
-        (async () => {
-          // Execute the action through domain services or generic update
-          if (
-            action.tool_name === "update_student_status" &&
-            action.payload?.student_id
-          ) {
-            await api.updateStudent({
-              id: String(action.payload.student_id),
-              status: String(action.payload.new_status || "Active"),
-            });
-          }
-
-          // Mark action as executed in the conversation
-          action.status = "executed";
-          action.executedAt = Date.now();
-          action.resultMessage = `تم تنفيذ: ${action.title} بنجاح`;
-
-          if (activeSession) {
-            activeSession.updatedAt = Date.now();
-            sessions = [...sessions];
-            await saveFileSession(activeSession);
-          }
-        })(),
-        {
-          loading: `جاري تنفيذ ${action.title}...`,
-          success: `تم تنفيذ ${action.title} بنجاح`,
-          error: "فشل تنفيذ الإجراء",
-        },
-      );
-    } catch (e) {
-      console.error("Failed to approve action:", e);
+    action.status = status;
+    action.executedAt = Date.now();
+    if (status === "executed") {
+      action.resultMessage = `تم اعتماد: ${action.title}`;
+      toast.success(`تم اعتماد ${action.title}`);
+    } else {
+      toast.info(`تم إلغاء ${action.title}`);
     }
-  }
 
-  async function handleRejectAction(
-    action: ActionWithStatus,
-    msgId?: string,
-    actionIdx?: number,
-  ) {
-    action.status = "rejected";
     if (activeSession) {
       activeSession.updatedAt = Date.now();
       sessions = [...sessions];
       await saveFileSession(activeSession);
     }
-    toast.info(`تم إلغاء ${action.title}`);
   }
 
   function handleLinkClick(href: string) {
@@ -496,17 +460,15 @@ interactive tool inspections, and consequential action approvals.
   bind:this={sidebarDiv}
   class={isStandalone
     ? "relative flex w-full h-full flex-col bg-card text-card-foreground overflow-hidden select-none"
-    : "absolute " +
-      (isRtl ? "left-3.5 border-r" : "right-3.5 border-l") +
-      " top-3.5 bottom-3.5 flex shrink-0 flex-col bg-card text-card-foreground rounded-2xl overflow-hidden border border-border/80 shadow-2xl z-50 select-none backdrop-blur-md"}
+    : "absolute end-3.5 top-3.5 bottom-3.5 flex shrink-0 flex-col bg-card text-card-foreground rounded-2xl overflow-hidden border border-border/80 shadow-2xl z-50 select-none backdrop-blur-md"}
   style:width={isStandalone ? "100%" : `${preferredWidth}rem`}
   style:min-width={isStandalone ? "100%" : `${preferredWidth}rem`}
   style:max-width={isStandalone ? "100%" : `${preferredWidth}rem`}
   transition:fly={isStandalone
     ? undefined
-    : { x: isRtl ? -400 : 400, duration: 250 }}
+    : { y: 12, opacity: 0, duration: 200 }}
 >
-  <!-- Resize Handle on the left/right edge -->
+  <!-- Resize Handle on the start edge -->
   {#if !isStandalone}
     <Resizer
       viewport={sidebarDiv}
@@ -543,15 +505,13 @@ interactive tool inspections, and consequential action approvals.
   />
 
   {#if viewMode === "cockpit"}
-    <!-- ChartBar & System Tools Cockpit View -->
+    <!-- Backend Connected Autopilot & System Tools Cockpit View -->
     <AgentCockpit
       orgId={currentOrgId}
       {pendingActions}
       onBack={() => {
         viewMode = "chat";
       }}
-      onApproveAction={(act) => handleApproveAction(act)}
-      onRejectAction={(act) => handleRejectAction(act)}
     />
   {:else}
     <!-- Chat View -->
@@ -565,9 +525,7 @@ interactive tool inspections, and consequential action approvals.
         {orgName}
         bind:chatContainer
         onLinkClick={handleLinkClick}
-        onApproveAction={(act, mId, aIdx) =>
-          handleApproveAction(act, mId, aIdx)}
-        onRejectAction={(act, mId, aIdx) => handleRejectAction(act, mId, aIdx)}
+        onActionResponse={handleActionResponse}
         onRetry={handleRetry}
         onEditUserMessage={handleEditUserMessage}
       />
