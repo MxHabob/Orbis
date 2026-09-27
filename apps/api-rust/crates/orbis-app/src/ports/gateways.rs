@@ -45,6 +45,10 @@ use orbis_domain::entities::solver::{TimetableProblem, SolveJobStatus, ExamProbl
 pub trait NotificationPort: Send + Sync {
     async fn send_email(&self, ctx: &RequestContext, to: &str, subject: &str, body: &str) -> Result<(), DomainError>;
     async fn send_whatsapp(&self, ctx: &RequestContext, to: &str, message: &str) -> Result<(), DomainError>;
+    async fn send_sms(&self, ctx: &RequestContext, to: &str, message: &str) -> Result<(), DomainError> {
+        let _ = (ctx, to, message);
+        Err(DomainError::Validation("SMS delivery not supported by this notification adapter".into()))
+    }
 }
 
 #[async_trait]

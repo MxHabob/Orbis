@@ -84,6 +84,25 @@ pub struct RegisterUserRequest {
     pub role: Option<String>,
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct ProvisionUserRequest {
+    pub person_id: Option<Uuid>,
+    pub employee_id: Option<Uuid>,
+    pub student_id: Option<Uuid>,
+    pub guardian_id: Option<Uuid>,
+    pub actor_type: Option<String>,
+    pub full_name: Option<String>,
+    pub full_name_ar: Option<String>,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub preferred_username: Option<String>,
+    pub custom_password: Option<String>,
+    pub roles: Vec<String>,
+    #[serde(default)]
+    pub group_ids: Vec<Uuid>,
+    pub delivery_channel: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct UserDto {
     pub id: Uuid,
@@ -312,6 +331,137 @@ async fn register_user(
     let roles = state.permission_checker.get_user_roles(user.id, user.org_id).await.unwrap_or_default();
 
     Ok(ApiResponse::ok(user_to_dto(user, person.as_ref(), roles)))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/iam/users/provision",
+    request_body = ProvisionUserRequest,
+    responses(
+        (status = 200, description = "User account provisioned successfully", body = super::employee_routes::AccountProvisioningResultDto),
+        (status = 400, description = "Validation error"),
+        (status = 409, description = "User already exists")
+    ),
+    security(("bearer" = [])),
+    tag = "IAM"
+)]
+async fn provision_user(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(payload): Json<ProvisionUserRequest>,
+) -> Result<Json<ApiResponse<super::employee_routes::AccountProvisioningResultDto>>, ApiError> {
+    use orbis_domain::entities::identity_provisioning::{ActorType, DeliveryChannel};
+    use orbis_app::services::identity_provisioning_service::ProvisionAccountInput;
+
+    // 1. Resolve Person ID & Actor Type
+    let mut resolved_person_id = payload.person_id;
+    let mut actor_type = payload.actor_type
+        .as_deref()
+        .map(ActorType::from)
+        .unwrap_or(ActorType::Custom);
+
+    if let Some(emp_id) = payload.employee_id {
+        let emp = state.employee_repo.find_by_id(emp_id).await?
+            .ok_or_else(|| ApiError::not_found(format!("Employee {} not found", emp_id)))?;
+        resolved_person_id = Some(emp.person_id);
+        actor_type = ActorType::Employee;
+    } else if let Some(std_id) = payload.student_id {
+        let std = state.student_repo.find_by_id(std_id).await?
+            .ok_or_else(|| ApiError::not_found(format!("Student {} not found", std_id)))?;
+        resolved_person_id = Some(std.person_id);
+        actor_type = ActorType::Student;
+    } else if let Some(g_id) = payload.guardian_id {
+        resolved_person_id = Some(g_id);
+        actor_type = ActorType::Guardian;
+    }
+
+    let person_id = if let Some(pid) = resolved_person_id {
+        pid
+    } else {
+        // Create new person
+        let full_name = payload.full_name.clone().unwrap_or_else(|| "User".to_string());
+        let parts: Vec<&str> = full_name.split_whitespace().collect();
+        let first_name = parts.first().copied().unwrap_or("User").to_string();
+        let last_name = if parts.len() > 1 {
+            parts[1..].join(" ")
+        } else {
+            String::new()
+        };
+
+        let new_person = orbis_domain::entities::person::Person {
+            id: Uuid::new_v4(),
+            org_id: Some(ctx.tenant_id),
+            first_name,
+            middle_name: None,
+            last_name,
+            first_name_ar: payload.full_name_ar.clone(),
+            middle_name_ar: None,
+            last_name_ar: None,
+            display_name: payload.full_name.clone(),
+            national_id: None,
+            passport_number: None,
+            birth_date: None,
+            place_of_birth: None,
+            gender: None,
+            nationality: None,
+            blood_type: None,
+            medical_notes: None,
+            special_needs_notes: None,
+            email: payload.email.clone(),
+            phone: payload.phone.clone(),
+            address: None,
+            avatar_url: None,
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+        };
+        state.person_repo.save(&new_person).await?;
+        new_person.id
+    };
+
+    let delivery_channel = match payload.delivery_channel.as_deref() {
+        Some("email") => Some(DeliveryChannel::Email),
+        Some("sms") => Some(DeliveryChannel::Sms),
+        Some("whatsapp") => Some(DeliveryChannel::WhatsApp),
+        _ => Some(DeliveryChannel::Manual),
+    };
+
+    let input = ProvisionAccountInput {
+        person_id,
+        actor_type,
+        preferred_username: payload.preferred_username,
+        email: payload.email,
+        phone: payload.phone,
+        roles: payload.roles,
+        group_ids: payload.group_ids,
+        delivery_channel,
+        custom_password: payload.custom_password,
+    };
+
+    let result = state.identity_provisioning_service.provision_account(
+        &ctx,
+        ctx.tenant_id,
+        input,
+    ).await?;
+
+    // If employee_id was provided, update employee.user_id
+    if let Some(emp_id) = payload.employee_id {
+        if let Ok(Some(mut emp)) = state.employee_repo.find_by_id(emp_id).await {
+            emp.user_id = Some(result.user_id);
+            emp.updated_at = chrono::Utc::now();
+            let _ = state.employee_repo.save(&emp).await;
+        }
+    }
+
+    // If student_id was provided, update student.user_id
+    if let Some(std_id) = payload.student_id {
+        if let Ok(Some(mut std)) = state.student_repo.find_by_id(std_id).await {
+            std.user_id = Some(result.user_id);
+            std.updated_at = chrono::Utc::now();
+            let _ = state.student_repo.save(&std).await;
+        }
+    }
+
+    Ok(ApiResponse::ok(super::employee_routes::AccountProvisioningResultDto::from(result)))
 }
 
 #[utoipa::path(
@@ -975,6 +1125,7 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/auth/devices", get(list_devices))
         .route("/api/v1/auth/devices/:id", axum::routing::delete(revoke_device))
         .route("/api/v1/iam/users", post(register_user).get(list_users))
+        .route("/api/v1/iam/users/provision", post(provision_user))
         .route("/api/v1/iam/users/:id", get(get_user).put(update_user))
         .route("/api/v1/iam/roles", get(list_roles).post(save_role))
         .route("/api/v1/iam/roles/:id", axum::routing::delete(delete_role))

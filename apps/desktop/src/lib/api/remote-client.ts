@@ -169,6 +169,7 @@ import type {
   BulkRegisterStudentCommandResultDto,
   BulkRegisterEmployeeCommandItem,
   BulkRegisterEmployeeCommandResultDto,
+  ProvisionUserRequest,
 } from "./types";
 
 export class ApiRequestError extends Error {
@@ -306,6 +307,9 @@ export class RemoteClient implements OrbisApiClient {
   // ── IAM ─────────────────────────────────────────────────────
   async registerUser(req: RegisterUserRequest): Promise<UserDto> {
     return this.post("/api/v1/iam/users", req);
+  }
+  async provisionUser(req: ProvisionUserRequest): Promise<AccountProvisioningResultDto> {
+    return this.post("/api/v1/iam/users/provision", req);
   }
   async listUsers(): Promise<UserDto[]> {
     return this.get("/api/v1/iam/users");

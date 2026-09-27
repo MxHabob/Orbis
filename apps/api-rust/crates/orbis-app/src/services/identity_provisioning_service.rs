@@ -451,9 +451,11 @@ impl IdentityProvisioningService {
         // Determine effective channels based on requested channel and active integrations
         let can_email = has_active_email && person.email.as_ref().map_or(false, |e| !e.trim().is_empty());
         let can_whatsapp = has_active_whatsapp && person.phone.as_ref().map_or(false, |p| !p.trim().is_empty());
+        let can_sms = _has_active_sms && person.phone.as_ref().map_or(false, |p| !p.trim().is_empty());
 
         let target_email = matches!(channel, DeliveryChannel::Email) || (matches!(channel, DeliveryChannel::Auto) && can_email);
         let target_whatsapp = matches!(channel, DeliveryChannel::WhatsApp) || (matches!(channel, DeliveryChannel::Auto) && !can_email && can_whatsapp);
+        let target_sms = matches!(channel, DeliveryChannel::Sms) || (matches!(channel, DeliveryChannel::Auto) && !can_email && !can_whatsapp && can_sms);
 
         if target_email {
             if let Some(ref email) = person.email {
@@ -500,6 +502,37 @@ impl IdentityProvisioningService {
                             let _ = self.event_bus.publish(ctx, &DomainEvent::CredentialDeliveryAttempted {
                                 user_id: person.id,
                                 channel: "whatsapp".into(),
+                                success: false,
+                                timestamp: Utc::now(),
+                            }).await;
+                            return (CredentialDeliveryStatus::Failed(e.to_string()), true);
+                        }
+                    }
+                }
+            }
+        }
+
+        if target_sms {
+            if let Some(ref phone) = person.phone {
+                if !phone.trim().is_empty() {
+                    let sms_text = format!(
+                        "Orbis: تم إنشاء حسابك في {}. اسم المستخدم: {} كلمة المرور: {} الرابط: {}",
+                        org_name, username, temporary_password, login_url
+                    );
+                    match notification_port.send_sms(ctx, phone.trim(), &sms_text).await {
+                        Ok(_) => {
+                            let _ = self.event_bus.publish(ctx, &DomainEvent::CredentialDeliveryAttempted {
+                                user_id: person.id,
+                                channel: "sms".into(),
+                                success: true,
+                                timestamp: Utc::now(),
+                            }).await;
+                            return (CredentialDeliveryStatus::Delivered, false);
+                        }
+                        Err(e) => {
+                            let _ = self.event_bus.publish(ctx, &DomainEvent::CredentialDeliveryAttempted {
+                                user_id: person.id,
+                                channel: "sms".into(),
                                 success: false,
                                 timestamp: Utc::now(),
                             }).await;

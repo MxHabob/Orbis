@@ -4,16 +4,10 @@ import { confirmStore } from "$lib/stores";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { l } from "$lib/core/i18n";
-import { Search, Refresh, ShieldCheck } from "@orbis/icons";
+import { Search, Refresh, ShieldCheck, UserPlus } from "@orbis/icons";
 
 import type { User, AccountProvisioningResultDto } from "$lib/api";
 import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
@@ -24,6 +18,7 @@ import { useQueryClient } from "@tanstack/svelte-query";
 import { goto } from "$app/navigation";
 import RoleSelect from "$lib/shared/components/role-select.svelte";
 import CredentialDeliveryModal from "$lib/shared/components/credential-delivery-modal.svelte";
+import CreateUserSheet from "$lib/features/settings/components/create-user-sheet.svelte";
 
 let { orgId }: { orgId: string } = $props();
 const queryClient = useQueryClient();
@@ -37,10 +32,18 @@ let activeFilter = $state<UniversalFilter>({
   groups: [],
 });
 
-// Credential modal state
+// Provisioning & Credential modal state
+let createUserSheetOpen = $state(false);
 let credentialModalOpen = $state(false);
 let activeProvisioningResult = $state<AccountProvisioningResultDto | null>(null);
 let activeUserName = $state("");
+
+function handleUserProvisioned(result: AccountProvisioningResultDto, name: string) {
+  activeProvisioningResult = result;
+  activeUserName = name;
+  credentialModalOpen = true;
+  loadUsers();
+}
 
 const userActions: ActionItem[] = [
   { id: "edit", label: m.common_action_edit?.() || "تعديل", icon: "Pencil" },
@@ -209,6 +212,14 @@ async function handleAction(event: GridActionEvent) {
         <ShieldCheck size={14} class="text-primary" />
         <span>{l("شؤون الموظفين", "Employee Affairs")}</span>
       </Button>
+      <Button
+        variant="default"
+        class="text-xs h-8 px-3.5 font-semibold gap-1.5 cursor-pointer shadow-xs"
+        onclick={() => (createUserSheetOpen = true)}
+      >
+        <UserPlus size={14} />
+        <span>{l("إنشاء حساب مستخدم", "Provision User")}</span>
+      </Button>
     </div>
   </div>
 
@@ -245,6 +256,13 @@ async function handleAction(event: GridActionEvent) {
       </div>
     {/if}
   </div>
+
+  <!-- Create User Slide-over Sheet -->
+  <CreateUserSheet
+    bind:open={createUserSheetOpen}
+    {orgId}
+    onsuccess={handleUserProvisioned}
+  />
 
   <!-- Temporary Credentials Modal -->
   <CredentialDeliveryModal

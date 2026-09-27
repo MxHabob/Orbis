@@ -406,6 +406,48 @@ impl NotificationPort for IntegrationResolver {
             )),
         }
     }
+
+    async fn send_sms(&self, ctx: &RequestContext, to: &str, message: &str) -> Result<(), DomainError> {
+        let configs = self.integration_repo.find_configs_by_org(ctx.tenant_id).await?;
+        let active_sms = configs.into_iter().find(|c| c.category == "sms" && c.is_enabled);
+
+        match active_sms {
+            Some(config) => {
+                let secrets = self.integration_repo.get_secrets_by_config(config.id).await?;
+                let sid = secrets
+                    .iter()
+                    .find(|s| s.key_name == "account_sid")
+                    .map(|s| s.secret_key.clone())
+                    .unwrap_or_default();
+                let token = secrets
+                    .iter()
+                    .find(|s| s.key_name == "auth_token")
+                    .map(|s| s.secret_key.clone())
+                    .unwrap_or_default();
+
+                let from_num = config
+                    .settings
+                    .as_ref()
+                    .and_then(|s| s.get("from_number"))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .to_string();
+
+                if config.provider_name == "twilio" {
+                    let adapter = WhatsAppAdapter::new(sid, token, from_num);
+                    adapter.send_sms(ctx, to, message).await
+                } else {
+                    Err(DomainError::Validation(format!(
+                        "Unsupported SMS Provider: {}",
+                        config.provider_name
+                    )))
+                }
+            }
+            None => Err(DomainError::Validation(
+                "No active SMS integration found".into(),
+            )),
+        }
+    }
 }
 
 #[async_trait]

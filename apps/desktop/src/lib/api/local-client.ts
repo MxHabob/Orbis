@@ -182,6 +182,7 @@ import type {
   MfaVerifyEnrollmentRequest,
   UserDeviceDto,
   UserIdentityDto,
+  ProvisionUserRequest,
 } from "./types";
 
 function unwrap<T>(response: { data: T } | T): T {
@@ -241,6 +242,9 @@ export class LocalClient implements OrbisApiClient {
   // ── IAM ─────────────────────────────────────────────────────
   async registerUser(req: RegisterUserRequest): Promise<UserDto> {
     return unwrap(await invoke("iam_register_user", { request: req }));
+  }
+  async provisionUser(req: ProvisionUserRequest): Promise<AccountProvisioningResultDto> {
+    return unwrap(await invoke("iam_provision_user", { request: req }));
   }
   async listUsers(): Promise<UserDto[]> {
     return unwrap(await invoke("iam_list_users"));

@@ -1193,6 +1193,7 @@ export interface OrbisApiClient {
 
   // ── IAM ─────────────────────────────────────────────────────
   registerUser(req: RegisterUserRequest): Promise<UserDto>;
+  provisionUser(req: ProvisionUserRequest): Promise<AccountProvisioningResultDto>;
   listUsers(): Promise<UserDto[]>;
   getUser(id: string): Promise<UserDto>;
   updateUser(id: string, req: UpdateUserRequest): Promise<UserDto>;
@@ -1887,6 +1888,23 @@ export interface EmployeeFilterInput {
 export interface ProvisionEmployeeAccountInput {
   preferred_username?: string | null;
   role?: string | null;
+  group_ids?: string[];
+  delivery_channel?: string | null;
+}
+
+export interface ProvisionUserRequest {
+  person_id?: string | null;
+  employee_id?: string | null;
+  student_id?: string | null;
+  guardian_id?: string | null;
+  actor_type?: string | null;
+  full_name?: string | null;
+  full_name_ar?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  preferred_username?: string | null;
+  custom_password?: string | null;
+  roles: string[];
   group_ids?: string[];
   delivery_channel?: string | null;
 }

@@ -55,6 +55,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         iam_cmds::auth_list_devices,
         iam_cmds::auth_revoke_device,
         iam_cmds::iam_register_user,
+        iam_cmds::iam_provision_user,
         iam_cmds::iam_list_users,
         iam_cmds::iam_get_user,
         iam_cmds::iam_update_user,

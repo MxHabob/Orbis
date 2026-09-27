@@ -47,4 +47,28 @@ impl NotificationPort for WhatsAppAdapter {
 
         Ok(())
     }
+
+    async fn send_sms(&self, _ctx: &RequestContext, to: &str, message: &str) -> Result<(), DomainError> {
+        let endpoint = format!("https://api.twilio.com/2010-04-01/Accounts/{}/Messages.json", self.account_sid);
+        
+        let params = [
+            ("To", to.to_string()),
+            ("From", self.from_number.clone()),
+            ("Body", message.to_string()),
+        ];
+
+        let res = self.client.post(&endpoint)
+            .basic_auth(&self.account_sid, Some(&self.auth_token))
+            .form(&params)
+            .send()
+            .await
+            .map_err(|e| DomainError::Validation(format!("Twilio SMS Network Error: {}", e)))?;
+
+        if !res.status().is_success() {
+            let error_text = res.text().await.unwrap_or_default();
+            return Err(DomainError::Validation(format!("Twilio SMS API Error: {}", error_text)));
+        }
+
+        Ok(())
+    }
 }

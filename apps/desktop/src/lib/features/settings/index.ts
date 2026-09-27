@@ -12,6 +12,7 @@ export { default as AddCurrencyDialog } from "./components/add-currency-dialog.s
 export { default as RoleCreationSheet } from "./components/role-creation-sheet.svelte";
 export { default as PermissionRuleDialog } from "./components/permission-rule-dialog.svelte";
 export { default as UserPermissionsDialog } from "./components/user-permissions-dialog.svelte";
+export { default as CreateUserSheet } from "./components/create-user-sheet.svelte";
 
 // Feature Components
 export { default as SettingsOverview } from "./settings-overview.svelte";

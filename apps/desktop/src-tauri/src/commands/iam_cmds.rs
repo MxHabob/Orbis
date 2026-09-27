@@ -303,6 +303,157 @@ pub async fn iam_register_user(request: serde_json::Value, state: State<'_, AppS
 }
 
 #[tauri::command]
+pub async fn iam_provision_user(
+    request: serde_json::Value,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<super::employee_cmds::AccountProvisioningResultDto>, String> {
+    use orbis_domain::entities::identity_provisioning::{ActorType, DeliveryChannel};
+    use orbis_app::services::identity_provisioning_service::ProvisionAccountInput;
+
+    let ctx = make_ctx(&state);
+
+    let mut resolved_person_id = request.get("person_id")
+        .or_else(|| request.get("personId"))
+        .and_then(|v| v.as_str())
+        .and_then(|s| Uuid::parse_str(s).ok());
+
+    let mut actor_type = request.get("actor_type")
+        .or_else(|| request.get("actorType"))
+        .and_then(|v| v.as_str())
+        .map(ActorType::from)
+        .unwrap_or(ActorType::Custom);
+
+    let employee_id = request.get("employee_id")
+        .or_else(|| request.get("employeeId"))
+        .and_then(|v| v.as_str())
+        .and_then(|s| Uuid::parse_str(s).ok());
+
+    let student_id = request.get("student_id")
+        .or_else(|| request.get("studentId"))
+        .and_then(|v| v.as_str())
+        .and_then(|s| Uuid::parse_str(s).ok());
+
+    let guardian_id = request.get("guardian_id")
+        .or_else(|| request.get("guardianId"))
+        .and_then(|v| v.as_str())
+        .and_then(|s| Uuid::parse_str(s).ok());
+
+    if let Some(emp_id) = employee_id {
+        let emp = state.employee_repo.find_by_id(emp_id).await.map_err(|e| e.to_string())?
+            .ok_or_else(|| format!("Employee {} not found", emp_id))?;
+        resolved_person_id = Some(emp.person_id);
+        actor_type = ActorType::Employee;
+    } else if let Some(std_id) = student_id {
+        let std = state.student_repo.find_by_id(std_id).await.map_err(|e| e.to_string())?
+            .ok_or_else(|| format!("Student {} not found", std_id))?;
+        resolved_person_id = Some(std.person_id);
+        actor_type = ActorType::Student;
+    } else if let Some(g_id) = guardian_id {
+        resolved_person_id = Some(g_id);
+        actor_type = ActorType::Guardian;
+    }
+
+    let person_id = if let Some(pid) = resolved_person_id {
+        pid
+    } else {
+        let full_name = request.get("full_name").or_else(|| request.get("fullName")).and_then(|v| v.as_str()).unwrap_or("User").to_string();
+        let full_name_ar = request.get("full_name_ar").or_else(|| request.get("fullNameAr")).and_then(|v| v.as_str()).map(|s| s.to_string());
+        let email = request.get("email").and_then(|v| v.as_str()).map(|s| s.to_string());
+        let phone = request.get("phone").and_then(|v| v.as_str()).map(|s| s.to_string());
+
+        let parts: Vec<&str> = full_name.split_whitespace().collect();
+        let first_name = parts.first().copied().unwrap_or("User").to_string();
+        let last_name = if parts.len() > 1 { parts[1..].join(" ") } else { String::new() };
+
+        let new_person = orbis_domain::entities::person::Person {
+            id: Uuid::new_v4(),
+            org_id: Some(ctx.tenant_id),
+            first_name,
+            middle_name: None,
+            last_name,
+            first_name_ar: full_name_ar,
+            middle_name_ar: None,
+            last_name_ar: None,
+            display_name: Some(full_name),
+            national_id: None,
+            passport_number: None,
+            birth_date: None,
+            place_of_birth: None,
+            gender: None,
+            nationality: None,
+            blood_type: None,
+            medical_notes: None,
+            special_needs_notes: None,
+            email,
+            phone,
+            address: None,
+            avatar_url: None,
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+        };
+        state.person_repo.save(&new_person).await.map_err(|e| e.to_string())?;
+        new_person.id
+    };
+
+    let roles: Vec<String> = request.get("roles")
+        .and_then(|v| v.as_array())
+        .map(|arr| arr.iter().filter_map(|x| x.as_str().map(|s| s.to_string())).collect())
+        .unwrap_or_default();
+
+    let group_ids: Vec<Uuid> = request.get("group_ids")
+        .or_else(|| request.get("groupIds"))
+        .and_then(|v| v.as_array())
+        .map(|arr| arr.iter().filter_map(|x| x.as_str().and_then(|s| Uuid::parse_str(s).ok())).collect())
+        .unwrap_or_default();
+
+    let delivery_channel = request.get("delivery_channel")
+        .or_else(|| request.get("deliveryChannel"))
+        .and_then(|v| v.as_str())
+        .map(|ch| match ch {
+            "email" => DeliveryChannel::Email,
+            "sms" => DeliveryChannel::Sms,
+            "whatsapp" => DeliveryChannel::WhatsApp,
+            _ => DeliveryChannel::Manual,
+        });
+
+    let input = ProvisionAccountInput {
+        person_id,
+        actor_type,
+        preferred_username: request.get("preferred_username").or_else(|| request.get("preferredUsername")).and_then(|v| v.as_str()).map(|s| s.to_string()),
+        email: request.get("email").and_then(|v| v.as_str()).map(|s| s.to_string()),
+        phone: request.get("phone").and_then(|v| v.as_str()).map(|s| s.to_string()),
+        roles,
+        group_ids,
+        delivery_channel,
+        custom_password: request.get("custom_password").or_else(|| request.get("customPassword")).and_then(|v| v.as_str()).map(|s| s.to_string()),
+    };
+
+    let result = state.identity_provisioning_service.provision_account(
+        &ctx,
+        ctx.tenant_id,
+        input,
+    ).await.map_err(|e| e.to_string())?;
+
+    if let Some(emp_id) = employee_id {
+        if let Ok(Some(mut emp)) = state.employee_repo.find_by_id(emp_id).await {
+            emp.user_id = Some(result.user_id);
+            emp.updated_at = chrono::Utc::now();
+            let _ = state.employee_repo.save(&emp).await;
+        }
+    }
+
+    if let Some(std_id) = student_id {
+        if let Ok(Some(mut std)) = state.student_repo.find_by_id(std_id).await {
+            std.user_id = Some(result.user_id);
+            std.updated_at = chrono::Utc::now();
+            let _ = state.student_repo.save(&std).await;
+        }
+    }
+
+    Ok(ok(super::employee_cmds::provisioning_to_dto(result)))
+}
+
+#[tauri::command]
 pub async fn iam_list_users(state: State<'_, AppState>) -> Result<ApiResponse<Vec<UserDto>>, String> {
     let ctx = make_ctx(&state);
     let users = state.auth_service.list_users(ctx.tenant_id).await.map_err(|e| e.to_string())?;
