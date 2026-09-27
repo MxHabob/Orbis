@@ -221,49 +221,7 @@ function handleContentClick(e: MouseEvent) {
 
           <!-- Assistant Text Content Card -->
           {#if msg.content}
-            <div class="relative bg-card/75 hover:bg-card/95 border rounded-2xl p-4 shadow-2xs transition-all {msg.isError ? 'border-destructive/30 bg-destructive/5 dark:bg-destructive/10' : 'border-border/70'}">
-              <!-- Assistant Header with Clean Icon -->
-              <div class="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-border/40 select-none">
-                <div class="flex items-center gap-1.5">
-                  <div class="w-5 h-5 rounded-md border border-primary/30 bg-primary/10 flex items-center justify-center p-0.5 shrink-0 text-primary shadow-2xs">
-                    <Sparkles size={11} />
-                  </div>
-                  <span class="text-[11.5px] font-bold text-foreground/90 flex items-center gap-1.5">
-                    Orbis AI
-                    {#if msg.isError}
-                      <Badge variant="destructive" class="text-[8.5px] h-4 px-1.5 font-bold">خطأ في الطلب</Badge>
-                    {/if}
-                  </span>
-                </div>
-
-                <!-- Fast Actions (Copy & Retry) -->
-                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {#if onRetry && !isThinking}
-                    <button
-                      type="button"
-                      onclick={() => onRetry(msg.id)}
-                      class="text-[11px] text-muted-foreground hover:text-foreground flex items-center p-1 rounded-md hover:bg-muted/70 transition-colors cursor-pointer"
-                      title="إعادة التوليد"
-                    >
-                      <Refresh size={12} />
-                    </button>
-                  {/if}
-
-                  <button
-                    type="button"
-                    onclick={() => copyText(msg.content, msg.id)}
-                    class="text-[11px] text-muted-foreground hover:text-foreground flex items-center p-1 rounded-md hover:bg-muted/70 transition-colors cursor-pointer"
-                    title="نسخ الرد"
-                  >
-                    {#if copiedMessageId === msg.id}
-                      <Check size={12} class="text-emerald-500" />
-                    {:else}
-                      <Clipboard size={12} />
-                    {/if}
-                  </button>
-                </div>
-              </div>
-
+            <div class="relative bg-card/65 hover:bg-card/90 border border-border/70 rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all {msg.isError ? 'border-destructive/30 bg-destructive/5 dark:bg-destructive/10 text-destructive' : ''}">
               <!-- Rendered Markdown Container -->
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -273,6 +231,37 @@ function handleContentClick(e: MouseEvent) {
               >
                 {@html renderMarkdown(msg.content)}
               </div>
+            </div>
+
+            <!-- Assistant Actions on Hover -->
+            <div class="flex items-center gap-1.5 ps-1 select-none opacity-0 group-hover:opacity-100 transition-opacity">
+              {#if msg.isError}
+                <Badge variant="destructive" class="text-[8.5px] h-4 px-1.5 font-semibold">خطأ في الطلب</Badge>
+              {/if}
+
+              {#if onRetry && !isThinking}
+                <button
+                  type="button"
+                  onclick={() => onRetry(msg.id)}
+                  class="p-1 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-muted/70 transition-colors cursor-pointer"
+                  title="إعادة التوليد"
+                >
+                  <Refresh size={12} />
+                </button>
+              {/if}
+
+              <button
+                type="button"
+                onclick={() => copyText(msg.content, msg.id)}
+                class="p-1 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-muted/70 transition-colors cursor-pointer"
+                title="نسخ الرد"
+              >
+                {#if copiedMessageId === msg.id}
+                  <Check size={12} class="text-emerald-500" />
+                {:else}
+                  <Clipboard size={12} />
+                {/if}
+              </button>
             </div>
           {/if}
 
