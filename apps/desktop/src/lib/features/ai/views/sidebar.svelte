@@ -22,7 +22,7 @@ interactive tool inspections, and consequential action approvals.
   import * as m from "$lib/paraglide/messages";
   import { getLocale } from "$lib/paraglide/runtime";
   import Resizer from "$lib/shell/resizer.svelte";
-  import { aiContext, authStore, uiStore } from "$lib/stores";
+  import { academicContext, aiContext, authStore, uiStore } from "$lib/stores";
   import { toast } from "@orbis/ui";
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
@@ -230,9 +230,50 @@ interactive tool inspections, and consequential action approvals.
           content: m.content,
         }));
 
+      const activeUiContext = aiContext.context
+        ? {
+            route: page.url.pathname,
+            screen: aiContext.context.screen || aiContext.context.pageName,
+            domain: aiContext.context.domain,
+            entity_type: aiContext.context.entity_type,
+            entity_id: aiContext.context.entity_id || aiContext.context.recordId,
+            selected_entity_ids: aiContext.context.selected_entity_ids || [],
+            active_filters: aiContext.context.active_filters,
+            metadata: aiContext.context.metadata,
+            period_id:
+              aiContext.context.period_id ||
+              academicContext.selectedPeriodId ||
+              undefined,
+            class_id:
+              aiContext.context.class_id ||
+              academicContext.selectedClassId ||
+              undefined,
+            subject_id:
+              aiContext.context.subject_id ||
+              academicContext.selectedSubjectId ||
+              undefined,
+          }
+        : {
+            route: page.url.pathname,
+            period_id: academicContext.selectedPeriodId || undefined,
+            class_id: academicContext.selectedClassId || undefined,
+            subject_id: academicContext.selectedSubjectId || undefined,
+          };
+
+      const activeAcademicContext = {
+        academic_year_id: academicContext.currentYear?.id || null,
+        academic_year_name: academicContext.yearLabel || null,
+        period_id: academicContext.selectedPeriodId || null,
+        period_name: academicContext.activePeriod?.name || null,
+        class_id: academicContext.selectedClassId || null,
+        subject_id: academicContext.selectedSubjectId || null,
+      };
+
       const response = await api.aiChat({
         messages: aiMessages,
         screen_context: (aiContext.context as Record<string, unknown>) || null,
+        ui_context: activeUiContext,
+        academic_context: activeAcademicContext,
         model: selectedModel ? selectedModel : undefined,
       });
 

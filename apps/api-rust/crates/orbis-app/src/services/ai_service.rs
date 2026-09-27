@@ -1,6 +1,6 @@
 //! AI Orchestration Service — Stateless ReAct Engine & Direct Domain Integration.
 //! Integrates directly with existing Domain Services (Student, Academic, Assessment, Finance, Scheduling, Reports, Org)
-//! without extra database tables or intermediate state bloat.
+//! with strict permission enforcement, dynamic identity resolution, and academic scoping.
 
 use chrono::Utc;
 use serde_json::json;
@@ -21,11 +21,12 @@ use crate::services::{
     student_service::StudentService,
 };
 use orbis_domain::entities::ai::{
-    AiChatRequest, AiChatResponse, AiMessage, AiProposedAction, AiToolDefinition,
-    AiToolResult,
+    AcademicAiContext, AiChatRequest, AiChatResponse, AiMessage, AiProposedAction,
+    AiToolDefinition, AiToolResult, ToolCategory, UiContext, UserAiContext,
 };
 use orbis_domain::entities::report::{OutputFormat, ParamValue, ReportLocale};
 use orbis_domain::errors::DomainError;
+use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{
     AttendanceFilter, GradeFilter, StudentFeeFilter, StudentFilter,
 };
@@ -79,16 +80,18 @@ impl AiOrchestrationService {
         vec![
             AiToolDefinition {
                 name: "search_students".into(),
-                description: "Search students by name, national ID, or student number in the organization.".into(),
+                description: "Search students by name, national ID, student number, or filter by class/status in the organization.".into(),
                 parameters_schema: json!({
                     "type": "object",
                     "properties": {
-                        "search_term": {"type": "string", "description": "Search query for name, student number, or national ID"}
-                    },
-                    "required": ["search_term"]
+                        "search_term": {"type": "string", "description": "Search query for name, student number, or national ID"},
+                        "class_id": {"type": "string", "description": "Optional UUID of the class to scope search"},
+                        "period_id": {"type": "string", "description": "Optional UUID of the academic period"}
+                    }
                 }),
                 required_permission: Some("student:read".into()),
                 is_consequential: false,
+                category: ToolCategory::Read,
             },
             AiToolDefinition {
                 name: "get_student_profile".into(),
@@ -102,32 +105,38 @@ impl AiOrchestrationService {
                 }),
                 required_permission: Some("student:read".into()),
                 is_consequential: false,
+                category: ToolCategory::Read,
             },
             AiToolDefinition {
                 name: "get_student_grades".into(),
-                description: "Get grades and assessment scores recorded for a student.".into(),
+                description: "Get grades and assessment scores recorded for a student, optionally filtered by academic period.".into(),
                 parameters_schema: json!({
                     "type": "object",
                     "properties": {
-                        "student_id": {"type": "string", "description": "UUID of the student"}
+                        "student_id": {"type": "string", "description": "UUID of the student"},
+                        "period_id": {"type": "string", "description": "Optional UUID of the academic period to filter grades"}
                     },
                     "required": ["student_id"]
                 }),
                 required_permission: Some("grade:read".into()),
                 is_consequential: false,
+                category: ToolCategory::Read,
             },
             AiToolDefinition {
                 name: "get_student_attendance".into(),
-                description: "Get attendance history and absence records for a student.".into(),
+                description: "Get attendance history and absence records for a student, optionally filtered by date or status.".into(),
                 parameters_schema: json!({
                     "type": "object",
                     "properties": {
-                        "student_id": {"type": "string", "description": "UUID of the student"}
+                        "student_id": {"type": "string", "description": "UUID of the student"},
+                        "class_id": {"type": "string", "description": "Optional UUID of the class to filter attendance"},
+                        "status": {"type": "string", "description": "Optional status filter (e.g. absent, late, excused)"}
                     },
                     "required": ["student_id"]
                 }),
                 required_permission: Some("attendance:read".into()),
                 is_consequential: false,
+                category: ToolCategory::Read,
             },
             AiToolDefinition {
                 name: "get_financial_summary".into(),
@@ -138,6 +147,7 @@ impl AiOrchestrationService {
                 }),
                 required_permission: Some("finance:read".into()),
                 is_consequential: false,
+                category: ToolCategory::Read,
             },
             AiToolDefinition {
                 name: "get_student_fees".into(),
@@ -151,6 +161,7 @@ impl AiOrchestrationService {
                 }),
                 required_permission: Some("finance:read".into()),
                 is_consequential: false,
+                category: ToolCategory::Read,
             },
             AiToolDefinition {
                 name: "list_report_templates".into(),
@@ -159,8 +170,9 @@ impl AiOrchestrationService {
                     "type": "object",
                     "properties": {}
                 }),
-                required_permission: Some("report:read".into()),
+                required_permission: Some("template:read".into()),
                 is_consequential: false,
+                category: ToolCategory::Read,
             },
             AiToolDefinition {
                 name: "generate_report".into(),
@@ -174,8 +186,9 @@ impl AiOrchestrationService {
                     },
                     "required": ["report_code", "output_format"]
                 }),
-                required_permission: Some("report:generate".into()),
+                required_permission: Some("template:generate_single".into()),
                 is_consequential: false,
+                category: ToolCategory::Generation,
             },
             AiToolDefinition {
                 name: "get_org_overview".into(),
@@ -186,6 +199,7 @@ impl AiOrchestrationService {
                 }),
                 required_permission: Some("organization:read".into()),
                 is_consequential: false,
+                category: ToolCategory::Read,
             },
             AiToolDefinition {
                 name: "update_student_status".into(),
@@ -201,6 +215,7 @@ impl AiOrchestrationService {
                 }),
                 required_permission: Some("student:update".into()),
                 is_consequential: true,
+                category: ToolCategory::Action,
             },
             AiToolDefinition {
                 name: "get_autopilot_status".into(),
@@ -209,8 +224,9 @@ impl AiOrchestrationService {
                     "type": "object",
                     "properties": {}
                 }),
-                required_permission: Some("settings:read".into()),
+                required_permission: Some("organization:read".into()),
                 is_consequential: false,
+                category: ToolCategory::Read,
             },
             AiToolDefinition {
                 name: "list_autopilot_tasks".into(),
@@ -221,8 +237,9 @@ impl AiOrchestrationService {
                         "status": {"type": "string", "enum": ["pending", "executing", "completed", "failed", "suggested", "cancelled"], "description": "Filter by task status"}
                     }
                 }),
-                required_permission: Some("settings:read".into()),
+                required_permission: Some("organization:read".into()),
                 is_consequential: false,
+                category: ToolCategory::Read,
             },
             AiToolDefinition {
                 name: "trigger_autopilot_tick".into(),
@@ -233,20 +250,216 @@ impl AiOrchestrationService {
                         "dry_run": {"type": "boolean", "description": "If true, simulates execution without making state changes"}
                     }
                 }),
-                required_permission: Some("settings:write".into()),
+                required_permission: Some("organization:write".into()),
                 is_consequential: true,
+                category: ToolCategory::Action,
+            },
+            // ── Advanced Real-World Educational AI Tools ──────────
+            AiToolDefinition {
+                name: "analyze_at_risk_students".into(),
+                description: "Execute Early Warning Analytics across attendance, grades, and financial records to identify at-risk students and recommend pedagogical interventions.".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "class_id": {"type": "string", "description": "Optional UUID of the class to scope evaluation"},
+                        "period_id": {"type": "string", "description": "Optional UUID of the academic period"}
+                    }
+                }),
+                required_permission: Some("student:read".into()),
+                is_consequential: false,
+                category: ToolCategory::Analysis,
+            },
+            AiToolDefinition {
+                name: "generate_exam_paper".into(),
+                description: "Generate a complete, pedagogical, multi-section exam paper with questions, Bloom taxonomy levels, points, and model answer keys.".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "subject_name": {"type": "string", "description": "Name of the subject (e.g. Mathematics, Science, Arabic)"},
+                        "grade_level": {"type": "string", "description": "Target educational grade level (e.g. Grade 8, Middle 2)"},
+                        "topics": {"type": "string", "description": "Curriculum topics or unit description to cover"},
+                        "language": {"type": "string", "enum": ["ar", "en", "bilingual"], "description": "Output language"},
+                        "difficulty": {"type": "string", "enum": ["easy", "medium", "hard", "balanced"], "description": "Difficulty balance"},
+                        "total_marks": {"type": "integer", "description": "Total marks for the exam (e.g. 100)"},
+                        "duration_minutes": {"type": "integer", "description": "Duration in minutes (e.g. 60, 90)"},
+                        "question_count": {"type": "integer", "description": "Number of questions to generate (default 8)"}
+                    },
+                    "required": ["subject_name", "topics"]
+                }),
+                required_permission: Some("assessment:write".into()),
+                is_consequential: false,
+                category: ToolCategory::Generation,
+            },
+            AiToolDefinition {
+                name: "analyze_class_performance".into(),
+                description: "Perform comprehensive academic distribution analytics for a class/subject, calculating GPA trends, pass rates, and grade distribution curves.".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "class_id": {"type": "string", "description": "Optional UUID of the class"},
+                        "class_subject_id": {"type": "string", "description": "Optional UUID of the class-subject"},
+                        "period_id": {"type": "string", "description": "Optional UUID of the academic period"}
+                    }
+                }),
+                required_permission: Some("grade:analytics".into()),
+                is_consequential: false,
+                category: ToolCategory::Analysis,
+            },
+            AiToolDefinition {
+                name: "analyze_financial_health".into(),
+                description: "Calculate institutional revenue collection efficiency, fee aging analysis, and overdue tuition breakdown.".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "period_id": {"type": "string", "description": "Optional UUID of the academic period"}
+                    }
+                }),
+                required_permission: Some("finance:read".into()),
+                is_consequential: false,
+                category: ToolCategory::Analysis,
+            },
+            AiToolDefinition {
+                name: "draft_parent_notice".into(),
+                description: "Draft a personalized, professional official school communication notice for a student's parent (academic alert, attendance warning, praise, or fee reminder).".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "student_id": {"type": "string", "description": "UUID of the student"},
+                        "notice_type": {"type": "string", "enum": ["academic_warning", "praise_excellence", "attendance_alert", "fee_reminder", "general_update"], "description": "Type of notice"},
+                        "language": {"type": "string", "enum": ["ar", "en"], "description": "Notice language (default ar)"},
+                        "custom_notes": {"type": "string", "description": "Specific teacher notes or context to include"}
+                    },
+                    "required": ["student_id", "notice_type"]
+                }),
+                required_permission: Some("notification:write".into()),
+                is_consequential: false,
+                category: ToolCategory::Generation,
             },
         ]
     }
 
-    /// Primary Stateless ReAct Multi-turn Execution Loop.
+    /// Resolves rich identity, roles, and permissions of the active user.
+    pub async fn resolve_user_ai_context(&self, ctx: &RequestContext) -> UserAiContext {
+        let mut uctx = UserAiContext {
+            org_id: ctx.tenant_id,
+            org_unit_path: ctx.org_unit_path.clone(),
+            ..Default::default()
+        };
+
+        if let Ok(Some(org)) = self.org_service.get_organization(ctx.tenant_id).await {
+            uctx.org_name = Some(org.name);
+        }
+
+        match &ctx.actor {
+            orbis_domain::iam::actor::Actor::User(uid) => {
+                uctx.user_id = Some(*uid);
+                let roles = self
+                    .permission_checker
+                    .get_user_roles(*uid, ctx.tenant_id)
+                    .await
+                    .unwrap_or_default();
+                let perms = self
+                    .permission_checker
+                    .get_user_permissions(*uid, ctx.tenant_id)
+                    .await
+                    .unwrap_or_default();
+                uctx.roles = roles.clone();
+                uctx.permissions = perms;
+
+                if roles.iter().any(|r| {
+                    r.eq_ignore_ascii_case("super_admin") || r.eq_ignore_ascii_case("admin")
+                }) {
+                    uctx.effective_role = Some("admin".to_string());
+                } else if roles.iter().any(|r| r.eq_ignore_ascii_case("teacher")) {
+                    uctx.effective_role = Some("teacher".to_string());
+                    uctx.is_teacher = true;
+                } else if roles
+                    .iter()
+                    .any(|r| r.eq_ignore_ascii_case("principal") || r.eq_ignore_ascii_case("headmaster"))
+                {
+                    uctx.effective_role = Some("principal".to_string());
+                } else if roles.iter().any(|r| r.eq_ignore_ascii_case("counselor")) {
+                    uctx.effective_role = Some("counselor".to_string());
+                } else if roles.iter().any(|r| r.eq_ignore_ascii_case("parent")) {
+                    uctx.effective_role = Some("parent".to_string());
+                    uctx.is_parent = true;
+                } else {
+                    uctx.effective_role = roles.first().cloned().or_else(|| Some("user".to_string()));
+                }
+            }
+            orbis_domain::iam::actor::Actor::Agent(aid) => {
+                uctx.effective_role = Some(format!("agent:{}", aid));
+            }
+            orbis_domain::iam::actor::Actor::Autopilot => {
+                uctx.effective_role = Some("autopilot".to_string());
+            }
+            orbis_domain::iam::actor::Actor::System => {
+                uctx.effective_role = Some("system".to_string());
+            }
+        }
+
+        uctx
+    }
+
+    /// Resolves academic year, period, class, and subject context from request and domain.
+    pub async fn resolve_academic_ai_context(
+        &self,
+        _ctx: &RequestContext,
+        request: &AiChatRequest,
+    ) -> AcademicAiContext {
+        let mut actx = request.academic_context.clone().unwrap_or_default();
+
+        if let Some(ref ui) = request.ui_context {
+            if actx.period_id.is_none() {
+                actx.period_id = ui.period_id;
+            }
+            if actx.class_id.is_none() {
+                actx.class_id = ui.class_id;
+            }
+            if actx.subject_id.is_none() {
+                actx.subject_id = ui.subject_id;
+            }
+            if actx.class_subject_id.is_none() {
+                actx.class_subject_id = ui.class_subject_id;
+            }
+        }
+
+        if let Some(cid) = actx.class_id {
+            if actx.class_name.is_none() {
+                if let Ok(Some(class)) = self.academic_service.class_repo.find_by_id(cid).await {
+                    actx.class_name = Some(class.name);
+                }
+            }
+        }
+
+        if let Some(sid) = actx.subject_id {
+            if actx.subject_name.is_none() {
+                if let Ok(Some(subj)) = self.academic_service.subject_repo.find_by_id(sid).await {
+                    actx.subject_name = Some(subj.name);
+                }
+            }
+        }
+
+        actx
+    }
+
+    /// Primary Stateless ReAct Multi-turn Execution Loop with Strict Permission Enforcement.
     pub async fn chat(
         &self,
         ctx: &RequestContext,
         request: AiChatRequest,
     ) -> Result<AiChatResponse, DomainError> {
         let tools = self.get_available_tools();
-        let system_prompt = self.build_system_prompt(ctx, request.screen_context.as_ref()).await;
+        let user_ctx = self.resolve_user_ai_context(ctx).await;
+        let academic_ctx = self.resolve_academic_ai_context(ctx, &request).await;
+
+        let system_prompt = self.build_system_prompt(
+            ctx,
+            &user_ctx,
+            &academic_ctx,
+            request.ui_context.as_ref(),
+            request.screen_context.as_ref(),
+        ).await;
 
         let mut conversation_history = request.messages;
         let mut executed_tools_all = Vec::new();
@@ -290,6 +503,34 @@ impl AiOrchestrationService {
                 let tool_def = tools.iter().find(|t| t.name == tool_call.tool_name);
 
                 if let Some(def) = tool_def {
+                    // Strict Authorization Enforcement before any execution or action staging
+                    if let Some(ref perm_str) = def.required_permission {
+                        if let Some(perm) = Permission::from_str(perm_str) {
+                            if let Err(e) = self.permission_checker.check(ctx, perm).await {
+                                let err_msg = format!(
+                                    "Permission denied: Actor does not possess the required permission '{}' for tool '{}'. {}",
+                                    perm_str, tool_call.tool_name, e
+                                );
+
+                                conversation_history.push(AiMessage {
+                                    role: "tool".into(),
+                                    content: err_msg.clone(),
+                                    tool_calls: None,
+                                    tool_call_id: Some(tool_call.id.clone()),
+                                    created_at: Some(Utc::now()),
+                                });
+
+                                executed_tools_all.push(AiToolResult {
+                                    tool_call_id: tool_call.id.clone(),
+                                    tool_name: tool_call.tool_name.clone(),
+                                    content: err_msg,
+                                    is_error: true,
+                                });
+                                continue;
+                            }
+                        }
+                    }
+
                     if def.is_consequential {
                         // Consequential tool: create a proposed action for Cockpit confirmation
                         let action = AiProposedAction {
@@ -371,24 +612,50 @@ impl AiOrchestrationService {
             response: final_response,
             executed_tools: executed_tools_all,
             proposed_actions: proposed_actions_all,
+            resolved_user_context: Some(user_ctx),
+            resolved_academic_context: Some(academic_ctx),
         })
     }
 
     /// Execute a domain tool by dispatching to the appropriate domain service.
-    async fn execute_tool(
+    /// Includes defense-in-depth permission verification.
+    pub async fn execute_tool(
         &self,
         ctx: &RequestContext,
         tool_name: &str,
         arguments: &serde_json::Value,
     ) -> Result<serde_json::Value, DomainError> {
+        let tools = self.get_available_tools();
+        if let Some(def) = tools.iter().find(|t| t.name == tool_name) {
+            if let Some(ref perm_str) = def.required_permission {
+                if let Some(perm) = Permission::from_str(perm_str) {
+                    self.permission_checker.check(ctx, perm).await?;
+                }
+            }
+        }
+
         match tool_name {
             "search_students" => {
                 let term = arguments
                     .get("search_term")
                     .and_then(|v| v.as_str())
                     .unwrap_or_default();
+                let class_id = arguments
+                    .get("class_id")
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| Uuid::parse_str(s).ok());
+                let period_id = arguments
+                    .get("period_id")
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| Uuid::parse_str(s).ok());
+
                 let mut filter = StudentFilter::default();
-                filter.search = Some(term.to_string());
+                if !term.is_empty() {
+                    filter.search = Some(term.to_string());
+                }
+                filter.class_id = class_id;
+                filter.period_id = period_id;
+
                 let result = self.student_service.list_students(ctx.tenant_id, filter).await?;
                 Ok(json!({
                     "total_count": result.total_count,
@@ -424,8 +691,15 @@ impl AiOrchestrationService {
                     .ok_or_else(|| DomainError::Validation("student_id is required".into()))?;
                 let sid = Uuid::parse_str(sid_str)
                     .map_err(|_| DomainError::Validation("Invalid student UUID".into()))?;
+                let period_id = arguments
+                    .get("period_id")
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| Uuid::parse_str(s).ok());
+
                 let mut filter = GradeFilter::default();
                 filter.student_id = Some(sid);
+                filter.period_id = period_id;
+
                 let grades = self.assessment_service.list_grades(ctx.tenant_id, filter).await?;
                 Ok(json!({
                     "total_count": grades.total_count,
@@ -445,8 +719,20 @@ impl AiOrchestrationService {
                     .ok_or_else(|| DomainError::Validation("student_id is required".into()))?;
                 let sid = Uuid::parse_str(sid_str)
                     .map_err(|_| DomainError::Validation("Invalid student UUID".into()))?;
+                let class_id = arguments
+                    .get("class_id")
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| Uuid::parse_str(s).ok());
+                let status = arguments
+                    .get("status")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+
                 let mut filter = AttendanceFilter::default();
                 filter.student_id = Some(sid);
+                filter.class_id = class_id;
+                filter.status = status;
+
                 let attendance = self.assessment_service.list_attendance(ctx.tenant_id, filter).await?;
                 Ok(json!({
                     "total_count": attendance.total_count,
@@ -608,44 +894,489 @@ impl AiOrchestrationService {
                     })).collect::<Vec<_>>()
                 }))
             }
+
+            // ── Advanced Real-World Educational AI Tools ──────────
+            "analyze_at_risk_students" => {
+                let class_id = arguments
+                    .get("class_id")
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| Uuid::parse_str(s).ok());
+                let period_id = arguments
+                    .get("period_id")
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| Uuid::parse_str(s).ok());
+
+                let mut filter = StudentFilter::default();
+                filter.class_id = class_id;
+                filter.period_id = period_id;
+
+                let students_list = self.student_service.list_students(ctx.tenant_id, filter).await?;
+                let mut at_risk_items = Vec::new();
+
+                for s in students_list.items.iter().take(30) {
+                    let sid = s.student.id;
+
+                    // 1. Attendance Analysis
+                    let mut att_filter = AttendanceFilter::default();
+                    att_filter.student_id = Some(sid);
+                    let att_records = self
+                        .assessment_service
+                        .list_attendance(ctx.tenant_id, att_filter)
+                        .await
+                        .unwrap_or_else(|_| orbis_domain::queries::filters::PaginatedList::empty(20));
+                    let total_days = att_records.total_count;
+                    let absent_count = att_records
+                        .items
+                        .iter()
+                        .filter(|a| {
+                            a.status.eq_ignore_ascii_case("absent") || a.status.contains("غائب")
+                        })
+                        .count();
+                    let absence_rate = if total_days > 0 {
+                        (absent_count as f64 / total_days as f64) * 100.0
+                    } else {
+                        0.0
+                    };
+
+                    // 2. Academic Performance Analysis
+                    let mut gr_filter = GradeFilter::default();
+                    gr_filter.student_id = Some(sid);
+                    gr_filter.period_id = period_id;
+                    let grade_records = self
+                        .assessment_service
+                        .list_grades(ctx.tenant_id, gr_filter)
+                        .await
+                        .unwrap_or_else(|_| orbis_domain::queries::filters::PaginatedList::empty(20));
+                    let mut total_score = rust_decimal::Decimal::ZERO;
+                    let mut total_max = rust_decimal::Decimal::ZERO;
+                    let mut failing_count = 0;
+
+                    for g in &grade_records.items {
+                        total_score += g.score;
+                        total_max += g.max_score;
+                        if g.max_score > rust_decimal::Decimal::ZERO {
+                            let ratio = g.score / g.max_score;
+                            if ratio
+                                < rust_decimal::Decimal::from_str_exact("0.50")
+                                    .unwrap_or_default()
+                            {
+                                failing_count += 1;
+                            }
+                        }
+                    }
+                    let avg_grade_pct = if total_max > rust_decimal::Decimal::ZERO {
+                        (total_score / total_max * rust_decimal::Decimal::from(100)).to_string()
+                    } else {
+                        "N/A".to_string()
+                    };
+
+                    // 3. Fee Overdue Analysis
+                    let mut fee_filter = StudentFeeFilter::default();
+                    fee_filter.student_id = Some(sid);
+                    let fee_records = self
+                        .finance_service
+                        .list_student_fees(ctx.tenant_id, fee_filter)
+                        .await
+                        .unwrap_or_else(|_| orbis_domain::queries::filters::PaginatedList::empty(20));
+                    let mut overdue_balance = rust_decimal::Decimal::ZERO;
+                    for f in &fee_records.items {
+                        if f.status == orbis_domain::entities::student_fee::FeeStatus::Overdue
+                            || f.balance_due > rust_decimal::Decimal::ZERO
+                        {
+                            overdue_balance += f.balance_due;
+                        }
+                    }
+
+                    // Composite risk score calculation
+                    let mut risk_score: u32 = 0;
+                    let mut risk_factors = Vec::new();
+
+                    if absence_rate >= 15.0 {
+                        risk_score += 35;
+                        risk_factors.push(format!("High absence rate ({:.1}%, {} days)", absence_rate, absent_count));
+                    } else if absence_rate >= 10.0 {
+                        risk_score += 20;
+                        risk_factors.push(format!("Moderate absence rate ({:.1}%, {} days)", absence_rate, absent_count));
+                    }
+
+                    if failing_count > 0 {
+                        risk_score += (failing_count as u32 * 15).min(40);
+                        risk_factors.push(format!("Failing in {} subjects (Avg: {}%)", failing_count, avg_grade_pct));
+                    }
+
+                    if overdue_balance > rust_decimal::Decimal::ZERO {
+                        risk_score += 15;
+                        risk_factors.push(format!("Overdue tuition balance: {}", overdue_balance));
+                    }
+
+                    let risk_level = if risk_score >= 50 {
+                        "high"
+                    } else if risk_score >= 25 {
+                        "medium"
+                    } else {
+                        "low"
+                    };
+
+                    if risk_level == "high" || risk_level == "medium" {
+                        let mut interventions = Vec::new();
+                        if absence_rate >= 10.0 {
+                            interventions.push("Issue attendance warning and schedule parent counseling".to_string());
+                        }
+                        if failing_count > 0 {
+                            interventions.push("Enroll in remedial academic support sessions".to_string());
+                        }
+                        if overdue_balance > rust_decimal::Decimal::ZERO {
+                            interventions.push("Review financial assistance or installment schedule".to_string());
+                        }
+
+                        at_risk_items.push(json!({
+                            "student_id": s.student.id,
+                            "student_number": s.student.student_number,
+                            "name": format!("{} {}", s.person.first_name, s.person.last_name),
+                            "risk_level": risk_level,
+                            "risk_score": risk_score,
+                            "risk_factors": risk_factors,
+                            "absence_rate_pct": format!("{:.1}%", absence_rate),
+                            "absent_days": absent_count,
+                            "failing_subjects_count": failing_count,
+                            "average_grade_pct": avg_grade_pct,
+                            "overdue_fee_balance": overdue_balance.to_string(),
+                            "recommended_interventions": interventions
+                        }));
+                    }
+                }
+
+                Ok(json!({
+                    "analyzed_students_count": students_list.items.len(),
+                    "at_risk_students_count": at_risk_items.len(),
+                    "students": at_risk_items
+                }))
+            }
+
+            "generate_exam_paper" => {
+                let subject_name = arguments.get("subject_name").and_then(|v| v.as_str()).unwrap_or("Mathematics");
+                let grade_level = arguments.get("grade_level").and_then(|v| v.as_str()).unwrap_or("Grade 8");
+                let topics = arguments.get("topics").and_then(|v| v.as_str()).unwrap_or("General Curriculum Review");
+                let language = arguments.get("language").and_then(|v| v.as_str()).unwrap_or("ar");
+                let difficulty = arguments.get("difficulty").and_then(|v| v.as_str()).unwrap_or("balanced");
+                let total_marks = arguments.get("total_marks").and_then(|v| v.as_i64()).unwrap_or(100);
+                let duration_minutes = arguments.get("duration_minutes").and_then(|v| v.as_i64()).unwrap_or(60);
+                let question_count = arguments.get("question_count").and_then(|v| v.as_i64()).unwrap_or(8);
+
+                let system_instructions = format!(
+                    "You are an expert curriculum and assessment designer for the Orbis Educational Operating System.\n\
+                     Generate a formal, balanced, high-quality examination paper in JSON format.\n\
+                     Subject: {}\nGrade Level: {}\nTopics: {}\nTarget Language: {}\nDifficulty: {}\nTotal Marks: {}\nDuration: {} mins\nQuestion Count: {}\n\n\
+                     Requirements:\n\
+                     1. Apply Bloom's Taxonomy (Remember, Understand, Apply, Analyze, Evaluate).\n\
+                     2. Include a balanced mix: Multiple Choice (MCQ), Short Answer, and Comprehensive / Problem Solving.\n\
+                     3. Provide clear model answers / answer keys and allocated marks for every question.\n\
+                     4. Respond with valid JSON only conforming to:\n\
+                     {{\n\
+                       \"exam_title\": \"...\",\n\
+                       \"subject\": \"...\",\n\
+                       \"grade_level\": \"...\",\n\
+                       \"total_marks\": {},\n\
+                       \"duration_minutes\": {},\n\
+                       \"instructions\": [\"...\"],\n\
+                       \"sections\": [\n\
+                         {{\n\
+                           \"section_title\": \"...\",\n\
+                           \"section_marks\": 30,\n\
+                           \"questions\": [\n\
+                             {{\n\
+                               \"question_number\": 1,\n\
+                               \"question_type\": \"mcq|true_false|short_answer|essay|numeric\",\n\
+                               \"bloom_level\": \"remember|understand|apply|analyze|evaluate\",\n\
+                               \"marks\": 5,\n\
+                               \"prompt\": \"...\",\n\
+                               \"options\": [\"A) ...\", \"B) ...\", \"C) ...\", \"D) ...\"],\n\
+                               \"correct_answer\": \"...\",\n\
+                               \"explanation\": \"...\"\n\
+                             }}\n\
+                           ]\n\
+                         }}\n\
+                       ]\n\
+                     }}",
+                    subject_name, grade_level, topics, language, difficulty, total_marks, duration_minutes, question_count, total_marks, duration_minutes
+                );
+
+                let user_prompt = format!(
+                    "Generate the complete examination paper for {} ({}) covering: {}. Total marks: {}, Duration: {} minutes.",
+                    subject_name, grade_level, topics, total_marks, duration_minutes
+                );
+
+                let generated_json_str = self.llm_gateway.generate_text(ctx, "", &system_instructions, &user_prompt, 0.2).await?;
+                let clean_str = generated_json_str.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
+                let exam_json: serde_json::Value = serde_json::from_str(clean_str).unwrap_or_else(|_| json!({
+                    "raw_generated_exam": generated_json_str,
+                    "subject": subject_name,
+                    "grade_level": grade_level,
+                    "topics": topics
+                }));
+
+                Ok(json!({
+                    "status": "success",
+                    "exam": exam_json
+                }))
+            }
+
+            "analyze_class_performance" => {
+                let class_id = arguments
+                    .get("class_id")
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| Uuid::parse_str(s).ok());
+                let class_subject_id = arguments
+                    .get("class_subject_id")
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| Uuid::parse_str(s).ok());
+                let period_id = arguments
+                    .get("period_id")
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| Uuid::parse_str(s).ok());
+
+                let mut gr_filter = GradeFilter::default();
+                gr_filter.class_subject_id = class_subject_id;
+                gr_filter.period_id = period_id;
+
+                let grades_list = self.assessment_service.list_grades(ctx.tenant_id, gr_filter).await?;
+                let mut total_score = rust_decimal::Decimal::ZERO;
+                let mut total_max = rust_decimal::Decimal::ZERO;
+                let mut count = 0;
+                let mut a_count = 0;
+                let mut b_count = 0;
+                let mut c_count = 0;
+                let mut d_count = 0;
+                let mut f_count = 0;
+
+                for g in &grades_list.items {
+                    if g.max_score > rust_decimal::Decimal::ZERO {
+                        total_score += g.score;
+                        total_max += g.max_score;
+                        count += 1;
+                        let pct = (g.score / g.max_score * rust_decimal::Decimal::from(100)).to_string().parse::<f64>().unwrap_or(0.0);
+                        if pct >= 90.0 { a_count += 1; }
+                        else if pct >= 80.0 { b_count += 1; }
+                        else if pct >= 70.0 { c_count += 1; }
+                        else if pct >= 60.0 { d_count += 1; }
+                        else { f_count += 1; }
+                    }
+                }
+
+                let avg_pct = if total_max > rust_decimal::Decimal::ZERO {
+                    (total_score / total_max * rust_decimal::Decimal::from(100)).to_string()
+                } else {
+                    "0.0".to_string()
+                };
+                let pass_rate = if count > 0 {
+                    format!("{:.1}%", ((count - f_count) as f64 / count as f64) * 100.0)
+                } else {
+                    "100%".to_string()
+                };
+
+                Ok(json!({
+                    "evaluated_grades_count": count,
+                    "class_id": class_id,
+                    "class_subject_id": class_subject_id,
+                    "period_id": period_id,
+                    "average_score_pct": format!("{}%", avg_pct),
+                    "pass_rate": pass_rate,
+                    "distribution": {
+                        "A_excellent_90_100": a_count,
+                        "B_very_good_80_89": b_count,
+                        "C_good_70_79": c_count,
+                        "D_pass_60_69": d_count,
+                        "F_fail_below_60": f_count
+                    }
+                }))
+            }
+
+            "analyze_financial_health" => {
+                let period_id = arguments
+                    .get("period_id")
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| Uuid::parse_str(s).ok());
+
+                let fee_filter = StudentFeeFilter::default();
+                let fees_list = self.finance_service.list_student_fees(ctx.tenant_id, fee_filter).await?;
+                let mut total_billed = rust_decimal::Decimal::ZERO;
+                let mut total_collected = rust_decimal::Decimal::ZERO;
+                let mut total_outstanding = rust_decimal::Decimal::ZERO;
+                let mut paid_count = 0;
+                let mut partial_count = 0;
+                let mut overdue_count = 0;
+                let mut pending_count = 0;
+
+                for f in &fees_list.items {
+                    total_billed += f.original_amount;
+                    total_collected += f.paid_amount;
+                    total_outstanding += f.balance_due;
+
+                    match f.status {
+                        orbis_domain::entities::student_fee::FeeStatus::Paid => paid_count += 1,
+                        orbis_domain::entities::student_fee::FeeStatus::PartiallyPaid => partial_count += 1,
+                        orbis_domain::entities::student_fee::FeeStatus::Overdue => overdue_count += 1,
+                        _ => pending_count += 1,
+                    }
+                }
+
+                let collection_efficiency = if total_billed > rust_decimal::Decimal::ZERO {
+                    format!("{:.1}%", (total_collected / total_billed * rust_decimal::Decimal::from(100)).to_string().parse::<f64>().unwrap_or(0.0))
+                } else {
+                    "100%".to_string()
+                };
+
+                Ok(json!({
+                    "total_fee_records": fees_list.total_count,
+                    "period_id": period_id,
+                    "total_billed_amount": total_billed.to_string(),
+                    "total_collected_revenue": total_collected.to_string(),
+                    "total_outstanding_balance": total_outstanding.to_string(),
+                    "collection_efficiency_rate": collection_efficiency,
+                    "status_breakdown": {
+                        "fully_paid_count": paid_count,
+                        "partially_paid_count": partial_count,
+                        "overdue_count": overdue_count,
+                        "pending_count": pending_count
+                    }
+                }))
+            }
+
+            "draft_parent_notice" => {
+                let sid_str = arguments
+                    .get("student_id")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| DomainError::Validation("student_id is required".into()))?;
+                let sid = Uuid::parse_str(sid_str)
+                    .map_err(|_| DomainError::Validation("Invalid student UUID".into()))?;
+                let notice_type = arguments.get("notice_type").and_then(|v| v.as_str()).unwrap_or("academic_warning");
+                let language = arguments.get("language").and_then(|v| v.as_str()).unwrap_or("ar");
+                let custom_notes = arguments.get("custom_notes").and_then(|v| v.as_str()).unwrap_or("");
+
+                let student_opt = self.student_service.get_student(sid).await?;
+                let student = student_opt
+                    .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", sid)))?;
+
+                let student_name = format!("{} {}", student.person.first_name, student.person.last_name);
+
+                let system_instructions = format!(
+                    "You are an official school administrative assistant drafting a formal parent communication letter for the Orbis Education Platform.\n\
+                     Language: {}\n\
+                     Tone: Respectful, professional, clear, constructive, and empathetic.\n\
+                     Notice Type: {}\n\
+                     Student Name: {}\n\
+                     Student Number: {}\n\
+                     Additional Notes: {}\n\n\
+                     Return a JSON object with fields: 'title', 'greeting', 'body', 'action_required', 'closing', 'contact_signoff'.",
+                    language, notice_type, student_name, student.student.student_number, custom_notes
+                );
+
+                let user_prompt = format!(
+                    "Draft the parent notice for {} regarding: {}.",
+                    student_name, notice_type
+                );
+
+                let generated_text = self.llm_gateway.generate_text(ctx, "", &system_instructions, &user_prompt, 0.3).await?;
+                let clean_str = generated_text.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
+                let notice_json: serde_json::Value = serde_json::from_str(clean_str).unwrap_or_else(|_| json!({
+                    "raw_notice": generated_text,
+                    "student_name": student_name,
+                    "notice_type": notice_type
+                }));
+
+                Ok(json!({
+                    "status": "success",
+                    "notice": notice_json
+                }))
+            }
+
             _ => Err(DomainError::Validation(format!("Tool '{}' not supported", tool_name))),
         }
     }
 
-    /// Build dynamic system prompt with tenant and screen context.
-    async fn build_system_prompt(
+    /// Build dynamic system prompt with tenant, user, academic, and UI screen context.
+    pub async fn build_system_prompt(
         &self,
-        ctx: &RequestContext,
+        _ctx: &RequestContext,
+        user_context: &UserAiContext,
+        academic_context: &AcademicAiContext,
+        ui_context: Option<&UiContext>,
         screen_context: Option<&serde_json::Value>,
     ) -> String {
-        let user_repr = match &ctx.actor {
-            orbis_domain::iam::actor::Actor::User(uid) => format!("User ({})", uid),
-            orbis_domain::iam::actor::Actor::Agent(aid) => format!("Agent ({})", aid),
-            orbis_domain::iam::actor::Actor::Autopilot => "Autopilot Engine".to_string(),
-            orbis_domain::iam::actor::Actor::System => "System".to_string(),
-        };
-
         let mut prompt = format!(
-            "You are Orbis AI, the intelligent, authoritative assistant for the Orbis Education Platform.\n\
-             Tenant Organization ID: {}\n\
-             Active User: {}\n\
-             Language: Respond in Arabic or English based on user query language.\n\
-             Tone: Professional, helpful, precise, educational, and secure.\n\
-             Capabilities: You can inspect student profiles, check grades, analyze attendance, query financial accounts and fees, trigger report generation, and view organization statistics.\n\
-             Safety Rules:\n\
-             1. Always verify and execute domain tools to provide authentic real-time data.\n\
-             2. Never make up data or IDs.\n\
-             3. If a tool proposes a consequential state modification, inform the user clearly that confirmation is required in their Cockpit.",
-            ctx.tenant_id,
-            user_repr
+            "You are Orbis AI, the intelligent, authoritative enterprise assistant for the Orbis Educational Operating System.\n\n\
+             [CONTEXT & IDENTITY]\n\
+             - Tenant: {} (Org ID: {})\n\
+             - User Role: {}\n\
+             - Assigned Roles: [{}]\n\
+             - Permissions Count: {}\n\
+             - Branch / Scope Path: {}\n",
+            user_context.org_name.as_deref().unwrap_or("Orbis School"),
+            user_context.org_id,
+            user_context.effective_role.as_deref().unwrap_or("Authorized User"),
+            user_context.roles.join(", "),
+            user_context.permissions.len(),
+            user_context.org_unit_path.as_deref().unwrap_or("Root / Organization-wide")
         );
 
-        if let Some(screen) = screen_context {
+        if academic_context.academic_year_name.is_some()
+            || academic_context.period_name.is_some()
+            || academic_context.class_name.is_some()
+            || academic_context.subject_name.is_some()
+        {
+            prompt.push_str("\n[ACADEMIC CONTEXT]\n");
+            if let Some(ref y) = academic_context.academic_year_name {
+                prompt.push_str(&format!("- Academic Year: {}\n", y));
+            }
+            if let Some(ref p) = academic_context.period_name {
+                prompt.push_str(&format!("- Active Period: {}\n", p));
+            }
+            if let Some(ref c) = academic_context.class_name {
+                prompt.push_str(&format!("- Selected Class: {}\n", c));
+            }
+            if let Some(ref s) = academic_context.subject_name {
+                prompt.push_str(&format!("- Selected Subject: {}\n", s));
+            }
+        }
+
+        if let Some(ui) = ui_context {
+            prompt.push_str("\n[ACTIVE UI SCREEN CONTEXT]\n");
+            if let Some(ref route) = ui.route {
+                prompt.push_str(&format!("- Route: {}\n", route));
+            }
+            if let Some(ref screen) = ui.screen {
+                prompt.push_str(&format!("- Screen: {}\n", screen));
+            }
+            if let Some(ref domain) = ui.domain {
+                prompt.push_str(&format!("- Domain: {}\n", domain));
+            }
+            if let Some(ref etype) = ui.entity_type {
+                prompt.push_str(&format!("- Viewing Entity Type: {}\n", etype));
+            }
+            if let Some(eid) = ui.entity_id {
+                prompt.push_str(&format!("- Primary Entity ID: {}\n", eid));
+            }
+            if !ui.selected_entity_ids.is_empty() {
+                prompt.push_str(&format!("- Selected Entity IDs: {:?}\n", ui.selected_entity_ids));
+            }
+            if let Some(ref filters) = ui.active_filters {
+                prompt.push_str(&format!("- Active Filters: {}\n", filters));
+            }
+        } else if let Some(screen) = screen_context {
             prompt.push_str(&format!(
-                "\n\nActive Screen Context:\n```json\n{}\n```",
+                "\n[ACTIVE SCREEN DATA]\n```json\n{}\n```\n",
                 screen
             ));
         }
+
+        prompt.push_str(
+            "\n[OPERATIONAL & SAFETY CONTRACT]\n\
+             1. Always query and execute authoritative domain tools to produce real-time, authentic institutional data. Never fabricate student names, IDs, grades, or finances.\n\
+             2. Respect user permissions and role boundaries at all times.\n\
+             3. Consequential actions (e.g. changing student status, triggering autopilot tasks) must be proposed for user review and confirmed through Cockpit.\n\
+             4. For educational assessments, generate structured blueprints and draft questions adhering to Bloom's taxonomy; final publication and subjective grading suggestions always require teacher review and sign-off.\n\
+             5. Respond in Arabic or English matching the user's conversation language."
+        );
 
         prompt
     }

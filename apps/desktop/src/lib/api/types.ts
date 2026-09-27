@@ -1570,12 +1570,69 @@ export interface AiMessage {
   created_at?: string;
 }
 
+export type ToolCategory = "read" | "analysis" | "generation" | "action";
+
+export interface TeachingAssignmentInfo {
+  class_subject_id: string;
+  class_id: string;
+  class_name: string;
+  subject_id: string;
+  subject_name: string;
+  period_id?: string | null;
+}
+
+export interface UserAiContext {
+  user_id?: string | null;
+  user_name?: string | null;
+  effective_role?: string | null;
+  roles: string[];
+  permissions: string[];
+  org_id: string;
+  org_name?: string | null;
+  org_unit_id?: string | null;
+  org_unit_path?: string | null;
+  employee_id?: string | null;
+  is_teacher: boolean;
+  teaching_assignments: TeachingAssignmentInfo[];
+  is_parent: boolean;
+  dependent_student_ids: string[];
+}
+
+export interface AcademicAiContext {
+  academic_year_id?: string | null;
+  academic_year_name?: string | null;
+  period_id?: string | null;
+  period_name?: string | null;
+  period_state?: string | null;
+  class_id?: string | null;
+  class_name?: string | null;
+  subject_id?: string | null;
+  subject_name?: string | null;
+  class_subject_id?: string | null;
+}
+
+export interface UiContext {
+  route?: string | null;
+  screen?: string | null;
+  domain?: string | null;
+  entity_type?: string | null;
+  entity_id?: string | null;
+  selected_entity_ids?: string[];
+  active_filters?: Record<string, unknown> | null;
+  metadata?: Record<string, unknown> | null;
+  period_id?: string | null;
+  class_id?: string | null;
+  subject_id?: string | null;
+  class_subject_id?: string | null;
+}
+
 export interface AiToolDefinition {
   name: string;
   description: string;
   parameters_schema: Record<string, unknown>;
   required_permission?: string | null;
   is_consequential: boolean;
+  category?: ToolCategory;
 }
 
 export interface AiProposedAction {
@@ -1589,6 +1646,8 @@ export interface AiProposedAction {
 export interface AiChatRequest {
   messages: AiMessage[];
   screen_context?: Record<string, unknown> | null;
+  ui_context?: UiContext | null;
+  academic_context?: AcademicAiContext | null;
   agent_type?: string | null;
   model?: string | null;
 }
@@ -1597,6 +1656,8 @@ export interface AiChatResponse {
   response: string;
   executed_tools: AiToolResult[];
   proposed_actions: AiProposedAction[];
+  resolved_user_context?: UserAiContext | null;
+  resolved_academic_context?: AcademicAiContext | null;
 }
 
 export interface AiStoredMessage {

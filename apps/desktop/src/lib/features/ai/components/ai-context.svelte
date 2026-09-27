@@ -1,11 +1,12 @@
 <script lang="ts">
 import { aiContext } from "$lib/stores";
 import type { AiPageContext } from "$lib/stores/ai-context.svelte";
+import { onMount } from "svelte";
 
-let { domain, pageName, recordId, metadata }: AiPageContext = $props();
+let props: AiPageContext = $props();
 
-$effect(() => {
-  aiContext.setContext({ domain, pageName, recordId, metadata });
+onMount(() => {
+  aiContext.setContext(props);
   return () => {
     aiContext.clearContext();
   };

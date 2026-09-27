@@ -11,8 +11,6 @@
   let {
     isStandalone = false,
     headerTitle = "",
-    messagesLength = 0,
-    currentOrgId = "",
     viewMode = "chat",
     sessions = [],
     currentSessionId = null,
@@ -28,8 +26,6 @@
   }: {
     isStandalone: boolean;
     headerTitle: string;
-    messagesLength: number;
-    currentOrgId: string;
     viewMode?: "chat" | "cockpit";
     sessions?: AiChatSession[];
     currentSessionId?: string | null;
