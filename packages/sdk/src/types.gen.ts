@@ -457,10 +457,12 @@ export type ExamSessionDto = {
 };
 
 export type FeeTemplateDto = {
+    applicable_levels?: string | null;
     category: string;
     code: string;
     currency: string;
     default_amount: string;
+    frequency?: string;
     id: string;
     is_mandatory: boolean;
     name: string;

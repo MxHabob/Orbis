@@ -61,6 +61,8 @@ pub struct FeeTemplateDto {
     pub currency: String,
     pub revenue_account_id: String,
     pub receivable_account_id: String,
+    pub applicable_levels: Option<String>,
+    pub frequency: String,
     pub is_mandatory: bool,
     pub is_active: bool,
     pub created_at: String,
@@ -68,6 +70,10 @@ pub struct FeeTemplateDto {
 }
 
 pub fn fee_template_to_dto(t: FeeTemplate) -> FeeTemplateDto {
+    let applicable_levels = t.applicable_levels.map(|levels| {
+        serde_json::to_string(&serde_json::json!({ "levels": levels })).unwrap_or_default()
+    });
+
     FeeTemplateDto {
         id: t.id.to_string(),
         org_id: t.org_id.to_string(),
@@ -79,6 +85,8 @@ pub fn fee_template_to_dto(t: FeeTemplate) -> FeeTemplateDto {
         currency: t.currency_code,
         revenue_account_id: t.revenue_account_id.to_string(),
         receivable_account_id: t.receivable_account_id.to_string(),
+        applicable_levels,
+        frequency: t.frequency.to_string(),
         is_mandatory: t.is_mandatory,
         is_active: t.is_active,
         created_at: t.created_at.to_rfc3339(),
@@ -464,17 +472,7 @@ pub async fn finance_list_fee_templates(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<FeeTemplateDto>>, String> {
     let ctx = make_ctx(&state);
-    let mut items = state.finance_service.list_fee_templates(ctx.tenant_id).await.map_err(|e| e.to_string())?;
-
-    if items.is_empty() {
-        let now = chrono::Utc::now().to_rfc3339();
-        let curr = state.org_repo.find_by_id(ctx.tenant_id).await.ok().flatten().and_then(|o| o.base_currency_code).unwrap_or_else(|| "SAR".to_string());
-        let _ = orbis_infra::adapters::bootstrap_adapter::seed_fee_templates(&state.db, ctx.tenant_id, &curr, &now).await;
-        if let Ok(reloaded) = state.finance_service.list_fee_templates(ctx.tenant_id).await {
-            items = reloaded;
-        }
-    }
-
+    let items = state.finance_service.list_fee_templates(ctx.tenant_id).await.map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(fee_template_to_dto).collect()))
 }
 

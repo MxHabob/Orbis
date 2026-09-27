@@ -114,6 +114,7 @@ pub struct ValidatedOnboardingFee {
     pub category: String,
     pub default_amount: f64,
     pub currency_code: String,
+    pub applicable_levels: Option<Vec<String>>,
     pub frequency: String,
     pub is_mandatory: bool,
 }

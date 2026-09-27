@@ -2020,10 +2020,12 @@ impl OnboardingPort for OnboardingAdapterImpl {
             };
 
             for f in &data.fee_templates {
+                let applicable_levels_json = f.applicable_levels.as_ref().map(|l| serde_json::to_string(&serde_json::json!({ "levels": l })).unwrap_or_default());
+
                 txn.execute(Statement::from_sql_and_values(
                     txn.get_database_backend(),
-                    "INSERT INTO fee_templates (id, org_id, code, name, name_ar, category, default_amount, currency_code, revenue_account_id, receivable_account_id, frequency, is_mandatory, is_active, created_at, updated_at) \
-                     SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 1, $13, $14 \
+                    "INSERT INTO fee_templates (id, org_id, code, name, name_ar, category, default_amount, currency_code, revenue_account_id, receivable_account_id, applicable_levels, frequency, is_mandatory, is_active, created_at, updated_at) \
+                     SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 1, $14, $15 \
                      WHERE NOT EXISTS (SELECT 1 FROM fee_templates WHERE org_id = $2 AND code = $3)",
                     vec![
                         f.id.into(), org_id.into(), f.code.clone().into(),
@@ -2031,6 +2033,7 @@ impl OnboardingPort for OnboardingAdapterImpl {
                         f.category.clone().into(), f.default_amount.into(),
                         f.currency_code.clone().into(),
                         rev_id.into(), rec_id.into(),
+                        applicable_levels_json.into(),
                         f.frequency.clone().into(),
                         (if f.is_mandatory { 1i32 } else { 0i32 }).into(),
                         now.clone().into(), now.clone().into(),

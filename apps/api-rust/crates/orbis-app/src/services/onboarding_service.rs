@@ -186,6 +186,8 @@ pub struct OnboardingFeeItemDto {
     pub category: String,
     #[serde(alias = "default_amount")]
     pub default_amount: f64,
+    #[serde(default, alias = "applicable_levels")]
+    pub applicable_levels: Option<Vec<String>>,
     pub frequency: String,
     #[serde(default = "default_true", alias = "is_mandatory")]
     pub is_mandatory: bool,
@@ -398,6 +400,7 @@ impl OnboardingService {
                 category: f.category.clone(),
                 default_amount: f.default_amount,
                 currency_code: request.profile.base_currency_code.clone(),
+                applicable_levels: f.applicable_levels.clone(),
                 frequency: f.frequency.clone(),
                 is_mandatory: f.is_mandatory,
             }

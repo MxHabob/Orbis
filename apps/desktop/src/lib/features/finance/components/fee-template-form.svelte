@@ -1,8 +1,10 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
-import { api, OrbisError } from "$lib/api";
+import { api, queryKeys } from "$lib/api";
+import { useQueryClient } from "@tanstack/svelte-query";
 import { feeTemplateInputSchema } from "@orbis/schemas";
+import { createClassesQuery } from "$lib/features/academics/queries";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
@@ -53,14 +55,35 @@ const form = new FormController({
   schema: feeTemplateInputSchema,
 });
 
-function fieldError(field: string): string | undefined {
-  return form.errors[field]?.[0];
-}
 
-// Grade levels applicability state
-let classes = $state<any[]>([]);
-let isLoadingClasses = $state(false);
-let uniqueLevels = $state<{ level: string; label: string }[]>([]);
+
+const queryClient = useQueryClient();
+
+// TanStack Query for Classes
+const classesQuery = createClassesQuery(() => orgId);
+const classes = $derived(classesQuery.data ?? []);
+const isLoadingClasses = $derived(classesQuery.isLoading);
+
+// Dynamic grade levels extracted directly from the classes database table (zero hardcoded dictionaries)
+const uniqueLevels = $derived.by(() => {
+  const levelMap = new Map<string, { ar: string; en: string }>();
+  for (const cls of classes) {
+    if (cls.level) {
+      if (!levelMap.has(cls.level)) {
+        levelMap.set(cls.level, {
+          ar: (cls as any).name_ar || cls.name || cls.level,
+          en: cls.name || (cls as any).name_ar || cls.level,
+        });
+      }
+    }
+  }
+
+  return Array.from(levelMap.entries()).map(([lvl, nameObj]) => ({
+    level: lvl,
+    label: l(nameObj.ar, nameObj.en),
+  }));
+});
+
 let applyToAllGrades = $state(true);
 let selectedLevels = $state<string[]>([]);
 
@@ -68,15 +91,11 @@ let selectedLevels = $state<string[]>([]);
 const categories = $derived([
   {
     value: "tuition",
-    label: m.common_ft_category_tuition
-      ? m.common_ft_category_tuition()
-      : m.common_ft_category_tuition(),
+    label: m.common_ft_category_tuition(),
   },
   {
     value: "transport",
-    label: m.common_ft_category_transport
-      ? m.common_ft_category_transport()
-      : m.common_ft_category_transport(),
+    label: m.common_ft_category_transport(),
   },
   {
     value: "books",
@@ -84,21 +103,15 @@ const categories = $derived([
   },
   {
     value: "uniform",
-    label: m.common_ft_category_uniform
-      ? m.common_ft_category_uniform()
-      : m.common_ft_category_uniform(),
+    label: m.common_ft_category_uniform(),
   },
   {
     value: "exam",
-    label: m.common_ft_category_exam
-      ? m.common_ft_category_exam()
-      : m.common_ft_category_exam(),
+    label: m.common_ft_category_exam(),
   },
   {
     value: "other",
-    label: m.common_guardians_relationship_other
-      ? m.common_guardians_relationship_other()
-      : m.common_guardians_relationship_other(),
+    label: m.common_guardians_relationship_other(),
   },
 ]);
 const categoryLabels = $derived(
@@ -114,27 +127,23 @@ const selectedCategoryLabel = $derived(
 const frequencies = $derived([
   {
     value: "once",
-    label: m.common_ft_frequency_once
-      ? m.common_ft_frequency_once()
-      : m.common_ft_frequency_once(),
+    label: m.common_ft_frequency_once(),
   },
   {
     value: "monthly",
-    label: m.common_ft_frequency_monthly
-      ? m.common_ft_frequency_monthly()
-      : m.common_ft_frequency_monthly(),
+    label: m.common_ft_frequency_monthly(),
   },
   {
     value: "termly",
-    label: m.common_ft_frequency_termly
-      ? m.common_ft_frequency_termly()
-      : m.common_ft_frequency_termly(),
+    label: m.common_ft_frequency_termly(),
   },
   {
     value: "yearly",
-    label: m.common_ft_frequency_yearly
-      ? m.common_ft_frequency_yearly()
-      : m.common_ft_frequency_yearly(),
+    label: m.common_ft_frequency_yearly(),
+  },
+  {
+    value: "annual",
+    label: m.common_ft_frequency_yearly(),
   },
 ]);
 const frequencyLabels = $derived(
@@ -154,17 +163,26 @@ $effect(() => {
     form.values.name_ar = template.name_ar || null;
     form.values.code = template.code || null;
     form.values.category = template.category || "tuition";
-    form.values.frequency = template.frequency || "yearly";
-    form.values.is_mandatory = template.is_mandatory === 1;
+    form.values.frequency = template.frequency === "annual" ? "yearly" : (template.frequency || "yearly");
+    form.values.is_mandatory = template.is_mandatory === 1 || template.is_mandatory === true;
 
     // Load amount directly from default_amount
     form.values.default_amount = template.default_amount || 0;
 
-    // Load applicable levels
+    // Load applicable levels (handles JSON string, object, or string array)
     if (template.applicable_levels) {
       try {
-        const rules = JSON.parse(template.applicable_levels);
-        const levels = rules.levels || (rules.level ? [rules.level] : []);
+        let levels: string[] = [];
+        if (typeof template.applicable_levels === "string") {
+          const parsed = JSON.parse(template.applicable_levels);
+          levels = Array.isArray(parsed) ? parsed : (parsed.levels || (parsed.level ? [parsed.level] : []));
+        } else if (Array.isArray(template.applicable_levels)) {
+          levels = template.applicable_levels;
+        } else if (typeof template.applicable_levels === "object") {
+          const obj = template.applicable_levels as any;
+          levels = Array.isArray(obj.levels) ? obj.levels : (obj.level ? [obj.level] : []);
+        }
+
         if (levels.length > 0) {
           selectedLevels = levels;
           applyToAllGrades = false;
@@ -180,54 +198,6 @@ $effect(() => {
       selectedLevels = [];
       applyToAllGrades = true;
     }
-  }
-});
-
-async function loadClasses() {
-  if (!orgId) return;
-  isLoadingClasses = true;
-  try {
-    const list = await api.listClasses();
-    classes = list;
-
-    const levelNames: Record<string, { en: string; ar: string }> = {
-      kg1: { en: "KG 1", ar: "روضة أولى" },
-      kg2: { en: "KG 2", ar: "روضة ثانية" },
-      grade1: { en: "Grade 1", ar: "الصف الأول" },
-      grade2: { en: "Grade 2", ar: "الصف الثاني" },
-      grade3: { en: "Grade 3", ar: "الصف الثالث" },
-      grade4: { en: "Grade 4", ar: "الصف الرابع" },
-      grade5: { en: "Grade 5", ar: "الصف الخامس" },
-      grade6: { en: "Grade 6", ar: "الصف السادس" },
-      grade7: { en: "Grade 7", ar: "الصف السابع" },
-      grade8: { en: "Grade 8", ar: "الصف الثامن" },
-      grade9: { en: "Grade 9", ar: "الصف التاسع" },
-    };
-
-    const levelsSet = new Set<string>();
-    for (const cls of list) {
-      if (cls.level) {
-        levelsSet.add(cls.level);
-      }
-    }
-
-    uniqueLevels = Array.from(levelsSet).map((lvl) => {
-      const nameObj = levelNames[lvl] || { en: lvl, ar: lvl };
-      return {
-        level: lvl,
-        label: l(nameObj.ar, nameObj.en),
-      };
-    });
-  } catch (e) {
-    console.error("Error loading classes for fee template form:", e);
-  } finally {
-    isLoadingClasses = false;
-  }
-}
-
-$effect(() => {
-  if (orgId) {
-    loadClasses();
   }
 });
 
@@ -248,6 +218,9 @@ async function handleSubmit() {
       await api.createFeeTemplate(request);
       toast.success(m.common_ft_create_success());
     }
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.finance.feeTemplates(orgId),
+    });
   });
   if (submitted) onSuccess();
   else if (form.formError) toast.error(form.formError);
@@ -412,7 +385,7 @@ async function handleSubmit() {
                       selectedLevels = selectedLevels.filter(x => x !== lvl.level);
                     }
                   }}
-                  disabled={isSubmitting}
+                  disabled={form.isSubmitting}
                 />
                 <Label for={`ft_level_${lvl.level}`} class="text-xs cursor-pointer text-start">
                   {lvl.label}

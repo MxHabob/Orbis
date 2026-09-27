@@ -22,14 +22,18 @@ let {
 
 <Sheet.Root bind:open>
   <Sheet.Content side="right" class="w-105 sm:w-120 h-full p-0 flex flex-col overflow-hidden">
-    <FeeTemplateForm 
-      {orgId} 
-      {template}
-      onSuccess={() => {
-        open = false;
-        onSuccess();
-      }} 
-      onCancel={() => (open = false)} 
-    />
+    {#if open}
+      {#key (template?.id || "new")}
+        <FeeTemplateForm 
+          {orgId} 
+          {template}
+          onSuccess={() => {
+            open = false;
+            onSuccess();
+          }} 
+          onCancel={() => (open = false)} 
+        />
+      {/key}
+    {/if}
   </Sheet.Content>
 </Sheet.Root>

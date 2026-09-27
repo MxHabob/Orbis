@@ -843,15 +843,22 @@ export class OnboardingState {
       };
 
       // 6. Finance configuration & fee templates
-      const feeTemplates = Object.entries(this.finance.registrationFees).map(([code, amount]) => ({
-        code: `FEE_${code.toUpperCase()}`,
-        name: `${code} Fee`,
-        nameAr: `رسوم ${code}`,
-        category: "tuition",
-        defaultAmount: amount,
-        frequency: "annual",
-        isMandatory: true,
-      }));
+      const feeTemplates = Object.entries(this.finance.registrationFees).map(([levelCode, amount]) => {
+        const gradeLevelObj = this.academics.gradeLevels.find((gl) => gl.level === levelCode);
+        const nameAr = gradeLevelObj?.name_ar ? `رسوم ${gradeLevelObj.name_ar}` : `رسوم ${levelCode}`;
+        const nameEn = gradeLevelObj?.name ? `${gradeLevelObj.name} Tuition Fee` : `${levelCode} Fee`;
+
+        return {
+          code: `FEE_${levelCode.toUpperCase()}`,
+          name: nameEn,
+          nameAr,
+          category: "tuition",
+          defaultAmount: amount,
+          applicableLevels: [levelCode],
+          frequency: "annual",
+          isMandatory: true,
+        };
+      });
 
       const finance = {
         initializeChartOfAccounts: true,
