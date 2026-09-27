@@ -36,7 +36,9 @@ function getTeacherLabel(t: any) {
   const enName = t.name_en || t.nameEn || t.full_name || t.email;
   const localized = l(arName, enName);
   if (localized) return localized;
-  return String(t.full_name || t.email || t.id || "");
+  const composite = `${t.first_name || ""} ${t.last_name || ""}`.trim();
+  if (composite) return composite;
+  return String(t.full_name || t.email || t.employee_number || t.id || "");
 }
 
 const selectedTeacher = $derived(
@@ -88,7 +90,14 @@ function handleValueChange(newVal: string | undefined) {
         value={String(t.id)}
         class="text-xs text-start justify-start cursor-pointer"
       >
-        {getTeacherLabel(t)}
+        <div class="flex items-center justify-between w-full gap-2 min-w-0">
+          <span class="truncate">{getTeacherLabel(t)}</span>
+          {#if t.employee_number}
+            <span class="text-[10px] font-mono text-muted-foreground/80 shrink-0">
+              #{t.employee_number}
+            </span>
+          {/if}
+        </div>
       </SelectItem>
     {/each}
     {#if teachers.length === 0 && !showAllOption}

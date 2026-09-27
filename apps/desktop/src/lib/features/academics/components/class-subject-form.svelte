@@ -35,7 +35,7 @@ import ClassSelect from "$lib/features/academics/components/class-select.svelte"
 import SubjectSelect from "$lib/features/academics/components/subject-select.svelte";
 import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
 import TeacherSelect from "$lib/features/academics/components/teacher-select.svelte";
-import { createUsersQuery } from "$lib/features/settings/queries";
+import { createEmployeesQuery } from "$lib/features/employees/queries";
 import { createAssessmentSchemesQuery } from "$lib/features/academics/queries-assessment";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { classSubjectFormInputSchema } from "@orbis/schemas";
@@ -74,24 +74,23 @@ let schemeId = $state("");
 const periodsQuery = createPeriodsQuery(() => orgId);
 const classesQuery = createClassesQuery(() => orgId);
 const subjectsQuery = createSubjectsQuery(() => orgId);
-const usersQuery = createUsersQuery(() => orgId);
+const teachersQuery = createEmployeesQuery(
+  () => orgId,
+  () => ({ employee_type: "teacher", status: "active" }),
+);
 const schemesQuery = createAssessmentSchemesQuery(() => orgId);
 
 const periods = $derived((periodsQuery.data as AcademicPeriodDto[]) ?? []);
 const classes = $derived((classesQuery.data as ClassDto[]) ?? []);
 const subjects = $derived((subjectsQuery.data as SubjectDto[]) ?? []);
-const teachers = $derived(
-  ((usersQuery.data as UserDto[]) ?? []).filter(
-    (u) => String(u.primary_role ?? u.role) === "teacher",
-  ),
-);
+const teachers = $derived(teachersQuery.data?.items ?? []);
 const schemes = $derived((schemesQuery.data as AssessmentSchemeDto[]) ?? []);
 
 const isLoading = $derived(
   periodsQuery.isLoading ||
     classesQuery.isLoading ||
     subjectsQuery.isLoading ||
-    usersQuery.isLoading,
+    teachersQuery.isLoading,
 );
 const form = new FormController({
   initialValues: {

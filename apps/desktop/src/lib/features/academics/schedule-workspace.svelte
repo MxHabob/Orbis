@@ -82,9 +82,9 @@ const subjectsQuery = createQuery(() => ({
   staleTime: 10 * 60 * 1000,
 }));
 
-const usersQuery = createQuery(() => ({
-  queryKey: ["users", orgId],
-  queryFn: () => api.listUsers(),
+const teachersQuery = createQuery(() => ({
+  queryKey: ["employees", orgId, { employee_type: "teacher", status: "active" }],
+  queryFn: () => api.listEmployees({ employee_type: "teacher", status: "active" }),
   enabled: !!orgId,
   staleTime: 5 * 60 * 1000,
 }));
@@ -99,18 +99,8 @@ const roomsQuery = createQuery(() => ({
 const periods = $derived(periodsQuery.data ?? []);
 const classes = $derived(classesQuery.data ?? []);
 const subjects = $derived(subjectsQuery.data ?? []);
-const users = $derived(usersQuery.data ?? []);
 const rooms = $derived(roomsQuery.data ?? []);
-
-// Teachers exclusively
-const teachers = $derived(
-  users.filter(
-    (u: any) =>
-      u.primary_role === "teacher" ||
-      u.role === "teacher" ||
-      (Array.isArray(u.roles) && u.roles.includes("teacher")),
-  ),
-);
+const teachers = $derived(teachersQuery.data?.items ?? []);
 
 const effectiveActivePeriodId = $derived(
   activePeriodId ||
