@@ -715,6 +715,17 @@ export class LocalClient implements OrbisApiClient {
       await invoke("finance_create_fee_template", { request: req }),
     );
   }
+  async updateFeeTemplate(
+    id: string,
+    req: Partial<CreateFeeTemplateRequest>,
+  ): Promise<FeeTemplateDto> {
+    return unwrap(
+      await invoke("finance_update_fee_template", { request: { id, ...req } }),
+    );
+  }
+  async deleteFeeTemplate(id: string): Promise<boolean> {
+    return unwrap(await invoke("finance_delete_fee_template", { id }));
+  }
   async listFeeTemplates(): Promise<FeeTemplateDto[]> {
     return unwrap(await invoke("finance_list_fee_templates"));
   }

@@ -1,7 +1,8 @@
 <!--
   @component EmployeeForm
-  Comprehensive multi-tab form for Registering and Editing Employee dossiers.
-  Integrates Unified Identity Provisioning, User Group assignment, and CSPRNG credential delivery.
+  Slide-over panel form for Creating and Editing Employee dossiers.
+  Designed to fit perfectly within Sheet layouts with Accordion sections,
+  live payroll calculations, and CSPRNG credential delivery.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -10,21 +11,32 @@ import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Textarea } from "@orbis/ui/textarea";
 import { Switch } from "@orbis/ui/switch";
+import { Button } from "@orbis/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
 } from "@orbis/ui/select";
+import * as Sheet from "@orbis/ui/sheet";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@orbis/ui/accordion";
+import { FormField, toast } from "@orbis/ui";
 import {
   Banknotes,
   BuildingOffice,
   CreditCard,
+  Eye,
+  EyeSlash,
+  LockClosed,
   ShieldCheck,
   User,
   UserGroup,
 } from "@orbis/icons";
-import { toast } from "@orbis/ui";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { extractErrorMessage } from "$lib/api";
 import type {
@@ -40,21 +52,25 @@ import {
 import { GroupSelector } from "$lib/features/groups";
 import NationalitySelect from "$lib/shared/components/nationality-select.svelte";
 import { formatNumber, l } from "$lib/core/i18n";
-    import CredentialDeliveryModal from "./credential-delivery-modal.svelte";
-    import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import CredentialDeliveryModal from "./credential-delivery-modal.svelte";
 
 interface Props {
   orgId: string;
   mode?: "create" | "edit";
   employee?: EmployeeDetailDto | null;
+  onSuccess?: (emp: EmployeeDetailDto, prov?: AccountProvisioningResultDto | null) => void;
+  onCancel?: () => void;
 }
 
-let { orgId, mode = "create", employee = null }: Props = $props();
+let { 
+  orgId, 
+  mode = "create", 
+  employee = null,
+  onSuccess,
+  onCancel,
+}: Props = $props();
 
-// Active Form Tab
-let activeTab = $state<"personal" | "employment" | "payroll" | "account">("personal");
-
-// Form State
+// Form State (Initialized directly from employee prop without $effect)
 let firstName = $state(employee?.first_name || "");
 let middleName = $state(employee?.middle_name || "");
 let lastName = $state(employee?.last_name || "");
@@ -137,15 +153,9 @@ let credentialModalOpen = $state(false);
 let provisioningResult = $state<AccountProvisioningResultDto | null>(null);
 let registeredEmployeeName = $state("");
 let registeredEmployeeId = $state<string | null>(null);
-
-let isDirty = $state(false);
-
-function markDirty() {
-  isDirty = true;
-}
+let savedEmployeeResult = $state<EmployeeDetailDto | null>(null);
 
 function toggleGroupSelection(groupId: string) {
-  markDirty();
   if (selectedGroupIds.includes(groupId)) {
     selectedGroupIds = selectedGroupIds.filter((id) => id !== groupId);
   } else {
@@ -153,50 +163,49 @@ function toggleGroupSelection(groupId: string) {
   }
 }
 
-function buildNotesPayload(): string {
-  return JSON.stringify({
+async function handleSubmit() {
+  if (!firstNameAr.trim() && !firstName.trim()) {
+    toast.error(m.employees_error_name_required?.() || "يرجى إدخال اسم الموظف");
+    return;
+  }
+
+  // Serialize payroll + text notes into notes JSON
+  const payrollPayload = {
     basic_salary: Number(basicSalary) || 0,
     housing_allowance: Number(housingAllowance) || 0,
     transport_allowance: Number(transportAllowance) || 0,
     other_allowances: Number(otherAllowances) || 0,
     gosi_deduction: Number(gosiDeduction) || 0,
     other_deductions: Number(otherDeductions) || 0,
+    gross_salary: totalGrossSalary,
+    net_salary: netPayableSalary,
     bank_name: bankName.trim(),
     bank_iban: bankIban.trim(),
     payment_method: paymentMethod,
     text_notes: textNotes.trim(),
-  });
-}
-
-async function handleSubmit() {
-  if (!firstName.trim() && !firstNameAr.trim()) {
-    toast.error(l("يرجى إدخال الاسم الأول على الأقل", "Please enter at least the first name"));
-    activeTab = "personal";
-    return;
-  }
-
-  const serializedNotes = buildNotesPayload();
+  };
+  const serializedNotes = JSON.stringify(payrollPayload);
 
   if (mode === "create") {
     const payload: RegisterEmployeeRequest = {
       first_name: firstName.trim() || firstNameAr.trim(),
       middle_name: middleName.trim() || undefined,
-      last_name: lastName.trim() || lastNameAr.trim() || "Staff",
+      last_name: lastName.trim() || lastNameAr.trim() || undefined,
       first_name_ar: firstNameAr.trim() || undefined,
       middle_name_ar: middleNameAr.trim() || undefined,
       last_name_ar: lastNameAr.trim() || undefined,
       national_id: nationalId.trim() || undefined,
       passport_number: passportNumber.trim() || undefined,
-      gender: gender || undefined,
+      gender: gender || "male",
       birth_date: birthDate || undefined,
-      nationality: nationality.trim() || undefined,
+      nationality: nationality.trim() || "Saudi",
       blood_type: bloodType || undefined,
       phone: phone.trim() || undefined,
       email: email.trim() || undefined,
       address: address.trim() || undefined,
 
       employee_number: employeeNumber.trim() || undefined,
-      employee_type: employeeType,
+      employee_type: employeeType || "Teacher",
       job_title: jobTitle.trim() || undefined,
       department: department.trim() || undefined,
       org_unit_id: orgUnitId.trim() || undefined,
@@ -220,8 +229,8 @@ async function handleSubmit() {
     try {
       const response = await registerMutation.mutateAsync(payload);
       toast.success(m.employees_save_success?.() || "تم تسجيل الموظف بنجاح");
-      isDirty = false;
 
+      savedEmployeeResult = response.employee;
       registeredEmployeeName = response.employee.full_name || response.employee.first_name;
       registeredEmployeeId = response.employee.id;
 
@@ -229,7 +238,11 @@ async function handleSubmit() {
         provisioningResult = response.provisioning;
         credentialModalOpen = true;
       } else {
-        goto(localizeHref(`/${orgId}/employees/${response.employee.id}`));
+        if (onSuccess) {
+          onSuccess(response.employee, null);
+        } else {
+          goto(localizeHref(`/${orgId}/employees/${response.employee.id}`));
+        }
       }
     } catch (err) {
       toast.error(extractErrorMessage(err));
@@ -264,10 +277,13 @@ async function handleSubmit() {
     };
 
     try {
-      await updateMutation.mutateAsync({ id: employee.id, req: payload });
+      const res = await updateMutation.mutateAsync({ id: employee.id, req: payload });
       toast.success(m.employees_save_success?.() || "تم حفظ بيانات الموظف بنجاح");
-      isDirty = false;
-      goto(localizeHref(`/${orgId}/employees/${employee.id}`));
+      if (onSuccess) {
+        onSuccess(res.employee, null);
+      } else {
+        goto(localizeHref(`/${orgId}/employees/${employee.id}`));
+      }
     } catch (err) {
       toast.error(extractErrorMessage(err));
     }
@@ -276,10 +292,20 @@ async function handleSubmit() {
 
 function handleCredentialModalClose() {
   credentialModalOpen = false;
-  if (registeredEmployeeId) {
+  if (onSuccess && savedEmployeeResult) {
+    onSuccess(savedEmployeeResult, provisioningResult);
+  } else if (registeredEmployeeId) {
     goto(localizeHref(`/${orgId}/employees/${registeredEmployeeId}`));
   } else {
     goto(localizeHref(`/${orgId}/employees`));
+  }
+}
+
+function handleCancelClick() {
+  if (onCancel) {
+    onCancel();
+  } else {
+    history.back();
   }
 }
 </script>
@@ -293,174 +319,152 @@ function handleCredentialModalClose() {
   }}
 />
 
-<div class="h-full w-full flex flex-col overflow-hidden bg-background">
-  <!-- Top Navigation Ribbon -->
-  <div class="border-b border-border/80 bg-card px-6 py-4 flex items-center justify-between shrink-0 shadow-2xs">
+<form
+  onsubmit={(e) => {
+    e.preventDefault();
+    handleSubmit();
+  }}
+  class="flex flex-col h-full overflow-hidden gap-0 bg-background text-foreground"
+>
+  <!-- Header matching sheet standards -->
+  <Sheet.Header class="px-6 py-4 border-b border-border/40 shrink-0 text-start flex flex-row items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-        <UserGroup size={20} />
+      <div class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <UserGroup size={18} />
       </div>
       <div class="flex flex-col">
-        <h1 class="text-base font-bold text-foreground">
-          {mode === "create" ? (m.employees_new_title?.() || "تسجيل موظف جديد") : (m.employees_edit_title?.() || "تعديل ملف الموظف")}
-        </h1>
+        <Sheet.Title class="text-base font-bold text-foreground">
+          {mode === "create" 
+            ? (m.employees_new_title?.() || "تسجيل موظف جديد") 
+            : (m.employees_edit_title?.() || "تعديل ملف الموظف")}
+        </Sheet.Title>
         <span class="text-xs text-muted-foreground">
-          {mode === "create" ? l("إدخال السجل الشخصي والوظيفي وتهيئة بيانات الدخول الموحدة", "Enter personal, employment, and unified identity records.") : (employee?.full_name || employee?.first_name || "")}
+          {mode === "create" 
+            ? l("إدخال السجل الشخصي والوظيفي والمالي", "Enter personal, employment, and payroll records.") 
+            : (employee?.full_name || employee?.first_name || "")}
         </span>
       </div>
     </div>
+  </Sheet.Header>
 
-    <!-- Navigation Tabs -->
-    <div class="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/60">
-      <button
-        type="button"
-        class="px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 {activeTab === 'personal' ? 'bg-card text-foreground shadow-2xs font-semibold' : 'text-muted-foreground hover:text-foreground'}"
-        onclick={() => (activeTab = "personal")}
-      >
-        <User size={13} />
-        <span>{m.employees_tab_personal?.() || "البيانات الشخصية"}</span>
-      </button>
-
-      <button
-        type="button"
-        class="px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 {activeTab === 'employment' ? 'bg-card text-foreground shadow-2xs font-semibold' : 'text-muted-foreground hover:text-foreground'}"
-        onclick={() => (activeTab = "employment")}
-      >
-        <BuildingOffice size={13} />
-        <span>{m.employees_tab_employment?.() || "البيانات الوظيفية"}</span>
-      </button>
-
-      <button
-        type="button"
-        class="px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 {activeTab === 'payroll' ? 'bg-card text-foreground shadow-2xs font-semibold' : 'text-muted-foreground hover:text-foreground'}"
-        onclick={() => (activeTab = "payroll")}
-      >
-        <Banknotes size={13} />
-        <span>{l("الرواتب والبدلات", "Payroll & Compensation")}</span>
-      </button>
-
-      {#if mode === "create"}
-        <button
-          type="button"
-          class="px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 {activeTab === 'account' ? 'bg-card text-foreground shadow-2xs font-semibold' : 'text-muted-foreground hover:text-foreground'}"
-          onclick={() => (activeTab = "account")}
-        >
-          <ShieldCheck size={13} />
-          <span>{m.employees_tab_account?.() || "حساب النظام والأمان"}</span>
-          {#if enableAccount}
-            <span class="size-1.5 rounded-full bg-emerald-500"></span>
-          {/if}
-        </button>
-      {/if}
-    </div>
-  </div>
-
-  <!-- Form Body -->
-  <div class="flex-1 min-h-0 overflow-y-auto p-6">
-    <div class="max-w-4xl mx-auto flex flex-col gap-6 pb-20">
-
-      <!-- TAB 1: PERSONAL INFORMATION -->
-      {#if activeTab === "personal"}
-        <div class="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-xs">
-          <div class="flex items-center gap-2 border-b border-border/60 pb-3">
+  <!-- Scrollable Form Body with Accordion Layout -->
+  <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
+    <Accordion type="multiple" value={["personal", "employment", "payroll", "account"]} class="flex flex-col gap-4">
+      
+      <!-- 1. PERSONAL INFORMATION -->
+      <AccordionItem value="personal" class="rounded-lg border border-border/40 bg-card/60">
+        <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline text-foreground">
+          <div class="flex items-center gap-2">
             <User size={16} class="text-primary" />
-            <h2 class="text-sm font-bold text-foreground">{m.employees_tab_personal?.() || "البيانات الشخصية والهوية"}</h2>
+            <span>{m.employees_tab_personal?.() || "البيانات الشخصية والهوية"}</span>
           </div>
-
-          <!-- Names Grid (Bilingual) -->
-          <div class="grid grid-cols-3 gap-4">
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_first_name_ar?.() || "الاسم الأول (بالعربية)"}</Label>
+        </AccordionTrigger>
+        <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
+          
+          <!-- Arabic Names -->
+          <div class="grid grid-cols-3 gap-3">
+            <FormField label={m.employees_first_name_ar?.() || "الاسم الأول (بالعربية)"} required>
+              {#snippet children()}
               <Input
                 type="text"
                 placeholder="محمد"
-                class="text-xs"
+                class="text-xs h-9"
                 bind:value={firstNameAr}
-                oninput={markDirty}
+                disabled={isSaving}
+                required
               />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_middle_name_ar?.() || "اسم الأب (بالعربية)"}</Label>
+              {/snippet}
+            </FormField>
+            <FormField label={m.employees_middle_name_ar?.() || "اسم الأب (بالعربية)"}>
+              {#snippet children()}
               <Input
                 type="text"
                 placeholder="عبدالله"
-                class="text-xs"
+                class="text-xs h-9"
                 bind:value={middleNameAr}
-                oninput={markDirty}
+                disabled={isSaving}
               />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_last_name_ar?.() || "اسم العائلة (بالعربية)"}</Label>
+              {/snippet}
+            </FormField>
+            <FormField label={m.employees_last_name_ar?.() || "اسم العائلة (بالعربية)"}>
+              {#snippet children()}
               <Input
                 type="text"
                 placeholder="الغامدي"
-                class="text-xs"
+                class="text-xs h-9"
                 bind:value={lastNameAr}
-                oninput={markDirty}
+                disabled={isSaving}
               />
-            </div>
+              {/snippet}
+            </FormField>
           </div>
 
-          <div class="grid grid-cols-3 gap-4">
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_first_name?.() || "First Name (Latin)"}</Label>
+          <!-- Latin / English Names -->
+          <div class="grid grid-cols-3 gap-3">
+            <FormField label={m.employees_first_name?.() || "First Name (Latin)"}>
+              {#snippet children()}
               <Input
                 type="text"
                 placeholder="Mohammed"
-                class="text-xs"
+                class="text-xs h-9"
                 bind:value={firstName}
-                oninput={markDirty}
+                disabled={isSaving}
               />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_middle_name?.() || "Middle Name"}</Label>
+              {/snippet}
+            </FormField>
+            <FormField label={m.employees_middle_name?.() || "Middle Name"}>
+              {#snippet children()}
               <Input
                 type="text"
                 placeholder="Abdullah"
-                class="text-xs"
+                class="text-xs h-9"
                 bind:value={middleName}
-                oninput={markDirty}
+                disabled={isSaving}
               />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_last_name?.() || "Last Name"}</Label>
+              {/snippet}
+            </FormField>
+            <FormField label={m.employees_last_name?.() || "Last Name"}>
+              {#snippet children()}
               <Input
                 type="text"
                 placeholder="Al-Ghamdi"
-                class="text-xs"
+                class="text-xs h-9"
                 bind:value={lastName}
-                oninput={markDirty}
+                disabled={isSaving}
               />
-            </div>
+              {/snippet}
+            </FormField>
           </div>
 
-          <!-- Identification & Demographics -->
-          <div class="grid grid-cols-4 gap-4 pt-2">
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_national_id?.() || "الهوية الوطنية / الإقامة"}</Label>
+          <!-- ID & Demographic Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <FormField label={m.employees_national_id?.() || "الهوية الوطنية / الإقامة"}>
+              {#snippet children()}
               <Input
                 type="text"
                 placeholder="10XXXXXXXX"
-                class="text-xs font-mono"
+                class="text-xs font-mono h-9"
                 bind:value={nationalId}
-                oninput={markDirty}
+                disabled={isSaving}
               />
-            </div>
+              {/snippet}
+            </FormField>
 
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_passport_number?.() || "رقم جواز السفر"}</Label>
+            <FormField label={m.employees_passport_number?.() || "رقم جواز السفر"}>
+              {#snippet children()}
               <Input
                 type="text"
                 placeholder="A1234567"
-                class="text-xs font-mono"
+                class="text-xs font-mono h-9"
                 bind:value={passportNumber}
-                oninput={markDirty}
+                disabled={isSaving}
               />
-            </div>
+              {/snippet}
+            </FormField>
 
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_gender?.() || "الجنس"}</Label>
-              <Select type="single" value={gender} onValueChange={(v) => { if (v) { gender = v; markDirty(); } }}>
+            <FormField label={m.employees_gender?.() || "الجنس"}>
+              {#snippet children()}
+              <Select type="single" value={gender} onValueChange={(v) => { if (v) gender = v; }} disabled={isSaving}>
                 <SelectTrigger class="text-xs h-9">
                   {gender === "male" ? (m.employees_gender_male?.() || "ذكر") : (m.employees_gender_female?.() || "أنثى")}
                 </SelectTrigger>
@@ -469,455 +473,530 @@ function handleCredentialModalClose() {
                   <SelectItem value="female">{m.employees_gender_female?.() || "أنثى"}</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+              {/snippet}
+            </FormField>
 
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_birth_date?.() || "تاريخ الميلاد"}</Label>
+            <FormField label={m.employees_birth_date?.() || "تاريخ الميلاد"}>
+              {#snippet children()}
               <Input
                 type="date"
-                class="text-xs font-mono"
+                class="text-xs font-mono h-9"
                 bind:value={birthDate}
-                oninput={markDirty}
+                disabled={isSaving}
               />
-            </div>
+              {/snippet}
+            </FormField>
           </div>
 
-          <!-- Contact & Extra Info -->
-          <div class="grid grid-cols-3 gap-4 pt-2">
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_phone?.() || "رقم الهاتف"}</Label>
+          <!-- Contact & Nationality -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <FormField label={m.employees_phone?.() || "رقم الهاتف"}>
+              {#snippet children()}
               <Input
                 type="tel"
                 placeholder="+966 5X XXX XXXX"
-                class="text-xs font-mono"
+                class="text-xs font-mono h-9"
                 bind:value={phone}
-                oninput={markDirty}
+                disabled={isSaving}
               />
-            </div>
+              {/snippet}
+            </FormField>
 
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_email?.() || "البريد الإلكتروني"}</Label>
+            <FormField label={m.employees_email?.() || "البريد الإلكتروني"}>
+              {#snippet children()}
               <Input
                 type="email"
-                placeholder="staff@orbis.edu"
-                class="text-xs font-mono"
+                placeholder="employee@school.edu.sa"
+                class="text-xs font-mono h-9"
                 bind:value={email}
-                oninput={markDirty}
+                disabled={isSaving}
               />
-            </div>
+              {/snippet}
+            </FormField>
 
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_nationality?.() || "الجنسية"}</Label>
-              <NationalitySelect
-                bind:value={nationality}
-                onchange={markDirty}
-              />
-            </div>
-          </div>
+            <FormField label={m.employees_nationality?.() || "الجنسية"}>
+              {#snippet children()}
+              <NationalitySelect bind:value={nationality} disabled={isSaving} />
+              {/snippet}
+            </FormField>
 
-          <div class="flex flex-col gap-1.5 pt-2">
-            <Label class="text-xs font-medium">{m.employees_address?.() || "العنوان السكني"}</Label>
-            <Input
-              type="text"
-              placeholder="الرياض، حي النخيل..."
-              class="text-xs"
-              bind:value={address}
-              oninput={markDirty}
-            />
-          </div>
-        </div>
-      {/if}
-
-      <!-- TAB 2: EMPLOYMENT & JOB -->
-      {#if activeTab === "employment"}
-        <div class="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-xs">
-          <div class="flex items-center gap-2 border-b border-border/60 pb-3">
-            <BuildingOffice size={16} class="text-primary" />
-            <h2 class="text-sm font-bold text-foreground">{m.employees_tab_employment?.() || "البيانات والتعيينات الوظيفية"}</h2>
-          </div>
-
-          <div class="grid grid-cols-3 gap-4">
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_employee_number?.() || "الرقم الوظيفي"}</Label>
-              <Input
-                type="text"
-                placeholder="EMP-1001"
-                class="text-xs font-mono"
-                bind:value={employeeNumber}
-                oninput={markDirty}
-              />
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_filter_type?.() || "فئة الموظف"}</Label>
-              <Select type="single" value={employeeType} onValueChange={(v) => { if (v) { employeeType = v; markDirty(); } }}>
+            <FormField label={m.employees_blood_type?.() || "فصيلة الدم"}>
+              {#snippet children()}
+              <Select type="single" value={bloodType} onValueChange={(v) => { if (v) bloodType = v; }} disabled={isSaving}>
                 <SelectTrigger class="text-xs h-9">
-                  {employeeType}
+                  {bloodType || "—"}
                 </SelectTrigger>
-                <SelectContent class="text-xs font-sans">
-                  <SelectItem value="Teacher">{m.employees_type_teacher?.() || "معلم"}</SelectItem>
-                  <SelectItem value="Admin">{m.employees_type_admin?.() || "إداري"}</SelectItem>
-                  <SelectItem value="Specialist">{m.employees_type_specialist?.() || "أخصائي"}</SelectItem>
-                  <SelectItem value="Support">{m.employees_type_support?.() || "خدمات مساندة"}</SelectItem>
+                <SelectContent class="text-xs font-mono">
+                  <SelectItem value="A+">A+</SelectItem>
+                  <SelectItem value="A-">A-</SelectItem>
+                  <SelectItem value="B+">B+</SelectItem>
+                  <SelectItem value="B-">B-</SelectItem>
+                  <SelectItem value="O+">O+</SelectItem>
+                  <SelectItem value="O-">O-</SelectItem>
+                  <SelectItem value="AB+">AB+</SelectItem>
+                  <SelectItem value="AB-">AB-</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+              {/snippet}
+            </FormField>
+          </div>
 
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_job_title?.() || "المسمى الوظيفي"}</Label>
+          <!-- Address -->
+          <FormField label={m.employees_address?.() || "العنوان الوطني ومحل الإقامة"}>
+            {#snippet children()}
+            <Input
+              type="text"
+              placeholder="الرياض، حي النخيل، شارع الملك فهد"
+              class="text-xs h-9"
+              bind:value={address}
+              disabled={isSaving}
+            />
+            {/snippet}
+          </FormField>
+
+        </AccordionContent>
+      </AccordionItem>
+
+      <!-- 2. EMPLOYMENT DETAILS -->
+      <AccordionItem value="employment" class="rounded-lg border border-border/40 bg-card/60">
+        <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline text-foreground">
+          <div class="flex items-center gap-2">
+            <BuildingOffice size={16} class="text-primary" />
+            <span>{m.employees_tab_employment?.() || "البيانات الوظيفية والتعاقدية"}</span>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
+          
+          <div class="grid grid-cols-2 gap-3">
+            <FormField label={m.employees_employee_number?.() || "الرقم الوظيفي"}>
+              {#snippet children()}
+              <Input
+                type="text"
+                placeholder="EMP-00123"
+                class="text-xs font-mono h-9"
+                bind:value={employeeNumber}
+                disabled={isSaving}
+              />
+              {/snippet}
+            </FormField>
+
+            <FormField label={m.employees_job_title?.() || "المسمى الوظيفي"}>
+              {#snippet children()}
               <Input
                 type="text"
                 placeholder="معلم رياضيات أول"
-                class="text-xs"
+                class="text-xs h-9"
                 bind:value={jobTitle}
-                oninput={markDirty}
+                disabled={isSaving}
               />
-            </div>
+              {/snippet}
+            </FormField>
           </div>
 
-          <div class="grid grid-cols-3 gap-4">
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_department?.() || "القسم / الإدارة"}</Label>
+          <div class="grid grid-cols-2 gap-3">
+            <FormField label={m.employees_department?.() || "القسم / الإدارة"}>
+              {#snippet children()}
               <Input
                 type="text"
                 placeholder="قسم العلوم والرياضيات"
-                class="text-xs"
+                class="text-xs h-9"
                 bind:value={department}
-                oninput={markDirty}
+                disabled={isSaving}
               />
-            </div>
+              {/snippet}
+            </FormField>
 
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_hire_date?.() || "تاريخ التعيين"}</Label>
+            <FormField label={m.employees_type?.() || "الفئة الوظيفية"}>
+              {#snippet children()}
+              <Select type="single" value={employeeType} onValueChange={(v) => { if (v) employeeType = v; }} disabled={isSaving}>
+                <SelectTrigger class="text-xs h-9">
+                  {employeeType === "Teacher" ? (m.employees_type_teacher?.() || "معلم / كادر تعليمي") :
+                   employeeType === "Admin" ? (m.employees_type_admin?.() || "إداري") :
+                   employeeType === "Staff" ? (m.employees_type_staff?.() || "موظف خدمات") : employeeType}
+                </SelectTrigger>
+                <SelectContent class="text-xs font-sans">
+                  <SelectItem value="Teacher">{m.employees_type_teacher?.() || "معلم / كادر تعليمي"}</SelectItem>
+                  <SelectItem value="Admin">{m.employees_type_admin?.() || "إداري"}</SelectItem>
+                  <SelectItem value="Staff">{m.employees_type_staff?.() || "موظف خدمات"}</SelectItem>
+                  <SelectItem value="Other">{m.common_guardians_relationship_other?.() || "أخرى"}</SelectItem>
+                </SelectContent>
+              </Select>
+              {/snippet}
+            </FormField>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <FormField label={m.employees_employment_type?.() || "نوع العقد"}>
+              {#snippet children()}
+              <Select type="single" value={employmentType} onValueChange={(v) => { if (v) employmentType = v; }} disabled={isSaving}>
+                <SelectTrigger class="text-xs h-9">
+                  {employmentType === "FullTime" ? (m.employees_contract_fulltime?.() || "دوام كامل") :
+                   employmentType === "PartTime" ? (m.employees_contract_parttime?.() || "دوام جزئي") : (m.employees_contract_contract?.() || "عقد محدد")}
+                </SelectTrigger>
+                <SelectContent class="text-xs font-sans">
+                  <SelectItem value="FullTime">{m.employees_contract_fulltime?.() || "دوام كامل"}</SelectItem>
+                  <SelectItem value="PartTime">{m.employees_contract_parttime?.() || "دوام جزئي"}</SelectItem>
+                  <SelectItem value="Contract">{m.employees_contract_contract?.() || "عقد محدد"}</SelectItem>
+                </SelectContent>
+              </Select>
+              {/snippet}
+            </FormField>
+
+            <FormField label={m.employees_work_shift?.() || "فترة العمل"}>
+              {#snippet children()}
+              <Select type="single" value={workShift} onValueChange={(v) => { if (v) workShift = v; }} disabled={isSaving}>
+                <SelectTrigger class="text-xs h-9">
+                  {workShift === "Morning" ? (m.employees_shift_morning?.() || "صباحي") :
+                   workShift === "Evening" ? (m.employees_shift_evening?.() || "مسائي") : (m.employees_shift_flexible?.() || "مرن")}
+                </SelectTrigger>
+                <SelectContent class="text-xs font-sans">
+                  <SelectItem value="Morning">{m.employees_shift_morning?.() || "صباحي"}</SelectItem>
+                  <SelectItem value="Evening">{m.employees_shift_evening?.() || "مسائي"}</SelectItem>
+                  <SelectItem value="Flexible">{m.employees_shift_flexible?.() || "مرن"}</SelectItem>
+                </SelectContent>
+              </Select>
+              {/snippet}
+            </FormField>
+
+            <FormField label={m.employees_hire_date?.() || "تاريخ التعيين"}>
+              {#snippet children()}
               <Input
                 type="date"
-                class="text-xs font-mono"
+                class="text-xs font-mono h-9"
                 bind:value={hireDate}
-                oninput={markDirty}
+                disabled={isSaving}
               />
-            </div>
+              {/snippet}
+            </FormField>
 
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_filter_status?.() || "الحالة الوظيفية"}</Label>
-              <Select type="single" value={status} onValueChange={(v) => { if (v) { status = v; markDirty(); } }}>
+            <FormField label={m.common_word_status?.() || "حالة الملف"}>
+              {#snippet children()}
+              <Select type="single" value={status} onValueChange={(v) => { if (v) status = v; }} disabled={isSaving}>
                 <SelectTrigger class="text-xs h-9">
-                  {status}
+                  {status === "active" ? (m.employees_status_active?.() || "على رأس العمل") :
+                   status === "suspended" ? (m.employees_status_suspended?.() || "موقوف") : (m.employees_status_terminated?.() || "منتهي عقده")}
                 </SelectTrigger>
                 <SelectContent class="text-xs font-sans">
-                  <SelectItem value="active">{m.employees_status_active?.() || "نشط"}</SelectItem>
-                  <SelectItem value="on_leave">{m.employees_status_on_leave?.() || "إجازة"}</SelectItem>
+                  <SelectItem value="active">{m.employees_status_active?.() || "على رأس العمل"}</SelectItem>
                   <SelectItem value="suspended">{m.employees_status_suspended?.() || "موقوف"}</SelectItem>
-                  <SelectItem value="terminated">{m.employees_status_terminated?.() || "منتهي الخدمة"}</SelectItem>
+                  <SelectItem value="terminated">{m.employees_status_terminated?.() || "منتهي عقده"}</SelectItem>
                 </SelectContent>
               </Select>
+              {/snippet}
+            </FormField>
+          </div>
+
+        </AccordionContent>
+      </AccordionItem>
+
+      <!-- 3. PAYROLL & COMPENSATION -->
+      <AccordionItem value="payroll" class="rounded-lg border border-border/40 bg-card/60">
+        <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline text-foreground">
+          <div class="flex items-center gap-2">
+            <Banknotes size={16} class="text-emerald-500" />
+            <span>{l("الرواتب والبدلات والتعويضات", "Payroll & Compensation")}</span>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
+          
+          <!-- Salary & Allowances Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <FormField label={l("الراتب الأساسي", "Basic Salary")}>
+              {#snippet children()}
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                class="text-xs font-mono h-9"
+                bind:value={basicSalary}
+                disabled={isSaving}
+              />
+              {/snippet}
+            </FormField>
+
+            <FormField label={l("بدل السكن", "Housing Allowance")}>
+              {#snippet children()}
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                class="text-xs font-mono h-9"
+                bind:value={housingAllowance}
+                disabled={isSaving}
+              />
+              {/snippet}
+            </FormField>
+
+            <FormField label={l("بدل النقل", "Transport Allowance")}>
+              {#snippet children()}
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                class="text-xs font-mono h-9"
+                bind:value={transportAllowance}
+                disabled={isSaving}
+              />
+              {/snippet}
+            </FormField>
+
+            <FormField label={l("بدلات ومكافآت أخرى", "Other Allowances")}>
+              {#snippet children()}
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                class="text-xs font-mono h-9"
+                bind:value={otherAllowances}
+                disabled={isSaving}
+              />
+              {/snippet}
+            </FormField>
+          </div>
+
+          <!-- Deductions Grid -->
+          <div class="grid grid-cols-2 gap-3">
+            <FormField label={l("استقطاع التأمينات (GOSI)", "GOSI / Social Insurance")}>
+              {#snippet children()}
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                class="text-xs font-mono h-9 text-rose-500"
+                bind:value={gosiDeduction}
+                disabled={isSaving}
+              />
+              {/snippet}
+            </FormField>
+
+            <FormField label={l("استقطاعات أخرى", "Other Deductions")}>
+              {#snippet children()}
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                class="text-xs font-mono h-9 text-rose-500"
+                bind:value={otherDeductions}
+                disabled={isSaving}
+              />
+              {/snippet}
+            </FormField>
+          </div>
+
+          <!-- Summary KPI Banner -->
+          <div class="grid grid-cols-3 gap-3 p-3.5 bg-muted/30 border border-border/40 rounded-lg">
+            <div class="flex flex-col text-start">
+              <span class="text-[11px] text-muted-foreground">{l("إجمالي الراتب (Gross)", "Total Gross")}</span>
+              <span class="text-sm font-bold font-mono text-foreground">{formatNumber(totalGrossSalary)} YER</span>
+            </div>
+            <div class="flex flex-col text-start">
+              <span class="text-[11px] text-muted-foreground">{l("إجمالي الاستقطاعات", "Total Deductions")}</span>
+              <span class="text-sm font-bold font-mono text-rose-500">-{formatNumber(totalDeductions)} YER</span>
+            </div>
+            <div class="flex flex-col text-start border-s border-border/40 ps-3">
+              <span class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">{l("صافي الراتب المستحق (Net)", "Net Payable")}</span>
+              <span class="text-base font-black font-mono text-emerald-600 dark:text-emerald-400">{formatNumber(netPayableSalary)} YER</span>
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_employment_type?.() || "نوع العقد"}</Label>
-              <Select type="single" value={employmentType} onValueChange={(v) => { if (v) { employmentType = v; markDirty(); } }}>
+          <!-- Bank & Routing Details -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <FormField label={l("طريقة الدفع", "Payment Method")}>
+              {#snippet children()}
+              <Select type="single" value={paymentMethod} onValueChange={(v) => { if (v) paymentMethod = v; }} disabled={isSaving}>
                 <SelectTrigger class="text-xs h-9">
-                  {employmentType}
+                  {paymentMethod === "bank_transfer" ? l("تحويل بنكي", "Bank Transfer") :
+                   paymentMethod === "cheque" ? l("شيك", "Cheque") : l("نقداً / صندوق", "Cash")}
                 </SelectTrigger>
                 <SelectContent class="text-xs font-sans">
-                  <SelectItem value="FullTime">{l("دوام كامل (Full Time)", "Full Time")}</SelectItem>
-                  <SelectItem value="PartTime">{l("دوام جزئي (Part Time)", "Part Time")}</SelectItem>
-                  <SelectItem value="Contract">{l("عقد محدد (Contract)", "Contract")}</SelectItem>
-                  <SelectItem value="Temporary">{l("مؤقت (Temporary)", "Temporary")}</SelectItem>
+                  <SelectItem value="bank_transfer">{l("تحويل بنكي", "Bank Transfer")}</SelectItem>
+                  <SelectItem value="cheque">{l("شيك", "Cheque")}</SelectItem>
+                  <SelectItem value="cash">{l("نقداً / صندوق", "Cash")}</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+              {/snippet}
+            </FormField>
 
-            <div class="flex flex-col gap-1.5">
-              <Label class="text-xs font-medium">{m.employees_work_shift?.() || "فترة العمل"}</Label>
-              <Select type="single" value={workShift} onValueChange={(v) => { if (v) { workShift = v; markDirty(); } }}>
-                <SelectTrigger class="text-xs h-9">
-                  {workShift}
-                </SelectTrigger>
-                <SelectContent class="text-xs font-sans">
-                  <SelectItem value="Morning">{l("فترة صباحية", "Morning")}</SelectItem>
-                  <SelectItem value="Evening">{l("فترة مسائية", "Evening")}</SelectItem>
-                  <SelectItem value="Rotating">{l("فترات مناوبة", "Rotating")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <FormField label={l("اسم البنك", "Bank Name")}>
+              {#snippet children()}
+              <Input
+                type="text"
+                placeholder={l("مثال: بنك الراجحي / بنك التضامن", "e.g. Al Rajhi Bank")}
+                class="text-xs h-9"
+                bind:value={bankName}
+                disabled={isSaving}
+              />
+              {/snippet}
+            </FormField>
+
+            <FormField label={l("رقم الآيبان (IBAN)", "IBAN Account Number")}>
+              {#snippet children()}
+              <Input
+                type="text"
+                placeholder="SA0000000000000000000000"
+                class="text-xs font-mono h-9 uppercase"
+                bind:value={bankIban}
+                disabled={isSaving}
+              />
+              {/snippet}
+            </FormField>
           </div>
 
-          <div class="flex flex-col gap-1.5 pt-2">
-            <Label class="text-xs font-medium">{m.employees_tab_notes?.() || "ملاحظات إدارية"}</Label>
+          <!-- Notes Textarea -->
+          <FormField label={m.employees_notes?.() || "ملاحظات إضافية"}>
+            {#snippet children()}
             <Textarea
-              placeholder={l("ملاحظات إضافية حول الموظف أو العقد...", "Additional notes...")}
-              class="text-xs min-h-20"
+              rows={2}
+              placeholder={m.employees_notes_placeholder?.() || "أدخل أي ملاحظات مهنية أو تعاقدية إضافية..."}
+              class="text-xs resize-none"
               bind:value={textNotes}
-              oninput={markDirty}
+              disabled={isSaving}
             />
-          </div>
-        </div>
-      {/if}
+            {/snippet}
+          </FormField>
 
-      <!-- TAB 3: PAYROLL & COMPENSATION -->
-      {#if activeTab === "payroll"}
-        <div class="flex flex-col gap-6 animate-in fade-in-50 duration-150">
-          <!-- Summary Metric Cards -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="flex flex-col gap-1.5 rounded-xl border border-border/80 bg-card p-4 shadow-2xs">
-              <span class="text-xs text-muted-foreground font-medium">{l("إجمالي الراتب والبدلات", "Gross Salary & Allowances")}</span>
-              <div class="flex items-baseline gap-1">
-                <span class="text-xl font-bold font-mono text-foreground">{formatNumber(totalGrossSalary)}</span>
-                <span class="text-xs text-muted-foreground">SAR / YER</span>
-              </div>
-              <span class="text-[10px] text-muted-foreground">{l("الأساسي + السكن + النقل + البدلات الأخرى", "Basic + Housing + Transport + Allowances")}</span>
-            </div>
+        </AccordionContent>
+      </AccordionItem>
 
-            <div class="flex flex-col gap-1.5 rounded-xl border border-destructive/20 bg-destructive/5 p-4 shadow-2xs">
-              <span class="text-xs text-destructive font-medium">{l("إجمالي الاستقطاعات", "Total Deductions")}</span>
-              <div class="flex items-baseline gap-1">
-                <span class="text-xl font-bold font-mono text-destructive">-{formatNumber(totalDeductions)}</span>
-                <span class="text-xs text-destructive/70">SAR / YER</span>
-              </div>
-              <span class="text-[10px] text-destructive/80">{l("التأمينات الاجتماعية + استقطاعات العقد", "GOSI + Other Deductions")}</span>
-            </div>
-
-            <div class="flex flex-col gap-1.5 rounded-xl border border-primary/30 bg-primary/5 p-4 shadow-2xs">
-              <span class="text-xs text-primary font-bold">{l("صافي الراتب المستحق", "Net Payable Salary")}</span>
-              <div class="flex items-baseline gap-1">
-                <span class="text-2xl font-black font-mono text-primary">{formatNumber(netPayableSalary)}</span>
-                <span class="text-xs font-semibold text-primary">SAR / YER</span>
-              </div>
-              <span class="text-[10px] text-primary/80">{l("صافي الراتب المحول شهرياً في المسير", "Net amount disbursed on monthly payroll")}</span>
-            </div>
-          </div>
-
-          <!-- Base Salary & Allowances Block -->
-          <div class="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-xs">
-            <div class="flex items-center gap-2 border-b border-border/60 pb-3">
-              <Banknotes size={16} class="text-primary" />
-              <h2 class="text-sm font-bold text-foreground">{l("هيكل الراتب والبدلات الشهرية", "Monthly Salary & Allowances Structure")}</h2>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="flex flex-col gap-1.5">
-                <Label class="text-xs font-bold text-foreground">{l("الراتب الأساسي الشهري", "Monthly Basic Salary")}</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  class="text-xs font-mono"
-                  bind:value={basicSalary}
-                  oninput={markDirty}
-                />
-                <span class="text-[10px] text-muted-foreground">{l("الراتب الأساسي المنصوص عليه في عقد العمل.", "Base salary stipulated in the contract.")}</span>
-              </div>
-
-              <div class="flex flex-col gap-1.5">
-                <Label class="text-xs font-medium">{l("بدل السكن الشهري", "Housing Allowance")}</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  class="text-xs font-mono"
-                  bind:value={housingAllowance}
-                  oninput={markDirty}
-                />
-              </div>
-
-              <div class="flex flex-col gap-1.5">
-                <Label class="text-xs font-medium">{l("بدل النقل والمواصلات", "Transportation Allowance")}</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  class="text-xs font-mono"
-                  bind:value={transportAllowance}
-                  oninput={markDirty}
-                />
-              </div>
-
-              <div class="flex flex-col gap-1.5">
-                <Label class="text-xs font-medium">{l("بدلات ومزايا إضافية", "Other Allowances / Benefits")}</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  class="text-xs font-mono"
-                  bind:value={otherAllowances}
-                  oninput={markDirty}
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- Deductions & Social Security Block -->
-          <div class="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-xs">
-            <div class="flex items-center gap-2 border-b border-border/60 pb-3">
-              <ShieldCheck size={16} class="text-primary" />
-              <h2 class="text-sm font-bold text-foreground">{l("الاستقطاعات الشهرية والتأمينات الاجتماعية", "Monthly Deductions & Social Security")}</h2>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="flex flex-col gap-1.5">
-                <Label class="text-xs font-medium">{l("استقطاع التأمينات الاجتماعية (حصة الموظف)", "GOSI / Social Security (Employee Share)")}</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  class="text-xs font-mono"
-                  bind:value={gosiDeduction}
-                  oninput={markDirty}
-                />
-              </div>
-
-              <div class="flex flex-col gap-1.5">
-                <Label class="text-xs font-medium">{l("استقطاعات أخرى أو ضرائب", "Other Deductions / Withholding Tax")}</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  class="text-xs font-mono"
-                  bind:value={otherDeductions}
-                  oninput={markDirty}
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- Banking & Disbursement Details Block -->
-          <div class="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-xs">
-            <div class="flex items-center gap-2 border-b border-border/60 pb-3">
-              <CreditCard size={16} class="text-primary" />
-              <h2 class="text-sm font-bold text-foreground">{l("بيانات الحساب البنكي والتحويل المالي", "Bank Account & Payment Routing")}</h2>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="flex flex-col gap-1.5">
-                <Label class="text-xs font-medium">{l("اسم البنك", "Bank Name")}</Label>
-                <Input
-                  type="text"
-                  placeholder={l("e.g. مصرف الراجحي / البنك الأهلي", "e.g. Al Rajhi Bank")}
-                  class="text-xs"
-                  bind:value={bankName}
-                  oninput={markDirty}
-                />
-              </div>
-
-              <div class="flex flex-col gap-1.5">
-                <Label class="text-xs font-medium">{l("رقم الحساب الدولي (IBAN)", "IBAN Account Number")}</Label>
-                <Input
-                  type="text"
-                  placeholder="SA00 0000 0000 0000 0000 0000"
-                  class="text-xs font-mono"
-                  bind:value={bankIban}
-                  oninput={markDirty}
-                />
-              </div>
-
-              <div class="flex flex-col gap-1.5">
-                <Label class="text-xs font-medium">{l("طريقة التحويل والصرف", "Disbursement Method")}</Label>
-                <Select type="single" value={paymentMethod} onValueChange={(v) => { if (v) { paymentMethod = v; markDirty(); } }}>
-                  <SelectTrigger class="text-xs h-9">
-                    {paymentMethod === "bank_transfer" ? l("تحويل بنكي مباشر (WPS)", "Direct Bank Transfer (WPS)") : paymentMethod === "check" ? l("شيك بنكي", "Bank Check") : l("نقداً من الخزينة", "Cash via Treasury")}
-                  </SelectTrigger>
-                  <SelectContent class="text-xs font-sans">
-                    <SelectItem value="bank_transfer">{l("تحويل بنكي مباشر (WPS)", "Direct Bank Transfer (WPS)")}</SelectItem>
-                    <SelectItem value="check">{l("شيك بنكي", "Bank Check")}</SelectItem>
-                    <SelectItem value="cash">{l("نقداً من الخزينة", "Cash via Treasury")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-        </div>
-      {/if}
-
-      <!-- TAB 4: IDENTITY PROVISIONING & USER GROUPS (CREATE MODE) -->
-      {#if activeTab === "account" && mode === "create"}
-        <div class="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-xs">
-          <div class="flex items-center justify-between border-b border-border/60 pb-3">
+      <!-- 4. SYSTEM ACCOUNT & IDENTITY (Only for create mode or when provisioning) -->
+      {#if mode === "create"}
+        <AccordionItem value="account" class="rounded-lg border border-border/40 bg-card/60">
+          <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline text-foreground">
             <div class="flex items-center gap-2">
               <ShieldCheck size={16} class="text-primary" />
-              <div class="flex flex-col">
-                <h2 class="text-sm font-bold text-foreground">{m.employees_account_provision_switch?.() || "إنشاء حساب مستخدم وربطه تلقائياً"}</h2>
-                <span class="text-xs text-muted-foreground">{m.employees_account_provision_desc?.() || "ينشئ حساب مستخدم مع بيانات اعتماد آمنة لمرة واحدة"}</span>
+              <span>{m.employees_tab_account?.() || "حساب النظام والأمان والصلاحيات"}</span>
+              {#if enableAccount}
+                <span class="size-2 rounded-full bg-emerald-500"></span>
+              {/if}
+            </div>
+          </AccordionTrigger>
+          <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
+            
+            <!-- Enable switch toggle -->
+            <div class="flex items-center justify-between p-3.5 bg-muted/20 border border-border/30 rounded-lg">
+              <div class="flex flex-col gap-0.5 text-start">
+                <span class="text-xs font-bold text-foreground">
+                  {l("إنشاء حساب مستخدم للنظام", "Provision System User Account")}
+                </span>
+                <span class="text-[11px] text-muted-foreground">
+                  {l("توليد بيانات دخول موحدة للموظف مع تفعيل الصلاحيات", "Auto-provision user login credentials and permissions")}
+                </span>
               </div>
+              <Switch bind:checked={enableAccount} disabled={isSaving} />
             </div>
 
-            <Switch
-              checked={enableAccount}
-              onCheckedChange={(c) => {
-                enableAccount = c;
-                markDirty();
-              }}
-            />
-          </div>
-
-          {#if enableAccount}
-            <div class="flex flex-col gap-5 pt-2">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="flex flex-col gap-1.5">
-                  <Label class="text-xs font-medium">{l("اسم المستخدم المفضل (اختياري)", "Preferred Username (Optional)")}</Label>
+            {#if enableAccount}
+              <!-- Username & Password Config -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <FormField label={m.employees_account_username?.() || "اسم المستخدم المفضل (اختياري)"}>
+                  {#snippet children()}
                   <Input
                     type="text"
-                    placeholder="e.g. m.ghamdi"
-                    class="text-xs font-mono"
+                    placeholder="m.alghamdi"
+                    class="text-xs font-mono h-9"
                     bind:value={preferredUsername}
-                    oninput={markDirty}
+                    disabled={isSaving}
                   />
-                  <span class="text-[10px] text-muted-foreground">{l("في حال تركه فارغاً، سيتم توليده تلقائياً من البريد أو الاسم والرقم الوظيفي.", "Auto-generated from email/name if left empty.")}</span>
-                </div>
+                  {/snippet}
+                </FormField>
 
-                <div class="flex flex-col gap-1.5 justify-center p-3 rounded-lg border border-border/50 bg-muted/20 text-xs text-muted-foreground">
-                  <span class="font-medium text-foreground text-[11px]">{l("تكامل التسليم التلقائي", "Automated Delivery")}</span>
-                  <span class="text-[10px] leading-relaxed">
-                    {l("يتم تسليم بيانات الاعتماد تلقائياً بناءً على خدمات التكامل وسياسات المنظمة، أو عرضها على الشاشة لمرة واحدة.", "Credentials are delivered automatically via active integrations and policies, or displayed one-time on screen.")}
-                  </span>
+                <div class="flex flex-col gap-1.5 text-start">
+                  <Label class="text-xs font-medium">{l("كلمة المرور المؤقتة", "Temporary Password")}</Label>
+                  {#if !showCustomPassword}
+                    <div class="flex items-center justify-between h-9 px-3 border border-border/40 rounded-lg bg-muted/20 text-xs">
+                      <span class="text-muted-foreground flex items-center gap-1.5">
+                        <LockClosed size={13} class="text-primary" />
+                        {l("توليد عشوائي آمن (CSPRNG)", "Auto-generated secure")}
+                      </span>
+                      <button
+                        type="button"
+                        class="text-[11px] text-primary hover:underline font-medium cursor-pointer"
+                        onclick={() => (showCustomPassword = true)}
+                      >
+                        {l("تخصيص يدوي", "Set manually")}
+                      </button>
+                    </div>
+                  {:else}
+                    <div class="relative">
+                      <Input
+                        type="text"
+                        placeholder="••••••••"
+                        class="text-xs font-mono h-9 pe-16"
+                        bind:value={customPassword}
+                        disabled={isSaving}
+                      />
+                      <button
+                        type="button"
+                        class="absolute end-2 top-2 text-[10px] text-muted-foreground hover:text-foreground cursor-pointer"
+                        onclick={() => {
+                          customPassword = "";
+                          showCustomPassword = false;
+                        }}
+                      >
+                        {l("توليد آلي", "Auto")}
+                      </button>
+                    </div>
+                  {/if}
                 </div>
               </div>
 
-              <!-- Assigned User Groups Selection -->
-              <div class="flex flex-col gap-2.5 pt-2">
-                <Label class="text-xs font-bold text-foreground flex items-center gap-1.5">
-                  <UserGroup size={14} class="text-primary" />
-                  {m.employees_user_groups?.() || "مجموعات المستخدمين المسندة"}
+              <!-- User Groups Selector -->
+              <div class="flex flex-col gap-2 pt-1 text-start">
+                <Label class="text-xs font-bold text-foreground">
+                  {m.employees_account_groups?.() || "تعيين المجموعات والصلاحيات (User Groups)"}
                 </Label>
-                <span class="text-[11px] text-muted-foreground">
-                  {m.employees_user_groups_desc?.() || "حدد المجموعات لمنح الصلاحيات والأدوار للموظف تلقائياً."}
-                </span>
-
-                <GroupSelector
-                  {orgId}
-                  bind:selectedGroupIds
-                  onchange={markDirty}
-                />
+                <div class="p-3 bg-muted/20 border border-border/30 rounded-lg">
+                  <GroupSelector
+                    {orgId}
+                    selectedIds={selectedGroupIds}
+                    ontoggle={toggleGroupSelection}
+                  />
+                </div>
               </div>
-            </div>
-          {/if}
-        </div>
+            {/if}
+
+          </AccordionContent>
+        </AccordionItem>
       {/if}
 
-    </div>
+    </Accordion>
   </div>
 
-  <SettingsBottomBar
-    visible={true}
-    isSaving={isSaving}
-    isDirty={isDirty}
-    saveLabel={mode === "create" ? (m.employees_new_title?.() || "تسجيل الموظف") : (m.settings_action_save_changes?.() || "حفظ التعديلات")}
-    onsave={handleSubmit}
-    onreset={() => goto(localizeHref(`/${orgId}/employees`))}
-    resetLabel={m.common_action_cancel?.() || "إلغاء"}
-  />
+  <!-- Sticky Bottom Actions -->
+  <div class="px-6 py-3 border-t border-border/40 flex gap-2 shrink-0 bg-background/80 backdrop-blur-xs">
+    <Button
+      type="button"
+      variant="ghost"
+      onclick={handleCancelClick}
+      disabled={isSaving}
+      class="flex-1 h-9 text-sm"
+    >
+      {m.common_action_cancel?.() || "إلغاء"}
+    </Button>
+    <Button
+      type="submit"
+      disabled={isSaving}
+      class="flex-1 h-9 text-sm font-semibold"
+    >
+      {#if isSaving}
+        {m.common_state_saving?.() || "جاري الحفظ..."}
+      {:else}
+        {m.common_action_save?.() || "حفظ"}
+      {/if}
+    </Button>
+  </div>
+</form>
 
-  <CredentialDeliveryModal
-    bind:open={credentialModalOpen}
-    provisioning={provisioningResult}
-    employeeName={registeredEmployeeName}
-    onclose={handleCredentialModalClose}
-  />
-</div>
+<!-- CSPRNG Credential Delivery Modal -->
+<CredentialDeliveryModal
+  bind:open={credentialModalOpen}
+  provisioning={provisioningResult}
+  employeeName={registeredEmployeeName}
+  onclose={handleCredentialModalClose}
+/>

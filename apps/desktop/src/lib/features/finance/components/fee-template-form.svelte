@@ -195,8 +195,9 @@ async function handleSubmit() {
   }
   const submitted = await form.submit(async (payload) => {
     const request = { ...payload, applicable_levels: applicableLevels };
-    if (template) {
-      toast.info(m.common_ft_update_success());
+    if (template?.id) {
+      await api.updateFeeTemplate(template.id, request);
+      toast.success(m.common_ft_update_success());
     } else {
       await api.createFeeTemplate(request);
       toast.success(m.common_ft_create_success());

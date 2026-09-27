@@ -364,6 +364,26 @@ impl FinanceService {
         self.fee_template_repo.find_by_org(org_id).await
     }
 
+    /// Delete fee template
+    pub async fn delete_fee_template(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+
+        let tmpl = self.fee_template_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Fee template {} not found", id)))?;
+
+        if tmpl.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        self.fee_template_repo.delete(id).await?;
+        Ok(())
+    }
+
     /// Create general ledger account
     pub async fn create_account(
         &self,

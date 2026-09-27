@@ -182,6 +182,8 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         finance_cmds::finance_create_account,
         finance_cmds::finance_list_accounts,
         finance_cmds::finance_create_fee_template,
+        finance_cmds::finance_update_fee_template,
+        finance_cmds::finance_delete_fee_template,
         finance_cmds::finance_list_fee_templates,
         finance_cmds::finance_generate_fee,
         finance_cmds::finance_list_student_fees,

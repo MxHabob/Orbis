@@ -793,6 +793,15 @@ export class RemoteClient implements OrbisApiClient {
   ): Promise<FeeTemplateDto> {
     return this.post("/api/v1/fee-templates", req);
   }
+  async updateFeeTemplate(
+    id: string,
+    req: Partial<CreateFeeTemplateRequest>,
+  ): Promise<FeeTemplateDto> {
+    return this.put(`/api/v1/fee-templates/${id}`, req);
+  }
+  async deleteFeeTemplate(id: string): Promise<boolean> {
+    return this.del(`/api/v1/fee-templates/${id}`);
+  }
   async listFeeTemplates(): Promise<FeeTemplateDto[]> {
     return this.get("/api/v1/fee-templates");
   }

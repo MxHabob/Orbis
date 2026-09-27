@@ -277,6 +277,14 @@ impl FeeTemplateRepository for FinanceRepoImpl {
         }
         Ok(())
     }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        FeeTemplateEntity::delete_by_id(id)
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
 }
 
 fn map_discount_template_model_to_domain(m: discount_template::Model) -> DomainDiscountTemplate {

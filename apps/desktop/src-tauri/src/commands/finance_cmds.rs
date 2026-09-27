@@ -8,7 +8,7 @@ use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use orbis_domain::entities::account::{Account, AccountType};
 use orbis_domain::entities::payment::{Payment, PaymentMethod};
-use orbis_domain::entities::fee_template::FeeTemplate;
+use orbis_domain::entities::fee_template::{FeeTemplate, FeeFrequency};
 use orbis_domain::entities::student_fee::StudentFee;
 use orbis_domain::entities::discount_template::{DiscountTemplate, DiscountType};
 use orbis_domain::entities::journal_entry::JournalEntry;
@@ -329,8 +329,26 @@ pub struct CreateFeeTemplateInput {
     pub category: Option<String>,
     pub default_amount: Decimal,
     pub currency: Option<String>,
-    pub revenue_account_id: String,
-    pub receivable_account_id: String,
+    pub revenue_account_id: Option<String>,
+    pub receivable_account_id: Option<String>,
+    pub applicable_levels: Option<serde_json::Value>,
+    pub frequency: Option<String>,
+    pub is_mandatory: Option<bool>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct UpdateFeeTemplateInput {
+    pub id: String,
+    pub code: Option<String>,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub category: Option<String>,
+    pub default_amount: Decimal,
+    pub currency: Option<String>,
+    pub revenue_account_id: Option<String>,
+    pub receivable_account_id: Option<String>,
+    pub applicable_levels: Option<serde_json::Value>,
+    pub frequency: Option<String>,
     pub is_mandatory: Option<bool>,
 }
 
@@ -444,27 +462,166 @@ pub async fn finance_list_accounts(
     Ok(ok(items.into_iter().map(account_to_dto).collect()))
 }
 
+fn parse_levels_from_json(val: Option<serde_json::Value>) -> Option<Vec<String>> {
+    let val = val?;
+    match val {
+        serde_json::Value::Array(arr) => Some(arr.into_iter().filter_map(|v| v.as_str().map(String::from)).collect()),
+        serde_json::Value::Object(obj) => {
+            obj.get("levels").and_then(|l| l.as_array()).map(|arr| {
+                arr.iter().filter_map(|v| v.as_str().map(String::from)).collect()
+            })
+        }
+        serde_json::Value::String(s) => {
+            if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&s) {
+                match parsed {
+                    serde_json::Value::Array(arr) => Some(arr.into_iter().filter_map(|v| v.as_str().map(String::from)).collect()),
+                    serde_json::Value::Object(obj) => {
+                        obj.get("levels").and_then(|l| l.as_array()).map(|arr| {
+                            arr.iter().filter_map(|v| v.as_str().map(String::from)).collect()
+                        })
+                    }
+                    _ => None,
+                }
+            } else if !s.trim().is_empty() {
+                Some(vec![s])
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
+}
+
 #[tauri::command]
 pub async fn finance_create_fee_template(
     request: CreateFeeTemplateInput,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<FeeTemplateDto>, String> {
     let ctx = make_ctx(&state);
-    let rev_id = Uuid::parse_str(&request.revenue_account_id).map_err(|_| "Invalid revenue_account_id")?;
-    let rec_id = Uuid::parse_str(&request.receivable_account_id).map_err(|_| "Invalid receivable_account_id")?;
-    let currency = request.currency.unwrap_or_else(|| "SAR".to_string());
+    let accounts = state.finance_service.list_accounts(ctx.tenant_id).await.map_err(|e| e.to_string())?;
 
-    let t = state.finance_service.create_fee_template(
-        &ctx,
-        ctx.tenant_id,
-        request.name,
-        request.default_amount,
-        currency,
-        rec_id,
-        rev_id,
-    ).await.map_err(|e| e.to_string())?;
+    let rec_id = if let Some(ref s) = request.receivable_account_id {
+        Uuid::parse_str(s).map_err(|_| "Invalid receivable_account_id")?
+    } else {
+        accounts.iter().find(|a| a.code == "110301" || a.code == "1103" || a.code.starts_with("1103"))
+            .map(|a| a.id)
+            .unwrap_or_else(Uuid::new_v4)
+    };
 
-    Ok(ok(fee_template_to_dto(t)))
+    let rev_id = if let Some(ref s) = request.revenue_account_id {
+        Uuid::parse_str(s).map_err(|_| "Invalid revenue_account_id")?
+    } else {
+        accounts.iter().find(|a| a.code == "410301" || a.code == "410101" || a.code.starts_with("41"))
+            .map(|a| a.id)
+            .unwrap_or_else(Uuid::new_v4)
+    };
+
+    let currency = request.currency.unwrap_or_else(|| "YER".to_string());
+    let freq = match request.frequency.as_deref().unwrap_or("yearly").to_lowercase().as_str() {
+        "once" => FeeFrequency::Once,
+        "monthly" => FeeFrequency::Monthly,
+        "termly" | "per_term" => FeeFrequency::PerTerm,
+        _ => FeeFrequency::Annual,
+    };
+
+    let tmpl_id = Uuid::new_v4();
+    let code = request.code.unwrap_or_else(|| format!("FEE-{}", tmpl_id.to_string().chars().take(6).collect::<String>()));
+    let levels = parse_levels_from_json(request.applicable_levels);
+    let now = chrono::Utc::now();
+
+    let tmpl = FeeTemplate {
+        id: tmpl_id,
+        org_id: ctx.tenant_id,
+        code,
+        name: request.name,
+        name_ar: request.name_ar,
+        category: request.category.unwrap_or_else(|| "tuition".to_string()),
+        default_amount: request.default_amount,
+        currency_code: currency,
+        revenue_account_id: rev_id,
+        receivable_account_id: rec_id,
+        applicable_levels: levels,
+        applicable_study_modes: None,
+        frequency: freq,
+        is_mandatory: request.is_mandatory.unwrap_or(true),
+        is_active: true,
+        created_at: now,
+        updated_at: now,
+    };
+
+    state.finance_service.fee_template_repo.save(&tmpl).await.map_err(|e| e.to_string())?;
+    Ok(ok(fee_template_to_dto(tmpl)))
+}
+
+#[tauri::command]
+pub async fn finance_update_fee_template(
+    request: UpdateFeeTemplateInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<FeeTemplateDto>, String> {
+    let ctx = make_ctx(&state);
+    let id = Uuid::parse_str(&request.id).map_err(|_| "Invalid fee template id")?;
+
+    let mut tmpl = state.finance_service.fee_template_repo.find_by_id(id).await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Fee template not found".to_string())?;
+
+    if tmpl.org_id != ctx.tenant_id {
+        return Err("Unauthorized".to_string());
+    }
+
+    tmpl.name = request.name;
+    tmpl.name_ar = request.name_ar;
+    if let Some(c) = request.code {
+        if !c.trim().is_empty() {
+            tmpl.code = c;
+        }
+    }
+    if let Some(cat) = request.category {
+        tmpl.category = cat;
+    }
+    tmpl.default_amount = request.default_amount;
+    if let Some(cur) = request.currency {
+        tmpl.currency_code = cur;
+    }
+    if let Some(rev) = request.revenue_account_id.and_then(|s| Uuid::parse_str(&s).ok()) {
+        tmpl.revenue_account_id = rev;
+    }
+    if let Some(rec) = request.receivable_account_id.and_then(|s| Uuid::parse_str(&s).ok()) {
+        tmpl.receivable_account_id = rec;
+    }
+    if let Some(freq) = request.frequency {
+        tmpl.frequency = match freq.to_lowercase().as_str() {
+            "once" => FeeFrequency::Once,
+            "monthly" => FeeFrequency::Monthly,
+            "termly" | "per_term" => FeeFrequency::PerTerm,
+            _ => FeeFrequency::Annual,
+        };
+    }
+    if let Some(mand) = request.is_mandatory {
+        tmpl.is_mandatory = mand;
+    }
+
+    if let Some(levels_val) = request.applicable_levels {
+        tmpl.applicable_levels = parse_levels_from_json(Some(levels_val));
+    } else {
+        tmpl.applicable_levels = None;
+    }
+
+    tmpl.updated_at = chrono::Utc::now();
+    state.finance_service.fee_template_repo.save(&tmpl).await.map_err(|e| e.to_string())?;
+
+    Ok(ok(fee_template_to_dto(tmpl)))
+}
+
+#[tauri::command]
+pub async fn finance_delete_fee_template(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<bool>, String> {
+    let ctx = make_ctx(&state);
+    let template_id = Uuid::parse_str(&id).map_err(|_| "Invalid fee template id")?;
+    state.finance_service.delete_fee_template(&ctx, ctx.tenant_id, template_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(true))
 }
 
 #[tauri::command]

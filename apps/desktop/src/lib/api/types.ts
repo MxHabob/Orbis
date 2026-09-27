@@ -1316,6 +1316,8 @@ export interface OrbisApiClient {
   createAccount(req: CreateAccountRequest): Promise<AccountDto>;
   listAccounts(): Promise<AccountDto[]>;
   createFeeTemplate(req: CreateFeeTemplateRequest): Promise<FeeTemplateDto>;
+  updateFeeTemplate(id: string, req: Partial<CreateFeeTemplateRequest>): Promise<FeeTemplateDto>;
+  deleteFeeTemplate(id: string): Promise<boolean>;
   listFeeTemplates(): Promise<FeeTemplateDto[]>;
   generateStudentFee(req: GenerateFeeRequest): Promise<StudentFeeDto>;
   listStudentFees(filter?: StudentFeeFilterParams): Promise<StudentFeeDto[]>;

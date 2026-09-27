@@ -400,6 +400,7 @@ pub trait FeeTemplateRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<FeeTemplate>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<FeeTemplate>, DomainError>;
     async fn save(&self, template: &FeeTemplate) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]

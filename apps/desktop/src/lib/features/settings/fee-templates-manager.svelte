@@ -4,44 +4,36 @@ Lists all fee templates with OrbisGrid, allowing CRUD through FeeTemplateSheet.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
-import { api } from "$lib/api";
+import { api, queryKeys } from "$lib/api";
+import { useQueryClient } from "@tanstack/svelte-query";
+import { createFeeTemplatesQuery } from "$lib/features/finance/queries";
+import { confirmStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { DocumentPage, Plus, Refresh } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { toast } from "@orbis/ui";
 import FeeTemplateSheet from "$lib/features/finance/components/fee-template-sheet.svelte";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
+import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { feeTemplateFilterFields } from "$lib/core/filter-configs";
 
 let { orgId }: { orgId: string } = $props();
 
+const queryClient = useQueryClient();
+
+// Queries
+const feeTemplatesQuery = createFeeTemplatesQuery(() => orgId);
+const templates = $derived(feeTemplatesQuery.data ?? []);
+const isLoading = $derived(feeTemplatesQuery.isLoading);
+
 // State
-let templates = $state<any[]>([]);
-let isLoading = $state(true);
 let isSheetOpen = $state(false);
 let selectedTemplate = $state<any | null>(null);
 let activeFilter = $state<UniversalFilter>({
   logic: "AND",
   conditions: [],
   groups: [],
-});
-
-async function loadTemplates() {
-  isLoading = true;
-  try {
-    templates = await api.listFeeTemplates();
-  } catch (e) {
-    toast.error((e as any)?.message || "Failed to load fee templates");
-  } finally {
-    isLoading = false;
-  }
-}
-
-onMount(() => {
-  if (orgId) loadTemplates();
 });
 
 function getCategoryLabel(catStr: string) {
@@ -59,17 +51,22 @@ function getFrequencyLabel(freqStr: string) {
   const f = String(freqStr).toLowerCase();
   if (f === "once") return m.common_ft_frequency_once?.() || "Once";
   if (f === "monthly") return m.common_ft_frequency_monthly?.() || "Monthly";
-  if (f === "termly") return m.common_ft_frequency_termly?.() || "Termly";
-  if (f === "yearly") return m.common_ft_frequency_yearly?.() || "Yearly";
+  if (f === "termly" || f === "per_term") return m.common_ft_frequency_termly?.() || "Termly";
+  if (f === "yearly" || f === "annual") return m.common_ft_frequency_yearly?.() || "Yearly";
   return freqStr;
 }
+
+const templateActions: ActionItem[] = [
+  { id: "edit", label: m.common_action_edit?.() || "Edit", icon: "Pencil" },
+  { id: "delete", label: m.common_action_delete?.() || "Delete", icon: "Trash2", variant: "destructive" },
+];
 
 const gridSource = $derived(
   templates.map((tpl, i) => ({
     ...tpl,
     __idx: i + 1,
     name: tpl.name_ar || tpl.name || "—",
-    amount: formatCurrency(Number(tpl.default_amount || 0), "YER"),
+    amount: formatCurrency(Number(tpl.default_amount || 0), tpl.currency || "YER"),
     frequency: getFrequencyLabel(tpl.frequency),
     status: (tpl.is_active === true || tpl.is_active === 1) ? "active" : "inactive",
     class_count: getCategoryLabel(tpl.category),
@@ -83,6 +80,18 @@ const columns: OrbisColumnDef[] = [
   { id: "amount", prop: "amount", header: m.common_ft_col_amount?.() || "Amount", name: "Amount", width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono font-bold" },
   { id: "frequency", prop: "frequency", header: m.common_ft_col_frequency?.() || "Frequency", name: "Frequency", width: 110, size: 110, readonly: true, align: "center" },
   { id: "status", prop: "status", header: m.common_word_status?.() || "Status", name: "Status", width: 100, size: 100, type: "badge", align: "center", readonly: true },
+  {
+    id: "actions",
+    prop: "actions",
+    header: m.common_je_col_actions?.() || "Actions",
+    name: "Actions",
+    width: 90,
+    size: 90,
+    type: "action",
+    align: "center",
+    readonly: true,
+    meta: { items: templateActions },
+  },
 ];
 
 function handleCreate() {
@@ -90,10 +99,30 @@ function handleCreate() {
   isSheetOpen = true;
 }
 
-function handleGridAction(event: GridActionEvent) {
+async function handleGridAction(event: GridActionEvent) {
+  const row = event.row as any;
   if (event.actionId === "dblclick" || event.actionId === "edit") {
-    selectedTemplate = event.row as any;
+    selectedTemplate = row;
     isSheetOpen = true;
+  } else if (event.actionId === "delete") {
+    const templateName = row.name_ar || row.name || "";
+    const confirmed = await confirmStore.prompt({
+      title: `${m.common_action_delete?.() || "Delete"}؟`,
+      description: `${m.common_action_delete?.() || "Delete"} "${templateName}"?`,
+      confirmText: m.common_action_delete?.() || "Delete",
+      variant: "destructive",
+    });
+    if (confirmed) {
+      try {
+        await api.deleteFeeTemplate(row.id);
+        toast.success(m.common_alert_deleted_successfully?.() || "Template deleted successfully");
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.finance.feeTemplates(orgId),
+        });
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to delete fee template");
+      }
+    }
   }
 }
 </script>
@@ -114,7 +143,12 @@ function handleGridAction(event: GridActionEvent) {
         bind:filter={activeFilter}
         fields={feeTemplateFilterFields}
       />
-      <Button variant="ghost" size="icon-sm" onclick={loadTemplates} class="text-muted-foreground">
+      <Button 
+        variant="ghost" 
+        size="icon-sm" 
+        onclick={() => feeTemplatesQuery.refetch()} 
+        class="text-muted-foreground"
+      >
         <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
       </Button>
       <Button size="sm" onclick={handleCreate} class="text-xs font-bold shrink-0">
@@ -144,5 +178,9 @@ function handleGridAction(event: GridActionEvent) {
   bind:open={isSheetOpen}
   {orgId}
   template={selectedTemplate}
-  onSuccess={loadTemplates}
+  onSuccess={() => {
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.finance.feeTemplates(orgId),
+    });
+  }}
 />
