@@ -108,18 +108,20 @@
   // Helper to create a single blank row
   function createBlankRow(rowNumber: number): BulkRowState {
     const data: Record<string, any> = {
+      __idx: rowNumber,
       rowNumber,
       id: `row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     };
-    for (const field of currentProfile.fields) {
-      data[field.key] = field.defaultValue ?? "";
+    for (const col of currentProfile.columnMetadata) {
+      data[col.id] = "";
     }
     return {
       rowNumber,
       data,
       status: "pending",
-      errors: {},
-      warnings: {},
+      errors: new Map(),
+      warnings: new Map(),
+      info: new Map(),
     };
   }
 
@@ -167,10 +169,10 @@
         const cells = line.includes("\t") ? line.split("\t") : line.split(",");
         const row = createBlankRow(startIndex + r);
 
-        for (let c = 0; c < Math.min(cells.length, currentProfile.fields.length); c++) {
-          const field = currentProfile.fields[c]!;
+        for (let c = 0; c < Math.min(cells.length, currentProfile.columnMetadata.length); c++) {
+          const col = currentProfile.columnMetadata[c]!;
           const cellVal = cells[c]?.trim() || "";
-          row.data[field.key] = cellVal;
+          row.data[col.id] = cellVal;
         }
         newRows.push(row);
       }
@@ -193,8 +195,8 @@
     if (!refData || rawRows.length === 0) return;
 
     const cleaned = rawRows.filter((row) => {
-      return currentProfile.fields.some((f) => {
-        const val = row.data[f.key];
+      return currentProfile.columnMetadata.some((col) => {
+        const val = row.data[col.id];
         return val !== undefined && val !== null && String(val).trim() !== "";
       });
     });
@@ -202,6 +204,7 @@
     for (let i = 0; i < cleaned.length; i++) {
       cleaned[i]!.rowNumber = i + 1;
       cleaned[i]!.data.rowNumber = i + 1;
+      cleaned[i]!.data.__idx = i + 1;
     }
 
     const summary = validateAllRows(cleaned, currentProfile, refData);

@@ -17,7 +17,7 @@ export interface BulkRowState {
   errors: Map<string, string>; // columnId -> error message for OrbisGrid .is-error
   warnings: Map<string, string>; // columnId -> warning message
   info: Map<string, string>; // columnId -> info message
-  status: "valid" | "error" | "warning" | "committed" | "failed";
+  status: "pending" | "valid" | "error" | "warning" | "committed" | "failed";
   commitError?: string;
 }
 
