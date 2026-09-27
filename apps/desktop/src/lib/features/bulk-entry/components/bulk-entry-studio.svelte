@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { OrbisGrid } from "@orbis/svelte-grid";
   import { toast } from "@orbis/ui";
+  import * as m from "$lib/paraglide/messages";
   import { orgContext } from "$lib/stores/org-context.svelte";
   import type {
     BulkProfileId,
-    BulkReferenceData,
     BulkRowState,
     BulkPreviewSummary,
     ChunkProgress,
     BulkCommitResult,
   } from "../types";
   import { BULK_PROFILES, getBulkProfile } from "../profiles";
+  import { createBulkReferenceDataQuery } from "../queries";
   import { downloadExcelTemplate } from "../engine/template-generator";
   import { pickAndParseFile, parseDroppedFile } from "../engine/file-parser";
   import { validateAllRows } from "../engine/validator";
@@ -22,11 +22,24 @@
   import CommitProgressModal from "./commit-progress-modal.svelte";
   import ImportResultSummary from "./import-result-summary.svelte";
 
-  let selectedProfileId = $state<BulkProfileId>("students");
+  let {
+    initialProfileId = "students",
+    hideProfileSelector = false,
+  }: {
+    initialProfileId?: BulkProfileId;
+    hideProfileSelector?: boolean;
+  } = $props();
+
+  let selectedProfileId = $state<BulkProfileId>(initialProfileId);
   let currentProfile = $derived(getBulkProfile(selectedProfileId));
 
-  let refData = $state<BulkReferenceData | null>(null);
-  let isLoadingRefData = $state(false);
+  // Declarative TanStack Query for Reference Data (Zero $effect data loading!)
+  const refDataQuery = createBulkReferenceDataQuery(
+    () => selectedProfileId,
+    () => orgContext.baseCurrency || "",
+  );
+  const refData = $derived(refDataQuery.data ?? null);
+  const isLoadingRefData = $derived(refDataQuery.isLoading);
 
   let fileName = $state<string | null>(null);
   let rawRows = $state<BulkRowState[]>([]);
@@ -45,31 +58,16 @@
 
   let isDraggingFile = $state(false);
 
-  // Load reference data on profile switch
-  async function loadReferenceData() {
-    isLoadingRefData = true;
-    try {
-      refData = await currentProfile.buildReferenceData(orgContext.baseCurrency|| "");
-    } catch (err) {
-      console.error("Failed to load reference data:", err);
-      toast.error("تعذر تحميل البيانات المرجعية للمؤسسة");
-    } finally {
-      isLoadingRefData = false;
-    }
+  // Switch profile handler (clears active staging rows without $effect)
+  function handleProfileChange(newProfileId: BulkProfileId) {
+    selectedProfileId = newProfileId;
+    rawRows = [];
+    fileName = null;
+    commitResult = null;
+    errorCount = 0;
+    warningCount = 0;
+    validCount = 0;
   }
-
-  $effect(() => {
-    if (selectedProfileId) {
-      loadReferenceData();
-      rawRows = [];
-      fileName = null;
-      commitResult = null;
-    }
-  });
-
-  onMount(() => {
-    loadReferenceData();
-  });
 
   // Filtered rows for OrbisGrid display
   const gridSource = $derived.by(() => {
@@ -93,9 +91,122 @@
     return filtered.map((r) => r.data);
   });
 
+  // Helper to create a single blank row
+  function createBlankRow(rowNumber: number): BulkRowState {
+    const data: Record<string, any> = {
+      rowNumber,
+      id: `row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    };
+    for (const field of currentProfile.fields) {
+      data[field.key] = field.defaultValue ?? "";
+    }
+    return {
+      rowNumber,
+      data,
+      status: "pending",
+      errors: {},
+      warnings: {},
+    };
+  }
+
+  // Add blank rows for direct visual entry
+  function handleAddBlankRows(count: number = 5) {
+    if (!refData) {
+      toast.warning(m.common_loading?.() || "جاري تحميل البيانات المرجعية...");
+      return;
+    }
+    const startIndex = rawRows.length + 1;
+    const newRows: BulkRowState[] = [];
+    for (let i = 0; i < count; i++) {
+      newRows.push(createBlankRow(startIndex + i));
+    }
+
+    const merged = [...rawRows, ...newRows];
+    const summary = validateAllRows(merged, currentProfile, refData);
+    rawRows = merged;
+    errorCount = summary.errorCount;
+    warningCount = summary.warningCount;
+    validCount = summary.validCount;
+
+    toast.success(`تمت إضافة ${count} صفوف جديدة في الجدول`);
+  }
+
+  // Paste tabular data from clipboard
+  async function handlePasteFromClipboard() {
+    if (!refData) {
+      toast.warning(m.common_loading?.() || "جاري تحميل البيانات المرجعية...");
+      return;
+    }
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text || !text.trim()) {
+        toast.warning("الحافظة فارغة أو لا تحتوي على نص قابل للصق");
+        return;
+      }
+
+      const lines = text.trim().split(/\r?\n/);
+      if (lines.length === 0) return;
+
+      const newRows: BulkRowState[] = [];
+      const startIndex = rawRows.length + 1;
+
+      for (let r = 0; r < lines.length; r++) {
+        const line = lines[r]!;
+        const cells = line.includes("\t") ? line.split("\t") : line.split(",");
+        const row = createBlankRow(startIndex + r);
+
+        for (let c = 0; c < Math.min(cells.length, currentProfile.fields.length); c++) {
+          const field = currentProfile.fields[c]!;
+          const cellVal = cells[c]?.trim() || "";
+          row.data[field.key] = cellVal;
+        }
+        newRows.push(row);
+      }
+
+      const merged = [...rawRows, ...newRows];
+      const summary = validateAllRows(merged, currentProfile, refData);
+      rawRows = merged;
+      errorCount = summary.errorCount;
+      warningCount = summary.warningCount;
+      validCount = summary.validCount;
+
+      toast.success(`تم لصق ${newRows.length} سجل بنجاح من الحافظة`);
+    } catch (err: any) {
+      toast.error(`تعذر اللصق من الحافظة: ${err.message || String(err)}`);
+    }
+  }
+
+  // Clear completely empty rows
+  function handleClearEmptyRows() {
+    if (!refData || rawRows.length === 0) return;
+
+    const cleaned = rawRows.filter((row) => {
+      return currentProfile.fields.some((f) => {
+        const val = row.data[f.key];
+        return val !== undefined && val !== null && String(val).trim() !== "";
+      });
+    });
+
+    for (let i = 0; i < cleaned.length; i++) {
+      cleaned[i]!.rowNumber = i + 1;
+      cleaned[i]!.data.rowNumber = i + 1;
+    }
+
+    const summary = validateAllRows(cleaned, currentProfile, refData);
+    rawRows = cleaned;
+    errorCount = summary.errorCount;
+    warningCount = summary.warningCount;
+    validCount = summary.validCount;
+
+    toast.info(`تم تنظيف وحذف الصفوف الفارغة`);
+  }
+
   // Handle template download
   async function handleDownloadTemplate() {
-    if (!refData) return;
+    if (!refData) {
+      toast.warning(m.common_loading?.() || "جاري تحميل البيانات المرجعية...");
+      return;
+    }
     try {
       await downloadExcelTemplate({
         profile: currentProfile,
@@ -187,11 +298,11 @@
       const savedPath = await exportCorrectedDataset({
         profile: currentProfile,
         rows: rawRows,
-        filenamePrefix: `Orbis_${selectedProfileId}_Corrected`,
+        filenamePrefix: `Orbis_${selectedProfileId}_Dataset`,
       });
 
       if (savedPath) {
-        toast.success("تم تصدير ملف البيانات المصححة بنجاح");
+        toast.success("تم تصدير ملف البيانات بنجاح");
         await openExportedFile(savedPath);
       }
     } catch (err: any) {
@@ -271,37 +382,61 @@
       </div>
       <div>
         <h1 class="text-base font-bold text-foreground">استوديو الإدخال والاستيراد الجماعي</h1>
-        <p class="text-xs text-muted-foreground mt-0.5">معاينة وتدقيق وتصحيح ملفات Excel داخل OrbisGrid قبل الاعتماد النهائي</p>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          إدخال مباشر في الجدول أو استيراد ملفات Excel/CSV مع التحقق الفوري والاعتماد التلقائي
+        </p>
       </div>
     </div>
 
-    <!-- Profile Selector & Template Download -->
-    <div class="flex items-center gap-2.5">
-      <select
-        bind:value={selectedProfileId}
-        class="h-9 px-3 rounded-xl bg-muted/60 border border-border text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+    <!-- Profile Selector & Quick Actions -->
+    <div class="flex items-center gap-2.5 flex-wrap">
+      {#if !hideProfileSelector}
+        <select
+          value={selectedProfileId}
+          onchange={(e) => handleProfileChange((e.target as HTMLSelectElement).value as BulkProfileId)}
+          class="h-9 px-3 rounded-xl bg-muted/60 border border-border text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          {#each Object.entries(BULK_PROFILES) as [id, prof]}
+            <option value={id}>{prof.displayName.ar}</option>
+          {/each}
+        </select>
+      {/if}
+
+      <button
+        onclick={() => handleAddBlankRows(5)}
+        disabled={isLoadingRefData}
+        class="h-9 px-3.5 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 font-bold text-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
       >
-        {#each Object.entries(BULK_PROFILES) as [id, prof]}
-          <option value={id}>{prof.displayName.ar}</option>
-        {/each}
-      </select>
+        <span>➕</span>
+        <span>إضافة 5 صفوف فارغة</span>
+      </button>
+
+      <button
+        onclick={handlePasteFromClipboard}
+        disabled={isLoadingRefData}
+        class="h-9 px-3.5 rounded-xl bg-muted border border-border text-foreground hover:bg-muted/80 font-bold text-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
+        title="لصق بيانات جدولية من Excel أو الحافظة"
+      >
+        <span>📋</span>
+        <span>لصق من الحافظة</span>
+      </button>
 
       <button
         onclick={handleDownloadTemplate}
         disabled={isLoadingRefData}
-        class="h-9 px-3.5 rounded-xl bg-muted border border-border text-foreground hover:bg-muted/80 font-bold text-xs flex items-center gap-1.5 transition-colors"
+        class="h-9 px-3.5 rounded-xl bg-muted border border-border text-foreground hover:bg-muted/80 font-bold text-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
       >
         <span>⬇</span>
-        <span>تنزيل قالب Excel المعتمد</span>
+        <span>تنزيل نموذج Excel</span>
       </button>
 
       <button
         onclick={handlePickFile}
         disabled={isLoadingRefData}
-        class="h-9 px-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm"
+        class="h-9 px-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50"
       >
         <span>📂</span>
-        <span>اختيار ملف واستيراده</span>
+        <span>استيراد ملف</span>
       </button>
     </div>
   </div>
@@ -320,47 +455,96 @@
       />
     </div>
   {:else if rawRows.length === 0}
-    <!-- Empty State / Drag and Drop Area -->
-    <div
-      class="flex-1 m-6 rounded-3xl border-2 border-dashed border-border/80 bg-card/40 flex flex-col items-center justify-center p-8 text-center transition-all {isDraggingFile ? 'border-primary bg-primary/5' : ''}"
-      ondragover={(e) => { e.preventDefault(); isDraggingFile = true; }}
-      ondragleave={() => { isDraggingFile = false; }}
-      ondrop={handleDropFile}
-      role="region"
-      aria-label="منطقة سحب وإفلات الملفات"
-    >
-      <div class="h-20 w-20 rounded-3xl bg-muted/60 border border-border flex items-center justify-center text-4xl shadow-inner mb-4">
-        📊
+    <!-- Unified Dual-Action Starting Area (Direct Entry vs File Upload) -->
+    <div class="flex-1 p-6 flex flex-col items-center justify-center max-w-5xl mx-auto w-full">
+      <div class="text-center mb-8">
+        <h2 class="text-xl font-bold text-foreground">اختر طريقة الإدخال الجماعي للبيانات</h2>
+        <p class="text-xs text-muted-foreground mt-1 max-w-lg">
+          يمكنك البدء مباشرة بالكتابة في الجدول التفاعلي، أو لصق البيانات من الحافظة، أو استيراد ملف Excel جاهز.
+        </p>
       </div>
-      <h2 class="text-lg font-bold text-foreground">قم بسحب وإفلات ملف Excel هنا أو اضغط للاختيار</h2>
-      <p class="text-xs text-muted-foreground max-w-md mt-1.5 leading-relaxed">
-        يدعم النظام ملفات <span class="font-bold text-foreground">.xlsx</span> و <span class="font-bold text-foreground">.csv</span>. لن يتم إدخال أي سجل في قاعدة البيانات مباشرة حتى تراجع البيانات وتعتمدها بالكامل.
-      </p>
 
-      <div class="mt-6 flex items-center gap-3">
-        <button
-          onclick={handlePickFile}
-          class="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 shadow-md transition-all flex items-center gap-2"
-        >
-          <span>📂</span>
-          <span>تصفح الملفات على جهازك</span>
-        </button>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+        <!-- Direct Rapid Grid Entry Card -->
+        <div class="rounded-3xl border border-border bg-card p-6 flex flex-col justify-between shadow-sm hover:border-primary/50 transition-all group">
+          <div>
+            <div class="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-2xl text-primary mb-4">
+              ⌨️
+            </div>
+            <h3 class="text-base font-bold text-foreground">الإدخال المباشر في الجدول</h3>
+            <p class="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+              افتح شبكة OrbisGrid التفاعلية وابدأ الكتابة فوراً أو الصق بيانات من جدول خارجي، مع تدقيق فوري للأخطاء وانتقال سهل بين الحقول عبر لوحة المفاتيح.
+            </p>
+          </div>
 
-        <button
-          onclick={handleDownloadTemplate}
-          class="px-4 py-2.5 rounded-xl bg-card border border-border text-foreground font-bold text-xs hover:bg-muted transition-colors flex items-center gap-1.5"
+          <div class="mt-6 flex items-center gap-2.5 flex-wrap">
+            <button
+              onclick={() => handleAddBlankRows(10)}
+              disabled={isLoadingRefData}
+              class="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <span>➕</span>
+              <span>بدء جدول بـ 10 صفوف</span>
+            </button>
+
+            <button
+              onclick={handlePasteFromClipboard}
+              disabled={isLoadingRefData}
+              class="px-3.5 py-2.5 rounded-xl bg-muted border border-border text-foreground font-bold text-xs hover:bg-muted/80 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <span>📋</span>
+              <span>لصق من الحافظة</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Excel / CSV File Import Card -->
+        <div
+          class="rounded-3xl border-2 border-dashed border-border/80 bg-card/50 p-6 flex flex-col justify-between transition-all {isDraggingFile ? 'border-primary bg-primary/5' : 'hover:border-primary/40'}"
+          ondragover={(e) => { e.preventDefault(); isDraggingFile = true; }}
+          ondragleave={() => { isDraggingFile = false; }}
+          ondrop={handleDropFile}
+          role="region"
+          aria-label="منطقة رفع الملفات"
         >
-          <span>⬇</span>
-          <span>تحميل نموذج فارغ</span>
-        </button>
+          <div>
+            <div class="h-12 w-12 rounded-2xl bg-muted border border-border flex items-center justify-center text-2xl mb-4">
+              📊
+            </div>
+            <h3 class="text-base font-bold text-foreground">استيراد ملف Excel أو CSV</h3>
+            <p class="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+              قم بسحب وإفلات ملف Excel المعد مسبقاً أو تصفح الملفات على جهازك لمعاينة وفحص كافة السجلات في الجدول قبل الاعتماد.
+            </p>
+          </div>
+
+          <div class="mt-6 flex items-center gap-2.5 flex-wrap">
+            <button
+              onclick={handlePickFile}
+              disabled={isLoadingRefData}
+              class="px-4 py-2.5 rounded-xl bg-card border border-border text-foreground font-bold text-xs hover:bg-muted shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <span>📂</span>
+              <span>اختيار ملف</span>
+            </button>
+
+            <button
+              onclick={handleDownloadTemplate}
+              disabled={isLoadingRefData}
+              class="px-3.5 py-2.5 rounded-xl bg-muted border border-border text-foreground font-bold text-xs hover:bg-muted/80 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <span>⬇</span>
+              <span>تنزيل النموذج</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   {:else}
     <!-- Active Workspace Bar -->
     <div class="px-6 py-2.5 border-b border-border bg-muted/20 flex items-center justify-between gap-4 flex-wrap text-xs">
       <!-- File Metadata & Filter Pills -->
-      <div class="flex items-center gap-2">
-        <span class="font-bold text-foreground ml-1">الملف: {fileName || "ملف البيانات"}</span>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="font-bold text-foreground ml-1">{fileName ? `الملف: ${fileName}` : "جدول الإدخال المباشر"}</span>
         <span class="text-muted-foreground">({rawRows.length} صف)</span>
 
         <div class="h-4 w-[1px] bg-border mx-1"></div>
@@ -395,13 +579,43 @@
         </button>
       </div>
 
-      <!-- Quick Search & Error Navigation -->
-      <div class="flex items-center gap-2">
+      <!-- Quick Actions, Search & Error Navigation -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <button
+          onclick={() => handleAddBlankRows(1)}
+          class="h-8 px-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20 font-bold text-xs hover:bg-primary/20 transition-colors"
+        >
+          + صف
+        </button>
+
+        <button
+          onclick={() => handleAddBlankRows(5)}
+          class="h-8 px-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20 font-bold text-xs hover:bg-primary/20 transition-colors"
+        >
+          + 5 صفوف
+        </button>
+
+        <button
+          onclick={handlePasteFromClipboard}
+          class="h-8 px-2.5 rounded-lg bg-muted border border-border text-foreground hover:bg-muted/80 font-bold text-xs"
+          title="لصق بيانات إضافية من الحافظة"
+        >
+          📋 لصق
+        </button>
+
+        <button
+          onclick={handleClearEmptyRows}
+          class="h-8 px-2.5 rounded-lg bg-muted border border-border text-foreground hover:bg-muted/80 font-bold text-xs"
+          title="حذف الصفوف الفارغة بالكامل"
+        >
+          🧹 مسح الفارغ
+        </button>
+
         <input
           type="text"
           placeholder="بحث سريع في الصفوف..."
           bind:value={searchQuery}
-          class="h-8 w-48 px-3 rounded-lg bg-card border border-border text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          class="h-8 w-44 px-3 rounded-lg bg-card border border-border text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
         />
 
         <button
@@ -429,7 +643,7 @@
     </div>
 
     <!-- Action Footer -->
-    <div class="px-6 py-3.5 border-t border-border bg-card/80 backdrop-blur-md flex items-center justify-between gap-4">
+    <div class="px-6 py-3.5 border-t border-border bg-card/80 backdrop-blur-md flex items-center justify-between gap-4 flex-wrap">
       <div class="flex items-center gap-2">
         <button
           onclick={handleReset}
@@ -443,7 +657,7 @@
           class="px-3.5 py-2 rounded-xl bg-muted border border-border text-xs font-bold text-foreground hover:bg-muted/80 transition-colors flex items-center gap-1.5"
         >
           <span>📤</span>
-          <span>تصدير الملف المصحح</span>
+          <span>تصدير البيانات</span>
         </button>
       </div>
 

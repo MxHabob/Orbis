@@ -113,6 +113,39 @@ pub struct RegisterEmployeeResult {
     pub provisioning: Option<AccountProvisioningResult>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BulkRegisterEmployeeItemInput {
+    pub row_index: usize,
+    pub registration: RegisterEmployeeInput,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BulkRegisterEmployeeItemResult {
+    pub row_index: usize,
+    pub success: bool,
+    pub employee_id: Option<Uuid>,
+    pub employee_number: Option<String>,
+    pub user_id: Option<Uuid>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BulkRegisterEmployeesInput {
+    pub items: Vec<BulkRegisterEmployeeItemInput>,
+    pub atomic: Option<bool>,
+    pub dry_run: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BulkRegisterEmployeeResult {
+    pub total: usize,
+    pub succeeded: usize,
+    pub failed: usize,
+    pub is_atomic: bool,
+    pub is_dry_run: bool,
+    pub items: Vec<BulkRegisterEmployeeItemResult>,
+}
+
 pub struct EmployeeService {
     pub employee_repo: Arc<dyn EmployeeRepository>,
     pub person_repo: Arc<dyn PersonRepository>,
@@ -521,5 +554,217 @@ impl EmployeeService {
     pub async fn count_employees_by_status(&self, ctx: &RequestContext, org_id: Uuid) -> Result<std::collections::HashMap<String, i64>, DomainError> {
         self.permission_checker.check(ctx, Permission::EmployeeRead).await?;
         self.employee_repo.count_by_status(org_id).await
+    }
+
+    /// Bulk register employees with demographic checks, person deduplication,
+    /// account provisioning, group assignments, and atomic all-or-nothing execution.
+    pub async fn bulk_register_employees(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        input: BulkRegisterEmployeesInput,
+    ) -> Result<BulkRegisterEmployeeResult, DomainError> {
+        self.permission_checker.check(ctx, Permission::EmployeeCreate).await?;
+
+        let is_atomic = input.atomic.unwrap_or(true);
+        let is_dry_run = input.dry_run.unwrap_or(false);
+        let items = input.items;
+        let total = items.len();
+
+        // ─────────────────────────────────────────────────────────────────
+        // STAGE 1: INTRA-BATCH INTEGRITY & CONFLICT PRE-VALIDATION
+        // ─────────────────────────────────────────────────────────────────
+        let mut pre_errors: std::collections::HashMap<usize, String> = std::collections::HashMap::new();
+        let mut seen_nids: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        let mut seen_passports: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        let mut seen_emp_nums: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+
+        for item in &items {
+            let row = item.row_index;
+
+            // 1. Required Demographics Check
+            if item.registration.first_name.trim().is_empty() {
+                pre_errors.insert(row, "First name is required".to_string());
+                continue;
+            }
+            if item.registration.last_name.trim().is_empty() {
+                pre_errors.insert(row, "Last name is required".to_string());
+                continue;
+            }
+            if item.registration.employee_type.trim().is_empty() {
+                pre_errors.insert(row, "Employee type is required".to_string());
+                continue;
+            }
+
+            // 2. Intra-Batch Duplicate National ID Check
+            if let Some(nid) = item.registration.national_id.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+                if let Some(prev_row) = seen_nids.get(nid) {
+                    pre_errors.insert(row, format!("Duplicate National ID '{}' within batch (conflicts with row {})", nid, prev_row));
+                    continue;
+                }
+                seen_nids.insert(nid.to_string(), row);
+            }
+
+            // 3. Intra-Batch Duplicate Passport Check
+            if let Some(pp) = item.registration.passport_number.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+                if let Some(prev_row) = seen_passports.get(pp) {
+                    pre_errors.insert(row, format!("Duplicate Passport Number '{}' within batch (conflicts with row {})", pp, prev_row));
+                    continue;
+                }
+                seen_passports.insert(pp.to_string(), row);
+            }
+
+            // 4. Intra-Batch Explicit Employee Number Check
+            if let Some(ref sn) = item.registration.employee_number {
+                let trimmed = sn.trim();
+                if !trimmed.is_empty() {
+                    if let Some(prev_row) = seen_emp_nums.get(trimmed) {
+                        pre_errors.insert(row, format!("Duplicate Employee Number '{}' within batch (conflicts with row {})", trimmed, prev_row));
+                        continue;
+                    }
+                    seen_emp_nums.insert(trimmed.to_string(), row);
+
+                    if let Ok(Some(_)) = self.employee_repo.find_by_employee_number(org_id, trimmed).await {
+                        pre_errors.insert(row, format!("Employee number '{}' already exists in organization", trimmed));
+                        continue;
+                    }
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // STAGE 2: ATOMIC ALL-OR-NOTHING / DRY-RUN DECISION GATE
+        // ─────────────────────────────────────────────────────────────────
+        if !pre_errors.is_empty() && is_atomic {
+            let mut results = Vec::with_capacity(total);
+            for item in &items {
+                let row = item.row_index;
+                if let Some(err) = pre_errors.get(&row) {
+                    results.push(BulkRegisterEmployeeItemResult {
+                        row_index: row,
+                        success: false,
+                        employee_id: None,
+                        employee_number: None,
+                        user_id: None,
+                        error: Some(err.clone()),
+                    });
+                } else {
+                    results.push(BulkRegisterEmployeeItemResult {
+                        row_index: row,
+                        success: false,
+                        employee_id: None,
+                        employee_number: None,
+                        user_id: None,
+                        error: Some("Batch aborted: another record in the batch failed validation (All-or-Nothing policy).".to_string()),
+                    });
+                }
+            }
+
+            return Ok(BulkRegisterEmployeeResult {
+                total,
+                succeeded: 0,
+                failed: total,
+                is_atomic: true,
+                is_dry_run,
+                items: results,
+            });
+        }
+
+        if is_dry_run {
+            let mut succeeded = 0;
+            let mut failed = 0;
+            let mut results = Vec::with_capacity(total);
+            for item in &items {
+                let row = item.row_index;
+                if let Some(err) = pre_errors.get(&row) {
+                    failed += 1;
+                    results.push(BulkRegisterEmployeeItemResult {
+                        row_index: row,
+                        success: false,
+                        employee_id: None,
+                        employee_number: None,
+                        user_id: None,
+                        error: Some(err.clone()),
+                    });
+                } else {
+                    succeeded += 1;
+                    results.push(BulkRegisterEmployeeItemResult {
+                        row_index: row,
+                        success: true,
+                        employee_id: None,
+                        employee_number: item.registration.employee_number.clone().or_else(|| Some("[Auto-Generated EMP]".to_string())),
+                        user_id: None,
+                        error: None,
+                    });
+                }
+            }
+
+            return Ok(BulkRegisterEmployeeResult {
+                total,
+                succeeded,
+                failed,
+                is_atomic,
+                is_dry_run: true,
+                items: results,
+            });
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // STAGE 3: SEQUENTIAL EXECUTION & PERSISTENCE
+        // ─────────────────────────────────────────────────────────────────
+        let mut succeeded = 0usize;
+        let mut failed = 0usize;
+        let mut results = Vec::with_capacity(total);
+
+        for item in items {
+            let row_idx = item.row_index;
+
+            if let Some(err) = pre_errors.get(&row_idx) {
+                failed += 1;
+                results.push(BulkRegisterEmployeeItemResult {
+                    row_index: row_idx,
+                    success: false,
+                    employee_id: None,
+                    employee_number: None,
+                    user_id: None,
+                    error: Some(err.clone()),
+                });
+                continue;
+            }
+
+            match self.register_employee(ctx, org_id, item.registration).await {
+                Ok(reg_res) => {
+                    succeeded += 1;
+                    results.push(BulkRegisterEmployeeItemResult {
+                        row_index: row_idx,
+                        success: true,
+                        employee_id: Some(reg_res.detail.employee.id),
+                        employee_number: Some(reg_res.detail.employee.employee_number),
+                        user_id: reg_res.detail.employee.user_id,
+                        error: None,
+                    });
+                }
+                Err(err) => {
+                    failed += 1;
+                    results.push(BulkRegisterEmployeeItemResult {
+                        row_index: row_idx,
+                        success: false,
+                        employee_id: None,
+                        employee_number: None,
+                        user_id: None,
+                        error: Some(err.to_string()),
+                    });
+                }
+            }
+        }
+
+        Ok(BulkRegisterEmployeeResult {
+            total,
+            succeeded,
+            failed,
+            is_atomic,
+            is_dry_run: false,
+            items: results,
+        })
     }
 }

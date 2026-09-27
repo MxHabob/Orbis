@@ -1,0 +1,11 @@
+<script lang="ts">
+  import { BulkEntryStudio } from "$lib/features/bulk-entry";
+</script>
+
+<svelte:head>
+  <title>الإدخال الجماعي للدرجات | Orbis</title>
+</svelte:head>
+
+<div class="h-full w-full overflow-hidden">
+  <BulkEntryStudio initialProfileId="grades" />
+</div>

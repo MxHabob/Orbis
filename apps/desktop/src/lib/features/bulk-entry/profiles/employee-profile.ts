@@ -1,5 +1,5 @@
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
-import { api } from "$lib/api";
+import { api, type BulkRegisterEmployeeCommandItem } from "$lib/api";
 import type {
   BulkImportProfile,
   BulkReferenceData,
@@ -343,36 +343,37 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
   },
 
   async commitChunk(rows: EmployeeRowData[], _orgId: string, refData: BulkReferenceData): Promise<{ success: boolean; errors?: string[] }> {
-    const errors: string[] = [];
+    const items: BulkRegisterEmployeeCommandItem[] = [];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i]!;
-      try {
-        const firstNameAr = row.first_name_ar?.trim() || "موظف";
-        const lastNameAr = row.last_name_ar?.trim() || "جديد";
-        const middleNameAr = row.middle_name_ar?.trim();
+      const firstNameAr = row.first_name_ar?.trim() || "موظف";
+      const lastNameAr = row.last_name_ar?.trim() || "جديد";
+      const middleNameAr = row.middle_name_ar?.trim();
 
-        let typeStr = "teacher";
-        const rawType = String(row.employee_type || "").toLowerCase().trim();
-        if (rawType.includes("admin") || rawType.includes("إداري")) typeStr = "admin";
-        if (rawType.includes("principal") || rawType.includes("مدير")) typeStr = "principal";
-        if (rawType.includes("accountant") || rawType.includes("محاسب")) typeStr = "accountant";
-        if (rawType.includes("supervisor") || rawType.includes("مشرف")) typeStr = "supervisor";
-        if (rawType.includes("worker") || rawType.includes("خدمات")) typeStr = "worker";
+      let typeStr = "teacher";
+      const rawType = String(row.employee_type || "").toLowerCase().trim();
+      if (rawType.includes("admin") || rawType.includes("إداري")) typeStr = "admin";
+      if (rawType.includes("principal") || rawType.includes("مدير")) typeStr = "principal";
+      if (rawType.includes("accountant") || rawType.includes("محاسب")) typeStr = "accountant";
+      if (rawType.includes("supervisor") || rawType.includes("مشرف")) typeStr = "supervisor";
+      if (rawType.includes("worker") || rawType.includes("خدمات")) typeStr = "worker";
 
-        const isProvision =
-          row.provision_user === true ||
-          String(row.provision_user).toLowerCase() === "true" ||
-          String(row.provision_user) === "نعم" ||
-          String(row.provision_user) === "1";
+      const isProvision =
+        row.provision_user === true ||
+        String(row.provision_user).toLowerCase() === "true" ||
+        String(row.provision_user) === "نعم" ||
+        String(row.provision_user) === "1";
 
-        let matchedGroupIds: string[] = [];
-        if (row.user_group_name?.trim()) {
-          const g = refData.userGroups.find((grp) => grp.name.toLowerCase() === row.user_group_name?.toLowerCase());
-          if (g?.id) matchedGroupIds.push(g.id);
-        }
+      let matchedGroupIds: string[] = [];
+      if (row.user_group_name?.trim()) {
+        const g = refData.userGroups.find((grp) => grp.name.toLowerCase() === row.user_group_name?.toLowerCase());
+        if (g?.id) matchedGroupIds.push(g.id);
+      }
 
-        await api.registerEmployee({
+      items.push({
+        row_index: row.rowNumber || i + 1,
+        registration: {
           first_name: firstNameAr,
           middle_name: middleNameAr,
           last_name: lastNameAr,
@@ -397,15 +398,29 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
                 group_ids: matchedGroupIds,
               }
             : undefined,
-        });
-      } catch (err: any) {
-        errors.push(`صف ${row.rowNumber || i + 1}: ${err.message || String(err)}`);
-      }
+        },
+      });
     }
 
-    return {
-      success: errors.length === 0,
-      errors: errors.length > 0 ? errors : undefined,
-    };
+    try {
+      const bulkRes = await api.bulkRegisterEmployees(items, { atomic: true });
+      const errors: string[] = [];
+
+      for (const it of bulkRes.items) {
+        if (!it.success && it.error) {
+          errors.push(`صف ${it.row_index}: ${it.error}`);
+        }
+      }
+
+      return {
+        success: bulkRes.failed === 0,
+        errors: errors.length > 0 ? errors : undefined,
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        errors: [err.message || String(err)],
+      };
+    }
   },
 };

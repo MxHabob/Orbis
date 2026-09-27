@@ -169,7 +169,7 @@ pub struct PaginatedEmployeesDto {
 
 // ── Request Inputs ───────────────────────────────────────────────
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AccountProvisioningConfigInput {
     pub enabled: bool,
     pub preferred_username: Option<String>,
@@ -180,7 +180,7 @@ pub struct AccountProvisioningConfigInput {
     pub custom_password: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct RegisterEmployeeRequest {
     pub person_id: Option<String>,
     pub employee_number: Option<String>,
@@ -602,5 +602,121 @@ pub async fn employee_reset_password(
         must_change_password: true,
         delivery_channel: res.delivery_channel.to_string(),
         delivery_status: res.delivery_status.to_string(),
+    }))
+}
+
+// ── Bulk Registration Command ───────────────────────────────────
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct BulkRegisterEmployeeCommandItem {
+    pub row_index: usize,
+    pub registration: RegisterEmployeeRequest,
+}
+
+#[derive(Serialize, Debug)]
+pub struct BulkRegisterEmployeeCommandResultDto {
+    pub total: usize,
+    pub succeeded: usize,
+    pub failed: usize,
+    pub items: Vec<BulkRegisterEmployeeItemCommandResultDto>,
+}
+
+#[derive(Serialize, Debug)]
+pub struct BulkRegisterEmployeeItemCommandResultDto {
+    pub row_index: usize,
+    pub success: bool,
+    pub employee_id: Option<String>,
+    pub employee_number: Option<String>,
+    pub user_id: Option<String>,
+    pub error: Option<String>,
+}
+
+#[tauri::command]
+pub async fn employee_bulk_register(
+    items: Vec<BulkRegisterEmployeeCommandItem>,
+    atomic: Option<bool>,
+    dry_run: Option<bool>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<BulkRegisterEmployeeCommandResultDto>, String> {
+    let ctx = make_ctx(&state);
+    let mut domain_items = Vec::with_capacity(items.len());
+
+    for item in items {
+        let input = orbis_app::services::employee_service::RegisterEmployeeInput {
+            person_id: item.registration.person_id.as_deref().and_then(|id| Uuid::parse_str(id).ok()),
+            employee_number: item.registration.employee_number.as_deref().map(|s| s.trim().to_string()).filter(|s| !s.is_empty()),
+            employee_type: item.registration.employee_type,
+            job_title: item.registration.job_title,
+            department: item.registration.department,
+            org_unit_id: item.registration.org_unit_id.as_deref().and_then(|id| Uuid::parse_str(id).ok()),
+            hire_date: item.registration.hire_date.as_deref().and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok()),
+            status: Some(EmployeeStatus::Active),
+            employment_type: Some(EmploymentType::FullTime),
+            work_shift: item.registration.work_shift,
+            notes: item.registration.notes,
+            first_name: item.registration.first_name,
+            middle_name: item.registration.middle_name,
+            last_name: item.registration.last_name,
+            first_name_ar: item.registration.first_name_ar,
+            middle_name_ar: item.registration.middle_name_ar,
+            last_name_ar: item.registration.last_name_ar,
+            display_name: item.registration.display_name,
+            national_id: item.registration.national_id,
+            passport_number: item.registration.passport_number,
+            gender: item.registration.gender,
+            birth_date: item.registration.birth_date.as_deref().and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok()),
+            place_of_birth: item.registration.place_of_birth,
+            nationality: item.registration.nationality,
+            blood_type: item.registration.blood_type,
+            medical_notes: item.registration.medical_notes,
+            special_needs_notes: item.registration.special_needs_notes,
+            phone: item.registration.phone,
+            email: item.registration.email,
+            address: item.registration.address,
+            avatar_url: None,
+            account: item.registration.account.map(|acc| AccountProvisioningConfig {
+                enabled: acc.enabled,
+                preferred_username: acc.preferred_username,
+                role: acc.role,
+                group_ids: acc.group_ids.into_iter().filter_map(|g| Uuid::parse_str(&g).ok()).collect(),
+                delivery_channel: acc.delivery_channel.and_then(|c| match c.to_lowercase().as_str() {
+                    "email" => Some(DeliveryChannel::Email),
+                    "sms" => Some(DeliveryChannel::Sms),
+                    "whatsapp" => Some(DeliveryChannel::WhatsApp),
+                    _ => Some(DeliveryChannel::Manual),
+                }),
+                custom_password: acc.custom_password,
+            }),
+        };
+
+        domain_items.push(orbis_app::services::employee_service::BulkRegisterEmployeeItemInput {
+            row_index: item.row_index,
+            registration: input,
+        });
+    }
+
+    let res = state.employee_service
+        .bulk_register_employees(&ctx, ctx.tenant_id, orbis_app::services::employee_service::BulkRegisterEmployeesInput {
+            items: domain_items,
+            atomic,
+            dry_run,
+        })
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let items_dto = res.items.into_iter().map(|it| BulkRegisterEmployeeItemCommandResultDto {
+        row_index: it.row_index,
+        success: it.success,
+        employee_id: it.employee_id.map(|id| id.to_string()),
+        employee_number: it.employee_number,
+        user_id: it.user_id.map(|id| id.to_string()),
+        error: it.error,
+    }).collect();
+
+    Ok(ok(BulkRegisterEmployeeCommandResultDto {
+        total: res.total,
+        succeeded: res.succeeded,
+        failed: res.failed,
+        items: items_dto,
     }))
 }

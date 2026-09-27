@@ -166,6 +166,22 @@ import type {
   DatabaseSettingsDto,
   BulkRegisterStudentCommandItem,
   BulkRegisterStudentCommandResultDto,
+  AiChatRequest,
+  AiChatResponse,
+  AiStoredSession,
+  AiToolDefinition,
+  AutopilotDiagnosticsDto,
+  AutopilotTaskDto,
+  BulkRegisterEmployeeCommandItem,
+  BulkRegisterEmployeeCommandResultDto,
+  GoogleAuthRequest,
+  ListTasksResponse,
+  MfaChallengeRequest,
+  MfaEnrollRequest,
+  MfaEnrollResponse,
+  MfaVerifyEnrollmentRequest,
+  UserDeviceDto,
+  UserIdentityDto,
 } from "./types";
 
 function unwrap<T>(response: { data: T } | T): T {
@@ -191,31 +207,31 @@ export class LocalClient implements OrbisApiClient {
     await invoke("auth_logout");
   }
   async mfaEnroll(
-    req?: import("./types").MfaEnrollRequest,
-  ): Promise<import("./types").MfaEnrollResponse> {
+    req?: MfaEnrollRequest,
+  ): Promise<MfaEnrollResponse> {
     return unwrap(await invoke("auth_mfa_enroll", { request: req ?? {} }));
   }
   async mfaVerifyEnrollment(
-    req: import("./types").MfaVerifyEnrollmentRequest,
+    req: MfaVerifyEnrollmentRequest,
   ): Promise<boolean> {
     return unwrap(await invoke("auth_mfa_verify_enrollment", { request: req }));
   }
   async mfaChallenge(
-    req: import("./types").MfaChallengeRequest,
+    req: MfaChallengeRequest,
   ): Promise<LoginResponse> {
     return unwrap(await invoke("auth_mfa_challenge", { request: req }));
   }
   async linkGoogle(
-    req: import("./types").GoogleAuthRequest,
-  ): Promise<import("./types").UserIdentityDto> {
+    req: GoogleAuthRequest,
+  ): Promise<UserIdentityDto> {
     return unwrap(await invoke("auth_link_google", { request: req }));
   }
   async loginWithGoogle(
-    req: import("./types").GoogleAuthRequest,
+    req: GoogleAuthRequest,
   ): Promise<LoginResponse> {
     return unwrap(await invoke("auth_login_google", { request: req }));
   }
-  async listDevices(): Promise<import("./types").UserDeviceDto[]> {
+  async listDevices(): Promise<UserDeviceDto[]> {
     return unwrap(await invoke("auth_list_devices"));
   }
   async revokeDevice(id: string): Promise<boolean> {
@@ -447,6 +463,16 @@ export class LocalClient implements OrbisApiClient {
   }
   async resetEmployeePassword(id: string): Promise<AccountProvisioningResultDto> {
     return unwrap(await invoke("employee_reset_password", { id }));
+  }
+  async bulkRegisterEmployees(
+    items: BulkRegisterEmployeeCommandItem[],
+    options?: { atomic?: boolean; dryRun?: boolean }
+  ): Promise<BulkRegisterEmployeeCommandResultDto> {
+    return unwrap(await invoke("employee_bulk_register", {
+      items,
+      atomic: options?.atomic ?? true,
+      dryRun: options?.dryRun ?? false,
+    }));
   }
 
   // ── User Groups ─────────────────────────────────────────────
@@ -1155,16 +1181,16 @@ export class LocalClient implements OrbisApiClient {
   }
 
   // ── AI Platform ─────────────────────────────────────────────
-  async aiChat(request: import("./types").AiChatRequest): Promise<import("./types").AiChatResponse> {
+  async aiChat(request: AiChatRequest): Promise<AiChatResponse> {
     return unwrap(await invoke("ai_chat", { request }));
   }
-  async aiListTools(): Promise<import("./types").AiToolDefinition[]> {
+  async aiListTools(): Promise<AiToolDefinition[]> {
     return unwrap(await invoke("ai_list_tools"));
   }
-  async aiSaveSession(session: import("./types").AiStoredSession): Promise<boolean> {
+  async aiSaveSession(session: AiStoredSession): Promise<boolean> {
     return unwrap(await invoke("ai_save_session", { session }));
   }
-  async aiLoadSessions(orgId: string): Promise<import("./types").AiStoredSession[]> {
+  async aiLoadSessions(orgId: string): Promise<AiStoredSession[]> {
     return unwrap(await invoke("ai_load_sessions", { orgId }));
   }
   async aiDeleteSession(orgId: string, sessionId: string): Promise<boolean> {
@@ -1183,7 +1209,7 @@ export class LocalClient implements OrbisApiClient {
     task_type?: string;
     limit?: number;
     offset?: number;
-  }): Promise<import("./types").ListTasksResponse> {
+  }): Promise<ListTasksResponse> {
     return unwrap(
       await invoke("autopilot_list_tasks", {
         status: params?.status ?? null,
@@ -1194,7 +1220,7 @@ export class LocalClient implements OrbisApiClient {
     );
   }
 
-  async autopilotRunTick(dryRun?: boolean): Promise<import("./types").AutopilotTaskDto[]> {
+  async autopilotRunTick(dryRun?: boolean): Promise<AutopilotTaskDto[]> {
     return unwrap(
       await invoke("autopilot_run_tick", {
         dryRun: dryRun ?? false,
@@ -1202,23 +1228,23 @@ export class LocalClient implements OrbisApiClient {
     );
   }
 
-  async autopilotGetTask(id: string): Promise<import("./types").AutopilotTaskDto> {
+  async autopilotGetTask(id: string): Promise<AutopilotTaskDto> {
     return unwrap(await invoke("autopilot_get_task", { id }));
   }
 
-  async autopilotExecuteTask(id: string): Promise<import("./types").AutopilotTaskDto> {
+  async autopilotExecuteTask(id: string): Promise<AutopilotTaskDto> {
     return unwrap(await invoke("autopilot_execute_task", { id }));
   }
 
-  async autopilotRetryTask(id: string): Promise<import("./types").AutopilotTaskDto> {
+  async autopilotRetryTask(id: string): Promise<AutopilotTaskDto> {
     return unwrap(await invoke("autopilot_retry_task", { id }));
   }
 
-  async autopilotDismissTask(id: string): Promise<import("./types").AutopilotTaskDto> {
+  async autopilotDismissTask(id: string): Promise<AutopilotTaskDto> {
     return unwrap(await invoke("autopilot_dismiss_task", { id }));
   }
 
-  async autopilotGetDiagnostics(): Promise<import("./types").AutopilotDiagnosticsDto> {
+  async autopilotGetDiagnostics(): Promise<AutopilotDiagnosticsDto> {
     return unwrap(await invoke("autopilot_get_diagnostics"));
   }
 }

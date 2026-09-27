@@ -167,6 +167,8 @@ import type {
   DatabaseSettingsDto,
   BulkRegisterStudentCommandItem,
   BulkRegisterStudentCommandResultDto,
+  BulkRegisterEmployeeCommandItem,
+  BulkRegisterEmployeeCommandResultDto,
 } from "./types";
 
 export class ApiRequestError extends Error {
@@ -575,6 +577,16 @@ export class RemoteClient implements OrbisApiClient {
   }
   async resetEmployeePassword(id: string): Promise<AccountProvisioningResultDto> {
     return this.post(`/api/v1/employees/${id}/reset-password`, {});
+  }
+  async bulkRegisterEmployees(
+    items: BulkRegisterEmployeeCommandItem[],
+    options?: { atomic?: boolean; dryRun?: boolean }
+  ): Promise<BulkRegisterEmployeeCommandResultDto> {
+    return this.post("/api/v1/employees/bulk-register", {
+      items,
+      atomic: options?.atomic ?? true,
+      dry_run: options?.dryRun ?? false,
+    });
   }
 
   // ── User Groups ─────────────────────────────────────────────

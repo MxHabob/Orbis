@@ -122,6 +122,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         employee_cmds::employee_provision_account,
         employee_cmds::employee_assign_groups,
         employee_cmds::employee_reset_password,
+        employee_cmds::employee_bulk_register,
         // ── User Groups ─────────────────────────────────────────
         group_cmds::group_create_group,
         group_cmds::group_list_groups,

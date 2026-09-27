@@ -39,15 +39,13 @@ Every agent starting a session in this repository MUST:
 
 ## 3. CONTINUATION STATE
 
-- **Current Status:** `BULK_ENTRY_FINAL_ARCHITECTURE_APPROVED`
+- **Current Status:** `BULK_ENTRY_STUDIO_IMPLEMENTATION_COMPLETED`
 - **Master Reference Document:** `docs/bulk_entry_final_architecture.md`
 - **Accomplished:**
-  - Conducted full code-level audit across Rust backend (`orbis-app`, `orbis-domain`, `orbis-infra`, `orbis-server`), Tauri 2.0 plugins (`dialog`, `opener`, `fs`, `window`, `process`), desktop routes, and `OrbisGrid` (`packages/svelte-grid`).
-  - Proved that selecting an Excel file writes 0 records to DB: the entire payload is loaded in-memory directly into `OrbisGrid` for visual inspection, inline correction, and pre-commit impact review.
-  - Specified the 6-Level Multi-Stage Validation Hierarchy (File, Cell, Row, Cross-Row/Batch, Domain Use Case, Database/Tx) with Live Incremental Revalidation.
-  - Designed the dynamic Excel Template Generator with protected reference sheets (Classes, Sections, Levels, Subjects, Fee Templates, User Groups, Enums).
-  - Formulated the typed domain profiles for Students (`StudentService::register_student`), Employees (`EmployeeService::register_employee`), and Grades (`AssessmentService::record_grade` + `CalculationEngine`).
-  - Established chunked-transaction rollback boundaries, natural-key idempotency, structured append-only audit logging in `audit_events`, and zero new database tables.
-  - Documented complete 35 E2E test scenarios, 18-step sequential implementation roadmap, and consolidation matrix.
-  - Authored the master architecture blueprint at `docs/bulk_entry_final_architecture.md`.
-- **Verification:** Architectural status set to `APPROVED`.
+  - Implemented the unified, production-grade `BulkEntryStudio` supporting both Direct Visual Grid Entry (manual typing, row additions, clipboard paste) and Excel/CSV File Import with 0 records written on initial load.
+  - Upgraded Rust Backend (`StudentService::bulk_register_students`, `EmployeeService::bulk_register_employees`) with multi-stage validation, cumulative class capacity tracking, admission policy enforcement, atomic all-or-nothing execution, deterministic sequence numbering, auto-assigned mandatory tuition fees, and guardian linkages.
+  - Implemented Tauri IPC commands (`student_bulk_register`, `employee_bulk_register`) with atomic and dry-run parameters.
+  - Refactored frontend data fetching to use TanStack Query (`createBulkReferenceDataQuery`) eliminating manual `$effect` synchronization.
+  - Consolidated `/settings/bulk-input`, `/settings/bulk-input/students`, `/settings/bulk-input/employees`, `/settings/bulk-input/grades`, and `/import` routes into the unified studio.
+  - Verified 0 errors across `bun x tsc` and `cargo check`.
+- **Verification:** Frontend and Rust backend compiled with 0 errors.

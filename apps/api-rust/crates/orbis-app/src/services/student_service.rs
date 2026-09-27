@@ -17,7 +17,7 @@ use crate::ports::repositories::{
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use std::sync::Arc;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use uuid::Uuid;
 use chrono::{Utc, NaiveDate, Datelike};
 
@@ -943,7 +943,7 @@ impl StudentService {
                         .map(|list| list.into_iter().filter(|e| e.status == EnrollmentStatus::Active).count() as i32)
                         .unwrap_or(0);
                     let max_c = if let Ok(Some(cls)) = self.class_repo.find_by_id(class_id).await {
-                        cls.max_capacity.unwrap_or(admission_policy.max_class_capacity)
+                        cls.capacity.unwrap_or(admission_policy.max_class_capacity)
                     } else {
                         admission_policy.max_class_capacity
                     };
@@ -1112,15 +1112,21 @@ impl StudentService {
 
                             let sg = StudentGuardian {
                                 id: Uuid::new_v4(),
-                                org_id,
                                 student_id: stu_id,
                                 guardian_id: g_pid,
                                 relationship: item.guardian_relationship.unwrap_or_else(|| "guardian".to_string()),
+                                relationship_ar: None,
                                 is_primary: true,
                                 is_emergency_contact: true,
-                                can_pickup: true,
-                                access_portal: false,
+                                is_authorized_pickup: true,
+                                is_payer: true,
+                                payment_share_percent: None,
+                                occupation: None,
+                                employer: None,
+                                work_phone: None,
+                                notes: None,
                                 created_at: Utc::now(),
+                                updated_at: Utc::now(),
                             };
                             let _ = self.guardian_repo.save(&sg).await;
                         }

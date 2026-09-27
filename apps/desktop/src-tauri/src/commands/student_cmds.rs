@@ -231,7 +231,7 @@ fn paginated_to_dto<T: Serialize, U: Serialize, F: Fn(T) -> U>(p: PaginatedList<
 
 // ── Request Inputs ───────────────────────────────────────────────
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct RegisterStudentRequest {
     pub person_id: Option<String>,
     pub user_id: Option<String>,
@@ -755,10 +755,10 @@ pub async fn student_check_duplicate(
     }))
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BulkRegisterStudentCommandItem {
     pub row_index: usize,
-    pub registration: RegisterStudentInput,
+    pub registration: RegisterStudentRequest,
     pub guardian_name: Option<String>,
     pub guardian_phone: Option<String>,
     pub guardian_relationship: Option<String>,
@@ -793,8 +793,8 @@ pub async fn student_bulk_register(
 
     for item in items {
         let input = orbis_app::services::student_service::RegisterStudentInput {
-            person_id: item.registration.person_id.and_then(|id| Uuid::parse_str(&id).ok()),
-            user_id: item.registration.user_id.and_then(|id| Uuid::parse_str(&id).ok()),
+            person_id: item.registration.person_id.as_deref().and_then(|id| Uuid::parse_str(id).ok()),
+            user_id: item.registration.user_id.as_deref().and_then(|id| Uuid::parse_str(id).ok()),
             student_number: if item.registration.student_number.trim().is_empty() { None } else { Some(item.registration.student_number) },
             first_name: item.registration.first_name,
             middle_name: item.registration.middle_name,
@@ -806,7 +806,7 @@ pub async fn student_bulk_register(
             national_id: item.registration.national_id,
             passport_number: item.registration.passport_number,
             gender: item.registration.gender,
-            birth_date: parse_naive_date(item.registration.birth_date.as_deref()),
+            birth_date: item.registration.birth_date.as_deref().and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok()),
             place_of_birth: item.registration.place_of_birth,
             nationality: item.registration.nationality,
             blood_type: item.registration.blood_type,
@@ -815,13 +815,9 @@ pub async fn student_bulk_register(
             phone: item.registration.phone,
             email: item.registration.email,
             avatar_url: None,
-            initial_period_id: item.registration.initial_period_id.and_then(|id| Uuid::parse_str(&id).ok()),
-            initial_class_id: item.registration.initial_class_id.and_then(|id| Uuid::parse_str(&id).ok()),
-            study_mode: item.registration.study_mode.and_then(|m| match m.to_lowercase().as_str() {
-                "part_time" => Some(orbis_domain::entities::enrollment::StudyMode::PartTime),
-                "distance_learning" => Some(orbis_domain::entities::enrollment::StudyMode::DistanceLearning),
-                _ => Some(orbis_domain::entities::enrollment::StudyMode::Regular),
-            }),
+            initial_period_id: item.registration.initial_period_id.as_deref().and_then(|id| Uuid::parse_str(id).ok()),
+            initial_class_id: item.registration.initial_class_id.as_deref().and_then(|id| Uuid::parse_str(id).ok()),
+            study_mode: Some(parse_study_mode(item.registration.study_mode.as_deref())),
             bypass_capacity_check: None,
         };
 

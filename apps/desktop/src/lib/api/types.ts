@@ -1243,6 +1243,7 @@ export interface OrbisApiClient {
   listEnrollments(filter?: EnrollmentFilterParams): Promise<EnrollmentDto[]>;
   getEnrollment(id: string): Promise<EnrollmentDto>;
   assignGuardian(req: AssignGuardianRequest): Promise<GuardianDto>;
+  listGuardians(studentId: string): Promise<GuardianDto[]>;
   bulkRegisterStudents(items: BulkRegisterStudentCommandItem[], options?: { atomic?: boolean; dryRun?: boolean }): Promise<BulkRegisterStudentCommandResultDto>;
 
   // ── Employee Affairs ────────────────────────────────────────
@@ -1255,6 +1256,7 @@ export interface OrbisApiClient {
   provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountInput): Promise<AccountProvisioningResultDto>;
   assignEmployeeGroups(id: string, groupIds: string[]): Promise<boolean>;
   resetEmployeePassword(id: string): Promise<AccountProvisioningResultDto>;
+  bulkRegisterEmployees(items: BulkRegisterEmployeeCommandItem[], options?: { atomic?: boolean; dryRun?: boolean }): Promise<BulkRegisterEmployeeCommandResultDto>;
 
   // ── User Groups ─────────────────────────────────────────────
   createGroup(req: CreateGroupRequest): Promise<GroupDetailDto>;
@@ -1912,6 +1914,28 @@ export interface StudentDocumentFulfillmentDto {
   file_path?: string;
   uploaded_at?: string;
 }
+
+export interface BulkRegisterEmployeeCommandItem {
+  row_index: number;
+  registration: RegisterEmployeeRequest;
+}
+
+export interface BulkRegisterEmployeeCommandResultDto {
+  total: number;
+  succeeded: number;
+  failed: number;
+  items: BulkRegisterEmployeeItemCommandResultDto[];
+}
+
+export interface BulkRegisterEmployeeItemCommandResultDto {
+  row_index: number;
+  success: boolean;
+  employee_id?: string;
+  employee_number?: string;
+  user_id?: string;
+  error?: string;
+}
+
 
 
 
