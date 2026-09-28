@@ -15,26 +15,16 @@ let isSaving = $state(false);
 let isLoading = $derived(orgQuery.isLoading);
 
 async function handleSave(registrationConfig: any) {
-  const org = orgQuery.data;
-  if (!orgId || !org) return;
-
-  let settingsObj: Record<string, any> = {};
-  if (org.settings) {
-    try {
-      settingsObj =
-        typeof org.settings === "string"
-          ? JSON.parse(org.settings)
-          : org.settings;
-    } catch {
-      settingsObj = {};
-    }
-  }
-
-  settingsObj.registration = registrationConfig.registration;
+  if (!orgId) return;
 
   isSaving = true;
   try {
-    await api.updateSettings(settingsObj);
+    const currentSettings = await api.getSettings();
+    const updatedSettings = {
+      ...currentSettings,
+      admission: registrationConfig.admission,
+    };
+    await api.updateSettings(updatedSettings);
     toast.success(m.settings_registration_save_success());
   } catch (e: unknown) {
     toast.error(

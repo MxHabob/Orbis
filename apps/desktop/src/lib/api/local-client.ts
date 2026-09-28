@@ -54,7 +54,7 @@ import type {
   RecordGradeRequest,
   MarkAttendanceRequest,
   BehaviorRecordDto,
-  RecordBehaviorInput,
+  RecordBehaviorRequest,
   CalculateGradesRequest,
   CalculateRankingsRequest,
   RankingItemDto,
@@ -89,13 +89,13 @@ import type {
   UpdateTemplateRequest,
   TemplateVersionDto,
   TemplateBindingDto,
-  ValidationResult,
+  ValidationResultDto,
   ReportDefinitionDto,
   StudentDto,
   StudentDetailDto,
   RegisterStudentInput,
-  CheckDuplicateInput,
-  DuplicateCheckResultDto,
+  DuplicateCheckRequest,
+  DuplicateCheckResponse,
   DocumentRequirementDto,
   CreateDocumentRequirementRequest,
   StudentDocumentFulfillmentDto,
@@ -125,7 +125,7 @@ import type {
   RegisterEmployeeRequest,
   UpdateEmployeeRequest,
   EmployeeFilterInput,
-  ProvisionEmployeeAccountInput,
+  ProvisionEmployeeAccountRequest,
   GroupDetailDto,
   GroupMemberInfoDto,
   CreateGroupRequest,
@@ -394,7 +394,7 @@ export class LocalClient implements OrbisApiClient {
   async registerStudent(req: RegisterStudentInput): Promise<StudentDetailDto> {
     return unwrap(await invoke("student_register_student", { request: req }));
   }
-  async checkDuplicate(req: CheckDuplicateInput): Promise<DuplicateCheckResultDto> {
+  async checkDuplicate(req: DuplicateCheckRequest): Promise<DuplicateCheckResponse> {
     return unwrap(await invoke("student_check_duplicate", { request: req }));
   }
   async listStudents(filter?: StudentFilterParams): Promise<PaginatedList<StudentDetailDto>> {
@@ -468,7 +468,7 @@ export class LocalClient implements OrbisApiClient {
   async updateEmployeeStatus(id: string, status: string): Promise<EmployeeDetailDto> {
     return unwrap(await invoke("employee_update_employee_status", { id, status }));
   }
-  async provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountInput): Promise<AccountProvisioningResultDto> {
+  async provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountRequest): Promise<AccountProvisioningResultDto> {
     return unwrap(await invoke("employee_provision_account", { id, request: req }));
   }
   async assignEmployeeGroups(id: string, groupIds: string[]): Promise<boolean> {
@@ -651,7 +651,7 @@ export class LocalClient implements OrbisApiClient {
     );
   }
 
-  async recordBehavior(req: RecordBehaviorInput): Promise<BehaviorRecordDto> {
+  async recordBehavior(req: RecordBehaviorRequest): Promise<BehaviorRecordDto> {
     return unwrap(
       await invoke("assessment_record_behavior", { request: req }),
     );
@@ -986,7 +986,7 @@ export class LocalClient implements OrbisApiClient {
     });
     return new Uint8Array(res);
   }
-  async validateTemplate(documentJson: string): Promise<ValidationResult> {
+  async validateTemplate(documentJson: string): Promise<ValidationResultDto> {
     return unwrap(await invoke("template_validate", { documentJson }));
   }
 

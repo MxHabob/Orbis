@@ -9,7 +9,7 @@ import {
   type EmployeeFilterInput,
   type RegisterEmployeeRequest,
   type UpdateEmployeeRequest,
-  type ProvisionEmployeeAccountInput,
+  type ProvisionEmployeeAccountRequest,
 } from "$lib/api";
 
 /** Paginated and filtered employees directory query. */
@@ -91,7 +91,7 @@ export function createUpdateEmployeeStatusMutation() {
 export function createProvisionEmployeeAccountMutation() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: ({ id, req }: { id: string; req: ProvisionEmployeeAccountInput }) =>
+    mutationFn: ({ id, req }: { id: string; req: ProvisionEmployeeAccountRequest }) =>
       api.provisionEmployeeAccount(id, req),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.employee.detail(variables.id) });

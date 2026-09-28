@@ -15,7 +15,7 @@ import {
   type TransferClassInput,
   type EnrollStudentRequest,
   type AssignGuardianRequest,
-  type RecordBehaviorInput,
+  type RecordBehaviorRequest,
   type UploadDocumentRequest,
 } from "$lib/api";
 
@@ -272,7 +272,7 @@ export function createRemoveGuardianMutation() {
 export function createRecordBehaviorMutation() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: (req: RecordBehaviorInput) => api.recordBehavior(req),
+    mutationFn: (req: RecordBehaviorRequest) => api.recordBehavior(req),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.student.behavior(vars.student_id || "") });
     },

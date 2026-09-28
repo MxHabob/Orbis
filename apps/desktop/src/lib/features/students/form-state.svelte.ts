@@ -241,7 +241,7 @@ export class StudentFormState {
         });
 
         if (res.has_duplicate && res.matches.length > 0) {
-          const match = res.matches.find((m) => m.field === field) || res.matches[0];
+          const match = res.matches.find((m: any) => m.field === field) || res.matches[0];
           const studentInfo = match.student_number ? ` (${match.student_number})` : "";
           this.duplicateWarnings = {
             ...this.duplicateWarnings,

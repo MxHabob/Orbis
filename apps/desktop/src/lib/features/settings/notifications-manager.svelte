@@ -1,21 +1,25 @@
-<!--
-@component NotificationsManager
-Manages in-app and email notification preferences.
--->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { Switch } from "@orbis/ui/switch";
 import { toast } from "@orbis/ui";
+import { api, extractErrorMessage } from "$lib/api";
+import type { OrganizationSettingsDto } from "@orbis/sdk";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { AppNotification } from "@orbis/icons";
 
 let { orgId }: { orgId: string } = $props();
 
 let isSaving = $state(false);
+let isLoading = $state(true);
+let rawSettings = $state<OrganizationSettingsDto | null>(null);
 let initialSnapshot = $state("");
 
-// Preferences state
+// Backend notifications settings
+let notifyParentsOnAbsence = $state(true);
+let notifyParentsOnGradePublish = $state(true);
+
+// Preferences state (hybrid with local channel preferences)
 let prefs = $state({
   inApp: {
     enrollment: true,
@@ -35,7 +39,20 @@ let prefs = $state({
   },
 });
 
-onMount(() => {
+onMount(async () => {
+  try {
+    isLoading = true;
+    rawSettings = await api.getSettings();
+    if (rawSettings?.notifications) {
+      notifyParentsOnAbsence = rawSettings.notifications.notify_parents_on_absence ?? true;
+      notifyParentsOnGradePublish = rawSettings.notifications.notify_parents_on_grade_publish ?? true;
+    }
+  } catch (e) {
+    console.error("Failed to load backend settings:", e);
+  } finally {
+    isLoading = false;
+  }
+
   const saved = localStorage.getItem("orbis_notification_preferences");
   if (saved) {
     try {
@@ -44,10 +61,12 @@ onMount(() => {
       console.error("Failed to parse notifications preferences:", e);
     }
   }
-  initialSnapshot = JSON.stringify(prefs);
+  initialSnapshot = JSON.stringify({ prefs, notifyParentsOnAbsence, notifyParentsOnGradePublish });
 });
 
-const currentSnapshot = $derived(JSON.stringify(prefs));
+const currentSnapshot = $derived(
+  JSON.stringify({ prefs, notifyParentsOnAbsence, notifyParentsOnGradePublish }),
+);
 const isDirty = $derived(
   Boolean(initialSnapshot && currentSnapshot !== initialSnapshot),
 );
@@ -55,7 +74,10 @@ const isDirty = $derived(
 function handleReset() {
   if (!initialSnapshot) return;
   try {
-    prefs = JSON.parse(initialSnapshot);
+    const parsed = JSON.parse(initialSnapshot);
+    prefs = parsed.prefs;
+    notifyParentsOnAbsence = parsed.notifyParentsOnAbsence;
+    notifyParentsOnGradePublish = parsed.notifyParentsOnGradePublish;
   } catch (e) {
     console.error("Failed to reset notifications preferences:", e);
   }
@@ -65,9 +87,23 @@ async function handleSave(e?: Event) {
   e?.preventDefault();
   isSaving = true;
   try {
-    localStorage.setItem("orbis_notification_preferences", currentSnapshot);
+    localStorage.setItem("orbis_notification_preferences", JSON.stringify(prefs));
+    if (rawSettings) {
+      const updatedSettings: OrganizationSettingsDto = {
+        ...rawSettings,
+        notifications: {
+          ...rawSettings.notifications,
+          notify_parents_on_absence: notifyParentsOnAbsence,
+          notify_parents_on_grade_publish: notifyParentsOnGradePublish,
+          finance_reminder_days: rawSettings.notifications?.finance_reminder_days ?? [7, 3, 1],
+        },
+      };
+      rawSettings = await api.updateSettings(updatedSettings);
+    }
     initialSnapshot = currentSnapshot;
     toast.success(m.settings_general_save_success());
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
   } finally {
     isSaving = false;
   }

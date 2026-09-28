@@ -87,7 +87,7 @@ import type {
   AttendanceDto,
   CalculationResultDto,
   CreateSchemeRequest,
-  UpdateSchemeRequest as SdkUpdateSchemeRequest,
+  UpdateSchemeRequest,
   RecordGradeRequest,
   MarkAttendanceRequest,
   CalculateGradesRequest,
@@ -978,7 +978,7 @@ export interface OrbisApiClient {
 
   // ── Student ─────────────────────────────────────────────────
   registerStudent(req: RegisterStudentInput): Promise<StudentDetailDto>;
-  checkDuplicate(req: CheckDuplicateInput): Promise<DuplicateCheckResultDto>;
+  checkDuplicate(req: DuplicateCheckRequest): Promise<DuplicateCheckResponse>;
   listStudents(filter?: StudentFilterParams): Promise<PaginatedList<StudentDetailDto>>;
   getStudent(id: string): Promise<StudentDetailDto>;
   updateStudentStatus(req: UpdateStudentStatusInput): Promise<StudentDto>;
@@ -1002,7 +1002,7 @@ export interface OrbisApiClient {
   getEmployeeStats(): Promise<Record<string, number>>;
   updateEmployee(id: string, req: UpdateEmployeeRequest): Promise<EmployeeDetailDto>;
   updateEmployeeStatus(id: string, status: string): Promise<EmployeeDetailDto>;
-  provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountInput): Promise<AccountProvisioningResultDto>;
+  provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountRequest): Promise<AccountProvisioningResultDto>;
   assignEmployeeGroups(id: string, groupIds: string[]): Promise<boolean>;
   bulkRegisterEmployees(items: BulkRegisterEmployeeCommandItem[], options?: { atomic?: boolean; dryRun?: boolean }): Promise<BulkRegisterEmployeeCommandResultDto>;
 
@@ -1057,7 +1057,7 @@ export interface OrbisApiClient {
   markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto>;
   listAttendance(classId: string, date: string): Promise<AttendanceDto[]>;
   listStudentAttendance(studentId: string): Promise<AttendanceDto[]>;
-  recordBehavior(req: RecordBehaviorInput): Promise<BehaviorRecordDto>;
+  recordBehavior(req: RecordBehaviorRequest): Promise<BehaviorRecordDto>;
   listStudentBehaviorRecords(studentId: string): Promise<BehaviorRecordDto[]>;
 
   // ── Student Cohort Progression ──────────────────────────────
@@ -1168,7 +1168,7 @@ export interface OrbisApiClient {
     contextData: any,
     locale?: string,
   ): Promise<Uint8Array>;
-  validateTemplate(documentJson: string): Promise<ValidationResult>;
+  validateTemplate(documentJson: string): Promise<ValidationResultDto>;
 
   // ── Template Bindings ───────────────────────────────────────
   listTemplateBindings(definitionId: string): Promise<TemplateBindingDto[]>;

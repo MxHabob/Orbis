@@ -10,6 +10,7 @@ import {
   type OrbisErrorBody,
 } from "@orbis/sdk";
 import * as sdk from "@orbis/sdk";
+import { OrbisError } from "./index";
 
 import type {
   OrbisApiClient,
@@ -60,7 +61,7 @@ import type {
   RecordGradeRequest,
   MarkAttendanceRequest,
   BehaviorRecordDto,
-  RecordBehaviorInput,
+  RecordBehaviorRequest,
   CalculateGradesRequest,
   CalculateRankingsRequest,
   RankingItemDto,
@@ -95,14 +96,13 @@ import type {
   UpdateTemplateRequest,
   TemplateVersionDto,
   TemplateBindingDto,
-  ValidationResult,
+  ValidationResultDto,
   ReportDefinitionDto,
-  OrbisError,
   StudentDto,
   StudentDetailDto,
   RegisterStudentInput,
-  CheckDuplicateInput,
-  DuplicateCheckResultDto,
+  DuplicateCheckRequest,
+  DuplicateCheckResponse,
   DocumentRequirementDto,
   CreateDocumentRequirementRequest,
   StudentDocumentFulfillmentDto,
@@ -116,7 +116,7 @@ import type {
   RegisterEmployeeResponseDto,
   UpdateEmployeeRequest,
   UpdateEmployeeStatusRequest,
-  ProvisionEmployeeAccountInput,
+  ProvisionEmployeeAccountRequest,
   GroupDetailDto,
   CreateGroupRequest,
   UpdateGroupRequest,
@@ -466,7 +466,7 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.registerStudent({ client: this.client, body: req as any })) as any;
   }
 
-  async checkDuplicate(req: CheckDuplicateInput): Promise<DuplicateCheckResultDto> {
+  async checkDuplicate(req: DuplicateCheckRequest): Promise<DuplicateCheckResponse> {
     return this.call(sdk.checkDuplicate({ client: this.client, body: req as any })) as any;
   }
 
@@ -606,7 +606,7 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.updateEmployeeStatus({ client: this.client, path: { id }, body: { status } as any })) as any;
   }
 
-  async provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountInput): Promise<AccountProvisioningResultDto> {
+  async provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountRequest): Promise<AccountProvisioningResultDto> {
     return this.call(sdk.provisionAccount({ client: this.client, path: { id }, body: req as any })) as any;
   }
 
@@ -795,7 +795,7 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.listAttendance({ client: this.client, query: { student_id: studentId } as any })) ?? [];
   }
 
-  async recordBehavior(_req: RecordBehaviorInput): Promise<BehaviorRecordDto> {
+  async recordBehavior(_req: RecordBehaviorRequest): Promise<BehaviorRecordDto> {
     return {
       id: "remote",
       student_id: _req.student_id,
@@ -1103,7 +1103,7 @@ export class RemoteClient implements OrbisApiClient {
     return res as any;
   }
 
-  async validateTemplate(documentJson: string): Promise<ValidationResult> {
+  async validateTemplate(documentJson: string): Promise<ValidationResultDto> {
     return this.call(sdk.validateTemplate({ client: this.client, body: { document_json: documentJson } })) as any;
   }
 

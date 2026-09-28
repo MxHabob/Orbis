@@ -36,3 +36,29 @@ Every agent starting a session in this repository MUST:
   - `packages/sdk`: Pure TypeScript client generated deterministically via `@hey-api/openapi-ts`.
 
 ---
+
+## 3. CONTINUATION STATE
+
+- **Last Session Date:** 2026-09-28
+- **Active Phase:** Phase 3 — Settings + Organization Reconciliation (Completed)
+- **Completed Scopes:**
+  - **Organization & Settings Backend:**
+    - Expanded `UpdateOrgRequest` (`name_ar`, `base_currency_code`, `date_format`, `is_hijri_enabled`, `logo`, `favicon`, `code`) in `orbis-server` & `orbis-app`.
+    - Added `AdmissionConfigurationDto` & `admission` to `OrganizationSettingsDto` in `orbis-server`.
+    - Aligned `OrgUnitDto` with domain fields (`head_id`, `data_isolation`, `children_count`, `descendant_count`).
+    - Aligned Tauri IPC commands (`org_cmds.rs`) with full serialization/deserialization.
+  - **SDK Regeneration:**
+    - Regenerated `openapi.json` and `@orbis/sdk` TypeScript client.
+  - **Desktop Settings Reconciliation:**
+    - Cleaned up duplicate/obsolete type aliases in `apps/desktop/src/lib/api/types.ts`.
+    - Fixed `branch-settings-card.svelte` to use `api.listOrgUnits()`.
+    - Connected `notifications-manager.svelte` to backend `api.getSettings()` / `api.updateSettings()`.
+    - Aligned `registration-settings.svelte` and `registration-settings-form.svelte` with canonical `admission` structure.
+    - Created `EnrollmentSettingsCard`, `FinanceSettingsCard`, and `AutopilotSettingsCard` (17 backend fields).
+    - Integrated policy cards into `general-settings-form.svelte` with bidirectional state persistence.
+  - **Verification:**
+    - `apps/api-rust` cargo check: 0 errors
+    - `apps/desktop/src-tauri` cargo check: 0 errors
+    - `packages/sdk` tsc: 0 errors
+    - `apps/desktop` tsc: 0 errors
+- **Next Scope in Master Execution Plan:** Next Phase in Scope-by-Scope Reconciliation (Calendar / Academics / Students / Finance).

@@ -88,17 +88,14 @@ const isDirty = $derived(
 );
 
 const activeBranchCount = $derived(
-  branches.filter((branch) => branch.is_active === 1).length,
+  branches.filter((branch) => branch.is_active === true || (branch.is_active as any) === 1).length,
 );
 
 onMount(async () => {
   try {
     isLoadingBranches = true;
-    const res = await api.getOrgUnits({
-      unit_type: "branch",
-      is_active: true,
-    });
-    branches = (res?.items || []).filter(
+    const res = await api.listOrgUnits();
+    branches = (Array.isArray(res) ? res : []).filter(
       (item: any) => item.unit_type === "branch",
     );
   } catch (error) {

@@ -105,22 +105,32 @@ function parseOrgRegistration(rawOrg: any) {
     settingsObj = {};
   }
 
-  const reg = settingsObj.registration || settingsObj.registration_config || {};
-  const pol = reg.policy_settings || reg;
+  const adm = settingsObj.admission || settingsObj.registration || settingsObj.registration_config || {};
+  const num = adm.numbering || {};
+  const pol = adm.policy || adm.policy_settings || adm;
+  const fields = adm.fields || adm.form_fields_list || [];
 
   return {
-    institutionType: reg.institution_type || "school",
-    studentNumberPrefix: reg.student_number_prefix || "STU",
-    studentNumberYearFormat: reg.student_number_year_format || "YEAR",
-    studentNumberDigits: reg.student_number_digits ? Number(reg.student_number_digits) : 4,
+    institutionType: adm.institution_type || "school",
+    studentNumberPrefix: num.prefix || adm.student_number_prefix || "STU",
+    studentNumberYearFormat: num.year_format === "full" ? "YEAR" : num.year_format === "short" ? "YEAR2" : num.year_format === "none" ? "NONE" : (adm.student_number_year_format || "YEAR"),
+    studentNumberDigits: num.sequence_digits ? Number(num.sequence_digits) : (adm.student_number_digits ? Number(adm.student_number_digits) : 4),
     requiresApproval: pol.requires_approval !== undefined ? Boolean(pol.requires_approval) : false,
     allowNoGuardian: pol.allow_no_guardian !== undefined ? Boolean(pol.allow_no_guardian) : false,
     allowDuplicateNationalId: pol.allow_duplicate_national_id !== undefined ? Boolean(pol.allow_duplicate_national_id) : false,
     autoAssignFees: pol.auto_assign_fees !== undefined ? Boolean(pol.auto_assign_fees) : true,
     maxClassCapacity: pol.max_class_capacity ? Number(pol.max_class_capacity) : 30,
-    requiredDocuments: Array.isArray(reg.required_documents_list) ? reg.required_documents_list : [],
-    formFields: Array.isArray(reg.form_fields_list) && reg.form_fields_list.length > 0
-      ? reg.form_fields_list
+    requiredDocuments: Array.isArray(adm.required_documents_list) ? adm.required_documents_list : [],
+    formFields: Array.isArray(fields) && fields.length > 0
+      ? fields.map((f: any) => ({
+          key: f.key,
+          nameAr: f.name_ar || f.nameAr || f.name,
+          nameEn: f.name_en || f.nameEn || f.key,
+          isActive: f.is_active !== undefined ? Boolean(f.is_active) : (f.isActive ?? true),
+          isRequired: f.is_required !== undefined ? Boolean(f.is_required) : (f.isRequired ?? false),
+          preventDuplicate: f.prevent_duplicate !== undefined ? Boolean(f.prevent_duplicate) : (f.preventDuplicate ?? false),
+          supportsDuplicate: f.supports_duplicate !== undefined ? Boolean(f.supports_duplicate) : (f.supportsDuplicate ?? true),
+        }))
       : defaultFormFields,
   };
 }
@@ -383,30 +393,33 @@ function handleFieldGridAction(event: GridActionEvent) {
 
 // Save form
 function handleFormSave() {
-  const activeFieldsList = formFields.filter((f) => f.isActive).map((f) => f.key);
-  const requiredFieldsList = formFields.filter((f) => f.isActive && f.isRequired).map((f) => f.key);
-  const preventDuplicatesList = formFields.filter((f) => f.isActive && f.preventDuplicate).map((f) => f.key);
-
   const payload = {
-    registration: {
-      institution_type: institutionType,
-      student_number_pattern: `${studentNumberPrefix}-{YEAR}-{SEQ:${studentNumberDigits}}`,
-      student_number_prefix: studentNumberPrefix,
-      student_number_digits: studentNumberDigits,
-      student_number_year_format: studentNumberYearFormat,
-      policy_settings: {
+    admission: {
+      numbering: {
+        prefix: studentNumberPrefix,
+        year_format: studentNumberYearFormat === "YEAR" ? "full" : studentNumberYearFormat === "YEAR2" ? "short" : "none",
+        sequence_digits: studentNumberDigits,
+        separator: "-",
+      },
+      policy: {
         requires_approval: requiresApproval,
         allow_no_guardian: allowNoGuardian,
         allow_duplicate_national_id: allowDuplicateNationalId,
         auto_assign_fees: autoAssignFees,
         max_class_capacity: maxClassCapacity,
+        allow_late_enrollment: false,
+        allow_waitlist: true,
+        sibling_priority_enabled: true,
       },
-      active_fields: activeFieldsList,
-      required_fields: requiredFieldsList,
-      prevent_duplicates: preventDuplicatesList,
-      required_documents: requiredDocuments.map((d) => d.nameAr),
-      required_documents_list: requiredDocuments,
-      form_fields_list: formFields,
+      fields: formFields.map((f) => ({
+        key: f.key,
+        name_ar: f.nameAr,
+        name_en: f.nameEn,
+        is_active: f.isActive,
+        is_required: f.isRequired,
+        prevent_duplicate: f.preventDuplicate,
+        supports_duplicate: f.supportsDuplicate,
+      })),
     },
   };
 
