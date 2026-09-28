@@ -24,6 +24,8 @@ pub struct SubjectDto {
     pub is_core: bool,
     pub is_elective: bool,
     pub is_active: bool,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Deserialize)]
@@ -49,7 +51,11 @@ pub struct ClassDto {
     pub homeroom_teacher_id: Option<String>,
     pub capacity: Option<i32>,
     pub current_students: Option<i32>,
+    pub room_id: Option<String>,
+    pub color: Option<String>,
     pub is_active: bool,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Deserialize)]
@@ -68,6 +74,9 @@ pub struct ClassSubjectDto {
     pub period_id: String,
     pub primary_teacher_id: String,
     pub weekly_hours: Option<i32>,
+    pub is_active: bool,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Deserialize)]
@@ -90,6 +99,61 @@ pub struct PrerequisiteCheckResultDto {
     pub failure_reason: Option<String>,
 }
 
+// ── Helpers ─────────────────────────────────────────────────────
+
+fn subject_dto(s: orbis_domain::entities::subject::Subject) -> SubjectDto {
+    SubjectDto {
+        id: s.id.to_string(),
+        org_id: s.org_id.to_string(),
+        unit_id: s.unit_id.map(|u| u.to_string()),
+        code: s.code,
+        name: s.name,
+        name_ar: s.name_ar,
+        description: s.description,
+        credit_hours: s.credit_hours,
+        is_core: s.is_core,
+        is_elective: s.is_elective,
+        is_active: s.is_active,
+        created_at: s.created_at.to_rfc3339(),
+        updated_at: s.updated_at.to_rfc3339(),
+    }
+}
+
+fn class_dto(c: orbis_domain::entities::class::Class) -> ClassDto {
+    ClassDto {
+        id: c.id.to_string(),
+        org_id: c.org_id.to_string(),
+        unit_id: c.unit_id.to_string(),
+        period_id: c.period_id.to_string(),
+        name: c.name,
+        name_ar: c.name_ar,
+        level: c.level,
+        division: c.division,
+        homeroom_teacher_id: c.homeroom_teacher_id.map(|h| h.to_string()),
+        capacity: c.capacity,
+        current_students: c.current_students,
+        room_id: c.room_id.map(|r| r.to_string()),
+        color: c.color,
+        is_active: c.is_active,
+        created_at: c.created_at.to_rfc3339(),
+        updated_at: c.updated_at.to_rfc3339(),
+    }
+}
+
+fn class_subject_dto(cs: orbis_domain::entities::class_subject::ClassSubject) -> ClassSubjectDto {
+    ClassSubjectDto {
+        id: cs.id.to_string(),
+        class_id: cs.class_id.to_string(),
+        subject_id: cs.subject_id.to_string(),
+        period_id: cs.period_id.to_string(),
+        primary_teacher_id: cs.primary_teacher_id.to_string(),
+        weekly_hours: cs.weekly_hours,
+        is_active: cs.is_active,
+        created_at: cs.created_at.to_rfc3339(),
+        updated_at: cs.updated_at.to_rfc3339(),
+    }
+}
+
 #[tauri::command]
 pub async fn academic_create_subject(request: CreateSubjectInput, state: State<'_, AppState>) -> Result<ApiResponse<SubjectDto>, String> {
     let ctx = make_ctx(&state);
@@ -98,57 +162,21 @@ pub async fn academic_create_subject(request: CreateSubjectInput, state: State<'
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(SubjectDto {
-        id: s.id.to_string(),
-        org_id: s.org_id.to_string(),
-        unit_id: s.unit_id.map(|u| u.to_string()),
-        code: s.code,
-        name: s.name,
-        name_ar: s.name_ar,
-        description: s.description,
-        credit_hours: s.credit_hours,
-        is_core: s.is_core,
-        is_elective: s.is_elective,
-        is_active: s.is_active,
-    }))
+    Ok(ok(subject_dto(s)))
 }
 
 #[tauri::command]
 pub async fn academic_list_subjects(state: State<'_, AppState>) -> Result<ApiResponse<Vec<SubjectDto>>, String> {
     let ctx = make_ctx(&state);
     let items = state.academic_service.list_subjects(ctx.tenant_id, SubjectFilter::default()).await.map_err(|e| e.to_string())?;
-    Ok(ok(items.items.into_iter().map(|s| SubjectDto {
-        id: s.id.to_string(),
-        org_id: s.org_id.to_string(),
-        unit_id: s.unit_id.map(|u| u.to_string()),
-        code: s.code,
-        name: s.name,
-        name_ar: s.name_ar,
-        description: s.description,
-        credit_hours: s.credit_hours,
-        is_core: s.is_core,
-        is_elective: s.is_elective,
-        is_active: s.is_active,
-    }).collect()))
+    Ok(ok(items.items.into_iter().map(subject_dto).collect()))
 }
 
 #[tauri::command]
 pub async fn academic_get_subject(id: String, state: State<'_, AppState>) -> Result<ApiResponse<SubjectDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
     let s = state.academic_service.get_subject(uid).await.map_err(|e| e.to_string())?.ok_or("Subject not found")?;
-    Ok(ok(SubjectDto {
-        id: s.id.to_string(),
-        org_id: s.org_id.to_string(),
-        unit_id: s.unit_id.map(|u| u.to_string()),
-        code: s.code,
-        name: s.name,
-        name_ar: s.name_ar,
-        description: s.description,
-        credit_hours: s.credit_hours,
-        is_core: s.is_core,
-        is_elective: s.is_elective,
-        is_active: s.is_active,
-    }))
+    Ok(ok(subject_dto(s)))
 }
 
 #[tauri::command]
@@ -161,60 +189,21 @@ pub async fn academic_create_class(request: CreateClassInput, state: State<'_, A
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(ClassDto {
-        id: c.id.to_string(),
-        org_id: c.org_id.to_string(),
-        unit_id: c.unit_id.to_string(),
-        period_id: c.period_id.to_string(),
-        name: c.name,
-        name_ar: c.name_ar,
-        level: c.level,
-        division: c.division,
-        homeroom_teacher_id: c.homeroom_teacher_id.map(|h| h.to_string()),
-        capacity: c.capacity,
-        current_students: c.current_students,
-        is_active: c.is_active,
-    }))
+    Ok(ok(class_dto(c)))
 }
 
 #[tauri::command]
 pub async fn academic_list_classes(state: State<'_, AppState>) -> Result<ApiResponse<Vec<ClassDto>>, String> {
     let ctx = make_ctx(&state);
     let items = state.academic_service.list_classes(ctx.tenant_id, ClassFilter::default()).await.map_err(|e| e.to_string())?;
-    Ok(ok(items.items.into_iter().map(|c| ClassDto {
-        id: c.id.to_string(),
-        org_id: c.org_id.to_string(),
-        unit_id: c.unit_id.to_string(),
-        period_id: c.period_id.to_string(),
-        name: c.name,
-        name_ar: c.name_ar,
-        level: c.level,
-        division: c.division,
-        homeroom_teacher_id: c.homeroom_teacher_id.map(|h| h.to_string()),
-        capacity: c.capacity,
-        current_students: c.current_students,
-        is_active: c.is_active,
-    }).collect()))
+    Ok(ok(items.items.into_iter().map(class_dto).collect()))
 }
 
 #[tauri::command]
 pub async fn academic_get_class(id: String, state: State<'_, AppState>) -> Result<ApiResponse<ClassDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
     let c = state.academic_service.get_class(uid).await.map_err(|e| e.to_string())?.ok_or("Class not found")?;
-    Ok(ok(ClassDto {
-        id: c.id.to_string(),
-        org_id: c.org_id.to_string(),
-        unit_id: c.unit_id.to_string(),
-        period_id: c.period_id.to_string(),
-        name: c.name,
-        name_ar: c.name_ar,
-        level: c.level,
-        division: c.division,
-        homeroom_teacher_id: c.homeroom_teacher_id.map(|h| h.to_string()),
-        capacity: c.capacity,
-        current_students: c.current_students,
-        is_active: c.is_active,
-    }))
+    Ok(ok(class_dto(c)))
 }
 
 #[tauri::command]
@@ -229,14 +218,7 @@ pub async fn academic_assign_class_subject(request: AssignClassSubjectInput, sta
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(ClassSubjectDto {
-        id: cs.id.to_string(),
-        class_id: cs.class_id.to_string(),
-        subject_id: cs.subject_id.to_string(),
-        period_id: cs.period_id.to_string(),
-        primary_teacher_id: cs.primary_teacher_id.to_string(),
-        weekly_hours: cs.weekly_hours,
-    }))
+    Ok(ok(class_subject_dto(cs)))
 }
 
 #[tauri::command]
@@ -250,14 +232,7 @@ pub async fn academic_list_class_subjects(class_id: String, period_id: String, s
         ..Default::default()
     };
     let items = state.academic_service.list_class_subjects(ctx.tenant_id, filter).await.map_err(|e| e.to_string())?;
-    Ok(ok(items.items.into_iter().map(|cs| ClassSubjectDto {
-        id: cs.id.to_string(),
-        class_id: cs.class_id.to_string(),
-        subject_id: cs.subject_id.to_string(),
-        period_id: cs.period_id.to_string(),
-        primary_teacher_id: cs.primary_teacher_id.to_string(),
-        weekly_hours: cs.weekly_hours,
-    }).collect()))
+    Ok(ok(items.items.into_iter().map(class_subject_dto).collect()))
 }
 
 #[tauri::command]

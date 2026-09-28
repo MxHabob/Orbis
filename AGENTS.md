@@ -40,7 +40,7 @@ Every agent starting a session in this repository MUST:
 ## 3. CONTINUATION STATE
 
 - **Last Session Date:** 2026-09-28
-- **Active Phase:** Phase 4 — IAM, Users, Roles & Permissions Reconciliation (Completed)
+- **Active Phase:** Phase 5 — Academic Structure & Calendar Reconciliation (Completed)
 - **Completed Scopes:**
   - **Organization & Settings (Phase 3):**
     - Expanded `UpdateOrgRequest` (`name_ar`, `base_currency_code`, `date_format`, `is_hijri_enabled`, `logo`, `favicon`, `code`) in `orbis-server` & `orbis-app`.
@@ -53,9 +53,21 @@ Every agent starting a session in this repository MUST:
     - Reconciled `user-profile.svelte` to map canonical `UpdateUserRequest` (`full_name_ar`, `is_active`) and query group memberships accurately.
     - Reconciled `user-sessions.svelte` to use canonical `UserDeviceDto` properties and wired `api.revokeDevice(id)` with confirmation.
     - Reconciled `user-roles.svelte` to remove unsafe `as any` casts and enforce typed role updates.
+  - **Academic Structure & Calendar (Phase 5):**
+    - Audited and aligned `AcademicPeriodDto` in `calendar_routes.rs` and `calendar_cmds.rs` (`code`, `is_locked`, `is_enrollment_open`, `is_grade_entry_open`, `created_at`, `updated_at`).
+    - Aligned `AcademicYearDto` in `calendar_cmds.rs` with `current_period_id`, `notes`, `created_at`, `updated_at`.
+    - Aligned `SubjectDto` in `academic_routes.rs` and `academic_cmds.rs` with `description`, `is_elective`, `created_at`, `updated_at`.
+    - Aligned `ClassDto` in `academic_routes.rs` and `academic_cmds.rs` with `homeroom_teacher_id`, `current_students`, `room_id`, `color`, `created_at`, `updated_at`.
+    - Aligned `RoomDto` in `scheduling_cmds.rs` with `org_unit_id`, `created_at`, `updated_at`.
+    - Reconciled `period-form.svelte` to cleanly separate `AcademicYear` vs `AcademicPeriod` creation with full date ISO conversions.
+    - Reconciled `subject-form.svelte` to bind `credit_hours` directly and eliminate untyped parameters.
+    - Reconciled `room-form.svelte` to sanitize payloads for `createRoom`.
+    - Reconciled `class-form.svelte` to support explicit OrgUnit and Period selection.
+    - Reconciled `subjects-manager.svelte` and `rooms-manager.svelte` with `formatDate` and typed DTOs.
   - **Verification:**
     - `apps/api-rust` cargo check: 0 errors
     - `apps/desktop/src-tauri` cargo check: 0 errors
     - `packages/sdk` tsc: 0 errors
     - `apps/desktop` tsc: 0 errors
-- **Next Scope in Master Execution Plan:** Phase 5 — Academic Structure & Calendar Reconciliation (Years, Periods, Classes, Subjects, Rooms, TimeSlots).
+- **Next Scope in Master Execution Plan:** Phase 6 — Student Lifecycle, Admissions, Guardians & Enrollments Reconciliation.
+

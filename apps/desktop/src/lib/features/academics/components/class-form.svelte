@@ -1,12 +1,19 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, type CreateClassRequest } from "$lib/api";
+import { api, type CreateClassRequest, queryKeys } from "$lib/api";
 import { academicContext } from "$lib/stores";
 import { createPeriodsQuery } from "$lib/features/academics/queries";
+import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
 import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
 import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "@orbis/ui";
 import { classFormInputSchema } from "@orbis/schemas";
@@ -25,9 +32,18 @@ let {
 const periodsQuery = createPeriodsQuery(() => orgId);
 const periods = $derived(periodsQuery.data ?? []);
 
+const unitsQuery = createQuery(() => ({
+  queryKey: queryKeys.org.units(orgId),
+  queryFn: () => api.listOrgUnits(),
+  enabled: !!orgId,
+}));
+const units = $derived(unitsQuery.data ?? []);
+
 // Form state
 const form = new FormController({
   initialValues: {
+    unit_id: "",
+    period_id: "",
     name: "",
     name_ar: "",
     code: "",
@@ -46,13 +62,15 @@ async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (values) => {
     const periodId =
+      values.period_id ||
       academicContext.effectivePeriodId ||
       (periods[0]?.id ? String(periods[0].id) : "");
     if (!periodId) {
       throw new Error("Academic period is required.");
     }
-    const orgUnits = await api.listOrgUnits();
-    const unitId = orgUnits[0]?.id ? String(orgUnits[0].id) : "";
+    const unitId =
+      values.unit_id ||
+      (units[0]?.id ? String(units[0].id) : "");
     if (!unitId) {
       throw new Error("Organizational unit is required.");
     }
@@ -84,7 +102,7 @@ async function handleSubmit(e: SubmitEvent) {
 		</SheetTitle>
 	</SheetHeader>
 
-	<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide">
+	<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide text-start">
 		<!-- Name (Arabic) -->
 		<FormField id="name_ar" label={m.academics_class_label_name_ar()} error={fieldError("name_ar")} required>
 			{#snippet children()}
@@ -110,6 +128,55 @@ async function handleSubmit(e: SubmitEvent) {
 			/>
 			{/snippet}
 		</FormField>
+
+		<!-- Unit & Period Selection -->
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+			{#if units.length > 0}
+				<FormField id="unit_select" label={m.common_word_unit()} error={fieldError("unit_id")}>
+					{#snippet children()}
+					<Select
+						type="single"
+						value={form.values.unit_id || (units[0]?.id ? String(units[0].id) : "")}
+						onValueChange={(v) => (form.values.unit_id = v ?? "")}
+					>
+						<SelectTrigger class="h-9 text-xs w-full">
+							{units.find(u => String(u.id) === (form.values.unit_id || String(units[0]?.id)))?.name_ar || units.find(u => String(u.id) === (form.values.unit_id || String(units[0]?.id)))?.name || m.common_word_unit()}
+						</SelectTrigger>
+						<SelectContent class="max-h-52">
+							{#each units as u}
+								<SelectItem value={String(u.id)}>
+									{u.name_ar || u.name}
+								</SelectItem>
+							{/each}
+						</SelectContent>
+					</Select>
+					{/snippet}
+				</FormField>
+			{/if}
+
+			{#if periods.length > 0}
+				<FormField id="period_select" label={m.common_period_form_title_create()} error={fieldError("period_id")}>
+					{#snippet children()}
+					<Select
+						type="single"
+						value={form.values.period_id || academicContext.effectivePeriodId || (periods[0]?.id ? String(periods[0].id) : "")}
+						onValueChange={(v) => (form.values.period_id = v ?? "")}
+					>
+						<SelectTrigger class="h-9 text-xs w-full">
+							{periods.find(p => String(p.id) === (form.values.period_id || academicContext.effectivePeriodId || String(periods[0]?.id)))?.name_ar || periods.find(p => String(p.id) === (form.values.period_id || academicContext.effectivePeriodId || String(periods[0]?.id)))?.name || m.common_period_form_title_create()}
+						</SelectTrigger>
+						<SelectContent class="max-h-52">
+							{#each periods as p}
+								<SelectItem value={String(p.id)}>
+									{p.name_ar || p.name}
+								</SelectItem>
+							{/each}
+						</SelectContent>
+					</Select>
+					{/snippet}
+				</FormField>
+			{/if}
+		</div>
 
 		<!-- Two Columns Row -->
 		<div class="grid grid-cols-2 gap-4">

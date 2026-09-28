@@ -64,13 +64,14 @@ const roomTypeLabels = {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (payload) => {
-    if (isEdit && room) {
-      await api.createRoom(payload);
-      toast.success(m.common_rooms_update_success());
-    } else {
-      await api.createRoom(payload);
-      toast.success(m.common_rooms_create_success());
-    }
+    const name = payload.name || payload.name_ar;
+    if (!name) throw new Error(m.common_rooms_error_name_required());
+    await api.createRoom({
+      name,
+      capacity: Number(payload.capacity) || 30,
+      room_type: payload.room_type || "classroom",
+    });
+    toast.success(isEdit ? m.common_rooms_update_success() : m.common_rooms_create_success());
   });
   if (submitted) {
     onSuccess();

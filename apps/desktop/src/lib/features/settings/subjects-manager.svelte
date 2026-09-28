@@ -6,11 +6,11 @@ Matches the design, layout, and UX of the Rooms manager page.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api } from "$lib/api";
+import { api, extractErrorMessage, type SubjectDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { toast } from "@orbis/ui";
-import { l } from "$lib/core/i18n";
+import { formatDate, l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Plus, Search, Refresh } from "@orbis/icons";
 import SubjectCreateSheet from "$lib/features/academics/components/subject-create-sheet.svelte";
@@ -21,7 +21,7 @@ import { subjectFilterFields } from "$lib/core/filter-configs";
 let { orgId }: { orgId: string } = $props();
 
 // State
-let subjects = $state<any[]>([]);
+let subjects = $state<SubjectDto[]>([]);
 let isLoading = $state(true);
 let searchQuery = $state("");
 let isSheetOpen = $state(false);
@@ -35,8 +35,8 @@ async function loadSubjects() {
   isLoading = true;
   try {
     subjects = await api.listSubjects();
-  } catch (e) {
-    toast.error((e as any)?.message || "Failed to load subjects");
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
   } finally {
     isLoading = false;
   }

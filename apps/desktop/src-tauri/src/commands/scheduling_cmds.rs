@@ -16,6 +16,9 @@ pub struct RoomDto {
     pub name: String,
     pub room_type: String,
     pub capacity: i32,
+    pub org_unit_id: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Deserialize)]
@@ -42,6 +45,8 @@ pub struct TimeSlotDto {
     pub end_time: String,
     pub is_break: bool,
     pub break_type: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Deserialize)]
@@ -65,6 +70,8 @@ pub struct ScheduledLessonDto {
     pub time_slot_id: String,
     pub room_id: Option<String>,
     pub teacher_id: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Deserialize)]
@@ -81,6 +88,50 @@ pub struct LessonFilter {
     pub period_id: Option<String>,
 }
 
+// ── Helpers ─────────────────────────────────────────────────────
+
+fn room_dto(r: orbis_domain::entities::room::Room) -> RoomDto {
+    RoomDto {
+        id: r.id.to_string(),
+        org_id: r.org_id.to_string(),
+        name: r.name,
+        room_type: r.room_type,
+        capacity: r.capacity,
+        org_unit_id: r.org_unit_id.map(|u| u.to_string()),
+        created_at: r.created_at.to_rfc3339(),
+        updated_at: r.updated_at.to_rfc3339(),
+    }
+}
+
+fn time_slot_dto(t: orbis_domain::entities::time_slot::TimeSlot) -> TimeSlotDto {
+    TimeSlotDto {
+        id: t.id.to_string(),
+        period_id: t.period_id.to_string(),
+        day_of_week: t.day_of_week,
+        slot_index: t.slot_index,
+        name: t.name,
+        name_ar: t.name_ar,
+        start_time: t.start_time.to_string(),
+        end_time: t.end_time.to_string(),
+        is_break: t.is_break,
+        break_type: t.break_type,
+        created_at: t.created_at.to_rfc3339(),
+        updated_at: t.updated_at.to_rfc3339(),
+    }
+}
+
+fn lesson_dto(l: orbis_domain::entities::scheduled_lesson::ScheduledLesson) -> ScheduledLessonDto {
+    ScheduledLessonDto {
+        id: l.id.to_string(),
+        class_subject_id: l.class_subject_id.to_string(),
+        time_slot_id: l.time_slot_id.to_string(),
+        room_id: l.room_id.map(|r| r.to_string()),
+        teacher_id: l.teacher_id.map(|t| t.to_string()),
+        created_at: l.created_at.to_rfc3339(),
+        updated_at: l.updated_at.to_rfc3339(),
+    }
+}
+
 #[tauri::command]
 pub async fn scheduling_create_room(request: CreateRoomInput, state: State<'_, AppState>) -> Result<ApiResponse<RoomDto>, String> {
     let ctx = make_ctx(&state);
@@ -88,39 +139,21 @@ pub async fn scheduling_create_room(request: CreateRoomInput, state: State<'_, A
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(RoomDto {
-        id: r.id.to_string(),
-        org_id: r.org_id.to_string(),
-        name: r.name,
-        room_type: r.room_type,
-        capacity: r.capacity,
-    }))
+    Ok(ok(room_dto(r)))
 }
 
 #[tauri::command]
 pub async fn scheduling_list_rooms(state: State<'_, AppState>) -> Result<ApiResponse<Vec<RoomDto>>, String> {
     let ctx = make_ctx(&state);
     let items = state.scheduling_service.list_rooms(ctx.tenant_id).await.map_err(|e| e.to_string())?;
-    Ok(ok(items.into_iter().map(|r| RoomDto {
-        id: r.id.to_string(),
-        org_id: r.org_id.to_string(),
-        name: r.name,
-        room_type: r.room_type,
-        capacity: r.capacity,
-    }).collect()))
+    Ok(ok(items.into_iter().map(room_dto).collect()))
 }
 
 #[tauri::command]
 pub async fn scheduling_get_room(id: String, state: State<'_, AppState>) -> Result<ApiResponse<RoomDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
     let r = state.scheduling_service.get_room(uid).await.map_err(|e| e.to_string())?.ok_or("Room not found")?;
-    Ok(ok(RoomDto {
-        id: r.id.to_string(),
-        org_id: r.org_id.to_string(),
-        name: r.name,
-        room_type: r.room_type,
-        capacity: r.capacity,
-    }))
+    Ok(ok(room_dto(r)))
 }
 
 #[tauri::command]
@@ -140,36 +173,14 @@ pub async fn scheduling_create_time_slot(request: CreateTimeSlotInput, state: St
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(TimeSlotDto {
-        id: t.id.to_string(),
-        period_id: t.period_id.to_string(),
-        day_of_week: t.day_of_week,
-        slot_index: t.slot_index,
-        name: t.name,
-        name_ar: t.name_ar,
-        start_time: t.start_time.to_string(),
-        end_time: t.end_time.to_string(),
-        is_break: t.is_break,
-        break_type: t.break_type,
-    }))
+    Ok(ok(time_slot_dto(t)))
 }
 
 #[tauri::command]
 pub async fn scheduling_list_time_slots(period_id: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<TimeSlotDto>>, String> {
     let pid = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
     let items = state.scheduling_service.list_time_slots(pid).await.map_err(|e| e.to_string())?;
-    Ok(ok(items.into_iter().map(|t| TimeSlotDto {
-        id: t.id.to_string(),
-        period_id: t.period_id.to_string(),
-        day_of_week: t.day_of_week,
-        slot_index: t.slot_index,
-        name: t.name,
-        name_ar: t.name_ar,
-        start_time: t.start_time.to_string(),
-        end_time: t.end_time.to_string(),
-        is_break: t.is_break,
-        break_type: t.break_type,
-    }).collect()))
+    Ok(ok(items.into_iter().map(time_slot_dto).collect()))
 }
 
 #[tauri::command]
@@ -184,13 +195,7 @@ pub async fn scheduling_schedule_lesson(request: ScheduleLessonInput, state: Sta
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(ScheduledLessonDto {
-        id: l.id.to_string(),
-        class_subject_id: l.class_subject_id.to_string(),
-        time_slot_id: l.time_slot_id.to_string(),
-        room_id: l.room_id.map(|r| r.to_string()),
-        teacher_id: l.teacher_id.map(|t| t.to_string()),
-    }))
+    Ok(ok(lesson_dto(l)))
 }
 
 #[tauri::command]
@@ -204,13 +209,7 @@ pub async fn scheduling_list_lessons(filter: Option<LessonFilter>, state: State<
         Ok(vec![])
     }.map_err(|e| e.to_string())?;
 
-    Ok(ok(items.into_iter().map(|l| ScheduledLessonDto {
-        id: l.id.to_string(),
-        class_subject_id: l.class_subject_id.to_string(),
-        time_slot_id: l.time_slot_id.to_string(),
-        room_id: l.room_id.map(|r| r.to_string()),
-        teacher_id: l.teacher_id.map(|t| t.to_string()),
-    }).collect()))
+    Ok(ok(items.into_iter().map(lesson_dto).collect()))
 }
 
 // ═════════════════════════════════════════════════════════════════════════════

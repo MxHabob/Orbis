@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api } from "$lib/api";
+import { api, queryKeys } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
@@ -22,6 +22,7 @@ import {
   AccordionTrigger,
 } from "@orbis/ui/accordion";
 import { createPeriodsQuery } from "$lib/features/academics/queries";
+import { createQuery } from "@tanstack/svelte-query";
 
 let {
   orgId,
@@ -32,6 +33,7 @@ let {
   orgId: string;
   period?: {
     id: string;
+    year_id?: string | null;
     name?: string | null;
     name_ar?: string | null;
     code?: string | null;
@@ -50,15 +52,29 @@ let {
 
 const isEdit = $derived(!!period);
 
+const yearsQuery = createQuery(() => ({
+  queryKey: queryKeys.calendar.years(),
+  queryFn: () => api.listAcademicYears(),
+}));
+const yearsList = $derived(yearsQuery.data ?? []);
+
+const periodsQuery = createPeriodsQuery(() => orgId);
+const periodsList = $derived(
+  (periodsQuery.data ?? []).filter(
+    (p: any) => !isEdit || String(p.id) !== String(period?.id),
+  ),
+);
+
 const form = new FormController({
   initialValues: {
+    year_id: period?.year_id || "",
     name: period?.name || "",
     name_ar: period?.name_ar || "",
     code: period?.code || "",
-    period_type: period?.period_type || "year",
+    period_type: period?.period_type || (period?.year_id ? "term" : "year"),
     parent_id: period?.parent_id || period?.period_id || "",
-    start_date: period?.start_date || "",
-    end_date: period?.end_date || "",
+    start_date: period?.start_date ? String(period.start_date).slice(0, 10) : "",
+    end_date: period?.end_date ? String(period.end_date).slice(0, 10) : "",
     grading_system: period?.grading_system || "percentage",
     passing_grade: period?.passing_grade ?? 50,
     max_grade: period?.max_grade ?? 100,
@@ -81,31 +97,35 @@ const gradingLabels = $derived({
   gpa: m.common_period_form_grading_gpa(),
 });
 
-
-const periodsQuery = createPeriodsQuery(() => orgId);
-const periodsList = $derived(
-  (periodsQuery.data ?? []).filter(
-    (p: any) => !isEdit || String(p.id) !== String(period?.id),
-  ),
-);
-
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (payload) => {
-    const request = {
-      ...payload,
-      name: payload.name || payload.name_ar || "",
-      name_ar: payload.name_ar || payload.name || undefined,
-      parent_id:
-        payload.period_type !== "year" && payload.parent_id
-          ? payload.parent_id
-          : undefined,
-    };
-    if (isEdit && period) {
-      await api.createAcademicPeriod(request);
+    if (payload.period_type === "year") {
+      const yearReq = {
+        name: payload.name || payload.name_ar || "",
+        name_ar: payload.name_ar || payload.name || undefined,
+        start_date: new Date(payload.start_date).toISOString(),
+        end_date: new Date(payload.end_date).toISOString(),
+      };
+      await api.createAcademicYear(yearReq);
       toast.success(m.common_action_save());
     } else {
-      await api.createAcademicPeriod(request);
+      const selectedYearId =
+        payload.year_id ||
+        (yearsList[0]?.id ? String(yearsList[0].id) : "");
+      if (!selectedYearId) {
+        throw new Error("Academic Year is required for periods/terms.");
+      }
+      const periodReq = {
+        year_id: selectedYearId,
+        parent_id: payload.parent_id || undefined,
+        name: payload.name || payload.name_ar || "",
+        name_ar: payload.name_ar || payload.name || undefined,
+        period_type: payload.period_type,
+        start_date: new Date(payload.start_date).toISOString(),
+        end_date: new Date(payload.end_date).toISOString(),
+      };
+      await api.createAcademicPeriod(periodReq);
       toast.success(m.common_period_form_success());
     }
   });

@@ -9,15 +9,17 @@ import { FormField } from "@orbis/ui";
 import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "@orbis/ui";
+
 type SubjectDraft = {
   name: string;
   name_ar: string;
   code: string;
+  credit_hours: number;
   color: string | null;
 };
 
 const form = new FormController<SubjectDraft>({
-  initialValues: { name: "", name_ar: "", code: "", color: null },
+  initialValues: { name: "", name_ar: "", code: "", credit_hours: 3, color: null },
   schema: createSubjectInputSchema,
 });
 
@@ -37,8 +39,11 @@ async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (draft) => {
     await api.createSubject({
-      ...draft,
+      code: draft.code,
       name: draft.name || draft.name_ar || "",
+      name_ar: draft.name_ar || draft.name || undefined,
+      credit_hours: String(draft.credit_hours ?? 3),
+      is_core: true,
     });
   });
   if (submitted) {
@@ -53,88 +58,88 @@ async function handleSubmit(e: SubmitEvent) {
 </script>
 
 <form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
-	<SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
-		<SheetTitle class="text-xl font-bold text-foreground">
-			{m.common_subject_sheet_title()}
-		</SheetTitle>
-	</SheetHeader>
+  <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
+    <SheetTitle class="text-xl font-bold text-foreground">
+      {m.common_subject_sheet_title()}
+    </SheetTitle>
+  </SheetHeader>
 
-	<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide">
-		<!-- Name (Arabic) -->
-		<FormField id="sub_name_ar" label={m.common_subject_label_name_ar()} error={fieldError("name_ar")} required>
-			{#snippet children()}
-			<InputColor
-				placeholder={m.common_subject_placeholder_name_ar()}
-				bind:value={form.values.name_ar}
-				bind:color={form.values.color}
-				onblur={() => form.markTouched("name_ar")}
-				required
-			/>
-			{/snippet}
-		</FormField>
+  <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide">
+    <!-- Name (Arabic) -->
+    <FormField id="sub_name_ar" label={m.common_subject_label_name_ar()} error={fieldError("name_ar")} required>
+      {#snippet children()}
+      <InputColor
+        placeholder={m.common_subject_placeholder_name_ar()}
+        bind:value={form.values.name_ar}
+        bind:color={form.values.color}
+        onblur={() => form.markTouched("name_ar")}
+        required
+      />
+      {/snippet}
+    </FormField>
 
-		<!-- Name (English) -->
-		<FormField id="sub_name_en" label={m.common_subject_label_name_en()} error={fieldError("name")}>
-			{#snippet children()}
-			<Input 
-				id="sub_name_en"
-				type="text" 
-				bind:value={form.values.name}
-				onblur={() => form.markTouched("name")}
-				aria-invalid={Boolean(fieldError("name"))}
-				aria-describedby={fieldError("name") ? "sub_name_error" : undefined}
-				placeholder={m.common_subject_placeholder_name_en()}
-			/>
-			{/snippet}
-		</FormField>
+    <!-- Name (English) -->
+    <FormField id="sub_name_en" label={m.common_subject_label_name_en()} error={fieldError("name")}>
+      {#snippet children()}
+      <Input 
+        id="sub_name_en"
+        type="text" 
+        bind:value={form.values.name}
+        onblur={() => form.markTouched("name")}
+        aria-invalid={Boolean(fieldError("name"))}
+        aria-describedby={fieldError("name") ? "sub_name_error" : undefined}
+        placeholder={m.common_subject_placeholder_name_en()}
+      />
+      {/snippet}
+    </FormField>
 
-		<!-- Subject Code -->
-		<FormField id="sub_code" label={m.common_subject_label_code()} error={fieldError("code")} required>
-			{#snippet children()}
-			<Input 
-				id="sub_code"
-				type="text" 
-				bind:value={form.values.code}
-				onblur={() => form.markTouched("code")}
-				aria-invalid={Boolean(fieldError("code"))}
-				aria-describedby={fieldError("code") ? "sub_code_error" : undefined}
-				placeholder={m.common_subject_placeholder_code()}
-			/>
-			{/snippet}
-		</FormField>
+    <!-- Subject Code -->
+    <FormField id="sub_code" label={m.common_subject_label_code()} error={fieldError("code")} required>
+      {#snippet children()}
+      <Input 
+        id="sub_code"
+        type="text" 
+        bind:value={form.values.code}
+        onblur={() => form.markTouched("code")}
+        aria-invalid={Boolean(fieldError("code"))}
+        aria-describedby={fieldError("code") ? "sub_code_error" : undefined}
+        placeholder={m.common_subject_placeholder_code()}
+      />
+      {/snippet}
+    </FormField>
 
-		<!-- Credit Hours -->
-		<div class="flex flex-col gap-2 text-start">
-			<label for="sub_weight" class="text-sm font-medium text-foreground">
-				{m.common_subject_label_periods()}
-			</label>
-			<Input 
-				id="sub_weight"
-				type="number" 
-				value="3"
-				min="1"
-				max="20"
-			/>
-		</div>
-	</div>
+    <!-- Credit Hours -->
+    <div class="flex flex-col gap-2 text-start">
+      <label for="sub_weight" class="text-sm font-medium text-foreground">
+        {m.common_subject_label_periods()}
+      </label>
+      <Input 
+        id="sub_weight"
+        type="number" 
+        bind:value={form.values.credit_hours}
+        min="1"
+        max="20"
+      />
+    </div>
+  </div>
 
-	<!-- Form Actions -->
-	<div class="px-6 py-3 border-t border-border/40 flex gap-2 justify-end shrink-0 bg-background/50">
-		<Button 
-			type="button" 
-			variant="ghost" 
-			onclick={onCancel}
-			disabled={form.isSubmitting}
-		>
-			{m.common_action_cancel()}
-		</Button>
-		<Button 
-			type="submit" 
-			variant="lime" 
-			class="font-semibold"
-			disabled={form.isSubmitting}
-		>
-			{form.isSubmitting ? m.common_state_saving() : m.common_action_save()}
-		</Button>
-	</div>
+  <!-- Form Actions -->
+  <div class="px-6 py-3 border-t border-border/40 flex gap-2 justify-end shrink-0 bg-background/50">
+    <Button 
+      type="button" 
+      variant="ghost" 
+      onclick={onCancel}
+      disabled={form.isSubmitting}
+    >
+      {m.common_action_cancel()}
+    </Button>
+    <Button 
+      type="submit" 
+      variant="lime" 
+      class="font-semibold"
+      disabled={form.isSubmitting}
+    >
+      {form.isSubmitting ? m.common_state_saving() : m.common_action_save()}
+    </Button>
+  </div>
 </form>

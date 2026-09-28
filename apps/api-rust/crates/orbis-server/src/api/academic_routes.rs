@@ -23,8 +23,10 @@ pub struct SubjectDto {
     pub code: String,
     pub name: String,
     pub name_ar: Option<String>,
+    pub description: Option<String>,
     pub credit_hours: Option<Decimal>,
     pub is_core: bool,
+    pub is_elective: bool,
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -50,7 +52,11 @@ pub struct ClassDto {
     pub name_ar: Option<String>,
     pub level: String,
     pub division: Option<String>,
+    pub homeroom_teacher_id: Option<Uuid>,
     pub capacity: Option<i32>,
+    pub current_students: Option<i32>,
+    pub room_id: Option<Uuid>,
+    pub color: Option<String>,
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -86,6 +92,47 @@ pub struct AssignClassSubjectRequest {
     pub weekly_hours: Option<i32>,
 }
 
+// ── Helpers ─────────────────────────────────────────────────────
+
+fn subject_to_dto(s: orbis_domain::entities::subject::Subject) -> SubjectDto {
+    SubjectDto {
+        id: s.id,
+        org_id: s.org_id,
+        unit_id: s.unit_id,
+        code: s.code,
+        name: s.name,
+        name_ar: s.name_ar,
+        description: s.description,
+        credit_hours: s.credit_hours,
+        is_core: s.is_core,
+        is_elective: s.is_elective,
+        is_active: s.is_active,
+        created_at: s.created_at,
+        updated_at: s.updated_at,
+    }
+}
+
+fn class_to_dto(c: orbis_domain::entities::class::Class) -> ClassDto {
+    ClassDto {
+        id: c.id,
+        org_id: c.org_id,
+        unit_id: c.unit_id,
+        period_id: c.period_id,
+        name: c.name,
+        name_ar: c.name_ar,
+        level: c.level,
+        division: c.division,
+        homeroom_teacher_id: c.homeroom_teacher_id,
+        capacity: c.capacity,
+        current_students: c.current_students,
+        room_id: c.room_id,
+        color: c.color,
+        is_active: c.is_active,
+        created_at: c.created_at,
+        updated_at: c.updated_at,
+    }
+}
+
 // ── Handlers ────────────────────────────────────────────────────
 
 #[utoipa::path(post, path = "/api/v1/subjects", request_body = CreateSubjectRequest,
@@ -105,11 +152,7 @@ async fn create_subject(
         p.credit_hours,
         p.is_core.unwrap_or(true),
     ).await?;
-    Ok(ApiResponse::ok(SubjectDto {
-        id: s.id, org_id: s.org_id, unit_id: s.unit_id, code: s.code, name: s.name, name_ar: s.name_ar,
-        credit_hours: s.credit_hours, is_core: s.is_core, is_active: s.is_active,
-        created_at: s.created_at, updated_at: s.updated_at,
-    }))
+    Ok(ApiResponse::ok(subject_to_dto(s)))
 }
 
 #[utoipa::path(get, path = "/api/v1/subjects",
@@ -120,11 +163,7 @@ async fn list_subjects(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<SubjectDto>>>, ApiError> {
     let subjects = state.academic_service.list_subjects(ctx.tenant_id, SubjectFilter::default()).await?;
-    let dtos = subjects.items.into_iter().map(|s| SubjectDto {
-        id: s.id, org_id: s.org_id, unit_id: s.unit_id, code: s.code, name: s.name, name_ar: s.name_ar,
-        credit_hours: s.credit_hours, is_core: s.is_core, is_active: s.is_active,
-        created_at: s.created_at, updated_at: s.updated_at,
-    }).collect();
+    let dtos = subjects.items.into_iter().map(subject_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -139,11 +178,7 @@ async fn get_subject(
 ) -> Result<Json<ApiResponse<SubjectDto>>, ApiError> {
     let s = state.academic_service.get_subject(id).await?
         .ok_or_else(|| ApiError::not_found(format!("Subject {} not found", id)))?;
-    Ok(ApiResponse::ok(SubjectDto {
-        id: s.id, org_id: s.org_id, unit_id: s.unit_id, code: s.code, name: s.name, name_ar: s.name_ar,
-        credit_hours: s.credit_hours, is_core: s.is_core, is_active: s.is_active,
-        created_at: s.created_at, updated_at: s.updated_at,
-    }))
+    Ok(ApiResponse::ok(subject_to_dto(s)))
 }
 
 #[utoipa::path(post, path = "/api/v1/classes", request_body = CreateClassRequest,
@@ -155,12 +190,7 @@ async fn create_class(
     Json(p): Json<CreateClassRequest>,
 ) -> Result<Json<ApiResponse<ClassDto>>, ApiError> {
     let c = state.academic_service.create_class(&ctx, ctx.tenant_id, p.unit_id, p.period_id, p.name, p.level).await?;
-    Ok(ApiResponse::ok(ClassDto {
-        id: c.id, org_id: c.org_id, unit_id: c.unit_id,
-        period_id: c.period_id, name: c.name, name_ar: c.name_ar, level: c.level,
-        division: c.division, capacity: c.capacity, is_active: c.is_active,
-        created_at: c.created_at, updated_at: c.updated_at,
-    }))
+    Ok(ApiResponse::ok(class_to_dto(c)))
 }
 
 #[utoipa::path(get, path = "/api/v1/classes",
@@ -171,12 +201,7 @@ async fn list_classes(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<ClassDto>>>, ApiError> {
     let classes = state.academic_service.list_classes(ctx.tenant_id, ClassFilter::default()).await?;
-    let dtos = classes.items.into_iter().map(|c| ClassDto {
-        id: c.id, org_id: c.org_id, unit_id: c.unit_id,
-        period_id: c.period_id, name: c.name, name_ar: c.name_ar, level: c.level,
-        division: c.division, capacity: c.capacity, is_active: c.is_active,
-        created_at: c.created_at, updated_at: c.updated_at,
-    }).collect();
+    let dtos = classes.items.into_iter().map(class_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -191,12 +216,7 @@ async fn get_class(
 ) -> Result<Json<ApiResponse<ClassDto>>, ApiError> {
     let c = state.academic_service.get_class(id).await?
         .ok_or_else(|| ApiError::not_found(format!("Class {} not found", id)))?;
-    Ok(ApiResponse::ok(ClassDto {
-        id: c.id, org_id: c.org_id, unit_id: c.unit_id,
-        period_id: c.period_id, name: c.name, name_ar: c.name_ar, level: c.level,
-        division: c.division, capacity: c.capacity, is_active: c.is_active,
-        created_at: c.created_at, updated_at: c.updated_at,
-    }))
+    Ok(ApiResponse::ok(class_to_dto(c)))
 }
 
 #[utoipa::path(post, path = "/api/v1/class-subjects", request_body = AssignClassSubjectRequest,

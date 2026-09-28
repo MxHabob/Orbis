@@ -19,11 +19,16 @@ pub struct AcademicYearDto {
     pub end_date: String,
     pub is_active: bool,
     pub status: String,
+    pub current_period_id: Option<String>,
+    pub notes: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Deserialize)]
 pub struct CreateYearInput {
     pub name: String,
+    pub name_ar: Option<String>,
     pub start_date: String,
     pub end_date: String,
 }
@@ -43,6 +48,8 @@ pub struct AcademicPeriodDto {
     pub is_locked: bool,
     pub is_enrollment_open: bool,
     pub is_grade_entry_open: bool,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Deserialize)]
@@ -50,6 +57,7 @@ pub struct CreatePeriodInput {
     pub year_id: String,
     pub parent_id: Option<String>,
     pub name: String,
+    pub name_ar: Option<String>,
     pub period_type: String,
     pub start_date: String,
     pub end_date: String,
@@ -79,6 +87,10 @@ fn year_dto(y: orbis_domain::entities::academic_year::AcademicYear) -> AcademicY
         end_date: y.end_date.to_rfc3339(),
         is_active,
         status: y.status,
+        current_period_id: y.current_period_id.map(|u| u.to_string()),
+        notes: y.notes,
+        created_at: y.created_at.to_rfc3339(),
+        updated_at: y.updated_at.to_rfc3339(),
     }
 }
 
@@ -102,6 +114,8 @@ fn period_dto(p: orbis_domain::entities::academic_period::AcademicPeriod) -> Aca
         is_locked: p.is_locked,
         is_enrollment_open: p.is_enrollment_open,
         is_grade_entry_open: p.is_grade_entry_open,
+        created_at: p.created_at.to_rfc3339(),
+        updated_at: p.updated_at.to_rfc3339(),
     }
 }
 

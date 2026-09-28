@@ -35,10 +35,14 @@ pub struct AcademicPeriodDto {
     pub parent_id: Option<Uuid>,
     pub name: String,
     pub name_ar: Option<String>,
+    pub code: Option<String>,
     pub start_date: DateTime<Utc>,
     pub end_date: DateTime<Utc>,
     pub period_type: String,
     pub status: String,
+    pub is_locked: bool,
+    pub is_enrollment_open: bool,
+    pub is_grade_entry_open: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -73,6 +77,28 @@ pub struct CreatePeriodRequest {
 pub struct PeriodTemplateDto {
     pub id: Uuid,
     pub name: String,
+}
+
+// ── Helper ──────────────────────────────────────────────────────
+
+fn period_to_dto(p: orbis_domain::entities::academic_period::AcademicPeriod) -> AcademicPeriodDto {
+    AcademicPeriodDto {
+        id: p.id,
+        year_id: p.year_id,
+        parent_id: p.parent_id,
+        name: p.name,
+        name_ar: p.name_ar,
+        code: p.code,
+        start_date: p.start_date,
+        end_date: p.end_date,
+        period_type: p.period_type,
+        status: p.state.to_string(),
+        is_locked: p.is_locked,
+        is_enrollment_open: p.is_enrollment_open,
+        is_grade_entry_open: p.is_grade_entry_open,
+        created_at: p.created_at,
+        updated_at: p.updated_at,
+    }
 }
 
 // ── Handlers ────────────────────────────────────────────────────
@@ -134,12 +160,7 @@ async fn get_current_context(
         created_at: y.created_at, updated_at: y.updated_at,
     }).collect();
 
-    let period_dtos: Vec<AcademicPeriodDto> = periods.into_iter().map(|p| AcademicPeriodDto {
-        id: p.id, year_id: p.year_id, parent_id: p.parent_id, name: p.name,
-        name_ar: p.name_ar, start_date: p.start_date, end_date: p.end_date,
-        period_type: p.period_type, status: p.state.to_string(),
-        created_at: p.created_at, updated_at: p.updated_at,
-    }).collect();
+    let period_dtos: Vec<AcademicPeriodDto> = periods.into_iter().map(period_to_dto).collect();
 
     let current_dto = current.map(|y| AcademicYearDto {
         id: y.id, org_id: y.org_id, name: y.name,
@@ -188,12 +209,7 @@ async fn create_period(
         &ctx, ctx.tenant_id, payload.year_id, payload.parent_id,
         payload.name, payload.period_type, payload.start_date, payload.end_date
     ).await?;
-    Ok(ApiResponse::ok(AcademicPeriodDto {
-        id: p.id, year_id: p.year_id, parent_id: p.parent_id, name: p.name,
-        name_ar: p.name_ar, start_date: p.start_date, end_date: p.end_date,
-        period_type: p.period_type, status: p.state.to_string(),
-        created_at: p.created_at, updated_at: p.updated_at,
-    }))
+    Ok(ApiResponse::ok(period_to_dto(p)))
 }
 
 #[utoipa::path(get, path = "/api/v1/academic-periods",
@@ -204,12 +220,7 @@ async fn list_periods(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<AcademicPeriodDto>>>, ApiError> {
     let periods = state.calendar_service.list_periods_by_org(ctx.tenant_id).await?;
-    let dtos = periods.into_iter().map(|p| AcademicPeriodDto {
-        id: p.id, year_id: p.year_id, parent_id: p.parent_id, name: p.name,
-        name_ar: p.name_ar, start_date: p.start_date, end_date: p.end_date,
-        period_type: p.period_type, status: p.state.to_string(),
-        created_at: p.created_at, updated_at: p.updated_at,
-    }).collect();
+    let dtos = periods.into_iter().map(period_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -224,12 +235,7 @@ async fn get_period(
 ) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
     let p = state.period_repo.find_by_id(id).await?
         .ok_or_else(|| ApiError::not_found(format!("Academic period {} not found", id)))?;
-    Ok(ApiResponse::ok(AcademicPeriodDto {
-        id: p.id, year_id: p.year_id, parent_id: p.parent_id, name: p.name,
-        name_ar: p.name_ar, start_date: p.start_date, end_date: p.end_date,
-        period_type: p.period_type, status: p.state.to_string(),
-        created_at: p.created_at, updated_at: p.updated_at,
-    }))
+    Ok(ApiResponse::ok(period_to_dto(p)))
 }
 
 #[utoipa::path(post, path = "/api/v1/academic-periods/{id}/lock",
@@ -242,12 +248,7 @@ async fn lock_period(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
     let p = state.calendar_service.lock_period(&ctx, id).await?;
-    Ok(ApiResponse::ok(AcademicPeriodDto {
-        id: p.id, year_id: p.year_id, parent_id: p.parent_id, name: p.name,
-        name_ar: p.name_ar, start_date: p.start_date, end_date: p.end_date,
-        period_type: p.period_type, status: p.state.to_string(),
-        created_at: p.created_at, updated_at: p.updated_at,
-    }))
+    Ok(ApiResponse::ok(period_to_dto(p)))
 }
 
 #[utoipa::path(post, path = "/api/v1/academic-periods/{id}/unlock",
@@ -260,12 +261,7 @@ async fn unlock_period(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
     let p = state.calendar_service.unlock_period(&ctx, id).await?;
-    Ok(ApiResponse::ok(AcademicPeriodDto {
-        id: p.id, year_id: p.year_id, parent_id: p.parent_id, name: p.name,
-        name_ar: p.name_ar, start_date: p.start_date, end_date: p.end_date,
-        period_type: p.period_type, status: p.state.to_string(),
-        created_at: p.created_at, updated_at: p.updated_at,
-    }))
+    Ok(ApiResponse::ok(period_to_dto(p)))
 }
 
 #[utoipa::path(post, path = "/api/v1/academic-periods/{id}/close",
@@ -278,12 +274,7 @@ async fn close_period(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
     let p = state.calendar_service.close_period(&ctx, id).await?;
-    Ok(ApiResponse::ok(AcademicPeriodDto {
-        id: p.id, year_id: p.year_id, parent_id: p.parent_id, name: p.name,
-        name_ar: p.name_ar, start_date: p.start_date, end_date: p.end_date,
-        period_type: p.period_type, status: p.state.to_string(),
-        created_at: p.created_at, updated_at: p.updated_at,
-    }))
+    Ok(ApiResponse::ok(period_to_dto(p)))
 }
 
 #[utoipa::path(get, path = "/api/v1/period-templates",

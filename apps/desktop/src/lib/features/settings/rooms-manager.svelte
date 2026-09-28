@@ -5,11 +5,11 @@ Lists all rooms and venues with OrbisGrid, CRUD via RoomCreateSheet.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api } from "$lib/api";
+import { api, extractErrorMessage, type RoomDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { toast } from "@orbis/ui";
-import { l } from "$lib/core/i18n";
+import { formatDate, l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Pin, Plus, Search, Refresh } from "@orbis/icons";
 import RoomCreateSheet from "$lib/features/academics/components/room-create-sheet.svelte";
@@ -20,11 +20,11 @@ import { roomFilterFields } from "$lib/core/filter-configs";
 let { orgId }: { orgId: string } = $props();
 
 // State
-let rooms = $state<any[]>([]);
+let rooms = $state<RoomDto[]>([]);
 let isLoading = $state(true);
 let searchQuery = $state("");
 let isSheetOpen = $state(false);
-let editingRoom = $state<any>(null);
+let editingRoom = $state<RoomDto | null>(null);
 let activeFilter = $state<UniversalFilter>({
   logic: "AND",
   conditions: [],
@@ -35,8 +35,8 @@ async function loadRooms() {
   isLoading = true;
   try {
     rooms = await api.listRooms();
-  } catch (e) {
-    toast.error((e as any)?.message || "Failed to load rooms");
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
   } finally {
     isLoading = false;
   }
