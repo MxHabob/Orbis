@@ -114,13 +114,3 @@ export function createAssignEmployeeGroupsMutation() {
   }));
 }
 
-/** Reset employee password mutation. */
-export function createResetEmployeePasswordMutation() {
-  const queryClient = useQueryClient();
-  return createMutation(() => ({
-    mutationFn: (id: string) => api.resetEmployeePassword(id),
-    onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.employee.detail(id) });
-    },
-  }));
-}

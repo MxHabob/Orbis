@@ -573,38 +573,6 @@ pub async fn employee_assign_groups(
     Ok(ok(true))
 }
 
-#[tauri::command]
-pub async fn employee_reset_password(
-    id: String,
-    state: State<'_, AppState>,
-) -> Result<ApiResponse<AccountProvisioningResultDto>, String> {
-    let ctx = make_ctx(&state);
-    let employee_id = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
-
-    let employee = state.employee_service.get_employee(&ctx, employee_id)
-        .await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| format!("Employee {} not found", id))?;
-
-    let user_id = employee.employee.user_id
-        .ok_or_else(|| "Employee does not have a linked user account".to_string())?;
-
-    let res = state.identity_provisioning_service.reset_password(
-        &ctx,
-        user_id,
-        Some(DeliveryChannel::Manual),
-    ).await.map_err(|e| e.to_string())?;
-
-    Ok(ok(AccountProvisioningResultDto {
-        user_id: res.user_id.to_string(),
-        username: res.username,
-        temporary_password: res.temporary_password,
-        must_change_password: true,
-        delivery_channel: res.delivery_channel.to_string(),
-        delivery_status: res.delivery_status.to_string(),
-    }))
-}
-
 // ── Bulk Registration Command ───────────────────────────────────
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

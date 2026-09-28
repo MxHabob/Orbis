@@ -12,9 +12,20 @@ import type {
   LoginRequest,
   LoginResponse,
   SessionResponse,
+  MfaEnrollRequest,
+  MfaEnrollResponse,
+  MfaVerifyEnrollmentRequest,
+  MfaChallengeRequest,
+  GoogleAuthRequest,
+  UserDeviceDto,
+  UserIdentityDto,
   RegisterUserRequest,
   UpdateUserRequest,
+  ProvisionUserRequest,
   UserDto,
+  RoleDto,
+  SaveRoleRequest,
+  PermissionRuleDto,
   OrgDto,
   UpdateOrgRequest,
   OrgUnitDto,
@@ -36,7 +47,32 @@ import type {
   EnrollmentDto,
   StudentDto,
   EnrollStudentRequest,
+  GuardianDto,
   AssignGuardianRequest,
+  EmployeeDetailDto,
+  RegisterEmployeeRequest,
+  RegisterEmployeeResponseDto,
+  PaginatedEmployeesDto,
+  UpdateEmployeeRequest,
+  UpdateEmployeeStatusRequest,
+  ProvisionEmployeeAccountRequest,
+  AssignEmployeeGroupsRequest,
+  AccountProvisioningResultDto,
+  GroupDetailDto,
+  GroupMemberInfoDto,
+  CreateGroupRequest,
+  UpdateGroupRequest,
+  AddGroupMemberRequest,
+  BulkAssignGroupRequest,
+  SetGroupPermissionsRequest,
+  OverrideRequestDto,
+  SubmitOverrideRequest,
+  ResolveOverrideRequest,
+  ApprovalStepDto,
+  StudentProgressionItemInput,
+  PromotionJobDto,
+  PromoteCohortRequest,
+  EvaluateCohortRequest,
   RoomDto,
   TimeSlotDto,
   ScheduledLessonDto,
@@ -76,11 +112,11 @@ import type {
   ProcessPaymentRequest,
   DocumentDto,
   UploadDocumentRequest,
+  DocumentRequirementDto,
+  CreateDocumentRequirementRequest,
+  StudentDocumentFulfillmentDto,
   IntegrationDto,
   ConnectAppRequest,
-  RoleDto,
-  SaveRoleRequest,
-  PermissionRuleDto,
 } from "@orbis/sdk";
 
 // ═══════════════════════════════════════════════════════════════
@@ -90,52 +126,6 @@ import type {
 export interface ApiResponse<T> {
   data: T;
   requestId?: string;
-}
-
-export interface MfaEnrollRequest {
-  factor_name?: string;
-}
-
-export interface MfaEnrollResponse {
-  factor_id: string;
-  secret: string;
-  qr_code_uri: string;
-  recovery_codes: string[];
-}
-
-export interface MfaVerifyEnrollmentRequest {
-  factor_id: string;
-  code: string;
-}
-
-export interface MfaChallengeRequest {
-  user_id: string;
-  code: string;
-  device_id?: string;
-  remember_device?: boolean;
-}
-
-export interface GoogleAuthRequest {
-  id_token: string;
-}
-
-export interface UserDeviceDto {
-  id: string;
-  device_id: string;
-  device_name: string;
-  device_type: string;
-  os?: string;
-  browser?: string;
-  is_trusted: boolean;
-  last_active_at: string;
-}
-
-export interface UserIdentityDto {
-  id: string;
-  provider: string;
-  provider_user_id: string;
-  email?: string;
-  connected_at: string;
 }
 
 export type UpdateSchemeRequest = Partial<CreateSchemeRequest>;
@@ -223,25 +213,6 @@ export interface EnrollmentFilterParams {
   pageSize?: number;
   sortBy?: string;
   sortDir?: string;
-}
-
-export interface GuardianDto {
-  id: string;
-  student_id: string;
-  guardian_id: string;
-  relationship: string;
-  relationship_ar?: string | null;
-  is_primary: boolean;
-  is_emergency_contact: boolean;
-  is_authorized_pickup: boolean;
-  is_payer: boolean;
-  payment_share_percent?: number | null;
-  occupation?: string | null;
-  employer?: string | null;
-  work_phone?: string | null;
-  notes?: string | null;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface RegisterStudentInput {
@@ -557,41 +528,7 @@ export interface PrerequisiteCheckResultDto {
   failure_reason?: string | null;
 }
 
-export interface ApprovalStepDto {
-  step_order: number;
-  approver_role: string;
-  status: string;
-  approver_id?: string | null;
-  approver_name?: string | null;
-  decision_at?: string | null;
-  notes?: string | null;
-}
 
-export interface OverrideRequestDto {
-  id: string;
-  org_id: string;
-  override_type: string;
-  risk_level: string;
-  entity_type: string;
-  entity_id: string;
-  field_name?: string | null;
-  old_value?: string | null;
-  new_value?: string | null;
-  reason: string;
-  requested_by: string;
-  requested_by_name?: string | null;
-  status: string;
-  current_approver_role?: string | null;
-  approval_chain: ApprovalStepDto[];
-  resolved_by?: string | null;
-  resolved_by_name?: string | null;
-  resolved_at?: string | null;
-  resolution_notes?: string | null;
-  expires_at?: string | null;
-  metadata: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface SubmitOverrideRequestInput {
   override_type: string;
@@ -626,23 +563,7 @@ export interface RejectOverrideInput {
   requestId?: string;
 }
 
-export interface PromotionJobDto {
-  id: string;
-  org_id: string;
-  source_period_id: string;
-  target_period_id?: string | null;
-  name: string;
-  status: string;
-  total_students: number;
-  promoted_count: number;
-  retained_count: number;
-  graduated_count: number;
-  excluded_count: number;
-  executed_by?: string | null;
-  executed_at?: string | null;
-  created_at: string;
-  updated_at: string;
-}
+
 
 export interface PromotionDetailDto {
   id: string;
@@ -656,18 +577,7 @@ export interface PromotionDetailDto {
   created_at: string;
 }
 
-export interface StudentProgressionItemInput {
-  student_id: string;
-  enrollment_id: string;
-  source_class_id?: string;
-  target_class_id?: string;
-  decision: string;
-  reason?: string;
-  studentId?: string;
-  enrollmentId?: string;
-  sourceClassId?: string;
-  targetClassId?: string;
-}
+
 
 export interface PromoteCohortInput {
   source_period_id: string;
@@ -1278,7 +1188,6 @@ export interface OrbisApiClient {
   updateEmployeeStatus(id: string, status: string): Promise<EmployeeDetailDto>;
   provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountInput): Promise<AccountProvisioningResultDto>;
   assignEmployeeGroups(id: string, groupIds: string[]): Promise<boolean>;
-  resetEmployeePassword(id: string): Promise<AccountProvisioningResultDto>;
   bulkRegisterEmployees(items: BulkRegisterEmployeeCommandItem[], options?: { atomic?: boolean; dryRun?: boolean }): Promise<BulkRegisterEmployeeCommandResultDto>;
 
   // ── User Groups ─────────────────────────────────────────────
@@ -1720,160 +1629,7 @@ export interface ListTasksResponse {
   items: AutopilotTaskDto[];
 }
 
-// ── Employee Affairs Interfaces ───────────────────────────────
-
-export interface EmployeeDetailDto {
-  id: string;
-  org_id: string;
-  person_id: string;
-  user_id?: string | null;
-  employee_number: string;
-  employee_type: string;
-  job_title?: string | null;
-  department?: string | null;
-  org_unit_id?: string | null;
-  org_unit_name?: string | null;
-  hire_date: string;
-  status: string;
-  employment_type: string;
-  work_shift?: string | null;
-  notes?: string | null;
-
-  // Person demographic fields
-  national_id?: string | null;
-  passport_number?: string | null;
-  first_name: string;
-  middle_name?: string | null;
-  last_name: string;
-  first_name_ar?: string | null;
-  middle_name_ar?: string | null;
-  last_name_ar?: string | null;
-  display_name?: string | null;
-  full_name: string;
-  full_name_ar?: string | null;
-  gender?: string | null;
-  birth_date?: string | null;
-  place_of_birth?: string | null;
-  nationality?: string | null;
-  blood_type?: string | null;
-  medical_notes?: string | null;
-  special_needs_notes?: string | null;
-  phone?: string | null;
-  email?: string | null;
-  address?: string | null;
-  avatar_url?: string | null;
-
-  // Linked user account
-  username?: string | null;
-  user_status?: string | null;
-  roles: string[];
-  groups: string[];
-  effective_permissions: string[];
-
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AccountProvisioningResultDto {
-  user_id: string;
-  username: string;
-  temporary_password?: string | null;
-  must_change_password: boolean;
-  delivery_channel: string;
-  delivery_status: string;
-}
-
-export interface RegisterEmployeeResponseDto {
-  employee: EmployeeDetailDto;
-  provisioning?: AccountProvisioningResultDto | null;
-}
-
-export interface PaginatedEmployeesDto {
-  items: EmployeeDetailDto[];
-  total_count: number;
-  page: number;
-  page_size: number;
-  total_pages: number;
-}
-
-export interface AccountProvisioningConfigInput {
-  enabled: boolean;
-  preferred_username?: string | null;
-  role?: string | null;
-  group_ids?: string[];
-  delivery_channel?: "email" | "sms" | "whatsapp" | "manual" | "auto" | null;
-  custom_password?: string | null;
-}
-
-export interface RegisterEmployeeRequest {
-  person_id?: string | null;
-  employee_number?: string | null;
-  employee_type: string;
-  job_title?: string | null;
-  department?: string | null;
-  org_unit_id?: string | null;
-  hire_date?: string | null;
-  status?: string | null;
-  employment_type?: string | null;
-  work_shift?: string | null;
-  notes?: string | null;
-
-  first_name: string;
-  middle_name?: string | null;
-  last_name: string;
-  first_name_ar?: string | null;
-  middle_name_ar?: string | null;
-  last_name_ar?: string | null;
-  display_name?: string | null;
-  national_id?: string | null;
-  passport_number?: string | null;
-  gender?: string | null;
-  birth_date?: string | null;
-  place_of_birth?: string | null;
-  nationality?: string | null;
-  blood_type?: string | null;
-  medical_notes?: string | null;
-  special_needs_notes?: string | null;
-  phone?: string | null;
-  email?: string | null;
-  address?: string | null;
-  avatar_url?: string | null;
-
-  account?: AccountProvisioningConfigInput | null;
-}
-
-export interface UpdateEmployeeRequest {
-  employee_type?: string | null;
-  job_title?: string | null;
-  department?: string | null;
-  org_unit_id?: string | null;
-  hire_date?: string | null;
-  status?: string | null;
-  employment_type?: string | null;
-  work_shift?: string | null;
-  notes?: string | null;
-
-  first_name?: string | null;
-  middle_name?: string | null;
-  last_name?: string | null;
-  first_name_ar?: string | null;
-  middle_name_ar?: string | null;
-  last_name_ar?: string | null;
-  display_name?: string | null;
-  national_id?: string | null;
-  passport_number?: string | null;
-  gender?: string | null;
-  birth_date?: string | null;
-  place_of_birth?: string | null;
-  nationality?: string | null;
-  blood_type?: string | null;
-  medical_notes?: string | null;
-  special_needs_notes?: string | null;
-  phone?: string | null;
-  email?: string | null;
-  address?: string | null;
-  avatar_url?: string | null;
-}
+// ── Employee Affairs Helper Types ─────────────────────────────
 
 export interface EmployeeFilterInput {
   query?: string;
@@ -1890,71 +1646,6 @@ export interface ProvisionEmployeeAccountInput {
   role?: string | null;
   group_ids?: string[];
   delivery_channel?: string | null;
-}
-
-export interface ProvisionUserRequest {
-  person_id?: string | null;
-  employee_id?: string | null;
-  student_id?: string | null;
-  guardian_id?: string | null;
-  actor_type?: string | null;
-  full_name?: string | null;
-  full_name_ar?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  preferred_username?: string | null;
-  custom_password?: string | null;
-  roles: string[];
-  group_ids?: string[];
-  delivery_channel?: string | null;
-}
-
-// ── User Groups Interfaces ────────────────────────────────────
-
-export interface GroupDetailDto {
-  id: string;
-  org_id: string;
-  name: string;
-  name_ar?: string | null;
-  description?: string | null;
-  is_system: boolean;
-  status: string;
-  member_count: number;
-  permissions: string[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface GroupMemberInfoDto {
-  user_id: string;
-  person_id: string;
-  full_name: string;
-  full_name_ar?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  avatar_url?: string | null;
-  user_status: string;
-  joined_at: string;
-}
-
-export interface CreateGroupRequest {
-  name: string;
-  name_ar?: string | null;
-  description?: string | null;
-  permissions?: string[];
-}
-
-export interface UpdateGroupRequest {
-  name?: string | null;
-  name_ar?: string | null;
-  description?: string | null;
-  status?: string | null;
-  permissions?: string[];
-}
-
-export interface BulkAssignGroupRequest {
-  group_id: string;
-  user_ids: string[];
 }
 
 // ── Student Duplicate Check Interfaces ────────────────────────
@@ -1980,43 +1671,7 @@ export interface DuplicateCheckResultDto {
   matches: DuplicateMatchDto[];
 }
 
-// ── Document Requirement Interfaces ───────────────────────────
 
-export interface DocumentRequirementDto {
-  id: string;
-  org_id: string;
-  target_type: string;
-  target_id?: string;
-  code: string;
-  name_ar: string;
-  name_en: string;
-  is_mandatory: boolean;
-  blocks_enrollment: boolean;
-  condition: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateDocumentRequirementRequest {
-  target_type: string;
-  target_id?: string;
-  code: string;
-  name_ar: string;
-  name_en?: string;
-  is_mandatory: boolean;
-  blocks_enrollment: boolean;
-  condition?: string;
-}
-
-export interface StudentDocumentFulfillmentDto {
-  requirement: DocumentRequirementDto;
-  is_fulfilled: boolean;
-  is_applicable: boolean;
-  document_id?: string;
-  document_name?: string;
-  file_path?: string;
-  uploaded_at?: string;
-}
 
 export interface BulkRegisterEmployeeCommandItem {
   row_index: number;

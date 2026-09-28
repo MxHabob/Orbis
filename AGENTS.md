@@ -39,12 +39,14 @@ Every agent starting a session in this repository MUST:
 
 ## 3. CONTINUATION STATE
 
-- **Current Status:** `SETTINGS_DESERIALIZATION_AND_CANONICAL_TYPES_CONSOLIDATED`
+- **Current Status:** `OPENAPI_SDK_UNIFICATION_AND_REMOTE_CLIENT_CONSOLIDATED`
 - **Master Reference Documents:** [orbis_ai_architecture_discovery.md](file:///c:/Users/User/.gemini/antigravity-ide/brain/3e2fb622-6955-4230-8ce1-9809fa99c255/orbis_ai_architecture_discovery.md), [student_backend_desktop_contract_reconciliation.md](file:///d:/projects/Orbis/docs/student_backend_desktop_contract_reconciliation.md)
 - **Accomplished:**
-  - Resolved settings deserialization error (`missing field require_admin_approval`) by adding `#[serde(default)]` to all nested settings structs in `orbis-domain/src/entities/settings.rs` and `admission.rs`, ensuring partial and evolving settings JSON are gracefully tolerated.
-  - Purged all hardcoded Arabic text from the Rust domain layer in favor of canonical English enums and specifications, with localization maintained exclusively in the frontend i18n layer.
-  - Fixed teacher selector and employee query case sensitivity via SeaORM `Func::lower`.
-  - Fixed `student-directory.svelte` array derivation from `PaginatedList` (`studentsQuery.data?.items`).
-  - Verified 0 errors across `bun x tsc --noEmit` (clean), `cargo check --workspace` in `apps/api-rust` (clean), and `cargo check` in `apps/desktop/src-tauri` (clean).
+  - Consolidated single source of truth: Rust OpenAPI -> `@orbis/sdk` -> Desktop `OrbisApiClient`.
+  - Replaced manual `fetch` calls in [remote-client.ts](file:///d:/projects/Orbis/apps/desktop/src/lib/api/remote-client.ts) with typed `@orbis/sdk` service invocations.
+  - Purged duplicate DTO interfaces from [types.ts](file:///d:/projects/Orbis/apps/desktop/src/lib/api/types.ts) in favor of `export * from "@orbis/sdk"`.
+  - Configured `@hey-api/openapi-ts` target output into `./src/gen/` in [packages/sdk](file:///d:/projects/Orbis/packages/sdk/openapi-ts.config.ts), preserving custom entry points and factories.
+  - Fixed utoipa path template formats (`{id}` instead of `:id`) across employee, group, and assessment routes.
+  - Relocated `reset-password` logic from Employee domain to IAM / User domain (`/api/v1/iam/users/{id}/reset-password`), purging employee-level password reset commands and routes.
+  - Verified 0 errors across `bun x tsc --noEmit` in `apps/desktop` and `packages/sdk`, `cargo check --workspace` in `apps/api-rust`, and `cargo check` in `apps/desktop/src-tauri`.
 - **Next Target Module:** `EXAMS` / `FINANCE` domain workflows and DocForge template integrations.

@@ -433,7 +433,8 @@ pub async fn get_employee_stats(
     Ok(ApiResponse::ok(stats))
 }
 
-#[utoipa::path(get, path = "/api/v1/employees/:id",
+#[utoipa::path(get, path = "/api/v1/employees/{id}",
+    params(("id" = Uuid, Path, description = "Employee ID")),
     responses((status = 200, body = EmployeeDetailDto)),
     security(("bearer" = [])), tag = "Employee")]
 pub async fn get_employee(
@@ -446,7 +447,8 @@ pub async fn get_employee(
     Ok(ApiResponse::ok(detail.into()))
 }
 
-#[utoipa::path(patch, path = "/api/v1/employees/:id",
+#[utoipa::path(patch, path = "/api/v1/employees/{id}",
+    params(("id" = Uuid, Path, description = "Employee ID")),
     request_body = UpdateEmployeeRequest,
     responses((status = 200, body = EmployeeDetailDto)),
     security(("bearer" = [])), tag = "Employee")]
@@ -509,7 +511,8 @@ pub async fn update_employee(
     Ok(ApiResponse::ok(updated.into()))
 }
 
-#[utoipa::path(patch, path = "/api/v1/employees/:id/status",
+#[utoipa::path(patch, path = "/api/v1/employees/{id}/status",
+    params(("id" = Uuid, Path, description = "Employee ID")),
     request_body = UpdateEmployeeStatusRequest,
     responses((status = 200, body = EmployeeDetailDto)),
     security(("bearer" = [])), tag = "Employee")]
@@ -532,7 +535,8 @@ pub async fn update_employee_status(
     Ok(ApiResponse::ok(updated.into()))
 }
 
-#[utoipa::path(post, path = "/api/v1/employees/:id/account",
+#[utoipa::path(post, path = "/api/v1/employees/{id}/account",
+    params(("id" = Uuid, Path, description = "Employee ID")),
     request_body = ProvisionEmployeeAccountRequest,
     responses((status = 200, body = AccountProvisioningResultDto)),
     security(("bearer" = [])), tag = "Employee")]
@@ -554,7 +558,8 @@ pub async fn provision_account(
     Ok(ApiResponse::ok(res.into()))
 }
 
-#[utoipa::path(post, path = "/api/v1/employees/:id/groups",
+#[utoipa::path(post, path = "/api/v1/employees/{id}/groups",
+    params(("id" = Uuid, Path, description = "Employee ID")),
     request_body = AssignEmployeeGroupsRequest,
     responses((status = 200, body = bool)),
     security(("bearer" = [])), tag = "Employee")]
@@ -568,29 +573,6 @@ pub async fn assign_groups(
     Ok(ApiResponse::ok(true))
 }
 
-#[utoipa::path(post, path = "/api/v1/employees/:id/reset-password",
-    responses((status = 200, body = AccountProvisioningResultDto)),
-    security(("bearer" = [])), tag = "Employee")]
-pub async fn reset_employee_password(
-    ctx: AuthContext,
-    State(state): State<AppState>,
-    Path(id): Path<Uuid>,
-) -> Result<Json<ApiResponse<AccountProvisioningResultDto>>, ApiError> {
-    let employee = state.employee_service.get_employee(&ctx, id).await?
-        .ok_or_else(|| ApiError::not_found(format!("Employee {} not found", id)))?;
-
-    let user_id = employee.employee.user_id
-        .ok_or_else(|| ApiError::bad_request("Employee does not have a linked user account"))?;
-
-    let res = state.identity_provisioning_service.reset_password(
-        &ctx,
-        user_id,
-        Some(DeliveryChannel::Manual),
-    ).await?;
-
-    Ok(ApiResponse::ok(res.into()))
-}
-
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/employees", post(register_employee).get(list_employees))
@@ -599,5 +581,4 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/employees/:id/status", patch(update_employee_status))
         .route("/api/v1/employees/:id/account", post(provision_account))
         .route("/api/v1/employees/:id/groups", post(assign_groups))
-        .route("/api/v1/employees/:id/reset-password", post(reset_employee_password))
 }

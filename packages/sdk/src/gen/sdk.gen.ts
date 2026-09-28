@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { ApproveOverrideData, ApproveOverrideResponses, ArchiveTemplateData, ArchiveTemplateResponses, AssignClassSubjectData, AssignClassSubjectResponses, AssignGuardianData, AssignGuardianResponses, AssignProctorData, AssignProctorResponses, AssignSeatingData, AssignSeatingResponses, AssignSecretData, AssignSecretResponses, BatchPrintData, BatchPrintResponses, BootstrapOrgData, BootstrapOrgResponses, CalculateGradesData, CalculateGradesResponses, CalculateRankingsData, CalculateRankingsResponses, ChangeStudyModeData, ChangeStudyModeResponses, ClosePeriodData, ClosePeriodResponses, ConnectAppData, ConnectAppResponses, CreateAccountData, CreateAccountResponses, CreateClassData, CreateClassResponses, CreateFeeTemplateData, CreateFeeTemplateResponses, CreateOrgData, CreateOrgResponses, CreateOrgUnitData, CreateOrgUnitResponses, CreatePeriodData, CreatePeriodResponses, CreateRoomData, CreateRoomResponses, CreateSchemeData, CreateSchemeResponses, CreateSessionData, CreateSessionResponses, CreateSubjectData, CreateSubjectResponses, CreateTemplateBindingData, CreateTemplateBindingResponses, CreateTemplateData, CreateTemplateResponses, CreateTimeSlotData, CreateTimeSlotResponses, CreateYearData, CreateYearResponses, DeleteDocumentData, DeleteDocumentResponses, DeleteOrgUnitData, DeleteOrgUnitResponses, DeleteTemplateData, DeleteTemplateResponses, DisconnectAppData, DisconnectAppResponses, DismissTaskData, DismissTaskErrors, DismissTaskResponses, DownloadReportFileData, DownloadReportFileResponses, EnrollStudentData, EnrollStudentResponses, EvaluateCohortData, EvaluateCohortResponses, ExecuteTaskData, ExecuteTaskErrors, ExecuteTaskResponses, GenerateFeeData, GenerateFeeResponses, GenerateReportData, GenerateReportResponses, GenerateSeatingData, GenerateSeatingResponses, GenerateSecretsData, GenerateSecretsResponses, GetClassData, GetClassResponses, GetCurrentContextData, GetCurrentContextResponses, GetCurrentOrgData, GetCurrentOrgResponses, GetDashboardData, GetDashboardResponses, GetDiagnosticsData, GetDiagnosticsErrors, GetDiagnosticsResponses, GetDocumentData, GetDocumentResponses, GetEnrollmentData, GetEnrollmentResponses, GetIntegrationStatusData, GetIntegrationStatusResponses, GetJobData, GetJobResponses, GetOrgUnitData, GetOrgUnitResponses, GetOverrideData, GetOverrideResponses, GetPeriodData, GetPeriodResponses, GetReportDefinitionData, GetReportDefinitionResponses, GetReportJobStatusData, GetReportJobStatusResponses, GetRoomData, GetRoomResponses, GetSchemeData, GetSchemeResponses, GetSession2Data, GetSession2Responses, GetSessionData, GetSessionErrors, GetSessionResponses, GetSettingsData, GetSettingsResponses, GetStudentData, GetStudentResponses, GetSubjectData, GetSubjectResponses, GetTaskData, GetTaskErrors, GetTaskResponses, GetTemplateData, GetTemplateResponses, GetTemplateVersionsData, GetTemplateVersionsResponses, GetUserData, GetUserErrors, GetUserResponses, GetYearData, GetYearResponses, GoogleLinkData, GoogleLinkResponses, GoogleLoginData, GoogleLoginResponses, ListAccountsData, ListAccountsResponses, ListAttendanceData, ListAttendanceResponses, ListClassesData, ListClassesResponses, ListClassSubjectsData, ListClassSubjectsResponses, ListCurrenciesData, ListCurrenciesResponses, ListDevicesData, ListDevicesResponses, ListDocumentsData, ListDocumentsResponses, ListEnrollmentsData, ListEnrollmentsResponses, ListFeesData, ListFeesResponses, ListFeeTemplatesData, ListFeeTemplatesResponses, ListGradesData, ListGradesResponses, ListGuardiansData, ListGuardiansResponses, ListIntegrationsData, ListIntegrationsResponses, ListJobsData, ListJobsResponses, ListLessonsData, ListLessonsResponses, ListOrgUnitsData, ListOrgUnitsResponses, ListOverridesData, ListOverridesResponses, ListPaymentsData, ListPaymentsResponses, ListPeriodsData, ListPeriodsResponses, ListPeriodTemplatesData, ListPeriodTemplatesResponses, ListPermissionsData, ListPermissionsResponses, ListReportDefinitionsData, ListReportDefinitionsResponses, ListRolesData, ListRolesResponses, ListRoomsData, ListRoomsResponses, ListSchedulesData, ListSchedulesResponses, ListSchemesData, ListSchemesResponses, ListSeatingData, ListSeatingResponses, ListSecretsData, ListSecretsResponses, ListSessionsData, ListSessionsResponses, ListStudentsData, ListStudentsResponses, ListSubjectsData, ListSubjectsResponses, ListTasksData, ListTasksErrors, ListTasksResponses, ListTemplateBindingsData, ListTemplateBindingsResponses, ListTemplatesData, ListTemplatesResponses, ListTimeSlotsData, ListTimeSlotsResponses, ListUsersData, ListUsersResponses, ListYearsData, ListYearsResponses, LockPeriodData, LockPeriodResponses, LoginData, LoginErrors, LoginResponses, MarkAttendanceData, MarkAttendanceResponses, MfaChallengeData, MfaChallengeResponses, MfaEnrollData, MfaEnrollResponses, MfaVerifyEnrollmentData, MfaVerifyEnrollmentResponses, PreviewTemplateData, PreviewTemplateResponses, ProcessPaymentData, ProcessPaymentResponses, PromoteCohortData, PromoteCohortResponses, PublishTemplateData, PublishTemplateResponses, RecordGradeData, RecordGradeResponses, RegisterStudentData, RegisterStudentResponses, RegisterUserData, RegisterUserErrors, RegisterUserResponses, RejectOverrideData, RejectOverrideResponses, RetryTaskData, RetryTaskErrors, RetryTaskResponses, RevertTemplateVersionData, RevertTemplateVersionResponses, RevokeDeviceData, RevokeDeviceResponses, RunTickData, RunTickErrors, RunTickResponses, SavePermissionsData, SavePermissionsResponses, SaveRoleData, SaveRoleResponses, ScheduleExamData, ScheduleExamResponses, ScheduleLessonData, ScheduleLessonResponses, SubmitOverrideData, SubmitOverrideResponses, ToggleIntegrationData, ToggleIntegrationResponses, UnlockPeriodData, UnlockPeriodResponses, UpdateCurrentOrgData, UpdateCurrentOrgResponses, UpdateSettingsData, UpdateSettingsResponses, UpdateStudentStatusData, UpdateStudentStatusResponses, UpdateTemplateData, UpdateTemplateResponses, UpdateUserData, UpdateUserErrors, UpdateUserResponses, UploadDocumentData, UploadDocumentResponses, ValidateTemplateData, ValidateTemplateResponses } from './types.gen.js';
+import type { AddGroupMemberData, AddGroupMemberResponses, ApproveOverrideData, ApproveOverrideResponses, ArchiveTemplateData, ArchiveTemplateResponses, AssignClassSubjectData, AssignClassSubjectResponses, AssignGroupsData, AssignGroupsResponses, AssignGuardianData, AssignGuardianResponses, AssignProctorData, AssignProctorResponses, AssignSeatingData, AssignSeatingResponses, AssignSecretData, AssignSecretResponses, BatchPrintData, BatchPrintResponses, BootstrapInitialSetupEndpointData, BootstrapInitialSetupEndpointResponses, BootstrapOrgEndpointData, BootstrapOrgEndpointResponses, BulkAssignGroupData, BulkAssignGroupResponses, CalculateGradesData, CalculateGradesResponses, CalculateRankingsData, CalculateRankingsResponses, ChangeStudyModeData, ChangeStudyModeResponses, CheckDuplicateData, CheckDuplicateResponses, ClosePeriodData, ClosePeriodResponses, ConnectAppData, ConnectAppResponses, CreateAccountData, CreateAccountResponses, CreateClassData, CreateClassResponses, CreateDocumentRequirementData, CreateDocumentRequirementResponses, CreateFeeTemplateData, CreateFeeTemplateResponses, CreateGroupData, CreateGroupResponses, CreateOrgData, CreateOrgResponses, CreateOrgUnitData, CreateOrgUnitResponses, CreatePeriodData, CreatePeriodResponses, CreateRoomData, CreateRoomResponses, CreateSchemeData, CreateSchemeResponses, CreateSessionData, CreateSessionResponses, CreateSubjectData, CreateSubjectResponses, CreateTemplateBindingData, CreateTemplateBindingResponses, CreateTemplateData, CreateTemplateResponses, CreateTimeSlotData, CreateTimeSlotResponses, CreateYearData, CreateYearResponses, DeleteDocumentData, DeleteDocumentRequirementData, DeleteDocumentRequirementResponses, DeleteDocumentResponses, DeleteGroupData, DeleteGroupResponses, DeleteOrgUnitData, DeleteOrgUnitResponses, DeleteRoleData, DeleteRoleResponses, DeleteTemplateData, DeleteTemplateResponses, DisconnectAppData, DisconnectAppResponses, DismissTaskData, DismissTaskErrors, DismissTaskResponses, DownloadReportFileData, DownloadReportFileResponses, EnrollStudentData, EnrollStudentResponses, EvaluateCohortData, EvaluateCohortResponses, EvaluateStudentRequirementsData, EvaluateStudentRequirementsResponses, ExecuteTaskData, ExecuteTaskErrors, ExecuteTaskResponses, GenerateFeeData, GenerateFeeResponses, GenerateReportData, GenerateReportResponses, GenerateSeatingData, GenerateSeatingResponses, GenerateSecretsData, GenerateSecretsResponses, GetClassData, GetClassResponses, GetCurrentContextData, GetCurrentContextResponses, GetCurrentOrgData, GetCurrentOrgResponses, GetDashboardData, GetDashboardResponses, GetDiagnosticsData, GetDiagnosticsErrors, GetDiagnosticsResponses, GetDocumentData, GetDocumentResponses, GetEmployeeData, GetEmployeeResponses, GetEmployeeStatsData, GetEmployeeStatsResponses, GetEnrollmentData, GetEnrollmentResponses, GetGroupData, GetGroupMembersData, GetGroupMembersResponses, GetGroupResponses, GetIntegrationStatusData, GetIntegrationStatusResponses, GetJobData, GetJobResponses, GetOrgUnitData, GetOrgUnitResponses, GetOverrideData, GetOverrideResponses, GetPeriodData, GetPeriodResponses, GetReportDefinitionData, GetReportDefinitionResponses, GetReportJobStatusData, GetReportJobStatusResponses, GetRoomData, GetRoomResponses, GetSchemeData, GetSchemeResponses, GetSession2Data, GetSession2Responses, GetSessionData, GetSessionErrors, GetSessionResponses, GetSettingsData, GetSettingsResponses, GetStudentData, GetStudentResponses, GetSubjectData, GetSubjectResponses, GetSystemEntitlementEndpointData, GetSystemEntitlementEndpointResponses, GetSystemHasOrgEndpointData, GetSystemHasOrgEndpointResponses, GetSystemReadinessEndpointData, GetSystemReadinessEndpointResponses, GetTaskData, GetTaskErrors, GetTaskResponses, GetTemplateData, GetTemplateResponses, GetTemplateVersionsData, GetTemplateVersionsResponses, GetUserData, GetUserErrors, GetUserResponses, GetYearData, GetYearResponses, GoogleLinkData, GoogleLinkResponses, GoogleLoginData, GoogleLoginResponses, ListAccountsData, ListAccountsResponses, ListAttendanceData, ListAttendanceResponses, ListClassesData, ListClassesResponses, ListClassSubjectsData, ListClassSubjectsResponses, ListCurrenciesData, ListCurrenciesResponses, ListDevicesData, ListDevicesResponses, ListDocumentRequirementsData, ListDocumentRequirementsResponses, ListDocumentsData, ListDocumentsResponses, ListEmployeesData, ListEmployeesResponses, ListEnrollmentsData, ListEnrollmentsResponses, ListFeesData, ListFeesResponses, ListFeeTemplatesData, ListFeeTemplatesResponses, ListGradesData, ListGradesResponses, ListGroupsData, ListGroupsResponses, ListGuardiansData, ListGuardiansResponses, ListIntegrationsData, ListIntegrationsResponses, ListJobsData, ListJobsResponses, ListLessonsData, ListLessonsResponses, ListOrgUnitsData, ListOrgUnitsResponses, ListOverridesData, ListOverridesResponses, ListPaymentsData, ListPaymentsResponses, ListPeriodsData, ListPeriodsResponses, ListPeriodTemplatesData, ListPeriodTemplatesResponses, ListPermissionsData, ListPermissionsResponses, ListReportDefinitionsData, ListReportDefinitionsResponses, ListRolesData, ListRolesResponses, ListRoomsData, ListRoomsResponses, ListSchedulesData, ListSchedulesResponses, ListSchemesData, ListSchemesResponses, ListSeatingData, ListSeatingResponses, ListSecretsData, ListSecretsResponses, ListSessionsData, ListSessionsResponses, ListStudentsData, ListStudentsResponses, ListSubjectsData, ListSubjectsResponses, ListTasksData, ListTasksErrors, ListTasksResponses, ListTemplateBindingsData, ListTemplateBindingsResponses, ListTemplatesData, ListTemplatesResponses, ListTimeSlotsData, ListTimeSlotsResponses, ListUsersData, ListUsersResponses, ListYearsData, ListYearsResponses, LockPeriodData, LockPeriodResponses, LoginData, LoginErrors, LoginResponses, MarkAttendanceData, MarkAttendanceResponses, MfaChallengeData, MfaChallengeResponses, MfaEnrollData, MfaEnrollResponses, MfaVerifyEnrollmentData, MfaVerifyEnrollmentResponses, OnboardingCompleteEndpointData, OnboardingCompleteEndpointResponses, PreviewTemplateData, PreviewTemplateResponses, ProcessPaymentData, ProcessPaymentResponses, PromoteCohortData, PromoteCohortResponses, ProvisionAccountData, ProvisionAccountResponses, ProvisionUserData, ProvisionUserErrors, ProvisionUserResponses, PublishTemplateData, PublishTemplateResponses, RecordGradeData, RecordGradeResponses, RegisterEmployeeData, RegisterEmployeeResponses, RegisterStudentData, RegisterStudentResponses, RegisterUserData, RegisterUserErrors, RegisterUserResponses, RejectOverrideData, RejectOverrideResponses, RemoveGroupMemberData, RemoveGroupMemberResponses, ResetUserPasswordData, ResetUserPasswordErrors, ResetUserPasswordResponses, RetryTaskData, RetryTaskErrors, RetryTaskResponses, RevertTemplateVersionData, RevertTemplateVersionResponses, RevokeDeviceData, RevokeDeviceResponses, RunTickData, RunTickErrors, RunTickResponses, SavePermissionsData, SavePermissionsResponses, SaveRoleData, SaveRoleResponses, ScheduleExamData, ScheduleExamResponses, ScheduleLessonData, ScheduleLessonResponses, SetGroupPermissionsData, SetGroupPermissionsResponses, SubmitOverrideData, SubmitOverrideResponses, ToggleIntegrationData, ToggleIntegrationResponses, UnlockPeriodData, UnlockPeriodResponses, UpdateCurrentOrgData, UpdateCurrentOrgResponses, UpdateEmployeeData, UpdateEmployeeResponses, UpdateEmployeeStatusData, UpdateEmployeeStatusResponses, UpdateGroupData, UpdateGroupResponses, UpdateSettingsData, UpdateSettingsResponses, UpdateStudentStatusData, UpdateStudentStatusResponses, UpdateTemplateData, UpdateTemplateResponses, UpdateUserData, UpdateUserErrors, UpdateUserResponses, UploadDocumentData, UploadDocumentResponses, ValidateTemplateData, ValidateTemplateResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -189,6 +189,24 @@ export const runTick = <ThrowOnError extends boolean = false>(options?: Options<
     }
 });
 
+export const bootstrapOrgEndpoint = <ThrowOnError extends boolean = false>(options: Options<BootstrapOrgEndpointData, ThrowOnError>): RequestResult<BootstrapOrgEndpointResponses, unknown, ThrowOnError> => (options.client ?? client).post<BootstrapOrgEndpointResponses, unknown, ThrowOnError>({
+    url: '/api/v1/bootstrap',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const bootstrapInitialSetupEndpoint = <ThrowOnError extends boolean = false>(options: Options<BootstrapInitialSetupEndpointData, ThrowOnError>): RequestResult<BootstrapInitialSetupEndpointResponses, unknown, ThrowOnError> => (options.client ?? client).post<BootstrapInitialSetupEndpointResponses, unknown, ThrowOnError>({
+    url: '/api/v1/bootstrap/initial-setup',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
 export const listClassSubjects = <ThrowOnError extends boolean = false>(options: Options<ListClassSubjectsData, ThrowOnError>): RequestResult<ListClassSubjectsResponses, unknown, ThrowOnError> => (options.client ?? client).get<ListClassSubjectsResponses, unknown, ThrowOnError>({ url: '/api/v1/class-subjects', ...options });
 
 export const assignClassSubject = <ThrowOnError extends boolean = false>(options: Options<AssignClassSubjectData, ThrowOnError>): RequestResult<AssignClassSubjectResponses, unknown, ThrowOnError> => (options.client ?? client).post<AssignClassSubjectResponses, unknown, ThrowOnError>({
@@ -215,6 +233,19 @@ export const getClass = <ThrowOnError extends boolean = false>(options: Options<
 
 export const listCurrencies = <ThrowOnError extends boolean = false>(options?: Options<ListCurrenciesData, ThrowOnError>): RequestResult<ListCurrenciesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListCurrenciesResponses, unknown, ThrowOnError>({ url: '/api/v1/currencies', ...options });
 
+export const listDocumentRequirements = <ThrowOnError extends boolean = false>(options?: Options<ListDocumentRequirementsData, ThrowOnError>): RequestResult<ListDocumentRequirementsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListDocumentRequirementsResponses, unknown, ThrowOnError>({ url: '/api/v1/document-requirements', ...options });
+
+export const createDocumentRequirement = <ThrowOnError extends boolean = false>(options: Options<CreateDocumentRequirementData, ThrowOnError>): RequestResult<CreateDocumentRequirementResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreateDocumentRequirementResponses, unknown, ThrowOnError>({
+    url: '/api/v1/document-requirements',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const deleteDocumentRequirement = <ThrowOnError extends boolean = false>(options: Options<DeleteDocumentRequirementData, ThrowOnError>): RequestResult<DeleteDocumentRequirementResponses, unknown, ThrowOnError> => (options.client ?? client).delete<DeleteDocumentRequirementResponses, unknown, ThrowOnError>({ url: '/api/v1/document-requirements/{id}', ...options });
+
 export const listDocuments = <ThrowOnError extends boolean = false>(options?: Options<ListDocumentsData, ThrowOnError>): RequestResult<ListDocumentsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListDocumentsResponses, unknown, ThrowOnError>({ url: '/api/v1/documents', ...options });
 
 export const uploadDocument = <ThrowOnError extends boolean = false>(options: Options<UploadDocumentData, ThrowOnError>): RequestResult<UploadDocumentResponses, unknown, ThrowOnError> => (options.client ?? client).post<UploadDocumentResponses, unknown, ThrowOnError>({
@@ -229,6 +260,57 @@ export const uploadDocument = <ThrowOnError extends boolean = false>(options: Op
 export const deleteDocument = <ThrowOnError extends boolean = false>(options: Options<DeleteDocumentData, ThrowOnError>): RequestResult<DeleteDocumentResponses, unknown, ThrowOnError> => (options.client ?? client).delete<DeleteDocumentResponses, unknown, ThrowOnError>({ url: '/api/v1/documents/{id}', ...options });
 
 export const getDocument = <ThrowOnError extends boolean = false>(options: Options<GetDocumentData, ThrowOnError>): RequestResult<GetDocumentResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetDocumentResponses, unknown, ThrowOnError>({ url: '/api/v1/documents/{id}', ...options });
+
+export const listEmployees = <ThrowOnError extends boolean = false>(options?: Options<ListEmployeesData, ThrowOnError>): RequestResult<ListEmployeesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListEmployeesResponses, unknown, ThrowOnError>({ url: '/api/v1/employees', ...options });
+
+export const registerEmployee = <ThrowOnError extends boolean = false>(options: Options<RegisterEmployeeData, ThrowOnError>): RequestResult<RegisterEmployeeResponses, unknown, ThrowOnError> => (options.client ?? client).post<RegisterEmployeeResponses, unknown, ThrowOnError>({
+    url: '/api/v1/employees',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getEmployeeStats = <ThrowOnError extends boolean = false>(options?: Options<GetEmployeeStatsData, ThrowOnError>): RequestResult<GetEmployeeStatsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetEmployeeStatsResponses, unknown, ThrowOnError>({ url: '/api/v1/employees/stats', ...options });
+
+export const getEmployee = <ThrowOnError extends boolean = false>(options: Options<GetEmployeeData, ThrowOnError>): RequestResult<GetEmployeeResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetEmployeeResponses, unknown, ThrowOnError>({ url: '/api/v1/employees/{id}', ...options });
+
+export const updateEmployee = <ThrowOnError extends boolean = false>(options: Options<UpdateEmployeeData, ThrowOnError>): RequestResult<UpdateEmployeeResponses, unknown, ThrowOnError> => (options.client ?? client).patch<UpdateEmployeeResponses, unknown, ThrowOnError>({
+    url: '/api/v1/employees/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const provisionAccount = <ThrowOnError extends boolean = false>(options: Options<ProvisionAccountData, ThrowOnError>): RequestResult<ProvisionAccountResponses, unknown, ThrowOnError> => (options.client ?? client).post<ProvisionAccountResponses, unknown, ThrowOnError>({
+    url: '/api/v1/employees/{id}/account',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const assignGroups = <ThrowOnError extends boolean = false>(options: Options<AssignGroupsData, ThrowOnError>): RequestResult<AssignGroupsResponses, unknown, ThrowOnError> => (options.client ?? client).post<AssignGroupsResponses, unknown, ThrowOnError>({
+    url: '/api/v1/employees/{id}/groups',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const updateEmployeeStatus = <ThrowOnError extends boolean = false>(options: Options<UpdateEmployeeStatusData, ThrowOnError>): RequestResult<UpdateEmployeeStatusResponses, unknown, ThrowOnError> => (options.client ?? client).patch<UpdateEmployeeStatusResponses, unknown, ThrowOnError>({
+    url: '/api/v1/employees/{id}/status',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 export const listEnrollments = <ThrowOnError extends boolean = false>(options?: Options<ListEnrollmentsData, ThrowOnError>): RequestResult<ListEnrollmentsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListEnrollmentsResponses, unknown, ThrowOnError>({ url: '/api/v1/enrollments', ...options });
 
@@ -365,6 +447,61 @@ export const calculateRankings = <ThrowOnError extends boolean = false>(options:
     }
 });
 
+export const listGroups = <ThrowOnError extends boolean = false>(options?: Options<ListGroupsData, ThrowOnError>): RequestResult<ListGroupsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListGroupsResponses, unknown, ThrowOnError>({ url: '/api/v1/groups', ...options });
+
+export const createGroup = <ThrowOnError extends boolean = false>(options: Options<CreateGroupData, ThrowOnError>): RequestResult<CreateGroupResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreateGroupResponses, unknown, ThrowOnError>({
+    url: '/api/v1/groups',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const bulkAssignGroup = <ThrowOnError extends boolean = false>(options: Options<BulkAssignGroupData, ThrowOnError>): RequestResult<BulkAssignGroupResponses, unknown, ThrowOnError> => (options.client ?? client).post<BulkAssignGroupResponses, unknown, ThrowOnError>({
+    url: '/api/v1/groups/bulk-assign',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const deleteGroup = <ThrowOnError extends boolean = false>(options: Options<DeleteGroupData, ThrowOnError>): RequestResult<DeleteGroupResponses, unknown, ThrowOnError> => (options.client ?? client).delete<DeleteGroupResponses, unknown, ThrowOnError>({ url: '/api/v1/groups/{id}', ...options });
+
+export const getGroup = <ThrowOnError extends boolean = false>(options: Options<GetGroupData, ThrowOnError>): RequestResult<GetGroupResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetGroupResponses, unknown, ThrowOnError>({ url: '/api/v1/groups/{id}', ...options });
+
+export const updateGroup = <ThrowOnError extends boolean = false>(options: Options<UpdateGroupData, ThrowOnError>): RequestResult<UpdateGroupResponses, unknown, ThrowOnError> => (options.client ?? client).patch<UpdateGroupResponses, unknown, ThrowOnError>({
+    url: '/api/v1/groups/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getGroupMembers = <ThrowOnError extends boolean = false>(options: Options<GetGroupMembersData, ThrowOnError>): RequestResult<GetGroupMembersResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetGroupMembersResponses, unknown, ThrowOnError>({ url: '/api/v1/groups/{id}/members', ...options });
+
+export const addGroupMember = <ThrowOnError extends boolean = false>(options: Options<AddGroupMemberData, ThrowOnError>): RequestResult<AddGroupMemberResponses, unknown, ThrowOnError> => (options.client ?? client).post<AddGroupMemberResponses, unknown, ThrowOnError>({
+    url: '/api/v1/groups/{id}/members',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const removeGroupMember = <ThrowOnError extends boolean = false>(options: Options<RemoveGroupMemberData, ThrowOnError>): RequestResult<RemoveGroupMemberResponses, unknown, ThrowOnError> => (options.client ?? client).delete<RemoveGroupMemberResponses, unknown, ThrowOnError>({ url: '/api/v1/groups/{id}/members/{user_id}', ...options });
+
+export const setGroupPermissions = <ThrowOnError extends boolean = false>(options: Options<SetGroupPermissionsData, ThrowOnError>): RequestResult<SetGroupPermissionsResponses, unknown, ThrowOnError> => (options.client ?? client).put<SetGroupPermissionsResponses, unknown, ThrowOnError>({
+    url: '/api/v1/groups/{id}/permissions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
 export const listPermissions = <ThrowOnError extends boolean = false>(options?: Options<ListPermissionsData, ThrowOnError>): RequestResult<ListPermissionsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListPermissionsResponses, unknown, ThrowOnError>({ url: '/api/v1/iam/permissions', ...options });
 
 export const savePermissions = <ThrowOnError extends boolean = false>(options: Options<SavePermissionsData, ThrowOnError>): RequestResult<SavePermissionsResponses, unknown, ThrowOnError> => (options.client ?? client).post<SavePermissionsResponses, unknown, ThrowOnError>({
@@ -387,10 +524,21 @@ export const saveRole = <ThrowOnError extends boolean = false>(options: Options<
     }
 });
 
+export const deleteRole = <ThrowOnError extends boolean = false>(options: Options<DeleteRoleData, ThrowOnError>): RequestResult<DeleteRoleResponses, unknown, ThrowOnError> => (options.client ?? client).delete<DeleteRoleResponses, unknown, ThrowOnError>({ url: '/api/v1/iam/roles/{id}', ...options });
+
 export const listUsers = <ThrowOnError extends boolean = false>(options?: Options<ListUsersData, ThrowOnError>): RequestResult<ListUsersResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListUsersResponses, unknown, ThrowOnError>({ url: '/api/v1/iam/users', ...options });
 
 export const registerUser = <ThrowOnError extends boolean = false>(options: Options<RegisterUserData, ThrowOnError>): RequestResult<RegisterUserResponses, RegisterUserErrors, ThrowOnError> => (options.client ?? client).post<RegisterUserResponses, RegisterUserErrors, ThrowOnError>({
     url: '/api/v1/iam/users',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const provisionUser = <ThrowOnError extends boolean = false>(options: Options<ProvisionUserData, ThrowOnError>): RequestResult<ProvisionUserResponses, ProvisionUserErrors, ThrowOnError> => (options.client ?? client).post<ProvisionUserResponses, ProvisionUserErrors, ThrowOnError>({
+    url: '/api/v1/iam/users/provision',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -408,6 +556,8 @@ export const updateUser = <ThrowOnError extends boolean = false>(options: Option
         ...options.headers
     }
 });
+
+export const resetUserPassword = <ThrowOnError extends boolean = false>(options: Options<ResetUserPasswordData, ThrowOnError>): RequestResult<ResetUserPasswordResponses, ResetUserPasswordErrors, ThrowOnError> => (options.client ?? client).post<ResetUserPasswordResponses, ResetUserPasswordErrors, ThrowOnError>({ url: '/api/v1/iam/users/{id}/reset-password', ...options });
 
 export const listIntegrations = <ThrowOnError extends boolean = false>(options?: Options<ListIntegrationsData, ThrowOnError>): RequestResult<ListIntegrationsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListIntegrationsResponses, unknown, ThrowOnError>({ url: '/api/v1/integrations', ...options });
 
@@ -433,6 +583,15 @@ export const toggleIntegration = <ThrowOnError extends boolean = false>(options:
     }
 });
 
+export const onboardingCompleteEndpoint = <ThrowOnError extends boolean = false>(options: Options<OnboardingCompleteEndpointData, ThrowOnError>): RequestResult<OnboardingCompleteEndpointResponses, unknown, ThrowOnError> => (options.client ?? client).post<OnboardingCompleteEndpointResponses, unknown, ThrowOnError>({
+    url: '/api/v1/onboarding/complete',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
 export const listOrgUnits = <ThrowOnError extends boolean = false>(options?: Options<ListOrgUnitsData, ThrowOnError>): RequestResult<ListOrgUnitsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListOrgUnitsResponses, unknown, ThrowOnError>({ url: '/api/v1/org-units', ...options });
 
 export const createOrgUnit = <ThrowOnError extends boolean = false>(options: Options<CreateOrgUnitData, ThrowOnError>): RequestResult<CreateOrgUnitResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreateOrgUnitResponses, unknown, ThrowOnError>({
@@ -450,15 +609,6 @@ export const getOrgUnit = <ThrowOnError extends boolean = false>(options: Option
 
 export const createOrg = <ThrowOnError extends boolean = false>(options: Options<CreateOrgData, ThrowOnError>): RequestResult<CreateOrgResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreateOrgResponses, unknown, ThrowOnError>({
     url: '/api/v1/organizations',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-export const bootstrapOrg = <ThrowOnError extends boolean = false>(options: Options<BootstrapOrgData, ThrowOnError>): RequestResult<BootstrapOrgResponses, unknown, ThrowOnError> => (options.client ?? client).post<BootstrapOrgResponses, unknown, ThrowOnError>({
-    url: '/api/v1/organizations/bootstrap',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -650,7 +800,18 @@ export const registerStudent = <ThrowOnError extends boolean = false>(options: O
     }
 });
 
+export const checkDuplicate = <ThrowOnError extends boolean = false>(options: Options<CheckDuplicateData, ThrowOnError>): RequestResult<CheckDuplicateResponses, unknown, ThrowOnError> => (options.client ?? client).post<CheckDuplicateResponses, unknown, ThrowOnError>({
+    url: '/api/v1/students/check-duplicate',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
 export const getStudent = <ThrowOnError extends boolean = false>(options: Options<GetStudentData, ThrowOnError>): RequestResult<GetStudentResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetStudentResponses, unknown, ThrowOnError>({ url: '/api/v1/students/{id}', ...options });
+
+export const evaluateStudentRequirements = <ThrowOnError extends boolean = false>(options: Options<EvaluateStudentRequirementsData, ThrowOnError>): RequestResult<EvaluateStudentRequirementsResponses, unknown, ThrowOnError> => (options.client ?? client).get<EvaluateStudentRequirementsResponses, unknown, ThrowOnError>({ url: '/api/v1/students/{id}/document-requirements', ...options });
 
 export const updateStudentStatus = <ThrowOnError extends boolean = false>(options: Options<UpdateStudentStatusData, ThrowOnError>): RequestResult<UpdateStudentStatusResponses, unknown, ThrowOnError> => (options.client ?? client).patch<UpdateStudentStatusResponses, unknown, ThrowOnError>({
     url: '/api/v1/students/{id}/status',
@@ -673,6 +834,12 @@ export const createSubject = <ThrowOnError extends boolean = false>(options: Opt
 });
 
 export const getSubject = <ThrowOnError extends boolean = false>(options: Options<GetSubjectData, ThrowOnError>): RequestResult<GetSubjectResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetSubjectResponses, unknown, ThrowOnError>({ url: '/api/v1/subjects/{id}', ...options });
+
+export const getSystemEntitlementEndpoint = <ThrowOnError extends boolean = false>(options?: Options<GetSystemEntitlementEndpointData, ThrowOnError>): RequestResult<GetSystemEntitlementEndpointResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetSystemEntitlementEndpointResponses, unknown, ThrowOnError>({ url: '/api/v1/system/entitlement', ...options });
+
+export const getSystemHasOrgEndpoint = <ThrowOnError extends boolean = false>(options?: Options<GetSystemHasOrgEndpointData, ThrowOnError>): RequestResult<GetSystemHasOrgEndpointResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetSystemHasOrgEndpointResponses, unknown, ThrowOnError>({ url: '/api/v1/system/has-organization', ...options });
+
+export const getSystemReadinessEndpoint = <ThrowOnError extends boolean = false>(options?: Options<GetSystemReadinessEndpointData, ThrowOnError>): RequestResult<GetSystemReadinessEndpointResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetSystemReadinessEndpointResponses, unknown, ThrowOnError>({ url: '/api/v1/system/readiness', ...options });
 
 export const listTemplates = <ThrowOnError extends boolean = false>(options?: Options<ListTemplatesData, ThrowOnError>): RequestResult<ListTemplatesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListTemplatesResponses, unknown, ThrowOnError>({ url: '/api/v1/templates', ...options });
 

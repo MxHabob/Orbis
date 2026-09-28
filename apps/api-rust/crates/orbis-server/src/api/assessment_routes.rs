@@ -389,7 +389,7 @@ pub async fn record_behavior(
     }))
 }
 
-#[utoipa::path(get, path = "/api/v1/students/:id/behavior",
+#[utoipa::path(get, path = "/api/v1/students/{id}/behavior",
     params(("id" = Uuid, Path, description = "Student ID")),
     responses((status = 200, body = Vec<BehaviorRecordDto>)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn list_student_behavior(

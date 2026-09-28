@@ -47,6 +47,28 @@ export type AccountDto = {
     parent_id?: string | null;
 };
 
+export type AccountProvisioningConfigRequest = {
+    custom_password?: string | null;
+    delivery_channel?: string | null;
+    enabled: boolean;
+    group_ids?: Array<string>;
+    preferred_username?: string | null;
+    role?: string | null;
+};
+
+export type AccountProvisioningResultDto = {
+    delivery_channel: string;
+    delivery_status: string;
+    must_change_password: boolean;
+    temporary_password?: string | null;
+    user_id: string;
+    username: string;
+};
+
+export type AddGroupMemberRequest = {
+    user_id: string;
+};
+
 export type ApprovalStepDto = {
     approver_id?: string | null;
     approver_name?: string | null;
@@ -72,6 +94,10 @@ export type AssignClassSubjectRequest = {
     primary_teacher_id: string;
     subject_id: string;
     weekly_hours?: number | null;
+};
+
+export type AssignEmployeeGroupsRequest = {
+    group_ids: Array<string>;
 };
 
 export type AssignGuardianRequest = {
@@ -178,6 +204,11 @@ export type BatchPrintRequest = {
     report_code: string;
 };
 
+export type BulkAssignGroupRequest = {
+    group_id: string;
+    user_ids: Array<string>;
+};
+
 export type CalculateGradesRequest = {
     class_subject_id?: string | null;
     scheme_id: string;
@@ -244,6 +275,17 @@ export type CreateClassRequest = {
     unit_id: string;
 };
 
+export type CreateDocumentRequirementRequest = {
+    blocks_enrollment: boolean;
+    code: string;
+    condition?: string | null;
+    is_mandatory: boolean;
+    name_ar: string;
+    name_en?: string | null;
+    target_id?: string | null;
+    target_type: string;
+};
+
 export type CreateExamSessionRequest = {
     end_date: string;
     name: string;
@@ -264,6 +306,13 @@ export type CreateFeeTemplateRequest = {
     name_ar?: string | null;
     receivable_account_id: string;
     revenue_account_id: string;
+};
+
+export type CreateGroupRequest = {
+    description?: string | null;
+    name: string;
+    name_ar?: string | null;
+    permissions?: Array<string>;
 };
 
 export type CreateOrgRequest = {
@@ -337,8 +386,12 @@ export type CreateTemplateRequest = {
 };
 
 export type CreateTimeSlotRequest = {
+    break_type?: string | null;
     day_of_week: number;
     end_time: string;
+    is_break?: boolean;
+    name?: string | null;
+    name_ar?: string | null;
     period_id: string;
     slot_index: number;
     start_time: string;
@@ -392,12 +445,95 @@ export type DocumentDto = {
     visibility: string;
 };
 
+export type DocumentRequirementDto = {
+    blocks_enrollment: boolean;
+    code: string;
+    condition: string;
+    created_at: string;
+    id: string;
+    is_mandatory: boolean;
+    name_ar: string;
+    name_en: string;
+    org_id: string;
+    target_id?: string | null;
+    target_type: string;
+    updated_at: string;
+};
+
+export type DuplicateCheckRequest = {
+    email?: string | null;
+    exclude_student_id?: string | null;
+    national_id?: string | null;
+    phone?: string | null;
+};
+
+export type DuplicateCheckResponse = {
+    has_duplicate: boolean;
+    matches: Array<DuplicateMatchDto>;
+};
+
+export type DuplicateMatchDto = {
+    field: string;
+    matched_person_id: string;
+    matched_person_name: string;
+    student_id?: string | null;
+    student_number?: string | null;
+    value: string;
+};
+
 export type EffectiveContextDto = {
     active_period_id?: string | null;
     dependents: Array<LinkedDependentDto>;
     effective_role: string;
     permissions: Array<string>;
     roles: Array<string>;
+};
+
+export type EmployeeDetailDto = {
+    address?: string | null;
+    avatar_url?: string | null;
+    birth_date?: string | null;
+    blood_type?: string | null;
+    created_at: string;
+    department?: string | null;
+    display_name?: string | null;
+    effective_permissions: Array<string>;
+    email?: string | null;
+    employee_number: string;
+    employee_type: string;
+    employment_type: string;
+    first_name: string;
+    first_name_ar?: string | null;
+    full_name: string;
+    full_name_ar?: string | null;
+    gender?: string | null;
+    groups: Array<string>;
+    hire_date: string;
+    id: string;
+    job_title?: string | null;
+    last_name: string;
+    last_name_ar?: string | null;
+    medical_notes?: string | null;
+    middle_name?: string | null;
+    middle_name_ar?: string | null;
+    national_id?: string | null;
+    nationality?: string | null;
+    notes?: string | null;
+    org_id: string;
+    org_unit_id?: string | null;
+    org_unit_name?: string | null;
+    passport_number?: string | null;
+    person_id: string;
+    phone?: string | null;
+    place_of_birth?: string | null;
+    roles: Array<string>;
+    special_needs_notes?: string | null;
+    status: string;
+    updated_at: string;
+    user_id?: string | null;
+    user_status?: string | null;
+    username?: string | null;
+    work_shift?: string | null;
 };
 
 export type EnrollStudentRequest = {
@@ -457,13 +593,15 @@ export type ExamSessionDto = {
 };
 
 export type FeeTemplateDto = {
-    applicable_levels?: string | null;
+    applicable_levels?: Array<string> | null;
+    applicable_study_modes?: Array<string> | null;
     category: string;
     code: string;
     currency: string;
     default_amount: string;
-    frequency?: string;
+    frequency: string;
     id: string;
+    is_active: boolean;
     is_mandatory: boolean;
     name: string;
     name_ar?: string | null;
@@ -536,15 +674,47 @@ export type GradeDto = {
     student_id: string;
 };
 
+export type GroupDetailDto = {
+    created_at: string;
+    description?: string | null;
+    id: string;
+    is_system: boolean;
+    member_count: number;
+    name: string;
+    name_ar?: string | null;
+    org_id: string;
+    permissions: Array<string>;
+    status: string;
+    updated_at: string;
+};
+
+export type GroupMemberInfoDto = {
+    avatar_url?: string | null;
+    email?: string | null;
+    full_name: string;
+    full_name_ar?: string | null;
+    joined_at: string;
+    person_id: string;
+    phone?: string | null;
+    user_id: string;
+    user_status: string;
+};
+
 export type GuardianDto = {
+    employer?: string | null;
     guardian_id: string;
     id: string;
     is_authorized_pickup: boolean;
     is_emergency_contact: boolean;
     is_payer: boolean;
     is_primary: boolean;
+    notes?: string | null;
+    occupation?: string | null;
+    payment_share_percent?: number | null;
     relationship: string;
+    relationship_ar?: string | null;
     student_id: string;
+    work_phone?: string | null;
 };
 
 export type IntegrationDto = {
@@ -714,6 +884,14 @@ export type OverrideRequestDto = {
     updated_at: string;
 };
 
+export type PaginatedEmployeesDto = {
+    items: Array<EmployeeDetailDto>;
+    page: number;
+    page_size: number;
+    total_count: number;
+    total_pages: number;
+};
+
 export type PaymentDto = {
     account_id: string;
     amount: string;
@@ -792,6 +970,30 @@ export type PromotionJobDto = {
     updated_at: string;
 };
 
+export type ProvisionEmployeeAccountRequest = {
+    delivery_channel?: string | null;
+    group_ids?: Array<string>;
+    preferred_username?: string | null;
+    role?: string | null;
+};
+
+export type ProvisionUserRequest = {
+    actor_type?: string | null;
+    custom_password?: string | null;
+    delivery_channel?: string | null;
+    email?: string | null;
+    employee_id?: string | null;
+    full_name?: string | null;
+    full_name_ar?: string | null;
+    group_ids?: Array<string>;
+    guardian_id?: string | null;
+    person_id?: string | null;
+    phone?: string | null;
+    preferred_username?: string | null;
+    roles: Array<string>;
+    student_id?: string | null;
+};
+
 export type RankingItemDto = {
     id: string;
     rank: number;
@@ -808,6 +1010,46 @@ export type RecordGradeRequest = {
     period_id: string;
     score: string;
     student_id: string;
+};
+
+export type RegisterEmployeeRequest = {
+    account?: AccountProvisioningConfigRequest | null;
+    address?: string | null;
+    avatar_url?: string | null;
+    birth_date?: string | null;
+    blood_type?: string | null;
+    department?: string | null;
+    display_name?: string | null;
+    email?: string | null;
+    employee_number?: string | null;
+    employee_type: string;
+    employment_type?: string | null;
+    first_name: string;
+    first_name_ar?: string | null;
+    gender?: string | null;
+    hire_date?: string | null;
+    job_title?: string | null;
+    last_name: string;
+    last_name_ar?: string | null;
+    medical_notes?: string | null;
+    middle_name?: string | null;
+    middle_name_ar?: string | null;
+    national_id?: string | null;
+    nationality?: string | null;
+    notes?: string | null;
+    org_unit_id?: string | null;
+    passport_number?: string | null;
+    person_id?: string | null;
+    phone?: string | null;
+    place_of_birth?: string | null;
+    special_needs_notes?: string | null;
+    status?: string | null;
+    work_shift?: string | null;
+};
+
+export type RegisterEmployeeResponseDto = {
+    employee: EmployeeDetailDto;
+    provisioning?: AccountProvisioningResultDto | null;
 };
 
 export type RegisterStudentRequest = {
@@ -946,6 +1188,20 @@ export type SessionResponse = {
     user: UserDto;
 };
 
+export type SetGroupPermissionsRequest = {
+    permissions: Array<string>;
+};
+
+export type StudentDocumentFulfillmentDto = {
+    document_id?: string | null;
+    document_name?: string | null;
+    file_path?: string | null;
+    is_applicable: boolean;
+    is_fulfilled: boolean;
+    requirement: DocumentRequirementDto;
+    uploaded_at?: string | null;
+};
+
 export type StudentDto = {
     admitted_at: string;
     avatar_url?: string | null;
@@ -1066,9 +1322,13 @@ export type TemplateVersionDto = {
 };
 
 export type TimeSlotDto = {
+    break_type?: string | null;
     day_of_week: number;
     end_time: string;
     id: string;
+    is_break: boolean;
+    name?: string | null;
+    name_ar?: string | null;
     period_id: string;
     slot_index: number;
     start_time: string;
@@ -1076,6 +1336,50 @@ export type TimeSlotDto = {
 
 export type ToggleIntegrationRequest = {
     is_enabled: boolean;
+};
+
+export type UpdateEmployeeRequest = {
+    address?: string | null;
+    avatar_url?: string | null;
+    birth_date?: string | null;
+    blood_type?: string | null;
+    department?: string | null;
+    display_name?: string | null;
+    email?: string | null;
+    employee_type?: string | null;
+    employment_type?: string | null;
+    first_name?: string | null;
+    first_name_ar?: string | null;
+    gender?: string | null;
+    hire_date?: string | null;
+    job_title?: string | null;
+    last_name?: string | null;
+    last_name_ar?: string | null;
+    medical_notes?: string | null;
+    middle_name?: string | null;
+    middle_name_ar?: string | null;
+    national_id?: string | null;
+    nationality?: string | null;
+    notes?: string | null;
+    org_unit_id?: string | null;
+    passport_number?: string | null;
+    phone?: string | null;
+    place_of_birth?: string | null;
+    special_needs_notes?: string | null;
+    status?: string | null;
+    work_shift?: string | null;
+};
+
+export type UpdateEmployeeStatusRequest = {
+    status: string;
+};
+
+export type UpdateGroupRequest = {
+    description?: string | null;
+    name?: string | null;
+    name_ar?: string | null;
+    permissions?: Array<string> | null;
+    status?: string | null;
 };
 
 export type UpdateOrgRequest = {
@@ -1810,6 +2114,34 @@ export type RunTickResponses = {
     200: unknown;
 };
 
+export type BootstrapOrgEndpointData = {
+    body: unknown;
+    path?: never;
+    query?: never;
+    url: '/api/v1/bootstrap';
+};
+
+export type BootstrapOrgEndpointResponses = {
+    /**
+     * Organization bootstrapped
+     */
+    200: unknown;
+};
+
+export type BootstrapInitialSetupEndpointData = {
+    body: unknown;
+    path?: never;
+    query?: never;
+    url: '/api/v1/bootstrap/initial-setup';
+};
+
+export type BootstrapInitialSetupEndpointResponses = {
+    /**
+     * Initial academic setup completed
+     */
+    200: unknown;
+};
+
 export type ListClassSubjectsData = {
     body?: never;
     path?: never;
@@ -1902,6 +2234,53 @@ export type ListCurrenciesResponses = {
 
 export type ListCurrenciesResponse = ListCurrenciesResponses[keyof ListCurrenciesResponses];
 
+export type ListDocumentRequirementsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/document-requirements';
+};
+
+export type ListDocumentRequirementsResponses = {
+    200: Array<DocumentRequirementDto>;
+};
+
+export type ListDocumentRequirementsResponse = ListDocumentRequirementsResponses[keyof ListDocumentRequirementsResponses];
+
+export type CreateDocumentRequirementData = {
+    body: CreateDocumentRequirementRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/document-requirements';
+};
+
+export type CreateDocumentRequirementResponses = {
+    201: DocumentRequirementDto;
+};
+
+export type CreateDocumentRequirementResponse = CreateDocumentRequirementResponses[keyof CreateDocumentRequirementResponses];
+
+export type DeleteDocumentRequirementData = {
+    body?: never;
+    path: {
+        /**
+         * Requirement ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/document-requirements/{id}';
+};
+
+export type DeleteDocumentRequirementResponses = {
+    /**
+     * Deleted
+     */
+    204: void;
+};
+
+export type DeleteDocumentRequirementResponse = DeleteDocumentRequirementResponses[keyof DeleteDocumentRequirementResponses];
+
 export type ListDocumentsData = {
     body?: never;
     path?: never;
@@ -1966,6 +2345,137 @@ export type GetDocumentResponses = {
 };
 
 export type GetDocumentResponse = GetDocumentResponses[keyof GetDocumentResponses];
+
+export type ListEmployeesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/employees';
+};
+
+export type ListEmployeesResponses = {
+    200: PaginatedEmployeesDto;
+};
+
+export type ListEmployeesResponse = ListEmployeesResponses[keyof ListEmployeesResponses];
+
+export type RegisterEmployeeData = {
+    body: RegisterEmployeeRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/employees';
+};
+
+export type RegisterEmployeeResponses = {
+    200: RegisterEmployeeResponseDto;
+};
+
+export type RegisterEmployeeResponse = RegisterEmployeeResponses[keyof RegisterEmployeeResponses];
+
+export type GetEmployeeStatsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/employees/stats';
+};
+
+export type GetEmployeeStatsResponses = {
+    200: {
+        [key: string]: number;
+    };
+};
+
+export type GetEmployeeStatsResponse = GetEmployeeStatsResponses[keyof GetEmployeeStatsResponses];
+
+export type GetEmployeeData = {
+    body?: never;
+    path: {
+        /**
+         * Employee ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/employees/{id}';
+};
+
+export type GetEmployeeResponses = {
+    200: EmployeeDetailDto;
+};
+
+export type GetEmployeeResponse = GetEmployeeResponses[keyof GetEmployeeResponses];
+
+export type UpdateEmployeeData = {
+    body: UpdateEmployeeRequest;
+    path: {
+        /**
+         * Employee ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/employees/{id}';
+};
+
+export type UpdateEmployeeResponses = {
+    200: EmployeeDetailDto;
+};
+
+export type UpdateEmployeeResponse = UpdateEmployeeResponses[keyof UpdateEmployeeResponses];
+
+export type ProvisionAccountData = {
+    body: ProvisionEmployeeAccountRequest;
+    path: {
+        /**
+         * Employee ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/employees/{id}/account';
+};
+
+export type ProvisionAccountResponses = {
+    200: AccountProvisioningResultDto;
+};
+
+export type ProvisionAccountResponse = ProvisionAccountResponses[keyof ProvisionAccountResponses];
+
+export type AssignGroupsData = {
+    body: AssignEmployeeGroupsRequest;
+    path: {
+        /**
+         * Employee ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/employees/{id}/groups';
+};
+
+export type AssignGroupsResponses = {
+    200: boolean;
+};
+
+export type AssignGroupsResponse = AssignGroupsResponses[keyof AssignGroupsResponses];
+
+export type UpdateEmployeeStatusData = {
+    body: UpdateEmployeeStatusRequest;
+    path: {
+        /**
+         * Employee ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/employees/{id}/status';
+};
+
+export type UpdateEmployeeStatusResponses = {
+    200: EmployeeDetailDto;
+};
+
+export type UpdateEmployeeStatusResponse = UpdateEmployeeStatusResponses[keyof UpdateEmployeeStatusResponses];
 
 export type ListEnrollmentsData = {
     body?: never;
@@ -2283,6 +2793,175 @@ export type CalculateRankingsResponses = {
 
 export type CalculateRankingsResponse = CalculateRankingsResponses[keyof CalculateRankingsResponses];
 
+export type ListGroupsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/groups';
+};
+
+export type ListGroupsResponses = {
+    200: Array<GroupDetailDto>;
+};
+
+export type ListGroupsResponse = ListGroupsResponses[keyof ListGroupsResponses];
+
+export type CreateGroupData = {
+    body: CreateGroupRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/groups';
+};
+
+export type CreateGroupResponses = {
+    200: GroupDetailDto;
+};
+
+export type CreateGroupResponse = CreateGroupResponses[keyof CreateGroupResponses];
+
+export type BulkAssignGroupData = {
+    body: BulkAssignGroupRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/groups/bulk-assign';
+};
+
+export type BulkAssignGroupResponses = {
+    200: number;
+};
+
+export type BulkAssignGroupResponse = BulkAssignGroupResponses[keyof BulkAssignGroupResponses];
+
+export type DeleteGroupData = {
+    body?: never;
+    path: {
+        /**
+         * Group ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/groups/{id}';
+};
+
+export type DeleteGroupResponses = {
+    200: boolean;
+};
+
+export type DeleteGroupResponse = DeleteGroupResponses[keyof DeleteGroupResponses];
+
+export type GetGroupData = {
+    body?: never;
+    path: {
+        /**
+         * Group ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/groups/{id}';
+};
+
+export type GetGroupResponses = {
+    200: GroupDetailDto;
+};
+
+export type GetGroupResponse = GetGroupResponses[keyof GetGroupResponses];
+
+export type UpdateGroupData = {
+    body: UpdateGroupRequest;
+    path: {
+        /**
+         * Group ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/groups/{id}';
+};
+
+export type UpdateGroupResponses = {
+    200: GroupDetailDto;
+};
+
+export type UpdateGroupResponse = UpdateGroupResponses[keyof UpdateGroupResponses];
+
+export type GetGroupMembersData = {
+    body?: never;
+    path: {
+        /**
+         * Group ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/groups/{id}/members';
+};
+
+export type GetGroupMembersResponses = {
+    200: Array<GroupMemberInfoDto>;
+};
+
+export type GetGroupMembersResponse = GetGroupMembersResponses[keyof GetGroupMembersResponses];
+
+export type AddGroupMemberData = {
+    body: AddGroupMemberRequest;
+    path: {
+        /**
+         * Group ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/groups/{id}/members';
+};
+
+export type AddGroupMemberResponses = {
+    200: boolean;
+};
+
+export type AddGroupMemberResponse = AddGroupMemberResponses[keyof AddGroupMemberResponses];
+
+export type RemoveGroupMemberData = {
+    body?: never;
+    path: {
+        /**
+         * Group ID
+         */
+        id: string;
+        /**
+         * User ID
+         */
+        user_id: string;
+    };
+    query?: never;
+    url: '/api/v1/groups/{id}/members/{user_id}';
+};
+
+export type RemoveGroupMemberResponses = {
+    200: boolean;
+};
+
+export type RemoveGroupMemberResponse = RemoveGroupMemberResponses[keyof RemoveGroupMemberResponses];
+
+export type SetGroupPermissionsData = {
+    body: SetGroupPermissionsRequest;
+    path: {
+        /**
+         * Group ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/groups/{id}/permissions';
+};
+
+export type SetGroupPermissionsResponses = {
+    200: boolean;
+};
+
+export type SetGroupPermissionsResponse = SetGroupPermissionsResponses[keyof SetGroupPermissionsResponses];
+
 export type ListPermissionsData = {
     body?: never;
     path?: never;
@@ -2347,6 +3026,27 @@ export type SaveRoleResponses = {
 
 export type SaveRoleResponse = SaveRoleResponses[keyof SaveRoleResponses];
 
+export type DeleteRoleData = {
+    body?: never;
+    path: {
+        /**
+         * Role identifier
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/iam/roles/{id}';
+};
+
+export type DeleteRoleResponses = {
+    /**
+     * Role deleted
+     */
+    200: boolean;
+};
+
+export type DeleteRoleResponse = DeleteRoleResponses[keyof DeleteRoleResponses];
+
 export type ListUsersData = {
     body?: never;
     path?: never;
@@ -2385,6 +3085,33 @@ export type RegisterUserResponses = {
 };
 
 export type RegisterUserResponse = RegisterUserResponses[keyof RegisterUserResponses];
+
+export type ProvisionUserData = {
+    body: ProvisionUserRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/iam/users/provision';
+};
+
+export type ProvisionUserErrors = {
+    /**
+     * Validation error
+     */
+    400: unknown;
+    /**
+     * User already exists
+     */
+    409: unknown;
+};
+
+export type ProvisionUserResponses = {
+    /**
+     * User account provisioned successfully
+     */
+    200: AccountProvisioningResultDto;
+};
+
+export type ProvisionUserResponse = ProvisionUserResponses[keyof ProvisionUserResponses];
 
 export type GetUserData = {
     body?: never;
@@ -2441,6 +3168,34 @@ export type UpdateUserResponses = {
 };
 
 export type UpdateUserResponse = UpdateUserResponses[keyof UpdateUserResponses];
+
+export type ResetUserPasswordData = {
+    body?: never;
+    path: {
+        /**
+         * User ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/iam/users/{id}/reset-password';
+};
+
+export type ResetUserPasswordErrors = {
+    /**
+     * User not found
+     */
+    404: unknown;
+};
+
+export type ResetUserPasswordResponses = {
+    /**
+     * Password reset successfully
+     */
+    200: AccountProvisioningResultDto;
+};
+
+export type ResetUserPasswordResponse = ResetUserPasswordResponses[keyof ResetUserPasswordResponses];
 
 export type ListIntegrationsData = {
     body?: never;
@@ -2512,6 +3267,20 @@ export type ToggleIntegrationResponses = {
 };
 
 export type ToggleIntegrationResponse = ToggleIntegrationResponses[keyof ToggleIntegrationResponses];
+
+export type OnboardingCompleteEndpointData = {
+    body: unknown;
+    path?: never;
+    query?: never;
+    url: '/api/v1/onboarding/complete';
+};
+
+export type OnboardingCompleteEndpointResponses = {
+    /**
+     * Organization onboarding completed
+     */
+    200: unknown;
+};
 
 export type ListOrgUnitsData = {
     body?: never;
@@ -2602,20 +3371,6 @@ export type CreateOrgResponses = {
 };
 
 export type CreateOrgResponse = CreateOrgResponses[keyof CreateOrgResponses];
-
-export type BootstrapOrgData = {
-    body: unknown;
-    path?: never;
-    query?: never;
-    url: '/api/v1/organizations/bootstrap';
-};
-
-export type BootstrapOrgResponses = {
-    /**
-     * Organization bootstrapped
-     */
-    200: unknown;
-};
 
 export type GetCurrentOrgData = {
     body?: never;
@@ -3147,6 +3902,19 @@ export type RegisterStudentResponses = {
 
 export type RegisterStudentResponse = RegisterStudentResponses[keyof RegisterStudentResponses];
 
+export type CheckDuplicateData = {
+    body: DuplicateCheckRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/students/check-duplicate';
+};
+
+export type CheckDuplicateResponses = {
+    200: DuplicateCheckResponse;
+};
+
+export type CheckDuplicateResponse = CheckDuplicateResponses[keyof CheckDuplicateResponses];
+
 export type GetStudentData = {
     body?: never;
     path: {
@@ -3164,6 +3932,24 @@ export type GetStudentResponses = {
 };
 
 export type GetStudentResponse = GetStudentResponses[keyof GetStudentResponses];
+
+export type EvaluateStudentRequirementsData = {
+    body?: never;
+    path: {
+        /**
+         * Student ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/students/{id}/document-requirements';
+};
+
+export type EvaluateStudentRequirementsResponses = {
+    200: Array<StudentDocumentFulfillmentDto>;
+};
+
+export type EvaluateStudentRequirementsResponse = EvaluateStudentRequirementsResponses[keyof EvaluateStudentRequirementsResponses];
 
 export type UpdateStudentStatusData = {
     body: UpdateStudentStatusRequest;
@@ -3226,6 +4012,48 @@ export type GetSubjectResponses = {
 };
 
 export type GetSubjectResponse = GetSubjectResponses[keyof GetSubjectResponses];
+
+export type GetSystemEntitlementEndpointData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/entitlement';
+};
+
+export type GetSystemEntitlementEndpointResponses = {
+    /**
+     * Get system entitlement
+     */
+    200: unknown;
+};
+
+export type GetSystemHasOrgEndpointData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/has-organization';
+};
+
+export type GetSystemHasOrgEndpointResponses = {
+    /**
+     * Check if organization exists
+     */
+    200: unknown;
+};
+
+export type GetSystemReadinessEndpointData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/readiness';
+};
+
+export type GetSystemReadinessEndpointResponses = {
+    /**
+     * Get system readiness
+     */
+    200: unknown;
+};
 
 export type ListTemplatesData = {
     body?: never;

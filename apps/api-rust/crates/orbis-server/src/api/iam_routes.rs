@@ -7,6 +7,7 @@ use uuid::Uuid;
 
 use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
+use super::employee_routes::AccountProvisioningResultDto;
 use crate::state::AppState;
 
 #[derive(Serialize, Deserialize, ToSchema, Clone, Debug)]
@@ -338,7 +339,7 @@ async fn register_user(
     path = "/api/v1/iam/users/provision",
     request_body = ProvisionUserRequest,
     responses(
-        (status = 200, description = "User account provisioned successfully", body = super::employee_routes::AccountProvisioningResultDto),
+        (status = 200, description = "User account provisioned successfully", body = AccountProvisioningResultDto),
         (status = 400, description = "Validation error"),
         (status = 409, description = "User already exists")
     ),
@@ -349,7 +350,7 @@ async fn provision_user(
     ctx: AuthContext,
     State(state): State<AppState>,
     Json(payload): Json<ProvisionUserRequest>,
-) -> Result<Json<ApiResponse<super::employee_routes::AccountProvisioningResultDto>>, ApiError> {
+) -> Result<Json<ApiResponse<AccountProvisioningResultDto>>, ApiError> {
     use orbis_domain::entities::identity_provisioning::{ActorType, DeliveryChannel};
     use orbis_app::services::identity_provisioning_service::ProvisionAccountInput;
 
@@ -461,7 +462,7 @@ async fn provision_user(
         }
     }
 
-    Ok(ApiResponse::ok(super::employee_routes::AccountProvisioningResultDto::from(result)))
+    Ok(ApiResponse::ok(AccountProvisioningResultDto::from(result)))
 }
 
 #[utoipa::path(
@@ -632,6 +633,33 @@ pub async fn update_user(
     let person = state.person_repo.find_by_id(user.person_id).await?;
     let roles = state.permission_checker.get_user_roles(user.id, user.org_id).await.unwrap_or_default();
     Ok(ApiResponse::ok(user_to_dto(user, person.as_ref(), roles)))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/iam/users/{id}/reset-password",
+    params(("id" = Uuid, Path, description = "User ID")),
+    responses(
+        (status = 200, description = "Password reset successfully", body = AccountProvisioningResultDto),
+        (status = 404, description = "User not found")
+    ),
+    security(("bearer" = [])),
+    tag = "IAM"
+)]
+pub async fn reset_user_password(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<Uuid>,
+) -> Result<Json<ApiResponse<AccountProvisioningResultDto>>, ApiError> {
+    use orbis_domain::entities::identity_provisioning::DeliveryChannel;
+
+    let res = state.identity_provisioning_service.reset_password(
+        &ctx,
+        id,
+        Some(DeliveryChannel::Manual),
+    ).await?;
+
+    Ok(ApiResponse::ok(AccountProvisioningResultDto::from(res)))
 }
 
 #[utoipa::path(
@@ -1127,6 +1155,7 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/iam/users", post(register_user).get(list_users))
         .route("/api/v1/iam/users/provision", post(provision_user))
         .route("/api/v1/iam/users/:id", get(get_user).put(update_user))
+        .route("/api/v1/iam/users/:id/reset-password", post(reset_user_password))
         .route("/api/v1/iam/roles", get(list_roles).post(save_role))
         .route("/api/v1/iam/roles/:id", axum::routing::delete(delete_role))
         .route("/api/v1/iam/permissions", get(list_permissions).post(save_permissions))

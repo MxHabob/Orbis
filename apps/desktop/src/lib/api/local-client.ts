@@ -474,9 +474,6 @@ export class LocalClient implements OrbisApiClient {
   async assignEmployeeGroups(id: string, groupIds: string[]): Promise<boolean> {
     return unwrap(await invoke("employee_assign_groups", { id, groupIds }));
   }
-  async resetEmployeePassword(id: string): Promise<AccountProvisioningResultDto> {
-    return unwrap(await invoke("employee_reset_password", { id }));
-  }
   async bulkRegisterEmployees(
     items: BulkRegisterEmployeeCommandItem[],
     options?: { atomic?: boolean; dryRun?: boolean }

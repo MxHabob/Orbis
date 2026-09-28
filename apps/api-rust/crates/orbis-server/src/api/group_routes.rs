@@ -145,7 +145,8 @@ pub async fn list_groups(
     Ok(ApiResponse::ok(dtos))
 }
 
-#[utoipa::path(get, path = "/api/v1/groups/:id",
+#[utoipa::path(get, path = "/api/v1/groups/{id}",
+    params(("id" = Uuid, Path, description = "Group ID")),
     responses((status = 200, body = GroupDetailDto)),
     security(("bearer" = [])), tag = "IAM")]
 pub async fn get_group(
@@ -158,7 +159,8 @@ pub async fn get_group(
     Ok(ApiResponse::ok(detail.into()))
 }
 
-#[utoipa::path(patch, path = "/api/v1/groups/:id",
+#[utoipa::path(patch, path = "/api/v1/groups/{id}",
+    params(("id" = Uuid, Path, description = "Group ID")),
     request_body = UpdateGroupRequest,
     responses((status = 200, body = GroupDetailDto)),
     security(("bearer" = [])), tag = "IAM")]
@@ -179,7 +181,8 @@ pub async fn update_group(
     Ok(ApiResponse::ok(detail.into()))
 }
 
-#[utoipa::path(delete, path = "/api/v1/groups/:id",
+#[utoipa::path(delete, path = "/api/v1/groups/{id}",
+    params(("id" = Uuid, Path, description = "Group ID")),
     responses((status = 200, body = bool)),
     security(("bearer" = [])), tag = "IAM")]
 pub async fn delete_group(
@@ -191,7 +194,8 @@ pub async fn delete_group(
     Ok(ApiResponse::ok(true))
 }
 
-#[utoipa::path(get, path = "/api/v1/groups/:id/members",
+#[utoipa::path(get, path = "/api/v1/groups/{id}/members",
+    params(("id" = Uuid, Path, description = "Group ID")),
     responses((status = 200, body = Vec<GroupMemberInfoDto>)),
     security(("bearer" = [])), tag = "IAM")]
 pub async fn get_group_members(
@@ -204,7 +208,8 @@ pub async fn get_group_members(
     Ok(ApiResponse::ok(dtos))
 }
 
-#[utoipa::path(post, path = "/api/v1/groups/:id/members",
+#[utoipa::path(post, path = "/api/v1/groups/{id}/members",
+    params(("id" = Uuid, Path, description = "Group ID")),
     request_body = AddGroupMemberRequest,
     responses((status = 200, body = bool)),
     security(("bearer" = [])), tag = "IAM")]
@@ -218,7 +223,11 @@ pub async fn add_group_member(
     Ok(ApiResponse::ok(true))
 }
 
-#[utoipa::path(delete, path = "/api/v1/groups/:id/members/:user_id",
+#[utoipa::path(delete, path = "/api/v1/groups/{id}/members/{user_id}",
+    params(
+        ("id" = Uuid, Path, description = "Group ID"),
+        ("user_id" = Uuid, Path, description = "User ID")
+    ),
     responses((status = 200, body = bool)),
     security(("bearer" = [])), tag = "IAM")]
 pub async fn remove_group_member(
@@ -246,7 +255,8 @@ pub async fn bulk_assign_group(
     Ok(ApiResponse::ok(count))
 }
 
-#[utoipa::path(put, path = "/api/v1/groups/:id/permissions",
+#[utoipa::path(put, path = "/api/v1/groups/{id}/permissions",
+    params(("id" = Uuid, Path, description = "Group ID")),
     request_body = SetGroupPermissionsRequest,
     responses((status = 200, body = bool)),
     security(("bearer" = [])), tag = "IAM")]

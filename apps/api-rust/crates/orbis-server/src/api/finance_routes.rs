@@ -50,7 +50,11 @@ pub struct FeeTemplateDto {
     pub currency: String,
     pub revenue_account_id: Uuid,
     pub receivable_account_id: Uuid,
+    pub applicable_levels: Option<Vec<String>>,
+    pub applicable_study_modes: Option<Vec<String>>,
+    pub frequency: String,
     pub is_mandatory: bool,
+    pub is_active: bool,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -332,7 +336,11 @@ pub async fn create_fee_template(
         currency: t.currency_code,
         revenue_account_id: t.revenue_account_id,
         receivable_account_id: t.receivable_account_id,
+        applicable_levels: t.applicable_levels,
+        applicable_study_modes: t.applicable_study_modes,
+        frequency: t.frequency.to_string(),
         is_mandatory: t.is_mandatory,
+        is_active: t.is_active,
     }))
 }
 
@@ -353,7 +361,11 @@ pub async fn list_fee_templates(
         currency: t.currency_code,
         revenue_account_id: t.revenue_account_id,
         receivable_account_id: t.receivable_account_id,
+        applicable_levels: t.applicable_levels,
+        applicable_study_modes: t.applicable_study_modes,
+        frequency: t.frequency.to_string(),
         is_mandatory: t.is_mandatory,
+        is_active: t.is_active,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -515,6 +527,7 @@ pub async fn list_journal_entries(
 }
 
 #[utoipa::path(get, path = "/api/v1/journal-entries/{id}",
+    params(("id" = Uuid, Path, description = "Journal Entry ID")),
     responses((status = 200, body = JournalEntryDto)), security(("bearer" = [])), tag = "Finance")]
 pub async fn get_journal_entry(
     ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
@@ -605,7 +618,9 @@ pub async fn create_journal_entry(
     Ok(ApiResponse::ok(map_journal_entry_to_dto(entry)))
 }
 
-#[utoipa::path(post, path = "/api/v1/journal-entries/{id}/reverse", request_body = ReverseJournalRequest,
+#[utoipa::path(post, path = "/api/v1/journal-entries/{id}/reverse",
+    params(("id" = Uuid, Path, description = "Journal Entry ID")),
+    request_body = ReverseJournalRequest,
     responses((status = 200, body = JournalEntryDto)), security(("bearer" = [])), tag = "Finance")]
 pub async fn reverse_journal_entry(
     ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<ReverseJournalRequest>,
@@ -620,7 +635,9 @@ pub async fn reverse_journal_entry(
     Ok(ApiResponse::ok(map_journal_entry_to_dto(reversing)))
 }
 
-#[utoipa::path(post, path = "/api/v1/student-fees/{id}/split", request_body = SplitFeeRequest,
+#[utoipa::path(post, path = "/api/v1/student-fees/{id}/split",
+    params(("id" = Uuid, Path, description = "Student Fee ID")),
+    request_body = SplitFeeRequest,
     responses((status = 200, body = Vec<StudentFeeDto>)), security(("bearer" = [])), tag = "Finance")]
 pub async fn split_fee(
     ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<SplitFeeRequest>,
@@ -652,7 +669,9 @@ pub async fn split_fee(
     Ok(ApiResponse::ok(dtos))
 }
 
-#[utoipa::path(post, path = "/api/v1/student-fees/{id}/refund", request_body = RefundStudentFeeRequest,
+#[utoipa::path(post, path = "/api/v1/student-fees/{id}/refund",
+    params(("id" = Uuid, Path, description = "Student Fee ID")),
+    request_body = RefundStudentFeeRequest,
     responses((status = 200, body = StudentFeeDto)), security(("bearer" = [])), tag = "Finance")]
 pub async fn refund_fee(
     ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<RefundStudentFeeRequest>,
@@ -687,11 +706,11 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/accounts", post(create_account).get(list_accounts))
         .route("/api/v1/fee-templates", post(create_fee_template).get(list_fee_templates))
         .route("/api/v1/student-fees", post(generate_fee).get(list_fees))
-        .route("/api/v1/student-fees/{id}/split", post(split_fee))
-        .route("/api/v1/student-fees/{id}/refund", post(refund_fee))
+        .route("/api/v1/student-fees/:id/split", post(split_fee))
+        .route("/api/v1/student-fees/:id/refund", post(refund_fee))
         .route("/api/v1/payments", post(process_payment).get(list_payments))
         .route("/api/v1/currencies", get(list_currencies))
         .route("/api/v1/journal-entries", post(create_journal_entry).get(list_journal_entries))
-        .route("/api/v1/journal-entries/{id}", get(get_journal_entry))
-        .route("/api/v1/journal-entries/{id}/reverse", post(reverse_journal_entry))
+        .route("/api/v1/journal-entries/:id", get(get_journal_entry))
+        .route("/api/v1/journal-entries/:id/reverse", post(reverse_journal_entry))
 }

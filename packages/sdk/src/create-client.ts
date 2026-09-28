@@ -4,20 +4,22 @@
  * authentication, header injection, and response handling.
  */
 
-import { client } from "./client.gen.js";
-import * as sdk from "./sdk.gen.js";
+import { client } from "./gen/client.gen.js";
+import * as sdk from "./gen/sdk.gen.js";
 
-export { client as heyApiClient } from "./client.gen.js";
+export { client as heyApiClient } from "./gen/client.gen.js";
 
 /**
  * SDK Configuration Interfaces
  */
-export interface ClientOptions {
+export interface OrbisClientOptions {
   baseUrl: string;
   headers?: () => Promise<Record<string, string>> | Record<string, string>;
   onUnauthorized?: () => void;
   onTokenRefreshed?: (token: string) => void | Promise<void>;
 }
+
+export type ClientOptions = OrbisClientOptions;
 
 const DEFAULT_API_URL = "http://localhost:8017";
 
@@ -41,7 +43,7 @@ client.setConfig({
  * Configures the global @orbis/sdk client with interceptors for dynamic headers,
  * URL resolution, and authentication recovery.
  */
-export const createOrbisClient = (options: ClientOptions) => {
+export const createOrbisClient = (options: OrbisClientOptions) => {
   const { baseUrl } = options;
 
   client.setConfig({ baseUrl });
@@ -130,3 +132,5 @@ export const createOrbisClient = (options: ClientOptions) => {
     ...sdk,
   };
 };
+
+export type OrbisClient = ReturnType<typeof createOrbisClient>;

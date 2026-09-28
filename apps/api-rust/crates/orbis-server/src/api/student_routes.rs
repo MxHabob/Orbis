@@ -173,10 +173,16 @@ pub struct GuardianDto {
     pub student_id: Uuid,
     pub guardian_id: Uuid,
     pub relationship: String,
+    pub relationship_ar: Option<String>,
     pub is_primary: bool,
     pub is_emergency_contact: bool,
     pub is_authorized_pickup: bool,
     pub is_payer: bool,
+    pub payment_share_percent: Option<f64>,
+    pub occupation: Option<String>,
+    pub employer: Option<String>,
+    pub work_phone: Option<String>,
+    pub notes: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -420,10 +426,16 @@ pub async fn assign_guardian(
         student_id: g.student_id,
         guardian_id: g.guardian_id,
         relationship: g.relationship,
+        relationship_ar: g.relationship_ar,
         is_primary: g.is_primary,
         is_emergency_contact: g.is_emergency_contact,
         is_authorized_pickup: g.is_authorized_pickup,
         is_payer: g.is_payer,
+        payment_share_percent: g.payment_share_percent,
+        occupation: g.occupation,
+        employer: g.employer,
+        work_phone: g.work_phone,
+        notes: g.notes,
     }))
 }
 
@@ -442,10 +454,16 @@ pub async fn list_guardians(
         student_id: g.student_id,
         guardian_id: g.guardian_id,
         relationship: g.relationship,
+        relationship_ar: g.relationship_ar,
         is_primary: g.is_primary,
         is_emergency_contact: g.is_emergency_contact,
         is_authorized_pickup: g.is_authorized_pickup,
         is_payer: g.is_payer,
+        payment_share_percent: g.payment_share_percent,
+        occupation: g.occupation,
+        employer: g.employer,
+        work_phone: g.work_phone,
+        notes: g.notes,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
