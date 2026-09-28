@@ -24,12 +24,16 @@ export type AcademicContextResponse = {
 };
 
 export type AcademicPeriodDto = {
+    created_at: string;
     end_date: string;
     id: string;
     name: string;
+    name_ar?: string | null;
+    parent_id?: string | null;
     period_type: string;
     start_date: string;
     status: string;
+    updated_at: string;
     year_id: string;
 };
 
@@ -38,26 +42,35 @@ export type AcademicSettingsDto = {
 };
 
 export type AcademicYearDto = {
+    created_at: string;
+    current_period_id?: string | null;
     end_date: string;
     id: string;
     is_active: boolean;
     name: string;
     name_ar?: string | null;
+    notes?: string | null;
     org_id: string;
     start_date: string;
     status: string;
+    updated_at: string;
 };
 
 export type AccountDto = {
     account_type: string;
     balances: unknown;
     code: string;
+    created_at: string;
+    created_by?: string | null;
     currency: string;
     id: string;
     is_active: boolean;
     name: string;
     org_id: string;
     parent_id?: string | null;
+    updated_at: string;
+    updated_by?: string | null;
+    version: number;
 };
 
 export type AccountProvisioningConfigRequest = {
@@ -167,12 +180,14 @@ export type ApprovalStepDto = {
 };
 
 export type AssessmentSchemeDto = {
+    created_at: string;
     description?: string | null;
     formula?: unknown;
     id: string;
     max_score: number;
     name: string;
     org_id: string;
+    updated_at: string;
 };
 
 export type AssignClassSubjectRequest = {
@@ -222,12 +237,15 @@ export type AssignSecretRequest = {
 export type AttendanceDto = {
     class_id?: string | null;
     class_subject_id?: string | null;
+    created_at: string;
     date: string;
     id: string;
+    marked_by?: string | null;
     notes?: string | null;
     scheduled_lesson_id?: string | null;
     status: string;
     student_id: string;
+    updated_at: string;
 };
 
 export type AutopilotDiagnosticsDto = {
@@ -330,20 +348,29 @@ export type ChangeStudyModeRequest = {
 };
 
 export type ClassDto = {
+    capacity?: number | null;
+    created_at: string;
+    division?: string | null;
     id: string;
+    is_active: boolean;
     level: string;
     name: string;
+    name_ar?: string | null;
     org_id: string;
     period_id: string;
     unit_id: string;
+    updated_at: string;
 };
 
 export type ClassSubjectDto = {
     class_id: string;
+    created_at: string;
     id: string;
+    is_active: boolean;
     period_id: string;
     primary_teacher_id: string;
     subject_id: string;
+    updated_at: string;
     weekly_hours?: number | null;
 };
 
@@ -453,6 +480,7 @@ export type CreateOrgUnitRequest = {
 export type CreatePeriodRequest = {
     end_date: string;
     name: string;
+    name_ar?: string | null;
     parent_id?: string | null;
     period_type: string;
     start_date: string;
@@ -477,6 +505,7 @@ export type CreateSubjectRequest = {
     credit_hours?: string | null;
     is_core?: boolean | null;
     name: string;
+    name_ar?: string | null;
     unit_id?: string | null;
 };
 
@@ -521,6 +550,7 @@ export type CreateTimeSlotRequest = {
 export type CreateYearRequest = {
     end_date: string;
     name: string;
+    name_ar?: string | null;
     start_date: string;
 };
 
@@ -561,6 +591,7 @@ export type DocumentDto = {
     tags?: string | null;
     term?: string | null;
     thumbnail_path?: string | null;
+    updated_at: string;
     uploaded_by?: string | null;
     url?: string | null;
     visibility: string;
@@ -616,6 +647,7 @@ export type EmployeeDetailDto = {
     birth_date?: string | null;
     blood_type?: string | null;
     created_at: string;
+    created_by?: string | null;
     department?: string | null;
     display_name?: string | null;
     effective_permissions: Array<string>;
@@ -651,6 +683,7 @@ export type EmployeeDetailDto = {
     special_needs_notes?: string | null;
     status: string;
     updated_at: string;
+    updated_by?: string | null;
     user_id?: string | null;
     user_status?: string | null;
     username?: string | null;
@@ -667,6 +700,8 @@ export type EnrollStudentRequest = {
 
 export type EnrollmentDto = {
     class_id?: string | null;
+    created_at: string;
+    created_by?: string | null;
     enrollment_date: string;
     id: string;
     is_attendance_exempt: boolean;
@@ -677,6 +712,8 @@ export type EnrollmentDto = {
     student_id: string;
     student_number: string;
     study_mode: string;
+    updated_at: string;
+    updated_by?: string | null;
     withdrawal_date?: string | null;
     withdrawal_reason?: string | null;
 };
@@ -696,14 +733,17 @@ export type EvaluateCohortRequest = {
 
 export type ExamScheduleDto = {
     class_subject_id: string;
+    created_at: string;
     end_time: string;
     exam_date: string;
     exam_session_id: string;
     id: string;
     start_time: string;
+    updated_at: string;
 };
 
 export type ExamSessionDto = {
+    created_at: string;
     end_date: string;
     id: string;
     name: string;
@@ -711,6 +751,7 @@ export type ExamSessionDto = {
     period_id: string;
     start_date: string;
     status: string;
+    updated_at: string;
 };
 
 export type FeeTemplateDto = {
@@ -718,6 +759,7 @@ export type FeeTemplateDto = {
     applicable_study_modes?: Array<string> | null;
     category: string;
     code: string;
+    created_at: string;
     currency: string;
     default_amount: string;
     frequency: string;
@@ -729,6 +771,7 @@ export type FeeTemplateDto = {
     org_id: string;
     receivable_account_id: string;
     revenue_account_id: string;
+    updated_at: string;
 };
 
 export type FinanceSettingsDto = {
@@ -781,18 +824,26 @@ export type GoogleAuthRequest = {
 };
 
 export type GradeDto = {
+    change_reason?: string | null;
     class_subject_id: string;
     component_id?: string | null;
+    created_at: string;
     enrollment_id?: string | null;
     id: string;
     is_excused: boolean;
     is_exempt: boolean;
+    is_final: boolean;
+    letter_grade?: string | null;
     max_score: string;
     notes?: string | null;
     org_id: string;
     period_id: string;
+    recorded_by?: string | null;
     score: string;
     student_id: string;
+    updated_at: string;
+    updated_by?: string | null;
+    weight?: string | null;
 };
 
 export type GroupDetailDto = {
@@ -822,6 +873,7 @@ export type GroupMemberInfoDto = {
 };
 
 export type GuardianDto = {
+    created_at: string;
     employer?: string | null;
     guardian_id: string;
     id: string;
@@ -835,6 +887,7 @@ export type GuardianDto = {
     relationship: string;
     relationship_ar?: string | null;
     student_id: string;
+    updated_at: string;
     work_phone?: string | null;
 };
 
@@ -870,12 +923,16 @@ export type JournalEntryDto = {
     is_reversed: boolean;
     lines: Array<JournalEntryLineDto>;
     org_id: string;
+    org_unit_id?: string | null;
     reference_number: string;
     reversal_reason?: string | null;
     reversed_by?: string | null;
     source_id?: string | null;
     source_type: string;
     status: string;
+    updated_at: string;
+    updated_by?: string | null;
+    version: number;
 };
 
 export type JournalEntryLineDto = {
@@ -970,6 +1027,8 @@ export type OrbisErrorBody = {
 export type OrgDto = {
     base_currency_code?: string | null;
     code?: string | null;
+    created_at: string;
+    created_by?: string | null;
     current_period_id?: string | null;
     date_format?: string | null;
     favicon?: string | null;
@@ -986,12 +1045,17 @@ export type OrgDto = {
     settings?: unknown;
     slug: string;
     timezone: string;
+    updated_at: string;
+    updated_by?: string | null;
+    version: number;
 };
 
 export type OrgUnitDto = {
     building?: string | null;
     capacity?: number | null;
     code?: string | null;
+    created_at: string;
+    created_by?: string | null;
     depth: number;
     floor?: number | null;
     id: string;
@@ -1004,6 +1068,8 @@ export type OrgUnitDto = {
     room_number?: string | null;
     sort_order?: number | null;
     unit_type: string;
+    updated_at: string;
+    updated_by?: string | null;
 };
 
 export type OrganizationSettingsDto = {
@@ -1050,6 +1116,9 @@ export type PaginatedEmployeesDto = {
 export type PaymentDto = {
     account_id: string;
     amount: string;
+    created_at: string;
+    created_by?: string | null;
+    enrollment_id?: string | null;
     fee_id?: string | null;
     id: string;
     journal_entry_id?: string | null;
@@ -1057,6 +1126,8 @@ export type PaymentDto = {
     org_id: string;
     paid_at: string;
     reference?: string | null;
+    student_id?: string | null;
+    updated_at: string;
 };
 
 export type PeriodTemplateDto = {
@@ -1093,11 +1164,13 @@ export type ProcessPaymentRequest = {
 };
 
 export type ProctorDto = {
+    created_at: string;
     exam_schedule_id: string;
     id: string;
     is_chief: boolean;
     room_id: string;
     teacher_id: string;
+    updated_at: string;
 };
 
 export type PromoteCohortRequest = {
@@ -1291,10 +1364,13 @@ export type RoleDto = {
 
 export type RoomDto = {
     capacity: number;
+    created_at: string;
     id: string;
     name: string;
     org_id: string;
+    org_unit_id?: string | null;
     room_type: string;
+    updated_at: string;
 };
 
 export type RunTickRequest = {
@@ -1327,10 +1403,12 @@ export type ScheduleLessonRequest = {
 
 export type ScheduledLessonDto = {
     class_subject_id: string;
+    created_at: string;
     id: string;
     room_id?: string | null;
     teacher_id?: string | null;
     time_slot_id: string;
+    updated_at: string;
 };
 
 export type ScoreItemRequest = {
@@ -1339,18 +1417,22 @@ export type ScoreItemRequest = {
 };
 
 export type SeatingDto = {
+    created_at: string;
     exam_session_id: string;
     id: string;
     room_id?: string | null;
     seating_number: string;
     student_id: string;
+    updated_at: string;
 };
 
 export type SecretDto = {
+    created_at: string;
     exam_schedule_id: string;
     id: string;
     secret_number: string;
     student_id: string;
+    updated_at: string;
 };
 
 export type SessionResponse = {
@@ -1383,6 +1465,7 @@ export type StudentDto = {
     avatar_url?: string | null;
     blood_type?: string | null;
     created_at: string;
+    created_by?: string | null;
     date_of_birth?: string | null;
     first_name: string;
     full_name: string;
@@ -1395,6 +1478,7 @@ export type StudentDto = {
     national_id?: string | null;
     nationality?: string | null;
     org_id: string;
+    org_unit_id?: string | null;
     passport_number?: string | null;
     person_id: string;
     special_needs_notes?: string | null;
@@ -1402,11 +1486,14 @@ export type StudentDto = {
     status: string;
     student_number: string;
     updated_at: string;
+    updated_by?: string | null;
     user_id?: string | null;
 };
 
 export type StudentFeeDto = {
     balance_due: string;
+    created_at: string;
+    created_by?: string | null;
     discount_amount: string;
     due_date: string;
     enrollment_id?: string | null;
@@ -1419,6 +1506,7 @@ export type StudentFeeDto = {
     period_id: string;
     status: string;
     student_id: string;
+    updated_at: string;
 };
 
 export type StudentProgressionItemInput = {
@@ -1432,11 +1520,16 @@ export type StudentProgressionItemInput = {
 
 export type SubjectDto = {
     code: string;
+    created_at: string;
     credit_hours?: string | null;
     id: string;
+    is_active: boolean;
     is_core: boolean;
     name: string;
+    name_ar?: string | null;
     org_id: string;
+    unit_id?: string | null;
+    updated_at: string;
 };
 
 export type SubmitOverrideRequest = {
@@ -1508,6 +1601,7 @@ export type TemplateVersionDto = {
 
 export type TimeSlotDto = {
     break_type?: string | null;
+    created_at: string;
     day_of_week: number;
     end_time: string;
     id: string;
@@ -1517,6 +1611,7 @@ export type TimeSlotDto = {
     period_id: string;
     slot_index: number;
     start_time: string;
+    updated_at: string;
 };
 
 export type ToggleIntegrationRequest = {
@@ -1680,6 +1775,8 @@ export type UserDto = {
     address?: string | null;
     avatar_url?: string | null;
     birth_date?: string | null;
+    created_at: string;
+    created_by?: string | null;
     email?: string | null;
     full_name: string;
     full_name_ar?: string | null;
@@ -1695,6 +1792,8 @@ export type UserDto = {
     phone?: string | null;
     roles?: Array<string>;
     status: string;
+    updated_at: string;
+    updated_by?: string | null;
 };
 
 export type UserIdentityDto = {
