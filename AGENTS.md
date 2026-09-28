@@ -40,25 +40,22 @@ Every agent starting a session in this repository MUST:
 ## 3. CONTINUATION STATE
 
 - **Last Session Date:** 2026-09-28
-- **Active Phase:** Phase 3 — Settings + Organization Reconciliation (Completed)
+- **Active Phase:** Phase 4 — IAM, Users, Roles & Permissions Reconciliation (Completed)
 - **Completed Scopes:**
-  - **Organization & Settings Backend:**
+  - **Organization & Settings (Phase 3):**
     - Expanded `UpdateOrgRequest` (`name_ar`, `base_currency_code`, `date_format`, `is_hijri_enabled`, `logo`, `favicon`, `code`) in `orbis-server` & `orbis-app`.
     - Added `AdmissionConfigurationDto` & `admission` to `OrganizationSettingsDto` in `orbis-server`.
     - Aligned `OrgUnitDto` with domain fields (`head_id`, `data_isolation`, `children_count`, `descendant_count`).
     - Aligned Tauri IPC commands (`org_cmds.rs`) with full serialization/deserialization.
-  - **SDK Regeneration:**
-    - Regenerated `openapi.json` and `@orbis/sdk` TypeScript client.
-  - **Desktop Settings Reconciliation:**
-    - Cleaned up duplicate/obsolete type aliases in `apps/desktop/src/lib/api/types.ts`.
-    - Fixed `branch-settings-card.svelte` to use `api.listOrgUnits()`.
-    - Connected `notifications-manager.svelte` to backend `api.getSettings()` / `api.updateSettings()`.
-    - Aligned `registration-settings.svelte` and `registration-settings-form.svelte` with canonical `admission` structure.
-    - Created `EnrollmentSettingsCard`, `FinanceSettingsCard`, and `AutopilotSettingsCard` (17 backend fields).
-    - Integrated policy cards into `general-settings-form.svelte` with bidirectional state persistence.
+    - Reconciled desktop settings cards (`branch-settings-card`, `notifications-manager`, `registration-settings`, `enrollment-settings-card`, `finance-settings-card`, `autopilot-settings-card`, `general-settings-form`).
+  - **IAM, Users, Roles & Permissions (Phase 4):**
+    - Audited full parity across REST API (`iam_routes.rs`, `group_routes.rs`), Tauri IPC (`iam_cmds.rs`, `group_cmds.rs`), and TypeScript SDK (`@orbis/sdk`).
+    - Reconciled `user-profile.svelte` to map canonical `UpdateUserRequest` (`full_name_ar`, `is_active`) and query group memberships accurately.
+    - Reconciled `user-sessions.svelte` to use canonical `UserDeviceDto` properties and wired `api.revokeDevice(id)` with confirmation.
+    - Reconciled `user-roles.svelte` to remove unsafe `as any` casts and enforce typed role updates.
   - **Verification:**
     - `apps/api-rust` cargo check: 0 errors
     - `apps/desktop/src-tauri` cargo check: 0 errors
     - `packages/sdk` tsc: 0 errors
     - `apps/desktop` tsc: 0 errors
-- **Next Scope in Master Execution Plan:** Next Phase in Scope-by-Scope Reconciliation (Calendar / Academics / Students / Finance).
+- **Next Scope in Master Execution Plan:** Phase 5 — Academic Structure & Calendar Reconciliation (Years, Periods, Classes, Subjects, Rooms, TimeSlots).

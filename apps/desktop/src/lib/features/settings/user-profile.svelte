@@ -34,7 +34,7 @@ const user = $derived((userQuery.data as User | null) ?? null);
 const isLoading = $derived(userQuery.isLoading);
 let isSaving = $state(false);
 
-// Groups query
+// Groups query & User Group memberships
 const groupsQuery = createQuery<GroupDetailDto[]>(() => ({
   queryKey: ["groups", orgId],
   queryFn: () => api.listGroups(),
@@ -43,14 +43,28 @@ const groupsQuery = createQuery<GroupDetailDto[]>(() => ({
 
 const allGroups = $derived(groupsQuery.data ?? []);
 
-// Compute assigned groups for this user
-const userAssignedGroups = $derived.by<GroupDetailDto[]>(() => {
-  if (!allGroups.length || !userId) return [];
-  return allGroups.filter((g) =>
-    g.members?.some((m) => m.user_id === userId)
-  );
-});
+const userGroupsQuery = createQuery<GroupDetailDto[]>(() => ({
+  queryKey: ["user_assigned_groups", orgId, userId],
+  queryFn: async () => {
+    const groups = await api.listGroups();
+    const memberships = await Promise.all(
+      groups.map(async (g) => {
+        try {
+          const members = await api.getGroupMembers(g.id);
+          const isMember = members.some((m) => m.user_id === userId);
+          return isMember ? g : null;
+        } catch {
+          return null;
+        }
+      }),
+    );
+    return memberships.filter(Boolean) as GroupDetailDto[];
+  },
+  enabled: !!userId,
+  staleTime: 60 * 1000,
+}));
 
+const userAssignedGroups = $derived(userGroupsQuery.data ?? []);
 const userAssignedGroupIds = $derived(userAssignedGroups.map((g) => g.id));
 
 // Manage Groups Drawer Sheet State
@@ -70,8 +84,7 @@ $effect(() => {
   const fetched = user;
   if (!fetched || initializedUserId === userId) return;
   fullName = fetched.full_name || "";
-  nameAr = fetched.name_ar || "";
-  nameEn = fetched.name_en || "";
+  nameAr = fetched.full_name_ar || "";
   email = fetched.email || "";
   phone = (fetched.phone as string) || "";
   role = fetched.roles?.[0] || "staff";
@@ -87,8 +100,7 @@ function openManageGroups() {
 function resetForm() {
   if (!user) return;
   fullName = user.full_name || "";
-  nameAr = user.name_ar || "";
-  nameEn = user.name_en || "";
+  nameAr = user.full_name_ar || "";
   email = user.email || "";
   phone = (user.phone as string) || "";
   role = user.roles?.[0] || "staff";
@@ -120,8 +132,7 @@ async function toggleAccountStatus() {
 
   isSaving = true;
   try {
-    const request = { ...user, is_active: nextState };
-    await api.updateUser(userId, request as any);
+    await api.updateUser(userId, { is_active: nextState });
     isActiveState = nextState;
     toast.success(
       nextState
@@ -143,17 +154,13 @@ async function saveProfile() {
   if (!userId) return;
   isSaving = true;
   try {
-    const request = {
-      ...user,
-      full_name: fullName,
-      name_ar: nameAr || null,
-      name_en: nameEn || null,
-      email: email || null,
-      phone: phone || null,
+    await api.updateUser(userId, {
+      full_name: fullName || undefined,
+      full_name_ar: nameAr || undefined,
+      phone: phone || undefined,
       is_active: isActiveState,
       roles: role ? [role] : user?.roles,
-    };
-    await api.updateUser(userId, request as any);
+    });
 
     await queryClient.invalidateQueries({ queryKey: ["user", orgId, userId] });
     await queryClient.invalidateQueries({ queryKey: ["users", orgId] });
@@ -251,14 +258,6 @@ async function saveProfile() {
           {m.settings_user_detail_label_phone ? m.settings_user_detail_label_phone() : l("رقم الهاتف", "Phone Number")}
         </Label>
         <Input id="phone" type="text" bind:value={phone} />
-      </div>
-
-      <!-- English Name -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label for="nameEn" class="text-xs font-medium text-muted-foreground">
-          {m.settings_user_detail_label_fullname_en ? m.settings_user_detail_label_fullname_en() : l("الاسم بالكامل (إنجليزي)", "Full Name (English)")}
-        </Label>
-        <Input id="nameEn" type="text" bind:value={nameEn} />
       </div>
     </div>
 

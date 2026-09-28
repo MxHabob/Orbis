@@ -39,10 +39,10 @@ async function loadRoles() {
       id: r.id,
       nameEn: r.name,
       nameAr: r.name_ar || r.name,
-      descEn: (r as any).description || (r.is_system ? "System role" : "Custom role"),
-      descAr: (r as any).description || (r.is_system ? "دور نظام أساسي" : "دور مخصص في المؤسسة"),
+      descEn: r.is_system ? "Institutional system role" : "Custom organizational role",
+      descAr: r.is_system ? "دور نظام قياسي في المؤسسة" : "دور مخصص في المؤسسة",
       isSystem: Boolean(r.is_system),
-      permCount: countRolePermissions(r.permissions),
+      permCount: countRolePermissions(r.permissions, r.id),
     }));
 
     // Load active roles for this user
@@ -72,7 +72,7 @@ async function saveRoles() {
   try {
     await api.updateUser(userId, {
       roles: checkedRoles,
-    } as any);
+    });
 
     toast.success(
       m.settings_user_detail_saved
