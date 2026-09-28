@@ -199,6 +199,8 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         finance_cmds::finance_list_currencies,
         finance_cmds::finance_list_journal_entries,
         finance_cmds::finance_get_journal_entry,
+        finance_cmds::finance_create_journal_entry,
+        finance_cmds::finance_reverse_journal_entry,
         finance_cmds::finance_create_discount_template,
         finance_cmds::finance_list_discount_templates,
         // ── Document ────────────────────────────────────────────

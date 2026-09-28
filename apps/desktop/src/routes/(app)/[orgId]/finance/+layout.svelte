@@ -60,8 +60,13 @@ const navItems = $derived([
   },
   {
     path: "payments",
-    label: m.finance_layout_nav_payments(),
+    label: "سندات القبض",
     icon: CreditCard,
+  },
+  {
+    path: "disbursements",
+    label: "سندات الصرف",
+    icon: Banknotes,
   },
 
   {

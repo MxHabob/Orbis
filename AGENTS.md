@@ -39,15 +39,12 @@ Every agent starting a session in this repository MUST:
 
 ## 3. CONTINUATION STATE
 
-- **Current Status:** `DESKTOP_FORMS_AND_FIELDS_SYNCHRONIZED_WITH_CANONICAL_DOMAIN`
+- **Current Status:** `FINANCE_IN_PAGE_WORKSPACES_STANDARDIZED_WITH_ORBIS_GRID`
 - **Master Reference Documents:** [orbis_ai_architecture_discovery.md](file:///c:/Users/User/.gemini/antigravity-ide/brain/3e2fb622-6955-4230-8ce1-9809fa99c255/orbis_ai_architecture_discovery.md), [student_backend_desktop_contract_reconciliation.md](file:///d:/projects/Orbis/docs/student_backend_desktop_contract_reconciliation.md)
 - **Accomplished:**
-  - Enriched all backend Axum/utoipa response DTOs with complete audit tracking fields (`created_at`, `updated_at`, `created_by`, `updated_by`, `org_unit_id`, `version`) across all server routes.
-  - Regenerated OpenAPI 3.1 specification via `export_openapi` and rebuilt `@orbis/sdk`.
-  - Enriched Desktop UI tables and grids to render localized audit columns (`created_at`, `updated_at`).
-  - Synchronized Desktop forms and state across modules (`Students`, `Employees`, `Finance`, `Academics`):
-    - Added and bound `national_id`, `passport_number`, `nationality`, `place_of_birth`, `blood_type`, `medical_notes`, and `special_needs_notes` in `student-details.svelte` and `profile-section.svelte`.
-    - Added `is_authorized_pickup`, `employer`, `work_phone` in `family-section.svelte` and `guardian-info.svelte.ts`.
-    - Fixed `ledger-form.svelte` mapping to use `account_type` instead of `item_type`.
-  - Verified 0 errors across `bun x tsc --noEmit` in `apps/desktop` and `packages/sdk`, `cargo check --workspace` in `apps/api-rust`, and `cargo check` in `apps/desktop/src-tauri`.
+  - Standardized Finance module workspaces (`journal-entries.svelte`, `payments-manager.svelte`) into unified in-page layouts containing the entry/voucher form and data grid together without modal Dialogs or Sheets.
+  - Rebuilt `journal-entries.svelte` to match the exact ERP layout with top header banner ("سند قيد بسيط"), amount input with highlighted styling, currency selector, direct-typing debit/credit account search inputs, notes, org unit selector, action ribbon (إضافة, تعديل, حذف, تحديث, بحث, طباعة, طباعة السند, خروج), sub-bar filters (فحص التاريخ, QR, إشعارات), and virtualized `OrbisGrid` with complete audit and user tracking.
+  - Rebuilt `payments-manager.svelte` with `OrbisGrid` and `SearchableSelect` components, completely removing all fake mock fallbacks.
+  - Implemented `finance_create_journal_entry` and `finance_reverse_journal_entry` in Tauri Rust IPC commands (`apps/desktop/src-tauri/src/commands/finance_cmds.rs`).
+  - Verified 0 errors across `bun x tsc --noEmit` in `apps/desktop`, `cargo check` in `apps/desktop/src-tauri`, and `cargo check --workspace` in `apps/api-rust`.
 - **Next Target Module:** `DOCFORGE` and `EXAMS` / `FINANCE` screen integration tests.

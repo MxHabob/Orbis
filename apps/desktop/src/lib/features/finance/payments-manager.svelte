@@ -3,15 +3,7 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api, queryClient } from "$lib/api";
-import {
-    Badge,
-  Grid,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@orbis/ui";
+import { Badge } from "@orbis/ui/badge";
 import {
   Card,
   CardHeader,
@@ -25,14 +17,9 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Skeleton } from "@orbis/ui/skeleton";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
-import { toast } from "@orbis/ui";
+import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
+import { Select, SelectContent, SelectItem, SelectTrigger, toast } from "@orbis/ui";
 import { CheckSquare, ChevronLeft, ChevronRight, Document, Plus, Printer, Search, SignOut, TaskList, Trash } from "@orbis/icons";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
@@ -174,15 +161,7 @@ async function loadData() {
       loadCurrencies(),
     ]);
 
-    payments = (paymentsList as any[]).map((p: any) => ({
-      ...p,
-      reference_number:
-        p.reference_number || `005${Math.floor(1000 + Math.random() * 9000)}`,
-      prints_count: p.prints_count || 0,
-      user: p.user || "U78",
-      branch: p.branch || "المركز الرئيسي",
-      notes: p.notes || "",
-    }));
+    payments = paymentsList || [];
 
     treasuries = treasuriesList;
     students = studentsList;
@@ -547,6 +526,103 @@ const filteredPayments = $derived.by(() => {
     return matchesSearch && matchesMethod && dateMatch;
   });
 });
+
+const paymentGridSource = $derived(
+  filteredPayments.map((p, idx) => ({
+    ...p,
+    __idx: idx + 1,
+    receipt_display: p.receipt_number || p.reference || p.id?.slice(0, 8),
+    date_display: formatDate(p.payment_date || p.paid_at || p.created_at, "date"),
+    method_display: getMethodLabel(p.payment_method || p.method || "Cash"),
+    amount_display: formatCurrency(Number(p.amount || 0), p.currency || "YER"),
+    currency_display: p.currency || "YER",
+    cash_account_display: cleanAccountName(p.cash_account_name) || treasuries.find((t) => t.id === (p.cash_account_id || p.account_id))?.name || m.finance_payments_collections_cash_account(),
+    student_display: p.student_name || p.payer_name || "—",
+    notes_display: p.notes || "—",
+    created_at_display: p.created_at ? formatDate(p.created_at, "datetime") : "—",
+    updated_at_display: p.updated_at ? formatDate(p.updated_at, "datetime") : "—",
+  }))
+);
+
+const paymentColumns: OrbisColumnDef<any>[] = [
+  {
+    id: "receipt_number",
+    header: m.common_word_number(),
+    accessorKey: "receipt_display",
+    width: 100,
+    align: "center",
+    sortable: true,
+  },
+  {
+    id: "date",
+    header: m.common_overview_date(),
+    accessorKey: "date_display",
+    width: 110,
+    align: "center",
+    sortable: true,
+  },
+  {
+    id: "method",
+    header: m.finance_fees_col_method(),
+    accessorKey: "method_display",
+    width: 110,
+    align: "center",
+    sortable: true,
+  },
+  {
+    id: "amount",
+    header: m.common_ft_col_amount(),
+    accessorKey: "amount_display",
+    width: 130,
+    align: "end",
+    sortable: true,
+  },
+  {
+    id: "currency",
+    header: m.finance_ledger_currency(),
+    accessorKey: "currency_display",
+    width: 80,
+    align: "center",
+    sortable: true,
+  },
+  {
+    id: "cash_account",
+    header: m.common_ledger_tab_cash_account(),
+    accessorKey: "cash_account_display",
+    width: 180,
+    sortable: true,
+  },
+  {
+    id: "student_name",
+    header: m.finance_payments_customer_account(),
+    accessorKey: "student_display",
+    width: 200,
+    sortable: true,
+  },
+  {
+    id: "notes",
+    header: m.common_year_notes(),
+    accessorKey: "notes_display",
+    minWidth: 200,
+    sortable: true,
+  },
+  {
+    id: "created_at",
+    header: m.common_audit_col_created_at?.() || "تاريخ الإنشاء",
+    accessorKey: "created_at_display",
+    width: 140,
+    align: "center",
+    sortable: true,
+  },
+  {
+    id: "updated_at",
+    header: m.common_audit_col_updated_at?.() || "آخر تعديل",
+    accessorKey: "updated_at_display",
+    width: 140,
+    align: "center",
+    sortable: true,
+  },
+];
 </script>
 
 <div class="h-full flex flex-col overflow-hidden bg-background p-4 font-sans text-start">
@@ -568,49 +644,44 @@ const filteredPayments = $derived.by(() => {
             <!-- Treasury select -->
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-[9px] font-bold text-muted-foreground">{m.common_ledger_tab_cash_account()}</Label>
-              <Select type="single" bind:value={treasuryId}>
-                <SelectTrigger class="h-8 text-xs w-44 border-border cursor-pointer text-start">
-                  {treasuryItems.find(t => t.value === treasuryId)?.label || "اختر الصندوق..."}
-                </SelectTrigger>
-                <SelectContent>
-                  {#each treasuryItems as tr}
-                    <SelectItem value={tr.value}>{tr.label}</SelectItem>
-                  {/each}
-                  {#if treasuryItems.length === 0}
-                    <SelectItem value="">{m.finance_payments_collections_cash_account_full()}</SelectItem>
-                  {/if}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={treasuryId}
+                placeholder="اختر الصندوق..."
+                searchPlaceholder="ابحث باسم الصندوق أو رمزه..."
+                items={treasuryItems}
+                getItemValue={(tr) => tr.value}
+                getItemLabel={(tr) => tr.label}
+                onchange={(val) => { if (val) treasuryId = val; }}
+                class="h-8 text-xs w-48 border-border bg-background"
+              />
             </div>
 
             <!-- Method select -->
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_fees_col_method()}</Label>
-              <Select type="single" bind:value={paymentMethod}>
-                <SelectTrigger class="h-8 text-xs w-28 border-border cursor-pointer text-start">
-                  {paymentMethods.find(m => m.value === paymentMethod)?.label || "اختر الطريقة..."}
-                </SelectTrigger>
-                <SelectContent>
-                  {#each paymentMethods as pm}
-                    <SelectItem value={pm.value}>{pm.label}</SelectItem>
-                  {/each}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={paymentMethod}
+                placeholder="اختر الطريقة..."
+                items={paymentMethods}
+                getItemValue={(pm) => pm.value}
+                getItemLabel={(pm) => pm.label}
+                onchange={(val) => { if (val) paymentMethod = val; }}
+                class="h-8 text-xs w-32 border-border bg-background"
+              />
             </div>
 
             <!-- Currency select -->
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_ledger_currency()}</Label>
-              <Select type="single" bind:value={currency}>
-                <SelectTrigger class="h-8 text-xs w-20 border-border cursor-pointer">
-                  {currency}
-                </SelectTrigger>
-                <SelectContent>
-                  {#each currencies as curr}
-                    <SelectItem value={curr.code}>{curr.code}</SelectItem>
-                  {/each}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={currency}
+                placeholder="العملة"
+                items={currencies}
+                getItemValue={(curr) => curr.code}
+                getItemLabel={(curr) => `${curr.code} - ${curr.name}`}
+                onchange={(val) => { if (val) currency = val; }}
+                class="h-8 text-xs w-32 border-border bg-background"
+              />
             </div>
 
             <!-- Date picker -->
@@ -982,69 +1053,23 @@ const filteredPayments = $derived.by(() => {
       </div>
     </div>
 
-    <!-- Grid Grid container -->
-    <div class="overflow-hidden">
-      {#if isLoading}
-        <div class="flex flex-col gap-2">
-          {#each Array(4) as _}
-            <Skeleton class="h-10 w-full rounded-lg" />
-          {/each}
-        </div>
-      {:else}
-        <div in:fade={{ duration: 150 }} class="border border-border/60 rounded-xl overflow-hidden bg-card/30 shadow-sm">
-          <Grid>
-            <TableHeader class="bg-muted/40 select-none">
-              <TableRow>
-                <TableHead class="w-10 text-center">
-                  <input 
-                    type="checkbox" 
-                    checked={selectedPaymentIds.size === filteredPayments.length && filteredPayments.length > 0} 
-                    onchange={toggleSelectAllPayments}
-                    class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
-                  />
-                </TableHead>
-                <TableHead class="text-start font-bold text-xs">{m.common_word_number()}</TableHead>
-                <TableHead class="text-start font-bold text-xs">{m.common_overview_date()}</TableHead>
-                <TableHead class="text-start font-bold text-xs">{m.finance_fees_col_method()}</TableHead>
-                <TableHead class="text-end font-bold text-xs text-emerald-500">{m.common_ft_col_amount()}</TableHead>
-                <TableHead class="text-center font-bold text-xs">{m.finance_ledger_currency()}</TableHead>
-                <TableHead class="text-start font-bold text-xs">{m.common_ledger_tab_cash_account()}</TableHead>
-                <TableHead class="text-start font-bold text-xs">{m.finance_payments_customer_account()}</TableHead>
-                <TableHead class="text-start font-bold text-xs">{m.common_year_notes()}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {#each filteredPayments as p (p.id)}
-                {#if showUserRecords || p.user === "U78"}
-                  <TableRow 
-                    class="hover:bg-muted/20 transition-all duration-150 cursor-pointer select-none {selectedPayment?.id === p.id ? 'bg-primary/10 border-primary border-l-2 hover:bg-primary/15' : ''}"
-                    onclick={() => selectRow(p)}
-                  >
-                    <TableCell class="w-10 text-center" onclick={(e) => e.stopPropagation()}>
-                      <input 
-                        type="checkbox" 
-                        checked={selectedPaymentIds.has(String(p.id))} 
-                        onchange={() => togglePaymentSelection(String(p.id))}
-                        class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
-                      />
-                    </TableCell>
-                    <TableCell class="text-start font-mono text-[11px] text-foreground font-extrabold whitespace-nowrap">{p.receipt_number || p.id.slice(0, 8)}</TableCell>
-                    <TableCell class="text-start text-[11px] text-muted-foreground whitespace-nowrap">{formatDate(p.payment_date || p.created_at)}</TableCell>
-                    <TableCell class="text-start text-[11px] font-semibold text-foreground whitespace-nowrap">{getMethodLabel(p.payment_method || 'Cash')}</TableCell>
-                    <TableCell class="text-end text-[11px] font-bold font-mono text-emerald-500 whitespace-nowrap">
-                      {formatCurrency(Number(p.amount || 0), p.currency || 'YER')}
-                    </TableCell>
-                    <TableCell class="text-center text-[11px] font-semibold font-mono">{p.currency || 'YER'}</TableCell>
-                    <TableCell class="text-start text-[11px] text-foreground max-w-[150px] truncate">{cleanAccountName(p.cash_account_name) || treasuries.find((t) => t.id === p.cash_account_id)?.name || m.finance_payments_collections_cash_account()}</TableCell>
-                    <TableCell class="text-start text-[11px] text-foreground font-semibold max-w-[180px] truncate">{p.student_name || '-'}</TableCell>
-                    <TableCell class="text-start text-[11px] text-muted-foreground max-w-[200px] truncate">{p.notes || '-'}</TableCell>
-                  </TableRow>
-                {/if}
-              {/each}
-            </TableBody>
-          </Grid>
-        </div>
-      {/if}
+    <!-- OrbisGrid Table container -->
+    <div class="h-96 min-h-64 flex flex-col bg-card rounded-xl border border-border/80 overflow-hidden p-2">
+      <OrbisGrid
+        columns={paymentColumns}
+        source={paymentGridSource}
+        loading={isLoading}
+        clientQuery
+        search={searchQuery}
+        rtl
+        readonly
+        emptyTitle="لا توجد سندات قبض مسجلة لهذا البحث أو التاريخ"
+        onRowClick={(row) => selectRow(row)}
+        onRowDoubleClick={(row) => {
+          selectRow(row);
+          toast.info(`تم تحميل السند رقم ${row.receipt_number || row.id}`);
+        }}
+      />
     </div>
   </div>
 

@@ -4,6 +4,7 @@ export { default as AccountsManager } from "./accounts-manager.svelte";
 export { default as FeesWorkspace } from "./fees-workspace.svelte";
 export { default as JournalEntries } from "./journal-entries.svelte";
 export { default as PaymentsManager } from "./payments-manager.svelte";
+export { default as DisbursementsManager } from "./disbursements-manager.svelte";
 export { default as PosTerminal } from "./pos-terminal.svelte";
 export { default as AccountStatement } from "./account-statement.svelte";
 export { default as FinancialReportPage } from "./components/financial-report-page.svelte";

@@ -11,7 +11,7 @@ use orbis_domain::entities::payment::{Payment, PaymentMethod};
 use orbis_domain::entities::fee_template::{FeeTemplate, FeeFrequency};
 use orbis_domain::entities::student_fee::StudentFee;
 use orbis_domain::entities::discount_template::{DiscountTemplate, DiscountType};
-use orbis_domain::entities::journal_entry::JournalEntry;
+use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};
 use orbis_domain::queries::filters::{PaymentFilter, StudentFeeFilter, PaginationParams};
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
@@ -880,3 +880,193 @@ pub async fn finance_create_discount_template(
     state.discount_template_repo.save(&tmpl).await.map_err(|e| e.to_string())?;
     Ok(ok(discount_template_to_dto(tmpl)))
 }
+
+#[derive(Deserialize, Debug)]
+pub struct CreateJournalEntryLineInput {
+    pub account_id: String,
+    pub debit_amount: Decimal,
+    pub credit_amount: Decimal,
+    pub description: Option<String>,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct CreateJournalEntryInput {
+    pub reference_number: Option<String>,
+    pub accounting_date: Option<String>,
+    pub amount: Option<Decimal>,
+    pub currency: Option<String>,
+    pub currency_code: Option<String>,
+    pub exchange_rate: Option<Decimal>,
+    pub debit_account_id: Option<String>,
+    pub credit_account_id: Option<String>,
+    pub description: Option<String>,
+    pub description_ar: Option<String>,
+    pub lines: Option<Vec<CreateJournalEntryLineInput>>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct ReverseJournalInput {
+    pub reason: Option<String>,
+}
+
+#[tauri::command]
+pub async fn finance_create_journal_entry(
+    request: CreateJournalEntryInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<JournalEntryDto>, String> {
+    let ctx = make_ctx(&state);
+    let now = chrono::Utc::now();
+    let entry_id = Uuid::new_v4();
+
+    let accounting_date = if let Some(ref d) = request.accounting_date {
+        chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d")
+            .unwrap_or_else(|_| now.date_naive())
+    } else {
+        now.date_naive()
+    };
+
+    let currency_code = request.currency_code
+        .or(request.currency)
+        .unwrap_or_else(|| "YER".to_string());
+
+    let exchange_rate = request.exchange_rate.unwrap_or(Decimal::ONE);
+
+    let debit_account_id = request.debit_account_id
+        .and_then(|id| Uuid::parse_str(&id).ok())
+        .unwrap_or(Uuid::nil());
+
+    let credit_account_id = request.credit_account_id
+        .and_then(|id| Uuid::parse_str(&id).ok())
+        .unwrap_or(Uuid::nil());
+
+    let description = request.description.unwrap_or_default();
+    let description_ar = request.description_ar;
+
+    let lines: Vec<JournalEntryLine> = if let Some(ls) = request.lines {
+        if !ls.is_empty() {
+            ls.into_iter().map(|l| {
+                JournalEntryLine {
+                    id: Uuid::new_v4(),
+                    account_id: Uuid::parse_str(&l.account_id).unwrap_or(Uuid::nil()),
+                    debit_amount: l.debit_amount,
+                    credit_amount: l.credit_amount,
+                    description: l.description,
+                    entity_type: l.entity_type,
+                    entity_id: l.entity_id.and_then(|id| Uuid::parse_str(&id).ok()),
+                }
+            }).collect()
+        } else {
+            let amount = request.amount.unwrap_or(Decimal::ZERO);
+            vec![
+                JournalEntryLine {
+                    id: Uuid::new_v4(),
+                    account_id: debit_account_id,
+                    debit_amount: amount,
+                    credit_amount: Decimal::ZERO,
+                    description: Some(description.clone()),
+                    entity_type: None,
+                    entity_id: None,
+                },
+                JournalEntryLine {
+                    id: Uuid::new_v4(),
+                    account_id: credit_account_id,
+                    debit_amount: Decimal::ZERO,
+                    credit_amount: amount,
+                    description: Some(description.clone()),
+                    entity_type: None,
+                    entity_id: None,
+                },
+            ]
+        }
+    } else {
+        let amount = request.amount.unwrap_or(Decimal::ZERO);
+        vec![
+            JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: debit_account_id,
+                debit_amount: amount,
+                credit_amount: Decimal::ZERO,
+                description: Some(description.clone()),
+                entity_type: None,
+                entity_id: None,
+            },
+            JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: credit_account_id,
+                debit_amount: Decimal::ZERO,
+                credit_amount: amount,
+                description: Some(description.clone()),
+                entity_type: None,
+                entity_id: None,
+            },
+        ]
+    };
+
+    let total_amount = if let Some(amt) = request.amount {
+        amt
+    } else {
+        lines.iter().map(|l| l.debit_amount).sum()
+    };
+
+    let reference_number = request.reference_number
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| format!("JV-{}", now.timestamp_millis()));
+
+    let entry = JournalEntry {
+        id: entry_id,
+        org_id: ctx.tenant_id,
+        reference_number,
+        accounting_date,
+        amount: total_amount,
+        currency_code,
+        exchange_rate,
+        base_amount: total_amount * exchange_rate,
+        debit_account_id,
+        credit_account_id,
+        description,
+        description_ar,
+        source_type: "manual".into(),
+        source_id: None,
+        status: JournalPostingStatus::Posted,
+        lines,
+        is_reversed: false,
+        reversed_by: None,
+        reversal_reason: None,
+        created_by: ctx.user_id(),
+        created_at: now,
+        updated_at: now,
+        updated_by: ctx.user_id(),
+        org_unit_id: None,
+        version: 1,
+    };
+
+    entry.validate_balance().map_err(|e| e)?;
+    state.journal_entry_repo.save(&entry).await.map_err(|e| e.to_string())?;
+
+    Ok(ok(journal_entry_to_dto(entry)))
+}
+
+#[tauri::command]
+pub async fn finance_reverse_journal_entry(
+    id: String,
+    request: ReverseJournalInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<JournalEntryDto>, String> {
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
+    let mut entry = state.journal_entry_repo
+        .find_by_id(uid)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Journal entry not found".to_string())?;
+
+    entry.is_reversed = true;
+    entry.status = JournalPostingStatus::Reversed;
+    entry.reversal_reason = request.reason;
+    entry.updated_at = chrono::Utc::now();
+
+    state.journal_entry_repo.save(&entry).await.map_err(|e| e.to_string())?;
+    Ok(ok(journal_entry_to_dto(entry)))
+}
+
