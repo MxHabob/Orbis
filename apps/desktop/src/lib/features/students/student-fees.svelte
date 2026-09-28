@@ -30,9 +30,11 @@ let totalFees = $derived(
   fees.reduce((s, f) => s + Number(f.net_amount || 0), 0),
 );
 let totalPaid = $derived(
-  payments.reduce((s, p) => s + Number(p.amount || 0), 0),
+  fees.reduce((s, f) => s + Number(f.paid_amount || 0), 0),
 );
-let balanceDue = $derived(totalFees - totalPaid);
+let balanceDue = $derived(
+  fees.reduce((s, f) => s + Number(f.balance_due ?? (Number(f.net_amount || 0) - Number(f.paid_amount || 0))), 0),
+);
 
 onMount(() => loadFinance());
 
@@ -41,8 +43,8 @@ async function loadFinance() {
   try {
     if (!orgId || !studentId) return;
     const [f, p] = await Promise.all([
-      api.listStudentFees({ studentId, enrollmentId: studentId }),
-      api.listPayments({ studentId }),
+      api.listStudentFees({ student_id: studentId }),
+      api.listPayments({ student_id: studentId }),
     ]);
     fees = f;
     payments = p;
@@ -57,12 +59,10 @@ async function loadFinance() {
 
 const feesSource = $derived(
   fees.map((f, i) => {
-    const paidAmount = payments
-      .filter((p) => p.fee_id === f.id)
-      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    const paidAmount = Number(f.paid_amount ?? 0);
     const discountAmount = Number(f.discount_amount || 0);
     const originalAmount = Number(f.original_amount || 0);
-    const balance = Math.max(0, Number(f.net_amount || 0) - paidAmount);
+    const balance = Number(f.balance_due ?? Math.max(0, Number(f.net_amount || 0) - paidAmount));
 
     let displayStatus = f.status || "unpaid";
     if (displayStatus === "partially_paid") {

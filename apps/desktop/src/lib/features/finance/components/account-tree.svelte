@@ -53,16 +53,10 @@ let searchQuery = $state("");
 let expandedNodeIds = $state<Set<string>>(new Set());
 let selectedAccountId = $state<string | null>(null);
 
-// Initialize root nodes as expanded by default
-$effect(() => {
-  if (accounts.length > 0 && expandedNodeIds.size === 0) {
-    expandedNodeIds = new Set(accounts.map((n) => n.id));
-  }
-});
-
 const rtl = $derived(getLocale() === "ar");
 
 function isExpanded(id: string): boolean {
+  if (searchQuery.trim().length > 0) return true;
   return expandedNodeIds.has(id);
 }
 
@@ -115,16 +109,7 @@ function filterTree(nodes: AccountNode[], query: string): AccountNode[] {
   return res;
 }
 
-const filteredTree = $derived.by(() => {
-  if (!searchQuery.trim()) return accounts;
-  return filterTree(accounts, searchQuery);
-});
-
-$effect(() => {
-  if (searchQuery.trim().length > 0) {
-    expandAll();
-  }
-});
+const filteredTree = $derived(filterTree(accounts, searchQuery));
 
 function handleSelect(node: AccountNode) {
   selectedAccountId = node.id;

@@ -82,11 +82,11 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
   if (e) e.preventDefault();
 
   await form.submit(async (values) => {
-    await api.connectionSetConfig(
-      values.mode as ConnectionMode,
-      values.mode === "remote" ? values.serverUrl.trim() : undefined,
-      values.mode === "local" ? values.dbFilename.trim() : undefined,
-    );
+    await api.connectionSetConfig({
+      mode: values.mode as ConnectionMode,
+      serverUrl: values.mode === "remote" ? values.serverUrl.trim() : undefined,
+      dbFilename: values.mode === "local" ? values.dbFilename.trim() : undefined,
+    });
 
     const result = await api.connectionConnect();
     if (result.connected) {

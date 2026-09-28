@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { api } from "$lib/api";
   import * as m from "$lib/paraglide/messages";
   import { FormController } from "$lib/shared/forms/form-controller.svelte";
@@ -35,7 +36,7 @@
   let description = $state("");
   let dueDate = $state(new Date().toISOString().split("T")[0]);
 
-  async function loadDropdownData() {
+  onMount(async () => {
     if (!orgId) return;
     isLoadingDropdowns = true;
     try {
@@ -46,36 +47,30 @@
       students = studentList;
       templates = templateList;
 
-      if (studentList.length > 0)
+      if (studentList.length > 0) {
         form.values.enrollment_id = String(studentList[0].id);
-      if (templateList.length > 0)
+      }
+      if (templateList.length > 0) {
         form.values.fee_template_id = String(templateList[0].id);
+        if (templateList[0].default_amount !== undefined) {
+          form.values.amount_override = Number(templateList[0].default_amount);
+        }
+      }
     } catch (e) {
       console.error("Error loading dropdown data for fee-assign-form:", e);
     } finally {
       isLoadingDropdowns = false;
     }
+  });
+
+  function handleTemplateChange(e: Event) {
+    const val = (e.currentTarget as HTMLSelectElement).value;
+    form.values.fee_template_id = val;
+    const tpl = templates.find((t) => String(t.id) === val);
+    if (tpl && tpl.default_amount !== undefined) {
+      form.values.amount_override = Number(tpl.default_amount);
+    }
   }
-
-  // Reload dropdowns when form is mounted
-  $effect(() => {
-    if (orgId) {
-      loadDropdownData();
-    }
-  });
-
-  // Auto-fill template amount when template changes
-  $effect(() => {
-    if (form.values.fee_template_id && templates.length > 0) {
-      const tpl = templates.find(
-        (t) => String(t.id) === String(form.values.fee_template_id),
-      );
-      if (tpl) {
-        form.values.amount_override =
-          tpl.default_amount !== undefined ? Number(tpl.default_amount) : null;
-      }
-    }
-  });
 
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
@@ -92,10 +87,13 @@
       description = "";
       dueDate = new Date().toISOString().split("T")[0];
     });
-    if (submitted) onSuccess();
-    else if (form.formError) toast.error(form.formError);
-    else if (Object.keys(form.errors).length > 0)
+    if (submitted) {
+      onSuccess();
+    } else if (form.formError) {
+      toast.error(form.formError);
+    } else if (Object.keys(form.errors).length > 0) {
       toast.error(m.common_fee_toast_error_amount());
+    }
   }
 </script>
 
@@ -122,9 +120,9 @@
           <option>{m.common_fee_dropdown_loading_students()}</option>
         {:else}
           {#each students as s (s.id)}
-            <option value={String(s.id)}
-              >{s.full_name || s.student_number || s.id}</option
-            >
+            <option value={String(s.id)}>
+              {s.full_name || s.student_number || s.id}
+            </option>
           {/each}
         {/if}
       </select>
@@ -141,7 +139,8 @@
     {#snippet children()}
       <select
         id="fee_ledger"
-        bind:value={form.values.fee_template_id}
+        value={form.values.fee_template_id}
+        onchange={handleTemplateChange}
         onblur={() => form.markTouched("fee_template_id")}
         class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
         disabled={isLoadingDropdowns || form.isSubmitting}
@@ -150,8 +149,9 @@
           <option>{m.common_fee_dropdown_loading_ledgers()}</option>
         {:else}
           {#each templates as t (t.id)}
-            <option value={String(t.id)}>{t.name_ar || t.name || t.code}</option
-            >
+            <option value={String(t.id)}>
+              {t.name_ar || t.name || t.code}
+            </option>
           {/each}
         {/if}
       </select>

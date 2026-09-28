@@ -11,7 +11,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api } from "$lib/api";
+import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -32,17 +32,22 @@ import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 
+import {
+  createAvailablePaymentMethodsQuery,
+  type AvailablePaymentMethod,
+} from "$lib/features/finance";
+    import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
+
 let { orgId }: { orgId: string } = $props();
+
+// Dynamic payment methods from Integration Layer
+const paymentMethodsQuery = createAvailablePaymentMethodsQuery(() => orgId);
+const availablePaymentMethods = $derived(paymentMethodsQuery.data ?? []);
 
 // ── State ──────────────────────────────────────────────────────────────
 let payments = $state<any[]>([]);
 let treasuries = $state<any[]>([]);
 let students = $state<any[]>([]);
-let currencies = $state<{ code: string; name: string }[]>([
-  { code: "YER", name: "ريال يمني (YER)" },
-  { code: "USD", name: "دولار أمريكي (USD)" },
-  { code: "SAR", name: "ريال سعودي (SAR)" },
-]);
 let isLoading = $state(true);
 let isSubmitting = $state(false);
 let showAddForm = $state(false);
@@ -52,11 +57,16 @@ let receiptNumber = $state("");
 let paymentDate = $state(new Date().toISOString().split("T")[0]);
 let selectedStudentId = $state("");
 let selectedTreasuryId = $state("");
-let paymentMethod = $state("Cash");
+let paymentMethod = $state("cash");
 let selectedCurrency = $state("YER");
 let checkInfo = $state("");
+let sourceToken = $state("");
 let notes = $state("");
 let generalAmount = $state<number | null>(null);
+
+const selectedPaymentMethodObj = $derived(
+  availablePaymentMethods.find((m) => m.id === paymentMethod) || availablePaymentMethods[0]
+);
 
 // Student Fees for Allocation
 let studentFees = $state<any[]>([]);
@@ -195,49 +205,44 @@ async function handleSavePayment() {
 
   isSubmitting = true;
   try {
+    const selectedStudent = students.find((s) => s.id === selectedStudentId);
     if (selectedFeeIds.size > 0) {
       // Create payment for each allocated fee
       for (const feeId of selectedFeeIds) {
         const amt = feeAmounts[feeId];
         if (amt && amt > 0) {
-          const payload = {
+          await api.processPayment({
             fee_id: feeId,
-            enrollment_id: selectedStudentId,
-            cash_account_id: selectedTreasuryId,
+            student_id: selectedStudentId,
+            account_id: selectedTreasuryId,
             amount: amt,
-            currency: selectedCurrency,
-            payment_method: paymentMethod,
-            payment_date: paymentDate,
-            receipt_number: receiptNumber.trim() || undefined,
-            check_info: checkInfo.trim() || undefined,
-            notes: notes.trim() || undefined,
-          };
-          await api.createPayment(payload as any);
+            method: paymentMethod,
+            reference: (checkInfo || receiptNumber).trim() || undefined,
+            source: sourceToken.trim() || undefined,
+            payer_name: selectedStudent?.full_name || undefined,
+          });
         }
       }
     } else {
       // General payment without specific fee allocation
-      const payload = {
-        enrollment_id: selectedStudentId,
-        cash_account_id: selectedTreasuryId,
+      await api.processPayment({
+        student_id: selectedStudentId,
+        account_id: selectedTreasuryId,
         amount: total,
-        currency: selectedCurrency,
-        payment_method: paymentMethod,
-        payment_date: paymentDate,
-        receipt_number: receiptNumber.trim() || undefined,
-        check_info: checkInfo.trim() || undefined,
-        notes: notes.trim() || undefined,
-      };
-      await api.createPayment(payload as any);
+        method: paymentMethod,
+        reference: (checkInfo || receiptNumber).trim() || undefined,
+        source: sourceToken.trim() || undefined,
+        payer_name: selectedStudent?.full_name || undefined,
+      });
     }
 
-    toast.success("تم حفظ سند القبض بنجاح");
+    toast.success("تم حفظ وترحيل سند القبض بنجاح");
     clearForm();
     showAddForm = false;
     await loadData();
   } catch (err: any) {
     console.error("Failed to record payment:", err);
-    toast.error(err?.message || "فشل تسجيل سند القبض");
+    toast.error(extractErrorMessage(err) || "فشل تسجيل سند القبض");
   } finally {
     isSubmitting = false;
   }
@@ -369,9 +374,9 @@ function exportCsv() {
           class="h-8 text-xs rounded-md bg-card border border-border/60 px-2 text-foreground focus:outline-none"
         >
           <option value="all">جميع الطرق</option>
-          <option value="cash">نقداً</option>
-          <option value="bank">تحويل بنكي</option>
-          <option value="check">شيك</option>
+          {#each availablePaymentMethods as m (m.id)}
+            <option value={m.id}>{m.name}</option>
+          {/each}
         </select>
 
         <Input
@@ -438,17 +443,38 @@ function exportCsv() {
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">طريقة القبض</Label>
+                <div class="flex items-center justify-between mb-1">
+                  <Label class="text-xs font-semibold text-foreground">طريقة القبض</Label>
+                  {#if selectedPaymentMethodObj?.is_digital_gateway}
+                    <span class="text-[9px] text-primary font-medium bg-primary/10 px-1.5 py-0.5 rounded">
+                      بوابة {selectedPaymentMethodObj.provider_name}
+                    </span>
+                  {/if}
+                </div>
                 <select
                   bind:value={paymentMethod}
                   class="w-full h-8 text-xs rounded-md bg-background border border-border/60 px-2 text-foreground focus:outline-none"
                 >
-                  <option value="Cash">نقداً</option>
-                  <option value="Bank">تحويل بنكي</option>
-                  <option value="Check">شيك</option>
+                  {#each availablePaymentMethods as m (m.id)}
+                    <option value={m.id}>
+                      {m.name} {m.is_digital_gateway ? `(عبر ${m.provider_name})` : ""}
+                    </option>
+                  {/each}
                 </select>
               </div>
             </div>
+
+            {#if selectedPaymentMethodObj?.requires_source_token}
+              <div transition:slide={{ duration: 120 }}>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">رمز تفويض / بطاقة بوابة الدفع (Gateway Token)</Label>
+                <Input
+                  type="text"
+                  bind:value={sourceToken}
+                  placeholder="tok_... أو رمز العملية من جهاز الشبكة"
+                  class="h-8 text-xs font-mono bg-background border-border/60"
+                />
+              </div>
+            {/if}
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
@@ -472,15 +498,7 @@ function exportCsv() {
 
               <div>
                 <Label class="text-xs font-semibold text-foreground mb-1 block">العملة</Label>
-                <SearchableSelect
-                  value={selectedCurrency}
-                  placeholder="العملة..."
-                  items={currencies}
-                  getItemValue={(c) => c.code}
-                  getItemLabel={(c) => c.name}
-                  onchange={(val) => { if (val) selectedCurrency = val; }}
-                  class="w-full h-8 text-xs bg-background border-border/60"
-                />
+                <CurrencySelector/>
               </div>
 
               <div>
@@ -580,7 +598,7 @@ function exportCsv() {
 
 <PdfReportViewer
   bind:open={printDialogOpen}
-  reportTemplateId="payment-receipt"
+  templateId="payment-receipt"
   parameters={printParameters}
-  title={printTitle}
+  reportTitle={printTitle}
 />

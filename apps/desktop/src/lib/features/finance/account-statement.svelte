@@ -26,7 +26,6 @@ import {
 } from "@orbis/icons";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
-import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import { fade } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();

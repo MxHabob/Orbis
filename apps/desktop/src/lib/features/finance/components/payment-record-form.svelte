@@ -1,6 +1,7 @@
 <script lang="ts">
+import { onMount } from "svelte";
+import { slide } from "svelte/transition";
 import { DocumentPage } from "@orbis/icons";
-
 import { api } from "$lib/api";
 import { formatCurrency } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
@@ -9,8 +10,10 @@ import { paymentRecordInputSchema } from "@orbis/schemas";
 import { FormField, toast } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-
-import { slide } from "svelte/transition";
+import {
+  createAvailablePaymentMethodsQuery,
+  type AvailablePaymentMethod,
+} from "$lib/features/finance";
 
 let {
   orgId,
@@ -21,6 +24,10 @@ let {
   onSuccess: () => void;
   onCancel: () => void;
 } = $props();
+
+// Dynamic payment methods from Integration Layer
+const paymentMethodsQuery = createAvailablePaymentMethodsQuery(() => orgId);
+const availablePaymentMethods = $derived(paymentMethodsQuery.data ?? []);
 
 // State
 let students = $state<any[]>([]);
@@ -34,12 +41,17 @@ let isLoadingFees = $state(false);
 let selectedEnrollmentId = $state("");
 let selectedTreasuryId = $state("");
 let selectedFeeId = $state("");
-let paymentMethod = $state<"Cash" | "Bank Transfer" | "Card">("Cash");
+let paymentMethod = $state<string>("cash");
 let currency = $state("YER");
 let amount = $state<number | null>(null);
 let receiptNumber = $state("");
 let referenceNumber = $state("");
+let sourceToken = $state("");
 let notes = $state("");
+
+const selectedPaymentMethodObj = $derived(
+  availablePaymentMethods.find((m) => m.id === paymentMethod) || availablePaymentMethods[0]
+);
 
 const form = new FormController({
   initialValues: {
@@ -64,10 +76,7 @@ const exchangeRate = $derived.by(() => {
   return Number.isFinite(rate) && rate > 0 ? rate : 1.0;
 });
 
-const convertedAmount = $derived.by(() => {
-  if (!amount) return 0.0;
-  return amount * exchangeRate;
-});
+const convertedAmount = $derived(amount ? amount * exchangeRate : 0.0);
 
 async function loadDropdownData() {
   if (!orgId) return;
@@ -90,6 +99,7 @@ async function loadDropdownData() {
 
     if (studentList.length > 0) {
       selectedEnrollmentId = String(studentList[0].id);
+      await loadStudentFees(String(studentList[0].id));
     }
     if (treasuryList.length > 0) {
       selectedTreasuryId = String(treasuryList[0].id);
@@ -123,28 +133,23 @@ async function loadStudentFees(enrollId: string) {
   }
 }
 
-// Reload dropdowns on mount
-$effect(() => {
-  if (orgId) {
-    loadDropdownData();
-  }
-});
+function handleStudentChange(e: Event) {
+  const val = (e.currentTarget as HTMLSelectElement).value;
+  selectedEnrollmentId = val;
+  loadStudentFees(val);
+}
 
-// Reactively load student fees when student selection changes
-$effect(() => {
-  if (selectedEnrollmentId) {
-    loadStudentFees(selectedEnrollmentId);
+function handleFeeChange(e: Event) {
+  const val = (e.currentTarget as HTMLSelectElement).value;
+  selectedFeeId = val;
+  const selectedFee = fees.find((f) => String(f.id) === val);
+  if (selectedFee) {
+    amount = Number(selectedFee.balance || selectedFee.total_amount || 0);
   }
-});
+}
 
-// Reactively set amount when fee selection changes
-$effect(() => {
-  if (selectedFeeId) {
-    const selectedFee = fees.find((f) => String(f.id) === selectedFeeId);
-    if (selectedFee) {
-      amount = Number(selectedFee.balance || selectedFee.total_amount || 0);
-    }
-  }
+onMount(() => {
+  loadDropdownData();
 });
 
 async function handleSubmit(e: SubmitEvent) {
@@ -156,12 +161,7 @@ async function handleSubmit(e: SubmitEvent) {
   form.values = {
     fee_id: selectedFeeId,
     amount: Number(amount),
-    method:
-      paymentMethod === "Cash"
-        ? "cash"
-        : paymentMethod === "Bank Transfer"
-          ? "bank_transfer"
-          : "card",
+    method: paymentMethod,
     reference: referenceNumber || undefined,
     notes: notes || undefined,
     cash_account_id: selectedTreasuryId,
@@ -170,10 +170,11 @@ async function handleSubmit(e: SubmitEvent) {
   const submitted = await form.submit(async (payload) => {
     await api.processPayment({
       fee_id: payload.fee_id,
+      account_id: payload.cash_account_id,
       amount: payload.amount,
-      paid_at: new Date().toISOString(),
       method: payload.method,
       reference: payload.reference,
+      source: sourceToken.trim() || undefined,
     });
     toast.success(m.common_payment_toast_success());
   });
@@ -182,6 +183,7 @@ async function handleSubmit(e: SubmitEvent) {
     amount = null;
     receiptNumber = "";
     referenceNumber = "";
+    sourceToken = "";
     notes = "";
     onSuccess();
   } else if (form.formError) {
@@ -198,7 +200,8 @@ async function handleSubmit(e: SubmitEvent) {
 		{#snippet children()}
 		<select 
 			id="pay_student"
-			bind:value={selectedEnrollmentId}
+			value={selectedEnrollmentId}
+			onchange={handleStudentChange}
 			class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
 			disabled={isLoadingDropdowns || isSubmitting}
 		>
@@ -218,7 +221,8 @@ async function handleSubmit(e: SubmitEvent) {
 		{#snippet children()}
 		<select 
 			id="pay_fee"
-			bind:value={selectedFeeId}
+			value={selectedFeeId}
+			onchange={handleFeeChange}
 			class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
 			disabled={isLoadingFees || isSubmitting}
 		>
@@ -257,21 +261,46 @@ async function handleSubmit(e: SubmitEvent) {
 		{/snippet}
 	</FormField>
 
-	<!-- Payment Method Select -->
+	<!-- Payment Method Select (Dynamically Resolved via Integration Layer) -->
 	<FormField id="pay_method" label={m.common_payment_label_method()} required>
 		{#snippet children()}
-		<select 
-			id="pay_method"
-			bind:value={paymentMethod}
-			class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
-			disabled={isSubmitting}
-		>
-			<option value="Cash">{m.finance_pos_cash()}</option>
-			<option value="Bank Transfer">{m.finance_pos_bank_transfer()}</option>
-			<option value="Card">{m.finance_payment_type_card()}</option>
-		</select>
+		<div class="flex flex-col gap-1.5">
+			<select 
+				id="pay_method"
+				bind:value={paymentMethod}
+				class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
+				disabled={isSubmitting}
+			>
+				{#each availablePaymentMethods as m (m.id)}
+					<option value={m.id}>
+						{m.name} {m.is_digital_gateway ? `(عبر ${m.provider_name})` : ""}
+					</option>
+				{/each}
+			</select>
+			{#if selectedPaymentMethodObj?.is_digital_gateway}
+				<div class="text-[10px] text-primary flex items-center gap-1 font-medium bg-primary/5 border border-primary/20 rounded px-2 py-1">
+					<span>معالجة إلكترونية موجهة لبوابة: <strong>{selectedPaymentMethodObj.provider_name}</strong></span>
+				</div>
+			{/if}
+		</div>
 		{/snippet}
 	</FormField>
+
+	<!-- Electronic Gateway Source Token -->
+	{#if selectedPaymentMethodObj?.requires_source_token}
+		<FormField id="pay_source_token" label="رمز تفويض / بطاقة بوابة الدفع (Token)">
+			{#snippet children()}
+			<Input
+				id="pay_source_token"
+				type="text"
+				bind:value={sourceToken}
+				placeholder="tok_... أو رمز العملية من جهاز الشبكة"
+				class="font-mono text-xs"
+				disabled={isSubmitting}
+			/>
+			{/snippet}
+		</FormField>
+	{/if}
 
 	<!-- Currency Selection -->
 	<FormField id="pay_currency" label={m.common_payment_label_currency()} required>

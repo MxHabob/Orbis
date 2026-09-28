@@ -85,15 +85,11 @@ const selectedAccount = $derived(
   allAccounts.find((a) => String(a.id) === String(value || "") || String(a.code) === String(value || ""))
 );
 
-// Sync input text when selected account changes and not typing
-$effect(() => {
-  if (selectedAccount && !isDropdownOpen) {
-    const code = selectedAccount.code ? `${selectedAccount.code} - ` : "";
-    const name = l(selectedAccount.name_ar, selectedAccount.name) || selectedAccount.name || "";
-    searchInputText = `${code}${name}`.trim();
-  } else if (!value && !isDropdownOpen) {
-    searchInputText = "";
-  }
+const selectedAccountLabel = $derived.by(() => {
+  if (!selectedAccount) return "";
+  const code = selectedAccount.code ? `${selectedAccount.code} - ` : "";
+  const name = l(selectedAccount.name_ar, selectedAccount.name) || selectedAccount.name || "";
+  return `${code}${name}`.trim();
 });
 
 // Real-time search query matching
@@ -129,6 +125,7 @@ function getAccountTypeBadge(type?: string | null) {
 
 function handleFocus() {
   if (disabled) return;
+  searchInputText = selectedAccountLabel;
   isDropdownOpen = true;
   highlightedIndex = 0;
 }
@@ -146,9 +143,7 @@ function handleInput(e: Event) {
 
 function handleSelectAccount(acc: AccountDto) {
   value = String(acc.id);
-  const code = acc.code ? `${acc.code} - ` : "";
-  const name = l(acc.name_ar, acc.name) || acc.name || "";
-  searchInputText = `${code}${name}`.trim();
+  searchInputText = "";
   isDropdownOpen = false;
   onselect?.(acc);
   onchange?.(String(acc.id));
@@ -192,14 +187,7 @@ function handleKeyDown(e: KeyboardEvent) {
 function handleClickOutside(e: MouseEvent) {
   if (containerElement && !containerElement.contains(e.target as Node)) {
     isDropdownOpen = false;
-    // Restore text if valid account was selected
-    if (selectedAccount) {
-      const code = selectedAccount.code ? `${selectedAccount.code} - ` : "";
-      const name = l(selectedAccount.name_ar, selectedAccount.name) || selectedAccount.name || "";
-      searchInputText = `${code}${name}`.trim();
-    } else if (!value) {
-      searchInputText = "";
-    }
+    searchInputText = "";
   }
 }
 </script>
@@ -221,13 +209,13 @@ function handleClickOutside(e: MouseEvent) {
       spellcheck="false"
       {placeholder}
       {disabled}
-      value={searchInputText}
+      value={isDropdownOpen ? searchInputText : selectedAccountLabel}
       oninput={handleInput}
       onfocus={handleFocus}
       onkeydown={handleKeyDown}
       class="{size === 'sm' ? 'h-8 text-xs ps-8.5 pe-7' : 'h-9 text-xs ps-9 pe-8'} bg-background border-border/80 focus-visible:ring-1 focus-visible:ring-primary/50 w-full font-medium transition-all {className}"
     />
-    {#if searchInputText || value}
+    {#if (isDropdownOpen && searchInputText) || value}
       <button
         type="button"
         class="absolute inset-e-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer p-0.5 rounded-full hover:bg-muted/80 transition-colors"

@@ -42,7 +42,16 @@ export const discountTemplateInputSchema = z.object({
 export const paymentRecordInputSchema = z.object({
   fee_id: z.string().trim().min(1),
   amount: z.number().finite().positive(),
-  method: z.enum(["cash", "bank_transfer", "card"]),
+  method: z.enum([
+    "cash",
+    "bank_transfer",
+    "check",
+    "card",
+    "credit_card",
+    "mada",
+    "apple_pay",
+    "other",
+  ]),
   reference: z.string().trim().optional(),
   notes: z.string().trim().optional(),
   cash_account_id: z.string().trim().min(1),

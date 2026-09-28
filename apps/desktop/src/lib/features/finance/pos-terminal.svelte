@@ -1,942 +1,692 @@
 <!--
-@component PosTerminal
-A dedicated, keyboard-optimized screen for school cashiers to record student payments rapidly.
-Provides barcode/ID lookup, outstanding fee checklist, and payment history.
+  @component PosTerminal
+  High-speed cashier point-of-sale terminal for educational billing collections.
+  Keyboard-optimized with barcode/ID lookup, outstanding fee checklist,
+  canonical multi-channel payment method handling, and atomic General Ledger posting.
 -->
 <script lang="ts">
-  import { api, queryClient } from "$lib/api";
-  import { formatCurrency, formatDate } from "$lib/core/i18n";
-  import * as m from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
-  import { matchStudent } from "$lib/shared/utils/search";
-  import {
-    ArrowLeft,
-    Banknotes,
-    BookOpen,
-    Calendar,
-    CheckCircle,
-    Document,
-    DocumentPage,
-    Hashtag,
-    Keyboard,
-    Plus,
-    Search,
-    XMark,
-  } from "@orbis/icons";
-  import { toast } from "@orbis/ui";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import { onMount } from "svelte";
-  import { fade, slide } from "svelte/transition";
+import { onMount } from "svelte";
+import { slide } from "svelte/transition";
+import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
+import { formatCurrency, formatDate } from "$lib/core/i18n";
+import {
+  createCashAccountsQuery,
+  createStudentFeesQuery,
+  createPaymentsQuery,
+  createProcessPaymentMutation,
+  createAvailablePaymentMethodsQuery,
+  type StudentFeeDto,
+  type PaymentDto,
+} from "$lib/features/finance";
+import { api, extractErrorMessage, type StudentDto } from "$lib/api";
+import { Button } from "@orbis/ui/button";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { toast } from "@orbis/ui";
+import {
+  Banknotes,
+  BuildingLibrary,
+  CheckCircle,
+  CreditCard,
+  Document,
+  DocumentPage,
+  Keyboard,
+  Printer,
+  XMark,
+  ArrowPath,
+} from "@orbis/icons";
 
-  let { orgId }: { orgId: string } = $props();
+let { orgId }: { orgId: string } = $props();
 
-  // Main Lists from DB
-  let students = $state<any[]>([]);
-  let treasuries = $state<any[]>([]);
-  let isLoadingData = $state(true);
+// ── State ─────────────────────────────────────────────────────────────
 
-  // Selection States
-  let searchQuery = $state("");
-  let isSearchFocused = $state(false);
-  let selectedStudent = $state<any | null>(null);
-  let activeStudentFees = $state<any[]>([]);
-  let activeStudentPayments = $state<any[]>([]);
-  let isLoadingStudentDetails = $state(false);
+let searchInputEl = $state<HTMLInputElement | null>(null);
+let searchQuery = $state("");
+let isSearchFocused = $state(false);
+let highlightedIndex = $state(-1);
+let isSearchingStudents = $state(false);
+let searchedStudents = $state<StudentDto[]>([]);
+let selectedStudent = $state<StudentDto | null>(null);
 
-  // Active Selected Fee to Pay
-  let selectedFee = $state<any | null>(null);
-  let selectedFeeId = $state("");
+// Payment Form State
+let formAccountId = $state("");
+let formMethod = $state("cash");
+let formFeeId = $state("");
+let formAmount = $state<number | null>(null);
+let referenceNumber = $state("");
+let sourceToken = $state("");
+let notes = $state("");
+let shouldPrintReceipt = $state(true);
+let lastReceiptPayment = $state<PaymentDto | null>(null);
 
-  // Search Dropdown Keyboard Navigation
-  let highlightedIndex = $state(-1);
-  let searchInputEl = $state<HTMLInputElement | null>(null);
+// ── Queries & Mutations ───────────────────────────────────────────────
 
-  // Form Fields
-  let selectedTreasuryId = $state("");
-  let paymentMethod = $state<"Cash" | "Bank Transfer" | "Card">("Cash");
-  let currency = $state("YER");
-  let amount = $state<number | null>(null);
-  let receiptNumber = $state("");
-  let referenceNumber = $state("");
-  let notes = $state("");
-  let isSubmitting = $state(false);
+const cashAccountsQuery = createCashAccountsQuery(() => orgId);
+const cashAccounts = $derived(cashAccountsQuery.data ?? []);
+const activeAccountId = $derived(formAccountId || cashAccounts[0]?.id || "");
 
-  // AdjustmentsHorizontal students locally based on search query
-  const filteredStudents = $derived.by(() => {
-    if (!searchQuery.trim()) return [];
-    return students.filter((s) => matchStudent(s, searchQuery)).slice(0, 8);
-  });
+const paymentMethodsQuery = createAvailablePaymentMethodsQuery(() => orgId);
+const availablePaymentMethods = $derived(paymentMethodsQuery.data ?? []);
+const selectedPaymentMethodObj = $derived(
+  availablePaymentMethods.find((m) => m.id === formMethod) || availablePaymentMethods[0]
+);
 
-  // Load basic startup data
-  async function loadData() {
-    if (!orgId) return;
-    isLoadingData = true;
-    try {
-      const [studentList, treasuryList] = await Promise.all([
-        api.listEnrollments(),
-        api
-          .listAccounts()
-          .then((accounts) =>
-            accounts.filter(
-              (account: any) =>
-                ["cash", "bank"].includes(account.sub_type) &&
-                account.is_active === 1 &&
-                account.is_control_account !== 1,
-            ),
-          ),
-      ]);
-      students = studentList;
-      treasuries = treasuryList;
+const studentFeesQuery = createStudentFeesQuery(
+  () => orgId,
+  () => (selectedStudent ? { studentId: selectedStudent.id } : undefined),
+  () => Boolean(selectedStudent?.id),
+);
+const activeStudentFees = $derived(
+  (studentFeesQuery.data ?? []).filter((f) => f.status !== "paid" && f.status !== "cancelled"),
+);
 
-      if (treasuryList.length > 0) {
-        selectedTreasuryId = String(treasuryList[0].id);
-        currency = String((treasuryList[0] as any).currency || "YER");
-      }
-    } catch (e) {
-      console.error("Error loading POS startup data:", e);
-      toast.error(m.finance_pos_error_loading_lookup_data());
-    } finally {
-      isLoadingData = false;
-      setTimeout(() => {
-        searchInputEl?.focus();
-      }, 100);
-    }
-  }
+const recentPaymentsQuery = createPaymentsQuery(
+  () => orgId,
+  () => (selectedStudent ? { studentId: selectedStudent.id } : undefined),
+);
+const activeStudentPayments = $derived(
+  (recentPaymentsQuery.data ?? []).slice(0, 5),
+);
 
-  // Load selected student's fees and payments
-  async function loadStudentData(enrollId: string) {
-    if (!enrollId || !orgId) return;
-    isLoadingStudentDetails = true;
-    try {
-      const [feesList, paymentsList] = await Promise.all([
-        api.listStudentFees(enrollId),
-        api.listPayments(null, null),
-      ]);
+const processPaymentMutation = createProcessPaymentMutation();
 
-      activeStudentFees = feesList.filter((f) => f.status !== "paid");
-      activeStudentPayments = paymentsList
-        .filter((p) => String(p.enrollment_id) === String(enrollId))
-        .slice(0, 5);
+// ── Student Search Logic ──────────────────────────────────────────────
 
-      if (activeStudentFees.length > 0) {
-        selectFeeItem(activeStudentFees[0]);
-      } else {
-        selectedFee = null;
-        selectedFeeId = "";
-        amount = null;
-      }
-    } catch (e) {
-      console.error("Error loading details for student:", e);
-      toast.error(m.finance_pos_error_loading_student_billing_info());
-    } finally {
-      isLoadingStudentDetails = false;
-    }
-  }
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-  function selectStudent(student: any) {
-    selectedStudent = student;
-    searchQuery = "";
+function handleSearchInput(query: string) {
+  searchQuery = query;
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+
+  if (!query.trim()) {
+    searchedStudents = [];
     highlightedIndex = -1;
-    loadStudentData(student.id);
+    return;
   }
 
-  function deselectStudent() {
-    selectedStudent = null;
-    activeStudentFees = [];
-    activeStudentPayments = [];
-    selectedFee = null;
-    selectedFeeId = "";
-    amount = null;
-    receiptNumber = "";
-    referenceNumber = "";
-    notes = "";
-    setTimeout(() => {
-      searchInputEl?.focus();
-    }, 50);
-  }
-
-  function selectFeeItem(fee: any) {
-    selectedFee = fee;
-    selectedFeeId = String(fee.id);
-    amount = Number(fee.balance || fee.total_amount || 0);
-  }
-
-  // Submitting Payment Command
-  async function handlePaymentSubmit(e: SubmitEvent) {
-    e.preventDefault();
-    if (!selectedStudent) {
-      toast.error(m.common_fee_toast_error_student());
-      return;
-    }
-    if (!selectedFeeId) {
-      toast.error(m.common_payment_toast_error_fee());
-      return;
-    }
-    if (!selectedTreasuryId) {
-      toast.error(m.common_payment_toast_error_cash_account());
-      return;
-    }
-    if (!amount || amount <= 0) {
-      toast.error(m.common_fee_toast_error_amount());
-      return;
-    }
-    if (!currency || currency.trim().length !== 3) {
-      toast.error(m.common_ledger_toast_error_currency());
-      return;
-    }
-
-    isSubmitting = true;
+  searchDebounceTimer = setTimeout(async () => {
+    isSearchingStudents = true;
     try {
-      await api.processPayment({
-        fee_id: selectedFeeId,
-        amount: Number(amount),
-        paid_at: new Date().toISOString(),
-        method:
-          paymentMethod === "Cash"
-            ? "cash"
-            : paymentMethod === "Bank Transfer"
-              ? "bank_transfer"
-              : "card",
-        reference: referenceNumber || undefined,
-      });
-      toast.success(m.common_payment_toast_success());
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["payments", orgId] }),
-        queryClient.invalidateQueries({ queryKey: ["student-fees", orgId] }),
-      ]);
-
-      amount = null;
-      receiptNumber = "";
-      referenceNumber = "";
-      notes = "";
-
-      await loadStudentData(selectedStudent.id);
-
-      if (activeStudentFees.length === 0) {
-        toast.info(m.finance_pos_all_outstanding_fees_for_this());
-        deselectStudent();
-      }
-    } catch (e) {
-      const errorMsg = e instanceof Error ? e.message : String(e);
-      toast.error(m.common_payment_toast_error_submit({ error: errorMsg }));
+      const results = await api.listStudents({ query: query.trim() });
+      searchedStudents = (results || []).slice(0, 8);
+      highlightedIndex = searchedStudents.length > 0 ? 0 : -1;
+    } catch {
+      searchedStudents = [];
     } finally {
-      isSubmitting = false;
+      isSearchingStudents = false;
+    }
+  }, 150);
+}
+
+function selectStudent(student: StudentDto) {
+  selectedStudent = student;
+  searchQuery = "";
+  searchedStudents = [];
+  highlightedIndex = -1;
+  formFeeId = "";
+  formAmount = null;
+  lastReceiptPayment = null;
+}
+
+function deselectStudent() {
+  selectedStudent = null;
+  formFeeId = "";
+  formAmount = null;
+  searchQuery = "";
+  searchedStudents = [];
+  lastReceiptPayment = null;
+  setTimeout(() => searchInputEl?.focus(), 50);
+}
+
+function selectFeeItem(fee: StudentFeeDto) {
+  formFeeId = fee.id;
+  formAmount = Number(fee.balance_due || fee.net_amount || 0);
+}
+
+// ── Payment Processing ────────────────────────────────────────────────
+
+async function handlePaymentSubmit(e: SubmitEvent) {
+  e.preventDefault();
+
+  if (!selectedStudent) {
+    toast.error(m.common_fee_toast_error_student ? m.common_fee_toast_error_student() : "يرجى اختيار طالب أولاً");
+    return;
+  }
+  if (!activeAccountId) {
+    toast.error(m.common_payment_toast_error_cash_account ? m.common_payment_toast_error_cash_account() : "يرجى اختيار الخزينة أو الحساب المالي");
+    return;
+  }
+  if (!formAmount || formAmount <= 0) {
+    toast.error(m.common_fee_toast_error_amount ? m.common_fee_toast_error_amount() : "المبلغ يجب أن يكون أكبر من صفر");
+    return;
+  }
+
+  try {
+    const payment = await processPaymentMutation.mutateAsync({
+      fee_id: formFeeId || undefined,
+      student_id: selectedStudent.id,
+      account_id: activeAccountId,
+      amount: Number(formAmount),
+      method: formMethod,
+      reference: referenceNumber.trim() || undefined,
+      source: sourceToken.trim() || undefined,
+      payer_name: `${selectedStudent.first_name || ""} ${selectedStudent.last_name || ""}`.trim() || undefined,
+    });
+
+    toast.success(m.common_payment_toast_success ? m.common_payment_toast_success() : "تم تسجيل الدفعة وترحيل القيد بنجاح");
+    lastReceiptPayment = payment;
+
+    // Reset payment fields
+    formAmount = null;
+    formFeeId = "";
+    referenceNumber = "";
+    sourceToken = "";
+    notes = "";
+
+    // Refresh student fee list
+    studentFeesQuery.refetch();
+    recentPaymentsQuery.refetch();
+
+    if (shouldPrintReceipt) {
+      handlePrintReceipt(payment);
+    }
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
+  }
+}
+
+async function handlePrintReceipt(payment: PaymentDto) {
+  try {
+    toast.info("جاري تجهيز سند القبض للطباعة...");
+    const pdfUrl = await api.renderReport("doc_payment_receipt", {
+      payment_id: payment.id,
+      receipt_number: payment.receipt_number || payment.id.slice(0, 8),
+      amount: String(payment.amount),
+      currency: payment.currency,
+      student_name: selectedStudent ? `${selectedStudent.first_name} ${selectedStudent.last_name}` : "",
+      student_id: selectedStudent?.student_number || "",
+      payment_method: payment.method,
+      date: formatDate(payment.paid_at),
+    });
+    if (pdfUrl) {
+      window.open(pdfUrl, "_blank");
+    }
+  } catch (e) {
+    console.warn("DocForge direct preview failed:", e);
+    toast.info(`تم إصدار سند القبض برقم ${payment.receipt_number || payment.id.slice(0, 8)}`);
+  }
+}
+
+// ── Keyboard Shortcuts ────────────────────────────────────────────────
+
+function handleGlobalKeyDown(e: KeyboardEvent) {
+  if (e.key === "Escape") {
+    if (searchQuery) {
+      searchQuery = "";
+      searchedStudents = [];
+      highlightedIndex = -1;
+    } else if (selectedStudent) {
+      deselectStudent();
     }
   }
 
-  // Global Keyboard Handler for POS layout
-  function handleGlobalKeyDown(e: KeyboardEvent) {
-    if (e.key === "Escape") {
-      if (searchQuery) {
-        searchQuery = "";
-        highlightedIndex = -1;
-      } else if (selectedStudent) {
-        deselectStudent();
-      }
-    }
+  if ((e.ctrlKey || e.metaKey) && (e.key === "f" || e.key === "k")) {
+    e.preventDefault();
+    searchInputEl?.focus();
+  }
 
-    if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "f")) {
+  if (isSearchFocused && searchedStudents.length > 0) {
+    if (e.key === "ArrowDown") {
       e.preventDefault();
-      searchInputEl?.focus();
-    }
-
-    if (isSearchFocused && filteredStudents.length > 0) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        highlightedIndex = (highlightedIndex + 1) % filteredStudents.length;
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        highlightedIndex =
-          (highlightedIndex - 1 + filteredStudents.length) %
-          filteredStudents.length;
-      } else if (e.key === "Enter" && highlightedIndex >= 0) {
-        e.preventDefault();
-        selectStudent(filteredStudents[highlightedIndex]);
-      }
+      highlightedIndex = (highlightedIndex + 1) % searchedStudents.length;
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      highlightedIndex = (highlightedIndex - 1 + searchedStudents.length) % searchedStudents.length;
+    } else if (e.key === "Enter" && highlightedIndex >= 0) {
+      e.preventDefault();
+      selectStudent(searchedStudents[highlightedIndex]);
     }
   }
+}
 
-  $effect(() => {
-    if (selectedTreasuryId && treasuries.length > 0) {
-      const activeT = treasuries.find(
-        (t) => String(t.id) === selectedTreasuryId,
-      );
-      if (activeT) {
-        currency = String(activeT.currency || "YER");
-      }
-    }
-  });
+onMount(() => {
+  searchInputEl?.focus();
+});
 
-  onMount(() => {
-    loadData();
-  });
+const rtl = $derived(getLocale() === "ar");
 </script>
 
 <svelte:window onkeydown={handleGlobalKeyDown} />
 
-<div
-  class="h-full w-full overflow-hidden flex flex-col font-sans bg-background"
->
-  <!-- Top Bar / Navigation Header -->
-  <div
-    class="flex items-center justify-between px-6 py-4 border-b border-border bg-card/60 backdrop-blur shrink-0 select-none"
-  >
-    <div class="flex items-center gap-3">
-      <a
-        href={`/${orgId}/finance/payments`}
-        class="h-8 w-8 rounded-lg hover:bg-accent flex items-center justify-center border border-border duration-100"
-        title={m.finance_pos_back_to_payments()}
-      >
-        <ArrowLeft size={16} class={getLocale() === "ar" ? "rotate-180" : ""} />
-      </a>
-      <div class="text-start">
-        <h2
-          class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2"
-        >
-          <Document size={15} class="text-lime-500" />
-          <span>{m.finance_pos_quick_pos_payment_register()}</span>
-        </h2>
+<div class="h-full w-full flex flex-col bg-background overflow-hidden select-none text-xs" dir={rtl ? "rtl" : "ltr"}>
+  <!-- Top Bar: Header & Cashier Status -->
+  <header class="h-12 border-b border-border/60 bg-muted/20 px-4 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-2.5">
+      <div class="h-7 w-7 rounded-md bg-primary/10 text-primary flex items-center justify-center font-bold">
+        <CreditCard size={15} />
+      </div>
+      <div>
+        <h1 class="text-xs font-bold text-foreground leading-none">
+          {m.finance_pos_quick_pos_payment_register ? m.finance_pos_quick_pos_payment_register() : "نقطة التحصيل السريع (POS)"}
+        </h1>
         <p class="text-[10px] text-muted-foreground mt-0.5">
-          {m.finance_pos_record_student_payments_instantly_with()}
+          سندات قبض مباشرة مع ترحيل محاسبي فوري للقيود اليومية
         </p>
       </div>
     </div>
 
-    <!-- Quick Shortcuts Legend -->
-    <div
-      class="hidden md:flex items-center gap-4 text-[10px] text-muted-foreground bg-accent/30 px-3 py-1.5 rounded-lg border border-border"
-    >
-      <span class="font-bold text-foreground flex items-center gap-1">
-        <Keyboard size={12} class="text-primary" />
-        <span>{m.finance_pos_shortcuts()}</span>
-      </span>
-      <span class="flex items-center gap-1">
-        <kbd
-          class="px-1.5 py-0.5 rounded bg-card border border-border font-mono text-[8px]"
-          >Ctrl + S</kbd
+    <!-- Active Cashier & Treasury Dropdown -->
+    <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 bg-background border border-border/80 rounded-md px-2.5 py-1 text-[11px]">
+        <BuildingLibrary size={13} class="text-muted-foreground" />
+        <span class="text-muted-foreground">الخزينة المستلمة:</span>
+        <select
+          bind:value={formAccountId}
+          class="bg-transparent font-medium text-foreground outline-none cursor-pointer text-[11px]"
         >
-        <span>{m.finance_pos_focus_search()}</span>
-      </span>
-      <span class="flex items-center gap-1">
-        <kbd
-          class="px-1.5 py-0.5 rounded bg-card border border-border font-mono text-[8px]"
-          >ESC</kbd
-        >
-        <span>{m.finance_pos_clear_student()}</span>
-      </span>
-      <span class="flex items-center gap-1">
-        <kbd
-          class="px-1.5 py-0.5 rounded bg-card border border-border font-mono text-[8px]"
-          >Enter</kbd
-        >
-        <span>{m.finance_pos_submit()}</span>
-      </span>
+          {#each cashAccounts as account (account.id)}
+            <option value={account.id}>{account.name} ({account.currency})</option>
+          {/each}
+        </select>
+      </div>
+
+      <div class="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/40 border border-border/40 rounded px-2 py-1">
+        <Keyboard size={12} />
+        <span>Ctrl+K للبحث السريع</span>
+      </div>
     </div>
-  </div>
+  </header>
 
-  <!-- Main POS Workspace (Split Screen) -->
-  <div class="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
-    <!-- LEFT COLUMN: Search & Student Card (Occupies 55%) -->
-    <div
-      class="w-full lg:w-[55%] flex flex-col border-r border-border min-h-0 p-6 overflow-y-auto gap-5"
-    >
-      <!-- Student Search Bar -->
-      <div class="relative w-full text-start">
-        <label
-          for="pos_search"
-          class="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block"
-        >
-          {m.finance_pos_search_verify_student()}
-        </label>
-
+  <!-- Main POS Workspace Body: Split Grid -->
+  <div class="flex-1 grid grid-cols-12 gap-0 overflow-hidden">
+    
+    <!-- Left 7 Cols: Student Lookup & Fee Invoices Breakdown -->
+    <div class="col-span-7 border-e border-border/60 flex flex-col h-full overflow-hidden bg-background">
+      
+      <!-- Student Search Input Box -->
+      <div class="p-3 border-b border-border/50 bg-muted/10 relative shrink-0">
         <div class="relative">
-          <Search
-            class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-          />
+          <div class="absolute inset-y-0 inset-s-0 ps-3 flex items-center pointer-events-none text-muted-foreground">
+          </div>
           <input
-            id="pos_search"
-            type="text"
-            placeholder={m.finance_pos_search_by_student_number_or()}
-            class="w-full bg-card/45 border border-border rounded-xl ps-9 pe-9 py-2.5 text-sm focus:ring-1 focus:ring-lime-500 focus:border-lime-500 outline-none transition-all"
-            bind:value={searchQuery}
             bind:this={searchInputEl}
-            onfocus={() => {
-              isSearchFocused = true;
-              highlightedIndex = -1;
-            }}
-            onblur={() =>
-              setTimeout(() => {
-                isSearchFocused = false;
-              }, 180)}
-            disabled={isLoadingData}
-            autocomplete="off"
+            type="text"
+            value={searchQuery}
+            oninput={(e) => handleSearchInput((e.target as HTMLInputElement).value)}
+            onfocus={() => (isSearchFocused = true)}
+            onblur={() => setTimeout(() => (isSearchFocused = false), 200)}
+            placeholder="ابحث بالاسم، الرقم الأكاديمي، أو رقم الهوية... (اضغط Enter للاختيار)"
+            class="w-full bg-background border border-border/80 rounded-lg ps-9 pe-9 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono"
           />
           {#if searchQuery}
             <button
               type="button"
-              onclick={() => {
-                searchQuery = "";
-                highlightedIndex = -1;
-              }}
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground"
+              onclick={() => { searchQuery = ""; searchedStudents = []; }}
+              class="absolute inset-y-0 inset-e-0 pe-3 flex items-center text-muted-foreground hover:text-foreground"
             >
               <XMark size={14} />
             </button>
           {/if}
         </div>
 
-        <!-- Autocomplete Suggestions dropdown -->
-        {#if isSearchFocused && filteredStudents.length > 0}
+        <!-- Search Results Dropdown -->
+        {#if isSearchFocused && searchedStudents.length > 0}
           <div
-            class="absolute left-0 right-0 mt-1.5 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden max-h-[300px] overflow-y-auto"
-            transition:slide={{ duration: 100 }}
+            transition:slide={{ duration: 120 }}
+            class="absolute top-full inset-s-3 inset-e-3 mt-1 bg-popover text-popover-foreground border border-border rounded-lg shadow-lg z-50 overflow-hidden"
           >
-            {#each filteredStudents as s, index}
-              <button
-                type="button"
-                class="w-full text-start px-4 py-3 flex items-center justify-between border-b border-border/40 duration-75 text-xs {index ===
-                highlightedIndex
-                  ? 'bg-lime-500/10 text-primary-foreground font-semibold border-lime-500/20'
-                  : 'hover:bg-accent/40 text-foreground'}"
-                onclick={() => selectStudent(s)}
-              >
-                <div class="flex items-center gap-2.5">
-                  <div
-                    class="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold"
-                  >
-                    {s.full_name?.charAt(0) || "?"}
+            <div class="max-h-56 overflow-y-auto divide-y divide-border/40">
+              {#each searchedStudents as student, idx (student.id)}
+                <button
+                  type="button"
+                  onmousedown={() => selectStudent(student)}
+                  class="w-full px-3 py-2 text-start flex items-center justify-between hover:bg-muted/80 transition-colors text-xs {idx === highlightedIndex ? 'bg-primary/10 text-primary font-medium' : ''}"
+                >
+                  <div class="flex items-center gap-2">
+                    <div class="h-6 w-6 rounded-full bg-muted flex items-center justify-center font-bold text-[10px] text-foreground shrink-0">
+                      {student.first_name?.[0] || "ط"}
+                    </div>
+                    <div>
+                      <div class="font-medium text-foreground">{student.first_name} {student.last_name}</div>
+                      <div class="text-[10px] text-muted-foreground font-mono">#{student.student_number || student.id.slice(0, 8)}</div>
+                    </div>
                   </div>
-                  <div class="flex flex-col">
-                    <span class="font-bold">{s.full_name}</span>
-                    <span class="text-[9px] text-muted-foreground"
-                      >{s.student_number || s.id}</span
-                    >
+                  <div class="text-[10px] text-muted-foreground font-mono">
+                    {student.national_id || "—"}
                   </div>
-                </div>
-                {#if s.student_number}
-                  <span
-                    class="font-mono bg-accent/60 px-2 py-0.5 rounded text-[9px] font-semibold border border-border"
-                  >
-                    #{s.student_number}
-                  </span>
-                {/if}
-              </button>
-            {/each}
+                </button>
+              {/each}
+            </div>
           </div>
         {/if}
       </div>
 
-      <!-- Left Bottom Workspace Contents -->
-      {#if isLoadingData}
-        <div class="flex-1 flex flex-col gap-4">
-          <Skeleton class="h-32 w-full rounded-xl" />
-          <Skeleton class="h-44 w-full rounded-xl" />
-        </div>
-      {:else if !selectedStudent}
-        <!-- POS Splash / Empty State -->
-        <div
-          class="flex-1 flex flex-col items-center justify-center border border-dashed border-border rounded-2xl p-8 bg-card/5 text-center min-h-[300px]"
-        >
-          <div
-            class="h-16 w-16 rounded-full bg-lime-500/10 flex items-center justify-center text-lime-500 mb-4 select-none"
-          >
-            <Search size={32} />
-          </div>
-          <h3 class="font-bold text-sm text-foreground mb-1">
-            {m.finance_pos_select_student_to_begin()}
-          </h3>
-          <p class="text-[10px] text-muted-foreground max-w-sm mb-4">
-            {m.finance_pos_search_using_full_name_or()}
-          </p>
-          <div class="flex items-center gap-2">
-            <span
-              class="text-[9px] px-2 py-1 bg-accent/50 rounded text-muted-foreground border border-border"
-            >
-              {m.finance_pos_press_ctrl_s_to_focus_search()}
-            </span>
-          </div>
-        </div>
-      {:else}
-        <!-- Selected Student Profile Box -->
-        <div
-          class="card-tactile bg-card/30 border border-border p-4 rounded-xl flex flex-col gap-4 text-start relative"
-          in:fade={{ duration: 150 }}
-        >
-          <button
-            type="button"
-            onclick={deselectStudent}
-            class="absolute top-3 right-3 text-muted-foreground/60 hover:text-foreground h-6 w-6 rounded-md flex items-center justify-center hover:bg-accent border border-border/50"
-            title={m.finance_pos_deselect_student()}
-          >
-            <XMark size={12} />
-          </button>
-
-          <div class="flex items-center gap-4">
-            <div
-              class="h-12 w-12 rounded-xl bg-lime-500/10 text-lime-500 flex items-center justify-center border border-lime-500/20 font-bold text-lg select-none"
-            >
-              {selectedStudent.full_name?.charAt(0) || "?"}
-            </div>
-            <div class="flex flex-col gap-0.5">
-              <span class="text-sm font-bold text-foreground"
-                >{selectedStudent.full_name}</span
-              >
-              <div
-                class="flex items-center gap-3 text-[10px] text-muted-foreground"
-              >
-                <span class="flex items-center gap-0.5 font-mono">
-                  <Hashtag size={10} />
-                  <span
-                    >#{selectedStudent.student_number ||
-                      selectedStudent.id.slice(0, 8)}</span
-                  >
-                </span>
-                {#if selectedStudent.class_name}
-                  <span class="flex items-center gap-0.5">
-                    <BookOpen size={10} />
-                    <span>{selectedStudent.class_name}</span>
-                  </span>
-                {/if}
+      <!-- Student Context & Fee Breakdown Area -->
+      <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+        {#if selectedStudent}
+          <!-- Selected Student Profile Banner -->
+          <div class="bg-muted/30 border border-border/80 rounded-lg p-3 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                {selectedStudent.first_name?.[0] || "ط"}
+              </div>
+              <div>
+                <div class="text-sm font-bold text-foreground">
+                  {selectedStudent.first_name} {selectedStudent.last_name}
+                </div>
+                <div class="text-[11px] text-muted-foreground flex items-center gap-3 mt-0.5 font-mono">
+                  <span>الرقم: #{selectedStudent.student_number || selectedStudent.id.slice(0, 8)}</span>
+                  <span>الهوية: {selectedStudent.national_id || "—"}</span>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Student Outstanding Fees section -->
-        <div class="flex flex-col gap-2.5 text-start">
-          <h4
-            class="text-xs font-bold text-foreground flex items-center justify-between select-none"
-          >
-            <span>{m.finance_pos_outstanding_fees_unpaid()}</span>
-            <span
-              class="text-[9.5px] px-2 py-0.5 rounded bg-rose-500/10 text-rose-500 font-mono"
-            >
-              {activeStudentFees.length}
-              {m.finance_pos_pending()}
-            </span>
-          </h4>
-
-          {#if isLoadingStudentDetails}
-            <div class="flex flex-col gap-2">
-              <Skeleton class="h-12 w-full rounded-lg" />
-              <Skeleton class="h-12 w-full rounded-lg" />
-            </div>
-          {:else if activeStudentFees.length === 0}
-            <div
-              class="border border-border/80 border-dashed rounded-xl p-6 text-center bg-emerald-500/5 text-emerald-500"
-            >
-              <CheckCircle size={24} class="mx-auto mb-2 text-emerald-500/80" />
-              <p class="text-xs font-bold">{m.finance_pos_no_pending_fees()}</p>
-              <p class="text-[9px] text-muted-foreground mt-0.5">
-                {m.finance_pos_all_invoiced_amounts_have_been()}
-              </p>
-            </div>
-          {:else}
-            <!-- Tactical Interactive list of fees -->
-            <div class="flex flex-col gap-2">
-              {#each activeStudentFees as fee (fee.id)}
-                {@const isSelected = selectedFeeId === String(fee.id)}
-                <button
-                  type="button"
-                  onclick={() => selectFeeItem(fee)}
-                  class="w-full card-tactile border p-3.5 rounded-xl flex items-center justify-between text-start duration-100 {isSelected
-                    ? 'bg-lime-500/10 border-lime-500 text-foreground ring-1 ring-lime-500/50'
-                    : 'bg-card hover:bg-accent/40 border-border'}"
-                >
-                  <div class="flex flex-col gap-0.5 max-w-[65%]">
-                    <span class="text-xs font-bold text-foreground truncate">
-                      {fee.description || m.common_ft_category_tuition()}
-                    </span>
-                    <span
-                      class="text-[9px] text-muted-foreground font-mono flex items-center gap-1"
-                    >
-                      <Calendar size={10} />
-                      <span
-                        >{m.finance_pos_due_date()}{fee.due_date
-                          ? formatDate(fee.due_date)
-                          : "-"}</span
-                      >
-                    </span>
-                  </div>
-
-                  <!-- Amount due details -->
-                  <div class="flex flex-col items-end gap-0.5">
-                    <span class="text-xs font-bold font-mono text-rose-500">
-                      {formatCurrency(
-                        Number(fee.balance || fee.amount || 0),
-                        fee.currency || "YER",
-                      )}
-                    </span>
-                    {#if Number(fee.paid_amount) > 0}
-                      <span class="text-[8.5px] text-emerald-500 font-mono">
-                        {m.finance_pos_paid()}{formatCurrency(
-                          Number(fee.paid_amount),
-                          fee.currency,
-                        )}
-                      </span>
-                    {/if}
-                  </div>
-                </button>
-              {/each}
-            </div>
-          {/if}
-        </div>
-
-        <!-- Student Recent Payment Ledger Logs -->
-        <div class="flex flex-col gap-2.5 text-start mt-2">
-          <h4 class="text-xs font-bold text-foreground select-none">
-            {m.finance_pos_recent_recorded_payments()}
-          </h4>
-
-          {#if isLoadingStudentDetails}
-            <div class="flex flex-col gap-2">
-              <Skeleton class="h-10 w-full rounded-lg" />
-            </div>
-          {:else if activeStudentPayments.length === 0}
-            <p
-              class="text-[10px] text-muted-foreground border border-border border-dashed p-4 text-center rounded-xl"
-            >
-              {m.finance_pos_no_payment_logs_on_file()}
-            </p>
-          {:else}
-            <div
-              class="border border-border rounded-xl bg-card overflow-hidden"
-            >
-              <table class="w-full text-xs text-start">
-                <thead>
-                  <tr
-                    class="bg-accent/40 border-b border-border/80 text-[10px] text-muted-foreground select-none"
-                  >
-                    <th class="p-2.5 text-start font-semibold"
-                      >{m.finance_pos_receipt()}</th
-                    >
-                    <th class="p-2.5 text-start font-semibold"
-                      >{m.common_overview_date()}</th
-                    >
-                    <th class="p-2.5 text-start font-semibold"
-                      >{m.finance_pos_method()}</th
-                    >
-                    <th class="p-2.5 text-end font-semibold"
-                      >{m.common_ft_col_amount()}</th
-                    >
-                  </tr>
-                </thead>
-                <tbody>
-                  {#each activeStudentPayments as pay (pay.id)}
-                    <tr class="border-b border-border/40 hover:bg-accent/10">
-                      <td class="p-2.5 font-bold font-mono"
-                        >#{pay.receipt_number || pay.id.slice(0, 6)}</td
-                      >
-                      <td class="p-2.5 text-muted-foreground text-[10px]"
-                        >{formatDate(pay.payment_date || pay.created_at)}</td
-                      >
-                      <td
-                        class="p-2.5 text-muted-foreground text-[10px] uppercase"
-                        >{pay.payment_method || "Cash"}</td
-                      >
-                      <td
-                        class="p-2.5 text-end font-bold font-mono text-emerald-500"
-                        >{formatCurrency(Number(pay.amount), pay.currency)}</td
-                      >
-                    </tr>
-                  {/each}
-                </tbody>
-              </table>
-            </div>
-          {/if}
-        </div>
-      {/if}
-    </div>
-
-    <!-- RIGHT COLUMN: Payment Register Form Panel (Occupies 45%) -->
-    <div
-      class="w-full lg:w-[45%] flex flex-col bg-card/30 p-6 overflow-y-auto min-h-0"
-    >
-      {#if !selectedStudent}
-        <!-- Form Disabled Overlay state -->
-        <div
-          class="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground select-none"
-        >
-          <DocumentPage size={40} class="text-muted-foreground/30 mb-3" />
-          <p class="text-xs font-semibold">
-            {m.finance_pos_payment_form_offline()}
-          </p>
-          <p class="text-[9.5px] text-muted-foreground/80 mt-1 max-w-[250px]">
-            {m.finance_pos_search_for_a_student_and()}
-          </p>
-        </div>
-      {:else if !selectedFee}
-        <!-- Fee Select Overlay State -->
-        <div
-          class="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground select-none"
-        >
-          <Plus size={40} class="text-muted-foreground/30 mb-3" />
-          <p class="text-xs font-semibold">
-            {m.finance_pos_select_a_fee_to_pay()}
-          </p>
-          <p class="text-[9.5px] text-muted-foreground/80 mt-1 max-w-[250px]">
-            {m.finance_pos_please_pick_which_outstanding_item()}
-          </p>
-        </div>
-      {:else}
-        <!-- Payment Recording Form -->
-        <form
-          onsubmit={handlePaymentSubmit}
-          class="flex flex-col gap-5 text-start h-full"
-          in:fade={{ duration: 150 }}
-        >
-          <h3
-            class="text-sm font-bold text-foreground border-b border-border/80 pb-2 select-none flex items-center gap-2"
-          >
-            <Banknotes size={15} class="text-lime-500" />
-            <span>{m.finance_pos_record_payment_receipt()}</span>
-          </h3>
-
-          <!-- Fee Information Preview -->
-          <div
-            class="bg-accent/40 border border-border p-3.5 rounded-xl text-xs flex flex-col gap-1.5 select-none"
-          >
-            <div class="flex justify-between">
-              <span class="text-muted-foreground"
-                >{m.finance_pos_active_item()}</span
-              >
-              <span class="font-bold text-foreground max-w-[200px] truncate"
-                >{selectedFee.description ||
-                  m.common_ft_category_tuition()}</span
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="text-muted-foreground"
-                >{m.finance_pos_total_invoice()}</span
-              >
-              <span class="font-medium text-foreground font-mono"
-                >{formatCurrency(
-                  Number(selectedFee.total_amount || selectedFee.amount),
-                  selectedFee.currency,
-                )}</span
-              >
-            </div>
-            <div
-              class="flex justify-between border-t border-border/60 pt-1.5 mt-0.5"
-            >
-              <span class="text-rose-500 font-semibold"
-                >{m.finance_pos_remaining_balance()}</span
-              >
-              <span class="font-bold text-rose-500 font-mono"
-                >{formatCurrency(
-                  Number(selectedFee.balance || selectedFee.amount),
-                  selectedFee.currency,
-                )}</span
-              >
-            </div>
+            <Button variant="ghost" size="sm" onclick={deselectStudent} class="h-7 text-xs text-muted-foreground hover:text-destructive">
+              <XMark size={13} class="me-1" />
+              تغيير الطالب (Esc)
+            </Button>
           </div>
 
-          <!-- Treasury Select -->
+          <!-- Outstanding Fees Checklist -->
           <div class="flex flex-col gap-2">
-            <label
-              for="pos_treasury"
-              class="text-xs font-bold text-muted-foreground uppercase tracking-wider"
-            >
-              {m.common_payment_label_cash_account()}
-            </label>
-            <select
-              id="pos_treasury"
-              bind:value={selectedTreasuryId}
-              class="bg-background text-foreground border border-border rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-lime-500 outline-none h-10 w-full"
-              disabled={isSubmitting}
-            >
-              {#each treasuries as t (t.id)}
-                <option value={String(t.id)}
-                  >{t.name_ar || t.name || t.code} ({t.currency})</option
-                >
-              {/each}
-            </select>
-          </div>
-
-          <!-- Payment Method -->
-          <div class="flex flex-col gap-2">
-            <span
-              class="text-xs font-bold text-muted-foreground uppercase tracking-wider select-none"
-            >
-              {m.common_payment_label_method()}
-            </span>
-            <div class="grid grid-cols-3 gap-3.5">
-              {#each ["Cash", "Bank Transfer", "Card"] as method}
-                <button
-                  type="button"
-                  class="h-14 rounded-xl border flex flex-col items-center justify-center gap-1.5 duration-100 font-semibold text-xs select-none {paymentMethod ===
-                  method
-                    ? 'bg-lime-500/10 border-lime-500 text-foreground ring-1 ring-lime-500/40'
-                    : 'bg-background hover:bg-accent border-border text-muted-foreground'}"
-                  onclick={() => (paymentMethod = method as any)}
-                  disabled={isSubmitting}
-                >
-                  <span class="text-[10px]">
-                    {#if method === "Cash"}{m.finance_pos_cash()}
-                    {:else if method === "Bank Transfer"}{m.finance_pos_bank_transfer()}
-                    {:else}{m.finance_pos_card()}{/if}
-                  </span>
-                </button>
-              {/each}
+            <div class="flex items-center justify-between">
+              <h2 class="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <DocumentPage size={14} class="text-primary" />
+                الرسوم والمطالبات المستحقة ({activeStudentFees.length})
+              </h2>
+              <span class="text-[11px] text-muted-foreground">اختر الرسم المستحق للتحصيل</span>
             </div>
-          </div>
 
-          <!-- Currency Section -->
-          <div class="flex flex-col gap-2">
-            <label
-              for="pos_currency"
-              class="text-xs font-bold text-muted-foreground uppercase tracking-wider"
-            >
-              {m.common_payment_label_currency()}
-            </label>
-            <div class="flex gap-3">
-              <Input
-                id="pos_currency"
-                type="text"
-                bind:value={currency}
-                placeholder="e.g., YER"
-                class="uppercase font-mono w-[90px] h-10 text-center font-bold"
-                required
-                maxlength={3}
-                disabled={isSubmitting}
-              />
-              <div class="flex gap-2 items-center">
-                {#each ["YER", "USD", "SAR"] as curr}
+            {#if studentFeesQuery.isLoading}
+              <div class="space-y-2">
+                <Skeleton class="h-12 w-full rounded-md" />
+                <Skeleton class="h-12 w-full rounded-md" />
+              </div>
+            {:else if activeStudentFees.length === 0}
+              <div class="bg-muted/20 border border-dashed border-border rounded-lg p-6 text-center text-muted-foreground">
+                <CheckCircle size={24} class="mx-auto mb-1.5 text-emerald-500 opacity-80" />
+                <p class="font-medium text-foreground">لا توجد رسوم مستحقة على هذا الطالب</p>
+                <p class="text-[10px] mt-0.5">تم سداد جميع الرسوم والمطالبات بالكامل</p>
+              </div>
+            {:else}
+              <div class="space-y-1.5">
+                {#each activeStudentFees as fee (fee.id)}
                   <button
                     type="button"
-                    class="h-10 px-4 rounded-xl border text-xs font-bold transition-all {currency.toUpperCase() ===
-                    curr
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-background hover:bg-accent text-muted-foreground border-border'}"
-                    onclick={() => (currency = curr)}
-                    disabled={isSubmitting}
+                    onclick={() => selectFeeItem(fee)}
+                    class="w-full text-start p-2.5 rounded-lg border transition-all flex items-center justify-between {formFeeId === fee.id ? 'bg-primary/10 border-primary text-foreground shadow-sm' : 'bg-background border-border/70 hover:border-primary/50 text-muted-foreground'}"
                   >
-                    {curr}
+                    <div class="flex items-center gap-2.5">
+                      <div class="h-4 w-4 rounded-full border flex items-center justify-center {formFeeId === fee.id ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40'}">
+                        {#if formFeeId === fee.id}
+                          <div class="h-1.5 w-1.5 rounded-full bg-background"></div>
+                        {/if}
+                      </div>
+                      <div>
+                        <div class="font-semibold text-foreground text-xs">{fee.notes || "رسوم دراسية"}</div>
+                        <div class="text-[10px] text-muted-foreground font-mono mt-0.5">
+                          تاريخ الاستحقاق: {formatDate(fee.due_date) || "—"}
+                          {#if fee.installment_number}
+                            • القسط {fee.installment_number}
+                          {/if}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="text-end">
+                      <div class="font-mono font-bold text-xs text-rose-600 dark:text-rose-400">
+                        {formatCurrency(Number(fee.balance_due || fee.net_amount || 0))}
+                      </div>
+                      <div class="text-[10px] text-muted-foreground font-mono">
+                        المسدد: {formatCurrency(Number(fee.paid_amount || 0))}
+                      </div>
+                    </div>
                   </button>
                 {/each}
               </div>
-            </div>
+            {/if}
           </div>
 
-          <!-- Amount -->
-          <div class="flex flex-col gap-2">
-            <label
-              for="pos_amount"
-              class="text-xs font-bold text-muted-foreground uppercase tracking-wider"
-            >
-              {m.common_payment_label_amount()} ({currency})
-            </label>
-            <div class="relative">
-              <Input
-                id="pos_amount"
-                type="number"
-                bind:value={amount}
-                min="1"
-                step="any"
-                placeholder="0.00"
-                class="h-10 font-bold font-mono"
-                required
-                disabled={isSubmitting}
-              />
-              {#if amount !== Number(selectedFee.balance)}
+          <!-- Recent Student Receipts Table -->
+          {#if activeStudentPayments.length > 0}
+            <div class="mt-2 border-t border-border/50 pt-3 flex flex-col gap-2">
+              <h2 class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                سندات القبض السابقة للطالب
+              </h2>
+              <div class="border border-border/60 rounded-md overflow-hidden bg-background">
+                <table class="w-full text-start text-[11px]">
+                  <thead class="bg-muted/40 border-b border-border/60 text-muted-foreground">
+                    <tr>
+                      <th class="py-1.5 px-3 font-semibold text-start">رقم السند</th>
+                      <th class="py-1.5 px-3 font-semibold text-start">الطريقة</th>
+                      <th class="py-1.5 px-3 font-semibold text-start">التاريخ</th>
+                      <th class="py-1.5 px-3 font-semibold text-end">المبلغ</th>
+                      <th class="py-1.5 px-2 font-semibold text-center w-10">طباعة</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-border/40">
+                    {#each activeStudentPayments as payment (payment.id)}
+                      <tr class="hover:bg-muted/20">
+                        <td class="py-1.5 px-3 font-mono font-medium text-foreground">
+                          #{payment.receipt_number || payment.id.slice(0, 8)}
+                        </td>
+                        <td class="py-1.5 px-3 text-muted-foreground">{payment.method}</td>
+                        <td class="py-1.5 px-3 font-mono text-muted-foreground">{formatDate(payment.paid_at)}</td>
+                        <td class="py-1.5 px-3 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-end">
+                          {formatCurrency(Number(payment.amount))}
+                        </td>
+                        <td class="py-1.5 px-2 text-center">
+                          <button
+                            type="button"
+                            onclick={() => handlePrintReceipt(payment)}
+                            class="p-1 text-muted-foreground hover:text-primary transition-colors"
+                            title="طباعة السند"
+                          >
+                            <Printer size={13} />
+                          </button>
+                        </td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {/if}
+
+        {:else}
+          <!-- Empty Search State -->
+          <div class="h-full flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
+            <div class="h-14 w-14 rounded-full bg-muted/40 flex items-center justify-center text-muted-foreground/60 mb-3">
+              <MagnifyingGlass size={28} />
+            </div>
+            <h3 class="text-sm font-bold text-foreground">اختر طالباً لبدء التحصيل</h3>
+            <p class="text-[11px] text-muted-foreground max-w-sm mt-1">
+              استخدم شريط البحث أعلاه بالاسم أو الرقم الأكاديمي لعرض المستحقات وتوليد سند القبض فورياً
+            </p>
+          </div>
+        {/if}
+      </div>
+    </div>
+
+    <!-- Right 5 Cols: Payment Collection Keypad & Execution -->
+    <div class="col-span-5 bg-muted/5 flex flex-col h-full overflow-hidden">
+      <form onsubmit={handlePaymentSubmit} class="flex flex-col h-full overflow-y-auto p-4 gap-4">
+        
+        <div class="border-b border-border/60 pb-2">
+          <h2 class="text-xs font-bold text-foreground flex items-center gap-1.5">
+            <Banknotes size={15} class="text-emerald-600" />
+            بيانات سند القبض والتحصيل
+          </h2>
+          <p class="text-[10px] text-muted-foreground mt-0.5">
+            يتم إنشاء القيد المحاسبي المزدوج وتحديث رصيد الطالب فور النقر
+          </p>
+        </div>
+
+        <!-- Payment Method Tabs (Dynamically Resolved via Integration Layer) -->
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-[11px] font-semibold text-foreground">طريقة الدفع (مربوطة بالتكاملات)</label>
+            {#if selectedPaymentMethodObj?.is_digital_gateway}
+              <span class="text-[9px] bg-primary/10 text-primary border border-primary/20 rounded px-1.5 py-0.5 font-medium">
+                بوابة {selectedPaymentMethodObj.provider_name}
+              </span>
+            {/if}
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+            {#each availablePaymentMethods as methodItem (methodItem.id)}
+              <button
+                type="button"
+                onclick={() => (formMethod = methodItem.id)}
+                class="flex items-center justify-center gap-1.5 py-2 px-2 rounded-md border text-[11px] font-medium transition-all {formMethod === methodItem.id ? 'bg-primary text-primary-foreground border-primary shadow-xs' : 'bg-background border-border/80 text-muted-foreground hover:bg-muted/60'}"
+              >
+                {#if methodItem.category === "manual"}
+                  <Banknotes size={13} />
+                {:else if methodItem.category === "bank"}
+                  {#if methodItem.id === "check"}
+                    <Document size={13} />
+                  {:else}
+                    <BuildingLibrary size={13} />
+                  {/if}
+                {:else}
+                  <CreditCard size={13} />
+                {/if}
+                <span class="truncate">{methodItem.name}</span>
+              </button>
+            {/each}
+          </div>
+
+          {#if availablePaymentMethods.filter((m) => m.is_digital_gateway).length === 0}
+            <div class="text-[10px] text-muted-foreground bg-muted/20 border border-border/40 rounded p-1.5 mt-1 flex items-center justify-between">
+              <span>طرق الدفع الإلكترونية (مدى / بطاقات) تتطلب تفعيل بوابة دفع.</span>
+              <a href="/{orgId}/settings/integrations" class="text-primary hover:underline font-medium">
+                متجر التكاملات
+              </a>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Amount Entry Field -->
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-center justify-between">
+            <label for="pos_amount" class="text-[11px] font-semibold text-foreground">المبلغ المستلم للتحصيل</label>
+            {#if formFeeId}
+              {@const selectedFee = activeStudentFees.find(f => f.id === formFeeId)}
+              {#if selectedFee}
                 <button
                   type="button"
-                  onclick={() => (amount = Number(selectedFee.balance))}
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] bg-accent/80 hover:bg-accent border border-border px-2 py-1 rounded font-bold text-muted-foreground duration-100"
-                  disabled={isSubmitting}
+                  onclick={() => (formAmount = Number(selectedFee.balance_due || 0))}
+                  class="text-[10px] text-primary hover:underline font-mono"
                 >
-                  {m.finance_pos_pay_full()}
+                  كامل الرصيد ({formatCurrency(Number(selectedFee.balance_due || 0))})
                 </button>
               {/if}
-            </div>
+            {/if}
           </div>
-
-          <!-- DocumentPage & Ref details -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="flex flex-col gap-2">
-              <label
-                for="pos_receipt"
-                class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider"
-              >
-                {m.common_payment_label_receipt()}
-              </label>
-              <Input
-                id="pos_receipt"
-                type="text"
-                bind:value={receiptNumber}
-                placeholder="e.g., REC-104"
-                class="h-10 text-xs"
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div class="flex flex-col gap-2">
-              <label
-                for="pos_ref"
-                class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider"
-              >
-                {m.common_payment_label_ref()}
-              </label>
-              <Input
-                id="pos_ref"
-                type="text"
-                bind:value={referenceNumber}
-                placeholder="e.g., TXN-998"
-                class="h-10 text-xs"
-                disabled={isSubmitting}
-              />
-            </div>
-          </div>
-
-          <!-- Notes -->
-          <div class="flex flex-col gap-2">
-            <label
-              for="pos_notes"
-              class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider"
-            >
-              {m.common_payment_label_notes()}
-            </label>
-            <Input
-              id="pos_notes"
-              type="text"
-              bind:value={notes}
-              placeholder={m.common_payment_placeholder_notes()}
-              class="h-10 text-xs"
-              disabled={isSubmitting}
+          <div class="relative">
+            <input
+              id="pos_amount"
+              type="number"
+              step="any"
+              min="0.01"
+              required
+              bind:value={formAmount}
+              placeholder="0.00"
+              class="w-full bg-background border border-border/80 rounded-lg px-3 py-2.5 text-base font-bold font-mono text-foreground placeholder:text-muted-foreground/40 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </div>
+        </div>
 
-          <!-- Form Submit Buttons -->
-          <div class="flex gap-3 mt-auto pt-4 shrink-0 select-none">
+        <!-- Electronic Source Token (if Gateway method requires token) -->
+        {#if selectedPaymentMethodObj?.requires_source_token}
+          <div class="flex flex-col gap-1.5" transition:slide={{ duration: 120 }}>
+            <label for="pos_token" class="text-[11px] font-semibold text-foreground flex items-center justify-between">
+              <span>رمز بطاقة / تفويض بوابة الدفع (Token)</span>
+              <span class="text-[9px] text-muted-foreground font-mono">Gateway Source Token</span>
+            </label>
+            <input
+              id="pos_token"
+              type="text"
+              bind:value={sourceToken}
+              placeholder="tok_... أو رقم المعاملة من جهاز الشبكة POS"
+              class="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary font-mono"
+            />
+          </div>
+        {/if}
+
+        <!-- Reference / Check Number -->
+        {#if formMethod !== "cash"}
+          <div class="flex flex-col gap-1.5" transition:slide={{ duration: 120 }}>
+            <label for="pos_ref" class="text-[11px] font-semibold text-foreground">
+              {formMethod === "check" ? "رقم الشيك والبنك المسحوب عليه" : "رقم الحوالة / العملية / المرجع"}
+            </label>
+            <input
+              id="pos_ref"
+              type="text"
+              bind:value={referenceNumber}
+              placeholder={formMethod === "check" ? "مثال: شيك رقم 44820 - بنك الرياض" : "مثال: TRF-994021"}
+              class="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary font-mono"
+            />
+          </div>
+        {/if}
+
+        <!-- Notes -->
+        <div class="flex flex-col gap-1.5">
+          <label for="pos_notes" class="text-[11px] font-semibold text-foreground">ملاحظات السند (اختياري)</label>
+          <input
+            id="pos_notes"
+            type="text"
+            bind:value={notes}
+            placeholder="ملاحظات تظهر في سند القبض..."
+            class="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary"
+          />
+        </div>
+
+        <!-- Receipt Print Option -->
+        <div class="flex items-center gap-2 pt-1">
+          <input
+            type="checkbox"
+            id="auto_print"
+            bind:checked={shouldPrintReceipt}
+            class="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5"
+          />
+          <label for="auto_print" class="text-[11px] text-muted-foreground cursor-pointer select-none">
+            طباعة سند القبض الفوري عبر DocForge بعد الحفظ
+          </label>
+        </div>
+
+        <!-- Submission Action Buttons -->
+        <div class="mt-auto pt-4 flex flex-col gap-2">
+          <Button
+            type="submit"
+            disabled={!selectedStudent || !formAmount || formAmount <= 0 || processPaymentMutation.isPending}
+            class="w-full h-10 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-2 shadow-sm"
+          >
+            {#if processPaymentMutation.isPending}
+              <ArrowPath size={14} class="animate-spin" />
+              <span>جاري ترحيل القيد وإصدار السند...</span>
+            {:else}
+              <CheckCircle size={15} />
+              <span>ترحيل سند القبض الآن (Enter)</span>
+            {/if}
+          </Button>
+
+          {#if lastReceiptPayment}
             <Button
               type="button"
-              variant="ghost"
-              class="w-1/3 h-11 text-xs border border-border"
-              onclick={deselectStudent}
-              disabled={isSubmitting}
+              variant="outline"
+              size="sm"
+              onclick={() => handlePrintReceipt(lastReceiptPayment!)}
+              class="w-full h-8 text-xs text-foreground"
             >
-              {m.common_action_cancel()}
+              <Printer size={13} class="me-1.5 text-primary" />
+              إعادة طباعة آخر سند (#{lastReceiptPayment.receipt_number || lastReceiptPayment.id.slice(0, 8)})
             </Button>
-            <Button
-              type="submit"
-              variant="lime"
-              class="flex-1 h-11 text-xs font-bold"
-              disabled={isSubmitting}
-            >
-              {#if isSubmitting}
-                {m.common_loading()}
-              {:else}
-                <span class="flex items-center justify-center gap-1.5">
-                  <Document size={15} />
-                  <span>{m.finance_pos_record_post_payment()}</span>
-                </span>
-              {/if}
-            </Button>
-          </div>
-        </form>
-      {/if}
+          {/if}
+        </div>
+
+      </form>
     </div>
+
   </div>
 </div>

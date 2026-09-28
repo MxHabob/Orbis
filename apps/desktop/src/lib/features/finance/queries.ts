@@ -205,3 +205,163 @@ export function createAccountMutation() {
     },
   }));
 }
+
+export interface AvailablePaymentMethod {
+  id: string; // e.g. "cash", "bank_transfer", "check", "mada", "credit_card", "apple_pay"
+  name: string;
+  name_en: string;
+  category: "manual" | "bank" | "electronic";
+  provider_name?: string;
+  is_digital_gateway: boolean;
+  requires_source_token: boolean;
+}
+
+/**
+ * Dynamically resolves active payment methods for the organization based on:
+ * 1. Base institutional manual methods (Cash, Bank Transfer, Check).
+ * 2. Active external payment integrations enabled in the Orbis Integration Layer.
+ */
+export function createAvailablePaymentMethodsQuery(orgId: () => string) {
+  return createQuery<AvailablePaymentMethod[]>(() => ({
+    queryKey: [...queryKeys.integration.list(orgId()), "payment-methods"],
+    queryFn: async () => {
+      const integrations = await api.listIntegrations().catch(() => []);
+      const activePaymentIntegrations = integrations.filter(
+        (i) =>
+          (i.category === "payment" || i.category === "payment-gateway") &&
+          i.is_enabled,
+      );
+
+      // Base standard institutional methods
+      const methods: AvailablePaymentMethod[] = [
+        {
+          id: "cash",
+          name: "نقداً",
+          name_en: "Cash",
+          category: "manual",
+          is_digital_gateway: false,
+          requires_source_token: false,
+        },
+        {
+          id: "bank_transfer",
+          name: "تحويل بنكي",
+          name_en: "Bank Transfer",
+          category: "bank",
+          is_digital_gateway: false,
+          requires_source_token: false,
+        },
+        {
+          id: "check",
+          name: "شيك مصرفي",
+          name_en: "Bank Check",
+          category: "bank",
+          is_digital_gateway: false,
+          requires_source_token: false,
+        },
+      ];
+
+      // Dynamically resolve methods from active integrations
+      for (const config of activePaymentIntegrations) {
+        const provider = (config.provider_name || "").toLowerCase().trim();
+        const settings = config.settings as Record<string, any> | undefined;
+
+        if (provider === "mada") {
+          methods.push({
+            id: "mada",
+            name: "بطاقة مدى (Mada)",
+            name_en: "Mada Debit Card",
+            category: "electronic",
+            provider_name: "mada",
+            is_digital_gateway: true,
+            requires_source_token: true,
+          });
+        } else if (provider === "moyasar") {
+          methods.push({
+            id: "mada",
+            name: "مدى (عبر Moyasar)",
+            name_en: "Mada (Moyasar)",
+            category: "electronic",
+            provider_name: "moyasar",
+            is_digital_gateway: true,
+            requires_source_token: true,
+          });
+          methods.push({
+            id: "credit_card",
+            name: "بطاقة ائتمانية (Visa / MasterCard)",
+            name_en: "Credit Card (Moyasar)",
+            category: "electronic",
+            provider_name: "moyasar",
+            is_digital_gateway: true,
+            requires_source_token: true,
+          });
+          methods.push({
+            id: "apple_pay",
+            name: "Apple Pay",
+            name_en: "Apple Pay (Moyasar)",
+            category: "electronic",
+            provider_name: "moyasar",
+            is_digital_gateway: true,
+            requires_source_token: true,
+          });
+        } else if (provider === "stripe") {
+          methods.push({
+            id: "credit_card",
+            name: "بطاقة ائتمان (Stripe)",
+            name_en: "Credit Card (Stripe)",
+            category: "electronic",
+            provider_name: "stripe",
+            is_digital_gateway: true,
+            requires_source_token: true,
+          });
+          methods.push({
+            id: "apple_pay",
+            name: "Apple Pay (Stripe)",
+            name_en: "Apple Pay",
+            category: "electronic",
+            provider_name: "stripe",
+            is_digital_gateway: true,
+            requires_source_token: true,
+          });
+        } else if (Array.isArray(settings?.methods)) {
+          for (const m of settings.methods) {
+            methods.push({
+              id: String(m).toLowerCase(),
+              name: `${m} (${config.provider_name})`,
+              name_en: `${m} (${config.provider_name})`,
+              category: "electronic",
+              provider_name: config.provider_name,
+              is_digital_gateway: true,
+              requires_source_token: true,
+            });
+          }
+        } else {
+          // Generic gateway adapter
+          methods.push({
+            id: "credit_card",
+            name: `بوابة دفع إلكتروني (${config.provider_name})`,
+            name_en: `Payment Gateway (${config.provider_name})`,
+            category: "electronic",
+            provider_name: config.provider_name,
+            is_digital_gateway: true,
+            requires_source_token: true,
+          });
+        }
+      }
+
+      // Deduplicate by method id
+      const uniqueMethods: AvailablePaymentMethod[] = [];
+      const seenIds = new Set<string>();
+      for (const m of methods) {
+        if (!seenIds.has(m.id)) {
+          seenIds.add(m.id);
+          uniqueMethods.push(m);
+        }
+      }
+
+      return uniqueMethods;
+    },
+    enabled: !!orgId(),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
