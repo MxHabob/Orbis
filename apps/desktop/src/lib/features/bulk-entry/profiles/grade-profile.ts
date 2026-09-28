@@ -292,46 +292,49 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
   },
 
   async commitChunk(rows: GradeRowData[], orgId: string, refData: BulkReferenceData): Promise<{ success: boolean; errors?: string[] }> {
-    const errors: string[] = [];
+    const items = rows.map((row) => {
+      const matchedSubject = refData.subjects.find(
+        (s) =>
+          s.id.toLowerCase() === row.subject_name.toLowerCase() ||
+          s.code?.toLowerCase() === row.subject_name.toLowerCase() ||
+          s.name.toLowerCase() === row.subject_name.toLowerCase() ||
+          s.nameAr?.toLowerCase() === row.subject_name.toLowerCase(),
+      );
 
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]!;
-      try {
-        const matchedSubject = refData.subjects.find(
-          (s) =>
-            s.id.toLowerCase() === row.subject_name.toLowerCase() ||
-            s.code?.toLowerCase() === row.subject_name.toLowerCase() ||
-            s.name.toLowerCase() === row.subject_name.toLowerCase() ||
-            s.nameAr?.toLowerCase() === row.subject_name.toLowerCase(),
-        );
+      const scoreNum = Number(row.score);
+      const maxScoreNum = row.max_score ? Number(row.max_score) : 100;
 
-        const scoreNum = Number(row.score);
-        const maxScoreNum = row.max_score ? Number(row.max_score) : 100;
+      const isExcused =
+        row.is_excused === true ||
+        String(row.is_excused).toLowerCase() === "true" ||
+        String(row.is_excused) === "نعم" ||
+        String(row.is_excused) === "1";
 
-        const isExcused =
-          row.is_excused === true ||
-          String(row.is_excused).toLowerCase() === "true" ||
-          String(row.is_excused) === "نعم" ||
-          String(row.is_excused) === "1";
+      return {
+        period_id: orgId,
+        student_id: row.student_number,
+        class_subject_id: matchedSubject?.id || orgId,
+        score: String(scoreNum),
+        max_score: String(maxScoreNum),
+        is_excused: isExcused,
+        notes: row.notes?.trim() || undefined,
+      };
+    });
 
-        // Invoke canonical recordGrade
-        await api.recordGrade({
-          period_id: orgId,
-          student_id: row.student_number, // resolved by student number
-          class_subject_id: matchedSubject?.id || orgId,
-          score: String(scoreNum),
-          max_score: String(maxScoreNum),
-          is_excused: isExcused,
-          notes: row.notes?.trim() || undefined,
-        });
-      } catch (err: any) {
-        errors.push(`صف ${row.rowNumber || i + 1}: ${err.message || String(err)}`);
+    try {
+      const result = await api.batchRecordGrades({ items });
+      if (result.count === 0 && items.length > 0) {
+        return {
+          success: false,
+          errors: ["فشل رصد درجات الطلاب"],
+        };
       }
+      return { success: true };
+    } catch (err: any) {
+      return {
+        success: false,
+        errors: [err.message || String(err)],
+      };
     }
-
-    return {
-      success: errors.length === 0,
-      errors: errors.length > 0 ? errors : undefined,
-    };
   },
 };

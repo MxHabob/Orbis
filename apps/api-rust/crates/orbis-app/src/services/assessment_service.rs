@@ -18,6 +18,27 @@ use uuid::Uuid;
 use chrono::{Utc, NaiveDate};
 use rust_decimal::Decimal;
 
+pub struct BatchGradeItem {
+    pub period_id: Uuid,
+    pub student_id: Uuid,
+    pub enrollment_id: Option<Uuid>,
+    pub class_subject_id: Uuid,
+    pub component_id: Option<Uuid>,
+    pub score: Decimal,
+    pub max_score: Option<Decimal>,
+    pub is_excused: bool,
+    pub is_exempt: bool,
+    pub notes: Option<String>,
+}
+
+pub struct BatchAttendanceItem {
+    pub student_id: Uuid,
+    pub status: String,
+    pub notes: Option<String>,
+    pub class_subject_id: Option<Uuid>,
+    pub scheduled_lesson_id: Option<Uuid>,
+}
+
 pub struct AssessmentService {
     pub scheme_repo: Arc<dyn AssessmentSchemeRepository>,
     pub grade_repo: Arc<dyn GradeRepository>,
@@ -114,6 +135,93 @@ impl AssessmentService {
         }).await;
 
         Ok(grade)
+    }
+
+    /// Batch record or update student grades
+    pub async fn batch_record_grades(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        items: Vec<BatchGradeItem>,
+    ) -> Result<Vec<Grade>, DomainError> {
+        self.permission_checker.check(ctx, Permission::GradeWrite).await?;
+
+        let now = Utc::now();
+        let mut grades = Vec::with_capacity(items.len());
+
+        for item in items {
+            let max_score = item.max_score.unwrap_or_else(|| Decimal::from(100));
+            if item.score < Decimal::ZERO || item.score > max_score {
+                return Err(DomainError::Validation(format!(
+                    "Score {} is outside allowable range [0, {}] for student {}",
+                    item.score, max_score, item.student_id
+                )));
+            }
+
+            let grade_id = Uuid::new_v4();
+            grades.push(Grade {
+                id: grade_id,
+                org_id,
+                period_id: item.period_id,
+                student_id: item.student_id,
+                enrollment_id: item.enrollment_id,
+                class_subject_id: item.class_subject_id,
+                component_id: item.component_id,
+                score: item.score,
+                max_score,
+                weight: None,
+                letter_grade: None,
+                is_final: false,
+                is_excused: item.is_excused,
+                is_exempt: item.is_exempt,
+                change_reason: None,
+                recorded_by: ctx.user_id(),
+                updated_by: None,
+                notes: item.notes,
+                created_at: now,
+                updated_at: now,
+            });
+        }
+
+        self.grade_repo.save_batch(&grades).await?;
+
+        for g in &grades {
+            let _ = self.event_bus.publish(ctx, &DomainEvent::GradeRecorded {
+                grade_id: g.id,
+                student_id: g.student_id,
+                class_subject_id: g.class_subject_id,
+                score: g.score,
+                timestamp: now,
+            }).await;
+        }
+
+        Ok(grades)
+    }
+
+    /// Delete a grade record
+    pub async fn delete_grade(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        grade_id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::GradeWrite).await?;
+
+        let grade = self.grade_repo.find_by_id(grade_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Grade {} not found", grade_id)))?;
+
+        if grade.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        self.grade_repo.delete(grade_id).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::GradeDeleted {
+            grade_id,
+            timestamp: Utc::now(),
+        }).await;
+
+        Ok(())
     }
 
     /// Calculate final grade from assessment scheme formula
@@ -301,6 +409,83 @@ impl AssessmentService {
         Ok(attendance)
     }
 
+    /// Batch mark attendance records for a class on a date
+    pub async fn batch_mark_attendance(
+        &self,
+        ctx: &RequestContext,
+        _org_id: Uuid,
+        class_id: Uuid,
+        date: NaiveDate,
+        items: Vec<BatchAttendanceItem>,
+    ) -> Result<Vec<Attendance>, DomainError> {
+        self.permission_checker.check(ctx, Permission::AttendanceWrite).await?;
+
+        let now = Utc::now();
+        let mut attendances = Vec::with_capacity(items.len());
+
+        for item in items {
+            let att_id = Uuid::new_v4();
+            attendances.push(Attendance {
+                id: att_id,
+                student_id: item.student_id,
+                class_id: Some(class_id),
+                class_subject_id: item.class_subject_id,
+                scheduled_lesson_id: item.scheduled_lesson_id,
+                attendance_date: date,
+                status: item.status,
+                notes: item.notes,
+                marked_by: ctx.user_id(),
+                created_at: now,
+                updated_at: now,
+            });
+        }
+
+        self.attendance_repo.save_batch(&attendances).await?;
+
+        for a in &attendances {
+            let _ = self.event_bus.publish(ctx, &DomainEvent::AttendanceMarked {
+                attendance_id: a.id,
+                student_id: a.student_id,
+                class_id: a.class_id,
+                class_subject_id: a.class_subject_id,
+                scheduled_lesson_id: a.scheduled_lesson_id,
+                status: a.status.clone(),
+                timestamp: now,
+            }).await;
+        }
+
+        Ok(attendances)
+    }
+
+    /// Delete an attendance record
+    pub async fn delete_attendance(
+        &self,
+        ctx: &RequestContext,
+        _org_id: Uuid,
+        attendance_id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::AttendanceWrite).await?;
+
+        self.attendance_repo.delete(attendance_id).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::AttendanceDeleted {
+            attendance_id,
+            timestamp: Utc::now(),
+        }).await;
+
+        Ok(())
+    }
+
+    /// List student attendance records
+    pub async fn list_student_attendance(
+        &self,
+        ctx: &RequestContext,
+        student_id: Uuid,
+    ) -> Result<Vec<Attendance>, DomainError> {
+        self.permission_checker.check(ctx, Permission::AttendanceRead).await?;
+        self.attendance_repo.find_by_student(student_id).await
+    }
+
     /// Create assessment scheme
     pub async fn create_assessment_scheme(
         &self,
@@ -313,10 +498,11 @@ impl AssessmentService {
         self.permission_checker.check(ctx, Permission::AssessmentWrite).await?;
 
         let now = Utc::now();
+        let scheme_id = Uuid::new_v4();
         let scheme = AssessmentScheme {
-            id: Uuid::new_v4(),
+            id: scheme_id,
             org_id,
-            name,
+            name: name.clone(),
             description: None,
             max_score,
             formula,
@@ -325,6 +511,14 @@ impl AssessmentService {
         };
 
         self.scheme_repo.save(&scheme).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::AssessmentSchemeCreated {
+            scheme_id,
+            org_id,
+            name,
+            timestamp: now,
+        }).await;
+
         Ok(scheme)
     }
 
@@ -363,6 +557,13 @@ impl AssessmentService {
         scheme.updated_at = Utc::now();
 
         self.scheme_repo.save(&scheme).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::AssessmentSchemeUpdated {
+            scheme_id,
+            org_id,
+            timestamp: scheme.updated_at,
+        }).await;
+
         Ok(scheme)
     }
 
@@ -382,7 +583,15 @@ impl AssessmentService {
             return Err(DomainError::Unauthorized("Organization mismatch".into()));
         }
 
-        self.scheme_repo.delete(scheme_id).await
+        self.scheme_repo.delete(scheme_id).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::AssessmentSchemeDeleted {
+            scheme_id,
+            org_id,
+            timestamp: Utc::now(),
+        }).await;
+
+        Ok(())
     }
 
     /// List assessment schemes
@@ -410,21 +619,57 @@ impl AssessmentService {
         description: String,
         points: i32,
     ) -> Result<BehaviorRecord, DomainError> {
-        self.permission_checker.check(ctx, Permission::StudentWrite).await?;
+        self.permission_checker.check(ctx, Permission::BehaviorWrite).await?;
         let now = Utc::now();
+        let record_id = Uuid::new_v4();
         let record = BehaviorRecord {
-            id: Uuid::new_v4(),
+            id: record_id,
             student_id,
             org_id,
             reporter_id: ctx.user_id().unwrap_or(Uuid::nil()),
-            record_type,
+            record_type: record_type.clone(),
             description,
             points,
             created_at: now,
             updated_at: now,
         };
         self.behavior_repo.save(&record).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::BehaviorLogged {
+            record_id,
+            student_id,
+            record_type,
+            points,
+            timestamp: now,
+        }).await;
+
         Ok(record)
+    }
+
+    /// Delete behavior record
+    pub async fn delete_behavior(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        behavior_id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::BehaviorDelete).await?;
+
+        let rec = self.behavior_repo.find_by_id(behavior_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Behavior record {} not found", behavior_id)))?;
+
+        if rec.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        self.behavior_repo.delete(behavior_id).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::BehaviorDeleted {
+            record_id: behavior_id,
+            timestamp: Utc::now(),
+        }).await;
+
+        Ok(())
     }
 
     /// List behavior records for a student
@@ -433,7 +678,17 @@ impl AssessmentService {
         ctx: &RequestContext,
         student_id: Uuid,
     ) -> Result<Vec<BehaviorRecord>, DomainError> {
-        self.permission_checker.check(ctx, Permission::StudentRead).await?;
+        self.permission_checker.check(ctx, Permission::BehaviorRead).await?;
         self.behavior_repo.find_by_student(student_id).await
+    }
+
+    /// List all behavior records for an organization
+    pub async fn list_behavior_records(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+    ) -> Result<Vec<BehaviorRecord>, DomainError> {
+        self.permission_checker.check(ctx, Permission::BehaviorRead).await?;
+        self.behavior_repo.find_by_org(org_id).await
     }
 }

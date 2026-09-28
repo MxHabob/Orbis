@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api } from "$lib/api";
+import { api, type GradeRecordDto, type CumulativeGpaRecordDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import {
   Card,
@@ -28,7 +28,8 @@ let { orgId, studentId }: { orgId: string; studentId: string } = $props();
 
 const periodId = $derived(academicContext.effectivePeriodId || "");
 
-let report = $state<any>(null);
+let report = $state<CumulativeGpaRecordDto | null>(null);
+let grades = $state<GradeRecordDto[]>([]);
 let isLoading = $state(true);
 
 onMount(() => loadGrades());
@@ -36,8 +37,13 @@ onMount(() => loadGrades());
 async function loadGrades() {
   isLoading = true;
   try {
-    if (!orgId || !studentId || !periodId) return;
-    report = await api.calculateGpa({ student_id: studentId, period_id: periodId }).catch(() => null);
+    if (!orgId || !studentId) return;
+    const [gpaRes, gradesRes] = await Promise.all([
+      periodId ? api.calculateGpa({ student_id: studentId, period_id: periodId }).catch(() => null) : Promise.resolve(null),
+      api.listStudentGrades(studentId).catch(() => []),
+    ]);
+    report = gpaRes;
+    grades = gradesRes || [];
   } catch (e) {
     console.error(e);
   } finally {
@@ -52,14 +58,14 @@ let activeFilter = $state<UniversalFilter>({
 });
 
 const gridSource = $derived(
-  (report?.grades || []).map((g, i: number) => ({
+  grades.map((g, i: number) => ({
     ...g,
     __idx: i + 1,
-    subject_name: g.subject_name || g.subject_id || "—",
-    exam_type: g.assessment_name || m.academics_grades_default_assessment(),
+    subject_name: g.class_subject_id || "—",
+    exam_type: g.assessment_id || m.academics_grades_default_assessment(),
     score: Number(g.score || 0),
-    max_score: 100,
-    percentage: Number(g.score || 0),
+    max_score: Number(g.max_score || 100),
+    percentage: Number(g.percentage || 0),
     grade_letter: g.grade_letter || "—",
   })),
 );
@@ -123,19 +129,19 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
     </CardContent>
   </Card>
 
-  {#if report?.grades?.length}
+  {#if report}
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <Card class="p-4 flex items-center justify-between">
         <div class="flex flex-col">
           <span class="text-[10px] text-muted-foreground font-semibold">{m.academics_grades_overall_grade()}</span>
-          <span class="text-base font-bold font-mono text-primary mt-0.5">{report?.cumulative_gpa != null ? Number(report.cumulative_gpa).toFixed(2) : "—"}</span>
+          <span class="text-base font-bold font-mono text-primary mt-0.5">{report.gpa != null ? Number(report.gpa).toFixed(2) : "—"}</span>
         </div>
         <AcademicCap size={20} class="text-primary" />
       </Card>
       <Card class="p-4 flex items-center justify-between">
         <div class="flex flex-col">
           <span class="text-[10px] text-muted-foreground font-semibold">{m.academics_grades_last_update()}</span>
-          <span class="text-xs font-semibold text-foreground mt-0.5">{report?.calculated_at ? formatDate(report.calculated_at) : "—"}</span>
+          <span class="text-xs font-semibold text-foreground mt-0.5">{report.calculated_at ? formatDate(report.calculated_at) : "—"}</span>
         </div>
         <Calendar size={20} class="text-muted-foreground" />
       </Card>

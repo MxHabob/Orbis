@@ -30,7 +30,7 @@ const components = $derived((componentsQuery.data || []) as any[]);
     <div class="p-6 border-b border-border/40 bg-muted/20">
       <SheetHeader>
         <SheetTitle class="flex items-center gap-2 text-lg">
-          <Settings2 size={18} class="text-primary" />
+          <SettingsAlt size={18} class="text-primary" />
           Assessment Configuration
         </SheetTitle>
       </SheetHeader>

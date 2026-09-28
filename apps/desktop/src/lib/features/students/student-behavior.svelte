@@ -4,7 +4,8 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api } from "$lib/api";
+import { api, type BehaviorRecordDto } from "$lib/api";
+import { confirmStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import {
   Card,
@@ -14,7 +15,7 @@ import {
   CardAction,
   CardContent,
 } from "@orbis/ui/card";
-import { Plus, Sparkles, UserBadgeCheck } from "@orbis/icons";
+import { Plus, Sparkles, UserBadgeCheck, Trash } from "@orbis/icons";
 import { onMount } from "svelte";
 import { toast } from "@orbis/ui";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -26,7 +27,7 @@ import { behaviorFilterFields } from "$lib/core/filter-configs";
 
 let { orgId, studentId }: { orgId: string; studentId: string } = $props();
 
-let records = $state<any[]>([]);
+let records = $state<BehaviorRecordDto[]>([]);
 let isLoading = $state(true);
 let isGeneratingAI = $state(false);
 let aiSummary = $state<string | null>(null);
@@ -101,16 +102,16 @@ const gridSource = $derived(
   records.map((rec, i) => ({
     ...rec,
     __idx: i + 1,
-    created_at: formatDate(rec.createdAt || rec.created_at) || "—",
+    created_at: formatDate(rec.created_at) || "—",
     record_type:
-      String(rec.recordType || rec.record_type || "").toLowerCase() === "positive"
+      String(rec.record_type || "").toLowerCase() === "positive"
         ? "positive"
         : "negative",
-    category: rec.category || rec.recordType || rec.record_type || "—",
+    category: rec.record_type || "—",
     description: rec.description || "—",
     points: rec.points ?? 0,
     status:
-      String(rec.recordType || rec.record_type || "").toLowerCase() === "positive"
+      String(rec.record_type || "").toLowerCase() === "positive"
         ? "active"
         : "inactive",
   })),

@@ -40,7 +40,7 @@ Every agent starting a session in this repository MUST:
 ## 3. CONTINUATION STATE
 
 - **Last Session Date:** 2026-09-28
-- **Active Phase:** Phase 7 — Employee Affairs, HR & Teacher Assignments Reconciliation (Completed)
+- **Active Phase:** Phase 8 — Scheduling, Timetabling & Lesson Slots Reconciliation (Completed)
 - **Completed Scopes:**
   - **Organization & Settings (Phase 3):**
     - Expanded `UpdateOrgRequest` (`name_ar`, `base_currency_code`, `date_format`, `is_hijri_enabled`, `logo`, `favicon`, `code`) in `orbis-server` & `orbis-app`.
@@ -85,11 +85,29 @@ Every agent starting a session in this repository MUST:
     - Reconciled `local-client.ts` and `remote-client.ts` to implement `deleteEmployee`, `restoreEmployee`, and `bulkRegisterEmployees` with SDK calls.
     - Reconciled `queries.ts` in desktop with `createDeleteEmployeeMutation`, `createRestoreEmployeeMutation`, and `createBulkRegisterEmployeesMutation`.
     - Reconciled `employee-directory.svelte` (added actions for view dossier, edit details, soft delete with `confirmStore`, and removed invalid route fallbacks) and `employee-form.svelte`.
+  - **Scheduling, Timetabling & Lesson Slots (Phase 8):**
+    - Added `RoomUpdated`, `RoomDeleted`, `TimeSlotUpdated`, `TimeSlotDeleted`, and `LessonDeleted` domain events and audit trail mappings in `orbis-domain`.
+    - Added `delete`, `delete_by_period`, `delete_by_class`, and `save_bulk` methods to `RoomRepository`, `TimeSlotRepository`, and `ScheduledLessonRepository` in `orbis-app` and implemented in `orbis-infra`.
+    - Added `update_room`, `delete_room`, `update_time_slot`, `delete_time_slot`, `batch_create_time_slots`, `delete_scheduled_lesson`, and `bulk_schedule_lessons` in `SchedulingService`.
+    - Added `UpdateRoomRequest`, `CreateTimeSlotItemRequest`, `BatchCreateTimeSlotsRequest`, `UpdateTimeSlotRequest`, `BulkScheduleLessonsRequest`, and corresponding REST routes (`PATCH/DELETE /api/v1/rooms/:id`, `POST /api/v1/time-slots/batch`, `GET/PATCH/DELETE /api/v1/time-slots/:id`, `POST /api/v1/scheduled-lessons/bulk`, `DELETE /api/v1/scheduled-lessons/:id`) in `orbis-server` registered in `ApiDoc`.
+    - Added `scheduling_update_room`, `scheduling_delete_room`, `scheduling_batch_create_time_slots`, `scheduling_get_time_slot`, `scheduling_update_time_slot`, `scheduling_delete_time_slot`, `scheduling_bulk_schedule_lessons`, and `scheduling_delete_scheduled_lesson` Tauri IPC commands in `scheduling_cmds.rs` registered in `commands/mod.rs`.
+    - Exported updated OpenAPI specification to `packages/sdk` and regenerated `@orbis/sdk`.
+    - Reconciled `local-client.ts` and `remote-client.ts` with all new scheduling methods.
+    - Reconciled `time-slot-sheet.svelte` (typed update and delete), `room-form.svelte` (update vs create), `rooms-manager.svelte` (row actions with `confirmStore`), `schedule-workspace.svelte` (real deletion and move handling), and `lesson-form.svelte`.
+  - **Assessment, Grading, Conduct & Attendance Tracking (Phase 9):**
+    - Added `AssessmentSchemeCreated`, `AssessmentSchemeUpdated`, `AssessmentSchemeDeleted`, `GradeDeleted`, `AttendanceDeleted`, and `BehaviorDeleted` domain events to `DomainEvent` enum and audit trails in `orbis-domain`.
+    - Added `delete` to `GradeRepository`, `save_batch` and `delete` to `AttendanceRepository`, `find_by_org` and `delete` to `BehaviorRecordRepository` in `orbis-app` and implemented in `orbis-infra`.
+    - Added `BatchGradeItem`, `batch_record_grades`, `delete_grade`, `BatchAttendanceItem`, `batch_mark_attendance`, `delete_attendance`, `list_student_attendance`, `list_behavior_records`, `delete_behavior` in `AssessmentService`.
+    - Reconciled REST routes (`POST /api/v1/assessments/grades/batch`, `DELETE /api/v1/assessments/grades/:id`, `POST /api/v1/assessments/attendance/batch`, `DELETE /api/v1/assessments/attendance/:id`, `GET /api/v1/assessments/attendance/students/:student_id`, `GET /api/v1/assessments/behavior`, `DELETE /api/v1/assessments/behavior/:id`, `POST /api/v1/assessments/gpa`) and registered in `ApiDoc` in `orbis-server`.
+    - Added all corresponding Tauri IPC commands in `assessment_cmds.rs` and registered in `commands/mod.rs`.
+    - Exported updated OpenAPI specification to `packages/sdk` and regenerated `@orbis/sdk`.
+    - Reconciled `local-client.ts`, `remote-client.ts`, and `types.ts` with complete dual-transport parity and typed SDK calls (removed fake stubs in `RemoteClient`).
+    - Reconciled `attendance-tracker.svelte` (`batchMarkAttendance`), `grade-profile.ts` (`batchRecordGrades`), `student-grades.svelte` (typed DTOs & GPA calculation), `student-attendance.svelte`, `student-behavior.svelte`, and `assessment-scheme-sheet.svelte`.
   - **Verification:**
     - `apps/api-rust` cargo check: 0 errors
     - `apps/desktop/src-tauri` cargo check: 0 errors
     - `packages/sdk` tsc: 0 errors
     - `apps/desktop` tsc: 0 errors
-- **Next Scope in Master Execution Plan:** Phase 8 — Scheduling, Timetabling & Lesson Slots Reconciliation.
+- **Next Scope in Master Execution Plan:** Phase 10 — Examination Operations, Seating & Exam Sessions Reconciliation.
 
 

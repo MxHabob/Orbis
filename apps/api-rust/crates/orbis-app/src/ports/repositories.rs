@@ -294,6 +294,7 @@ pub trait GradeRepository: Send + Sync {
     async fn list(&self, org_id: Uuid, filter: orbis_domain::queries::filters::GradeFilter) -> Result<PaginatedList<Grade>, DomainError>;
     async fn save(&self, grade: &Grade) -> Result<(), DomainError>;
     async fn save_batch(&self, grades: &[Grade]) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]
@@ -303,13 +304,17 @@ pub trait AttendanceRepository: Send + Sync {
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<Attendance>, DomainError>;
     async fn list(&self, org_id: Uuid, filter: orbis_domain::queries::filters::AttendanceFilter) -> Result<PaginatedList<Attendance>, DomainError>;
     async fn save(&self, attendance: &Attendance) -> Result<(), DomainError>;
+    async fn save_batch(&self, attendances: &[Attendance]) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait BehaviorRecordRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<BehaviorRecord>, DomainError>;
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<BehaviorRecord>, DomainError>;
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<BehaviorRecord>, DomainError>;
     async fn save(&self, record: &BehaviorRecord) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 // =========================================================================

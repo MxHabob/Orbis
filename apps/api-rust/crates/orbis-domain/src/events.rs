@@ -44,10 +44,16 @@ pub enum DomainEvent {
     LessonDeleted { lesson_id: Uuid, timestamp: DateTime<Utc> },
     TimetableSolved { job_id: Uuid, period_id: Uuid, lessons_count: usize, timestamp: DateTime<Utc> },
 
+    AssessmentSchemeCreated { scheme_id: Uuid, org_id: Uuid, name: String, timestamp: DateTime<Utc> },
+    AssessmentSchemeUpdated { scheme_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    AssessmentSchemeDeleted { scheme_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
     GradeRecorded { grade_id: Uuid, student_id: Uuid, class_subject_id: Uuid, score: Decimal, timestamp: DateTime<Utc> },
+    GradeDeleted { grade_id: Uuid, timestamp: DateTime<Utc> },
     GpaCalculated { student_id: Uuid, period_id: Uuid, gpa: Decimal, cgpa: Decimal, timestamp: DateTime<Utc> },
     AttendanceMarked { attendance_id: Uuid, student_id: Uuid, class_id: Option<Uuid>, class_subject_id: Option<Uuid>, scheduled_lesson_id: Option<Uuid>, status: String, timestamp: DateTime<Utc> },
+    AttendanceDeleted { attendance_id: Uuid, timestamp: DateTime<Utc> },
     BehaviorLogged { record_id: Uuid, student_id: Uuid, record_type: String, points: i32, timestamp: DateTime<Utc> },
+    BehaviorDeleted { record_id: Uuid, timestamp: DateTime<Utc> },
 
     ExamSessionCreated { session_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
     ExamScheduled { schedule_id: Uuid, session_id: Uuid, timestamp: DateTime<Utc> },
@@ -131,10 +137,16 @@ impl DomainEvent {
             DomainEvent::TimetableSolved { job_id, .. } => Some(("timetable.solved", "solver_job", *job_id)),
 
             // Assessment
+            DomainEvent::AssessmentSchemeCreated { scheme_id, .. } => Some(("assessment_scheme.created", "assessment_scheme", *scheme_id)),
+            DomainEvent::AssessmentSchemeUpdated { scheme_id, .. } => Some(("assessment_scheme.updated", "assessment_scheme", *scheme_id)),
+            DomainEvent::AssessmentSchemeDeleted { scheme_id, .. } => Some(("assessment_scheme.deleted", "assessment_scheme", *scheme_id)),
             DomainEvent::GradeRecorded { grade_id, .. } => Some(("grade.recorded", "grade", *grade_id)),
+            DomainEvent::GradeDeleted { grade_id, .. } => Some(("grade.deleted", "grade", *grade_id)),
             DomainEvent::GpaCalculated { .. } => None, // Derived calculation — no audit
             DomainEvent::AttendanceMarked { attendance_id, .. } => Some(("attendance.marked", "attendance", *attendance_id)),
+            DomainEvent::AttendanceDeleted { attendance_id, .. } => Some(("attendance.deleted", "attendance", *attendance_id)),
             DomainEvent::BehaviorLogged { record_id, .. } => Some(("behavior.logged", "behavior_record", *record_id)),
+            DomainEvent::BehaviorDeleted { record_id, .. } => Some(("behavior.deleted", "behavior_record", *record_id)),
 
             // Exams
             DomainEvent::ExamSessionCreated { session_id, .. } => Some(("exam_session.created", "exam_session", *session_id)),

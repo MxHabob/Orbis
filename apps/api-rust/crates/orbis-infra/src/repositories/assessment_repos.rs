@@ -241,6 +241,14 @@ impl GradeRepository for AssessmentRepoImpl {
         }
         Ok(())
     }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        GradeEntity::delete_by_id(id)
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
 }
 
 fn map_attendance_model_to_domain(m: attendance::Model) -> DomainAttendance {
@@ -328,6 +336,21 @@ impl AttendanceRepository for AssessmentRepoImpl {
         }
         Ok(())
     }
+
+    async fn save_batch(&self, attendances: &[DomainAttendance]) -> Result<(), DomainError> {
+        for a in attendances {
+            AttendanceRepository::save(self, a).await?;
+        }
+        Ok(())
+    }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        AttendanceEntity::delete_by_id(id)
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
 }
 
 fn map_grade_model_to_domain(m: grade::Model) -> DomainGrade {
@@ -381,6 +404,20 @@ impl BehaviorRecordRepository for AssessmentRepoImpl {
         }).collect())
     }
 
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainBehaviorRecord>, DomainError> {
+        let models = BehaviorRecordEntity::find()
+            .filter(behavior_record::Column::OrgId.eq(org_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainBehaviorRecord {
+            id: m.id, student_id: m.student_id, org_id: m.org_id,
+            reporter_id: m.reporter_id, record_type: m.record_type,
+            description: m.description, points: m.points,
+            created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
     async fn save(&self, record: &DomainBehaviorRecord) -> Result<(), DomainError> {
         let active = behavior_record::ActiveModel {
             id: Set(record.id), student_id: Set(record.student_id),
@@ -395,6 +432,14 @@ impl BehaviorRecordRepository for AssessmentRepoImpl {
         } else {
             active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         }
+        Ok(())
+    }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        BehaviorRecordEntity::delete_by_id(id)
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
     }
 }

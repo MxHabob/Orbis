@@ -60,15 +60,24 @@ import type {
   AssessmentSchemeDto,
   GradeDto,
   AttendanceDto,
+  BehaviorRecordDto,
+  CumulativeGpaRecordDto,
   CalculationResultDto,
   CreateSchemeRequest,
   UpdateSchemeRequest,
   RecordGradeRequest,
+  RecordGradeItemRequest,
+  BatchRecordGradesRequest,
+  BatchRecordGradesResponseDto,
   MarkAttendanceRequest,
-  BehaviorRecordDto,
+  MarkAttendanceItemRequest,
+  BatchMarkAttendanceRequest,
+  BatchMarkAttendanceResponseDto,
   RecordBehaviorRequest,
   CalculateGradesRequest,
+  CalculateGpaRequest,
   CalculateRankingsRequest,
+  ScoreItemRequest,
   RankingItemDto,
   ExamSessionDto,
   ExamScheduleDto,
@@ -176,8 +185,6 @@ import type {
   UpdateStudentProfileInput,
   ChangeStudyModeInput,
   TransferClassInput,
-  CalculateGpaInput,
-  CumulativeGpaRecordDto,
   StudentFeeFilterParams,
   PaymentFilterParams,
   AiChatRequest,
@@ -826,11 +833,13 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.createScheme({ client: this.client, body: req }));
   }
 
-  async updateAssessmentScheme(id: string, _req: UpdateSchemeRequest): Promise<AssessmentSchemeDto> {
-    return this.call(sdk.getScheme({ client: this.client, path: { id } }));
+  async updateAssessmentScheme(id: string, req: UpdateSchemeRequest): Promise<AssessmentSchemeDto> {
+    return this.call(sdk.updateScheme({ client: this.client, path: { id }, body: req }));
   }
 
-  async deleteAssessmentScheme(_id: string): Promise<void> {}
+  async deleteAssessmentScheme(id: string): Promise<void> {
+    await this.call(sdk.deleteScheme({ client: this.client, path: { id } }));
+  }
 
   async listAssessmentSchemes(): Promise<AssessmentSchemeDto[]> {
     return this.call(sdk.listSchemes({ client: this.client })) ?? [];
@@ -842,6 +851,14 @@ export class RemoteClient implements OrbisApiClient {
 
   async recordGrade(req: RecordGradeRequest): Promise<GradeDto> {
     return this.call(sdk.recordGrade({ client: this.client, body: req }));
+  }
+
+  async batchRecordGrades(req: BatchRecordGradesRequest): Promise<BatchRecordGradesResponseDto> {
+    return this.call(sdk.batchRecordGrades({ client: this.client, body: req }));
+  }
+
+  async deleteGrade(id: string): Promise<void> {
+    await this.call(sdk.deleteGrade({ client: this.client, path: { id } }));
   }
 
   async listGrades(filter?: { studentId?: string; classSubjectId?: string }): Promise<GradeDto[]> {
@@ -857,23 +874,8 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.calculateGrades({ client: this.client, body: req }));
   }
 
-  async calculateGpa(_req: CalculateGpaInput): Promise<CumulativeGpaRecordDto> {
-    return {
-      id: "",
-      org_id: "",
-      student_id: _req.student_id,
-      period_id: _req.period_id || "",
-      term_attempted_credits: 0,
-      term_earned_credits: 0,
-      term_points: 0,
-      term_gpa: 0,
-      cumulative_attempted_credits: 0,
-      cumulative_earned_credits: 0,
-      cumulative_points: 0,
-      cumulative_gpa: 0,
-      standing: "good_standing",
-      calculated_at: new Date().toISOString(),
-    };
+  async calculateGpa(req: CalculateGpaRequest): Promise<CumulativeGpaRecordDto> {
+    return this.call(sdk.calculateGpa({ client: this.client, body: req }));
   }
 
   async calculateRankings(req: CalculateRankingsRequest): Promise<RankingItemDto[]> {
@@ -884,30 +886,36 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.markAttendance({ client: this.client, body: req }));
   }
 
+  async batchMarkAttendance(req: BatchMarkAttendanceRequest): Promise<BatchMarkAttendanceResponseDto> {
+    return this.call(sdk.batchMarkAttendance({ client: this.client, body: req }));
+  }
+
+  async deleteAttendance(id: string): Promise<void> {
+    await this.call(sdk.deleteAttendance({ client: this.client, path: { id } }));
+  }
+
   async listAttendance(classId: string, date: string): Promise<AttendanceDto[]> {
     return this.call(sdk.listAttendance({ client: this.client, query: { class_id: classId, date } as any })) ?? [];
   }
 
   async listStudentAttendance(studentId: string): Promise<AttendanceDto[]> {
-    return this.call(sdk.listAttendance({ client: this.client, query: { student_id: studentId } as any })) ?? [];
+    return this.call(sdk.listStudentAttendance({ client: this.client, path: { id: studentId } })) ?? [];
   }
 
-  async recordBehavior(_req: RecordBehaviorRequest): Promise<BehaviorRecordDto> {
-    return {
-      id: "remote",
-      student_id: _req.student_id,
-      org_id: "",
-      reporter_id: "",
-      record_type: _req.record_type,
-      description: _req.description,
-      points: _req.points,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
+  async recordBehavior(req: RecordBehaviorRequest): Promise<BehaviorRecordDto> {
+    return this.call(sdk.recordBehavior({ client: this.client, body: req }));
   }
 
-  async listStudentBehaviorRecords(_studentId: string): Promise<BehaviorRecordDto[]> {
-    return [];
+  async deleteBehavior(id: string): Promise<void> {
+    await this.call(sdk.deleteBehavior({ client: this.client, path: { id } }));
+  }
+
+  async listStudentBehaviorRecords(studentId: string): Promise<BehaviorRecordDto[]> {
+    return this.call(sdk.listStudentBehavior({ client: this.client, path: { id: studentId } })) ?? [];
+  }
+
+  async listAllBehavior(): Promise<BehaviorRecordDto[]> {
+    return this.call(sdk.listAllBehavior({ client: this.client })) ?? [];
   }
 
   // ── Student Cohort Progression ──────────────────────────────

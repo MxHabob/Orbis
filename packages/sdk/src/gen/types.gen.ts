@@ -332,11 +332,31 @@ export type BatchCreateTimeSlotsRequest = {
     slots: Array<CreateTimeSlotItemRequest>;
 };
 
+export type BatchMarkAttendanceRequest = {
+    class_id: string;
+    date: string;
+    items: Array<MarkAttendanceItemRequest>;
+};
+
+export type BatchMarkAttendanceResponseDto = {
+    attendances: Array<AttendanceDto>;
+    count: number;
+};
+
 export type BatchPrintRequest = {
     batch_config: unknown;
     locale?: string | null;
     parameters?: unknown;
     report_code: string;
+};
+
+export type BatchRecordGradesRequest = {
+    items: Array<RecordGradeItemRequest>;
+};
+
+export type BatchRecordGradesResponseDto = {
+    count: number;
+    grades: Array<GradeDto>;
 };
 
 export type BehaviorRecordDto = {
@@ -418,6 +438,11 @@ export type BulkRegisterStudentsResponse = {
 
 export type BulkScheduleLessonsRequest = {
     lessons: Array<ScheduleLessonRequest>;
+};
+
+export type CalculateGpaRequest = {
+    period_id: string;
+    student_id: string;
 };
 
 export type CalculateGradesRequest = {
@@ -662,6 +687,23 @@ export type CreateYearRequest = {
     name: string;
     name_ar?: string | null;
     start_date: string;
+};
+
+export type CumulativeGpaRecordDto = {
+    calculated_at: string;
+    cumulative_attempted_credits: string;
+    cumulative_earned_credits: string;
+    cumulative_gpa: string;
+    cumulative_points: string;
+    id: string;
+    org_id: string;
+    period_id: string;
+    standing: string;
+    student_id: string;
+    term_attempted_credits: string;
+    term_earned_credits: string;
+    term_gpa: string;
+    term_points: string;
 };
 
 export type CurrencyDto = {
@@ -1094,6 +1136,14 @@ export type LoginResponse = {
     user: UserDto;
 };
 
+export type MarkAttendanceItemRequest = {
+    class_subject_id?: string | null;
+    notes?: string | null;
+    scheduled_lesson_id?: string | null;
+    status: string;
+    student_id: string;
+};
+
 export type MarkAttendanceRequest = {
     class_id: string;
     date: string;
@@ -1363,6 +1413,19 @@ export type RecordBehaviorRequest = {
     description: string;
     points: number;
     record_type: string;
+    student_id: string;
+};
+
+export type RecordGradeItemRequest = {
+    class_subject_id: string;
+    component_id?: string | null;
+    enrollment_id?: string | null;
+    is_excused?: boolean | null;
+    is_exempt?: boolean | null;
+    max_score?: string | null;
+    notes?: string | null;
+    period_id: string;
+    score: string;
     student_id: string;
 };
 
@@ -2346,6 +2409,35 @@ export type MarkAttendanceResponses = {
 
 export type MarkAttendanceResponse = MarkAttendanceResponses[keyof MarkAttendanceResponses];
 
+export type BatchMarkAttendanceData = {
+    body: BatchMarkAttendanceRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/attendance/batch';
+};
+
+export type BatchMarkAttendanceResponses = {
+    200: BatchMarkAttendanceResponseDto;
+};
+
+export type BatchMarkAttendanceResponse = BatchMarkAttendanceResponses[keyof BatchMarkAttendanceResponses];
+
+export type DeleteAttendanceData = {
+    body?: never;
+    path: {
+        /**
+         * Attendance ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/attendance/{id}';
+};
+
+export type DeleteAttendanceResponses = {
+    200: unknown;
+};
+
 export type ListDevicesData = {
     body?: never;
     path?: never;
@@ -2713,6 +2805,19 @@ export type RunTickResponses = {
     200: unknown;
 };
 
+export type ListAllBehaviorData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/behavior';
+};
+
+export type ListAllBehaviorResponses = {
+    200: Array<BehaviorRecordDto>;
+};
+
+export type ListAllBehaviorResponse = ListAllBehaviorResponses[keyof ListAllBehaviorResponses];
+
 export type RecordBehaviorData = {
     body: RecordBehaviorRequest;
     path?: never;
@@ -2725,6 +2830,22 @@ export type RecordBehaviorResponses = {
 };
 
 export type RecordBehaviorResponse = RecordBehaviorResponses[keyof RecordBehaviorResponses];
+
+export type DeleteBehaviorData = {
+    body?: never;
+    path: {
+        /**
+         * Behavior Record ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/behavior/{id}';
+};
+
+export type DeleteBehaviorResponses = {
+    200: unknown;
+};
 
 export type BootstrapOrgEndpointData = {
     body: unknown;
@@ -3462,6 +3583,19 @@ export type CalculateGradesResponses = {
 
 export type CalculateGradesResponse = CalculateGradesResponses[keyof CalculateGradesResponses];
 
+export type CalculateGpaData = {
+    body: CalculateGpaRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/grades/actions/calculate-gpa';
+};
+
+export type CalculateGpaResponses = {
+    200: CumulativeGpaRecordDto;
+};
+
+export type CalculateGpaResponse = CalculateGpaResponses[keyof CalculateGpaResponses];
+
 export type CalculateRankingsData = {
     body: CalculateRankingsRequest;
     path?: never;
@@ -3474,6 +3608,35 @@ export type CalculateRankingsResponses = {
 };
 
 export type CalculateRankingsResponse = CalculateRankingsResponses[keyof CalculateRankingsResponses];
+
+export type BatchRecordGradesData = {
+    body: BatchRecordGradesRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/grades/batch';
+};
+
+export type BatchRecordGradesResponses = {
+    200: BatchRecordGradesResponseDto;
+};
+
+export type BatchRecordGradesResponse = BatchRecordGradesResponses[keyof BatchRecordGradesResponses];
+
+export type DeleteGradeData = {
+    body?: never;
+    path: {
+        /**
+         * Grade ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/grades/{id}';
+};
+
+export type DeleteGradeResponses = {
+    200: unknown;
+};
 
 export type ListGroupsData = {
     body?: never;
@@ -4817,6 +4980,24 @@ export type GetStudentResponses = {
 };
 
 export type GetStudentResponse = GetStudentResponses[keyof GetStudentResponses];
+
+export type ListStudentAttendanceData = {
+    body?: never;
+    path: {
+        /**
+         * Student ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/students/{id}/attendance';
+};
+
+export type ListStudentAttendanceResponses = {
+    200: Array<AttendanceDto>;
+};
+
+export type ListStudentAttendanceResponse = ListStudentAttendanceResponses[keyof ListStudentAttendanceResponses];
 
 export type ListStudentBehaviorData = {
     body?: never;

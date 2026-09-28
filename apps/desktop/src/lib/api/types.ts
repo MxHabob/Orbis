@@ -94,13 +94,24 @@ import type {
   AssessmentSchemeDto,
   GradeDto,
   AttendanceDto,
+  BehaviorRecordDto,
+  CumulativeGpaRecordDto,
   CalculationResultDto,
   CreateSchemeRequest,
   UpdateSchemeRequest,
   RecordGradeRequest,
+  RecordGradeItemRequest,
+  BatchRecordGradesRequest,
+  BatchRecordGradesResponseDto,
   MarkAttendanceRequest,
+  MarkAttendanceItemRequest,
+  BatchMarkAttendanceRequest,
+  BatchMarkAttendanceResponseDto,
+  RecordBehaviorRequest,
   CalculateGradesRequest,
+  CalculateGpaRequest,
   CalculateRankingsRequest,
+  ScoreItemRequest,
   RankingItemDto,
   ExamSessionDto,
   ExamScheduleDto,
@@ -143,8 +154,6 @@ import type {
   ReverseJournalRequest,
   SplitFeeRequest,
   RefundStudentFeeRequest,
-  BehaviorRecordDto,
-  RecordBehaviorRequest,
   DuplicateCheckRequest,
   DuplicateCheckResponse,
   AiChatRequest,
@@ -520,30 +529,6 @@ export interface PromoteCohortInput {
   sourcePeriodId?: string;
   targetPeriodId?: string;
   jobName?: string;
-}
-
-export interface CumulativeGpaRecordDto {
-  id: string;
-  org_id: string;
-  student_id: string;
-  period_id: string;
-  term_attempted_credits: number | string;
-  term_earned_credits: number | string;
-  term_points: number | string;
-  term_gpa: number | string;
-  cumulative_attempted_credits: number | string;
-  cumulative_earned_credits: number | string;
-  cumulative_points: number | string;
-  cumulative_gpa: number | string;
-  standing: string;
-  calculated_at: string;
-}
-
-export interface CalculateGpaInput {
-  student_id: string;
-  period_id: string;
-  studentId?: string;
-  periodId?: string;
 }
 
 
@@ -1068,18 +1053,28 @@ export interface OrbisApiClient {
   listAssessmentSchemes(): Promise<AssessmentSchemeDto[]>;
   getAssessmentScheme(id: string): Promise<AssessmentSchemeDto>;
   recordGrade(req: RecordGradeRequest): Promise<GradeDto>;
+  batchRecordGrades(
+    req: BatchRecordGradesRequest,
+  ): Promise<BatchRecordGradesResponseDto>;
+  deleteGrade(id: string): Promise<void>;
   listGrades(filter?: {
     studentId?: string;
     classSubjectId?: string;
   }): Promise<GradeDto[]>;
   calculateGrades(req: CalculateGradesRequest): Promise<CalculationResultDto>;
-  calculateGpa(req: CalculateGpaInput): Promise<CumulativeGpaRecordDto>;
+  calculateGpa(req: CalculateGpaRequest): Promise<CumulativeGpaRecordDto>;
   calculateRankings(req: CalculateRankingsRequest): Promise<RankingItemDto[]>;
   markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto>;
+  batchMarkAttendance(
+    req: BatchMarkAttendanceRequest,
+  ): Promise<BatchMarkAttendanceResponseDto>;
+  deleteAttendance(id: string): Promise<void>;
   listAttendance(classId: string, date: string): Promise<AttendanceDto[]>;
   listStudentAttendance(studentId: string): Promise<AttendanceDto[]>;
   recordBehavior(req: RecordBehaviorRequest): Promise<BehaviorRecordDto>;
+  deleteBehavior(id: string): Promise<void>;
   listStudentBehaviorRecords(studentId: string): Promise<BehaviorRecordDto[]>;
+  listAllBehavior(): Promise<BehaviorRecordDto[]>;
 
   // ── Student Cohort Progression ──────────────────────────────
   evaluateCohort(sourcePeriodId: string): Promise<StudentProgressionItemInput[]>;

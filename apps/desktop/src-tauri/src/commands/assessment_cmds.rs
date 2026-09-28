@@ -1,4 +1,4 @@
-//! Tauri IPC commands — Assessment (Schemes, Grades, Attendance).
+//! Tauri IPC commands — Assessment (Schemes, Grades, Attendance, Behavior).
 
 use tauri::State;
 use serde::{Deserialize, Serialize};
@@ -8,9 +8,11 @@ use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
+use orbis_app::services::assessment_service::{BatchGradeItem, BatchAttendanceItem};
+
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct AssessmentSchemeDto {
     pub id: String,
     pub org_id: String,
@@ -18,6 +20,8 @@ pub struct AssessmentSchemeDto {
     pub description: Option<String>,
     pub max_score: f64,
     pub formula: Option<serde_json::Value>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Deserialize)]
@@ -37,7 +41,7 @@ pub struct UpdateSchemeInput {
     pub formula: Option<serde_json::Value>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct GradeDto {
     pub id: String,
     pub org_id: String,
@@ -48,9 +52,17 @@ pub struct GradeDto {
     pub component_id: Option<String>,
     pub score: Decimal,
     pub max_score: Decimal,
+    pub weight: Option<Decimal>,
+    pub letter_grade: Option<String>,
+    pub is_final: bool,
     pub is_excused: bool,
     pub is_exempt: bool,
+    pub change_reason: Option<String>,
+    pub recorded_by: Option<String>,
+    pub updated_by: Option<String>,
     pub notes: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Deserialize)]
@@ -69,7 +81,34 @@ pub struct RecordGradeInput {
     pub notes: Option<String>,
 }
 
+#[derive(Deserialize)]
+pub struct RecordGradeItemInput {
+    pub period_id: String,
+    pub student_id: String,
+    pub enrollment_id: Option<String>,
+    pub class_subject_id: String,
+    pub component_id: Option<String>,
+    pub score: Decimal,
+    pub max_score: Option<Decimal>,
+    #[serde(default)]
+    pub is_excused: bool,
+    #[serde(default)]
+    pub is_exempt: bool,
+    pub notes: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct BatchRecordGradesInput {
+    pub items: Vec<RecordGradeItemInput>,
+}
+
 #[derive(Serialize)]
+pub struct BatchRecordGradesResponseDto {
+    pub grades: Vec<GradeDto>,
+    pub count: usize,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct AttendanceDto {
     pub id: String,
     pub student_id: String,
@@ -78,7 +117,10 @@ pub struct AttendanceDto {
     pub scheduled_lesson_id: Option<String>,
     pub date: String,
     pub status: String,
-    pub note: Option<String>,
+    pub notes: Option<String>,
+    pub marked_by: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Deserialize)]
@@ -88,6 +130,28 @@ pub struct MarkAttendanceInput {
     pub date: String,
     pub status: String,
     pub notes: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct MarkAttendanceItemInput {
+    pub student_id: String,
+    pub status: String,
+    pub notes: Option<String>,
+    pub class_subject_id: Option<String>,
+    pub scheduled_lesson_id: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct BatchMarkAttendanceInput {
+    pub class_id: String,
+    pub date: String,
+    pub items: Vec<MarkAttendanceItemInput>,
+}
+
+#[derive(Serialize)]
+pub struct BatchMarkAttendanceResponseDto {
+    pub attendances: Vec<AttendanceDto>,
+    pub count: usize,
 }
 
 #[derive(Deserialize)]
@@ -109,6 +173,126 @@ pub struct GradeFilter {
     pub class_subject_id: Option<String>,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct CumulativeGpaRecordDto {
+    pub id: String,
+    pub org_id: String,
+    pub student_id: String,
+    pub period_id: String,
+    pub term_attempted_credits: Decimal,
+    pub term_earned_credits: Decimal,
+    pub term_points: Decimal,
+    pub term_gpa: Decimal,
+    pub cumulative_attempted_credits: Decimal,
+    pub cumulative_earned_credits: Decimal,
+    pub cumulative_points: Decimal,
+    pub cumulative_gpa: Decimal,
+    pub standing: String,
+    pub calculated_at: String,
+}
+
+#[derive(Deserialize)]
+pub struct CalculateGpaInput {
+    pub student_id: String,
+    pub period_id: String,
+}
+
+#[derive(Deserialize)]
+pub struct ScoreItemInput {
+    pub id: String,
+    pub score: Decimal,
+}
+
+#[derive(Deserialize)]
+pub struct CalculateRankingsInput {
+    pub items: Vec<ScoreItemInput>,
+    pub tie_policy: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct RankingItemDto {
+    pub id: String,
+    pub rank: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BehaviorRecordDto {
+    pub id: String,
+    pub student_id: String,
+    pub org_id: String,
+    pub reporter_id: String,
+    pub record_type: String,
+    pub description: String,
+    pub points: i32,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RecordBehaviorInput {
+    pub student_id: String,
+    pub record_type: String,
+    pub description: String,
+    pub points: i32,
+}
+
+fn grade_to_dto(g: orbis_domain::entities::grade::Grade) -> GradeDto {
+    GradeDto {
+        id: g.id.to_string(),
+        org_id: g.org_id.to_string(),
+        period_id: g.period_id.to_string(),
+        student_id: g.student_id.to_string(),
+        enrollment_id: g.enrollment_id.map(|e| e.to_string()),
+        class_subject_id: g.class_subject_id.to_string(),
+        component_id: g.component_id.map(|c| c.to_string()),
+        score: g.score,
+        max_score: g.max_score,
+        weight: g.weight,
+        letter_grade: g.letter_grade,
+        is_final: g.is_final,
+        is_excused: g.is_excused,
+        is_exempt: g.is_exempt,
+        change_reason: g.change_reason,
+        recorded_by: g.recorded_by.map(|u| u.to_string()),
+        updated_by: g.updated_by.map(|u| u.to_string()),
+        notes: g.notes,
+        created_at: g.created_at.to_rfc3339(),
+        updated_at: g.updated_at.to_rfc3339(),
+    }
+}
+
+fn attendance_to_dto(a: orbis_domain::entities::attendance::Attendance) -> AttendanceDto {
+    AttendanceDto {
+        id: a.id.to_string(),
+        student_id: a.student_id.to_string(),
+        class_id: a.class_id.map(|c| c.to_string()),
+        class_subject_id: a.class_subject_id.map(|c| c.to_string()),
+        scheduled_lesson_id: a.scheduled_lesson_id.map(|s| s.to_string()),
+        date: a.attendance_date.to_string(),
+        status: a.status,
+        notes: a.notes,
+        marked_by: a.marked_by.map(|u| u.to_string()),
+        created_at: a.created_at.to_rfc3339(),
+        updated_at: a.updated_at.to_rfc3339(),
+    }
+}
+
+fn behavior_to_dto(r: orbis_domain::entities::behavior_record::BehaviorRecord) -> BehaviorRecordDto {
+    BehaviorRecordDto {
+        id: r.id.to_string(),
+        student_id: r.student_id.to_string(),
+        org_id: r.org_id.to_string(),
+        reporter_id: r.reporter_id.to_string(),
+        record_type: r.record_type,
+        description: r.description,
+        points: r.points,
+        created_at: r.created_at.to_rfc3339(),
+        updated_at: r.updated_at.to_rfc3339(),
+    }
+}
+
+// ── Handlers ────────────────────────────────────────────────────
+
 #[tauri::command]
 pub async fn assessment_create_scheme(request: CreateSchemeInput, state: State<'_, AppState>) -> Result<ApiResponse<AssessmentSchemeDto>, String> {
     let ctx = make_ctx(&state);
@@ -123,6 +307,8 @@ pub async fn assessment_create_scheme(request: CreateSchemeInput, state: State<'
         description: s.description,
         max_score: s.max_score,
         formula: s.formula,
+        created_at: s.created_at.to_rfc3339(),
+        updated_at: s.updated_at.to_rfc3339(),
     }))
 }
 
@@ -137,6 +323,8 @@ pub async fn assessment_list_schemes(state: State<'_, AppState>) -> Result<ApiRe
         description: s.description,
         max_score: s.max_score,
         formula: s.formula,
+        created_at: s.created_at.to_rfc3339(),
+        updated_at: s.updated_at.to_rfc3339(),
     }).collect()))
 }
 
@@ -151,6 +339,8 @@ pub async fn assessment_get_scheme(id: String, state: State<'_, AppState>) -> Re
         description: s.description,
         max_score: s.max_score,
         formula: s.formula,
+        created_at: s.created_at.to_rfc3339(),
+        updated_at: s.updated_at.to_rfc3339(),
     }))
 }
 
@@ -177,6 +367,8 @@ pub async fn assessment_update_scheme(request: UpdateSchemeInput, state: State<'
         description: s.description,
         max_score: s.max_score,
         formula: s.formula,
+        created_at: s.created_at.to_rfc3339(),
+        updated_at: s.updated_at.to_rfc3339(),
     }))
 }
 
@@ -213,20 +405,62 @@ pub async fn assessment_record_grade(request: RecordGradeInput, state: State<'_,
     .await
     .map_err(|e| e.to_string())?;
 
-    Ok(ok(GradeDto {
-        id: g.id.to_string(),
-        org_id: g.org_id.to_string(),
-        period_id: g.period_id.to_string(),
-        student_id: g.student_id.to_string(),
-        enrollment_id: g.enrollment_id.map(|e| e.to_string()),
-        class_subject_id: g.class_subject_id.to_string(),
-        component_id: g.component_id.map(|c| c.to_string()),
-        score: g.score,
-        max_score: g.max_score,
-        is_excused: g.is_excused,
-        is_exempt: g.is_exempt,
-        notes: g.notes,
+    Ok(ok(grade_to_dto(g)))
+}
+
+#[tauri::command]
+pub async fn assessment_batch_record_grades(
+    request: BatchRecordGradesInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<BatchRecordGradesResponseDto>, String> {
+    let ctx = make_ctx(&state);
+    let mut items = Vec::with_capacity(request.items.len());
+
+    for item in request.items {
+        let period_id = Uuid::parse_str(&item.period_id).map_err(|_| "Invalid periodId")?;
+        let student_id = Uuid::parse_str(&item.student_id).map_err(|_| "Invalid studentId")?;
+        let enrollment_id = item.enrollment_id.and_then(|e| Uuid::parse_str(&e).ok());
+        let class_subject_id = Uuid::parse_str(&item.class_subject_id).map_err(|_| "Invalid classSubjectId")?;
+        let component_id = item.component_id.and_then(|c| Uuid::parse_str(&c).ok());
+
+        items.push(BatchGradeItem {
+            period_id,
+            student_id,
+            enrollment_id,
+            class_subject_id,
+            component_id,
+            score: item.score,
+            max_score: item.max_score,
+            is_excused: item.is_excused,
+            is_exempt: item.is_exempt,
+            notes: item.notes,
+        });
+    }
+
+    let grades = state.assessment_service.batch_record_grades(&ctx, ctx.tenant_id, items)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let dtos: Vec<GradeDto> = grades.into_iter().map(grade_to_dto).collect();
+    let count = dtos.len();
+
+    Ok(ok(BatchRecordGradesResponseDto {
+        grades: dtos,
+        count,
     }))
+}
+
+#[tauri::command]
+pub async fn assessment_delete_grade(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<()>, String> {
+    let ctx = make_ctx(&state);
+    let grade_id = Uuid::parse_str(&id).map_err(|_| "Invalid grade ID")?;
+    state.assessment_service.delete_grade(&ctx, ctx.tenant_id, grade_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(()))
 }
 
 #[tauri::command]
@@ -240,95 +474,8 @@ pub async fn assessment_list_grades(filter: Option<GradeFilter>, state: State<'_
         Ok(vec![])
     }.map_err(|e| e.to_string())?;
 
-    Ok(ok(items.into_iter().map(|g| GradeDto {
-        id: g.id.to_string(),
-        org_id: g.org_id.to_string(),
-        period_id: g.period_id.to_string(),
-        student_id: g.student_id.to_string(),
-        enrollment_id: g.enrollment_id.map(|e| e.to_string()),
-        class_subject_id: g.class_subject_id.to_string(),
-        component_id: g.component_id.map(|c| c.to_string()),
-        score: g.score,
-        max_score: g.max_score,
-        is_excused: g.is_excused,
-        is_exempt: g.is_exempt,
-        notes: g.notes,
-    }).collect()))
+    Ok(ok(items.into_iter().map(grade_to_dto).collect()))
 }
-
-#[tauri::command]
-pub async fn assessment_mark_attendance(request: MarkAttendanceInput, state: State<'_, AppState>) -> Result<ApiResponse<AttendanceDto>, String> {
-    let ctx = make_ctx(&state);
-    let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
-    let class_id = Uuid::parse_str(&request.class_id).map_err(|_| "Invalid classId")?;
-    let date = NaiveDate::parse_from_str(&request.date, "%Y-%m-%d").map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
-
-    let a = state.assessment_service.mark_attendance(&ctx, ctx.tenant_id, Uuid::nil(), student_id, Some(class_id), None, date, request.status, request.notes)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    Ok(ok(AttendanceDto {
-        id: a.id.to_string(),
-        student_id: a.student_id.to_string(),
-        class_id: a.class_id.map(|c| c.to_string()),
-        class_subject_id: a.class_subject_id.map(|c| c.to_string()),
-        scheduled_lesson_id: a.scheduled_lesson_id.map(|s| s.to_string()),
-        date: a.attendance_date.to_string(),
-        status: a.status,
-        note: a.notes,
-    }))
-}
-
-#[tauri::command]
-pub async fn assessment_list_attendance(class_id: String, date: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<AttendanceDto>>, String> {
-    let cid = Uuid::parse_str(&class_id).map_err(|_| "Invalid class ID")?;
-    let parsed_date = NaiveDate::parse_from_str(&date, "%Y-%m-%d").map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
-    let items = state.attendance_repo.find_by_class_and_date(cid, parsed_date).await.map_err(|e| e.to_string())?;
-    Ok(ok(items.into_iter().map(|a| AttendanceDto {
-        id: a.id.to_string(),
-        student_id: a.student_id.to_string(),
-        class_id: a.class_id.map(|c| c.to_string()),
-        class_subject_id: a.class_subject_id.map(|c| c.to_string()),
-        scheduled_lesson_id: a.scheduled_lesson_id.map(|s| s.to_string()),
-        date: a.attendance_date.to_string(),
-        status: a.status,
-        note: a.notes,
-    }).collect()))
-}
-
-#[tauri::command]
-pub async fn assessment_list_student_attendance(
-    student_id: String,
-    state: State<'_, AppState>,
-) -> Result<ApiResponse<Vec<AttendanceDto>>, String> {
-    let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
-    let domain_filter = orbis_domain::queries::filters::AttendanceFilter {
-        student_id: Some(sid),
-        class_id: None,
-        class_subject_id: None,
-        date: None,
-        status: None,
-        pagination: Some(orbis_domain::queries::filters::PaginationParams {
-            page: Some(1),
-            page_size: Some(1000),
-            sort_by: None,
-            sort_dir: None,
-        }),
-    };
-    let ctx = make_ctx(&state);
-    let items = state.attendance_repo.list(ctx.tenant_id, domain_filter).await.map_err(|e| e.to_string())?;
-    Ok(ok(items.items.into_iter().map(|a| AttendanceDto {
-        id: a.id.to_string(),
-        student_id: a.student_id.to_string(),
-        class_id: a.class_id.map(|c| c.to_string()),
-        class_subject_id: a.class_subject_id.map(|c| c.to_string()),
-        scheduled_lesson_id: a.scheduled_lesson_id.map(|s| s.to_string()),
-        date: a.attendance_date.to_string(),
-        status: a.status,
-        note: a.notes,
-    }).collect()))
-}
-
 
 #[tauri::command]
 pub async fn assessment_calculate_grades(request: CalculateGradesInput, state: State<'_, AppState>) -> Result<ApiResponse<CalculationResultDto>, String> {
@@ -345,30 +492,6 @@ pub async fn assessment_calculate_grades(request: CalculateGradesInput, state: S
         final_score,
         message: "Calculated successfully".to_string(),
     }))
-}
-
-#[derive(Serialize)]
-pub struct CumulativeGpaRecordDto {
-    pub id: String,
-    pub org_id: String,
-    pub student_id: String,
-    pub period_id: String,
-    pub term_attempted_credits: Decimal,
-    pub term_earned_credits: Decimal,
-    pub term_points: Decimal,
-    pub term_gpa: Decimal,
-    pub cumulative_attempted_credits: Decimal,
-    pub cumulative_earned_credits: Decimal,
-    pub cumulative_points: Decimal,
-    pub cumulative_gpa: Decimal,
-    pub standing: String,
-    pub calculated_at: String,
-}
-
-#[derive(Deserialize)]
-pub struct CalculateGpaInput {
-    pub student_id: String,
-    pub period_id: String,
 }
 
 #[tauri::command]
@@ -403,24 +526,6 @@ pub async fn assessment_calculate_gpa(
     }))
 }
 
-#[derive(Deserialize)]
-pub struct ScoreItemInput {
-    pub id: String,
-    pub score: Decimal,
-}
-
-#[derive(Deserialize)]
-pub struct CalculateRankingsInput {
-    pub items: Vec<ScoreItemInput>,
-    pub tie_policy: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct RankingItemDto {
-    pub id: String,
-    pub rank: u32,
-}
-
 #[tauri::command]
 pub async fn assessment_calculate_rankings(
     request: CalculateRankingsInput,
@@ -452,39 +557,87 @@ pub async fn assessment_calculate_rankings(
     Ok(ok(dtos))
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct BehaviorRecordDto {
-    pub id: String,
-    pub student_id: String,
-    pub org_id: String,
-    pub reporter_id: String,
-    pub record_type: String,
-    pub description: String,
-    pub points: i32,
-    pub created_at: String,
-    pub updated_at: String,
+#[tauri::command]
+pub async fn assessment_mark_attendance(request: MarkAttendanceInput, state: State<'_, AppState>) -> Result<ApiResponse<AttendanceDto>, String> {
+    let ctx = make_ctx(&state);
+    let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
+    let class_id = Uuid::parse_str(&request.class_id).map_err(|_| "Invalid classId")?;
+    let date = NaiveDate::parse_from_str(&request.date, "%Y-%m-%d").map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
+
+    let a = state.assessment_service.mark_attendance(&ctx, ctx.tenant_id, Uuid::nil(), student_id, Some(class_id), None, date, request.status, request.notes)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(attendance_to_dto(a)))
 }
 
-#[derive(Deserialize, Debug)]
-pub struct RecordBehaviorInput {
-    pub student_id: String,
-    pub record_type: String,
-    pub description: String,
-    pub points: i32,
-}
+#[tauri::command]
+pub async fn assessment_batch_mark_attendance(
+    request: BatchMarkAttendanceInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<BatchMarkAttendanceResponseDto>, String> {
+    let ctx = make_ctx(&state);
+    let class_id = Uuid::parse_str(&request.class_id).map_err(|_| "Invalid classId")?;
+    let date = NaiveDate::parse_from_str(&request.date, "%Y-%m-%d").map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
 
-fn behavior_to_dto(r: orbis_domain::entities::behavior_record::BehaviorRecord) -> BehaviorRecordDto {
-    BehaviorRecordDto {
-        id: r.id.to_string(),
-        student_id: r.student_id.to_string(),
-        org_id: r.org_id.to_string(),
-        reporter_id: r.reporter_id.to_string(),
-        record_type: r.record_type,
-        description: r.description,
-        points: r.points,
-        created_at: r.created_at.to_rfc3339(),
-        updated_at: r.updated_at.to_rfc3339(),
+    let mut items = Vec::with_capacity(request.items.len());
+    for item in request.items {
+        let student_id = Uuid::parse_str(&item.student_id).map_err(|_| "Invalid studentId")?;
+        let class_subject_id = item.class_subject_id.and_then(|cs| Uuid::parse_str(&cs).ok());
+        let scheduled_lesson_id = item.scheduled_lesson_id.and_then(|sl| Uuid::parse_str(&sl).ok());
+
+        items.push(BatchAttendanceItem {
+            student_id,
+            status: item.status,
+            notes: item.notes,
+            class_subject_id,
+            scheduled_lesson_id,
+        });
     }
+
+    let list = state.assessment_service.batch_mark_attendance(&ctx, ctx.tenant_id, class_id, date, items)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let dtos: Vec<AttendanceDto> = list.into_iter().map(attendance_to_dto).collect();
+    let count = dtos.len();
+
+    Ok(ok(BatchMarkAttendanceResponseDto {
+        attendances: dtos,
+        count,
+    }))
+}
+
+#[tauri::command]
+pub async fn assessment_delete_attendance(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<()>, String> {
+    let ctx = make_ctx(&state);
+    let attendance_id = Uuid::parse_str(&id).map_err(|_| "Invalid attendance ID")?;
+    state.assessment_service.delete_attendance(&ctx, ctx.tenant_id, attendance_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(()))
+}
+
+#[tauri::command]
+pub async fn assessment_list_attendance(class_id: String, date: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<AttendanceDto>>, String> {
+    let cid = Uuid::parse_str(&class_id).map_err(|_| "Invalid class ID")?;
+    let parsed_date = NaiveDate::parse_from_str(&date, "%Y-%m-%d").map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
+    let items = state.attendance_repo.find_by_class_and_date(cid, parsed_date).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(attendance_to_dto).collect()))
+}
+
+#[tauri::command]
+pub async fn assessment_list_student_attendance(
+    student_id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<AttendanceDto>>, String> {
+    let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
+    let ctx = make_ctx(&state);
+    let items = state.assessment_service.list_student_attendance(&ctx, sid).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(attendance_to_dto).collect()))
 }
 
 #[tauri::command]
@@ -503,6 +656,19 @@ pub async fn assessment_record_behavior(
 }
 
 #[tauri::command]
+pub async fn assessment_delete_behavior(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<()>, String> {
+    let ctx = make_ctx(&state);
+    let behavior_id = Uuid::parse_str(&id).map_err(|_| "Invalid behavior record ID")?;
+    state.assessment_service.delete_behavior(&ctx, ctx.tenant_id, behavior_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(()))
+}
+
+#[tauri::command]
 pub async fn assessment_list_student_behavior_records(
     student_id: String,
     state: State<'_, AppState>,
@@ -517,3 +683,15 @@ pub async fn assessment_list_student_behavior_records(
     Ok(ok(records.into_iter().map(behavior_to_dto).collect()))
 }
 
+#[tauri::command]
+pub async fn assessment_list_all_behavior(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<BehaviorRecordDto>>, String> {
+    let ctx = make_ctx(&state);
+    let records = state.assessment_service
+        .list_behavior_records(&ctx, ctx.tenant_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(records.into_iter().map(behavior_to_dto).collect()))
+}

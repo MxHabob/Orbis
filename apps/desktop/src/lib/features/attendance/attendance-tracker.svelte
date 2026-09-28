@@ -134,15 +134,15 @@ async function handleSaveAttendance() {
 
   isSaving = true;
   try {
-    for (const row of attendanceRows) {
-      await api.markAttendance({
-        classId: selectedClassId,
-        studentId: row.studentId,
-        date: selectedDate,
+    await api.batchMarkAttendance({
+      class_id: selectedClassId,
+      date: selectedDate,
+      items: attendanceRows.map((row) => ({
+        student_id: row.studentId,
         status: row.status,
-        remarks: row.remarks || undefined,
-      });
-    }
+        notes: row.remarks || undefined,
+      })),
+    });
     toast.success("تم حفظ سجل الحضور والغياب بنجاح");
     await loadRosterAndAttendance();
   } catch (e) {

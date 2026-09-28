@@ -53,15 +53,24 @@ import type {
   AssessmentSchemeDto,
   GradeDto,
   AttendanceDto,
+  BehaviorRecordDto,
+  CumulativeGpaRecordDto,
   CalculationResultDto,
   CreateSchemeRequest,
   UpdateSchemeRequest,
   RecordGradeRequest,
+  RecordGradeItemRequest,
+  BatchRecordGradesRequest,
+  BatchRecordGradesResponseDto,
   MarkAttendanceRequest,
-  BehaviorRecordDto,
+  MarkAttendanceItemRequest,
+  BatchMarkAttendanceRequest,
+  BatchMarkAttendanceResponseDto,
   RecordBehaviorRequest,
   CalculateGradesRequest,
+  CalculateGpaRequest,
   CalculateRankingsRequest,
+  ScoreItemRequest,
   RankingItemDto,
   ExamSessionDto,
   ExamScheduleDto,
@@ -145,8 +154,6 @@ import type {
   PromotionDetailDto,
   StudentProgressionItemInput,
   PromoteCohortInput,
-  CumulativeGpaRecordDto,
-  CalculateGpaInput,
   HealthResponse,
   OrganizationReadiness,
   EntitlementResult,
@@ -626,7 +633,7 @@ export class LocalClient implements OrbisApiClient {
           id,
           name: req.name,
           description: req.description,
-          maxScore: req.max_score,
+          max_score: req.max_score,
           formula: req.formula,
         },
       }),
@@ -644,6 +651,16 @@ export class LocalClient implements OrbisApiClient {
   async recordGrade(req: RecordGradeRequest): Promise<GradeDto> {
     return unwrap(await invoke("assessment_record_grade", { request: req }));
   }
+  async batchRecordGrades(
+    req: BatchRecordGradesRequest,
+  ): Promise<BatchRecordGradesResponseDto> {
+    return unwrap(
+      await invoke("assessment_batch_record_grades", { request: req }),
+    );
+  }
+  async deleteGrade(id: string): Promise<void> {
+    unwrap(await invoke("assessment_delete_grade", { id }));
+  }
   async listGrades(filter?: {
     studentId?: string;
     classSubjectId?: string;
@@ -660,7 +677,7 @@ export class LocalClient implements OrbisApiClient {
     );
   }
   async calculateGpa(
-    req: CalculateGpaInput,
+    req: CalculateGpaRequest,
   ): Promise<CumulativeGpaRecordDto> {
     return unwrap(
       await invoke("assessment_calculate_gpa", { request: req }),
@@ -676,6 +693,16 @@ export class LocalClient implements OrbisApiClient {
   async markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto> {
     return unwrap(await invoke("assessment_mark_attendance", { request: req }));
   }
+  async batchMarkAttendance(
+    req: BatchMarkAttendanceRequest,
+  ): Promise<BatchMarkAttendanceResponseDto> {
+    return unwrap(
+      await invoke("assessment_batch_mark_attendance", { request: req }),
+    );
+  }
+  async deleteAttendance(id: string): Promise<void> {
+    unwrap(await invoke("assessment_delete_attendance", { id }));
+  }
   async listAttendance(
     classId: string,
     date: string,
@@ -689,11 +716,13 @@ export class LocalClient implements OrbisApiClient {
       await invoke("assessment_list_student_attendance", { studentId }),
     );
   }
-
   async recordBehavior(req: RecordBehaviorRequest): Promise<BehaviorRecordDto> {
     return unwrap(
       await invoke("assessment_record_behavior", { request: req }),
     );
+  }
+  async deleteBehavior(id: string): Promise<void> {
+    unwrap(await invoke("assessment_delete_behavior", { id }));
   }
   async listStudentBehaviorRecords(
     studentId: string,
@@ -701,6 +730,9 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(
       await invoke("assessment_list_student_behavior_records", { studentId }),
     );
+  }
+  async listAllBehavior(): Promise<BehaviorRecordDto[]> {
+    return unwrap(await invoke("assessment_list_all_behavior"));
   }
 
   // ── Student Cohort Progression ──────────────────────────────
