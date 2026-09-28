@@ -13,9 +13,10 @@ import { formatDate, l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Pin, Plus, Search, Refresh } from "@orbis/icons";
 import RoomCreateSheet from "$lib/features/academics/components/room-create-sheet.svelte";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
+import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { roomFilterFields } from "$lib/core/filter-configs";
+import { confirmStore } from "$lib/stores";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -46,6 +47,11 @@ onMount(() => {
   if (orgId) loadRooms();
 });
 
+const roomActions: ActionItem[] = [
+  { id: "edit", label: l("تعديل", "Edit"), variant: "default" },
+  { id: "delete", label: l("حذف", "Delete"), variant: "destructive" },
+];
+
 const gridSource = $derived(
   rooms.map((r, i) => ({
     ...r,
@@ -71,6 +77,7 @@ const columns: OrbisColumnDef[] = [
   { id: "status", prop: "status", header: "Status", name: "Status", width: 100, size: 100, type: "badge", align: "center", readonly: true },
   { id: "created_at_display", prop: "created_at_display", header: l("تاريخ الإنشاء", "Created At"), name: "Created At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
   { id: "updated_at_display", prop: "updated_at_display", header: l("آخر تحديث", "Updated At"), name: "Updated At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "actions", prop: "actions", header: l("إجراءات", "Actions"), name: "Actions", width: 120, size: 120, type: "action", align: "center", readonly: true, meta: { items: roomActions } },
 ];
 
 function openCreateSheet() {
@@ -78,10 +85,32 @@ function openCreateSheet() {
   isSheetOpen = true;
 }
 
+function promptDelete(room: RoomDto) {
+  confirmStore.open({
+    title: l("حذف القاعة", "Delete Room"),
+    message: l(`هل أنت متأكد من رغبتك في حذف القاعة "${room.name_ar || room.name}"؟`, `Are you sure you want to delete room "${room.name_ar || room.name}"?`),
+    confirmLabel: l("حذف", "Delete"),
+    variant: "destructive",
+    onConfirm: async () => {
+      try {
+        await api.deleteRoom(room.id);
+        toast.success(l("تم حذف القاعة بنجاح", "Room deleted successfully"));
+        loadRooms();
+      } catch (err) {
+        toast.error(extractErrorMessage(err));
+      }
+    },
+  });
+}
+
 function handleGridAction(event: GridActionEvent) {
+  const room = event.row as unknown as RoomDto;
+  if (!room) return;
   if (event.actionId === "dblclick" || event.actionId === "edit") {
-    editingRoom = event.row;
+    editingRoom = room;
     isSheetOpen = true;
+  } else if (event.actionId === "delete") {
+    promptDelete(room);
   }
 }
 </script>

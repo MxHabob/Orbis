@@ -50,6 +50,11 @@ impl RoomRepository for SchedulingRepoImpl {
         }
         Ok(())
     }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        RoomEntity::delete_by_id(id).exec(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -90,6 +95,27 @@ impl TimeSlotRepository for SchedulingRepoImpl {
         } else {
             active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         }
+        Ok(())
+    }
+
+    async fn save_bulk(&self, slots: &[DomainTimeSlot]) -> Result<(), DomainError> {
+        for slot in slots {
+            TimeSlotRepository::save(self, slot).await?;
+        }
+        Ok(())
+    }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        TimeSlotEntity::delete_by_id(id).exec(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
+
+    async fn delete_by_period(&self, period_id: Uuid) -> Result<(), DomainError> {
+        TimeSlotEntity::delete_many()
+            .filter(time_slot::Column::PeriodId.eq(period_id))
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
     }
 }
@@ -178,7 +204,6 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
     }
 
     async fn save(&self, lesson: &DomainScheduledLesson) -> Result<(), DomainError> {
-
         let active = scheduled_lesson::ActiveModel {
             id: Set(lesson.id), class_subject_id: Set(lesson.class_subject_id),
             room_id: Set(lesson.room_id), time_slot_id: Set(lesson.time_slot_id),
@@ -190,6 +215,36 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
             active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
             active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        }
+        Ok(())
+    }
+
+    async fn save_bulk(&self, lessons: &[DomainScheduledLesson]) -> Result<(), DomainError> {
+        for lesson in lessons {
+            ScheduledLessonRepository::save(self, lesson).await?;
+        }
+        Ok(())
+    }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        ScheduledLessonEntity::delete_by_id(id).exec(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
+
+    async fn delete_by_period(&self, period_id: Uuid) -> Result<(), DomainError> {
+        let slots = TimeSlotEntity::find()
+            .filter(time_slot::Column::PeriodId.eq(period_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        let slot_ids: Vec<Uuid> = slots.into_iter().map(|s| s.id).collect();
+
+        if !slot_ids.is_empty() {
+            ScheduledLessonEntity::delete_many()
+                .filter(scheduled_lesson::Column::TimeSlotId.is_in(slot_ids))
+                .exec(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }

@@ -27,6 +27,15 @@ pub struct CreateRoomInput {
     pub capacity: i32,
     #[serde(default = "default_room_type")]
     pub room_type: String,
+    pub org_unit_id: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateRoomInput {
+    pub name: Option<String>,
+    pub capacity: Option<i32>,
+    pub room_type: Option<String>,
+    pub org_unit_id: Option<String>,
 }
 
 fn default_room_type() -> String {
@@ -63,6 +72,37 @@ pub struct CreateTimeSlotInput {
     pub break_type: Option<String>,
 }
 
+#[derive(Deserialize)]
+pub struct CreateTimeSlotItemInput {
+    pub day_of_week: i16,
+    pub slot_index: i32,
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub start_time: String,
+    pub end_time: String,
+    #[serde(default)]
+    pub is_break: bool,
+    pub break_type: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct BatchCreateTimeSlotsInput {
+    pub period_id: String,
+    pub slots: Vec<CreateTimeSlotItemInput>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateTimeSlotInput {
+    pub day_of_week: Option<i16>,
+    pub slot_index: Option<i32>,
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub start_time: Option<String>,
+    pub end_time: Option<String>,
+    pub is_break: Option<bool>,
+    pub break_type: Option<String>,
+}
+
 #[derive(Serialize)]
 pub struct ScheduledLessonDto {
     pub id: String,
@@ -82,10 +122,17 @@ pub struct ScheduleLessonInput {
     pub teacher_id: Option<String>,
 }
 
+#[derive(Deserialize)]
+pub struct BulkScheduleLessonsInput {
+    pub lessons: Vec<ScheduleLessonInput>,
+}
+
 #[derive(Deserialize, Default)]
 pub struct LessonFilter {
     pub class_subject_id: Option<String>,
     pub period_id: Option<String>,
+    pub class_id: Option<String>,
+    pub teacher_id: Option<String>,
 }
 
 // ── Helpers ─────────────────────────────────────────────────────
@@ -135,11 +182,35 @@ fn lesson_dto(l: orbis_domain::entities::scheduled_lesson::ScheduledLesson) -> S
 #[tauri::command]
 pub async fn scheduling_create_room(request: CreateRoomInput, state: State<'_, AppState>) -> Result<ApiResponse<RoomDto>, String> {
     let ctx = make_ctx(&state);
-    let r = state.scheduling_service.create_room(&ctx, ctx.tenant_id, request.name, request.capacity, request.room_type)
+    let org_unit_id = request.org_unit_id.and_then(|u| Uuid::parse_str(&u).ok());
+    let r = state.scheduling_service.create_room(&ctx, ctx.tenant_id, request.name, request.capacity, request.room_type, org_unit_id)
         .await
         .map_err(|e| e.to_string())?;
 
     Ok(ok(room_dto(r)))
+}
+
+#[tauri::command]
+pub async fn scheduling_update_room(id: String, request: UpdateRoomInput, state: State<'_, AppState>) -> Result<ApiResponse<RoomDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid room ID")?;
+    let org_unit_id = request.org_unit_id.map(|u| Uuid::parse_str(&u).ok());
+    let r = state.scheduling_service.update_room(&ctx, uid, request.name, request.capacity, request.room_type, org_unit_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(room_dto(r)))
+}
+
+#[tauri::command]
+pub async fn scheduling_delete_room(id: String, state: State<'_, AppState>) -> Result<ApiResponse<String>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid room ID")?;
+    state.scheduling_service.delete_room(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok("Room deleted successfully".to_string()))
 }
 
 #[tauri::command]
@@ -177,6 +248,72 @@ pub async fn scheduling_create_time_slot(request: CreateTimeSlotInput, state: St
 }
 
 #[tauri::command]
+pub async fn scheduling_batch_create_time_slots(request: BatchCreateTimeSlotsInput, state: State<'_, AppState>) -> Result<ApiResponse<Vec<TimeSlotDto>>, String> {
+    let ctx = make_ctx(&state);
+    let period_id = Uuid::parse_str(&request.period_id).map_err(|_| "Invalid periodId")?;
+    let mut items = Vec::with_capacity(request.slots.len());
+    for s in request.slots {
+        let start_time = NaiveTime::parse_from_str(&s.start_time, "%H:%M:%S")
+            .or_else(|_| NaiveTime::parse_from_str(&s.start_time, "%H:%M"))
+            .map_err(|_| "Invalid start_time format")?;
+        let end_time = NaiveTime::parse_from_str(&s.end_time, "%H:%M:%S")
+            .or_else(|_| NaiveTime::parse_from_str(&s.end_time, "%H:%M"))
+            .map_err(|_| "Invalid end_time format")?;
+        items.push((s.day_of_week, s.slot_index, s.name, s.name_ar, start_time, end_time, s.is_break, s.break_type));
+    }
+
+    let slots = state.scheduling_service.batch_create_time_slots(&ctx, period_id, items)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(slots.into_iter().map(time_slot_dto).collect()))
+}
+
+#[tauri::command]
+pub async fn scheduling_get_time_slot(id: String, state: State<'_, AppState>) -> Result<ApiResponse<TimeSlotDto>, String> {
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid time slot ID")?;
+    let t = state.scheduling_service.get_time_slot(uid).await.map_err(|e| e.to_string())?.ok_or("Time slot not found")?;
+    Ok(ok(time_slot_dto(t)))
+}
+
+#[tauri::command]
+pub async fn scheduling_update_time_slot(id: String, request: UpdateTimeSlotInput, state: State<'_, AppState>) -> Result<ApiResponse<TimeSlotDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid time slot ID")?;
+    let start_time = if let Some(st) = request.start_time {
+        Some(NaiveTime::parse_from_str(&st, "%H:%M:%S")
+            .or_else(|_| NaiveTime::parse_from_str(&st, "%H:%M"))
+            .map_err(|_| "Invalid start_time format")?)
+    } else {
+        None
+    };
+    let end_time = if let Some(et) = request.end_time {
+        Some(NaiveTime::parse_from_str(&et, "%H:%M:%S")
+            .or_else(|_| NaiveTime::parse_from_str(&et, "%H:%M"))
+            .map_err(|_| "Invalid end_time format")?)
+    } else {
+        None
+    };
+
+    let t = state.scheduling_service.update_time_slot(
+        &ctx, uid, request.day_of_week, request.slot_index, request.name.map(Some), request.name_ar.map(Some), start_time, end_time, request.is_break, request.break_type.map(Some)
+    ).await.map_err(|e| e.to_string())?;
+
+    Ok(ok(time_slot_dto(t)))
+}
+
+#[tauri::command]
+pub async fn scheduling_delete_time_slot(id: String, state: State<'_, AppState>) -> Result<ApiResponse<String>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid time slot ID")?;
+    state.scheduling_service.delete_time_slot(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok("Time slot deleted successfully".to_string()))
+}
+
+#[tauri::command]
 pub async fn scheduling_list_time_slots(period_id: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<TimeSlotDto>>, String> {
     let pid = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
     let items = state.scheduling_service.list_time_slots(pid).await.map_err(|e| e.to_string())?;
@@ -199,10 +336,44 @@ pub async fn scheduling_schedule_lesson(request: ScheduleLessonInput, state: Sta
 }
 
 #[tauri::command]
+pub async fn scheduling_bulk_schedule_lessons(request: BulkScheduleLessonsInput, state: State<'_, AppState>) -> Result<ApiResponse<Vec<ScheduledLessonDto>>, String> {
+    let ctx = make_ctx(&state);
+    let mut items = Vec::with_capacity(request.lessons.len());
+    for l in request.lessons {
+        let class_subject_id = Uuid::parse_str(&l.class_subject_id).map_err(|_| "Invalid classSubjectId")?;
+        let time_slot_id = Uuid::parse_str(&l.time_slot_id).map_err(|_| "Invalid timeSlotId")?;
+        let room_id = l.room_id.and_then(|r| Uuid::parse_str(&r).ok());
+        let teacher_id = l.teacher_id.and_then(|t| Uuid::parse_str(&t).ok());
+        items.push((class_subject_id, time_slot_id, room_id, teacher_id));
+    }
+
+    let lessons = state.scheduling_service.bulk_schedule_lessons(&ctx, items)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(lessons.into_iter().map(lesson_dto).collect()))
+}
+
+#[tauri::command]
+pub async fn scheduling_delete_scheduled_lesson(id: String, state: State<'_, AppState>) -> Result<ApiResponse<String>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid scheduled lesson ID")?;
+    state.scheduling_service.delete_scheduled_lesson(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok("Scheduled lesson deleted successfully".to_string()))
+}
+
+#[tauri::command]
 pub async fn scheduling_list_lessons(filter: Option<LessonFilter>, state: State<'_, AppState>) -> Result<ApiResponse<Vec<ScheduledLessonDto>>, String> {
     let f = filter.unwrap_or_default();
     let items = if let Some(csid) = f.class_subject_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
         state.scheduling_service.list_lessons_by_class_subject(csid).await
+    } else if let Some(cid) = f.class_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
+        state.scheduling_service.list_lessons_by_class(cid).await
+    } else if let Some(tid) = f.teacher_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
+        state.scheduling_service.list_lessons_by_teacher(tid).await
     } else if let Some(pid) = f.period_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
         state.scheduling_service.list_lessons_by_period(pid).await
     } else {
@@ -308,5 +479,3 @@ pub async fn solver_get_exam_status(
 
     Ok(ok(status))
 }
-
-

@@ -84,8 +84,13 @@ import type {
   TimeSlotDto,
   ScheduledLessonDto,
   CreateRoomRequest,
+  UpdateRoomRequest,
   CreateTimeSlotRequest,
+  CreateTimeSlotItemRequest,
+  BatchCreateTimeSlotsRequest,
+  UpdateTimeSlotRequest,
   ScheduleLessonRequest,
+  BulkScheduleLessonsRequest,
   AssessmentSchemeDto,
   GradeDto,
   AttendanceDto,
@@ -1028,15 +1033,25 @@ export interface OrbisApiClient {
   createRoom(req: CreateRoomRequest): Promise<RoomDto>;
   listRooms(): Promise<RoomDto[]>;
   getRoom(id: string): Promise<RoomDto>;
+  updateRoom(id: string, req: UpdateRoomRequest): Promise<RoomDto>;
+  deleteRoom(id: string): Promise<void>;
   createTimeSlot(req: CreateTimeSlotRequest): Promise<TimeSlotDto>;
+  batchCreateTimeSlots(req: BatchCreateTimeSlotsRequest): Promise<TimeSlotDto[]>;
   listTimeSlots(periodId?: string): Promise<TimeSlotDto[]>;
+  getTimeSlot(id: string): Promise<TimeSlotDto>;
+  updateTimeSlot(id: string, req: UpdateTimeSlotRequest): Promise<TimeSlotDto>;
+  deleteTimeSlot(id: string): Promise<void>;
   scheduleLesson(req: ScheduleLessonRequest): Promise<ScheduledLessonDto>;
+  bulkScheduleLessons(req: BulkScheduleLessonsRequest): Promise<ScheduledLessonDto[]>;
+  deleteScheduledLesson(id: string): Promise<void>;
   listScheduledLessons(
     filterOrPeriodId?:
       | string
       | {
           classSubjectId?: string;
           periodId?: string;
+          classId?: string;
+          teacherId?: string;
         },
     classSubjectId?: string,
   ): Promise<ScheduledLessonDto[]>;

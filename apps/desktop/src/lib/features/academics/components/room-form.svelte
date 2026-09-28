@@ -66,12 +66,21 @@ async function handleSubmit(e: SubmitEvent) {
   const submitted = await form.submit(async (payload) => {
     const name = payload.name || payload.name_ar;
     if (!name) throw new Error(m.common_rooms_error_name_required());
-    await api.createRoom({
-      name,
-      capacity: Number(payload.capacity) || 30,
-      room_type: payload.room_type || "classroom",
-    });
-    toast.success(isEdit ? m.common_rooms_update_success() : m.common_rooms_create_success());
+    if (isEdit && room?.id) {
+      await api.updateRoom(room.id, {
+        name,
+        capacity: Number(payload.capacity) || 30,
+        room_type: payload.room_type || "classroom",
+      });
+      toast.success(m.common_rooms_update_success());
+    } else {
+      await api.createRoom({
+        name,
+        capacity: Number(payload.capacity) || 30,
+        room_type: payload.room_type || "classroom",
+      });
+      toast.success(m.common_rooms_create_success());
+    }
   });
   if (submitted) {
     onSuccess();

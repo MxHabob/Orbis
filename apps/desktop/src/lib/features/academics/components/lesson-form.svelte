@@ -157,6 +157,9 @@ async function handleSubmit(event: SubmitEvent) {
   }
 
   const submitted = await form.submit(async (values) => {
+    if (isEditing && lesson?.id) {
+      await api.deleteScheduledLesson(lesson.id);
+    }
     const request: ScheduleLessonRequest = {
       class_subject_id: selectedClassSubject.id,
       time_slot_id: values.time_slot_id,

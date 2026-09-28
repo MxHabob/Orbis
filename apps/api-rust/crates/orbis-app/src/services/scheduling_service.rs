@@ -71,6 +71,7 @@ impl SchedulingService {
         name: String,
         capacity: i32,
         room_type: String,
+        org_unit_id: Option<Uuid>,
     ) -> Result<Room, DomainError> {
         self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
 
@@ -83,7 +84,7 @@ impl SchedulingService {
             name,
             capacity,
             room_type,
-            org_unit_id: None,
+            org_unit_id,
             created_at: now,
             updated_at: now,
         };
@@ -98,6 +99,57 @@ impl SchedulingService {
         self.event_bus.publish(ctx, &event).await?;
 
         Ok(room)
+    }
+
+    pub async fn update_room(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+        name: Option<String>,
+        capacity: Option<i32>,
+        room_type: Option<String>,
+        org_unit_id: Option<Option<Uuid>>,
+    ) -> Result<Room, DomainError> {
+        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+
+        let mut room = self.room_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound("Room not found".into()))?;
+
+        let now = Utc::now();
+        if let Some(n) = name { room.name = n; }
+        if let Some(c) = capacity { room.capacity = c; }
+        if let Some(rt) = room_type { room.room_type = rt; }
+        if let Some(ou_id) = org_unit_id { room.org_unit_id = ou_id; }
+        room.updated_at = now;
+
+        self.room_repo.save(&room).await?;
+
+        let event = DomainEvent::RoomUpdated {
+            room_id: id,
+            org_id: room.org_id,
+            timestamp: now,
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(room)
+    }
+
+    pub async fn delete_room(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+
+        let room = self.room_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound("Room not found".into()))?;
+
+        self.room_repo.delete(id).await?;
+
+        let event = DomainEvent::RoomDeleted {
+            room_id: id,
+            org_id: room.org_id,
+            timestamp: Utc::now(),
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(())
     }
 
     pub async fn list_rooms(&self, org_id: Uuid) -> Result<Vec<Room>, DomainError> {
@@ -155,6 +207,107 @@ impl SchedulingService {
         Ok(slot)
     }
 
+    pub async fn update_time_slot(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+        day_of_week: Option<i16>,
+        slot_index: Option<i32>,
+        name: Option<Option<String>>,
+        name_ar: Option<Option<String>>,
+        start_time: Option<NaiveTime>,
+        end_time: Option<NaiveTime>,
+        is_break: Option<bool>,
+        break_type: Option<Option<String>>,
+    ) -> Result<TimeSlot, DomainError> {
+        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+
+        let mut slot = self.time_slot_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound("Time slot not found".into()))?;
+
+        let now = Utc::now();
+        if let Some(dow) = day_of_week { slot.day_of_week = dow; }
+        if let Some(si) = slot_index { slot.slot_index = si; }
+        if let Some(n) = name { slot.name = n; }
+        if let Some(na) = name_ar { slot.name_ar = na; }
+        if let Some(st) = start_time { slot.start_time = st; }
+        if let Some(et) = end_time { slot.end_time = et; }
+        if let Some(ib) = is_break { slot.is_break = ib; }
+        if let Some(bt) = break_type { slot.break_type = bt; }
+        slot.updated_at = now;
+
+        self.time_slot_repo.save(&slot).await?;
+
+        let event = DomainEvent::TimeSlotUpdated {
+            time_slot_id: id,
+            period_id: slot.period_id,
+            timestamp: now,
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(slot)
+    }
+
+    pub async fn delete_time_slot(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+
+        let slot = self.time_slot_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound("Time slot not found".into()))?;
+
+        self.time_slot_repo.delete(id).await?;
+
+        let event = DomainEvent::TimeSlotDeleted {
+            time_slot_id: id,
+            period_id: slot.period_id,
+            timestamp: Utc::now(),
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(())
+    }
+
+    pub async fn batch_create_time_slots(
+        &self,
+        ctx: &RequestContext,
+        period_id: Uuid,
+        items: Vec<(i16, i32, Option<String>, Option<String>, NaiveTime, NaiveTime, bool, Option<String>)>,
+    ) -> Result<Vec<TimeSlot>, DomainError> {
+        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+
+        let now = Utc::now();
+        let mut slots = Vec::with_capacity(items.len());
+        for (day_of_week, slot_index, name, name_ar, start_time, end_time, is_break, break_type) in items {
+            let slot = TimeSlot {
+                id: Uuid::new_v4(),
+                period_id,
+                day_of_week,
+                slot_index,
+                name,
+                name_ar,
+                start_time,
+                end_time,
+                is_break,
+                break_type,
+                created_at: now,
+                updated_at: now,
+            };
+            slots.push(slot);
+        }
+
+        self.time_slot_repo.save_bulk(&slots).await?;
+
+        for s in &slots {
+            let event = DomainEvent::TimeSlotCreated {
+                time_slot_id: s.id,
+                period_id,
+                timestamp: now,
+            };
+            self.event_bus.publish(ctx, &event).await?;
+        }
+
+        Ok(slots)
+    }
+
     pub async fn list_time_slots(&self, period_id: Uuid) -> Result<Vec<TimeSlot>, DomainError> {
         self.time_slot_repo.find_by_period(period_id).await
     }
@@ -208,6 +361,60 @@ impl SchedulingService {
         self.event_bus.publish(ctx, &event).await?;
 
         Ok(lesson)
+    }
+
+    pub async fn delete_scheduled_lesson(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+
+        self.lesson_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound("Scheduled lesson not found".into()))?;
+
+        self.lesson_repo.delete(id).await?;
+
+        let event = DomainEvent::LessonDeleted {
+            lesson_id: id,
+            timestamp: Utc::now(),
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(())
+    }
+
+    pub async fn bulk_schedule_lessons(
+        &self,
+        ctx: &RequestContext,
+        items: Vec<(Uuid, Uuid, Option<Uuid>, Option<Uuid>)>,
+    ) -> Result<Vec<ScheduledLesson>, DomainError> {
+        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+
+        let now = Utc::now();
+        let mut lessons = Vec::with_capacity(items.len());
+        for (class_subject_id, time_slot_id, room_id, teacher_id) in items {
+            let lesson = ScheduledLesson {
+                id: Uuid::new_v4(),
+                class_subject_id,
+                time_slot_id,
+                room_id,
+                teacher_id,
+                created_at: now,
+                updated_at: now,
+            };
+            lessons.push(lesson);
+        }
+
+        self.lesson_repo.save_bulk(&lessons).await?;
+
+        for l in &lessons {
+            let event = DomainEvent::LessonScheduled {
+                lesson_id: l.id,
+                class_subject_id: l.class_subject_id,
+                time_slot_id: l.time_slot_id,
+                timestamp: now,
+            };
+            self.event_bus.publish(ctx, &event).await?;
+        }
+
+        Ok(lessons)
     }
 
     pub async fn list_lessons_by_class(&self, class_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError> {

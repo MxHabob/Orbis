@@ -18,7 +18,7 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import { ClockRotateRight, FloppyDisk, Heart, Pencil, Plus, Trash, XMark } from "@orbis/icons";
-import { api, extractErrorMessage, type CreateTimeSlotRequest } from "$lib/api";
+import { api, extractErrorMessage, type CreateTimeSlotRequest, type UpdateTimeSlotRequest } from "$lib/api";
 import { toast } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { createTimeSlotInputSchema } from "@orbis/schemas";
@@ -131,10 +131,7 @@ async function handleSaveSlot(e: SubmitEvent) {
   try {
     if (editingSlotId) {
       // Update
-      const request: CreateTimeSlotRequest = {
-        period_id: periodId,
-        day_of_week: 1,
-        slot_index: 1,
+      const request: UpdateTimeSlotRequest = {
         name: name.trim() || nameAr.trim(),
         name_ar: nameAr.trim(),
         start_time: startTime,
@@ -142,13 +139,13 @@ async function handleSaveSlot(e: SubmitEvent) {
         is_break: isBreak,
         break_type: isBreak ? breakType : null,
       };
-      await api.createTimeSlot(request);
+      await api.updateTimeSlot(editingSlotId, request);
       toast.success(m.academics_schedule_time_slot_updated());
     } else {
       // Create
       const slotNumber =
         timeSlots.reduce(
-          (max, s) => Math.max(max, Number(s.slot_number) || 0),
+          (max, s) => Math.max(max, Number(s.slot_index || s.slot_number) || 0),
           0,
         ) + 1;
 
@@ -178,6 +175,7 @@ async function handleSaveSlot(e: SubmitEvent) {
 
 async function handleDeleteSlot(id: string) {
   try {
+    await api.deleteTimeSlot(id);
     toast.success(m.academics_schedule_time_slot_deleted());
     if (editingSlotId === id) resetForm();
     onSuccess?.();

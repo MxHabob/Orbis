@@ -323,10 +323,13 @@ function openEditLessonSheet(lesson: any) {
 
 async function handleMoveLesson(
   lesson: any,
-  targetDay: number,
+  _targetDay: number,
   targetSlotId: string,
 ) {
   try {
+    if (lesson.id) {
+      await api.deleteScheduledLesson(lesson.id);
+    }
     const request: ScheduleLessonRequest = {
       class_subject_id: lesson.class_subject_id,
       time_slot_id: targetSlotId,
@@ -339,12 +342,18 @@ async function handleMoveLesson(
     refetchSchedule();
   } catch (err) {
     toast.error(extractErrorMessage(err));
+    refetchSchedule();
   }
 }
 
 async function handleDeleteLesson(lessonId: string) {
-  toast.success(m.academics_schedule_lesson_deleted());
-  refetchSchedule();
+  try {
+    await api.deleteScheduledLesson(lessonId);
+    toast.success(m.academics_schedule_lesson_deleted());
+    refetchSchedule();
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
+  }
 }
 
 const isLoading = $derived(

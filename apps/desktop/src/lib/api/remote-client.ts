@@ -50,8 +50,13 @@ import type {
   TimeSlotDto,
   ScheduledLessonDto,
   CreateRoomRequest,
+  UpdateRoomRequest,
   CreateTimeSlotRequest,
+  CreateTimeSlotItemRequest,
+  BatchCreateTimeSlotsRequest,
+  UpdateTimeSlotRequest,
   ScheduleLessonRequest,
+  BulkScheduleLessonsRequest,
   AssessmentSchemeDto,
   GradeDto,
   AttendanceDto,
@@ -756,28 +761,62 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.getRoom({ client: this.client, path: { id } }));
   }
 
+  async updateRoom(id: string, req: UpdateRoomRequest): Promise<RoomDto> {
+    return this.call(sdk.updateRoom({ client: this.client, path: { id }, body: req }));
+  }
+
+  async deleteRoom(id: string): Promise<void> {
+    await this.call(sdk.deleteRoom({ client: this.client, path: { id } }));
+  }
+
   async createTimeSlot(req: CreateTimeSlotRequest): Promise<TimeSlotDto> {
     return this.call(sdk.createTimeSlot({ client: this.client, body: req }));
+  }
+
+  async batchCreateTimeSlots(req: BatchCreateTimeSlotsRequest): Promise<TimeSlotDto[]> {
+    return this.call(sdk.batchCreateTimeSlots({ client: this.client, body: req })) ?? [];
   }
 
   async listTimeSlots(periodId?: string): Promise<TimeSlotDto[]> {
     return this.call(sdk.listTimeSlots({ client: this.client, query: { period_id: periodId } as any })) ?? [];
   }
 
+  async getTimeSlot(id: string): Promise<TimeSlotDto> {
+    return this.call(sdk.getTimeSlot({ client: this.client, path: { id } }));
+  }
+
+  async updateTimeSlot(id: string, req: UpdateTimeSlotRequest): Promise<TimeSlotDto> {
+    return this.call(sdk.updateTimeSlot({ client: this.client, path: { id }, body: req }));
+  }
+
+  async deleteTimeSlot(id: string): Promise<void> {
+    await this.call(sdk.deleteTimeSlot({ client: this.client, path: { id } }));
+  }
+
   async scheduleLesson(req: ScheduleLessonRequest): Promise<ScheduledLessonDto> {
     return this.call(sdk.scheduleLesson({ client: this.client, body: req }));
   }
 
+  async bulkScheduleLessons(req: BulkScheduleLessonsRequest): Promise<ScheduledLessonDto[]> {
+    return this.call(sdk.bulkScheduleLessons({ client: this.client, body: req })) ?? [];
+  }
+
+  async deleteScheduledLesson(id: string): Promise<void> {
+    await this.call(sdk.deleteLesson({ client: this.client, path: { id } }));
+  }
+
   async listScheduledLessons(
-    filterOrPeriodId?: string | { classSubjectId?: string; periodId?: string },
+    filterOrPeriodId?: string | { classSubjectId?: string; periodId?: string; classId?: string; teacherId?: string },
     classSubjectId?: string,
   ): Promise<ScheduledLessonDto[]> {
     const periodId = typeof filterOrPeriodId === "string" ? filterOrPeriodId : filterOrPeriodId?.periodId;
     const csId = typeof filterOrPeriodId === "object" ? filterOrPeriodId.classSubjectId : classSubjectId;
+    const classId = typeof filterOrPeriodId === "object" ? filterOrPeriodId.classId : undefined;
+    const teacherId = typeof filterOrPeriodId === "object" ? filterOrPeriodId.teacherId : undefined;
     return this.call(
       sdk.listLessons({
         client: this.client,
-        query: { period_id: periodId, class_subject_id: csId } as any,
+        query: { period_id: periodId, class_subject_id: csId, class_id: classId, teacher_id: teacherId } as any,
       }),
     ) ?? [];
   }

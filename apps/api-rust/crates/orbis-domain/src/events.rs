@@ -35,8 +35,13 @@ pub enum DomainEvent {
 
 
     RoomCreated { room_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    RoomUpdated { room_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    RoomDeleted { room_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
     TimeSlotCreated { time_slot_id: Uuid, period_id: Uuid, timestamp: DateTime<Utc> },
+    TimeSlotUpdated { time_slot_id: Uuid, period_id: Uuid, timestamp: DateTime<Utc> },
+    TimeSlotDeleted { time_slot_id: Uuid, period_id: Uuid, timestamp: DateTime<Utc> },
     LessonScheduled { lesson_id: Uuid, class_subject_id: Uuid, time_slot_id: Uuid, timestamp: DateTime<Utc> },
+    LessonDeleted { lesson_id: Uuid, timestamp: DateTime<Utc> },
     TimetableSolved { job_id: Uuid, period_id: Uuid, lessons_count: usize, timestamp: DateTime<Utc> },
 
     GradeRecorded { grade_id: Uuid, student_id: Uuid, class_subject_id: Uuid, score: Decimal, timestamp: DateTime<Utc> },
@@ -116,8 +121,13 @@ impl DomainEvent {
 
             // Scheduling
             DomainEvent::RoomCreated { room_id, .. } => Some(("room.created", "room", *room_id)),
+            DomainEvent::RoomUpdated { room_id, .. } => Some(("room.updated", "room", *room_id)),
+            DomainEvent::RoomDeleted { room_id, .. } => Some(("room.deleted", "room", *room_id)),
             DomainEvent::TimeSlotCreated { time_slot_id, .. } => Some(("time_slot.created", "time_slot", *time_slot_id)),
+            DomainEvent::TimeSlotUpdated { time_slot_id, .. } => Some(("time_slot.updated", "time_slot", *time_slot_id)),
+            DomainEvent::TimeSlotDeleted { time_slot_id, .. } => Some(("time_slot.deleted", "time_slot", *time_slot_id)),
             DomainEvent::LessonScheduled { .. } => None, // Bulk operation — audit the solver job instead
+            DomainEvent::LessonDeleted { lesson_id, .. } => Some(("scheduled_lesson.deleted", "scheduled_lesson", *lesson_id)),
             DomainEvent::TimetableSolved { job_id, .. } => Some(("timetable.solved", "solver_job", *job_id)),
 
             // Assessment

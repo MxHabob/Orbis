@@ -321,6 +321,7 @@ pub trait RoomRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Room>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Room>, DomainError>;
     async fn save(&self, room: &Room) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]
@@ -328,6 +329,9 @@ pub trait TimeSlotRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<TimeSlot>, DomainError>;
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<TimeSlot>, DomainError>;
     async fn save(&self, slot: &TimeSlot) -> Result<(), DomainError>;
+    async fn save_bulk(&self, slots: &[TimeSlot]) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
+    async fn delete_by_period(&self, period_id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]
@@ -338,6 +342,9 @@ pub trait ScheduledLessonRepository: Send + Sync {
     async fn find_by_class_subject(&self, class_subject_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError>;
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError>;
     async fn save(&self, lesson: &ScheduledLesson) -> Result<(), DomainError>;
+    async fn save_bulk(&self, lessons: &[ScheduledLesson]) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
+    async fn delete_by_period(&self, period_id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]

@@ -43,8 +43,13 @@ import type {
   TimeSlotDto,
   ScheduledLessonDto,
   CreateRoomRequest,
+  UpdateRoomRequest,
   CreateTimeSlotRequest,
+  CreateTimeSlotItemRequest,
+  BatchCreateTimeSlotsRequest,
+  UpdateTimeSlotRequest,
   ScheduleLessonRequest,
+  BulkScheduleLessonsRequest,
   AssessmentSchemeDto,
   GradeDto,
   AttendanceDto,
@@ -525,13 +530,7 @@ export class LocalClient implements OrbisApiClient {
 
   // ── Scheduling ──────────────────────────────────────────────
   async createRoom(req: CreateRoomRequest): Promise<RoomDto> {
-    const payload = {
-      name: req.name,
-      capacity: req.capacity,
-      roomType: req.room_type ?? (req as any).roomType ?? "classroom",
-      room_type: req.room_type ?? (req as any).roomType ?? "classroom",
-    };
-    return unwrap(await invoke("scheduling_create_room", { request: payload }));
+    return unwrap(await invoke("scheduling_create_room", { request: req }));
   }
   async listRooms(): Promise<RoomDto[]> {
     return unwrap(await invoke("scheduling_list_rooms"));
@@ -539,22 +538,50 @@ export class LocalClient implements OrbisApiClient {
   async getRoom(id: string): Promise<RoomDto> {
     return unwrap(await invoke("scheduling_get_room", { id }));
   }
+  async updateRoom(id: string, req: UpdateRoomRequest): Promise<RoomDto> {
+    return unwrap(await invoke("scheduling_update_room", { id, request: req }));
+  }
+  async deleteRoom(id: string): Promise<void> {
+    await invoke("scheduling_delete_room", { id });
+  }
   async createTimeSlot(req: CreateTimeSlotRequest): Promise<TimeSlotDto> {
     return unwrap(
       await invoke("scheduling_create_time_slot", { request: req }),
     );
   }
+  async batchCreateTimeSlots(req: BatchCreateTimeSlotsRequest): Promise<TimeSlotDto[]> {
+    return unwrap(
+      await invoke("scheduling_batch_create_time_slots", { request: req }),
+    );
+  }
   async listTimeSlots(periodId?: string): Promise<TimeSlotDto[]> {
     return unwrap(
       await invoke("scheduling_list_time_slots", {
-        periodId: periodId || null,
+        periodId: periodId || "",
       }),
     );
+  }
+  async getTimeSlot(id: string): Promise<TimeSlotDto> {
+    return unwrap(await invoke("scheduling_get_time_slot", { id }));
+  }
+  async updateTimeSlot(id: string, req: UpdateTimeSlotRequest): Promise<TimeSlotDto> {
+    return unwrap(await invoke("scheduling_update_time_slot", { id, request: req }));
+  }
+  async deleteTimeSlot(id: string): Promise<void> {
+    await invoke("scheduling_delete_time_slot", { id });
   }
   async scheduleLesson(
     req: ScheduleLessonRequest,
   ): Promise<ScheduledLessonDto> {
     return unwrap(await invoke("scheduling_schedule_lesson", { request: req }));
+  }
+  async bulkScheduleLessons(
+    req: BulkScheduleLessonsRequest,
+  ): Promise<ScheduledLessonDto[]> {
+    return unwrap(await invoke("scheduling_bulk_schedule_lessons", { request: req }));
+  }
+  async deleteScheduledLesson(id: string): Promise<void> {
+    await invoke("scheduling_delete_scheduled_lesson", { id });
   }
   async listScheduledLessons(
     filterOrPeriodId?:
@@ -562,6 +589,8 @@ export class LocalClient implements OrbisApiClient {
       | {
           classSubjectId?: string;
           periodId?: string;
+          classId?: string;
+          teacherId?: string;
         },
     classSubjectId?: string,
   ): Promise<ScheduledLessonDto[]> {
@@ -571,9 +600,13 @@ export class LocalClient implements OrbisApiClient {
         : {
             period_id: filterOrPeriodId?.periodId,
             class_subject_id: filterOrPeriodId?.classSubjectId,
+            class_id: filterOrPeriodId?.classId,
+            teacher_id: filterOrPeriodId?.teacherId,
           };
     return unwrap(
-      await invoke("scheduling_list_lessons", { filter }),
+      await invoke("scheduling_list_lessons", {
+        filter,
+      }),
     );
   }
 

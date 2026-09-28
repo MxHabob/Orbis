@@ -327,6 +327,11 @@ export type AutopilotTaskDto = {
     updated_at: string;
 };
 
+export type BatchCreateTimeSlotsRequest = {
+    period_id: string;
+    slots: Array<CreateTimeSlotItemRequest>;
+};
+
 export type BatchPrintRequest = {
     batch_config: unknown;
     locale?: string | null;
@@ -409,6 +414,10 @@ export type BulkRegisterStudentsResponse = {
     items: Array<BulkRegisterItemResultDto>;
     succeeded: number;
     total: number;
+};
+
+export type BulkScheduleLessonsRequest = {
+    lessons: Array<ScheduleLessonRequest>;
 };
 
 export type CalculateGradesRequest = {
@@ -579,6 +588,7 @@ export type CreatePeriodRequest = {
 export type CreateRoomRequest = {
     capacity: number;
     name: string;
+    org_unit_id?: string | null;
     room_type: string;
 };
 
@@ -622,6 +632,17 @@ export type CreateTemplateRequest = {
     page_size?: string | null;
     page_width_mm?: number | null;
     tags?: string | null;
+};
+
+export type CreateTimeSlotItemRequest = {
+    break_type?: string | null;
+    day_of_week: number;
+    end_time: string;
+    is_break?: boolean;
+    name?: string | null;
+    name_ar?: string | null;
+    slot_index: number;
+    start_time: string;
 };
 
 export type CreateTimeSlotRequest = {
@@ -1832,6 +1853,13 @@ export type UpdateOrgRequest = {
     timezone?: string | null;
 };
 
+export type UpdateRoomRequest = {
+    capacity?: number | null;
+    name?: string | null;
+    org_unit_id?: string | null;
+    room_type?: string | null;
+};
+
 export type UpdateSchemeRequest = {
     description?: string | null;
     formula?: unknown;
@@ -1876,6 +1904,17 @@ export type UpdateTemplateRequest = {
     name_ar?: string | null;
     orientation?: string | null;
     page_size?: string | null;
+};
+
+export type UpdateTimeSlotRequest = {
+    break_type?: string | null;
+    day_of_week?: number | null;
+    end_time?: string | null;
+    is_break?: boolean | null;
+    name?: string | null;
+    name_ar?: string | null;
+    slot_index?: number | null;
+    start_time?: string | null;
 };
 
 export type UpdateUserRequest = {
@@ -4480,6 +4519,24 @@ export type CreateRoomResponses = {
 
 export type CreateRoomResponse = CreateRoomResponses[keyof CreateRoomResponses];
 
+export type DeleteRoomData = {
+    body?: never;
+    path: {
+        /**
+         * Room ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/rooms/{id}';
+};
+
+export type DeleteRoomResponses = {
+    200: string;
+};
+
+export type DeleteRoomResponse = DeleteRoomResponses[keyof DeleteRoomResponses];
+
 export type GetRoomData = {
     body?: never;
     path: {
@@ -4497,6 +4554,24 @@ export type GetRoomResponses = {
 };
 
 export type GetRoomResponse = GetRoomResponses[keyof GetRoomResponses];
+
+export type UpdateRoomData = {
+    body: UpdateRoomRequest;
+    path: {
+        /**
+         * Room ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/rooms/{id}';
+};
+
+export type UpdateRoomResponses = {
+    200: RoomDto;
+};
+
+export type UpdateRoomResponse = UpdateRoomResponses[keyof UpdateRoomResponses];
 
 export type ListLessonsData = {
     body?: never;
@@ -4523,6 +4598,37 @@ export type ScheduleLessonResponses = {
 };
 
 export type ScheduleLessonResponse = ScheduleLessonResponses[keyof ScheduleLessonResponses];
+
+export type BulkScheduleLessonsData = {
+    body: BulkScheduleLessonsRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/scheduled-lessons/bulk';
+};
+
+export type BulkScheduleLessonsResponses = {
+    201: Array<ScheduledLessonDto>;
+};
+
+export type BulkScheduleLessonsResponse = BulkScheduleLessonsResponses[keyof BulkScheduleLessonsResponses];
+
+export type DeleteLessonData = {
+    body?: never;
+    path: {
+        /**
+         * Scheduled Lesson ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/scheduled-lessons/{id}';
+};
+
+export type DeleteLessonResponses = {
+    200: string;
+};
+
+export type DeleteLessonResponse = DeleteLessonResponses[keyof DeleteLessonResponses];
 
 export type ListFeesData = {
     body?: never;
@@ -5113,3 +5219,70 @@ export type CreateTimeSlotResponses = {
 };
 
 export type CreateTimeSlotResponse = CreateTimeSlotResponses[keyof CreateTimeSlotResponses];
+
+export type BatchCreateTimeSlotsData = {
+    body: BatchCreateTimeSlotsRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/time-slots/batch';
+};
+
+export type BatchCreateTimeSlotsResponses = {
+    201: Array<TimeSlotDto>;
+};
+
+export type BatchCreateTimeSlotsResponse = BatchCreateTimeSlotsResponses[keyof BatchCreateTimeSlotsResponses];
+
+export type DeleteTimeSlotData = {
+    body?: never;
+    path: {
+        /**
+         * TimeSlot ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/time-slots/{id}';
+};
+
+export type DeleteTimeSlotResponses = {
+    200: string;
+};
+
+export type DeleteTimeSlotResponse = DeleteTimeSlotResponses[keyof DeleteTimeSlotResponses];
+
+export type GetTimeSlotData = {
+    body?: never;
+    path: {
+        /**
+         * TimeSlot ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/time-slots/{id}';
+};
+
+export type GetTimeSlotResponses = {
+    200: TimeSlotDto;
+};
+
+export type GetTimeSlotResponse = GetTimeSlotResponses[keyof GetTimeSlotResponses];
+
+export type UpdateTimeSlotData = {
+    body: UpdateTimeSlotRequest;
+    path: {
+        /**
+         * TimeSlot ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/time-slots/{id}';
+};
+
+export type UpdateTimeSlotResponses = {
+    200: TimeSlotDto;
+};
+
+export type UpdateTimeSlotResponse = UpdateTimeSlotResponses[keyof UpdateTimeSlotResponses];
