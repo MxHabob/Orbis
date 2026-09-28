@@ -14,7 +14,6 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
-import { SheetFooter } from "@orbis/ui/sheet";
 import { toast } from "@orbis/ui";
 import {
   cashAccountInputSchema,
@@ -539,7 +538,7 @@ async function handleSubmit(e: SubmitEvent) {
     {/if}
 
       <!-- Form Actions (Footer) -->
-      <SheetFooter class="mt-auto flex shrink-0 flex-row justify-end gap-3 border-t border-border/50 px-0 pb-0 pt-5">
+      <div class="mt-auto flex shrink-0 flex-row justify-end gap-3 border-t border-border/50 px-0 pb-0 pt-4">
         <Button
           type="button"
           onclick={onCancel}
@@ -562,6 +561,6 @@ async function handleSubmit(e: SubmitEvent) {
           {/if}
           <span>{isSubmitting ? m.common_loading() : m.common_ledger_btn_add_account()}</span>
         </Button>
-      </SheetFooter>
+      </div>
   </form>
 </div>

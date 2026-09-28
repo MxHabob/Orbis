@@ -5,11 +5,11 @@ import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { Grid, Plus, BuildingLibrary, BuildingOffice, Refresh, Download, Search } from "@orbis/icons";
+import { Grid, Plus, BuildingLibrary, BuildingOffice, Refresh, Download, Search, XMark } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate, l } from "$lib/core/i18n";
-import { fade } from "svelte/transition";
-import LedgerCreateSheet from "$lib/features/finance/components/ledger-create-sheet.svelte";
+import { fade, slide } from "svelte/transition";
+import LedgerForm from "$lib/features/finance/components/ledger-form.svelte";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import AccountTree from "$lib/features/finance/components/account-tree.svelte";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
@@ -22,7 +22,7 @@ let allAccounts = $state<any[]>([]);
 let childAccounts = $state<any[]>([]);
 let baseCurrency = $state("YER");
 let isLoading = $state(true);
-let isAddDialogOpen = $state(false);
+let showAddForm = $state(false);
 let viewMode = $state<"grid" | "tree">("grid");
 let searchQuery = $state("");
 let activeFilter = $state<UniversalFilter>({
@@ -32,7 +32,7 @@ let activeFilter = $state<UniversalFilter>({
 });
 
 function handleSuccess() {
-  isAddDialogOpen = false;
+  showAddForm = false;
   loadData();
 }
 
@@ -205,11 +205,43 @@ function exportAccounts() {
         </Button>
       </div>
 
-      <Button variant="outline" class="h-9 px-3 text-xs font-bold shrink-0" onclick={() => { isAddDialogOpen = true; }}>
-        <Plus size={14} class="me-1.5" />
-        {m.finance_new_cash_account_button()}
+      <Button
+        variant={showAddForm ? "secondary" : "outline"}
+        class="h-9 px-3 text-xs font-bold shrink-0"
+        onclick={() => { showAddForm = !showAddForm; }}
+      >
+        {#if showAddForm}
+          <XMark size={14} class="me-1.5" />
+          <span>{m.common_action_cancel()}</span>
+        {:else}
+          <Plus size={14} class="me-1.5" />
+          <span>{m.finance_new_cash_account_button()}</span>
+        {/if}
       </Button>
     </header>
+
+    <!-- In-Page Account Creation Workspace Card (Zero Dialogs/Sheets) -->
+    {#if showAddForm}
+      <div transition:slide={{ duration: 200 }} class="shrink-0 rounded-xl border border-primary/20 bg-card p-5 shadow-sm">
+        <div class="flex items-center justify-between border-b border-border/50 pb-3 mb-4">
+          <div class="flex items-center gap-2">
+            <div class="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-primary">
+              <BuildingLibrary size={14} />
+            </div>
+            <h3 class="text-xs font-bold text-foreground">{m.finance_new_cash_account_button()}</h3>
+          </div>
+          <Button variant="ghost" size="icon-xs" onclick={() => showAddForm = false} class="text-muted-foreground">
+            <XMark size={14} />
+          </Button>
+        </div>
+        <LedgerForm
+          {orgId}
+          defaultTab="gl"
+          onSuccess={handleSuccess}
+          onCancel={() => (showAddForm = false)}
+        />
+      </div>
+    {/if}
 
     <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
       {#if viewMode === "grid"}
@@ -262,5 +294,3 @@ function exportAccounts() {
     </div>
   </div>
 </div>
-
-<LedgerCreateSheet bind:open={isAddDialogOpen} {orgId} onSuccess={handleSuccess} />
