@@ -156,13 +156,6 @@ export interface ApiResponse<T> {
   requestId?: string;
 }
 
-export type UpdateSchemeRequest = SdkUpdateSchemeRequest;
-export type ValidationResult = ValidationResultDto;
-export type ValidationIssue = ValidationIssueDto;
-export type DuplicateCheckResultDto = DuplicateCheckResponse;
-export type CheckDuplicateInput = DuplicateCheckRequest;
-export type RecordBehaviorInput = RecordBehaviorRequest;
-export type ProvisionEmployeeAccountInput = ProvisionEmployeeAccountRequest;
 
 export interface PaginatedResponse<T> {
   items: T[];
@@ -544,41 +537,6 @@ export interface CalculateGpaInput {
   periodId?: string;
 }
 
-export class OrbisError extends Error {
-  code: string;
-  details?: unknown;
-  requestId?: string;
-
-  constructor(
-    message: string,
-    code = "UNKNOWN_ERROR",
-    details?: unknown,
-    requestId?: string,
-  ) {
-    super(message);
-    this.name = "OrbisError";
-    this.code = code;
-    this.details = details;
-    this.requestId = requestId;
-  }
-
-  static fromUnknown(err: unknown): OrbisError {
-    if (err instanceof OrbisError) return err;
-    if (err instanceof Error) {
-      return new OrbisError(err.message, "INTERNAL_ERROR", err);
-    }
-    if (typeof err === "object" && err !== null) {
-      const record = err as Record<string, unknown>;
-      return new OrbisError(
-        typeof record.message === "string" ? record.message : "Unknown error",
-        typeof record.code === "string" ? record.code : "UNKNOWN_ERROR",
-        record.details ?? record,
-        typeof record.requestId === "string" ? record.requestId : undefined,
-      );
-    }
-    return new OrbisError(String(err));
-  }
-}
 
 export interface AuditLogDto {
   id: string;

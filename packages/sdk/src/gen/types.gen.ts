@@ -95,6 +95,23 @@ export type AddGroupMemberRequest = {
     user_id: string;
 };
 
+export type AdmissionConfigurationDto = {
+    fields?: Array<FormFieldConfigDto>;
+    numbering?: NumberingSchemaDto;
+    policy?: AdmissionPolicyDto;
+};
+
+export type AdmissionPolicyDto = {
+    allow_duplicate_national_id: boolean;
+    allow_late_enrollment: boolean;
+    allow_no_guardian: boolean;
+    allow_waitlist: boolean;
+    auto_assign_fees: boolean;
+    max_class_capacity: number;
+    requires_approval: boolean;
+    sibling_priority_enabled: boolean;
+};
+
 export type AiChatRequest = {
     academic_context?: AcademicAiContext | null;
     agent_type?: string | null;
@@ -785,6 +802,16 @@ export type FinanceSettingsDto = {
     tax_rate: number;
 };
 
+export type FormFieldConfigDto = {
+    is_active: boolean;
+    is_required: boolean;
+    key: string;
+    name_ar: string;
+    name_en: string;
+    prevent_duplicate: boolean;
+    supports_duplicate: boolean;
+};
+
 export type GenerateFeeRequest = {
     discount_amount?: string | null;
     due_date: string;
@@ -1014,6 +1041,13 @@ export type NotificationSettingsDto = {
     whatsapp_integration_id?: string | null;
 };
 
+export type NumberingSchemaDto = {
+    prefix: string;
+    separator: string;
+    sequence_digits: number;
+    year_format: string;
+};
+
 /**
  * Uniform error response body.
  */
@@ -1053,11 +1087,15 @@ export type OrgDto = {
 export type OrgUnitDto = {
     building?: string | null;
     capacity?: number | null;
+    children_count: number;
     code?: string | null;
     created_at: string;
     created_by?: string | null;
+    data_isolation: string;
     depth: number;
+    descendant_count: number;
     floor?: number | null;
+    head_id?: string | null;
     id: string;
     is_active: boolean;
     name: string;
@@ -1074,6 +1112,7 @@ export type OrgUnitDto = {
 
 export type OrganizationSettingsDto = {
     academic?: AcademicSettingsDto;
+    admission?: AdmissionConfigurationDto;
     autopilot?: AutopilotSettingsDto;
     enrollment?: EnrollmentSettingsDto;
     finance?: FinanceSettingsDto;
@@ -1680,8 +1719,15 @@ export type UpdateGroupRequest = {
 };
 
 export type UpdateOrgRequest = {
+    base_currency_code?: string | null;
+    code?: string | null;
+    date_format?: string | null;
+    favicon?: string | null;
+    is_hijri_enabled?: boolean | null;
     locale?: string | null;
+    logo?: string | null;
     name?: string | null;
+    name_ar?: string | null;
     primary_color?: string | null;
     timezone?: string | null;
 };

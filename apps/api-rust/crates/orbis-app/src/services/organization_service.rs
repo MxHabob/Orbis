@@ -16,6 +16,21 @@ use crate::ports::repositories::{
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+pub struct UpdateOrgRequest {
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub code: Option<String>,
+    pub timezone: Option<String>,
+    pub locale: Option<String>,
+    pub date_format: Option<String>,
+    pub is_hijri_enabled: Option<bool>,
+    pub base_currency_code: Option<String>,
+    pub primary_color: Option<String>,
+    pub logo: Option<String>,
+    pub favicon: Option<String>,
+}
+
 pub struct OrganizationService {
     pub org_repo: Arc<dyn OrganizationRepository>,
     pub org_unit_repo: Arc<dyn OrgUnitRepository>,
@@ -74,21 +89,26 @@ impl OrganizationService {
         &self,
         ctx: &RequestContext,
         org_id: Uuid,
-        name: Option<String>,
-        timezone: Option<String>,
-        locale: Option<String>,
-        primary_color: Option<String>,
+        req: UpdateOrgRequest,
     ) -> Result<Organization, DomainError> {
         self.permission_checker.check(ctx, Permission::OrganizationWrite).await?;
 
         let mut org = self.org_repo.find_by_id(org_id).await?
             .ok_or_else(|| DomainError::NotFound(format!("Organization {} not found", org_id)))?;
 
-        if let Some(n) = name { org.name = n; }
-        if let Some(t) = timezone { org.timezone = t; }
-        if let Some(l) = locale { org.locale = l; }
-        if let Some(c) = primary_color { org.primary_color = Some(c); }
+        if let Some(n) = req.name { org.name = n; }
+        if let Some(na) = req.name_ar { org.name_ar = Some(na); }
+        if let Some(cd) = req.code { org.code = Some(cd); }
+        if let Some(t) = req.timezone { org.timezone = t; }
+        if let Some(l) = req.locale { org.locale = l; }
+        if let Some(df) = req.date_format { org.date_format = Some(df); }
+        if let Some(h) = req.is_hijri_enabled { org.is_hijri_enabled = h; }
+        if let Some(curr) = req.base_currency_code { org.base_currency_code = Some(curr); }
+        if let Some(c) = req.primary_color { org.primary_color = Some(c); }
+        if let Some(lg) = req.logo { org.logo = Some(lg); }
+        if let Some(fav) = req.favicon { org.favicon = Some(fav); }
         org.updated_at = Utc::now();
+        org.version += 1;
 
         self.org_repo.save(&org).await?;
 

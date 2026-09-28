@@ -28,7 +28,7 @@ pub use finance_service::FinanceService;
 pub use assessment_service::AssessmentService;
 pub use calculation_engine::{CalcEngine, AstNode, WeightedItem, apply_rounding};
 pub use auth_service::{AuthService, LoginResponse, VerifiedSessionResponse, GoogleLoginResult};
-pub use organization_service::OrganizationService;
+pub use organization_service::{OrganizationService, UpdateOrgRequest};
 pub use calendar_service::CalendarService;
 pub use scheduling_service::SchedulingService;
 pub use document_service::{DocumentService, CreateDocumentInput, CreateDocumentRequirementInput, StudentDocumentFulfillment};

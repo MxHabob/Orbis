@@ -27,9 +27,16 @@ pub struct CreateOrgRequest {
 #[derive(Deserialize, ToSchema)]
 pub struct UpdateOrgRequest {
     pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub code: Option<String>,
     pub timezone: Option<String>,
     pub locale: Option<String>,
+    pub date_format: Option<String>,
+    pub is_hijri_enabled: Option<bool>,
+    pub base_currency_code: Option<String>,
     pub primary_color: Option<String>,
+    pub logo: Option<String>,
+    pub favicon: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -106,10 +113,14 @@ pub struct OrgUnitDto {
     pub name_ar: Option<String>,
     pub code: Option<String>,
     pub unit_type: String,
+    pub head_id: Option<Uuid>,
     pub capacity: Option<i32>,
     pub building: Option<String>,
     pub floor: Option<i32>,
     pub room_number: Option<String>,
+    pub data_isolation: String,
+    pub children_count: i32,
+    pub descendant_count: i32,
     pub sort_order: Option<i32>,
     pub is_active: bool,
     pub created_by: Option<Uuid>,
@@ -129,10 +140,14 @@ fn unit_to_dto(u: orbis_domain::entities::org_unit::OrgUnit) -> OrgUnitDto {
         name_ar: u.name_ar,
         code: u.code,
         unit_type: u.unit_type,
+        head_id: u.head_id,
         capacity: u.capacity,
         building: u.building,
         floor: u.floor,
         room_number: u.room_number,
+        data_isolation: u.data_isolation,
+        children_count: u.children_count,
+        descendant_count: u.descendant_count,
         sort_order: u.sort_order,
         is_active: u.is_active,
         created_by: u.created_by,
@@ -188,7 +203,21 @@ async fn update_current_org(
     Json(payload): Json<UpdateOrgRequest>,
 ) -> Result<Json<ApiResponse<OrgDto>>, ApiError> {
     let org = state.organization_service.update_organization(
-        &ctx, ctx.tenant_id, payload.name, payload.timezone, payload.locale, payload.primary_color
+        &ctx,
+        ctx.tenant_id,
+        orbis_app::services::UpdateOrgRequest {
+            name: payload.name,
+            name_ar: payload.name_ar,
+            code: payload.code,
+            timezone: payload.timezone,
+            locale: payload.locale,
+            date_format: payload.date_format,
+            is_hijri_enabled: payload.is_hijri_enabled,
+            base_currency_code: payload.base_currency_code,
+            primary_color: payload.primary_color,
+            logo: payload.logo,
+            favicon: payload.favicon,
+        },
     ).await?;
 
     Ok(ApiResponse::ok(org_to_dto(org)))
@@ -278,6 +307,8 @@ pub struct OrganizationSettingsDto {
     pub academic: AcademicSettingsDto,
     #[serde(default)]
     pub enrollment: EnrollmentSettingsDto,
+    #[serde(default, alias = "registration")]
+    pub admission: AdmissionConfigurationDto,
     #[serde(default)]
     pub finance: FinanceSettingsDto,
     #[serde(default)]
@@ -299,6 +330,47 @@ pub struct EnrollmentSettingsDto {
     pub sibling_priority_enabled: bool,
     pub max_class_size_default: i32,
     pub allow_late_enrollment: bool,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Default)]
+pub struct NumberingSchemaDto {
+    pub prefix: String,
+    pub year_format: String,
+    pub sequence_digits: u8,
+    pub separator: String,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Default)]
+pub struct AdmissionPolicyDto {
+    pub requires_approval: bool,
+    pub allow_no_guardian: bool,
+    pub allow_duplicate_national_id: bool,
+    pub auto_assign_fees: bool,
+    pub max_class_capacity: i32,
+    pub allow_late_enrollment: bool,
+    pub allow_waitlist: bool,
+    pub sibling_priority_enabled: bool,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Default)]
+pub struct FormFieldConfigDto {
+    pub key: String,
+    pub name_ar: String,
+    pub name_en: String,
+    pub is_active: bool,
+    pub is_required: bool,
+    pub prevent_duplicate: bool,
+    pub supports_duplicate: bool,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Default)]
+pub struct AdmissionConfigurationDto {
+    #[serde(default)]
+    pub numbering: NumberingSchemaDto,
+    #[serde(default)]
+    pub policy: AdmissionPolicyDto,
+    #[serde(default)]
+    pub fields: Vec<FormFieldConfigDto>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Default)]
@@ -369,6 +441,37 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                 max_class_size_default: s.enrollment.max_class_size_default,
                 allow_late_enrollment: s.enrollment.allow_late_enrollment,
             },
+            admission: AdmissionConfigurationDto {
+                numbering: NumberingSchemaDto {
+                    prefix: s.admission.numbering.prefix,
+                    year_format: match s.admission.numbering.year_format {
+                        orbis_domain::entities::admission::YearFormat::Full => "full".to_string(),
+                        orbis_domain::entities::admission::YearFormat::Short => "short".to_string(),
+                        orbis_domain::entities::admission::YearFormat::None => "none".to_string(),
+                    },
+                    sequence_digits: s.admission.numbering.sequence_digits,
+                    separator: s.admission.numbering.separator,
+                },
+                policy: AdmissionPolicyDto {
+                    requires_approval: s.admission.policy.requires_approval,
+                    allow_no_guardian: s.admission.policy.allow_no_guardian,
+                    allow_duplicate_national_id: s.admission.policy.allow_duplicate_national_id,
+                    auto_assign_fees: s.admission.policy.auto_assign_fees,
+                    max_class_capacity: s.admission.policy.max_class_capacity,
+                    allow_late_enrollment: s.admission.policy.allow_late_enrollment,
+                    allow_waitlist: s.admission.policy.allow_waitlist,
+                    sibling_priority_enabled: s.admission.policy.sibling_priority_enabled,
+                },
+                fields: s.admission.fields.into_iter().map(|f| FormFieldConfigDto {
+                    key: f.key,
+                    name_ar: f.name_ar,
+                    name_en: f.name_en,
+                    is_active: f.is_active,
+                    is_required: f.is_required,
+                    prevent_duplicate: f.prevent_duplicate,
+                    supports_duplicate: f.supports_duplicate,
+                }).collect(),
+            },
             finance: FinanceSettingsDto {
                 currency: s.finance.currency,
                 tax_rate: s.finance.tax_rate,
@@ -423,6 +526,37 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 max_class_size_default: s.enrollment.max_class_size_default,
                 allow_late_enrollment: s.enrollment.allow_late_enrollment,
             },
+            admission: orbis_domain::entities::admission::AdmissionConfiguration {
+                numbering: orbis_domain::entities::admission::NumberingSchema {
+                    prefix: s.admission.numbering.prefix,
+                    year_format: match s.admission.numbering.year_format.to_lowercase().as_str() {
+                        "short" => orbis_domain::entities::admission::YearFormat::Short,
+                        "none" => orbis_domain::entities::admission::YearFormat::None,
+                        _ => orbis_domain::entities::admission::YearFormat::Full,
+                    },
+                    sequence_digits: s.admission.numbering.sequence_digits,
+                    separator: s.admission.numbering.separator,
+                },
+                policy: orbis_domain::entities::admission::AdmissionPolicy {
+                    requires_approval: s.admission.policy.requires_approval,
+                    allow_no_guardian: s.admission.policy.allow_no_guardian,
+                    allow_duplicate_national_id: s.admission.policy.allow_duplicate_national_id,
+                    auto_assign_fees: s.admission.policy.auto_assign_fees,
+                    max_class_capacity: s.admission.policy.max_class_capacity,
+                    allow_late_enrollment: s.admission.policy.allow_late_enrollment,
+                    allow_waitlist: s.admission.policy.allow_waitlist,
+                    sibling_priority_enabled: s.admission.policy.sibling_priority_enabled,
+                },
+                fields: s.admission.fields.into_iter().map(|f| orbis_domain::entities::admission::FormFieldConfig {
+                    key: f.key,
+                    name_ar: f.name_ar,
+                    name_en: f.name_en,
+                    is_active: f.is_active,
+                    is_required: f.is_required,
+                    prevent_duplicate: f.prevent_duplicate,
+                    supports_duplicate: f.supports_duplicate,
+                }).collect(),
+            },
             finance: orbis_domain::entities::settings::FinanceSettings {
                 currency: s.finance.currency,
                 tax_rate: s.finance.tax_rate,
@@ -461,7 +595,6 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 grade_entry_auto_close_days: s.autopilot.grade_entry_auto_close_days,
                 allow_grade_edit_after_close: s.autopilot.allow_grade_edit_after_close,
             },
-            admission: Default::default(),
         }
     }
 }
