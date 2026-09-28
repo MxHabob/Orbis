@@ -203,6 +203,8 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         finance_cmds::finance_reverse_journal_entry,
         finance_cmds::finance_create_discount_template,
         finance_cmds::finance_list_discount_templates,
+        finance_cmds::finance_split_student_fee,
+        finance_cmds::finance_refund_student_fee,
         // ── Document ────────────────────────────────────────────
         document_cmds::document_upload,
         document_cmds::document_list,

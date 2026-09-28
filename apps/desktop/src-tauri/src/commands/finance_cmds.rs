@@ -1070,3 +1070,60 @@ pub async fn finance_reverse_journal_entry(
     Ok(ok(journal_entry_to_dto(entry)))
 }
 
+#[derive(Deserialize, Debug)]
+pub struct SplitFeeInput {
+    pub num_installments: u32,
+    pub due_dates: Vec<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RefundStudentFeeInput {
+    pub refund_amount: Decimal,
+    pub notes: Option<String>,
+}
+
+#[tauri::command]
+pub async fn finance_split_student_fee(
+    id: String,
+    request: SplitFeeInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<StudentFeeDto>>, String> {
+    let ctx = make_ctx(&state);
+    let fee_id = Uuid::parse_str(&id).map_err(|_| "Invalid fee ID")?;
+    let mut due_dates = Vec::new();
+    for d in request.due_dates {
+        let parsed = NaiveDate::parse_from_str(&d, "%Y-%m-%d").map_err(|_| format!("Invalid date format: {}", d))?;
+        due_dates.push(parsed);
+    }
+
+    let created = state.finance_service.split_fee_into_installments(
+        &ctx,
+        ctx.tenant_id,
+        fee_id,
+        request.num_installments,
+        due_dates,
+    ).await.map_err(|e| e.to_string())?;
+
+    Ok(ok(created.into_iter().map(student_fee_to_dto).collect()))
+}
+
+#[tauri::command]
+pub async fn finance_refund_student_fee(
+    id: String,
+    request: RefundStudentFeeInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<StudentFeeDto>, String> {
+    let ctx = make_ctx(&state);
+    let fee_id = Uuid::parse_str(&id).map_err(|_| "Invalid fee ID")?;
+
+    let fee = state.finance_service.refund_student_fee(
+        &ctx,
+        ctx.tenant_id,
+        fee_id,
+        request.refund_amount,
+        request.notes,
+    ).await.map_err(|e| e.to_string())?;
+
+    Ok(ok(student_fee_to_dto(fee)))
+}
+
