@@ -40,7 +40,7 @@ Every agent starting a session in this repository MUST:
 ## 3. CONTINUATION STATE
 
 - **Last Session Date:** 2026-09-28
-- **Active Phase:** Phase 5 — Academic Structure & Calendar Reconciliation (Completed)
+- **Active Phase:** Phase 6 — Student Lifecycle, Admissions, Guardians & Enrollments Reconciliation (Completed)
 - **Completed Scopes:**
   - **Organization & Settings (Phase 3):**
     - Expanded `UpdateOrgRequest` (`name_ar`, `base_currency_code`, `date_format`, `is_hijri_enabled`, `logo`, `favicon`, `code`) in `orbis-server` & `orbis-app`.
@@ -64,10 +64,21 @@ Every agent starting a session in this repository MUST:
     - Reconciled `room-form.svelte` to sanitize payloads for `createRoom`.
     - Reconciled `class-form.svelte` to support explicit OrgUnit and Period selection.
     - Reconciled `subjects-manager.svelte` and `rooms-manager.svelte` with `formatDate` and typed DTOs.
+  - **Student Lifecycle, Admissions, Guardians & Enrollments (Phase 6):**
+    - Aligned `RegisterStudentRequest` in `student_routes.rs` with complete demographics, contact, Arabic naming, initial period/class, and study mode fields.
+    - Added `UpdateStudentProfileRequest` DTO and endpoint (`PATCH /api/v1/students/:id/profile`) in `student_routes.rs`.
+    - Added `TransferClassRequest` and endpoint (`POST /api/v1/enrollments/:id/transfer-class`) in `student_routes.rs`.
+    - Added `BulkRegisterStudentsRequest` and bulk register endpoint (`POST /api/v1/students/bulk-register`) in `student_routes.rs`.
+    - Added soft delete (`DELETE /api/v1/students/:id`), restore (`POST /api/v1/students/:id/restore`), and remove guardian (`DELETE /api/v1/students/:student_id/guardians/:guardian_id`) endpoints in `student_routes.rs`.
+    - Enhanced `StudentService::assign_guardian_full` in `orbis-app` to persist all guardian fields (`relationship_ar`, `is_emergency_contact`, `is_authorized_pickup`, `is_payer`, `payment_share_percent`, `occupation`, `employer`, `work_phone`, `notes`).
+    - Aligned `student_cmds.rs` in Tauri with `assign_guardian_full`.
+    - Exported updated OpenAPI specification to `packages/sdk` and regenerated TypeScript client.
+    - Reconciled `remote-client.ts` and `local-client.ts` with typed contracts.
+    - Reconciled `student-details.svelte` to use valid backend status transitions.
   - **Verification:**
     - `apps/api-rust` cargo check: 0 errors
     - `apps/desktop/src-tauri` cargo check: 0 errors
     - `packages/sdk` tsc: 0 errors
     - `apps/desktop` tsc: 0 errors
-- **Next Scope in Master Execution Plan:** Phase 6 — Student Lifecycle, Admissions, Guardians & Enrollments Reconciliation.
+- **Next Scope in Master Execution Plan:** Phase 7 — Employee Affairs, HR & Teacher Assignments Reconciliation.
 

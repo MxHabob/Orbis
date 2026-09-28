@@ -349,7 +349,7 @@ async function saveStudentDetails(e: Event) {
     if (isActiveState !== currentStatus) {
       await api.updateStudentStatus({
         student_id: targetStudentId,
-        status: isActiveState ? "active" : "inactive",
+        status: isActiveState ? "active" : "withdrawn",
       });
     }
 

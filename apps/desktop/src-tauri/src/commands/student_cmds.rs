@@ -675,7 +675,22 @@ pub async fn student_assign_guardian(
     let guardian_id = Uuid::parse_str(&request.guardian_id).map_err(|_| "Invalid guardianId")?;
 
     let g = state.student_service
-        .assign_guardian(&ctx, student_id, guardian_id, request.relationship, request.is_primary)
+        .assign_guardian_full(
+            &ctx,
+            student_id,
+            guardian_id,
+            request.relationship,
+            request.relationship_ar,
+            request.is_primary,
+            Some(request.is_emergency_contact),
+            Some(request.is_authorized_pickup),
+            Some(request.is_payer),
+            request.payment_share_percent,
+            request.occupation,
+            request.employer,
+            request.work_phone,
+            request.notes,
+        )
         .await
         .map_err(|e| e.to_string())?;
 

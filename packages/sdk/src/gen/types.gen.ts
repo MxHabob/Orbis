@@ -24,9 +24,13 @@ export type AcademicContextResponse = {
 };
 
 export type AcademicPeriodDto = {
+    code?: string | null;
     created_at: string;
     end_date: string;
     id: string;
+    is_enrollment_open: boolean;
+    is_grade_entry_open: boolean;
+    is_locked: boolean;
     name: string;
     name_ar?: string | null;
     parent_id?: string | null;
@@ -220,15 +224,19 @@ export type AssignEmployeeGroupsRequest = {
 };
 
 export type AssignGuardianRequest = {
+    employer?: string | null;
     guardian_id: string;
     is_authorized_pickup?: boolean | null;
     is_emergency_contact?: boolean | null;
     is_payer?: boolean | null;
     is_primary?: boolean | null;
+    notes?: string | null;
+    occupation?: string | null;
     payment_share_percent?: number | null;
     relationship: string;
     relationship_ar?: string | null;
     student_id: string;
+    work_phone?: string | null;
 };
 
 export type AssignProctorRequest = {
@@ -343,6 +351,37 @@ export type BulkAssignGroupRequest = {
     user_ids: Array<string>;
 };
 
+export type BulkRegisterItemResultDto = {
+    error?: string | null;
+    row_index: number;
+    student_id?: string | null;
+    student_number?: string | null;
+    success: boolean;
+};
+
+export type BulkRegisterStudentItem = {
+    guardian_name?: string | null;
+    guardian_phone?: string | null;
+    guardian_relationship?: string | null;
+    registration: RegisterStudentRequest;
+    row_index: number;
+};
+
+export type BulkRegisterStudentsRequest = {
+    atomic?: boolean | null;
+    dry_run?: boolean | null;
+    items: Array<BulkRegisterStudentItem>;
+};
+
+export type BulkRegisterStudentsResponse = {
+    failed: number;
+    is_atomic: boolean;
+    is_dry_run: boolean;
+    items: Array<BulkRegisterItemResultDto>;
+    succeeded: number;
+    total: number;
+};
+
 export type CalculateGradesRequest = {
     class_subject_id?: string | null;
     scheme_id: string;
@@ -366,8 +405,11 @@ export type ChangeStudyModeRequest = {
 
 export type ClassDto = {
     capacity?: number | null;
+    color?: string | null;
     created_at: string;
+    current_students?: number | null;
     division?: string | null;
+    homeroom_teacher_id?: string | null;
     id: string;
     is_active: boolean;
     level: string;
@@ -375,6 +417,7 @@ export type ClassDto = {
     name_ar?: string | null;
     org_id: string;
     period_id: string;
+    room_id?: string | null;
     unit_id: string;
     updated_at: string;
 };
@@ -1333,20 +1376,32 @@ export type RegisterEmployeeResponseDto = {
 
 export type RegisterStudentRequest = {
     avatar_url?: string | null;
+    birth_date?: string | null;
     blood_type?: string | null;
+    bypass_capacity_check?: boolean | null;
     date_of_birth?: string | null;
+    display_name?: string | null;
+    email?: string | null;
     first_name: string;
-    gender: string;
+    first_name_ar?: string | null;
+    gender?: string | null;
+    initial_class_id?: string | null;
+    initial_period_id?: string | null;
     last_name: string;
+    last_name_ar?: string | null;
     medical_notes?: string | null;
+    middle_name?: string | null;
+    middle_name_ar?: string | null;
     name_ar?: string | null;
     national_id?: string | null;
     nationality?: string | null;
     passport_number?: string | null;
     person_id?: string | null;
+    phone?: string | null;
     place_of_birth?: string | null;
     special_needs_notes?: string | null;
-    student_number: string;
+    student_number?: string | null;
+    study_mode?: string | null;
     user_id?: string | null;
 };
 
@@ -1500,19 +1555,26 @@ export type StudentDocumentFulfillmentDto = {
 };
 
 export type StudentDto = {
+    address?: string | null;
     admitted_at: string;
     avatar_url?: string | null;
     blood_type?: string | null;
     created_at: string;
     created_by?: string | null;
     date_of_birth?: string | null;
+    display_name?: string | null;
+    email?: string | null;
     first_name: string;
+    first_name_ar?: string | null;
     full_name: string;
     gender: string;
     graduated_at?: string | null;
     id: string;
     last_name: string;
+    last_name_ar?: string | null;
     medical_notes?: string | null;
+    middle_name?: string | null;
+    middle_name_ar?: string | null;
     name_ar?: string | null;
     national_id?: string | null;
     nationality?: string | null;
@@ -1520,6 +1582,8 @@ export type StudentDto = {
     org_unit_id?: string | null;
     passport_number?: string | null;
     person_id: string;
+    phone?: string | null;
+    place_of_birth?: string | null;
     special_needs_notes?: string | null;
     standing: string;
     status: string;
@@ -1561,9 +1625,11 @@ export type SubjectDto = {
     code: string;
     created_at: string;
     credit_hours?: string | null;
+    description?: string | null;
     id: string;
     is_active: boolean;
     is_core: boolean;
+    is_elective: boolean;
     name: string;
     name_ar?: string | null;
     org_id: string;
@@ -1659,6 +1725,11 @@ export type ToggleIntegrationRequest = {
 
 export type ToolCategory = 'read' | 'analysis' | 'generation' | 'action';
 
+export type TransferClassRequest = {
+    reason?: string | null;
+    target_class_id: string;
+};
+
 export type UiContext = {
     active_filters?: unknown;
     class_id?: string | null;
@@ -1737,6 +1808,29 @@ export type UpdateSchemeRequest = {
     formula?: unknown;
     max_score?: number | null;
     name?: string | null;
+};
+
+export type UpdateStudentProfileRequest = {
+    address?: string | null;
+    avatar_url?: string | null;
+    birth_date?: string | null;
+    blood_type?: string | null;
+    display_name?: string | null;
+    email?: string | null;
+    first_name?: string | null;
+    first_name_ar?: string | null;
+    gender?: string | null;
+    last_name?: string | null;
+    last_name_ar?: string | null;
+    medical_notes?: string | null;
+    middle_name?: string | null;
+    middle_name_ar?: string | null;
+    national_id?: string | null;
+    nationality?: string | null;
+    passport_number?: string | null;
+    phone?: string | null;
+    place_of_birth?: string | null;
+    special_needs_notes?: string | null;
 };
 
 export type UpdateStudentStatusRequest = {
@@ -2930,7 +3024,10 @@ export type UpdateEmployeeStatusResponse = UpdateEmployeeStatusResponses[keyof U
 export type ListEnrollmentsData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        class_id?: string | null;
+        student_id?: string | null;
+    };
     url: '/api/v1/enrollments';
 };
 
@@ -2988,6 +3085,24 @@ export type ChangeStudyModeResponses = {
 };
 
 export type ChangeStudyModeResponse = ChangeStudyModeResponses[keyof ChangeStudyModeResponses];
+
+export type TransferClassData = {
+    body: TransferClassRequest;
+    path: {
+        /**
+         * Enrollment ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/enrollments/{id}/transfer-class';
+};
+
+export type TransferClassResponses = {
+    200: EnrollmentDto;
+};
+
+export type TransferClassResponse = TransferClassResponses[keyof TransferClassResponses];
 
 export type AssignProctorData = {
     body: AssignProctorRequest;
@@ -4397,9 +4512,6 @@ export type ListGuardiansData = {
     body?: never;
     path?: never;
     query: {
-        /**
-         * Student ID
-         */
         student_id: string;
     };
     url: '/api/v1/student-guardians';
@@ -4427,7 +4539,17 @@ export type AssignGuardianResponse = AssignGuardianResponses[keyof AssignGuardia
 export type ListStudentsData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        period_id?: string | null;
+        class_id?: string | null;
+        status?: string | null;
+        standing?: string | null;
+        search?: string | null;
+        page?: number | null;
+        page_size?: number | null;
+        sort_by?: string | null;
+        sort_dir?: string | null;
+    };
     url: '/api/v1/students';
 };
 
@@ -4450,6 +4572,19 @@ export type RegisterStudentResponses = {
 
 export type RegisterStudentResponse = RegisterStudentResponses[keyof RegisterStudentResponses];
 
+export type BulkRegisterStudentsData = {
+    body: BulkRegisterStudentsRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/students/bulk-register';
+};
+
+export type BulkRegisterStudentsResponses = {
+    200: BulkRegisterStudentsResponse;
+};
+
+export type BulkRegisterStudentsResponse2 = BulkRegisterStudentsResponses[keyof BulkRegisterStudentsResponses];
+
 export type CheckDuplicateData = {
     body: DuplicateCheckRequest;
     path?: never;
@@ -4462,6 +4597,24 @@ export type CheckDuplicateResponses = {
 };
 
 export type CheckDuplicateResponse = CheckDuplicateResponses[keyof CheckDuplicateResponses];
+
+export type DeleteStudentData = {
+    body?: never;
+    path: {
+        /**
+         * Student ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/students/{id}';
+};
+
+export type DeleteStudentResponses = {
+    200: boolean;
+};
+
+export type DeleteStudentResponse = DeleteStudentResponses[keyof DeleteStudentResponses];
 
 export type GetStudentData = {
     body?: never;
@@ -4517,6 +4670,42 @@ export type EvaluateStudentRequirementsResponses = {
 
 export type EvaluateStudentRequirementsResponse = EvaluateStudentRequirementsResponses[keyof EvaluateStudentRequirementsResponses];
 
+export type UpdateStudentProfileData = {
+    body: UpdateStudentProfileRequest;
+    path: {
+        /**
+         * Student ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/students/{id}/profile';
+};
+
+export type UpdateStudentProfileResponses = {
+    200: StudentDto;
+};
+
+export type UpdateStudentProfileResponse = UpdateStudentProfileResponses[keyof UpdateStudentProfileResponses];
+
+export type RestoreStudentData = {
+    body?: never;
+    path: {
+        /**
+         * Student ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/students/{id}/restore';
+};
+
+export type RestoreStudentResponses = {
+    200: StudentDto;
+};
+
+export type RestoreStudentResponse = RestoreStudentResponses[keyof RestoreStudentResponses];
+
 export type UpdateStudentStatusData = {
     body: UpdateStudentStatusRequest;
     path: {
@@ -4534,6 +4723,28 @@ export type UpdateStudentStatusResponses = {
 };
 
 export type UpdateStudentStatusResponse = UpdateStudentStatusResponses[keyof UpdateStudentStatusResponses];
+
+export type RemoveGuardianData = {
+    body?: never;
+    path: {
+        /**
+         * Student ID
+         */
+        student_id: string;
+        /**
+         * Guardian ID
+         */
+        guardian_id: string;
+    };
+    query?: never;
+    url: '/api/v1/students/{student_id}/guardians/{guardian_id}';
+};
+
+export type RemoveGuardianResponses = {
+    200: boolean;
+};
+
+export type RemoveGuardianResponse = RemoveGuardianResponses[keyof RemoveGuardianResponses];
 
 export type ListSubjectsData = {
     body?: never;

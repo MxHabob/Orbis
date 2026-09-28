@@ -463,21 +463,55 @@ export class RemoteClient implements OrbisApiClient {
 
   // ── Student ─────────────────────────────────────────────────
   async registerStudent(req: RegisterStudentInput): Promise<StudentDetailDto> {
-    return this.call(sdk.registerStudent({ client: this.client, body: req as any })) as any;
+    const res = await this.call(sdk.registerStudent({ client: this.client, body: req as any }));
+    if ((res as any).student && (res as any).person) {
+      return res as any;
+    }
+    const student = res as unknown as StudentDto;
+    return {
+      student,
+      person: {
+        id: student.person_id,
+        first_name: student.first_name,
+        last_name: student.last_name,
+        full_name: student.full_name,
+        national_id: student.national_id,
+        passport_number: student.passport_number,
+        gender: student.gender,
+        birth_date: student.date_of_birth,
+        created_at: student.created_at,
+        updated_at: student.updated_at,
+      },
+    };
   }
 
   async checkDuplicate(req: DuplicateCheckRequest): Promise<DuplicateCheckResponse> {
-    return this.call(sdk.checkDuplicate({ client: this.client, body: req as any })) as any;
+    return this.call(sdk.checkDuplicate({ client: this.client, body: req }));
   }
 
   async listStudents(filter?: StudentFilterParams): Promise<PaginatedList<StudentDetailDto>> {
     const res = await this.call(sdk.listStudents({ client: this.client, query: filter as any }));
     if (Array.isArray(res)) {
+      const items: StudentDetailDto[] = (res as StudentDto[]).map((student) => ({
+        student,
+        person: {
+          id: student.person_id,
+          first_name: student.first_name,
+          last_name: student.last_name,
+          full_name: student.full_name,
+          national_id: student.national_id,
+          passport_number: student.passport_number,
+          gender: student.gender,
+          birth_date: student.date_of_birth,
+          created_at: student.created_at,
+          updated_at: student.updated_at,
+        },
+      }));
       return {
-        items: res as any,
-        total_count: res.length,
-        page: 1,
-        page_size: res.length || 50,
+        items,
+        total_count: items.length,
+        page: filter?.page ?? 1,
+        page_size: filter?.page_size ?? (items.length || 50),
         total_pages: 1,
       };
     }
@@ -485,7 +519,22 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async getStudent(id: string): Promise<StudentDetailDto> {
-    return this.call(sdk.getStudent({ client: this.client, path: { id } })) as any;
+    const student = await this.call(sdk.getStudent({ client: this.client, path: { id } }));
+    return {
+      student,
+      person: {
+        id: student.person_id,
+        first_name: student.first_name,
+        last_name: student.last_name,
+        full_name: student.full_name,
+        national_id: student.national_id,
+        passport_number: student.passport_number,
+        gender: student.gender,
+        birth_date: student.date_of_birth,
+        created_at: student.created_at,
+        updated_at: student.updated_at,
+      },
+    };
   }
 
   async updateStudentStatus(req: UpdateStudentStatusInput): Promise<StudentDto> {
@@ -493,23 +542,43 @@ export class RemoteClient implements OrbisApiClient {
       sdk.updateStudentStatus({
         client: this.client,
         path: { id: req.student_id || req.studentId || "" },
-        body: req as any,
+        body: { status: req.status, reason: req.reason },
       }),
     );
   }
 
   async updateStudentProfile(req: UpdateStudentProfileInput): Promise<StudentDetailDto> {
     const studentId = req.student_id || req.studentId || "";
-    const res = await this.call(sdk.getStudent({ client: this.client, path: { id: studentId } }));
-    return res as any;
+    const student = await this.call(
+      sdk.updateStudentProfile({
+        client: this.client,
+        path: { id: studentId },
+        body: req as any,
+      }),
+    );
+    return {
+      student,
+      person: {
+        id: student.person_id,
+        first_name: student.first_name,
+        last_name: student.last_name,
+        full_name: student.full_name,
+        national_id: student.national_id,
+        passport_number: student.passport_number,
+        gender: student.gender,
+        birth_date: student.date_of_birth,
+        created_at: student.created_at,
+        updated_at: student.updated_at,
+      },
+    };
   }
 
-  async deleteStudent(_id: string): Promise<boolean> {
-    return true;
+  async deleteStudent(id: string): Promise<boolean> {
+    return this.call(sdk.deleteStudent({ client: this.client, path: { id } }));
   }
 
   async restoreStudent(id: string): Promise<StudentDto> {
-    return this.call(sdk.getStudent({ client: this.client, path: { id } })) as any;
+    return this.call(sdk.restoreStudent({ client: this.client, path: { id } }));
   }
 
   async changeStudyMode(req: ChangeStudyModeInput): Promise<EnrollmentDto> {
@@ -525,7 +594,14 @@ export class RemoteClient implements OrbisApiClient {
 
   async transferClass(req: TransferClassInput): Promise<EnrollmentDto> {
     const id = req.enrollment_id || req.enrollmentId || "";
-    return this.call(sdk.getEnrollment({ client: this.client, path: { id } }));
+    const targetClassId = req.target_class_id || req.targetClassId || "";
+    return this.call(
+      sdk.transferClass({
+        client: this.client,
+        path: { id },
+        body: { target_class_id: targetClassId, reason: req.reason },
+      }),
+    );
   }
 
   async enrollStudent(req: EnrollStudentRequest): Promise<EnrollmentDto> {
@@ -541,44 +617,31 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async assignGuardian(req: AssignGuardianRequest): Promise<GuardianDto> {
-    return this.call(sdk.assignGuardian({ client: this.client, body: req })) as any;
+    return this.call(sdk.assignGuardian({ client: this.client, body: req }));
   }
 
   async listGuardians(studentId: string): Promise<GuardianDto[]> {
-    return (await this.call(sdk.listGuardians({ client: this.client, query: { student_id: studentId } as any }))) as any ?? [];
+    return (await this.call(sdk.listGuardians({ client: this.client, query: { student_id: studentId } }))) ?? [];
   }
 
-  async removeGuardian(_studentId: string, _guardianId: string): Promise<boolean> {
-    return true;
+  async removeGuardian(studentId: string, guardianId: string): Promise<boolean> {
+    return this.call(sdk.removeGuardian({ client: this.client, path: { student_id: studentId, guardian_id: guardianId } }));
   }
 
   async bulkRegisterStudents(
     items: BulkRegisterStudentCommandItem[],
-    _options?: { atomic?: boolean; dryRun?: boolean },
+    options?: { atomic?: boolean; dryRun?: boolean },
   ): Promise<BulkRegisterStudentCommandResultDto> {
-    const results = [];
-    let succeeded = 0;
-    let failed = 0;
-    for (const item of items) {
-      try {
-        const registered = await this.registerStudent(item.registration);
-        results.push({
-          row_index: item.row_index,
-          success: true,
-          student_id: (registered as any).student?.id ?? (registered as any).id,
-          student_number: (registered as any).student?.student_number ?? item.registration.student_number,
-        });
-        succeeded++;
-      } catch (e: any) {
-        results.push({
-          row_index: item.row_index,
-          success: false,
-          error: e.message || "Failed to register student",
-        });
-        failed++;
-      }
-    }
-    return { total: items.length, succeeded, failed, items: results };
+    return this.call(
+      sdk.bulkRegisterStudents({
+        client: this.client,
+        body: {
+          items: items as any,
+          atomic: options?.atomic ?? true,
+          dry_run: options?.dryRun ?? false,
+        },
+      }),
+    ) as any;
   }
 
   // ── Employee Affairs ────────────────────────────────────────

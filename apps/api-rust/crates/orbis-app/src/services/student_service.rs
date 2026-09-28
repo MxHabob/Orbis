@@ -711,6 +711,42 @@ impl StudentService {
         relationship: String,
         is_primary: bool,
     ) -> Result<StudentGuardian, DomainError> {
+        self.assign_guardian_full(
+            ctx,
+            student_id,
+            guardian_id,
+            relationship,
+            None,
+            is_primary,
+            Some(true),
+            Some(false),
+            Some(is_primary),
+            None,
+            None,
+            None,
+            None,
+            None,
+        ).await
+    }
+
+    /// Assign guardian with full options
+    pub async fn assign_guardian_full(
+        &self,
+        ctx: &RequestContext,
+        student_id: Uuid,
+        guardian_id: Uuid,
+        relationship: String,
+        relationship_ar: Option<String>,
+        is_primary: bool,
+        is_emergency_contact: Option<bool>,
+        is_authorized_pickup: Option<bool>,
+        is_payer: Option<bool>,
+        payment_share_percent: Option<f64>,
+        occupation: Option<String>,
+        employer: Option<String>,
+        work_phone: Option<String>,
+        notes: Option<String>,
+    ) -> Result<StudentGuardian, DomainError> {
         self.permission_checker.check(ctx, Permission::StudentUpdate).await?;
 
         let now = Utc::now();
@@ -719,16 +755,16 @@ impl StudentService {
             student_id,
             guardian_id,
             relationship,
-            relationship_ar: None,
+            relationship_ar,
             is_primary,
-            is_emergency_contact: true,
-            is_authorized_pickup: false,
-            is_payer: is_primary,
-            payment_share_percent: None,
-            occupation: None,
-            employer: None,
-            work_phone: None,
-            notes: None,
+            is_emergency_contact: is_emergency_contact.unwrap_or(true),
+            is_authorized_pickup: is_authorized_pickup.unwrap_or(false),
+            is_payer: is_payer.unwrap_or(is_primary),
+            payment_share_percent,
+            occupation,
+            employer,
+            work_phone,
+            notes,
             created_at: now,
             updated_at: now,
         };

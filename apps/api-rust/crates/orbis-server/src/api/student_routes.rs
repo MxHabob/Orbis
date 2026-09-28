@@ -1,6 +1,6 @@
-//! Student routes — Registrations, Enrollments, Study Mode changes, Status updates, Guardians.
+//! Student routes — Registrations, Enrollments, Study Mode changes, Status updates, Guardians, Bulk registration.
 
-use axum::{extract::{State, Path, Query}, routing::{get, post, patch}, Json, Router};
+use axum::{extract::{State, Path, Query}, routing::{get, post, patch, delete}, Json, Router};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use chrono::{DateTime, Utc, NaiveDate};
@@ -9,9 +9,9 @@ use uuid::Uuid;
 use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
-use orbis_domain::entities::student::{StudentStatus, StudentDetail};
+use orbis_domain::entities::student::{StudentStatus, AcademicStanding, StudentDetail};
 use orbis_domain::entities::enrollment::{Enrollment, StudyMode};
-use orbis_domain::queries::filters::StudentFilter;
+use orbis_domain::queries::filters::{StudentFilter, PaginationParams};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct StudentDto {
@@ -23,15 +23,24 @@ pub struct StudentDto {
     pub national_id: Option<String>,
     pub passport_number: Option<String>,
     pub first_name: String,
+    pub middle_name: Option<String>,
     pub last_name: String,
     pub full_name: String,
     pub name_ar: Option<String>,
+    pub first_name_ar: Option<String>,
+    pub middle_name_ar: Option<String>,
+    pub last_name_ar: Option<String>,
+    pub display_name: Option<String>,
     pub gender: String,
     pub date_of_birth: Option<NaiveDate>,
+    pub place_of_birth: Option<String>,
     pub nationality: Option<String>,
     pub blood_type: Option<String>,
     pub medical_notes: Option<String>,
     pub special_needs_notes: Option<String>,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+    pub address: Option<String>,
     pub avatar_url: Option<String>,
     pub status: String,
     pub standing: String,
@@ -59,15 +68,24 @@ impl From<StudentDetail> for StudentDto {
             national_id: p.national_id,
             passport_number: p.passport_number,
             first_name: p.first_name,
+            middle_name: p.middle_name,
             last_name: p.last_name,
             full_name,
             name_ar: full_name_ar,
+            first_name_ar: p.first_name_ar,
+            middle_name_ar: p.middle_name_ar,
+            last_name_ar: p.last_name_ar,
+            display_name: p.display_name,
             gender: p.gender.unwrap_or_else(|| "male".into()),
             date_of_birth: p.birth_date,
+            place_of_birth: p.place_of_birth,
             nationality: p.nationality,
             blood_type: p.blood_type,
             medical_notes: p.medical_notes,
             special_needs_notes: p.special_needs_notes,
+            phone: p.phone,
+            email: p.email,
+            address: p.address,
             avatar_url: p.avatar_url,
             status: s.status.to_string(),
             standing: s.standing.to_string(),
@@ -86,19 +104,55 @@ impl From<StudentDetail> for StudentDto {
 pub struct RegisterStudentRequest {
     pub person_id: Option<Uuid>,
     pub user_id: Option<Uuid>,
-    pub student_number: String,
+    pub student_number: Option<String>,
     pub national_id: Option<String>,
     pub passport_number: Option<String>,
     pub first_name: String,
+    pub middle_name: Option<String>,
     pub last_name: String,
+    pub first_name_ar: Option<String>,
+    pub middle_name_ar: Option<String>,
+    pub last_name_ar: Option<String>,
     pub name_ar: Option<String>,
-    pub gender: String,
+    pub display_name: Option<String>,
+    pub gender: Option<String>,
     pub date_of_birth: Option<NaiveDate>,
+    pub birth_date: Option<NaiveDate>,
     pub place_of_birth: Option<String>,
     pub nationality: Option<String>,
     pub blood_type: Option<String>,
     pub medical_notes: Option<String>,
     pub special_needs_notes: Option<String>,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+    pub avatar_url: Option<String>,
+    pub initial_period_id: Option<Uuid>,
+    pub initial_class_id: Option<Uuid>,
+    pub study_mode: Option<String>,
+    pub bypass_capacity_check: Option<bool>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct UpdateStudentProfileRequest {
+    pub first_name: Option<String>,
+    pub middle_name: Option<String>,
+    pub last_name: Option<String>,
+    pub first_name_ar: Option<String>,
+    pub middle_name_ar: Option<String>,
+    pub last_name_ar: Option<String>,
+    pub display_name: Option<String>,
+    pub national_id: Option<String>,
+    pub passport_number: Option<String>,
+    pub gender: Option<String>,
+    pub birth_date: Option<NaiveDate>,
+    pub place_of_birth: Option<String>,
+    pub nationality: Option<String>,
+    pub blood_type: Option<String>,
+    pub medical_notes: Option<String>,
+    pub special_needs_notes: Option<String>,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+    pub address: Option<String>,
     pub avatar_url: Option<String>,
 }
 
@@ -163,6 +217,12 @@ pub struct ChangeStudyModeRequest {
 }
 
 #[derive(Deserialize, ToSchema)]
+pub struct TransferClassRequest {
+    pub target_class_id: Uuid,
+    pub reason: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
 pub struct UpdateStudentStatusRequest {
     pub status: String,
     pub reason: Option<String>,
@@ -179,6 +239,10 @@ pub struct AssignGuardianRequest {
     pub is_authorized_pickup: Option<bool>,
     pub is_payer: Option<bool>,
     pub payment_share_percent: Option<f64>,
+    pub occupation: Option<String>,
+    pub employer: Option<String>,
+    pub work_phone: Option<String>,
+    pub notes: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -201,13 +265,26 @@ pub struct GuardianDto {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::IntoParams)]
+pub struct StudentQuery {
+    pub period_id: Option<Uuid>,
+    pub class_id: Option<Uuid>,
+    pub status: Option<String>,
+    pub standing: Option<String>,
+    pub search: Option<String>,
+    pub page: Option<u64>,
+    pub page_size: Option<u64>,
+    pub sort_by: Option<String>,
+    pub sort_dir: Option<String>,
+}
+
+#[derive(Deserialize, utoipa::IntoParams)]
 pub struct EnrollmentQuery {
     pub class_id: Option<Uuid>,
     pub student_id: Option<Uuid>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::IntoParams)]
 pub struct GuardianQuery {
     pub student_id: Uuid,
 }
@@ -236,6 +313,56 @@ pub struct DuplicateCheckResponse {
     pub matches: Vec<DuplicateMatchDto>,
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct BulkRegisterStudentItem {
+    pub row_index: usize,
+    pub registration: RegisterStudentRequest,
+    pub guardian_name: Option<String>,
+    pub guardian_phone: Option<String>,
+    pub guardian_relationship: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct BulkRegisterStudentsRequest {
+    pub items: Vec<BulkRegisterStudentItem>,
+    pub atomic: Option<bool>,
+    pub dry_run: Option<bool>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct BulkRegisterItemResultDto {
+    pub row_index: usize,
+    pub success: bool,
+    pub student_id: Option<Uuid>,
+    pub student_number: Option<String>,
+    pub error: Option<String>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct BulkRegisterStudentsResponse {
+    pub total: usize,
+    pub succeeded: usize,
+    pub failed: usize,
+    pub is_atomic: bool,
+    pub is_dry_run: bool,
+    pub items: Vec<BulkRegisterItemResultDto>,
+}
+
+// ── Helpers ──────────────────────────────────────────────────────
+
+fn parse_study_mode(mode_str: Option<&str>) -> StudyMode {
+    match mode_str {
+        Some("homeschooled") | Some("homeschool") => StudyMode::Homeschooled,
+        Some("auditor") => StudyMode::Auditor,
+        Some("visiting") => StudyMode::Visiting,
+        Some("distance_learning") => StudyMode::DistanceLearning,
+        Some("part_time") => StudyMode::PartTime,
+        Some("exchange") => StudyMode::Exchange,
+        Some("special_needs") => StudyMode::SpecialNeeds,
+        _ => StudyMode::Regular,
+    }
+}
+
 // ── Handlers ────────────────────────────────────────────────────
 
 #[utoipa::path(post, path = "/api/v1/students", request_body = RegisterStudentRequest,
@@ -246,33 +373,42 @@ pub async fn register_student(
     State(state): State<AppState>,
     Json(p): Json<RegisterStudentRequest>,
 ) -> Result<Json<ApiResponse<StudentDto>>, ApiError> {
+    let student_num = p.student_number.and_then(|sn| {
+        let trimmed = sn.trim();
+        if trimmed.is_empty() { None } else { Some(trimmed.to_string()) }
+    });
+
+    let birth_date = p.birth_date.or(p.date_of_birth);
+    let first_name_ar = p.first_name_ar.or(p.name_ar);
+    let study_mode = p.study_mode.as_deref().map(|s| parse_study_mode(Some(s)));
+
     let input = orbis_app::services::RegisterStudentInput {
         person_id: p.person_id,
         user_id: p.user_id,
-        student_number: if p.student_number.trim().is_empty() { None } else { Some(p.student_number) },
+        student_number: student_num,
         first_name: p.first_name,
-        middle_name: None,
+        middle_name: p.middle_name,
         last_name: p.last_name,
-        first_name_ar: p.name_ar,
-        middle_name_ar: None,
-        last_name_ar: None,
-        display_name: None,
+        first_name_ar,
+        middle_name_ar: p.middle_name_ar,
+        last_name_ar: p.last_name_ar,
+        display_name: p.display_name,
         national_id: p.national_id,
         passport_number: p.passport_number,
-        gender: Some(p.gender),
-        birth_date: p.date_of_birth,
+        gender: p.gender,
+        birth_date,
         place_of_birth: p.place_of_birth,
         nationality: p.nationality,
         blood_type: p.blood_type,
         medical_notes: p.medical_notes,
         special_needs_notes: p.special_needs_notes,
-        phone: None,
-        email: None,
+        phone: p.phone,
+        email: p.email,
         avatar_url: p.avatar_url,
-        initial_period_id: None,
-        initial_class_id: None,
-        study_mode: None,
-        bypass_capacity_check: None,
+        initial_period_id: p.initial_period_id,
+        initial_class_id: p.initial_class_id,
+        study_mode,
+        bypass_capacity_check: p.bypass_capacity_check,
     };
 
     let result = state.student_service.register_student(&ctx, ctx.tenant_id, input).await?;
@@ -280,13 +416,46 @@ pub async fn register_student(
 }
 
 #[utoipa::path(get, path = "/api/v1/students",
+    params(StudentQuery),
     responses((status = 200, body = Vec<StudentDto>)),
     security(("bearer" = [])), tag = "Student")]
 pub async fn list_students(
     ctx: AuthContext,
     State(state): State<AppState>,
+    Query(q): Query<StudentQuery>,
 ) -> Result<Json<ApiResponse<Vec<StudentDto>>>, ApiError> {
-    let paginated = state.student_service.list_students(ctx.tenant_id, StudentFilter::default()).await?;
+    let domain_filter = StudentFilter {
+        period_id: q.period_id,
+        class_id: q.class_id,
+        status: q.status.as_deref().and_then(|s| match s {
+            "active" => Some(StudentStatus::Active),
+            "on_leave" => Some(StudentStatus::OnLeave),
+            "suspended" => Some(StudentStatus::Suspended),
+            "withdrawn" => Some(StudentStatus::Withdrawn),
+            "transferred_out" => Some(StudentStatus::TransferredOut),
+            "graduated" => Some(StudentStatus::Graduated),
+            "expelled" => Some(StudentStatus::Expelled),
+            _ => None,
+        }),
+        standing: q.standing.as_deref().and_then(|s| match s {
+            "good_standing" => Some(AcademicStanding::GoodStanding),
+            "honor_list" => Some(AcademicStanding::HonorList),
+            "warning_1" => Some(AcademicStanding::AcademicWarning1),
+            "warning_2" => Some(AcademicStanding::AcademicWarning2),
+            "warning_3" => Some(AcademicStanding::AcademicWarning3),
+            "probation" => Some(AcademicStanding::Probation),
+            "dismissed" => Some(AcademicStanding::Dismissed),
+            _ => None,
+        }),
+        search: q.search.filter(|s| !s.trim().is_empty()),
+        pagination: Some(PaginationParams {
+            page: q.page,
+            page_size: q.page_size,
+            sort_by: q.sort_by,
+            sort_dir: q.sort_dir,
+        }),
+    };
+    let paginated = state.student_service.list_students(ctx.tenant_id, domain_filter).await?;
     let dtos = paginated.items.into_iter().map(Into::into).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -332,6 +501,154 @@ pub async fn update_student_status(
     Ok(ApiResponse::ok(detail.into()))
 }
 
+#[utoipa::path(patch, path = "/api/v1/students/{id}/profile", request_body = UpdateStudentProfileRequest,
+    params(("id" = Uuid, Path, description = "Student ID")),
+    responses((status = 200, body = StudentDto)),
+    security(("bearer" = [])), tag = "Student")]
+pub async fn update_student_profile(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(p): Json<UpdateStudentProfileRequest>,
+) -> Result<Json<ApiResponse<StudentDto>>, ApiError> {
+    let input = orbis_app::services::student_service::UpdateStudentProfileInput {
+        first_name: p.first_name,
+        middle_name: p.middle_name,
+        last_name: p.last_name,
+        first_name_ar: p.first_name_ar,
+        middle_name_ar: p.middle_name_ar,
+        last_name_ar: p.last_name_ar,
+        display_name: p.display_name,
+        national_id: p.national_id,
+        passport_number: p.passport_number,
+        gender: p.gender,
+        birth_date: p.birth_date,
+        place_of_birth: p.place_of_birth,
+        nationality: p.nationality,
+        blood_type: p.blood_type,
+        medical_notes: p.medical_notes,
+        special_needs_notes: p.special_needs_notes,
+        phone: p.phone,
+        email: p.email,
+        address: p.address,
+        avatar_url: p.avatar_url,
+    };
+
+    let detail = state.student_service.update_student_profile(&ctx, id, input).await?;
+    Ok(ApiResponse::ok(detail.into()))
+}
+
+#[utoipa::path(delete, path = "/api/v1/students/{id}",
+    params(("id" = Uuid, Path, description = "Student ID")),
+    responses((status = 200, body = bool)),
+    security(("bearer" = [])), tag = "Student")]
+pub async fn delete_student(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<bool>>, ApiError> {
+    state.student_service.soft_delete_student(&ctx, id).await?;
+    Ok(ApiResponse::ok(true))
+}
+
+#[utoipa::path(post, path = "/api/v1/students/{id}/restore",
+    params(("id" = Uuid, Path, description = "Student ID")),
+    responses((status = 200, body = StudentDto)),
+    security(("bearer" = [])), tag = "Student")]
+pub async fn restore_student(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<StudentDto>>, ApiError> {
+    let student = state.student_service.restore_student(&ctx, id).await?;
+    let person = state.person_repo.find_by_id(student.person_id).await?
+        .ok_or_else(|| ApiError::not_found(format!("Person {} not found", student.person_id)))?;
+    let detail = StudentDetail { student, person };
+    Ok(ApiResponse::ok(detail.into()))
+}
+
+#[utoipa::path(post, path = "/api/v1/students/bulk-register", request_body = BulkRegisterStudentsRequest,
+    responses((status = 200, body = BulkRegisterStudentsResponse)),
+    security(("bearer" = [])), tag = "Student")]
+pub async fn bulk_register_students(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<BulkRegisterStudentsRequest>,
+) -> Result<Json<ApiResponse<BulkRegisterStudentsResponse>>, ApiError> {
+    let mut domain_items = Vec::with_capacity(p.items.len());
+
+    for item in p.items {
+        let student_num = item.registration.student_number.and_then(|sn| {
+            let trimmed = sn.trim();
+            if trimmed.is_empty() { None } else { Some(trimmed.to_string()) }
+        });
+
+        let birth_date = item.registration.birth_date.or(item.registration.date_of_birth);
+        let first_name_ar = item.registration.first_name_ar.or(item.registration.name_ar);
+        let study_mode = item.registration.study_mode.as_deref().map(|s| parse_study_mode(Some(s)));
+
+        let input = orbis_app::services::student_service::RegisterStudentInput {
+            person_id: item.registration.person_id,
+            user_id: item.registration.user_id,
+            student_number: student_num,
+            first_name: item.registration.first_name,
+            middle_name: item.registration.middle_name,
+            last_name: item.registration.last_name,
+            first_name_ar,
+            middle_name_ar: item.registration.middle_name_ar,
+            last_name_ar: item.registration.last_name_ar,
+            display_name: item.registration.display_name,
+            national_id: item.registration.national_id,
+            passport_number: item.registration.passport_number,
+            gender: item.registration.gender,
+            birth_date,
+            place_of_birth: item.registration.place_of_birth,
+            nationality: item.registration.nationality,
+            blood_type: item.registration.blood_type,
+            medical_notes: item.registration.medical_notes,
+            special_needs_notes: item.registration.special_needs_notes,
+            phone: item.registration.phone,
+            email: item.registration.email,
+            avatar_url: item.registration.avatar_url,
+            initial_period_id: item.registration.initial_period_id,
+            initial_class_id: item.registration.initial_class_id,
+            study_mode,
+            bypass_capacity_check: item.registration.bypass_capacity_check,
+        };
+
+        domain_items.push(orbis_app::services::student_service::BulkRegisterItemInput {
+            row_index: item.row_index,
+            registration: input,
+            guardian_name: item.guardian_name,
+            guardian_phone: item.guardian_phone,
+            guardian_relationship: item.guardian_relationship,
+        });
+    }
+
+    let res = state.student_service.bulk_register_students(&ctx, ctx.tenant_id, orbis_app::services::student_service::BulkRegisterStudentsInput {
+        items: domain_items,
+        atomic: p.atomic,
+        dry_run: p.dry_run,
+    }).await?;
+
+    let items_dto = res.items.into_iter().map(|it| BulkRegisterItemResultDto {
+        row_index: it.row_index,
+        success: it.success,
+        student_id: it.student_id,
+        student_number: it.student_number,
+        error: it.error,
+    }).collect();
+
+    Ok(ApiResponse::ok(BulkRegisterStudentsResponse {
+        total: res.total,
+        succeeded: res.succeeded,
+        failed: res.failed,
+        is_atomic: res.is_atomic,
+        is_dry_run: res.is_dry_run,
+        items: items_dto,
+    }))
+}
+
 #[utoipa::path(post, path = "/api/v1/enrollments", request_body = EnrollStudentRequest,
     responses((status = 201, body = EnrollmentDto)),
     security(("bearer" = [])), tag = "Student")]
@@ -340,16 +657,7 @@ pub async fn enroll_student(
     State(state): State<AppState>,
     Json(p): Json<EnrollStudentRequest>,
 ) -> Result<Json<ApiResponse<EnrollmentDto>>, ApiError> {
-    let study_mode = match p.study_mode.as_deref() {
-        Some("homeschooled") => StudyMode::Homeschooled,
-        Some("auditor") => StudyMode::Auditor,
-        Some("visiting") => StudyMode::Visiting,
-        Some("distance_learning") => StudyMode::DistanceLearning,
-        Some("part_time") => StudyMode::PartTime,
-        Some("exchange") => StudyMode::Exchange,
-        Some("special_needs") => StudyMode::SpecialNeeds,
-        _ => StudyMode::Regular,
-    };
+    let study_mode = parse_study_mode(p.study_mode.as_deref());
 
     let e = state.student_service.enroll_student(
         &ctx,
@@ -365,6 +673,7 @@ pub async fn enroll_student(
 }
 
 #[utoipa::path(get, path = "/api/v1/enrollments",
+    params(EnrollmentQuery),
     responses((status = 200, body = Vec<EnrollmentDto>)),
     security(("bearer" = [])), tag = "Student")]
 pub async fn list_enrollments(
@@ -407,18 +716,22 @@ pub async fn change_study_mode(
     Path(id): Path<Uuid>,
     Json(p): Json<ChangeStudyModeRequest>,
 ) -> Result<Json<ApiResponse<EnrollmentDto>>, ApiError> {
-    let new_mode = match p.new_mode.as_str() {
-        "homeschooled" => StudyMode::Homeschooled,
-        "auditor" => StudyMode::Auditor,
-        "visiting" => StudyMode::Visiting,
-        "distance_learning" => StudyMode::DistanceLearning,
-        "part_time" => StudyMode::PartTime,
-        "exchange" => StudyMode::Exchange,
-        "special_needs" => StudyMode::SpecialNeeds,
-        _ => StudyMode::Regular,
-    };
-
+    let new_mode = parse_study_mode(Some(&p.new_mode));
     let e = state.student_service.change_study_mode(&ctx, id, new_mode, p.reason).await?;
+    Ok(ApiResponse::ok(e.into()))
+}
+
+#[utoipa::path(post, path = "/api/v1/enrollments/{id}/transfer-class", request_body = TransferClassRequest,
+    params(("id" = Uuid, Path, description = "Enrollment ID")),
+    responses((status = 200, body = EnrollmentDto)),
+    security(("bearer" = [])), tag = "Student")]
+pub async fn transfer_class(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(p): Json<TransferClassRequest>,
+) -> Result<Json<ApiResponse<EnrollmentDto>>, ApiError> {
+    let e = state.student_service.transfer_class(&ctx, id, p.target_class_id, p.reason).await?;
     Ok(ApiResponse::ok(e.into()))
 }
 
@@ -430,13 +743,23 @@ pub async fn assign_guardian(
     State(state): State<AppState>,
     Json(p): Json<AssignGuardianRequest>,
 ) -> Result<Json<ApiResponse<GuardianDto>>, ApiError> {
-    let g = state.student_service.assign_guardian(
+    let g = state.student_service.assign_guardian_full(
         &ctx,
         p.student_id,
         p.guardian_id,
         p.relationship,
+        p.relationship_ar,
         p.is_primary.unwrap_or(false),
+        p.is_emergency_contact,
+        p.is_authorized_pickup,
+        p.is_payer,
+        p.payment_share_percent,
+        p.occupation,
+        p.employer,
+        p.work_phone,
+        p.notes,
     ).await?;
+
     Ok(ApiResponse::ok(GuardianDto {
         id: g.id,
         student_id: g.student_id,
@@ -458,7 +781,7 @@ pub async fn assign_guardian(
 }
 
 #[utoipa::path(get, path = "/api/v1/student-guardians",
-    params(("student_id" = Uuid, Query, description = "Student ID")),
+    params(GuardianQuery),
     responses((status = 200, body = Vec<GuardianDto>)),
     security(("bearer" = [])), tag = "Student")]
 pub async fn list_guardians(
@@ -486,6 +809,22 @@ pub async fn list_guardians(
         updated_at: g.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(delete, path = "/api/v1/students/{student_id}/guardians/{guardian_id}",
+    params(
+        ("student_id" = Uuid, Path, description = "Student ID"),
+        ("guardian_id" = Uuid, Path, description = "Guardian ID")
+    ),
+    responses((status = 200, body = bool)),
+    security(("bearer" = [])), tag = "Student")]
+pub async fn remove_guardian(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path((student_id, guardian_id)): Path<(Uuid, Uuid)>,
+) -> Result<Json<ApiResponse<bool>>, ApiError> {
+    state.student_service.remove_guardian(&ctx, student_id, guardian_id).await?;
+    Ok(ApiResponse::ok(true))
 }
 
 #[utoipa::path(post, path = "/api/v1/students/check-duplicate", request_body = DuplicateCheckRequest,
@@ -522,11 +861,16 @@ pub async fn check_duplicate(
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/students", post(register_student).get(list_students))
+        .route("/api/v1/students/bulk-register", post(bulk_register_students))
         .route("/api/v1/students/check-duplicate", post(check_duplicate))
-        .route("/api/v1/students/:id", get(get_student))
+        .route("/api/v1/students/:id", get(get_student).delete(delete_student))
         .route("/api/v1/students/:id/status", patch(update_student_status))
+        .route("/api/v1/students/:id/profile", patch(update_student_profile))
+        .route("/api/v1/students/:id/restore", post(restore_student))
+        .route("/api/v1/students/:student_id/guardians/:guardian_id", delete(remove_guardian))
         .route("/api/v1/enrollments", post(enroll_student).get(list_enrollments))
         .route("/api/v1/enrollments/:id", get(get_enrollment))
         .route("/api/v1/enrollments/:id/study-mode", patch(change_study_mode))
+        .route("/api/v1/enrollments/:id/transfer-class", post(transfer_class))
         .route("/api/v1/student-guardians", post(assign_guardian).get(list_guardians))
 }
