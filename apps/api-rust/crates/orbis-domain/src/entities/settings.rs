@@ -20,6 +20,7 @@ pub struct OrganizationSettings {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct AcademicSettings {
     pub default_grading_system: String, // e.g., "percentage", "letter", "gpa"
 }
@@ -33,6 +34,7 @@ impl Default for AcademicSettings {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct EnrollmentSettings {
     pub registration_enabled: bool,
     pub require_admin_approval: bool,
@@ -56,6 +58,7 @@ impl Default for EnrollmentSettings {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct FinanceSettings {
     pub currency: String,
     pub tax_rate: f64,
@@ -85,6 +88,7 @@ impl Default for FinanceSettings {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct NotificationSettings {
     /// Default Integration UUID for Email delivery (e.g. SendGrid, Amazon SES)
     pub email_integration_id: Option<Uuid>,
@@ -112,6 +116,7 @@ impl Default for NotificationSettings {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct AutopilotSettings {
     #[serde(default = "default_true")]
     pub enabled: bool,

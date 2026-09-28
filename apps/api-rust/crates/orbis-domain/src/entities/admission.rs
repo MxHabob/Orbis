@@ -15,6 +15,7 @@ impl Default for YearFormat {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct NumberingSchema {
     pub prefix: String,
     pub year_format: YearFormat,
@@ -59,6 +60,7 @@ impl NumberingSchema {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct AdmissionPolicy {
     pub requires_approval: bool,
     pub allow_no_guardian: bool,
@@ -85,7 +87,8 @@ impl Default for AdmissionPolicy {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
 pub struct FormFieldConfig {
     pub key: String,
     pub name_ar: String,

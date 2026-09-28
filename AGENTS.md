@@ -39,13 +39,12 @@ Every agent starting a session in this repository MUST:
 
 ## 3. CONTINUATION STATE
 
-- **Current Status:** `USER_PROVISIONING_AND_INTEGRATION_CHANNELS_CONSOLIDATED`
+- **Current Status:** `SETTINGS_DESERIALIZATION_AND_CANONICAL_TYPES_CONSOLIDATED`
 - **Master Reference Documents:** [orbis_ai_architecture_discovery.md](file:///c:/Users/User/.gemini/antigravity-ide/brain/3e2fb622-6955-4230-8ce1-9809fa99c255/orbis_ai_architecture_discovery.md), [student_backend_desktop_contract_reconciliation.md](file:///d:/projects/Orbis/docs/student_backend_desktop_contract_reconciliation.md)
 - **Accomplished:**
-  - Built enterprise-grade User Account Provisioning & Identity Management workflow in [users-directory.svelte](file:///d:/projects/Orbis/apps/desktop/src/lib/features/settings/users-directory.svelte) and [create-user-sheet.svelte](file:///d:/projects/Orbis/apps/desktop/src/lib/features/settings/components/create-user-sheet.svelte).
-  - Adopted the canonical Orbis Sheet structure matching [discount-template-sheet.svelte](file:///d:/projects/Orbis/apps/desktop/src/lib/features/finance/components/discount-template-sheet.svelte) and [discount-template-form.svelte](file:///d:/projects/Orbis/apps/desktop/src/lib/features/finance/components/discount-template-form.svelte), with `Sheet.Root`, `Sheet.Header`, `Accordion` multi-section groupings, and standard `FormField` components.
-  - Guaranteed Zero Person Duplication across all personas: directly reuses `hr_employees.person_id`, `students.person_id`, and `student_guardians.guardian_id` (`person_id`) without creating unnecessary duplicate `Person` records.
-  - Dynamically wired credential delivery channels (Email, SMS, WhatsApp) to actual active workspace integrations via `api.listIntegrations()`, replacing static hardcoded channels with dynamic gateway capability checks and status badges.
-  - Seamlessly integrated with [credential-delivery-modal.svelte](file:///d:/projects/Orbis/apps/desktop/src/lib/shared/components/credential-delivery-modal.svelte) for instant temporary credential display, copy, and print slips.
-  - Verified 0 errors across `bun x tsc --noEmit` (clean), `cargo check --workspace` in `apps/api-rust` (clean), `cargo check` in `apps/desktop/src-tauri` (clean), and production static build `bun run build` (clean in 27s).
+  - Resolved settings deserialization error (`missing field require_admin_approval`) by adding `#[serde(default)]` to all nested settings structs in `orbis-domain/src/entities/settings.rs` and `admission.rs`, ensuring partial and evolving settings JSON are gracefully tolerated.
+  - Purged all hardcoded Arabic text from the Rust domain layer in favor of canonical English enums and specifications, with localization maintained exclusively in the frontend i18n layer.
+  - Fixed teacher selector and employee query case sensitivity via SeaORM `Func::lower`.
+  - Fixed `student-directory.svelte` array derivation from `PaginatedList` (`studentsQuery.data?.items`).
+  - Verified 0 errors across `bun x tsc --noEmit` (clean), `cargo check --workspace` in `apps/api-rust` (clean), and `cargo check` in `apps/desktop/src-tauri` (clean).
 - **Next Target Module:** `EXAMS` / `FINANCE` domain workflows and DocForge template integrations.

@@ -35,8 +35,16 @@ const studentsQuery = createStudentsQuery(() => orgId);
 const classesQuery = createClassesQuery(() => orgId);
 
 // Derived data from queries
-const students = $derived(studentsQuery.data ?? []);
-const classes = $derived(classesQuery.data ?? []);
+const students = $derived<any[]>(
+  Array.isArray(studentsQuery.data)
+    ? studentsQuery.data
+    : (studentsQuery.data as any)?.items ?? [],
+);
+const classes = $derived<any[]>(
+  Array.isArray(classesQuery.data)
+    ? classesQuery.data
+    : (classesQuery.data as any)?.items ?? [],
+);
 const filteredStudents = $derived(studentsStore.filterList(students));
 
 let showOverrideDialog = $state(false);
