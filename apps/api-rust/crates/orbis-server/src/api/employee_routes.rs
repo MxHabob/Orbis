@@ -299,6 +299,39 @@ pub struct PaginatedEmployeesDto {
     pub total_pages: u64,
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct BulkRegisterEmployeeItemRequest {
+    pub row_index: usize,
+    pub registration: RegisterEmployeeRequest,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct BulkRegisterEmployeesRequest {
+    pub items: Vec<BulkRegisterEmployeeItemRequest>,
+    pub atomic: Option<bool>,
+    pub dry_run: Option<bool>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct BulkRegisterEmployeeItemResultDto {
+    pub row_index: usize,
+    pub success: bool,
+    pub employee_id: Option<Uuid>,
+    pub employee_number: Option<String>,
+    pub user_id: Option<Uuid>,
+    pub error: Option<String>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct BulkRegisterEmployeesResponseDto {
+    pub total: usize,
+    pub succeeded: usize,
+    pub failed: usize,
+    pub is_atomic: bool,
+    pub is_dry_run: bool,
+    pub items: Vec<BulkRegisterEmployeeItemResultDto>,
+}
+
 fn parse_delivery_channel(s: Option<&str>) -> Option<DeliveryChannel> {
     match s {
         Some("email") => Some(DeliveryChannel::Email),
@@ -577,12 +610,151 @@ pub async fn assign_groups(
     Ok(ApiResponse::ok(true))
 }
 
+#[utoipa::path(post, path = "/api/v1/employees/bulk-register",
+    request_body = BulkRegisterEmployeesRequest,
+    responses((status = 200, body = BulkRegisterEmployeesResponseDto)),
+    security(("bearer" = [])), tag = "Employee")]
+pub async fn bulk_register_employees(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<BulkRegisterEmployeesRequest>,
+) -> Result<Json<ApiResponse<BulkRegisterEmployeesResponseDto>>, ApiError> {
+    let org_id = ctx.tenant_id;
+    let mut domain_items = Vec::with_capacity(p.items.len());
+
+    for item in p.items {
+        let reg = item.registration;
+        let account_cfg = reg.account.map(|acc| AccountProvisioningConfig {
+            enabled: acc.enabled,
+            preferred_username: acc.preferred_username,
+            role: acc.role,
+            group_ids: acc.group_ids,
+            delivery_channel: parse_delivery_channel(acc.delivery_channel.as_deref()),
+            custom_password: acc.custom_password,
+        });
+
+        let status = reg.status.as_deref().and_then(|s| match s {
+            "active" => Some(EmployeeStatus::Active),
+            "on_leave" => Some(EmployeeStatus::OnLeave),
+            "suspended" => Some(EmployeeStatus::Suspended),
+            "terminated" => Some(EmployeeStatus::Terminated),
+            "resigned" => Some(EmployeeStatus::Resigned),
+            _ => None,
+        });
+
+        let employment_type = reg.employment_type.as_deref().and_then(|e| match e {
+            "full_time" => Some(EmploymentType::FullTime),
+            "part_time" => Some(EmploymentType::PartTime),
+            "contract" => Some(EmploymentType::Contract),
+            "hourly" => Some(EmploymentType::Hourly),
+            _ => None,
+        });
+
+        let input = RegisterEmployeeInput {
+            person_id: reg.person_id,
+            employee_number: reg.employee_number,
+            employee_type: reg.employee_type,
+            job_title: reg.job_title,
+            department: reg.department,
+            org_unit_id: reg.org_unit_id,
+            hire_date: reg.hire_date,
+            status,
+            employment_type,
+            work_shift: reg.work_shift,
+            notes: reg.notes,
+            first_name: reg.first_name,
+            middle_name: reg.middle_name,
+            last_name: reg.last_name,
+            first_name_ar: reg.first_name_ar,
+            middle_name_ar: reg.middle_name_ar,
+            last_name_ar: reg.last_name_ar,
+            display_name: reg.display_name,
+            national_id: reg.national_id,
+            passport_number: reg.passport_number,
+            gender: reg.gender,
+            birth_date: reg.birth_date,
+            place_of_birth: reg.place_of_birth,
+            nationality: reg.nationality,
+            blood_type: reg.blood_type,
+            medical_notes: reg.medical_notes,
+            special_needs_notes: reg.special_needs_notes,
+            phone: reg.phone,
+            email: reg.email,
+            address: reg.address,
+            avatar_url: reg.avatar_url,
+            account: account_cfg,
+        };
+
+        domain_items.push(orbis_app::services::employee_service::BulkRegisterEmployeeItemInput {
+            row_index: item.row_index,
+            registration: input,
+        });
+    }
+
+    let res = state.employee_service.bulk_register_employees(
+        &ctx,
+        org_id,
+        orbis_app::services::employee_service::BulkRegisterEmployeesInput {
+            items: domain_items,
+            atomic: p.atomic,
+            dry_run: p.dry_run,
+        },
+    ).await?;
+
+    let items_dto = res.items.into_iter().map(|it| BulkRegisterEmployeeItemResultDto {
+        row_index: it.row_index,
+        success: it.success,
+        employee_id: it.employee_id,
+        employee_number: it.employee_number,
+        user_id: it.user_id,
+        error: it.error,
+    }).collect();
+
+    Ok(ApiResponse::ok(BulkRegisterEmployeesResponseDto {
+        total: res.total,
+        succeeded: res.succeeded,
+        failed: res.failed,
+        is_atomic: res.is_atomic,
+        is_dry_run: res.is_dry_run,
+        items: items_dto,
+    }))
+}
+
+#[utoipa::path(delete, path = "/api/v1/employees/{id}",
+    params(("id" = Uuid, Path, description = "Employee ID")),
+    responses((status = 200, body = bool)),
+    security(("bearer" = [])), tag = "Employee")]
+pub async fn delete_employee(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<bool>>, ApiError> {
+    state.employee_service.delete_employee(&ctx, id).await?;
+    Ok(ApiResponse::ok(true))
+}
+
+#[utoipa::path(post, path = "/api/v1/employees/{id}/restore",
+    params(("id" = Uuid, Path, description = "Employee ID")),
+    responses((status = 200, body = EmployeeDetailDto)),
+    security(("bearer" = [])), tag = "Employee")]
+pub async fn restore_employee(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<EmployeeDetailDto>>, ApiError> {
+    let restored = state.employee_service.restore_employee(&ctx, id).await?;
+    Ok(ApiResponse::ok(restored.into()))
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/employees", post(register_employee).get(list_employees))
         .route("/api/v1/employees/stats", get(get_employee_stats))
-        .route("/api/v1/employees/:id", get(get_employee).patch(update_employee))
+        .route("/api/v1/employees/bulk-register", post(bulk_register_employees))
+        .route("/api/v1/employees/:id", get(get_employee).patch(update_employee).delete(delete_employee))
+        .route("/api/v1/employees/:id/restore", post(restore_employee))
         .route("/api/v1/employees/:id/status", patch(update_employee_status))
         .route("/api/v1/employees/:id/account", post(provision_account))
         .route("/api/v1/employees/:id/groups", post(assign_groups))
 }
+

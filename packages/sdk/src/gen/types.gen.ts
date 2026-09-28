@@ -351,6 +351,35 @@ export type BulkAssignGroupRequest = {
     user_ids: Array<string>;
 };
 
+export type BulkRegisterEmployeeItemRequest = {
+    registration: RegisterEmployeeRequest;
+    row_index: number;
+};
+
+export type BulkRegisterEmployeeItemResultDto = {
+    employee_id?: string | null;
+    employee_number?: string | null;
+    error?: string | null;
+    row_index: number;
+    success: boolean;
+    user_id?: string | null;
+};
+
+export type BulkRegisterEmployeesRequest = {
+    atomic?: boolean | null;
+    dry_run?: boolean | null;
+    items: Array<BulkRegisterEmployeeItemRequest>;
+};
+
+export type BulkRegisterEmployeesResponseDto = {
+    failed: number;
+    is_atomic: boolean;
+    is_dry_run: boolean;
+    items: Array<BulkRegisterEmployeeItemResultDto>;
+    succeeded: number;
+    total: number;
+};
+
 export type BulkRegisterItemResultDto = {
     error?: string | null;
     row_index: number;
@@ -2916,6 +2945,19 @@ export type RegisterEmployeeResponses = {
 
 export type RegisterEmployeeResponse = RegisterEmployeeResponses[keyof RegisterEmployeeResponses];
 
+export type BulkRegisterEmployeesData = {
+    body: BulkRegisterEmployeesRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/employees/bulk-register';
+};
+
+export type BulkRegisterEmployeesResponses = {
+    200: BulkRegisterEmployeesResponseDto;
+};
+
+export type BulkRegisterEmployeesResponse = BulkRegisterEmployeesResponses[keyof BulkRegisterEmployeesResponses];
+
 export type GetEmployeeStatsData = {
     body?: never;
     path?: never;
@@ -2930,6 +2972,24 @@ export type GetEmployeeStatsResponses = {
 };
 
 export type GetEmployeeStatsResponse = GetEmployeeStatsResponses[keyof GetEmployeeStatsResponses];
+
+export type DeleteEmployeeData = {
+    body?: never;
+    path: {
+        /**
+         * Employee ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/employees/{id}';
+};
+
+export type DeleteEmployeeResponses = {
+    200: boolean;
+};
+
+export type DeleteEmployeeResponse = DeleteEmployeeResponses[keyof DeleteEmployeeResponses];
 
 export type GetEmployeeData = {
     body?: never;
@@ -3002,6 +3062,24 @@ export type AssignGroupsResponses = {
 };
 
 export type AssignGroupsResponse = AssignGroupsResponses[keyof AssignGroupsResponses];
+
+export type RestoreEmployeeData = {
+    body?: never;
+    path: {
+        /**
+         * Employee ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/employees/{id}/restore';
+};
+
+export type RestoreEmployeeResponses = {
+    200: EmployeeDetailDto;
+};
+
+export type RestoreEmployeeResponse = RestoreEmployeeResponses[keyof RestoreEmployeeResponses];
 
 export type UpdateEmployeeStatusData = {
     body: UpdateEmployeeStatusRequest;

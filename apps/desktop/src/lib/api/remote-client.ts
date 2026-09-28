@@ -669,6 +669,14 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.updateEmployeeStatus({ client: this.client, path: { id }, body: { status } as any })) as any;
   }
 
+  async deleteEmployee(id: string): Promise<boolean> {
+    return this.call(sdk.deleteEmployee({ client: this.client, path: { id } })) as any;
+  }
+
+  async restoreEmployee(id: string): Promise<EmployeeDetailDto> {
+    return this.call(sdk.restoreEmployee({ client: this.client, path: { id } })) as any;
+  }
+
   async provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountRequest): Promise<AccountProvisioningResultDto> {
     return this.call(sdk.provisionAccount({ client: this.client, path: { id }, body: req as any })) as any;
   }
@@ -679,33 +687,20 @@ export class RemoteClient implements OrbisApiClient {
 
   async bulkRegisterEmployees(
     items: BulkRegisterEmployeeCommandItem[],
-    _options?: { atomic?: boolean; dryRun?: boolean },
+    options?: { atomic?: boolean; dryRun?: boolean },
   ): Promise<BulkRegisterEmployeeCommandResultDto> {
-    const results = [];
-    let succeeded = 0;
-    let failed = 0;
-    for (const item of items) {
-      try {
-        const res = await this.registerEmployee(item.registration as any);
-        results.push({
-          row_index: item.row_index,
-          success: true,
-          employee_id: res.employee.id,
-          employee_number: res.employee.employee_number,
-          user_id: res.employee.user_id ?? undefined,
-        });
-        succeeded++;
-      } catch (e: any) {
-        results.push({
-          row_index: item.row_index,
-          success: false,
-          error: e.message || "Failed to register employee",
-        });
-        failed++;
-      }
-    }
-    return { total: items.length, succeeded, failed, items: results };
+    return this.call(
+      sdk.bulkRegisterEmployees({
+        client: this.client,
+        body: {
+          items: items as any,
+          atomic: options?.atomic ?? true,
+          dry_run: options?.dryRun ?? false,
+        },
+      }),
+    ) as any;
   }
+
 
   // ── User Groups ─────────────────────────────────────────────
   async createGroup(req: CreateGroupRequest): Promise<GroupDetailDto> {

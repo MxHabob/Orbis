@@ -114,3 +114,40 @@ export function createAssignEmployeeGroupsMutation() {
   }));
 }
 
+/** Soft delete employee mutation. */
+export function createDeleteEmployeeMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.deleteEmployee(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.employee.all });
+    },
+  }));
+}
+
+/** Restore soft-deleted employee mutation. */
+export function createRestoreEmployeeMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.restoreEmployee(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.employee.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.employee.all });
+    },
+  }));
+}
+
+/** Bulk register employees mutation. */
+export function createBulkRegisterEmployeesMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: ({ items, options }: { items: any[]; options?: { atomic?: boolean; dryRun?: boolean } }) =>
+      api.bulkRegisterEmployees(items, options),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.employee.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });
+    },
+  }));
+}
+
+

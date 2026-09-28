@@ -123,6 +123,8 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         employee_cmds::employee_get_employee_stats,
         employee_cmds::employee_update_employee,
         employee_cmds::employee_update_employee_status,
+        employee_cmds::employee_delete_employee,
+        employee_cmds::employee_restore_employee,
         employee_cmds::employee_provision_account,
         employee_cmds::employee_assign_groups,
         employee_cmds::employee_bulk_register,

@@ -688,3 +688,34 @@ pub async fn employee_bulk_register(
         items: items_dto,
     }))
 }
+
+#[tauri::command]
+pub async fn employee_delete_employee(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<bool>, String> {
+    let ctx = make_ctx(&state);
+    let employee_id = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+
+    state.employee_service.delete_employee(&ctx, employee_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(true))
+}
+
+#[tauri::command]
+pub async fn employee_restore_employee(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<EmployeeDetailDto>, String> {
+    let ctx = make_ctx(&state);
+    let employee_id = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+
+    let restored = state.employee_service.restore_employee(&ctx, employee_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(employee_detail_to_dto(restored)))
+}
+

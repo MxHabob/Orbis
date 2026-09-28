@@ -773,4 +773,61 @@ impl EmployeeService {
             items: results,
         })
     }
+
+    /// Soft delete an employee
+    pub async fn delete_employee(&self, ctx: &RequestContext, employee_id: Uuid) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::EmployeeDelete).await?;
+
+        let mut employee = self.employee_repo.find_by_id(employee_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Employee {} not found", employee_id)))?;
+
+        employee.is_deleted = true;
+        employee.deleted_at = Some(Utc::now());
+        employee.updated_at = Utc::now();
+        employee.updated_by = ctx.user_id();
+        self.employee_repo.save(&employee).await?;
+
+        // Also deactivate user account if linked
+        if let Some(uid) = employee.user_id {
+            let _ = self.identity_provisioning_service.toggle_user_status(ctx, uid, false).await;
+        }
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::EmployeeDeleted {
+            employee_id,
+            org_id: employee.org_id,
+            timestamp: Utc::now(),
+        }).await;
+
+        Ok(())
+    }
+
+    /// Restore a soft-deleted employee
+    pub async fn restore_employee(&self, ctx: &RequestContext, employee_id: Uuid) -> Result<EmployeeDetail, DomainError> {
+        self.permission_checker.check(ctx, Permission::EmployeeDelete).await?;
+
+        let mut employee = self.employee_repo.find_by_id(employee_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Employee {} not found", employee_id)))?;
+
+        employee.is_deleted = false;
+        employee.deleted_at = None;
+        employee.updated_at = Utc::now();
+        employee.updated_by = ctx.user_id();
+        self.employee_repo.save(&employee).await?;
+
+        if let Some(uid) = employee.user_id {
+            let _ = self.identity_provisioning_service.toggle_user_status(ctx, uid, true).await;
+        }
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::EmployeeRestored {
+            employee_id,
+            org_id: employee.org_id,
+            timestamp: Utc::now(),
+        }).await;
+
+        let detail = self.employee_repo.find_detail_by_id(employee_id).await?
+            .ok_or_else(|| DomainError::Internal("Failed to load restored employee detail".into()))?;
+
+        Ok(detail)
+    }
 }
+

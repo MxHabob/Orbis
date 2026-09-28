@@ -1,8 +1,8 @@
 use orbis_server::ApiDoc;
-use utoipa::OpenApi;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+use utoipa::OpenApi;
 
 fn main() {
     let doc = ApiDoc::openapi();
@@ -12,9 +12,7 @@ fn main() {
     let paths: Vec<String> = if args.len() > 1 {
         vec![args[1].clone()]
     } else {
-        vec![
-            "../../packages/sdk/openapi.json".to_string(),
-        ]
+        vec!["D:/projects/Orbis/packages/sdk/openapi.json".to_string()]
     };
 
     for path_str in paths {

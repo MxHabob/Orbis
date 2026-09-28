@@ -55,6 +55,10 @@ import type {
   EmployeeDetailDto,
   RegisterEmployeeRequest,
   RegisterEmployeeResponseDto,
+  BulkRegisterEmployeeItemRequest,
+  BulkRegisterEmployeesRequest,
+  BulkRegisterEmployeeItemResultDto,
+  BulkRegisterEmployeesResponseDto,
   PaginatedEmployeesDto,
   UpdateEmployeeRequest,
   UpdateEmployeeStatusRequest,
@@ -1002,6 +1006,8 @@ export interface OrbisApiClient {
   getEmployeeStats(): Promise<Record<string, number>>;
   updateEmployee(id: string, req: UpdateEmployeeRequest): Promise<EmployeeDetailDto>;
   updateEmployeeStatus(id: string, status: string): Promise<EmployeeDetailDto>;
+  deleteEmployee(id: string): Promise<boolean>;
+  restoreEmployee(id: string): Promise<EmployeeDetailDto>;
   provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountRequest): Promise<AccountProvisioningResultDto>;
   assignEmployeeGroups(id: string, groupIds: string[]): Promise<boolean>;
   bulkRegisterEmployees(items: BulkRegisterEmployeeCommandItem[], options?: { atomic?: boolean; dryRun?: boolean }): Promise<BulkRegisterEmployeeCommandResultDto>;

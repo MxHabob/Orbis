@@ -6,9 +6,7 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { goto } from "$app/navigation";
 import { Input } from "@orbis/ui/input";
-import { Label } from "@orbis/ui/label";
 import { Textarea } from "@orbis/ui/textarea";
 import { Button } from "@orbis/ui/button";
 import {
@@ -31,7 +29,6 @@ import {
   User,
   UserGroup,
 } from "@orbis/icons";
-import { localizeHref } from "$lib/paraglide/runtime";
 import { extractErrorMessage } from "$lib/api";
 import type {
   EmployeeDetailDto,
@@ -192,8 +189,6 @@ async function handleSubmit() {
 
       if (onSuccess) {
         onSuccess(response.employee);
-      } else {
-        goto(localizeHref(`/${orgId}/employees/${response.employee.id}`));
       }
     } catch (err) {
       toast.error(extractErrorMessage(err));
@@ -232,8 +227,6 @@ async function handleSubmit() {
       toast.success(m.employees_save_success?.() || "تم حفظ بيانات الموظف بنجاح");
       if (onSuccess) {
         onSuccess(res.employee);
-      } else {
-        goto(localizeHref(`/${orgId}/employees/${employee.id}`));
       }
     } catch (err) {
       toast.error(extractErrorMessage(err));

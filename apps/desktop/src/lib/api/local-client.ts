@@ -468,6 +468,12 @@ export class LocalClient implements OrbisApiClient {
   async updateEmployeeStatus(id: string, status: string): Promise<EmployeeDetailDto> {
     return unwrap(await invoke("employee_update_employee_status", { id, status }));
   }
+  async deleteEmployee(id: string): Promise<boolean> {
+    return unwrap(await invoke("employee_delete_employee", { id }));
+  }
+  async restoreEmployee(id: string): Promise<EmployeeDetailDto> {
+    return unwrap(await invoke("employee_restore_employee", { id }));
+  }
   async provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountRequest): Promise<AccountProvisioningResultDto> {
     return unwrap(await invoke("employee_provision_account", { id, request: req }));
   }

@@ -40,7 +40,7 @@ Every agent starting a session in this repository MUST:
 ## 3. CONTINUATION STATE
 
 - **Last Session Date:** 2026-09-28
-- **Active Phase:** Phase 6 — Student Lifecycle, Admissions, Guardians & Enrollments Reconciliation (Completed)
+- **Active Phase:** Phase 7 — Employee Affairs, HR & Teacher Assignments Reconciliation (Completed)
 - **Completed Scopes:**
   - **Organization & Settings (Phase 3):**
     - Expanded `UpdateOrgRequest` (`name_ar`, `base_currency_code`, `date_format`, `is_hijri_enabled`, `logo`, `favicon`, `code`) in `orbis-server` & `orbis-app`.
@@ -55,10 +55,10 @@ Every agent starting a session in this repository MUST:
     - Reconciled `user-roles.svelte` to remove unsafe `as any` casts and enforce typed role updates.
   - **Academic Structure & Calendar (Phase 5):**
     - Audited and aligned `AcademicPeriodDto` in `calendar_routes.rs` and `calendar_cmds.rs` (`code`, `is_locked`, `is_enrollment_open`, `is_grade_entry_open`, `created_at`, `updated_at`).
-    - Aligned `AcademicYearDto` in `calendar_cmds.rs` with `current_period_id`, `notes`, `created_at`, `updated_at`.
-    - Aligned `SubjectDto` in `academic_routes.rs` and `academic_cmds.rs` with `description`, `is_elective`, `created_at`, `updated_at`.
-    - Aligned `ClassDto` in `academic_routes.rs` and `academic_cmds.rs` with `homeroom_teacher_id`, `current_students`, `room_id`, `color`, `created_at`, `updated_at`.
-    - Aligned `RoomDto` in `scheduling_cmds.rs` with `org_unit_id`, `created_at`, `updated_at`.
+    - Aligned `AcademicYearDto` in `calendar_cmds.rs` with `current_period_id`, `notes`, `created_at`, `updated_at`).
+    - Aligned `SubjectDto` in `academic_routes.rs` and `academic_cmds.rs` with `description`, `is_elective`, `created_at`, `updated_at`).
+    - Aligned `ClassDto` in `academic_routes.rs` and `academic_cmds.rs` with `homeroom_teacher_id`, `current_students`, `room_id`, `color`, `created_at`, `updated_at`).
+    - Aligned `RoomDto` in `scheduling_cmds.rs` with `org_unit_id`, `created_at`, `updated_at`).
     - Reconciled `period-form.svelte` to cleanly separate `AcademicYear` vs `AcademicPeriod` creation with full date ISO conversions.
     - Reconciled `subject-form.svelte` to bind `credit_hours` directly and eliminate untyped parameters.
     - Reconciled `room-form.svelte` to sanitize payloads for `createRoom`.
@@ -75,10 +75,21 @@ Every agent starting a session in this repository MUST:
     - Exported updated OpenAPI specification to `packages/sdk` and regenerated TypeScript client.
     - Reconciled `remote-client.ts` and `local-client.ts` with typed contracts.
     - Reconciled `student-details.svelte` to use valid backend status transitions.
+  - **Employee Affairs, HR & Teacher Assignments (Phase 7):**
+    - Added `delete_employee` (soft delete) and `restore_employee` methods to `EmployeeService` in `orbis-app`.
+    - Added `EmployeeDeleted` and `EmployeeRestored` domain events to `DomainEvent` enum and audit trails in `orbis-domain`.
+    - Added `BulkRegisterEmployeesRequest`, `BulkRegisterEmployeeItemRequest`, `BulkRegisterEmployeesResponseDto`, and `BulkRegisterEmployeeItemResultDto` DTOs to `employee_routes.rs`.
+    - Added `POST /api/v1/employees/bulk-register`, `DELETE /api/v1/employees/:id`, and `POST /api/v1/employees/:id/restore` endpoints to `employee_routes.rs` and registered in `ApiDoc` in `orbis-server`.
+    - Added `employee_delete_employee` and `employee_restore_employee` Tauri IPC commands to `employee_cmds.rs` and registered in `src-tauri/src/commands/mod.rs`.
+    - Exported updated OpenAPI specification to `packages/sdk` and regenerated typed `@orbis/sdk`.
+    - Reconciled `local-client.ts` and `remote-client.ts` to implement `deleteEmployee`, `restoreEmployee`, and `bulkRegisterEmployees` with SDK calls.
+    - Reconciled `queries.ts` in desktop with `createDeleteEmployeeMutation`, `createRestoreEmployeeMutation`, and `createBulkRegisterEmployeesMutation`.
+    - Reconciled `employee-directory.svelte` (added actions for view dossier, edit details, soft delete with `confirmStore`, and removed invalid route fallbacks) and `employee-form.svelte`.
   - **Verification:**
     - `apps/api-rust` cargo check: 0 errors
     - `apps/desktop/src-tauri` cargo check: 0 errors
     - `packages/sdk` tsc: 0 errors
     - `apps/desktop` tsc: 0 errors
-- **Next Scope in Master Execution Plan:** Phase 7 — Employee Affairs, HR & Teacher Assignments Reconciliation.
+- **Next Scope in Master Execution Plan:** Phase 8 — Scheduling, Timetabling & Lesson Slots Reconciliation.
+
 

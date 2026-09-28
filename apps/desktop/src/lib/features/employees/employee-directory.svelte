@@ -22,9 +22,8 @@ import {
 } from "@orbis/icons";
 import { fly } from "svelte/transition";
 import { quintOut } from "svelte/easing";
-import { goto } from "$app/navigation";
 import { toast } from "@orbis/ui";
-import { localizeHref, getLocale } from "$lib/paraglide/runtime";
+import { getLocale } from "$lib/paraglide/runtime";
 import { formatNumber, formatDate, l } from "$lib/core/i18n";
 import { extractErrorMessage } from "$lib/api";
 import { debounce } from "$lib/shared/utils/debounce";
@@ -34,6 +33,7 @@ import {
   createEmployeesQuery,
   createEmployeeStatsQuery,
   createUpdateEmployeeStatusMutation,
+  createDeleteEmployeeMutation,
 } from "./queries";
 import EmployeeSheet from "./components/employee-sheet.svelte";
 import { confirmStore } from "$lib/stores";
@@ -81,6 +81,7 @@ const statsQuery = createEmployeeStatsQuery(() => orgId);
 
 // Mutations
 const statusMutation = createUpdateEmployeeStatusMutation();
+const deleteMutation = createDeleteEmployeeMutation();
 
 // Derived Data
 const employees = $derived(employeesQuery.data?.items ?? []);
@@ -141,6 +142,34 @@ async function promptStatusChange(emp: EmployeeDetailDto, targetStatus: string) 
   }
 }
 
+// Soft Delete Handler via Global confirmStore
+async function promptDelete(emp: EmployeeDetailDto) {
+  const confirmed = await confirmStore.prompt({
+    title: l("حذف ملف الموظف", "Delete Employee Record"),
+    description: l(
+      `هل أنت متأكد من حذف ملف الموظف (${emp.full_name || emp.first_name})؟ يمكن استعادة الملف لاحقاً.`,
+      `Are you sure you want to delete this employee record? It can be restored later.`
+    ),
+    confirmText: l("حذف الملف", "Delete"),
+    variant: "destructive",
+  });
+
+  if (!confirmed) return;
+
+  try {
+    await deleteMutation.mutateAsync(emp.id);
+    toast.success(l("تم حذف سجل الموظف بنجاح", "Employee deleted successfully"));
+    selectedIds.delete(emp.id);
+    if (selectedEmployee && selectedEmployee.id === emp.id) {
+      sheetOpen = false;
+      selectedEmployee = null;
+    }
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
+  }
+}
+
+
 // Export CSV Handler
 function handleExport() {
   const dataset = selectedIds.size > 0
@@ -200,9 +229,12 @@ function getTypeLabel(t: string): string {
 
 // ── OrbisGrid Actions & Columns (Icon-Only Pure Icons) ─────────────────
 const employeeActions: ActionItem[] = [
+  { id: "preview", label: l("عرض الملف", "View Dossier"), icon: "Eye" },
+  { id: "edit", label: l("تعديل البيانات", "Edit Details"), icon: "PencilSquare" },
   { id: "set_active", label: l("تفعيل الموظف", "Set Active"), icon: "CheckCircle" },
   { id: "set_on_leave", label: l("تعيين في إجازة", "Set On Leave"), icon: "BuildingOffice" },
   { id: "set_suspended", label: l("إيقاف مؤقت", "Suspend"), icon: "ShieldCheck", variant: "destructive" },
+  { id: "delete", label: l("حذف الموظف", "Delete Employee"), icon: "Trash", variant: "destructive" },
 ];
 
 const gridSource = $derived(
@@ -361,10 +393,8 @@ function handleGridAction(event: GridActionEvent) {
 
   if (event.actionId === "toggle-select" || event.actionId === "select") {
     toggleSelect(emp.id);
-  } else if (event.actionId === "preview" || event.actionId === "dblclick") {
+  } else if (event.actionId === "preview" || event.actionId === "dblclick" || event.actionId === "profile") {
     openEmployeeSheet(emp, "preview");
-  } else if (event.actionId === "profile") {
-    goto(localizeHref(`/${orgId}/employees/${emp.id}`));
   } else if (event.actionId === "edit") {
     openEmployeeSheet(emp, "edit");
   } else if (event.actionId === "set_active") {
@@ -373,8 +403,11 @@ function handleGridAction(event: GridActionEvent) {
     promptStatusChange(emp, "on_leave");
   } else if (event.actionId === "set_suspended") {
     promptStatusChange(emp, "suspended");
+  } else if (event.actionId === "delete") {
+    promptDelete(emp);
   }
 }
+
 </script>
 
 <div class="h-full w-full flex flex-col overflow-hidden bg-background">
