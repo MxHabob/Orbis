@@ -65,6 +65,8 @@ pub struct EmployeeDetailDto {
     pub groups: Vec<String>,
     pub effective_permissions: Vec<String>,
 
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -125,6 +127,8 @@ impl From<EmployeeDetail> for EmployeeDetailDto {
             groups,
             effective_permissions: d.effective_permissions,
 
+            created_by: e.created_by,
+            updated_by: e.updated_by,
             created_at: e.created_at,
             updated_at: e.updated_at,
         }

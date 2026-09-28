@@ -37,6 +37,9 @@ pub struct StudentDto {
     pub standing: String,
     pub admitted_at: DateTime<Utc>,
     pub graduated_at: Option<DateTime<Utc>>,
+    pub org_unit_id: Option<Uuid>,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -70,6 +73,9 @@ impl From<StudentDetail> for StudentDto {
             standing: s.standing.to_string(),
             admitted_at: s.admitted_at,
             graduated_at: s.graduated_at,
+            org_unit_id: s.org_unit_id,
+            created_by: s.created_by,
+            updated_by: s.updated_by,
             created_at: s.created_at,
             updated_at: s.updated_at,
         }
@@ -111,6 +117,10 @@ pub struct EnrollmentDto {
     pub enrollment_date: DateTime<Utc>,
     pub withdrawal_date: Option<DateTime<Utc>>,
     pub withdrawal_reason: Option<String>,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl From<Enrollment> for EnrollmentDto {
@@ -129,6 +139,10 @@ impl From<Enrollment> for EnrollmentDto {
             enrollment_date: e.enrolled_at,
             withdrawal_date: e.withdrawn_at,
             withdrawal_reason: e.withdrawal_reason,
+            created_by: e.created_by,
+            updated_by: e.updated_by,
+            created_at: e.created_at,
+            updated_at: e.updated_at,
         }
     }
 }
@@ -183,6 +197,8 @@ pub struct GuardianDto {
     pub employer: Option<String>,
     pub work_phone: Option<String>,
     pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Deserialize)]
@@ -436,6 +452,8 @@ pub async fn assign_guardian(
         employer: g.employer,
         work_phone: g.work_phone,
         notes: g.notes,
+        created_at: g.created_at,
+        updated_at: g.updated_at,
     }))
 }
 
@@ -464,6 +482,8 @@ pub async fn list_guardians(
         employer: g.employer,
         work_phone: g.work_phone,
         notes: g.notes,
+        created_at: g.created_at,
+        updated_at: g.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }

@@ -52,6 +52,11 @@ pub struct OrgDto {
     pub is_verified: bool,
     pub settings: Option<serde_json::Value>,
     pub features: Option<serde_json::Value>,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
+    pub version: i32,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 fn org_to_dto(org: orbis_domain::entities::organization::Organization) -> OrgDto {
@@ -74,6 +79,11 @@ fn org_to_dto(org: orbis_domain::entities::organization::Organization) -> OrgDto
         is_verified: org.is_verified,
         settings: org.settings,
         features: org.features,
+        created_by: org.created_by,
+        updated_by: org.updated_by,
+        version: org.version,
+        created_at: org.created_at,
+        updated_at: org.updated_at,
     }
 }
 
@@ -102,6 +112,10 @@ pub struct OrgUnitDto {
     pub room_number: Option<String>,
     pub sort_order: Option<i32>,
     pub is_active: bool,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 fn unit_to_dto(u: orbis_domain::entities::org_unit::OrgUnit) -> OrgUnitDto {
@@ -121,6 +135,10 @@ fn unit_to_dto(u: orbis_domain::entities::org_unit::OrgUnit) -> OrgUnitDto {
         room_number: u.room_number,
         sort_order: u.sort_order,
         is_active: u.is_active,
+        created_by: u.created_by,
+        updated_by: u.updated_by,
+        created_at: u.created_at,
+        updated_at: u.updated_at,
     }
 }
 

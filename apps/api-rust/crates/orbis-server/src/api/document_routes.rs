@@ -37,6 +37,7 @@ pub struct DocumentDto {
     pub thumbnail_path: Option<String>,
     pub preview_path: Option<String>,
     pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -119,6 +120,7 @@ async fn upload_document(
         thumbnail_path: doc.thumbnail_path,
         preview_path: doc.preview_path,
         created_at: doc.created_at,
+        updated_at: doc.updated_at,
     }))
 }
 
@@ -151,6 +153,7 @@ async fn list_documents(
         thumbnail_path: doc.thumbnail_path,
         preview_path: doc.preview_path,
         created_at: doc.created_at,
+        updated_at: doc.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -184,6 +187,7 @@ async fn get_document(
         thumbnail_path: doc.thumbnail_path,
         preview_path: doc.preview_path,
         created_at: doc.created_at,
+        updated_at: doc.updated_at,
     }))
 }
 

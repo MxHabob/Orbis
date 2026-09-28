@@ -20,6 +20,8 @@ pub struct ExamSessionDto {
     pub start_date: NaiveDate,
     pub end_date: NaiveDate,
     pub status: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -39,6 +41,8 @@ pub struct ExamScheduleDto {
     pub exam_date: NaiveDate,
     pub start_time: NaiveTime,
     pub end_time: NaiveTime,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -57,6 +61,8 @@ pub struct SeatingDto {
     pub student_id: Uuid,
     pub room_id: Option<Uuid>,
     pub seating_number: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -73,6 +79,8 @@ pub struct SecretDto {
     pub exam_schedule_id: Uuid,
     pub student_id: Uuid,
     pub secret_number: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -89,6 +97,8 @@ pub struct ProctorDto {
     pub room_id: Uuid,
     pub teacher_id: Uuid,
     pub is_chief: bool,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -138,6 +148,7 @@ async fn create_session(
     Ok(ApiResponse::ok(ExamSessionDto {
         id: s.id, org_id: s.org_id, period_id: s.period_id,
         name: s.name, start_date: s.start_date, end_date: s.end_date, status: s.status,
+        created_at: s.created_at, updated_at: s.updated_at,
     }))
 }
 
@@ -153,6 +164,7 @@ async fn list_sessions(
     let dtos = sessions.into_iter().map(|s| ExamSessionDto {
         id: s.id, org_id: s.org_id, period_id: s.period_id,
         name: s.name, start_date: s.start_date, end_date: s.end_date, status: s.status,
+        created_at: s.created_at, updated_at: s.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -166,6 +178,7 @@ async fn get_session(
     Ok(ApiResponse::ok(ExamSessionDto {
         id: s.id, org_id: s.org_id, period_id: s.period_id,
         name: s.name, start_date: s.start_date, end_date: s.end_date, status: s.status,
+        created_at: s.created_at, updated_at: s.updated_at,
     }))
 }
 
@@ -178,6 +191,7 @@ async fn schedule_exam(
     Ok(ApiResponse::ok(ExamScheduleDto {
         id: s.id, exam_session_id: s.exam_session_id, class_subject_id: s.class_subject_id,
         exam_date: s.exam_date, start_time: s.start_time, end_time: s.end_time,
+        created_at: s.created_at, updated_at: s.updated_at,
     }))
 }
 
@@ -191,6 +205,7 @@ async fn list_schedules(
     let dtos = schedules.into_iter().map(|s| ExamScheduleDto {
         id: s.id, exam_session_id: s.exam_session_id, class_subject_id: s.class_subject_id,
         exam_date: s.exam_date, start_time: s.start_time, end_time: s.end_time,
+        created_at: s.created_at, updated_at: s.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -205,6 +220,7 @@ async fn assign_seating(
         id: s.id, exam_session_id: s.exam_session_id,
         student_id: s.student_id, seating_number: s.seating_number,
         room_id: s.room_id,
+        created_at: s.created_at, updated_at: s.updated_at,
     }))
 }
 
@@ -219,6 +235,7 @@ async fn list_seating(
         id: s.id, exam_session_id: s.exam_session_id,
         student_id: s.student_id, seating_number: s.seating_number,
         room_id: s.room_id,
+        created_at: s.created_at, updated_at: s.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -235,6 +252,7 @@ async fn generate_seating(
         id: s.id, exam_session_id: s.exam_session_id,
         student_id: s.student_id, seating_number: s.seating_number,
         room_id: s.room_id,
+        created_at: s.created_at, updated_at: s.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -248,6 +266,7 @@ async fn assign_secret(
     Ok(ApiResponse::ok(SecretDto {
         id: s.id, exam_schedule_id: s.exam_schedule_id,
         student_id: s.student_id, secret_number: s.secret_number,
+        created_at: s.created_at, updated_at: s.updated_at,
     }))
 }
 
@@ -261,6 +280,7 @@ async fn list_secrets(
     let dtos = list.into_iter().map(|s| SecretDto {
         id: s.id, exam_schedule_id: s.exam_schedule_id,
         student_id: s.student_id, secret_number: s.secret_number,
+        created_at: s.created_at, updated_at: s.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -276,6 +296,7 @@ async fn generate_secrets(
     let dtos = secrets.into_iter().map(|s| SecretDto {
         id: s.id, exam_schedule_id: s.exam_schedule_id,
         student_id: s.student_id, secret_number: s.secret_number,
+        created_at: s.created_at, updated_at: s.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -290,6 +311,8 @@ async fn assign_proctor(
         id: pr.id, exam_schedule_id: pr.exam_schedule_id,
         room_id: pr.room_id, teacher_id: pr.teacher_id,
         is_chief: pr.is_chief,
+        created_at: pr.created_at,
+        updated_at: pr.updated_at,
     }))
 }
 

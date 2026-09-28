@@ -16,6 +16,9 @@ pub struct RoomDto {
     pub name: String,
     pub room_type: String,
     pub capacity: i32,
+    pub org_unit_id: Option<Uuid>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -37,6 +40,8 @@ pub struct TimeSlotDto {
     pub end_time: chrono::NaiveTime,
     pub is_break: bool,
     pub break_type: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -60,6 +65,8 @@ pub struct ScheduledLessonDto {
     pub time_slot_id: Uuid,
     pub room_id: Option<Uuid>,
     pub teacher_id: Option<Uuid>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -84,7 +91,7 @@ async fn create_room(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateRoomRequest>,
 ) -> Result<Json<ApiResponse<RoomDto>>, ApiError> {
     let r = state.scheduling_service.create_room(&ctx, ctx.tenant_id, p.name, p.capacity, p.room_type).await?;
-    Ok(ApiResponse::ok(RoomDto { id: r.id, org_id: r.org_id, name: r.name, room_type: r.room_type, capacity: r.capacity }))
+    Ok(ApiResponse::ok(RoomDto { id: r.id, org_id: r.org_id, name: r.name, room_type: r.room_type, capacity: r.capacity, org_unit_id: r.org_unit_id, created_at: r.created_at, updated_at: r.updated_at }))
 }
 
 #[utoipa::path(get, path = "/api/v1/rooms", responses((status = 200, body = Vec<RoomDto>)),
@@ -93,7 +100,7 @@ async fn list_rooms(
     ctx: AuthContext, State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<RoomDto>>>, ApiError> {
     let rooms = state.scheduling_service.list_rooms(ctx.tenant_id).await?;
-    let dtos = rooms.into_iter().map(|r| RoomDto { id: r.id, org_id: r.org_id, name: r.name, room_type: r.room_type, capacity: r.capacity }).collect();
+    let dtos = rooms.into_iter().map(|r| RoomDto { id: r.id, org_id: r.org_id, name: r.name, room_type: r.room_type, capacity: r.capacity, org_unit_id: r.org_unit_id, created_at: r.created_at, updated_at: r.updated_at }).collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -103,7 +110,7 @@ async fn get_room(
     _ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<RoomDto>>, ApiError> {
     let r = state.scheduling_service.get_room(id).await?.ok_or_else(|| ApiError::not_found("Room not found"))?;
-    Ok(ApiResponse::ok(RoomDto { id: r.id, org_id: r.org_id, name: r.name, room_type: r.room_type, capacity: r.capacity }))
+    Ok(ApiResponse::ok(RoomDto { id: r.id, org_id: r.org_id, name: r.name, room_type: r.room_type, capacity: r.capacity, org_unit_id: r.org_unit_id, created_at: r.created_at, updated_at: r.updated_at }))
 }
 
 #[utoipa::path(post, path = "/api/v1/time-slots", request_body = CreateTimeSlotRequest,
@@ -125,6 +132,8 @@ async fn create_time_slot(
         end_time: t.end_time,
         is_break: t.is_break,
         break_type: t.break_type,
+        created_at: t.created_at,
+        updated_at: t.updated_at,
     }))
 }
 
@@ -148,6 +157,8 @@ async fn list_time_slots(
         end_time: t.end_time,
         is_break: t.is_break,
         break_type: t.break_type,
+        created_at: t.created_at,
+        updated_at: t.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -158,7 +169,7 @@ async fn schedule_lesson(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<ScheduleLessonRequest>,
 ) -> Result<Json<ApiResponse<ScheduledLessonDto>>, ApiError> {
     let l = state.scheduling_service.schedule_lesson(&ctx, p.class_subject_id, p.time_slot_id, p.room_id, p.teacher_id).await?;
-    Ok(ApiResponse::ok(ScheduledLessonDto { id: l.id, class_subject_id: l.class_subject_id, time_slot_id: l.time_slot_id, room_id: l.room_id, teacher_id: l.teacher_id }))
+    Ok(ApiResponse::ok(ScheduledLessonDto { id: l.id, class_subject_id: l.class_subject_id, time_slot_id: l.time_slot_id, room_id: l.room_id, teacher_id: l.teacher_id, created_at: l.created_at, updated_at: l.updated_at }))
 }
 
 #[utoipa::path(get, path = "/api/v1/scheduled-lessons", responses((status = 200, body = Vec<ScheduledLessonDto>)),
@@ -171,7 +182,7 @@ async fn list_lessons(
     } else if let Some(pid) = q.period_id {
         state.scheduling_service.list_lessons_by_period(pid).await?
     } else { vec![] };
-    let dtos = lessons.into_iter().map(|l| ScheduledLessonDto { id: l.id, class_subject_id: l.class_subject_id, time_slot_id: l.time_slot_id, room_id: l.room_id, teacher_id: l.teacher_id }).collect();
+    let dtos = lessons.into_iter().map(|l| ScheduledLessonDto { id: l.id, class_subject_id: l.class_subject_id, time_slot_id: l.time_slot_id, room_id: l.room_id, teacher_id: l.teacher_id, created_at: l.created_at, updated_at: l.updated_at }).collect();
     Ok(ApiResponse::ok(dtos))
 }
 

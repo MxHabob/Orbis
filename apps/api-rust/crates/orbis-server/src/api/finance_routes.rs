@@ -14,7 +14,7 @@ use orbis_domain::entities::account::AccountType;
 use orbis_domain::entities::payment::PaymentMethod;
 use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct AccountDto {
     pub id: Uuid,
     pub org_id: Uuid,
@@ -25,6 +25,11 @@ pub struct AccountDto {
     pub currency: String,
     pub is_active: bool,
     pub balances: serde_json::Value,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
+    pub version: i32,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -38,7 +43,7 @@ pub struct CreateAccountRequest {
     pub currency: Option<String>,
 }
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct FeeTemplateDto {
     pub id: Uuid,
     pub org_id: Uuid,
@@ -55,6 +60,8 @@ pub struct FeeTemplateDto {
     pub frequency: String,
     pub is_mandatory: bool,
     pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -73,7 +80,7 @@ pub struct CreateFeeTemplateRequest {
     pub is_mandatory: Option<bool>,
 }
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct StudentFeeDto {
     pub id: Uuid,
     pub org_id: Uuid,
@@ -88,6 +95,9 @@ pub struct StudentFeeDto {
     pub balance_due: Decimal,
     pub status: String,
     pub due_date: NaiveDate,
+    pub created_by: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -100,17 +110,22 @@ pub struct GenerateFeeRequest {
     pub due_date: NaiveDate,
 }
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct PaymentDto {
     pub id: Uuid,
     pub org_id: Uuid,
     pub fee_id: Option<Uuid>,
+    pub enrollment_id: Option<Uuid>,
+    pub student_id: Option<Uuid>,
     pub account_id: Uuid,
     pub amount: Decimal,
     pub method: String,
     pub reference: Option<String>,
     pub journal_entry_id: Option<Uuid>,
     pub paid_at: DateTime<Utc>,
+    pub created_by: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -168,6 +183,10 @@ pub struct JournalEntryDto {
     pub reversal_reason: Option<String>,
     pub created_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub updated_by: Option<Uuid>,
+    pub org_unit_id: Option<Uuid>,
+    pub version: i32,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -248,6 +267,10 @@ fn map_journal_entry_to_dto(entry: JournalEntry) -> JournalEntryDto {
         reversal_reason: entry.reversal_reason,
         created_by: entry.created_by,
         created_at: entry.created_at,
+        updated_at: entry.updated_at,
+        updated_by: entry.updated_by,
+        org_unit_id: entry.org_unit_id,
+        version: entry.version,
     }
 }
 
@@ -286,6 +309,11 @@ pub async fn create_account(
         currency: a.currency_code,
         is_active: a.is_active,
         balances: a.balances,
+        created_by: a.created_by,
+        updated_by: a.updated_by,
+        version: a.version,
+        created_at: a.created_at,
+        updated_at: a.updated_at,
     }))
 }
 
@@ -305,6 +333,11 @@ pub async fn list_accounts(
         currency: a.currency_code,
         is_active: a.is_active,
         balances: a.balances,
+        created_by: a.created_by,
+        updated_by: a.updated_by,
+        version: a.version,
+        created_at: a.created_at,
+        updated_at: a.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -341,6 +374,8 @@ pub async fn create_fee_template(
         frequency: t.frequency.to_string(),
         is_mandatory: t.is_mandatory,
         is_active: t.is_active,
+        created_at: t.created_at,
+        updated_at: t.updated_at,
     }))
 }
 
@@ -366,6 +401,8 @@ pub async fn list_fee_templates(
         frequency: t.frequency.to_string(),
         is_mandatory: t.is_mandatory,
         is_active: t.is_active,
+        created_at: t.created_at,
+        updated_at: t.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -399,6 +436,9 @@ pub async fn generate_fee(
         balance_due: f.balance_due,
         status: f.status.to_string(),
         due_date: f.due_date,
+        created_by: f.created_by,
+        created_at: f.created_at,
+        updated_at: f.updated_at,
     }))
 }
 
@@ -430,6 +470,9 @@ pub async fn list_fees(
         balance_due: f.balance_due,
         status: f.status.to_string(),
         due_date: f.due_date,
+        created_by: f.created_by,
+        created_at: f.created_at,
+        updated_at: f.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -468,12 +511,17 @@ pub async fn process_payment(
         id: pay.id,
         org_id: pay.org_id,
         fee_id: pay.fee_id,
+        enrollment_id: pay.enrollment_id,
+        student_id: pay.student_id,
         account_id: pay.account_id,
         amount: pay.amount,
         method: pay.method.to_string(),
         reference: pay.reference,
         journal_entry_id: pay.journal_entry_id,
         paid_at: pay.paid_at,
+        created_by: pay.created_by,
+        created_at: pay.created_at,
+        updated_at: pay.updated_at,
     }))
 }
 
@@ -496,12 +544,17 @@ pub async fn list_payments(
         id: p.id,
         org_id: p.org_id,
         fee_id: p.fee_id,
+        enrollment_id: p.enrollment_id,
+        student_id: p.student_id,
         account_id: p.account_id,
         amount: p.amount,
         method: p.method.to_string(),
         reference: p.reference,
         journal_entry_id: p.journal_entry_id,
         paid_at: p.paid_at,
+        created_by: p.created_by,
+        created_at: p.created_at,
+        updated_at: p.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -664,6 +717,9 @@ pub async fn split_fee(
         balance_due: f.balance_due,
         status: f.status.to_string(),
         due_date: f.due_date,
+        created_by: f.created_by,
+        created_at: f.created_at,
+        updated_at: f.updated_at,
     }).collect();
 
     Ok(ApiResponse::ok(dtos))
@@ -698,6 +754,9 @@ pub async fn refund_fee(
         balance_due: f.balance_due,
         status: f.status.to_string(),
         due_date: f.due_date,
+        created_by: f.created_by,
+        created_at: f.created_at,
+        updated_at: f.updated_at,
     }))
 }
 

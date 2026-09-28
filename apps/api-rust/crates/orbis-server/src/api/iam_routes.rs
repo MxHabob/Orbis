@@ -125,6 +125,10 @@ pub struct UserDto {
     pub birth_date: Option<String>,
     pub address: Option<String>,
     pub is_active: bool,
+    pub created_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 pub fn user_to_dto(
@@ -165,6 +169,10 @@ pub fn user_to_dto(
         birth_date,
         address,
         is_active,
+        created_by: u.created_by,
+        updated_by: u.updated_by,
+        created_at: u.created_at,
+        updated_at: u.updated_at,
     }
 }
 

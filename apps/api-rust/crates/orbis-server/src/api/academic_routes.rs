@@ -10,37 +10,50 @@ use super::extractors::AuthContext;
 use crate::state::AppState;
 use orbis_domain::queries::filters::{SubjectFilter, ClassFilter, ClassSubjectFilter};
 
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 
 // ── DTOs ────────────────────────────────────────────────────────
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct SubjectDto {
     pub id: Uuid,
     pub org_id: Uuid,
+    pub unit_id: Option<Uuid>,
     pub code: String,
     pub name: String,
+    pub name_ar: Option<String>,
     pub credit_hours: Option<Decimal>,
     pub is_core: bool,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct CreateSubjectRequest {
     pub code: String,
     pub name: String,
+    pub name_ar: Option<String>,
     pub unit_id: Option<Uuid>,
     pub credit_hours: Option<Decimal>,
     pub is_core: Option<bool>,
 }
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct ClassDto {
     pub id: Uuid,
     pub org_id: Uuid,
     pub unit_id: Uuid,
     pub period_id: Uuid,
     pub name: String,
+    pub name_ar: Option<String>,
     pub level: String,
+    pub division: Option<String>,
+    pub capacity: Option<i32>,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -51,7 +64,7 @@ pub struct CreateClassRequest {
     pub level: String,
 }
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct ClassSubjectDto {
     pub id: Uuid,
     pub class_id: Uuid,
@@ -59,6 +72,9 @@ pub struct ClassSubjectDto {
     pub period_id: Uuid,
     pub primary_teacher_id: Uuid,
     pub weekly_hours: Option<i32>,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -90,8 +106,9 @@ async fn create_subject(
         p.is_core.unwrap_or(true),
     ).await?;
     Ok(ApiResponse::ok(SubjectDto {
-        id: s.id, org_id: s.org_id, code: s.code, name: s.name,
-        credit_hours: s.credit_hours, is_core: s.is_core,
+        id: s.id, org_id: s.org_id, unit_id: s.unit_id, code: s.code, name: s.name, name_ar: s.name_ar,
+        credit_hours: s.credit_hours, is_core: s.is_core, is_active: s.is_active,
+        created_at: s.created_at, updated_at: s.updated_at,
     }))
 }
 
@@ -104,8 +121,9 @@ async fn list_subjects(
 ) -> Result<Json<ApiResponse<Vec<SubjectDto>>>, ApiError> {
     let subjects = state.academic_service.list_subjects(ctx.tenant_id, SubjectFilter::default()).await?;
     let dtos = subjects.items.into_iter().map(|s| SubjectDto {
-        id: s.id, org_id: s.org_id, code: s.code, name: s.name,
-        credit_hours: s.credit_hours, is_core: s.is_core,
+        id: s.id, org_id: s.org_id, unit_id: s.unit_id, code: s.code, name: s.name, name_ar: s.name_ar,
+        credit_hours: s.credit_hours, is_core: s.is_core, is_active: s.is_active,
+        created_at: s.created_at, updated_at: s.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -122,8 +140,9 @@ async fn get_subject(
     let s = state.academic_service.get_subject(id).await?
         .ok_or_else(|| ApiError::not_found(format!("Subject {} not found", id)))?;
     Ok(ApiResponse::ok(SubjectDto {
-        id: s.id, org_id: s.org_id, code: s.code, name: s.name,
-        credit_hours: s.credit_hours, is_core: s.is_core,
+        id: s.id, org_id: s.org_id, unit_id: s.unit_id, code: s.code, name: s.name, name_ar: s.name_ar,
+        credit_hours: s.credit_hours, is_core: s.is_core, is_active: s.is_active,
+        created_at: s.created_at, updated_at: s.updated_at,
     }))
 }
 
@@ -138,7 +157,9 @@ async fn create_class(
     let c = state.academic_service.create_class(&ctx, ctx.tenant_id, p.unit_id, p.period_id, p.name, p.level).await?;
     Ok(ApiResponse::ok(ClassDto {
         id: c.id, org_id: c.org_id, unit_id: c.unit_id,
-        period_id: c.period_id, name: c.name, level: c.level,
+        period_id: c.period_id, name: c.name, name_ar: c.name_ar, level: c.level,
+        division: c.division, capacity: c.capacity, is_active: c.is_active,
+        created_at: c.created_at, updated_at: c.updated_at,
     }))
 }
 
@@ -152,7 +173,9 @@ async fn list_classes(
     let classes = state.academic_service.list_classes(ctx.tenant_id, ClassFilter::default()).await?;
     let dtos = classes.items.into_iter().map(|c| ClassDto {
         id: c.id, org_id: c.org_id, unit_id: c.unit_id,
-        period_id: c.period_id, name: c.name, level: c.level,
+        period_id: c.period_id, name: c.name, name_ar: c.name_ar, level: c.level,
+        division: c.division, capacity: c.capacity, is_active: c.is_active,
+        created_at: c.created_at, updated_at: c.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -170,7 +193,9 @@ async fn get_class(
         .ok_or_else(|| ApiError::not_found(format!("Class {} not found", id)))?;
     Ok(ApiResponse::ok(ClassDto {
         id: c.id, org_id: c.org_id, unit_id: c.unit_id,
-        period_id: c.period_id, name: c.name, level: c.level,
+        period_id: c.period_id, name: c.name, name_ar: c.name_ar, level: c.level,
+        division: c.division, capacity: c.capacity, is_active: c.is_active,
+        created_at: c.created_at, updated_at: c.updated_at,
     }))
 }
 
@@ -186,7 +211,8 @@ async fn assign_class_subject(
     Ok(ApiResponse::ok(ClassSubjectDto {
         id: cs.id, class_id: cs.class_id, subject_id: cs.subject_id,
         period_id: cs.period_id, primary_teacher_id: cs.primary_teacher_id,
-        weekly_hours: cs.weekly_hours,
+        weekly_hours: cs.weekly_hours, is_active: cs.is_active,
+        created_at: cs.created_at, updated_at: cs.updated_at,
     }))
 }
 
@@ -208,7 +234,8 @@ async fn list_class_subjects(
     let dtos = items.items.into_iter().map(|cs| ClassSubjectDto {
         id: cs.id, class_id: cs.class_id, subject_id: cs.subject_id,
         period_id: cs.period_id, primary_teacher_id: cs.primary_teacher_id,
-        weekly_hours: cs.weekly_hours,
+        weekly_hours: cs.weekly_hours, is_active: cs.is_active,
+        created_at: cs.created_at, updated_at: cs.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }

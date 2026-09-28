@@ -19,6 +19,8 @@ pub struct AssessmentSchemeDto {
     pub description: Option<String>,
     pub max_score: f64,
     pub formula: Option<serde_json::Value>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -48,9 +50,17 @@ pub struct GradeDto {
     pub component_id: Option<Uuid>,
     pub score: Decimal,
     pub max_score: Decimal,
+    pub weight: Option<Decimal>,
+    pub letter_grade: Option<String>,
+    pub is_final: bool,
     pub is_excused: bool,
     pub is_exempt: bool,
+    pub change_reason: Option<String>,
+    pub recorded_by: Option<Uuid>,
+    pub updated_by: Option<Uuid>,
     pub notes: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -77,6 +87,9 @@ pub struct AttendanceDto {
     pub date: NaiveDate,
     pub status: String,
     pub notes: Option<String>,
+    pub marked_by: Option<Uuid>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -144,6 +157,7 @@ pub async fn create_scheme(
     ).await?;
     Ok(ApiResponse::ok(AssessmentSchemeDto {
         id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score, formula: s.formula,
+        created_at: s.created_at, updated_at: s.updated_at,
     }))
 }
 
@@ -155,6 +169,7 @@ pub async fn list_schemes(
     let schemes = state.assessment_service.list_assessment_schemes(ctx.tenant_id).await?;
     let dtos = schemes.into_iter().map(|s| AssessmentSchemeDto {
         id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score, formula: s.formula,
+        created_at: s.created_at, updated_at: s.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -168,6 +183,7 @@ pub async fn get_scheme(
     let s = state.assessment_scheme_repo.find_by_id(id).await?.ok_or_else(|| ApiError::not_found("Scheme not found"))?;
     Ok(ApiResponse::ok(AssessmentSchemeDto {
         id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score, formula: s.formula,
+        created_at: s.created_at, updated_at: s.updated_at,
     }))
 }
 
@@ -188,6 +204,7 @@ pub async fn update_scheme(
     ).await?;
     Ok(ApiResponse::ok(AssessmentSchemeDto {
         id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score, formula: s.formula,
+        created_at: s.created_at, updated_at: s.updated_at,
     }))
 }
 
@@ -232,9 +249,17 @@ pub async fn record_grade(
         component_id: g.component_id,
         score: g.score,
         max_score: g.max_score,
+        weight: g.weight,
+        letter_grade: g.letter_grade,
+        is_final: g.is_final,
         is_excused: g.is_excused,
         is_exempt: g.is_exempt,
+        change_reason: g.change_reason,
+        recorded_by: g.recorded_by,
+        updated_by: g.updated_by,
         notes: g.notes,
+        created_at: g.created_at,
+        updated_at: g.updated_at,
     }))
 }
 
@@ -258,9 +283,17 @@ pub async fn list_grades(
         component_id: g.component_id,
         score: g.score,
         max_score: g.max_score,
+        weight: g.weight,
+        letter_grade: g.letter_grade,
+        is_final: g.is_final,
         is_excused: g.is_excused,
         is_exempt: g.is_exempt,
+        change_reason: g.change_reason,
+        recorded_by: g.recorded_by,
+        updated_by: g.updated_by,
         notes: g.notes,
+        created_at: g.created_at,
+        updated_at: g.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -351,6 +384,7 @@ pub async fn mark_attendance(
         id: a.id, student_id: a.student_id, class_id: a.class_id,
         class_subject_id: a.class_subject_id, scheduled_lesson_id: a.scheduled_lesson_id,
         date: a.attendance_date, status: a.status, notes: a.notes,
+        marked_by: a.marked_by, created_at: a.created_at, updated_at: a.updated_at,
     }))
 }
 
@@ -364,6 +398,7 @@ pub async fn list_attendance(
         id: a.id, student_id: a.student_id, class_id: a.class_id,
         class_subject_id: a.class_subject_id, scheduled_lesson_id: a.scheduled_lesson_id,
         date: a.attendance_date, status: a.status, notes: a.notes,
+        marked_by: a.marked_by, created_at: a.created_at, updated_at: a.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
