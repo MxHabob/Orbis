@@ -56,6 +56,8 @@ const gridSource = $derived(
     capacity: r.capacity ?? "—",
     room_type: r.room_type || "—",
     status: r.is_active !== false ? "active" : "inactive",
+    created_at_display: r.created_at ? formatDate(r.created_at, "datetime") : "—",
+    updated_at_display: r.updated_at ? formatDate(r.updated_at, "datetime") : "—",
   })),
 );
 
@@ -67,6 +69,8 @@ const columns: OrbisColumnDef[] = [
   { id: "floor", prop: "floor", header: "Floor", name: "Floor", width: 90, size: 90, readonly: true, align: "center" },
   { id: "capacity", prop: "capacity", header: m.common_rooms_col_capacity(), name: m.common_rooms_col_capacity(), width: 100, size: 100, readonly: true, align: "center", type: "number" },
   { id: "status", prop: "status", header: "Status", name: "Status", width: 100, size: 100, type: "badge", align: "center", readonly: true },
+  { id: "created_at_display", prop: "created_at_display", header: l("تاريخ الإنشاء", "Created At"), name: "Created At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "updated_at_display", prop: "updated_at_display", header: l("آخر تحديث", "Updated At"), name: "Updated At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
 ];
 
 function openCreateSheet() {

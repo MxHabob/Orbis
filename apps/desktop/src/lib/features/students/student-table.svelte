@@ -127,6 +127,26 @@ const baseColumns: OrbisColumnDef[] = [
     readonly: true,
     cellClass: "text-xs font-mono text-muted-foreground",
   },
+  {
+    id: "created_at_display",
+    prop: "created_at_display",
+    header: l("تاريخ الإنشاء", "Created At"),
+    name: "Created At",
+    width: 140,
+    size: 140,
+    readonly: true,
+    cellClass: "text-xs font-mono text-muted-foreground",
+  },
+  {
+    id: "updated_at_display",
+    prop: "updated_at_display",
+    header: l("آخر تحديث", "Updated At"),
+    name: "Updated At",
+    width: 140,
+    size: 140,
+    readonly: true,
+    cellClass: "text-xs font-mono text-muted-foreground",
+  },
 ];
 
 const columns = $derived.by<OrbisColumnDef[]>(() => {
@@ -193,6 +213,8 @@ let gridSource = $derived(
       standing: formatStanding(s.standing),
       gender_display: genderDisplay,
       admitted_at_display: s.admitted_at ? formatDate(s.admitted_at) : "—",
+      created_at_display: s.created_at ? formatDate(s.created_at, "datetime") : "—",
+      updated_at_display: s.updated_at ? formatDate(s.updated_at, "datetime") : "—",
       avatar_url: p.avatar_url,
     };
   }),

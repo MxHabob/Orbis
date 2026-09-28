@@ -91,6 +91,8 @@ const gridSource = $derived(
     full_name: l(u.name_ar, u.full_name) || u.full_name || "—",
     role: u.roles?.[0] || "staff",
     status: u.is_deleted ? "inactive" : "active",
+    created_at_display: u.created_at ? formatDate(u.created_at, "datetime") : "—",
+    updated_at_display: u.updated_at ? formatDate(u.updated_at, "datetime") : "—",
   })),
 );
 
@@ -102,6 +104,8 @@ const columns: OrbisColumnDef[] = [
   { id: "phone", prop: "phone", header: m.common_bulk_col_phone(), name: m.common_bulk_col_phone(), width: 140, minWidth: 120, readonly: true, cellClass: "font-mono", flex: 1 },
   { id: "role", prop: "role", header: m.common_user_form_role(), name: m.common_user_form_role(), width: 110, minWidth: 100, readonly: true, align: "center", flex: 1 },
   { id: "status", prop: "status", header: m.common_word_status?.() || "Status", name: "Status", width: 100, minWidth: 90, type: "badge", align: "center", readonly: true, flex: 0 },
+  { id: "created_at_display", prop: "created_at_display", header: l("تاريخ الإنشاء", "Created At"), name: "Created At", width: 130, minWidth: 120, readonly: true, cellClass: "font-mono text-xs text-muted-foreground", flex: 1 },
+  { id: "updated_at_display", prop: "updated_at_display", header: l("آخر تحديث", "Updated At"), name: "Updated At", width: 130, minWidth: 120, readonly: true, cellClass: "font-mono text-xs text-muted-foreground", flex: 1 },
   {
     id: "actions",
     prop: "actions",

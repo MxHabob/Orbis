@@ -219,6 +219,8 @@ const gridSource = $derived(
       status_display: getStatusLabel(emp.status),
       account_display: emp.username || l("غير مربوط", "Not Linked"),
       hire_date_display: emp.hire_date ? formatDate(emp.hire_date, "date") : "—",
+      created_at_display: emp.created_at ? formatDate(emp.created_at, "datetime") : "—",
+      updated_at_display: emp.updated_at ? formatDate(emp.updated_at, "datetime") : "—",
     };
   })
 );
@@ -316,6 +318,26 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
     name: "Hire Date",
     width: 120,
     size: 120,
+    readonly: true,
+    cellClass: "font-mono text-xs text-muted-foreground",
+  },
+  {
+    id: "created_at_display",
+    prop: "created_at_display",
+    header: l("تاريخ الإنشاء", "Created At"),
+    name: "Created At",
+    width: 130,
+    size: 130,
+    readonly: true,
+    cellClass: "font-mono text-xs text-muted-foreground",
+  },
+  {
+    id: "updated_at_display",
+    prop: "updated_at_display",
+    header: l("آخر تحديث", "Updated At"),
+    name: "Updated At",
+    width: 130,
+    size: 130,
     readonly: true,
     cellClass: "font-mono text-xs text-muted-foreground",
   },

@@ -12,7 +12,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Document, Plus, QuestionMarkCircle, CheckSquare, Search, Refresh } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatCurrency } from "$lib/core/i18n";
+import { formatCurrency, formatDate, l } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
 import FeeAssignSheet from "$lib/features/finance/components/fee-assign-sheet.svelte";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
@@ -96,6 +96,8 @@ const gridSource = $derived(
       f.currency || "YER",
     ),
     payment_status: getStatusLabel(f.status || "unpaid"),
+    created_at_display: f.created_at ? formatDate(f.created_at, "datetime") : "—",
+    updated_at_display: f.updated_at ? formatDate(f.updated_at, "datetime") : "—",
   })),
 );
 
@@ -108,6 +110,8 @@ const columns: OrbisColumnDef[] = [
   { id: "paid_amount", prop: "paid_amount", header: m.finance_fees_total_collected(), name: m.finance_fees_total_collected(), width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono text-emerald-600 font-medium" },
   { id: "balance", prop: "balance", header: m.finance_fees_total_due(), name: m.finance_fees_total_due(), width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono text-rose-600 font-bold" },
   { id: "payment_status", prop: "payment_status", header: m.finance_fees_col_status(), name: m.finance_fees_col_status(), width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  { id: "created_at_display", prop: "created_at_display", header: l("تاريخ الإنشاء", "Created At"), name: "Created At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "updated_at_display", prop: "updated_at_display", header: l("آخر تحديث", "Updated At"), name: "Updated At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
 ];
 
 const rtl = $derived(getLocale() === "ar");

@@ -7,7 +7,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Grid, Plus, BuildingLibrary, BuildingOffice, Refresh, Download, Search } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatCurrency } from "$lib/core/i18n";
+import { formatCurrency, formatDate, l } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
 import LedgerCreateSheet from "$lib/features/finance/components/ledger-create-sheet.svelte";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
@@ -132,6 +132,8 @@ const treasurySource = $derived(
     ),
     currency_code: account.currency || baseCurrency,
     status: account.is_active === 1 ? "active" : "inactive",
+    created_at_display: account.created_at ? formatDate(account.created_at, "datetime") : "—",
+    updated_at_display: account.updated_at ? formatDate(account.updated_at, "datetime") : "—",
   })),
 );
 
@@ -143,6 +145,8 @@ const treasuryCols: OrbisColumnDef[] = [
   { id: "balance", prop: "balance", header: m.finance_col_balance(), name: m.finance_col_balance(), width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold" },
   { id: "currency_code", prop: "currency_code", header: "Currency", name: "Currency", width: 90, size: 90, readonly: true, align: "center" },
   { id: "status", prop: "status", header: "Status", name: "Status", width: 100, size: 100, type: "badge", align: "center", readonly: true },
+  { id: "created_at_display", prop: "created_at_display", header: l("تاريخ الإنشاء", "Created At"), name: "Created At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "updated_at_display", prop: "updated_at_display", header: l("آخر تحديث", "Updated At"), name: "Updated At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
 ];
 
 const rtl = $derived(getLocale() === "ar");
