@@ -5,7 +5,6 @@ export { default as AccountTree } from "./components/account-tree.svelte";
 export { default as DiscountTemplateForm } from "./components/discount-template-form.svelte";
 export { default as FeeAssignSheet } from "./components/fee-assign-sheet.svelte";
 export { default as FeeTemplateForm } from "./components/fee-template-form.svelte";
-export { default as FinancialReportPage } from "./components/financial-report-page.svelte";
 export { default as LedgerCreateSheet } from "./components/ledger-create-sheet.svelte";
 export { default as LedgerForm } from "./components/ledger-form.svelte";
 export { default as DisbursementsManager } from "./disbursements-manager.svelte";
