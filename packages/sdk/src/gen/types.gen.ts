@@ -4,6 +4,19 @@ export type ClientOptions = {
     baseUrl: `${string}://${string}` | (string & {});
 };
 
+export type AcademicAiContext = {
+    academic_year_id?: string | null;
+    academic_year_name?: string | null;
+    class_id?: string | null;
+    class_name?: string | null;
+    class_subject_id?: string | null;
+    period_id?: string | null;
+    period_name?: string | null;
+    period_state?: string | null;
+    subject_id?: string | null;
+    subject_name?: string | null;
+};
+
 export type AcademicContextResponse = {
     all_years: Array<AcademicYearDto>;
     current_year?: AcademicYearDto | null;
@@ -67,6 +80,80 @@ export type AccountProvisioningResultDto = {
 
 export type AddGroupMemberRequest = {
     user_id: string;
+};
+
+export type AiChatRequest = {
+    academic_context?: AcademicAiContext | null;
+    agent_type?: string | null;
+    messages: Array<AiMessage>;
+    model?: string | null;
+    screen_context?: unknown;
+    ui_context?: UiContext | null;
+};
+
+export type AiChatResponse = {
+    executed_tools: Array<AiToolResult>;
+    proposed_actions: Array<AiProposedAction>;
+    resolved_academic_context?: AcademicAiContext | null;
+    resolved_user_context?: UserAiContext | null;
+    response: string;
+};
+
+export type AiMessage = {
+    content: string;
+    created_at?: string | null;
+    role: string;
+    tool_call_id?: string | null;
+    tool_calls?: Array<AiToolCall> | null;
+};
+
+export type AiProposedAction = {
+    description: string;
+    payload: unknown;
+    requires_confirmation: boolean;
+    title: string;
+    tool_name: string;
+};
+
+export type AiStoredMessage = {
+    content: string;
+    executed_tools?: Array<AiToolResult> | null;
+    id: string;
+    proposed_actions?: Array<unknown> | null;
+    role: string;
+    timestamp: number;
+};
+
+export type AiStoredSession = {
+    context?: unknown;
+    created_at: number;
+    id: string;
+    messages: Array<AiStoredMessage>;
+    org_id: string;
+    title: string;
+    updated_at: number;
+};
+
+export type AiToolCall = {
+    arguments: unknown;
+    id: string;
+    tool_name: string;
+};
+
+export type AiToolDefinition = {
+    category?: ToolCategory;
+    description: string;
+    is_consequential: boolean;
+    name: string;
+    parameters_schema: unknown;
+    required_permission?: string | null;
+};
+
+export type AiToolResult = {
+    content: string;
+    is_error: boolean;
+    tool_call_id: string;
+    tool_name: string;
 };
 
 export type ApprovalStepDto = {
@@ -204,6 +291,18 @@ export type BatchPrintRequest = {
     report_code: string;
 };
 
+export type BehaviorRecordDto = {
+    created_at: string;
+    description: string;
+    id: string;
+    org_id: string;
+    points: number;
+    record_type: string;
+    reporter_id: string;
+    student_id: string;
+    updated_at: string;
+};
+
 export type BulkAssignGroupRequest = {
     group_id: string;
     user_ids: Array<string>;
@@ -313,6 +412,28 @@ export type CreateGroupRequest = {
     name: string;
     name_ar?: string | null;
     permissions?: Array<string>;
+};
+
+export type CreateJournalEntryLineRequest = {
+    account_id: string;
+    credit_amount: string;
+    debit_amount: string;
+    description?: string | null;
+    entity_id?: string | null;
+    entity_type?: string | null;
+};
+
+export type CreateJournalEntryRequest = {
+    accounting_date?: string | null;
+    amount: string;
+    credit_account_id: string;
+    currency_code?: string | null;
+    debit_account_id: string;
+    description: string;
+    description_ar?: string | null;
+    exchange_rate?: string | null;
+    lines?: Array<CreateJournalEntryLineRequest> | null;
+    reference_number?: string | null;
 };
 
 export type CreateOrgRequest = {
@@ -733,6 +854,40 @@ export type IntegrationStatusDto = {
     is_enabled: boolean;
 };
 
+export type JournalEntryDto = {
+    accounting_date: string;
+    amount: string;
+    base_amount: string;
+    created_at: string;
+    created_by?: string | null;
+    credit_account_id: string;
+    currency_code: string;
+    debit_account_id: string;
+    description: string;
+    description_ar?: string | null;
+    exchange_rate: string;
+    id: string;
+    is_reversed: boolean;
+    lines: Array<JournalEntryLineDto>;
+    org_id: string;
+    reference_number: string;
+    reversal_reason?: string | null;
+    reversed_by?: string | null;
+    source_id?: string | null;
+    source_type: string;
+    status: string;
+};
+
+export type JournalEntryLineDto = {
+    account_id: string;
+    credit_amount: string;
+    debit_amount: string;
+    description?: string | null;
+    entity_id?: string | null;
+    entity_type?: string | null;
+    id: string;
+};
+
 export type LinkedDependentDto = {
     current_grade_level?: string | null;
     current_section_name?: string | null;
@@ -999,6 +1154,13 @@ export type RankingItemDto = {
     rank: number;
 };
 
+export type RecordBehaviorRequest = {
+    description: string;
+    points: number;
+    record_type: string;
+    student_id: string;
+};
+
 export type RecordGradeRequest = {
     class_subject_id: string;
     component_id?: string | null;
@@ -1010,6 +1172,11 @@ export type RecordGradeRequest = {
     period_id: string;
     score: string;
     student_id: string;
+};
+
+export type RefundStudentFeeRequest = {
+    notes?: string | null;
+    refund_amount: string;
 };
 
 export type RegisterEmployeeRequest = {
@@ -1104,6 +1271,10 @@ export type ResolveOverrideRequest = {
     notes?: string | null;
 };
 
+export type ReverseJournalRequest = {
+    reason: string;
+};
+
 export type RevertVersionRequest = {
     version: number;
 };
@@ -1192,6 +1363,11 @@ export type SetGroupPermissionsRequest = {
     permissions: Array<string>;
 };
 
+export type SplitFeeRequest = {
+    due_dates: Array<string>;
+    num_installments: number;
+};
+
 export type StudentDocumentFulfillmentDto = {
     document_id?: string | null;
     document_name?: string | null;
@@ -1275,6 +1451,15 @@ export type SubmitOverrideRequest = {
     risk_level?: string | null;
 };
 
+export type TeachingAssignmentInfo = {
+    class_id: string;
+    class_name: string;
+    class_subject_id: string;
+    period_id?: string | null;
+    subject_id: string;
+    subject_name: string;
+};
+
 export type TemplateBindingDto = {
     created_at: string;
     format: string;
@@ -1338,6 +1523,23 @@ export type ToggleIntegrationRequest = {
     is_enabled: boolean;
 };
 
+export type ToolCategory = 'read' | 'analysis' | 'generation' | 'action';
+
+export type UiContext = {
+    active_filters?: unknown;
+    class_id?: string | null;
+    class_subject_id?: string | null;
+    domain?: string | null;
+    entity_id?: string | null;
+    entity_type?: string | null;
+    metadata?: unknown;
+    period_id?: string | null;
+    route?: string | null;
+    screen?: string | null;
+    selected_entity_ids?: Array<string>;
+    subject_id?: string | null;
+};
+
 export type UpdateEmployeeRequest = {
     address?: string | null;
     avatar_url?: string | null;
@@ -1389,6 +1591,13 @@ export type UpdateOrgRequest = {
     timezone?: string | null;
 };
 
+export type UpdateSchemeRequest = {
+    description?: string | null;
+    formula?: unknown;
+    max_score?: number | null;
+    name?: string | null;
+};
+
 export type UpdateStudentStatusRequest = {
     reason?: string | null;
     status: string;
@@ -1437,6 +1646,23 @@ export type UploadDocumentRequest = {
     thumbnail_path?: string | null;
     url?: string | null;
     visibility?: string | null;
+};
+
+export type UserAiContext = {
+    dependent_student_ids: Array<string>;
+    effective_role?: string | null;
+    employee_id?: string | null;
+    is_parent: boolean;
+    is_teacher: boolean;
+    org_id: string;
+    org_name?: string | null;
+    org_unit_id?: string | null;
+    org_unit_path?: string | null;
+    permissions: Array<string>;
+    roles: Array<string>;
+    teaching_assignments: Array<TeachingAssignmentInfo>;
+    user_id?: string | null;
+    user_name?: string | null;
 };
 
 export type UserDeviceDto = {
@@ -1677,6 +1903,38 @@ export type CreateAccountResponses = {
 
 export type CreateAccountResponse = CreateAccountResponses[keyof CreateAccountResponses];
 
+export type ChatData = {
+    body: AiChatRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/ai/chat';
+};
+
+export type ChatResponses = {
+    /**
+     * AI chat response with executed domain tools and proposed actions
+     */
+    200: AiChatResponse;
+};
+
+export type ChatResponse = ChatResponses[keyof ChatResponses];
+
+export type ListToolsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/ai/tools';
+};
+
+export type ListToolsResponses = {
+    /**
+     * List registered domain AI tools with schemas and permissions
+     */
+    200: Array<AiToolDefinition>;
+};
+
+export type ListToolsResponse = ListToolsResponses[keyof ListToolsResponses];
+
 export type ListSchemesData = {
     body?: never;
     path?: never;
@@ -1703,6 +1961,22 @@ export type CreateSchemeResponses = {
 
 export type CreateSchemeResponse = CreateSchemeResponses[keyof CreateSchemeResponses];
 
+export type DeleteSchemeData = {
+    body?: never;
+    path: {
+        /**
+         * Assessment Scheme ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/assessment-schemes/{id}';
+};
+
+export type DeleteSchemeResponses = {
+    200: unknown;
+};
+
 export type GetSchemeData = {
     body?: never;
     path: {
@@ -1720,6 +1994,24 @@ export type GetSchemeResponses = {
 };
 
 export type GetSchemeResponse = GetSchemeResponses[keyof GetSchemeResponses];
+
+export type UpdateSchemeData = {
+    body: UpdateSchemeRequest;
+    path: {
+        /**
+         * Assessment Scheme ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/assessment-schemes/{id}';
+};
+
+export type UpdateSchemeResponses = {
+    200: AssessmentSchemeDto;
+};
+
+export type UpdateSchemeResponse = UpdateSchemeResponses[keyof UpdateSchemeResponses];
 
 export type ListAttendanceData = {
     body?: never;
@@ -2113,6 +2405,19 @@ export type RunTickResponses = {
      */
     200: unknown;
 };
+
+export type RecordBehaviorData = {
+    body: RecordBehaviorRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/behavior';
+};
+
+export type RecordBehaviorResponses = {
+    201: BehaviorRecordDto;
+};
+
+export type RecordBehaviorResponse = RecordBehaviorResponses[keyof RecordBehaviorResponses];
 
 export type BootstrapOrgEndpointData = {
     body: unknown;
@@ -3268,6 +3573,68 @@ export type ToggleIntegrationResponses = {
 
 export type ToggleIntegrationResponse = ToggleIntegrationResponses[keyof ToggleIntegrationResponses];
 
+export type ListJournalEntriesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/journal-entries';
+};
+
+export type ListJournalEntriesResponses = {
+    200: Array<JournalEntryDto>;
+};
+
+export type ListJournalEntriesResponse = ListJournalEntriesResponses[keyof ListJournalEntriesResponses];
+
+export type CreateJournalEntryData = {
+    body: CreateJournalEntryRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/journal-entries';
+};
+
+export type CreateJournalEntryResponses = {
+    201: JournalEntryDto;
+};
+
+export type CreateJournalEntryResponse = CreateJournalEntryResponses[keyof CreateJournalEntryResponses];
+
+export type GetJournalEntryData = {
+    body?: never;
+    path: {
+        /**
+         * Journal Entry ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/journal-entries/{id}';
+};
+
+export type GetJournalEntryResponses = {
+    200: JournalEntryDto;
+};
+
+export type GetJournalEntryResponse = GetJournalEntryResponses[keyof GetJournalEntryResponses];
+
+export type ReverseJournalEntryData = {
+    body: ReverseJournalRequest;
+    path: {
+        /**
+         * Journal Entry ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/journal-entries/{id}/reverse';
+};
+
+export type ReverseJournalEntryResponses = {
+    200: JournalEntryDto;
+};
+
+export type ReverseJournalEntryResponse = ReverseJournalEntryResponses[keyof ReverseJournalEntryResponses];
+
 export type OnboardingCompleteEndpointData = {
     body: unknown;
     path?: never;
@@ -3845,6 +4212,42 @@ export type GenerateFeeResponses = {
 
 export type GenerateFeeResponse = GenerateFeeResponses[keyof GenerateFeeResponses];
 
+export type RefundFeeData = {
+    body: RefundStudentFeeRequest;
+    path: {
+        /**
+         * Student Fee ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/student-fees/{id}/refund';
+};
+
+export type RefundFeeResponses = {
+    200: StudentFeeDto;
+};
+
+export type RefundFeeResponse = RefundFeeResponses[keyof RefundFeeResponses];
+
+export type SplitFeeData = {
+    body: SplitFeeRequest;
+    path: {
+        /**
+         * Student Fee ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/student-fees/{id}/split';
+};
+
+export type SplitFeeResponses = {
+    200: Array<StudentFeeDto>;
+};
+
+export type SplitFeeResponse = SplitFeeResponses[keyof SplitFeeResponses];
+
 export type ListGuardiansData = {
     body?: never;
     path?: never;
@@ -3932,6 +4335,24 @@ export type GetStudentResponses = {
 };
 
 export type GetStudentResponse = GetStudentResponses[keyof GetStudentResponses];
+
+export type ListStudentBehaviorData = {
+    body?: never;
+    path: {
+        /**
+         * Student ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/students/{id}/behavior';
+};
+
+export type ListStudentBehaviorResponses = {
+    200: Array<BehaviorRecordDto>;
+};
+
+export type ListStudentBehaviorResponse = ListStudentBehaviorResponses[keyof ListStudentBehaviorResponses];
 
 export type EvaluateStudentRequirementsData = {
     body?: never;

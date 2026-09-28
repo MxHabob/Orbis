@@ -36,13 +36,13 @@ export async function loadFileSessions(orgId: string): Promise<AiChatSession[]> 
       orgId: s.org_id,
       createdAt: s.created_at,
       updatedAt: s.updated_at,
-      context: s.context || null,
+      context: (s.context as Record<string, unknown> | null) ?? null,
       messages: s.messages.map((m) => ({
         id: m.id,
         role: m.role as any,
         content: m.content,
         timestamp: m.timestamp,
-        executedTools: m.executed_tools,
+        executedTools: m.executed_tools || undefined,
         proposedActions: m.proposed_actions as any,
       })),
     }));

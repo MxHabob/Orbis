@@ -230,6 +230,9 @@ use api::{
         api::report_routes::get_report_job_status,
         api::report_routes::download_report_file,
         api::report_routes::batch_print,
+        // AI Platform
+        api::ai_routes::chat,
+        api::ai_routes::list_tools,
         // Autopilot
         api::autopilot_routes::list_tasks,
         api::autopilot_routes::run_tick,
@@ -317,6 +320,7 @@ use api::{
             // Assessment
             api::assessment_routes::AssessmentSchemeDto,
             api::assessment_routes::CreateSchemeRequest,
+            api::assessment_routes::UpdateSchemeRequest,
             api::assessment_routes::GradeDto,
             api::assessment_routes::RecordGradeRequest,
             api::assessment_routes::AttendanceDto,
@@ -326,6 +330,8 @@ use api::{
             api::assessment_routes::CalculateRankingsRequest,
             api::assessment_routes::ScoreItemRequest,
             api::assessment_routes::RankingItemDto,
+            api::assessment_routes::BehaviorRecordDto,
+            api::assessment_routes::RecordBehaviorRequest,
             // Exam
             api::exam_routes::ExamSessionDto,
             api::exam_routes::CreateExamSessionRequest,
@@ -349,6 +355,13 @@ use api::{
             api::finance_routes::PaymentDto,
             api::finance_routes::ProcessPaymentRequest,
             api::finance_routes::CurrencyDto,
+            api::finance_routes::JournalEntryDto,
+            api::finance_routes::JournalEntryLineDto,
+            api::finance_routes::CreateJournalEntryRequest,
+            api::finance_routes::CreateJournalEntryLineRequest,
+            api::finance_routes::ReverseJournalRequest,
+            api::finance_routes::SplitFeeRequest,
+            api::finance_routes::RefundStudentFeeRequest,
             // Document
             api::document_routes::DocumentDto,
             api::document_routes::UploadDocumentRequest,
@@ -377,6 +390,21 @@ use api::{
             api::report_routes::ValidationIssueDto,
             api::report_routes::ReportDefinitionDto,
             api::report_routes::RevertVersionRequest,
+            // AI Platform
+            orbis_domain::entities::ai::AiToolCall,
+            orbis_domain::entities::ai::AiToolResult,
+            orbis_domain::entities::ai::AiMessage,
+            orbis_domain::entities::ai::ToolCategory,
+            orbis_domain::entities::ai::TeachingAssignmentInfo,
+            orbis_domain::entities::ai::UserAiContext,
+            orbis_domain::entities::ai::AcademicAiContext,
+            orbis_domain::entities::ai::UiContext,
+            orbis_domain::entities::ai::AiToolDefinition,
+            orbis_domain::entities::ai::AiProposedAction,
+            orbis_domain::entities::ai::AiChatRequest,
+            orbis_domain::entities::ai::AiChatResponse,
+            orbis_domain::entities::ai::AiStoredMessage,
+            orbis_domain::entities::ai::AiStoredSession,
             // Autopilot
             api::autopilot_routes::AutopilotTaskDto,
             api::autopilot_routes::AutopilotDiagnosticsDto,

@@ -4,6 +4,9 @@
  * Strongly-typed API client interfaces for the Orbis Desktop application.
  * Both LocalClient (Tauri IPC) and RemoteClient (HTTP SDK) implement
  * this interface, ensuring transport-agnostic UI code.
+ *
+ * Canonical DTOs and API models are derived directly from the OpenAPI contract
+ * exported via `@orbis/sdk`.
  */
 
 export * from "@orbis/sdk";
@@ -84,6 +87,7 @@ import type {
   AttendanceDto,
   CalculationResultDto,
   CreateSchemeRequest,
+  UpdateSchemeRequest as SdkUpdateSchemeRequest,
   RecordGradeRequest,
   MarkAttendanceRequest,
   CalculateGradesRequest,
@@ -117,10 +121,34 @@ import type {
   StudentDocumentFulfillmentDto,
   IntegrationDto,
   ConnectAppRequest,
+  TemplateDto,
+  CreateTemplateRequest,
+  UpdateTemplateRequest,
+  TemplateVersionDto,
+  TemplateBindingDto,
+  ValidationResultDto,
+  ValidationIssueDto,
+  ReportDefinitionDto,
+  JournalEntryDto,
+  CreateJournalEntryRequest,
+  ReverseJournalRequest,
+  SplitFeeRequest,
+  RefundStudentFeeRequest,
+  BehaviorRecordDto,
+  RecordBehaviorRequest,
+  DuplicateCheckRequest,
+  DuplicateCheckResponse,
+  AiChatRequest,
+  AiChatResponse,
+  AiToolDefinition,
+  AiStoredSession,
+  AutopilotTaskDto,
+  AutopilotDiagnosticsDto,
+  ListTasksResponse,
 } from "@orbis/sdk";
 
 // ═══════════════════════════════════════════════════════════════
-// SHARED ENVELOPES
+// SHARED ENVELOPES & ALIASES
 // ═══════════════════════════════════════════════════════════════
 
 export interface ApiResponse<T> {
@@ -128,7 +156,13 @@ export interface ApiResponse<T> {
   requestId?: string;
 }
 
-export type UpdateSchemeRequest = Partial<CreateSchemeRequest>;
+export type UpdateSchemeRequest = SdkUpdateSchemeRequest;
+export type ValidationResult = ValidationResultDto;
+export type ValidationIssue = ValidationIssueDto;
+export type DuplicateCheckResultDto = DuplicateCheckResponse;
+export type CheckDuplicateInput = DuplicateCheckRequest;
+export type RecordBehaviorInput = RecordBehaviorRequest;
+export type ProvisionEmployeeAccountInput = ProvisionEmployeeAccountRequest;
 
 export interface PaginatedResponse<T> {
   items: T[];
@@ -350,33 +384,6 @@ export interface TransferClassInput {
   targetClassId?: string;
 }
 
-export interface BehaviorRecordDto {
-  id: string;
-  student_id: string;
-  org_id: string;
-  reporter_id: string;
-  record_type: string;
-  description: string;
-  points: number;
-  created_at: string;
-  updated_at: string;
-  studentId?: string;
-  orgId?: string;
-  reporterId?: string;
-  recordType?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface RecordBehaviorInput {
-  student_id: string;
-  record_type: string;
-  description: string;
-  points: number;
-  studentId?: string;
-  recordType?: string;
-}
-
 export interface ReportJobStatusDto {
   job_id: string;
   status: string;
@@ -389,76 +396,6 @@ export interface BatchPrintParams {
   gridRows?: number;
   marginMm?: number;
   cutMarks?: boolean;
-}
-
-export interface JournalEntryLineDto {
-  id: string;
-  account_id: string;
-  debit_amount: string | number;
-  credit_amount: string | number;
-  description?: string | null;
-  entity_type?: string | null;
-  entity_id?: string | null;
-}
-
-export interface JournalEntryDto {
-  id: string;
-  org_id: string;
-  reference_number: string;
-  accounting_date: string;
-  amount: string | number;
-  currency: string;
-  exchange_rate: string | number;
-  base_amount: string | number;
-  debit_account_id: string;
-  credit_account_id: string;
-  description: string;
-  description_ar?: string | null;
-  source_type: string;
-  source_id?: string | null;
-  status: string;
-  lines: JournalEntryLineDto[];
-  is_reversed: boolean;
-  reversed_by?: string | null;
-  reversal_reason?: string | null;
-  created_by?: string | null;
-  created_at: string;
-}
-
-export interface CreateJournalEntryLineRequest {
-  account_id: string;
-  debit_amount: number | string;
-  credit_amount: number | string;
-  description?: string | null;
-  entity_type?: string | null;
-  entity_id?: string | null;
-}
-
-export interface CreateJournalEntryRequest {
-  reference_number?: string;
-  accounting_date?: string;
-  amount: number | string;
-  currency_code?: string;
-  exchange_rate?: number | string;
-  debit_account_id: string;
-  credit_account_id: string;
-  description: string;
-  description_ar?: string;
-  lines?: CreateJournalEntryLineRequest[];
-}
-
-export interface ReverseJournalRequest {
-  reason: string;
-}
-
-export interface SplitFeeRequest {
-  num_installments: number;
-  due_dates: string[];
-}
-
-export interface RefundStudentFeeRequest {
-  refund_amount: number | string;
-  notes?: string;
 }
 
 export interface DiscountTemplateDto {
@@ -528,8 +465,6 @@ export interface PrerequisiteCheckResultDto {
   failure_reason?: string | null;
 }
 
-
-
 export interface SubmitOverrideRequestInput {
   override_type: string;
   risk_level?: string;
@@ -563,8 +498,6 @@ export interface RejectOverrideInput {
   requestId?: string;
 }
 
-
-
 export interface PromotionDetailDto {
   id: string;
   job_id: string;
@@ -576,8 +509,6 @@ export interface PromotionDetailDto {
   reason: string;
   created_at: string;
 }
-
-
 
 export interface PromoteCohortInput {
   source_period_id: string;
@@ -647,114 +578,6 @@ export class OrbisError extends Error {
     }
     return new OrbisError(String(err));
   }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// DOCFORGE ENGINE & TEMPLATE DTOs
-// ═══════════════════════════════════════════════════════════════
-
-export interface TemplateDto {
-  id: string;
-  name: string;
-  name_ar?: string | null;
-  description?: string | null;
-  description_ar?: string | null;
-  document_type: string;
-  entity_type: string;
-  status: string;
-  version: number;
-  published_version?: number | null;
-  page_size: string;
-  page_width_mm?: number | null;
-  page_height_mm?: number | null;
-  orientation: string;
-  margins_json: string;
-  document_json: string;
-  locale: string;
-  master_template_id?: string | null;
-  code?: string | null;
-  tags?: string | null;
-  is_system: boolean;
-  is_default: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateTemplateRequest {
-  name: string;
-  name_ar?: string | null;
-  description?: string | null;
-  description_ar?: string | null;
-  document_type: string;
-  entity_type: string;
-  page_size?: string | null;
-  page_width_mm?: number | null;
-  page_height_mm?: number | null;
-  orientation?: string | null;
-  margins_json?: string | null;
-  document_json?: string | null;
-  locale?: string | null;
-  code?: string | null;
-  tags?: string | null;
-  master_template_id?: string | null;
-}
-
-export interface UpdateTemplateRequest {
-  name?: string | null;
-  name_ar?: string | null;
-  description?: string | null;
-  description_ar?: string | null;
-  page_size?: string | null;
-  orientation?: string | null;
-  margins_json?: string | null;
-  document_json?: string | null;
-}
-
-export interface TemplateVersionDto {
-  id: string;
-  template_id: string;
-  version: number;
-  change_summary?: string | null;
-  created_by: string;
-  created_at: string;
-}
-
-export interface TemplateBindingDto {
-  id: string;
-  report_definition_id: string;
-  template_id: string;
-  locale: string;
-  format: string;
-  is_default: boolean;
-  created_at: string;
-}
-
-export interface ValidationResult {
-  valid: boolean;
-  errors: ValidationIssue[];
-  warnings: ValidationIssue[];
-}
-
-export interface ValidationIssue {
-  nodeId?: string | null;
-  path: string;
-  message: string;
-  severity: string;
-}
-
-export interface ReportDefinitionDto {
-  id: string;
-  code: string;
-  name: string;
-  name_ar: string;
-  domain: string;
-  category: string;
-  description?: string | null;
-  description_ar?: string | null;
-  supported_formats: string[];
-  parameters: any[];
-  is_system: boolean;
-  is_active: boolean;
 }
 
 export interface AuditLogDto {
@@ -1087,6 +910,41 @@ export type StartupPhase =
   | "login"
   | "ready"
   | "error";
+
+export interface EmployeeFilterInput {
+  query?: string;
+  employee_type?: string;
+  department?: string;
+  status?: string;
+  org_unit_id?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface BulkRegisterEmployeeCommandItem {
+  row_index: number;
+  registration: RegisterEmployeeRequest;
+}
+
+export interface BulkRegisterEmployeeItemCommandResultDto {
+  row_index: number;
+  success: boolean;
+  employee_id?: string;
+  employee_number?: string;
+  user_id?: string;
+  error?: string;
+}
+
+export interface BulkRegisterEmployeeCommandResultDto {
+  total: number;
+  succeeded: number;
+  failed: number;
+  items: BulkRegisterEmployeeItemCommandResultDto[];
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UNIFIED CLIENT INTERFACE
+// ═══════════════════════════════════════════════════════════════
 
 export interface OrbisApiClient {
   // ── Auth & MFA & Devices ────────────────────────────────────
@@ -1456,244 +1314,3 @@ export interface OrbisApiClient {
   autopilotDismissTask(id: string): Promise<AutopilotTaskDto>;
   autopilotGetDiagnostics(): Promise<AutopilotDiagnosticsDto>;
 }
-
-// ── AI Platform Interfaces ───────────────────────────────────
-
-export interface AiToolCall {
-  id: string;
-  tool_name: string;
-  arguments: Record<string, unknown>;
-}
-
-export interface AiToolResult {
-  tool_call_id: string;
-  tool_name: string;
-  content: string;
-  is_error: boolean;
-}
-
-export interface AiMessage {
-  role: "user" | "assistant" | "system" | "tool";
-  content: string;
-  tool_calls?: AiToolCall[];
-  tool_call_id?: string;
-  created_at?: string;
-}
-
-export type ToolCategory = "read" | "analysis" | "generation" | "action";
-
-export interface TeachingAssignmentInfo {
-  class_subject_id: string;
-  class_id: string;
-  class_name: string;
-  subject_id: string;
-  subject_name: string;
-  period_id?: string | null;
-}
-
-export interface UserAiContext {
-  user_id?: string | null;
-  user_name?: string | null;
-  effective_role?: string | null;
-  roles: string[];
-  permissions: string[];
-  org_id: string;
-  org_name?: string | null;
-  org_unit_id?: string | null;
-  org_unit_path?: string | null;
-  employee_id?: string | null;
-  is_teacher: boolean;
-  teaching_assignments: TeachingAssignmentInfo[];
-  is_parent: boolean;
-  dependent_student_ids: string[];
-}
-
-export interface AcademicAiContext {
-  academic_year_id?: string | null;
-  academic_year_name?: string | null;
-  period_id?: string | null;
-  period_name?: string | null;
-  period_state?: string | null;
-  class_id?: string | null;
-  class_name?: string | null;
-  subject_id?: string | null;
-  subject_name?: string | null;
-  class_subject_id?: string | null;
-}
-
-export interface UiContext {
-  route?: string | null;
-  screen?: string | null;
-  domain?: string | null;
-  entity_type?: string | null;
-  entity_id?: string | null;
-  selected_entity_ids?: string[];
-  active_filters?: Record<string, unknown> | null;
-  metadata?: Record<string, unknown> | null;
-  period_id?: string | null;
-  class_id?: string | null;
-  subject_id?: string | null;
-  class_subject_id?: string | null;
-}
-
-export interface AiToolDefinition {
-  name: string;
-  description: string;
-  parameters_schema: Record<string, unknown>;
-  required_permission?: string | null;
-  is_consequential: boolean;
-  category?: ToolCategory;
-}
-
-export interface AiProposedAction {
-  tool_name: string;
-  title: string;
-  description: string;
-  payload: Record<string, unknown>;
-  requires_confirmation: boolean;
-}
-
-export interface AiChatRequest {
-  messages: AiMessage[];
-  screen_context?: Record<string, unknown> | null;
-  ui_context?: UiContext | null;
-  academic_context?: AcademicAiContext | null;
-  agent_type?: string | null;
-  model?: string | null;
-}
-
-export interface AiChatResponse {
-  response: string;
-  executed_tools: AiToolResult[];
-  proposed_actions: AiProposedAction[];
-  resolved_user_context?: UserAiContext | null;
-  resolved_academic_context?: AcademicAiContext | null;
-}
-
-export interface AiStoredMessage {
-  id: string;
-  role: "user" | "assistant" | "system" | "tool";
-  content: string;
-  timestamp: number;
-  executed_tools?: AiToolResult[];
-  proposed_actions?: Record<string, unknown>[];
-}
-
-export interface AiStoredSession {
-  id: string;
-  title: string;
-  org_id: string;
-  created_at: number;
-  updated_at: number;
-  context?: Record<string, unknown> | null;
-  messages: AiStoredMessage[];
-}
-
-// ── Autopilot System Interfaces ───────────────────────────────
-
-export interface AutopilotTaskDto {
-  id: string;
-  org_id: string;
-  task_type: string;
-  status: string;
-  target_id?: string | null;
-  target_type?: string | null;
-  risk_level: string;
-  reason?: string | null;
-  parameters?: Record<string, unknown> | null;
-  scheduled_at: string;
-  executed_at?: string | null;
-  attempts: number;
-  max_retries: number;
-  error_log?: string | null;
-  idempotency_key?: string | null;
-  triggered_by: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AutopilotDiagnosticsDto {
-  is_healthy: boolean;
-  status: string;
-  mode: string;
-  stuck_tasks: AutopilotTaskDto[];
-  overdue_tasks: AutopilotTaskDto[];
-  total_tasks_count: number;
-  pending_tasks_count: number;
-  completed_tasks_count: number;
-  failed_tasks_count: number;
-}
-
-export interface ListTasksResponse {
-  total_count: number;
-  items: AutopilotTaskDto[];
-}
-
-// ── Employee Affairs Helper Types ─────────────────────────────
-
-export interface EmployeeFilterInput {
-  query?: string;
-  employee_type?: string;
-  department?: string;
-  status?: string;
-  org_unit_id?: string;
-  page?: number;
-  page_size?: number;
-}
-
-export interface ProvisionEmployeeAccountInput {
-  preferred_username?: string | null;
-  role?: string | null;
-  group_ids?: string[];
-  delivery_channel?: string | null;
-}
-
-// ── Student Duplicate Check Interfaces ────────────────────────
-
-export interface CheckDuplicateInput {
-  national_id?: string;
-  phone?: string;
-  email?: string;
-  exclude_student_id?: string;
-}
-
-export interface DuplicateMatchDto {
-  field: string;
-  value: string;
-  matched_person_id: string;
-  matched_person_name: string;
-  student_id?: string;
-  student_number?: string;
-}
-
-export interface DuplicateCheckResultDto {
-  has_duplicate: boolean;
-  matches: DuplicateMatchDto[];
-}
-
-
-
-export interface BulkRegisterEmployeeCommandItem {
-  row_index: number;
-  registration: RegisterEmployeeRequest;
-}
-
-export interface BulkRegisterEmployeeCommandResultDto {
-  total: number;
-  succeeded: number;
-  failed: number;
-  items: BulkRegisterEmployeeItemCommandResultDto[];
-}
-
-export interface BulkRegisterEmployeeItemCommandResultDto {
-  row_index: number;
-  success: boolean;
-  employee_id?: string;
-  employee_number?: string;
-  user_id?: string;
-  error?: string;
-}
-
-
-
-

@@ -274,7 +274,7 @@ export function createRecordBehaviorMutation() {
   return createMutation(() => ({
     mutationFn: (req: RecordBehaviorInput) => api.recordBehavior(req),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.student.behavior(vars.student_id || vars.studentId || "") });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.behavior(vars.student_id || "") });
     },
   }));
 }

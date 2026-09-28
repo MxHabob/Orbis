@@ -1,14 +1,15 @@
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AiToolCall {
     pub id: String,
     pub tool_name: String,
     pub arguments: serde_json::Value,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AiToolResult {
     pub tool_call_id: String,
     pub tool_name: String,
@@ -16,7 +17,7 @@ pub struct AiToolResult {
     pub is_error: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AiMessage {
     pub role: String, // "user" | "assistant" | "system" | "tool"
     pub content: String,
@@ -28,7 +29,7 @@ pub struct AiMessage {
     pub created_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ToolCategory {
     Read,
@@ -43,7 +44,7 @@ impl Default for ToolCategory {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct TeachingAssignmentInfo {
     pub class_subject_id: uuid::Uuid,
     pub class_id: uuid::Uuid,
@@ -53,7 +54,7 @@ pub struct TeachingAssignmentInfo {
     pub period_id: Option<uuid::Uuid>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, ToSchema)]
 pub struct UserAiContext {
     pub user_id: Option<uuid::Uuid>,
     pub user_name: Option<String>,
@@ -71,7 +72,7 @@ pub struct UserAiContext {
     pub dependent_student_ids: Vec<uuid::Uuid>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, ToSchema)]
 pub struct AcademicAiContext {
     pub academic_year_id: Option<uuid::Uuid>,
     pub academic_year_name: Option<String>,
@@ -85,7 +86,7 @@ pub struct AcademicAiContext {
     pub class_subject_id: Option<uuid::Uuid>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, ToSchema)]
 pub struct UiContext {
     pub route: Option<String>,
     pub screen: Option<String>,
@@ -103,7 +104,7 @@ pub struct UiContext {
     pub class_subject_id: Option<uuid::Uuid>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AiToolDefinition {
     pub name: String,
     pub description: String,
@@ -114,7 +115,7 @@ pub struct AiToolDefinition {
     pub category: ToolCategory,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AiProposedAction {
     pub tool_name: String,
     pub title: String,
@@ -123,7 +124,7 @@ pub struct AiProposedAction {
     pub requires_confirmation: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AiChatRequest {
     pub messages: Vec<AiMessage>,
     pub screen_context: Option<serde_json::Value>,
@@ -136,7 +137,7 @@ pub struct AiChatRequest {
     pub model: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AiChatResponse {
     pub response: String,
     pub executed_tools: Vec<AiToolResult>,
@@ -153,7 +154,7 @@ pub struct LlmChatOutput {
     pub tool_calls: Vec<AiToolCall>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AiStoredMessage {
     pub id: String,
     pub role: String,
@@ -165,7 +166,7 @@ pub struct AiStoredMessage {
     pub proposed_actions: Option<Vec<serde_json::Value>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AiStoredSession {
     pub id: String,
     pub title: String,
