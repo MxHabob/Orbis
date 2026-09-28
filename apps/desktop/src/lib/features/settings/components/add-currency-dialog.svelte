@@ -9,7 +9,7 @@ import * as m from "$lib/paraglide/messages";
 import { api } from "$lib/api";
 import { toast } from "@orbis/ui";
 import { uniqueCurrencies } from "@orbis/location/currencies";
-import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import { Button } from "@orbis/ui/button";
 import { FormField } from "@orbis/ui";
 import { Input } from "@orbis/ui/input";
@@ -266,17 +266,25 @@ async function handleSubmit(e: Event) {
           <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.settings_nav_currencies()}</AccordionTrigger>
           <AccordionContent>
       <!-- Preset Quick Selection -->
-      <div class="flex flex-col gap-1.5 p-3 rounded-lg border border-border/40 bg-muted/20">
+      <div class="flex flex-col gap-1.5 py-3">
         <div class="flex items-center gap-1.5 text-xs text-primary font-medium">
           <Sparkles size={13} />
           <span>{m.common_header_search()} ({m.settings_nav_currencies()})</span>
         </div>
-        <ComboboxDropdown
-          placeholder="اختر عملة للتعبيئة السريعة..."
-          searchPlaceholder="ابحث باسم العملة أو الرمز (مثال: USD, EUR, YER)..."
-          selectedItem={selectedPresetItem}
+        <SearchableSelect
+          value={code}
           items={presetItems}
-          onSelect={handlePresetSelect}
+          placeholder="اختر عملة للتعبئة السريعة..."
+          searchPlaceholder="ابحث باسم العملة أو الرمز (مثال: USD, EUR, YER)..."
+          getItemValue={(item) => item.value}
+          getItemLabel={(item) => item.label}
+          getItemSubtitle={(item) => item.value}
+          onchange={(val) => {
+            if (val) {
+              const item = presetItems.find((p) => p.value === val);
+              if (item) handlePresetSelect(item);
+            }
+          }}
           class="w-full bg-background border-border/60 text-xs h-8"
         />
       </div>
@@ -383,7 +391,7 @@ async function handleSubmit(e: Event) {
       </div>
 
       <!-- Base Currency Switch -->
-      <div class="flex items-center justify-between p-3 rounded-lg border border-border/40 bg-muted/10">
+      <div class="flex items-center justify-between py-3">
         <div class="flex items-center gap-2">
           <GlobeAlt size={14} class="text-muted-foreground" />
           <div class="flex flex-col gap-0.5">

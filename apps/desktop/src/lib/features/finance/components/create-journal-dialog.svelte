@@ -19,6 +19,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@orbis/ui/dialog";
+import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
 import { toast } from "@orbis/ui";
 import { AdjustmentsHorizontal, CheckCircle, Grid, InfoCircle, Plus, Scale, Trash } from "@orbis/icons";
 
@@ -198,22 +199,13 @@ async function handleSubmit() {
           {#each lines as line, index}
             <div class="grid grid-cols-12 gap-2 items-center">
               <div class="col-span-5">
-                <Select value={line.accountId} onValueChange={(v) => (line.accountId = v)}>
-                  <SelectTrigger class="h-8 text-xs">
-                    <span class="truncate">
-                      {accounts.find((a) => a.id === line.accountId)
-                        ? `${accounts.find((a) => a.id === line.accountId).code} - ${l(accounts.find((a) => a.id === line.accountId).name_ar, accounts.find((a) => a.id === line.accountId).name)}`
-                        : "اختر الحساب..."}
-                    </span>
-                  </SelectTrigger>
-                  <SelectContent class="max-h-56">
-                    {#each accounts as acc}
-                      <SelectItem value={acc.id}>
-                        {acc.code} - {l(acc.name_ar, acc.name) || acc.name}
-                      </SelectItem>
-                    {/each}
-                  </SelectContent>
-                </Select>
+                <AccountSearchInput
+                  bind:value={line.accountId}
+                  {accounts}
+                  placeholder="اختر أو اكتب الحساب..."
+                  size="sm"
+                  class="w-full text-xs"
+                />
               </div>
 
               <div class="col-span-3">

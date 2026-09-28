@@ -187,14 +187,26 @@ let { state }: { state: StudentFormState } = $props();
             </div>
           </div>
 
-          <!-- Occupations / Job -->
+          <!-- Occupations / Job & Employer -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-xs font-semibold text-foreground">{m.common_form_guardian_job_label()}</Label>
               <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_job_desc()}</span>
             </div>
-            <div class="w-full md:w-120 shrink-0">
+            <div class="w-full md:w-120 shrink-0 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Input bind:value={guardian.occupation} class="h-9 w-full bg-background" placeholder={m.common_form_guardian_job_placeholder()} />
+              <Input bind:value={guardian.employer} class="h-9 w-full bg-background" placeholder={l("جهة العمل / الشركة", "Employer / Company")} />
+            </div>
+          </div>
+
+          <!-- Work Phone -->
+          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+            <div class="flex flex-col gap-1 text-start">
+              <Label class="text-xs font-semibold text-foreground">{l("هاتف العمل", "Work Phone")}</Label>
+              <span class="text-[11px] text-muted-foreground leading-relaxed">{l("رقم هاتف مقر عمل ولي الأمر للضرورة", "Guardian workplace phone number")}</span>
+            </div>
+            <div class="w-full md:w-120 shrink-0">
+              <Input bind:value={guardian.work_phone} class="h-9 w-full bg-background font-mono text-left" placeholder="01-234567" />
             </div>
           </div>
 
@@ -219,6 +231,11 @@ let { state }: { state: StudentFormState } = $props();
                 <div class="flex items-center gap-2">
                   <Checkbox id={`payer_${index}`} checked={guardian.is_payer} onCheckedChange={(val) => guardian.is_payer = !!val} />
                   <Label for={`payer_${index}`} class="text-xs cursor-pointer">{m.common_form_guardian_role_payer()}</Label>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <Checkbox id={`pickup_${index}`} checked={guardian.is_authorized_pickup} onCheckedChange={(val) => guardian.is_authorized_pickup = !!val} />
+                  <Label for={`pickup_${index}`} class="text-xs cursor-pointer">{l("مصرح بالاستلام", "Authorized Pickup")}</Label>
                 </div>
               </div>
 

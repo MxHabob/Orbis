@@ -1,29 +1,26 @@
 <!--
   @component RoleSelect
-  Dynamic Role Selector component. Fetches authoritative organization roles
-  from the backend rather than using hardcoded lists.
+  Dynamic Role Selector component powered by TanStack Query & SearchableSelect.
+  Fetches authoritative organization roles from the backend rather than using hardcoded lists.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 import { api, type RoleDto } from "$lib/api";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import { createQuery } from "@tanstack/svelte-query";
 
 interface Props {
-  value?: string;
+  value?: string | null;
   allowAll?: boolean;
   allLabel?: string;
   placeholder?: string;
   disabled?: boolean;
   size?: "sm" | "default";
   class?: string;
+  id?: string;
   onValueChange?: (val: string) => void;
+  onchange?: (val: string | null) => void;
 }
 
 let {
@@ -34,7 +31,9 @@ let {
   disabled = false,
   size = "default",
   class: className = "",
+  id = undefined,
   onValueChange,
+  onchange,
 }: Props = $props();
 
 const rolesQuery = createQuery<RoleDto[]>(() => ({
@@ -45,44 +44,45 @@ const rolesQuery = createQuery<RoleDto[]>(() => ({
 
 const roles = $derived(rolesQuery.data ?? []);
 
-function getRoleLabel(roleId: string): string {
-  if (allowAll && (roleId === "all" || roleId === "")) {
-    return allLabel;
-  }
-  const match = roles.find((r) => r.id === roleId);
-  if (match) {
-    return l(match.name_ar, match.name) || match.name || match.id;
-  }
-  return roleId || placeholder;
+function getRoleValue(r: RoleDto): string {
+  return String(r.id || "");
 }
 
-function handleChange(v: string | undefined) {
-  const next = v ?? "";
+function getRoleLabel(r: RoleDto): string {
+  return l(r.name_ar, r.name) || r.name || String(r.id || "");
+}
+
+function getRoleSubtitle(r: RoleDto): string | undefined {
+  return r.description || undefined;
+}
+
+function getRoleBadge(r: RoleDto): string | undefined {
+  return String(r.id || "");
+}
+
+function handleChange(val: string | null) {
+  const next = val || "";
   value = next;
   onValueChange?.(next);
+  onchange?.(val);
 }
 </script>
 
-<Select
-  type="single"
-  value={value || (allowAll ? "all" : undefined)}
-  onValueChange={handleChange}
+<SearchableSelect
+  bind:value
+  items={roles}
+  placeholder={rolesQuery.isLoading ? "جارٍ تحميل الأدوار..." : placeholder}
+  searchPlaceholder="ابحث عن اسم الدور الوظيفي أو الرمز..."
+  emptyText="لا توجد أدوار مطابقة للبحث"
+  showAllOption={allowAll}
+  {allLabel}
   disabled={disabled || rolesQuery.isLoading}
->
-  <SelectTrigger class="{size === 'sm' ? 'h-8 text-xs' : 'h-9 text-xs'} bg-card {className}">
-    <span>{getRoleLabel(value)}</span>
-  </SelectTrigger>
-  <SelectContent class="text-xs font-sans max-h-56">
-    {#if allowAll}
-      <SelectItem value="all">{allLabel}</SelectItem>
-    {/if}
-    {#each roles as r (r.id)}
-      <SelectItem value={r.id}>
-        <div class="flex items-center justify-between w-full gap-2">
-          <span>{l(r.name_ar, r.name) || r.name}</span>
-          <span class="text-[10px] font-mono text-muted-foreground opacity-70">({r.id})</span>
-        </div>
-      </SelectItem>
-    {/each}
-  </SelectContent>
-</Select>
+  {size}
+  {id}
+  getItemValue={getRoleValue}
+  getItemLabel={getRoleLabel}
+  getItemSubtitle={getRoleSubtitle}
+  getItemBadge={getRoleBadge}
+  onchange={handleChange}
+  class={className}
+/>

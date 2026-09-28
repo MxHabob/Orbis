@@ -31,7 +31,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import { toast } from "@orbis/ui";
 import { CheckSquare, ChevronLeft, ChevronRight, Document, Plus, Printer, Search, SignOut, TaskList, Trash } from "@orbis/icons";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
@@ -664,12 +664,15 @@ const filteredPayments = $derived.by(() => {
                 <div class="flex flex-col gap-2">
                   <div class="flex flex-col gap-1">
                     <span class="text-[10px] font-bold text-muted-foreground md:hidden">{m.finance_payments_account_student_name()}</span>
-                    <ComboboxDropdown
+                    <SearchableSelect
+                      value={row.studentEnrollmentId}
                       placeholder="-- اختر حساب الطالب --"
                       searchPlaceholder="ابحث باسم الطالب..."
-                      selectedItem={studentItems.find((item) => item.value === row.studentEnrollmentId)}
-                      items={studentItems}
-                      onSelect={(item) => { handleStudentChange(index, item ? item.value : ""); }}
+                      items={students}
+                      getItemValue={(s) => String(s.id)}
+                      getItemLabel={(s) => s.full_name || s.student_number || String(s.id)}
+                      getItemSubtitle={(s) => s.student_number ? `#${s.student_number}` : undefined}
+                      onchange={(val) => { handleStudentChange(index, val || ""); }}
                       class="w-full text-xs h-8.5 bg-background border-border"
                     />
                   </div>

@@ -36,6 +36,7 @@ export class PersonalInfoState {
   bloodType = $state("");
   emergencyContact = $state("");
   medicalNotes = $state("");
+  specialNeedsNotes = $state("");
 
   populate(originalStudent: StudentDetailDto | null) {
     if (!originalStudent) return;
@@ -70,6 +71,7 @@ export class PersonalInfoState {
     this.passportNumber = p.passport_number || "";
     this.bloodType = p.blood_type || "";
     this.medicalNotes = p.medical_notes || "";
+    this.specialNeedsNotes = p.special_needs_notes || "";
     this.status = s.status || "active";
   }
 }

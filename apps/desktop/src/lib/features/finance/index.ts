@@ -14,3 +14,4 @@ export { default as FeeAssignSheet } from "./components/fee-assign-sheet.svelte"
 export { default as FeeTemplateForm } from "./components/fee-template-form.svelte";
 export { default as DiscountTemplateForm } from "./components/discount-template-form.svelte";
 export { default as CreateJournalDialog } from "./components/create-journal-dialog.svelte";
+export { default as AccountSearchInput } from "./components/account-search-input.svelte";

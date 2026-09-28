@@ -13,7 +13,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import { SheetFooter } from "@orbis/ui/sheet";
 import { toast } from "@orbis/ui";
 import {
@@ -203,7 +203,14 @@ async function handleSubmit(e: SubmitEvent) {
       glForm.setField("parent_id", glParentId);
 
       const success = await glForm.submit(async (payload) => {
-        await api.createAccount(payload as any);
+        await api.createAccount({
+          code: payload.code,
+          name: payload.name,
+          name_ar: payload.name_ar,
+          account_type: payload.item_type || glAccountType,
+          currency: payload.currency,
+          parent_id: payload.parent_id || undefined,
+        });
       });
 
       if (!success) {
@@ -232,7 +239,13 @@ async function handleSubmit(e: SubmitEvent) {
       cashForm.setField("sub_type", trType);
 
       const success = await cashForm.submit(async (payload) => {
-        await api.createAccount(payload as any);
+        await api.createAccount({
+          code: payload.code || `TR-${Date.now()}`,
+          name: payload.name,
+          name_ar: payload.name_ar,
+          account_type: "asset",
+          currency: payload.currency,
+        });
       });
 
       if (!success) {
@@ -261,7 +274,13 @@ async function handleSubmit(e: SubmitEvent) {
       entityForm.setField("sub_type", enType);
 
       const success = await entityForm.submit(async (payload) => {
-        await api.createAccount(payload as any);
+        await api.createAccount({
+          code: payload.code || `EN-${Date.now()}`,
+          name: payload.name,
+          name_ar: payload.name_ar,
+          account_type: itemType,
+          currency: payload.currency,
+        });
       });
 
       if (!success) {
@@ -320,12 +339,19 @@ async function handleSubmit(e: SubmitEvent) {
         <!-- Parent Account Select -->
         <FormField label={m.common_ledger_label_parent()} required>
           {#snippet children()}
-          <ComboboxDropdown
+          <SearchableSelect
+            value={glParentId}
             placeholder={m.common_ledger_placeholder_parent()}
             searchPlaceholder={m.common_ledger_search_parent()}
-            selectedItem={selectedParentItem}
-            items={parentItems}
-            onSelect={handleParentSelect}
+            items={ledgers}
+            getItemValue={(l) => String(l.id)}
+            getItemLabel={(l) => `${l.code} - ${l.name}`}
+            getItemSubtitle={(l) => l.code}
+            getItemBadge={(l) => l.account_type || "asset"}
+            onchange={(val) => {
+              const item = parentItems.find((p) => p.value === val);
+              if (item) handleParentSelect(item);
+            }}
             class="w-full text-xs"
           />
           {/snippet}

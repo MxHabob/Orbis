@@ -418,7 +418,7 @@ const studyModes = [
 
       <!-- Medical Notes / Conditions -->
       {#if state.activeFields.medical_notes}
-        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
+        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label for="medicalNotes" class="text-xs font-semibold text-foreground">
               {l("الملاحظات والبيانات الطبية", "Medical Notes")}
@@ -437,6 +437,25 @@ const studyModes = [
           </div>
         </div>
       {/if}
+
+      <!-- Special Needs Notes -->
+      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
+        <div class="flex flex-col gap-1 text-start">
+          <Label for="specialNeedsNotes" class="text-xs font-semibold text-foreground">
+            {l("ملاحظات التربية الخاصة / الرعاية الإضافية", "Special Needs & Accommodations")}
+          </Label>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">{l("تسهيلات الوصول أو الرعاية التعليمية الخاصة المطلوبة", "Special accommodations or accessibility assistance")}</span>
+        </div>
+        <div class="w-full md:w-120 shrink-0">
+          <Input 
+            id="specialNeedsNotes"
+            type="text" 
+            placeholder={l("أدخل ملاحظات التربية الخاصة إن وجدت...", "Enter special needs notes if any...")} 
+            class="h-9 w-full bg-background" 
+            bind:value={state.personal.specialNeedsNotes}
+          />
+        </div>
+      </div>
     </div>
   </CardContent>
 </Card>

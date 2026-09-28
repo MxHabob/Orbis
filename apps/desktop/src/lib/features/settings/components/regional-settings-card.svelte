@@ -1,16 +1,11 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Switch } from "@orbis/ui/switch";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
 import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 
 interface Props {
@@ -34,9 +29,9 @@ let {
 }: Props = $props();
 
 const dateFormats = [
-  { value: "YYYY-MM-DD", label: "YYYY-MM-DD (2026-06-24)" },
-  { value: "DD/MM/YYYY", label: "DD/MM/YYYY (24/06/2026)" },
-  { value: "MM/DD/YYYY", label: "MM/DD/YYYY (06/24/2026)" },
+  { value: "YYYY-MM-DD", label: "YYYY-MM-DD (2026-06-24)", example: "ISO Standard" },
+  { value: "DD/MM/YYYY", label: "DD/MM/YYYY (24/06/2026)", example: "British / Arabic Standard" },
+  { value: "MM/DD/YYYY", label: "MM/DD/YYYY (06/24/2026)", example: "US Standard" },
 ];
 </script>
 
@@ -58,6 +53,7 @@ const dateFormats = [
       title={m.common_general_timezone()}
       description={m.settings_general_timezone_desc()}
       bind:currentTimezone={timezone}
+      disabled={isSaving}
     />
 
     <!-- Locale / Language -->
@@ -65,6 +61,7 @@ const dateFormats = [
       title={m.settings_general_locale()}
       description={m.settings_general_locale_desc()}
       bind:currentLocale={locale}
+      disabled={isSaving}
       onchange={onLanguageChange}
     />
 
@@ -74,16 +71,18 @@ const dateFormats = [
       description={m.settings_general_date_format_desc()}
     >
       {#snippet children()}
-        <Select type="single" value={dateFormat} onValueChange={(v: string | undefined) => (dateFormat = v ?? "")} disabled={isSaving}>
-          <SelectTrigger class="h-9 w-full">
-            {dateFormats.find(df => df.value === dateFormat)?.label || dateFormat}
-          </SelectTrigger>
-          <SelectContent>
-            {#each dateFormats as df}
-              <SelectItem value={df.value}>{df.label}</SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
+        <SearchableSelect
+          bind:value={dateFormat}
+          items={dateFormats}
+          placeholder={m.settings_general_date_format?.() || "اختر صيغة التاريخ..."}
+          searchPlaceholder="ابحث عن صيغة التاريخ..."
+          disabled={isSaving}
+          getItemValue={(df) => df.value}
+          getItemLabel={(df) => df.label}
+          getItemSubtitle={(df) => df.example}
+          getItemBadge={(df) => df.value}
+          class="w-full"
+        />
       {/snippet}
     </SettingsRow>
 

@@ -1,12 +1,13 @@
 <!--
   @component CurrencySelector
-  Reusable currency selection component using `SettingsRow`.
+  Reusable currency selection component using SearchableSelect and SettingsRow.
   Relying 100% on active currencies from the backend database via `api.listCurrencies()`.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
+import { l } from "$lib/core/i18n";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import { api } from "$lib/api";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 import { Label } from "@orbis/ui/label";
@@ -16,7 +17,7 @@ let {
   description = m.settings_general_currency_desc(),
   currentCurrency = $bindable("SAR"),
   includeAll = false,
-  allLabel = "All currencies",
+  allLabel = m.common_filter_all?.() || "جميع العملات",
   compact = false,
   disabled = false,
   last = false,
@@ -49,42 +50,36 @@ onMount(async () => {
   }
 });
 
-const items = $derived.by(() => {
-  const currencyItems = dbCurrencies.map((c) => {
-    const codeUpper = (c.code || "").toUpperCase();
-    const symbolStr = c.symbol ? ` (${c.symbol})` : "";
-    const nameStr = c.name_ar || c.name || "";
-    return {
-      id: codeUpper,
-      label: nameStr
-        ? `${codeUpper} - ${nameStr}${symbolStr}`
-        : `${codeUpper}${symbolStr}`,
-      value: codeUpper,
-    };
-  });
+function getCurrencyValue(c: any): string {
+  if (!c) return "";
+  return String(c.code || c.id || c || "").toUpperCase();
+}
 
-  return includeAll
-    ? [{ id: "all", label: allLabel, value: "all" }, ...currencyItems]
-    : currencyItems;
-});
+function getCurrencyLabel(c: any): string {
+  if (!c) return "";
+  if (typeof c === "string") return c;
+  const codeUpper = (c.code || "").toUpperCase();
+  const nameStr = l(c.name_ar, c.name) || c.name || "";
+  const symbolStr = c.symbol ? ` (${c.symbol})` : "";
+  return nameStr ? `${codeUpper} - ${nameStr}${symbolStr}` : `${codeUpper}${symbolStr}`;
+}
 
-const selectedItem = $derived.by(() => {
-  const currentUpper = (currentCurrency || "").toUpperCase();
-  const match = items.find((item) => item.value === currentUpper);
-  if (match) return match;
-
-  return {
-    id: currentUpper || "SAR",
-    label: currentUpper || "SAR",
-    value: currentUpper || "SAR",
-  };
-});
-
-function handleSelect(item: { id: string; label: string; value: string }) {
-  if (item.value !== currentCurrency) {
-    currentCurrency = item.value;
-    onchange?.(item.value);
+function getCurrencySubtitle(c: any): string | undefined {
+  if (c?.exchange_rate && Number(c.exchange_rate) !== 1) {
+    return `سعر الصرف: ${c.exchange_rate}`;
   }
+  return undefined;
+}
+
+function getCurrencyBadge(c: any): string | undefined {
+  if (c?.is_base) return "العملة الأساسية";
+  return undefined;
+}
+
+function handleChange(val: string | null) {
+  const next = val || "SAR";
+  currentCurrency = next;
+  onchange?.(next);
 }
 </script>
 
@@ -97,13 +92,20 @@ function handleSelect(item: { id: string; label: string; value: string }) {
       <span class="text-[11px] text-muted-foreground leading-relaxed">{description}</span>
     {/if}
     <div class="w-full">
-      <ComboboxDropdown
-        placeholder={isLoading ? "Loading currencies..." : "Select currency..."}
-        searchPlaceholder="Search currency..."
-        {selectedItem}
-        {items}
+      <SearchableSelect
+        bind:value={currentCurrency}
+        items={dbCurrencies}
+        placeholder={isLoading ? "جارٍ تحميل العملات..." : (m.finance_ledger_currency?.() || "اختر العملة...")}
+        searchPlaceholder="ابحث باسم العملة أو الرمز (مثال: USD, SAR, YER)..."
+        emptyText="لا توجد عملات مطابقة"
+        showAllOption={includeAll}
+        {allLabel}
         disabled={disabled || isLoading}
-        onSelect={handleSelect}
+        getItemValue={getCurrencyValue}
+        getItemLabel={getCurrencyLabel}
+        getItemSubtitle={getCurrencySubtitle}
+        getItemBadge={getCurrencyBadge}
+        onchange={handleChange}
         class="w-full"
       />
     </div>
@@ -111,13 +113,20 @@ function handleSelect(item: { id: string; label: string; value: string }) {
 {:else}
   <SettingsRow {title} {description} {last}>
     {#snippet children()}
-      <ComboboxDropdown
-        placeholder={isLoading ? "Loading currencies..." : "Select currency..."}
-        searchPlaceholder="Search currency..."
-        {selectedItem}
-        {items}
+      <SearchableSelect
+        bind:value={currentCurrency}
+        items={dbCurrencies}
+        placeholder={isLoading ? "جارٍ تحميل العملات..." : (m.finance_ledger_currency?.() || "اختر العملة...")}
+        searchPlaceholder="ابحث باسم العملة أو الرمز (مثال: USD, SAR, YER)..."
+        emptyText="لا توجد عملات مطابقة"
+        showAllOption={includeAll}
+        {allLabel}
         disabled={disabled || isLoading}
-        onSelect={handleSelect}
+        getItemValue={getCurrencyValue}
+        getItemLabel={getCurrencyLabel}
+        getItemSubtitle={getCurrencySubtitle}
+        getItemBadge={getCurrencyBadge}
+        onchange={handleChange}
         class="w-full"
       />
     {/snippet}

@@ -5,10 +5,10 @@ import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { api } from "$lib/api";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatCurrency } from "$lib/core/i18n";
+import { formatCurrency, l } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
+import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
   Card,
@@ -571,17 +571,16 @@ const rtl = $derived(getLocale() === "ar");
           </div>
 
           {#if activeView === "single"}
-            <ComboboxDropdown
-              class="w-64"
-              placeholder="اختر الحساب المحاسبي..."
-              searchPlaceholder="بحث باسم أو رمز الحساب..."
-              items={accountItems}
-              selectedItem={selectedAccountItem}
-              onSelect={(item) =>
-                selectAccount(
-                  accounts.find((account) => account.id === item.value),
-                )}
-            />
+            <div class="w-72">
+              <AccountSearchInput
+                bind:value={selectedAccountId}
+                {accounts}
+                onselect={selectAccount}
+                placeholder="ابحث برمز أو اسم الحساب..."
+                size="sm"
+                class="w-full"
+              />
+            </div>
           {/if}
         </div>
 

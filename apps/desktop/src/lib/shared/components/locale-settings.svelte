@@ -1,57 +1,84 @@
 <!--
-@component LocaleSettings
-A reusable locale/language selection row using `@orbis/location`, `ComboboxDropdown`, and `SettingsRow`.
+  @component LocaleSettings
+  A reusable locale/language selection row using `SearchableSelect` and `SettingsRow`.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { countries } from "@orbis/location/countries-intl";
-import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 
+interface LocaleOption {
+  code: string;
+  name: string;
+  nativeName: string;
+  flag: string;
+  region?: string;
+}
+
 let {
-  title = m.settings_appearance_language
-    ? m.settings_appearance_language()
-    : "Language & Region",
-  description = m.common_account_preferences_lang_desc
-    ? m.common_account_preferences_lang_desc()
-    : "Choose your preferred language for the interface.",
+  title = m.settings_general_locale?.() || "اللغة الافتراضية",
+  description = m.settings_general_locale_desc?.() || "لغة الواجهة الافتراضية لمنظمتك.",
   currentLocale = $bindable("ar"),
+  disabled = false,
   last = false,
   onchange,
 }: {
   title?: string;
   description?: string;
   currentLocale?: string;
+  disabled?: boolean;
   last?: boolean;
   onchange?: (locale: string) => void;
 } = $props();
 
-const localeItems = Object.values(countries).map((c, index) => ({
-  id: index.toString(),
-  label: `${c.name} (${c.default_locale})`,
-  value: c.default_locale,
-}));
+const supportedLocales: LocaleOption[] = [
+  { code: "ar", name: "Arabic", nativeName: "العربية", flag: "🌐", region: "اللغة الرسمية للنظام" },
+  { code: "en", name: "English", nativeName: "English", flag: "🌐", region: "International" },
+  { code: "ar-YE", name: "Arabic (Yemen)", nativeName: "العربية (اليمن)", flag: "🇾🇪", region: "الجمهورية اليمنية" },
+  { code: "ar-SA", name: "Arabic (Saudi Arabia)", nativeName: "العربية (السعودية)", flag: "🇸🇦", region: "المملكة العربية السعودية" },
+  { code: "ar-EG", name: "Arabic (Egypt)", nativeName: "العربية (مصر)", flag: "🇪🇬", region: "جمهورية مصر العربية" },
+  { code: "ar-AE", name: "Arabic (UAE)", nativeName: "العربية (الإمارات)", flag: "🇦🇪", region: "دولة الإمارات العربية المتحدة" },
+  { code: "en-US", name: "English (United States)", nativeName: "English (US)", flag: "🇺🇸", region: "United States" },
+  { code: "en-GB", name: "English (United Kingdom)", nativeName: "English (UK)", flag: "🇬🇧", region: "United Kingdom" },
+];
 
-const selectedItem = $derived(
-  localeItems.find((item) => item.value === currentLocale),
-);
+function getLocaleValue(loc: LocaleOption): string {
+  return loc.code;
+}
 
-function handleSelect(item: { id: string; label: string; value: string }) {
-  if (item.value !== currentLocale) {
-    currentLocale = item.value;
-    onchange?.(item.value);
-  }
+function getLocaleLabel(loc: LocaleOption): string {
+  return `${loc.flag} ${loc.nativeName} (${loc.name})`;
+}
+
+function getLocaleSubtitle(loc: LocaleOption): string | undefined {
+  return loc.region;
+}
+
+function getLocaleBadge(loc: LocaleOption): string | undefined {
+  return loc.code;
+}
+
+function handleChange(val: string | null) {
+  const next = val || "ar";
+  currentLocale = next;
+  onchange?.(next);
 }
 </script>
 
 <SettingsRow {title} {description} {last}>
   {#snippet children()}
-    <ComboboxDropdown
-      placeholder="Select language..."
-      searchPlaceholder="Search language..."
-      {selectedItem}
-      items={localeItems}
-      onSelect={handleSelect}
+    <SearchableSelect
+      bind:value={currentLocale}
+      items={supportedLocales}
+      placeholder={m.settings_general_locale?.() || "اختر لغة الواجهة..."}
+      searchPlaceholder="ابحث باسم اللغة أو الرمز (مثال: العربية, English, ar, en)..."
+      emptyText="لا توجد لغة مطابقة"
+      {disabled}
+      getItemValue={getLocaleValue}
+      getItemLabel={getLocaleLabel}
+      getItemSubtitle={getLocaleSubtitle}
+      getItemBadge={getLocaleBadge}
+      onchange={handleChange}
       class="w-full"
     />
   {/snippet}

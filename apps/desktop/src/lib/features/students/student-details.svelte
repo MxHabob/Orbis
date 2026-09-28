@@ -35,6 +35,7 @@ import { fade } from "svelte/transition";
 import { l } from "$lib/core/i18n";
 import { createStudentQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
+import NationalitySelect from "$lib/shared/components/nationality-select.svelte";
 import {
   api,
   extractErrorMessage,
@@ -43,6 +44,7 @@ import {
   type AttendanceDto,
   type BehaviorRecordDto,
   type ClassDto,
+  type StudentDetailDto,
 } from "$lib/api";
 import { queryClient } from "$lib/api";
 import { academicContext } from "$lib/stores";
@@ -74,6 +76,13 @@ let email = $state("");
 let phone = $state("");
 let address = $state("");
 let isActiveState = $state(true);
+let nationalId = $state("");
+let passportNumber = $state("");
+let nationality = $state("");
+let placeOfBirth = $state("");
+let bloodType = $state("");
+let medicalNotes = $state("");
+let specialNeedsNotes = $state("");
 
 let birthDay = $state("");
 let birthMonth = $state("");
@@ -119,34 +128,45 @@ let gradesReport = $state<CalculationResultDto | null>(null);
 let attendanceReport = $state<AttendanceDto | null>(null);
 let behaviorRecords = $state<BehaviorRecordDto[]>([]);
 
+function populateForm(detail: StudentDetailDto) {
+  const p = detail.person;
+  const s = detail.student;
+  const e = detail.enrollment;
+
+  nameAr = (p?.first_name && p?.last_name ? `${p.first_name} ${p.last_name}` : "") || p?.first_name_ar || p?.display_name || p?.full_name || "";
+  nameEn = p?.full_name || "";
+  const rawBirth = p?.birth_date ? String(p.birth_date).slice(0, 10) : "";
+  if (rawBirth) {
+    const parts = rawBirth.split("-");
+    if (parts.length === 3) {
+      birthYear = parts[0];
+      birthMonth = String(parseInt(parts[1], 10));
+      birthDay = String(parseInt(parts[2], 10));
+    }
+  }
+
+  sex = p?.gender || "male";
+  classId = String(e?.class_id || "");
+  studentNumber = String(s?.student_number || "");
+  email = String(p?.email || "");
+  phone = String(p?.phone || "");
+  address = String(p?.address || "");
+  isActiveState = s?.status === "active";
+  nationalId = p?.national_id || "";
+  passportNumber = p?.passport_number || "";
+  nationality = p?.nationality || "Saudi";
+  placeOfBirth = p?.place_of_birth || "";
+  bloodType = p?.blood_type || "";
+  medicalNotes = p?.medical_notes || "";
+  specialNeedsNotes = p?.special_needs_notes || "";
+}
+
 onMount(async () => {
   evaluationLoading = true;
   try {
     const detail = await api.getStudent(studentId);
     if (detail) {
-      const p = detail.person;
-      const s = detail.student;
-      const e = detail.enrollment;
-
-      nameAr = (p?.first_name && p?.last_name ? `${p.first_name} ${p.last_name}` : "") || p?.first_name_ar || p?.display_name || p?.full_name || "";
-      nameEn = p?.full_name || "";
-      const rawBirth = p?.birth_date ? String(p.birth_date).slice(0, 10) : "";
-      if (rawBirth) {
-        const parts = rawBirth.split("-");
-        if (parts.length === 3) {
-          birthYear = parts[0];
-          birthMonth = String(parseInt(parts[1], 10));
-          birthDay = String(parseInt(parts[2], 10));
-        }
-      }
-
-      sex = p?.gender || "male";
-      classId = String(e?.class_id || "");
-      studentNumber = String(s?.student_number || "");
-      email = String(p?.email || "");
-      phone = String(p?.phone || "");
-      address = String(p?.address || "");
-      isActiveState = s?.status === "active";
+      populateForm(detail);
     }
 
     const periodId =
@@ -313,6 +333,13 @@ async function saveStudentDetails(e: Event) {
       last_name_ar: lastNameAr,
       gender: sex || undefined,
       birth_date: birthDate || undefined,
+      national_id: nationalId.trim() || undefined,
+      passport_number: passportNumber.trim() || undefined,
+      nationality: nationality.trim() || undefined,
+      place_of_birth: placeOfBirth.trim() || undefined,
+      blood_type: bloodType.trim() || undefined,
+      medical_notes: medicalNotes.trim() || undefined,
+      special_needs_notes: specialNeedsNotes.trim() || undefined,
       email: email.trim() || undefined,
       phone: phone.trim() || undefined,
       address: address.trim() || undefined,
@@ -405,8 +432,6 @@ async function saveStudentDetails(e: Event) {
 
         <!-- Card Body -->
         <CardContent class="p-0">
-          <div class="flex flex-col divide-y divide-border">
-          
           <!-- Row 1: Student Active Status -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
@@ -514,7 +539,54 @@ async function saveStudentDetails(e: Event) {
             </div>
           </div>
 
-          <!-- Row 6: Class/Grade -->
+          <!-- Row 6: National ID & Passport Number -->
+          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+            <div class="flex flex-col gap-1 text-start">
+              <span class="text-xs font-bold text-foreground">{m.common_form_national_id_label()} / {l("جواز السفر", "Passport")}</span>
+              <span class="text-[10px] text-muted-foreground">{l("رقم الهوية الوطنية أو الإقامة ورقم جواز السفر", "National ID or Passport number")}</span>
+            </div>
+            <div class="w-full md:w-80 shrink-0 grid grid-cols-2 gap-2">
+              <Input type="text" class="text-xs h-9 font-mono" placeholder={m.common_form_national_id_placeholder()} bind:value={nationalId} />
+              <Input type="text" class="text-xs h-9 font-mono" placeholder={l("رقم الجواز", "Passport No")} bind:value={passportNumber} />
+            </div>
+          </div>
+
+          <!-- Row 7: Nationality & Place of Birth -->
+          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+            <div class="flex flex-col gap-1 text-start">
+              <span class="text-xs font-bold text-foreground">{m.common_bulk_col_nat()} / {l("مكان الميلاد", "Place of Birth")}</span>
+              <span class="text-[10px] text-muted-foreground">{l("الجنسية ومحل الميلاد الرسمي للطالب", "Student nationality and official place of birth")}</span>
+            </div>
+            <div class="w-full md:w-80 shrink-0 grid grid-cols-2 gap-2">
+              <NationalitySelect bind:value={nationality} />
+              <Input type="text" class="text-xs h-9" placeholder={l("مكان الميلاد", "Place of Birth")} bind:value={placeOfBirth} />
+            </div>
+          </div>
+
+          <!-- Row 8: Blood Type -->
+          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+            <div class="flex flex-col gap-1 text-start">
+              <span class="text-xs font-bold text-foreground">{l("فصيلة الدم", "Blood Type")}</span>
+              <span class="text-[10px] text-muted-foreground">{l("فصيلة دم الطالب للحالات الطبية والطارئة", "Blood type for medical emergencies")}</span>
+            </div>
+            <div class="w-full md:w-80 shrink-0">
+              <Input type="text" class="text-xs h-9 font-mono" placeholder="مثال: O+, A+, B-, AB+..." bind:value={bloodType} />
+            </div>
+          </div>
+
+          <!-- Row 9: Medical & Special Needs Notes -->
+          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+            <div class="flex flex-col gap-1 text-start">
+              <span class="text-xs font-bold text-foreground">{l("الحالة الصحية والاحتياجات الخاصة", "Medical & Special Needs")}</span>
+              <span class="text-[10px] text-muted-foreground">{l("ملاحظات الأمراض المزمنة أو الحساسية أو رعاية خاصة", "Chronic conditions, allergies, or special care requirements")}</span>
+            </div>
+            <div class="w-full md:w-80 shrink-0 flex flex-col gap-2">
+              <Input type="text" class="text-xs h-9" placeholder={l("الملاحظات الطبية والحساسية...", "Medical notes / allergies...")} bind:value={medicalNotes} />
+              <Input type="text" class="text-xs h-9" placeholder={l("ملاحظات الرعاية والاحتياجات الخاصة...", "Special needs / accommodations...")} bind:value={specialNeedsNotes} />
+            </div>
+          </div>
+
+          <!-- Row 10: Class/Grade -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
               <span class="text-xs font-bold text-foreground">{m.common_form_target_class()} *</span>
@@ -536,7 +608,7 @@ async function saveStudentDetails(e: Event) {
             </div>
           </div>
 
-          <!-- Row 7: Academic ID -->
+          <!-- Row 11: Academic ID -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
               <span class="text-xs font-bold text-foreground">{m.common_form_student_number()}</span>
@@ -547,7 +619,7 @@ async function saveStudentDetails(e: Event) {
             </div>
           </div>
 
-          <!-- Row 8: Contact Phone -->
+          <!-- Row 12: Contact Phone -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
               <span class="text-xs font-bold text-foreground">{m.common_form_student_phone()}</span>
@@ -558,7 +630,7 @@ async function saveStudentDetails(e: Event) {
             </div>
           </div>
 
-          <!-- Row 9: Email Address -->
+          <!-- Row 13: Email Address -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
               <span class="text-xs font-bold text-foreground">{m.common_form_student_email()}</span>
@@ -569,7 +641,7 @@ async function saveStudentDetails(e: Event) {
             </div>
           </div>
 
-          <!-- Row 10: Address -->
+          <!-- Row 14: Address -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex flex-col gap-1 text-start">
               <span class="text-xs font-bold text-foreground">{m.common_form_address()}</span>
@@ -583,7 +655,7 @@ async function saveStudentDetails(e: Event) {
 
         <!-- Card Footer Actions -->
         <CardFooter class="flex justify-end gap-3 px-6 py-4 bg-muted/20 border-t border-border">
-          <Button type="button" variant="ghost" size="sm" onclick={() => { initialized = false; }}>
+          <Button type="button" variant="ghost" size="sm" onclick={() => { if (studentDetail) populateForm(studentDetail); }}>
             {m.common_switcher_reset()}
           </Button>
           <Button

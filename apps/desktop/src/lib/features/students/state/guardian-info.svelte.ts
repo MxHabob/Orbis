@@ -15,6 +15,9 @@ export interface GuardianLink {
   is_payer?: boolean;
   payment_share_percent?: number;
   occupation?: string;
+  employer?: string;
+  work_phone?: string;
+  notes?: string;
 }
 
 export class GuardianState {
@@ -75,6 +78,9 @@ export class GuardianState {
               is_payer: g.is_payer,
               payment_share_percent: g.payment_share_percent ?? 100,
               occupation: g.occupation || "",
+              employer: g.employer || "",
+              work_phone: g.work_phone || "",
+              notes: g.notes || "",
             };
           }),
         );
