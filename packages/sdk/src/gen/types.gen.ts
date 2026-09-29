@@ -274,6 +274,19 @@ export type AttendanceDto = {
     updated_at: string;
 };
 
+export type AuditLogDto = {
+    action: string;
+    created_at: string;
+    details?: unknown;
+    entity_id?: string | null;
+    entity_type: string;
+    id: string;
+    ip_address?: string | null;
+    metadata?: string | null;
+    org_id: string;
+    user_id?: string | null;
+};
+
 export type AutopilotDiagnosticsDto = {
     completed_tasks_count: number;
     failed_tasks_count: number;
@@ -1410,6 +1423,20 @@ export type PromotionJobDto = {
     target_period_id?: string | null;
     total_students: number;
     updated_at: string;
+};
+
+export type ProviderSchemaField = {
+    data_type: string;
+    key: string;
+    label: string;
+    label_ar: string;
+};
+
+export type ProviderSchemaResponse = {
+    fields: Array<ProviderSchemaField>;
+    name: string;
+    name_ar: string;
+    provider_key: string;
 };
 
 export type ProvisionEmployeeAccountRequest = {
@@ -2756,8 +2783,10 @@ export type GetDiagnosticsResponses = {
     /**
      * Autopilot diagnostics summary
      */
-    200: unknown;
+    200: AutopilotDiagnosticsDto;
 };
+
+export type GetDiagnosticsResponse = GetDiagnosticsResponses[keyof GetDiagnosticsResponses];
 
 export type ListTasksData = {
     body?: never;
@@ -2798,8 +2827,10 @@ export type ListTasksResponses = {
     /**
      * Paginated autopilot tasks list
      */
-    200: unknown;
+    200: ListTasksResponse;
 };
+
+export type ListTasksResponse2 = ListTasksResponses[keyof ListTasksResponses];
 
 export type GetTaskData = {
     body?: never;
@@ -2828,8 +2859,10 @@ export type GetTaskResponses = {
     /**
      * Autopilot task detail
      */
-    200: unknown;
+    200: AutopilotTaskDto;
 };
+
+export type GetTaskResponse = GetTaskResponses[keyof GetTaskResponses];
 
 export type DismissTaskData = {
     body?: never;
@@ -2858,8 +2891,10 @@ export type DismissTaskResponses = {
     /**
      * Dismissed task result
      */
-    200: unknown;
+    200: AutopilotTaskDto;
 };
+
+export type DismissTaskResponse = DismissTaskResponses[keyof DismissTaskResponses];
 
 export type ExecuteTaskData = {
     body?: never;
@@ -2888,8 +2923,10 @@ export type ExecuteTaskResponses = {
     /**
      * Executed task result
      */
-    200: unknown;
+    200: AutopilotTaskDto;
 };
+
+export type ExecuteTaskResponse = ExecuteTaskResponses[keyof ExecuteTaskResponses];
 
 export type RetryTaskData = {
     body?: never;
@@ -2918,8 +2955,10 @@ export type RetryTaskResponses = {
     /**
      * Retried task result
      */
-    200: unknown;
+    200: AutopilotTaskDto;
 };
+
+export type RetryTaskResponse = RetryTaskResponses[keyof RetryTaskResponses];
 
 export type RunTickData = {
     body?: RunTickRequest | null;
@@ -2943,8 +2982,10 @@ export type RunTickResponses = {
     /**
      * Evaluated autopilot tasks list
      */
-    200: unknown;
+    200: Array<AutopilotTaskDto>;
 };
+
+export type RunTickResponse = RunTickResponses[keyof RunTickResponses];
 
 export type ListAllBehaviorData = {
     body?: never;
@@ -4991,8 +5032,10 @@ export type ListReportDefinitionsResponses = {
     /**
      * List report definitions
      */
-    200: unknown;
+    200: Array<ReportDefinitionDto>;
 };
+
+export type ListReportDefinitionsResponse = ListReportDefinitionsResponses[keyof ListReportDefinitionsResponses];
 
 export type GetReportDefinitionData = {
     body?: never;
@@ -5007,8 +5050,10 @@ export type GetReportDefinitionResponses = {
     /**
      * Get report definition
      */
-    200: unknown;
+    200: ReportDefinitionDto;
 };
+
+export type GetReportDefinitionResponse = GetReportDefinitionResponses[keyof GetReportDefinitionResponses];
 
 export type ListTemplateBindingsData = {
     body?: never;
@@ -5023,8 +5068,10 @@ export type ListTemplateBindingsResponses = {
     /**
      * List template bindings
      */
-    200: unknown;
+    200: Array<TemplateBindingDto>;
 };
+
+export type ListTemplateBindingsResponse = ListTemplateBindingsResponses[keyof ListTemplateBindingsResponses];
 
 export type CreateTemplateBindingData = {
     body: CreateTemplateBindingRequest;
@@ -5039,8 +5086,29 @@ export type CreateTemplateBindingResponses = {
     /**
      * Create template binding
      */
-    201: unknown;
+    201: TemplateBindingDto;
 };
+
+export type CreateTemplateBindingResponse = CreateTemplateBindingResponses[keyof CreateTemplateBindingResponses];
+
+export type ListAuditLogsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        limit?: number | null;
+        offset?: number | null;
+    };
+    url: '/api/v1/reports/audit-logs';
+};
+
+export type ListAuditLogsResponses = {
+    /**
+     * List report and system audit logs
+     */
+    200: Array<AuditLogDto>;
+};
+
+export type ListAuditLogsResponse = ListAuditLogsResponses[keyof ListAuditLogsResponses];
 
 export type BatchPrintData = {
     body: BatchPrintRequest;
@@ -5053,8 +5121,10 @@ export type BatchPrintResponses = {
     /**
      * Batch print HTML
      */
-    200: unknown;
+    200: string;
 };
+
+export type BatchPrintResponse = BatchPrintResponses[keyof BatchPrintResponses];
 
 export type GenerateReportData = {
     body: GenerateReportRequest;
@@ -5067,8 +5137,10 @@ export type GenerateReportResponses = {
     /**
      * Generate report
      */
-    200: unknown;
+    200: GenerateReportResponse;
 };
+
+export type GenerateReportResponse2 = GenerateReportResponses[keyof GenerateReportResponses];
 
 export type DownloadReportFileData = {
     body?: never;
@@ -5101,8 +5173,31 @@ export type GetReportJobStatusResponses = {
     /**
      * Get report job status
      */
-    200: unknown;
+    200: ReportJobStatusResponse;
 };
+
+export type GetReportJobStatusResponse = GetReportJobStatusResponses[keyof GetReportJobStatusResponses];
+
+export type GetProviderSchemaData = {
+    body?: never;
+    path: {
+        /**
+         * Data provider key (e.g. academic.term_result, exam.seating_plan)
+         */
+        key: string;
+    };
+    query?: never;
+    url: '/api/v1/reports/schema/{key}';
+};
+
+export type GetProviderSchemaResponses = {
+    /**
+     * Get data provider schema for template discovery
+     */
+    200: ProviderSchemaResponse;
+};
+
+export type GetProviderSchemaResponse = GetProviderSchemaResponses[keyof GetProviderSchemaResponses];
 
 export type ListRoomsData = {
     body?: never;
@@ -5679,11 +5774,10 @@ export type ListTemplatesData = {
 };
 
 export type ListTemplatesResponses = {
-    /**
-     * List templates
-     */
-    200: unknown;
+    200: Array<TemplateDto>;
 };
+
+export type ListTemplatesResponse = ListTemplatesResponses[keyof ListTemplatesResponses];
 
 export type CreateTemplateData = {
     body: CreateTemplateRequest;
@@ -5693,11 +5787,10 @@ export type CreateTemplateData = {
 };
 
 export type CreateTemplateResponses = {
-    /**
-     * Create template
-     */
-    201: unknown;
+    201: TemplateDto;
 };
+
+export type CreateTemplateResponse = CreateTemplateResponses[keyof CreateTemplateResponses];
 
 export type PreviewTemplateData = {
     body: PreviewTemplateRequest;
@@ -5707,9 +5800,6 @@ export type PreviewTemplateData = {
 };
 
 export type PreviewTemplateResponses = {
-    /**
-     * Preview template as byte array
-     */
     200: Blob | File;
 };
 
@@ -5723,11 +5813,10 @@ export type ValidateTemplateData = {
 };
 
 export type ValidateTemplateResponses = {
-    /**
-     * Validate template
-     */
-    200: unknown;
+    200: ValidationResultDto;
 };
+
+export type ValidateTemplateResponse = ValidateTemplateResponses[keyof ValidateTemplateResponses];
 
 export type DeleteTemplateData = {
     body?: never;
@@ -5757,11 +5846,10 @@ export type GetTemplateData = {
 };
 
 export type GetTemplateResponses = {
-    /**
-     * Get template
-     */
-    200: unknown;
+    200: TemplateDto;
 };
+
+export type GetTemplateResponse = GetTemplateResponses[keyof GetTemplateResponses];
 
 export type UpdateTemplateData = {
     body: UpdateTemplateRequest;
@@ -5773,11 +5861,10 @@ export type UpdateTemplateData = {
 };
 
 export type UpdateTemplateResponses = {
-    /**
-     * Update template
-     */
-    200: unknown;
+    200: TemplateDto;
 };
+
+export type UpdateTemplateResponse = UpdateTemplateResponses[keyof UpdateTemplateResponses];
 
 export type ArchiveTemplateData = {
     body?: never;
@@ -5807,11 +5894,10 @@ export type PublishTemplateData = {
 };
 
 export type PublishTemplateResponses = {
-    /**
-     * Publish template
-     */
-    200: unknown;
+    200: TemplateDto;
 };
+
+export type PublishTemplateResponse = PublishTemplateResponses[keyof PublishTemplateResponses];
 
 export type RevertTemplateVersionData = {
     body: RevertVersionRequest;
@@ -5823,11 +5909,10 @@ export type RevertTemplateVersionData = {
 };
 
 export type RevertTemplateVersionResponses = {
-    /**
-     * Revert template version
-     */
-    200: unknown;
+    200: TemplateDto;
 };
+
+export type RevertTemplateVersionResponse = RevertTemplateVersionResponses[keyof RevertTemplateVersionResponses];
 
 export type GetTemplateVersionsData = {
     body?: never;
@@ -5839,11 +5924,10 @@ export type GetTemplateVersionsData = {
 };
 
 export type GetTemplateVersionsResponses = {
-    /**
-     * Get template versions
-     */
-    200: unknown;
+    200: Array<TemplateVersionDto>;
 };
+
+export type GetTemplateVersionsResponse = GetTemplateVersionsResponses[keyof GetTemplateVersionsResponses];
 
 export type ListTimeSlotsData = {
     body?: never;

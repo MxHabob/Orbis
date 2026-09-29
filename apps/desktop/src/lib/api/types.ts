@@ -517,7 +517,7 @@ export interface AuditLogDto {
   entity_id?: string | null;
   ip_address?: string | null;
   metadata?: string | null;
-  details?: Record<string, unknown> | null;
+  details?: unknown;
   created_at: string;
 }
 

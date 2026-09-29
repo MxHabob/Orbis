@@ -1223,15 +1223,15 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async listIntegrations(): Promise<IntegrationDto[]> {
-    return this.call(sdk.listIntegrations({ client: this.client })) ?? [];
+    return (await this.call(sdk.listIntegrations({ client: this.client }))) ?? [];
   }
 
   async getIntegrationStatus(providerName: string): Promise<IntegrationStatusResponse> {
-    return this.call(sdk.getIntegrationStatus({ client: this.client, path: { provider_name: providerName } })) as any;
+    return this.call(sdk.getIntegrationStatus({ client: this.client, path: { provider_name: providerName } }));
   }
 
   async disconnectApp(providerName: string): Promise<boolean> {
-    return this.call(sdk.disconnectApp({ client: this.client, path: { provider_name: providerName } })) as any;
+    return this.call(sdk.disconnectApp({ client: this.client, path: { provider_name: providerName } }));
   }
 
   async toggleIntegration(providerName: string, isEnabled: boolean): Promise<boolean> {
@@ -1239,26 +1239,33 @@ export class RemoteClient implements OrbisApiClient {
       sdk.toggleIntegration({
         client: this.client,
         path: { provider_name: providerName },
-        body: { is_enabled: isEnabled } as any,
+        body: { is_enabled: isEnabled },
       }),
-    ) as any;
+    );
   }
 
   // ── Templates ───────────────────────────────────────────────
   async createTemplate(req: CreateTemplateRequest): Promise<TemplateDto> {
-    return this.call(sdk.createTemplate({ client: this.client, body: req })) as any;
+    return this.call(sdk.createTemplate({ client: this.client, body: req }));
   }
 
   async getTemplate(id: string): Promise<TemplateDto> {
-    return this.call(sdk.getTemplate({ client: this.client, path: { id } })) as any;
+    return this.call(sdk.getTemplate({ client: this.client, path: { id } }));
   }
 
   async listTemplates(filter?: { documentType?: string; entityType?: string; status?: string }): Promise<TemplateDto[]> {
-    return (await this.call(sdk.listTemplates({ client: this.client, query: filter as any }))) as any ?? [];
+    return (await this.call(sdk.listTemplates({
+      client: this.client,
+      query: {
+        document_type: filter?.documentType,
+        entity_type: filter?.entityType,
+        status: filter?.status,
+      },
+    }))) ?? [];
   }
 
   async updateTemplate(id: string, req: UpdateTemplateRequest): Promise<TemplateDto> {
-    return this.call(sdk.updateTemplate({ client: this.client, path: { id }, body: req })) as any;
+    return this.call(sdk.updateTemplate({ client: this.client, path: { id }, body: req }));
   }
 
   async deleteTemplate(id: string): Promise<void> {
@@ -1266,7 +1273,7 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async publishTemplate(id: string): Promise<TemplateDto> {
-    return this.call(sdk.publishTemplate({ client: this.client, path: { id } })) as any;
+    return this.call(sdk.publishTemplate({ client: this.client, path: { id } }));
   }
 
   async archiveTemplate(id: string): Promise<void> {
@@ -1274,30 +1281,34 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async getTemplateVersions(id: string): Promise<TemplateVersionDto[]> {
-    return (await this.call(sdk.getTemplateVersions({ client: this.client, path: { id } }))) as any ?? [];
+    return (await this.call(sdk.getTemplateVersions({ client: this.client, path: { id } }))) ?? [];
   }
 
   async revertTemplateVersion(id: string, targetVersion: number): Promise<TemplateDto> {
-    return this.call(sdk.revertTemplateVersion({ client: this.client, path: { id }, body: { target_version: targetVersion } as any })) as any;
+    return this.call(sdk.revertTemplateVersion({
+      client: this.client,
+      path: { id },
+      body: { version: targetVersion },
+    }));
   }
 
   async previewTemplate(documentJson: string, contextData: any, locale?: string): Promise<Uint8Array> {
     const res = await this.call(
       sdk.previewTemplate({
         client: this.client,
-        body: { document_json: documentJson, context_data: contextData, locale } as any,
+        body: { document_json: documentJson, context_data: contextData, locale },
       }),
     );
-    return res as any;
+    return res instanceof Uint8Array ? res : new Uint8Array(res as any);
   }
 
   async validateTemplate(documentJson: string): Promise<ValidationResultDto> {
-    return this.call(sdk.validateTemplate({ client: this.client, body: { document_json: documentJson } })) as any;
+    return this.call(sdk.validateTemplate({ client: this.client, body: { document_json: documentJson } }));
   }
 
   // ── Template Bindings ───────────────────────────────────────
   async listTemplateBindings(definitionId: string): Promise<TemplateBindingDto[]> {
-    return (await this.call(sdk.listTemplateBindings({ client: this.client, path: { definition_id: definitionId } }))) as any ?? [];
+    return (await this.call(sdk.listTemplateBindings({ client: this.client, path: { definition_id: definitionId } }))) ?? [];
   }
 
   async createTemplateBinding(
@@ -1310,18 +1321,18 @@ export class RemoteClient implements OrbisApiClient {
       sdk.createTemplateBinding({
         client: this.client,
         path: { definition_id: definitionId },
-        body: { template_id: templateId, locale, format } as any,
+        body: { template_id: templateId, locale, format },
       }),
-    ) as any;
+    );
   }
 
   // ── Report Definitions ──────────────────────────────────────
   async listReportDefinitions(domain?: string, category?: string): Promise<ReportDefinitionDto[]> {
-    return (await this.call(sdk.listReportDefinitions({ client: this.client, query: { domain, category } as any }))) as any ?? [];
+    return (await this.call(sdk.listReportDefinitions({ client: this.client, query: { domain, category } }))) ?? [];
   }
 
   async getReportDefinition(code: string): Promise<ReportDefinitionDto> {
-    return this.call(sdk.getReportDefinition({ client: this.client, path: { code } })) as any;
+    return this.call(sdk.getReportDefinition({ client: this.client, path: { code } }));
   }
 
   // ── Report Execution & Printing & Audit Logs ───────────────
@@ -1336,32 +1347,34 @@ export class RemoteClient implements OrbisApiClient {
         body: { report_code: templateId, format, parameters },
       }),
     );
-    return (res as any)?.job_id ?? "";
+    return res.job_id;
   }
 
   async getReportJobStatus(jobId: string): Promise<ReportJobStatusDto> {
-    return this.call(sdk.getReportJobStatus({ client: this.client, path: { job_id: jobId } as any })) as any;
+    return this.call(sdk.getReportJobStatus({ client: this.client, path: { id: jobId } }));
   }
 
   async downloadReportFile(jobId: string): Promise<Uint8Array> {
-    return this.call(sdk.downloadReportFile({ client: this.client, path: { job_id: jobId } as any })) as any;
+    const res = await this.call(sdk.downloadReportFile({ client: this.client, path: { id: jobId } }));
+    return res instanceof Uint8Array ? res : new Uint8Array(res as any);
   }
 
   async batchPrint(req: BatchPrintParams): Promise<string> {
-    return this.call(sdk.batchPrint({ client: this.client, body: req as any })) as any;
+    return this.call(sdk.batchPrint({ client: this.client, body: req as any }));
   }
 
-  async listAuditLogs(_limit?: number, _offset?: number): Promise<AuditLogDto[]> {
-    return [];
+  async listAuditLogs(limit?: number, offset?: number): Promise<AuditLogDto[]> {
+    return (await this.call(sdk.listAuditLogs({ client: this.client, query: { limit, offset } }))) ?? [];
   }
 
   async getEntityAudit(
-    _entityType: string,
-    _entityId: string,
-    _limit?: number,
-    _offset?: number,
+    entityType: string,
+    entityId: string,
+    limit?: number,
+    offset?: number,
   ): Promise<AuditLogDto[]> {
-    return [];
+    const logs = await this.listAuditLogs(limit, offset);
+    return logs.filter(l => l.entity_type === entityType && l.entity_id === entityId);
   }
 
   // ── System & Bootstrap ──────────────────────────────────────

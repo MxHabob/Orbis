@@ -121,13 +121,8 @@ async fn disconnect_app(
 async fn toggle_integration(
     ctx: AuthContext, Path(provider_name): Path<String>, State(state): State<AppState>, Json(body): Json<ToggleIntegrationRequest>,
 ) -> Result<Json<ApiResponse<bool>>, ApiError> {
-    if let Some(mut cfg) = state.integration_service.get_integration_by_provider(ctx.tenant_id, &provider_name).await? {
-        cfg.is_enabled = body.is_enabled;
-        cfg.updated_at = chrono::Utc::now();
-        state.integration_repo.save_config(&cfg).await?;
-        return Ok(ApiResponse::ok(true));
-    }
-    Ok(ApiResponse::ok(false))
+    let toggled = state.integration_service.toggle_integration(&ctx, ctx.tenant_id, &provider_name, body.is_enabled).await?;
+    Ok(ApiResponse::ok(toggled))
 }
 
 pub fn routes() -> Router<AppState> {

@@ -6,7 +6,7 @@ use chrono::Utc;
 use orbis_domain::entities::report::{
     ReportDefinition, ReportTemplate, ReportJob, OutputFormat, ReportLocale,
     ParamValue, ParameterDef, ParamType, JobStatus, OrgReportContext,
-    ReportAuditEntry, ExportResult,
+    ReportAuditEntry, ExportResult, TemplateStatus,
 };
 use orbis_domain::errors::DomainError;
 use crate::context::RequestContext;
@@ -258,6 +258,81 @@ impl ReportService {
     /// Save or update report template
     pub async fn save_template(&self, template: &ReportTemplate) -> Result<(), DomainError> {
         self.template_repo.save(template).await
+    }
+
+    /// Get template by ID
+    pub async fn get_template(&self, id: Uuid) -> Result<Option<ReportTemplate>, DomainError> {
+        self.template_repo.find_by_id(id).await
+    }
+
+    /// Delete (soft delete) a template
+    pub async fn delete_template(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
+        let template = self.template_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound("Template not found".into()))?;
+
+        if template.org_id != ctx.tenant_id {
+            return Err(DomainError::Forbidden("Template belongs to another organization".into()));
+        }
+
+        self.template_repo.soft_delete(id).await
+    }
+
+    /// Publish a template
+    pub async fn publish_template(&self, ctx: &RequestContext, id: Uuid) -> Result<ReportTemplate, DomainError> {
+        let mut template = self.template_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound("Template not found".into()))?;
+
+        if template.org_id != ctx.tenant_id {
+            return Err(DomainError::Forbidden("Template belongs to another organization".into()));
+        }
+
+        template.status = TemplateStatus::Published;
+        template.published_version = Some(template.version);
+        template.published_at = Some(Utc::now());
+        template.published_by = ctx.actor.id();
+        template.updated_at = Utc::now();
+
+        self.template_repo.save(&template).await?;
+        Ok(template)
+    }
+
+    /// Archive a template
+    pub async fn archive_template(&self, ctx: &RequestContext, id: Uuid) -> Result<ReportTemplate, DomainError> {
+        let mut template = self.template_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound("Template not found".into()))?;
+
+        if template.org_id != ctx.tenant_id {
+            return Err(DomainError::Forbidden("Template belongs to another organization".into()));
+        }
+
+        template.status = TemplateStatus::Archived;
+        template.updated_at = Utc::now();
+
+        self.template_repo.save(&template).await?;
+        Ok(template)
+    }
+
+    /// Revert template to a previous version
+    pub async fn revert_template_version(&self, ctx: &RequestContext, id: Uuid, version: i32) -> Result<ReportTemplate, DomainError> {
+        let mut template = self.template_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound("Template not found".into()))?;
+
+        if template.org_id != ctx.tenant_id {
+            return Err(DomainError::Forbidden("Template belongs to another organization".into()));
+        }
+
+        let ver = self.template_repo.find_version(id, version).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Version {} not found", version)))?;
+
+        template.document_json = ver.document_json;
+        if let Some(ps) = ver.page_size { template.page_size = ps; }
+        if let Some(ori) = ver.orientation { template.orientation = ori; }
+        if let Some(mar) = ver.margins_json { template.margins_json = mar; }
+        template.version += 1;
+        template.updated_at = Utc::now();
+
+        self.template_repo.save(&template).await?;
+        Ok(template)
     }
 }
 

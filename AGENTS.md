@@ -131,11 +131,20 @@ Every agent starting a session in this repository MUST:
     - Reconciled `local-client.ts`, `remote-client.ts`, and `types.ts` with complete dual-transport parity and typed SDK calls (removed fake stubs in `RemoteClient`).
     - Reconciled `features/documents/queries.ts` with full TanStack Query and Mutation hooks (`useDocuments`, `useDocumentsByEntity`, `useDocument`, `useDocumentRequirements`, `useDocumentRequirement`, `useStudentDocumentRequirements`, `useUploadDocument`, `useUpdateDocument`, `useDeleteDocument`, `useCreateDocumentRequirement`, `useUpdateDocumentRequirement`, `useDeleteDocumentRequirement`), eliminating all `any` types.
     - Reconciled `archive-preview-sheet.svelte`, `archive-document-card.svelte`, `archive-document-row.svelte`, and `student-documents.svelte` with canonical `DocumentDto` and field types.
+  - **Third-Party Integrations, Webhooks, Marketplace & DocForge Vector Reporting AST Engine (Phase 13):**
+    - Added `IntegrationConnected`, `IntegrationDisconnected`, `IntegrationToggled`, `TemplateCreated`, `TemplateUpdated`, `TemplateDeleted`, `TemplatePublished`, `TemplateArchived`, and `ReportGenerated` domain events to `DomainEvent` enum and audit trail mapping in `orbis-domain`.
+    - Added `toggle_integration` with permission check in `IntegrationService` in `orbis-app`.
+    - Added `get_template`, `delete_template`, `publish_template`, `archive_template`, and `revert_template_version` use cases in `ReportService` in `orbis-app`.
+    - Updated `report_routes.rs` and `autopilot_routes.rs` to replace generic `ApiResponse<T>` body declarations with direct, strongly typed DTOs (`TemplateDto`, `ReportDefinitionDto`, `TemplateBindingDto`, `GenerateReportResponse`, `ReportJobStatusResponse`, `ProviderSchemaResponse`, `AuditLogDto`, `AutopilotTaskDto`, `ListTasksResponse`, `AutopilotDiagnosticsDto`) in `orbis-server` and registered in `ApiDoc`.
+    - Aligned `integration_cmds.rs` and `template_cmds.rs` in Tauri IPC with application services.
+    - Exported updated OpenAPI specification to `packages/sdk` and regenerated typed `@orbis/sdk`.
+    - Reconciled `local-client.ts`, `remote-client.ts`, and `types.ts` with complete dual-transport parity and typed SDK calls (removed fake stubs and throwing mocks).
+    - Reconciled `reporting-workspace.svelte`, `template-studio.svelte`, `templates-gallery.svelte`, and `audit-log-viewer.svelte`.
   - **Verification:**
     - `apps/api-rust` cargo check: 0 errors
     - `apps/desktop/src-tauri` cargo check: 0 errors
     - `packages/sdk` tsc: 0 errors
     - `apps/desktop` tsc: 0 errors
-- **Next Scope in Master Execution Plan:** Phase 13 — Third-Party Integrations, Webhooks, Marketplace & DocForge Vector Reporting AST Engine.
+- **Next Scope in Master Execution Plan:** Complete System Hardening, End-to-End Integrity & Enterprise ERP Delivery.
 
 

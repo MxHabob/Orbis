@@ -109,11 +109,8 @@ pub async fn integration_list(state: State<'_, AppState>) -> Result<ApiResponse<
 #[tauri::command]
 pub async fn integration_toggle(provider_name: String, is_enabled: bool, state: State<'_, AppState>) -> Result<ApiResponse<bool>, String> {
     let ctx = make_ctx(&state);
-    if let Some(mut cfg) = state.integration_repo.find_config_by_provider(ctx.tenant_id, &provider_name).await.map_err(|e| e.to_string())? {
-        cfg.is_enabled = is_enabled;
-        cfg.updated_at = chrono::Utc::now();
-        state.integration_repo.save_config(&cfg).await.map_err(|e| e.to_string())?;
-        return Ok(ok(true));
-    }
-    Ok(ok(false))
+    let toggled = state.integration_service.toggle_integration(&ctx, ctx.tenant_id, &provider_name, is_enabled)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(toggled))
 }

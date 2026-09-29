@@ -277,6 +277,8 @@ use api::{
         api::report_routes::get_report_job_status,
         api::report_routes::download_report_file,
         api::report_routes::batch_print,
+        api::report_routes::get_provider_schema,
+        api::report_routes::list_audit_logs,
         // AI Platform
         api::ai_routes::chat,
         api::ai_routes::list_tools,
@@ -467,6 +469,9 @@ use api::{
             api::report_routes::ValidationIssueDto,
             api::report_routes::ReportDefinitionDto,
             api::report_routes::RevertVersionRequest,
+            api::report_routes::ProviderSchemaResponse,
+            api::report_routes::ProviderSchemaField,
+            api::report_routes::AuditLogDto,
             // AI Platform
             orbis_domain::entities::ai::AiToolCall,
             orbis_domain::entities::ai::AiToolResult,

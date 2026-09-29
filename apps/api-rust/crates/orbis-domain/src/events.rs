@@ -112,6 +112,19 @@ pub enum DomainEvent {
     UserAccountStatusChanged { user_id: Uuid, org_id: Uuid, old_status: String, new_status: String, timestamp: DateTime<Utc> },
     UserPasswordReset { user_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
     CredentialDeliveryAttempted { user_id: Uuid, channel: String, success: bool, timestamp: DateTime<Utc> },
+
+    // --- Integration ---
+    IntegrationConnected { config_id: Uuid, org_id: Uuid, provider_name: String, timestamp: DateTime<Utc> },
+    IntegrationDisconnected { config_id: Uuid, org_id: Uuid, provider_name: String, timestamp: DateTime<Utc> },
+    IntegrationToggled { config_id: Uuid, org_id: Uuid, is_enabled: bool, timestamp: DateTime<Utc> },
+
+    // --- Reporting & Templates ---
+    TemplateCreated { template_id: Uuid, org_id: Uuid, name: String, timestamp: DateTime<Utc> },
+    TemplateUpdated { template_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    TemplateDeleted { template_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    TemplatePublished { template_id: Uuid, org_id: Uuid, version: i32, timestamp: DateTime<Utc> },
+    TemplateArchived { template_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    ReportGenerated { job_id: Uuid, org_id: Uuid, report_code: String, timestamp: DateTime<Utc> },
 }
 
 impl DomainEvent {
@@ -235,6 +248,19 @@ impl DomainEvent {
             DomainEvent::UserAccountStatusChanged { user_id, .. } => Some(("user.status_changed", "user", *user_id)),
             DomainEvent::UserPasswordReset { user_id, .. } => Some(("user.password_reset", "user", *user_id)),
             DomainEvent::CredentialDeliveryAttempted { .. } => None, // Operational — not an auditable entity change
+
+            // Integration
+            DomainEvent::IntegrationConnected { config_id, .. } => Some(("integration.connected", "integration_config", *config_id)),
+            DomainEvent::IntegrationDisconnected { config_id, .. } => Some(("integration.disconnected", "integration_config", *config_id)),
+            DomainEvent::IntegrationToggled { config_id, .. } => Some(("integration.toggled", "integration_config", *config_id)),
+
+            // Reporting & Templates
+            DomainEvent::TemplateCreated { template_id, .. } => Some(("template.created", "report_template", *template_id)),
+            DomainEvent::TemplateUpdated { template_id, .. } => Some(("template.updated", "report_template", *template_id)),
+            DomainEvent::TemplateDeleted { template_id, .. } => Some(("template.deleted", "report_template", *template_id)),
+            DomainEvent::TemplatePublished { template_id, .. } => Some(("template.published", "report_template", *template_id)),
+            DomainEvent::TemplateArchived { template_id, .. } => Some(("template.archived", "report_template", *template_id)),
+            DomainEvent::ReportGenerated { job_id, .. } => Some(("report.generated", "report_job", *job_id)),
         }
     }
 }

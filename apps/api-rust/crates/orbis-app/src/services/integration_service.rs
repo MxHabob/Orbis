@@ -87,4 +87,16 @@ impl IntegrationService {
         self.permission_checker.check(ctx, Permission::OrganizationWrite).await?;
         self.integration_repo.delete_by_provider(org_id, provider_name).await
     }
+
+    /// Toggle integration enabled status
+    pub async fn toggle_integration(&self, ctx: &RequestContext, org_id: Uuid, provider_name: &str, is_enabled: bool) -> Result<bool, DomainError> {
+        self.permission_checker.check(ctx, Permission::OrganizationWrite).await?;
+        if let Some(mut cfg) = self.integration_repo.find_config_by_provider(org_id, provider_name).await? {
+            cfg.is_enabled = is_enabled;
+            cfg.updated_at = Utc::now();
+            self.integration_repo.save_config(&cfg).await?;
+            return Ok(true);
+        }
+        Ok(false)
+    }
 }

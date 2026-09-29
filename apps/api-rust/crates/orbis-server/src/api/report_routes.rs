@@ -240,7 +240,7 @@ pub struct ListReportDefinitionsQuery {
     path = "/api/v1/templates",
     tag = "Report",
     params(ListTemplatesQuery),
-    responses((status = 200, description = "List templates", body = ApiResponse<Vec<TemplateDto>>)),
+    responses((status = 200, body = Vec<TemplateDto>)),
     security(("bearer" = []))
 )]
 pub async fn list_templates(
@@ -269,7 +269,7 @@ pub async fn list_templates(
     path = "/api/v1/templates",
     tag = "Report",
     request_body = CreateTemplateRequest,
-    responses((status = 201, description = "Create template", body = ApiResponse<TemplateDto>)),
+    responses((status = 201, body = TemplateDto)),
     security(("bearer" = []))
 )]
 pub async fn create_template(
@@ -321,7 +321,7 @@ pub async fn create_template(
     get,
     path = "/api/v1/templates/{id}",
     tag = "Report",
-    responses((status = 200, description = "Get template", body = ApiResponse<TemplateDto>)),
+    responses((status = 200, body = TemplateDto)),
     security(("bearer" = []))
 )]
 pub async fn get_template(
@@ -331,8 +331,8 @@ pub async fn get_template(
 ) -> Result<Json<ApiResponse<TemplateDto>>, ApiError> {
     let ctx = auth.0;
     let t = state
-        .report_template_repo
-        .find_by_id(id)
+        .report_service
+        .get_template(id)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?
         .ok_or_else(|| ApiError::not_found("Template not found"))?;
@@ -345,7 +345,7 @@ pub async fn get_template(
     path = "/api/v1/templates/{id}",
     tag = "Report",
     request_body = UpdateTemplateRequest,
-    responses((status = 200, description = "Update template", body = ApiResponse<TemplateDto>)),
+    responses((status = 200, body = TemplateDto)),
     security(("bearer" = []))
 )]
 pub async fn update_template(
@@ -395,20 +395,9 @@ pub async fn delete_template(
     Path(id): Path<Uuid>,
 ) -> Result<axum::http::StatusCode, ApiError> {
     let ctx = auth.0;
-    let t = state
-        .report_template_repo
-        .find_by_id(id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?
-        .ok_or_else(|| ApiError::not_found("Template not found"))?;
-
-    if t.org_id != ctx.tenant_id {
-        return Err(ApiError::forbidden("Template belongs to another organization"));
-    }
-
     state
-        .report_template_repo
-        .soft_delete(id)
+        .report_service
+        .delete_template(&ctx, id)
         .await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
@@ -419,7 +408,7 @@ pub async fn delete_template(
     post,
     path = "/api/v1/templates/{id}/publish",
     tag = "Report",
-    responses((status = 200, description = "Publish template", body = ApiResponse<TemplateDto>)),
+    responses((status = 200, body = TemplateDto)),
     security(("bearer" = []))
 )]
 pub async fn publish_template(
@@ -428,24 +417,10 @@ pub async fn publish_template(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<TemplateDto>>, ApiError> {
     let ctx = auth.0;
-    let mut template = state
-        .report_template_repo
-        .find_by_id(id)
+    let template = state
+        .report_service
+        .publish_template(&ctx, id)
         .await
-        .map_err(|e| ApiError::internal(e.to_string()))?
-        .ok_or_else(|| ApiError::not_found("Template not found"))?;
-
-    if template.org_id != ctx.tenant_id {
-        return Err(ApiError::forbidden("Template belongs to another organization"));
-    }
-
-    template.status = TemplateStatus::Published;
-    template.published_version = Some(template.version);
-    template.published_at = Some(Utc::now());
-    template.published_by = ctx.actor.id();
-    template.updated_at = Utc::now();
-
-    state.report_service.save_template(&template).await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
     Ok(ApiResponse::ok_with_id(to_template_dto(template), ctx.request_id))
@@ -464,21 +439,10 @@ pub async fn archive_template(
     Path(id): Path<Uuid>,
 ) -> Result<axum::http::StatusCode, ApiError> {
     let ctx = auth.0;
-    let mut template = state
-        .report_template_repo
-        .find_by_id(id)
+    state
+        .report_service
+        .archive_template(&ctx, id)
         .await
-        .map_err(|e| ApiError::internal(e.to_string()))?
-        .ok_or_else(|| ApiError::not_found("Template not found"))?;
-
-    if template.org_id != ctx.tenant_id {
-        return Err(ApiError::forbidden("Template belongs to another organization"));
-    }
-
-    template.status = TemplateStatus::Archived;
-    template.updated_at = Utc::now();
-
-    state.report_service.save_template(&template).await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
     Ok(axum::http::StatusCode::NO_CONTENT)
@@ -488,7 +452,7 @@ pub async fn archive_template(
     get,
     path = "/api/v1/templates/{id}/versions",
     tag = "Report",
-    responses((status = 200, description = "Get template versions", body = ApiResponse<Vec<TemplateVersionDto>>)),
+    responses((status = 200, body = Vec<TemplateVersionDto>)),
     security(("bearer" = []))
 )]
 pub async fn get_template_versions(
@@ -523,7 +487,7 @@ pub async fn get_template_versions(
     path = "/api/v1/templates/{id}/revert",
     tag = "Report",
     request_body = RevertVersionRequest,
-    responses((status = 200, description = "Revert template version", body = ApiResponse<TemplateDto>)),
+    responses((status = 200, body = TemplateDto)),
     security(("bearer" = []))
 )]
 pub async fn revert_template_version(
@@ -533,31 +497,10 @@ pub async fn revert_template_version(
     Json(req): Json<RevertVersionRequest>,
 ) -> Result<Json<ApiResponse<TemplateDto>>, ApiError> {
     let ctx = auth.0;
-    let mut template = state
-        .report_template_repo
-        .find_by_id(id)
+    let template = state
+        .report_service
+        .revert_template_version(&ctx, id, req.version)
         .await
-        .map_err(|e| ApiError::internal(e.to_string()))?
-        .ok_or_else(|| ApiError::not_found("Template not found"))?;
-
-    if template.org_id != ctx.tenant_id {
-        return Err(ApiError::forbidden("Template belongs to another organization"));
-    }
-
-    let version = state
-        .report_template_repo
-        .find_version(id, req.version)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?
-        .ok_or_else(|| ApiError::not_found("Version not found"))?;
-
-    template.document_json = version.document_json;
-    if let Some(ps) = version.page_size { template.page_size = ps; }
-    if let Some(ori) = version.orientation { template.orientation = ori; }
-    if let Some(mar) = version.margins_json { template.margins_json = mar; }
-    template.updated_at = Utc::now();
-
-    state.report_service.save_template(&template).await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
     Ok(ApiResponse::ok_with_id(to_template_dto(template), ctx.request_id))
@@ -568,7 +511,7 @@ pub async fn revert_template_version(
     path = "/api/v1/templates/preview",
     tag = "Report",
     request_body = PreviewTemplateRequest,
-    responses((status = 200, description = "Preview template as byte array", body = Vec<u8>)),
+    responses((status = 200, body = Vec<u8>)),
     security(("bearer" = []))
 )]
 pub async fn preview_template(
@@ -609,7 +552,7 @@ pub async fn preview_template(
     path = "/api/v1/templates/validate",
     tag = "Report",
     request_body = ValidateTemplateRequest,
-    responses((status = 200, description = "Validate template", body = ApiResponse<ValidationResultDto>)),
+    responses((status = 200, body = ValidationResultDto)),
     security(("bearer" = []))
 )]
 pub async fn validate_template(
@@ -672,7 +615,7 @@ pub async fn validate_template(
     path = "/api/v1/report-definitions",
     tag = "Report",
     params(ListReportDefinitionsQuery),
-    responses((status = 200, description = "List report definitions", body = ApiResponse<Vec<ReportDefinitionDto>>)),
+    responses((status = 200, description = "List report definitions", body = Vec<ReportDefinitionDto>)),
     security(("bearer" = []))
 )]
 pub async fn list_report_definitions(
@@ -715,7 +658,7 @@ pub async fn list_report_definitions(
     get,
     path = "/api/v1/report-definitions/{code}",
     tag = "Report",
-    responses((status = 200, description = "Get report definition", body = ApiResponse<ReportDefinitionDto>)),
+    responses((status = 200, description = "Get report definition", body = ReportDefinitionDto)),
     security(("bearer" = []))
 )]
 pub async fn get_report_definition(
@@ -753,7 +696,7 @@ pub async fn get_report_definition(
     get,
     path = "/api/v1/report-definitions/{definition_id}/bindings",
     tag = "Report",
-    responses((status = 200, description = "List template bindings", body = ApiResponse<Vec<TemplateBindingDto>>)),
+    responses((status = 200, description = "List template bindings", body = Vec<TemplateBindingDto>)),
     security(("bearer" = []))
 )]
 pub async fn list_template_bindings(
@@ -789,7 +732,7 @@ pub async fn list_template_bindings(
     path = "/api/v1/report-definitions/{definition_id}/bindings",
     tag = "Report",
     request_body = CreateTemplateBindingRequest,
-    responses((status = 201, description = "Create template binding", body = ApiResponse<TemplateBindingDto>)),
+    responses((status = 201, description = "Create template binding", body = TemplateBindingDto)),
     security(("bearer" = []))
 )]
 pub async fn create_template_binding(
@@ -835,7 +778,7 @@ pub async fn create_template_binding(
     path = "/api/v1/reports/generate",
     tag = "Report",
     request_body = GenerateReportRequest,
-    responses((status = 200, description = "Generate report", body = ApiResponse<GenerateReportResponse>)),
+    responses((status = 200, description = "Generate report", body = GenerateReportResponse)),
     security(("bearer" = []))
 )]
 pub async fn generate_report(
@@ -905,7 +848,7 @@ pub async fn generate_report(
     get,
     path = "/api/v1/reports/jobs/{id}/status",
     tag = "Report",
-    responses((status = 200, description = "Get report job status", body = ApiResponse<ReportJobStatusResponse>)),
+    responses((status = 200, description = "Get report job status", body = ReportJobStatusResponse)),
     security(("bearer" = []))
 )]
 pub async fn get_report_job_status(
@@ -975,7 +918,7 @@ pub async fn download_report_file(
     path = "/api/v1/reports/batch-print",
     tag = "Report",
     request_body = BatchPrintRequest,
-    responses((status = 200, description = "Batch print HTML", body = ApiResponse<String>)),
+    responses((status = 200, description = "Batch print HTML", body = String)),
     security(("bearer" = []))
 )]
 pub async fn batch_print(
@@ -1138,7 +1081,7 @@ pub struct ProviderSchemaField {
     path = "/api/v1/reports/schema/{key}",
     tag = "Report",
     params(("key" = String, Path, description = "Data provider key (e.g. academic.term_result, exam.seating_plan)")),
-    responses((status = 200, description = "Get data provider schema for template discovery", body = ApiResponse<ProviderSchemaResponse>)),
+    responses((status = 200, description = "Get data provider schema for template discovery", body = ProviderSchemaResponse)),
     security(("bearer" = []))
 )]
 pub async fn get_provider_schema(
@@ -1218,6 +1161,14 @@ pub struct AuditLogFilter {
     pub offset: Option<u64>,
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/v1/reports/audit-logs",
+    tag = "Report",
+    params(AuditLogFilter),
+    responses((status = 200, description = "List report and system audit logs", body = Vec<AuditLogDto>)),
+    security(("bearer" = []))
+)]
 pub async fn list_audit_logs(
     State(state): State<AppState>,
     auth: AuthContext,

@@ -160,7 +160,7 @@ async function handleExecuteReport() {
     };
 
     const jobId = await generateMutation.mutateAsync({
-      reportCode: matchingTemplate.id,
+      reportCode: selectedDefinition.code,
       format: selectedFormat,
       parameters: params,
     });

@@ -336,8 +336,9 @@ pub async fn template_delete(
     id: String,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
+    let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
-    state.report_template_repo.soft_delete(uid).await
+    state.report_service.delete_template(&ctx, uid).await
         .map_err(|e| e.to_string())
 }
 
@@ -352,21 +353,8 @@ pub async fn template_publish(
 ) -> Result<ApiResponse<TemplateDto>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
-    let mut template = state.report_template_repo.find_by_id(uid).await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| "Template not found".to_string())?;
-
-    if template.org_id != ctx.tenant_id {
-        return Err("Template belongs to another organization".to_string());
-    }
-
-    template.status = TemplateStatus::Published;
-    template.published_version = Some(template.version);
-    template.published_at = Some(Utc::now());
-    template.published_by = ctx.actor.id();
-    template.updated_at = Utc::now();
-
-    state.report_service.save_template(&template).await.map_err(|e| e.to_string())?;
+    let template = state.report_service.publish_template(&ctx, uid).await
+        .map_err(|e| e.to_string())?;
     Ok(ok(template_dto(template)))
 }
 
@@ -377,18 +365,8 @@ pub async fn template_archive(
 ) -> Result<(), String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
-    let mut template = state.report_template_repo.find_by_id(uid).await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| "Template not found".to_string())?;
-
-    if template.org_id != ctx.tenant_id {
-        return Err("Template belongs to another organization".to_string());
-    }
-
-    template.status = TemplateStatus::Archived;
-    template.updated_at = Utc::now();
-
-    state.report_service.save_template(&template).await.map_err(|e| e.to_string())?;
+    state.report_service.archive_template(&ctx, uid).await
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -414,23 +392,8 @@ pub async fn template_revert_version(
 ) -> Result<ApiResponse<TemplateDto>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
-    let version = state.report_template_repo.find_version(uid, target_version).await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| format!("Version {} not found", target_version))?;
-
-    let mut template = state.report_template_repo.find_by_id(uid).await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| "Template not found".to_string())?;
-
-    if template.org_id != ctx.tenant_id {
-        return Err("Template belongs to another organization".to_string());
-    }
-
-    template.document_json = version.document_json;
-    template.version += 1;
-    template.updated_at = Utc::now();
-
-    state.report_service.save_template(&template).await.map_err(|e| e.to_string())?;
+    let template = state.report_service.revert_template_version(&ctx, uid, target_version).await
+        .map_err(|e| e.to_string())?;
     Ok(ok(template_dto(template)))
 }
 

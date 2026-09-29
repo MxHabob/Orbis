@@ -110,7 +110,7 @@ pub struct ListTasksResponse {
         ("offset" = Option<u64>, Query, description = "Pagination offset (default 0)"),
     ),
     responses(
-        (status = 200, description = "Paginated autopilot tasks list", body = ApiResponse<ListTasksResponse>),
+        (status = 200, description = "Paginated autopilot tasks list", body = ListTasksResponse),
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error")
     ),
@@ -151,7 +151,7 @@ pub async fn list_tasks(
     tag = "Autopilot",
     request_body = Option<RunTickRequest>,
     responses(
-        (status = 200, description = "Evaluated autopilot tasks list", body = ApiResponse<Vec<AutopilotTaskDto>>),
+        (status = 200, description = "Evaluated autopilot tasks list", body = Vec<AutopilotTaskDto>),
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error")
     ),
@@ -183,7 +183,7 @@ pub async fn run_tick(
         ("id" = Uuid, Path, description = "Task UUID")
     ),
     responses(
-        (status = 200, description = "Autopilot task detail", body = ApiResponse<AutopilotTaskDto>),
+        (status = 200, description = "Autopilot task detail", body = AutopilotTaskDto),
         (status = 404, description = "Task not found"),
         (status = 401, description = "Unauthorized")
     ),
@@ -213,7 +213,7 @@ pub async fn get_task(
         ("id" = Uuid, Path, description = "Task UUID")
     ),
     responses(
-        (status = 200, description = "Executed task result", body = ApiResponse<AutopilotTaskDto>),
+        (status = 200, description = "Executed task result", body = AutopilotTaskDto),
         (status = 404, description = "Task not found"),
         (status = 401, description = "Unauthorized")
     ),
@@ -238,7 +238,7 @@ pub async fn execute_task(
         ("id" = Uuid, Path, description = "Task UUID")
     ),
     responses(
-        (status = 200, description = "Retried task result", body = ApiResponse<AutopilotTaskDto>),
+        (status = 200, description = "Retried task result", body = AutopilotTaskDto),
         (status = 404, description = "Task not found"),
         (status = 401, description = "Unauthorized")
     ),
@@ -263,7 +263,7 @@ pub async fn retry_task(
         ("id" = Uuid, Path, description = "Task UUID")
     ),
     responses(
-        (status = 200, description = "Dismissed task result", body = ApiResponse<AutopilotTaskDto>),
+        (status = 200, description = "Dismissed task result", body = AutopilotTaskDto),
         (status = 404, description = "Task not found"),
         (status = 401, description = "Unauthorized")
     ),
@@ -285,7 +285,7 @@ pub async fn dismiss_task(
     path = "/api/v1/autopilot/diagnostics",
     tag = "Autopilot",
     responses(
-        (status = 200, description = "Autopilot diagnostics summary", body = ApiResponse<AutopilotDiagnosticsDto>),
+        (status = 200, description = "Autopilot diagnostics summary", body = AutopilotDiagnosticsDto),
         (status = 401, description = "Unauthorized")
     ),
     security(("bearer_auth" = []))
