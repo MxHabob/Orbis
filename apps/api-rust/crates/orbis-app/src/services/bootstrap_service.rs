@@ -25,6 +25,7 @@ use crate::ports::bootstrap::{
     BulkBootstrapPort, ValidatedBootstrapData, ValidatedOrg, ValidatedPerson,
     ValidatedUser, ValidatedRoleAssignment, ValidatedRole, ValidatedRolePermission,
     ValidatedPeriodTemplate, ValidatedAssessmentScheme, ValidatedCurrency,
+    ValidatedUserGroup,
 };
 use crate::ports::entitlement::EntitlementProvider;
 use crate::ports::repositories::SystemRepository;
@@ -287,19 +288,22 @@ impl BootstrapService {
         let first_name = name_parts.first().unwrap_or(&"").to_string();
         let last_name = if name_parts.len() > 1 { name_parts[1..].join(" ") } else { first_name.clone() };
 
-        // System roles
+        // System roles (11 standard ERP roles covering all departments)
         let roles = vec![
             ValidatedRole { id: "super_admin".into(), org_id, name: "Super Administrator".into(), name_ar: "مدير نظام عام".into(), is_system: true },
             ValidatedRole { id: "admin".into(), org_id, name: "Administrator".into(), name_ar: "مدير النظام".into(), is_system: true },
             ValidatedRole { id: "principal".into(), org_id, name: "Principal".into(), name_ar: "مدير المدرسة/الجامعة".into(), is_system: true },
             ValidatedRole { id: "teacher".into(), org_id, name: "Teacher".into(), name_ar: "معلم/محاضر".into(), is_system: true },
+            ValidatedRole { id: "registrar".into(), org_id, name: "Registrar".into(), name_ar: "مسجل شؤون الطلاب".into(), is_system: true },
+            ValidatedRole { id: "accountant".into(), org_id, name: "Financial Accountant".into(), name_ar: "محاسب مالي".into(), is_system: true },
+            ValidatedRole { id: "exam_officer".into(), org_id, name: "Exam Officer".into(), name_ar: "مسؤول الكنترول والامتحانات".into(), is_system: true },
             ValidatedRole { id: "student".into(), org_id, name: "Student".into(), name_ar: "طالب".into(), is_system: true },
             ValidatedRole { id: "parent".into(), org_id, name: "Parent/Guardian".into(), name_ar: "ولي أمر".into(), is_system: true },
             ValidatedRole { id: "staff".into(), org_id, name: "Staff".into(), name_ar: "موظف".into(), is_system: true },
             ValidatedRole { id: "auditor".into(), org_id, name: "Financial Auditor".into(), name_ar: "مراجع مالي".into(), is_system: true },
         ];
 
-        // Role permissions — resolved from institution blueprint
+        // Role permissions — resolved from comprehensive ERP permissions catalog
         let role_permissions = self.build_default_permissions(org_id);
 
         // Period templates
@@ -309,49 +313,94 @@ impl BootstrapService {
         let (formula, max_score, scheme_name) = match institution_type {
             InstitutionType::School => (
                 serde_json::json!({
-                    "type": "add",
-                    "operands": [
-                        { "type": "variable", "name": "assignments" },
-                        { "type": "variable", "name": "oral" },
-                        { "type": "variable", "name": "attendance" },
-                        { "type": "variable", "name": "written_test" }
-                    ],
-                    "weights": {
-                        "assignments": 20,
-                        "oral": 20,
-                        "attendance": 20,
-                        "written_test": 40,
-                        "monthly_total": 100,
-                        "term_monthly_contribution": 20,
-                        "term_final_exam": 30,
-                        "term_total": 50,
-                        "annual_total": 100
-                    }
+                    "type": "weighted_average",
+                    "components": [
+                        {
+                            "id": "comp_assignments",
+                            "name": "الواجبات والمهام المدرسية",
+                            "component_type": "assignment",
+                            "weight": 20,
+                            "max_score": 100,
+                            "passing_score": 50
+                        },
+                        {
+                            "id": "comp_oral",
+                            "name": "التقييم الشفهي والمشاركات",
+                            "component_type": "oral",
+                            "weight": 20,
+                            "max_score": 100,
+                            "passing_score": 50
+                        },
+                        {
+                            "id": "comp_attendance",
+                            "name": "المواظبة والانضباط السلوكي",
+                            "component_type": "attendance",
+                            "weight": 20,
+                            "max_score": 100,
+                            "passing_score": 50
+                        },
+                        {
+                            "id": "comp_exam",
+                            "name": "الاختبار التحريري الفصلي",
+                            "component_type": "exam",
+                            "weight": 40,
+                            "max_score": 100,
+                            "passing_score": 50
+                        }
+                    ]
                 }),
                 100.0,
                 "مخطط التقييم المدرسي القياسي (واجبات 20 + شفهي 20 + مواظبة 20 + تحريري 40 = 100)"
             ),
             InstitutionType::University => (
                 serde_json::json!({
-                    "type": "weighted_sum",
-                    "items": [
-                        { "node": { "type": "variable", "name": "coursework" }, "weight": 0.4 },
-                        { "node": { "type": "variable", "name": "final_exam" }, "weight": 0.6 }
+                    "type": "weighted_average",
+                    "components": [
+                        {
+                            "id": "comp_coursework",
+                            "name": "الأعمال الفصلية والبحوث",
+                            "component_type": "assignment",
+                            "weight": 40,
+                            "max_score": 100,
+                            "passing_score": 60
+                        },
+                        {
+                            "id": "comp_final_exam",
+                            "name": "الاختبار النهائي",
+                            "component_type": "exam",
+                            "weight": 60,
+                            "max_score": 100,
+                            "passing_score": 60
+                        }
                     ]
                 }),
                 100.0,
-                "University Assessment Scheme (Coursework 40% + Final Exam 60%)"
+                "مخطط التقييم الجامعي القياسي (أعمال فصلية 40 + اختبار نهائي 60 = 100)"
             ),
             InstitutionType::Institute => (
                 serde_json::json!({
-                    "type": "weighted_sum",
-                    "items": [
-                        { "node": { "type": "variable", "name": "practical" }, "weight": 0.5 },
-                        { "node": { "type": "variable", "name": "theory" }, "weight": 0.5 }
+                    "type": "weighted_average",
+                    "components": [
+                        {
+                            "id": "comp_practical",
+                            "name": "التقييم العملي والتطبيقي",
+                            "component_type": "practical",
+                            "weight": 50,
+                            "max_score": 100,
+                            "passing_score": 50
+                        },
+                        {
+                            "id": "comp_theory",
+                            "name": "الاختبار النظري",
+                            "component_type": "exam",
+                            "weight": 50,
+                            "max_score": 100,
+                            "passing_score": 50
+                        }
                     ]
                 }),
                 100.0,
-                "Training Assessment Scheme (Practical 50% + Theory 50%)"
+                "مخطط تقييم المعاهد والتدريب المهني (عملي 50 + نظري 50 = 100)"
             ),
         };
 
@@ -413,54 +462,293 @@ impl BootstrapService {
             period_templates,
             assessment_scheme,
             accounts: vec![], // COA loaded from JSON by Infrastructure
+            user_groups: self.build_default_user_groups(org_id),
             currency,
             org_settings,
             report_definitions: vec![],
         }
     }
 
+    pub fn build_default_user_groups(&self, _org_id: Uuid) -> Vec<ValidatedUserGroup> {
+        vec![
+            ValidatedUserGroup {
+                id: Uuid::new_v4(),
+                name: "School Administration".to_string(),
+                name_ar: "الإدارة المدرسية".to_string(),
+                description: "صلاحيات الإشراف الإداري والأكاديمي الشامل، إدارة الوحدات والسياسات العامة.".to_string(),
+                permissions: vec![
+                    "organization:read".into(), "organization:write".into(), "org_unit:read".into(), "org_unit:write".into(),
+                    "user:read".into(), "user:write".into(), "employee:read".into(), "employee:write".into(),
+                    "group:read".into(), "group:assign".into(), "student:read".into(), "student:write".into(),
+                    "enrollment:read".into(), "period:read".into(), "class:read".into(), "subject:read".into(),
+                    "schedule:read".into(), "timetable:read".into(), "grade:read".into(), "grade:analytics".into(),
+                    "grade:report".into(), "attendance:read".into(), "attendance:analytics".into(), "attendance:report".into(),
+                    "behavior:read".into(), "finance:read".into(), "dashboard:read".into(), "audit:read".into(),
+                    "report:read".into(), "report:generate".into(),
+                ],
+            },
+            ValidatedUserGroup {
+                id: Uuid::new_v4(),
+                name: "Teachers & Faculty".to_string(),
+                name_ar: "هيئة التدريس والمعلمون".to_string(),
+                description: "إدخال ورصد الدرجات والتقييمات، تسجيل الحضور والغياب، ومتابعة الحصص والجداول.".to_string(),
+                permissions: vec![
+                    "class:read".into(), "subject:read".into(), "schedule:read".into(), "timetable:read".into(),
+                    "lesson:read".into(), "lesson:write".into(), "student:read".into(), "attendance:read".into(),
+                    "attendance:write".into(), "attendance:report".into(), "grade:read".into(), "grade:write".into(),
+                    "grade:submit".into(), "grade:report".into(), "assessment:read".into(), "behavior:read".into(),
+                    "behavior:write".into(), "document:read".into(),
+                ],
+            },
+            ValidatedUserGroup {
+                id: Uuid::new_v4(),
+                name: "Student Affairs & Admissions".to_string(),
+                name_ar: "شؤون الطلاب والقبول".to_string(),
+                description: "إدارة ملفات الطلاب وأولياء الأمور، التسجيل، السجلات الأكاديمية والوثائق الرسمية.".to_string(),
+                permissions: vec![
+                    "student:read".into(), "student:write".into(), "student:create".into(), "student:update".into(), "student:delete".into(),
+                    "enrollment:read".into(), "enrollment:write".into(), "enrollment:approve".into(), "enrollment:transfer".into(), "enrollment:promote".into(),
+                    "guardian:read".into(), "guardian:write".into(), "guardian:delete".into(),
+                    "document:read".into(), "document:write".into(), "document:verify".into(),
+                    "attendance:read".into(), "attendance:write".into(), "behavior:read".into(), "behavior:write".into(),
+                    "class:read".into(), "period:read".into(), "report:read".into(), "report:generate".into(),
+                ],
+            },
+            ValidatedUserGroup {
+                id: Uuid::new_v4(),
+                name: "Human Resources".to_string(),
+                name_ar: "الموارد البشرية وشؤون الموظفين".to_string(),
+                description: "إدارة السجلات الوظيفية للكادر التعليمي والإداري، العقود، والصلاحيات والمجموعات.".to_string(),
+                permissions: vec![
+                    "employee:read".into(), "employee:write".into(), "employee:create".into(), "employee:update".into(), "employee:delete".into(),
+                    "user:read".into(), "user:password_write".into(), "group:read".into(), "group:assign".into(),
+                    "org_unit:read".into(), "document:read".into(), "document:write".into(), "audit:read".into(),
+                    "report:read".into(), "report:generate".into(),
+                ],
+            },
+            ValidatedUserGroup {
+                id: Uuid::new_v4(),
+                name: "Finance & Accounting".to_string(),
+                name_ar: "الشؤون المالية والحسابات".to_string(),
+                description: "إدارة الرسوم الدراسية، الفواتير، سندات القبض والصرف، الخصومات والتقارير المالية.".to_string(),
+                permissions: vec![
+                    "finance:read".into(), "finance:write".into(), "finance:manage".into(), "account:read".into(), "account:write".into(),
+                    "invoice:read".into(), "invoice:write".into(), "payment:read".into(), "payment:write".into(), "payment:refund".into(),
+                    "fee:read".into(), "fee:write".into(), "fee:split".into(), "discount:read".into(), "discount:write".into(),
+                    "student:read".into(), "enrollment:read".into(), "report:read".into(), "report:generate".into(), "audit:read".into(),
+                ],
+            },
+            ValidatedUserGroup {
+                id: Uuid::new_v4(),
+                name: "Exam Control Board".to_string(),
+                name_ar: "الكنترول ولجنة الامتحانات".to_string(),
+                description: "إدارة الاختبارات والتقييمات الفصلية، توزيع اللجان، مراجعة واعتماد وتثبيت النتائج النهائية.".to_string(),
+                permissions: vec![
+                    "exam:read".into(), "exam:write".into(), "exam:manage".into(), "exam_session:read".into(), "exam_session:write".into(),
+                    "assessment:read".into(), "assessment:write".into(), "assessment:publish".into(),
+                    "grade:read".into(), "grade:write".into(), "grade:submit".into(), "grade:approve".into(), "grade:lock".into(), "grade:report".into(),
+                    "period:read".into(), "class:read".into(), "subject:read".into(), "student:read".into(), "report:generate".into(),
+                ],
+            },
+            ValidatedUserGroup {
+                id: Uuid::new_v4(),
+                name: "Students".to_string(),
+                name_ar: "مجموعة الطلاب".to_string(),
+                description: "بوابة الطالب لاستعراض الجداول الدراسية، الحضور، التقييمات، والنتائج الأكاديمية.".to_string(),
+                permissions: vec![
+                    "student:read_self".into(), "grade:read_self".into(), "attendance:read_self".into(),
+                    "schedule:read_self".into(), "timetable:read_self".into(), "lesson:read_self".into(),
+                    "invoice:read_self".into(), "document:read_self".into(), "assessment:read_self".into(),
+                ],
+            },
+            ValidatedUserGroup {
+                id: Uuid::new_v4(),
+                name: "Parents & Guardians".to_string(),
+                name_ar: "مجموعة أولياء الأمور".to_string(),
+                description: "بوابة ولي الأمر لمتابعة التحصيل الدراسي للأبناء، الحضور، الرسوم، والتقارير الدورية.".to_string(),
+                permissions: vec![
+                    "student:read_children".into(), "grade:read_children".into(), "attendance:read_children".into(),
+                    "schedule:read_children".into(), "timetable:read_children".into(), "invoice:read_children".into(),
+                    "payment:read_children".into(), "document:read_children".into(), "behavior:read_children".into(),
+                ],
+            },
+            ValidatedUserGroup {
+                id: Uuid::new_v4(),
+                name: "Student Guidance & Counseling".to_string(),
+                name_ar: "التوجيه والإرشاد الطلابي".to_string(),
+                description: "متابعة السلوك والانضباط المدرسي، الرعاية الطلابية، والتواصل مع أولياء الأمور.".to_string(),
+                permissions: vec![
+                    "student:read".into(), "attendance:read".into(), "behavior:read".into(), "behavior:write".into(),
+                    "behavior:delete".into(), "grade:read".into(), "guardian:read".into(), "document:read".into(),
+                    "report:read".into(), "report:generate".into(),
+                ],
+            },
+        ]
+    }
+
     fn build_default_permissions(&self, org_id: Uuid) -> Vec<ValidatedRolePermission> {
         let mut perms = vec![];
         let rules: Vec<(&str, &str, Vec<&str>)> = vec![
-            // Administrative roles — universal access
+            // ── 1. Super Administrator (Universal Root Access) ─────────────────
             ("super_admin", "*", vec!["*"]),
-            ("admin", "*", vec!["*"]),
-            ("principal", "*", vec!["*"]),
-            // Academic & Faculty roles
-            ("teacher", "Grade", vec!["read", "write", "submit"]),
-            ("teacher", "Attendance", vec!["read", "write"]),
-            ("teacher", "Assessment", vec!["read", "write"]),
-            ("teacher", "Class", vec!["read"]),
-            ("teacher", "Subject", vec!["read"]),
-            ("teacher", "Schedule", vec!["read"]),
-            ("teacher", "Student", vec!["read"]),
-            ("teacher", "Document", vec!["read"]),
-            // Student roles
-            ("student", "Grade", vec!["read"]),
-            ("student", "Attendance", vec!["read"]),
-            ("student", "Schedule", vec!["read"]),
-            ("student", "Enrollment", vec!["read"]),
-            ("student", "Document", vec!["read"]),
-            // Parent / Guardian roles
-            ("parent", "Grade", vec!["read"]),
-            ("parent", "Attendance", vec!["read"]),
-            ("parent", "Schedule", vec!["read"]),
-            ("parent", "Enrollment", vec!["read"]),
-            ("parent", "Finance", vec!["read"]),
-            ("parent", "Document", vec!["read"]),
-            // Administrative & Support Staff
-            ("staff", "User", vec!["read"]),
-            ("staff", "Enrollment", vec!["read", "write"]),
-            ("staff", "Attendance", vec!["read", "write"]),
-            ("staff", "Student", vec!["read", "write"]),
-            ("staff", "Document", vec!["read", "write"]),
-            // Financial Auditor & Accounting
-            ("auditor", "Finance", vec!["read", "audit"]),
-            ("auditor", "Account", vec!["read"]),
-            ("auditor", "Invoice", vec!["read"]),
-            ("auditor", "Payment", vec!["read"]),
-            ("auditor", "Report", vec!["read", "generate"]),
-            ("auditor", "Audit", vec!["read"]),
+
+            // ── 2. Organization Administrator (Complete Operations) ────────────
+            ("admin", "organization", vec!["read", "write"]),
+            ("admin", "org_unit", vec!["read", "write", "delete"]),
+            ("admin", "user", vec!["read", "write", "delete", "role_write", "password_write"]),
+            ("admin", "group", vec!["read", "write", "delete", "assign"]),
+            ("admin", "employee", vec!["read", "write", "create", "update", "delete"]),
+            ("admin", "period", vec!["read", "write", "activate", "lock", "unlock"]),
+            ("admin", "class", vec!["read", "write", "delete"]),
+            ("admin", "subject", vec!["read", "write", "delete"]),
+            ("admin", "schedule", vec!["read", "write", "delete"]),
+            ("admin", "student", vec!["read", "create", "update", "delete", "write"]),
+            ("admin", "guardian", vec!["read", "write", "delete"]),
+            ("admin", "enrollment", vec!["read", "write", "promote", "transfer"]),
+            ("admin", "promotion", vec!["read", "write", "execute"]),
+            ("admin", "assessment", vec!["read", "write", "delete"]),
+            ("admin", "grade", vec!["read", "write", "entry_manage", "analytics", "report"]),
+            ("admin", "attendance", vec!["read", "write", "analytics", "report"]),
+            ("admin", "behavior", vec!["read", "write", "delete", "ai"]),
+            ("admin", "exam_session", vec!["read", "write", "activate", "delete"]),
+            ("admin", "seating_number", vec!["read", "generate"]),
+            ("admin", "secret_number", vec!["read", "generate", "reveal"]),
+            ("admin", "exam_hall", vec!["read", "write", "allocate"]),
+            ("admin", "proctor", vec!["read", "assign"]),
+            ("admin", "student_order", vec!["read", "rebuild", "freeze"]),
+            ("admin", "exam_schedule", vec!["read", "write"]),
+            ("admin", "finance", vec!["read", "write", "payment"]),
+            ("admin", "document", vec!["read", "write", "delete"]),
+            ("admin", "template", vec!["read", "write", "publish", "delete", "import", "export", "generate_single", "generate_batch", "generate_download", "asset_upload", "asset_delete", "component_write", "component_delete"]),
+            ("admin", "workflow", vec!["read", "write", "approve", "execute"]),
+            ("admin", "notification", vec!["read", "write"]),
+            ("admin", "dashboard", vec!["read"]),
+            ("admin", "audit", vec!["read"]),
+            ("admin", "data", vec!["import", "export"]),
+            ("admin", "system", vec!["autopilot"]),
+
+            // ── 3. School Principal / Dean (Academic Leadership & Control) ─────
+            ("principal", "organization", vec!["read"]),
+            ("principal", "org_unit", vec!["read"]),
+            ("principal", "user", vec!["read"]),
+            ("principal", "employee", vec!["read"]),
+            ("principal", "period", vec!["read", "activate", "lock", "unlock"]),
+            ("principal", "class", vec!["read", "write"]),
+            ("principal", "subject", vec!["read"]),
+            ("principal", "schedule", vec!["read", "write"]),
+            ("principal", "student", vec!["read", "update"]),
+            ("principal", "guardian", vec!["read"]),
+            ("principal", "enrollment", vec!["read", "promote", "transfer"]),
+            ("principal", "promotion", vec!["read", "execute"]),
+            ("principal", "assessment", vec!["read", "write"]),
+            ("principal", "grade", vec!["read", "analytics", "report"]),
+            ("principal", "attendance", vec!["read", "analytics", "report"]),
+            ("principal", "behavior", vec!["read", "write", "ai"]),
+            ("principal", "exam_session", vec!["read", "activate"]),
+            ("principal", "seating_number", vec!["read", "generate"]),
+            ("principal", "secret_number", vec!["read", "reveal"]),
+            ("principal", "exam_hall", vec!["read", "allocate"]),
+            ("principal", "proctor", vec!["read", "assign"]),
+            ("principal", "student_order", vec!["read", "freeze"]),
+            ("principal", "exam_schedule", vec!["read", "write"]),
+            ("principal", "finance", vec!["read"]),
+            ("principal", "document", vec!["read", "write"]),
+            ("principal", "template", vec!["read", "generate_single", "generate_batch", "generate_download"]),
+            ("principal", "workflow", vec!["read", "approve", "execute"]),
+            ("principal", "notification", vec!["read", "write"]),
+            ("principal", "dashboard", vec!["read"]),
+            ("principal", "audit", vec!["read"]),
+
+            // ── 4. Teacher / Faculty (Classroom, Attendance, Gradebook) ────────
+            ("teacher", "class", vec!["read"]),
+            ("teacher", "subject", vec!["read"]),
+            ("teacher", "schedule", vec!["read"]),
+            ("teacher", "student", vec!["read"]),
+            ("teacher", "guardian", vec!["read"]),
+            ("teacher", "assessment", vec!["read", "write"]),
+            ("teacher", "grade", vec!["read", "write", "report"]),
+            ("teacher", "attendance", vec!["read", "write"]),
+            ("teacher", "behavior", vec!["read", "write"]),
+            ("teacher", "exam_schedule", vec!["read"]),
+            ("teacher", "document", vec!["read"]),
+            ("teacher", "template", vec!["read", "generate_single"]),
+            ("teacher", "notification", vec!["read"]),
+
+            // ── 5. Academic Registrar (Admissions, Rosters & Dossiers) ─────────
+            ("registrar", "period", vec!["read"]),
+            ("registrar", "class", vec!["read", "write"]),
+            ("registrar", "subject", vec!["read"]),
+            ("registrar", "student", vec!["read", "create", "update", "write"]),
+            ("registrar", "guardian", vec!["read", "write"]),
+            ("registrar", "enrollment", vec!["read", "write", "promote", "transfer"]),
+            ("registrar", "promotion", vec!["read", "write"]),
+            ("registrar", "attendance", vec!["read"]),
+            ("registrar", "document", vec!["read", "write"]),
+            ("registrar", "template", vec!["read", "generate_single", "generate_batch", "generate_download"]),
+            ("registrar", "notification", vec!["read", "write"]),
+
+            // ── 6. Financial Accountant (Billing, Payments & Receipts) ─────────
+            ("accountant", "student", vec!["read"]),
+            ("accountant", "guardian", vec!["read"]),
+            ("accountant", "enrollment", vec!["read"]),
+            ("accountant", "finance", vec!["read", "write", "payment"]),
+            ("accountant", "document", vec!["read", "write"]),
+            ("accountant", "template", vec!["read", "generate_single", "generate_batch", "generate_download"]),
+            ("accountant", "notification", vec!["read"]),
+            ("accountant", "dashboard", vec!["read"]),
+
+            // ── 7. Exam & Control Officer (Blind Grading, Halls & Rosters) ─────
+            ("exam_officer", "period", vec!["read"]),
+            ("exam_officer", "class", vec!["read"]),
+            ("exam_officer", "subject", vec!["read"]),
+            ("exam_officer", "student", vec!["read"]),
+            ("exam_officer", "assessment", vec!["read"]),
+            ("exam_officer", "grade", vec!["read", "write", "entry_manage", "report"]),
+            ("exam_officer", "exam_session", vec!["read", "write", "activate", "delete"]),
+            ("exam_officer", "seating_number", vec!["read", "generate"]),
+            ("exam_officer", "secret_number", vec!["read", "generate", "reveal"]),
+            ("exam_officer", "exam_hall", vec!["read", "write", "allocate"]),
+            ("exam_officer", "proctor", vec!["read", "assign"]),
+            ("exam_officer", "student_order", vec!["read", "rebuild", "freeze"]),
+            ("exam_officer", "exam_schedule", vec!["read", "write"]),
+            ("exam_officer", "document", vec!["read", "write"]),
+            ("exam_officer", "template", vec!["read", "generate_single", "generate_batch", "generate_download"]),
+            ("exam_officer", "notification", vec!["read", "write"]),
+
+            // ── 8. Administrative Staff (Support & Inquiries) ──────────────────
+            ("staff", "user", vec!["read"]),
+            ("staff", "student", vec!["read"]),
+            ("staff", "guardian", vec!["read"]),
+            ("staff", "enrollment", vec!["read"]),
+            ("staff", "attendance", vec!["read", "write"]),
+            ("staff", "document", vec!["read", "write"]),
+            ("staff", "template", vec!["read", "generate_single"]),
+            ("staff", "notification", vec!["read"]),
+
+            // ── 9. Financial Auditor (Compliance & Inspection) ─────────────────
+            ("auditor", "finance", vec!["read"]),
+            ("auditor", "audit", vec!["read"]),
+            ("auditor", "dashboard", vec!["read"]),
+            ("auditor", "document", vec!["read"]),
+            ("auditor", "workflow", vec!["read"]),
+            ("auditor", "template", vec!["read"]),
+
+            // ── 10. Student (Self-Service Portal) ─────────────────────────────
+            ("student", "schedule", vec!["read"]),
+            ("student", "grade", vec!["read"]),
+            ("student", "attendance", vec!["read"]),
+            ("student", "document", vec!["read"]),
+            ("student", "notification", vec!["read"]),
+
+            // ── 11. Parent / Guardian (Family Portal) ─────────────────────────
+            ("parent", "student", vec!["read"]),
+            ("parent", "schedule", vec!["read"]),
+            ("parent", "grade", vec!["read"]),
+            ("parent", "attendance", vec!["read"]),
+            ("parent", "behavior", vec!["read"]),
+            ("parent", "finance", vec!["read"]),
+            ("parent", "document", vec!["read"]),
+            ("parent", "notification", vec!["read"]),
         ];
 
         for (role, resource, actions) in rules {
@@ -631,35 +919,142 @@ impl BootstrapService {
     }
 
     fn build_org_settings(&self, inst_type: &InstitutionType, currency: &str) -> serde_json::Value {
-        let grading_system = match inst_type {
-            InstitutionType::School => "percentage",
-            InstitutionType::University => "gpa_4_0",
-            InstitutionType::Institute => "pass_fail",
+        let (grading_system, gpa_scale, max_grade, passing_grade) = match inst_type {
+            InstitutionType::School => ("percentage", 4.0, 100.0, 50.0),
+            InstitutionType::University => ("gpa_4_0", 4.0, 100.0, 60.0),
+            InstitutionType::Institute => ("pass_fail", 4.0, 100.0, 60.0),
+        };
+
+        let student_prefix = match inst_type {
+            InstitutionType::School => "STU",
+            InstitutionType::University => "UNI",
+            InstitutionType::Institute => "INST",
+        };
+
+        let max_capacity = match inst_type {
+            InstitutionType::School => 25,
+            InstitutionType::University => 50,
+            InstitutionType::Institute => 20,
         };
 
         serde_json::json!({
             "academic": {
-                "default_grading_system": grading_system
+                "default_grading_system": grading_system,
+                "passing_grade": passing_grade,
+                "max_grade": max_grade,
+                "credit_hours_enabled": matches!(inst_type, InstitutionType::University),
+                "allow_grade_change_after_lock": false,
+                "gpa_scale": gpa_scale,
+                "is_hijri_enabled": false,
+                "week_start_day": "sunday",
+                "working_days": ["sunday", "monday", "tuesday", "wednesday", "thursday"]
+            },
+            "admission": {
+                "numbering": {
+                    "prefix": student_prefix,
+                    "year_format": "full",
+                    "sequence_digits": 4,
+                    "separator": "-"
+                },
+                "policy": {
+                    "requires_approval": true,
+                    "allow_no_guardian": matches!(inst_type, InstitutionType::University | InstitutionType::Institute),
+                    "allow_duplicate_national_id": false,
+                    "auto_assign_fees": true,
+                    "max_class_capacity": max_capacity,
+                    "allow_late_enrollment": false,
+                    "allow_waitlist": true,
+                    "sibling_priority_enabled": matches!(inst_type, InstitutionType::School)
+                },
+                "fields": [
+                    { "key": "national_id", "name_ar": "الرقم الوطني / رقم الهوية", "name_en": "National ID Number", "is_active": true, "is_required": true, "prevent_duplicate": true, "supports_duplicate": true },
+                    { "key": "phone", "name_ar": "رقم هاتف الطالب / التواصل", "name_en": "Student Phone Number", "is_active": true, "is_required": true, "prevent_duplicate": false, "supports_duplicate": true },
+                    { "key": "email", "name_ar": "البريد الإلكتروني", "name_en": "Email Address", "is_active": true, "is_required": false, "prevent_duplicate": false, "supports_duplicate": true },
+                    { "key": "birth_date", "name_ar": "تاريخ الميلاد", "name_en": "Date of Birth", "is_active": true, "is_required": true, "prevent_duplicate": false, "supports_duplicate": false },
+                    { "key": "sex", "name_ar": "الجنس", "name_en": "Gender", "is_active": true, "is_required": true, "prevent_duplicate": false, "supports_duplicate": false },
+                    { "key": "nationality", "name_ar": "الجنسية الرسمية", "name_en": "Nationality", "is_active": true, "is_required": true, "prevent_duplicate": false, "supports_duplicate": false },
+                    { "key": "address", "name_ar": "عنوان السكن والحي", "name_en": "Residential Address", "is_active": true, "is_required": false, "prevent_duplicate": false, "supports_duplicate": false },
+                    { "key": "place_of_birth", "name_ar": "مكان الميلاد", "name_en": "Place of Birth", "is_active": true, "is_required": false, "prevent_duplicate": false, "supports_duplicate": false },
+                    { "key": "blood_type", "name_ar": "فصيلة الدم", "name_en": "Blood Type", "is_active": true, "is_required": false, "prevent_duplicate": false, "supports_duplicate": false },
+                    { "key": "emergency_contact", "name_ar": "جهة الاتصال للطوارئ", "name_en": "Emergency Contact", "is_active": true, "is_required": true, "prevent_duplicate": false, "supports_duplicate": false },
+                    { "key": "medical_notes", "name_ar": "الملاحظات الطبية والحساسية", "name_en": "Medical Notes & Allergies", "is_active": true, "is_required": false, "prevent_duplicate": false, "supports_duplicate": false },
+                    { "key": "previous_school", "name_ar": "المدرسة / المؤسسة السابقة", "name_en": "Previous Institution", "is_active": true, "is_required": false, "prevent_duplicate": false, "supports_duplicate": false }
+                ]
             },
             "enrollment": {
                 "registration_enabled": true,
                 "require_admin_approval": true,
                 "allow_waitlist": true,
-                "max_class_size_default": 25
+                "sibling_priority_enabled": matches!(inst_type, InstitutionType::School),
+                "max_class_size_default": max_capacity,
+                "allow_late_enrollment": false
             },
             "finance": {
                 "currency": currency,
                 "tax_rate": 0.15,
-                "invoice_due_days": 14
+                "invoice_due_days": 14,
+                "late_fee_type": "fixed",
+                "late_fee_value": 0.0,
+                "allow_partial_payments": true,
+                "primary_payment_gateway_id": null,
+                "invoicing_integration_id": null
+            },
+            "attendance": {
+                "daily_attendance_mode": "single",
+                "absence_threshold_warning": 3,
+                "absence_threshold_critical": 7,
+                "allow_excuse_submission": true,
+                "auto_notify_parents_on_absence": true
+            },
+            "examinations": {
+                "blind_grading_enabled": true,
+                "secret_number_digits": 5,
+                "seating_number_prefix": "",
+                "seating_number_start": 1001,
+                "auto_balance_exam_halls": true,
+                "proctor_ratio_per_students": 20,
+                "allow_proctor_self_swaps": false
+            },
+            "documents": {
+                "default_certificate_header_ar": "المملكة العربية السعودية - وزارة التعليم",
+                "qr_verification_enabled": true,
+                "signature_verification_required": true,
+                "archival_retention_years": 10
             },
             "notifications": {
+                "email_integration_id": null,
+                "sms_integration_id": null,
+                "whatsapp_integration_id": null,
                 "notify_parents_on_absence": true,
-                "notify_parents_on_grade_publish": true
+                "notify_parents_on_grade_publish": true,
+                "finance_reminder_days": [7, 3, 1]
+            },
+            "security": {
+                "session_timeout_minutes": 60,
+                "max_login_attempts": 5,
+                "password_min_length": 8,
+                "mfa_policy": "optional",
+                "device_tracking_enabled": true
             },
             "autopilot": {
                 "enabled": true,
-                "mode": "automatic",
-                "max_retries": 3
+                "mode": "suggested",
+                "auto_open_enrollment": false,
+                "auto_close_enrollment": true,
+                "auto_record_attendance": true,
+                "auto_fee_assignment": true,
+                "auto_grade_entry_reminder": true,
+                "auto_period_lock": false,
+                "auto_promotion": false,
+                "auto_exam_scheduling": false,
+                "auto_report_generation": true,
+                "grace_days": 3,
+                "notify_before_deadline_hours": 24,
+                "max_retries": 3,
+                "auto_advance_periods": false,
+                "auto_lock_grades": false,
+                "grade_entry_auto_close_days": 7,
+                "allow_grade_edit_after_close": false
             }
         })
     }

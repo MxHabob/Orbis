@@ -22,6 +22,7 @@ let { orgId }: { orgId: string } = $props();
 
 // State
 let rooms = $state<RoomDto[]>([]);
+let orgUnits = $state<any[]>([]);
 let isLoading = $state(true);
 let searchQuery = $state("");
 let isSheetOpen = $state(false);
@@ -32,10 +33,17 @@ let activeFilter = $state<UniversalFilter>({
   groups: [],
 });
 
+const orgUnitsMap = $derived(new Map(orgUnits.map((u) => [String(u.id), u])));
+
 async function loadRooms() {
   isLoading = true;
   try {
-    rooms = await api.listRooms();
+    const [fetchedRooms, fetchedUnits] = await Promise.all([
+      api.listRooms(),
+      api.listOrgUnits().catch(() => []),
+    ]);
+    rooms = fetchedRooms;
+    orgUnits = fetchedUnits;
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
   } finally {
@@ -53,18 +61,22 @@ const roomActions: ActionItem[] = [
 ];
 
 const gridSource = $derived(
-  rooms.map((r, i) => ({
-    ...r,
-    __idx: i + 1,
-    name: l(r.name_ar, r.name) || r.name || "—",
-    building: r.building || "—",
-    floor: r.floor !== null && r.floor !== undefined ? String(r.floor) : "—",
-    capacity: r.capacity ?? "—",
-    room_type: r.room_type || "—",
-    status: r.is_active !== false ? "active" : "inactive",
-    created_at_display: r.created_at ? formatDate(r.created_at, "datetime") : "—",
-    updated_at_display: r.updated_at ? formatDate(r.updated_at, "datetime") : "—",
-  })),
+  rooms.map((r, i) => {
+    const unit = r.org_unit_id ? orgUnitsMap.get(String(r.org_unit_id)) : null;
+    const buildingName = unit ? (l(unit.name_ar, unit.name) || unit.name) : (r.building || "—");
+    return {
+      ...r,
+      __idx: i + 1,
+      name: l(r.name_ar, r.name) || r.name || "—",
+      building: buildingName,
+      floor: r.floor !== null && r.floor !== undefined ? String(r.floor) : "—",
+      capacity: r.capacity ?? "—",
+      room_type: r.room_type || "—",
+      status: r.is_active !== false ? "active" : "inactive",
+      created_at_display: r.created_at ? formatDate(r.created_at, "datetime") : "—",
+      updated_at_display: r.updated_at ? formatDate(r.updated_at, "datetime") : "—",
+    };
+  }),
 );
 
 const columns: OrbisColumnDef[] = [

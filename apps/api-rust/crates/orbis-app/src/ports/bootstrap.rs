@@ -23,8 +23,18 @@ pub struct ValidatedBootstrapData {
     pub assessment_scheme: ValidatedAssessmentScheme,
     pub accounts: Vec<ValidatedAccount>,
     pub currency: ValidatedCurrency,
+    pub user_groups: Vec<ValidatedUserGroup>,
     pub org_settings: serde_json::Value,
     pub report_definitions: Vec<serde_json::Value>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ValidatedUserGroup {
+    pub id: Uuid,
+    pub name: String,
+    pub name_ar: String,
+    pub description: String,
+    pub permissions: Vec<String>,
 }
 
 #[derive(Debug, Clone)]

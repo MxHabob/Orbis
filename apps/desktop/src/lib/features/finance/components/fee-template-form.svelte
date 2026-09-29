@@ -88,24 +88,29 @@ const classesQuery = createClassesQuery(() => orgId);
 const classes = $derived(classesQuery.data ?? []);
 const isLoadingClasses = $derived(classesQuery.isLoading);
 
-// Dynamic grade levels extracted directly from the classes database table (zero hardcoded dictionaries)
+// Dynamic grade levels extracted directly from the classes database table
 const uniqueLevels = $derived.by(() => {
   const levelMap = new Map<string, { ar: string; en: string }>();
   for (const cls of classes) {
     if (cls.level) {
       if (!levelMap.has(cls.level)) {
+        const rawAr = (cls as any).name_ar || cls.name || cls.level;
+        const rawEn = cls.name || (cls as any).name_ar || cls.level;
         levelMap.set(cls.level, {
-          ar: (cls as any).name_ar || cls.name || cls.level,
-          en: cls.name || (cls as any).name_ar || cls.level,
+          ar: rawAr,
+          en: rawEn,
         });
       }
     }
   }
 
-  // Ensure any selected levels from existing template are visible even before classes finish loading
+  // Ensure any selected levels from existing template are visible
   for (const lvl of selectedLevels) {
     if (!levelMap.has(lvl)) {
-      levelMap.set(lvl, { ar: lvl, en: lvl });
+      levelMap.set(lvl, {
+        ar: lvl,
+        en: lvl,
+      });
     }
   }
 

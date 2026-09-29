@@ -163,12 +163,18 @@ Every agent starting a session in this repository MUST:
     - **Migration Fix:** Guarded `rooms` table column additions (`floor`, `name_ar`) in `m20240106_000001_room_floor_name_ar.rs` with `has_column` to prevent duplicate column migration errors during local SQLite initialization.
     - **No Lazy Query Seeding Side Effects:** Removed all `if is_empty()` lazy seeding side-effects from query commands (`report_cmds.rs`, `template_cmds.rs`, `finance_cmds.rs`, `onboarding_repo.rs`), ensuring all seed data is created strictly during organization bootstrap and onboarding.
     - **Exact Schema Alignment Fix:** Reconciled raw SQL inserts in `bootstrap_repo.rs` with exact SeaORM entity models (`organizations`, `users`, `role_permissions`), embedding `org_type` and `institution_type` within the `settings` JSON field rather than non-existent columns.
+  - **System Bootstrap & IAM Enterprise Permissions & Reports Catalog:**
+    - Expanded system roles to 11 full standard ERP roles (`super_admin`, `admin`, `principal`, `teacher`, `registrar`, `accountant`, `exam_officer`, `student`, `parent`, `staff`, `auditor`).
+    - Populated 210+ exhaustive permission assignments in `build_default_permissions` across all 9 ERP domains (`iam`, `employees`, `academic`, `students`, `assessment`, `examinations`, `finance`, `documents`, `system`) without omitting any resource or action.
+    - Expanded default organization configuration in `build_org_settings` with complete baseline policies (`academic`, `admission`, `enrollment`, `finance`, `attendance`, `examinations`, `documents`, `notifications`, `security`, `autopilot`).
+    - Seeded comprehensive catalog of **56 default institutional templates and reports** in `seed_default_reports` (`template_catalog`) spanning Administration, Academics, Attendance, Examination Control, Accounting & Finance Ledgers, and HR.
   - **Verification:**
     - `apps/api-rust` cargo check: 0 errors
     - `apps/desktop/src-tauri` cargo check: 0 errors
     - `packages/sdk` build (tsc): 0 errors
     - `apps/desktop` bunx tsc: 0 errors
 - **Next Scope in Master Execution Plan:** Complete System Hardening, End-to-End Integrity & Enterprise ERP Delivery.
+
 
 
 

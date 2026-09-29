@@ -28,6 +28,7 @@ let { orgId }: { orgId: string } = $props();
 
 // State
 let units = $state<any[]>([]);
+let rooms = $state<any[]>([]);
 let isLoading = $state(true);
 let error = $state<string | null>(null);
 
@@ -48,14 +49,52 @@ async function loadUnits() {
   isLoading = true;
   error = null;
   try {
-    const list = await api.listOrgUnits();
+    const [list, fetchedRooms] = await Promise.all([
+      api.listOrgUnits(),
+      api.listRooms().catch(() => []),
+    ]);
     units = list;
+    rooms = fetchedRooms;
   } catch (e) {
     error = extractErrorMessage(e);
     toast.error(error);
   } finally {
     isLoading = false;
   }
+}
+
+function getUnitCapacity(unit: any): string | number {
+  if (unit.capacity !== null && unit.capacity !== undefined && Number(unit.capacity) > 0) {
+    return unit.capacity;
+  }
+  const directRooms = rooms.filter((r) => String(r.org_unit_id) === String(unit.id));
+  if (directRooms.length > 0) {
+    const total = directRooms.reduce((acc, r) => acc + (Number(r.capacity) || 0), 0);
+    return total > 0 ? total : "—";
+  }
+  if (unit.unit_type === "campus" || !unit.parent_id) {
+    const total = rooms.reduce((acc, r) => acc + (Number(r.capacity) || 0), 0);
+    return total > 0 ? total : "—";
+  }
+  return "—";
+}
+
+function getUnitLocation(unit: any): string {
+  if (unit.building || unit.floor !== null || unit.room_number) {
+    const parts = [];
+    if (unit.building) parts.push(`Bld ${unit.building}`);
+    if (unit.floor !== null && unit.floor !== undefined) parts.push(`Floor ${unit.floor}`);
+    if (unit.room_number) parts.push(`Room ${unit.room_number}`);
+    if (parts.length > 0) return parts.join(" • ");
+  }
+  if (unit.parent_id && unitsMap.has(String(unit.parent_id))) {
+    const parent = unitsMap.get(String(unit.parent_id));
+    return l(parent.name_ar, parent.name) || parent.name || "—";
+  }
+  if (unit.unit_type === "campus" || !unit.parent_id) {
+    return isAr() ? "المقر الرئيسي / الفرع الأساسي" : "Main Campus / Primary Site";
+  }
+  return "—";
 }
 
 onMount(() => {
@@ -557,25 +596,11 @@ function escapeHtml(text: string): string {
                   </TableCell>
                   
                   <TableCell class="text-xs text-muted-foreground font-mono">
-                    {node.unit.capacity !== null && node.unit.capacity !== undefined ? node.unit.capacity : "—"}
+                    {getUnitCapacity(node.unit)}
                   </TableCell>
                   
                   <TableCell class="text-xs text-muted-foreground">
-                    {#if node.unit.building || node.unit.floor !== null || node.unit.room_number}
-                      <div class="flex items-center gap-1.5 flex-wrap">
-                        {#if node.unit.building}
-                          <span class="bg-muted px-1.5 py-0.5 rounded text-[10px] font-bold">Bld {node.unit.building}</span>
-                        {/if}
-                        {#if node.unit.floor !== null}
-                          <span class="bg-muted px-1.5 py-0.5 rounded text-[10px]">Floor {node.unit.floor}</span>
-                        {/if}
-                        {#if node.unit.room_number}
-                          <span class="bg-muted px-1.5 py-0.5 rounded text-[10px] font-mono">Room {node.unit.room_number}</span>
-                        {/if}
-                      </div>
-                    {:else}
-                      <span class="text-muted-foreground/60">—</span>
-                    {/if}
+                    <span class="truncate">{getUnitLocation(node.unit)}</span>
                   </TableCell>
                   
                   <TableCell class="text-end px-6">
@@ -653,25 +678,11 @@ function escapeHtml(text: string): string {
                   </TableCell>
                   
                   <TableCell class="text-xs text-muted-foreground font-mono">
-                    {unit.capacity !== null && unit.capacity !== undefined ? unit.capacity : "—"}
+                    {getUnitCapacity(unit)}
                   </TableCell>
                   
                   <TableCell class="text-xs text-muted-foreground">
-                    {#if unit.building || unit.floor !== null || unit.room_number}
-                      <div class="flex items-center gap-1.5 flex-wrap">
-                        {#if unit.building}
-                          <span class="bg-muted px-1.5 py-0.5 rounded text-[10px] font-bold">Bld {unit.building}</span>
-                        {/if}
-                        {#if unit.floor !== null}
-                          <span class="bg-muted px-1.5 py-0.5 rounded text-[10px]">Floor {unit.floor}</span>
-                        {/if}
-                        {#if unit.room_number}
-                          <span class="bg-muted px-1.5 py-0.5 rounded text-[10px] font-mono">Room {unit.room_number}</span>
-                        {/if}
-                      </div>
-                    {:else}
-                      <span class="text-muted-foreground/60">—</span>
-                    {/if}
+                    <span class="truncate">{getUnitLocation(unit)}</span>
                   </TableCell>
                   
                   <TableCell class="text-end px-6">
