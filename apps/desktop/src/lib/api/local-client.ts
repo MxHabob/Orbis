@@ -165,7 +165,6 @@ import type {
   EntitlementResult,
   BootstrapRequest,
   BootstrapResult,
-  InitialSetupRequest,
   CompleteOrganizationOnboardingRequest,
   OnboardingResult,
   ConnectionConfig,
@@ -1233,9 +1232,6 @@ export class LocalClient implements OrbisApiClient {
   }
   async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
     return invoke<BootstrapResult>("bootstrap_organization", req as unknown as Record<string, unknown>);
-  }
-  async bootstrapInitialSetup(req: InitialSetupRequest): Promise<OrganizationReadiness> {
-    return invoke<OrganizationReadiness>("bootstrap_initial_setup", req as unknown as Record<string, unknown>);
   }
   async completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {
     return invoke<OnboardingResult>("onboarding_complete", { request: req });

@@ -8,7 +8,6 @@ import type {
   ConnectionValidation,
   OrganizationReadiness,
   SetupItem,
-  InitialSetupRequest,
   CompleteOrganizationOnboardingRequest,
   OnboardingResult,
   EntitlementResult,
@@ -99,17 +98,6 @@ class SystemStore {
     } catch (e) {
       console.warn("Failed to load entitlement:", e);
       return null;
-    }
-  }
-
-  async completeInitialSetup(req: InitialSetupRequest): Promise<OrganizationReadiness> {
-    this.isLoading = true;
-    try {
-      const res = await api.bootstrapInitialSetup(req);
-      this.orgReadiness = res;
-      return res;
-    } finally {
-      this.isLoading = false;
     }
   }
 

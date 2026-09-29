@@ -100,8 +100,10 @@ pub struct ValidatedOnboardingRoom {
     pub org_id: Uuid,
     pub building_unit_id: Option<Uuid>,
     pub name: String,
+    pub name_ar: Option<String>,
     pub room_type: String,
     pub capacity: i32,
+    pub floor: Option<i32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

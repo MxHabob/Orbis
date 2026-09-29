@@ -156,9 +156,13 @@ pub struct OnboardingFacilitiesDto {
 #[serde(rename_all = "camelCase")]
 pub struct OnboardingRoomItemDto {
     pub name: String,
+    #[serde(default, alias = "name_ar")]
+    pub name_ar: Option<String>,
     #[serde(alias = "room_type")]
     pub room_type: String,
     pub capacity: i32,
+    #[serde(default)]
+    pub floor: Option<i32>,
     #[serde(default)]
     pub building: Option<String>,
 }
@@ -385,8 +389,10 @@ impl OnboardingService {
                 org_id: target_org_id,
                 building_unit_id: parent_id,
                 name: rm.name.clone(),
+                name_ar: rm.name_ar.clone(),
                 room_type: rm.room_type.clone(),
                 capacity: rm.capacity,
+                floor: rm.floor,
             }
         }).collect();
 

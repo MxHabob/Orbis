@@ -1,14 +1,4 @@
 //! Organization Blueprint Composition — unified initialization engine.
-//!
-//! This is the **single source of truth** for all organization setup data.
-//! It replaces the scattered initialization across:
-//! - `infra-persistence/bootstrap.rs` (academic_policies + period_templates)
-//! - `cli/seeder.rs` (currencies + permissions + period_templates + COA)
-//! - `desktop/completeSetup()` (INSTITUTION_PROFILES)
-//!
-//! Every blueprint produces the complete seed data for one institution type:
-//! grade_scales, calculation_policies, period_templates, default_permissions,
-//! currencies, and chart_of_accounts.
 
 use sea_orm::{ConnectionTrait, DatabaseConnection, Statement, TransactionTrait};
 use orbis_domain::errors::DomainError;
@@ -196,26 +186,6 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
 }
 
 // ── Subsystem Seeders ───────────────────────────────────────────
-
-#[allow(dead_code)]
-async fn seed_org_units<C: ConnectionTrait>(
-    db: &C,
-    org_id: Uuid,
-    admin_id: Option<Uuid>,
-    _org_type: &str,
-    now: &str,
-) -> Result<Uuid, DomainError> {
-    let root_id = Uuid::new_v4();
-    db.execute(Statement::from_sql_and_values(
-        db.get_database_backend(),
-        "INSERT INTO org_units (id, org_id, parent_id, path, depth, name, name_ar, code, unit_type, data_isolation, children_count, descendant_count, sort_order, is_active, created_by, updated_by, created_at, updated_at) VALUES ($1, $2, NULL, 'root', 0, 'Main Campus', 'المقر الرئيسي', 'HQ', 'campus', 'none', 0, 0, 1, 1, $3, $4, $5, $6)",
-        vec![root_id.into(), org_id.into(), admin_id.into(), admin_id.into(), now.to_string().into(), now.to_string().into()]
-    )).await.map_err(|e| DomainError::Internal(format!("Failed to seed root org_unit: {e}")))?;
-
-    // Note: Child organizational units (Branches, Buildings, Stages, Departments)
-    // are created and structured dynamically by the Onboarding wizard according to the institution's actual configuration.
-    Ok(root_id)
-}
 
 async fn seed_period_templates<C: ConnectionTrait>(
     db: &C,
@@ -1637,7 +1607,7 @@ pub async fn seed_initial_audit_logs<C: ConnectionTrait>(
 
 use async_trait::async_trait;
 use orbis_app::ports::bootstrap::{
-    BulkBootstrapPort, ValidatedBootstrapData, ValidatedInitialSetupData,
+    BulkBootstrapPort, ValidatedBootstrapData,
     BootstrapPersistenceResult,
 };
 
@@ -1672,142 +1642,6 @@ impl BulkBootstrapPort for BootstrapAdapterImpl {
             admin_user_id: result.admin_id,
             rows_inserted: 0, // Not tracked in the current impl
         })
-    }
-
-    async fn persist_initial_setup(
-        &self,
-        data: ValidatedInitialSetupData,
-    ) -> Result<(), DomainError> {
-        let txn = self.db.begin().await
-            .map_err(|e| DomainError::Internal(format!("Failed to begin initial setup transaction: {e}")))?;
-
-        let now = Utc::now().to_rfc3339();
-        let org_id = data.org_id;
-
-        let normalize_start = |s: &str| -> String {
-            if s.len() == 10 && !s.contains('T') {
-                format!("{}T00:00:00Z", s)
-            } else {
-                s.to_string()
-            }
-        };
-
-        let normalize_end = |s: &str| -> String {
-            if s.len() == 10 && !s.contains('T') {
-                format!("{}T23:59:59Z", s)
-            } else {
-                s.to_string()
-            }
-        };
-
-        let year_start = normalize_start(&data.academic_year.start_date);
-        let year_end = normalize_end(&data.academic_year.end_date);
-
-        // Academic Year
-        txn.execute(Statement::from_sql_and_values(
-            txn.get_database_backend(),
-            "INSERT INTO academic_years (id, org_id, name, name_ar, start_date, end_date, status, is_locked, created_at, updated_at) \
-             SELECT $1, $2, $3, $4, $5, $6, 'active', 0, $7, $8 \
-             WHERE NOT EXISTS (SELECT 1 FROM academic_years WHERE org_id = $2 AND name = $3)",
-            vec![
-                data.academic_year.id.into(),
-                org_id.into(),
-                data.academic_year.name.clone().into(),
-                data.academic_year.name_ar.clone().into(),
-                year_start.into(),
-                year_end.into(),
-                now.clone().into(),
-                now.clone().into(),
-            ],
-        )).await.map_err(|e| DomainError::Internal(format!("Failed to insert academic year: {e}")))?;
-
-        // Periods
-        for p in &data.periods {
-            let p_start = normalize_start(&p.start_date);
-            let p_end = normalize_end(&p.end_date);
-            txn.execute(Statement::from_sql_and_values(
-                txn.get_database_backend(),
-                "INSERT INTO academic_periods (id, org_id, year_id, name, name_ar, period_type, start_date, end_date, status, is_locked, is_enrollment_open, is_grade_entry_open, created_at, updated_at) \
-                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, 'active', 0, 1, 1, $9, $10 \
-                 WHERE NOT EXISTS (SELECT 1 FROM academic_periods WHERE org_id = $2 AND year_id = $3 AND name = $4)",
-                vec![
-                    p.id.into(),
-                    org_id.into(),
-                    p.year_id.into(),
-                    p.name.clone().into(),
-                    p.name_ar.clone().into(),
-                    p.period_type.clone().into(),
-                    p_start.into(),
-                    p_end.into(),
-                    now.clone().into(),
-                    now.clone().into(),
-                ],
-            )).await.map_err(|e| DomainError::Internal(format!("Failed to insert period: {e}")))?;
-        }
-
-        // First period ID for class references
-        let period_id = data.periods.first()
-            .map(|p| p.id)
-            .unwrap_or(data.academic_year.id);
-
-        // Query root org_unit for valid foreign key linking
-        let root_unit_row = txn.query_one(Statement::from_sql_and_values(
-            txn.get_database_backend(),
-            "SELECT id FROM org_units WHERE org_id = $1 ORDER BY depth ASC LIMIT 1",
-            vec![org_id.into()]
-        )).await.ok().flatten();
-
-        let default_unit_id: Uuid = match root_unit_row {
-            Some(r) => r.try_get("", "id").unwrap_or(Uuid::nil()),
-            None => Uuid::nil(),
-        };
-
-        // Classes
-        for c in &data.classes {
-            txn.execute(Statement::from_sql_and_values(
-                txn.get_database_backend(),
-                "INSERT INTO classes (id, org_id, unit_id, period_id, name, name_ar, level, division, is_active, is_deleted, created_at, updated_at) \
-                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, 1, 0, $9, $10 \
-                 WHERE NOT EXISTS (SELECT 1 FROM classes WHERE org_id = $2 AND period_id = $4 AND name = $5)",
-                vec![
-                    c.id.into(),
-                    org_id.into(),
-                    default_unit_id.into(),
-                    period_id.into(),
-                    c.name.clone().into(),
-                    c.name_ar.clone().into(),
-                    c.level.clone().into(),
-                    c.division.clone().unwrap_or_default().into(),
-                    now.clone().into(),
-                    now.clone().into(),
-                ],
-            )).await.map_err(|e| DomainError::Internal(format!("Failed to insert class: {e}")))?;
-        }
-
-        // Subjects
-        for s in &data.subjects {
-            txn.execute(Statement::from_sql_and_values(
-                txn.get_database_backend(),
-                "INSERT INTO subjects (id, org_id, code, name, name_ar, is_core, is_elective, is_lab_required, is_active, created_at, updated_at) \
-                 SELECT $1, $2, $3, $4, $5, $6, 0, 0, 1, $7, $8 \
-                 WHERE NOT EXISTS (SELECT 1 FROM subjects WHERE org_id = $2 AND code = $3)",
-                vec![
-                    s.id.into(),
-                    org_id.into(),
-                    s.code.clone().into(),
-                    s.name.clone().into(),
-                    s.name_ar.clone().into(),
-                    (if s.is_core { 1i32 } else { 0i32 }).into(),
-                    now.clone().into(),
-                    now.clone().into(),
-                ],
-            )).await.map_err(|e| DomainError::Internal(format!("Failed to insert subject: {e}")))?;
-        }
-
-        txn.commit().await
-            .map_err(|e| DomainError::Internal(format!("Failed to commit initial setup: {e}")))?;
-
-        Ok(())
     }
 }
 

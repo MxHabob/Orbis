@@ -1,5 +1,5 @@
 import type { PeriodTemplateDef } from "../types";
-import { DEFAULT_PERIOD_TEMPLATES } from "../templates";
+import { api } from "$lib/api";
 
 // Generate dynamic defaults based on current date
 function getDefaultStartDate(): string {
@@ -34,8 +34,36 @@ export class CalendarInfoState {
   academicYearNameAr = $state(getDefaultYearNameAr());
   startDate = $state(getDefaultStartDate());
   endDate = $state(getDefaultEndDate());
-  selectedTemplateId = $state(DEFAULT_PERIOD_TEMPLATES[0].id);
-  periodTemplates = $state<PeriodTemplateDef[]>(DEFAULT_PERIOD_TEMPLATES);
+  selectedTemplateId = $state<string>("");
+  periodTemplates = $state<PeriodTemplateDef[]>([]);
+  isLoadingTemplates = $state(false);
+
+  constructor() {
+    this.loadPeriodTemplates();
+  }
+
+  async loadPeriodTemplates() {
+    this.isLoadingTemplates = true;
+    try {
+      const templates = await api.listPeriodTemplates();
+      if (Array.isArray(templates) && templates.length > 0) {
+        this.periodTemplates = templates.map((t) => ({
+          id: t.id,
+          name: t.name,
+          name_ar: t.name_ar || t.name,
+          structure: (t.structure || []) as any,
+        }));
+        if (!this.selectedTemplateId || !this.periodTemplates.some((t) => t.id === this.selectedTemplateId)) {
+          const defaultTpl = (templates as any).find((t: any) => t.is_default) || this.periodTemplates[0];
+          this.selectedTemplateId = defaultTpl?.id || this.periodTemplates[0]?.id || "";
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to load period templates from bootstrap:", e);
+    } finally {
+      this.isLoadingTemplates = false;
+    }
+  }
 
   serialize() {
     return {
@@ -65,13 +93,7 @@ export class CalendarInfoState {
     ) {
       this.periodTemplates = data.periodTemplates;
     } else {
-      this.periodTemplates = DEFAULT_PERIOD_TEMPLATES;
-      if (
-        !this.selectedTemplateId ||
-        !this.periodTemplates.some((t) => t.id === this.selectedTemplateId)
-      ) {
-        this.selectedTemplateId = DEFAULT_PERIOD_TEMPLATES[0].id;
-      }
+      this.loadPeriodTemplates();
     }
   }
 }

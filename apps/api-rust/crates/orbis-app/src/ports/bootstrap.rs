@@ -134,59 +134,6 @@ pub struct BootstrapPersistenceResult {
     pub rows_inserted: u64,
 }
 
-// ── Initial Setup Data ──────────────────────────────────────────────────────
-
-#[derive(Debug, Clone)]
-pub struct ValidatedInitialSetupData {
-    pub org_id: Uuid,
-    pub academic_year: ValidatedAcademicYear,
-    pub periods: Vec<ValidatedPeriod>,
-    pub classes: Vec<ValidatedClass>,
-    pub subjects: Vec<ValidatedSubject>,
-}
-
-#[derive(Debug, Clone)]
-pub struct ValidatedAcademicYear {
-    pub id: Uuid,
-    pub org_id: Uuid,
-    pub name: String,
-    pub name_ar: String,
-    pub start_date: String,
-    pub end_date: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct ValidatedPeriod {
-    pub id: Uuid,
-    pub org_id: Uuid,
-    pub year_id: Uuid,
-    pub name: String,
-    pub name_ar: String,
-    pub period_type: String,
-    pub start_date: String,
-    pub end_date: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct ValidatedClass {
-    pub id: Uuid,
-    pub org_id: Uuid,
-    pub name: String,
-    pub name_ar: String,
-    pub level: String,
-    pub division: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-pub struct ValidatedSubject {
-    pub id: Uuid,
-    pub org_id: Uuid,
-    pub code: String,
-    pub name: String,
-    pub name_ar: String,
-    pub is_core: bool,
-}
-
 // ── Port Trait ──────────────────────────────────────────────────────────────
 
 /// Infrastructure port for efficient bulk bootstrap persistence.
@@ -201,11 +148,4 @@ pub trait BulkBootstrapPort: Send + Sync {
         &self,
         data: ValidatedBootstrapData,
     ) -> Result<BootstrapPersistenceResult, DomainError>;
-
-    /// Persist initial setup data (academic year, periods, classes, subjects)
-    /// in a single atomic transaction.
-    async fn persist_initial_setup(
-        &self,
-        data: ValidatedInitialSetupData,
-    ) -> Result<(), DomainError>;
 }

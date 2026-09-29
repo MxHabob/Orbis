@@ -275,19 +275,6 @@ pub async fn bootstrap_org_endpoint(
     Ok(ApiResponse::ok(res))
 }
 
-#[utoipa::path(post, path = "/api/v1/bootstrap/initial-setup",
-    request_body = serde_json::Value,
-    responses((status = 200, description = "Initial academic setup completed")),
-    tag = "Organization")]
-pub async fn bootstrap_initial_setup_endpoint(
-    ctx: AuthContext,
-    State(state): State<AppState>,
-    Json(payload): Json<orbis_app::services::InitialSetupRequest>,
-) -> Result<Json<ApiResponse<orbis_app::services::OrganizationReadiness>>, ApiError> {
-    let res = state.bootstrap_service.complete_initial_setup(ctx.tenant_id, payload).await
-        .map_err(|e| ApiError::bad_request(e.to_string()))?;
-    Ok(ApiResponse::ok(res))
-}
 
 #[utoipa::path(post, path = "/api/v1/onboarding/complete",
     request_body = serde_json::Value,
@@ -801,7 +788,6 @@ async fn delete_org_unit(
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/bootstrap", post(bootstrap_org_endpoint))
-        .route("/api/v1/bootstrap/initial-setup", post(bootstrap_initial_setup_endpoint))
         .route("/api/v1/onboarding/complete", post(onboarding_complete_endpoint))
         .route("/api/v1/organizations/bootstrap", post(bootstrap_org_endpoint))
         .route("/api/v1/system/readiness", get(get_system_readiness_endpoint))

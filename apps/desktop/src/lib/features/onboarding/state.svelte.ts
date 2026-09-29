@@ -746,8 +746,8 @@ export class OnboardingState {
               periods.push({
                 id: `${termId}_sub_${j + 1}`,
                 parentId: termId,
-                name: `${item.name || `Term ${i + 1}`} - ${child.name || `Month ${j + 1}`}`,
-                nameAr: `${item.name_ar || `الفصل ${i + 1}`} - ${child.name_ar || `الشهر ${j + 1}`}`,
+                name: child.name || `Month ${j + 1}`,
+                nameAr: child.name_ar || `الشهر ${j + 1}`,
                 periodType: child.type || "monthly",
                 startDate: childStart.toISOString().split("T")[0],
                 endDate: childEnd.toISOString().split("T")[0],
@@ -836,8 +836,10 @@ export class OnboardingState {
         buildings: this.facilities.buildings || [],
         rooms: (this.facilities.rooms || []).map((rm) => ({
           name: rm.name,
+          nameAr: rm.name_ar,
           roomType: rm.room_type,
           capacity: rm.capacity,
+          floor: rm.floor,
           building: rm.building,
         })),
       };

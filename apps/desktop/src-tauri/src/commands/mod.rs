@@ -318,7 +318,6 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         bootstrap_cmds::system_has_organization,
         bootstrap_cmds::system_get_readiness,
         bootstrap_cmds::bootstrap_organization,
-        bootstrap_cmds::bootstrap_initial_setup,
         bootstrap_cmds::onboarding_complete,
         bootstrap_cmds::system_get_entitlement,
         // ── AI Platform ─────────────────────────────────────────

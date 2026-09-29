@@ -68,7 +68,6 @@ use api::{
         api::org_routes::get_current_org,
         api::org_routes::update_current_org,
         api::org_routes::bootstrap_org_endpoint,
-        api::org_routes::bootstrap_initial_setup_endpoint,
         api::org_routes::onboarding_complete_endpoint,
         api::org_routes::get_system_readiness_endpoint,
         api::org_routes::get_system_has_org_endpoint,

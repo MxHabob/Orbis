@@ -25,8 +25,6 @@ use crate::ports::bootstrap::{
     BulkBootstrapPort, ValidatedBootstrapData, ValidatedOrg, ValidatedPerson,
     ValidatedUser, ValidatedRoleAssignment, ValidatedRole, ValidatedRolePermission,
     ValidatedPeriodTemplate, ValidatedAssessmentScheme, ValidatedCurrency,
-    ValidatedInitialSetupData, ValidatedAcademicYear, ValidatedPeriod,
-    ValidatedClass, ValidatedSubject,
 };
 use crate::ports::entitlement::EntitlementProvider;
 use crate::ports::repositories::SystemRepository;
@@ -64,65 +62,6 @@ pub struct BootstrapResult {
     pub admin_user_id: String,
     pub token: String,
     pub readiness: OrganizationReadiness,
-}
-
-/// Request for completing initial academic setup.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct InitialSetupRequest {
-    #[serde(alias = "academic_year")]
-    pub academic_year: AcademicYearInput,
-    pub periods: Vec<PeriodInput>,
-    pub classes: Vec<ClassInput>,
-    pub subjects: Vec<SubjectInput>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AcademicYearInput {
-    pub name: String,
-    #[serde(default, alias = "name_ar")]
-    pub name_ar: Option<String>,
-    #[serde(alias = "start_date")]
-    pub start_date: String,
-    #[serde(alias = "end_date")]
-    pub end_date: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PeriodInput {
-    pub name: String,
-    #[serde(default, alias = "name_ar")]
-    pub name_ar: Option<String>,
-    #[serde(alias = "period_type")]
-    pub period_type: String,
-    #[serde(alias = "start_date")]
-    pub start_date: String,
-    #[serde(alias = "end_date")]
-    pub end_date: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ClassInput {
-    pub name: String,
-    #[serde(default, alias = "name_ar")]
-    pub name_ar: Option<String>,
-    pub level: String,
-    #[serde(default)]
-    pub division: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SubjectInput {
-    pub code: String,
-    pub name: String,
-    #[serde(default, alias = "name_ar")]
-    pub name_ar: Option<String>,
-    #[serde(default, alias = "is_core")]
-    pub is_core: bool,
 }
 
 // ── Service ─────────────────────────────────────────────────────────────────
@@ -239,74 +178,6 @@ impl BootstrapService {
         })
     }
 
-    /// Complete initial academic setup — create year, periods, classes, subjects.
-    ///
-    /// Single transactional operation. Idempotent — safe to retry.
-    /// Complete initial academic setup for an organization.
-    ///
-    /// **DEPRECATED:** This method is a subset of `OnboardingService::complete_onboarding()`.
-    /// All new code should use `OnboardingService::complete_onboarding()` instead.
-    /// This method will be removed in a future release after all consumers are migrated.
-    #[deprecated(note = "Use OnboardingService::complete_onboarding() instead — this is a subset.")]
-    pub async fn complete_initial_setup(
-        &self,
-        org_id: Uuid,
-        request: InitialSetupRequest,
-    ) -> Result<OrganizationReadiness, DomainError> {
-        // 1. Validate org exists
-        if !self.system_repo.has_organization().await? {
-            return Err(DomainError::NotFound("No organization found".into()));
-        }
-
-        // 2. Validate inputs
-        self.validate_initial_setup(&request)?;
-
-        // 3. Build validated data
-        let year_id = Uuid::new_v4();
-        let validated = ValidatedInitialSetupData {
-            org_id,
-            academic_year: ValidatedAcademicYear {
-                id: year_id,
-                org_id,
-                name: request.academic_year.name.clone(),
-                name_ar: request.academic_year.name_ar.clone().unwrap_or_default(),
-                start_date: request.academic_year.start_date.clone(),
-                end_date: request.academic_year.end_date.clone(),
-            },
-            periods: request.periods.iter().map(|p| ValidatedPeriod {
-                id: Uuid::new_v4(),
-                org_id,
-                year_id,
-                name: p.name.clone(),
-                name_ar: p.name_ar.clone().unwrap_or_default(),
-                period_type: p.period_type.clone(),
-                start_date: p.start_date.clone(),
-                end_date: p.end_date.clone(),
-            }).collect(),
-            classes: request.classes.iter().map(|c| ValidatedClass {
-                id: Uuid::new_v4(),
-                org_id,
-                name: c.name.clone(),
-                name_ar: c.name_ar.clone().unwrap_or_default(),
-                level: c.level.clone(),
-                division: c.division.clone(),
-            }).collect(),
-            subjects: request.subjects.iter().map(|s| ValidatedSubject {
-                id: Uuid::new_v4(),
-                org_id,
-                code: s.code.clone(),
-                name: s.name.clone(),
-                name_ar: s.name_ar.clone().unwrap_or_default(),
-                is_core: s.is_core,
-            }).collect(),
-        };
-
-        // 4. Persist in single transaction
-        self.bootstrap_port.persist_initial_setup(validated).await?;
-
-        // 5. Return updated readiness
-        self.get_readiness(org_id).await
-    }
 
     /// Get organization readiness for a specific org.
     pub async fn get_readiness(&self, org_id: Uuid) -> Result<OrganizationReadiness, DomainError> {
@@ -389,24 +260,6 @@ impl BootstrapService {
         Ok(())
     }
 
-    fn validate_initial_setup(&self, req: &InitialSetupRequest) -> Result<(), DomainError> {
-        if req.academic_year.name.trim().is_empty() {
-            return Err(DomainError::Validation("Academic year name cannot be empty".into()));
-        }
-        if req.academic_year.start_date.trim().is_empty() {
-            return Err(DomainError::Validation("Academic year start date is required".into()));
-        }
-        if req.academic_year.end_date.trim().is_empty() {
-            return Err(DomainError::Validation("Academic year end date is required".into()));
-        }
-        if req.classes.is_empty() {
-            return Err(DomainError::Validation("At least one class is required".into()));
-        }
-        if req.subjects.is_empty() {
-            return Err(DomainError::Validation("At least one subject is required".into()));
-        }
-        Ok(())
-    }
 
     fn slugify(name: &str) -> String {
         name.to_lowercase()
@@ -629,7 +482,7 @@ impl BootstrapService {
                         "name_ar": "الفصل الدراسي الأول",
                         "type": "term",
                         "weight": 50,
-                        "periods": [
+                        "children": [
                             { "name": "Month 1", "name_ar": "الشهر الأول", "type": "month", "weight": 100 },
                             { "name": "Month 2", "name_ar": "الشهر الثاني", "type": "month", "weight": 100 },
                             { "name": "Month 3", "name_ar": "الشهر الثالث", "type": "month", "weight": 100 },
@@ -641,7 +494,7 @@ impl BootstrapService {
                         "name_ar": "الفصل الدراسي الثاني",
                         "type": "term",
                         "weight": 50,
-                        "periods": [
+                        "children": [
                             { "name": "Month 1", "name_ar": "الشهر الأول", "type": "month", "weight": 100 },
                             { "name": "Month 2", "name_ar": "الشهر الثاني", "type": "month", "weight": 100 },
                             { "name": "Month 3", "name_ar": "الشهر الثالث", "type": "month", "weight": 100 },

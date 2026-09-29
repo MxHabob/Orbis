@@ -35,7 +35,7 @@ pub use document_service::{DocumentService, CreateDocumentInput, UpdateDocumentI
 pub use integration_service::IntegrationService;
 pub use workflow_service::{WorkflowService, SubmitOverrideInput};
 pub use report_service::{ReportService, GenerateReportInput, OrgContextResolver};
-pub use bootstrap_service::{BootstrapService, BootstrapRequest, BootstrapResult, InitialSetupRequest};
+pub use bootstrap_service::{BootstrapService, BootstrapRequest, BootstrapResult};
 pub use onboarding_service::{OnboardingService, CompleteOrganizationOnboardingRequest, OnboardingResult};
 pub use system_service::{SystemService, HealthResponse, OrganizationReadiness, OrgLifecycleState};
 pub use ai_service::AiOrchestrationService;

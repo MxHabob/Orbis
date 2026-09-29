@@ -717,17 +717,6 @@ export interface BootstrapResult {
   readiness: OrganizationReadiness;
 }
 
-export interface InitialSetupRequest {
-  orgId: string;
-  academicYearName: string;
-  academicYearNameAr?: string;
-  academicYearStart: string;
-  academicYearEnd: string;
-  periods: Array<{ name: string; name_ar?: string; period_type: string; start_date: string; end_date: string }>;
-  classes: Array<{ name: string; name_ar?: string; level: string; division?: string }>;
-  subjects: Array<{ code: string; name: string; name_ar?: string; is_core: boolean }>;
-}
-
 export interface CompleteOrganizationOnboardingRequest {
   orgId?: string;
   profile: {
@@ -749,6 +738,8 @@ export interface CompleteOrganizationOnboardingRequest {
     startDate: string;
     endDate: string;
     periods: Array<{
+      id?: string;
+      parentId?: string;
       name: string;
       nameAr?: string;
       periodType: string;
@@ -784,8 +775,10 @@ export interface CompleteOrganizationOnboardingRequest {
     buildings: string[];
     rooms: Array<{
       name: string;
+      nameAr?: string;
       roomType: string;
       capacity: number;
+      floor?: number;
       building?: string;
     }>;
   };
@@ -1221,7 +1214,6 @@ export interface OrbisApiClient {
   systemGetReadiness(): Promise<OrganizationReadiness>;
   systemGetEntitlement(): Promise<EntitlementResult>;
   bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult>;
-  bootstrapInitialSetup(req: InitialSetupRequest): Promise<OrganizationReadiness>;
   completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult>;
 
   // ── Connection & Database Management ─────────────────────────

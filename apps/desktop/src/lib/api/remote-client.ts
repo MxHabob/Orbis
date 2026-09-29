@@ -164,7 +164,6 @@ import type {
   EntitlementResult,
   BootstrapRequest,
   BootstrapResult,
-  InitialSetupRequest,
   CompleteOrganizationOnboardingRequest,
   OnboardingResult,
   ConnectionConfig,
@@ -1408,10 +1407,6 @@ export class RemoteClient implements OrbisApiClient {
 
   async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
     return this.call(sdk.bootstrapOrgEndpoint({ client: this.client, body: req as any })) as any;
-  }
-
-  async bootstrapInitialSetup(req: InitialSetupRequest): Promise<OrganizationReadiness> {
-    return this.call(sdk.bootstrapInitialSetupEndpoint({ client: this.client, body: req as any })) as any;
   }
 
   async completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {
