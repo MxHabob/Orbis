@@ -283,7 +283,7 @@ pub async fn execute() -> Result<()> {
         orbis_infra::adapters::entitlement_adapter::UnlicensedEntitlementProvider,
     );
     let bootstrap_port: std::sync::Arc<dyn orbis_app::ports::bootstrap::BulkBootstrapPort> = std::sync::Arc::new(
-        orbis_infra::adapters::bootstrap_adapter::BootstrapAdapterImpl { db: db.clone() },
+        orbis_infra::repositories::bootstrap_repo::BootstrapRepoImpl { db: db.clone() },
     );
     let password_hasher = std::sync::Arc::new(orbis_infra::security::bcrypt::BcryptHasher);
     let token_service = std::sync::Arc::new(orbis_infra::security::jwt::JwtTokenService::new("cli-init-token-secret".to_string()));

@@ -69,8 +69,10 @@ impl SchedulingService {
         ctx: &RequestContext,
         org_id: Uuid,
         name: String,
+        name_ar: Option<String>,
         capacity: i32,
         room_type: String,
+        floor: Option<i32>,
         org_unit_id: Option<Uuid>,
     ) -> Result<Room, DomainError> {
         self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
@@ -82,8 +84,10 @@ impl SchedulingService {
             id: room_id,
             org_id,
             name,
+            name_ar,
             capacity,
             room_type,
+            floor,
             org_unit_id,
             created_at: now,
             updated_at: now,
@@ -106,8 +110,10 @@ impl SchedulingService {
         ctx: &RequestContext,
         id: Uuid,
         name: Option<String>,
+        name_ar: Option<String>,
         capacity: Option<i32>,
         room_type: Option<String>,
+        floor: Option<i32>,
         org_unit_id: Option<Option<Uuid>>,
     ) -> Result<Room, DomainError> {
         self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
@@ -117,8 +123,10 @@ impl SchedulingService {
 
         let now = Utc::now();
         if let Some(n) = name { room.name = n; }
+        if let Some(n) = name_ar { room.name_ar = Some(n); }
         if let Some(c) = capacity { room.capacity = c; }
         if let Some(rt) = room_type { room.room_type = rt; }
+        if let Some(f) = floor { room.floor = Some(f); }
         if let Some(ou_id) = org_unit_id { room.org_unit_id = ou_id; }
         room.updated_at = now;
 

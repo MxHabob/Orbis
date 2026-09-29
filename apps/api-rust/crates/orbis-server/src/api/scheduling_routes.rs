@@ -14,8 +14,10 @@ pub struct RoomDto {
     pub id: Uuid,
     pub org_id: Uuid,
     pub name: String,
+    pub name_ar: Option<String>,
     pub room_type: String,
     pub capacity: i32,
+    pub floor: Option<i32>,
     pub org_unit_id: Option<Uuid>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
@@ -24,16 +26,20 @@ pub struct RoomDto {
 #[derive(Deserialize, ToSchema)]
 pub struct CreateRoomRequest {
     pub name: String,
+    pub name_ar: Option<String>,
     pub room_type: String,
     pub capacity: i32,
+    pub floor: Option<i32>,
     pub org_unit_id: Option<Uuid>,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct UpdateRoomRequest {
     pub name: Option<String>,
+    pub name_ar: Option<String>,
     pub room_type: Option<String>,
     pub capacity: Option<i32>,
+    pub floor: Option<i32>,
     pub org_unit_id: Option<Uuid>,
 }
 
@@ -140,8 +146,8 @@ pub struct LessonQuery {
 async fn create_room(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateRoomRequest>,
 ) -> Result<Json<ApiResponse<RoomDto>>, ApiError> {
-    let r = state.scheduling_service.create_room(&ctx, ctx.tenant_id, p.name, p.capacity, p.room_type, p.org_unit_id).await?;
-    Ok(ApiResponse::ok(RoomDto { id: r.id, org_id: r.org_id, name: r.name, room_type: r.room_type, capacity: r.capacity, org_unit_id: r.org_unit_id, created_at: r.created_at, updated_at: r.updated_at }))
+    let r = state.scheduling_service.create_room(&ctx, ctx.tenant_id, p.name, p.name_ar, p.capacity, p.room_type, p.floor, p.org_unit_id).await?;
+    Ok(ApiResponse::ok(RoomDto { id: r.id, org_id: r.org_id, name: r.name, name_ar: r.name_ar, room_type: r.room_type, capacity: r.capacity, floor: r.floor, org_unit_id: r.org_unit_id, created_at: r.created_at, updated_at: r.updated_at }))
 }
 
 #[utoipa::path(get, path = "/api/v1/rooms", responses((status = 200, body = Vec<RoomDto>)),
@@ -150,7 +156,7 @@ async fn list_rooms(
     ctx: AuthContext, State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<RoomDto>>>, ApiError> {
     let rooms = state.scheduling_service.list_rooms(ctx.tenant_id).await?;
-    let dtos = rooms.into_iter().map(|r| RoomDto { id: r.id, org_id: r.org_id, name: r.name, room_type: r.room_type, capacity: r.capacity, org_unit_id: r.org_unit_id, created_at: r.created_at, updated_at: r.updated_at }).collect();
+    let dtos = rooms.into_iter().map(|r| RoomDto { id: r.id, org_id: r.org_id, name: r.name, name_ar: r.name_ar, room_type: r.room_type, capacity: r.capacity, floor: r.floor, org_unit_id: r.org_unit_id, created_at: r.created_at, updated_at: r.updated_at }).collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -160,7 +166,7 @@ async fn get_room(
     _ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<RoomDto>>, ApiError> {
     let r = state.scheduling_service.get_room(id).await?.ok_or_else(|| ApiError::not_found("Room not found"))?;
-    Ok(ApiResponse::ok(RoomDto { id: r.id, org_id: r.org_id, name: r.name, room_type: r.room_type, capacity: r.capacity, org_unit_id: r.org_unit_id, created_at: r.created_at, updated_at: r.updated_at }))
+    Ok(ApiResponse::ok(RoomDto { id: r.id, org_id: r.org_id, name: r.name, name_ar: r.name_ar, room_type: r.room_type, capacity: r.capacity, floor: r.floor, org_unit_id: r.org_unit_id, created_at: r.created_at, updated_at: r.updated_at }))
 }
 
 #[utoipa::path(patch, path = "/api/v1/rooms/{id}", params(("id" = Uuid, Path, description = "Room ID")),
@@ -168,8 +174,8 @@ async fn get_room(
 async fn update_room(
     ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<UpdateRoomRequest>,
 ) -> Result<Json<ApiResponse<RoomDto>>, ApiError> {
-    let r = state.scheduling_service.update_room(&ctx, id, p.name, p.capacity, p.room_type, p.org_unit_id.map(Some)).await?;
-    Ok(ApiResponse::ok(RoomDto { id: r.id, org_id: r.org_id, name: r.name, room_type: r.room_type, capacity: r.capacity, org_unit_id: r.org_unit_id, created_at: r.created_at, updated_at: r.updated_at }))
+    let r = state.scheduling_service.update_room(&ctx, id, p.name, p.name_ar, p.capacity, p.room_type, p.floor, p.org_unit_id.map(Some)).await?;
+    Ok(ApiResponse::ok(RoomDto { id: r.id, org_id: r.org_id, name: r.name, name_ar: r.name_ar, room_type: r.room_type, capacity: r.capacity, floor: r.floor, org_unit_id: r.org_unit_id, created_at: r.created_at, updated_at: r.updated_at }))
 }
 
 #[utoipa::path(delete, path = "/api/v1/rooms/{id}", params(("id" = Uuid, Path, description = "Room ID")),

@@ -425,33 +425,42 @@ impl BootstrapService {
             // Administrative roles — universal access
             ("super_admin", "*", vec!["*"]),
             ("admin", "*", vec!["*"]),
-            // Domain-specific roles
-            ("teacher", "Grade", vec!["read", "write"]),
+            ("principal", "*", vec!["*"]),
+            // Academic & Faculty roles
+            ("teacher", "Grade", vec!["read", "write", "submit"]),
             ("teacher", "Attendance", vec!["read", "write"]),
             ("teacher", "Assessment", vec!["read", "write"]),
             ("teacher", "Class", vec!["read"]),
             ("teacher", "Subject", vec!["read"]),
             ("teacher", "Schedule", vec!["read"]),
+            ("teacher", "Student", vec!["read"]),
+            ("teacher", "Document", vec!["read"]),
+            // Student roles
             ("student", "Grade", vec!["read"]),
             ("student", "Attendance", vec!["read"]),
             ("student", "Schedule", vec!["read"]),
             ("student", "Enrollment", vec!["read"]),
+            ("student", "Document", vec!["read"]),
+            // Parent / Guardian roles
             ("parent", "Grade", vec!["read"]),
             ("parent", "Attendance", vec!["read"]),
             ("parent", "Schedule", vec!["read"]),
             ("parent", "Enrollment", vec!["read"]),
-            ("principal", "Organization", vec!["read"]),
-            ("principal", "User", vec!["read", "write"]),
-            ("principal", "Period", vec!["read", "write", "activate", "lock"]),
-            ("principal", "Class", vec!["read", "write"]),
-            ("principal", "Subject", vec!["read", "write"]),
-            ("principal", "Grade", vec!["read", "write", "analytics", "report"]),
-            ("principal", "Attendance", vec!["read", "write", "analytics"]),
-            ("principal", "Assessment", vec!["read", "write"]),
-            ("principal", "Enrollment", vec!["read", "write", "promote", "transfer"]),
+            ("parent", "Finance", vec!["read"]),
+            ("parent", "Document", vec!["read"]),
+            // Administrative & Support Staff
             ("staff", "User", vec!["read"]),
             ("staff", "Enrollment", vec!["read", "write"]),
             ("staff", "Attendance", vec!["read", "write"]),
+            ("staff", "Student", vec!["read", "write"]),
+            ("staff", "Document", vec!["read", "write"]),
+            // Financial Auditor & Accounting
+            ("auditor", "Finance", vec!["read", "audit"]),
+            ("auditor", "Account", vec!["read"]),
+            ("auditor", "Invoice", vec!["read"]),
+            ("auditor", "Payment", vec!["read"]),
+            ("auditor", "Report", vec!["read", "generate"]),
+            ("auditor", "Audit", vec!["read"]),
         ];
 
         for (role, resource, actions) in rules {
@@ -469,11 +478,16 @@ impl BootstrapService {
         perms
     }
 
-    fn build_period_templates(&self, org_id: Uuid, _inst_type: &InstitutionType) -> Vec<ValidatedPeriodTemplate> {
+    fn build_period_templates(&self, org_id: Uuid, inst_type: &InstitutionType) -> Vec<ValidatedPeriodTemplate> {
+        let is_school = matches!(inst_type, InstitutionType::School);
+        let is_uni = matches!(inst_type, InstitutionType::University);
+        let is_inst = matches!(inst_type, InstitutionType::Institute);
+
         vec![
+            // ── K-12 / General School Templates ─────────────────────────────
             ValidatedPeriodTemplate {
                 id: Uuid::new_v4(), org_id,
-                name: "Standard School System (2 Terms, 4 Assessment Periods Each)".into(),
+                name: "Standard School System (2 Semesters, 4 Assessment Periods Each)".into(),
                 name_ar: "نظام الفصلين الدراسيين (فصلان، 4 فترات تقييم لكل فصل)".into(),
                 institution_type: "school".into(),
                 structure: serde_json::json!([
@@ -483,10 +497,10 @@ impl BootstrapService {
                         "type": "term",
                         "weight": 50,
                         "children": [
-                            { "name": "Month 1", "name_ar": "الشهر الأول", "type": "month", "weight": 100 },
-                            { "name": "Month 2", "name_ar": "الشهر الثاني", "type": "month", "weight": 100 },
-                            { "name": "Month 3", "name_ar": "الشهر الثالث", "type": "month", "weight": 100 },
-                            { "name": "Term 1 Final Exam", "name_ar": "اختبار نهاية الفصل الأول", "type": "exam", "weight": 30 }
+                            { "name": "Month 1", "name_ar": "الشهر الأول", "type": "month", "weight": 20 },
+                            { "name": "Month 2", "name_ar": "الشهر الثاني", "type": "month", "weight": 20 },
+                            { "name": "Month 3", "name_ar": "الشهر الثالث", "type": "month", "weight": 20 },
+                            { "name": "Term 1 Final Exam", "name_ar": "الاختبار النهائي للفصل الأول", "type": "exam", "weight": 40 }
                         ]
                     },
                     {
@@ -495,14 +509,14 @@ impl BootstrapService {
                         "type": "term",
                         "weight": 50,
                         "children": [
-                            { "name": "Month 1", "name_ar": "الشهر الأول", "type": "month", "weight": 100 },
-                            { "name": "Month 2", "name_ar": "الشهر الثاني", "type": "month", "weight": 100 },
-                            { "name": "Month 3", "name_ar": "الشهر الثالث", "type": "month", "weight": 100 },
-                            { "name": "Term 2 Final Exam", "name_ar": "اختبار نهاية الفصل الثاني", "type": "exam", "weight": 30 }
+                            { "name": "Month 4", "name_ar": "الشهر الرابع", "type": "month", "weight": 20 },
+                            { "name": "Month 5", "name_ar": "الشهر الخامس", "type": "month", "weight": 20 },
+                            { "name": "Month 6", "name_ar": "الشهر السادس", "type": "month", "weight": 20 },
+                            { "name": "Term 2 Final Exam", "name_ar": "الاختبار النهائي للفصل الثاني", "type": "exam", "weight": 40 }
                         ]
                     }
                 ]),
-                is_default: true,
+                is_default: is_school,
             },
             ValidatedPeriodTemplate {
                 id: Uuid::new_v4(), org_id,
@@ -518,7 +532,7 @@ impl BootstrapService {
             },
             ValidatedPeriodTemplate {
                 id: Uuid::new_v4(), org_id,
-                name: "Four Quarters".into(),
+                name: "Four Quarters System".into(),
                 name_ar: "نظام الأرباع السنوية (4 أرباع)".into(),
                 institution_type: "school".into(),
                 structure: serde_json::json!([
@@ -529,6 +543,90 @@ impl BootstrapService {
                 ]),
                 is_default: false,
             },
+
+            // ── University / Higher Education Templates ─────────────────────
+            ValidatedPeriodTemplate {
+                id: Uuid::new_v4(), org_id,
+                name: "University Semesters + Summer Session".into(),
+                name_ar: "النظام الجامعي الفصلي (فصلان دراسيان + فصل صيفي)".into(),
+                institution_type: "university".into(),
+                structure: serde_json::json!([
+                    {
+                        "name": "Fall Semester",
+                        "name_ar": "الفصل الدراسي الخريفي (الأول)",
+                        "type": "semester",
+                        "weight": 50,
+                        "children": [
+                            { "name": "Midterm Exam", "name_ar": "اختبار منتصف الفصل الخريفي", "type": "exam", "weight": 30 },
+                            { "name": "Coursework & Practical", "name_ar": "الأعمال الفصلية والمختبرات", "type": "month", "weight": 20 },
+                            { "name": "Final Semester Exam", "name_ar": "الاختبار النهائي للفصل الخريفي", "type": "exam", "weight": 50 }
+                        ]
+                    },
+                    {
+                        "name": "Spring Semester",
+                        "name_ar": "الفصل الدراسي الربيعي (الثاني)",
+                        "type": "semester",
+                        "weight": 50,
+                        "children": [
+                            { "name": "Midterm Exam", "name_ar": "اختبار منتصف الفصل الربيعي", "type": "exam", "weight": 30 },
+                            { "name": "Coursework & Practical", "name_ar": "الأعمال الفصلية والمختبرات", "type": "month", "weight": 20 },
+                            { "name": "Final Semester Exam", "name_ar": "الاختبار النهائي للفصل الربيعي", "type": "exam", "weight": 50 }
+                        ]
+                    },
+                    {
+                        "name": "Summer Session (Optional)",
+                        "name_ar": "الفصل الدراسي الصيفي (اختياري)",
+                        "type": "semester",
+                        "weight": 0,
+                        "children": [
+                            { "name": "Summer Intensive Midterm", "name_ar": "اختبار منتصف الصيفي", "type": "exam", "weight": 40 },
+                            { "name": "Summer Final Exam", "name_ar": "الاختبار النهائي للصيفي", "type": "exam", "weight": 60 }
+                        ]
+                    }
+                ]),
+                is_default: is_uni,
+            },
+
+            // ── Technical Institute / Training Center Templates ─────────────
+            ValidatedPeriodTemplate {
+                id: Uuid::new_v4(), org_id,
+                name: "Modular Vocational System (3 Modules + Capstone)".into(),
+                name_ar: "نظام الوحدات والمساقات التدريبية (3 وحدات + مشروع التخرج والتقييم النهائي)".into(),
+                institution_type: "institute".into(),
+                structure: serde_json::json!([
+                    {
+                        "name": "Module 1: Foundations",
+                        "name_ar": "الوحدة التدريبية الأولى: الأساسيات",
+                        "type": "module",
+                        "weight": 30,
+                        "children": [
+                            { "name": "Theory Assessment", "name_ar": "التقييم النظري للوحدة الأولى", "type": "exam", "weight": 50 },
+                            { "name": "Hands-on Workshop", "name_ar": "التطبيق العملي للورشة", "type": "month", "weight": 50 }
+                        ]
+                    },
+                    {
+                        "name": "Module 2: Advanced Practice",
+                        "name_ar": "الوحدة التدريبية الثانية: التطبيقات المتقدمة",
+                        "type": "module",
+                        "weight": 30,
+                        "children": [
+                            { "name": "Theory Assessment", "name_ar": "التقييم النظري للوحدة الثانية", "type": "exam", "weight": 50 },
+                            { "name": "Hands-on Workshop", "name_ar": "التطبيق العملي للورشة", "type": "month", "weight": 50 }
+                        ]
+                    },
+                    {
+                        "name": "Module 3: Capstone & Internship",
+                        "name_ar": "الوحدة التدريبية الثالثة: مشروع التخرج والتدريب الميداني",
+                        "type": "module",
+                        "weight": 40,
+                        "children": [
+                            { "name": "Final Practical Assessment", "name_ar": "التقييم العملي والمهني النهائي", "type": "exam", "weight": 60 },
+                            { "name": "Capstone Project Evaluation", "name_ar": "مناقشة وتقييم مشروع التخرج", "type": "exam", "weight": 40 }
+                        ]
+                    }
+                ]),
+                is_default: is_inst,
+            }
         ]
     }
 

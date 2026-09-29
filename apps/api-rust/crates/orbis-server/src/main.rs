@@ -404,7 +404,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         report_org_context_resolver: org_context_resolver,
         // ── Bootstrap & System Services ──────────────────────────
         bootstrap_service: Arc::new(orbis_app::services::BootstrapService::new(
-            Arc::new(orbis_infra::adapters::bootstrap_adapter::BootstrapAdapterImpl {
+            Arc::new(orbis_infra::repositories::bootstrap_repo::BootstrapRepoImpl {
                 db: db.clone(),
             }),
             Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl {
@@ -415,7 +415,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Arc::new(orbis_infra::adapters::entitlement_adapter::UnlicensedEntitlementProvider),
         )),
         onboarding_service: Arc::new(orbis_app::services::OnboardingService::new(
-            Arc::new(orbis_infra::adapters::bootstrap_adapter::OnboardingAdapterImpl {
+            Arc::new(orbis_infra::repositories::onboarding_repo::OnboardingRepoImpl {
                 db: db.clone(),
             }),
             Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl {

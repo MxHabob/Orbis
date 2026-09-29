@@ -26,3 +26,5 @@ pub mod system_repo;
 pub mod employee_repo;
 pub mod group_repo;
 pub mod sequence_repo;
+pub mod bootstrap_repo;
+pub mod onboarding_repo;

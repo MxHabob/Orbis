@@ -650,7 +650,9 @@ export type CreatePeriodRequest = {
 
 export type CreateRoomRequest = {
     capacity: number;
+    floor?: number | null;
     name: string;
+    name_ar?: string | null;
     org_unit_id?: string | null;
     room_type: string;
 };
@@ -1648,8 +1650,10 @@ export type RoleDto = {
 export type RoomDto = {
     capacity: number;
     created_at: string;
+    floor?: number | null;
     id: string;
     name: string;
+    name_ar?: string | null;
     org_id: string;
     org_unit_id?: string | null;
     room_type: string;
@@ -2067,7 +2071,9 @@ export type UpdateOrgUnitRequest = {
 
 export type UpdateRoomRequest = {
     capacity?: number | null;
+    floor?: number | null;
     name?: string | null;
+    name_ar?: string | null;
     org_unit_id?: string | null;
     room_type?: string | null;
 };

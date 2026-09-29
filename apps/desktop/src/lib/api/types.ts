@@ -791,6 +791,7 @@ export interface CompleteOrganizationOnboardingRequest {
       nameAr?: string;
       category: string;
       defaultAmount: number;
+      applicableLevels?: string[];
       frequency: string;
       isMandatory?: boolean;
     }>;

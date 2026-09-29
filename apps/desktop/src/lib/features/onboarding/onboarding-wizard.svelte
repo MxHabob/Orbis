@@ -4,13 +4,10 @@
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { getLocale } from "$lib/paraglide/runtime";
 import { onboardingState } from "./state.svelte";
 import { authStore, systemStore } from "$lib/stores";
-
 import OnboardingStepper from "./onboarding-stepper.svelte";
 import OnboardingFooter from "./onboarding-footer.svelte";
-
 import OrganizationBootstrapStep from "./steps/organization-bootstrap-step.svelte";
 import WelcomeStep from "./steps/welcome-step.svelte";
 import AcademicCalendarStep from "./steps/academic-calendar-step.svelte";
@@ -21,10 +18,8 @@ import SubjectsStep from "./steps/subjects-step.svelte";
 import FinancialSetupStep from "./steps/financial-setup-step.svelte";
 import ReviewStep from "./steps/review-step.svelte";
 import LaunchStep from "./steps/launch-step.svelte";
-
 import { InfoCircle } from "@orbis/icons";
 
-const isArabic = $derived(getLocale().startsWith("ar"));
 let needsBootstrap = $derived(!authStore.isAuthenticated);
 
 onMount(async () => {
@@ -40,7 +35,6 @@ function handleStepClick(step: number) {
 </script>
 
 <div class="h-full w-full bg-background text-foreground flex flex-col overflow-hidden font-sans select-none">
-
   {#if !needsBootstrap}
     <OnboardingStepper
       currentStep={onboardingState.currentStep}

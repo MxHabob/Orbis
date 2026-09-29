@@ -22,23 +22,25 @@ impl RoomRepository for SchedulingRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainRoom>, DomainError> {
         let model = RoomEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(|m| DomainRoom {
-            id: m.id, org_id: m.org_id, name: m.name, capacity: m.capacity,
-            room_type: m.room_type, org_unit_id: m.org_unit_id, created_at: m.created_at, updated_at: m.updated_at
+            id: m.id, org_id: m.org_id, name: m.name, name_ar: m.name_ar, capacity: m.capacity,
+            room_type: m.room_type, floor: m.floor, org_unit_id: m.org_unit_id, created_at: m.created_at, updated_at: m.updated_at
         }))
     }
 
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainRoom>, DomainError> {
         let models = RoomEntity::find().filter(room::Column::OrgId.eq(org_id)).all(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(models.into_iter().map(|m| DomainRoom {
-            id: m.id, org_id: m.org_id, name: m.name, capacity: m.capacity,
-            room_type: m.room_type, org_unit_id: m.org_unit_id, created_at: m.created_at, updated_at: m.updated_at
+            id: m.id, org_id: m.org_id, name: m.name, name_ar: m.name_ar, capacity: m.capacity,
+            room_type: m.room_type, floor: m.floor, org_unit_id: m.org_unit_id, created_at: m.created_at, updated_at: m.updated_at
         }).collect())
     }
 
     async fn save(&self, room: &DomainRoom) -> Result<(), DomainError> {
         let active = room::ActiveModel {
             id: Set(room.id), org_id: Set(room.org_id), name: Set(room.name.clone()),
+            name_ar: Set(room.name_ar.clone()),
             capacity: Set(room.capacity), room_type: Set(room.room_type.clone()),
+            floor: Set(room.floor),
             org_unit_id: Set(room.org_unit_id),
             created_at: Set(room.created_at), updated_at: Set(room.updated_at),
         };

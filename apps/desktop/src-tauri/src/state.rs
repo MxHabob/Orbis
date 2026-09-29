@@ -409,7 +409,7 @@ impl AppState {
         );
 
         let bootstrap_port: Arc<dyn orbis_app::ports::bootstrap::BulkBootstrapPort> = Arc::new(
-            orbis_infra::adapters::bootstrap_adapter::BootstrapAdapterImpl { db: db.clone() },
+            orbis_infra::repositories::bootstrap_repo::BootstrapRepoImpl { db: db.clone() },
         );
 
         let system_service = Arc::new(orbis_app::services::SystemService::new(
@@ -425,7 +425,7 @@ impl AppState {
         ));
 
         let onboarding_service = Arc::new(orbis_app::services::OnboardingService::new(
-            Arc::new(orbis_infra::adapters::bootstrap_adapter::OnboardingAdapterImpl { db: db.clone() }),
+            Arc::new(orbis_infra::repositories::onboarding_repo::OnboardingRepoImpl { db: db.clone() }),
             system_repo_impl.clone(),
         ));
 

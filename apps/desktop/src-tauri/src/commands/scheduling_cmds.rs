@@ -14,8 +14,10 @@ pub struct RoomDto {
     pub id: String,
     pub org_id: String,
     pub name: String,
+    pub name_ar: Option<String>,
     pub room_type: String,
     pub capacity: i32,
+    pub floor: Option<i32>,
     pub org_unit_id: Option<String>,
     pub created_at: String,
     pub updated_at: String,
@@ -24,17 +26,21 @@ pub struct RoomDto {
 #[derive(Deserialize)]
 pub struct CreateRoomInput {
     pub name: String,
+    pub name_ar: Option<String>,
     pub capacity: i32,
     #[serde(default = "default_room_type")]
     pub room_type: String,
+    pub floor: Option<i32>,
     pub org_unit_id: Option<String>,
 }
 
 #[derive(Deserialize)]
 pub struct UpdateRoomInput {
     pub name: Option<String>,
+    pub name_ar: Option<String>,
     pub capacity: Option<i32>,
     pub room_type: Option<String>,
+    pub floor: Option<i32>,
     pub org_unit_id: Option<String>,
 }
 
@@ -142,8 +148,10 @@ fn room_dto(r: orbis_domain::entities::room::Room) -> RoomDto {
         id: r.id.to_string(),
         org_id: r.org_id.to_string(),
         name: r.name,
+        name_ar: r.name_ar,
         room_type: r.room_type,
         capacity: r.capacity,
+        floor: r.floor,
         org_unit_id: r.org_unit_id.map(|u| u.to_string()),
         created_at: r.created_at.to_rfc3339(),
         updated_at: r.updated_at.to_rfc3339(),
@@ -183,7 +191,7 @@ fn lesson_dto(l: orbis_domain::entities::scheduled_lesson::ScheduledLesson) -> S
 pub async fn scheduling_create_room(request: CreateRoomInput, state: State<'_, AppState>) -> Result<ApiResponse<RoomDto>, String> {
     let ctx = make_ctx(&state);
     let org_unit_id = request.org_unit_id.and_then(|u| Uuid::parse_str(&u).ok());
-    let r = state.scheduling_service.create_room(&ctx, ctx.tenant_id, request.name, request.capacity, request.room_type, org_unit_id)
+    let r = state.scheduling_service.create_room(&ctx, ctx.tenant_id, request.name, request.name_ar, request.capacity, request.room_type, request.floor, org_unit_id)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -195,7 +203,7 @@ pub async fn scheduling_update_room(id: String, request: UpdateRoomInput, state:
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid room ID")?;
     let org_unit_id = request.org_unit_id.map(|u| Uuid::parse_str(&u).ok());
-    let r = state.scheduling_service.update_room(&ctx, uid, request.name, request.capacity, request.room_type, org_unit_id)
+    let r = state.scheduling_service.update_room(&ctx, uid, request.name, request.name_ar, request.capacity, request.room_type, request.floor, org_unit_id)
         .await
         .map_err(|e| e.to_string())?;
 

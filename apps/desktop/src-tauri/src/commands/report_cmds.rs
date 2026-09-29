@@ -277,20 +277,10 @@ pub async fn audit_list_logs(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<AuditLogDto>>, String> {
     let ctx = make_ctx(&state);
-    let mut entries = state.report_audit_repo
+    let entries = state.report_audit_repo
         .list_by_org(ctx.tenant_id, limit, offset)
         .await
         .map_err(|e| e.to_string())?;
-
-    // Self-healing: if no audit logs exist yet for this org, seed initial audit logs
-    if entries.is_empty() && offset.unwrap_or(0) == 0 {
-        let now = chrono::Utc::now().to_rfc3339();
-        let admin_id = ctx.actor.id().unwrap_or_default();
-        let _ = orbis_infra::adapters::bootstrap_adapter::seed_initial_audit_logs(&state.db, ctx.tenant_id, admin_id, &now).await;
-        if let Ok(reloaded) = state.report_audit_repo.list_by_org(ctx.tenant_id, limit, offset).await {
-            entries = reloaded;
-        }
-    }
 
     let dtos = entries.into_iter().map(|e| AuditLogDto {
         id: e.id.to_string(),

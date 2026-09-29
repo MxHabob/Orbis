@@ -913,18 +913,10 @@ pub async fn finance_list_discount_templates(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<DiscountTemplateDto>>, String> {
     let ctx = make_ctx(&state);
-    let mut items = state.discount_template_repo
+    let items = state.discount_template_repo
         .find_by_org(ctx.tenant_id)
         .await
         .map_err(|e| e.to_string())?;
-
-    if items.is_empty() {
-        let now = chrono::Utc::now().to_rfc3339();
-        let _ = orbis_infra::adapters::bootstrap_adapter::seed_discount_templates(&state.db, ctx.tenant_id, &now).await;
-        if let Ok(reloaded) = state.discount_template_repo.find_by_org(ctx.tenant_id).await {
-            items = reloaded;
-        }
-    }
 
     Ok(ok(items.into_iter().map(discount_template_to_dto).collect()))
 }

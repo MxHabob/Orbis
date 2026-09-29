@@ -24,7 +24,6 @@ import { OrbisGrid, type OrbisColumnDef, type ActionItem, type GridActionEvent }
 import { l, isAr, formatDate } from "$lib/core/i18n";
 import { confirmStore } from "$lib/stores";
 
-import BranchCard from "./components/branch-card.svelte";
 import BranchSheet from "./components/branch-sheet.svelte";
 import BranchSettingsCard from "./components/branch-settings-card.svelte";
 import BranchDetailsView from "./components/branch-details-view.svelte";
