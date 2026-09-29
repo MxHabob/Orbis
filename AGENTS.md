@@ -156,7 +156,12 @@ Every agent starting a session in this repository MUST:
     - Built root `+page.svelte` matching `FinanceOverview` layout with top 4 KPI metric cards, toolbar controls, and OrbisGrid / Cards view.
     - Added deep-linked sub-routes `[branchId]/+page.svelte` (full branch details, classes, rooms, sub-units, staff) and `governance/+page.svelte`.
     - Built `branch-details-view.svelte` providing deep multi-tab exploration for any branch (Classes, Rooms & Halls, Child Sub-Units, Staff & Faculty, Location & Telemetry Specs).
-    - Reconciled `branch-form.svelte` and `branch-sheet.svelte` to match standard system sheets and shared UI components (`FormField`, `Select`, `Input`, `Checkbox`).
+  - **Onboarding & Bootstrap Architectural Reconciliation:**
+    - **Separation of Concerns & Source of Truth:** Technical bootstrap (`BootstrapService` / `bootstrap_adapter.rs`) is strictly confined to system provisioning (Super Admin, system roles/permissions, standard currencies, period templates catalog in DB, COA, settings, AST report templates). Removed all hardcoded creation of OrgUnits, Campuses, Buildings, Rooms, Academic Years, and Academic Periods from technical bootstrap.
+    - **Onboarding Authority (`OnboardingService` / `OnboardingPort`):** Exclusively owns and constructs the institutional topology (OrgUnits hierarchy with campus & buildings, rooms with `floor`, `capacity`, and `name_ar`, academic year, multi-level academic periods with parent IDs, classes, subjects, timeslots, fee templates, and document requirements).
+    - **Period Templates Dynamic Catalog:** Removed static `DEFAULT_PERIOD_TEMPLATES` from Desktop frontend; Desktop onboarding now queries `api.listPeriodTemplates()` to dynamically populate period template options directly from the backend catalog with full structure and Arabic translations.
+    - **Legacy Removal:** Purged legacy `complete_initial_setup` / `InitialSetupRequest` / `bootstrap_initial_setup` endpoints and IPC handlers across REST routes, Tauri commands, Desktop API clients, and System store.
+    - **CLI Role Clarification:** Restrained CLI tools to developer maintenance, diagnostics, and repairs without duplicate launch/bootstrap logic.
   - **Verification:**
     - `apps/api-rust` cargo check: 0 errors
     - `apps/desktop/src-tauri` cargo check: 0 errors

@@ -1372,7 +1372,11 @@ export type PaymentDto = {
 
 export type PeriodTemplateDto = {
     id: string;
+    institution_type: string;
+    is_default: boolean;
     name: string;
+    name_ar?: string | null;
+    structure: unknown;
 };
 
 export type PermissionRuleDto = {
@@ -3070,20 +3074,6 @@ export type BootstrapOrgEndpointData = {
 export type BootstrapOrgEndpointResponses = {
     /**
      * Organization bootstrapped
-     */
-    200: unknown;
-};
-
-export type BootstrapInitialSetupEndpointData = {
-    body: unknown;
-    path?: never;
-    query?: never;
-    url: '/api/v1/bootstrap/initial-setup';
-};
-
-export type BootstrapInitialSetupEndpointResponses = {
-    /**
-     * Initial academic setup completed
      */
     200: unknown;
 };

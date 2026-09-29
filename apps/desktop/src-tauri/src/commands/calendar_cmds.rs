@@ -74,6 +74,10 @@ pub struct AcademicContextResponse {
 pub struct PeriodTemplateDto {
     pub id: String,
     pub name: String,
+    pub name_ar: Option<String>,
+    pub institution_type: String,
+    pub structure: serde_json::Value,
+    pub is_default: bool,
 }
 
 fn year_dto(y: orbis_domain::entities::academic_year::AcademicYear) -> AcademicYearDto {
@@ -227,10 +231,16 @@ pub async fn calendar_close_period(id: String, state: State<'_, AppState>) -> Re
 }
 
 #[tauri::command]
-pub async fn calendar_list_period_templates() -> Result<ApiResponse<Vec<PeriodTemplateDto>>, String> {
-    Ok(ok(vec![
-        PeriodTemplateDto { id: "semesters".to_string(), name: "Two Semesters (Fall/Spring)".to_string() },
-        PeriodTemplateDto { id: "trimesters".to_string(), name: "Three Trimesters".to_string() },
-        PeriodTemplateDto { id: "quarters".to_string(), name: "Four Quarters".to_string() },
-    ]))
+pub async fn calendar_list_period_templates(state: State<'_, AppState>) -> Result<ApiResponse<Vec<PeriodTemplateDto>>, String> {
+    let ctx = make_ctx(&state);
+    let templates = state.period_template_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    let dtos = templates.into_iter().map(|t| PeriodTemplateDto {
+        id: t.id.to_string(),
+        name: t.name,
+        name_ar: t.name_ar,
+        institution_type: t.institution_type,
+        structure: t.structure,
+        is_default: t.is_default,
+    }).collect();
+    Ok(ok(dtos))
 }

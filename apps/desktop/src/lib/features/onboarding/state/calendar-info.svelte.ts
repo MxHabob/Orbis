@@ -1,18 +1,15 @@
-import type { PeriodTemplateDef } from "../types";
 import { api } from "$lib/api";
+import type { PeriodTemplateDef } from "../types";
 
 // Generate dynamic defaults based on current date
 function getDefaultStartDate(): string {
   const now = new Date();
-  // If we're past August, use this year's September; otherwise use last year's
   const year = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear();
-  // Default academic year starts September 1st
   return `${year}-09-01`;
 }
 
 function getDefaultEndDate(): string {
   const start = new Date(getDefaultStartDate());
-  // Academic year is typically ~10 months (June 30)
   const endYear = start.getFullYear() + 1;
   return `${endYear}-06-30`;
 }

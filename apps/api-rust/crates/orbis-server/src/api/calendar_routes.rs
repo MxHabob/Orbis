@@ -77,6 +77,10 @@ pub struct CreatePeriodRequest {
 pub struct PeriodTemplateDto {
     pub id: Uuid,
     pub name: String,
+    pub name_ar: Option<String>,
+    pub institution_type: String,
+    pub structure: serde_json::Value,
+    pub is_default: bool,
 }
 
 // ── Helper ──────────────────────────────────────────────────────
@@ -286,7 +290,12 @@ async fn list_period_templates(
 ) -> Result<Json<ApiResponse<Vec<PeriodTemplateDto>>>, ApiError> {
     let templates = state.period_template_repo.find_by_org(ctx.tenant_id).await?;
     let dtos = templates.into_iter().map(|t| PeriodTemplateDto {
-        id: t.id, name: t.name,
+        id: t.id,
+        name: t.name,
+        name_ar: t.name_ar,
+        institution_type: t.institution_type,
+        structure: t.structure,
+        is_default: t.is_default,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
