@@ -213,7 +213,7 @@ function handleGoToOnboarding() {
         </a>
 
         <a 
-          href="/{orgId}/settings/academic-policy" 
+          href="/{orgId}/ai-center/settings" 
           class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           title={m.common_autopilot_popover_config_title()}
         >

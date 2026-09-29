@@ -10,7 +10,6 @@ import {
   AuthenticationSettingsCard,
   EnrollmentSettingsCard,
   FinanceSettingsCard,
-  AutopilotSettingsCard,
 } from "$lib/features/settings";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
@@ -63,26 +62,6 @@ let lateFeeType = $state("fixed");
 let lateFeeValue = $state(0.0);
 let allowPartialPayments = $state(false);
 
-// Autopilot state
-let autopilotEnabled = $state(true);
-let autopilotMode = $state("suggested");
-let autoOpenEnrollment = $state(false);
-let autoCloseEnrollment = $state(true);
-let autoRecordAttendance = $state(true);
-let autoFeeAssignment = $state(true);
-let autoGradeEntryReminder = $state(true);
-let autoPeriodLock = $state(false);
-let autoPromotion = $state(false);
-let autoExamScheduling = $state(false);
-let autoReportGeneration = $state(true);
-let graceDays = $state(3);
-let notifyBeforeDeadlineHours = $state(24);
-let maxRetries = $state(3);
-let autoAdvancePeriods = $state(false);
-let autoLockGrades = $state(false);
-let gradeEntryAutoCloseDays = $state(7);
-let allowGradeEditAfterClose = $state(false);
-
 let initialValues = $state<any>(null);
 const settingsForm = new FormController({
   initialValues: {
@@ -114,26 +93,6 @@ async function loadSettings() {
       lateFeeType = s.finance.late_fee_type;
       lateFeeValue = s.finance.late_fee_value;
       allowPartialPayments = s.finance.allow_partial_payments;
-    }
-    if (s.autopilot) {
-      autopilotEnabled = s.autopilot.enabled;
-      autopilotMode = s.autopilot.mode;
-      autoOpenEnrollment = s.autopilot.auto_open_enrollment;
-      autoCloseEnrollment = s.autopilot.auto_close_enrollment;
-      autoRecordAttendance = s.autopilot.auto_record_attendance;
-      autoFeeAssignment = s.autopilot.auto_fee_assignment;
-      autoGradeEntryReminder = s.autopilot.auto_grade_entry_reminder;
-      autoPeriodLock = s.autopilot.auto_period_lock;
-      autoPromotion = s.autopilot.auto_promotion;
-      autoExamScheduling = s.autopilot.auto_exam_scheduling;
-      autoReportGeneration = s.autopilot.auto_report_generation;
-      graceDays = s.autopilot.grace_days;
-      notifyBeforeDeadlineHours = s.autopilot.notify_before_deadline_hours;
-      maxRetries = s.autopilot.max_retries;
-      autoAdvancePeriods = s.autopilot.auto_advance_periods;
-      autoLockGrades = s.autopilot.auto_lock_grades;
-      gradeEntryAutoCloseDays = s.autopilot.grade_entry_auto_close_days;
-      allowGradeEditAfterClose = s.autopilot.allow_grade_edit_after_close;
     }
   } catch {
     // Non-fatal if settings fail to load initially
@@ -174,24 +133,6 @@ $effect(() => {
         lateFeeType,
         lateFeeValue,
         allowPartialPayments,
-        autopilotEnabled,
-        autopilotMode,
-        autoOpenEnrollment,
-        autoCloseEnrollment,
-        autoRecordAttendance,
-        autoFeeAssignment,
-        autoGradeEntryReminder,
-        autoPeriodLock,
-        autoPromotion,
-        autoExamScheduling,
-        autoReportGeneration,
-        graceDays,
-        notifyBeforeDeadlineHours,
-        maxRetries,
-        autoAdvancePeriods,
-        autoLockGrades,
-        gradeEntryAutoCloseDays,
-        allowGradeEditAfterClose,
       };
     });
     systemStore.loadEntitlement();
@@ -219,25 +160,7 @@ const isDirty = $derived.by(() => {
     invoiceDueDays !== initialValues.invoiceDueDays ||
     lateFeeType !== initialValues.lateFeeType ||
     lateFeeValue !== initialValues.lateFeeValue ||
-    allowPartialPayments !== initialValues.allowPartialPayments ||
-    autopilotEnabled !== initialValues.autopilotEnabled ||
-    autopilotMode !== initialValues.autopilotMode ||
-    autoOpenEnrollment !== initialValues.autoOpenEnrollment ||
-    autoCloseEnrollment !== initialValues.autoCloseEnrollment ||
-    autoRecordAttendance !== initialValues.autoRecordAttendance ||
-    autoFeeAssignment !== initialValues.autoFeeAssignment ||
-    autoGradeEntryReminder !== initialValues.autoGradeEntryReminder ||
-    autoPeriodLock !== initialValues.autoPeriodLock ||
-    autoPromotion !== initialValues.autoPromotion ||
-    autoExamScheduling !== initialValues.autoExamScheduling ||
-    autoReportGeneration !== initialValues.autoReportGeneration ||
-    graceDays !== initialValues.graceDays ||
-    notifyBeforeDeadlineHours !== initialValues.notifyBeforeDeadlineHours ||
-    maxRetries !== initialValues.maxRetries ||
-    autoAdvancePeriods !== initialValues.autoAdvancePeriods ||
-    autoLockGrades !== initialValues.autoLockGrades ||
-    gradeEntryAutoCloseDays !== initialValues.gradeEntryAutoCloseDays ||
-    allowGradeEditAfterClose !== initialValues.allowGradeEditAfterClose
+    allowPartialPayments !== initialValues.allowPartialPayments
   );
 });
 
@@ -262,24 +185,6 @@ function handleReset() {
   lateFeeType = initialValues.lateFeeType;
   lateFeeValue = initialValues.lateFeeValue;
   allowPartialPayments = initialValues.allowPartialPayments;
-  autopilotEnabled = initialValues.autopilotEnabled;
-  autopilotMode = initialValues.autopilotMode;
-  autoOpenEnrollment = initialValues.autoOpenEnrollment;
-  autoCloseEnrollment = initialValues.autoCloseEnrollment;
-  autoRecordAttendance = initialValues.autoRecordAttendance;
-  autoFeeAssignment = initialValues.autoFeeAssignment;
-  autoGradeEntryReminder = initialValues.autoGradeEntryReminder;
-  autoPeriodLock = initialValues.autoPeriodLock;
-  autoPromotion = initialValues.autoPromotion;
-  autoExamScheduling = initialValues.autoExamScheduling;
-  autoReportGeneration = initialValues.autoReportGeneration;
-  graceDays = initialValues.graceDays;
-  notifyBeforeDeadlineHours = initialValues.notifyBeforeDeadlineHours;
-  maxRetries = initialValues.maxRetries;
-  autoAdvancePeriods = initialValues.autoAdvancePeriods;
-  autoLockGrades = initialValues.autoLockGrades;
-  gradeEntryAutoCloseDays = initialValues.gradeEntryAutoCloseDays;
-  allowGradeEditAfterClose = initialValues.allowGradeEditAfterClose;
 }
 
 async function handleSubmit(e?: Event) {
@@ -320,26 +225,7 @@ async function handleSubmit(e?: Event) {
             invoicing_integration_id: rawSettings.finance?.invoicing_integration_id ?? null,
             primary_payment_gateway_id: rawSettings.finance?.primary_payment_gateway_id ?? null,
           },
-          autopilot: {
-            enabled: autopilotEnabled,
-            mode: autopilotMode,
-            auto_open_enrollment: autoOpenEnrollment,
-            auto_close_enrollment: autoCloseEnrollment,
-            auto_record_attendance: autoRecordAttendance,
-            auto_fee_assignment: autoFeeAssignment,
-            auto_grade_entry_reminder: autoGradeEntryReminder,
-            auto_period_lock: autoPeriodLock,
-            auto_promotion: autoPromotion,
-            auto_exam_scheduling: autoExamScheduling,
-            auto_report_generation: autoReportGeneration,
-            grace_days: graceDays,
-            notify_before_deadline_hours: notifyBeforeDeadlineHours,
-            max_retries: maxRetries,
-            auto_advance_periods: autoAdvancePeriods,
-            auto_lock_grades: autoLockGrades,
-            grade_entry_auto_close_days: gradeEntryAutoCloseDays,
-            allow_grade_edit_after_close: allowGradeEditAfterClose,
-          },
+          autopilot: rawSettings.autopilot,
         });
         rawSettings = updated;
       } catch (err) {
@@ -369,24 +255,6 @@ async function handleSubmit(e?: Event) {
       lateFeeType,
       lateFeeValue,
       allowPartialPayments,
-      autopilotEnabled,
-      autopilotMode,
-      autoOpenEnrollment,
-      autoCloseEnrollment,
-      autoRecordAttendance,
-      autoFeeAssignment,
-      autoGradeEntryReminder,
-      autoPeriodLock,
-      autoPromotion,
-      autoExamScheduling,
-      autoReportGeneration,
-      graceDays,
-      notifyBeforeDeadlineHours,
-      maxRetries,
-      autoAdvancePeriods,
-      autoLockGrades,
-      gradeEntryAutoCloseDays,
-      allowGradeEditAfterClose,
     };
   } else {
     toast.error(
@@ -461,27 +329,6 @@ function handleSaveAvatar(e: Event) {
         {isSaving}
       />
 
-      <AutopilotSettingsCard
-        bind:enabled={autopilotEnabled}
-        bind:mode={autopilotMode}
-        bind:autoOpenEnrollment
-        bind:autoCloseEnrollment
-        bind:autoRecordAttendance
-        bind:autoFeeAssignment
-        bind:autoGradeEntryReminder
-        bind:autoPeriodLock
-        bind:autoPromotion
-        bind:autoExamScheduling
-        bind:autoReportGeneration
-        bind:graceDays
-        bind:notifyBeforeDeadlineHours
-        bind:maxRetries
-        bind:autoAdvancePeriods
-        bind:autoLockGrades
-        bind:gradeEntryAutoCloseDays
-        bind:allowGradeEditAfterClose
-        {isSaving}
-      />
 
       <BranchSettingsCard {org} {isSaving} />
 
