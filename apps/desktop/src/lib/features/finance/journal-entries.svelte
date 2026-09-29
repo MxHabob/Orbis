@@ -166,17 +166,18 @@ async function handleSaveNew() {
 }
 
 async function handleReverse(entry: JournalEntryDto) {
-  const confirmed = await confirmStore.show({
+  const confirmed = await confirmStore.prompt({
     title: "عكس سند القيد",
-    message: `هل أنت متأكد من إنشاء قيد عكسي للسند رقم "${entry.reference_number || entry.id.slice(0, 8)}"؟`,
+    description: `هل أنت متأكد من إنشاء قيد عكسي للسند رقم "${entry.reference_number || entry.id.slice(0, 8)}"؟`,
     confirmText: "عكس القيد",
     cancelText: "إلغاء",
+    variant: "destructive",
   });
 
   if (!confirmed) return;
 
   try {
-    await api.reverseJournalEntry(entry.id);
+    await api.reverseJournalEntry(entry.id, { reason: "عكس يدوي من واجهة القيود" });
     toast.success("تم إنشاء القيد العكسي بنجاح");
     await loadData();
   } catch (err: any) {

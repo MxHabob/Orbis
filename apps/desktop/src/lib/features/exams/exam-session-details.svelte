@@ -19,6 +19,7 @@ import { ArrowLeft, ArrowsRightLeft, Bolt, BookOpen, Calendar, CheckCircle, Hash
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";
+import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { api } from "$lib/api";
 import { aiContext, confirmStore } from "$lib/stores";
@@ -57,6 +58,7 @@ let rooms = $state<any[]>([]);
 let isLoading = $state(true);
 let activeTab = $state("subjects");
 let isSubjectSheetOpen = $state(false);
+let isEditSheetOpen = $state(false);
 
 let activeJob = $state<any>(null);
 let solveJobs = $state<any[]>([]);
@@ -228,7 +230,6 @@ async function loadSession() {
       loadedSchedules,
       loadedSeatingNumbers,
       loadedHalls,
-      loadedProctors,
       loadedRooms,
       [classList, subjectList],
     ] = await Promise.all([
@@ -242,7 +243,6 @@ async function loadSession() {
         return [];
       }),
       Promise.resolve([]),
-      Promise.resolve([]),
       api.listRooms().catch((err: unknown) => {
         console.error("Failed to load school rooms", err);
         return [];
@@ -254,6 +254,20 @@ async function loadSession() {
         },
       ),
     ]);
+
+    let loadedProctors: any[] = [];
+    if (loadedSchedules.length > 0) {
+      try {
+        const proctorArrays = await Promise.all(
+          loadedSchedules.map((s: any) =>
+            api.listProctors(s.id).catch(() => []),
+          ),
+        );
+        loadedProctors = proctorArrays.flat();
+      } catch (e) {
+        console.error("Failed to load proctors", e);
+      }
+    }
 
     subjects = loadedSubjects;
     schedules = loadedSchedules;
@@ -395,7 +409,7 @@ async function handleDeleteSchedule(scheduleId: string) {
     variant: "destructive",
   });
   if (!confirmed) return;
-  const promise = Promise.resolve();
+  const promise = api.deleteExamSchedule(scheduleId);
   toast.promise(promise, {
     loading: m.academics_exams_sessions_sessionId_deleting_scheduled_exam(),
     success: m.academics_exams_sessions_sessionId_deleted_exam_successfully(),
@@ -440,14 +454,59 @@ async function handleAllocateHalls() {
 
 async function handleActivate() {
   if (!session) return;
-  const promise = Promise.resolve();
+  const targetStatus = session.status === "active" ? "completed" : "active";
+  const promise = api.updateExamSession(sessionId, { status: targetStatus });
 
   toast.promise(promise, {
-    loading: "جاري تفعيل دورة الامتحانات...",
-    success: "تم تفعيل دورة الامتحانات بنجاح!",
-    error: (err) => (err as any)?.message || "فشل تفعيل دورة الامتحانات",
+    loading: "جاري تحديث حالة دورة الامتحانات...",
+    success: "تم تحديث حالة دورة الامتحانات بنجاح!",
+    error: (err) => (err as any)?.message || "فشل تحديث حالة دورة الامتحانات",
   });
 
+  try {
+    await promise;
+    await loadSession();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function handleDeleteSeating(seatingId: string) {
+  const confirmed = await confirmStore.prompt({
+    title: "حذف رقم الجلوس؟",
+    description: "هل أنت متأكد من رغبتك في حذف رقم الجلوس المحدد؟",
+    confirmText: "حذف",
+    variant: "destructive",
+  });
+  if (!confirmed) return;
+  const promise = api.deleteSeating(seatingId);
+  toast.promise(promise, {
+    loading: "جاري حذف رقم الجلوس...",
+    success: "تم حذف رقم الجلوس بنجاح!",
+    error: (err: any) => (err as any)?.message || "فشل حذف رقم الجلوس",
+  });
+  try {
+    await promise;
+    await loadSession();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function handleDeleteProctor(proctorId: string) {
+  const confirmed = await confirmStore.prompt({
+    title: "إلغاء تكليف المراقب؟",
+    description: "هل أنت متأكد من رغبتك في إلغاء تكليف المراقب من هذه اللجنة؟",
+    confirmText: "إلغاء التكليف",
+    variant: "destructive",
+  });
+  if (!confirmed) return;
+  const promise = api.deleteProctor(proctorId);
+  toast.promise(promise, {
+    loading: "جاري إلغاء تكليف المراقب...",
+    success: "تم إلغاء التكليف بنجاح!",
+    error: (err: any) => (err as any)?.message || "فشل إلغاء التكليف",
+  });
   try {
     await promise;
     await loadSession();
@@ -520,7 +579,7 @@ async function handleAssignProctors() {
 					<Button
 						variant="outline"
 						class="h-7 px-3 text-[10px] flex items-center gap-1 cursor-pointer"
-						onclick={() => toast.info("Edit sheet coming soon")}
+						onclick={() => isEditSheetOpen = true}
 					>
 						<Pencil size={10} />
 						{m.common_action_edit()}
@@ -803,6 +862,7 @@ async function handleAssignProctors() {
 										<TableHead>{m.common_word_student()}</TableHead>
 										<TableHead>{m.common_table_class()}</TableHead>
 										<TableHead>{m.academics_exams_level()}</TableHead>
+										<TableHead class="w-12 text-center">{m.common_action_delete()}</TableHead>
 									</TableRow>
 								</TableHeader>
 								<TableBody>
@@ -821,6 +881,16 @@ async function handleAssignProctors() {
 											<TableCell>{sn.student_name_ar || sn.enrollment_id}</TableCell>
 											<TableCell>{sn.class_id}</TableCell>
 											<TableCell>{sn.level}</TableCell>
+											<TableCell class="text-center">
+												<button
+													type="button"
+													class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer"
+													onclick={() => handleDeleteSeating(sn.id)}
+													title="حذف رقم الجلوس"
+												>
+													<Trash size={12} />
+												</button>
+											</TableCell>
 										</TableRow>
 									{/each}
 								</TableBody>
@@ -917,6 +987,7 @@ async function handleAssignProctors() {
 										<TableHead>{m.academics_exams_committee()}</TableHead>
 										<TableHead>{m.common_user_form_role()}</TableHead>
 										<TableHead class="w-20">{m.common_word_status()}</TableHead>
+										<TableHead class="w-12 text-center">{m.common_action_delete()}</TableHead>
 									</TableRow>
 								</TableHeader>
 								<TableBody>
@@ -931,6 +1002,16 @@ async function handleAssignProctors() {
 												{:else}
 													<span class="text-[9px] text-amber-500">{m.academics_exams_pending_confirmation()}</span>
 												{/if}
+											</TableCell>
+											<TableCell class="text-center">
+												<button
+													type="button"
+													class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer"
+													onclick={() => handleDeleteProctor(p.id)}
+													title="إلغاء تكليف المراقب"
+												>
+													<Trash size={12} />
+												</button>
 											</TableCell>
 										</TableRow>
 									{/each}
@@ -1199,6 +1280,13 @@ async function handleAssignProctors() {
 	bind:open={isSubjectSheetOpen}
 	{orgId}
 	{sessionId}
+	onSuccess={loadSession}
+/>
+
+<SessionCreateSheet
+	bind:open={isEditSheetOpen}
+	{orgId}
+	{session}
 	onSuccess={loadSession}
 />
 

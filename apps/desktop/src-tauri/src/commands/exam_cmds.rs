@@ -288,6 +288,71 @@ pub async fn exam_generate_secrets(request: GenerateSecretsInput, state: State<'
     }).collect()))
 }
 
+#[derive(Deserialize)]
+pub struct UpdateExamSessionInput {
+    pub name: Option<String>,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub status: Option<String>,
+}
+
+#[tauri::command]
+pub async fn exam_update_session(id: String, request: UpdateExamSessionInput, state: State<'_, AppState>) -> Result<ApiResponse<ExamSessionDto>, String> {
+    let ctx = make_ctx(&state);
+    let session_id = Uuid::parse_str(&id).map_err(|_| "Invalid session ID")?;
+    let start_date = match request.start_date {
+        Some(d) => Some(NaiveDate::parse_from_str(&d, "%Y-%m-%d").map_err(|_| "Invalid start_date (expected YYYY-MM-DD)")?),
+        None => None,
+    };
+    let end_date = match request.end_date {
+        Some(d) => Some(NaiveDate::parse_from_str(&d, "%Y-%m-%d").map_err(|_| "Invalid end_date (expected YYYY-MM-DD)")?),
+        None => None,
+    };
+
+    let s = state.scheduling_service.update_exam_session(&ctx, session_id, request.name, start_date, end_date, request.status)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(ExamSessionDto {
+        id: s.id.to_string(), org_id: s.org_id.to_string(), academic_period_id: s.period_id.to_string(),
+        name: s.name,
+        start_date: s.start_date.to_string(), end_date: s.end_date.to_string(),
+        status: s.status,
+    }))
+}
+
+#[tauri::command]
+pub async fn exam_delete_session(id: String, state: State<'_, AppState>) -> Result<ApiResponse<()>, String> {
+    let ctx = make_ctx(&state);
+    let session_id = Uuid::parse_str(&id).map_err(|_| "Invalid session ID")?;
+    state.scheduling_service.delete_exam_session(&ctx, session_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(()))
+}
+
+#[tauri::command]
+pub async fn exam_delete_schedule(id: String, state: State<'_, AppState>) -> Result<ApiResponse<()>, String> {
+    let ctx = make_ctx(&state);
+    let schedule_id = Uuid::parse_str(&id).map_err(|_| "Invalid schedule ID")?;
+    state.scheduling_service.delete_exam_schedule(&ctx, schedule_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(()))
+}
+
+#[tauri::command]
+pub async fn exam_delete_seating(id: String, state: State<'_, AppState>) -> Result<ApiResponse<()>, String> {
+    let ctx = make_ctx(&state);
+    let seating_id = Uuid::parse_str(&id).map_err(|_| "Invalid seating ID")?;
+    state.scheduling_service.delete_seating_number(&ctx, seating_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(()))
+}
+
+#[tauri::command]
+pub async fn exam_delete_secret(id: String, state: State<'_, AppState>) -> Result<ApiResponse<()>, String> {
+    let ctx = make_ctx(&state);
+    let secret_id = Uuid::parse_str(&id).map_err(|_| "Invalid secret ID")?;
+    state.scheduling_service.delete_secret_number(&ctx, secret_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(()))
+}
+
 #[tauri::command]
 pub async fn exam_assign_proctor(request: AssignProctorInput, state: State<'_, AppState>) -> Result<ApiResponse<ProctorDto>, String> {
     let ctx = make_ctx(&state);
@@ -306,4 +371,25 @@ pub async fn exam_assign_proctor(request: AssignProctorInput, state: State<'_, A
         teacher_id: pr.teacher_id.to_string(),
         is_chief: pr.is_chief,
     }))
+}
+
+#[tauri::command]
+pub async fn exam_list_proctors(schedule_id: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<ProctorDto>>, String> {
+    let sid = Uuid::parse_str(&schedule_id).map_err(|_| "Invalid schedule_id")?;
+    let list = state.scheduling_service.list_proctors(sid).await.map_err(|e| e.to_string())?;
+    Ok(ok(list.into_iter().map(|pr| ProctorDto {
+        id: pr.id.to_string(),
+        exam_schedule_id: pr.exam_schedule_id.to_string(),
+        room_id: pr.room_id.to_string(),
+        teacher_id: pr.teacher_id.to_string(),
+        is_chief: pr.is_chief,
+    }).collect()))
+}
+
+#[tauri::command]
+pub async fn exam_delete_proctor(id: String, state: State<'_, AppState>) -> Result<ApiResponse<()>, String> {
+    let ctx = make_ctx(&state);
+    let proctor_id = Uuid::parse_str(&id).map_err(|_| "Invalid proctor ID")?;
+    state.scheduling_service.delete_proctor(&ctx, proctor_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(()))
 }

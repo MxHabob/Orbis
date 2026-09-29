@@ -1,6 +1,6 @@
 //! Exam routes — Sessions, Schedules, Seating, Secrets, Proctors.
 
-use axum::{extract::{State, Path, Query}, routing::{get, post}, Json, Router};
+use axum::{extract::{State, Path, Query}, routing::{get, post, delete}, Json, Router};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use chrono::{NaiveDate, NaiveTime};
@@ -31,6 +31,14 @@ pub struct CreateExamSessionRequest {
     pub name: String,
     pub start_date: NaiveDate,
     pub end_date: NaiveDate,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct UpdateExamSessionRequest {
+    pub name: Option<String>,
+    pub start_date: Option<NaiveDate>,
+    pub end_date: Option<NaiveDate>,
+    pub status: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -137,6 +145,9 @@ pub struct SeatingQuery { pub session_id: Uuid }
 #[derive(Deserialize)]
 pub struct SecretQuery { pub schedule_id: Uuid }
 
+#[derive(Deserialize)]
+pub struct ProctorQuery { pub schedule_id: Uuid }
+
 // ── Handlers ────────────────────────────────────────────────────
 
 #[utoipa::path(post, path = "/api/v1/exam-sessions", request_body = CreateExamSessionRequest,
@@ -182,6 +193,29 @@ async fn get_session(
     }))
 }
 
+#[utoipa::path(patch, path = "/api/v1/exam-sessions/{id}", request_body = UpdateExamSessionRequest,
+    params(("id" = Uuid, Path, description = "Exam Session ID")),
+    responses((status = 200, body = ExamSessionDto)), security(("bearer" = [])), tag = "Exam")]
+async fn update_session(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<UpdateExamSessionRequest>,
+) -> Result<Json<ApiResponse<ExamSessionDto>>, ApiError> {
+    let s = state.scheduling_service.update_exam_session(&ctx, id, p.name, p.start_date, p.end_date, p.status).await?;
+    Ok(ApiResponse::ok(ExamSessionDto {
+        id: s.id, org_id: s.org_id, period_id: s.period_id,
+        name: s.name, start_date: s.start_date, end_date: s.end_date, status: s.status,
+        created_at: s.created_at, updated_at: s.updated_at,
+    }))
+}
+
+#[utoipa::path(delete, path = "/api/v1/exam-sessions/{id}", params(("id" = Uuid, Path, description = "Exam Session ID")),
+    responses((status = 200, body = ())), security(("bearer" = [])), tag = "Exam")]
+async fn delete_session(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    state.scheduling_service.delete_exam_session(&ctx, id).await?;
+    Ok(ApiResponse::ok(()))
+}
+
 #[utoipa::path(post, path = "/api/v1/exam-schedules", request_body = ScheduleExamRequest,
     responses((status = 201, body = ExamScheduleDto)), security(("bearer" = [])), tag = "Exam")]
 async fn schedule_exam(
@@ -208,6 +242,15 @@ async fn list_schedules(
         created_at: s.created_at, updated_at: s.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(delete, path = "/api/v1/exam-schedules/{id}", params(("id" = Uuid, Path, description = "Exam Schedule ID")),
+    responses((status = 200, body = ())), security(("bearer" = [])), tag = "Exam")]
+async fn delete_schedule(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    state.scheduling_service.delete_exam_schedule(&ctx, id).await?;
+    Ok(ApiResponse::ok(()))
 }
 
 #[utoipa::path(post, path = "/api/v1/exam-seating", request_body = AssignSeatingRequest,
@@ -238,6 +281,15 @@ async fn list_seating(
         created_at: s.created_at, updated_at: s.updated_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(delete, path = "/api/v1/exam-seating/{id}", params(("id" = Uuid, Path, description = "Seating Number ID")),
+    responses((status = 200, body = ())), security(("bearer" = [])), tag = "Exam")]
+async fn delete_seating(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    state.scheduling_service.delete_seating_number(&ctx, id).await?;
+    Ok(ApiResponse::ok(()))
 }
 
 #[utoipa::path(post, path = "/api/v1/exam-seating/actions/generate", request_body = GenerateSeatingRequest,
@@ -285,6 +337,15 @@ async fn list_secrets(
     Ok(ApiResponse::ok(dtos))
 }
 
+#[utoipa::path(delete, path = "/api/v1/exam-secrets/{id}", params(("id" = Uuid, Path, description = "Secret Number ID")),
+    responses((status = 200, body = ())), security(("bearer" = [])), tag = "Exam")]
+async fn delete_secret(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    state.scheduling_service.delete_secret_number(&ctx, id).await?;
+    Ok(ApiResponse::ok(()))
+}
+
 #[utoipa::path(post, path = "/api/v1/exam-secrets/actions/generate", request_body = GenerateSecretsRequest,
     responses((status = 200, body = Vec<SecretDto>)), security(("bearer" = [])), tag = "Exam")]
 async fn generate_secrets(
@@ -316,14 +377,44 @@ async fn assign_proctor(
     }))
 }
 
+#[utoipa::path(get, path = "/api/v1/exam-proctors",
+    params(("schedule_id" = Uuid, Query, description = "Exam Schedule ID")),
+    responses((status = 200, body = Vec<ProctorDto>)), security(("bearer" = [])), tag = "Exam")]
+async fn list_proctors(
+    _ctx: AuthContext, State(state): State<AppState>, Query(q): Query<ProctorQuery>,
+) -> Result<Json<ApiResponse<Vec<ProctorDto>>>, ApiError> {
+    let list = state.scheduling_service.list_proctors(q.schedule_id).await?;
+    let dtos = list.into_iter().map(|pr| ProctorDto {
+        id: pr.id, exam_schedule_id: pr.exam_schedule_id,
+        room_id: pr.room_id, teacher_id: pr.teacher_id,
+        is_chief: pr.is_chief,
+        created_at: pr.created_at,
+        updated_at: pr.updated_at,
+    }).collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(delete, path = "/api/v1/exam-proctors/{id}", params(("id" = Uuid, Path, description = "Proctor Assignment ID")),
+    responses((status = 200, body = ())), security(("bearer" = [])), tag = "Exam")]
+async fn delete_proctor(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    state.scheduling_service.delete_proctor(&ctx, id).await?;
+    Ok(ApiResponse::ok(()))
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/exam-sessions", post(create_session).get(list_sessions))
-        .route("/api/v1/exam-sessions/:id", get(get_session))
+        .route("/api/v1/exam-sessions/:id", get(get_session).patch(update_session).delete(delete_session))
         .route("/api/v1/exam-schedules", post(schedule_exam).get(list_schedules))
+        .route("/api/v1/exam-schedules/:id", delete(delete_schedule))
         .route("/api/v1/exam-seating", post(assign_seating).get(list_seating))
+        .route("/api/v1/exam-seating/:id", delete(delete_seating))
         .route("/api/v1/exam-seating/actions/generate", post(generate_seating))
         .route("/api/v1/exam-secrets", post(assign_secret).get(list_secrets))
+        .route("/api/v1/exam-secrets/:id", delete(delete_secret))
         .route("/api/v1/exam-secrets/actions/generate", post(generate_secrets))
-        .route("/api/v1/exam-proctors", post(assign_proctor))
+        .route("/api/v1/exam-proctors", post(assign_proctor).get(list_proctors))
+        .route("/api/v1/exam-proctors/:id", delete(delete_proctor))
 }

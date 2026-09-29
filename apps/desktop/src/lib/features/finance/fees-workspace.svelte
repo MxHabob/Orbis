@@ -179,7 +179,7 @@ async function handleSplitInstallments() {
   isSubmitting = true;
   try {
     await api.splitStudentFee(selectedFeeForSplit.id, {
-      installments_count: splitCount,
+      num_installments: splitCount,
       due_dates: splitDueDates.slice(0, splitCount),
     });
     toast.success("تم تقسيط الرسوم بنجاح");

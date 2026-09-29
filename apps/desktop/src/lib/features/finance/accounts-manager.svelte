@@ -17,6 +17,7 @@ import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import { toast } from "@orbis/ui";
+import { confirmStore } from "$lib/stores";
 import {
   Grid,
   Plus,
@@ -29,6 +30,7 @@ import {
   CheckCircle,
   DocumentChartBar,
   ArrowRightTag,
+  Trash,
 } from "@orbis/icons";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
@@ -208,16 +210,49 @@ async function handleSaveAccount() {
       parent_id: formParentId || undefined,
     };
 
-    const created = await api.createAccount(payload as any);
-    toast.success("تم حفظ الحساب في دليل الحسابات بنجاح");
+    let result: any;
+    if (!isAddingNew && selectedAccount?.id) {
+      result = await api.updateAccount(selectedAccount.id, payload);
+      toast.success("تم تحديث بيانات الحساب بنجاح");
+    } else {
+      result = await api.createAccount(payload);
+      toast.success("تم حفظ الحساب في دليل الحسابات بنجاح");
+    }
     await loadData();
 
-    if (created && created.id) {
-      handleSelectAccount(created as any);
+    if (result && result.id) {
+      handleSelectAccount(result as any);
     }
   } catch (err: any) {
     console.error("Failed to save account:", err);
     toast.error(err?.message || "فشل حفظ الحساب");
+  } finally {
+    isSubmitting = false;
+  }
+}
+
+async function handleDeleteAccount() {
+  if (!selectedAccount?.id) return;
+
+  const confirmed = await confirmStore.prompt({
+    title: "حذف الحساب",
+    description: `هل أنت متأكد من رغبتك في حذف الحساب "${selectedAccount.name || selectedAccount.code}"؟ لن يمكن التراجع عن هذا الإجراء إذا كانت هناك قيود مسجلة.`,
+    confirmText: "حذف الحساب",
+    cancelText: "إلغاء",
+    variant: "destructive",
+  });
+
+  if (!confirmed) return;
+
+  isSubmitting = true;
+  try {
+    await api.deleteAccount(selectedAccount.id);
+    toast.success("تم حذف الحساب بنجاح");
+    selectedAccount = null;
+    await loadData();
+  } catch (err: any) {
+    console.error("Failed to delete account:", err);
+    toast.error(err?.message || "فشل حذف الحساب");
   } finally {
     isSubmitting = false;
   }
@@ -502,6 +537,19 @@ function exportAccountsCsv() {
                 </div>
 
                 <div class="flex items-center gap-2">
+                  {#if !isAddingNew && selectedAccount?.id}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      class="h-8 text-xs font-semibold gap-1.5"
+                      disabled={isSubmitting}
+                      onclick={handleDeleteAccount}
+                    >
+                      <Trash size={13} />
+                      <span>حذف الحساب</span>
+                    </Button>
+                  {/if}
+
                   <Button
                     variant="ghost"
                     size="sm"

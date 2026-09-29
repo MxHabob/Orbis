@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Sheet, SheetContent, SheetFooter } from "@orbis/ui/sheet";
 import { Collapse, Document, Download, Expand, Trash } from "@orbis/icons";
-import type { Documents } from "@orbis/sdk";
+import type { DocumentDto } from "$lib/api";
 
 let {
   open = $bindable(false),
@@ -12,7 +12,7 @@ let {
   ondelete,
 }: {
   open: boolean;
-  document: Documents | null;
+  document: DocumentDto | null;
   url: string;
   ondelete: (id: string) => void;
 } = $props();
@@ -70,7 +70,6 @@ function handleCanvasWheel(event: WheelEvent) {
 function startPan(event: PointerEvent) {
   if (!isImage || event.button !== 0) return;
   event.preventDefault();
-  const target = event.currentTarget as HTMLElement;
   isPanning = true;
   panStartX = event.clientX;
   panStartY = event.clientY;
@@ -149,7 +148,7 @@ function endPan(event: PointerEvent) {
             <iframe src={url} title={document.name} class="h-[68vh] min-h-105 w-full border-0 bg-background"></iframe>
           {:else}
             <div class="flex flex-col items-center gap-3 text-center text-muted-foreground">
-              <File class="h-16 w-16" strokeWidth={1.25} />
+              <Document class="h-16 w-16" />
               <p class="text-sm">{document.mime_type || m.archive_preview_unsupported()}</p>
             </div>
           {/if}
@@ -166,7 +165,7 @@ function endPan(event: PointerEvent) {
         </div>
         <div>
           <p class="text-[10px] font-semibold uppercase text-muted-foreground">{m.archive_detail_size()}</p>
-          <p class="mt-1 text-xs text-foreground">{((document.size || 0) / 1024).toFixed(1)} KB</p>
+          <p class="mt-1 text-xs text-foreground">{((document.file_size_bytes || 0) / 1024).toFixed(1)} KB</p>
         </div>
         <div>
           <p class="text-[10px] font-semibold uppercase text-muted-foreground">{m.archive_detail_category()}</p>

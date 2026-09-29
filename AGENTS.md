@@ -103,11 +103,39 @@ Every agent starting a session in this repository MUST:
     - Exported updated OpenAPI specification to `packages/sdk` and regenerated `@orbis/sdk`.
     - Reconciled `local-client.ts`, `remote-client.ts`, and `types.ts` with complete dual-transport parity and typed SDK calls (removed fake stubs in `RemoteClient`).
     - Reconciled `attendance-tracker.svelte` (`batchMarkAttendance`), `grade-profile.ts` (`batchRecordGrades`), `student-grades.svelte` (typed DTOs & GPA calculation), `student-attendance.svelte`, `student-behavior.svelte`, and `assessment-scheme-sheet.svelte`.
+  - **Examination Operations, Seating & Exam Sessions (Phase 10):**
+    - Added `ExamSessionUpdated`, `ExamSessionDeleted`, `ExamScheduleDeleted`, `SeatingNumberDeleted`, `SecretNumberAssigned`, `SecretNumberDeleted`, `ProctorAssigned`, and `ProctorDeleted` domain events to `DomainEvent` enum and audit trails in `orbis-domain`.
+    - Added `delete` on `ExamSessionRepository` and `ExamScheduleRepository`, `find_by_id`/`delete`/`delete_by_session` on `SeatingNumberRepository`, `find_by_id`/`delete`/`delete_by_schedule` on `SecretNumberRepository`, and `find_by_id`/`delete`/`delete_by_schedule` on `ExamProctorRepository` in `orbis-app` and implemented in `orbis-infra`.
+    - Added `update_exam_session`, `delete_exam_session`, `delete_exam_schedule`, `delete_seating_number`, `delete_secret_number`, `delete_proctor`, and `list_proctors` in `SchedulingService`.
+    - Added `UpdateExamSessionRequest`, `PATCH/DELETE /api/v1/exam-sessions/:id`, `DELETE /api/v1/exam-schedules/:id`, `DELETE /api/v1/exam-seating/:id`, `DELETE /api/v1/exam-secrets/:id`, `GET /api/v1/exam-proctors`, and `DELETE /api/v1/exam-proctors/:id` in `orbis-server` registered in `ApiDoc`.
+    - Added all corresponding Tauri IPC commands in `exam_cmds.rs` and registered in `commands/mod.rs`.
+    - Exported updated OpenAPI specification to `packages/sdk` and regenerated `@orbis/sdk`.
+    - Reconciled `local-client.ts`, `remote-client.ts`, and `types.ts` with typed SDK calls and query hooks in `queries.ts`.
+    - Reconciled `exam-session-details.svelte` (wired schedule deletion, session activation/completion status, real proctor roster fetching, seating and proctor deletions, and session editing sheet), `session-create-sheet.svelte` (support create vs edit), and `exam-control.svelte` (wired real grade loading and `batchRecordGrades`).
+  - **Financial General Ledger, Vouchers & Billing Reconciliation (Phase 11):**
+    - Added `AccountCreated`, `AccountUpdated`, `AccountDeleted`, `FeeTemplateCreated`, `FeeTemplateUpdated`, `FeeTemplateDeleted`, `DiscountTemplateCreated`, `DiscountTemplateUpdated`, `DiscountTemplateDeleted`, `StudentFeeUpdated`, `StudentFeeDeleted`, `PaymentDeleted`, `JournalEntryReversed`, and `JournalEntryDeleted` domain events to `DomainEvent` enum and audit trails in `orbis-domain`.
+    - Added `delete` on `AccountRepository`, `JournalEntryRepository`, `DiscountTemplateRepository`, `StudentFeeRepository`, and `PaymentRepository` in `orbis-app` and implemented in `orbis-infra`.
+    - Added `get_account`, `update_account`, `delete_account` (with system account protection invariant), `get_fee_template`, `update_fee_template`, `delete_fee_template`, `create_discount_template`, `list_discount_templates`, `delete_discount_template`, `delete_student_fee` (with paid fee protection invariant), `delete_payment` (with fee balance recalculation), and `delete_journal_entry` in `FinanceService`.
+    - Added `UpdateAccountRequest`, `UpdateFeeTemplateRequest`, `DiscountTemplateDto`, `CreateDiscountTemplateRequest` DTOs and registered endpoints (`GET/PATCH/DELETE /api/v1/accounts/:id`, `GET/PATCH/DELETE /api/v1/fee-templates/:id`, `GET/POST /api/v1/discount-templates`, `DELETE /api/v1/discount-templates/:id`, `DELETE /api/v1/student-fees/:id`, `DELETE /api/v1/payments/:id`, `DELETE /api/v1/journal-entries/:id`) in `orbis-server` registered in `ApiDoc`.
+    - Added `finance_get_account`, `finance_update_account`, `finance_delete_account`, `finance_get_fee_template`, `finance_delete_discount_template`, `finance_delete_student_fee`, `finance_delete_payment`, `finance_delete_journal_entry` Tauri IPC commands in `finance_cmds.rs` and registered in `commands/mod.rs`.
+    - Exported updated OpenAPI specification to `packages/sdk` and regenerated typed `@orbis/sdk`.
+    - Reconciled `local-client.ts`, `remote-client.ts`, and `types.ts` with complete dual-transport parity and typed SDK calls (removed fake stubs and throwing mocks).
+    - Reconciled `finance/queries.ts` with complete TanStack mutation hooks (`createUpdateAccountMutation`, `createDeleteAccountMutation`, `createUpdateFeeTemplateMutation`, `createDeleteFeeTemplateMutation`, `createDeleteDiscountTemplateMutation`, `createDeleteStudentFeeMutation`, `createDeletePaymentMutation`, `createCreateJournalEntryMutation`, `createReverseJournalEntryMutation`, `createDeleteJournalEntryMutation`, `createSplitStudentFeeMutation`, `createRefundStudentFeeMutation`).
+    - Reconciled `accounts-manager.svelte` (update vs create, account deletion with `confirmStore`), `fees-workspace.svelte` (reconciled `num_installments` field), `payments-manager.svelte`, `journal-entries.svelte` (`confirmStore.prompt()` and reversal reason), `fee-templates-manager.svelte`, and `discount-templates-manager.svelte` (action column and deletion with `confirmStore`).
+  - **Document Lifecycle, Records Management & Verification (Phase 12):**
+    - Added `DocumentUpdated`, `DocumentRequirementCreated`, `DocumentRequirementUpdated`, and `DocumentRequirementDeleted` domain events to `DomainEvent` enum and audit trails in `orbis-domain`.
+    - Added `update_document`, `get_document_requirement`, and `update_document_requirement` use cases in `DocumentService` in `orbis-app`.
+    - Added `UpdateDocumentRequest`, `UpdateDocumentRequirementRequest`, `ListDocumentsQuery` DTOs and endpoints (`PATCH /api/v1/documents/:id`, `GET /api/v1/document-requirements/:id`, `PATCH /api/v1/document-requirements/:id`) in `orbis-server` registered in `ApiDoc`.
+    - Added `document_update`, `document_get_requirement`, and `document_update_requirement` Tauri IPC commands in `document_cmds.rs` and registered in `commands/mod.rs`.
+    - Exported updated OpenAPI specification to `packages/sdk` and regenerated typed `@orbis/sdk`.
+    - Reconciled `local-client.ts`, `remote-client.ts`, and `types.ts` with complete dual-transport parity and typed SDK calls (removed fake stubs in `RemoteClient`).
+    - Reconciled `features/documents/queries.ts` with full TanStack Query and Mutation hooks (`useDocuments`, `useDocumentsByEntity`, `useDocument`, `useDocumentRequirements`, `useDocumentRequirement`, `useStudentDocumentRequirements`, `useUploadDocument`, `useUpdateDocument`, `useDeleteDocument`, `useCreateDocumentRequirement`, `useUpdateDocumentRequirement`, `useDeleteDocumentRequirement`), eliminating all `any` types.
+    - Reconciled `archive-preview-sheet.svelte`, `archive-document-card.svelte`, `archive-document-row.svelte`, and `student-documents.svelte` with canonical `DocumentDto` and field types.
   - **Verification:**
     - `apps/api-rust` cargo check: 0 errors
     - `apps/desktop/src-tauri` cargo check: 0 errors
     - `packages/sdk` tsc: 0 errors
     - `apps/desktop` tsc: 0 errors
-- **Next Scope in Master Execution Plan:** Phase 10 — Examination Operations, Seating & Exam Sessions Reconciliation.
+- **Next Scope in Master Execution Plan:** Phase 13 — Third-Party Integrations, Webhooks, Marketplace & DocForge Vector Reporting AST Engine.
 
 

@@ -80,6 +80,14 @@ impl ExamSessionRepository for ExamRepoImpl {
         }
         Ok(())
     }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        ExamSessionEntity::delete_by_id(id)
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -121,10 +129,28 @@ impl ExamScheduleRepository for ExamRepoImpl {
         }
         Ok(())
     }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        ExamScheduleEntity::delete_by_id(id)
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
 }
 
 #[async_trait]
 impl SeatingNumberRepository for ExamRepoImpl {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainSeatingNumber>, DomainError> {
+        let model = SeatingNumberEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(model.map(|m| DomainSeatingNumber {
+            id: m.id, exam_session_id: m.exam_session_id,
+            student_id: m.student_id, seating_number: m.seating_number,
+            room_id: m.room_id, created_at: m.created_at,
+            updated_at: m.updated_at,
+        }))
+    }
+
     async fn find_by_session(&self, session_id: Uuid) -> Result<Vec<DomainSeatingNumber>, DomainError> {
         let models = SeatingNumberEntity::find()
             .filter(seating_number::Column::ExamSessionId.eq(session_id))
@@ -176,10 +202,36 @@ impl SeatingNumberRepository for ExamRepoImpl {
         }
         Ok(())
     }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        SeatingNumberEntity::delete_by_id(id)
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
+
+    async fn delete_by_session(&self, session_id: Uuid) -> Result<(), DomainError> {
+        SeatingNumberEntity::delete_many()
+            .filter(seating_number::Column::ExamSessionId.eq(session_id))
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
 }
 
 #[async_trait]
 impl SecretNumberRepository for ExamRepoImpl {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainSecretNumber>, DomainError> {
+        let model = SecretNumberEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(model.map(|m| DomainSecretNumber {
+            id: m.id, exam_schedule_id: m.exam_schedule_id,
+            student_id: m.student_id, secret_number: m.secret_number,
+            created_at: m.created_at, updated_at: m.updated_at,
+        }))
+    }
+
     async fn find_by_schedule(&self, schedule_id: Uuid) -> Result<Vec<DomainSecretNumber>, DomainError> {
         let models = SecretNumberEntity::find()
             .filter(secret_number::Column::ExamScheduleId.eq(schedule_id))
@@ -228,10 +280,37 @@ impl SecretNumberRepository for ExamRepoImpl {
         }
         Ok(())
     }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        SecretNumberEntity::delete_by_id(id)
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
+
+    async fn delete_by_schedule(&self, schedule_id: Uuid) -> Result<(), DomainError> {
+        SecretNumberEntity::delete_many()
+            .filter(secret_number::Column::ExamScheduleId.eq(schedule_id))
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
 }
 
 #[async_trait]
 impl ExamProctorRepository for ExamRepoImpl {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainExamProctor>, DomainError> {
+        let model = ExamProctorEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(model.map(|m| DomainExamProctor {
+            id: m.id, exam_schedule_id: m.exam_schedule_id,
+            room_id: m.room_id, teacher_id: m.teacher_id,
+            is_chief: m.is_chief, created_at: m.created_at,
+            updated_at: m.updated_at,
+        }))
+    }
+
     async fn find_by_schedule(&self, schedule_id: Uuid) -> Result<Vec<DomainExamProctor>, DomainError> {
         let models = ExamProctorEntity::find()
             .filter(exam_proctor::Column::ExamScheduleId.eq(schedule_id))
@@ -259,6 +338,23 @@ impl ExamProctorRepository for ExamRepoImpl {
         } else {
             active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         }
+        Ok(())
+    }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        ExamProctorEntity::delete_by_id(id)
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
+
+    async fn delete_by_schedule(&self, schedule_id: Uuid) -> Result<(), DomainError> {
+        ExamProctorEntity::delete_many()
+            .filter(exam_proctor::Column::ExamScheduleId.eq(schedule_id))
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
     }
 }

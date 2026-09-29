@@ -13,7 +13,10 @@ import {
   buildGradeColumns,
   transformMatrixToSource,
   recalculateRowTotals,
+  scoreToGradeLetter,
   type GradeMatrixResponse,
+  type GradeMatrixStudent,
+  type GradeCell,
 } from "./grade-helpers";
 import type { CellEditEvent } from "@orbis/svelte-grid";
     import { ControlGrid } from "../academics";
@@ -103,25 +106,58 @@ $effect(() => {
 async function loadGradeMatrix() {
   if (!selectedPeriodId || !selectedClassId || !selectedSubjectId) return;
   isMatrixLoading = true;
-  matrixData = null as any;
+  matrixData = null;
   gridSource = [];
   isDirty = false;
   try {
-    const result = (await (api.assessment as any).getGradeMatrix(
-      orgId,
-      selectedPeriodId,
-      selectedClassId,
-      selectedSubjectId,
-    )) as unknown as GradeMatrixResponse;
+    const studentRes = await api.listStudents({ pageSize: 200, classId: selectedClassId });
+    const studentItems = studentRes.items || [];
+    const assessmentTypes = ["quiz", "midterm", "final"];
+
+    const students: GradeMatrixStudent[] = await Promise.all(
+      studentItems.map(async (st: any) => {
+        const studentId = st.student?.id || st.id;
+        const studentGrades = await api.listGrades(studentId).catch(() => []);
+        const matchingGrades = studentGrades.filter(
+          (g: any) =>
+            String(g.subject_id) === String(selectedSubjectId) &&
+            String(g.period_id) === String(selectedPeriodId),
+        );
+        const cells: GradeCell[] = assessmentTypes.map((type) => {
+          const g = matchingGrades.find((gr: any) => gr.grade_type === type);
+          return {
+            grade_id: g?.id || null,
+            exam_type: type,
+            score: g?.raw_score ?? null,
+            max_score: g?.max_score ?? 100,
+          };
+        });
+        const total = cells.reduce((acc, c) => acc + (c.score || 0), 0);
+        const maxTotal = cells.reduce((acc, c) => acc + (c.max_score || 100), 0);
+        const percentage = maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
+        return {
+          enrollment_id: studentId,
+          student_id: studentId,
+          student_name: st.student?.full_name || st.full_name || "",
+          student_name_ar: st.student?.full_name_ar || st.full_name_ar || null,
+          grades: cells,
+          total,
+          max_total: maxTotal,
+          percentage,
+          grade_letter: scoreToGradeLetter(percentage, academicContext.gradeScaleItems),
+        };
+      }),
+    );
+
+    const result: GradeMatrixResponse = {
+      period_id: selectedPeriodId,
+      class_subject_id: `${selectedClassId}_${selectedSubjectId}`,
+      students,
+      assessment_types: assessmentTypes,
+    };
 
     matrixData = result;
-
-    if (result?.students?.length > 0) {
-      const first = result.students[0];
-      assessmentKeys = first
-        ? first.grades.map((g) => g.assessment_id || g.exam_type)
-        : [];
-    }
+    assessmentKeys = assessmentTypes;
 
     gridSource = transformMatrixToSource(
       result,
@@ -129,7 +165,7 @@ async function loadGradeMatrix() {
       academicContext.gradeScaleItems,
     );
   } catch (e: unknown) {
-    toast.error((e as any)?.message || "Error loading grade matrix");
+    toast.error(extractErrorMessage(e) || "Error loading grade matrix");
   } finally {
     isMatrixLoading = false;
   }
@@ -158,84 +194,45 @@ function handleCellEdit(event: CellEditEvent) {
   isDirty = true;
 }
 
-// ── FloppyDisk All Grades ────────────────────────────────────────────────────────
+// ── Save All Grades ────────────────────────────────────────────────────────
 async function handleSaveAll() {
   if (!matrixData || !canEnterGrades) return;
   isSaving = true;
 
   try {
-    const sub = subjects.find((s: any) => String(s.id) === selectedSubjectId);
-
-    const students: any[] = [];
+    const items: any[] = [];
     for (const row of gridSource) {
       for (const key of assessmentKeys) {
-        const score = row[`score_${key}`];
-        if (score !== null && score !== undefined) {
-          students.push({
-            enrollment_id: row.enrollment_id,
-            score: Number(score),
+        const score = row[`exam_${key}`] ?? row[`score_${key}`];
+        if (score !== null && score !== undefined && score !== "") {
+          items.push({
+            student_id: row.student_id,
+            period_id: selectedPeriodId,
+            subject_id: selectedSubjectId,
+            class_id: selectedClassId,
+            grade_type: key,
+            raw_score: Number(score),
+            max_score: 100,
+            weight: 1.0,
             notes: null,
           });
         }
       }
     }
 
-    if (students.length === 0) {
+    if (items.length === 0) {
       toast.warning(m.common_action_save());
       isSaving = false;
       return;
     }
 
-    const request = {
-      period_id: selectedPeriodId,
-      class_id: selectedClassId,
-      subject_id: selectedSubjectId,
-      subject_name: sub?.name || "",
-      subject_name_ar: sub?.name_ar || null,
-      assessment_id: null,
-      class_subject_id: null,
-      exam_type: "final",
-      semester: "1",
-      max_score: 100,
-      weight: 1.0,
-      is_final: 1,
-      students,
-    };
-
-    const result = await (api.assessment as any).bulkSubjectGradeEntry(
-      orgId,
-      authStore.userId || "admin",
-      request,
-    );
-
-    const created = (result as any)?.created || 0;
-    const updated = (result as any)?.updated || 0;
-    const failed = (result as any)?.failed || 0;
-    const total = created + updated;
-
-    if (failed > 0) {
-      toast.warning(
-        m.common_action_save({
-          success: String(total),
-          failed: String(failed),
-        }),
-        {
-          description: ((result as any)?.errors || []).join("\n"),
-        },
-      );
-    } else {
-      toast.success(m.common_control_save_success({ total: String(total) }), {
-        description: m.common_action_save({
-          created: String(created),
-          updated: String(updated),
-        }),
-      });
-    }
+    await api.batchRecordGrades({ items });
+    toast.success(m.common_control_save_success({ total: String(items.length) }));
 
     isDirty = false;
     await loadGradeMatrix();
   } catch (e: unknown) {
-    toast.error((e as any)?.message || "Error saving grades");
+    toast.error(extractErrorMessage(e) || "Error saving grades");
   } finally {
     isSaving = false;
   }

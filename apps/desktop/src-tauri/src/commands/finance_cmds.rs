@@ -322,6 +322,18 @@ pub struct CreateAccountInput {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct UpdateAccountInput {
+    pub code: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub account_type: String,
+    pub sub_type: Option<String>,
+    pub parent_id: Option<String>,
+    pub currency: Option<String>,
+    pub is_active: Option<bool>,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct CreateFeeTemplateInput {
     pub code: Option<String>,
     pub name: String,
@@ -460,6 +472,65 @@ pub async fn finance_list_accounts(
     let ctx = make_ctx(&state);
     let items = state.finance_service.list_accounts(ctx.tenant_id).await.map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(account_to_dto).collect()))
+}
+
+#[tauri::command]
+pub async fn finance_get_account(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AccountDto>, String> {
+    let ctx = make_ctx(&state);
+    let account_id = Uuid::parse_str(&id).map_err(|_| "Invalid account id")?;
+    let account = state.finance_service.get_account(ctx.tenant_id, account_id).await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Account not found".to_string())?;
+    Ok(ok(account_to_dto(account)))
+}
+
+#[tauri::command]
+pub async fn finance_update_account(
+    id: String,
+    request: UpdateAccountInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AccountDto>, String> {
+    let ctx = make_ctx(&state);
+    let account_id = Uuid::parse_str(&id).map_err(|_| "Invalid account id")?;
+    let parent_id = request.parent_id.and_then(|p| Uuid::parse_str(&p).ok());
+    let account_type = match request.account_type.to_lowercase().as_str() {
+        "asset" => AccountType::Asset,
+        "liability" => AccountType::Liability,
+        "equity" => AccountType::Equity,
+        "revenue" => AccountType::Revenue,
+        "expense" => AccountType::Expense,
+        _ => AccountType::Asset,
+    };
+
+    let account = state.finance_service.update_account(
+        &ctx,
+        ctx.tenant_id,
+        account_id,
+        request.code,
+        request.name,
+        request.name_ar,
+        account_type,
+        request.sub_type,
+        parent_id,
+        request.currency.unwrap_or_else(|| "SAR".to_string()),
+        request.is_active.unwrap_or(true),
+    ).await.map_err(|e| e.to_string())?;
+
+    Ok(ok(account_to_dto(account)))
+}
+
+#[tauri::command]
+pub async fn finance_delete_account(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<bool>, String> {
+    let ctx = make_ctx(&state);
+    let account_id = Uuid::parse_str(&id).map_err(|_| "Invalid account id")?;
+    state.finance_service.delete_account(&ctx, ctx.tenant_id, account_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(true))
 }
 
 fn parse_levels_from_json(val: Option<serde_json::Value>) -> Option<Vec<String>> {
@@ -631,6 +702,19 @@ pub async fn finance_list_fee_templates(
     let ctx = make_ctx(&state);
     let items = state.finance_service.list_fee_templates(ctx.tenant_id).await.map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(fee_template_to_dto).collect()))
+}
+
+#[tauri::command]
+pub async fn finance_get_fee_template(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<FeeTemplateDto>, String> {
+    let ctx = make_ctx(&state);
+    let template_id = Uuid::parse_str(&id).map_err(|_| "Invalid fee template id")?;
+    let tmpl = state.finance_service.get_fee_template(ctx.tenant_id, template_id).await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Fee template not found".to_string())?;
+    Ok(ok(fee_template_to_dto(tmpl)))
 }
 
 #[tauri::command]
@@ -881,6 +965,17 @@ pub async fn finance_create_discount_template(
     Ok(ok(discount_template_to_dto(tmpl)))
 }
 
+#[tauri::command]
+pub async fn finance_delete_discount_template(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<bool>, String> {
+    let ctx = make_ctx(&state);
+    let template_id = Uuid::parse_str(&id).map_err(|_| "Invalid discount template id")?;
+    state.finance_service.delete_discount_template(&ctx, ctx.tenant_id, template_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(true))
+}
+
 #[derive(Deserialize, Debug)]
 pub struct CreateJournalEntryLineInput {
     pub account_id: String,
@@ -1126,4 +1221,38 @@ pub async fn finance_refund_student_fee(
 
     Ok(ok(student_fee_to_dto(fee)))
 }
+
+#[tauri::command]
+pub async fn finance_delete_student_fee(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<bool>, String> {
+    let ctx = make_ctx(&state);
+    let fee_id = Uuid::parse_str(&id).map_err(|_| "Invalid student fee id")?;
+    state.finance_service.delete_student_fee(&ctx, ctx.tenant_id, fee_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(true))
+}
+
+#[tauri::command]
+pub async fn finance_delete_payment(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<bool>, String> {
+    let ctx = make_ctx(&state);
+    let payment_id = Uuid::parse_str(&id).map_err(|_| "Invalid payment id")?;
+    state.finance_service.delete_payment(&ctx, ctx.tenant_id, payment_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(true))
+}
+
+#[tauri::command]
+pub async fn finance_delete_journal_entry(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<bool>, String> {
+    let ctx = make_ctx(&state);
+    let entry_id = Uuid::parse_str(&id).map_err(|_| "Invalid journal entry id")?;
+    state.finance_service.delete_journal_entry(&ctx, ctx.tenant_id, entry_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(true))
+}
+
 

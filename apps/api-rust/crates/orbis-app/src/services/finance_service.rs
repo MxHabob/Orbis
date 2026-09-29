@@ -1,4 +1,4 @@
-use crate::ports::repositories::{PaymentRepository, JournalEntryRepository, StudentFeeRepository, FeeTemplateRepository, CurrencyRepository, PolicyRepository, AccountRepository};
+use crate::ports::repositories::{PaymentRepository, JournalEntryRepository, StudentFeeRepository, FeeTemplateRepository, DiscountTemplateRepository, CurrencyRepository, PolicyRepository, AccountRepository};
 use crate::ports::event_bus::EventBus;
 use crate::ports::gateways::{PaymentGatewayPort, NotificationPort};
 use crate::ports::iam::PermissionCheckerPort;
@@ -8,6 +8,7 @@ use orbis_domain::entities::payment::{Payment, PaymentMethod};
 use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};
 use orbis_domain::entities::account::Account;
 use orbis_domain::entities::fee_template::FeeTemplate;
+use orbis_domain::entities::discount_template::DiscountTemplate;
 use orbis_domain::entities::student_fee::{StudentFee, FeeStatus};
 use orbis_domain::queries::filters::{PaymentFilter, StudentFeeFilter, PaginatedList};
 use orbis_domain::events::DomainEvent;
@@ -22,6 +23,7 @@ pub struct FinanceService {
     pub journal_repo: Arc<dyn JournalEntryRepository>,
     pub student_fee_repo: Arc<dyn StudentFeeRepository>,
     pub fee_template_repo: Arc<dyn FeeTemplateRepository>,
+    pub discount_template_repo: Arc<dyn DiscountTemplateRepository>,
     pub account_repo: Arc<dyn AccountRepository>,
     pub currency_repo: Arc<dyn CurrencyRepository>,
     pub policy_repo: Arc<dyn PolicyRepository>,
@@ -37,6 +39,7 @@ impl FinanceService {
         journal_repo: Arc<dyn JournalEntryRepository>,
         student_fee_repo: Arc<dyn StudentFeeRepository>,
         fee_template_repo: Arc<dyn FeeTemplateRepository>,
+        discount_template_repo: Arc<dyn DiscountTemplateRepository>,
         account_repo: Arc<dyn AccountRepository>,
         currency_repo: Arc<dyn CurrencyRepository>,
         policy_repo: Arc<dyn PolicyRepository>,
@@ -50,6 +53,7 @@ impl FinanceService {
             journal_repo,
             student_fee_repo,
             fee_template_repo,
+            discount_template_repo,
             account_repo,
             currency_repo,
             policy_repo,
@@ -364,6 +368,93 @@ impl FinanceService {
         self.fee_template_repo.find_by_org(org_id).await
     }
 
+    /// Get fee template
+    pub async fn get_fee_template(&self, org_id: Uuid, id: Uuid) -> Result<Option<FeeTemplate>, DomainError> {
+        let tmpl = self.fee_template_repo.find_by_id(id).await?;
+        if let Some(ref t) = tmpl {
+            if t.org_id != org_id {
+                return Err(DomainError::Unauthorized("Organization mismatch".into()));
+            }
+        }
+        Ok(tmpl)
+    }
+
+    /// Update fee template
+    pub async fn update_fee_template(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        id: Uuid,
+        code: Option<String>,
+        name: String,
+        name_ar: Option<String>,
+        category: Option<String>,
+        default_amount: Decimal,
+        currency_code: Option<String>,
+        revenue_account_id: Option<Uuid>,
+        receivable_account_id: Option<Uuid>,
+        applicable_levels: Option<Vec<String>>,
+        frequency: Option<String>,
+        is_mandatory: Option<bool>,
+        is_active: Option<bool>,
+    ) -> Result<FeeTemplate, DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+
+        let mut tmpl = self.fee_template_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Fee template {} not found", id)))?;
+
+        if tmpl.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        tmpl.name = name;
+        tmpl.name_ar = name_ar;
+        if let Some(c) = code {
+            if !c.trim().is_empty() {
+                tmpl.code = c;
+            }
+        }
+        if let Some(cat) = category {
+            tmpl.category = cat;
+        }
+        tmpl.default_amount = default_amount;
+        if let Some(cur) = currency_code {
+            tmpl.currency_code = cur;
+        }
+        if let Some(rev) = revenue_account_id {
+            tmpl.revenue_account_id = rev;
+        }
+        if let Some(rec) = receivable_account_id {
+            tmpl.receivable_account_id = rec;
+        }
+        if let Some(freq) = frequency {
+            tmpl.frequency = match freq.to_lowercase().as_str() {
+                "once" => orbis_domain::entities::fee_template::FeeFrequency::Once,
+                "monthly" => orbis_domain::entities::fee_template::FeeFrequency::Monthly,
+                "annual" => orbis_domain::entities::fee_template::FeeFrequency::Annual,
+                _ => orbis_domain::entities::fee_template::FeeFrequency::PerTerm,
+            };
+        }
+        if let Some(mand) = is_mandatory {
+            tmpl.is_mandatory = mand;
+        }
+        if let Some(act) = is_active {
+            tmpl.is_active = act;
+        }
+        tmpl.applicable_levels = applicable_levels;
+        tmpl.updated_at = Utc::now();
+
+        self.fee_template_repo.save(&tmpl).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::FeeTemplateUpdated {
+            template_id: id,
+            org_id,
+            timestamp: tmpl.updated_at,
+        }).await;
+
+        Ok(tmpl)
+    }
+
     /// Delete fee template
     pub async fn delete_fee_template(
         &self,
@@ -381,6 +472,13 @@ impl FinanceService {
         }
 
         self.fee_template_repo.delete(id).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::FeeTemplateDeleted {
+            template_id: id,
+            org_id,
+            timestamp: Utc::now(),
+        }).await;
+
         Ok(())
     }
 
@@ -426,6 +524,96 @@ impl FinanceService {
 
         self.account_repo.save(&account).await?;
         Ok(account)
+    }
+
+    /// Get general ledger account
+    pub async fn get_account(&self, org_id: Uuid, id: Uuid) -> Result<Option<Account>, DomainError> {
+        let acct = self.account_repo.find_by_id(id).await?;
+        if let Some(ref a) = acct {
+            if a.org_id != org_id {
+                return Err(DomainError::Unauthorized("Organization mismatch".into()));
+            }
+        }
+        Ok(acct)
+    }
+
+    /// Update general ledger account
+    pub async fn update_account(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        id: Uuid,
+        code: String,
+        name: String,
+        name_ar: Option<String>,
+        account_type: orbis_domain::entities::account::AccountType,
+        sub_type: Option<String>,
+        parent_id: Option<Uuid>,
+        currency_code: String,
+        is_active: bool,
+    ) -> Result<Account, DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+
+        let mut account = self.account_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Account {} not found", id)))?;
+
+        if account.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        account.code = code.clone();
+        account.name = name;
+        account.name_ar = name_ar;
+        account.account_type = account_type;
+        account.sub_type = sub_type;
+        account.parent_id = parent_id;
+        account.path = format!("/{}", code);
+        account.currency_code = currency_code;
+        account.is_active = is_active;
+        account.updated_by = ctx.user_id();
+        account.updated_at = Utc::now();
+        account.version += 1;
+
+        self.account_repo.save(&account).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::AccountUpdated {
+            account_id: id,
+            org_id,
+            timestamp: account.updated_at,
+        }).await;
+
+        Ok(account)
+    }
+
+    /// Delete general ledger account
+    pub async fn delete_account(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+
+        let account = self.account_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Account {} not found", id)))?;
+
+        if account.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        if account.is_system_account {
+            return Err(DomainError::Validation("Cannot delete system protected account".into()));
+        }
+
+        self.account_repo.delete(id).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::AccountDeleted {
+            account_id: id,
+            org_id,
+            timestamp: Utc::now(),
+        }).await;
+
+        Ok(())
     }
 
     /// List general ledger accounts
@@ -619,5 +807,188 @@ impl FinanceService {
         }
 
         Ok(created_fees)
+    }
+
+    /// Create discount template
+    pub async fn create_discount_template(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        code: Option<String>,
+        name: String,
+        name_ar: Option<String>,
+        discount_type: orbis_domain::entities::discount_template::DiscountType,
+        value: Decimal,
+        eligibility_rules: Option<serde_json::Value>,
+        is_approval_required: bool,
+        is_auto_apply: bool,
+        is_stackable: bool,
+        priority: u32,
+    ) -> Result<DiscountTemplate, DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+
+        let now = Utc::now();
+        let tmpl_id = Uuid::new_v4();
+
+        let tmpl = DiscountTemplate {
+            id: tmpl_id,
+            org_id,
+            code: code.unwrap_or_else(|| format!("DISC-{}", tmpl_id.to_string().chars().take(6).collect::<String>())),
+            name,
+            name_ar,
+            discount_type,
+            value,
+            eligibility_rules,
+            is_approval_required,
+            is_auto_apply,
+            is_stackable,
+            priority,
+            is_active: true,
+            created_at: now,
+            updated_at: now,
+        };
+
+        self.discount_template_repo.save(&tmpl).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::DiscountTemplateCreated {
+            template_id: tmpl_id,
+            org_id,
+            code: tmpl.code.clone(),
+            timestamp: now,
+        }).await;
+
+        Ok(tmpl)
+    }
+
+    /// List discount templates
+    pub async fn list_discount_templates(&self, org_id: Uuid) -> Result<Vec<DiscountTemplate>, DomainError> {
+        self.discount_template_repo.find_by_org(org_id).await
+    }
+
+    /// Delete discount template
+    pub async fn delete_discount_template(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+
+        let tmpl = self.discount_template_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Discount template {} not found", id)))?;
+
+        if tmpl.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        self.discount_template_repo.delete(id).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::DiscountTemplateDeleted {
+            template_id: id,
+            org_id,
+            timestamp: Utc::now(),
+        }).await;
+
+        Ok(())
+    }
+
+    /// Delete student fee
+    pub async fn delete_student_fee(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+
+        let fee = self.student_fee_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Student fee {} not found", id)))?;
+
+        if fee.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        if fee.paid_amount > Decimal::ZERO {
+            return Err(DomainError::Validation("Cannot delete fee with applied payments. Refund or reverse payments first.".into()));
+        }
+
+        self.student_fee_repo.delete(id).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::StudentFeeDeleted {
+            fee_id: id,
+            org_id,
+            timestamp: Utc::now(),
+        }).await;
+
+        Ok(())
+    }
+
+    /// Delete payment record
+    pub async fn delete_payment(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::ProcessPayment).await?;
+
+        let payment = self.payment_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Payment {} not found", id)))?;
+
+        if payment.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        // If linked to a student fee, adjust the fee's paid_amount and balance_due
+        if let Some(fee_id) = payment.fee_id {
+            if let Some(mut fee) = self.student_fee_repo.find_by_id(fee_id).await? {
+                fee.paid_amount = (fee.paid_amount - payment.amount).max(Decimal::ZERO);
+                fee.balance_due = (fee.net_amount - fee.paid_amount).max(Decimal::ZERO);
+                if fee.paid_amount == Decimal::ZERO {
+                    fee.status = FeeStatus::Pending;
+                } else {
+                    fee.status = FeeStatus::PartiallyPaid;
+                }
+                fee.updated_at = Utc::now();
+                self.student_fee_repo.save(&fee).await?;
+            }
+        }
+
+        self.payment_repo.delete(id).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::PaymentDeleted {
+            payment_id: id,
+            org_id,
+            timestamp: Utc::now(),
+        }).await;
+
+        Ok(())
+    }
+
+    /// Delete journal entry
+    pub async fn delete_journal_entry(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+
+        let entry = self.journal_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Journal entry {} not found", id)))?;
+
+        if entry.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        self.journal_repo.delete(id).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::JournalEntryDeleted {
+            entry_id: id,
+            org_id,
+            timestamp: Utc::now(),
+        }).await;
+
+        Ok(())
     }
 }

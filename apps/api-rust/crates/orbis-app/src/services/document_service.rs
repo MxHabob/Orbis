@@ -37,6 +37,18 @@ pub struct CreateDocumentInput {
     pub preview_path: Option<String>,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct UpdateDocumentInput {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub category: Option<String>,
+    pub asset_type: Option<String>,
+    pub school_year: Option<String>,
+    pub term: Option<String>,
+    pub tags: Option<String>,
+    pub visibility: Option<String>,
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CreateDocumentRequirementInput {
     pub target_type: RequirementTargetType,
@@ -47,6 +59,18 @@ pub struct CreateDocumentRequirementInput {
     pub is_mandatory: bool,
     pub blocks_enrollment: bool,
     pub condition: DocumentCondition,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+pub struct UpdateDocumentRequirementInput {
+    pub target_type: Option<RequirementTargetType>,
+    pub target_id: Option<Option<Uuid>>,
+    pub code: Option<String>,
+    pub name_ar: Option<String>,
+    pub name_en: Option<String>,
+    pub is_mandatory: Option<bool>,
+    pub blocks_enrollment: Option<bool>,
+    pub condition: Option<DocumentCondition>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -131,6 +155,56 @@ impl DocumentService {
         Ok(doc)
     }
 
+    /// Update an existing document's metadata
+    pub async fn update_document(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+        input: UpdateDocumentInput,
+    ) -> Result<Document, DomainError> {
+        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+
+        let mut doc = self.document_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Document {id} not found")))?;
+
+        if let Some(name) = input.name {
+            doc.name = name;
+        }
+        if let Some(desc) = input.description {
+            doc.description = Some(desc);
+        }
+        if let Some(cat) = input.category {
+            doc.category = cat;
+        }
+        if let Some(asset) = input.asset_type {
+            doc.asset_type = asset;
+        }
+        if let Some(sy) = input.school_year {
+            doc.school_year = Some(sy);
+        }
+        if let Some(term) = input.term {
+            doc.term = Some(term);
+        }
+        if let Some(tags) = input.tags {
+            doc.tags = Some(tags);
+        }
+        if let Some(vis) = input.visibility {
+            doc.visibility = vis;
+        }
+        doc.updated_at = Utc::now();
+
+        self.document_repo.save(&doc).await?;
+
+        let event = DomainEvent::DocumentUpdated {
+            document_id: id,
+            org_id: doc.org_id,
+            timestamp: doc.updated_at,
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(doc)
+    }
+
     /// Get document by ID
     pub async fn get_document(&self, id: Uuid) -> Result<Option<Document>, DomainError> {
         self.document_repo.find_by_id(id).await
@@ -185,6 +259,70 @@ impl DocumentService {
         );
 
         self.doc_requirement_repo.save(&req).await?;
+
+        let event = DomainEvent::DocumentRequirementCreated {
+            requirement_id: req.id,
+            org_id,
+            code: req.code.clone(),
+            timestamp: req.created_at,
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(req)
+    }
+
+    /// Get document requirement by ID
+    pub async fn get_document_requirement(&self, id: Uuid) -> Result<Option<DocumentRequirement>, DomainError> {
+        self.doc_requirement_repo.find_by_id(id).await
+    }
+
+    /// Update an existing document requirement
+    pub async fn update_document_requirement(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+        input: UpdateDocumentRequirementInput,
+    ) -> Result<DocumentRequirement, DomainError> {
+        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+
+        let mut req = self.doc_requirement_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Document requirement {id} not found")))?;
+
+        if let Some(target_type) = input.target_type {
+            req.target_type = target_type;
+        }
+        if let Some(target_id) = input.target_id {
+            req.target_id = target_id;
+        }
+        if let Some(code) = input.code {
+            req.code = code;
+        }
+        if let Some(name_ar) = input.name_ar {
+            req.name_ar = name_ar;
+        }
+        if let Some(name_en) = input.name_en {
+            req.name_en = name_en;
+        }
+        if let Some(is_mandatory) = input.is_mandatory {
+            req.is_mandatory = is_mandatory;
+        }
+        if let Some(blocks) = input.blocks_enrollment {
+            req.blocks_enrollment = blocks;
+        }
+        if let Some(cond) = input.condition {
+            req.condition = cond;
+        }
+        req.updated_at = Utc::now();
+
+        self.doc_requirement_repo.save(&req).await?;
+
+        let event = DomainEvent::DocumentRequirementUpdated {
+            requirement_id: id,
+            org_id: req.org_id,
+            timestamp: req.updated_at,
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
         Ok(req)
     }
 
@@ -206,7 +344,18 @@ impl DocumentService {
     /// Delete document requirement
     pub async fn delete_document_requirement(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
         self.permission_checker.check(ctx, Permission::DocumentDelete).await?;
-        self.doc_requirement_repo.delete(id).await
+        let req = self.doc_requirement_repo.find_by_id(id).await?;
+        self.doc_requirement_repo.delete(id).await?;
+
+        if let Some(r) = req {
+            let event = DomainEvent::DocumentRequirementDeleted {
+                requirement_id: id,
+                org_id: r.org_id,
+                timestamp: Utc::now(),
+            };
+            self.event_bus.publish(ctx, &event).await?;
+        }
+        Ok(())
     }
 
     /// Evaluate document requirements fulfillment for a student

@@ -357,6 +357,7 @@ pub trait ExamSessionRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ExamSession>, DomainError>;
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<ExamSession>, DomainError>;
     async fn save(&self, session: &ExamSession) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]
@@ -364,28 +365,38 @@ pub trait ExamScheduleRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ExamSchedule>, DomainError>;
     async fn find_by_session(&self, session_id: Uuid) -> Result<Vec<ExamSchedule>, DomainError>;
     async fn save(&self, schedule: &ExamSchedule) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait SeatingNumberRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<SeatingNumber>, DomainError>;
     async fn find_by_session(&self, session_id: Uuid) -> Result<Vec<SeatingNumber>, DomainError>;
     async fn find_by_session_and_student(&self, session_id: Uuid, student_id: Uuid) -> Result<Option<SeatingNumber>, DomainError>;
     async fn save(&self, seating: &SeatingNumber) -> Result<(), DomainError>;
     async fn save_bulk(&self, seatings: &[SeatingNumber]) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
+    async fn delete_by_session(&self, session_id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait SecretNumberRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<SecretNumber>, DomainError>;
     async fn find_by_schedule(&self, schedule_id: Uuid) -> Result<Vec<SecretNumber>, DomainError>;
     async fn find_by_schedule_and_seating(&self, schedule_id: Uuid, student_id: Uuid) -> Result<Option<SecretNumber>, DomainError>;
     async fn save(&self, secret: &SecretNumber) -> Result<(), DomainError>;
     async fn save_bulk(&self, secrets: &[SecretNumber]) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
+    async fn delete_by_schedule(&self, schedule_id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait ExamProctorRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<ExamProctor>, DomainError>;
     async fn find_by_schedule(&self, schedule_id: Uuid) -> Result<Vec<ExamProctor>, DomainError>;
     async fn save(&self, proctor: &ExamProctor) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
+    async fn delete_by_schedule(&self, schedule_id: Uuid) -> Result<(), DomainError>;
 }
 
 // =========================================================================
@@ -398,6 +409,7 @@ pub trait AccountRepository: Send + Sync {
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Account>, DomainError>;
     async fn find_by_code(&self, org_id: Uuid, code: &str) -> Result<Option<Account>, DomainError>;
     async fn save(&self, account: &Account) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]
@@ -405,6 +417,7 @@ pub trait JournalEntryRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<JournalEntry>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<JournalEntry>, DomainError>;
     async fn save(&self, entry: &JournalEntry) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]
@@ -420,6 +433,7 @@ pub trait DiscountTemplateRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DiscountTemplate>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DiscountTemplate>, DomainError>;
     async fn save(&self, template: &DiscountTemplate) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]
@@ -429,6 +443,7 @@ pub trait StudentFeeRepository: Send + Sync {
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<StudentFee>, DomainError>;
     async fn list(&self, org_id: Uuid, filter: orbis_domain::queries::filters::StudentFeeFilter) -> Result<PaginatedList<StudentFee>, DomainError>;
     async fn save(&self, fee: &StudentFee) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]
@@ -438,6 +453,7 @@ pub trait PaymentRepository: Send + Sync {
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Payment>, DomainError>;
     async fn list(&self, org_id: Uuid, filter: orbis_domain::queries::filters::PaymentFilter) -> Result<PaginatedList<Payment>, DomainError>;
     async fn save(&self, payment: &Payment) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]

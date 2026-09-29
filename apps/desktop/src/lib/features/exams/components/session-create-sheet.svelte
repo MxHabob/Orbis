@@ -76,14 +76,27 @@ async function handleSubmit() {
     period_id: periodId,
   };
   const submitted = await form.submit(async (payload) => {
-    await api.createExamSession({
-      name: payload.name || payload.name_ar,
-      session_type: payload.session_type,
-      start_date: payload.start_date,
-      end_date: payload.end_date,
-      period_id: payload.period_id,
-    } as any);
-    toast.success(m.common_exams_create_success());
+    if (isEdit && session?.id) {
+      await api.updateExamSession(session.id, {
+        name: payload.name || payload.name_ar,
+        name_ar: payload.name_ar || undefined,
+        session_type: payload.session_type,
+        start_date: payload.start_date,
+        end_date: payload.end_date,
+        period_id: payload.period_id,
+      });
+      toast.success("تم تحديث دورة الامتحانات بنجاح");
+    } else {
+      await api.createExamSession({
+        name: payload.name || payload.name_ar,
+        name_ar: payload.name_ar || undefined,
+        session_type: payload.session_type,
+        start_date: payload.start_date,
+        end_date: payload.end_date,
+        period_id: payload.period_id,
+      });
+      toast.success(m.common_exams_create_success());
+    }
     // Reset form
     name = "";
     nameAr = "";

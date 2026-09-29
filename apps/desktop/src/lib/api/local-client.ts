@@ -78,6 +78,7 @@ import type {
   SecretDto,
   ProctorDto,
   CreateExamSessionRequest,
+  UpdateExamSessionRequest,
   GenerateSeatingRequest,
   GenerateSecretsRequest,
   ScheduleExamRequest,
@@ -85,16 +86,23 @@ import type {
   AssignSecretRequest,
   AssignProctorRequest,
   AccountDto,
-  FeeTemplateDto,
-  StudentFeeDto,
-  PaymentDto,
-  CurrencyDto,
   CreateAccountRequest,
+  UpdateAccountRequest,
+  FeeTemplateDto,
   CreateFeeTemplateRequest,
+  UpdateFeeTemplateRequest,
+  StudentFeeDto,
   GenerateFeeRequest,
+  PaymentDto,
   ProcessPaymentRequest,
+  CurrencyDto,
   DocumentDto,
   UploadDocumentRequest,
+  UpdateDocumentRequest,
+  DocumentRequirementDto,
+  CreateDocumentRequirementRequest,
+  UpdateDocumentRequirementRequest,
+  StudentDocumentFulfillmentDto,
   IntegrationDto,
   IntegrationStatusResponse,
   ConnectAppRequest,
@@ -110,9 +118,6 @@ import type {
   RegisterStudentInput,
   DuplicateCheckRequest,
   DuplicateCheckResponse,
-  DocumentRequirementDto,
-  CreateDocumentRequirementRequest,
-  StudentDocumentFulfillmentDto,
   StudentFilterParams,
   EnrollmentFilterParams,
   UpdateStudentStatusInput,
@@ -798,11 +803,23 @@ export class LocalClient implements OrbisApiClient {
   async getExamSession(id: string): Promise<ExamSessionDto> {
     return unwrap(await invoke("exam_get_session", { id }));
   }
+  async updateExamSession(
+    id: string,
+    req: UpdateExamSessionRequest,
+  ): Promise<ExamSessionDto> {
+    return unwrap(await invoke("exam_update_session", { id, request: req }));
+  }
+  async deleteExamSession(id: string): Promise<void> {
+    unwrap(await invoke("exam_delete_session", { id }));
+  }
   async scheduleExam(req: ScheduleExamRequest): Promise<ExamScheduleDto> {
     return unwrap(await invoke("exam_schedule_exam", { request: req }));
   }
   async listExamSchedules(sessionId: string): Promise<ExamScheduleDto[]> {
     return unwrap(await invoke("exam_list_schedules", { sessionId }));
+  }
+  async deleteExamSchedule(id: string): Promise<void> {
+    unwrap(await invoke("exam_delete_schedule", { id }));
   }
   async assignSeating(req: AssignSeatingRequest): Promise<SeatingDto> {
     return unwrap(await invoke("exam_assign_seating", { request: req }));
@@ -813,6 +830,9 @@ export class LocalClient implements OrbisApiClient {
   async generateSeating(req: GenerateSeatingRequest): Promise<SeatingDto[]> {
     return unwrap(await invoke("exam_generate_seating", { request: req }));
   }
+  async deleteSeating(id: string): Promise<void> {
+    unwrap(await invoke("exam_delete_seating", { id }));
+  }
   async assignSecret(req: AssignSecretRequest): Promise<SecretDto> {
     return unwrap(await invoke("exam_assign_secret", { request: req }));
   }
@@ -822,8 +842,17 @@ export class LocalClient implements OrbisApiClient {
   async generateSecrets(req: GenerateSecretsRequest): Promise<SecretDto[]> {
     return unwrap(await invoke("exam_generate_secrets", { request: req }));
   }
+  async deleteSecret(id: string): Promise<void> {
+    unwrap(await invoke("exam_delete_secret", { id }));
+  }
   async assignProctor(req: AssignProctorRequest): Promise<ProctorDto> {
     return unwrap(await invoke("exam_assign_proctor", { request: req }));
+  }
+  async listProctors(scheduleId: string): Promise<ProctorDto[]> {
+    return unwrap(await invoke("exam_list_proctors", { scheduleId }));
+  }
+  async deleteProctor(id: string): Promise<void> {
+    unwrap(await invoke("exam_delete_proctor", { id }));
   }
 
   // ── Finance ─────────────────────────────────────────────────
@@ -833,6 +862,15 @@ export class LocalClient implements OrbisApiClient {
   async listAccounts(): Promise<AccountDto[]> {
     return unwrap(await invoke("finance_list_accounts"));
   }
+  async getAccount(id: string): Promise<AccountDto> {
+    return unwrap(await invoke("finance_get_account", { id }));
+  }
+  async updateAccount(id: string, req: UpdateAccountRequest): Promise<AccountDto> {
+    return unwrap(await invoke("finance_update_account", { id, request: req }));
+  }
+  async deleteAccount(id: string): Promise<boolean> {
+    return unwrap(await invoke("finance_delete_account", { id }));
+  }
   async createFeeTemplate(
     req: CreateFeeTemplateRequest,
   ): Promise<FeeTemplateDto> {
@@ -840,9 +878,12 @@ export class LocalClient implements OrbisApiClient {
       await invoke("finance_create_fee_template", { request: req }),
     );
   }
+  async getFeeTemplate(id: string): Promise<FeeTemplateDto> {
+    return unwrap(await invoke("finance_get_fee_template", { id }));
+  }
   async updateFeeTemplate(
     id: string,
-    req: Partial<CreateFeeTemplateRequest>,
+    req: UpdateFeeTemplateRequest,
   ): Promise<FeeTemplateDto> {
     return unwrap(
       await invoke("finance_update_fee_template", { request: { id, ...req } }),
@@ -864,6 +905,9 @@ export class LocalClient implements OrbisApiClient {
       await invoke("finance_list_student_fees", { filter: filter ?? {} }),
     );
   }
+  async deleteStudentFee(id: string): Promise<boolean> {
+    return unwrap(await invoke("finance_delete_student_fee", { id }));
+  }
   async processPayment(req: ProcessPaymentRequest): Promise<PaymentDto> {
     return unwrap(await invoke("finance_process_payment", { request: req }));
   }
@@ -873,6 +917,9 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(
       await invoke("finance_list_payments", { filter: filter ?? {} }),
     );
+  }
+  async deletePayment(id: string): Promise<boolean> {
+    return unwrap(await invoke("finance_delete_payment", { id }));
   }
   async listCurrencies(): Promise<CurrencyDto[]> {
     return unwrap(await invoke("finance_list_currencies"));
@@ -897,6 +944,9 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(
       await invoke("finance_reverse_journal_entry", { id, request: req }),
     );
+  }
+  async deleteJournalEntry(id: string): Promise<boolean> {
+    return unwrap(await invoke("finance_delete_journal_entry", { id }));
   }
   async splitStudentFee(
     id: string,
@@ -924,12 +974,21 @@ export class LocalClient implements OrbisApiClient {
       await invoke("finance_create_discount_template", { request: req }),
     );
   }
+  async deleteDiscountTemplate(id: string): Promise<boolean> {
+    return unwrap(await invoke("finance_delete_discount_template", { id }));
+  }
 
   // ── Document ────────────────────────────────────────────────
   async uploadDocument(req: UploadDocumentRequest): Promise<DocumentDto> {
     return unwrap(await invoke("document_upload", { request: req }));
   }
-  async listDocuments(): Promise<DocumentDto[]> {
+  async updateDocument(id: string, req: UpdateDocumentRequest): Promise<DocumentDto> {
+    return unwrap(await invoke("document_update", { id, request: req }));
+  }
+  async listDocuments(params?: { entity_type?: string; entity_id?: string }): Promise<DocumentDto[]> {
+    if (params?.entity_type && params?.entity_id) {
+      return this.listDocumentsByEntity(params.entity_type, params.entity_id);
+    }
     return unwrap(await invoke("document_list"));
   }
   async listDocumentsByEntity(entityType: string, entityId: string): Promise<DocumentDto[]> {
@@ -947,6 +1006,17 @@ export class LocalClient implements OrbisApiClient {
   ): Promise<DocumentRequirementDto> {
     return unwrap(
       await invoke("document_create_requirement", { request: req }),
+    );
+  }
+  async getDocumentRequirement(id: string): Promise<DocumentRequirementDto> {
+    return unwrap(await invoke("document_get_requirement", { id }));
+  }
+  async updateDocumentRequirement(
+    id: string,
+    req: UpdateDocumentRequirementRequest,
+  ): Promise<DocumentRequirementDto> {
+    return unwrap(
+      await invoke("document_update_requirement", { id, request: req }),
     );
   }
   async listDocumentRequirements(): Promise<DocumentRequirementDto[]> {

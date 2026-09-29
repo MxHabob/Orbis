@@ -70,6 +70,7 @@ export type AccountDto = {
     id: string;
     is_active: boolean;
     name: string;
+    name_ar?: string | null;
     org_id: string;
     parent_id?: string | null;
     updated_at: string;
@@ -524,6 +525,19 @@ export type CreateClassRequest = {
     unit_id: string;
 };
 
+export type CreateDiscountTemplateRequest = {
+    code?: string | null;
+    discount_type: string;
+    eligibility_rules?: unknown;
+    is_approval_required?: boolean | null;
+    is_auto_apply?: boolean | null;
+    is_stackable?: boolean | null;
+    name: string;
+    name_ar?: string | null;
+    priority?: number | null;
+    value: string;
+};
+
 export type CreateDocumentRequirementRequest = {
     blocks_enrollment: boolean;
     code: string;
@@ -721,6 +735,24 @@ export type DashboardCountsDto = {
     total_students: number;
     total_subjects: number;
     total_teachers: number;
+};
+
+export type DiscountTemplateDto = {
+    code: string;
+    created_at: string;
+    discount_type: string;
+    eligibility_rules?: unknown;
+    id: string;
+    is_active: boolean;
+    is_approval_required: boolean;
+    is_auto_apply: boolean;
+    is_stackable: boolean;
+    name: string;
+    name_ar?: string | null;
+    org_id: string;
+    priority: number;
+    updated_at: string;
+    value: string;
 };
 
 export type DocumentDto = {
@@ -1858,6 +1890,39 @@ export type UiContext = {
     subject_id?: string | null;
 };
 
+export type UpdateAccountRequest = {
+    account_type: string;
+    code: string;
+    currency?: string | null;
+    is_active?: boolean | null;
+    name: string;
+    name_ar?: string | null;
+    parent_id?: string | null;
+    sub_type?: string | null;
+};
+
+export type UpdateDocumentRequest = {
+    asset_type?: string | null;
+    category?: string | null;
+    description?: string | null;
+    name?: string | null;
+    school_year?: string | null;
+    tags?: string | null;
+    term?: string | null;
+    visibility?: string | null;
+};
+
+export type UpdateDocumentRequirementRequest = {
+    blocks_enrollment?: boolean | null;
+    code?: string | null;
+    condition?: string | null;
+    is_mandatory?: boolean | null;
+    name_ar?: string | null;
+    name_en?: string | null;
+    target_id?: string | null;
+    target_type?: string | null;
+};
+
 export type UpdateEmployeeRequest = {
     address?: string | null;
     avatar_url?: string | null;
@@ -1892,6 +1957,28 @@ export type UpdateEmployeeRequest = {
 
 export type UpdateEmployeeStatusRequest = {
     status: string;
+};
+
+export type UpdateExamSessionRequest = {
+    end_date?: string | null;
+    name?: string | null;
+    start_date?: string | null;
+    status?: string | null;
+};
+
+export type UpdateFeeTemplateRequest = {
+    applicable_levels?: Array<string> | null;
+    category?: string | null;
+    code?: string | null;
+    currency?: string | null;
+    default_amount: string;
+    frequency?: string | null;
+    is_active?: boolean | null;
+    is_mandatory?: boolean | null;
+    name: string;
+    name_ar?: string | null;
+    receivable_account_id?: string | null;
+    revenue_account_id?: string | null;
 };
 
 export type UpdateGroupRequest = {
@@ -2272,6 +2359,60 @@ export type CreateAccountResponses = {
 };
 
 export type CreateAccountResponse = CreateAccountResponses[keyof CreateAccountResponses];
+
+export type DeleteAccountData = {
+    body?: never;
+    path: {
+        /**
+         * Account ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/accounts/{id}';
+};
+
+export type DeleteAccountResponses = {
+    200: boolean;
+};
+
+export type DeleteAccountResponse = DeleteAccountResponses[keyof DeleteAccountResponses];
+
+export type GetAccountData = {
+    body?: never;
+    path: {
+        /**
+         * Account ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/accounts/{id}';
+};
+
+export type GetAccountResponses = {
+    200: AccountDto;
+};
+
+export type GetAccountResponse = GetAccountResponses[keyof GetAccountResponses];
+
+export type UpdateAccountData = {
+    body: UpdateAccountRequest;
+    path: {
+        /**
+         * Account ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/accounts/{id}';
+};
+
+export type UpdateAccountResponses = {
+    200: AccountDto;
+};
+
+export type UpdateAccountResponse = UpdateAccountResponses[keyof UpdateAccountResponses];
 
 export type ChatData = {
     body: AiChatRequest;
@@ -2967,6 +3108,50 @@ export type ListCurrenciesResponses = {
 
 export type ListCurrenciesResponse = ListCurrenciesResponses[keyof ListCurrenciesResponses];
 
+export type ListDiscountTemplatesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/discount-templates';
+};
+
+export type ListDiscountTemplatesResponses = {
+    200: Array<DiscountTemplateDto>;
+};
+
+export type ListDiscountTemplatesResponse = ListDiscountTemplatesResponses[keyof ListDiscountTemplatesResponses];
+
+export type CreateDiscountTemplateData = {
+    body: CreateDiscountTemplateRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/discount-templates';
+};
+
+export type CreateDiscountTemplateResponses = {
+    201: DiscountTemplateDto;
+};
+
+export type CreateDiscountTemplateResponse = CreateDiscountTemplateResponses[keyof CreateDiscountTemplateResponses];
+
+export type DeleteDiscountTemplateData = {
+    body?: never;
+    path: {
+        /**
+         * Discount Template ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/discount-templates/{id}';
+};
+
+export type DeleteDiscountTemplateResponses = {
+    200: boolean;
+};
+
+export type DeleteDiscountTemplateResponse = DeleteDiscountTemplateResponses[keyof DeleteDiscountTemplateResponses];
+
 export type ListDocumentRequirementsData = {
     body?: never;
     path?: never;
@@ -3014,10 +3199,49 @@ export type DeleteDocumentRequirementResponses = {
 
 export type DeleteDocumentRequirementResponse = DeleteDocumentRequirementResponses[keyof DeleteDocumentRequirementResponses];
 
+export type GetDocumentRequirementData = {
+    body?: never;
+    path: {
+        /**
+         * Requirement ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/document-requirements/{id}';
+};
+
+export type GetDocumentRequirementResponses = {
+    200: DocumentRequirementDto;
+};
+
+export type GetDocumentRequirementResponse = GetDocumentRequirementResponses[keyof GetDocumentRequirementResponses];
+
+export type UpdateDocumentRequirementData = {
+    body: UpdateDocumentRequirementRequest;
+    path: {
+        /**
+         * Requirement ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/document-requirements/{id}';
+};
+
+export type UpdateDocumentRequirementResponses = {
+    200: DocumentRequirementDto;
+};
+
+export type UpdateDocumentRequirementResponse = UpdateDocumentRequirementResponses[keyof UpdateDocumentRequirementResponses];
+
 export type ListDocumentsData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        entity_type?: string | null;
+        entity_id?: string | null;
+    };
     url: '/api/v1/documents';
 };
 
@@ -3078,6 +3302,24 @@ export type GetDocumentResponses = {
 };
 
 export type GetDocumentResponse = GetDocumentResponses[keyof GetDocumentResponses];
+
+export type UpdateDocumentData = {
+    body: UpdateDocumentRequest;
+    path: {
+        /**
+         * Document ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{id}';
+};
+
+export type UpdateDocumentResponses = {
+    200: DocumentDto;
+};
+
+export type UpdateDocumentResponse = UpdateDocumentResponses[keyof UpdateDocumentResponses];
 
 export type ListEmployeesData = {
     body?: never;
@@ -3342,6 +3584,24 @@ export type TransferClassResponses = {
 
 export type TransferClassResponse = TransferClassResponses[keyof TransferClassResponses];
 
+export type ListProctorsData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Exam Schedule ID
+         */
+        schedule_id: string;
+    };
+    url: '/api/v1/exam-proctors';
+};
+
+export type ListProctorsResponses = {
+    200: Array<ProctorDto>;
+};
+
+export type ListProctorsResponse = ListProctorsResponses[keyof ListProctorsResponses];
+
 export type AssignProctorData = {
     body: AssignProctorRequest;
     path?: never;
@@ -3354,6 +3614,22 @@ export type AssignProctorResponses = {
 };
 
 export type AssignProctorResponse = AssignProctorResponses[keyof AssignProctorResponses];
+
+export type DeleteProctorData = {
+    body?: never;
+    path: {
+        /**
+         * Proctor Assignment ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/exam-proctors/{id}';
+};
+
+export type DeleteProctorResponses = {
+    200: unknown;
+};
 
 export type ListSchedulesData = {
     body?: never;
@@ -3385,6 +3661,22 @@ export type ScheduleExamResponses = {
 };
 
 export type ScheduleExamResponse = ScheduleExamResponses[keyof ScheduleExamResponses];
+
+export type DeleteScheduleData = {
+    body?: never;
+    path: {
+        /**
+         * Exam Schedule ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/exam-schedules/{id}';
+};
+
+export type DeleteScheduleResponses = {
+    200: unknown;
+};
 
 export type ListSeatingData = {
     body?: never;
@@ -3430,6 +3722,22 @@ export type GenerateSeatingResponses = {
 
 export type GenerateSeatingResponse = GenerateSeatingResponses[keyof GenerateSeatingResponses];
 
+export type DeleteSeatingData = {
+    body?: never;
+    path: {
+        /**
+         * Seating Number ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/exam-seating/{id}';
+};
+
+export type DeleteSeatingResponses = {
+    200: unknown;
+};
+
 export type ListSecretsData = {
     body?: never;
     path?: never;
@@ -3474,6 +3782,22 @@ export type GenerateSecretsResponses = {
 
 export type GenerateSecretsResponse = GenerateSecretsResponses[keyof GenerateSecretsResponses];
 
+export type DeleteSecretData = {
+    body?: never;
+    path: {
+        /**
+         * Secret Number ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/exam-secrets/{id}';
+};
+
+export type DeleteSecretResponses = {
+    200: unknown;
+};
+
 export type ListSessionsData = {
     body?: never;
     path?: never;
@@ -3500,6 +3824,22 @@ export type CreateSessionResponses = {
 
 export type CreateSessionResponse = CreateSessionResponses[keyof CreateSessionResponses];
 
+export type DeleteSessionData = {
+    body?: never;
+    path: {
+        /**
+         * Exam Session ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/exam-sessions/{id}';
+};
+
+export type DeleteSessionResponses = {
+    200: unknown;
+};
+
 export type GetSession2Data = {
     body?: never;
     path: {
@@ -3517,6 +3857,24 @@ export type GetSession2Responses = {
 };
 
 export type GetSession2Response = GetSession2Responses[keyof GetSession2Responses];
+
+export type UpdateSessionData = {
+    body: UpdateExamSessionRequest;
+    path: {
+        /**
+         * Exam Session ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/exam-sessions/{id}';
+};
+
+export type UpdateSessionResponses = {
+    200: ExamSessionDto;
+};
+
+export type UpdateSessionResponse = UpdateSessionResponses[keyof UpdateSessionResponses];
 
 export type ListFeeTemplatesData = {
     body?: never;
@@ -3543,6 +3901,60 @@ export type CreateFeeTemplateResponses = {
 };
 
 export type CreateFeeTemplateResponse = CreateFeeTemplateResponses[keyof CreateFeeTemplateResponses];
+
+export type DeleteFeeTemplateData = {
+    body?: never;
+    path: {
+        /**
+         * Fee Template ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/fee-templates/{id}';
+};
+
+export type DeleteFeeTemplateResponses = {
+    200: boolean;
+};
+
+export type DeleteFeeTemplateResponse = DeleteFeeTemplateResponses[keyof DeleteFeeTemplateResponses];
+
+export type GetFeeTemplateData = {
+    body?: never;
+    path: {
+        /**
+         * Fee Template ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/fee-templates/{id}';
+};
+
+export type GetFeeTemplateResponses = {
+    200: FeeTemplateDto;
+};
+
+export type GetFeeTemplateResponse = GetFeeTemplateResponses[keyof GetFeeTemplateResponses];
+
+export type UpdateFeeTemplateData = {
+    body: UpdateFeeTemplateRequest;
+    path: {
+        /**
+         * Fee Template ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/fee-templates/{id}';
+};
+
+export type UpdateFeeTemplateResponses = {
+    200: FeeTemplateDto;
+};
+
+export type UpdateFeeTemplateResponse = UpdateFeeTemplateResponses[keyof UpdateFeeTemplateResponses];
 
 export type ListGradesData = {
     body?: never;
@@ -4139,6 +4551,24 @@ export type CreateJournalEntryResponses = {
 
 export type CreateJournalEntryResponse = CreateJournalEntryResponses[keyof CreateJournalEntryResponses];
 
+export type DeleteJournalEntryData = {
+    body?: never;
+    path: {
+        /**
+         * Journal Entry ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/journal-entries/{id}';
+};
+
+export type DeleteJournalEntryResponses = {
+    200: boolean;
+};
+
+export type DeleteJournalEntryResponse = DeleteJournalEntryResponses[keyof DeleteJournalEntryResponses];
+
 export type GetJournalEntryData = {
     body?: never;
     path: {
@@ -4458,6 +4888,24 @@ export type ProcessPaymentResponses = {
 };
 
 export type ProcessPaymentResponse = ProcessPaymentResponses[keyof ProcessPaymentResponses];
+
+export type DeletePaymentData = {
+    body?: never;
+    path: {
+        /**
+         * Payment ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/payments/{id}';
+};
+
+export type DeletePaymentResponses = {
+    200: boolean;
+};
+
+export type DeletePaymentResponse = DeletePaymentResponses[keyof DeletePaymentResponses];
 
 export type ListPeriodTemplatesData = {
     body?: never;
@@ -4819,6 +5267,24 @@ export type GenerateFeeResponses = {
 
 export type GenerateFeeResponse = GenerateFeeResponses[keyof GenerateFeeResponses];
 
+export type DeleteStudentFeeData = {
+    body?: never;
+    path: {
+        /**
+         * Student Fee ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/student-fees/{id}';
+};
+
+export type DeleteStudentFeeResponses = {
+    200: boolean;
+};
+
+export type DeleteStudentFeeResponse = DeleteStudentFeeResponses[keyof DeleteStudentFeeResponses];
+
 export type RefundFeeData = {
     body: RefundStudentFeeRequest;
     path: {
@@ -5025,7 +5491,11 @@ export type EvaluateStudentRequirementsData = {
          */
         id: string;
     };
-    query?: never;
+    query?: {
+        grade_level_id?: string | null;
+        is_national?: boolean | null;
+        is_transfer?: boolean | null;
+    };
     url: '/api/v1/students/{id}/document-requirements';
 };
 

@@ -56,19 +56,46 @@ pub enum DomainEvent {
     BehaviorDeleted { record_id: Uuid, timestamp: DateTime<Utc> },
 
     ExamSessionCreated { session_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    ExamSessionUpdated { session_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    ExamSessionDeleted { session_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
     ExamScheduled { schedule_id: Uuid, session_id: Uuid, timestamp: DateTime<Utc> },
+    ExamScheduleDeleted { schedule_id: Uuid, session_id: Uuid, timestamp: DateTime<Utc> },
     SeatingNumberAssigned { student_id: Uuid, session_id: Uuid, seating_number: String, timestamp: DateTime<Utc> },
+    SeatingNumberDeleted { seating_id: Uuid, timestamp: DateTime<Utc> },
+    SecretNumberAssigned { secret_id: Uuid, schedule_id: Uuid, timestamp: DateTime<Utc> },
+    SecretNumberDeleted { secret_id: Uuid, timestamp: DateTime<Utc> },
+    ProctorAssigned { proctor_id: Uuid, schedule_id: Uuid, timestamp: DateTime<Utc> },
+    ProctorDeleted { proctor_id: Uuid, timestamp: DateTime<Utc> },
 
+    // Finance
+    AccountCreated { account_id: Uuid, org_id: Uuid, code: String, timestamp: DateTime<Utc> },
+    AccountUpdated { account_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    AccountDeleted { account_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    FeeTemplateCreated { template_id: Uuid, org_id: Uuid, code: String, timestamp: DateTime<Utc> },
+    FeeTemplateUpdated { template_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    FeeTemplateDeleted { template_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    DiscountTemplateCreated { template_id: Uuid, org_id: Uuid, code: String, timestamp: DateTime<Utc> },
+    DiscountTemplateUpdated { template_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    DiscountTemplateDeleted { template_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
     StudentFeeGenerated { fee_id: Uuid, student_id: Uuid, enrollment_id: Option<Uuid>, net_amount: Decimal, timestamp: DateTime<Utc> },
+    StudentFeeUpdated { fee_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    StudentFeeDeleted { fee_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
     PaymentReceived { payment_id: Uuid, fee_id: Option<Uuid>, amount: Decimal, timestamp: DateTime<Utc> },
+    PaymentDeleted { payment_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
     JournalEntryPosted { entry_id: Uuid, amount: Decimal, timestamp: DateTime<Utc> },
+    JournalEntryReversed { entry_id: Uuid, reversal_id: Uuid, timestamp: DateTime<Utc> },
+    JournalEntryDeleted { entry_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
 
     OverrideSubmitted { request_id: Uuid, org_id: Uuid, override_type: String, requested_by: Uuid, timestamp: DateTime<Utc> },
     OverrideApproved { request_id: Uuid, org_id: Uuid, approver_id: Uuid, timestamp: DateTime<Utc> },
     OverrideRejected { request_id: Uuid, org_id: Uuid, rejecter_id: Uuid, reason: String, timestamp: DateTime<Utc> },
 
     DocumentUploaded { document_id: Uuid, entity_type: Option<String>, entity_id: Option<Uuid>, timestamp: DateTime<Utc> },
+    DocumentUpdated { document_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
     DocumentDeleted { document_id: Uuid, timestamp: DateTime<Utc> },
+    DocumentRequirementCreated { requirement_id: Uuid, org_id: Uuid, code: String, timestamp: DateTime<Utc> },
+    DocumentRequirementUpdated { requirement_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    DocumentRequirementDeleted { requirement_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
 
     // --- Employee & Groups & Identity Provisioning ---
     EmployeeCreated { employee_id: Uuid, person_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
@@ -150,13 +177,35 @@ impl DomainEvent {
 
             // Exams
             DomainEvent::ExamSessionCreated { session_id, .. } => Some(("exam_session.created", "exam_session", *session_id)),
+            DomainEvent::ExamSessionUpdated { session_id, .. } => Some(("exam_session.updated", "exam_session", *session_id)),
+            DomainEvent::ExamSessionDeleted { session_id, .. } => Some(("exam_session.deleted", "exam_session", *session_id)),
             DomainEvent::ExamScheduled { schedule_id, .. } => Some(("exam.scheduled", "exam_schedule", *schedule_id)),
+            DomainEvent::ExamScheduleDeleted { schedule_id, .. } => Some(("exam.schedule_deleted", "exam_schedule", *schedule_id)),
             DomainEvent::SeatingNumberAssigned { .. } => None, // Bulk operation
+            DomainEvent::SeatingNumberDeleted { seating_id, .. } => Some(("exam.seating_deleted", "seating_number", *seating_id)),
+            DomainEvent::SecretNumberAssigned { secret_id, .. } => Some(("exam.secret_assigned", "secret_number", *secret_id)),
+            DomainEvent::SecretNumberDeleted { secret_id, .. } => Some(("exam.secret_deleted", "secret_number", *secret_id)),
+            DomainEvent::ProctorAssigned { proctor_id, .. } => Some(("exam.proctor_assigned", "exam_proctor", *proctor_id)),
+            DomainEvent::ProctorDeleted { proctor_id, .. } => Some(("exam.proctor_deleted", "exam_proctor", *proctor_id)),
 
             // Finance
+            DomainEvent::AccountCreated { account_id, .. } => Some(("account.created", "account", *account_id)),
+            DomainEvent::AccountUpdated { account_id, .. } => Some(("account.updated", "account", *account_id)),
+            DomainEvent::AccountDeleted { account_id, .. } => Some(("account.deleted", "account", *account_id)),
+            DomainEvent::FeeTemplateCreated { template_id, .. } => Some(("fee_template.created", "fee_template", *template_id)),
+            DomainEvent::FeeTemplateUpdated { template_id, .. } => Some(("fee_template.updated", "fee_template", *template_id)),
+            DomainEvent::FeeTemplateDeleted { template_id, .. } => Some(("fee_template.deleted", "fee_template", *template_id)),
+            DomainEvent::DiscountTemplateCreated { template_id, .. } => Some(("discount_template.created", "discount_template", *template_id)),
+            DomainEvent::DiscountTemplateUpdated { template_id, .. } => Some(("discount_template.updated", "discount_template", *template_id)),
+            DomainEvent::DiscountTemplateDeleted { template_id, .. } => Some(("discount_template.deleted", "discount_template", *template_id)),
             DomainEvent::StudentFeeGenerated { fee_id, .. } => Some(("student_fee.generated", "student_fee", *fee_id)),
+            DomainEvent::StudentFeeUpdated { fee_id, .. } => Some(("student_fee.updated", "student_fee", *fee_id)),
+            DomainEvent::StudentFeeDeleted { fee_id, .. } => Some(("student_fee.deleted", "student_fee", *fee_id)),
             DomainEvent::PaymentReceived { payment_id, .. } => Some(("payment.received", "payment", *payment_id)),
+            DomainEvent::PaymentDeleted { payment_id, .. } => Some(("payment.deleted", "payment", *payment_id)),
             DomainEvent::JournalEntryPosted { entry_id, .. } => Some(("journal_entry.posted", "journal_entry", *entry_id)),
+            DomainEvent::JournalEntryReversed { entry_id, .. } => Some(("journal_entry.reversed", "journal_entry", *entry_id)),
+            DomainEvent::JournalEntryDeleted { entry_id, .. } => Some(("journal_entry.deleted", "journal_entry", *entry_id)),
 
             // Overrides
             DomainEvent::OverrideSubmitted { request_id, .. } => Some(("override.submitted", "override_request", *request_id)),
@@ -165,7 +214,11 @@ impl DomainEvent {
 
             // Documents
             DomainEvent::DocumentUploaded { document_id, .. } => Some(("document.uploaded", "document", *document_id)),
+            DomainEvent::DocumentUpdated { document_id, .. } => Some(("document.updated", "document", *document_id)),
             DomainEvent::DocumentDeleted { document_id, .. } => Some(("document.deleted", "document", *document_id)),
+            DomainEvent::DocumentRequirementCreated { requirement_id, .. } => Some(("document_requirement.created", "document_requirement", *requirement_id)),
+            DomainEvent::DocumentRequirementUpdated { requirement_id, .. } => Some(("document_requirement.updated", "document_requirement", *requirement_id)),
+            DomainEvent::DocumentRequirementDeleted { requirement_id, .. } => Some(("document_requirement.deleted", "document_requirement", *requirement_id)),
 
             // Employee & Groups
             DomainEvent::EmployeeCreated { employee_id, .. } => Some(("employee.created", "employee", *employee_id)),

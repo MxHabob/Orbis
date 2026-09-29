@@ -13,9 +13,15 @@ import {
   type PaymentFilterParams,
   type CreateDiscountTemplateRequest,
   type CreateFeeTemplateRequest,
+  type UpdateFeeTemplateRequest,
   type GenerateFeeRequest,
   type ProcessPaymentRequest,
   type CreateAccountRequest,
+  type UpdateAccountRequest,
+  type CreateJournalEntryRequest,
+  type ReverseJournalRequest,
+  type SplitFeeRequest,
+  type RefundStudentFeeRequest,
 } from "$lib/api";
 
 /** Treasuries for an organization. */
@@ -362,6 +368,188 @@ export function createAvailablePaymentMethodsQuery(orgId: () => string) {
     },
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
+  }));
+}
+
+/** Update account mutation */
+export function createUpdateAccountMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: ({ id, req }: { id: string; req: UpdateAccountRequest }) =>
+      api.updateAccount(id, req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.accounts(),
+      });
+    },
+  }));
+}
+
+/** Delete account mutation */
+export function createDeleteAccountMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.deleteAccount(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.accounts(),
+      });
+    },
+  }));
+}
+
+/** Update fee template mutation */
+export function createUpdateFeeTemplateMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: ({ id, req }: { id: string; req: UpdateFeeTemplateRequest }) =>
+      api.updateFeeTemplate(id, req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.feeTemplates(),
+      });
+    },
+  }));
+}
+
+/** Delete fee template mutation */
+export function createDeleteFeeTemplateMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.deleteFeeTemplate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.feeTemplates(),
+      });
+    },
+  }));
+}
+
+/** Delete discount template mutation */
+export function createDeleteDiscountTemplateMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.deleteDiscountTemplate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.discountTemplates(),
+      });
+    },
+  }));
+}
+
+/** Delete student fee mutation */
+export function createDeleteStudentFeeMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.deleteStudentFee(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.studentFees(),
+      });
+    },
+  }));
+}
+
+/** Delete payment mutation */
+export function createDeletePaymentMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.deletePayment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.payments(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.studentFees(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.accounts(),
+      });
+    },
+  }));
+}
+
+/** Create journal entry mutation */
+export function createCreateJournalEntryMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (req: CreateJournalEntryRequest) => api.createJournalEntry(req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.journalEntries(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.accounts(),
+      });
+    },
+  }));
+}
+
+/** Reverse journal entry mutation */
+export function createReverseJournalEntryMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: ({ id, req }: { id: string; req: ReverseJournalRequest }) =>
+      api.reverseJournalEntry(id, req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.journalEntries(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.accounts(),
+      });
+    },
+  }));
+}
+
+/** Delete journal entry mutation */
+export function createDeleteJournalEntryMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.deleteJournalEntry(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.journalEntries(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.accounts(),
+      });
+    },
+  }));
+}
+
+/** Split student fee mutation */
+export function createSplitStudentFeeMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: ({ id, req }: { id: string; req: SplitFeeRequest }) =>
+      api.splitStudentFee(id, req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.studentFees(),
+      });
+    },
+  }));
+}
+
+/** Refund student fee mutation */
+export function createRefundStudentFeeMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: ({ id, req }: { id: string; req: RefundStudentFeeRequest }) =>
+      api.refundStudentFee(id, req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.studentFees(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.payments(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.accounts(),
+      });
+    },
   }));
 }
 

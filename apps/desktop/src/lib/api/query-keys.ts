@@ -173,6 +173,12 @@ export const queryKeys = {
     session: (id: string) => [...queryKeys.exam.all, "session", id] as const,
     schedules: (sessionId: string) =>
       [...queryKeys.exam.all, "schedules", sessionId] as const,
+    seating: (sessionId: string) =>
+      [...queryKeys.exam.all, "seating", sessionId] as const,
+    secrets: (scheduleId: string) =>
+      [...queryKeys.exam.all, "secrets", scheduleId] as const,
+    proctors: (scheduleId: string) =>
+      [...queryKeys.exam.all, "proctors", scheduleId] as const,
   },
 
   // ── Finance ─────────────────────────────────────────────────
@@ -204,8 +210,17 @@ export const queryKeys = {
   // ── Document ────────────────────────────────────────────────
   document: {
     all: ["document"] as const,
-    list: (orgId?: string) => [...queryKeys.document.all, "list", orgId ?? "current"] as const,
+    list: (orgIdOrFilter?: string | { entity_type?: string; entity_id?: string }, filter?: { entity_type?: string; entity_id?: string }) => {
+      if (typeof orgIdOrFilter === "string") {
+        return [...queryKeys.document.all, "list", orgIdOrFilter, filter ?? {}] as const;
+      }
+      return [...queryKeys.document.all, "list", "current", orgIdOrFilter ?? {}] as const;
+    },
+    byEntity: (entityType: string, entityId: string) => [...queryKeys.document.all, "entity", entityType, entityId] as const,
     detail: (id: string) => [...queryKeys.document.all, "detail", id] as const,
+    requirements: (orgId?: string) => [...queryKeys.document.all, "requirements", orgId ?? "current"] as const,
+    requirement: (id: string) => [...queryKeys.document.all, "requirement", id] as const,
+    studentFulfillment: (studentId: string, params?: Record<string, unknown>) => [...queryKeys.document.all, "studentFulfillment", studentId, params ?? {}] as const,
   },
 
   // ── Integration ─────────────────────────────────────────────

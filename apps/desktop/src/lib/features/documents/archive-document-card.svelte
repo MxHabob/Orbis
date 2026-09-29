@@ -7,7 +7,7 @@ import {
   resolveDocumentUrl,
 } from "$lib/features/documents/queries";
 import { DocumentPage, Download, Play, SoundHigh, Trash } from "@orbis/icons";
-import type { Documents } from "@orbis/sdk";
+import type { DocumentDto } from "$lib/api";
 
 let {
   document,
@@ -16,9 +16,9 @@ let {
   ondelete,
   ontoggle,
 }: {
-  document: Documents;
+  document: DocumentDto;
   selected?: boolean;
-  onpreview: (document: Documents) => void;
+  onpreview: (document: DocumentDto) => void;
   ondelete: (id: string) => void;
   ontoggle: (id: string, selected: boolean) => void;
 } = $props();
@@ -119,7 +119,7 @@ function loadWhenVisible(node: HTMLDivElement) {
     <p class="truncate text-xs font-medium text-foreground" title={document.name}>{document.name}</p>
     <div class="mt-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
       <span class="truncate">{document.category || "archive"}</span>
-      <span class="shrink-0 font-mono">{((document.size || 0) / 1024).toFixed(1)} KB</span>
+      <span class="shrink-0 font-mono">{((document.file_size_bytes || 0) / 1024).toFixed(1)} KB</span>
     </div>
   </div>
 </article>

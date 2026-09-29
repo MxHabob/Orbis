@@ -722,6 +722,101 @@ impl SchedulingService {
         Ok(proctor)
     }
 
+    pub async fn update_exam_session(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+        name: Option<String>,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
+        status: Option<String>,
+    ) -> Result<ExamSession, DomainError> {
+        self.permission_checker.check(ctx, Permission::ExamSessionWrite).await?;
+        let mut session = self.exam_session_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound("Exam session not found".to_string()))?;
+
+        if let Some(n) = name { session.name = n; }
+        if let Some(s) = start_date { session.start_date = s; }
+        if let Some(e) = end_date { session.end_date = e; }
+        if let Some(st) = status { session.status = st; }
+        session.updated_at = Utc::now();
+
+        self.exam_session_repo.save(&session).await?;
+
+        let event = DomainEvent::ExamSessionUpdated {
+            session_id: session.id,
+            org_id: session.org_id,
+            timestamp: session.updated_at,
+        };
+        self.event_bus.publish(ctx, &event).await?;
+        Ok(session)
+    }
+
+    pub async fn delete_exam_session(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::ExamSessionDelete).await?;
+        let session = self.exam_session_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound("Exam session not found".to_string()))?;
+
+        self.exam_session_repo.delete(id).await?;
+
+        let event = DomainEvent::ExamSessionDeleted {
+            session_id: id,
+            org_id: session.org_id,
+            timestamp: Utc::now(),
+        };
+        self.event_bus.publish(ctx, &event).await?;
+        Ok(())
+    }
+
+    pub async fn delete_exam_schedule(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::ExamScheduleWrite).await?;
+        let schedule = self.exam_schedule_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound("Exam schedule not found".to_string()))?;
+
+        self.exam_schedule_repo.delete(id).await?;
+
+        let event = DomainEvent::ExamScheduleDeleted {
+            schedule_id: id,
+            session_id: schedule.exam_session_id,
+            timestamp: Utc::now(),
+        };
+        self.event_bus.publish(ctx, &event).await?;
+        Ok(())
+    }
+
+    pub async fn delete_seating_number(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::SeatingNumberGenerate).await?;
+        self.seating_number_repo.delete(id).await?;
+        let event = DomainEvent::SeatingNumberDeleted {
+            seating_id: id,
+            timestamp: Utc::now(),
+        };
+        self.event_bus.publish(ctx, &event).await?;
+        Ok(())
+    }
+
+    pub async fn delete_secret_number(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::SecretNumberGenerate).await?;
+        self.secret_number_repo.delete(id).await?;
+        let event = DomainEvent::SecretNumberDeleted {
+            secret_id: id,
+            timestamp: Utc::now(),
+        };
+        self.event_bus.publish(ctx, &event).await?;
+        Ok(())
+    }
+
+    pub async fn delete_proctor(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::ProctorAssign).await?;
+        self.exam_proctor_repo.delete(id).await?;
+        let event = DomainEvent::ProctorDeleted {
+            proctor_id: id,
+            timestamp: Utc::now(),
+        };
+        self.event_bus.publish(ctx, &event).await?;
+        Ok(())
+    }
+
     pub async fn list_proctors(&self, schedule_id: Uuid) -> Result<Vec<ExamProctor>, DomainError> {
         self.exam_proctor_repo.find_by_schedule(schedule_id).await
     }

@@ -5,14 +5,15 @@ Lists all discount/scholarship templates with OrbisGrid, CRUD via DiscountTempla
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api } from "$lib/api";
+import { api, queryClient, queryKeys } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Plus, ReceiptPercent, Refresh } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatCurrency } from "$lib/core/i18n";
+import { formatCurrency, l } from "$lib/core/i18n";
 import { toast } from "@orbis/ui";
+import { confirmStore } from "$lib/stores";
 import DiscountTemplateSheet from "$lib/features/finance/components/discount-template-sheet.svelte";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
+import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { discountTemplateFilterFields } from "$lib/core/filter-configs";
 
@@ -46,18 +47,25 @@ onMount(() => {
 
 function getFormattedValue(tpl: any): string {
   const val = Number(tpl.value || 0);
-  if (String(tpl.calculation_method).toLowerCase() === "percentage")
+  if (String(tpl.discount_type || tpl.calculation_method).toLowerCase() === "percentage")
     return `${val}%`;
   return formatCurrency(val, "YER");
 }
 
 function getTypeLabel(typeStr: string): string {
   const t = String(typeStr).toLowerCase();
+  if (t === "percentage") return "نسبة مئوية (%)";
+  if (t === "fixed_amount") return "مبلغ ثابت";
   if (t === "manual") return "Manual";
   if (t === "scholarship") return "Scholarship";
   if (t === "system") return "System";
   return typeStr;
 }
+
+const templateActions: ActionItem[] = [
+  { id: "edit", label: m.common_action_edit?.() || "Edit", icon: "Pencil" },
+  { id: "delete", label: m.common_action_delete?.() || "Delete", icon: "Trash2", variant: "destructive" },
+];
 
 const gridSource = $derived(
   templates.map((tpl, i) => ({
@@ -66,7 +74,7 @@ const gridSource = $derived(
     name: tpl.name_ar || tpl.name || "—",
     discount_type: getTypeLabel(tpl.discount_type || tpl.type || ""),
     value: getFormattedValue(tpl),
-    status: tpl.is_active === 1 ? "active" : "inactive",
+    status: (tpl.is_active === 1 || tpl.is_active === true) ? "active" : "inactive",
   })),
 );
 
@@ -76,6 +84,18 @@ const columns: OrbisColumnDef[] = [
   { id: "discount_type", prop: "discount_type", header: m.common_word_type?.() || "Type", name: "Type", width: 130, size: 130, readonly: true },
   { id: "value", prop: "value", header: m.common_dt_col_value?.() || "Value", name: "Value", width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono font-bold" },
   { id: "status", prop: "status", header: m.common_word_status?.() || "Status", name: "Status", width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  {
+    id: "actions",
+    prop: "actions",
+    header: m.common_je_col_actions?.() || "Actions",
+    name: "Actions",
+    width: 90,
+    size: 90,
+    type: "action",
+    align: "center",
+    readonly: true,
+    meta: { items: templateActions },
+  },
 ];
 
 function handleCreate() {
@@ -83,10 +103,31 @@ function handleCreate() {
   isSheetOpen = true;
 }
 
-function handleGridAction(event: GridActionEvent) {
+async function handleGridAction(event: GridActionEvent) {
+  const row = event.row as any;
   if (event.actionId === "dblclick" || event.actionId === "edit") {
-    selectedTemplate = event.row as any;
+    selectedTemplate = row;
     isSheetOpen = true;
+  } else if (event.actionId === "delete") {
+    const templateName = row.name_ar || row.name || "";
+    const confirmed = await confirmStore.prompt({
+      title: `${m.common_action_delete?.() || "Delete"}؟`,
+      description: `${m.common_action_delete?.() || "Delete"} "${templateName}"?`,
+      confirmText: m.common_action_delete?.() || "Delete",
+      variant: "destructive",
+    });
+    if (confirmed) {
+      try {
+        await api.deleteDiscountTemplate(row.id);
+        toast.success(m.common_alert_deleted_successfully?.() || "Template deleted successfully");
+        await loadTemplates();
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.finance.discountTemplates(orgId),
+        });
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to delete discount template");
+      }
+    }
   }
 }
 </script>

@@ -4,7 +4,17 @@ import {
   createMutation,
   useQueryClient,
 } from "@tanstack/svelte-query";
-import { api, queryKeys } from "$lib/api";
+import {
+  api,
+  queryKeys,
+  type DocumentDto,
+  type UploadDocumentRequest,
+  type UpdateDocumentRequest,
+  type DocumentRequirementDto,
+  type CreateDocumentRequirementRequest,
+  type UpdateDocumentRequirementRequest,
+  type StudentDocumentFulfillmentDto,
+} from "$lib/api";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir, join } from "@tauri-apps/api/path";
 
@@ -81,43 +91,106 @@ export async function resolveDocumentUrl(
 
 export function getDocumentSource(document: {
   url?: string | null;
-  path?: string | null;
+  file_path?: string | null;
 }): string {
-  return document.url || document.path || "";
+  return document.url || document.file_path || "";
+}
+
+export interface DocumentPageResult {
+  items: DocumentDto[];
+  count: number;
+  has_more: boolean;
+  next_cursor: string | null;
 }
 
 export function useDocuments(
-  filter: () => {
-    ownerId?: string;
+  filter?: () => {
     entityType?: string;
-    category?: string;
-    search?: string;
-    assetType?: string;
-    schoolYear?: string;
-    term?: string;
     entityId?: string;
   },
 ) {
-  return createInfiniteQuery(() => ({
-    queryKey: queryKeys.document.all,
-    placeholderData: (previousData: any) => previousData,
-    queryFn: async () => {
-      const items = await api.listDocuments();
-      return {
-        items,
-        count: items.length,
-        has_more: false,
-        next_cursor: null,
-      };
-    },
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage: any) => {
-      if (lastPage?.has_more && lastPage?.next_cursor) {
-        return lastPage.next_cursor;
-      }
-      return undefined;
-    },
+  return createInfiniteQuery<DocumentPageResult, Error, DocumentPageResult, readonly unknown[], string | undefined>(() => {
+    const f = filter ? filter() : undefined;
+    return {
+      queryKey: queryKeys.document.list(f ? { entity_type: f.entityType, entity_id: f.entityId } : undefined),
+      placeholderData: (previousData) => previousData,
+      queryFn: async () => {
+        const items = f?.entityType && f?.entityId
+          ? await api.listDocumentsByEntity(f.entityType, f.entityId)
+          : await api.listDocuments(f ? { entity_type: f.entityType, entity_id: f.entityId } : undefined);
+        return {
+          items,
+          count: items.length,
+          has_more: false,
+          next_cursor: null,
+        };
+      },
+      initialPageParam: undefined,
+      getNextPageParam: (lastPage) => {
+        if (lastPage?.has_more && lastPage?.next_cursor) {
+          return lastPage.next_cursor;
+        }
+        return undefined;
+      },
+    };
+  });
+}
+
+export function useDocumentsByEntity(
+  entityType: () => string,
+  entityId: () => string,
+) {
+  return createQuery(() => ({
+    queryKey: queryKeys.document.byEntity(entityType(), entityId()),
+    queryFn: () => api.listDocumentsByEntity(entityType(), entityId()),
+    enabled: Boolean(entityType() && entityId()),
+    staleTime: 2 * 60 * 1000,
   }));
+}
+
+export function useDocument(id: () => string) {
+  return createQuery(() => ({
+    queryKey: queryKeys.document.detail(id()),
+    queryFn: () => api.getDocument(id()),
+    enabled: Boolean(id()),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+export function useDocumentRequirements() {
+  return createQuery(() => ({
+    queryKey: queryKeys.document.requirements(),
+    queryFn: () => api.listDocumentRequirements(),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+export function useDocumentRequirement(id: () => string) {
+  return createQuery(() => ({
+    queryKey: queryKeys.document.requirement(id()),
+    queryFn: () => api.getDocumentRequirement(id()),
+    enabled: Boolean(id()),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+export function useStudentDocumentRequirements(
+  studentId: () => string,
+  params?: () => {
+    grade_level_id?: string;
+    is_national?: boolean;
+    is_transfer?: boolean;
+  },
+) {
+  return createQuery(() => {
+    const p = params ? params() : undefined;
+    return {
+      queryKey: queryKeys.document.studentFulfillment(studentId(), p),
+      queryFn: () => api.evaluateStudentDocumentRequirements(studentId(), p),
+      enabled: Boolean(studentId()),
+      staleTime: 3 * 60 * 1000,
+    };
+  });
 }
 
 // --- Mutations ---
@@ -128,29 +201,30 @@ export function useUploadDocument(
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: async (payload: {
-      file: File;
-      entity_type: string;
-      entity_id: string;
-      category: string;
-      visibility: string;
-    }) => {
-      return api.uploadDocument({
-        name: payload.file.name,
-        mime_type: payload.file.type || "application/octet-stream",
-        entity_type: payload.entity_type,
-        entity_id: payload.entity_id,
-        category: payload.category,
-        visibility: payload.visibility,
-        file_path: payload.file.name,
-        file_size_bytes: payload.file.size,
-      });
+    mutationFn: async (req: UploadDocumentRequest) => {
+      return api.uploadDocument(req);
     },
     onSuccess: () => {
       if (options.invalidateOnSuccess === false) return;
       queryClient.invalidateQueries({
         queryKey: queryKeys.document.all,
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.student.all,
+      });
+    },
+  }));
+}
+
+export function useUpdateDocument() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: ({ id, req }: { id: string; req: UpdateDocumentRequest }) =>
+      api.updateDocument(id, req),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.detail(vars.id) });
     },
   }));
 }
@@ -162,6 +236,46 @@ export function useDeleteDocument() {
     mutationFn: (id: string) => api.deleteDocument(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    },
+  }));
+}
+
+export function useCreateDocumentRequirement() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (req: CreateDocumentRequirementRequest) =>
+      api.createDocumentRequirement(req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirements() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    },
+  }));
+}
+
+export function useUpdateDocumentRequirement() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: ({ id, req }: { id: string; req: UpdateDocumentRequirementRequest }) =>
+      api.updateDocumentRequirement(id, req),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirements() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirement(vars.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    },
+  }));
+}
+
+export function useDeleteDocumentRequirement() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.deleteDocumentRequirement(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirements() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
     },
   }));
 }

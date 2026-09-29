@@ -1,10 +1,10 @@
-//! Tauri IPC commands — Document.
+//! Tauri IPC commands — Document & Requirements Management.
 
 use tauri::State;
 use serde::{Deserialize, Serialize};
 use crate::state::AppState;
 use uuid::Uuid;
-use orbis_app::services::CreateDocumentInput;
+use orbis_app::services::{CreateDocumentInput, UpdateDocumentInput, UpdateDocumentRequirementInput};
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
@@ -57,6 +57,18 @@ pub struct UploadDocumentInput {
     pub url: Option<String>,
     pub thumbnail_path: Option<String>,
     pub preview_path: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateDocumentTauriInput {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub category: Option<String>,
+    pub asset_type: Option<String>,
+    pub school_year: Option<String>,
+    pub term: Option<String>,
+    pub tags: Option<String>,
+    pub visibility: Option<String>,
 }
 
 fn doc_dto(d: orbis_domain::entities::document::Document) -> DocumentDto {
@@ -125,6 +137,33 @@ pub async fn document_upload(request: UploadDocumentInput, state: State<'_, AppS
 }
 
 #[tauri::command]
+pub async fn document_update(
+    id: String,
+    request: UpdateDocumentTauriInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<DocumentDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
+
+    let input = UpdateDocumentInput {
+        name: request.name,
+        description: request.description,
+        category: request.category,
+        asset_type: request.asset_type,
+        school_year: request.school_year,
+        term: request.term,
+        tags: request.tags,
+        visibility: request.visibility,
+    };
+
+    let doc = state.document_service.update_document(&ctx, uid, input)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(doc_dto(doc)))
+}
+
+#[tauri::command]
 pub async fn document_list(state: State<'_, AppState>) -> Result<ApiResponse<Vec<DocumentDto>>, String> {
     let ctx = make_ctx(&state);
     let items = state.document_service.list_documents_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
@@ -155,7 +194,6 @@ pub async fn document_list_by_entity(
     let items = state.document_service.list_documents_by_entity(&entity_type, eid).await.map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(doc_dto).collect()))
 }
-
 
 // ── Document Requirements ──────────────────────────────────────
 
@@ -201,6 +239,18 @@ pub struct CreateDocumentRequirementRequest {
     pub name_en: Option<String>,
     pub is_mandatory: bool,
     pub blocks_enrollment: bool,
+    pub condition: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct UpdateDocumentRequirementTauriInput {
+    pub target_type: Option<String>,
+    pub target_id: Option<String>,
+    pub code: Option<String>,
+    pub name_ar: Option<String>,
+    pub name_en: Option<String>,
+    pub is_mandatory: Option<bool>,
+    pub blocks_enrollment: Option<bool>,
     pub condition: Option<String>,
 }
 
@@ -252,6 +302,65 @@ pub async fn document_create_requirement(
 
     let req = state.document_service
         .create_document_requirement(&ctx, ctx.tenant_id, input)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(doc_requirement_to_dto(req)))
+}
+
+#[tauri::command]
+pub async fn document_get_requirement(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<DocumentRequirementDto>, String> {
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
+    let r = state.document_service.get_document_requirement(uid)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or("Document requirement not found")?;
+
+    Ok(ok(doc_requirement_to_dto(r)))
+}
+
+#[tauri::command]
+pub async fn document_update_requirement(
+    id: String,
+    request: UpdateDocumentRequirementTauriInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<DocumentRequirementDto>, String> {
+    use orbis_domain::entities::document_requirement::{RequirementTargetType, DocumentCondition};
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
+
+    let target_type = request.target_type.map(|t| match t.as_str() {
+        "stage" => RequirementTargetType::Stage,
+        "grade_level" => RequirementTargetType::GradeLevel,
+        "program" => RequirementTargetType::Program,
+        _ => RequirementTargetType::Global,
+    });
+
+    let condition = request.condition.map(|c| match c.as_str() {
+        "non_national_only" => DocumentCondition::NonNationalOnly,
+        "transfer_students_only" => DocumentCondition::TransferStudentsOnly,
+        "special_needs_only" => DocumentCondition::SpecialNeedsOnly,
+        _ => DocumentCondition::AllStudents,
+    });
+
+    let target_id = request.target_id.map(|id_str| Uuid::parse_str(&id_str).ok());
+
+    let input = UpdateDocumentRequirementInput {
+        target_type,
+        target_id,
+        code: request.code,
+        name_ar: request.name_ar,
+        name_en: request.name_en,
+        is_mandatory: request.is_mandatory,
+        blocks_enrollment: request.blocks_enrollment,
+        condition,
+    };
+
+    let req = state.document_service
+        .update_document_requirement(&ctx, uid, input)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -319,4 +428,3 @@ pub async fn document_evaluate_student_requirements(
 
     Ok(ok(dtos))
 }
-

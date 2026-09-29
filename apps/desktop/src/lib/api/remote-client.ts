@@ -85,6 +85,7 @@ import type {
   SecretDto,
   ProctorDto,
   CreateExamSessionRequest,
+  UpdateExamSessionRequest,
   GenerateSeatingRequest,
   GenerateSecretsRequest,
   ScheduleExamRequest,
@@ -92,16 +93,19 @@ import type {
   AssignSecretRequest,
   AssignProctorRequest,
   AccountDto,
-  FeeTemplateDto,
-  StudentFeeDto,
-  PaymentDto,
-  CurrencyDto,
   CreateAccountRequest,
+  UpdateAccountRequest,
+  FeeTemplateDto,
   CreateFeeTemplateRequest,
+  UpdateFeeTemplateRequest,
+  StudentFeeDto,
   GenerateFeeRequest,
+  PaymentDto,
   ProcessPaymentRequest,
+  CurrencyDto,
   DocumentDto,
   UploadDocumentRequest,
+  UpdateDocumentRequest,
   IntegrationDto,
   IntegrationStatusResponse,
   ConnectAppRequest,
@@ -119,6 +123,7 @@ import type {
   DuplicateCheckResponse,
   DocumentRequirementDto,
   CreateDocumentRequirementRequest,
+  UpdateDocumentRequirementRequest,
   StudentDocumentFulfillmentDto,
   StudentFilterParams,
   EnrollmentFilterParams,
@@ -981,12 +986,24 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.getSession2({ client: this.client, path: { id } }));
   }
 
+  async updateExamSession(id: string, req: UpdateExamSessionRequest): Promise<ExamSessionDto> {
+    return this.call(sdk.updateSession({ client: this.client, path: { id }, body: req }));
+  }
+
+  async deleteExamSession(id: string): Promise<void> {
+    await this.call(sdk.deleteSession({ client: this.client, path: { id } }));
+  }
+
   async scheduleExam(req: ScheduleExamRequest): Promise<ExamScheduleDto> {
     return this.call(sdk.scheduleExam({ client: this.client, body: req }));
   }
 
   async listExamSchedules(sessionId: string): Promise<ExamScheduleDto[]> {
     return this.call(sdk.listSchedules({ client: this.client, query: { session_id: sessionId } })) ?? [];
+  }
+
+  async deleteExamSchedule(id: string): Promise<void> {
+    await this.call(sdk.deleteSchedule({ client: this.client, path: { id } }));
   }
 
   async assignSeating(req: AssignSeatingRequest): Promise<SeatingDto> {
@@ -1001,6 +1018,10 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.generateSeating({ client: this.client, body: req })) ?? [];
   }
 
+  async deleteSeating(id: string): Promise<void> {
+    await this.call(sdk.deleteSeating({ client: this.client, path: { id } }));
+  }
+
   async assignSecret(req: AssignSecretRequest): Promise<SecretDto> {
     return this.call(sdk.assignSecret({ client: this.client, body: req }));
   }
@@ -1013,8 +1034,20 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.generateSecrets({ client: this.client, body: req })) ?? [];
   }
 
+  async deleteSecret(id: string): Promise<void> {
+    await this.call(sdk.deleteSecret({ client: this.client, path: { id } }));
+  }
+
   async assignProctor(req: AssignProctorRequest): Promise<ProctorDto> {
     return this.call(sdk.assignProctor({ client: this.client, body: req }));
+  }
+
+  async listProctors(scheduleId: string): Promise<ProctorDto[]> {
+    return this.call(sdk.listProctors({ client: this.client, query: { schedule_id: scheduleId } })) ?? [];
+  }
+
+  async deleteProctor(id: string): Promise<void> {
+    await this.call(sdk.deleteProctor({ client: this.client, path: { id } }));
   }
 
   // ── Finance ─────────────────────────────────────────────────
@@ -1026,15 +1059,33 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.listAccounts({ client: this.client })) ?? [];
   }
 
+  async getAccount(id: string): Promise<AccountDto> {
+    return this.call(sdk.getAccount({ client: this.client, path: { id } }));
+  }
+
+  async updateAccount(id: string, req: UpdateAccountRequest): Promise<AccountDto> {
+    return this.call(sdk.updateAccount({ client: this.client, path: { id }, body: req }));
+  }
+
+  async deleteAccount(id: string): Promise<boolean> {
+    await this.call(sdk.deleteAccount({ client: this.client, path: { id } }));
+    return true;
+  }
+
   async createFeeTemplate(req: CreateFeeTemplateRequest): Promise<FeeTemplateDto> {
     return this.call(sdk.createFeeTemplate({ client: this.client, body: req }));
   }
 
-  async updateFeeTemplate(id: string, req: Partial<CreateFeeTemplateRequest>): Promise<FeeTemplateDto> {
-    return this.call(sdk.createFeeTemplate({ client: this.client, body: req as any }));
+  async getFeeTemplate(id: string): Promise<FeeTemplateDto> {
+    return this.call(sdk.getFeeTemplate({ client: this.client, path: { id } }));
   }
 
-  async deleteFeeTemplate(_id: string): Promise<boolean> {
+  async updateFeeTemplate(id: string, req: UpdateFeeTemplateRequest): Promise<FeeTemplateDto> {
+    return this.call(sdk.updateFeeTemplate({ client: this.client, path: { id }, body: req }));
+  }
+
+  async deleteFeeTemplate(id: string): Promise<boolean> {
+    await this.call(sdk.deleteFeeTemplate({ client: this.client, path: { id } }));
     return true;
   }
 
@@ -1050,6 +1101,11 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.listFees({ client: this.client, query: filter as any })) ?? [];
   }
 
+  async deleteStudentFee(id: string): Promise<boolean> {
+    await this.call(sdk.deleteStudentFee({ client: this.client, path: { id } }));
+    return true;
+  }
+
   async processPayment(req: ProcessPaymentRequest): Promise<PaymentDto> {
     return this.call(sdk.processPayment({ client: this.client, body: req }));
   }
@@ -1058,40 +1114,55 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.listPayments({ client: this.client, query: filter as any })) ?? [];
   }
 
+  async deletePayment(id: string): Promise<boolean> {
+    await this.call(sdk.deletePayment({ client: this.client, path: { id } }));
+    return true;
+  }
+
   async listCurrencies(): Promise<CurrencyDto[]> {
     return this.call(sdk.listCurrencies({ client: this.client })) ?? [];
   }
 
   async listJournalEntries(): Promise<JournalEntryDto[]> {
-    return [];
+    return this.call(sdk.listJournalEntries({ client: this.client })) ?? [];
   }
 
-  async getJournalEntry(_id: string): Promise<JournalEntryDto> {
-    throw new Error("Journal entry details not available on remote client");
+  async getJournalEntry(id: string): Promise<JournalEntryDto> {
+    return this.call(sdk.getJournalEntry({ client: this.client, path: { id } }));
   }
 
-  async createJournalEntry(_req: CreateJournalEntryRequest): Promise<JournalEntryDto> {
-    throw new Error("Creating journal entry directly not supported on remote client");
+  async createJournalEntry(req: CreateJournalEntryRequest): Promise<JournalEntryDto> {
+    return this.call(sdk.createJournalEntry({ client: this.client, body: req }));
   }
 
-  async reverseJournalEntry(_id: string, _req: ReverseJournalRequest): Promise<JournalEntryDto> {
-    throw new Error("Reversing journal entry not supported on remote client");
+  async reverseJournalEntry(id: string, req: ReverseJournalRequest): Promise<JournalEntryDto> {
+    return this.call(sdk.reverseJournalEntry({ client: this.client, path: { id }, body: req }));
   }
 
-  async splitStudentFee(_id: string, _req: SplitFeeRequest): Promise<StudentFeeDto[]> {
-    return [];
+  async deleteJournalEntry(id: string): Promise<boolean> {
+    await this.call(sdk.deleteJournalEntry({ client: this.client, path: { id } }));
+    return true;
   }
 
-  async refundStudentFee(_id: string, _req: RefundStudentFeeRequest): Promise<StudentFeeDto> {
-    throw new Error("Refunding student fee not supported on remote client");
+  async splitStudentFee(id: string, req: SplitFeeRequest): Promise<StudentFeeDto[]> {
+    return this.call(sdk.splitFee({ client: this.client, path: { id }, body: req })) ?? [];
+  }
+
+  async refundStudentFee(id: string, req: RefundStudentFeeRequest): Promise<StudentFeeDto> {
+    return this.call(sdk.refundFee({ client: this.client, path: { id }, body: req }));
   }
 
   async listDiscountTemplates(): Promise<DiscountTemplateDto[]> {
-    return [];
+    return this.call(sdk.listDiscountTemplates({ client: this.client })) ?? [];
   }
 
-  async createDiscountTemplate(_req: CreateDiscountTemplateRequest): Promise<DiscountTemplateDto> {
-    throw new Error("Discount templates not supported on remote client");
+  async createDiscountTemplate(req: CreateDiscountTemplateRequest): Promise<DiscountTemplateDto> {
+    return this.call(sdk.createDiscountTemplate({ client: this.client, body: req }));
+  }
+
+  async deleteDiscountTemplate(id: string): Promise<boolean> {
+    await this.call(sdk.deleteDiscountTemplate({ client: this.client, path: { id } }));
+    return true;
   }
 
   // ── Document ────────────────────────────────────────────────
@@ -1099,12 +1170,16 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.uploadDocument({ client: this.client, body: req }));
   }
 
-  async listDocuments(): Promise<DocumentDto[]> {
-    return this.call(sdk.listDocuments({ client: this.client })) ?? [];
+  async updateDocument(id: string, req: UpdateDocumentRequest): Promise<DocumentDto> {
+    return this.call(sdk.updateDocument({ client: this.client, path: { id }, body: req }));
   }
 
-  async listDocumentsByEntity(_entityType: string, _entityId: string): Promise<DocumentDto[]> {
-    return this.call(sdk.listDocuments({ client: this.client })) ?? [];
+  async listDocuments(params?: { entity_type?: string; entity_id?: string }): Promise<DocumentDto[]> {
+    return this.call(sdk.listDocuments({ client: this.client, query: params })) ?? [];
+  }
+
+  async listDocumentsByEntity(entityType: string, entityId: string): Promise<DocumentDto[]> {
+    return this.call(sdk.listDocuments({ client: this.client, query: { entity_type: entityType, entity_id: entityId } })) ?? [];
   }
 
   async getDocument(id: string): Promise<DocumentDto> {
@@ -1119,6 +1194,14 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.createDocumentRequirement({ client: this.client, body: req }));
   }
 
+  async getDocumentRequirement(id: string): Promise<DocumentRequirementDto> {
+    return this.call(sdk.getDocumentRequirement({ client: this.client, path: { id } }));
+  }
+
+  async updateDocumentRequirement(id: string, req: UpdateDocumentRequirementRequest): Promise<DocumentRequirementDto> {
+    return this.call(sdk.updateDocumentRequirement({ client: this.client, path: { id }, body: req }));
+  }
+
   async listDocumentRequirements(): Promise<DocumentRequirementDto[]> {
     return this.call(sdk.listDocumentRequirements({ client: this.client })) ?? [];
   }
@@ -1128,10 +1211,10 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async evaluateStudentDocumentRequirements(
-    _studentId: string,
-    _params?: { grade_level_id?: string; is_national?: boolean; is_transfer?: boolean },
+    studentId: string,
+    params?: { grade_level_id?: string; is_national?: boolean; is_transfer?: boolean },
   ): Promise<StudentDocumentFulfillmentDto[]> {
-    return [];
+    return this.call(sdk.evaluateStudentRequirements({ client: this.client, path: { id: studentId }, query: params })) ?? [];
   }
 
   // ── Integration ─────────────────────────────────────────────

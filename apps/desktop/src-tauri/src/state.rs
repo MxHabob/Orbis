@@ -263,6 +263,7 @@ impl AppState {
             finance_repo.clone(),
             finance_repo.clone(),
             finance_repo.clone(),
+            finance_repo.clone(),
             policy_repo.clone(),
             event_bus.clone(),
             integration_resolver.clone(),

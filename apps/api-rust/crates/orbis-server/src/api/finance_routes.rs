@@ -1,6 +1,6 @@
 //! Finance routes — Accounts, FeeTemplates, StudentFees, Payments, Currencies, Journal Entries, Installments, Refunds.
 
-use axum::{extract::{State, Query, Path}, routing::{get, post}, Json, Router};
+use axum::{extract::{State, Query, Path}, routing::{get, post, delete}, Json, Router};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use chrono::{DateTime, Utc, NaiveDate};
@@ -20,6 +20,7 @@ pub struct AccountDto {
     pub org_id: Uuid,
     pub code: String,
     pub name: String,
+    pub name_ar: Option<String>,
     pub account_type: String,
     pub parent_id: Option<Uuid>,
     pub currency: String,
@@ -41,6 +42,18 @@ pub struct CreateAccountRequest {
     pub sub_type: Option<String>,
     pub parent_id: Option<Uuid>,
     pub currency: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct UpdateAccountRequest {
+    pub code: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub account_type: String,
+    pub sub_type: Option<String>,
+    pub parent_id: Option<Uuid>,
+    pub currency: Option<String>,
+    pub is_active: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
@@ -78,6 +91,55 @@ pub struct CreateFeeTemplateRequest {
     pub applicable_study_modes: Option<Vec<String>>,
     pub frequency: Option<String>,
     pub is_mandatory: Option<bool>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct UpdateFeeTemplateRequest {
+    pub code: Option<String>,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub category: Option<String>,
+    pub default_amount: Decimal,
+    pub currency: Option<String>,
+    pub revenue_account_id: Option<Uuid>,
+    pub receivable_account_id: Option<Uuid>,
+    pub applicable_levels: Option<Vec<String>>,
+    pub frequency: Option<String>,
+    pub is_mandatory: Option<bool>,
+    pub is_active: Option<bool>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
+pub struct DiscountTemplateDto {
+    pub id: Uuid,
+    pub org_id: Uuid,
+    pub code: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub discount_type: String,
+    pub value: Decimal,
+    pub eligibility_rules: Option<serde_json::Value>,
+    pub is_approval_required: bool,
+    pub is_auto_apply: bool,
+    pub is_stackable: bool,
+    pub priority: u32,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct CreateDiscountTemplateRequest {
+    pub code: Option<String>,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub discount_type: String,
+    pub value: Decimal,
+    pub eligibility_rules: Option<serde_json::Value>,
+    pub is_approval_required: Option<bool>,
+    pub is_auto_apply: Option<bool>,
+    pub is_stackable: Option<bool>,
+    pub priority: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
@@ -304,6 +366,7 @@ pub async fn create_account(
         org_id: a.org_id,
         code: a.code,
         name: a.name,
+        name_ar: a.name_ar,
         account_type: a.account_type.to_string(),
         parent_id: a.parent_id,
         currency: a.currency_code,
@@ -317,6 +380,92 @@ pub async fn create_account(
     }))
 }
 
+#[utoipa::path(get, path = "/api/v1/accounts/{id}",
+    params(("id" = Uuid, Path, description = "Account ID")),
+    responses((status = 200, body = AccountDto)), security(("bearer" = [])), tag = "Finance")]
+pub async fn get_account(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<AccountDto>>, ApiError> {
+    let a = state.finance_service.get_account(ctx.tenant_id, id).await?
+        .ok_or_else(|| ApiError::not_found(format!("Account {} not found", id)))?;
+
+    Ok(ApiResponse::ok(AccountDto {
+        id: a.id,
+        org_id: a.org_id,
+        code: a.code,
+        name: a.name,
+        name_ar: a.name_ar,
+        account_type: a.account_type.to_string(),
+        parent_id: a.parent_id,
+        currency: a.currency_code,
+        is_active: a.is_active,
+        balances: a.balances,
+        created_by: a.created_by,
+        updated_by: a.updated_by,
+        version: a.version,
+        created_at: a.created_at,
+        updated_at: a.updated_at,
+    }))
+}
+
+#[utoipa::path(patch, path = "/api/v1/accounts/{id}",
+    params(("id" = Uuid, Path, description = "Account ID")),
+    request_body = UpdateAccountRequest,
+    responses((status = 200, body = AccountDto)), security(("bearer" = [])), tag = "Finance")]
+pub async fn update_account(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<UpdateAccountRequest>,
+) -> Result<Json<ApiResponse<AccountDto>>, ApiError> {
+    let account_type = match p.account_type.to_lowercase().as_str() {
+        "liability" => AccountType::Liability,
+        "equity" => AccountType::Equity,
+        "revenue" => AccountType::Revenue,
+        "expense" => AccountType::Expense,
+        _ => AccountType::Asset,
+    };
+
+    let a = state.finance_service.update_account(
+        &ctx,
+        ctx.tenant_id,
+        id,
+        p.code,
+        p.name,
+        p.name_ar,
+        account_type,
+        p.sub_type,
+        p.parent_id,
+        p.currency.unwrap_or_else(|| "SAR".to_string()),
+        p.is_active.unwrap_or(true),
+    ).await?;
+
+    Ok(ApiResponse::ok(AccountDto {
+        id: a.id,
+        org_id: a.org_id,
+        code: a.code,
+        name: a.name,
+        name_ar: a.name_ar,
+        account_type: a.account_type.to_string(),
+        parent_id: a.parent_id,
+        currency: a.currency_code,
+        is_active: a.is_active,
+        balances: a.balances,
+        created_by: a.created_by,
+        updated_by: a.updated_by,
+        version: a.version,
+        created_at: a.created_at,
+        updated_at: a.updated_at,
+    }))
+}
+
+#[utoipa::path(delete, path = "/api/v1/accounts/{id}",
+    params(("id" = Uuid, Path, description = "Account ID")),
+    responses((status = 200, body = bool)), security(("bearer" = [])), tag = "Finance")]
+pub async fn delete_account(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<bool>>, ApiError> {
+    state.finance_service.delete_account(&ctx, ctx.tenant_id, id).await?;
+    Ok(ApiResponse::ok(true))
+}
+
 #[utoipa::path(get, path = "/api/v1/accounts",
     responses((status = 200, body = Vec<AccountDto>)), security(("bearer" = [])), tag = "Finance")]
 pub async fn list_accounts(
@@ -328,6 +477,7 @@ pub async fn list_accounts(
         org_id: a.org_id,
         code: a.code,
         name: a.name,
+        name_ar: a.name_ar,
         account_type: a.account_type.to_string(),
         parent_id: a.parent_id,
         currency: a.currency_code,
@@ -760,16 +910,224 @@ pub async fn refund_fee(
     }))
 }
 
+#[utoipa::path(get, path = "/api/v1/fee-templates/{id}",
+    params(("id" = Uuid, Path, description = "Fee Template ID")),
+    responses((status = 200, body = FeeTemplateDto)), security(("bearer" = [])), tag = "Finance")]
+pub async fn get_fee_template(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<FeeTemplateDto>>, ApiError> {
+    let t = state.finance_service.get_fee_template(ctx.tenant_id, id).await?
+        .ok_or_else(|| ApiError::not_found(format!("Fee template {} not found", id)))?;
+
+    Ok(ApiResponse::ok(FeeTemplateDto {
+        id: t.id,
+        org_id: t.org_id,
+        code: t.code,
+        name: t.name,
+        name_ar: t.name_ar,
+        category: t.category,
+        default_amount: t.default_amount,
+        currency: t.currency_code,
+        revenue_account_id: t.revenue_account_id,
+        receivable_account_id: t.receivable_account_id,
+        applicable_levels: t.applicable_levels,
+        applicable_study_modes: t.applicable_study_modes,
+        frequency: t.frequency.to_string(),
+        is_mandatory: t.is_mandatory,
+        is_active: t.is_active,
+        created_at: t.created_at,
+        updated_at: t.updated_at,
+    }))
+}
+
+#[utoipa::path(patch, path = "/api/v1/fee-templates/{id}",
+    params(("id" = Uuid, Path, description = "Fee Template ID")),
+    request_body = UpdateFeeTemplateRequest,
+    responses((status = 200, body = FeeTemplateDto)), security(("bearer" = [])), tag = "Finance")]
+pub async fn update_fee_template(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<UpdateFeeTemplateRequest>,
+) -> Result<Json<ApiResponse<FeeTemplateDto>>, ApiError> {
+    let t = state.finance_service.update_fee_template(
+        &ctx,
+        ctx.tenant_id,
+        id,
+        p.code,
+        p.name,
+        p.name_ar,
+        p.category,
+        p.default_amount,
+        p.currency,
+        p.revenue_account_id,
+        p.receivable_account_id,
+        p.applicable_levels,
+        p.frequency,
+        p.is_mandatory,
+        p.is_active,
+    ).await?;
+
+    Ok(ApiResponse::ok(FeeTemplateDto {
+        id: t.id,
+        org_id: t.org_id,
+        code: t.code,
+        name: t.name,
+        name_ar: t.name_ar,
+        category: t.category,
+        default_amount: t.default_amount,
+        currency: t.currency_code,
+        revenue_account_id: t.revenue_account_id,
+        receivable_account_id: t.receivable_account_id,
+        applicable_levels: t.applicable_levels,
+        applicable_study_modes: t.applicable_study_modes,
+        frequency: t.frequency.to_string(),
+        is_mandatory: t.is_mandatory,
+        is_active: t.is_active,
+        created_at: t.created_at,
+        updated_at: t.updated_at,
+    }))
+}
+
+#[utoipa::path(delete, path = "/api/v1/fee-templates/{id}",
+    params(("id" = Uuid, Path, description = "Fee Template ID")),
+    responses((status = 200, body = bool)), security(("bearer" = [])), tag = "Finance")]
+pub async fn delete_fee_template(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<bool>>, ApiError> {
+    state.finance_service.delete_fee_template(&ctx, ctx.tenant_id, id).await?;
+    Ok(ApiResponse::ok(true))
+}
+
+#[utoipa::path(get, path = "/api/v1/discount-templates",
+    responses((status = 200, body = Vec<DiscountTemplateDto>)), security(("bearer" = [])), tag = "Finance")]
+pub async fn list_discount_templates(
+    ctx: AuthContext, State(state): State<AppState>,
+) -> Result<Json<ApiResponse<Vec<DiscountTemplateDto>>>, ApiError> {
+    let templates = state.finance_service.list_discount_templates(ctx.tenant_id).await?;
+    let dtos = templates.into_iter().map(|t| DiscountTemplateDto {
+        id: t.id,
+        org_id: t.org_id,
+        code: t.code,
+        name: t.name,
+        name_ar: t.name_ar,
+        discount_type: match t.discount_type {
+            orbis_domain::entities::discount_template::DiscountType::Percentage => "percentage".into(),
+            orbis_domain::entities::discount_template::DiscountType::FixedAmount => "fixed_amount".into(),
+        },
+        value: t.value,
+        eligibility_rules: t.eligibility_rules,
+        is_approval_required: t.is_approval_required,
+        is_auto_apply: t.is_auto_apply,
+        is_stackable: t.is_stackable,
+        priority: t.priority,
+        is_active: t.is_active,
+        created_at: t.created_at,
+        updated_at: t.updated_at,
+    }).collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(post, path = "/api/v1/discount-templates", request_body = CreateDiscountTemplateRequest,
+    responses((status = 201, body = DiscountTemplateDto)), security(("bearer" = [])), tag = "Finance")]
+pub async fn create_discount_template(
+    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateDiscountTemplateRequest>,
+) -> Result<Json<ApiResponse<DiscountTemplateDto>>, ApiError> {
+    let dtype = match p.discount_type.to_lowercase().as_str() {
+        "percentage" | "percent" => orbis_domain::entities::discount_template::DiscountType::Percentage,
+        _ => orbis_domain::entities::discount_template::DiscountType::FixedAmount,
+    };
+
+    let t = state.finance_service.create_discount_template(
+        &ctx,
+        ctx.tenant_id,
+        p.code,
+        p.name,
+        p.name_ar,
+        dtype,
+        p.value,
+        p.eligibility_rules,
+        p.is_approval_required.unwrap_or(false),
+        p.is_auto_apply.unwrap_or(false),
+        p.is_stackable.unwrap_or(false),
+        p.priority.unwrap_or(1),
+    ).await?;
+
+    Ok(ApiResponse::ok(DiscountTemplateDto {
+        id: t.id,
+        org_id: t.org_id,
+        code: t.code,
+        name: t.name,
+        name_ar: t.name_ar,
+        discount_type: match t.discount_type {
+            orbis_domain::entities::discount_template::DiscountType::Percentage => "percentage".into(),
+            orbis_domain::entities::discount_template::DiscountType::FixedAmount => "fixed_amount".into(),
+        },
+        value: t.value,
+        eligibility_rules: t.eligibility_rules,
+        is_approval_required: t.is_approval_required,
+        is_auto_apply: t.is_auto_apply,
+        is_stackable: t.is_stackable,
+        priority: t.priority,
+        is_active: t.is_active,
+        created_at: t.created_at,
+        updated_at: t.updated_at,
+    }))
+}
+
+#[utoipa::path(delete, path = "/api/v1/discount-templates/{id}",
+    params(("id" = Uuid, Path, description = "Discount Template ID")),
+    responses((status = 200, body = bool)), security(("bearer" = [])), tag = "Finance")]
+pub async fn delete_discount_template(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<bool>>, ApiError> {
+    state.finance_service.delete_discount_template(&ctx, ctx.tenant_id, id).await?;
+    Ok(ApiResponse::ok(true))
+}
+
+#[utoipa::path(delete, path = "/api/v1/student-fees/{id}",
+    params(("id" = Uuid, Path, description = "Student Fee ID")),
+    responses((status = 200, body = bool)), security(("bearer" = [])), tag = "Finance")]
+pub async fn delete_student_fee(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<bool>>, ApiError> {
+    state.finance_service.delete_student_fee(&ctx, ctx.tenant_id, id).await?;
+    Ok(ApiResponse::ok(true))
+}
+
+#[utoipa::path(delete, path = "/api/v1/payments/{id}",
+    params(("id" = Uuid, Path, description = "Payment ID")),
+    responses((status = 200, body = bool)), security(("bearer" = [])), tag = "Finance")]
+pub async fn delete_payment(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<bool>>, ApiError> {
+    state.finance_service.delete_payment(&ctx, ctx.tenant_id, id).await?;
+    Ok(ApiResponse::ok(true))
+}
+
+#[utoipa::path(delete, path = "/api/v1/journal-entries/{id}",
+    params(("id" = Uuid, Path, description = "Journal Entry ID")),
+    responses((status = 200, body = bool)), security(("bearer" = [])), tag = "Finance")]
+pub async fn delete_journal_entry(
+    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<bool>>, ApiError> {
+    state.finance_service.delete_journal_entry(&ctx, ctx.tenant_id, id).await?;
+    Ok(ApiResponse::ok(true))
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/accounts", post(create_account).get(list_accounts))
+        .route("/api/v1/accounts/:id", get(get_account).patch(update_account).delete(delete_account))
         .route("/api/v1/fee-templates", post(create_fee_template).get(list_fee_templates))
+        .route("/api/v1/fee-templates/:id", get(get_fee_template).patch(update_fee_template).delete(delete_fee_template))
+        .route("/api/v1/discount-templates", post(create_discount_template).get(list_discount_templates))
+        .route("/api/v1/discount-templates/:id", delete(delete_discount_template))
         .route("/api/v1/student-fees", post(generate_fee).get(list_fees))
+        .route("/api/v1/student-fees/:id", delete(delete_student_fee))
         .route("/api/v1/student-fees/:id/split", post(split_fee))
         .route("/api/v1/student-fees/:id/refund", post(refund_fee))
         .route("/api/v1/payments", post(process_payment).get(list_payments))
+        .route("/api/v1/payments/:id", delete(delete_payment))
         .route("/api/v1/currencies", get(list_currencies))
         .route("/api/v1/journal-entries", post(create_journal_entry).get(list_journal_entries))
-        .route("/api/v1/journal-entries/:id", get(get_journal_entry))
+        .route("/api/v1/journal-entries/:id", get(get_journal_entry).delete(delete_journal_entry))
         .route("/api/v1/journal-entries/:id/reverse", post(reverse_journal_entry))
 }

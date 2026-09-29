@@ -7,7 +7,7 @@ import {
   resolveDocumentUrl,
 } from "$lib/features/documents/queries";
 import { DocumentPage, Download, Play, SoundHigh, Trash } from "@orbis/icons";
-import type { Documents } from "@orbis/sdk";
+import type { DocumentDto } from "$lib/api";
 
 let {
   document,
@@ -16,9 +16,9 @@ let {
   ondelete,
   ontoggle,
 }: {
-  document: Documents;
+  document: DocumentDto;
   selected?: boolean;
-  onpreview: (document: Documents) => void;
+  onpreview: (document: DocumentDto) => void;
   ondelete: (id: string) => void;
   ontoggle: (id: string, selected: boolean) => void;
 } = $props();

@@ -121,23 +121,30 @@ import type {
   GenerateSeatingRequest,
   GenerateSecretsRequest,
   CreateExamSessionRequest,
+  UpdateExamSessionRequest,
   ScheduleExamRequest,
   AssignSeatingRequest,
   AssignSecretRequest,
   AssignProctorRequest,
   AccountDto,
-  FeeTemplateDto,
-  StudentFeeDto,
-  PaymentDto,
-  CurrencyDto,
   CreateAccountRequest,
+  UpdateAccountRequest,
+  FeeTemplateDto,
   CreateFeeTemplateRequest,
+  UpdateFeeTemplateRequest,
+  DiscountTemplateDto,
+  CreateDiscountTemplateRequest,
+  StudentFeeDto,
   GenerateFeeRequest,
+  PaymentDto,
   ProcessPaymentRequest,
+  CurrencyDto,
   DocumentDto,
   UploadDocumentRequest,
+  UpdateDocumentRequest,
   DocumentRequirementDto,
   CreateDocumentRequirementRequest,
+  UpdateDocumentRequirementRequest,
   StudentDocumentFulfillmentDto,
   IntegrationDto,
   ConnectAppRequest,
@@ -407,37 +414,6 @@ export interface BatchPrintParams {
   gridRows?: number;
   marginMm?: number;
   cutMarks?: boolean;
-}
-
-export interface DiscountTemplateDto {
-  id: string;
-  org_id: string;
-  code: string;
-  name: string;
-  name_ar?: string | null;
-  discount_type: string;
-  value: string | number;
-  eligibility_rules?: Record<string, unknown> | null;
-  is_approval_required: boolean;
-  is_auto_apply: boolean;
-  is_stackable: boolean;
-  priority: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateDiscountTemplateRequest {
-  code?: string;
-  name: string;
-  name_ar?: string;
-  discount_type: string;
-  value: number | string;
-  eligibility_rules?: Record<string, unknown>;
-  isApproval_required?: boolean;
-  isAutoApply?: boolean;
-  isStackable?: boolean;
-  priority?: number;
 }
 
 export interface StudentFeeFilterParams {
@@ -1093,27 +1069,40 @@ export interface OrbisApiClient {
   createExamSession(req: CreateExamSessionRequest): Promise<ExamSessionDto>;
   listExamSessions(periodId: string): Promise<ExamSessionDto[]>;
   getExamSession(id: string): Promise<ExamSessionDto>;
+  updateExamSession(id: string, req: UpdateExamSessionRequest): Promise<ExamSessionDto>;
+  deleteExamSession(id: string): Promise<void>;
   scheduleExam(req: ScheduleExamRequest): Promise<ExamScheduleDto>;
   listExamSchedules(sessionId: string): Promise<ExamScheduleDto[]>;
+  deleteExamSchedule(id: string): Promise<void>;
   assignSeating(req: AssignSeatingRequest): Promise<SeatingDto>;
   listSeating(sessionId: string): Promise<SeatingDto[]>;
   generateSeating(req: GenerateSeatingRequest): Promise<SeatingDto[]>;
+  deleteSeating(id: string): Promise<void>;
   assignSecret(req: AssignSecretRequest): Promise<SecretDto>;
   listSecrets(scheduleId: string): Promise<SecretDto[]>;
   generateSecrets(req: GenerateSecretsRequest): Promise<SecretDto[]>;
+  deleteSecret(id: string): Promise<void>;
   assignProctor(req: AssignProctorRequest): Promise<ProctorDto>;
+  listProctors(scheduleId: string): Promise<ProctorDto[]>;
+  deleteProctor(id: string): Promise<void>;
 
   // ── Finance ─────────────────────────────────────────────────
   createAccount(req: CreateAccountRequest): Promise<AccountDto>;
   listAccounts(): Promise<AccountDto[]>;
+  getAccount(id: string): Promise<AccountDto>;
+  updateAccount(id: string, req: UpdateAccountRequest): Promise<AccountDto>;
+  deleteAccount(id: string): Promise<boolean>;
   createFeeTemplate(req: CreateFeeTemplateRequest): Promise<FeeTemplateDto>;
-  updateFeeTemplate(id: string, req: Partial<CreateFeeTemplateRequest>): Promise<FeeTemplateDto>;
+  getFeeTemplate(id: string): Promise<FeeTemplateDto>;
+  updateFeeTemplate(id: string, req: UpdateFeeTemplateRequest): Promise<FeeTemplateDto>;
   deleteFeeTemplate(id: string): Promise<boolean>;
   listFeeTemplates(): Promise<FeeTemplateDto[]>;
   generateStudentFee(req: GenerateFeeRequest): Promise<StudentFeeDto>;
   listStudentFees(filter?: StudentFeeFilterParams): Promise<StudentFeeDto[]>;
+  deleteStudentFee(id: string): Promise<boolean>;
   processPayment(req: ProcessPaymentRequest): Promise<PaymentDto>;
   listPayments(filter?: PaymentFilterParams): Promise<PaymentDto[]>;
+  deletePayment(id: string): Promise<boolean>;
   listCurrencies(): Promise<CurrencyDto[]>;
   listJournalEntries(): Promise<JournalEntryDto[]>;
   getJournalEntry(id: string): Promise<JournalEntryDto>;
@@ -1122,6 +1111,7 @@ export interface OrbisApiClient {
     id: string,
     req: ReverseJournalRequest,
   ): Promise<JournalEntryDto>;
+  deleteJournalEntry(id: string): Promise<boolean>;
   splitStudentFee(
     id: string,
     req: SplitFeeRequest,
@@ -1134,14 +1124,18 @@ export interface OrbisApiClient {
   createDiscountTemplate(
     req: CreateDiscountTemplateRequest,
   ): Promise<DiscountTemplateDto>;
+  deleteDiscountTemplate(id: string): Promise<boolean>;
 
   // ── Document ────────────────────────────────────────────────
   uploadDocument(req: UploadDocumentRequest): Promise<DocumentDto>;
-  listDocuments(): Promise<DocumentDto[]>;
+  updateDocument(id: string, req: UpdateDocumentRequest): Promise<DocumentDto>;
+  listDocuments(params?: { entity_type?: string; entity_id?: string }): Promise<DocumentDto[]>;
   listDocumentsByEntity(entityType: string, entityId: string): Promise<DocumentDto[]>;
   getDocument(id: string): Promise<DocumentDto>;
   deleteDocument(id: string): Promise<void>;
   createDocumentRequirement(req: CreateDocumentRequirementRequest): Promise<DocumentRequirementDto>;
+  getDocumentRequirement(id: string): Promise<DocumentRequirementDto>;
+  updateDocumentRequirement(id: string, req: UpdateDocumentRequirementRequest): Promise<DocumentRequirementDto>;
   listDocumentRequirements(): Promise<DocumentRequirementDto[]>;
   deleteDocumentRequirement(id: string): Promise<void>;
   evaluateStudentDocumentRequirements(
