@@ -8,8 +8,6 @@ import {
   DangerZoneSettingsCard,
   BranchSettingsCard,
   AuthenticationSettingsCard,
-  EnrollmentSettingsCard,
-  FinanceSettingsCard,
 } from "$lib/features/settings";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
@@ -46,22 +44,6 @@ let hijriEnabled = $state(false);
 // Institutional Policy Settings State
 let rawSettings = $state<OrganizationSettingsDto | null>(null);
 
-// Enrollment state
-let registrationEnabled = $state(true);
-let requireAdminApproval = $state(true);
-let allowWaitlist = $state(true);
-let siblingPriorityEnabled = $state(true);
-let maxClassSizeDefault = $state(25);
-let allowLateEnrollment = $state(false);
-
-// Finance state
-let financeCurrency = $state("SAR");
-let taxRate = $state(0.15);
-let invoiceDueDays = $state(14);
-let lateFeeType = $state("fixed");
-let lateFeeValue = $state(0.0);
-let allowPartialPayments = $state(false);
-
 let initialValues = $state<any>(null);
 const settingsForm = new FormController({
   initialValues: {
@@ -77,23 +59,7 @@ const settingsForm = new FormController({
 async function loadSettings() {
   try {
     const s = await api.getSettings();
-    rawSettings = s;
-    if (s.enrollment) {
-      registrationEnabled = s.enrollment.registration_enabled;
-      requireAdminApproval = s.enrollment.require_admin_approval;
-      allowWaitlist = s.enrollment.allow_waitlist;
-      siblingPriorityEnabled = s.enrollment.sibling_priority_enabled;
-      maxClassSizeDefault = s.enrollment.max_class_size_default;
-      allowLateEnrollment = s.enrollment.allow_late_enrollment;
-    }
-    if (s.finance) {
-      financeCurrency = s.finance.currency || currency;
-      taxRate = s.finance.tax_rate;
-      invoiceDueDays = s.finance.invoice_due_days;
-      lateFeeType = s.finance.late_fee_type;
-      lateFeeValue = s.finance.late_fee_value;
-      allowPartialPayments = s.finance.allow_partial_payments;
-    }
+    // Settings loaded
   } catch {
     // Non-fatal if settings fail to load initially
   }
@@ -122,17 +88,6 @@ $effect(() => {
         locale,
         dateFormat,
         hijriEnabled,
-        registrationEnabled,
-        requireAdminApproval,
-        allowWaitlist,
-        siblingPriorityEnabled,
-        maxClassSizeDefault,
-        allowLateEnrollment,
-        taxRate,
-        invoiceDueDays,
-        lateFeeType,
-        lateFeeValue,
-        allowPartialPayments,
       };
     });
     systemStore.loadEntitlement();
@@ -149,18 +104,7 @@ const isDirty = $derived.by(() => {
     timezone !== initialValues.timezone ||
     locale !== initialValues.locale ||
     dateFormat !== initialValues.dateFormat ||
-    hijriEnabled !== initialValues.hijriEnabled ||
-    registrationEnabled !== initialValues.registrationEnabled ||
-    requireAdminApproval !== initialValues.requireAdminApproval ||
-    allowWaitlist !== initialValues.allowWaitlist ||
-    siblingPriorityEnabled !== initialValues.siblingPriorityEnabled ||
-    maxClassSizeDefault !== initialValues.maxClassSizeDefault ||
-    allowLateEnrollment !== initialValues.allowLateEnrollment ||
-    taxRate !== initialValues.taxRate ||
-    invoiceDueDays !== initialValues.invoiceDueDays ||
-    lateFeeType !== initialValues.lateFeeType ||
-    lateFeeValue !== initialValues.lateFeeValue ||
-    allowPartialPayments !== initialValues.allowPartialPayments
+    hijriEnabled !== initialValues.hijriEnabled
   );
 });
 
@@ -174,17 +118,6 @@ function handleReset() {
   locale = initialValues.locale;
   dateFormat = initialValues.dateFormat;
   hijriEnabled = initialValues.hijriEnabled;
-  registrationEnabled = initialValues.registrationEnabled;
-  requireAdminApproval = initialValues.requireAdminApproval;
-  allowWaitlist = initialValues.allowWaitlist;
-  siblingPriorityEnabled = initialValues.siblingPriorityEnabled;
-  maxClassSizeDefault = initialValues.maxClassSizeDefault;
-  allowLateEnrollment = initialValues.allowLateEnrollment;
-  taxRate = initialValues.taxRate;
-  invoiceDueDays = initialValues.invoiceDueDays;
-  lateFeeType = initialValues.lateFeeType;
-  lateFeeValue = initialValues.lateFeeValue;
-  allowPartialPayments = initialValues.allowPartialPayments;
 }
 
 async function handleSubmit(e?: Event) {
@@ -207,24 +140,8 @@ async function handleSubmit(e?: Event) {
       try {
         const updated = await api.updateSettings({
           ...rawSettings,
-          enrollment: {
-            registration_enabled: registrationEnabled,
-            require_admin_approval: requireAdminApproval,
-            allow_waitlist: allowWaitlist,
-            sibling_priority_enabled: siblingPriorityEnabled,
-            max_class_size_default: maxClassSizeDefault,
-            allow_late_enrollment: allowLateEnrollment,
-          },
-          finance: {
-            currency: financeCurrency || currency,
-            tax_rate: taxRate,
-            invoice_due_days: invoiceDueDays,
-            late_fee_type: lateFeeType,
-            late_fee_value: lateFeeValue,
-            allow_partial_payments: allowPartialPayments,
-            invoicing_integration_id: rawSettings.finance?.invoicing_integration_id ?? null,
-            primary_payment_gateway_id: rawSettings.finance?.primary_payment_gateway_id ?? null,
-          },
+          enrollment: rawSettings.enrollment,
+          finance: rawSettings.finance,
           autopilot: rawSettings.autopilot,
         });
         rawSettings = updated;
@@ -244,17 +161,6 @@ async function handleSubmit(e?: Event) {
       locale,
       dateFormat,
       hijriEnabled,
-      registrationEnabled,
-      requireAdminApproval,
-      allowWaitlist,
-      siblingPriorityEnabled,
-      maxClassSizeDefault,
-      allowLateEnrollment,
-      taxRate,
-      invoiceDueDays,
-      lateFeeType,
-      lateFeeValue,
-      allowPartialPayments,
     };
   } else {
     toast.error(
@@ -307,26 +213,6 @@ function handleSaveAvatar(e: Event) {
         bind:hijriEnabled
         {isSaving}
         onLanguageChange={handleLanguageChange}
-      />
-
-      <EnrollmentSettingsCard
-        bind:registrationEnabled
-        bind:requireAdminApproval
-        bind:allowWaitlist
-        bind:siblingPriorityEnabled
-        bind:maxClassSizeDefault
-        bind:allowLateEnrollment
-        {isSaving}
-      />
-
-      <FinanceSettingsCard
-        bind:currency={financeCurrency}
-        bind:taxRate
-        bind:invoiceDueDays
-        bind:lateFeeType
-        bind:lateFeeValue
-        bind:allowPartialPayments
-        {isSaving}
       />
 
 

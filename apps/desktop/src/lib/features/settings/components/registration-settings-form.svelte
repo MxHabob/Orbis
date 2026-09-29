@@ -106,6 +106,7 @@ function parseOrgRegistration(rawOrg: any) {
   }
 
   const adm = settingsObj.admission || settingsObj.registration || settingsObj.registration_config || {};
+  const enr = settingsObj.enrollment || {};
   const num = adm.numbering || {};
   const pol = adm.policy || adm.policy_settings || adm;
   const fields = adm.fields || adm.form_fields_list || [];
@@ -115,11 +116,15 @@ function parseOrgRegistration(rawOrg: any) {
     studentNumberPrefix: num.prefix || adm.student_number_prefix || "STU",
     studentNumberYearFormat: num.year_format === "full" ? "YEAR" : num.year_format === "short" ? "YEAR2" : num.year_format === "none" ? "NONE" : (adm.student_number_year_format || "YEAR"),
     studentNumberDigits: num.sequence_digits ? Number(num.sequence_digits) : (adm.student_number_digits ? Number(adm.student_number_digits) : 4),
-    requiresApproval: pol.requires_approval !== undefined ? Boolean(pol.requires_approval) : false,
+    registrationEnabled: enr.registration_enabled !== undefined ? Boolean(enr.registration_enabled) : true,
+    requiresApproval: enr.require_admin_approval !== undefined ? Boolean(enr.require_admin_approval) : (pol.requires_approval !== undefined ? Boolean(pol.requires_approval) : true),
+    allowWaitlist: enr.allow_waitlist !== undefined ? Boolean(enr.allow_waitlist) : (pol.allow_waitlist !== undefined ? Boolean(pol.allow_waitlist) : true),
+    siblingPriorityEnabled: enr.sibling_priority_enabled !== undefined ? Boolean(enr.sibling_priority_enabled) : (pol.sibling_priority_enabled !== undefined ? Boolean(pol.sibling_priority_enabled) : true),
+    allowLateEnrollment: enr.allow_late_enrollment !== undefined ? Boolean(enr.allow_late_enrollment) : (pol.allow_late_enrollment !== undefined ? Boolean(pol.allow_late_enrollment) : false),
     allowNoGuardian: pol.allow_no_guardian !== undefined ? Boolean(pol.allow_no_guardian) : false,
     allowDuplicateNationalId: pol.allow_duplicate_national_id !== undefined ? Boolean(pol.allow_duplicate_national_id) : false,
     autoAssignFees: pol.auto_assign_fees !== undefined ? Boolean(pol.auto_assign_fees) : true,
-    maxClassCapacity: pol.max_class_capacity ? Number(pol.max_class_capacity) : 30,
+    maxClassCapacity: enr.max_class_size_default ? Number(enr.max_class_size_default) : (pol.max_class_capacity ? Number(pol.max_class_capacity) : 30),
     requiredDocuments: Array.isArray(adm.required_documents_list) ? adm.required_documents_list : [],
     formFields: Array.isArray(fields) && fields.length > 0
       ? fields.map((f: any) => ({
@@ -142,7 +147,11 @@ let institutionType = $state<string>(parsed.institutionType);
 let studentNumberPrefix = $state<string>(parsed.studentNumberPrefix);
 let studentNumberYearFormat = $state<string>(parsed.studentNumberYearFormat);
 let studentNumberDigits = $state<number>(parsed.studentNumberDigits);
+let registrationEnabled = $state<boolean>(parsed.registrationEnabled);
 let requiresApproval = $state<boolean>(parsed.requiresApproval);
+let allowWaitlist = $state<boolean>(parsed.allowWaitlist);
+let siblingPriorityEnabled = $state<boolean>(parsed.siblingPriorityEnabled);
+let allowLateEnrollment = $state<boolean>(parsed.allowLateEnrollment);
 let allowNoGuardian = $state<boolean>(parsed.allowNoGuardian);
 let allowDuplicateNationalId = $state<boolean>(parsed.allowDuplicateNationalId);
 let autoAssignFees = $state<boolean>(parsed.autoAssignFees);
@@ -164,7 +173,11 @@ const initialState = {
   studentNumberPrefix: parsed.studentNumberPrefix,
   studentNumberYearFormat: parsed.studentNumberYearFormat,
   studentNumberDigits: parsed.studentNumberDigits,
+  registrationEnabled: parsed.registrationEnabled,
   requiresApproval: parsed.requiresApproval,
+  allowWaitlist: parsed.allowWaitlist,
+  siblingPriorityEnabled: parsed.siblingPriorityEnabled,
+  allowLateEnrollment: parsed.allowLateEnrollment,
   allowNoGuardian: parsed.allowNoGuardian,
   allowDuplicateNationalId: parsed.allowDuplicateNationalId,
   autoAssignFees: parsed.autoAssignFees,
@@ -179,7 +192,11 @@ const isDirty = $derived.by(() => {
     studentNumberPrefix !== initialState.studentNumberPrefix ||
     studentNumberYearFormat !== initialState.studentNumberYearFormat ||
     studentNumberDigits !== initialState.studentNumberDigits ||
+    registrationEnabled !== initialState.registrationEnabled ||
     requiresApproval !== initialState.requiresApproval ||
+    allowWaitlist !== initialState.allowWaitlist ||
+    siblingPriorityEnabled !== initialState.siblingPriorityEnabled ||
+    allowLateEnrollment !== initialState.allowLateEnrollment ||
     allowNoGuardian !== initialState.allowNoGuardian ||
     allowDuplicateNationalId !== initialState.allowDuplicateNationalId ||
     autoAssignFees !== initialState.autoAssignFees ||
@@ -191,13 +208,59 @@ const isDirty = $derived.by(() => {
 
 onMount(async () => {
   try {
-    const [backendReqs, classesList] = await Promise.all([
+    const [backendReqs, classesList, currentSettings] = await Promise.all([
       api.listDocumentRequirements().catch(() => []),
       api.listClasses().catch(() => []),
+      api.getSettings().catch(() => null),
     ]);
 
     if (classesList && Array.isArray(classesList)) {
       dbClasses = classesList;
+    }
+
+    if (currentSettings) {
+      if (currentSettings.enrollment) {
+        const e = currentSettings.enrollment;
+        if (e.registration_enabled !== undefined) registrationEnabled = Boolean(e.registration_enabled);
+        if (e.require_admin_approval !== undefined) requiresApproval = Boolean(e.require_admin_approval);
+        if (e.allow_waitlist !== undefined) allowWaitlist = Boolean(e.allow_waitlist);
+        if (e.sibling_priority_enabled !== undefined) siblingPriorityEnabled = Boolean(e.sibling_priority_enabled);
+        if (e.max_class_size_default !== undefined) maxClassCapacity = Number(e.max_class_size_default);
+        if (e.allow_late_enrollment !== undefined) allowLateEnrollment = Boolean(e.allow_late_enrollment);
+      }
+      if (currentSettings.admission) {
+        const a = currentSettings.admission;
+        if (a.institution_type) institutionType = a.institution_type;
+        if (a.numbering?.prefix) studentNumberPrefix = a.numbering.prefix;
+        if (a.numbering?.sequence_digits) studentNumberDigits = Number(a.numbering.sequence_digits);
+        if (a.numbering?.year_format) {
+          studentNumberYearFormat = a.numbering.year_format === "full" ? "YEAR" : a.numbering.year_format === "short" ? "YEAR2" : "NONE";
+        }
+        if (a.policy) {
+          if (a.policy.requires_approval !== undefined) requiresApproval = Boolean(a.policy.requires_approval);
+          if (a.policy.allow_no_guardian !== undefined) allowNoGuardian = Boolean(a.policy.allow_no_guardian);
+          if (a.policy.allow_duplicate_national_id !== undefined) allowDuplicateNationalId = Boolean(a.policy.allow_duplicate_national_id);
+          if (a.policy.auto_assign_fees !== undefined) autoAssignFees = Boolean(a.policy.auto_assign_fees);
+          if (a.policy.max_class_capacity !== undefined) maxClassCapacity = Number(a.policy.max_class_capacity);
+          if (a.policy.allow_waitlist !== undefined) allowWaitlist = Boolean(a.policy.allow_waitlist);
+          if (a.policy.sibling_priority_enabled !== undefined) siblingPriorityEnabled = Boolean(a.policy.sibling_priority_enabled);
+          if (a.policy.allow_late_enrollment !== undefined) allowLateEnrollment = Boolean(a.policy.allow_late_enrollment);
+        }
+      }
+      // Re-synchronize initial state
+      initialState.institutionType = institutionType;
+      initialState.studentNumberPrefix = studentNumberPrefix;
+      initialState.studentNumberYearFormat = studentNumberYearFormat;
+      initialState.studentNumberDigits = studentNumberDigits;
+      initialState.registrationEnabled = registrationEnabled;
+      initialState.requiresApproval = requiresApproval;
+      initialState.allowWaitlist = allowWaitlist;
+      initialState.siblingPriorityEnabled = siblingPriorityEnabled;
+      initialState.allowLateEnrollment = allowLateEnrollment;
+      initialState.allowNoGuardian = allowNoGuardian;
+      initialState.allowDuplicateNationalId = allowDuplicateNationalId;
+      initialState.autoAssignFees = autoAssignFees;
+      initialState.maxClassCapacity = maxClassCapacity;
     }
 
     if (backendReqs && backendReqs.length > 0) {
@@ -212,6 +275,7 @@ onMount(async () => {
         condition: r.condition || "all_students",
       }));
       requiredDocuments = mapped;
+      initialState.requiredDocuments = JSON.parse(JSON.stringify(mapped));
     }
   } catch (err) {
     console.error("Failed to load registration requirements data:", err);
@@ -223,7 +287,11 @@ function resetToInitial() {
   studentNumberPrefix = initialState.studentNumberPrefix;
   studentNumberYearFormat = initialState.studentNumberYearFormat;
   studentNumberDigits = initialState.studentNumberDigits;
+  registrationEnabled = initialState.registrationEnabled;
   requiresApproval = initialState.requiresApproval;
+  allowWaitlist = initialState.allowWaitlist;
+  siblingPriorityEnabled = initialState.siblingPriorityEnabled;
+  allowLateEnrollment = initialState.allowLateEnrollment;
   allowNoGuardian = initialState.allowNoGuardian;
   allowDuplicateNationalId = initialState.allowDuplicateNationalId;
   autoAssignFees = initialState.autoAssignFees;
@@ -395,6 +463,7 @@ function handleFieldGridAction(event: GridActionEvent) {
 function handleFormSave() {
   const payload = {
     admission: {
+      institution_type: institutionType,
       numbering: {
         prefix: studentNumberPrefix,
         year_format: studentNumberYearFormat === "YEAR" ? "full" : studentNumberYearFormat === "YEAR2" ? "short" : "none",
@@ -407,9 +476,9 @@ function handleFormSave() {
         allow_duplicate_national_id: allowDuplicateNationalId,
         auto_assign_fees: autoAssignFees,
         max_class_capacity: maxClassCapacity,
-        allow_late_enrollment: false,
-        allow_waitlist: true,
-        sibling_priority_enabled: true,
+        allow_late_enrollment: allowLateEnrollment,
+        allow_waitlist: allowWaitlist,
+        sibling_priority_enabled: siblingPriorityEnabled,
       },
       fields: formFields.map((f) => ({
         key: f.key,
@@ -420,6 +489,14 @@ function handleFormSave() {
         prevent_duplicate: f.preventDuplicate,
         supports_duplicate: f.supportsDuplicate,
       })),
+    },
+    enrollment: {
+      registration_enabled: registrationEnabled,
+      require_admin_approval: requiresApproval,
+      allow_waitlist: allowWaitlist,
+      sibling_priority_enabled: siblingPriorityEnabled,
+      max_class_size_default: maxClassCapacity,
+      allow_late_enrollment: allowLateEnrollment,
     },
   };
 
@@ -575,23 +652,78 @@ function handleFormSave() {
         <CardHeader>
           <div class="flex flex-col text-start">
             <CardTitle>
-              {l("ضوابط وإجراءات القبول والتسجيل", "Admission Governance Rules")}
+              {l("ضوابط وإجراءات القبول والتسجيل", "Admission & Enrollment Governance Rules")}
             </CardTitle>
+            <CardDescription>
+              {l("التحكم في بوابات التسجيل، اعتمادات القيد، قوائم الانتظار، وسياسات الاستيعاب", "Manage registration portals, approval workflows, waitlists, and capacity limits")}
+            </CardDescription>
           </div>
         </CardHeader>
 
         <CardContent class="p-6 flex flex-col divide-y divide-border">
-          <!-- Approval Workflow -->
+          <!-- Enable Registration Portal -->
           <div class="py-3 flex items-center justify-between gap-4 first:pt-0">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
-                {l("اشتراط موافقة المسجل الأكاديمي / الإدارة", "Require Academic Registrar Approval")}
+                {l("تفعيل بوابة واستمارة التسجيل", "Enable Registration Portal")}
+              </span>
+              <span class="text-[11px] text-muted-foreground">
+                {l("السماح بقبول طلبات التسجيل والقيد للعام الدراسي النشط", "Allow incoming student admission requests for active terms")}
+              </span>
+            </div>
+            <Switch bind:checked={registrationEnabled} />
+          </div>
+
+          <!-- Approval Workflow -->
+          <div class="py-3 flex items-center justify-between gap-4">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-xs font-bold text-foreground">
+                {l("اشتراط موافقة المسجل الأكاديمي / الإدارة", "Require Academic Registrar / Admin Approval")}
               </span>
               <span class="text-[11px] text-muted-foreground">
                 {l("إخضاع طلبات التسجيل الجديدة لمرحلة المراجعة والاعتماد قبل التسكين في الشعب", "New applicants remain pending approval before enrollment")}
               </span>
             </div>
             <Switch bind:checked={requiresApproval} />
+          </div>
+
+          <!-- Allow Waitlist -->
+          <div class="py-3 flex items-center justify-between gap-4">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-xs font-bold text-foreground">
+                {l("تفعيل قوائم الانتظار عند اكتمال الشعب", "Enable Waitlist on Capacity")}
+              </span>
+              <span class="text-[11px] text-muted-foreground">
+                {l("وضع الطلاب تلقائياً في قائمة الانتظار عند اكتمال الطاقة الاستيعابية للشعبة", "Place students on waitlist when classes reach capacity")}
+              </span>
+            </div>
+            <Switch bind:checked={allowWaitlist} />
+          </div>
+
+          <!-- Sibling Priority -->
+          <div class="py-3 flex items-center justify-between gap-4">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-xs font-bold text-foreground">
+                {l("أولوية القبول للإخوة والأقارب", "Sibling Priority Enrollment")}
+              </span>
+              <span class="text-[11px] text-muted-foreground">
+                {l("منح أولوية القبول والتسكين لإخوة الطلاب المسجلين مسبقاً بالمؤسسة", "Prioritize siblings of already enrolled students")}
+              </span>
+            </div>
+            <Switch bind:checked={siblingPriorityEnabled} />
+          </div>
+
+          <!-- Allow Late Enrollment -->
+          <div class="py-3 flex items-center justify-between gap-4">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-xs font-bold text-foreground">
+                {l("السماح بالتسجيل المتأخر بعد بدء الفصل", "Allow Late Enrollment")}
+              </span>
+              <span class="text-[11px] text-muted-foreground">
+                {l("قبول طلبات القيد والتسجيل بعد بدء الفصل الدراسي أو انقضاء الموعد النهائي", "Accept enrollment applications after period start or deadline")}
+              </span>
+            </div>
+            <Switch bind:checked={allowLateEnrollment} />
           </div>
 
           <!-- Allow No Guardian -->

@@ -74,7 +74,12 @@ let {
 
       <div class="flex flex-col gap-2 p-3.5 rounded-lg border border-border/50 bg-muted/20 text-start">
         <Label class="text-xs font-semibold">{l("نوع غرامة التأخير", "Late Fee Type")}</Label>
-        <Select bind:value={lateFeeType} disabled={isSaving}>
+        <Select
+          type="single"
+          value={lateFeeType}
+          onValueChange={(v) => { if (v) lateFeeType = v; }}
+          disabled={isSaving}
+        >
           <SelectTrigger class="h-8 text-xs w-48">
             <span>{lateFeeType === "percentage" ? l("نسبة مئوية", "Percentage") : l("مبلغ ثابت", "Fixed Amount")}</span>
           </SelectTrigger>

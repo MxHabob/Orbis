@@ -9,7 +9,7 @@ import {
   createOrgAcademicPolicyQuery,
   useUpdateAcademicPolicy,
 } from "$lib/features/academics/queries-policy";
-import { extractErrorMessage } from "$lib/api";
+import { api, extractErrorMessage, type OrganizationSettingsDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -28,8 +28,8 @@ import {
   CardContent,
 } from "@orbis/ui/card";
 import { toast } from "@orbis/ui";
-
-import { BookOpen, Lock, Scale, UserBadgeCheck } from "@orbis/icons";
+import { l } from "$lib/core/i18n";
+import { BookOpen, Lock, ReceiptPercent, Scale, UserBadgeCheck } from "@orbis/icons";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
@@ -41,6 +41,8 @@ const updateMutation = useUpdateAcademicPolicy();
 // Form states
 let isSaving = $state(false);
 let initialSnapshot = $state("");
+let rawSettings = $state<OrganizationSettingsDto | null>(null);
+
 let form = $state({
   default_grading_system: "percentage",
   default_passing_grade: 50,
@@ -56,7 +58,15 @@ let form = $state({
   exclude_withdrawn: true,
 });
 
-// Sync database record to local form state
+// Financial Policy State
+let currency = $state("YER");
+let taxRate = $state(0.15);
+let invoiceDueDays = $state(14);
+let lateFeeType = $state<string>("fixed");
+let lateFeeValue = $state(0.0);
+let allowPartialPayments = $state(false);
+
+// Sync database record and org finance settings to local form state
 $effect(() => {
   if (policyQuery.data) {
     const d = policyQuery.data as any;
@@ -75,17 +85,86 @@ $effect(() => {
       auto_graduate_final_level: d.auto_graduate_final_level === 1,
       exclude_withdrawn: d.exclude_withdrawn !== 0,
     };
-    initialSnapshot = untrack(() => JSON.stringify(form));
+
+    api.getSettings().then((s) => {
+      if (s) {
+        rawSettings = s;
+        if (s.finance) {
+          currency = s.finance.currency || "YER";
+          taxRate = s.finance.tax_rate ?? 0.15;
+          invoiceDueDays = s.finance.invoice_due_days ?? 14;
+          lateFeeType = s.finance.late_fee_type || "fixed";
+          lateFeeValue = s.finance.late_fee_value ?? 0.0;
+          allowPartialPayments = Boolean(s.finance.allow_partial_payments);
+        }
+      }
+      initialSnapshot = untrack(() =>
+        JSON.stringify({
+          ...form,
+          finance: {
+            taxRate,
+            invoiceDueDays,
+            lateFeeType,
+            lateFeeValue,
+            allowPartialPayments,
+          },
+        }),
+      );
+    }).catch(() => {
+      initialSnapshot = untrack(() =>
+        JSON.stringify({
+          ...form,
+          finance: {
+            taxRate,
+            invoiceDueDays,
+            lateFeeType,
+            lateFeeValue,
+            allowPartialPayments,
+          },
+        }),
+      );
+    });
   }
 });
 
 const isDirty = $derived(
-  initialSnapshot !== "" && JSON.stringify(form) !== initialSnapshot,
+  initialSnapshot !== "" &&
+    JSON.stringify({
+      ...form,
+      finance: {
+        taxRate,
+        invoiceDueDays,
+        lateFeeType,
+        lateFeeValue,
+        allowPartialPayments,
+      },
+    }) !== initialSnapshot,
 );
 
 function handleReset() {
   if (!initialSnapshot) return;
-  form = JSON.parse(initialSnapshot);
+  const parsed = JSON.parse(initialSnapshot);
+  form = {
+    default_grading_system: parsed.default_grading_system,
+    default_passing_grade: parsed.default_passing_grade,
+    default_max_grade: parsed.default_max_grade,
+    min_attendance_rate: parsed.min_attendance_rate,
+    enrollment_auto_close: parsed.enrollment_auto_close,
+    allow_late_enrollment: parsed.allow_late_enrollment,
+    late_enrollment_approval: parsed.late_enrollment_approval,
+    grade_entry_auto_close: parsed.grade_entry_auto_close,
+    allow_grade_edit_after_close: parsed.allow_grade_edit_after_close,
+    grade_edit_approval: parsed.grade_edit_approval,
+    auto_graduate_final_level: parsed.auto_graduate_final_level,
+    exclude_withdrawn: parsed.exclude_withdrawn,
+  };
+  if (parsed.finance) {
+    taxRate = parsed.finance.taxRate;
+    invoiceDueDays = parsed.finance.invoiceDueDays;
+    lateFeeType = parsed.finance.lateFeeType;
+    lateFeeValue = parsed.finance.lateFeeValue;
+    allowPartialPayments = parsed.finance.allowPartialPayments;
+  }
 }
 
 async function handleSave(e?: Event) {
@@ -112,11 +191,38 @@ async function handleSave(e?: Event) {
       policy: payload,
     });
 
-    initialSnapshot = JSON.stringify(form);
+    const currentSettings = rawSettings || await api.getSettings().catch(() => null);
+    if (currentSettings) {
+      const updatedSettings = {
+        ...currentSettings,
+        finance: {
+          ...currentSettings.finance,
+          currency: currentSettings.finance?.currency || currency || "YER",
+          tax_rate: Number(taxRate),
+          invoice_due_days: Number(invoiceDueDays),
+          late_fee_type: lateFeeType,
+          late_fee_value: Number(lateFeeValue),
+          allow_partial_payments: Boolean(allowPartialPayments),
+        },
+      };
+      const res = await api.updateSettings(updatedSettings);
+      rawSettings = res;
+    }
+
+    initialSnapshot = JSON.stringify({
+      ...form,
+      finance: {
+        taxRate,
+        invoiceDueDays,
+        lateFeeType,
+        lateFeeValue,
+        allowPartialPayments,
+      },
+    });
     toast.success(
       m.settings_policy_save_success
         ? m.settings_policy_save_success()
-        : "تم حفظ السياسات الأكاديمية بنجاح",
+        : "تم حفظ السياسات الأكاديمية والمالية بنجاح",
     );
   } catch (err: unknown) {
     toast.error(extractErrorMessage(err));
@@ -153,15 +259,15 @@ async function handleSave(e?: Event) {
       <!-- Top Action Bar -->
       <div class="flex items-center justify-between gap-3 w-full select-none pb-2 border-b border-border">
         <div class="flex flex-col text-start">
-          <h1 class="text-sm font-semibold text-foreground">السياسات والضوابط الأكاديمية</h1>
-          <p class="text-xs text-muted-foreground mt-0.5">إعدادات النظم الدراسية، درجات النجاح، رصد الدرجات، وضوابط التسجيل والترفيع.</p>
+          <h1 class="text-sm font-semibold text-foreground">السياسات الأكاديمية والمالية للمؤسسة</h1>
+          <p class="text-xs text-muted-foreground mt-0.5">إعدادات النظم الدراسية، درجات النجاح، رصد وقفل الدرجات، الترفيع الأكاديمي، وسياسات الفواتير والتحصيل المالي.</p>
         </div>
       </div>
 
       <!-- Two-Column Settings Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- 1. Grading & Evaluation Defaults Section -->
-        <Card>
+        <Card class="border-border/80 shadow-xs">
           <CardHeader>
             <div class="flex items-center gap-2">
               <Scale size={14} class="text-primary" />
@@ -230,73 +336,89 @@ async function handleSave(e?: Event) {
           </CardContent>
         </Card>
 
-        <!-- 2. Enrollment Rules Section -->
-        <Card>
+        <!-- 2. Billing & Financial Policies Section -->
+        <Card class="border-border/80 shadow-xs">
           <CardHeader>
             <div class="flex items-center gap-2">
-              <UserBadgeCheck size={14} class="text-primary" />
-              <CardTitle>
-                {m.common_policy_card_enrollment
-                  ? m.common_policy_card_enrollment()
-                  : "قواعد وضوابط التسجيل"}
-              </CardTitle>
+              <ReceiptPercent size={14} class="text-primary" />
+              <CardTitle>سياسات الفواتير والتحصيل المالي</CardTitle>
             </div>
           </CardHeader>
 
           <CardContent class="p-6 flex flex-col gap-4 text-start">
-            <!-- Allow Late Enrollment -->
-            <div class="flex items-center justify-between py-2 border-b border-border">
-              <div class="flex flex-col text-start gap-0.5 pe-4">
-                <span class="text-xs font-semibold text-foreground">
-                  {m.common_policy_field_allow_late
-                    ? m.common_policy_field_allow_late()
-                    : "السماح بالتسجيل المتأخر"}
-                </span>
-                <span class="text-[10px] text-muted-foreground leading-relaxed">
-                  السماح بتسجيل الطلاب وقبول ملفاتهم بعد انقضاء الموعد النهائي للتسجيل.
-                </span>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="flex flex-col gap-1.5 text-start">
+                <Label class="text-xs font-semibold">نسبة الضريبة الافتراضية (%)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="1"
+                  value={taxRate}
+                  oninput={(e) => taxRate = parseFloat(e.currentTarget.value) || 0}
+                  disabled={isSaving}
+                  class="text-xs font-mono h-9"
+                />
+                <span class="text-[10px] text-muted-foreground">مثال: 0.15 تمثل ضريبة 15%</span>
               </div>
-              <Switch
-                checked={form.allow_late_enrollment}
-                onCheckedChange={(v) => (form.allow_late_enrollment = v)}
-                disabled={isSaving}
-              />
+
+              <div class="flex flex-col gap-1.5 text-start">
+                <Label class="text-xs font-semibold">فترة الاستحقاق (أيام)</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="365"
+                  bind:value={invoiceDueDays}
+                  disabled={isSaving}
+                  class="text-xs font-mono h-9"
+                />
+                <span class="text-[10px] text-muted-foreground">المهلة المحددة للسداد</span>
+              </div>
             </div>
 
-            <!-- Late Enrollment Requires Approval -->
-            <div class="flex items-center justify-between py-2 border-b border-border">
-              <div class="flex flex-col text-start gap-0.5 pe-4">
-                <span class="text-xs font-semibold text-foreground">
-                  {m.common_policy_field_late_approval
-                    ? m.common_policy_field_late_approval()
-                    : "التسجيل المتأخر يتطلب موافقة"}
-                </span>
-                <span class="text-[10px] text-muted-foreground leading-relaxed">
-                  توجيه طلبات التسجيل المتأخر إلى قائمة الموافقات الإدارية للاعتماد.
-                </span>
+            <div class="grid grid-cols-2 gap-4 pt-1">
+              <div class="flex flex-col gap-1.5 text-start">
+                <Label class="text-xs font-semibold">نوع غرامة التأخير</Label>
+                <Select
+                  type="single"
+                  value={lateFeeType}
+                  onValueChange={(v) => { if (v) lateFeeType = v; }}
+                  disabled={isSaving}
+                >
+                  <SelectTrigger class="text-xs h-9 w-full">
+                    {lateFeeType === "percentage" ? "نسبة مئوية (%)" : "مبلغ ثابت"}
+                  </SelectTrigger>
+                  <SelectContent class="text-xs">
+                    <SelectItem value="fixed">مبلغ ثابت</SelectItem>
+                    <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Switch
-                checked={form.late_enrollment_approval}
-                onCheckedChange={(v) => (form.late_enrollment_approval = v)}
-                disabled={isSaving || !form.allow_late_enrollment}
-              />
+
+              <div class="flex flex-col gap-1.5 text-start">
+                <Label class="text-xs font-semibold">قيمة غرامة التأخير</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={lateFeeValue}
+                  oninput={(e) => lateFeeValue = parseFloat(e.currentTarget.value) || 0}
+                  disabled={isSaving}
+                  class="text-xs font-mono h-9"
+                />
+              </div>
             </div>
 
-            <!-- Auto Close on Capacity -->
-            <div class="flex items-center justify-between py-2">
+            <div class="flex items-center justify-between py-2 border-t border-border mt-1">
               <div class="flex flex-col text-start gap-0.5 pe-4">
-                <span class="text-xs font-semibold text-foreground">
-                  {m.common_policy_field_auto_close_capacity
-                    ? m.common_policy_field_auto_close_capacity()
-                    : "الإغلاق التلقائي عند اكتمال الطاقة"}
-                </span>
+                <span class="text-xs font-semibold text-foreground">السماح بالدفع الجزئي للفواتير</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
-                  تأمين وإغلاق الشعب الأكاديمية تلقائياً عند وصول الطاقة الاستيعابية المحددة للفصل.
+                  تمكين أولياء الأمور والطلاب من سداد رسوم الفاتورة الواحدة على دفعات متعددة.
                 </span>
               </div>
               <Switch
-                checked={form.enrollment_auto_close}
-                onCheckedChange={(v) => (form.enrollment_auto_close = v)}
+                checked={allowPartialPayments}
+                onCheckedChange={(v) => (allowPartialPayments = v)}
                 disabled={isSaving}
               />
             </div>
@@ -304,7 +426,7 @@ async function handleSave(e?: Event) {
         </Card>
 
         <!-- 3. Grade Entry & Locking Policies Section -->
-        <Card>
+        <Card class="border-border/80 shadow-xs">
           <CardHeader>
             <div class="flex items-center gap-2">
               <Lock size={14} class="text-primary" />
@@ -361,7 +483,7 @@ async function handleSave(e?: Event) {
         </Card>
 
         <!-- 4. Promotion & Graduation Rules Section -->
-        <Card>
+        <Card class="border-border/80 shadow-xs">
           <CardHeader>
             <div class="flex items-center gap-2">
               <BookOpen size={14} class="text-primary" />

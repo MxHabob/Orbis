@@ -23,6 +23,7 @@ async function handleSave(registrationConfig: any) {
     const updatedSettings = {
       ...currentSettings,
       admission: registrationConfig.admission,
+      enrollment: registrationConfig.enrollment ?? currentSettings.enrollment,
     };
     await api.updateSettings(updatedSettings);
     toast.success(m.settings_registration_save_success());
