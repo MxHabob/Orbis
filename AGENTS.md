@@ -157,16 +157,17 @@ Every agent starting a session in this repository MUST:
     - Added deep-linked sub-routes `[branchId]/+page.svelte` (full branch details, classes, rooms, sub-units, staff) and `governance/+page.svelte`.
     - Built `branch-details-view.svelte` providing deep multi-tab exploration for any branch (Classes, Rooms & Halls, Child Sub-Units, Staff & Faculty, Location & Telemetry Specs).
   - **Onboarding & Bootstrap Architectural Reconciliation:**
-    - **Separation of Concerns & Source of Truth:** Technical bootstrap (`BootstrapService` / `bootstrap_adapter.rs`) is strictly confined to system provisioning (Super Admin, system roles/permissions, standard currencies, period templates catalog in DB, COA, settings, AST report templates). Removed all hardcoded creation of OrgUnits, Campuses, Buildings, Rooms, Academic Years, and Academic Periods from technical bootstrap.
-    - **Onboarding Authority (`OnboardingService` / `OnboardingPort`):** Exclusively owns and constructs the institutional topology (OrgUnits hierarchy with campus & buildings, rooms with `floor`, `capacity`, and `name_ar`, academic year, multi-level academic periods with parent IDs, classes, subjects, timeslots, fee templates, and document requirements).
-    - **Period Templates Dynamic Catalog:** Removed static `DEFAULT_PERIOD_TEMPLATES` from Desktop frontend; Desktop onboarding now queries `api.listPeriodTemplates()` to dynamically populate period template options directly from the backend catalog with full structure and Arabic translations.
-    - **Legacy Removal:** Purged legacy `complete_initial_setup` / `InitialSetupRequest` / `bootstrap_initial_setup` endpoints and IPC handlers across REST routes, Tauri commands, Desktop API clients, and System store.
-    - **CLI Role Clarification:** Restrained CLI tools to developer maintenance, diagnostics, and repairs without duplicate launch/bootstrap logic.
+    - **Single Authoritative Bootstrap Owner:** `BootstrapService` in `orbis-app` is the single source of truth for Day-1 Technical System Provisioning and Foundation (Super Admin, system roles, full permissions across all ERP domains, standard currencies catalog, hierarchical period templates catalog for Schools, Universities, and Institutes, standard COA chart of accounts, default user groups, settings, AST report templates).
+    - **Single Authoritative Onboarding Owner:** `OnboardingService` in `orbis-app` is the single source of truth for full Institutional Topology & Structure (OrgUnits hierarchy with campus & buildings, rooms with `floor`, `capacity`, and `name_ar`, academic year, multi-level academic periods with parent IDs, classes, subjects, timeslots, fee templates, and dynamic document requirements per institution type).
+    - **Clean Infrastructure Separation:** Deleted `bootstrap_adapter.rs` and `onboarding_adapter.rs`. Moved direct SeaORM persistence into clean repositories (`bootstrap_repo.rs` & `onboarding_repo.rs`) in `orbis-infra/src/repositories/`.
+    - **Migration Fix:** Guarded `rooms` table column additions (`floor`, `name_ar`) in `m20240106_000001_room_floor_name_ar.rs` with `has_column` to prevent duplicate column migration errors during local SQLite initialization.
+    - **No Lazy Query Seeding Side Effects:** Removed all `if is_empty()` lazy seeding side-effects from query commands (`report_cmds.rs`, `template_cmds.rs`, `finance_cmds.rs`, `onboarding_repo.rs`), ensuring all seed data is created strictly during organization bootstrap and onboarding.
+    - **Exact Schema Alignment Fix:** Reconciled raw SQL inserts in `bootstrap_repo.rs` with exact SeaORM entity models (`organizations`, `users`, `role_permissions`), embedding `org_type` and `institution_type` within the `settings` JSON field rather than non-existent columns.
   - **Verification:**
     - `apps/api-rust` cargo check: 0 errors
     - `apps/desktop/src-tauri` cargo check: 0 errors
-    - `packages/sdk` tsc: 0 errors
-    - `apps/desktop` tsc: 0 errors
+    - `packages/sdk` build (tsc): 0 errors
+    - `apps/desktop` bunx tsc: 0 errors
 - **Next Scope in Master Execution Plan:** Complete System Hardening, End-to-End Integrity & Enterprise ERP Delivery.
 
 

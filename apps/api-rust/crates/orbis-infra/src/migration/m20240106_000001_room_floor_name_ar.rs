@@ -11,34 +11,38 @@ impl MigrationName for Migration {
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // Add floor column to rooms table
-        manager
-            .alter_table(
-                Table::alter()
-                    .table(Alias::new("rooms"))
-                    .add_column(
-                        ColumnDef::new(Alias::new("floor"))
-                            .integer()
-                            .null()
-                            .default(0),
-                    )
-                    .to_owned(),
-            )
-            .await?;
+        // Add floor column to rooms table if it doesn't already exist
+        if !manager.has_column("rooms", "floor").await.unwrap_or(false) {
+            let _ = manager
+                .alter_table(
+                    Table::alter()
+                        .table(Alias::new("rooms"))
+                        .add_column(
+                            ColumnDef::new(Alias::new("floor"))
+                                .integer()
+                                .null()
+                                .default(0),
+                        )
+                        .to_owned(),
+                )
+                .await;
+        }
 
-        // Add name_ar column to rooms table
-        manager
-            .alter_table(
-                Table::alter()
-                    .table(Alias::new("rooms"))
-                    .add_column(
-                        ColumnDef::new(Alias::new("name_ar"))
-                            .string()
-                            .null(),
-                    )
-                    .to_owned(),
-            )
-            .await?;
+        // Add name_ar column to rooms table if it doesn't already exist
+        if !manager.has_column("rooms", "name_ar").await.unwrap_or(false) {
+            let _ = manager
+                .alter_table(
+                    Table::alter()
+                        .table(Alias::new("rooms"))
+                        .add_column(
+                            ColumnDef::new(Alias::new("name_ar"))
+                                .string()
+                                .null(),
+                        )
+                        .to_owned(),
+                )
+                .await;
+        }
 
         Ok(())
     }

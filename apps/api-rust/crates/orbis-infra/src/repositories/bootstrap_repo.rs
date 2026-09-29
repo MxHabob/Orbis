@@ -384,20 +384,25 @@ impl BulkBootstrapPort for BootstrapRepoImpl {
         let admin_person_id = data.admin_person.id;
 
         // 1. Organization
+        let mut settings_json = data.org_settings.clone();
+        if let Some(obj) = settings_json.as_object_mut() {
+            obj.insert("org_type".to_string(), serde_json::Value::String(data.organization.org_type.clone()));
+            obj.insert("institution_type".to_string(), serde_json::Value::String(data.organization.org_type.clone()));
+        }
+
         txn.execute(Statement::from_sql_and_values(
             txn.get_database_backend(),
-            "INSERT INTO organizations (id, name, name_ar, slug, org_type, timezone, locale, base_currency_code, is_active, subscription_tier, max_students, version, settings, created_at, updated_at) \
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1, 'enterprise', 10000, 1, $9, $10, $11)",
+            "INSERT INTO organizations (id, name, name_ar, slug, timezone, locale, base_currency_code, is_active, is_verified, is_deleted, is_hijri_enabled, version, settings, created_at, updated_at) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, 1, 1, 0, 0, 1, $8, $9, $10)",
             vec![
                 org_id.into(),
                 data.organization.name.clone().into(),
                 data.organization.name_ar.clone().into(),
                 data.organization.slug.clone().into(),
-                data.organization.org_type.clone().into(),
                 data.organization.timezone.clone().into(),
                 data.organization.locale.clone().into(),
                 data.organization.base_currency_code.clone().into(),
-                data.org_settings.to_string().into(),
+                settings_json.to_string().into(),
                 now.clone().into(),
                 now.clone().into(),
             ]
@@ -422,8 +427,8 @@ impl BulkBootstrapPort for BootstrapRepoImpl {
         // 3. Admin User
         txn.execute(Statement::from_sql_and_values(
             txn.get_database_backend(),
-            "INSERT INTO users (id, org_id, person_id, email, password_hash, is_active, is_email_verified, is_phone_verified, is_mfa_enabled, failed_login_attempts, created_at, updated_at) \
-             VALUES ($1, $2, $3, $4, $5, 1, 1, 0, 0, 0, $6, $7)",
+            "INSERT INTO users (id, org_id, person_id, email, password_hash, status, is_email_verified, is_phone_verified, is_mfa_enabled, login_count, failed_login_attempts, is_deleted, created_at, updated_at) \
+             VALUES ($1, $2, $3, $4, $5, 'active', 1, 0, 0, 0, 0, 0, $6, $7)",
             vec![
                 admin_user_id.into(),
                 org_id.into(),
@@ -473,15 +478,14 @@ impl BulkBootstrapPort for BootstrapRepoImpl {
         for perm in &data.role_permissions {
             txn.execute(Statement::from_sql_and_values(
                 txn.get_database_backend(),
-                "INSERT INTO role_permissions (id, role_id, org_id, resource, action, effect, created_at) \
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                "INSERT INTO role_permissions (id, role_id, org_id, resource, action, condition, created_at) \
+                 VALUES ($1, $2, $3, $4, $5, NULL, $6)",
                 vec![
                     perm.id.into(),
                     perm.role_id.clone().into(),
                     org_id.into(),
                     perm.resource.clone().into(),
                     perm.action.clone().into(),
-                    perm.effect.clone().into(),
                     now.clone().into(),
                 ]
             )).await.map_err(|e| DomainError::Internal(format!("Failed to insert permission: {e}")))?;
