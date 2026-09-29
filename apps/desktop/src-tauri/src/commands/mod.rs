@@ -72,6 +72,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         org_cmds::org_update_settings,
         org_cmds::org_get_dashboard,
         org_cmds::org_create_unit,
+        org_cmds::org_update_unit,
         org_cmds::org_list_units,
         org_cmds::org_get_unit,
         org_cmds::org_delete_unit,

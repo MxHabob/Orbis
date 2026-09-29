@@ -140,11 +140,29 @@ Every agent starting a session in this repository MUST:
     - Exported updated OpenAPI specification to `packages/sdk` and regenerated typed `@orbis/sdk`.
     - Reconciled `local-client.ts`, `remote-client.ts`, and `types.ts` with complete dual-transport parity and typed SDK calls (removed fake stubs and throwing mocks).
     - Reconciled `reporting-workspace.svelte`, `template-studio.svelte`, `templates-gallery.svelte`, and `audit-log-viewer.svelte`.
+  - **Settings Architecture & Domain Reorganization:**
+    - **Autopilot Engine Migration to AI Center:** Transferred autopilot operational configuration and governance policies from general settings into the dedicated AI Center (`ai-settings.svelte` and `orbis-autopilot-popover.svelte`), with live risk matrices, threshold parameters, and backend synchronization.
+    - **Registration & Enrollment Policies Migration:** Consolidated student ID sequence pattern generation, portal activation, administrative approvals, waitlist handling, sibling priority, late enrollments, and default classroom capacity limits directly into the Registration Rules domain (`registration-settings.svelte` and `registration-settings-form.svelte`).
+    - **Billing & Fee Collection Policies Migration:** Reconciled institutional tax rate, invoice due terms, late fee types/values, and partial payment policies into the Academic & Institutional Policies Center (`academic-policy-manager.svelte`).
+    - **General Settings Streamlining:** Pruned extraneous policy cards from `general-settings-form.svelte` to maintain strict focus on institutional profile, branding, regional preferences, branches, authentication, and entitlements.
+  - **Multi-Branch Management & Institutional Governance:**
+    - Added `OrgUnitDeleted` domain event to `DomainEvent` enum and audit trails in `orbis-domain`.
+    - Added `CreateOrgUnitInput` and `UpdateOrgUnitRequest` to `organization_service.rs` in `orbis-app` with full metadata, materialized path recalculation, and event dispatch.
+    - Updated `create_org_unit`, added `update_org_unit` endpoint (`PATCH /api/v1/org-units/:id`), and registered `api::org_routes::update_org_unit` in `ApiDoc` in `orbis-server`.
+    - Updated `org_create_unit`, added `org_update_unit` Tauri IPC command in `org_cmds.rs`, and registered in `commands/mod.rs`.
+    - Exported updated OpenAPI specification to `packages/sdk` and regenerated typed `@orbis/sdk`.
+    - Reconciled `local-client.ts`, `remote-client.ts`, `types.ts`, and `queries.ts` with `updateOrgUnit` and typed TanStack hooks.
+    - Built `+layout.svelte` for branches using `SecondaryMenu` (`دليل الفروع والعمليات` & `سياسات وحوكمة الفروع`).
+    - Built root `+page.svelte` matching `FinanceOverview` layout with top 4 KPI metric cards, toolbar controls, and OrbisGrid / Cards view.
+    - Added deep-linked sub-routes `[branchId]/+page.svelte` (full branch details, classes, rooms, sub-units, staff) and `governance/+page.svelte`.
+    - Built `branch-details-view.svelte` providing deep multi-tab exploration for any branch (Classes, Rooms & Halls, Child Sub-Units, Staff & Faculty, Location & Telemetry Specs).
+    - Reconciled `branch-form.svelte` and `branch-sheet.svelte` to match standard system sheets and shared UI components (`FormField`, `Select`, `Input`, `Checkbox`).
   - **Verification:**
     - `apps/api-rust` cargo check: 0 errors
     - `apps/desktop/src-tauri` cargo check: 0 errors
     - `packages/sdk` tsc: 0 errors
     - `apps/desktop` tsc: 0 errors
 - **Next Scope in Master Execution Plan:** Complete System Hardening, End-to-End Integrity & Enterprise ERP Delivery.
+
 
 

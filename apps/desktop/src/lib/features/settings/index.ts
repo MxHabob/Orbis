@@ -5,6 +5,9 @@ export { default as AvatarSettingsCard } from "./components/avatar-settings-card
 export { default as DangerZoneSettingsCard } from "./components/danger-zone-settings-card.svelte";
 export { default as GeneralSettingsForm } from "./components/general-settings-form.svelte";
 export { default as BranchSettingsCard } from "./components/branch-settings-card.svelte";
+export { default as BranchSheet } from "./components/branch-sheet.svelte";
+export { default as BranchForm } from "./components/branch-form.svelte";
+export { default as BranchDetailsView } from "./components/branch-details-view.svelte";
 export { default as AuthenticationSettingsCard } from "./components/authentication-settings-card.svelte";
 export { default as RegistrationSettingsForm } from "./components/registration-settings-form.svelte";
 export { default as AddDocumentRequirementSheet } from "./components/add-document-requirement-sheet.svelte";
@@ -15,9 +18,9 @@ export { default as UserPermissionsDialog } from "./components/user-permissions-
 export { default as CreateUserSheet } from "./components/create-user-sheet.svelte";
 export { default as EnrollmentSettingsCard } from "./components/enrollment-settings-card.svelte";
 export { default as FinanceSettingsCard } from "./components/finance-settings-card.svelte";
-export { default as AutopilotSettingsCard } from "./components/autopilot-settings-card.svelte";
 
 // Feature Components
+export { default as BranchesWorkspace } from "./branches-workspace.svelte";
 export { default as SettingsOverview } from "./settings-overview.svelte";
 export { default as RegistrationSettings } from "./registration-settings.svelte";
 export { default as AcademicPolicyManager } from "./academic-policy-manager.svelte";

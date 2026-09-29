@@ -9,6 +9,7 @@ pub enum DomainEvent {
     OrganizationUpdated { org_id: Uuid, timestamp: DateTime<Utc> },
     OrgUnitCreated { unit_id: Uuid, org_id: Uuid, parent_id: Option<Uuid>, unit_type: String, timestamp: DateTime<Utc> },
     OrgUnitUpdated { unit_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    OrgUnitDeleted { unit_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
     
     UserCreated { user_id: Uuid, person_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
     UserLoggedIn { user_id: Uuid, org_id: Uuid, session_id: Uuid, timestamp: DateTime<Utc> },
@@ -139,6 +140,7 @@ impl DomainEvent {
             DomainEvent::OrganizationUpdated { org_id, .. } => Some(("organization.updated", "organization", *org_id)),
             DomainEvent::OrgUnitCreated { unit_id, .. } => Some(("org_unit.created", "org_unit", *unit_id)),
             DomainEvent::OrgUnitUpdated { unit_id, .. } => Some(("org_unit.updated", "org_unit", *unit_id)),
+            DomainEvent::OrgUnitDeleted { unit_id, .. } => Some(("org_unit.deleted", "org_unit", *unit_id)),
 
             // User / Auth
             DomainEvent::UserCreated { user_id, .. } => Some(("user.created", "user", *user_id)),

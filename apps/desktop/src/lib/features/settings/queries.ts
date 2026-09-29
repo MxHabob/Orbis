@@ -57,6 +57,7 @@ export function createUserQuery(orgId: () => string, userId: () => string) {
 }
 
 import type { UniversalFilter } from "@orbis/ui/filter-builder";
+import type { OrgUnitDto, CreateOrgUnitRequest, UpdateOrgUnitRequest, OrganizationSettingsDto, UpdateOrgRequest } from "$lib/api";
 
 /** Paginated users query using infinite scrolling. */
 export function createUsersPaginatedQuery(
@@ -84,5 +85,91 @@ export function createUsersPaginatedQuery(
     },
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
+  }));
+}
+
+/** Get all organizational units / branches for an organization. */
+export function createOrgUnitsQuery(orgId: () => string) {
+  return createQuery<OrgUnitDto[]>(() => ({
+    queryKey: queryKeys.org.units(orgId()),
+    queryFn: () => api.listOrgUnits(),
+    enabled: !!orgId(),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+/** Get a single organizational unit. */
+export function createOrgUnitQuery(orgId: () => string, unitId: () => string) {
+  return createQuery<OrgUnitDto>(() => ({
+    queryKey: queryKeys.org.unit(unitId()),
+    queryFn: () => api.getOrgUnit(unitId()),
+    enabled: !!orgId() && !!unitId(),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+/** Create org unit mutation. */
+export function createCreateOrgUnitMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (req: CreateOrgUnitRequest) => api.createOrgUnit(req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.org.all,
+      });
+    },
+  }));
+}
+
+/** Update org unit mutation. */
+export function createUpdateOrgUnitMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (variables: { id: string; req: UpdateOrgUnitRequest }) =>
+      api.updateOrgUnit(variables.id, variables.req),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.org.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.org.unit(variables.id),
+      });
+    },
+  }));
+}
+
+/** Delete org unit mutation. */
+export function createDeleteOrgUnitMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.deleteOrgUnit(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.org.all,
+      });
+    },
+  }));
+}
+
+/** Get organization settings. */
+export function createOrgSettingsQuery(orgId: () => string) {
+  return createQuery<OrganizationSettingsDto>(() => ({
+    queryKey: queryKeys.org.settings(orgId()),
+    queryFn: () => api.getSettings(),
+    enabled: !!orgId(),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+/** Update organization settings mutation. */
+export function createUpdateOrgSettingsMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (settings: OrganizationSettingsDto) => api.updateSettings(settings),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.org.all,
+      });
+    },
   }));
 }

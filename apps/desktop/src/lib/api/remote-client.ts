@@ -28,6 +28,7 @@ import type {
   UpdateOrgRequest,
   OrgUnitDto,
   CreateOrgUnitRequest,
+  UpdateOrgUnitRequest,
   OrganizationSettingsDto,
   DashboardCountsDto,
   AcademicYearDto,
@@ -372,6 +373,10 @@ export class RemoteClient implements OrbisApiClient {
   // ── OrgUnits ────────────────────────────────────────────────
   async createOrgUnit(req: CreateOrgUnitRequest): Promise<OrgUnitDto> {
     return this.call(sdk.createOrgUnit({ client: this.client, body: req }));
+  }
+
+  async updateOrgUnit(id: string, req: UpdateOrgUnitRequest): Promise<OrgUnitDto> {
+    return this.call(sdk.updateOrgUnit({ client: this.client, path: { id }, body: req }));
   }
 
   async listOrgUnits(): Promise<OrgUnitDto[]> {

@@ -96,10 +96,45 @@ fn org_to_dto(org: orbis_domain::entities::organization::Organization) -> OrgDto
 
 #[derive(Deserialize, ToSchema)]
 pub struct CreateOrgUnitRequest {
+    #[schema(example = "Main Campus")]
     pub name: String,
+    #[schema(example = "الفرع الرئيسي")]
+    pub name_ar: Option<String>,
+    #[schema(example = "BR-01")]
+    pub code: Option<String>,
+    #[schema(example = "branch")]
     pub unit_type: String,
     pub parent_id: Option<Uuid>,
-    pub data_isolation: String,
+    pub head_id: Option<Uuid>,
+    pub capacity: Option<i32>,
+    pub building: Option<String>,
+    pub floor: Option<i32>,
+    pub room_number: Option<String>,
+    pub settings: Option<serde_json::Value>,
+    pub local_policies: Option<serde_json::Value>,
+    #[schema(example = "shared")]
+    pub data_isolation: Option<String>,
+    pub sort_order: Option<i32>,
+    pub is_active: Option<bool>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct UpdateOrgUnitRequest {
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub code: Option<String>,
+    pub unit_type: Option<String>,
+    pub parent_id: Option<Uuid>,
+    pub head_id: Option<Uuid>,
+    pub capacity: Option<i32>,
+    pub building: Option<String>,
+    pub floor: Option<i32>,
+    pub room_number: Option<String>,
+    pub settings: Option<serde_json::Value>,
+    pub local_policies: Option<serde_json::Value>,
+    pub data_isolation: Option<String>,
+    pub sort_order: Option<i32>,
+    pub is_active: Option<bool>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -118,6 +153,8 @@ pub struct OrgUnitDto {
     pub building: Option<String>,
     pub floor: Option<i32>,
     pub room_number: Option<String>,
+    pub settings: Option<serde_json::Value>,
+    pub local_policies: Option<serde_json::Value>,
     pub data_isolation: String,
     pub children_count: i32,
     pub descendant_count: i32,
@@ -145,6 +182,8 @@ fn unit_to_dto(u: orbis_domain::entities::org_unit::OrgUnit) -> OrgUnitDto {
         building: u.building,
         floor: u.floor,
         room_number: u.room_number,
+        settings: u.settings,
+        local_policies: u.local_policies,
         data_isolation: u.data_isolation,
         children_count: u.children_count,
         descendant_count: u.descendant_count,
@@ -657,7 +696,27 @@ async fn create_org_unit(
     State(state): State<AppState>,
     Json(payload): Json<CreateOrgUnitRequest>,
 ) -> Result<Json<ApiResponse<OrgUnitDto>>, ApiError> {
-    let unit = state.organization_service.create_org_unit(&ctx, ctx.tenant_id, payload.name, payload.unit_type, payload.parent_id, payload.data_isolation).await?;
+    let unit = state.organization_service.create_org_unit(
+        &ctx,
+        ctx.tenant_id,
+        orbis_app::services::CreateOrgUnitInput {
+            name: payload.name,
+            name_ar: payload.name_ar,
+            code: payload.code,
+            unit_type: payload.unit_type,
+            parent_id: payload.parent_id,
+            head_id: payload.head_id,
+            capacity: payload.capacity,
+            building: payload.building,
+            floor: payload.floor,
+            room_number: payload.room_number,
+            settings: payload.settings,
+            local_policies: payload.local_policies,
+            data_isolation: payload.data_isolation,
+            sort_order: payload.sort_order,
+            is_active: payload.is_active,
+        },
+    ).await?;
 
     Ok(ApiResponse::ok(unit_to_dto(unit)))
 }
@@ -689,6 +748,41 @@ async fn get_org_unit(
     Ok(ApiResponse::ok(unit_to_dto(u)))
 }
 
+#[utoipa::path(patch, path = "/api/v1/org-units/{id}", request_body = UpdateOrgUnitRequest,
+    params(("id" = Uuid, Path, description = "OrgUnit ID")),
+    responses((status = 200, description = "OrgUnit updated", body = OrgUnitDto)),
+    security(("bearer" = [])), tag = "OrgUnits")]
+async fn update_org_unit(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(payload): Json<UpdateOrgUnitRequest>,
+) -> Result<Json<ApiResponse<OrgUnitDto>>, ApiError> {
+    let unit = state.organization_service.update_org_unit(
+        &ctx,
+        id,
+        orbis_app::services::UpdateOrgUnitRequest {
+            name: payload.name,
+            name_ar: payload.name_ar,
+            code: payload.code,
+            unit_type: payload.unit_type,
+            parent_id: payload.parent_id,
+            head_id: payload.head_id,
+            capacity: payload.capacity,
+            building: payload.building,
+            floor: payload.floor,
+            room_number: payload.room_number,
+            settings: payload.settings,
+            local_policies: payload.local_policies,
+            data_isolation: payload.data_isolation,
+            sort_order: payload.sort_order,
+            is_active: payload.is_active,
+        },
+    ).await?;
+
+    Ok(ApiResponse::ok(unit_to_dto(unit)))
+}
+
 #[utoipa::path(delete, path = "/api/v1/org-units/{id}",
     params(("id" = Uuid, Path, description = "OrgUnit ID")),
     responses((status = 204, description = "OrgUnit deleted")),
@@ -718,5 +812,5 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/organizations/current/settings", get(get_settings).put(update_settings))
         .route("/api/v1/organizations/current/dashboard", get(get_dashboard))
         .route("/api/v1/org-units", post(create_org_unit).get(list_org_units))
-        .route("/api/v1/org-units/:id", get(get_org_unit).delete(delete_org_unit))
+        .route("/api/v1/org-units/:id", get(get_org_unit).patch(update_org_unit).delete(delete_org_unit))
 }

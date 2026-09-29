@@ -621,9 +621,20 @@ export type CreateOrgRequest = {
 };
 
 export type CreateOrgUnitRequest = {
-    data_isolation: string;
+    building?: string | null;
+    capacity?: number | null;
+    code?: string | null;
+    data_isolation?: string | null;
+    floor?: number | null;
+    head_id?: string | null;
+    is_active?: boolean | null;
+    local_policies?: unknown;
     name: string;
+    name_ar?: string | null;
     parent_id?: string | null;
+    room_number?: string | null;
+    settings?: unknown;
+    sort_order?: number | null;
     unit_type: string;
 };
 
@@ -1286,12 +1297,14 @@ export type OrgUnitDto = {
     head_id?: string | null;
     id: string;
     is_active: boolean;
+    local_policies?: unknown;
     name: string;
     name_ar?: string | null;
     org_id: string;
     parent_id?: string | null;
     path: string;
     room_number?: string | null;
+    settings?: unknown;
     sort_order?: number | null;
     unit_type: string;
     updated_at: string;
@@ -2028,6 +2041,24 @@ export type UpdateOrgRequest = {
     name_ar?: string | null;
     primary_color?: string | null;
     timezone?: string | null;
+};
+
+export type UpdateOrgUnitRequest = {
+    building?: string | null;
+    capacity?: number | null;
+    code?: string | null;
+    data_isolation?: string | null;
+    floor?: number | null;
+    head_id?: string | null;
+    is_active?: boolean | null;
+    local_policies?: unknown;
+    name?: string | null;
+    name_ar?: string | null;
+    parent_id?: string | null;
+    room_number?: string | null;
+    settings?: unknown;
+    sort_order?: number | null;
+    unit_type?: string | null;
 };
 
 export type UpdateRoomRequest = {
@@ -4733,6 +4764,27 @@ export type GetOrgUnitResponses = {
 };
 
 export type GetOrgUnitResponse = GetOrgUnitResponses[keyof GetOrgUnitResponses];
+
+export type UpdateOrgUnitData = {
+    body: UpdateOrgUnitRequest;
+    path: {
+        /**
+         * OrgUnit ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/org-units/{id}';
+};
+
+export type UpdateOrgUnitResponses = {
+    /**
+     * OrgUnit updated
+     */
+    200: OrgUnitDto;
+};
+
+export type UpdateOrgUnitResponse = UpdateOrgUnitResponses[keyof UpdateOrgUnitResponses];
 
 export type CreateOrgData = {
     body: CreateOrgRequest;

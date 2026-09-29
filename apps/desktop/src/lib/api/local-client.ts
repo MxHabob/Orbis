@@ -21,6 +21,7 @@ import type {
   UpdateOrgRequest,
   OrgUnitDto,
   CreateOrgUnitRequest,
+  UpdateOrgUnitRequest,
   OrganizationSettingsDto,
   DashboardCountsDto,
   AcademicYearDto,
@@ -313,6 +314,9 @@ export class LocalClient implements OrbisApiClient {
   // ── OrgUnits ────────────────────────────────────────────────
   async createOrgUnit(req: CreateOrgUnitRequest): Promise<OrgUnitDto> {
     return unwrap(await invoke("org_create_unit", { request: req }));
+  }
+  async updateOrgUnit(id: string, req: UpdateOrgUnitRequest): Promise<OrgUnitDto> {
+    return unwrap(await invoke("org_update_unit", { id, request: req }));
   }
   async listOrgUnits(): Promise<OrgUnitDto[]> {
     return unwrap(await invoke("org_list_units"));

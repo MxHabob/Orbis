@@ -31,6 +31,44 @@ pub struct UpdateOrgRequest {
     pub favicon: Option<String>,
 }
 
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+pub struct CreateOrgUnitInput {
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub code: Option<String>,
+    pub unit_type: String,
+    pub parent_id: Option<Uuid>,
+    pub head_id: Option<Uuid>,
+    pub capacity: Option<i32>,
+    pub building: Option<String>,
+    pub floor: Option<i32>,
+    pub room_number: Option<String>,
+    pub settings: Option<serde_json::Value>,
+    pub local_policies: Option<serde_json::Value>,
+    pub data_isolation: Option<String>,
+    pub sort_order: Option<i32>,
+    pub is_active: Option<bool>,
+}
+
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
+pub struct UpdateOrgUnitRequest {
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub code: Option<String>,
+    pub unit_type: Option<String>,
+    pub parent_id: Option<Uuid>,
+    pub head_id: Option<Uuid>,
+    pub capacity: Option<i32>,
+    pub building: Option<String>,
+    pub floor: Option<i32>,
+    pub room_number: Option<String>,
+    pub settings: Option<serde_json::Value>,
+    pub local_policies: Option<serde_json::Value>,
+    pub data_isolation: Option<String>,
+    pub sort_order: Option<i32>,
+    pub is_active: Option<bool>,
+}
+
 pub struct OrganizationService {
     pub org_repo: Arc<dyn OrganizationRepository>,
     pub org_unit_repo: Arc<dyn OrgUnitRepository>,
@@ -131,17 +169,14 @@ impl OrganizationService {
         &self,
         ctx: &RequestContext,
         org_id: Uuid,
-        name: String,
-        unit_type: String,
-        parent_id: Option<Uuid>,
-        data_isolation: String,
+        req: CreateOrgUnitInput,
     ) -> Result<OrgUnit, DomainError> {
         self.permission_checker.check(ctx, Permission::OrgUnitWrite).await?;
 
         let now = Utc::now();
         let unit_id = Uuid::new_v4();
 
-        let (path, depth) = if let Some(pid) = parent_id {
+        let (path, depth) = if let Some(pid) = req.parent_id {
             let parent = self.org_unit_repo.find_by_id(pid).await?
                 .ok_or_else(|| DomainError::NotFound(format!("Parent OrgUnit {} not found", pid)))?;
             (format!("{}.{}", parent.path, unit_id), parent.depth + 1)
@@ -152,25 +187,25 @@ impl OrganizationService {
         let unit = OrgUnit {
             id: unit_id,
             org_id,
-            parent_id,
+            parent_id: req.parent_id,
             path,
             depth,
-            name,
-            name_ar: None,
-            code: None,
-            unit_type: unit_type.clone(),
-            head_id: None,
-            capacity: None,
-            room_number: None,
-            floor: None,
-            building: None,
-            settings: Some(serde_json::json!({})),
-            local_policies: None,
-            data_isolation,
+            name: req.name,
+            name_ar: req.name_ar,
+            code: req.code,
+            unit_type: req.unit_type.clone(),
+            head_id: req.head_id,
+            capacity: req.capacity,
+            room_number: req.room_number,
+            floor: req.floor,
+            building: req.building,
+            settings: req.settings.or_else(|| Some(serde_json::json!({}))),
+            local_policies: req.local_policies,
+            data_isolation: req.data_isolation.unwrap_or_else(|| "shared".to_string()),
             children_count: 0,
             descendant_count: 0,
-            sort_order: Some(0),
-            is_active: true,
+            sort_order: req.sort_order.or(Some(0)),
+            is_active: req.is_active.unwrap_or(true),
             created_by: ctx.user_id(),
             updated_by: ctx.user_id(),
             created_at: now,
@@ -182,8 +217,62 @@ impl OrganizationService {
         let event = DomainEvent::OrgUnitCreated {
             unit_id,
             org_id,
-            parent_id,
-            unit_type,
+            parent_id: req.parent_id,
+            unit_type: req.unit_type,
+            timestamp: now,
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(unit)
+    }
+
+    /// Update an organizational unit
+    pub async fn update_org_unit(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+        req: UpdateOrgUnitRequest,
+    ) -> Result<OrgUnit, DomainError> {
+        self.permission_checker.check(ctx, Permission::OrgUnitWrite).await?;
+
+        let mut unit = self.org_unit_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("OrgUnit {} not found", id)))?;
+
+        let now = Utc::now();
+
+        if let Some(name) = req.name { unit.name = name; }
+        if let Some(name_ar) = req.name_ar { unit.name_ar = Some(name_ar); }
+        if let Some(code) = req.code { unit.code = Some(code); }
+        if let Some(unit_type) = req.unit_type { unit.unit_type = unit_type; }
+        if let Some(head_id) = req.head_id { unit.head_id = Some(head_id); }
+        if let Some(capacity) = req.capacity { unit.capacity = Some(capacity); }
+        if let Some(building) = req.building { unit.building = Some(building); }
+        if let Some(floor) = req.floor { unit.floor = Some(floor); }
+        if let Some(room_number) = req.room_number { unit.room_number = Some(room_number); }
+        if let Some(settings) = req.settings { unit.settings = Some(settings); }
+        if let Some(local_policies) = req.local_policies { unit.local_policies = Some(local_policies); }
+        if let Some(data_isolation) = req.data_isolation { unit.data_isolation = data_isolation; }
+        if let Some(sort_order) = req.sort_order { unit.sort_order = Some(sort_order); }
+        if let Some(is_active) = req.is_active { unit.is_active = is_active; }
+
+        if let Some(new_parent_id) = req.parent_id {
+            if Some(new_parent_id) != unit.parent_id {
+                let parent = self.org_unit_repo.find_by_id(new_parent_id).await?
+                    .ok_or_else(|| DomainError::NotFound(format!("Parent OrgUnit {} not found", new_parent_id)))?;
+                unit.parent_id = Some(new_parent_id);
+                unit.path = format!("{}.{}", parent.path, unit.id);
+                unit.depth = parent.depth + 1;
+            }
+        }
+
+        unit.updated_by = ctx.user_id();
+        unit.updated_at = now;
+
+        self.org_unit_repo.save(&unit).await?;
+
+        let event = DomainEvent::OrgUnitUpdated {
+            unit_id: id,
+            org_id: unit.org_id,
             timestamp: now,
         };
         self.event_bus.publish(ctx, &event).await?;
@@ -204,7 +293,19 @@ impl OrganizationService {
     /// Delete org unit
     pub async fn delete_org_unit(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
         self.permission_checker.check(ctx, Permission::OrgUnitDelete).await?;
-        self.org_unit_repo.delete(id).await
+        let unit = self.org_unit_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("OrgUnit {} not found", id)))?;
+
+        self.org_unit_repo.delete(id).await?;
+
+        let event = DomainEvent::OrgUnitDeleted {
+            unit_id: id,
+            org_id: unit.org_id,
+            timestamp: Utc::now(),
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(())
     }
 
     /// Get organization settings

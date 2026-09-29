@@ -33,6 +33,7 @@ import type {
   UpdateOrgRequest,
   OrgUnitDto,
   CreateOrgUnitRequest,
+  UpdateOrgUnitRequest,
   OrganizationSettingsDto,
   DashboardCountsDto,
   AcademicYearDto,
@@ -911,6 +912,7 @@ export interface OrbisApiClient {
 
   // ── OrgUnits ────────────────────────────────────────────────
   createOrgUnit(req: CreateOrgUnitRequest): Promise<OrgUnitDto>;
+  updateOrgUnit(id: string, req: UpdateOrgUnitRequest): Promise<OrgUnitDto>;
   listOrgUnits(): Promise<OrgUnitDto[]>;
   getOrgUnit(id: string): Promise<OrgUnitDto>;
   deleteOrgUnit(id: string): Promise<void>;

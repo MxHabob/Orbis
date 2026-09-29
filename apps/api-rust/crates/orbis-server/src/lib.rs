@@ -79,6 +79,7 @@ use api::{
         api::org_routes::create_org_unit,
         api::org_routes::list_org_units,
         api::org_routes::get_org_unit,
+        api::org_routes::update_org_unit,
         api::org_routes::delete_org_unit,
         // Calendar
         api::calendar_routes::create_year,
@@ -320,6 +321,7 @@ use api::{
             api::org_routes::UpdateOrgRequest,
             api::org_routes::OrgDto,
             api::org_routes::CreateOrgUnitRequest,
+            api::org_routes::UpdateOrgUnitRequest,
             api::org_routes::OrgUnitDto,
             api::org_routes::OrganizationSettingsDto,
             api::org_routes::AcademicSettingsDto,
