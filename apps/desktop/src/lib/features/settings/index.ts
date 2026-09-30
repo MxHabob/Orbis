@@ -26,6 +26,7 @@ export { default as RegistrationSettings } from "./registration-settings.svelte"
 export { default as AcademicPolicyManager } from "./academic-policy-manager.svelte";
 export { default as ApprovalsManager } from "./approvals-manager.svelte";
 export { default as ArchiveManager } from "./archive-manager.svelte";
+export { default as TrashManager } from "../documents/trash-manager.svelte";
 export { default as AssessmentSchemesManager } from "./assessment-schemes-manager.svelte";
 export { default as AuditLogViewer } from "./audit-log-viewer.svelte";
 export { default as CurrenciesManager } from "./currencies-manager.svelte";

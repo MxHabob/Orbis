@@ -1,221 +1,144 @@
 <!--
   @component ArchiveManager
-  Enterprise Digital Archive & Student Document Repository.
-  Features:
-  - Student-specific document search and filtering with declarative queries (zero $effect).
-  - Authoritative ClassSelect and PeriodSelect (Year & Term) from Academics domain.
-  - Dynamic category and asset type filtering.
-  - Hybrid Grid View & Virtualized OrbisGrid Table View.
-  - Fast multi-file upload with progress tracking and direct entity association.
-  - Full preview drawer with pan/zoom and batch management.
+  Enterprise Digital Archive, Folder Explorer & Curriculum AI Knowledge Base.
+  Fully rebuilt with Svelte 5 runes, hierarchical folder browsing, and multi-view operations.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { createQuery } from "@tanstack/svelte-query";
+import { goto } from "$app/navigation";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
 import {
+  Folder,
+  FolderOpen,
+  FolderPlus,
+  DocumentPage,
+  ArrowUpTray,
+  Search,
+  Grid,
+  Bars3BottomLeft,
+  Sparkles,
+  AcademicCap,
+  Trash,
+  ArchiveBox,
+  Refresh,
+  XMark,
+  Check,
+  CheckCircle,
+} from "@orbis/icons";
+import { confirmStore } from "@orbis/ui/confirm-dialog";
+import { toast } from "@orbis/ui/toast";
+import {
+  useFolders,
+  useFolderContents,
+  useCurriculumFolders,
   useDocuments,
-  useUploadDocument,
+  useUploadFile,
+  useArchiveDocument,
   useDeleteDocument,
+  useTrashDocument,
+  useTrashDocuments,
+  useDeleteFolder,
   resolveDocumentUrl,
   getDocumentSource,
 } from "$lib/features/documents/queries";
-import { api, type ClassDto, type StudentDetailDto, type DocumentDto } from "$lib/api";
-import { Button } from "@orbis/ui/button";
-import { Input } from "@orbis/ui/input";
-import { Badge } from "@orbis/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@orbis/ui/select";
-import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
+import FolderCard from "$lib/features/documents/folder-card.svelte";
+import FolderBreadcrumbs from "$lib/features/documents/folder-breadcrumbs.svelte";
+import FolderCreateModal from "$lib/features/documents/folder-create-modal.svelte";
 import ArchiveDocumentCard from "$lib/features/documents/archive-document-card.svelte";
-import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
-import { type OrbisColumnDef, type GridActionEvent, type ActionItem, OrbisGrid } from "@orbis/svelte-grid";
-import { confirmStore } from "$lib/stores";
-import {
-  AdjustmentsHorizontal,
-  ArrowPath,
-  ArrowUpTray,
-  Document,
-  Grid,
-  QueueList,
-  Search,
-  User,
-  XMark,
-  Funnel,
-} from "@orbis/icons";
-import { createOperationToast } from "$lib/shared/components/operation-toast";
-import ArchiveLoading from "../documents/archive-loading.svelte";
-import { ClassSelect, PeriodSelect } from "$lib/features/academics";
-import { l } from "$lib/core/i18n";
+import ArchiveDocumentRow from "$lib/features/documents/archive-document-row.svelte";
+import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
+import ArchiveLoading from "$lib/features/documents/archive-loading.svelte";
+import type { DocumentDto, FolderDto } from "$lib/api";
 
-let { orgId }: { orgId: string } = $props();
+let {
+  orgId,
+  folderId = null,
+}: {
+  orgId: string;
+  folderId?: string | null;
+} = $props();
 
-// Filter States
-let searchQuery = $state("");
-let selectedCategory = $state("");
-let selectedAssetType = $state("");
-let selectedSchoolYear = $state<string | null>("all");
-let selectedTerm = $state<string | null>("all");
-let selectedClassId = $state<string | null>("all");
-let uploadCategory = $state("events");
+// View and State Management
 let viewMode = $state<"grid" | "table">("grid");
+let searchQuery = $state("");
+let selectedAssetType = $state<string>("all");
+let selectedCategory = $state<string>("all");
 let selectedIds = $state<Set<string>>(new Set());
 
-// Student Specific Search State
-let studentSearchQuery = $state("");
-let isStudentSearchFocused = $state(false);
-let selectedStudent = $state<StudentDetailDto | null>(null);
-
-const archiveCategories = [
-  ["events", "الفعاليات"],
-  ["students", "الطلاب"],
-  ["staff", "الموظفون"],
-  ["certificates", "الشهادات"],
-  ["administration", "الإدارة"],
-  ["academic", "أكاديمي"],
-  ["archive", "غير مصنف"],
-] as const;
-
-let fileInput: HTMLInputElement | undefined = $state();
+// Modals & Sheets
+let isCreateFolderModalOpen = $state(false);
 let isPreviewOpen = $state(false);
 let selectedDocument = $state<DocumentDto | null>(null);
 let selectedDocumentUrl = $state("");
-let archiveScroller: HTMLDivElement | undefined = $state();
 
-// Declarative Student Search Query
-const studentSearchQueryResults = createQuery(() => ({
-  queryKey: ["archive-student-search", studentSearchQuery.trim()],
-  queryFn: () => api.listStudents({ search: studentSearchQuery.trim(), pageSize: 6 }),
-  enabled: studentSearchQuery.trim().length >= 2,
-  staleTime: 30 * 1000,
-}));
+// Drag and Drop Upload
+let isDragOverContainer = $state(false);
+let fileInput: HTMLInputElement | undefined = $state();
 
-const studentSearchResults = $derived<StudentDetailDto[]>(
-  studentSearchQueryResults.data?.items || [],
-);
-const isSearchingStudents = $derived(studentSearchQueryResults.isLoading);
+// Queries
+const isRoot = $derived(!folderId);
 
-function getStudentDisplayName(s: StudentDetailDto) {
-  const ar = [s.person?.first_name_ar,s.person.middle_name_ar ,s.person?.last_name_ar].filter(Boolean).join(" ");
-  const en = [s.person?.full_name, s.person.middle_name, s.person.last_name].filter(Boolean).join(" ");
-  return ar || en || s.student?.student_number || s.student?.id;
-}
+// 1. If in a specific folder, fetch its contents (subfolders + documents)
+const folderContentsQuery = useFolderContents(() => folderId || "");
 
-// Documents Query
-const documentsQuery = useDocuments(() => ({
-  entityType: selectedStudent ? "student" : "archive",
-  category: selectedCategory,
-  search: searchQuery.trim(),
-  assetType: selectedAssetType,
-  schoolYear: selectedSchoolYear === "all" ? "" : selectedSchoolYear ?? "",
-  term: selectedTerm === "all" ? "" : selectedTerm ?? "",
-  entityId: selectedStudent?.student?.id,
-}));
+// 2. If at root, fetch root folders
+const rootFoldersQuery = useFolders(() => undefined);
 
-const uploadMutation = useUploadDocument({ invalidateOnSuccess: false });
-const deleteMutation = useDeleteDocument();
+// 3. Curriculum folders for quick knowledge base access
+const curriculumFoldersQuery = useCurriculumFolders();
 
-async function loadNextPage() {
-  if (!documentsQuery.hasNextPage || documentsQuery.isFetchingNextPage) return;
-  await documentsQuery.fetchNextPage();
-}
+// 4. Documents query (if root or general)
+const rootDocumentsQuery = useDocuments(() => (isRoot ? undefined : { entityId: folderId || undefined }));
 
-function infiniteScroll(node: HTMLDivElement) {
-  const observer = new IntersectionObserver(
-    ([entry]) => {
-      if (entry?.isIntersecting) loadNextPage();
-    },
-    { root: archiveScroller ?? null, rootMargin: "320px 0px" },
-  );
-
-  observer.observe(node);
-  return { destroy: () => observer.disconnect() };
-}
-
-async function handleDelete(id: string) {
-  const confirmed = await confirmStore.prompt({
-    description: m.common_docs_delete_confirm(),
-    title: m.common_docs_delete_confirm(),
-    confirmText: m.common_action_delete(),
-    variant: "destructive",
-  });
-  if (confirmed) {
-    deleteMutation.mutate(id);
-  }
-}
-
-async function handleBulkDelete() {
-  const confirmed = await confirmStore.prompt({
-    description: `سيتم حذف ${selectedCount} ملفًا محددًا.`,
-    title: "حذف الملفات المحددة",
-    confirmText: m.common_action_delete(),
-    variant: "destructive",
-  });
-  if (!confirmed) return;
-
-  await Promise.all(
-    [...selectedIds].map((id) => deleteMutation.mutateAsync(id)),
-  );
-  selectedIds = new Set();
-  await documentsQuery.refetch();
-}
-
-// Raw Documents Flattened
-const rawDocuments = $derived(
-  documentsQuery.data?.pages.flatMap((p) => p.items) || [],
+// Active Data Derivatives
+const currentFolder = $derived<FolderDto | null>(
+  !isRoot && folderContentsQuery.data?.folder ? folderContentsQuery.data.folder : null
 );
 
-// Declarative Client Filtering
-const documents = $derived.by(() => {
+const subfolders = $derived<FolderDto[]>(
+  isRoot
+    ? (rootFoldersQuery.data || [])
+    : (folderContentsQuery.data?.subfolders || [])
+);
+
+const rawDocuments = $derived<DocumentDto[]>(
+  isRoot
+    ? (rootDocumentsQuery.data?.pages.flatMap((p) => p.items) || [])
+    : (folderContentsQuery.data?.documents || [])
+);
+
+const isLoading = $derived(
+  isRoot
+    ? rootFoldersQuery.isLoading || rootDocumentsQuery.isLoading
+    : folderContentsQuery.isLoading
+);
+
+// Filtering & Search
+const filteredFolders = $derived.by(() => {
+  const q = searchQuery.trim().toLowerCase();
+  if (!q) return subfolders;
+  return subfolders.filter((f) => f.name.toLowerCase().includes(q) || f.path.toLowerCase().includes(q));
+});
+
+const filteredDocuments = $derived.by(() => {
   const q = searchQuery.trim().toLowerCase();
   return rawDocuments.filter((doc) => {
-    // Student Filter
-    if (selectedStudent) {
-      const sId = selectedStudent.student?.id;
-      const sUserId = selectedStudent.student?.user_id;
-      const sNum = selectedStudent.student?.student_number?.toLowerCase();
-      const docEntityId = doc.entity_id || "";
-      const docName = doc.name.toLowerCase();
-
-      const matchesStudent =
-        docEntityId === sId ||
-        docEntityId === sUserId ||
-        (sNum && docName.includes(sNum)) ||
-        (sNum && (doc.tags || "").toLowerCase().includes(sNum));
-
-      if (!matchesStudent) return false;
-    }
-
     // Category Filter
-    if (selectedCategory && doc.category !== selectedCategory) {
+    if (selectedCategory !== "all" && doc.category !== selectedCategory) {
       return false;
     }
 
     // Asset Type Filter
-    if (selectedAssetType) {
-      if (selectedAssetType === "image" && !doc.mime_type?.startsWith("image/")) return false;
-      if (selectedAssetType === "video" && !doc.mime_type?.startsWith("video/")) return false;
-      if (selectedAssetType === "document" && (doc.mime_type?.startsWith("image/") || doc.mime_type?.startsWith("video/"))) return false;
+    if (selectedAssetType !== "all") {
+      const mime = doc.mime_type?.toLowerCase() || "";
+      if (selectedAssetType === "image" && !mime.startsWith("image/")) return false;
+      if (selectedAssetType === "video" && !mime.startsWith("video/")) return false;
+      if (selectedAssetType === "audio" && !mime.startsWith("audio/")) return false;
+      if (selectedAssetType === "pdf" && mime !== "application/pdf" && doc.extension?.toLowerCase() !== "pdf") return false;
     }
 
-    // School Year Filter
-    if (selectedSchoolYear && selectedSchoolYear !== "all") {
-      if (doc.academic_year_id && doc.academic_year_id !== selectedSchoolYear) {
-        return false;
-      }
-    }
-
-    // Term Filter
-    if (selectedTerm && selectedTerm !== "all") {
-      if (doc.term_id && doc.term_id !== selectedTerm) {
-        return false;
-      }
-    }
-
-    // General Search
+    // Search Query Filter
     if (q) {
       const matchName = doc.name.toLowerCase().includes(q);
       const matchDesc = (doc.description || "").toLowerCase().includes(q);
@@ -227,548 +150,488 @@ const documents = $derived.by(() => {
   });
 });
 
-// Category options
-let availableCategories = $derived.by(() => {
-  const labels = new Map(archiveCategories);
-  const values = new Set(
-    rawDocuments.map((document) => document.category).filter(Boolean),
-  );
-  return [...values]
-    .sort()
-    .map((value) => [value, labels.get(value) || value] as const);
+// Category options derived from existing documents
+const availableCategories = $derived.by(() => {
+  const set = new Set<string>();
+  for (const d of rawDocuments) {
+    if (d.category) set.add(d.category);
+  }
+  return Array.from(set);
 });
 
-let groupedDocs = $derived(
-  documents.reduce(
-    (acc: Record<string, DocumentDto[]>, doc: DocumentDto) => {
-      const cat = doc.category || "uncategorized";
-      if (!acc[cat]) acc[cat] = [];
-      acc[cat].push(doc);
-      return acc;
-    },
-    {} as Record<string, DocumentDto[]>,
-  ),
-);
+// Trash Query for Badge Counter
+const trashDocumentsQuery = useTrashDocuments();
+const trashedDocsCount = $derived(trashDocumentsQuery.data?.length || 0);
 
-let groupedEntries = $derived(
-  Object.entries(groupedDocs) as [string, DocumentDto[]][],
-);
+// Mutations
+const uploadFileMutation = useUploadFile();
+const archiveDocMutation = useArchiveDocument();
+const deleteDocMutation = useDeleteDocument();
+const trashDocMutation = useTrashDocument();
+const deleteFolderMutation = useDeleteFolder();
 
-let allVisibleSelected = $derived(
-  documents.length > 0 &&
-    documents.every((document) => selectedIds.has(document.id)),
-);
-
-let selectedCount = $derived(selectedIds.size);
-
-let tableSource = $derived(
-  documents.map((document) => ({
-    ...document,
-    __selected: selectedIds.has(document.id),
-    size_display: `${((document.file_size_bytes || 0) / 1024).toFixed(1)} KB`,
-    type_display:
-      document.asset_type || document.extension?.toUpperCase() || "FILE",
-    date_display: document.created_at
-      ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(
-          new Date(document.created_at),
-        )
-      : "-",
-  })),
-);
-
-const tableRowActions: ActionItem[] = [
-  { id: "preview", label: "معاينة", icon: "Eye" },
-  { id: "delete", label: "حذف", icon: "Trash2", variant: "destructive" },
-];
-
-let archiveTableColumns = $derived<OrbisColumnDef[]>([
-  {
-    id: "__selected",
-    prop: "__selected",
-    header: "",
-    name: "",
-    width: 44,
-    size: 44,
-    sort: false,
-  },
-  {
-    id: "name",
-    prop: "name",
-    header: "الملف والمستند",
-    name: "الملف والمستند",
-    width: 280,
-    size: 280,
-    cellClass: "font-semibold",
-  },
-  {
-    id: "category",
-    prop: "category",
-    header: "التصنيف",
-    name: "التصنيف",
-    width: 140,
-    size: 140,
-    type: "badge",
-    align: "center",
-  },
-  {
-    id: "type_display",
-    prop: "type_display",
-    header: "النوع",
-    name: "النوع",
-    width: 110,
-    size: 110,
-    align: "center",
-  },
-  {
-    id: "size_display",
-    prop: "size_display",
-    header: "الحجم",
-    name: "الحجم",
-    width: 110,
-    size: 110,
-    align: "center",
-  },
-  {
-    id: "date_display",
-    prop: "date_display",
-    header: "تاريخ الإضافة",
-    name: "تاريخ الإضافة",
-    width: 150,
-    size: 150,
-    align: "center",
-  },
-  {
-    id: "actions",
-    prop: "actions",
-    header: "إجراءات",
-    name: "إجراءات",
-    width: 110,
-    size: 110,
-    type: "action",
-    align: "center",
-    readonly: true,
-    meta: { items: tableRowActions },
-  },
-]);
-
-function openFilePicker() {
-  fileInput?.click();
+// Navigation Handlers
+function navigateToFolder(targetFolderId?: string | null) {
+  if (!targetFolderId) {
+    goto(`/${orgId}/settings/archive`);
+  } else {
+    goto(`/${orgId}/settings/archive/${targetFolderId}`);
+  }
 }
 
-function toggleDocument(id: string, selected: boolean) {
-  const next = new Set(selectedIds);
-  if (selected) next.add(id);
-  else next.delete(id);
-  selectedIds = next;
-}
-
-function toggleAllVisible() {
-  if (allVisibleSelected) {
-    selectedIds = new Set();
-    return;
-  }
-  selectedIds = new Set(documents.map((document) => document.id));
-}
-
-function handleTableAction(event: GridActionEvent) {
-  if (event.actionId === "select-all") {
-    toggleAllVisible();
-    return;
-  }
-  if (event.actionId === "dblclick" && event.row?.id) {
-    const document = documents.find((item) => item.id === String(event.row.id));
-    if (document) openPreview(document);
-    return;
-  }
-  if (event.actionId === "preview" && event.row?.id) {
-    const document = documents.find((item) => item.id === String(event.row.id));
-    if (document) openPreview(document);
-    return;
-  }
-  if (event.actionId === "delete" && event.row?.id) {
-    handleDelete(String(event.row.id));
-    return;
-  }
-  if (event.actionId !== "toggle-select" && event.actionId !== "select") return;
-  const id = String(event.row?.id || "");
-  if (!id) return;
-  toggleDocument(id, !selectedIds.has(id));
-}
-
-async function openPreview(doc: DocumentDto) {
+// Preview Handler
+async function handlePreview(doc: DocumentDto) {
   selectedDocument = doc;
   selectedDocumentUrl = await resolveDocumentUrl(getDocumentSource(doc));
   isPreviewOpen = true;
 }
 
-async function handleFileSelect(event: Event) {
-  const target = event.currentTarget as HTMLInputElement;
-  const file = target.files?.[0];
-  if (!file) return;
-
-  const operation = createOperationToast({
-    title: `${m.common_docs_btn_upload()} (${target.files?.length ?? 1})`,
-    message: file.name,
-    actionLabel: m.common_control_refresh(),
-    onAction: () => documentsQuery.refetch(),
+// Delete / Trash Document Handler
+async function handleDeleteDoc(id: string) {
+  const confirmed = await confirmStore.prompt({
+    title: "نقل إلى سلة المحذوفات",
+    description: "هل تود نقل هذا الملف إلى سلة المحذوفات؟ يمكنك استعادته لاحقاً.",
+    confirmText: "نقل للسلة",
+    variant: "destructive",
   });
-  const files = Array.from(target.files ?? []);
-  operation.update(5, "Preparing files...");
+  if (confirmed) {
+    try {
+      await trashDocMutation.mutateAsync(id);
+      toast.success("تم نقل الملف إلى سلة المحذوفات");
+      selectedIds.delete(id);
+      selectedIds = new Set(selectedIds);
+      trashDocumentsQuery.refetch();
+      if (!isRoot) folderContentsQuery.refetch();
+    } catch (e: any) {
+      toast.error(e?.message || "فشل في حذف الملف");
+    }
+  }
+}
+
+// Archive Document Handler
+async function handleArchiveDoc(id: string) {
+  try {
+    await archiveDocMutation.mutateAsync({ id, reason: "أرشفة يدوية من المستكشف" });
+    toast.success("تم أرشفة الملف بنجاح");
+    if (!isRoot) folderContentsQuery.refetch();
+  } catch (e: any) {
+    toast.error(e?.message || "فشل في أرشفة الملف");
+  }
+}
+
+// Delete Folder Handler
+async function handleDeleteFolder(f: FolderDto) {
+  const confirmed = await confirmStore.prompt({
+    title: `حذف المجلد "${f.name}"`,
+    description: "سيتم حذف المجلد وكافة المجلدات الفرعية. هل تود الاستمرار؟",
+    confirmText: "حذف المجلد",
+    variant: "destructive",
+  });
+  if (confirmed) {
+    try {
+      await deleteFolderMutation.mutateAsync(f.id);
+      toast.success(`تم حذف المجلد "${f.name}"`);
+      if (isRoot) {
+        rootFoldersQuery.refetch();
+      } else {
+        folderContentsQuery.refetch();
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "فشل في حذف المجلد");
+    }
+  }
+}
+
+// Multi-select Handlers
+function toggleSelect(id: string, isSelected: boolean) {
+  if (isSelected) {
+    selectedIds.add(id);
+  } else {
+    selectedIds.delete(id);
+  }
+  selectedIds = new Set(selectedIds);
+}
+
+function selectAllDocuments() {
+  if (selectedIds.size === filteredDocuments.length) {
+    selectedIds = new Set();
+  } else {
+    selectedIds = new Set(filteredDocuments.map((d) => d.id));
+  }
+}
+
+async function handleBulkDelete() {
+  const count = selectedIds.size;
+  if (count === 0) return;
+  const confirmed = await confirmStore.prompt({
+    title: `حذف ${count} ملفاً`,
+    description: `سيتم حذف ${count} ملفاً محدداً بشكل دائم. هل تود المتابعة؟`,
+    confirmText: "حذف الكل",
+    variant: "destructive",
+  });
+  if (!confirmed) return;
 
   try {
-    let completed = 0;
-    const entityType = selectedStudent ? "student" : "archive";
-    const entityId = selectedStudent ? selectedStudent.student.id : orgId || "organization";
+    await Promise.all(Array.from(selectedIds).map((id) => deleteDocMutation.mutateAsync(id)));
+    toast.success(`تم حذف ${count} ملفاً بنجاح`);
+    selectedIds = new Set();
+    if (!isRoot) folderContentsQuery.refetch();
+  } catch (e: any) {
+    toast.error("حدث خطأ أثناء الحذف الجماعي");
+  }
+}
 
-    await Promise.all(
-      files.map(async (selectedFile) => {
-        await uploadMutation.mutateAsync({
-          file: selectedFile,
-          entity_type: entityType,
-          entity_id: entityId,
-          category: uploadCategory,
-          visibility: "private",
-        });
-        completed += 1;
-        operation.update(
-          10 + (completed / files.length) * 85,
-          `${completed} / ${files.length} uploaded`,
-        );
-      }),
-    );
-    await documentsQuery.refetch();
-    operation.success(`${files.length} files uploaded`);
-  } catch (error) {
-    operation.error((error as any)?.message || "Failed to upload files");
-  } finally {
+// Drag and Drop & Upload Files
+async function handleFilesUpload(files: FileList | File[]) {
+  if (!files || files.length === 0) return;
+
+  const total = files.length;
+  let successCount = 0;
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    try {
+      await uploadFileMutation.mutateAsync({
+        file,
+        name: file.name,
+        folder_id: folderId ?? undefined,
+        category: selectedCategory !== "all" ? selectedCategory : "archive",
+        visibility: "internal",
+      });
+      successCount++;
+    } catch (e) {
+      console.error(`Failed to upload ${file.name}:`, e);
+    }
+  }
+
+  if (successCount > 0) {
+    toast.success(`تم رفع ${successCount} من أصل ${total} ملف بنجاح`);
+    if (isRoot) {
+      rootDocumentsQuery.refetch();
+    } else {
+      folderContentsQuery.refetch();
+    }
+  } else {
+    toast.error("فشل رفع الملفات");
+  }
+}
+
+function onFileInputChange(e: Event) {
+  const target = e.target as HTMLInputElement;
+  if (target.files) {
+    handleFilesUpload(target.files);
     target.value = "";
   }
 }
 
-const hasActiveFilters = $derived(
-  Boolean(
-    searchQuery ||
-    selectedCategory ||
-    selectedAssetType ||
-    (selectedSchoolYear && selectedSchoolYear !== "all") ||
-    (selectedTerm && selectedTerm !== "all") ||
-    (selectedClassId && selectedClassId !== "all") ||
-    selectedStudent
-  )
-);
+function onContainerDragOver(e: DragEvent) {
+  e.preventDefault();
+  isDragOverContainer = true;
+}
 
-function clearAllFilters() {
-  searchQuery = "";
-  selectedCategory = "";
-  selectedAssetType = "";
-  selectedSchoolYear = "all";
-  selectedTerm = "all";
-  selectedClassId = "all";
-  selectedStudent = null;
-  studentSearchQuery = "";
+function onContainerDragLeave() {
+  isDragOverContainer = false;
+}
+
+function onContainerDrop(e: DragEvent) {
+  e.preventDefault();
+  isDragOverContainer = false;
+  if (e.dataTransfer?.files) {
+    handleFilesUpload(e.dataTransfer.files);
+  }
 }
 </script>
 
-<div bind:this={archiveScroller} class="flex flex-col gap-5 p-6 h-full overflow-auto scrollbar-hide text-start">
-  
-  <!-- Comprehensive Archive Filtering & Action Bar -->
-  <div class="flex flex-col gap-3.5 border-b border-border/50 pb-4">
-    
-    <!-- Top Row: General Search + Student Search Autocomplete + View Switches & Upload -->
-    <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-      
-      <!-- Search Fields Container -->
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 max-w-2xl">
-        
-        <!-- General Document Search -->
-        <div class="relative flex-1 min-w-[180px]">
-          <Search size={14} class="absolute inset-s-3 top-1/2 -translate-y-1/2 text-muted-foreground/70 pointer-events-none" />
-          <Input
-            bind:value={searchQuery}
-            placeholder={l("البحث باسم الملف أو الوصف...", "Search file name or description...")}
-            class="h-9 w-full pe-3 ps-9 text-xs bg-background"
-          />
-        </div>
+<input
+  bind:this={fileInput}
+  type="file"
+  multiple
+  class="hidden"
+  onchange={onFileInputChange}
+/>
 
-        <!-- Student-Specific Search Dropdown -->
-        <div class="relative flex-1 min-w-[220px]">
-          <User size={14} class="absolute inset-s-3 top-1/2 -translate-y-1/2 text-muted-foreground/70 pointer-events-none" />
-          <Input
-            bind:value={studentSearchQuery}
-            placeholder={l("بحث وثائق طالب معين (اسم أو رقم)...", "Filter by specific student...")}
-            class="h-9 w-full pe-3 ps-9 text-xs bg-background"
-            onfocus={() => isStudentSearchFocused = true}
-            onblur={() => setTimeout(() => (isStudentSearchFocused = false), 250)}
-          />
+<!-- Main File Explorer Container -->
+<div
+  role="region"
+  aria-label="مستكشف الملفات والمستندات"
+  ondragover={onContainerDragOver}
+  ondragleave={onContainerDragLeave}
+  ondrop={onContainerDrop}
+  class="relative flex flex-col h-full w-full overflow-hidden bg-background text-foreground text-start select-none
+    {isDragOverContainer ? 'ring-2 ring-primary ring-inset bg-primary/5' : ''}"
+>
+  <!-- Top Navigation & Action Header -->
+  <header class="shrink-0 p-5 border-b border-border/50 bg-card/40 backdrop-blur-sm space-y-4">
+    <!-- Breadcrumbs & Quick Creation Actions -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <FolderBreadcrumbs
+        {orgId}
+        {currentFolder}
+        onnavigate={navigateToFolder}
+      />
 
-          <!-- Live Student Results Popover -->
-          {#if isStudentSearchFocused && studentSearchResults.length > 0}
-            <div class="absolute z-50 top-10 inset-x-0 bg-popover border border-border/80 shadow-lg rounded-xl overflow-hidden max-h-60 overflow-y-auto">
-              <div class="p-1.5 flex flex-col gap-0.5">
-                {#each studentSearchResults as student (student.student?.id)}
-                  <button
-                    type="button"
-                    class="w-full px-3 py-2 text-start flex items-center justify-between gap-2 rounded-lg hover:bg-muted text-xs transition-colors cursor-pointer"
-                    onmousedown={() => {
-                      selectedStudent = student;
-                      studentSearchQuery = "";
-                    }}
-                  >
-                    <div class="flex flex-col">
-                      <span class="font-bold text-foreground">{getStudentDisplayName(student)}</span>
-                      <span class="text-[10px] font-mono text-muted-foreground">{student.student?.student_number}</span>
-                    </div>
-                    <Badge variant="outline" class="text-[10px]">
-                      {student.student?.status || "طالب"}
-                    </Badge>
-                  </button>
-                {/each}
-              </div>
-            </div>
-          {/if}
-        </div>
-      </div>
-
-      <!-- Right Controls: View Switcher, Category Upload & Upload Button -->
-      <div class="flex shrink-0 items-center gap-2">
-        <div class="flex items-center rounded-lg border border-border bg-background p-0.5" role="group" aria-label="طريقة عرض الأرشيف">
-          <Button
-            variant={viewMode === "grid" ? "secondary" : "ghost"}
-            size="icon-xs"
-            onclick={() => viewMode = "grid"}
-            title="عرض شبكي"
-            aria-label="عرض شبكي"
-          >
-            <Grid class="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant={viewMode === "table" ? "secondary" : "ghost"}
-            size="icon-xs"
-            onclick={() => viewMode = "table"}
-            title="عرض جدول"
-            aria-label="عرض جدول"
-          >
-            <QueueList class="h-3.5 w-3.5" />
-          </Button>
-        </div>
-
-        <Select
-          type="single"
-          value={uploadCategory}
-          onValueChange={(value: string | undefined) => uploadCategory = value ?? "events"}
+      <div class="flex items-center flex-wrap gap-2 w-full sm:w-auto justify-end">
+        <!-- Trash Bin Button -->
+        <Button
+          variant="outline"
+          size="sm"
+          onclick={() => goto(`/${orgId}/settings/archive/trash`)}
+          class="gap-1.5 text-xs shadow-sm hover:border-rose-500/40 hover:text-rose-600 dark:hover:text-rose-400"
+          title="سلة المحذوفات"
         >
-          <SelectTrigger class="h-9 w-32 text-xs">
-            <span class="truncate">{archiveCategories.find(([value]) => value === uploadCategory)?.[1] || "تصنيف الرفع"}</span>
-          </SelectTrigger>
-          <SelectContent align="end">
-            {#each archiveCategories as [value, label]}
-              <SelectItem value={value}>{label}</SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
-
-        <Button variant="default" size="sm" class="h-9 text-xs font-bold gap-1.5" onclick={openFilePicker} disabled={uploadMutation.isPending}>
-          {#if uploadMutation.isPending}
-            <ArrowPath size={14} class="animate-spin" />
-          {:else}
-            <ArrowUpTray size={14} />
+          <Trash class="w-3.5 h-3.5 text-rose-500" />
+          <span>سلة المحذوفات</span>
+          {#if trashedDocsCount > 0}
+            <span class="rounded-full bg-rose-500/15 px-1.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
+              {trashedDocsCount}
+            </span>
           {/if}
-          <span>{m.common_docs_btn_upload()}</span>
         </Button>
-        <input bind:this={fileInput} type="file" accept="image/*,video/*,application/pdf" multiple class="hidden" onchange={handleFileSelect} />
+
+        <!-- New Folder Button -->
+        <Button
+          variant="outline"
+          size="sm"
+          onclick={() => isCreateFolderModalOpen = true}
+          class="gap-1.5 text-xs shadow-sm"
+        >
+          <FolderPlus class="w-3.5 h-3.5 text-amber-500" />
+          <span>مجلد جديد</span>
+        </Button>
+
+        <!-- Upload Files Button -->
+        <Button
+          size="sm"
+          onclick={() => fileInput?.click()}
+          class="gap-1.5 text-xs shadow-sm"
+        >
+          <ArrowUpTray class="w-3.5 h-3.5" />
+          <span>رفع ملفات</span>
+        </Button>
       </div>
     </div>
 
-    <!-- Active Student Filter Banner -->
-    {#if selectedStudent}
-      <div class="flex items-center justify-between px-3 py-1.5 bg-primary/10 border border-primary/25 rounded-lg text-xs">
-        <div class="flex items-center gap-2">
-          <User class="w-3.5 h-3.5 text-primary" />
-          <span class="text-muted-foreground">{l("تصفية وثائق الطالب:", "Filtered by Student:")}</span>
-          <span class="font-bold text-foreground">{getStudentDisplayName(selectedStudent)}</span>
-          <span class="text-xs font-mono text-primary font-semibold">({selectedStudent.student?.student_number})</span>
+    <!-- Search & Filter Toolbar -->
+    <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <!-- Search Input -->
+      <div class="relative flex-1 max-w-md">
+        <Search class="w-4 h-4 absolute right-3 top-2.5 text-muted-foreground pointer-events-none" />
+        <Input
+          bind:value={searchQuery}
+          placeholder="ابحث في المستندات والمجلدات..."
+          class="w-full pr-9 text-xs bg-background/80 h-9"
+        />
+        {#if searchQuery}
+          <button
+            type="button"
+            onclick={() => searchQuery = ""}
+            class="absolute left-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+          >
+            <XMark class="w-3.5 h-3.5" />
+          </button>
+        {/if}
+      </div>
+
+      <!-- Filter Controls & View Switcher -->
+      <div class="flex items-center flex-wrap gap-2 text-xs">
+        <!-- Asset Type Filter -->
+        <select
+          bind:value={selectedAssetType}
+          class="h-9 px-2.5 rounded-lg border border-border/60 bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+        >
+          <option value="all">جميع أنواع الملفات</option>
+          <option value="pdf">مستندات PDF</option>
+          <option value="image">الصور</option>
+          <option value="video">الفيديوهات</option>
+          <option value="audio">التسجيلات الصوتية</option>
+        </select>
+
+        <!-- Category Filter -->
+        {#if availableCategories.length > 0}
+          <select
+            bind:value={selectedCategory}
+            class="h-9 px-2.5 rounded-lg border border-border/60 bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+          >
+            <option value="all">كافة التصنيفات</option>
+            {#each availableCategories as cat}
+              <option value={cat}>{cat}</option>
+            {/each}
+          </select>
+        {/if}
+
+        <!-- View Switcher -->
+        <div class="flex items-center p-0.5 rounded-lg border border-border/60 bg-muted/40">
+          <button
+            type="button"
+            onclick={() => viewMode = "grid"}
+            class="p-1.5 rounded-md transition-all {viewMode === 'grid' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
+            title="عرض الشبكة"
+          >
+            <Grid class="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onclick={() => viewMode = "table"}
+            class="p-1.5 rounded-md transition-all {viewMode === 'table' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
+            title="عرض القائمة"
+          >
+            <Bars3BottomLeft class="w-3.5 h-3.5" />
+          </button>
         </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Multi-Select Bulk Actions Bar (Sticky Float) -->
+  {#if selectedIds.size > 0}
+    <div class="px-5 py-2.5 bg-primary/10 border-b border-primary/20 flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-2 duration-150">
+      <div class="flex items-center gap-2">
+        <span class="font-semibold text-primary">تم تحديد {selectedIds.size} عنصر</span>
         <button
           type="button"
-          onclick={() => selectedStudent = null}
-          class="text-muted-foreground hover:text-foreground cursor-pointer"
-          title={l("إلغاء التصفية", "Clear filter")}
+          onclick={() => selectedIds = new Set()}
+          class="text-muted-foreground hover:text-foreground underline text-[11px]"
         >
-          <XMark class="w-4 h-4" />
+          إلغاء التحديد
         </button>
       </div>
-    {/if}
 
-    <!-- Bottom Filter Selectors Row (Academics ClassSelect & PeriodSelect + Category & Type) -->
-    <div class="flex flex-wrap items-center gap-2 pt-1">
-      <div class="flex items-center gap-1.5 text-muted-foreground text-xs pe-1">
-        <Funnel class="w-3.5 h-3.5" />
-        <span>{l("الفلاتر الأكاديمية:", "Academic Filters:")}</span>
-      </div>
-
-      <!-- Class Select (Reusable Academics Component) -->
-      <div class="w-44">
-        <ClassSelect
-          bind:value={selectedClassId}
-          showAllOption={true}
-          allOptionLabel={l("كافة الصفوف", "All Classes")}
-          placeholder={l("كافة الصفوف", "All Classes")}
-        />
-      </div>
-
-      <!-- Academic Year Select (Reusable PeriodSelect) -->
-      <div class="w-44">
-        <PeriodSelect
-          bind:value={selectedSchoolYear}
-          periodType="academic_year"
-          showAllOption={true}
-          allOptionLabel={l("كافة الأعوام", "All Academic Years")}
-          placeholder={l("كافة الأعوام", "All Academic Years")}
-        />
-      </div>
-
-      <!-- Term Select (Reusable PeriodSelect) -->
-      <div class="w-40">
-        <PeriodSelect
-          bind:value={selectedTerm}
-          periodType="term"
-          showAllOption={true}
-          allOptionLabel={l("كافة الفصول", "All Terms")}
-          placeholder={l("كافة الفصول", "All Terms")}
-        />
-      </div>
-
-      <!-- Category Filter -->
-      <Select
-        type="single"
-        value={selectedCategory || "all"}
-        onValueChange={(value) => selectedCategory = value === "all" ? "" : value ?? ""}
-      >
-        <SelectTrigger class="h-9 w-36 text-xs bg-background">
-          <span class="truncate">{selectedCategory ? (availableCategories.find(([v]) => v === selectedCategory)?.[1] || selectedCategory) : l("كافة التصنيفات", "All Categories")}</span>
-        </SelectTrigger>
-        <SelectContent align="end">
-          <SelectItem value="all">{l("كافة التصنيفات", "All Categories")}</SelectItem>
-          {#each (availableCategories.length > 0 ? availableCategories : archiveCategories) as [value, label]}
-            <SelectItem value={value}>{label}</SelectItem>
-          {/each}
-        </SelectContent>
-      </Select>
-
-      <!-- Asset Type Filter -->
-      <Select
-        type="single"
-        value={selectedAssetType || "all"}
-        onValueChange={(value) => selectedAssetType = value === "all" ? "" : value ?? ""}
-      >
-        <SelectTrigger class="h-9 w-32 text-xs bg-background">
-          <span class="truncate">{selectedAssetType === "image" ? "صور" : selectedAssetType === "video" ? "فيديو" : selectedAssetType === "document" ? "وثائق" : l("كل الأنواع", "All Types")}</span>
-        </SelectTrigger>
-        <SelectContent align="end">
-          <SelectItem value="all">{l("كل الأنواع", "All Types")}</SelectItem>
-          <SelectItem value="image">{l("صور", "Images")}</SelectItem>
-          <SelectItem value="video">{l("فيديو", "Videos")}</SelectItem>
-          <SelectItem value="document">{l("وثائق ومستندات", "Documents")}</SelectItem>
-        </SelectContent>
-      </Select>
-
-      {#if hasActiveFilters}
-        <Button variant="ghost" size="sm" class="h-9 gap-1 text-xs text-muted-foreground hover:text-foreground" onclick={clearAllFilters}>
-          <XMark size={13} />
-          <span>{l("إعادة تعيين", "Reset")}</span>
+      <div class="flex items-center gap-2">
+        <Button variant="destructive" size="xs" onclick={handleBulkDelete} class="gap-1.5">
+          <Trash class="w-3 h-3" />
+          <span>حذف المحدد</span>
         </Button>
-      {/if}
-    </div>
-  </div>
-
-  <!-- Loading Skeletons -->
-  {#if documentsQuery.isLoading && rawDocuments.length === 0}
-    <ArchiveLoading />
-  {:else if documents.length === 0}
-    <!-- Empty State -->
-    <div class="flex flex-col items-center justify-center py-20 text-center bg-muted/10 rounded-2xl border border-dashed border-border/60">
-      <div class="w-12 h-12 rounded-2xl bg-muted/40 flex items-center justify-center mb-3">
-        <Document class="h-6 w-6 text-muted-foreground/60" />
       </div>
-      <h3 class="text-base font-semibold text-foreground">{m.settings_archive_empty_title()}</h3>
-      <p class="text-xs text-muted-foreground max-w-sm mt-1">{m.settings_archive_empty_desc()}</p>
-      <Button variant="outline" size="sm" class="mt-3 text-xs" onclick={openFilePicker} disabled={uploadMutation.isPending}>
-        <ArrowUpTray size={14} class="me-1.5" />
-        {m.common_docs_btn_upload()}
-      </Button>
     </div>
-  {:else}
-    {#if viewMode === "grid"}
-      {#each groupedEntries as [category, docs]}
-        <div class="space-y-4">
-          <h2 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40 pb-2">
-            {archiveCategories.find(([c]) => c === category)?.[1] || category}
-          </h2>
-          <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            {#each docs as doc (doc.id)}
-              <ArchiveDocumentCard
-                document={doc}
-                selected={selectedIds.has(doc.id)}
-                onpreview={openPreview}
-                ondelete={handleDelete}
-                ontoggle={toggleDocument}
+  {/if}
+
+  <!-- Main Content Viewport -->
+  <main class="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
+    {#if isLoading}
+      <ArchiveLoading />
+    {:else if filteredFolders.length === 0 && filteredDocuments.length === 0}
+      <!-- Empty State -->
+      <div class="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
+        <div class="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4 text-muted-foreground/60 shadow-inner">
+          <FolderOpen class="w-8 h-8" />
+        </div>
+        <h3 class="font-bold text-base text-foreground">المجلد فارغ</h3>
+        <p class="text-xs text-muted-foreground max-w-sm mt-1">
+          لم يتم العثور على أي ملفات أو مجلدات هنا. اسحب الملفات وأفلتها هنا أو انقر على "رفع ملفات".
+        </p>
+        <div class="flex items-center gap-2 mt-5">
+          <Button variant="outline" size="sm" onclick={() => isCreateFolderModalOpen = true}>
+            <FolderPlus class="w-3.5 h-3.5 me-1.5 text-amber-500" />
+            <span>إنشاء مجلد</span>
+          </Button>
+          <Button size="sm" onclick={() => fileInput?.click()}>
+            <ArrowUpTray class="w-3.5 h-3.5 me-1.5" />
+            <span>رفع ملفات</span>
+          </Button>
+        </div>
+      </div>
+    {:else}
+      <!-- 1. Folders Section -->
+      {#if filteredFolders.length > 0}
+        <section class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <Folder class="w-3.5 h-3.5 text-amber-500" />
+              <span>المجلدات ({filteredFolders.length})</span>
+            </h4>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
+            {#each filteredFolders as folder (folder.id)}
+              <FolderCard
+                {folder}
+                onopen={(f) => navigateToFolder(f.id)}
+                ondelete={handleDeleteFolder}
               />
             {/each}
           </div>
-        </div>
-      {/each}
-    {:else}
-      <div class="rounded-xl border border-border/80 bg-background overflow-hidden">
-        <OrbisGrid
-          columns={archiveTableColumns}
-          source={tableSource}
-          height="min(70vh, 620px)"
-          rowSize={44}
-          rtl={true}
-          onaction={handleTableAction}
-          emptyTitle="لا توجد ملفات"
-        />
-      </div>
-    {/if}
-    
-    <!-- Infinite scroll sentinel and manual fallback -->
-    <div use:infiniteScroll class="h-px w-full" aria-hidden="true"></div>
-    {#if documentsQuery.hasNextPage}
-      <div class="flex justify-center pt-6 pb-4">
-        <Button 
-          variant="outline" 
-          size="sm"
-          disabled={documentsQuery.isFetchingNextPage}
-          onclick={loadNextPage}
-          class="text-xs gap-2 rounded-xl"
-        >
-          {#if documentsQuery.isFetchingNextPage}
-            <ArrowPath class="h-3.5 w-3.5 animate-spin" />
-            <span>{m.settings_archive_loading_more()}</span>
+        </section>
+      {/if}
+
+      <!-- 2. Documents Section -->
+      {#if filteredDocuments.length > 0}
+        <section class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <DocumentPage class="w-3.5 h-3.5 text-primary" />
+              <span>الملفات والمستندات ({filteredDocuments.length})</span>
+            </h4>
+
+            {#if viewMode === "table"}
+              <button
+                type="button"
+                onclick={selectAllDocuments}
+                class="text-xs text-primary hover:underline font-medium"
+              >
+                {selectedIds.size === filteredDocuments.length ? "إلغاء تحديد الكل" : "تحديد الكل"}
+              </button>
+            {/if}
+          </div>
+
+          {#if viewMode === "grid"}
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5">
+              {#each filteredDocuments as doc (doc.id)}
+                <ArchiveDocumentCard
+                  document={doc}
+                  selected={selectedIds.has(doc.id)}
+                  onpreview={handlePreview}
+                  ondelete={handleDeleteDoc}
+                  onarchive={handleArchiveDoc}
+                  ontoggle={toggleSelect}
+                />
+              {/each}
+            </div>
           {:else}
-            <span>{m.settings_archive_load_more()}</span>
+            <!-- Table View -->
+            <div class="border border-border/50 rounded-xl overflow-hidden bg-card/60 divide-y divide-border/40">
+              <div class="grid grid-cols-[auto_minmax(0,2.5fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(100px,1fr)_auto] items-center gap-3 px-3 py-2 bg-muted/40 text-[11px] font-semibold text-muted-foreground uppercase">
+                <span class="w-4"></span>
+                <span>اسم الملف</span>
+                <span>التصنيف</span>
+                <span>الحجم</span>
+                <span>تاريخ الرفع</span>
+                <span class="text-end">الإجراءات</span>
+              </div>
+              {#each filteredDocuments as doc (doc.id)}
+                <ArchiveDocumentRow
+                  document={doc}
+                  selected={selectedIds.has(doc.id)}
+                  onpreview={handlePreview}
+                  ondelete={handleDeleteDoc}
+                  onarchive={handleArchiveDoc}
+                  ontoggle={toggleSelect}
+                />
+              {/each}
+            </div>
           {/if}
-        </Button>
-      </div>
+        </section>
+      {/if}
     {/if}
-  {/if}
+  </main>
 </div>
 
-<SettingsBottomBar
-  visible={selectedCount > 0}
-  isDirty={selectedCount > 0}
-  isSaving={deleteMutation.isPending}
-  message={`${selectedCount} ملف محدد`}
-  saveLabel="حذف المحدد"
-  savingLabel="جاري الحذف..."
-  resetLabel="إلغاء التحديد"
-  onsave={handleBulkDelete}
-  onreset={() => selectedIds = new Set()}
+<!-- Modals -->
+<FolderCreateModal
+  bind:open={isCreateFolderModalOpen}
+  parentId={folderId}
+  oncreated={(f) => {
+    if (isRoot) {
+      rootFoldersQuery.refetch();
+    } else {
+      folderContentsQuery.refetch();
+    }
+  }}
 />
 
 <ArchivePreviewSheet
   bind:open={isPreviewOpen}
   document={selectedDocument}
   url={selectedDocumentUrl}
-  ondelete={handleDelete}
+  ondelete={handleDeleteDoc}
+  onarchive={handleArchiveDoc}
 />
