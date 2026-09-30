@@ -50,27 +50,4 @@ impl SequenceCounterRepository for SequenceCounterRepoImpl {
             Ok(next_val as u64)
         }
     }
-
-    async fn seed_if_empty(&self, org_id: Uuid, sequence_type: &str, academic_year: i32, initial_val: i64) -> Result<(), DomainError> {
-        let existing = SequenceCounterEntity::find()
-            .filter(sequence_counter::Column::OrgId.eq(org_id))
-            .filter(sequence_counter::Column::SequenceType.eq(sequence_type))
-            .filter(sequence_counter::Column::AcademicYear.eq(academic_year))
-            .one(&self.db)
-            .await
-            .map_err(|e| DomainError::Internal(e.to_string()))?;
-
-        if existing.is_none() {
-            let active = sequence_counter::ActiveModel {
-                id: Set(Uuid::new_v4()),
-                org_id: Set(org_id),
-                sequence_type: Set(sequence_type.to_string()),
-                academic_year: Set(academic_year),
-                current_val: Set(initial_val),
-                updated_at: Set(Utc::now()),
-            };
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        }
-        Ok(())
-    }
 }

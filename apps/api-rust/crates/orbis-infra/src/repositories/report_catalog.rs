@@ -810,14 +810,14 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
     ]
 }
 
-/// Seeds the complete master report catalog into the database.
-pub async fn seed_master_report_definitions<C: ConnectionTrait>(
+/// Provisions the complete master report catalog into the database.
+pub async fn provision_master_report_definitions<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
     now: &str,
 ) -> Result<(), DomainError> {
     let catalog = get_master_report_catalog();
-    info!("Seeding master business report catalog ({} reports) for org_id={}", catalog.len(), org_id);
+    info!("Provisioning master business report catalog ({} reports) for org_id={}", catalog.len(), org_id);
 
     for (idx, entry) in catalog.into_iter().enumerate() {
         let rid = Uuid::new_v4();

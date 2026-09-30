@@ -697,7 +697,6 @@ pub trait DocumentRequirementRepository: Send + Sync {
 #[async_trait]
 pub trait SequenceCounterRepository: Send + Sync {
     async fn next_sequence(&self, org_id: Uuid, sequence_type: &str, academic_year: i32) -> Result<u64, DomainError>;
-    async fn seed_if_empty(&self, org_id: Uuid, sequence_type: &str, academic_year: i32, initial_val: i64) -> Result<(), DomainError>;
 }
 
 

@@ -4,13 +4,13 @@ use serde_json::json;
 use tracing::info;
 use uuid::Uuid;
 
-pub async fn seed_master_templates<C: ConnectionTrait>(
+pub async fn provision_master_templates<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
     admin_id: Uuid,
     now: &str,
 ) -> Result<(), DomainError> {
-    info!("Seeding master visual AST document templates for org_id={}", org_id);
+    info!("Provisioning master visual AST document templates for org_id={}", org_id);
 
     let templates = get_master_template_definitions();
 
