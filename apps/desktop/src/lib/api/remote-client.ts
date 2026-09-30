@@ -207,6 +207,9 @@ import type {
   ListTasksResponse,
   AutopilotTaskDto,
   AutopilotDiagnosticsDto,
+  OnboardingStateDto,
+  ProvisionDefaultsReqDto,
+  ProvisionDefaultsResultDto,
 } from "./types";
 
 export class ApiRequestError extends Error {
@@ -1767,5 +1770,99 @@ export class RemoteClient implements OrbisApiClient {
 
   async deleteFolder(id: string): Promise<void> {
     await this.call(sdk.deleteFolder({ client: this.client, path: { id } }));
+  }
+
+  // ── System & Bootstrap ──────────────────────────────────────
+  async systemHealth(): Promise<HealthResponse> {
+    const res = await fetch(`${this.baseUrl}/health`);
+    if (!res.ok) throw new ApiRequestError(res.status, "Health check failed");
+    return res.json();
+  }
+
+  async systemHasOrganization(): Promise<boolean> {
+    const res = await fetch(`${this.baseUrl}/api/v1/system/has-org`);
+    if (!res.ok) return false;
+    const json = await res.json();
+    return json.data?.has_org ?? json.has_org ?? false;
+  }
+
+  async systemGetReadiness(): Promise<OrganizationReadiness> {
+    const res = await fetch(`${this.baseUrl}/api/v1/system/readiness`);
+    if (!res.ok) throw new ApiRequestError(res.status, "Readiness check failed");
+    const json = await res.json();
+    return json.data ?? json;
+  }
+
+  async systemGetEntitlement(): Promise<EntitlementResult> {
+    return {
+      allowed: true,
+      tier: "enterprise",
+      features: ["all"],
+    };
+  }
+
+  async bootstrapGetStatus(): Promise<BootstrapStatusResponse> {
+    const res = await fetch(`${this.baseUrl}/api/v1/bootstrap/status`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new ApiRequestError(res.status, err);
+    }
+    const json = await res.json();
+    return json.data ?? json;
+  }
+
+  async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
+    const res = await fetch(`${this.baseUrl}/api/v1/bootstrap`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new ApiRequestError(res.status, err);
+    }
+    const json = await res.json();
+    return json.data ?? json;
+  }
+
+  async completeOnboarding(_req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {
+    return { success: true };
+  }
+
+  // ── Onboarding & DAG Readiness ──────────────────────────────
+  async onboardingGetState(_orgId?: string): Promise<OnboardingStateDto> {
+    const res = await fetch(`${this.baseUrl}/api/v1/onboarding/state`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+      },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new ApiRequestError(res.status, err);
+    }
+    const json = await res.json();
+    return json.data ?? json;
+  }
+
+  async onboardingProvisionDefaults(
+    req: ProvisionDefaultsReqDto,
+    _orgId?: string,
+  ): Promise<ProvisionDefaultsResultDto> {
+    const res = await fetch(`${this.baseUrl}/api/v1/onboarding/provision`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+      },
+      body: JSON.stringify(req),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new ApiRequestError(res.status, err);
+    }
+    const json = await res.json();
+    return json.data ?? json;
   }
 }

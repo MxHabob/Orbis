@@ -105,5 +105,7 @@ pub struct AppState {
     pub employee_service: Arc<orbis_app::services::EmployeeService>,
     pub group_service: Arc<orbis_app::services::GroupService>,
     pub bootstrap_service: Arc<orbis_app::services::BootstrapService>,
+    pub onboarding_service: Arc<orbis_app::services::OnboardingService>,
 }
+
 

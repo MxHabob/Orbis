@@ -4,7 +4,7 @@ import { Input } from "@orbis/ui/input";
 import { Folder, Sparkles, AcademicCap, Plus, XMark, Search, Check } from "@orbis/icons";
 import { api, type FolderDto, type CreateFolderRequest, type CreateCurriculumFolderRequest, type StudentDetailDto } from "$lib/api";
 import { createQuery } from "@tanstack/svelte-query";
-import { toast } from "@orbis/ui/toast";
+import { toast } from "@orbis/ui";
 
 let {
   open = $bindable(false),

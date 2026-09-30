@@ -914,6 +914,95 @@ export interface BulkRegisterEmployeeCommandResultDto {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ONBOARDING & DAG READINESS
+// ═══════════════════════════════════════════════════════════════
+
+export type OnboardingTaskCategory =
+  | "organization"
+  | "calendar"
+  | "academics"
+  | "assessment"
+  | "finance"
+  | "students"
+  | "templates"
+  | "integrations";
+
+export type OnboardingTaskStatus =
+  | "not_started"
+  | "in_progress"
+  | "completed"
+  | "blocked"
+  | "optional"
+  | "not_applicable";
+
+export interface SetupTaskDto {
+  id: string;
+  category: OnboardingTaskCategory;
+  title: string;
+  title_ar: string;
+  description: string;
+  description_ar: string;
+  is_required: boolean;
+  status: OnboardingTaskStatus;
+  dependencies: string[];
+  progress: number;
+  route: string;
+  action_type: string;
+  institution_types: string[];
+  required_permissions: string[];
+  completion_condition: string;
+  blocking_reason?: string;
+  blocking_reason_ar?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CategoryProgressDto {
+  category: OnboardingTaskCategory;
+  label: string;
+  label_ar: string;
+  total_tasks: number;
+  completed_tasks: number;
+  progress_percentage: number;
+}
+
+export interface OnboardingStateDto {
+  org_id: string;
+  org_name: string;
+  institution_type: string;
+  total_tasks: number;
+  completed_tasks: number;
+  required_tasks: number;
+  required_completed: number;
+  optional_tasks: number;
+  optional_completed: number;
+  blocked_tasks: number;
+  progress_percentage: number;
+  required_progress_percentage: number;
+  is_institution_ready: boolean;
+  tasks: SetupTaskDto[];
+  categories: CategoryProgressDto[];
+  recommended_next_task?: SetupTaskDto;
+  warnings: string[];
+}
+
+export interface ProvisionDefaultsReqDto {
+  academic_year_name?: string;
+  academic_year_name_ar?: string;
+  start_date?: string;
+  end_date?: string;
+  provision_stages_and_grades?: boolean;
+  provision_subjects?: boolean;
+  provision_assessment_scheme?: boolean;
+  provision_tuition_fee_template?: boolean;
+}
+
+export interface ProvisionDefaultsResultDto {
+  success: boolean;
+  created_items: string[];
+  state: OnboardingStateDto;
+}
+
+// ═══════════════════════════════════════════════════════════════
 // UNIFIED CLIENT INTERFACE
 // ═══════════════════════════════════════════════════════════════
 
@@ -1285,6 +1374,13 @@ export interface OrbisApiClient {
   bootstrapGetStatus(): Promise<BootstrapStatusResponse>;
   bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult>;
   completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult>;
+
+  // ── Onboarding & DAG Readiness ──────────────────────────────
+  onboardingGetState(orgId?: string): Promise<OnboardingStateDto>;
+  onboardingProvisionDefaults(
+    req: ProvisionDefaultsReqDto,
+    orgId?: string,
+  ): Promise<ProvisionDefaultsResultDto>;
 
   // ── Connection & Database Management ─────────────────────────
   connectionGetConfig(): Promise<ConnectionConfig>;

@@ -21,6 +21,7 @@ pub mod group_service;
 pub mod bootstrap_service;
 pub mod file_storage_service;
 pub mod folder_service;
+pub mod onboarding_service;
 
 pub use student_service::{StudentService, RegisterStudentInput};
 pub use progression_service::ProgressionService;
@@ -45,3 +46,8 @@ pub use identity_provisioning_service::{IdentityProvisioningService, ProvisionAc
 pub use employee_service::{EmployeeService, RegisterEmployeeInput, UpdateEmployeeInput, RegisterEmployeeResult, AccountProvisioningConfig};
 pub use group_service::{GroupService, CreateGroupInput, UpdateGroupInput, BulkAssignGroupInput};
 pub use bootstrap_service::{BootstrapService, BootstrapRequest, BootstrapResult, BootstrapStatus, BootstrapStatusResponse};
+pub use onboarding_service::{
+    OnboardingService, OnboardingStateResponse, SetupTask, CategoryProgress,
+    OnboardingTaskCategory, OnboardingTaskStatus, ProvisionDefaultsRequest, ProvisionDefaultsResult,
+};
+

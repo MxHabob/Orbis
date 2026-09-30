@@ -194,3 +194,5 @@ pub mod progression_routes;
 pub mod ai_routes;
 pub mod autopilot_routes;
 pub mod bootstrap_routes;
+pub mod onboarding_routes;
+

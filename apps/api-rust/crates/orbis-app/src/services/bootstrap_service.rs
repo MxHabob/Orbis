@@ -32,9 +32,12 @@ use orbis_domain::errors::DomainError;
 use crate::ports::repositories::{
     OrganizationRepository, UserRepository, PersonRepository,
     UserIdentityRepository, RoleRepository, SettingsRepository, SystemRepository,
+    CurrencyRepository, AccountRepository,
 };
 use crate::ports::security::PasswordHasher;
 use crate::ports::event_bus::EventBus;
+use orbis_domain::entities::currency::Currency;
+use orbis_domain::entities::account::{Account, AccountType};
 
 // ═══════════════════════════════════════════════════════════════
 // Bootstrap Request
@@ -123,6 +126,8 @@ pub struct BootstrapService {
     pub role_repo: Arc<dyn RoleRepository>,
     pub settings_repo: Arc<dyn SettingsRepository>,
     pub system_repo: Arc<dyn SystemRepository>,
+    pub currency_repo: Arc<dyn CurrencyRepository>,
+    pub account_repo: Arc<dyn AccountRepository>,
     pub password_hasher: Arc<dyn PasswordHasher>,
     pub event_bus: Arc<dyn EventBus>,
 }
@@ -136,6 +141,8 @@ impl BootstrapService {
         role_repo: Arc<dyn RoleRepository>,
         settings_repo: Arc<dyn SettingsRepository>,
         system_repo: Arc<dyn SystemRepository>,
+        currency_repo: Arc<dyn CurrencyRepository>,
+        account_repo: Arc<dyn AccountRepository>,
         password_hasher: Arc<dyn PasswordHasher>,
         event_bus: Arc<dyn EventBus>,
     ) -> Self {
@@ -147,6 +154,8 @@ impl BootstrapService {
             role_repo,
             settings_repo,
             system_repo,
+            currency_repo,
+            account_repo,
             password_hasher,
             event_bus,
         }
@@ -245,16 +254,22 @@ impl BootstrapService {
         // ── Step 4: Initialize organization settings ──────────
         self.initialize_settings(org_id, &institution_type, &req).await?;
 
-        // ── Step 5: Create system roles ───────────────────────
+        // ── Step 5: Seed system reference currencies ──────────
+        self.seed_system_currencies(org_id, &req).await?;
+
+        // ── Step 6: Initialize Chart of Accounts scaffold ─────
+        self.initialize_chart_of_accounts(org_id, &req).await?;
+
+        // ── Step 7: Create system roles ───────────────────────
         self.create_system_roles(org_id).await?;
 
-        // ── Step 6: Create initial administrator ──────────────
+        // ── Step 8: Create initial administrator ──────────────
         let (admin_user, _admin_person) = self.create_administrator(org_id, &req).await?;
 
-        // ── Step 7: Assign admin role ─────────────────────────
+        // ── Step 9: Assign admin role ─────────────────────────
         self.assign_admin_role(org_id, admin_user.id).await?;
 
-        // ── Step 8: Verify ────────────────────────────────────
+        // ── Step 10: Verify ───────────────────────────────────
         let verified = self.verify_bootstrap(org_id).await?;
         if !verified {
             warnings.push("Bootstrap verification detected incomplete state".to_string());
@@ -399,6 +414,358 @@ impl BootstrapService {
         }
 
         self.settings_repo.save_settings(org_id, &settings).await?;
+        Ok(())
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Internal: Seed System Currencies
+    // ─────────────────────────────────────────────────────────
+
+    /// Seed standard reference currencies (SAR, USD, AED, YER, EUR, GBP, KWD, BHD, QAR, OMR).
+    async fn seed_system_currencies(
+        &self,
+        org_id: Uuid,
+        req: &BootstrapRequest,
+    ) -> Result<(), DomainError> {
+        let now = Utc::now();
+        let base_code = req.base_currency_code.as_deref().unwrap_or("SAR").to_uppercase();
+
+        let standard_currencies = [
+            ("SAR", "Saudi Riyal", Some("ريال سعودي"), "ر.س", "after", 2),
+            ("USD", "US Dollar", Some("دولار أمريكي"), "$", "before", 2),
+            ("AED", "UAE Dirham", Some("درهم إماراتي"), "د.إ", "after", 2),
+            ("YER", "Yemeni Rial", Some("ريال يمني"), "ر.ي", "after", 2),
+            ("EUR", "Euro", Some("يورو"), "€", "after", 2),
+            ("GBP", "British Pound", Some("جنيه إسترليني"), "£", "before", 2),
+            ("KWD", "Kuwaiti Dinar", Some("دينار كويتي"), "د.ك", "after", 3),
+            ("BHD", "Bahraini Dinar", Some("دينار بحريني"), "د.ب", "after", 3),
+            ("QAR", "Qatari Riyal", Some("ريال قطري"), "ر.ق", "after", 2),
+            ("OMR", "Omani Rial", Some("ريال عماني"), "ر.ع", "after", 3),
+        ];
+
+        for (code, name, name_ar, symbol, pos, dec) in standard_currencies {
+            let is_base = code == base_code;
+            let currency = Currency {
+                code: code.to_string(),
+                org_id,
+                name: name.to_string(),
+                name_ar: name_ar.map(|s| s.to_string()),
+                symbol: symbol.to_string(),
+                symbol_position: pos.to_string(),
+                decimal_places: dec,
+                is_base,
+                is_active: true,
+                updated_at: now,
+            };
+            self.currency_repo.save(&currency).await?;
+        }
+
+        Ok(())
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Internal: Initialize Chart of Accounts
+    // ─────────────────────────────────────────────────────────
+
+    /// Initialize standard double-entry Chart of Accounts scaffold.
+    async fn initialize_chart_of_accounts(
+        &self,
+        org_id: Uuid,
+        req: &BootstrapRequest,
+    ) -> Result<(), DomainError> {
+        let now = Utc::now();
+        let currency_code = req.base_currency_code.clone().unwrap_or_else(|| "SAR".to_string());
+
+        // Level 1: Core Account Groups
+        let asset_id = Uuid::new_v4();
+        let liability_id = Uuid::new_v4();
+        let equity_id = Uuid::new_v4();
+        let revenue_id = Uuid::new_v4();
+        let expense_id = Uuid::new_v4();
+
+        // Level 2: Sub-groups
+        let current_asset_id = Uuid::new_v4();
+        let current_liability_id = Uuid::new_v4();
+
+        // Level 3: Posting Accounts
+        let cash_id = Uuid::new_v4();
+        let ar_id = Uuid::new_v4();
+        let discount_id = Uuid::new_v4();
+        let academic_exp_id = Uuid::new_v4();
+
+        let accounts = vec![
+            Account {
+                id: asset_id,
+                org_id,
+                code: "1000".to_string(),
+                name: "Assets".to_string(),
+                name_ar: Some("الأصول".to_string()),
+                account_type: AccountType::Asset,
+                sub_type: None,
+                parent_id: None,
+                path: "/1000/".to_string(),
+                depth: 1,
+                currency_code: currency_code.clone(),
+                entity_type: None,
+                entity_id: None,
+                is_control_account: true,
+                is_system_account: true,
+                is_active: true,
+                balances: serde_json::json!({ "debit": 0, "credit": 0, "net": 0 }),
+                created_by: None,
+                updated_by: None,
+                version: 1,
+                created_at: now,
+                updated_at: now,
+            },
+            Account {
+                id: current_asset_id,
+                org_id,
+                code: "1100".to_string(),
+                name: "Current Assets".to_string(),
+                name_ar: Some("الأصول المتداولة".to_string()),
+                account_type: AccountType::Asset,
+                sub_type: Some("current_assets".to_string()),
+                parent_id: Some(asset_id),
+                path: "/1000/1100/".to_string(),
+                depth: 2,
+                currency_code: currency_code.clone(),
+                entity_type: None,
+                entity_id: None,
+                is_control_account: true,
+                is_system_account: true,
+                is_active: true,
+                balances: serde_json::json!({ "debit": 0, "credit": 0, "net": 0 }),
+                created_by: None,
+                updated_by: None,
+                version: 1,
+                created_at: now,
+                updated_at: now,
+            },
+            Account {
+                id: cash_id,
+                org_id,
+                code: "1110".to_string(),
+                name: "Cash & Bank Accounts".to_string(),
+                name_ar: Some("النقدية والحسابات البنكية".to_string()),
+                account_type: AccountType::Asset,
+                sub_type: Some("cash".to_string()),
+                parent_id: Some(current_asset_id),
+                path: "/1000/1100/1110/".to_string(),
+                depth: 3,
+                currency_code: currency_code.clone(),
+                entity_type: None,
+                entity_id: None,
+                is_control_account: false,
+                is_system_account: true,
+                is_active: true,
+                balances: serde_json::json!({ "debit": 0, "credit": 0, "net": 0 }),
+                created_by: None,
+                updated_by: None,
+                version: 1,
+                created_at: now,
+                updated_at: now,
+            },
+            Account {
+                id: ar_id,
+                org_id,
+                code: "1120".to_string(),
+                name: "Student Accounts Receivable".to_string(),
+                name_ar: Some("ذمم الطلاب والرسوم المستحقة".to_string()),
+                account_type: AccountType::Asset,
+                sub_type: Some("receivable".to_string()),
+                parent_id: Some(current_asset_id),
+                path: "/1000/1100/1120/".to_string(),
+                depth: 3,
+                currency_code: currency_code.clone(),
+                entity_type: None,
+                entity_id: None,
+                is_control_account: false,
+                is_system_account: true,
+                is_active: true,
+                balances: serde_json::json!({ "debit": 0, "credit": 0, "net": 0 }),
+                created_by: None,
+                updated_by: None,
+                version: 1,
+                created_at: now,
+                updated_at: now,
+            },
+            Account {
+                id: liability_id,
+                org_id,
+                code: "2000".to_string(),
+                name: "Liabilities".to_string(),
+                name_ar: Some("الالتزامات".to_string()),
+                account_type: AccountType::Liability,
+                sub_type: None,
+                parent_id: None,
+                path: "/2000/".to_string(),
+                depth: 1,
+                currency_code: currency_code.clone(),
+                entity_type: None,
+                entity_id: None,
+                is_control_account: true,
+                is_system_account: true,
+                is_active: true,
+                balances: serde_json::json!({ "debit": 0, "credit": 0, "net": 0 }),
+                created_by: None,
+                updated_by: None,
+                version: 1,
+                created_at: now,
+                updated_at: now,
+            },
+            Account {
+                id: current_liability_id,
+                org_id,
+                code: "2100".to_string(),
+                name: "Accounts Payable".to_string(),
+                name_ar: Some("الذمم الدائنة والموردين".to_string()),
+                account_type: AccountType::Liability,
+                sub_type: Some("payable".to_string()),
+                parent_id: Some(liability_id),
+                path: "/2000/2100/".to_string(),
+                depth: 2,
+                currency_code: currency_code.clone(),
+                entity_type: None,
+                entity_id: None,
+                is_control_account: false,
+                is_system_account: true,
+                is_active: true,
+                balances: serde_json::json!({ "debit": 0, "credit": 0, "net": 0 }),
+                created_by: None,
+                updated_by: None,
+                version: 1,
+                created_at: now,
+                updated_at: now,
+            },
+            Account {
+                id: equity_id,
+                org_id,
+                code: "3000".to_string(),
+                name: "Equity & Fund Balance".to_string(),
+                name_ar: Some("حقوق الملكية ورأس المال".to_string()),
+                account_type: AccountType::Equity,
+                sub_type: None,
+                parent_id: None,
+                path: "/3000/".to_string(),
+                depth: 1,
+                currency_code: currency_code.clone(),
+                entity_type: None,
+                entity_id: None,
+                is_control_account: true,
+                is_system_account: true,
+                is_active: true,
+                balances: serde_json::json!({ "debit": 0, "credit": 0, "net": 0 }),
+                created_by: None,
+                updated_by: None,
+                version: 1,
+                created_at: now,
+                updated_at: now,
+            },
+            Account {
+                id: revenue_id,
+                org_id,
+                code: "4000".to_string(),
+                name: "Tuition & Educational Revenue".to_string(),
+                name_ar: Some("إيرادات الرسوم الدراسية والتعليمية".to_string()),
+                account_type: AccountType::Revenue,
+                sub_type: Some("tuition_revenue".to_string()),
+                parent_id: None,
+                path: "/4000/".to_string(),
+                depth: 1,
+                currency_code: currency_code.clone(),
+                entity_type: None,
+                entity_id: None,
+                is_control_account: false,
+                is_system_account: true,
+                is_active: true,
+                balances: serde_json::json!({ "debit": 0, "credit": 0, "net": 0 }),
+                created_by: None,
+                updated_by: None,
+                version: 1,
+                created_at: now,
+                updated_at: now,
+            },
+            Account {
+                id: discount_id,
+                org_id,
+                code: "4100".to_string(),
+                name: "Discounts & Scholarships".to_string(),
+                name_ar: Some("الخصومات والمنح الدراسية".to_string()),
+                account_type: AccountType::Revenue,
+                sub_type: Some("contra_revenue".to_string()),
+                parent_id: Some(revenue_id),
+                path: "/4000/4100/".to_string(),
+                depth: 2,
+                currency_code: currency_code.clone(),
+                entity_type: None,
+                entity_id: None,
+                is_control_account: false,
+                is_system_account: true,
+                is_active: true,
+                balances: serde_json::json!({ "debit": 0, "credit": 0, "net": 0 }),
+                created_by: None,
+                updated_by: None,
+                version: 1,
+                created_at: now,
+                updated_at: now,
+            },
+            Account {
+                id: expense_id,
+                org_id,
+                code: "5000".to_string(),
+                name: "Operating Expenses".to_string(),
+                name_ar: Some("المصروفات التشغيلية".to_string()),
+                account_type: AccountType::Expense,
+                sub_type: None,
+                parent_id: None,
+                path: "/5000/".to_string(),
+                depth: 1,
+                currency_code: currency_code.clone(),
+                entity_type: None,
+                entity_id: None,
+                is_control_account: true,
+                is_system_account: true,
+                is_active: true,
+                balances: serde_json::json!({ "debit": 0, "credit": 0, "net": 0 }),
+                created_by: None,
+                updated_by: None,
+                version: 1,
+                created_at: now,
+                updated_at: now,
+            },
+            Account {
+                id: academic_exp_id,
+                org_id,
+                code: "5100".to_string(),
+                name: "Academic & Instructional Expenses".to_string(),
+                name_ar: Some("مصروفات الأنشطة والوسائل التعليمية".to_string()),
+                account_type: AccountType::Expense,
+                sub_type: Some("instructional".to_string()),
+                parent_id: Some(expense_id),
+                path: "/5000/5100/".to_string(),
+                depth: 2,
+                currency_code: currency_code.clone(),
+                entity_type: None,
+                entity_id: None,
+                is_control_account: false,
+                is_system_account: true,
+                is_active: true,
+                balances: serde_json::json!({ "debit": 0, "credit": 0, "net": 0 }),
+                created_by: None,
+                updated_by: None,
+                version: 1,
+                created_at: now,
+                updated_at: now,
+            },
+        ];
+
+        for account in accounts {
+            if self.account_repo.find_by_code(org_id, &account.code).await?.is_none() {
+                self.account_repo.save(&account).await?;
+            }
+        }
+
         Ok(())
     }
 

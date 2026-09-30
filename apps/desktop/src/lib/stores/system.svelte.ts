@@ -25,8 +25,9 @@ class SystemStore {
   connectionMode = $state<ConnectionMode | null>(null);
   connectionError = $state<string | null>(null);
 
-  // Organization readiness
+  // Organization readiness & onboarding
   orgReadiness = $state<OrganizationReadiness | null>(null);
+  onboardingState = $state<import("$lib/api/types").OnboardingStateDto | null>(null);
   entitlement = $state<EntitlementResult | null>(null);
   isLoading = $state(false);
 
@@ -35,6 +36,20 @@ class SystemStore {
   hasOrganization = $derived(this.orgReadiness?.has_organization ?? false);
   orgLifecycleState = $derived<OrgLifecycleState>(this.orgReadiness?.state ?? "empty");
   isOperational = $derived(this.orgReadiness?.state === "operational");
+  
+  // Real DAG onboarding tasks
+  onboardingTasks = $derived(this.onboardingState?.tasks ?? []);
+  pendingOnboardingTasks = $derived(
+    this.onboardingState?.tasks.filter((t) => t.status !== "completed" && t.status !== "not_applicable") ?? []
+  );
+  completedOnboardingTasks = $derived(
+    this.onboardingState?.tasks.filter((t) => t.status === "completed") ?? []
+  );
+  blockedOnboardingTasks = $derived(
+    this.onboardingState?.tasks.filter((t) => t.status === "blocked") ?? []
+  );
+  onboardingProgressPercentage = $derived(this.onboardingState?.progress_percentage ?? 0);
+  isInstitutionReady = $derived(this.onboardingState?.is_institution_ready ?? false);
   pendingSetupItems = $derived(
     this.orgReadiness?.pending_setup_items?.filter((i) => !i.is_completed) ?? []
   );
@@ -124,11 +139,25 @@ class SystemStore {
     }
   }
 
-  async completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {
+  async loadOnboardingState(orgId?: string): Promise<import("$lib/api/types").OnboardingStateDto | null> {
+    try {
+      this.onboardingState = await api.onboardingGetState(orgId);
+      return this.onboardingState;
+    } catch (e) {
+      console.warn("Failed to load onboarding state:", e);
+      return null;
+    }
+  }
+
+  async provisionBlueprintDefaults(
+    req: import("$lib/api/types").ProvisionDefaultsReqDto,
+    orgId?: string,
+  ): Promise<import("$lib/api/types").ProvisionDefaultsResultDto> {
     this.isLoading = true;
     try {
-      const res = await api.completeOnboarding(req);
-      this.orgReadiness = res.readiness;
+      const res = await api.onboardingProvisionDefaults(req, orgId);
+      this.onboardingState = res.state;
+      await this.loadReadiness();
       return res;
     } finally {
       this.isLoading = false;

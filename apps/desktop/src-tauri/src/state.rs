@@ -140,6 +140,7 @@ pub struct AppState {
     pub employee_service: Arc<orbis_app::services::EmployeeService>,
     pub group_service: Arc<orbis_app::services::GroupService>,
     pub bootstrap_service: Arc<orbis_app::services::BootstrapService>,
+    pub onboarding_service: Arc<orbis_app::services::OnboardingService>,
 }
 
 
@@ -485,8 +486,30 @@ impl AppState {
             Arc::new(orbis_infra::repositories::role_repo::RoleRepoImpl::new(db.clone())),
             settings_repo.clone(),
             system_repo_impl.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
             password_hasher.clone(),
             event_bus.clone(),
+        ));
+
+        let onboarding_service = Arc::new(orbis_app::services::OnboardingService::new(
+            org_repo.clone(),
+            org_unit_repo.clone(),
+            calendar_repo.clone(),
+            calendar_repo.clone(),
+            academic_repo.clone(),
+            academic_repo.clone(),
+            academic_repo.clone(),
+            assessment_repo.clone(),
+            settings_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            scheduling_repo.clone(),
+            doc_req_repo.clone(),
+            report_template_repo.clone(),
+            integration_repo.clone(),
+            permission_checker.clone(),
         ));
 
         let state = Self {
@@ -588,6 +611,7 @@ impl AppState {
             employee_service,
             group_service,
             bootstrap_service,
+            onboarding_service,
         };
 
         // Spawn Autopilot Background Scheduler (checks every 60 seconds)

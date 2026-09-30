@@ -624,6 +624,15 @@ export type CalculationResultDto = {
     message: string;
 };
 
+export type CategoryProgressDto = {
+    category: string;
+    completed_tasks: number;
+    label: string;
+    label_ar: string;
+    progress_percentage: number;
+    total_tasks: number;
+};
+
 export type ChangeStudyModeRequest = {
     new_mode: string;
     reason?: string | null;
@@ -1464,6 +1473,26 @@ export type NumberingSchemaDto = {
     year_format: string;
 };
 
+export type OnboardingStateDto = {
+    blocked_tasks: number;
+    categories: Array<CategoryProgressDto>;
+    completed_tasks: number;
+    institution_type: string;
+    is_institution_ready: boolean;
+    optional_completed: number;
+    optional_tasks: number;
+    org_id: string;
+    org_name: string;
+    progress_percentage: number;
+    recommended_next_task?: SetupTaskDto | null;
+    required_completed: number;
+    required_progress_percentage: number;
+    required_tasks: number;
+    tasks: Array<SetupTaskDto>;
+    total_tasks: number;
+    warnings: Array<string>;
+};
+
 /**
  * Uniform error response body.
  */
@@ -1703,6 +1732,23 @@ export type ProviderSchemaResponse = {
     name: string;
     name_ar: string;
     provider_key: string;
+};
+
+export type ProvisionDefaultsReqDto = {
+    academic_year_name?: string | null;
+    academic_year_name_ar?: string | null;
+    end_date?: string | null;
+    provision_assessment_scheme?: boolean | null;
+    provision_stages_and_grades?: boolean | null;
+    provision_subjects?: boolean | null;
+    provision_tuition_fee_template?: boolean | null;
+    start_date?: string | null;
+};
+
+export type ProvisionDefaultsResultDto = {
+    created_items: Array<string>;
+    state: OnboardingStateDto;
+    success: boolean;
 };
 
 export type ProvisionEmployeeAccountRequest = {
@@ -1977,6 +2023,27 @@ export type SessionResponse = {
 
 export type SetGroupPermissionsRequest = {
     permissions: Array<string>;
+};
+
+export type SetupTaskDto = {
+    action_type: string;
+    blocking_reason?: string | null;
+    blocking_reason_ar?: string | null;
+    category: string;
+    completion_condition: string;
+    dependencies: Array<string>;
+    description: string;
+    description_ar: string;
+    id: string;
+    institution_types: Array<string>;
+    is_required: boolean;
+    metadata?: unknown;
+    progress: number;
+    required_permissions: Array<string>;
+    route: string;
+    status: string;
+    title: string;
+    title_ar: string;
 };
 
 export type SplitFeeRequest = {
@@ -5116,6 +5183,60 @@ export type ReverseJournalEntryResponses = {
 };
 
 export type ReverseJournalEntryResponse = ReverseJournalEntryResponses[keyof ReverseJournalEntryResponses];
+
+export type ProvisionBlueprintDefaultsData = {
+    body: ProvisionDefaultsReqDto;
+    path?: never;
+    query?: never;
+    url: '/api/v1/onboarding/provision';
+};
+
+export type ProvisionBlueprintDefaultsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Forbidden
+     */
+    403: unknown;
+};
+
+export type ProvisionBlueprintDefaultsResponses = {
+    /**
+     * Defaults provisioned successfully
+     */
+    200: ProvisionDefaultsResultDto;
+};
+
+export type ProvisionBlueprintDefaultsResponse = ProvisionBlueprintDefaultsResponses[keyof ProvisionBlueprintDefaultsResponses];
+
+export type GetOnboardingStateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/onboarding/state';
+};
+
+export type GetOnboardingStateErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Organization not found
+     */
+    404: unknown;
+};
+
+export type GetOnboardingStateResponses = {
+    /**
+     * Current onboarding state and setup tasks
+     */
+    200: OnboardingStateDto;
+};
+
+export type GetOnboardingStateResponse = GetOnboardingStateResponses[keyof GetOnboardingStateResponses];
 
 export type ListOrgUnitsData = {
     body?: never;

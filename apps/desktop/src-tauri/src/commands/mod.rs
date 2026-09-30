@@ -26,6 +26,7 @@ pub mod system_cmds;
 pub mod ai_cmds;
 pub mod autopilot_cmds;
 pub mod bootstrap_cmds;
+pub mod onboarding_cmds;
 
 use tauri::generate_handler;
 
@@ -366,5 +367,8 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         // ── Bootstrap ───────────────────────────────────────────
         bootstrap_cmds::bootstrap_get_status,
         bootstrap_cmds::bootstrap_execute,
+        // ── Onboarding ──────────────────────────────────────────
+        onboarding_cmds::onboarding_get_state,
+        onboarding_cmds::onboarding_provision_defaults,
     ]
 }

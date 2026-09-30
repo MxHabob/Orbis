@@ -11,7 +11,7 @@ use api::{
     iam_routes, org_routes, calendar_routes, academic_routes,
     student_routes, employee_routes, group_routes, override_routes, progression_routes, scheduling_routes, assessment_routes, exam_routes,
     finance_routes, document_routes, storage_routes, folder_routes, integration_routes, report_routes, ai_routes,
-    autopilot_routes, bootstrap_routes,
+    autopilot_routes, bootstrap_routes, onboarding_routes,
 };
 
 // ── OpenAPI Spec ────────────────────────────────────────────────
@@ -43,6 +43,7 @@ use api::{
         (name = "Report", description = "Report definitions, templates, generation"),
         (name = "Autopilot", description = "Autonomous lifecycle, finance & reporting automation engine"),
         (name = "Bootstrap", description = "First-time organization initialization"),
+        (name = "Onboarding", description = "Post-bootstrap institution configuration & readiness DAG"),
     ),
     paths(
         // Auth & MFA & Devices
@@ -313,6 +314,9 @@ use api::{
         // Bootstrap
         api::bootstrap_routes::get_bootstrap_status,
         api::bootstrap_routes::execute_bootstrap,
+        // Onboarding
+        api::onboarding_routes::get_onboarding_state,
+        api::onboarding_routes::provision_blueprint_defaults,
     ),
     components(
         schemas(
@@ -564,6 +568,12 @@ use api::{
             api::bootstrap_routes::BootstrapRequest,
             api::bootstrap_routes::BootstrapResultDto,
             api::bootstrap_routes::BootstrapStatusDto,
+            // Onboarding
+            api::onboarding_routes::SetupTaskDto,
+            api::onboarding_routes::CategoryProgressDto,
+            api::onboarding_routes::OnboardingStateDto,
+            api::onboarding_routes::ProvisionDefaultsReqDto,
+            api::onboarding_routes::ProvisionDefaultsResultDto,
         )
     ),
     modifiers(),
@@ -598,6 +608,7 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(ai_routes::routes())
         .merge(autopilot_routes::routes())
         .merge(bootstrap_routes::routes())
+        .merge(onboarding_routes::routes())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .layer(tower_http::cors::CorsLayer::permissive())
         .with_state(state)

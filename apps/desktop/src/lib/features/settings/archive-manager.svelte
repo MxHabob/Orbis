@@ -11,7 +11,7 @@ import { Input } from "@orbis/ui/input";
 import {
   Folder,
   FolderOpen,
-  FolderPlus,
+  NewFolderAlt,
   DocumentPage,
   ArrowUpTray,
   Search,
@@ -26,8 +26,8 @@ import {
   Check,
   CheckCircle,
 } from "@orbis/icons";
-import { confirmStore } from "@orbis/ui/confirm-dialog";
-import { toast } from "@orbis/ui/toast";
+import { confirmStore } from "$lib/stores";
+import { toast } from "@orbis/ui";
 import {
   useFolders,
   useFolderContents,
@@ -395,7 +395,7 @@ function onContainerDrop(e: DragEvent) {
           onclick={() => isCreateFolderModalOpen = true}
           class="gap-1.5 text-xs shadow-sm"
         >
-          <FolderPlus class="w-3.5 h-3.5 text-amber-500" />
+          <NewFolderAlt class="w-3.5 h-3.5 text-amber-500" />
           <span>مجلد جديد</span>
         </Button>
 
@@ -521,7 +521,7 @@ function onContainerDrop(e: DragEvent) {
         </p>
         <div class="flex items-center gap-2 mt-5">
           <Button variant="outline" size="sm" onclick={() => isCreateFolderModalOpen = true}>
-            <FolderPlus class="w-3.5 h-3.5 me-1.5 text-amber-500" />
+            <NewFolderAlt class="w-3.5 h-3.5 me-1.5 text-amber-500" />
             <span>إنشاء مجلد</span>
           </Button>
           <Button size="sm" onclick={() => fileInput?.click()}>

@@ -347,8 +347,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Arc::new(orbis_infra::repositories::role_repo::RoleRepoImpl::new(db.clone())),
         settings_repo.clone(),
         Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl { db: db.clone() }),
+        finance_repo.clone(),
+        finance_repo.clone(),
         password_hasher.clone(),
         event_bus.clone(),
+    ));
+
+    let onboarding_service = Arc::new(orbis_app::services::OnboardingService::new(
+        org_repo.clone(),
+        org_unit_repo.clone(),
+        calendar_repo.clone(),
+        calendar_repo.clone(),
+        academic_repo.clone(),
+        academic_repo.clone(),
+        academic_repo.clone(),
+        assessment_repo.clone(),
+        settings_repo.clone(),
+        finance_repo.clone(),
+        finance_repo.clone(),
+        finance_repo.clone(),
+        scheduling_repo.clone(),
+        doc_req_repo.clone(),
+        report_template_repo.clone(),
+        integration_repo.clone(),
+        permission_checker.clone(),
     ));
 
     // Build AppState
@@ -454,6 +476,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         employee_service,
         group_service,
         bootstrap_service,
+        onboarding_service,
     };
 
     // Spawn Autopilot Background Scheduler (checks every 60 seconds)

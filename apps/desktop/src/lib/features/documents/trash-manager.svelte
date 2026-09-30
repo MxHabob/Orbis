@@ -23,8 +23,8 @@ import {
   ClockRotateRight,
   ArchiveBox,
 } from "@orbis/icons";
-import { confirmStore } from "@orbis/ui/confirm-dialog";
-import { toast } from "@orbis/ui/toast";
+import { confirmStore } from "$lib/stores";
+import { toast } from "@orbis/ui";
 import {
   useTrashDocuments,
   useRestoreDocument,
