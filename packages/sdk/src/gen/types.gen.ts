@@ -3159,20 +3159,6 @@ export type DeleteBehaviorResponses = {
     200: unknown;
 };
 
-export type BootstrapOrgEndpointData = {
-    body: unknown;
-    path?: never;
-    query?: never;
-    url: '/api/v1/bootstrap';
-};
-
-export type BootstrapOrgEndpointResponses = {
-    /**
-     * Organization bootstrapped
-     */
-    200: unknown;
-};
-
 export type ListClassSubjectsData = {
     body?: never;
     path?: never;
@@ -4762,20 +4748,6 @@ export type ReverseJournalEntryResponses = {
 
 export type ReverseJournalEntryResponse = ReverseJournalEntryResponses[keyof ReverseJournalEntryResponses];
 
-export type OnboardingCompleteEndpointData = {
-    body: unknown;
-    path?: never;
-    query?: never;
-    url: '/api/v1/onboarding/complete';
-};
-
-export type OnboardingCompleteEndpointResponses = {
-    /**
-     * Organization onboarding completed
-     */
-    200: unknown;
-};
-
 export type ListOrgUnitsData = {
     body?: never;
     path?: never;
@@ -5856,20 +5828,6 @@ export type GetSubjectResponses = {
 };
 
 export type GetSubjectResponse = GetSubjectResponses[keyof GetSubjectResponses];
-
-export type GetSystemEntitlementEndpointData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/system/entitlement';
-};
-
-export type GetSystemEntitlementEndpointResponses = {
-    /**
-     * Get system entitlement
-     */
-    200: unknown;
-};
 
 export type GetSystemHasOrgEndpointData = {
     body?: never;
