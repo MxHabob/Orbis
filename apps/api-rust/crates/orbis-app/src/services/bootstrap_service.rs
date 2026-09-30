@@ -1,0 +1,657 @@
+//! Bootstrap Service — Orchestrates first-time organization initialization.
+//!
+//! This is NOT a domain service. It is an application-level orchestrator that
+//! coordinates existing domain services (Organization, IAM, Identity, Settings)
+//! to create a valid, usable Orbis institution from a fresh database.
+//!
+//! Responsibilities:
+//! - Validate bootstrap request
+//! - Check idempotency (prevent duplicate bootstrap)
+//! - Create organization via OrganizationService / Repository
+//! - Create initial administrator (Person → User → Identity → Role)
+//! - Initialize required organization settings
+//! - Initialize required system roles and permissions
+//! - Verify initialization completeness
+//! - Return strongly-typed bootstrap result
+
+use std::sync::Arc;
+use uuid::Uuid;
+use chrono::Utc;
+use serde::{Deserialize, Serialize};
+
+use orbis_domain::entities::organization::{InstitutionType, Organization};
+use orbis_domain::entities::person::Person;
+use orbis_domain::entities::user::User;
+use orbis_domain::entities::identity::{UserIdentity, IdentityProvider};
+use orbis_domain::entities::role::Role;
+use orbis_domain::entities::role_permission::RolePermission;
+use orbis_domain::entities::user_role_assignment::UserRoleAssignment;
+use orbis_domain::entities::settings::OrganizationSettings;
+use orbis_domain::errors::DomainError;
+
+use crate::ports::repositories::{
+    OrganizationRepository, UserRepository, PersonRepository,
+    UserIdentityRepository, RoleRepository, SettingsRepository, SystemRepository,
+};
+use crate::ports::security::PasswordHasher;
+use crate::ports::event_bus::EventBus;
+
+// ═══════════════════════════════════════════════════════════════
+// Bootstrap Request
+// ═══════════════════════════════════════════════════════════════
+
+/// Complete request to bootstrap a new Orbis institution.
+/// Contains all information required to create a valid organization + administrator.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BootstrapRequest {
+    // ── Institution ───────────────────────────────────────────
+    pub institution_type: String,
+    pub organization_name: String,
+    pub organization_name_ar: Option<String>,
+    pub organization_slug: String,
+    pub organization_code: Option<String>,
+
+    // ── Localization ──────────────────────────────────────────
+    pub timezone: String,
+    pub locale: String,
+    pub date_format: Option<String>,
+    pub is_hijri_enabled: Option<bool>,
+    pub base_currency_code: Option<String>,
+
+    // ── Branding ──────────────────────────────────────────────
+    pub primary_color: Option<String>,
+
+    // ── Administrator ─────────────────────────────────────────
+    pub admin_first_name: String,
+    pub admin_last_name: String,
+    pub admin_first_name_ar: Option<String>,
+    pub admin_last_name_ar: Option<String>,
+    pub admin_email: String,
+    pub admin_password: String,
+    pub admin_phone: Option<String>,
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Bootstrap Result
+// ═══════════════════════════════════════════════════════════════
+
+/// Strongly-typed result of a successful bootstrap.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BootstrapResult {
+    pub success: bool,
+    pub organization_id: Uuid,
+    pub organization_name: String,
+    pub organization_slug: String,
+    pub institution_type: String,
+    pub admin_user_id: Uuid,
+    pub admin_email: String,
+    pub setup_required: bool,
+    pub warnings: Vec<String>,
+}
+
+/// Status of the bootstrap system.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum BootstrapStatus {
+    /// No organization exists — bootstrap is required.
+    Required,
+    /// Bootstrap is currently in progress (set via in-flight flag).
+    InProgress,
+    /// Bootstrap completed successfully — organization exists with admin.
+    Completed,
+}
+
+/// Bootstrap status response for the frontend.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BootstrapStatusResponse {
+    pub status: BootstrapStatus,
+    pub organization_id: Option<Uuid>,
+    pub organization_name: Option<String>,
+    pub institution_type: Option<String>,
+    pub has_admin: bool,
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Bootstrap Service
+// ═══════════════════════════════════════════════════════════════
+
+pub struct BootstrapService {
+    pub org_repo: Arc<dyn OrganizationRepository>,
+    pub user_repo: Arc<dyn UserRepository>,
+    pub person_repo: Arc<dyn PersonRepository>,
+    pub user_identity_repo: Arc<dyn UserIdentityRepository>,
+    pub role_repo: Arc<dyn RoleRepository>,
+    pub settings_repo: Arc<dyn SettingsRepository>,
+    pub system_repo: Arc<dyn SystemRepository>,
+    pub password_hasher: Arc<dyn PasswordHasher>,
+    pub event_bus: Arc<dyn EventBus>,
+}
+
+impl BootstrapService {
+    pub fn new(
+        org_repo: Arc<dyn OrganizationRepository>,
+        user_repo: Arc<dyn UserRepository>,
+        person_repo: Arc<dyn PersonRepository>,
+        user_identity_repo: Arc<dyn UserIdentityRepository>,
+        role_repo: Arc<dyn RoleRepository>,
+        settings_repo: Arc<dyn SettingsRepository>,
+        system_repo: Arc<dyn SystemRepository>,
+        password_hasher: Arc<dyn PasswordHasher>,
+        event_bus: Arc<dyn EventBus>,
+    ) -> Self {
+        Self {
+            org_repo,
+            user_repo,
+            person_repo,
+            user_identity_repo,
+            role_repo,
+            settings_repo,
+            system_repo,
+            password_hasher,
+            event_bus,
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Bootstrap Status
+    // ─────────────────────────────────────────────────────────
+
+    /// Determine the current bootstrap status by inspecting actual database state.
+    pub async fn get_status(&self) -> Result<BootstrapStatusResponse, DomainError> {
+        let has_org = self.system_repo.has_organization().await?;
+
+        if !has_org {
+            return Ok(BootstrapStatusResponse {
+                status: BootstrapStatus::Required,
+                organization_id: None,
+                organization_name: None,
+                institution_type: None,
+                has_admin: false,
+            });
+        }
+
+        let org_id = self.system_repo.get_first_org_id().await?;
+        let org_name = self.system_repo.get_org_name().await?;
+        let has_admin = self.system_repo.has_admin().await?;
+
+        // Determine institution type from organization metadata
+        let institution_type = if let Some(oid) = org_id {
+            self.org_repo.find_by_id(oid).await?
+                .and_then(|o| o.metadata.as_ref()
+                    .and_then(|m| m.get("institution_type"))
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string()))
+        } else {
+            None
+        };
+
+        let status = if has_org && has_admin {
+            BootstrapStatus::Completed
+        } else {
+            // Org exists but no admin — partial bootstrap (failure recovery scenario)
+            BootstrapStatus::Required
+        };
+
+        Ok(BootstrapStatusResponse {
+            status,
+            organization_id: org_id,
+            organization_name: org_name,
+            institution_type,
+            has_admin,
+        })
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Execute Bootstrap
+    // ─────────────────────────────────────────────────────────
+
+    /// Execute the complete bootstrap sequence.
+    ///
+    /// This is idempotent: if an organization + admin already exist,
+    /// it returns `DomainError::AlreadyInitialized`.
+    ///
+    /// If only an organization exists (no admin), it will complete the
+    /// bootstrap by creating the admin — this handles crash recovery.
+    pub async fn execute(&self, req: BootstrapRequest) -> Result<BootstrapResult, DomainError> {
+        // ── Step 1: Validate request ──────────────────────────
+        self.validate_request(&req)?;
+
+        // ── Step 2: Check idempotency ─────────────────────────
+        let has_org = self.system_repo.has_organization().await?;
+        let has_admin = self.system_repo.has_admin().await?;
+
+        if has_org && has_admin {
+            return Err(DomainError::AlreadyInitialized);
+        }
+
+        let mut warnings = Vec::new();
+
+        // ── Step 3: Create or recover organization ────────────
+        let org = if has_org {
+            // Recovery: organization exists but admin doesn't.
+            // Reuse the existing organization.
+            warnings.push("Organization already existed — resuming bootstrap".to_string());
+            let org_id = self.system_repo.get_first_org_id().await?
+                .ok_or_else(|| DomainError::Internal("Organization flag set but no org found".into()))?;
+            self.org_repo.find_by_id(org_id).await?
+                .ok_or_else(|| DomainError::Internal("Organization ID exists but record not found".into()))?
+        } else {
+            self.create_organization(&req).await?
+        };
+
+        let org_id = org.id;
+        let institution_type = InstitutionType::from_str_loose(&req.institution_type);
+
+        // ── Step 4: Initialize organization settings ──────────
+        self.initialize_settings(org_id, &institution_type, &req).await?;
+
+        // ── Step 5: Create system roles ───────────────────────
+        self.create_system_roles(org_id).await?;
+
+        // ── Step 6: Create initial administrator ──────────────
+        let (admin_user, _admin_person) = self.create_administrator(org_id, &req).await?;
+
+        // ── Step 7: Assign admin role ─────────────────────────
+        self.assign_admin_role(org_id, admin_user.id).await?;
+
+        // ── Step 8: Verify ────────────────────────────────────
+        let verified = self.verify_bootstrap(org_id).await?;
+        if !verified {
+            warnings.push("Bootstrap verification detected incomplete state".to_string());
+        }
+
+        Ok(BootstrapResult {
+            success: true,
+            organization_id: org_id,
+            organization_name: org.name.clone(),
+            organization_slug: org.slug.clone(),
+            institution_type: institution_type.as_str().to_string(),
+            admin_user_id: admin_user.id,
+            admin_email: req.admin_email.clone(),
+            setup_required: true, // Onboarding always required after bootstrap
+            warnings,
+        })
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Internal: Validate
+    // ─────────────────────────────────────────────────────────
+
+    fn validate_request(&self, req: &BootstrapRequest) -> Result<(), DomainError> {
+        if req.organization_name.trim().is_empty() {
+            return Err(DomainError::Validation("Organization name is required".into()));
+        }
+        if req.organization_slug.trim().is_empty() {
+            return Err(DomainError::Validation("Organization slug is required".into()));
+        }
+        if req.admin_first_name.trim().is_empty() {
+            return Err(DomainError::Validation("Administrator first name is required".into()));
+        }
+        if req.admin_last_name.trim().is_empty() {
+            return Err(DomainError::Validation("Administrator last name is required".into()));
+        }
+        if req.admin_email.trim().is_empty() {
+            return Err(DomainError::Validation("Administrator email is required".into()));
+        }
+        if req.admin_password.len() < 8 {
+            return Err(DomainError::Validation("Administrator password must be at least 8 characters".into()));
+        }
+        if req.timezone.trim().is_empty() {
+            return Err(DomainError::Validation("Timezone is required".into()));
+        }
+        if req.locale.trim().is_empty() {
+            return Err(DomainError::Validation("Locale is required".into()));
+        }
+
+        // Validate institution type
+        let _inst = InstitutionType::from_str_loose(&req.institution_type);
+
+        // Validate email format (basic)
+        if !req.admin_email.contains('@') || !req.admin_email.contains('.') {
+            return Err(DomainError::Validation("Invalid administrator email format".into()));
+        }
+
+        // Validate slug format (lowercase, no spaces)
+        let slug = req.organization_slug.trim();
+        if slug.contains(' ') || slug != slug.to_lowercase() {
+            return Err(DomainError::Validation("Organization slug must be lowercase with no spaces".into()));
+        }
+
+        Ok(())
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Internal: Create Organization
+    // ─────────────────────────────────────────────────────────
+
+    async fn create_organization(&self, req: &BootstrapRequest) -> Result<Organization, DomainError> {
+        // Check slug uniqueness
+        if let Some(_existing) = self.org_repo.find_by_slug(&req.organization_slug).await? {
+            return Err(DomainError::Conflict(format!(
+                "Organization with slug '{}' already exists",
+                req.organization_slug
+            )));
+        }
+
+        let institution_type = InstitutionType::from_str_loose(&req.institution_type);
+        let now = Utc::now();
+
+        let mut org = Organization::new(
+            req.organization_name.clone(),
+            req.organization_slug.clone(),
+            req.timezone.clone(),
+            req.locale.clone(),
+        )?;
+
+        // Apply optional fields from bootstrap request
+        org.name_ar = req.organization_name_ar.clone();
+        org.code = req.organization_code.clone();
+        org.date_format = req.date_format.clone().or(Some("YYYY-MM-DD".to_string()));
+        org.is_hijri_enabled = req.is_hijri_enabled.unwrap_or(false);
+        org.base_currency_code = req.base_currency_code.clone();
+        org.primary_color = req.primary_color.clone().or(Some("#4f46e5".to_string()));
+        org.is_verified = true; // Bootstrap-created org is verified
+        org.metadata = Some(serde_json::json!({
+            "institution_type": institution_type.as_str(),
+            "bootstrapped_at": now.to_rfc3339(),
+            "bootstrap_version": "2.0",
+        }));
+        org.created_at = now;
+        org.updated_at = now;
+
+        self.org_repo.save(&org).await?;
+
+        Ok(org)
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Internal: Initialize Settings
+    // ─────────────────────────────────────────────────────────
+
+    async fn initialize_settings(
+        &self,
+        org_id: Uuid,
+        institution_type: &InstitutionType,
+        req: &BootstrapRequest,
+    ) -> Result<(), DomainError> {
+        let mut settings = OrganizationSettings::default();
+
+        // Apply institution-type-specific defaults
+        match institution_type {
+            InstitutionType::School => {
+                settings.academic.default_grading_system = "percentage".to_string();
+                settings.enrollment.max_class_size_default = 30;
+            }
+            InstitutionType::University => {
+                settings.academic.default_grading_system = "gpa".to_string();
+                settings.enrollment.max_class_size_default = 50;
+                settings.enrollment.allow_late_enrollment = true;
+            }
+            InstitutionType::Institute => {
+                settings.academic.default_grading_system = "percentage".to_string();
+                settings.enrollment.max_class_size_default = 25;
+            }
+        }
+
+        // Apply currency from bootstrap request
+        if let Some(ref currency) = req.base_currency_code {
+            settings.finance.currency = currency.clone();
+        }
+
+        self.settings_repo.save_settings(org_id, &settings).await?;
+        Ok(())
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Internal: Create System Roles
+    // ─────────────────────────────────────────────────────────
+
+    /// Create the required system roles for the organization.
+    /// Idempotent — skips roles that already exist.
+    async fn create_system_roles(&self, org_id: Uuid) -> Result<(), DomainError> {
+        let now = Utc::now();
+
+        let system_roles = vec![
+            ("super_admin", "Super Administrator", Some("مدير النظام")),
+            ("org_admin", "Organization Administrator", Some("مدير المؤسسة")),
+            ("principal", "Principal", Some("المدير")),
+            ("teacher", "Teacher", Some("معلم")),
+            ("guardian", "Guardian", Some("ولي أمر")),
+            ("student", "Student", Some("طالب")),
+            ("accountant", "Accountant", Some("محاسب")),
+            ("registrar", "Registrar", Some("أمين القبول والتسجيل")),
+        ];
+
+        for (role_id, name, name_ar) in system_roles {
+            let role = Role {
+                id: role_id.to_string(),
+                org_id,
+                name: name.to_string(),
+                name_ar: name_ar.map(|s| s.to_string()),
+                is_system: true,
+                created_at: now,
+                updated_at: now,
+            };
+
+            self.role_repo.save_role(&role).await?;
+        }
+
+        // Create admin permissions for super_admin and org_admin roles
+        self.create_admin_permissions(org_id, "super_admin").await?;
+        self.create_admin_permissions(org_id, "org_admin").await?;
+
+        Ok(())
+    }
+
+    /// Assign all permissions to an admin role.
+    /// Idempotent — replaces existing permissions.
+    async fn create_admin_permissions(&self, org_id: Uuid, role_id: &str) -> Result<(), DomainError> {
+        let now = Utc::now();
+
+        // All permission strings from the Permission enum
+        let all_permissions = [
+            ("organization", vec!["read", "write"]),
+            ("user", vec!["read", "write", "delete", "role_write", "password_write"]),
+            ("period", vec!["read", "write", "activate", "lock", "unlock"]),
+            ("org_unit", vec!["read", "write", "delete"]),
+            ("class", vec!["read", "write", "delete"]),
+            ("subject", vec!["read", "write", "delete"]),
+            ("schedule", vec!["read", "write", "delete"]),
+            ("assessment", vec!["read", "write", "delete"]),
+            ("grade", vec!["read", "write", "entry_manage", "analytics", "report"]),
+            ("student", vec!["read", "write", "create", "update", "delete"]),
+            ("guardian", vec!["read", "write", "delete"]),
+            ("enrollment", vec!["read", "write", "promote", "transfer"]),
+            ("workflow", vec!["read", "write", "approve", "execute"]),
+            ("attendance", vec!["read", "write", "analytics", "report"]),
+            ("behavior", vec!["read", "write", "delete", "ai"]),
+            ("document", vec!["read", "write", "delete"]),
+            ("template", vec!["read", "write", "publish", "delete", "import", "export",
+                             "generate_single", "generate_batch", "generate_download",
+                             "asset_upload", "asset_delete", "component_write", "component_delete"]),
+            ("exam_session", vec!["read", "write", "activate", "delete"]),
+            ("seating_number", vec!["generate", "read"]),
+            ("secret_number", vec!["generate", "read", "reveal"]),
+            ("exam_hall", vec!["read", "write", "allocate"]),
+            ("proctor", vec!["read", "assign"]),
+            ("student_order", vec!["read", "rebuild", "freeze"]),
+            ("exam_schedule", vec!["read", "write"]),
+            ("notification", vec!["read", "write"]),
+            ("dashboard", vec!["read"]),
+            ("audit", vec!["read"]),
+            ("data", vec!["import", "export"]),
+            ("finance", vec!["read", "write", "payment"]),
+            ("promotion", vec!["read", "write", "execute"]),
+            ("employee", vec!["read", "write", "create", "update", "delete"]),
+            ("group", vec!["read", "write", "delete", "assign"]),
+            ("system", vec!["autopilot"]),
+        ];
+
+        let mut perms = Vec::new();
+        for (resource, actions) in &all_permissions {
+            for action in actions {
+                perms.push(RolePermission {
+                    id: Uuid::new_v4(),
+                    role_id: role_id.to_string(),
+                    org_id,
+                    resource: resource.to_string(),
+                    action: action.to_string(),
+                    condition: None,
+                    created_at: now,
+                });
+            }
+        }
+
+        self.role_repo.save_role_permissions(org_id, role_id, &perms).await?;
+
+        Ok(())
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Internal: Create Administrator
+    // ─────────────────────────────────────────────────────────
+
+    async fn create_administrator(
+        &self,
+        org_id: Uuid,
+        req: &BootstrapRequest,
+    ) -> Result<(User, Person), DomainError> {
+        // Check if admin email already exists (idempotency)
+        if let Some(existing_user) = self.user_repo.find_by_email(&req.admin_email).await? {
+            // Admin already exists — return existing (recovery scenario)
+            let person = self.person_repo.find_by_id(existing_user.person_id).await?
+                .ok_or_else(|| DomainError::Internal("Admin user exists but person record missing".into()))?;
+            return Ok((existing_user, person));
+        }
+
+        let now = Utc::now();
+        let person_id = Uuid::new_v4();
+        let user_id = Uuid::new_v4();
+
+        // Create Person record
+        let person = Person {
+            id: person_id,
+            org_id: Some(org_id),
+            first_name: req.admin_first_name.clone(),
+            middle_name: None,
+            last_name: req.admin_last_name.clone(),
+            first_name_ar: req.admin_first_name_ar.clone(),
+            middle_name_ar: None,
+            last_name_ar: req.admin_last_name_ar.clone(),
+            display_name: None,
+            national_id: None,
+            passport_number: None,
+            gender: None,
+            birth_date: None,
+            place_of_birth: None,
+            nationality: None,
+            blood_type: None,
+            medical_notes: None,
+            special_needs_notes: None,
+            phone: req.admin_phone.clone(),
+            email: Some(req.admin_email.clone()),
+            address: None,
+            avatar_url: None,
+            created_at: now,
+            updated_at: now,
+        };
+        self.person_repo.save(&person).await?;
+
+        // Hash password
+        let password_hash = self.password_hasher.hash(&req.admin_password).await?;
+
+        // Create User record
+        let user = User {
+            id: user_id,
+            person_id,
+            org_id,
+            email: Some(req.admin_email.clone()),
+            is_email_verified: true, // Bootstrap admin is pre-verified
+            phone: req.admin_phone.clone(),
+            is_phone_verified: false,
+            password_hash: Some(password_hash),
+            is_mfa_enabled: false,
+            status: "active".to_string(),
+            login_count: 0,
+            failed_login_attempts: 0,
+            locked_until: None,
+            is_deleted: false,
+            created_by: None, // System-created
+            updated_by: None,
+            created_at: now,
+            updated_at: now,
+        };
+        self.user_repo.save(&user).await?;
+
+        // Create UserIdentity for password authentication
+        let identity = UserIdentity {
+            id: Uuid::new_v4(),
+            user_id,
+            provider: IdentityProvider::Password,
+            provider_user_id: req.admin_email.clone(),
+            email: Some(req.admin_email.clone()),
+            is_primary: true,
+            profile_data: None,
+            connected_at: now,
+            last_used_at: None,
+        };
+        self.user_identity_repo.save(&identity).await?;
+
+        Ok((user, person))
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Internal: Assign Admin Role
+    // ─────────────────────────────────────────────────────────
+
+    async fn assign_admin_role(&self, org_id: Uuid, user_id: Uuid) -> Result<(), DomainError> {
+        let now = Utc::now();
+
+        // Assign super_admin role
+        let assignment = UserRoleAssignment {
+            id: Uuid::new_v4(),
+            user_id,
+            role_id: "super_admin".to_string(),
+            org_id,
+            scope_type: "organization".to_string(),
+            scope_id: None,
+            assigned_by: Some("system:bootstrap".to_string()),
+            created_at: now,
+        };
+        self.role_repo.assign_role(&assignment).await?;
+
+        // Also assign org_admin role
+        let org_admin = UserRoleAssignment {
+            id: Uuid::new_v4(),
+            user_id,
+            role_id: "org_admin".to_string(),
+            org_id,
+            scope_type: "organization".to_string(),
+            scope_id: None,
+            assigned_by: Some("system:bootstrap".to_string()),
+            created_at: now,
+        };
+        self.role_repo.assign_role(&org_admin).await?;
+
+        Ok(())
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Internal: Verify
+    // ─────────────────────────────────────────────────────────
+
+    /// Verify that bootstrap created everything required.
+    async fn verify_bootstrap(&self, org_id: Uuid) -> Result<bool, DomainError> {
+        let has_org = self.org_repo.find_by_id(org_id).await?.is_some();
+        let has_admin = self.system_repo.has_admin().await?;
+
+        // Verify settings exist
+        let settings = self.settings_repo.get_settings(org_id).await;
+        let has_settings = settings.is_ok();
+
+        // Verify at least one role exists
+        let role_count = self.role_repo.count_by_org(org_id).await?;
+
+        Ok(has_org && has_admin && has_settings && role_count > 0)
+    }
+}

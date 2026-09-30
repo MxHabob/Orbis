@@ -699,22 +699,44 @@ export interface OrganizationReadiness {
 }
 
 export interface BootstrapRequest {
-  orgName: string;
-  orgNameAr?: string;
-  orgType: string;
+  institution_type: string;
+  organization_name: string;
+  organization_name_ar?: string;
+  organization_slug: string;
+  organization_code?: string;
   timezone: string;
   locale: string;
-  currency: string;
-  adminFullName: string;
-  adminEmail: string;
-  adminPassword: string;
+  date_format?: string;
+  is_hijri_enabled?: boolean;
+  base_currency_code?: string;
+  primary_color?: string;
+  admin_first_name: string;
+  admin_last_name: string;
+  admin_first_name_ar?: string;
+  admin_last_name_ar?: string;
+  admin_email: string;
+  admin_password: string;
+  admin_phone?: string;
 }
 
 export interface BootstrapResult {
-  org_id: string;
+  success: boolean;
+  organization_id: string;
+  organization_name: string;
+  organization_slug: string;
+  institution_type: string;
   admin_user_id: string;
-  token: string;
-  readiness: OrganizationReadiness;
+  admin_email: string;
+  setup_required: boolean;
+  warnings: string[];
+}
+
+export interface BootstrapStatusResponse {
+  status: "required" | "in_progress" | "completed";
+  organization_id?: string;
+  organization_name?: string;
+  institution_type?: string;
+  has_admin: boolean;
 }
 
 export interface CompleteOrganizationOnboardingRequest {
@@ -1214,6 +1236,7 @@ export interface OrbisApiClient {
   systemHasOrganization(): Promise<boolean>;
   systemGetReadiness(): Promise<OrganizationReadiness>;
   systemGetEntitlement(): Promise<EntitlementResult>;
+  bootstrapGetStatus(): Promise<BootstrapStatusResponse>;
   bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult>;
   completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult>;
 

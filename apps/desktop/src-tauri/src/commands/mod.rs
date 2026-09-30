@@ -23,6 +23,7 @@ pub mod database_cmds;
 pub mod system_cmds;
 pub mod ai_cmds;
 pub mod autopilot_cmds;
+pub mod bootstrap_cmds;
 
 use tauri::generate_handler;
 
@@ -334,5 +335,8 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         autopilot_cmds::autopilot_retry_task,
         autopilot_cmds::autopilot_dismiss_task,
         autopilot_cmds::autopilot_get_diagnostics,
+        // ── Bootstrap ───────────────────────────────────────────
+        bootstrap_cmds::bootstrap_get_status,
+        bootstrap_cmds::bootstrap_execute,
     ]
 }

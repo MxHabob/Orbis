@@ -11,7 +11,7 @@ use api::{
     iam_routes, org_routes, calendar_routes, academic_routes,
     student_routes, employee_routes, group_routes, override_routes, progression_routes, scheduling_routes, assessment_routes, exam_routes,
     finance_routes, document_routes, integration_routes, report_routes, ai_routes,
-    autopilot_routes,
+    autopilot_routes, bootstrap_routes,
 };
 
 // ── OpenAPI Spec ────────────────────────────────────────────────
@@ -40,6 +40,7 @@ use api::{
         (name = "Integration", description = "Third-party app integrations"),
         (name = "Report", description = "Report definitions, templates, generation"),
         (name = "Autopilot", description = "Autonomous lifecycle, finance & reporting automation engine"),
+        (name = "Bootstrap", description = "First-time organization initialization"),
     ),
     paths(
         // Auth & MFA & Devices
@@ -287,6 +288,9 @@ use api::{
         api::autopilot_routes::retry_task,
         api::autopilot_routes::dismiss_task,
         api::autopilot_routes::get_diagnostics,
+        // Bootstrap
+        api::bootstrap_routes::get_bootstrap_status,
+        api::bootstrap_routes::execute_bootstrap,
     ),
     components(
         schemas(
@@ -524,6 +528,10 @@ use api::{
             api::group_routes::AddGroupMemberRequest,
             api::group_routes::BulkAssignGroupRequest,
             api::group_routes::SetGroupPermissionsRequest,
+            // Bootstrap
+            api::bootstrap_routes::BootstrapRequest,
+            api::bootstrap_routes::BootstrapResultDto,
+            api::bootstrap_routes::BootstrapStatusDto,
         )
     ),
     modifiers(),
@@ -555,6 +563,7 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(report_routes::routes())
         .merge(ai_routes::routes())
         .merge(autopilot_routes::routes())
+        .merge(bootstrap_routes::routes())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .layer(tower_http::cors::CorsLayer::permissive())
         .with_state(state)

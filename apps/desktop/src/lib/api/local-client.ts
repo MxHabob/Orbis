@@ -165,6 +165,7 @@ import type {
   EntitlementResult,
   BootstrapRequest,
   BootstrapResult,
+  BootstrapStatusResponse,
   CompleteOrganizationOnboardingRequest,
   OnboardingResult,
   ConnectionConfig,
@@ -1230,8 +1231,11 @@ export class LocalClient implements OrbisApiClient {
   async systemGetEntitlement(): Promise<EntitlementResult> {
     return invoke<EntitlementResult>("system_get_entitlement");
   }
+  async bootstrapGetStatus(): Promise<BootstrapStatusResponse> {
+    return invoke<BootstrapStatusResponse>("bootstrap_get_status");
+  }
   async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
-    return invoke<BootstrapResult>("bootstrap_organization", req as unknown as Record<string, unknown>);
+    return invoke<BootstrapResult>("bootstrap_execute", { request: req });
   }
   async completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {
     return invoke<OnboardingResult>("onboarding_complete", { request: req });

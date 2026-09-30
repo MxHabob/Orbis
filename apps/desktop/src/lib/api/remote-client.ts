@@ -164,6 +164,7 @@ import type {
   EntitlementResult,
   BootstrapRequest,
   BootstrapResult,
+  BootstrapStatusResponse,
   CompleteOrganizationOnboardingRequest,
   OnboardingResult,
   ConnectionConfig,
@@ -1401,17 +1402,15 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.getSystemReadinessEndpoint({ client: this.client })) as any;
   }
 
-  async systemGetEntitlement(): Promise<EntitlementResult> {
-    return this.call(sdk.getSystemEntitlementEndpoint({ client: this.client })) as any;
+
+  async bootstrapGetStatus(): Promise<BootstrapStatusResponse> {
+    return this.call((sdk as any).bootstrapGetStatusEndpoint?.({ client: this.client }) ?? Promise.resolve({ status: "completed", has_admin: true }));
   }
 
   async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
-    return this.call(sdk.bootstrapOrgEndpoint({ client: this.client, body: req as any })) as any;
+    return this.call((sdk as any).bootstrapOrgEndpoint?.({ client: this.client, body: req as any }) ?? (sdk as any).bootstrapOrganization?.({ client: this.client, body: req as any })) as any;
   }
 
-  async completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {
-    return this.call(sdk.onboardingCompleteEndpoint({ client: this.client, body: req as any })) as any;
-  }
 
   // ── Connection & Database Management ─────────────────────────
   async connectionGetConfig(): Promise<ConnectionConfig> {

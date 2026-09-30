@@ -134,6 +134,7 @@ pub struct AppState {
     pub identity_provisioning_service: Arc<orbis_app::services::IdentityProvisioningService>,
     pub employee_service: Arc<orbis_app::services::EmployeeService>,
     pub group_service: Arc<orbis_app::services::GroupService>,
+    pub bootstrap_service: Arc<orbis_app::services::BootstrapService>,
 }
 
 
@@ -451,6 +452,18 @@ impl AppState {
             permission_checker.clone(),
         ));
 
+        let bootstrap_service = Arc::new(orbis_app::services::BootstrapService::new(
+            org_repo.clone(),
+            user_repo.clone(),
+            person_repo.clone(),
+            identity_repo.clone(),
+            Arc::new(orbis_infra::repositories::role_repo::RoleRepoImpl::new(db.clone())),
+            settings_repo.clone(),
+            system_repo_impl.clone(),
+            password_hasher.clone(),
+            event_bus.clone(),
+        ));
+
         let state = Self {
             db,
             active_session,
@@ -544,6 +557,7 @@ impl AppState {
             identity_provisioning_service,
             employee_service,
             group_service,
+            bootstrap_service,
         };
 
         // Spawn Autopilot Background Scheduler (checks every 60 seconds)

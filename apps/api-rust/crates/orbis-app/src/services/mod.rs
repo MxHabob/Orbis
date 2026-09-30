@@ -18,6 +18,7 @@ pub mod autopilot_service;
 pub mod identity_provisioning_service;
 pub mod employee_service;
 pub mod group_service;
+pub mod bootstrap_service;
 
 pub use student_service::{StudentService, RegisterStudentInput};
 pub use progression_service::ProgressionService;
@@ -39,3 +40,4 @@ pub use autopilot_service::{AutopilotService, AutopilotDiagnostics};
 pub use identity_provisioning_service::{IdentityProvisioningService, ProvisionAccountInput, ResetPasswordResult};
 pub use employee_service::{EmployeeService, RegisterEmployeeInput, UpdateEmployeeInput, RegisterEmployeeResult, AccountProvisioningConfig};
 pub use group_service::{GroupService, CreateGroupInput, UpdateGroupInput, BulkAssignGroupInput};
+pub use bootstrap_service::{BootstrapService, BootstrapRequest, BootstrapResult, BootstrapStatus, BootstrapStatusResponse};

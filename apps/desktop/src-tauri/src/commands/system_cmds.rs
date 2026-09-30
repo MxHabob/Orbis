@@ -35,7 +35,10 @@ pub async fn system_get_readiness(
 #[tauri::command]
 pub async fn system_get_entitlement(
     state: State<'_, AppState>,
-) -> Result<orbis_app::ports::entitlement::SystemEntitlementSummary, String> {
-    let summary = state.entitlement_provider.system_summary().await;
-    Ok(summary)
+) -> Result<orbis_domain::entities::entitlement::EntitlementResult, String> {
+    state
+        .entitlement_provider
+        .check_entitlement("orbis_desktop", "default")
+        .await
+        .map_err(|e| e.to_string())
 }

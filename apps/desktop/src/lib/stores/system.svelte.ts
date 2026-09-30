@@ -12,6 +12,9 @@ import type {
   OnboardingResult,
   EntitlementResult,
   OrgLifecycleState,
+  BootstrapRequest,
+  BootstrapResult,
+  BootstrapStatusResponse,
 } from "$lib/api/types";
 import { extractErrorMessage } from "$lib/api";
 
@@ -98,6 +101,26 @@ class SystemStore {
     } catch (e) {
       console.warn("Failed to load entitlement:", e);
       return null;
+    }
+  }
+
+  async bootstrapGetStatus(): Promise<BootstrapStatusResponse | null> {
+    try {
+      return await api.bootstrapGetStatus();
+    } catch (e) {
+      console.warn("Failed to get bootstrap status:", e);
+      return null;
+    }
+  }
+
+  async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
+    this.isLoading = true;
+    try {
+      const res = await api.bootstrapOrganization(req);
+      await this.loadReadiness();
+      return res;
+    } finally {
+      this.isLoading = false;
     }
   }
 

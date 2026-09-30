@@ -317,6 +317,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         permission_checker.clone(),
     ));
 
+    let bootstrap_service = Arc::new(orbis_app::services::BootstrapService::new(
+        org_repo.clone(),
+        user_repo.clone(),
+        person_repo.clone(),
+        identity_repo.clone(),
+        Arc::new(orbis_infra::repositories::role_repo::RoleRepoImpl::new(db.clone())),
+        settings_repo.clone(),
+        Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl { db: db.clone() }),
+        password_hasher.clone(),
+        event_bus.clone(),
+    ));
+
     // Build AppState
     let state = AppState {
         db: db.clone(),
@@ -414,6 +426,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         identity_provisioning_service,
         employee_service,
         group_service,
+        bootstrap_service,
     };
 
     // Spawn Autopilot Background Scheduler (checks every 60 seconds)

@@ -50,6 +50,9 @@ use orbis_domain::{
         subject::Subject,
         time_slot::TimeSlot,
         user::User,
+        role::Role,
+        role_permission::RolePermission,
+        user_role_assignment::UserRoleAssignment,
         workflow::{WorkflowAction, WorkflowExecution, WorkflowRule},
     },
     autopilot::task::AutopilotTask,
@@ -697,6 +700,21 @@ pub trait DocumentRequirementRepository: Send + Sync {
 #[async_trait]
 pub trait SequenceCounterRepository: Send + Sync {
     async fn next_sequence(&self, org_id: Uuid, sequence_type: &str, academic_year: i32) -> Result<u64, DomainError>;
+}
+
+// =========================================================================
+// Role & Permission Repository Port
+// =========================================================================
+
+#[async_trait]
+pub trait RoleRepository: Send + Sync {
+    async fn find_by_id(&self, org_id: Uuid, role_id: &str) -> Result<Option<Role>, DomainError>;
+    async fn list_by_org(&self, org_id: Uuid) -> Result<Vec<Role>, DomainError>;
+    async fn count_by_org(&self, org_id: Uuid) -> Result<u64, DomainError>;
+    async fn save_role(&self, role: &Role) -> Result<(), DomainError>;
+    async fn save_role_permissions(&self, org_id: Uuid, role_id: &str, permissions: &[RolePermission]) -> Result<(), DomainError>;
+    async fn assign_role(&self, assignment: &UserRoleAssignment) -> Result<(), DomainError>;
+    async fn find_assignment(&self, org_id: Uuid, user_id: Uuid, role_id: &str) -> Result<Option<UserRoleAssignment>, DomainError>;
 }
 
 
