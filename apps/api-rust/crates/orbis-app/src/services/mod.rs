@@ -19,6 +19,8 @@ pub mod identity_provisioning_service;
 pub mod employee_service;
 pub mod group_service;
 pub mod bootstrap_service;
+pub mod file_storage_service;
+pub mod folder_service;
 
 pub use student_service::{StudentService, RegisterStudentInput};
 pub use progression_service::ProgressionService;
@@ -31,6 +33,8 @@ pub use organization_service::{OrganizationService, UpdateOrgRequest, CreateOrgU
 pub use calendar_service::CalendarService;
 pub use scheduling_service::SchedulingService;
 pub use document_service::{DocumentService, CreateDocumentInput, UpdateDocumentInput, CreateDocumentRequirementInput, UpdateDocumentRequirementInput, StudentDocumentFulfillment};
+pub use file_storage_service::{FileStorageService, UploadFileInput};
+pub use folder_service::{FolderService, CreateFolderInput, UpdateFolderInput, FolderContentsDto};
 pub use integration_service::IntegrationService;
 pub use workflow_service::{WorkflowService, SubmitOverrideInput};
 pub use report_service::{ReportService, GenerateReportInput, OrgContextResolver};

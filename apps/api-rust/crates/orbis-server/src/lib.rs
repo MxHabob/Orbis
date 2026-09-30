@@ -10,7 +10,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use api::{
     iam_routes, org_routes, calendar_routes, academic_routes,
     student_routes, employee_routes, group_routes, override_routes, progression_routes, scheduling_routes, assessment_routes, exam_routes,
-    finance_routes, document_routes, integration_routes, report_routes, ai_routes,
+    finance_routes, document_routes, storage_routes, folder_routes, integration_routes, report_routes, ai_routes,
     autopilot_routes, bootstrap_routes,
 };
 
@@ -37,6 +37,8 @@ use api::{
         (name = "Exam", description = "Exam sessions, schedules, seating, proctors"),
         (name = "Finance", description = "Accounts, fee templates, student fees, payments"),
         (name = "Document", description = "Document management"),
+        (name = "Storage", description = "Physical file storage, upload, download, presigned URLs, archive"),
+        (name = "Folder", description = "Hierarchical folders, student folders, and AI curriculum knowledge base"),
         (name = "Integration", description = "Third-party app integrations"),
         (name = "Report", description = "Report definitions, templates, generation"),
         (name = "Autopilot", description = "Autonomous lifecycle, finance & reporting automation engine"),
@@ -249,6 +251,26 @@ use api::{
         api::document_routes::update_document_requirement,
         api::document_routes::delete_document_requirement,
         api::document_routes::evaluate_student_requirements,
+        // Storage & File Upload
+        api::storage_routes::upload_file,
+        api::storage_routes::download_file,
+        api::storage_routes::get_access_url,
+        api::storage_routes::archive_document,
+        api::storage_routes::restore_document,
+        api::storage_routes::trash_document,
+        api::storage_routes::purge_document,
+        api::storage_routes::list_archived_documents,
+        api::storage_routes::list_trash_documents,
+        // Folder & Hierarchy & AI Curriculum
+        api::folder_routes::create_folder,
+        api::folder_routes::list_folders,
+        api::folder_routes::get_folder,
+        api::folder_routes::get_folder_contents,
+        api::folder_routes::get_or_create_student_folder,
+        api::folder_routes::list_curriculum_folders,
+        api::folder_routes::get_or_create_curriculum_folder,
+        api::folder_routes::update_folder,
+        api::folder_routes::delete_folder,
         // Integration
         api::integration_routes::connect_app,
         api::integration_routes::list_integrations,
@@ -455,6 +477,16 @@ use api::{
             api::document_routes::CreateDocumentRequirementRequest,
             api::document_routes::UpdateDocumentRequirementRequest,
             api::document_routes::StudentDocumentFulfillmentDto,
+            // Storage
+            api::storage_routes::PresignedUrlResponseDto,
+            api::storage_routes::PresignRequest,
+            api::storage_routes::ArchiveRequest,
+            // Folder
+            api::folder_routes::FolderDto,
+            api::folder_routes::FolderContentsDto,
+            api::folder_routes::CreateFolderRequest,
+            api::folder_routes::UpdateFolderRequest,
+            api::folder_routes::CreateCurriculumFolderRequest,
             // Integration
             api::integration_routes::IntegrationDto,
             api::integration_routes::IntegrationStatusDto,
@@ -559,6 +591,8 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(exam_routes::routes())
         .merge(finance_routes::routes())
         .merge(document_routes::routes())
+        .merge(storage_routes::routes())
+        .merge(folder_routes::folder_routes())
         .merge(integration_routes::routes())
         .merge(report_routes::routes())
         .merge(ai_routes::routes())

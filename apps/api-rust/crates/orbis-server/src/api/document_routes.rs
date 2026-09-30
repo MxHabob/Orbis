@@ -11,10 +11,12 @@ use super::extractors::AuthContext;
 use crate::state::AppState;
 use orbis_app::services::{CreateDocumentInput, UpdateDocumentInput, UpdateDocumentRequirementInput};
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct DocumentDto {
     pub id: Uuid,
     pub org_id: Uuid,
+    pub org_unit_id: Option<Uuid>,
+    pub folder_id: Option<Uuid>,
     pub uploaded_by: Option<Uuid>,
     pub entity_type: Option<String>,
     pub entity_id: Option<Uuid>,
@@ -22,28 +24,39 @@ pub struct DocumentDto {
     pub description: Option<String>,
     pub category: String,
     pub asset_type: String,
-    pub school_year: Option<String>,
-    pub term: Option<String>,
+    pub academic_year_id: Option<Uuid>,
+    pub term_id: Option<Uuid>,
     pub tags: Option<String>,
     pub visibility: String,
     #[serde(alias = "size")]
     pub file_size_bytes: Option<i64>,
     pub mime_type: Option<String>,
     pub extension: Option<String>,
+    pub checksum_sha256: Option<String>,
     pub storage_provider: String,
     #[serde(alias = "path")]
     pub file_path: String,
+    pub storage_key: Option<String>,
     pub url: Option<String>,
     pub thumbnail_path: Option<String>,
     pub preview_path: Option<String>,
+    pub is_archived: bool,
+    pub archived_at: Option<DateTime<Utc>>,
+    pub archived_by: Option<Uuid>,
+    pub archive_reason: Option<String>,
+    pub is_legal_hold: bool,
+    pub deleted_at: Option<DateTime<Utc>>,
+    pub deleted_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
-fn doc_to_dto(doc: orbis_domain::entities::document::Document) -> DocumentDto {
+pub fn doc_to_dto(doc: orbis_domain::entities::document::Document) -> DocumentDto {
     DocumentDto {
         id: doc.id,
         org_id: doc.org_id,
+        org_unit_id: doc.org_unit_id,
+        folder_id: doc.folder_id,
         uploaded_by: doc.uploaded_by,
         entity_type: doc.entity_type,
         entity_id: doc.entity_id,
@@ -51,18 +64,27 @@ fn doc_to_dto(doc: orbis_domain::entities::document::Document) -> DocumentDto {
         description: doc.description,
         category: doc.category,
         asset_type: doc.asset_type,
-        school_year: doc.school_year,
-        term: doc.term,
+        academic_year_id: doc.academic_year_id,
+        term_id: doc.term_id,
         tags: doc.tags,
         visibility: doc.visibility,
         file_size_bytes: doc.file_size_bytes,
         mime_type: doc.mime_type,
         extension: doc.extension,
+        checksum_sha256: doc.checksum_sha256,
         storage_provider: doc.storage_provider,
         file_path: doc.file_path,
+        storage_key: doc.storage_key,
         url: doc.url,
         thumbnail_path: doc.thumbnail_path,
         preview_path: doc.preview_path,
+        is_archived: doc.is_archived,
+        archived_at: doc.archived_at,
+        archived_by: doc.archived_by,
+        archive_reason: doc.archive_reason,
+        is_legal_hold: doc.is_legal_hold,
+        deleted_at: doc.deleted_at,
+        deleted_by: doc.deleted_by,
         created_at: doc.created_at,
         updated_at: doc.updated_at,
     }
@@ -72,21 +94,25 @@ fn doc_to_dto(doc: orbis_domain::entities::document::Document) -> DocumentDto {
 pub struct UploadDocumentRequest {
     pub entity_type: Option<String>,
     pub entity_id: Option<Uuid>,
+    pub org_unit_id: Option<Uuid>,
+    pub folder_id: Option<Uuid>,
     pub name: String,
     pub description: Option<String>,
     pub category: Option<String>,
     pub asset_type: Option<String>,
-    pub school_year: Option<String>,
-    pub term: Option<String>,
+    pub academic_year_id: Option<Uuid>,
+    pub term_id: Option<Uuid>,
     pub tags: Option<String>,
     pub visibility: Option<String>,
     #[serde(alias = "size")]
     pub file_size_bytes: Option<i64>,
     pub mime_type: Option<String>,
     pub extension: Option<String>,
+    pub checksum_sha256: Option<String>,
     pub storage_provider: Option<String>,
     #[serde(alias = "path")]
     pub file_path: String,
+    pub storage_key: Option<String>,
     pub url: Option<String>,
     pub thumbnail_path: Option<String>,
     pub preview_path: Option<String>,
@@ -95,11 +121,12 @@ pub struct UploadDocumentRequest {
 #[derive(Deserialize, ToSchema)]
 pub struct UpdateDocumentRequest {
     pub name: Option<String>,
+    pub folder_id: Option<Uuid>,
     pub description: Option<String>,
     pub category: Option<String>,
     pub asset_type: Option<String>,
-    pub school_year: Option<String>,
-    pub term: Option<String>,
+    pub academic_year_id: Option<Uuid>,
+    pub term_id: Option<Uuid>,
     pub tags: Option<String>,
     pub visibility: Option<String>,
 }
@@ -108,6 +135,7 @@ pub struct UpdateDocumentRequest {
 pub struct ListDocumentsQuery {
     pub entity_type: Option<String>,
     pub entity_id: Option<Uuid>,
+    pub folder_id: Option<Uuid>,
 }
 
 // ── Handlers ────────────────────────────────────────────────────
@@ -122,6 +150,8 @@ async fn upload_document(
         _ => None,
     };
     let input = CreateDocumentInput {
+        org_unit_id: p.org_unit_id,
+        folder_id: p.folder_id,
         uploaded_by,
         entity_type: p.entity_type,
         entity_id: p.entity_id,
@@ -129,15 +159,17 @@ async fn upload_document(
         description: p.description,
         category: p.category.unwrap_or_else(|| "general".to_string()),
         asset_type: p.asset_type.unwrap_or_else(|| "file".to_string()),
-        school_year: p.school_year,
-        term: p.term,
+        academic_year_id: p.academic_year_id,
+        term_id: p.term_id,
         tags: p.tags,
         visibility: p.visibility.unwrap_or_else(|| "internal".to_string()),
         file_size_bytes: p.file_size_bytes,
         mime_type: p.mime_type,
         extension: p.extension,
+        checksum_sha256: p.checksum_sha256,
         storage_provider: p.storage_provider.unwrap_or_else(|| "local".to_string()),
-        file_path: p.file_path,
+        file_path: p.file_path.clone(),
+        storage_key: p.storage_key.or(Some(p.file_path)),
         url: p.url,
         thumbnail_path: p.thumbnail_path,
         preview_path: p.preview_path,
@@ -153,7 +185,9 @@ async fn list_documents(
     State(state): State<AppState>,
     Query(query): Query<ListDocumentsQuery>,
 ) -> Result<Json<ApiResponse<Vec<DocumentDto>>>, ApiError> {
-    let docs = if let (Some(ref et), Some(eid)) = (query.entity_type, query.entity_id) {
+    let docs = if let Some(fid) = query.folder_id {
+        state.document_service.document_repo.find_by_folder(ctx.tenant_id, fid).await?
+    } else if let (Some(ref et), Some(eid)) = (query.entity_type, query.entity_id) {
         state.document_service.list_documents_by_entity(et, eid).await?
     } else {
         state.document_service.list_documents_by_org(ctx.tenant_id).await?
@@ -181,11 +215,12 @@ async fn update_document(
 ) -> Result<Json<ApiResponse<DocumentDto>>, ApiError> {
     let input = UpdateDocumentInput {
         name: p.name,
+        folder_id: p.folder_id,
         description: p.description,
         category: p.category,
         asset_type: p.asset_type,
-        school_year: p.school_year,
-        term: p.term,
+        academic_year_id: p.academic_year_id,
+        term_id: p.term_id,
         tags: p.tags,
         visibility: p.visibility,
     };

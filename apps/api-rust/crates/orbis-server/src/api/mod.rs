@@ -164,6 +164,7 @@ impl From<DomainError> for ApiError {
             DomainError::AlreadyInitialized => Self::conflict("System has already been initialized"),
             DomainError::BootstrapFailed(msg) => Self::bad_request(format!("Bootstrap failed: {msg}")),
             DomainError::ConcurrencyConflict(_) => Self::conflict(err.to_string()),
+            DomainError::Storage(msg) => Self::internal(format!("Storage error: {msg}")),
             DomainError::Internal(_) => Self::internal(err.to_string()),
         }
     }
@@ -184,6 +185,8 @@ pub mod assessment_routes;
 pub mod exam_routes;
 pub mod finance_routes;
 pub mod document_routes;
+pub mod storage_routes;
+pub mod folder_routes;
 pub mod integration_routes;
 pub mod report_routes;
 pub mod override_routes;

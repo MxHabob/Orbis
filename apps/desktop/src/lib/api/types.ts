@@ -140,6 +140,11 @@ import type {
   PaymentDto,
   ProcessPaymentRequest,
   CurrencyDto,
+  FolderDto,
+  FolderContentsDto,
+  CreateFolderRequest,
+  UpdateFolderRequest,
+  CreateCurriculumFolderRequest,
   DocumentDto,
   UploadDocumentRequest,
   UpdateDocumentRequest,
@@ -147,6 +152,9 @@ import type {
   CreateDocumentRequirementRequest,
   UpdateDocumentRequirementRequest,
   StudentDocumentFulfillmentDto,
+  PresignedUrlResponseDto,
+  PresignRequest,
+  ArchiveRequest,
   IntegrationDto,
   ConnectAppRequest,
   TemplateDto,
@@ -526,6 +534,24 @@ export interface IntegrationStatusResponse {
   connected: boolean;
   is_enabled: boolean;
   config?: IntegrationDto | null;
+}
+
+// ── Document & Storage Types ──────────────────────────────────────────────
+
+export interface StorageUploadRequest {
+  file: File | Blob;
+  name?: string;
+  category?: string;
+  entity_type?: string;
+  entity_id?: string;
+  org_unit_id?: string;
+  folder_id?: string;
+  asset_type?: string;
+  description?: string;
+  academic_year_id?: string;
+  term_id?: string;
+  tags?: string;
+  visibility?: string;
 }
 
 // ── Connection & Database Management Types (Desktop / Hybrid) ─────────────
@@ -1144,13 +1170,22 @@ export interface OrbisApiClient {
   ): Promise<DiscountTemplateDto>;
   deleteDiscountTemplate(id: string): Promise<boolean>;
 
-  // ── Document ────────────────────────────────────────────────
+  // ── Document & Storage Management ───────────────────────────
   uploadDocument(req: UploadDocumentRequest): Promise<DocumentDto>;
-  updateDocument(id: string, req: UpdateDocumentRequest): Promise<DocumentDto>;
-  listDocuments(params?: { entity_type?: string; entity_id?: string }): Promise<DocumentDto[]>;
+  uploadFile(req: StorageUploadRequest): Promise<DocumentDto>;
+  listDocuments(params?: { entity_type?: string; entity_id?: string; folder_id?: string }): Promise<DocumentDto[]>;
   listDocumentsByEntity(entityType: string, entityId: string): Promise<DocumentDto[]>;
   getDocument(id: string): Promise<DocumentDto>;
+  updateDocument(id: string, req: UpdateDocumentRequest): Promise<DocumentDto>;
   deleteDocument(id: string): Promise<void>;
+  archiveDocument(id: string, reason?: string): Promise<DocumentDto>;
+  restoreDocument(id: string): Promise<DocumentDto>;
+  trashDocument(id: string): Promise<void>;
+  purgeDocument(id: string): Promise<void>;
+  listArchivedDocuments(): Promise<DocumentDto[]>;
+  listTrashDocuments(): Promise<DocumentDto[]>;
+  getDocumentAccessUrl(id: string, expiresInSeconds?: number): Promise<string>;
+  downloadDocumentFile(id: string): Promise<Blob | Uint8Array>;
   createDocumentRequirement(req: CreateDocumentRequirementRequest): Promise<DocumentRequirementDto>;
   getDocumentRequirement(id: string): Promise<DocumentRequirementDto>;
   updateDocumentRequirement(id: string, req: UpdateDocumentRequirementRequest): Promise<DocumentRequirementDto>;
@@ -1164,6 +1199,17 @@ export interface OrbisApiClient {
       is_transfer?: boolean;
     },
   ): Promise<StudentDocumentFulfillmentDto[]>;
+
+  // ── Folders & Curriculum Knowledge Base ─────────────────────
+  createFolder(req: CreateFolderRequest): Promise<FolderDto>;
+  listFolders(parentId?: string): Promise<FolderDto[]>;
+  getFolder(id: string): Promise<FolderDto>;
+  getFolderContents(id: string): Promise<FolderContentsDto>;
+  getOrCreateStudentFolder(studentId: string, studentName?: string): Promise<FolderDto>;
+  listCurriculumFolders(): Promise<FolderDto[]>;
+  getOrCreateCurriculumFolder(req: CreateCurriculumFolderRequest): Promise<FolderDto>;
+  updateFolder(id: string, req: UpdateFolderRequest): Promise<FolderDto>;
+  deleteFolder(id: string): Promise<void>;
 
   // ── Integration ─────────────────────────────────────────────
   connectApp(req: ConnectAppRequest): Promise<IntegrationDto>;

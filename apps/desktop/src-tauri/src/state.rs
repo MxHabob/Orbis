@@ -116,6 +116,11 @@ pub struct AppState {
     pub calendar_service: Arc<orbis_app::services::CalendarService>,
     pub scheduling_service: Arc<orbis_app::services::SchedulingService>,
     pub document_service: Arc<orbis_app::services::DocumentService>,
+    pub folder_repo: Arc<dyn orbis_app::ports::repositories::FolderRepository>,
+    pub folder_service: Arc<orbis_app::services::FolderService>,
+    pub file_storage_service: Arc<orbis_app::services::FileStorageService>,
+    pub storage_resolver: Arc<orbis_infra::adapters::storage::StorageResolver>,
+    pub storage_adapter: Arc<dyn orbis_app::ports::storage::StorageAdapter>,
     pub integration_service: Arc<orbis_app::services::IntegrationService>,
     pub workflow_service: Arc<orbis_app::services::WorkflowService>,
     pub report_service: Arc<orbis_app::services::ReportService>,
@@ -347,6 +352,26 @@ impl AppState {
             permission_checker.clone(),
         ));
 
+        let folder_repo = Arc::new(orbis_infra::repositories::folder_repo::FolderRepoImpl { db: db.clone() });
+        let folder_service = Arc::new(orbis_app::services::FolderService::new(
+            folder_repo.clone(),
+            document_repo.clone(),
+            permission_checker.clone(),
+        ));
+
+        let storage_root = app_data_dir.join("storage");
+        let storage_resolver = Arc::new(orbis_infra::adapters::storage::StorageResolver::new(
+            storage_root,
+            integration_repo.clone(),
+        ));
+        let storage_adapter = storage_resolver.default_adapter();
+        let file_storage_service = Arc::new(orbis_app::services::FileStorageService::new(
+            storage_adapter.clone(),
+            document_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
         let integration_service = Arc::new(orbis_app::services::IntegrationService::new(
             integration_repo.clone(),
             permission_checker.clone(),
@@ -540,6 +565,11 @@ impl AppState {
             calendar_service,
             scheduling_service,
             document_service,
+            folder_repo,
+            folder_service: folder_service.clone(),
+            file_storage_service,
+            storage_resolver,
+            storage_adapter,
             integration_service,
             workflow_service,
             report_service,

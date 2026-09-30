@@ -13,7 +13,7 @@ export class OrbisStorageUploader {
    */
   static upload(
     url: string,
-    fileData: File | Blob | ArrayBuffer | string, // can accept base64 string or file buffer
+    fileData: File | Blob | ArrayBuffer | string, // accepts File, Blob, ArrayBuffer, or base64 dataURI
     options: UploadOptions = {},
   ): Promise<{ success: boolean; data: any }> {
     return new Promise((resolve, reject) => {
@@ -23,7 +23,7 @@ export class OrbisStorageUploader {
       const extraFields = options.extraFields || {};
       const onProgress = options.onProgress;
 
-      // Check if XMLHttpRequest is available (Browser / React Native / Tauri)
+      // Check if XMLHttpRequest is available (Browser / React Native / Tauri webview)
       if (typeof XMLHttpRequest !== "undefined") {
         const xhr = new XMLHttpRequest();
         xhr.open(method, url, true);
@@ -67,7 +67,6 @@ export class OrbisStorageUploader {
 
         // Determine body format (Multipart Form vs Raw Binary)
         if (method === "POST" && !(fileData instanceof ArrayBuffer)) {
-          // Use FormData for standard Multipart upload
           const formData = new FormData();
 
           // Append extra fields
@@ -82,7 +81,6 @@ export class OrbisStorageUploader {
             typeof fileData === "string" &&
             fileData.startsWith("data:")
           ) {
-            // Handle Base64 URL representation
             const parsedBlob = this.dataURItoBlob(fileData);
             formData.append(fieldName, parsedBlob, "upload_file");
           } else {

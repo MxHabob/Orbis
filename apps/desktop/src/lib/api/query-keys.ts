@@ -223,6 +223,16 @@ export const queryKeys = {
     studentFulfillment: (studentId: string, params?: Record<string, unknown>) => [...queryKeys.document.all, "studentFulfillment", studentId, params ?? {}] as const,
   },
 
+  // ── Folder & Knowledge Base ─────────────────────────────────
+  folder: {
+    all: ["folder"] as const,
+    list: (parentId?: string) => ["folder", "list", parentId ?? "root"] as const,
+    detail: (id: string) => ["folder", "detail", id] as const,
+    contents: (id: string) => ["folder", "contents", id] as const,
+    student: (studentId: string) => ["folder", "student", studentId] as const,
+    curriculum: () => ["folder", "curriculum"] as const,
+  },
+
   // ── Integration ─────────────────────────────────────────────
   integration: {
     all: ["integration"] as const,

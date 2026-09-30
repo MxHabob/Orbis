@@ -7,4 +7,5 @@ pub mod iam;
 pub mod reporting;
 pub mod transactions;
 pub mod entitlement;
+pub mod storage;
 

@@ -37,6 +37,7 @@ pub mod discount_template;
 pub mod student_fee;
 pub mod payment;
 pub mod document;
+pub mod folder;
 pub mod integration;
 pub mod workflow;
 pub mod report;

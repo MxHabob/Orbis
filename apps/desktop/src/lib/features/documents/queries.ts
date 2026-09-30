@@ -8,7 +8,13 @@ import {
   api,
   queryKeys,
   type DocumentDto,
+  type FolderDto,
+  type FolderContentsDto,
+  type CreateFolderRequest,
+  type UpdateFolderRequest,
+  type CreateCurriculumFolderRequest,
   type UploadDocumentRequest,
+  type StorageUploadRequest,
   type UpdateDocumentRequest,
   type DocumentRequirementDto,
   type CreateDocumentRequirementRequest,
@@ -279,3 +285,200 @@ export function useDeleteDocumentRequirement() {
     },
   }));
 }
+
+// ── Storage & Archive Hooks ─────────────────────────────────
+
+export function useUploadFile(
+  options: { invalidateOnSuccess?: boolean } = {},
+) {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: async (req: StorageUploadRequest) => {
+      return api.uploadFile(req);
+    },
+    onSuccess: () => {
+      if (options.invalidateOnSuccess === false) return;
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.student.all,
+      });
+    },
+  }));
+}
+
+export function useArchivedDocuments() {
+  return createQuery(() => ({
+    queryKey: [...queryKeys.document.all, "archived"] as const,
+    queryFn: () => api.listArchivedDocuments(),
+    staleTime: 2 * 60 * 1000,
+  }));
+}
+
+export function useTrashDocuments() {
+  return createQuery(() => ({
+    queryKey: [...queryKeys.document.all, "trash"] as const,
+    queryFn: () => api.listTrashDocuments(),
+    staleTime: 2 * 60 * 1000,
+  }));
+}
+
+export function useArchiveDocument() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      api.archiveDocument(id, reason),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.detail(vars.id) });
+    },
+  }));
+}
+
+export function useRestoreDocument() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.restoreDocument(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.detail(id) });
+    },
+  }));
+}
+
+export function useTrashDocument() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.trashDocument(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    },
+  }));
+}
+
+export function usePurgeDocument() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.purgeDocument(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    },
+  }));
+}
+
+// ── Folder & Curriculum Knowledge Base Hooks ────────────────
+
+export function useFolders(parentId?: () => string | undefined) {
+  return createQuery(() => {
+    const pid = parentId ? parentId() : undefined;
+    return {
+      queryKey: queryKeys.folder.list(pid),
+      queryFn: () => api.listFolders(pid),
+      staleTime: 2 * 60 * 1000,
+    };
+  });
+}
+
+export function useFolder(id: () => string) {
+  return createQuery(() => ({
+    queryKey: queryKeys.folder.detail(id()),
+    queryFn: () => api.getFolder(id()),
+    enabled: Boolean(id()),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+export function useFolderContents(id: () => string) {
+  return createQuery(() => ({
+    queryKey: queryKeys.folder.contents(id()),
+    queryFn: () => api.getFolderContents(id()),
+    enabled: Boolean(id()),
+    staleTime: 2 * 60 * 1000,
+  }));
+}
+
+export function useStudentFolder(
+  studentId: () => string,
+  studentName?: () => string | undefined,
+) {
+  return createQuery(() => {
+    const sid = studentId();
+    const sname = studentName ? studentName() : undefined;
+    return {
+      queryKey: queryKeys.folder.student(sid),
+      queryFn: () => api.getOrCreateStudentFolder(sid, sname),
+      enabled: Boolean(sid),
+      staleTime: 5 * 60 * 1000,
+    };
+  });
+}
+
+export function useCurriculumFolders() {
+  return createQuery(() => ({
+    queryKey: queryKeys.folder.curriculum(),
+    queryFn: () => api.listCurriculumFolders(),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+export function useCreateFolder() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (req: CreateFolderRequest) => api.createFolder(req),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
+      if (vars.parent_id) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.folder.contents(vars.parent_id) });
+      }
+    },
+  }));
+}
+
+export function useCreateCurriculumFolder() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (req: CreateCurriculumFolderRequest) => api.getOrCreateCurriculumFolder(req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.curriculum() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
+    },
+  }));
+}
+
+export function useUpdateFolder() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: ({ id, req }: { id: string; req: UpdateFolderRequest }) =>
+      api.updateFolder(id, req),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.detail(vars.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.contents(vars.id) });
+    },
+  }));
+}
+
+export function useDeleteFolder() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.deleteFolder(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+    },
+  }));
+}
+

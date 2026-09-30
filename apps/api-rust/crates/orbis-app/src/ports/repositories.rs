@@ -19,6 +19,7 @@ use orbis_domain::{
         discount_template::DiscountTemplate,
         document::Document,
         document_requirement::DocumentRequirement,
+        folder::Folder,
         employee::{Employee, EmployeeDetail},
         enrollment::{Enrollment, EnrollmentStatus},
         exam_proctor::ExamProctor,
@@ -516,9 +517,28 @@ pub trait DocumentRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Document>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Document>, DomainError>;
     async fn find_by_entity(&self, entity_type: &str, entity_id: Uuid) -> Result<Vec<Document>, DomainError>;
+    async fn find_by_folder(&self, org_id: Uuid, folder_id: Uuid) -> Result<Vec<Document>, DomainError>;
+    async fn find_by_curriculum(&self, org_id: Uuid, academic_year_id: Option<Uuid>, term_id: Option<Uuid>) -> Result<Vec<Document>, DomainError>;
+    async fn find_archived(&self, org_id: Uuid) -> Result<Vec<Document>, DomainError>;
+    async fn find_trash(&self, org_id: Uuid) -> Result<Vec<Document>, DomainError>;
     async fn save(&self, document: &Document) -> Result<(), DomainError>;
+    async fn soft_delete(&self, id: Uuid, deleted_by: Option<Uuid>) -> Result<(), DomainError>;
+    async fn restore(&self, id: Uuid) -> Result<(), DomainError>;
+    async fn purge(&self, id: Uuid) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
     async fn delete_by_entity(&self, entity_type: &str, entity_id: Uuid) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait FolderRepository: Send + Sync {
+    async fn find_by_id(&self, org_id: Uuid, id: Uuid) -> Result<Option<Folder>, DomainError>;
+    async fn find_by_path(&self, org_id: Uuid, path: &str) -> Result<Option<Folder>, DomainError>;
+    async fn find_by_entity(&self, org_id: Uuid, entity_type: &str, entity_id: Uuid) -> Result<Option<Folder>, DomainError>;
+    async fn list_children(&self, org_id: Uuid, parent_id: Option<Uuid>) -> Result<Vec<Folder>, DomainError>;
+    async fn list_by_type(&self, org_id: Uuid, folder_type: &str) -> Result<Vec<Folder>, DomainError>;
+    async fn list_all(&self, org_id: Uuid) -> Result<Vec<Folder>, DomainError>;
+    async fn save(&self, folder: &Folder) -> Result<(), DomainError>;
+    async fn delete(&self, org_id: Uuid, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]

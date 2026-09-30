@@ -73,6 +73,20 @@ import type {
   CalculateRankingsRequest,
   ScoreItemRequest,
   RankingItemDto,
+  DocumentDto,
+  FolderDto,
+  FolderContentsDto,
+  CreateFolderRequest,
+  UpdateFolderRequest,
+  CreateCurriculumFolderRequest,
+  UploadDocumentRequest,
+  StorageUploadRequest,
+  UpdateDocumentRequest,
+  DocumentRequirementDto,
+  CreateDocumentRequirementRequest,
+  UpdateDocumentRequirementRequest,
+  StudentDocumentFulfillmentDto,
+  PresignedUrlResponseDto,
   ExamSessionDto,
   ExamScheduleDto,
   SeatingDto,
@@ -97,13 +111,6 @@ import type {
   PaymentDto,
   ProcessPaymentRequest,
   CurrencyDto,
-  DocumentDto,
-  UploadDocumentRequest,
-  UpdateDocumentRequest,
-  DocumentRequirementDto,
-  CreateDocumentRequirementRequest,
-  UpdateDocumentRequirementRequest,
-  StudentDocumentFulfillmentDto,
   IntegrationDto,
   IntegrationStatusResponse,
   ConnectAppRequest,
@@ -982,71 +989,6 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(await invoke("finance_delete_discount_template", { id }));
   }
 
-  // ── Document ────────────────────────────────────────────────
-  async uploadDocument(req: UploadDocumentRequest): Promise<DocumentDto> {
-    return unwrap(await invoke("document_upload", { request: req }));
-  }
-  async updateDocument(id: string, req: UpdateDocumentRequest): Promise<DocumentDto> {
-    return unwrap(await invoke("document_update", { id, request: req }));
-  }
-  async listDocuments(params?: { entity_type?: string; entity_id?: string }): Promise<DocumentDto[]> {
-    if (params?.entity_type && params?.entity_id) {
-      return this.listDocumentsByEntity(params.entity_type, params.entity_id);
-    }
-    return unwrap(await invoke("document_list"));
-  }
-  async listDocumentsByEntity(entityType: string, entityId: string): Promise<DocumentDto[]> {
-    return unwrap(await invoke("document_list_by_entity", { entityType, entityId }));
-  }
-
-  async getDocument(id: string): Promise<DocumentDto> {
-    return unwrap(await invoke("document_get", { id }));
-  }
-  async deleteDocument(id: string): Promise<void> {
-    await invoke("document_delete", { id });
-  }
-  async createDocumentRequirement(
-    req: CreateDocumentRequirementRequest,
-  ): Promise<DocumentRequirementDto> {
-    return unwrap(
-      await invoke("document_create_requirement", { request: req }),
-    );
-  }
-  async getDocumentRequirement(id: string): Promise<DocumentRequirementDto> {
-    return unwrap(await invoke("document_get_requirement", { id }));
-  }
-  async updateDocumentRequirement(
-    id: string,
-    req: UpdateDocumentRequirementRequest,
-  ): Promise<DocumentRequirementDto> {
-    return unwrap(
-      await invoke("document_update_requirement", { id, request: req }),
-    );
-  }
-  async listDocumentRequirements(): Promise<DocumentRequirementDto[]> {
-    return unwrap(await invoke("document_list_requirements"));
-  }
-  async deleteDocumentRequirement(id: string): Promise<void> {
-    await invoke("document_delete_requirement", { id });
-  }
-  async evaluateStudentDocumentRequirements(
-    studentId: string,
-    params?: {
-      grade_level_id?: string;
-      is_national?: boolean;
-      is_transfer?: boolean;
-    },
-  ): Promise<StudentDocumentFulfillmentDto[]> {
-    return unwrap(
-      await invoke("document_evaluate_student_requirements", {
-        studentId,
-        gradeLevelId: params?.grade_level_id ?? null,
-        isNational: params?.is_national ?? null,
-        isTransfer: params?.is_transfer ?? null,
-      }),
-    );
-  }
-
   // ── Integration ─────────────────────────────────────────────
   async connectApp(req: ConnectAppRequest): Promise<IntegrationDto> {
     return unwrap(await invoke("integration_connect_app", { request: req }));
@@ -1411,5 +1353,182 @@ export class LocalClient implements OrbisApiClient {
 
   async autopilotGetDiagnostics(): Promise<AutopilotDiagnosticsDto> {
     return unwrap(await invoke("autopilot_get_diagnostics"));
+  }
+
+  // ── Document & Storage Management ───────────────────────────
+  async uploadDocument(req: UploadDocumentRequest): Promise<DocumentDto> {
+    return unwrap(await invoke("document_upload", { request: req }));
+  }
+
+  async uploadFile(req: StorageUploadRequest): Promise<DocumentDto> {
+    const arrayBuffer = await req.file.arrayBuffer();
+    const data = Array.from(new Uint8Array(arrayBuffer));
+    const mime_type = req.file.type || "application/octet-stream";
+    const name = req.name || (req.file instanceof File ? req.file.name : "upload.bin");
+
+    return unwrap(
+      await invoke("storage_upload_file", {
+        request: {
+          name,
+          mime_type,
+          data,
+          category: req.category ?? null,
+          entity_type: req.entity_type ?? null,
+          entity_id: req.entity_id ?? null,
+          org_unit_id: req.org_unit_id ?? null,
+          folder_id: req.folder_id ?? null,
+          asset_type: req.asset_type ?? null,
+          description: req.description ?? null,
+          academic_year_id: req.academic_year_id ?? null,
+          term_id: req.term_id ?? null,
+          tags: req.tags ?? null,
+          visibility: req.visibility ?? null,
+        },
+      }),
+    );
+  }
+
+  async listDocuments(params?: { entity_type?: string; entity_id?: string; folder_id?: string }): Promise<DocumentDto[]> {
+    if (params?.folder_id) {
+      const contents = await this.getFolderContents(params.folder_id);
+      return contents.documents;
+    }
+    if (params?.entity_type && params?.entity_id) {
+      return this.listDocumentsByEntity(params.entity_type, params.entity_id);
+    }
+    return unwrap(await invoke("document_list"));
+  }
+
+  async listDocumentsByEntity(entityType: string, entityId: string): Promise<DocumentDto[]> {
+    return unwrap(
+      await invoke("document_list_by_entity", {
+        entityType,
+        entityId,
+      }),
+    );
+  }
+
+  async getDocument(id: string): Promise<DocumentDto> {
+    return unwrap(await invoke("document_get", { id }));
+  }
+
+  async updateDocument(id: string, req: UpdateDocumentRequest): Promise<DocumentDto> {
+    return unwrap(await invoke("document_update", { id, request: req }));
+  }
+
+  async deleteDocument(id: string): Promise<void> {
+    await invoke("document_delete", { id });
+  }
+
+  async archiveDocument(id: string, reason?: string): Promise<DocumentDto> {
+    return unwrap(await invoke("document_archive", { id, reason: reason ?? null }));
+  }
+
+  async restoreDocument(id: string): Promise<DocumentDto> {
+    return unwrap(await invoke("document_restore", { id }));
+  }
+
+  async trashDocument(id: string): Promise<void> {
+    await invoke("document_trash", { id });
+  }
+
+  async purgeDocument(id: string): Promise<void> {
+    await invoke("document_purge", { id });
+  }
+
+  async listArchivedDocuments(): Promise<DocumentDto[]> {
+    return unwrap(await invoke("document_list_archived"));
+  }
+
+  async listTrashDocuments(): Promise<DocumentDto[]> {
+    return unwrap(await invoke("document_list_trash"));
+  }
+
+  async getDocumentAccessUrl(id: string, expiresInSeconds?: number): Promise<string> {
+    return unwrap(await invoke("storage_get_url", { id, expiresInSeconds: expiresInSeconds ?? null }));
+  }
+
+  async downloadDocumentFile(id: string): Promise<Blob | Uint8Array> {
+    const res: { document: DocumentDto; data: number[] } = unwrap(
+      await invoke("storage_download_file", { id }),
+    );
+    const uint8 = new Uint8Array(res.data);
+    return new Blob([uint8], { type: res.document.mime_type || "application/octet-stream" });
+  }
+
+  async createDocumentRequirement(req: CreateDocumentRequirementRequest): Promise<DocumentRequirementDto> {
+    return unwrap(await invoke("document_create_requirement", { request: req }));
+  }
+
+  async getDocumentRequirement(id: string): Promise<DocumentRequirementDto> {
+    return unwrap(await invoke("document_get_requirement", { id }));
+  }
+
+  async updateDocumentRequirement(id: string, req: UpdateDocumentRequirementRequest): Promise<DocumentRequirementDto> {
+    return unwrap(await invoke("document_update_requirement", { id, request: req }));
+  }
+
+  async listDocumentRequirements(): Promise<DocumentRequirementDto[]> {
+    return unwrap(await invoke("document_list_requirements"));
+  }
+
+  async deleteDocumentRequirement(id: string): Promise<void> {
+    await invoke("document_delete_requirement", { id });
+  }
+
+  async evaluateStudentDocumentRequirements(
+    studentId: string,
+    params?: { grade_level_id?: string; is_national?: boolean; is_transfer?: boolean },
+  ): Promise<StudentDocumentFulfillmentDto[]> {
+    return unwrap(
+      await invoke("document_evaluate_student_requirements", {
+        studentId,
+        gradeLevelId: params?.grade_level_id ?? null,
+        isNational: params?.is_national ?? true,
+        isTransfer: params?.is_transfer ?? false,
+      }),
+    );
+  }
+
+  // ── Folders & Curriculum Knowledge Base ─────────────────────
+  async createFolder(req: CreateFolderRequest): Promise<FolderDto> {
+    return unwrap(await invoke("folder_create", { request: req }));
+  }
+
+  async listFolders(parentId?: string): Promise<FolderDto[]> {
+    return unwrap(await invoke("folder_list", { parentId: parentId ?? null }));
+  }
+
+  async getFolder(id: string): Promise<FolderDto> {
+    return unwrap(await invoke("folder_get", { id }));
+  }
+
+  async getFolderContents(id: string): Promise<FolderContentsDto> {
+    return unwrap(await invoke("folder_get_contents", { id }));
+  }
+
+  async getOrCreateStudentFolder(studentId: string, studentName?: string): Promise<FolderDto> {
+    return unwrap(
+      await invoke("folder_get_or_create_student", {
+        studentId,
+        studentName: studentName ?? null,
+      }),
+    );
+  }
+
+  async listCurriculumFolders(): Promise<FolderDto[]> {
+    return unwrap(await invoke("folder_list_curriculum"));
+  }
+
+  async getOrCreateCurriculumFolder(req: CreateCurriculumFolderRequest): Promise<FolderDto> {
+    return unwrap(await invoke("folder_get_or_create_curriculum", { request: req }));
+  }
+
+  async updateFolder(id: string, req: UpdateFolderRequest): Promise<FolderDto> {
+    return unwrap(await invoke("folder_update", { id, request: req }));
+  }
+
+  async deleteFolder(id: string): Promise<void> {
+    await invoke("folder_delete", { id });
   }
 }

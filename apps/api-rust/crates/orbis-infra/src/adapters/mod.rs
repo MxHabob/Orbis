@@ -12,4 +12,5 @@ pub mod resolver;
 pub mod report_defaults;
 pub mod solver_adapter;
 pub mod entitlement_adapter;
+pub mod storage;
 

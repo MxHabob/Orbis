@@ -17,21 +17,25 @@ use crate::ports::iam::PermissionCheckerPort;
 #[derive(Debug, Clone)]
 pub struct CreateDocumentInput {
     pub uploaded_by: Option<Uuid>,
+    pub org_unit_id: Option<Uuid>,
+    pub folder_id: Option<Uuid>,
     pub entity_type: Option<String>,
     pub entity_id: Option<Uuid>,
     pub name: String,
     pub description: Option<String>,
     pub category: String,
     pub asset_type: String,
-    pub school_year: Option<String>,
-    pub term: Option<String>,
+    pub academic_year_id: Option<Uuid>,
+    pub term_id: Option<Uuid>,
     pub tags: Option<String>,
     pub visibility: String,
     pub file_size_bytes: Option<i64>,
     pub mime_type: Option<String>,
     pub extension: Option<String>,
+    pub checksum_sha256: Option<String>,
     pub storage_provider: String,
     pub file_path: String,
+    pub storage_key: Option<String>,
     pub url: Option<String>,
     pub thumbnail_path: Option<String>,
     pub preview_path: Option<String>,
@@ -40,11 +44,12 @@ pub struct CreateDocumentInput {
 #[derive(Debug, Clone, Default)]
 pub struct UpdateDocumentInput {
     pub name: Option<String>,
+    pub folder_id: Option<Uuid>,
     pub description: Option<String>,
     pub category: Option<String>,
     pub asset_type: Option<String>,
-    pub school_year: Option<String>,
-    pub term: Option<String>,
+    pub academic_year_id: Option<Uuid>,
+    pub term_id: Option<Uuid>,
     pub tags: Option<String>,
     pub visibility: Option<String>,
 }
@@ -118,6 +123,8 @@ impl DocumentService {
         let doc = Document {
             id: doc_id,
             org_id,
+            org_unit_id: input.org_unit_id,
+            folder_id: input.folder_id,
             uploaded_by: input.uploaded_by,
             entity_type: input.entity_type.clone(),
             entity_id: input.entity_id,
@@ -125,19 +132,27 @@ impl DocumentService {
             description: input.description,
             category: input.category,
             asset_type: input.asset_type,
-            school_year: input.school_year,
-            term: input.term,
+            academic_year_id: input.academic_year_id,
+            term_id: input.term_id,
             tags: input.tags,
             visibility: input.visibility,
             file_size_bytes: input.file_size_bytes,
             mime_type: input.mime_type,
             extension: input.extension,
+            checksum_sha256: input.checksum_sha256,
             storage_provider: input.storage_provider,
             file_path: input.file_path,
+            storage_key: input.storage_key,
             url: input.url,
             thumbnail_path: input.thumbnail_path,
             preview_path: input.preview_path,
+            is_archived: false,
+            archived_at: None,
+            archived_by: None,
+            archive_reason: None,
+            is_legal_hold: false,
             deleted_at: None,
+            deleted_by: None,
             created_at: now,
             updated_at: now,
         };
@@ -170,6 +185,9 @@ impl DocumentService {
         if let Some(name) = input.name {
             doc.name = name;
         }
+        if let Some(fid) = input.folder_id {
+            doc.folder_id = Some(fid);
+        }
         if let Some(desc) = input.description {
             doc.description = Some(desc);
         }
@@ -179,11 +197,11 @@ impl DocumentService {
         if let Some(asset) = input.asset_type {
             doc.asset_type = asset;
         }
-        if let Some(sy) = input.school_year {
-            doc.school_year = Some(sy);
+        if let Some(ay_id) = input.academic_year_id {
+            doc.academic_year_id = Some(ay_id);
         }
-        if let Some(term) = input.term {
-            doc.term = Some(term);
+        if let Some(t_id) = input.term_id {
+            doc.term_id = Some(t_id);
         }
         if let Some(tags) = input.tags {
             doc.tags = Some(tags);
@@ -210,7 +228,7 @@ impl DocumentService {
         self.document_repo.find_by_id(id).await
     }
 
-    /// List documents for an organization
+    /// List active documents for an organization
     pub async fn list_documents_by_org(&self, org_id: Uuid) -> Result<Vec<Document>, DomainError> {
         self.document_repo.find_by_org(org_id).await
     }
@@ -220,14 +238,95 @@ impl DocumentService {
         self.document_repo.find_by_entity(entity_type, entity_id).await
     }
 
-    /// Delete document
+    /// List archived documents for an organization
+    pub async fn list_archived_documents(&self, org_id: Uuid) -> Result<Vec<Document>, DomainError> {
+        self.document_repo.find_archived(org_id).await
+    }
+
+    /// List soft-deleted documents (trash) for an organization
+    pub async fn list_trash_documents(&self, org_id: Uuid) -> Result<Vec<Document>, DomainError> {
+        self.document_repo.find_trash(org_id).await
+    }
+
+    /// Archive a document
+    pub async fn archive_document(&self, ctx: &RequestContext, id: Uuid, reason: Option<String>) -> Result<Document, DomainError> {
+        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+
+        let mut doc = self.document_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Document {id} not found")))?;
+
+        let actor_id = match ctx.actor {
+            orbis_domain::iam::actor::Actor::User(uid) => Some(uid),
+            _ => None,
+        };
+
+        doc.is_archived = true;
+        doc.archived_at = Some(Utc::now());
+        doc.archived_by = actor_id;
+        doc.archive_reason = reason.clone();
+        doc.updated_at = Utc::now();
+
+        self.document_repo.save(&doc).await?;
+
+        let event = DomainEvent::DocumentArchived {
+            document_id: id,
+            org_id: doc.org_id,
+            reason,
+            timestamp: doc.updated_at,
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(doc)
+    }
+
+    /// Restore an archived or soft-deleted document
+    pub async fn restore_document(&self, ctx: &RequestContext, id: Uuid) -> Result<Document, DomainError> {
+        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+
+        self.document_repo.restore(id).await?;
+
+        let doc = self.document_repo.find_by_id(id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Document {id} not found")))?;
+
+        let event = DomainEvent::DocumentRestored {
+            document_id: id,
+            org_id: doc.org_id,
+            timestamp: Utc::now(),
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(doc)
+    }
+
+    /// Soft delete document (move to trash)
     pub async fn delete_document(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
         self.permission_checker.check(ctx, Permission::DocumentDelete).await?;
 
-        self.document_repo.delete(id).await?;
+        let actor_id = match ctx.actor {
+            orbis_domain::iam::actor::Actor::User(uid) => Some(uid),
+            _ => None,
+        };
+
+        self.document_repo.soft_delete(id, actor_id).await?;
 
         let event = DomainEvent::DocumentDeleted {
             document_id: id,
+            timestamp: Utc::now(),
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(())
+    }
+
+    /// Permanently purge document from database
+    pub async fn purge_document(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
+        self.permission_checker.check(ctx, Permission::DocumentDelete).await?;
+
+        self.document_repo.purge(id).await?;
+
+        let event = DomainEvent::DocumentPurged {
+            document_id: id,
+            org_id: ctx.tenant_id,
             timestamp: Utc::now(),
         };
         self.event_bus.publish(ctx, &event).await?;

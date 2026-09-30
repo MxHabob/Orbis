@@ -25,3 +25,7 @@ export {
   isVATCountry,
   taxTypes,
 } from "./tax";
+export {
+  OrbisStorageUploader,
+  type UploadOptions,
+} from "./uploader";

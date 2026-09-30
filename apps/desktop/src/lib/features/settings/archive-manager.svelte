@@ -203,14 +203,14 @@ const documents = $derived.by(() => {
 
     // School Year Filter
     if (selectedSchoolYear && selectedSchoolYear !== "all") {
-      if (doc.school_year && doc.school_year !== selectedSchoolYear) {
+      if (doc.academic_year_id && doc.academic_year_id !== selectedSchoolYear) {
         return false;
       }
     }
 
     // Term Filter
     if (selectedTerm && selectedTerm !== "all") {
-      if (doc.term && doc.term !== selectedTerm) {
+      if (doc.term_id && doc.term_id !== selectedTerm) {
         return false;
       }
     }

@@ -204,6 +204,10 @@ export type ApprovalStepDto = {
     step_order: number;
 };
 
+export type ArchiveRequest = {
+    reason?: string | null;
+};
+
 /**
  * A single assessment component (e.g., Assignments, Oral, Attendance, Written Test).
  */
@@ -435,6 +439,101 @@ export type BehaviorRecordDto = {
     updated_at: string;
 };
 
+export type BootstrapRequest = {
+    /**
+     * Administrator email
+     */
+    admin_email: string;
+    /**
+     * Administrator first name
+     */
+    admin_first_name: string;
+    /**
+     * Administrator first name in Arabic
+     */
+    admin_first_name_ar?: string | null;
+    /**
+     * Administrator last name
+     */
+    admin_last_name: string;
+    /**
+     * Administrator last name in Arabic
+     */
+    admin_last_name_ar?: string | null;
+    /**
+     * Administrator password (min 8 characters)
+     */
+    admin_password: string;
+    /**
+     * Administrator phone number
+     */
+    admin_phone?: string | null;
+    /**
+     * Base currency ISO code
+     */
+    base_currency_code?: string | null;
+    /**
+     * Date format pattern
+     */
+    date_format?: string | null;
+    /**
+     * Institution type: "school", "university", "institute"
+     */
+    institution_type: string;
+    /**
+     * Enable Hijri calendar support
+     */
+    is_hijri_enabled?: boolean | null;
+    /**
+     * BCP-47 locale
+     */
+    locale: string;
+    /**
+     * Short organization code
+     */
+    organization_code?: string | null;
+    /**
+     * Organization display name
+     */
+    organization_name: string;
+    /**
+     * Organization name in Arabic (optional)
+     */
+    organization_name_ar?: string | null;
+    /**
+     * URL-safe slug
+     */
+    organization_slug: string;
+    /**
+     * Theme primary color hex
+     */
+    primary_color?: string | null;
+    /**
+     * IANA timezone
+     */
+    timezone: string;
+};
+
+export type BootstrapResultDto = {
+    admin_email: string;
+    admin_user_id: string;
+    institution_type: string;
+    organization_id: string;
+    organization_name: string;
+    organization_slug: string;
+    setup_required: boolean;
+    success: boolean;
+    warnings: Array<string>;
+};
+
+export type BootstrapStatusDto = {
+    has_admin: boolean;
+    institution_type?: string | null;
+    organization_id?: string | null;
+    organization_name?: string | null;
+    status: string;
+};
+
 export type BulkAssignGroupRequest = {
     group_id: string;
     user_ids: Array<string>;
@@ -588,6 +687,13 @@ export type CreateClassRequest = {
     unit_id: string;
 };
 
+export type CreateCurriculumFolderRequest = {
+    academic_year_id?: string | null;
+    metadata?: unknown;
+    name: string;
+    term_id?: string | null;
+};
+
 export type CreateDiscountTemplateRequest = {
     code?: string | null;
     discount_type: string;
@@ -632,6 +738,18 @@ export type CreateFeeTemplateRequest = {
     name_ar?: string | null;
     receivable_account_id: string;
     revenue_account_id: string;
+};
+
+export type CreateFolderRequest = {
+    academic_year_id?: string | null;
+    entity_id?: string | null;
+    entity_type?: string | null;
+    folder_type?: string | null;
+    metadata?: unknown;
+    name: string;
+    org_unit_id?: string | null;
+    parent_id?: string | null;
+    term_id?: string | null;
 };
 
 export type CreateGroupRequest = {
@@ -838,24 +956,35 @@ export type DiscountTemplateDto = {
 };
 
 export type DocumentDto = {
+    academic_year_id?: string | null;
+    archive_reason?: string | null;
+    archived_at?: string | null;
+    archived_by?: string | null;
     asset_type: string;
     category: string;
+    checksum_sha256?: string | null;
     created_at: string;
+    deleted_at?: string | null;
+    deleted_by?: string | null;
     description?: string | null;
     entity_id?: string | null;
     entity_type?: string | null;
     extension?: string | null;
     file_path: string;
     file_size_bytes?: number | null;
+    folder_id?: string | null;
     id: string;
+    is_archived: boolean;
+    is_legal_hold: boolean;
     mime_type?: string | null;
     name: string;
     org_id: string;
+    org_unit_id?: string | null;
     preview_path?: string | null;
-    school_year?: string | null;
+    storage_key?: string | null;
     storage_provider: string;
     tags?: string | null;
-    term?: string | null;
+    term_id?: string | null;
     thumbnail_path?: string | null;
     updated_at: string;
     uploaded_by?: string | null;
@@ -1049,6 +1178,31 @@ export type FinanceSettingsDto = {
     late_fee_value: number;
     primary_payment_gateway_id?: string | null;
     tax_rate: number;
+};
+
+export type FolderContentsDto = {
+    documents: Array<DocumentDto>;
+    folder: FolderDto;
+    subfolders: Array<FolderDto>;
+};
+
+export type FolderDto = {
+    academic_year_id?: string | null;
+    created_at: string;
+    created_by?: string | null;
+    entity_id?: string | null;
+    entity_type?: string | null;
+    folder_type: string;
+    id: string;
+    is_system: boolean;
+    metadata?: unknown;
+    name: string;
+    org_id: string;
+    org_unit_id?: string | null;
+    parent_id?: string | null;
+    path: string;
+    term_id?: string | null;
+    updated_at: string;
 };
 
 export type FormFieldConfigDto = {
@@ -1472,6 +1626,15 @@ export type PermissionRuleDto = {
     level?: number | null;
     only_if_creator?: boolean | null;
     role: string;
+};
+
+export type PresignRequest = {
+    expires_in_seconds?: number | null;
+};
+
+export type PresignedUrlResponseDto = {
+    expires_in_seconds: number;
+    url: string;
 };
 
 export type PreviewTemplateRequest = {
@@ -2034,13 +2197,14 @@ export type UpdateAccountRequest = {
 };
 
 export type UpdateDocumentRequest = {
+    academic_year_id?: string | null;
     asset_type?: string | null;
     category?: string | null;
     description?: string | null;
+    folder_id?: string | null;
     name?: string | null;
-    school_year?: string | null;
     tags?: string | null;
-    term?: string | null;
+    term_id?: string | null;
     visibility?: string | null;
 };
 
@@ -2111,6 +2275,14 @@ export type UpdateFeeTemplateRequest = {
     name_ar?: string | null;
     receivable_account_id?: string | null;
     revenue_account_id?: string | null;
+};
+
+export type UpdateFolderRequest = {
+    academic_year_id?: string | null;
+    metadata?: unknown;
+    name?: string | null;
+    parent_id?: string | null;
+    term_id?: string | null;
 };
 
 export type UpdateGroupRequest = {
@@ -2238,21 +2410,25 @@ export type UpdateUserRequest = {
 };
 
 export type UploadDocumentRequest = {
+    academic_year_id?: string | null;
     asset_type?: string | null;
     category?: string | null;
+    checksum_sha256?: string | null;
     description?: string | null;
     entity_id?: string | null;
     entity_type?: string | null;
     extension?: string | null;
     file_path: string;
     file_size_bytes?: number | null;
+    folder_id?: string | null;
     mime_type?: string | null;
     name: string;
+    org_unit_id?: string | null;
     preview_path?: string | null;
-    school_year?: string | null;
+    storage_key?: string | null;
     storage_provider?: string | null;
     tags?: string | null;
-    term?: string | null;
+    term_id?: string | null;
     thumbnail_path?: string | null;
     url?: string | null;
     visibility?: string | null;
@@ -3159,6 +3335,49 @@ export type DeleteBehaviorResponses = {
     200: unknown;
 };
 
+export type ExecuteBootstrapData = {
+    body: BootstrapRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/bootstrap';
+};
+
+export type ExecuteBootstrapErrors = {
+    /**
+     * Validation error
+     */
+    400: unknown;
+    /**
+     * System already initialized
+     */
+    409: unknown;
+};
+
+export type ExecuteBootstrapResponses = {
+    /**
+     * Bootstrap successful
+     */
+    200: BootstrapResultDto;
+};
+
+export type ExecuteBootstrapResponse = ExecuteBootstrapResponses[keyof ExecuteBootstrapResponses];
+
+export type GetBootstrapStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/bootstrap/status';
+};
+
+export type GetBootstrapStatusResponses = {
+    /**
+     * Bootstrap status
+     */
+    200: BootstrapStatusDto;
+};
+
+export type GetBootstrapStatusResponse = GetBootstrapStatusResponses[keyof GetBootstrapStatusResponses];
+
 export type ListClassSubjectsData = {
     body?: never;
     path?: never;
@@ -3384,6 +3603,7 @@ export type ListDocumentsData = {
     query?: {
         entity_type?: string | null;
         entity_id?: string | null;
+        folder_id?: string | null;
     };
     url: '/api/v1/documents';
 };
@@ -4098,6 +4318,155 @@ export type UpdateFeeTemplateResponses = {
 };
 
 export type UpdateFeeTemplateResponse = UpdateFeeTemplateResponses[keyof UpdateFeeTemplateResponses];
+
+export type ListFoldersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        parent_id?: string | null;
+    };
+    url: '/api/v1/folders';
+};
+
+export type ListFoldersResponses = {
+    200: Array<FolderDto>;
+};
+
+export type ListFoldersResponse = ListFoldersResponses[keyof ListFoldersResponses];
+
+export type CreateFolderData = {
+    body: CreateFolderRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/folders';
+};
+
+export type CreateFolderResponses = {
+    201: FolderDto;
+};
+
+export type CreateFolderResponse = CreateFolderResponses[keyof CreateFolderResponses];
+
+export type ListCurriculumFoldersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/folders/curriculum';
+};
+
+export type ListCurriculumFoldersResponses = {
+    200: Array<FolderDto>;
+};
+
+export type ListCurriculumFoldersResponse = ListCurriculumFoldersResponses[keyof ListCurriculumFoldersResponses];
+
+export type GetOrCreateCurriculumFolderData = {
+    body: CreateCurriculumFolderRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/folders/curriculum';
+};
+
+export type GetOrCreateCurriculumFolderResponses = {
+    201: FolderDto;
+};
+
+export type GetOrCreateCurriculumFolderResponse = GetOrCreateCurriculumFolderResponses[keyof GetOrCreateCurriculumFolderResponses];
+
+export type GetOrCreateStudentFolderData = {
+    body?: never;
+    path: {
+        /**
+         * Student ID
+         */
+        student_id: string;
+    };
+    query?: {
+        student_name?: string | null;
+    };
+    url: '/api/v1/folders/student/{student_id}';
+};
+
+export type GetOrCreateStudentFolderResponses = {
+    200: FolderDto;
+};
+
+export type GetOrCreateStudentFolderResponse = GetOrCreateStudentFolderResponses[keyof GetOrCreateStudentFolderResponses];
+
+export type DeleteFolderData = {
+    body?: never;
+    path: {
+        /**
+         * Folder ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/folders/{id}';
+};
+
+export type DeleteFolderResponses = {
+    /**
+     * Folder deleted
+     */
+    204: void;
+};
+
+export type DeleteFolderResponse = DeleteFolderResponses[keyof DeleteFolderResponses];
+
+export type GetFolderData = {
+    body?: never;
+    path: {
+        /**
+         * Folder ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/folders/{id}';
+};
+
+export type GetFolderResponses = {
+    200: FolderDto;
+};
+
+export type GetFolderResponse = GetFolderResponses[keyof GetFolderResponses];
+
+export type UpdateFolderData = {
+    body: UpdateFolderRequest;
+    path: {
+        /**
+         * Folder ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/folders/{id}';
+};
+
+export type UpdateFolderResponses = {
+    200: FolderDto;
+};
+
+export type UpdateFolderResponse = UpdateFolderResponses[keyof UpdateFolderResponses];
+
+export type GetFolderContentsData = {
+    body?: never;
+    path: {
+        /**
+         * Folder ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/folders/{id}/contents';
+};
+
+export type GetFolderContentsResponses = {
+    200: FolderContentsDto;
+};
+
+export type GetFolderContentsResponse = GetFolderContentsResponses[keyof GetFolderContentsResponses];
 
 export type ListGradesData = {
     body?: never;
@@ -5444,6 +5813,231 @@ export type DeleteLessonResponses = {
 };
 
 export type DeleteLessonResponse = DeleteLessonResponses[keyof DeleteLessonResponses];
+
+export type ListArchivedDocumentsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/storage/archive';
+};
+
+export type ListArchivedDocumentsResponses = {
+    /**
+     * List of archived documents
+     */
+    200: Array<DocumentDto>;
+};
+
+export type ListArchivedDocumentsResponse = ListArchivedDocumentsResponses[keyof ListArchivedDocumentsResponses];
+
+export type ListTrashDocumentsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/storage/trash';
+};
+
+export type ListTrashDocumentsResponses = {
+    /**
+     * List of trashed documents
+     */
+    200: Array<DocumentDto>;
+};
+
+export type ListTrashDocumentsResponse = ListTrashDocumentsResponses[keyof ListTrashDocumentsResponses];
+
+export type UploadFileData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/storage/upload';
+};
+
+export type UploadFileErrors = {
+    /**
+     * Invalid payload or file missing
+     */
+    400: unknown;
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type UploadFileResponses = {
+    /**
+     * File uploaded successfully
+     */
+    201: DocumentDto;
+};
+
+export type UploadFileResponse = UploadFileResponses[keyof UploadFileResponses];
+
+export type ArchiveDocumentData = {
+    body: ArchiveRequest;
+    path: {
+        /**
+         * Document ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/storage/{id}/archive';
+};
+
+export type ArchiveDocumentErrors = {
+    /**
+     * Document not found
+     */
+    404: unknown;
+};
+
+export type ArchiveDocumentResponses = {
+    /**
+     * Document archived
+     */
+    200: DocumentDto;
+};
+
+export type ArchiveDocumentResponse = ArchiveDocumentResponses[keyof ArchiveDocumentResponses];
+
+export type DownloadFileData = {
+    body?: never;
+    path: {
+        /**
+         * Document ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/storage/{id}/file';
+};
+
+export type DownloadFileErrors = {
+    /**
+     * Document or physical file not found
+     */
+    404: unknown;
+};
+
+export type DownloadFileResponses = {
+    /**
+     * Raw file stream / binary
+     */
+    200: unknown;
+};
+
+export type GetAccessUrlData = {
+    body: PresignRequest;
+    path: {
+        /**
+         * Document ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/storage/{id}/presign';
+};
+
+export type GetAccessUrlErrors = {
+    /**
+     * Document not found
+     */
+    404: unknown;
+};
+
+export type GetAccessUrlResponses = {
+    /**
+     * Presigned URL generated
+     */
+    200: PresignedUrlResponseDto;
+};
+
+export type GetAccessUrlResponse = GetAccessUrlResponses[keyof GetAccessUrlResponses];
+
+export type PurgeDocumentData = {
+    body?: never;
+    path: {
+        /**
+         * Document ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/storage/{id}/purge';
+};
+
+export type PurgeDocumentErrors = {
+    /**
+     * Document not found
+     */
+    404: unknown;
+};
+
+export type PurgeDocumentResponses = {
+    /**
+     * Document permanently purged
+     */
+    204: void;
+};
+
+export type PurgeDocumentResponse = PurgeDocumentResponses[keyof PurgeDocumentResponses];
+
+export type RestoreDocumentData = {
+    body?: never;
+    path: {
+        /**
+         * Document ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/storage/{id}/restore';
+};
+
+export type RestoreDocumentErrors = {
+    /**
+     * Document not found
+     */
+    404: unknown;
+};
+
+export type RestoreDocumentResponses = {
+    /**
+     * Document restored
+     */
+    200: DocumentDto;
+};
+
+export type RestoreDocumentResponse = RestoreDocumentResponses[keyof RestoreDocumentResponses];
+
+export type TrashDocumentData = {
+    body?: never;
+    path: {
+        /**
+         * Document ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/storage/{id}/trash';
+};
+
+export type TrashDocumentErrors = {
+    /**
+     * Document not found
+     */
+    404: unknown;
+};
+
+export type TrashDocumentResponses = {
+    /**
+     * Document moved to trash
+     */
+    204: void;
+};
+
+export type TrashDocumentResponse = TrashDocumentResponses[keyof TrashDocumentResponses];
 
 export type ListFeesData = {
     body?: never;

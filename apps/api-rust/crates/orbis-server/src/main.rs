@@ -40,6 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let exam_repo = Arc::new(orbis_infra::repositories::exam_repos::ExamRepoImpl { db: db.clone() });
     let finance_repo = Arc::new(orbis_infra::repositories::finance_repos::FinanceRepoImpl { db: db.clone() });
     let document_repo = Arc::new(orbis_infra::repositories::document_repos::DocumentRepoImpl { db: db.clone() });
+    let folder_repo = Arc::new(orbis_infra::repositories::folder_repo::FolderRepoImpl::new(db.clone()));
     let integration_repo = Arc::new(orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() });
     let workflow_repo = Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
     let override_repo = Arc::new(orbis_infra::repositories::override_repos::OverrideRepoImpl { db: db.clone() });
@@ -224,6 +225,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         permission_checker.clone(),
     ));
 
+    let folder_service = Arc::new(orbis_app::services::FolderService::new(
+        folder_repo.clone(),
+        document_repo.clone(),
+        permission_checker.clone(),
+    ));
+
+    let storage_root = std::env::var("STORAGE_LOCAL_ROOT")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| std::path::PathBuf::from("./storage"));
+    let storage_resolver = Arc::new(orbis_infra::adapters::storage::StorageResolver::new(
+        storage_root,
+        integration_repo.clone(),
+    ));
+    let storage_adapter = storage_resolver.default_adapter();
+    let file_storage_service = Arc::new(orbis_app::services::FileStorageService::new(
+        storage_adapter.clone(),
+        document_repo.clone(),
+        event_bus.clone(),
+        permission_checker.clone(),
+    ));
+
     let integration_service = Arc::new(orbis_app::services::IntegrationService::new(
         integration_repo.clone(),
         permission_checker.clone(),
@@ -368,7 +390,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         fee_template_repo: finance_repo.clone(),
         student_fee_repo: finance_repo.clone(),
         payment_repo: finance_repo.clone(),
-        document_repo,
+        document_repo: document_repo.clone(),
+        folder_repo,
         doc_requirement_repo: doc_req_repo,
         sequence_repo,
         integration_repo,
@@ -400,6 +423,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         calendar_service,
         scheduling_service,
         document_service,
+        folder_service,
+        file_storage_service,
+        storage_resolver,
+        storage_adapter,
         integration_service,
         workflow_service,
         report_service,

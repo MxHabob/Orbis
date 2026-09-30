@@ -1,9 +1,0 @@
-{
-  "extends": "@orbis/tsconfig/base.json",
-  "include": ["."],
-  "exclude": ["node_modules"],
-  "compilerOptions": {
-    "typeRoots": ["./node_modules/@types", "../../types"],
-    "types": ["node"]
-  }
-}

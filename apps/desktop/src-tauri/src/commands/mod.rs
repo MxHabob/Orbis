@@ -12,6 +12,8 @@ pub mod assessment_cmds;
 pub mod exam_cmds;
 pub mod finance_cmds;
 pub mod document_cmds;
+pub mod folder_cmds;
+pub mod storage_cmds;
 pub mod integration_cmds;
 pub mod workflow_cmds;
 pub mod progression_cmds;
@@ -245,12 +247,38 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         document_cmds::document_list_by_entity,
         document_cmds::document_get,
         document_cmds::document_delete,
+        document_cmds::document_archive,
+        document_cmds::document_restore,
+        document_cmds::document_trash,
+        document_cmds::document_purge,
+        document_cmds::document_list_archived,
+        document_cmds::document_list_trash,
         document_cmds::document_create_requirement,
         document_cmds::document_get_requirement,
         document_cmds::document_update_requirement,
         document_cmds::document_list_requirements,
         document_cmds::document_delete_requirement,
         document_cmds::document_evaluate_student_requirements,
+        // ── Folders & Curriculum Knowledge Base ─────────────────
+        folder_cmds::folder_create,
+        folder_cmds::folder_list,
+        folder_cmds::folder_get,
+        folder_cmds::folder_get_contents,
+        folder_cmds::folder_get_or_create_student,
+        folder_cmds::folder_list_curriculum,
+        folder_cmds::folder_get_or_create_curriculum,
+        folder_cmds::folder_update,
+        folder_cmds::folder_delete,
+        // ── Storage & Physical File Operations ──────────────────
+        storage_cmds::storage_upload_file,
+        storage_cmds::storage_download_file,
+        storage_cmds::storage_get_url,
+        storage_cmds::storage_archive_document,
+        storage_cmds::storage_restore_document,
+        storage_cmds::storage_trash_document,
+        storage_cmds::storage_purge_document,
+        storage_cmds::storage_list_archived,
+        storage_cmds::storage_list_trash,
 
         // ── Integration ─────────────────────────────────────────
         integration_cmds::integration_connect_app,

@@ -24,5 +24,33 @@ pub enum DomainError {
     BootstrapFailed(String),
     #[error("Concurrency conflict: {0}")]
     ConcurrencyConflict(String),
+    #[error("Storage error: {0}")]
+    Storage(String),
+}
+
+#[derive(Error, Debug, Clone)]
+pub enum StorageError {
+    #[error("Storage provider not configured: {0}")]
+    NotConfigured(String),
+    #[error("Storage connection error: {0}")]
+    Connection(String),
+    #[error("Object not found: {0}")]
+    NotFound(String),
+    #[error("Storage I/O error: {0}")]
+    Io(String),
+    #[error("Security or path traversal violation: {0}")]
+    SecurityViolation(String),
+    #[error("File size exceeded limit: {0} bytes (max: {1} bytes)")]
+    QuotaExceeded(u64, u64),
+    #[error("Invalid MIME or magic bytes: {0}")]
+    InvalidMime(String),
+    #[error("Operation not supported by provider: {0}")]
+    Unsupported(String),
+}
+
+impl From<StorageError> for DomainError {
+    fn from(err: StorageError) -> Self {
+        DomainError::Storage(err.to_string())
+    }
 }
 

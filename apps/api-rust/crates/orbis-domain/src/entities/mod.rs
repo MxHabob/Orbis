@@ -57,4 +57,6 @@ pub mod solver;
 pub mod employee;
 pub mod group;
 pub mod identity_provisioning;
+pub mod storage;
+pub mod folder;
 
