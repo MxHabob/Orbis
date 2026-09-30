@@ -183,6 +183,12 @@ impl AppState {
         let mut provider_registry = InMemoryDataProviderRegistry::new();
         provider_registry.register_provider(Box::new(FeeCollectionDataProvider { db: db.clone() }));
         provider_registry.register_provider(Box::new(StudentListDataProvider { db: db.clone() }));
+        provider_registry.register_provider(Box::new(TermResultDataProvider { db: db.clone() }));
+        provider_registry.register_provider(Box::new(AnnualResultDataProvider { db: db.clone() }));
+        provider_registry.register_provider(Box::new(ExamSeatingPlanDataProvider { db: db.clone() }));
+        provider_registry.register_provider(Box::new(ExamAttendanceSheetDataProvider { db: db.clone() }));
+        provider_registry.register_provider(Box::new(PaymentReceiptDataProvider { db: db.clone() }));
+        provider_registry.register_provider(Box::new(StudentStatementDataProvider { db: db.clone() }));
         let report_provider_registry = Arc::new(provider_registry);
 
         let mut renderer_registry = InMemoryRendererRegistry::new();

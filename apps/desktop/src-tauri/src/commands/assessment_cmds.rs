@@ -9,6 +9,7 @@ use rust_decimal::Decimal;
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
 use orbis_app::services::assessment_service::{BatchGradeItem, BatchAttendanceItem};
+use orbis_domain::entities::assessment_scheme::{AssessmentScheme, AssessmentComponent, AssessmentLevel, InstitutionScope};
 
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
@@ -17,9 +18,15 @@ pub struct AssessmentSchemeDto {
     pub id: String,
     pub org_id: String,
     pub name: String,
+    pub name_ar: Option<String>,
     pub description: Option<String>,
-    pub max_score: f64,
+    pub max_score: Decimal,
     pub formula: Option<serde_json::Value>,
+    pub level: AssessmentLevel,
+    pub institution_scope: InstitutionScope,
+    pub components: Vec<AssessmentComponent>,
+    pub is_default: bool,
+    pub is_system: bool,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -27,18 +34,28 @@ pub struct AssessmentSchemeDto {
 #[derive(Deserialize)]
 pub struct CreateSchemeInput {
     pub name: String,
+    pub name_ar: Option<String>,
     pub description: Option<String>,
-    pub max_score: f64,
+    pub max_score: Decimal,
     pub formula: Option<serde_json::Value>,
+    pub level: Option<AssessmentLevel>,
+    pub institution_scope: Option<InstitutionScope>,
+    pub components: Option<Vec<AssessmentComponent>>,
+    pub is_default: Option<bool>,
 }
 
 #[derive(Deserialize)]
 pub struct UpdateSchemeInput {
     pub id: String,
     pub name: Option<String>,
+    pub name_ar: Option<String>,
     pub description: Option<String>,
-    pub max_score: Option<f64>,
+    pub max_score: Option<Decimal>,
     pub formula: Option<serde_json::Value>,
+    pub level: Option<AssessmentLevel>,
+    pub institution_scope: Option<InstitutionScope>,
+    pub components: Option<Vec<AssessmentComponent>>,
+    pub is_default: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -291,57 +308,61 @@ fn behavior_to_dto(r: orbis_domain::entities::behavior_record::BehaviorRecord) -
     }
 }
 
+fn scheme_to_dto(s: AssessmentScheme) -> AssessmentSchemeDto {
+    AssessmentSchemeDto {
+        id: s.id.to_string(),
+        org_id: s.org_id.to_string(),
+        name: s.name,
+        name_ar: s.name_ar,
+        description: s.description,
+        max_score: s.max_score,
+        formula: s.formula,
+        level: s.level,
+        institution_scope: s.institution_scope,
+        components: s.components,
+        is_default: s.is_default,
+        is_system: s.is_system,
+        created_at: s.created_at.to_rfc3339(),
+        updated_at: s.updated_at.to_rfc3339(),
+    }
+}
+
 // ── Handlers ────────────────────────────────────────────────────
 
 #[tauri::command]
 pub async fn assessment_create_scheme(request: CreateSchemeInput, state: State<'_, AppState>) -> Result<ApiResponse<AssessmentSchemeDto>, String> {
     let ctx = make_ctx(&state);
-    let s = state.assessment_service.create_assessment_scheme(&ctx, ctx.tenant_id, request.name, request.max_score, request.formula)
-        .await
-        .map_err(|e| e.to_string())?;
+    let s = state.assessment_service.create_assessment_scheme(
+        &ctx,
+        ctx.tenant_id,
+        request.name,
+        request.name_ar,
+        request.description,
+        request.max_score,
+        request.formula,
+        request.level,
+        request.institution_scope,
+        request.components,
+        request.is_default.unwrap_or(false),
+    )
+    .await
+    .map_err(|e| e.to_string())?;
 
-    Ok(ok(AssessmentSchemeDto {
-        id: s.id.to_string(),
-        org_id: s.org_id.to_string(),
-        name: s.name,
-        description: s.description,
-        max_score: s.max_score,
-        formula: s.formula,
-        created_at: s.created_at.to_rfc3339(),
-        updated_at: s.updated_at.to_rfc3339(),
-    }))
+    Ok(ok(scheme_to_dto(s)))
 }
 
 #[tauri::command]
 pub async fn assessment_list_schemes(state: State<'_, AppState>) -> Result<ApiResponse<Vec<AssessmentSchemeDto>>, String> {
     let ctx = make_ctx(&state);
     let items = state.assessment_service.list_assessment_schemes(ctx.tenant_id).await.map_err(|e| e.to_string())?;
-    Ok(ok(items.into_iter().map(|s| AssessmentSchemeDto {
-        id: s.id.to_string(),
-        org_id: s.org_id.to_string(),
-        name: s.name,
-        description: s.description,
-        max_score: s.max_score,
-        formula: s.formula,
-        created_at: s.created_at.to_rfc3339(),
-        updated_at: s.updated_at.to_rfc3339(),
-    }).collect()))
+    Ok(ok(items.into_iter().map(scheme_to_dto).collect()))
 }
 
 #[tauri::command]
 pub async fn assessment_get_scheme(id: String, state: State<'_, AppState>) -> Result<ApiResponse<AssessmentSchemeDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
     let s = state.assessment_scheme_repo.find_by_id(uid).await.map_err(|e| e.to_string())?.ok_or("Scheme not found")?;
-    Ok(ok(AssessmentSchemeDto {
-        id: s.id.to_string(),
-        org_id: s.org_id.to_string(),
-        name: s.name,
-        description: s.description,
-        max_score: s.max_score,
-        formula: s.formula,
-        created_at: s.created_at.to_rfc3339(),
-        updated_at: s.updated_at.to_rfc3339(),
-    }))
+    Ok(ok(scheme_to_dto(s)))
 }
 
 #[tauri::command]
@@ -353,23 +374,19 @@ pub async fn assessment_update_scheme(request: UpdateSchemeInput, state: State<'
         ctx.tenant_id,
         uid,
         request.name,
+        request.name_ar,
         request.description,
         request.max_score,
         request.formula,
+        request.level,
+        request.institution_scope,
+        request.components,
+        request.is_default,
     )
     .await
     .map_err(|e| e.to_string())?;
 
-    Ok(ok(AssessmentSchemeDto {
-        id: s.id.to_string(),
-        org_id: s.org_id.to_string(),
-        name: s.name,
-        description: s.description,
-        max_score: s.max_score,
-        formula: s.formula,
-        created_at: s.created_at.to_rfc3339(),
-        updated_at: s.updated_at.to_rfc3339(),
-    }))
+    Ok(ok(scheme_to_dto(s)))
 }
 
 #[tauri::command]

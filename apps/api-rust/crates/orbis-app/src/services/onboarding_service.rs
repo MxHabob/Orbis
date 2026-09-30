@@ -84,11 +84,15 @@ pub struct OnboardingPeriodItemDto {
     pub name_ar: Option<String>,
     #[serde(alias = "period_type")]
     pub period_type: String,
+    #[serde(default = "default_teaching", alias = "period_kind")]
+    pub period_kind: String,
     #[serde(alias = "start_date")]
     pub start_date: String,
     #[serde(alias = "end_date")]
     pub end_date: String,
 }
+
+fn default_teaching() -> String { "teaching".to_string() }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -326,6 +330,7 @@ impl OnboardingService {
                 name: p.name.clone(),
                 name_ar: p.name_ar.clone(),
                 period_type: p.period_type.clone(),
+                period_kind: p.period_kind.clone(),
                 start_date: p.start_date.clone(),
                 end_date: p.end_date.clone(),
             }

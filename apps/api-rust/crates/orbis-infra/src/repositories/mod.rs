@@ -28,3 +28,5 @@ pub mod group_repo;
 pub mod sequence_repo;
 pub mod bootstrap_repo;
 pub mod onboarding_repo;
+pub mod report_catalog;
+pub mod template_catalog;

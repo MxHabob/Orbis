@@ -82,7 +82,7 @@ impl AcademicYearRepository for CalendarRepoImpl {
     }
 }
 
-use orbis_domain::entities::academic_period::AcademicPeriodState;
+use orbis_domain::entities::academic_period::{AcademicPeriodState, PeriodType, PeriodKind};
 
 fn str_to_period_state(s: &str) -> AcademicPeriodState {
     match s {
@@ -105,7 +105,8 @@ fn map_period_model_to_domain(m: academic_period::Model) -> DomainPeriod {
         name: m.name,
         name_ar: m.name_ar,
         code: m.code,
-        period_type: m.period_type,
+        period_type: PeriodType::from_str(&m.period_type),
+        period_kind: PeriodKind::from_str(&m.period_kind),
         state: str_to_period_state(&m.status),
         start_date: m.start_date,
         end_date: m.end_date,
@@ -165,7 +166,8 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
             name: Set(period.name.clone()),
             name_ar: Set(period.name_ar.clone()),
             code: Set(period.code.clone()),
-            period_type: Set(period.period_type.clone()),
+            period_type: Set(period.period_type.to_string()),
+            period_kind: Set(period.period_kind.to_string()),
             start_date: Set(period.start_date),
             end_date: Set(period.end_date),
             hijri_start: Set(period.hijri_start.clone()),

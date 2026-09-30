@@ -336,6 +336,9 @@ use api::{
             // Calendar
             api::calendar_routes::AcademicYearDto,
             api::calendar_routes::AcademicPeriodDto,
+            orbis_domain::entities::academic_period::PeriodKind,
+            orbis_domain::entities::academic_period::PeriodType,
+            orbis_domain::entities::academic_period::AcademicPeriodState,
             api::calendar_routes::AcademicContextResponse,
             api::calendar_routes::CreateYearRequest,
             api::calendar_routes::CreatePeriodRequest,
@@ -384,6 +387,9 @@ use api::{
             api::scheduling_routes::BulkScheduleLessonsRequest,
             // Assessment
             api::assessment_routes::AssessmentSchemeDto,
+            orbis_domain::entities::assessment_scheme::AssessmentLevel,
+            orbis_domain::entities::assessment_scheme::AssessmentComponent,
+            orbis_domain::entities::assessment_scheme::InstitutionScope,
             api::assessment_routes::CreateSchemeRequest,
             api::assessment_routes::UpdateSchemeRequest,
             api::assessment_routes::GradeDto,

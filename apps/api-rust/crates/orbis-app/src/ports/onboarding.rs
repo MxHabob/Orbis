@@ -47,6 +47,7 @@ pub struct ValidatedOnboardingPeriod {
     pub name: String,
     pub name_ar: Option<String>,
     pub period_type: String,
+    pub period_kind: String,
     pub start_date: String,
     pub end_date: String,
 }

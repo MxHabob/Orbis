@@ -34,12 +34,15 @@ export type AcademicPeriodDto = {
     name: string;
     name_ar?: string | null;
     parent_id?: string | null;
+    period_kind: string;
     period_type: string;
     start_date: string;
     status: string;
     updated_at: string;
     year_id: string;
 };
+
+export type AcademicPeriodState = 'planning' | 'enrollment_open' | 'active_teaching' | 'final_exams' | 'grade_submission' | 'closed' | 'archived';
 
 export type AcademicSettingsDto = {
     default_grading_system: string;
@@ -201,13 +204,60 @@ export type ApprovalStepDto = {
     step_order: number;
 };
 
+/**
+ * A single assessment component (e.g., Assignments, Oral, Attendance, Written Test).
+ */
+export type AssessmentComponent = {
+    /**
+     * Stable identifier for this component within the scheme.
+     */
+    code: string;
+    /**
+     * Whether this component is required (vs. optional/bonus).
+     */
+    isRequired: boolean;
+    /**
+     * Maximum possible score for this component.
+     */
+    maxScore: string;
+    /**
+     * Display name (English).
+     */
+    name: string;
+    /**
+     * Display name (Arabic).
+     */
+    nameAr?: string | null;
+    /**
+     * Display order within the scheme.
+     */
+    sortOrder: number;
+    /**
+     * Weight of this component in the overall score (0.0–1.0).
+     * For school monthly assessments: each component contributes its raw score,
+     * so weight can be 1.0 and the sum is the total.
+     */
+    weight: string;
+};
+
+/**
+ * The academic level at which this assessment scheme operates.
+ */
+export type AssessmentLevel = 'monthly_period' | 'term' | 'annual' | 'coursework' | 'midterm' | 'final' | 'module_assessment';
+
 export type AssessmentSchemeDto = {
+    components: Array<AssessmentComponent>;
     created_at: string;
     description?: string | null;
     formula?: unknown;
     id: string;
-    max_score: number;
+    institution_scope: InstitutionScope;
+    is_default: boolean;
+    is_system: boolean;
+    level: AssessmentLevel;
+    max_score: string;
     name: string;
+    name_ar?: string | null;
     org_id: string;
     updated_at: string;
 };
@@ -643,6 +693,7 @@ export type CreatePeriodRequest = {
     name: string;
     name_ar?: string | null;
     parent_id?: string | null;
+    period_kind?: string | null;
     period_type: string;
     start_date: string;
     year_id: string;
@@ -658,10 +709,15 @@ export type CreateRoomRequest = {
 };
 
 export type CreateSchemeRequest = {
+    components?: Array<AssessmentComponent> | null;
     description?: string | null;
     formula?: unknown;
-    max_score: number;
+    institution_scope?: InstitutionScope | null;
+    is_default?: boolean | null;
+    level?: AssessmentLevel | null;
+    max_score: string;
     name: string;
+    name_ar?: string | null;
 };
 
 export type CreateSubjectRequest = {
@@ -1111,6 +1167,11 @@ export type GuardianDto = {
     work_phone?: string | null;
 };
 
+/**
+ * Which institution types this scheme is applicable to.
+ */
+export type InstitutionScope = 'school' | 'university' | 'institute' | 'all';
+
 export type IntegrationDto = {
     category: string;
     env: string;
@@ -1372,6 +1433,18 @@ export type PaymentDto = {
     updated_at: string;
 };
 
+/**
+ * The semantic function/purpose of a period.
+ *
+ * This distinguishes what happens during the period:
+ * - `Teaching` — regular instruction months
+ * - `Examination` — term/final exam period (e.g. the 4th period in a school term)
+ * - `Break` — vacation, holiday
+ * - `Registration` — enrollment/registration window
+ * - `Preparatory` — pre-academic preparation
+ */
+export type PeriodKind = 'teaching' | 'examination' | 'break' | 'registration' | 'preparatory';
+
 export type PeriodTemplateDto = {
     id: string;
     institution_type: string;
@@ -1380,6 +1453,17 @@ export type PeriodTemplateDto = {
     name_ar?: string | null;
     structure: unknown;
 };
+
+/**
+ * The structural type of a period in the academic hierarchy.
+ *
+ * This determines where the period sits in the Year → Term → Period tree:
+ * - `Semester` / `Trimester` / `Quarter` — top-level terms under a Year
+ * - `Month` — monthly sub-period within a term
+ * - `Module` / `Block` — university/institute sub-periods
+ * - `Custom` — institution-defined
+ */
+export type PeriodType = 'semester' | 'trimester' | 'quarter' | 'month' | 'module' | 'block' | 'custom';
 
 export type PermissionRuleDto = {
     actions: Array<string>;
@@ -2079,10 +2163,15 @@ export type UpdateRoomRequest = {
 };
 
 export type UpdateSchemeRequest = {
+    components?: Array<AssessmentComponent> | null;
     description?: string | null;
     formula?: unknown;
-    max_score?: number | null;
+    institution_scope?: InstitutionScope | null;
+    is_default?: boolean | null;
+    level?: AssessmentLevel | null;
+    max_score?: string | null;
     name?: string | null;
+    name_ar?: string | null;
 };
 
 export type UpdateStudentProfileRequest = {

@@ -1,4 +1,4 @@
-use orbis_domain::entities::assessment_scheme::AssessmentScheme;
+use orbis_domain::entities::assessment_scheme::{AssessmentScheme, AssessmentComponent, AssessmentLevel, InstitutionScope};
 use orbis_domain::entities::behavior_record::BehaviorRecord;
 use orbis_domain::entities::grade::Grade;
 use orbis_domain::entities::attendance::Attendance;
@@ -249,7 +249,7 @@ impl AssessmentService {
             engine.set_variable(&var_name, grade.score);
         }
 
-        let max_score_decimal = Decimal::from_f64_retain(scheme.max_score).unwrap_or(Decimal::from(100));
+        let max_score_decimal = scheme.max_score;
         let final_score = engine.evaluate(&formula)?;
         let final_score = if final_score > max_score_decimal {
             max_score_decimal
@@ -492,8 +492,14 @@ impl AssessmentService {
         ctx: &RequestContext,
         org_id: Uuid,
         name: String,
-        max_score: f64,
+        name_ar: Option<String>,
+        description: Option<String>,
+        max_score: Decimal,
         formula: Option<serde_json::Value>,
+        level: Option<AssessmentLevel>,
+        institution_scope: Option<InstitutionScope>,
+        components: Option<Vec<AssessmentComponent>>,
+        is_default: bool,
     ) -> Result<AssessmentScheme, DomainError> {
         self.permission_checker.check(ctx, Permission::AssessmentWrite).await?;
 
@@ -503,9 +509,15 @@ impl AssessmentService {
             id: scheme_id,
             org_id,
             name: name.clone(),
-            description: None,
+            name_ar,
+            description,
             max_score,
             formula,
+            level: level.unwrap_or(AssessmentLevel::MonthlyPeriod),
+            institution_scope: institution_scope.unwrap_or(InstitutionScope::All),
+            components: components.unwrap_or_default(),
+            is_default,
+            is_system: false,
             created_at: now,
             updated_at: now,
         };
@@ -529,9 +541,14 @@ impl AssessmentService {
         org_id: Uuid,
         scheme_id: Uuid,
         name: Option<String>,
+        name_ar: Option<String>,
         description: Option<String>,
-        max_score: Option<f64>,
+        max_score: Option<Decimal>,
         formula: Option<serde_json::Value>,
+        level: Option<AssessmentLevel>,
+        institution_scope: Option<InstitutionScope>,
+        components: Option<Vec<AssessmentComponent>>,
+        is_default: Option<bool>,
     ) -> Result<AssessmentScheme, DomainError> {
         self.permission_checker.check(ctx, Permission::AssessmentWrite).await?;
 
@@ -545,6 +562,9 @@ impl AssessmentService {
         if let Some(n) = name {
             scheme.name = n;
         }
+        if let Some(nar) = name_ar {
+            scheme.name_ar = Some(nar);
+        }
         if let Some(d) = description {
             scheme.description = Some(d);
         }
@@ -553,6 +573,18 @@ impl AssessmentService {
         }
         if let Some(f) = formula {
             scheme.formula = Some(f);
+        }
+        if let Some(lvl) = level {
+            scheme.level = lvl;
+        }
+        if let Some(scope) = institution_scope {
+            scheme.institution_scope = scope;
+        }
+        if let Some(comps) = components {
+            scheme.components = comps;
+        }
+        if let Some(def) = is_default {
+            scheme.is_default = def;
         }
         scheme.updated_at = Utc::now();
 

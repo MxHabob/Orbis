@@ -2,14 +2,14 @@
 import * as m from "$lib/paraglide/messages";
 import { api, extractErrorMessage } from "$lib/api";
 import { academicContext } from "$lib/stores";
-import { l, isAr, formatDate } from "$lib/core/i18n";
-import type { ReportDefinitionDto, TemplateDto, AcademicPeriodDto, ClassDto } from "$lib/api/types";
+import { l, isAr } from "$lib/core/i18n";
+import type { ReportDefinitionDto } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
-import { Card, CardContent } from "@orbis/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
+import { Card } from "@orbis/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@orbis/ui/tabs";
 import {
   Select,
   SelectTrigger,
@@ -39,44 +39,38 @@ import {
   BookOpen,
   Calendar,
   ChartBar,
-  CheckCircle,
-  ClockRotateRight,
-  Document,
   DocumentChartBar,
   DocumentPage,
   Download,
   Eye,
-  Keyframes,
   Play,
   Refresh,
-  Search,
-  Sparkles,
   Users,
 } from "@orbis/icons";
+import SearchField from "$lib/shared/components/search-field.svelte";
+import { fade } from "svelte/transition";
 
 import MetricsView from "$lib/features/metrics/metrics-view.svelte";
 import { createReportDefinitionsQuery, createGenerateReportMutation } from "./queries";
-import { createTemplatesQuery } from "$lib/features/templates/queries";
 import { createPeriodsQuery, createClassesQuery } from "$lib/features/academics/queries";
 
 let { orgId }: { orgId: string } = $props();
 
 let activeMainTab = $state<"reports" | "analytics">("reports");
 let selectedCategory = $state<string>("all");
+let selectedFormatFilter = $state<string>("all");
 let searchQuery = $state<string>("");
 
 // TanStack Query layer for deterministic caching and lifecycle
 const defsQuery = createReportDefinitionsQuery(() => orgId);
-const templatesQuery = createTemplatesQuery(() => orgId);
 const periodsQuery = createPeriodsQuery(() => orgId);
 const classesQuery = createClassesQuery(() => orgId);
 const generateMutation = createGenerateReportMutation();
 
 const reportDefinitions = $derived(defsQuery.data ?? []);
-const templates = $derived(templatesQuery.data ?? []);
 const periods = $derived(periodsQuery.data ?? []);
 const classes = $derived(classesQuery.data ?? []);
-const isLoading = $derived(defsQuery.isLoading || templatesQuery.isLoading || periodsQuery.isLoading || classesQuery.isLoading);
+const isLoading = $derived(defsQuery.isLoading || periodsQuery.isLoading || classesQuery.isLoading);
 
 // Report Generation Execution State
 let selectedDefinition = $state<ReportDefinitionDto | null>(null);
@@ -94,21 +88,50 @@ let currentJobId = $state<string>("");
 let isPreviewOpen = $state(false);
 let previewBlobUrl = $state<string>("");
 
-const categories = [
-  { id: "all", label: "جميع التقارير", icon: DocumentChartBar },
-  { id: "academic", label: "الشؤون الأكاديمية", icon: BookOpen },
-  { id: "students", label: "شؤون الطلاب والقبول", icon: Users },
-  { id: "finance", label: "المالية والحسابات", icon: Banknotes },
-  { id: "attendance", label: "الحضور والغياب", icon: Calendar },
-  { id: "exams", label: "الاختبارات واللجان", icon: DocumentPage },
+const categoryOptions = [
+  { id: "all", label: "جميع المجالات الأكاديمية والمؤسسية" },
+  { id: "academic", label: "الشؤون الأكاديمية والدرجات" },
+  { id: "student", label: "شؤون الطلاب والقبول والتسجيل" },
+  { id: "attendance", label: "الحضور والمواظبة والانضباط" },
+  { id: "exam", label: "الاختبارات والكنترول المدرسي" },
+  { id: "finance", label: "المالية والمحاسبة والرسوم" },
+  { id: "hr", label: "الموارد البشرية وشؤون الكادر" },
+  { id: "administration", label: "الإدارة والتشغيل والسياسات" },
 ];
+
+function getDomainIcon(domain?: string, category?: string) {
+  const d = (domain || "").toLowerCase();
+  const c = (category || "").toLowerCase();
+  if (d === "finance" || c.includes("billing") || c.includes("accounting") || c.includes("cash")) return Banknotes;
+  if (d === "academic" || c.includes("grades") || c.includes("transcript") || c.includes("curriculum")) return BookOpen;
+  if (d === "students" || d === "student" || c.includes("admission") || c.includes("guardians")) return Users;
+  if (d === "attendance" || c.includes("daily") || c.includes("monthly") || c.includes("absence")) return Calendar;
+  if (d.includes("exam") || c.includes("seating") || c.includes("control")) return DocumentPage;
+  if (d.includes("employee") || d.includes("hr") || c.includes("staff") || c.includes("payroll")) return Users;
+  return AdjustmentsHorizontal;
+}
 
 const filteredDefinitions = $derived(
   reportDefinitions.filter((def) => {
+    const domain = (def.domain || "").toLowerCase();
+    const category = (def.category || "").toLowerCase();
+    const selected = selectedCategory.toLowerCase();
+
     const matchesCat =
-      selectedCategory === "all" ||
-      def.category?.toLowerCase() === selectedCategory.toLowerCase() ||
-      def.domain?.toLowerCase() === selectedCategory.toLowerCase();
+      selected === "all" ||
+      domain === selected ||
+      category === selected ||
+      (selected === "student" && (domain === "students" || category === "students" || category === "admissions")) ||
+      (selected === "exam" && (domain === "exams" || domain === "examinations" || category === "examinations" || category === "seating" || category === "control")) ||
+      (selected === "academic" && (category === "grades" || category === "transcripts" || category === "scheduling" || category === "curriculum")) ||
+      (selected === "finance" && (category === "accounting" || category === "billing" || category === "cash" || category === "discounts" || category === "tax")) ||
+      (selected === "attendance" && (category === "daily" || category === "monthly" || category === "alerts" || category === "behavior")) ||
+      (selected === "hr" && (domain === "employees" || category === "employees" || category === "staff" || category === "payroll" || category === "workload" || category === "contracts")) ||
+      (selected === "administration" && (domain === "system" || category === "facilities" || category === "security" || category === "autopilot"));
+
+    const matchesFormat =
+      selectedFormatFilter === "all" ||
+      (def.supported_formats && def.supported_formats.includes(selectedFormatFilter));
 
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
@@ -116,9 +139,10 @@ const filteredDefinitions = $derived(
       def.name.toLowerCase().includes(q) ||
       def.name_ar?.toLowerCase().includes(q) ||
       def.code.toLowerCase().includes(q) ||
-      def.description?.toLowerCase().includes(q);
+      def.description?.toLowerCase().includes(q) ||
+      def.description_ar?.toLowerCase().includes(q);
 
-    return matchesCat && matchesSearch;
+    return matchesCat && matchesFormat && matchesSearch;
   }),
 );
 
@@ -136,16 +160,6 @@ function openGenerateSheet(def: ReportDefinitionDto) {
 
 async function handleExecuteReport() {
   if (!selectedDefinition) return;
-
-  // Find linked template or default template
-  const matchingTemplate =
-    templates.find((t) => t.document_type === selectedDefinition?.code) ||
-    templates[0];
-
-  if (!matchingTemplate) {
-    toast.error("لا يوجد قالب تقرير مرتبط بهذا المستند حالياً");
-    return;
-  }
 
   isGenerating = true;
   jobStatus = "جاري معالجة البيانات وتوليد المستند...";
@@ -228,141 +242,150 @@ function handleDownloadCurrent() {
 }
 </script>
 
-<div class="p-6 max-w-7xl mx-auto space-y-6 text-start">
-  <!-- Hero Header -->
-  <div class="relative overflow-hidden rounded-2xl border border-border/80 bg-linear-to-b from-card to-card/60 p-6 shadow-sm backdrop-blur-md">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div class="flex items-center gap-3.5">
-        <div class="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs">
-          <DocumentPage class="w-6 h-6" />
-        </div>
-        <div>
-          <h1 class="text-xl font-bold text-foreground tracking-tight">
-            مركز التقارير والمستندات المؤسسية (DocForge Hub)
-          </h1>
-          <p class="text-xs text-muted-foreground mt-0.5">
-            توليد، طباعة وتصدير الكشوفات الأكاديمية والمالية، بطاقات الاختبارات، وسندات القبض
-          </p>
-        </div>
-      </div>
-
-      <!-- Main Tabs Switcher -->
-      <Tabs value={activeMainTab} onValueChange={(v) => (activeMainTab = v as "reports" | "analytics")}>
-        <TabsList class="bg-muted/40 p-1 rounded-xl border border-border/60">
-          <TabsTrigger value="reports" class="text-xs font-semibold gap-1.5 px-3 py-1.5 rounded-lg">
-            <DocumentChartBar class="w-3.5 h-3.5" />
-            استخراج التقارير والمستندات
-          </TabsTrigger>
-          <TabsTrigger value="analytics" class="text-xs font-semibold gap-1.5 px-3 py-1.5 rounded-lg">
-            <ChartBar class="w-3.5 h-3.5" />
-            لوحة التحليلات والمؤشرات
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-    </div>
-  </div>
-
-  {#if activeMainTab === "analytics"}
-    <div class="w-full">
-      <MetricsView {orgId} />
-    </div>
-  {:else}
-    <!-- Categories Navigation & Search -->
-    <div class="space-y-4">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <!-- Category AdjustmentsHorizontal Pills -->
-        <div class="flex flex-wrap items-center gap-1.5 p-1 bg-muted/30 rounded-xl border border-border/60">
-          {#each categories as cat}
-            {@const Icon = cat.icon}
-            <button
-              type="button"
-              onclick={() => (selectedCategory = cat.id)}
-              class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer {selectedCategory === cat.id ? 'bg-primary text-primary-foreground shadow-2xs' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'}"
-            >
-              <Icon class="w-3.5 h-3.5" />
-              <span>{cat.label}</span>
-            </button>
-          {/each}
-        </div>
-
-        <!-- Search Box -->
-        <div class="relative w-full sm:w-64 shrink-0">
-          <Search class="absolute start-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="بحث في التقارير المتاحة..."
+<div class="h-full w-full overflow-y-auto bg-background/30 scrollbar-hide">
+  <div class="w-full p-6 md:p-8 flex flex-col gap-6">
+    
+    <!-- Sleek Top Controls Toolbar (matching Settings and Templates pages) -->
+    <div class="flex flex-wrap items-center justify-between gap-4" in:fade={{ delay: 50, duration: 200 }}>
+      
+      <!-- Filters & Search Controls -->
+      <div class="flex flex-wrap items-center gap-3 shrink-0">
+        <!-- Search Field -->
+        <div class="w-full sm:w-72">
+          <SearchField
             bind:value={searchQuery}
-            class="h-8 ps-8 text-xs w-full"
+            placeholder="بحث في التقارير والكشوفات..."
           />
         </div>
+
+        <!-- Category / Domain Filter -->
+        <Select type="single" bind:value={selectedCategory}>
+          <SelectTrigger class="h-9 text-xs bg-background/40 border-border/40 hover:bg-muted/40 transition-colors w-auto min-w-[200px]">
+            {categoryOptions.find((c) => c.id === selectedCategory)?.label || "جميع المجالات"}
+          </SelectTrigger>
+          <SelectContent>
+            {#each categoryOptions as cat}
+              <SelectItem value={cat.id}>{cat.label}</SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
+
+        <!-- Format Filter -->
+        <Select type="single" bind:value={selectedFormatFilter}>
+          <SelectTrigger class="h-9 text-xs bg-background/40 border-border/40 hover:bg-muted/40 transition-colors">
+            {({ all: "كافة الصيغ (PDF, XLSX)", PDF: "مستندات PDF", XLSX: "جداول XLSX", CSV: "ملفات CSV", HTML: "تفاعلي HTML" } as Record<string, string>)[selectedFormatFilter] || "صيغة التصدير"}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كافة الصيغ (PDF, XLSX)</SelectItem>
+            <SelectItem value="PDF">مستندات PDF</SelectItem>
+            <SelectItem value="XLSX">جداول XLSX</SelectItem>
+            <SelectItem value="CSV">ملفات CSV</SelectItem>
+            <SelectItem value="HTML">تفاعلي HTML</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      <!-- Report Definitions Cards Grid -->
-      {#if isLoading}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {#each Array(6) as _}
-            <div class="h-44 rounded-2xl bg-card border border-border/60 animate-pulse"></div>
-          {/each}
-        </div>
-      {:else if filteredDefinitions.length === 0}
-        <Card class="border border-dashed p-12 text-center flex flex-col items-center justify-center gap-2 text-muted-foreground">
-          <DocumentPage class="w-8 h-8 opacity-40" />
-          <div class="text-sm font-bold">لا توجد تقارير مطابقة</div>
-          <div class="text-xs">جرب اختيار تصنيف آخر أو تغيير كلمة البحث</div>
-        </Card>
-      {:else}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {#each filteredDefinitions as def}
-            <div class="group relative rounded-2xl border border-border/80 bg-card p-5 shadow-xs hover:shadow-md transition-all hover:border-primary/40 flex flex-col justify-between gap-4">
-              <div class="space-y-3">
-                <div class="flex items-start justify-between gap-2">
-                  <div class="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                    <DocumentPage class="w-5 h-5" />
-                  </div>
-                  <Badge variant="outline" class="text-[9px] font-mono uppercase bg-muted/40">
-                    {def.code}
-                  </Badge>
-                </div>
-
-                <div>
-                  <h3 class="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                    {def.name_ar || def.name}
-                  </h3>
-                  <div class="text-[10px] text-muted-foreground font-mono mt-0.5">
-                    {def.name}
-                  </div>
-                </div>
-
-                <p class="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                  {def.description_ar || def.description || "تقرير جاهز للتوليد والطباعة بصيغة PDF عالية الدقة."}
-                </p>
-              </div>
-
-              <div class="pt-3 border-t border-border/50 flex items-center justify-between gap-2">
-                <div class="flex items-center gap-1">
-                  {#each def.supported_formats || ["PDF"] as fmt}
-                    <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-muted text-muted-foreground border border-border/50">
-                      {fmt}
-                    </span>
-                  {/each}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onclick={() => openGenerateSheet(def)}
-                  class="h-8 text-xs font-semibold gap-1.5 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all"
-                >
-                  <Play class="w-3 h-3" />
-                  توليد التقرير
-                </Button>
-              </div>
-            </div>
-          {/each}
-        </div>
-      {/if}
+      <!-- Mode Switcher Tabs (Reports vs Analytics) -->
+      <div class="flex items-center gap-3 shrink-0">
+        <Tabs value={activeMainTab} onValueChange={(v) => (activeMainTab = v as "reports" | "analytics")}>
+          <TabsList class="h-9 bg-muted/40 p-0.5 rounded-lg border border-border/40">
+            <TabsTrigger value="reports" class="text-xs font-semibold gap-1.5 px-3 py-1 rounded-md">
+              <DocumentChartBar class="w-3.5 h-3.5" />
+              دليل التقارير
+              {#if reportDefinitions.length > 0}
+                <span class="ms-1 px-1.5 py-0.2 rounded-full text-[10px] bg-primary/15 text-primary font-mono font-bold">
+                  {filteredDefinitions.length}
+                </span>
+              {/if}
+            </TabsTrigger>
+            <TabsTrigger value="analytics" class="text-xs font-semibold gap-1.5 px-3 py-1 rounded-md">
+              <ChartBar class="w-3.5 h-3.5" />
+              المؤشرات والتحليلات
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
     </div>
-  {/if}
+
+    {#if activeMainTab === "analytics"}
+      <div class="w-full" in:fade={{ duration: 150 }}>
+        <MetricsView {orgId} />
+      </div>
+    {:else}
+      <!-- Reports Cards Grid -->
+      <div class="space-y-4" in:fade={{ duration: 150 }}>
+        {#if isLoading}
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {#each Array(6) as _}
+              <div class="h-44 rounded-xl bg-card/50 border border-border/40 animate-pulse"></div>
+            {/each}
+          </div>
+        {:else if filteredDefinitions.length === 0}
+          <Card class="border border-dashed border-border/60 bg-transparent p-12 text-center flex flex-col items-center justify-center gap-2 text-muted-foreground rounded-xl">
+            <DocumentPage class="w-8 h-8 opacity-40" />
+            <div class="text-sm font-bold text-foreground">لا توجد تقارير مطابقة</div>
+            <div class="text-xs">جرب اختيار مجال آخر أو تغيير كلمة البحث</div>
+          </Card>
+        {:else}
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {#each filteredDefinitions as def}
+              {@const IconComponent = getDomainIcon(def.domain, def.category)}
+              <div class="group relative rounded-xl border border-border/40 bg-card/60 backdrop-blur-xs p-5 shadow-2xs hover:shadow-md hover:border-primary/40 transition-all duration-200 flex flex-col justify-between gap-4">
+                
+                <div class="space-y-3">
+                  <!-- Header Row: Icon + Code Badge -->
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                      <IconComponent class="w-4 h-4" />
+                    </div>
+                    <Badge variant="outline" class="text-[9px] font-mono uppercase bg-muted/30 border-border/40 text-muted-foreground">
+                      {def.code}
+                    </Badge>
+                  </div>
+
+                  <!-- Titles -->
+                  <div>
+                    <h3 class="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-snug">
+                      {def.name_ar || def.name}
+                    </h3>
+                    <div class="text-[10px] text-muted-foreground/80 font-mono mt-0.5 line-clamp-1">
+                      {def.name}
+                    </div>
+                  </div>
+
+                  <!-- Description -->
+                  <p class="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                    {def.description_ar || def.description || "تقرير جاهز للتوليد والطباعة بصيغة PDF وجداول بيانات."}
+                  </p>
+                </div>
+
+                <!-- Footer: Supported Formats & Action -->
+                <div class="pt-3 border-t border-border/40 flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-1">
+                    {#each def.supported_formats || ["PDF"] as fmt}
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-muted/50 text-muted-foreground border border-border/40">
+                        {fmt}
+                      </span>
+                    {/each}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onclick={() => openGenerateSheet(def)}
+                    class="h-8 px-3 text-xs font-semibold gap-1.5 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all cursor-pointer"
+                  >
+                    <Play class="w-3 h-3" />
+                    توليد التقرير
+                  </Button>
+                </div>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    {/if}
+  </div>
 </div>
 
 <!-- Parameter Drawer Sheet -->
@@ -490,7 +513,7 @@ function handleDownloadCurrent() {
           size="sm"
           onclick={handleExecuteReport}
           disabled={isGenerating}
-          class="h-9 text-xs font-bold gap-1.5 shadow-sm"
+          class="h-9 text-xs font-bold gap-1.5 shadow-sm cursor-pointer"
         >
           <Play class="w-3.5 h-3.5" />
           {isGenerating ? "جاري الإنشاء..." : "بدء التوليد والمعاينة"}

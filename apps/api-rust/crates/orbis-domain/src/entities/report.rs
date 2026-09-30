@@ -62,6 +62,12 @@ pub enum ReportDomain {
     Exam,
     Attendance,
     Staff,
+    Student,
+    Admission,
+    Document,
+    Organization,
+    Hr,
+    Administration,
     System,
 }
 
@@ -73,6 +79,12 @@ impl std::fmt::Display for ReportDomain {
             Self::Exam => write!(f, "exam"),
             Self::Attendance => write!(f, "attendance"),
             Self::Staff => write!(f, "staff"),
+            Self::Student => write!(f, "student"),
+            Self::Admission => write!(f, "admission"),
+            Self::Document => write!(f, "document"),
+            Self::Organization => write!(f, "organization"),
+            Self::Hr => write!(f, "hr"),
+            Self::Administration => write!(f, "administration"),
             Self::System => write!(f, "system"),
         }
     }
@@ -86,6 +98,12 @@ impl ReportDomain {
             "exam" => Self::Exam,
             "attendance" => Self::Attendance,
             "staff" => Self::Staff,
+            "student" => Self::Student,
+            "admission" => Self::Admission,
+            "document" => Self::Document,
+            "organization" => Self::Organization,
+            "hr" => Self::Hr,
+            "administration" => Self::Administration,
             _ => Self::System,
         }
     }

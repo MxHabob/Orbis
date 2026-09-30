@@ -117,8 +117,17 @@ impl CalendarService {
     ) -> Result<AcademicPeriod, DomainError> {
         self.permission_checker.check(ctx, Permission::PeriodWrite).await?;
 
+        use orbis_domain::entities::academic_period::{PeriodType, PeriodKind};
+
         let now = Utc::now();
         let period_id = Uuid::new_v4();
+        let parsed_type = PeriodType::from_str(&period_type);
+        // Infer kind from type: terms default to Teaching, but callers can override via metadata
+        let inferred_kind = if parsed_type.is_term() {
+            PeriodKind::Teaching
+        } else {
+            PeriodKind::Teaching
+        };
 
         let period = AcademicPeriod {
             id: period_id,
@@ -128,7 +137,8 @@ impl CalendarService {
             name,
             name_ar: None,
             code: None,
-            period_type,
+            period_type: parsed_type,
+            period_kind: inferred_kind,
             state: AcademicPeriodState::ActiveTeaching,
             start_date,
             end_date,

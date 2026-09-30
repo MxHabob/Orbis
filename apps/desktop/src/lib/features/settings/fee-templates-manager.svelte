@@ -56,6 +56,25 @@ function getFrequencyLabel(freqStr: string) {
   return freqStr;
 }
 
+function formatLevels(raw: any) {
+  if (!raw) return l("كافة المراحل والصفوف", "All Levels");
+  try {
+    let levels: string[] = [];
+    if (typeof raw === "string") {
+      const parsed = JSON.parse(raw);
+      levels = Array.isArray(parsed) ? parsed : (parsed.levels || (parsed.level ? [parsed.level] : []));
+    } else if (Array.isArray(raw)) {
+      levels = raw;
+    } else if (typeof raw === "object") {
+      levels = Array.isArray(raw.levels) ? raw.levels : (raw.level ? [raw.level] : []);
+    }
+    if (levels.length === 0) return l("كافة المراحل والصفوف", "All Levels");
+    return levels.join(", ");
+  } catch {
+    return l("كافة المراحل والصفوف", "All Levels");
+  }
+}
+
 const templateActions: ActionItem[] = [
   { id: "edit", label: m.common_action_edit?.() || "Edit", icon: "Pencil" },
   { id: "delete", label: m.common_action_delete?.() || "Delete", icon: "Trash2", variant: "destructive" },
@@ -68,6 +87,7 @@ const gridSource = $derived(
     name: tpl.name_ar || tpl.name || "—",
     amount: formatCurrency(Number(tpl.default_amount || 0), tpl.currency || "YER"),
     frequency: getFrequencyLabel(tpl.frequency),
+    applicable_levels_display: formatLevels(tpl.applicable_levels),
     status: (tpl.is_active === true || tpl.is_active === 1) ? "active" : "inactive",
     class_count: getCategoryLabel(tpl.category),
     created_at_display: tpl.created_at ? formatDate(tpl.created_at, "datetime") : "—",
@@ -78,10 +98,11 @@ const gridSource = $derived(
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
   { id: "name", prop: "name", header: m.common_ft_col_name?.() || "Template", name: "Template", width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "class_count", prop: "class_count", header: m.common_ft_col_category?.() || "Category", name: "Category", width: 130, size: 130, readonly: true },
+  { id: "class_count", prop: "class_count", header: m.common_ft_col_category?.() || "Category", name: "Category", width: 120, size: 120, readonly: true },
   { id: "amount", prop: "amount", header: m.common_ft_col_amount?.() || "Amount", name: "Amount", width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono font-bold" },
-  { id: "frequency", prop: "frequency", header: m.common_ft_col_frequency?.() || "Frequency", name: "Frequency", width: 110, size: 110, readonly: true, align: "center" },
-  { id: "status", prop: "status", header: m.common_word_status?.() || "Status", name: "Status", width: 100, size: 100, type: "badge", align: "center", readonly: true },
+  { id: "frequency", prop: "frequency", header: m.common_ft_col_frequency?.() || "Frequency", name: "Frequency", width: 100, size: 100, readonly: true, align: "center" },
+  { id: "applicable_levels_display", prop: "applicable_levels_display", header: l("المراحل المستهدفة", "Target Levels"), name: "Target Levels", width: 150, size: 150, readonly: true },
+  { id: "status", prop: "status", header: m.common_word_status?.() || "Status", name: "Status", width: 90, size: 90, type: "badge", align: "center", readonly: true },
   { id: "created_at_display", prop: "created_at_display", header: l("تاريخ الإنشاء", "Created At"), name: "Created At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
   { id: "updated_at_display", prop: "updated_at_display", header: l("آخر تحديث", "Updated At"), name: "Updated At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
   {

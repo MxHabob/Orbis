@@ -404,8 +404,8 @@ impl OnboardingPort for OnboardingRepoImpl {
             let p_end = normalize_end(&p.end_date);
             txn.execute(Statement::from_sql_and_values(
                 txn.get_database_backend(),
-                "INSERT INTO academic_periods (id, org_id, year_id, parent_id, name, name_ar, period_type, start_date, end_date, status, is_locked, is_enrollment_open, is_grade_entry_open, created_at, updated_at) \
-                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, 'active', 0, 1, 1, $10, $11 \
+                "INSERT INTO academic_periods (id, org_id, year_id, parent_id, name, name_ar, period_type, period_kind, start_date, end_date, status, is_locked, is_enrollment_open, is_grade_entry_open, created_at, updated_at) \
+                 SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'active', 0, 1, 1, $11, $12 \
                  WHERE NOT EXISTS (SELECT 1 FROM academic_periods WHERE org_id = $2 AND year_id = $3 AND name = $5)",
                 vec![
                     p.id.into(),
@@ -415,6 +415,7 @@ impl OnboardingPort for OnboardingRepoImpl {
                     p.name.clone().into(),
                     p.name_ar.clone().unwrap_or_else(|| p.name.clone()).into(),
                     p.period_type.clone().into(),
+                    p.period_kind.clone().into(),
                     p_start.into(),
                     p_end.into(),
                     now.clone().into(),

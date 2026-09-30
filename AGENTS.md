@@ -167,13 +167,52 @@ Every agent starting a session in this repository MUST:
     - Expanded system roles to 11 full standard ERP roles (`super_admin`, `admin`, `principal`, `teacher`, `registrar`, `accountant`, `exam_officer`, `student`, `parent`, `staff`, `auditor`).
     - Populated 210+ exhaustive permission assignments in `build_default_permissions` across all 9 ERP domains (`iam`, `employees`, `academic`, `students`, `assessment`, `examinations`, `finance`, `documents`, `system`) without omitting any resource or action.
     - Expanded default organization configuration in `build_org_settings` with complete baseline policies (`academic`, `admission`, `enrollment`, `finance`, `attendance`, `examinations`, `documents`, `notifications`, `security`, `autopilot`).
-    - Seeded comprehensive catalog of **56 default institutional templates and reports** in `seed_default_reports` (`template_catalog`) spanning Administration, Academics, Attendance, Examination Control, Accounting & Finance Ledgers, and HR.
+  - **Academic Structure & Assessment Schemes Engine Reconciliation:**
+    - **PeriodKind Enum & Semantic Distinction:** Added `PeriodKind` enum (`Teaching`, `Examination`, `Break`, `Registration`, `Preparatory`) in `orbis-domain` to decouple semantic function from structural hierarchy (`PeriodType`), enabling explicit marking of examination periods (e.g. 4th period of a term).
+    - **Database Migration:** Added `m20240107_000001_academic_period_kind_assessment_enrichment.rs` adding `period_kind` column to `academic_periods` and `name_ar`, `level`, `institution_scope`, `components`, `is_default`, and `is_system` columns to `assessment_schemes`.
+    - **Assessment Schemes Domain Enrichment:** Enriched `AssessmentScheme` with typed components (`AssessmentComponent`), `AssessmentLevel` (`MonthlyPeriod`, `Term`, `Annual`, `Coursework`, `Midterm`, `Final`, `ModuleAssessment`), `InstitutionScope` (`School`, `University`, `Institute`, `All`), and exact decimal precision (`max_score: Decimal`).
+    - **Service & Repository Reconciliation:** Reconciled `AssessmentService`, `CalendarService`, `OnboardingService`, `onboarding_repo.rs`, `assessment_repos.rs`, and `calendar_repos.rs`.
+    - **REST & IPC Parity:** Updated `calendar_routes.rs`, `assessment_routes.rs`, `calendar_cmds.rs`, and `assessment_cmds.rs` with typed DTOs and registered schemas in `ApiDoc`.
+    - **Full Data Provider Registration:** Registered all 8 report data providers (`FeeCollectionDataProvider`, `StudentListDataProvider`, `TermResultDataProvider`, `AnnualResultDataProvider`, `ExamSeatingPlanDataProvider`, `ExamAttendanceSheetDataProvider`, `PaymentReceiptDataProvider`, `StudentStatementDataProvider`) in `apps/desktop/src-tauri/src/state.rs`.
+    - **SDK Regeneration:** Re-exported canonical OpenAPI specification and regenerated typed `@orbis/sdk` with 0 errors.
+    - **Fee Templates Management UX:** Reconciled `fee-templates-manager.svelte` with target levels badge/indicator column.
   - **Verification:**
     - `apps/api-rust` cargo check: 0 errors
     - `apps/desktop/src-tauri` cargo check: 0 errors
     - `packages/sdk` build (tsc): 0 errors
-    - `apps/desktop` bunx tsc: 0 errors
-- **Next Scope in Master Execution Plan:** Complete System Hardening, End-to-End Integrity & Enterprise ERP Delivery.
+- **Last Session Date:** 2026-09-30
+- **Active Phase:** Phase 14 — Master Report Catalog & DocForge Vector Reporting Engine Rebuild (In Progress)
+- **Completed Scopes:**
+  - **Organization & Settings (Phase 3)**
+  - **IAM, Users, Roles & Permissions (Phase 4)**
+  - **Academic Structure & Calendar (Phase 5)**
+  - **Student Lifecycle, Admissions & Enrollments (Phase 6)**
+  - **Employee Affairs, HR & Teacher Assignments (Phase 7)**
+  - **Scheduling, Timetabling & Lesson Slots (Phase 8)**
+  - **Assessment, Grading, Conduct & Attendance (Phase 9)**
+  - **Examination Operations, Seating & Exam Sessions (Phase 10)**
+  - **Financial General Ledger, Vouchers & Billing Reconciliation (Phase 11)**
+  - **Document Lifecycle & Records Management (Phase 12)**
+  - **Third-Party Integrations, Webhooks & Marketplace (Phase 13)**
+  - **Academic Structure & Assessment Schemes Engine Reconciliation (Phase 14A):**
+    - `PeriodKind` enum & semantic distinction (`Teaching`, `Examination`, `Break`, `Registration`, `Preparatory`).
+    - Database migration `m20240107_000001_academic_period_kind_assessment_enrichment.rs`.
+    - `AssessmentScheme` typed components, `AssessmentLevel`, `InstitutionScope`, and `Decimal` max scores.
+    - Full dual-transport parity across REST API & Tauri IPC, regenerated `@orbis/sdk`.
+    - Registered all 8 report data providers in `src-tauri/src/state.rs`.
+  - **Master Educational Report Definitions Catalog (Phase 14B):**
+    - Built [report_catalog.rs](file:///d:/projects/Orbis/apps/api-rust/crates/orbis-infra/src/repositories/report_catalog.rs) with master business report catalog covering all 7 ERP domains (200+ reports).
+    - Wired `seed_master_report_definitions` into technical bootstrap repo.
+  - **Master DocForge Visual Templates & Reporting Redesign (Phase 14C):**
+    - Built [template_catalog.rs](file:///d:/projects/Orbis/apps/api-rust/crates/orbis-infra/src/repositories/template_catalog.rs) with rich visual DocForge AST layouts (Frames, Text nodes, Images, Barcodes, QR codes, Tables, Shapes, dynamic variable expressions) for standard document templates (Smart Student ID Badge, Staff ID Badge, Certificate of Enrollment, Term Report Card, Payment Receipt Voucher, Exam Admission Slip, Academic Transcript).
+    - Removed obsolete `seed_default_reports` and dead `seed_default_report_definitions` from [bootstrap_repo.rs](file:///d:/projects/Orbis/apps/api-rust/crates/orbis-infra/src/repositories/bootstrap_repo.rs).
+    - Completely redesigned [reporting-workspace.svelte](file:///d:/projects/Orbis/apps/desktop/src/lib/features/reporting/reporting-workspace.svelte) with a sleek, low-profile top toolbar (matching Settings and Templates gallery pages), smooth Svelte transitions, domain filter selects, export format filters, and modern card grid.
+  - **Verification:**
+    - `apps/api-rust` cargo check: 0 errors
+    - `apps/desktop/src-tauri` cargo check: 0 errors
+    - `apps/desktop` tsc: 0 errors
+- **Next Scope in Master Execution Plan:** Concrete data provider query implementations & DocForge vector printing engine end-to-end verification.
+
 
 
 

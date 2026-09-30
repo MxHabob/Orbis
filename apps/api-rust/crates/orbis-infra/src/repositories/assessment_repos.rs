@@ -15,19 +15,37 @@ use crate::models::{
     behavior_record::{self, Entity as BehaviorRecordEntity},
 };
 
+use orbis_domain::entities::assessment_scheme::{AssessmentLevel, InstitutionScope, AssessmentComponent};
+
 pub struct AssessmentRepoImpl {
     pub db: DatabaseConnection,
+}
+
+fn map_scheme_model_to_domain(m: assessment_scheme::Model) -> DomainAssessmentScheme {
+    let components: Vec<AssessmentComponent> = serde_json::from_str(&m.components_json).unwrap_or_default();
+    DomainAssessmentScheme {
+        id: m.id,
+        org_id: m.org_id,
+        name: m.name,
+        name_ar: m.name_ar,
+        description: m.description,
+        max_score: rust_decimal::Decimal::from_f64_retain(m.max_score).unwrap_or_default(),
+        formula: m.formula,
+        level: AssessmentLevel::from_str(&m.level),
+        institution_scope: InstitutionScope::from_str(&m.institution_scope),
+        components,
+        is_default: m.is_default,
+        is_system: m.is_system,
+        created_at: m.created_at,
+        updated_at: m.updated_at,
+    }
 }
 
 #[async_trait]
 impl AssessmentSchemeRepository for AssessmentRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainAssessmentScheme>, DomainError> {
         let model = AssessmentSchemeEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(model.map(|m| DomainAssessmentScheme {
-            id: m.id, org_id: m.org_id, name: m.name, description: m.description,
-            max_score: m.max_score, formula: m.formula,
-            created_at: m.created_at, updated_at: m.updated_at
-        }))
+        Ok(model.map(map_scheme_model_to_domain))
     }
 
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainAssessmentScheme>, DomainError> {
@@ -36,18 +54,25 @@ impl AssessmentSchemeRepository for AssessmentRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| DomainAssessmentScheme {
-            id: m.id, org_id: m.org_id, name: m.name, description: m.description,
-            max_score: m.max_score, formula: m.formula,
-            created_at: m.created_at, updated_at: m.updated_at
-        }).collect())
+        Ok(models.into_iter().map(map_scheme_model_to_domain).collect())
     }
 
     async fn save(&self, scheme: &DomainAssessmentScheme) -> Result<(), DomainError> {
+        use rust_decimal::prelude::ToPrimitive;
         let active = assessment_scheme::ActiveModel {
-            id: Set(scheme.id), org_id: Set(scheme.org_id), name: Set(scheme.name.clone()),
-            description: Set(scheme.description.clone()), max_score: Set(scheme.max_score),
-            formula: Set(scheme.formula.clone()), created_at: Set(scheme.created_at),
+            id: Set(scheme.id),
+            org_id: Set(scheme.org_id),
+            name: Set(scheme.name.clone()),
+            name_ar: Set(scheme.name_ar.clone()),
+            description: Set(scheme.description.clone()),
+            max_score: Set(scheme.max_score.to_f64().unwrap_or(100.0)),
+            formula: Set(scheme.formula.clone()),
+            level: Set(scheme.level.to_string()),
+            institution_scope: Set(scheme.institution_scope.to_string()),
+            components_json: Set(serde_json::to_string(&scheme.components).unwrap_or_else(|_| "[]".into())),
+            is_default: Set(scheme.is_default),
+            is_system: Set(scheme.is_system),
+            created_at: Set(scheme.created_at),
             updated_at: Set(scheme.updated_at),
         };
 

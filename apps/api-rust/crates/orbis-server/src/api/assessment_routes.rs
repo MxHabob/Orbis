@@ -11,15 +11,22 @@ use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
 use orbis_app::services::assessment_service::{BatchGradeItem, BatchAttendanceItem};
+use orbis_domain::entities::assessment_scheme::{AssessmentScheme, AssessmentComponent, AssessmentLevel, InstitutionScope};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct AssessmentSchemeDto {
     pub id: Uuid,
     pub org_id: Uuid,
     pub name: String,
+    pub name_ar: Option<String>,
     pub description: Option<String>,
-    pub max_score: f64,
+    pub max_score: Decimal,
     pub formula: Option<serde_json::Value>,
+    pub level: AssessmentLevel,
+    pub institution_scope: InstitutionScope,
+    pub components: Vec<AssessmentComponent>,
+    pub is_default: bool,
+    pub is_system: bool,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
@@ -27,17 +34,27 @@ pub struct AssessmentSchemeDto {
 #[derive(Deserialize, ToSchema)]
 pub struct CreateSchemeRequest {
     pub name: String,
+    pub name_ar: Option<String>,
     pub description: Option<String>,
-    pub max_score: f64,
+    pub max_score: Decimal,
     pub formula: Option<serde_json::Value>,
+    pub level: Option<AssessmentLevel>,
+    pub institution_scope: Option<InstitutionScope>,
+    pub components: Option<Vec<AssessmentComponent>>,
+    pub is_default: Option<bool>,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct UpdateSchemeRequest {
     pub name: Option<String>,
+    pub name_ar: Option<String>,
     pub description: Option<String>,
-    pub max_score: Option<f64>,
+    pub max_score: Option<Decimal>,
     pub formula: Option<serde_json::Value>,
+    pub level: Option<AssessmentLevel>,
+    pub institution_scope: Option<InstitutionScope>,
+    pub components: Option<Vec<AssessmentComponent>>,
+    pub is_default: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -272,6 +289,25 @@ fn attendance_to_dto(a: orbis_domain::entities::attendance::Attendance) -> Atten
     }
 }
 
+fn scheme_to_dto(s: AssessmentScheme) -> AssessmentSchemeDto {
+    AssessmentSchemeDto {
+        id: s.id,
+        org_id: s.org_id,
+        name: s.name,
+        name_ar: s.name_ar,
+        description: s.description,
+        max_score: s.max_score,
+        formula: s.formula,
+        level: s.level,
+        institution_scope: s.institution_scope,
+        components: s.components,
+        is_default: s.is_default,
+        is_system: s.is_system,
+        created_at: s.created_at,
+        updated_at: s.updated_at,
+    }
+}
+
 // ── Handlers ────────────────────────────────────────────────────
 
 #[utoipa::path(post, path = "/api/v1/assessment-schemes", request_body = CreateSchemeRequest,
@@ -283,13 +319,16 @@ pub async fn create_scheme(
         &ctx,
         ctx.tenant_id,
         p.name,
+        p.name_ar,
+        p.description,
         p.max_score,
         p.formula,
+        p.level,
+        p.institution_scope,
+        p.components,
+        p.is_default.unwrap_or(false),
     ).await?;
-    Ok(ApiResponse::ok(AssessmentSchemeDto {
-        id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score, formula: s.formula,
-        created_at: s.created_at, updated_at: s.updated_at,
-    }))
+    Ok(ApiResponse::ok(scheme_to_dto(s)))
 }
 
 #[utoipa::path(get, path = "/api/v1/assessment-schemes",
@@ -298,10 +337,7 @@ pub async fn list_schemes(
     ctx: AuthContext, State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<AssessmentSchemeDto>>>, ApiError> {
     let schemes = state.assessment_service.list_assessment_schemes(ctx.tenant_id).await?;
-    let dtos = schemes.into_iter().map(|s| AssessmentSchemeDto {
-        id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score, formula: s.formula,
-        created_at: s.created_at, updated_at: s.updated_at,
-    }).collect();
+    let dtos = schemes.into_iter().map(scheme_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -312,10 +348,7 @@ pub async fn get_scheme(
     _ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<AssessmentSchemeDto>>, ApiError> {
     let s = state.assessment_scheme_repo.find_by_id(id).await?.ok_or_else(|| ApiError::not_found("Scheme not found"))?;
-    Ok(ApiResponse::ok(AssessmentSchemeDto {
-        id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score, formula: s.formula,
-        created_at: s.created_at, updated_at: s.updated_at,
-    }))
+    Ok(ApiResponse::ok(scheme_to_dto(s)))
 }
 
 #[utoipa::path(put, path = "/api/v1/assessment-schemes/{id}", request_body = UpdateSchemeRequest,
@@ -329,14 +362,16 @@ pub async fn update_scheme(
         ctx.tenant_id,
         id,
         p.name,
+        p.name_ar,
         p.description,
         p.max_score,
         p.formula,
+        p.level,
+        p.institution_scope,
+        p.components,
+        p.is_default,
     ).await?;
-    Ok(ApiResponse::ok(AssessmentSchemeDto {
-        id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score, formula: s.formula,
-        created_at: s.created_at, updated_at: s.updated_at,
-    }))
+    Ok(ApiResponse::ok(scheme_to_dto(s)))
 }
 
 #[utoipa::path(delete, path = "/api/v1/assessment-schemes/{id}",

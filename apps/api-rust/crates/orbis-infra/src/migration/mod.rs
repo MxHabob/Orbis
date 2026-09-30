@@ -6,6 +6,7 @@ pub mod m20240103_000001_normalized_schema;
 pub mod m20240104_000001_employee_groups_schema;
 pub mod m20240105_000001_registration_schema;
 pub mod m20240106_000001_room_floor_name_ar;
+pub mod m20240107_000001_academic_period_kind_assessment_enrichment;
 
 pub struct Migrator;
 
@@ -19,6 +20,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20240104_000001_employee_groups_schema::Migration),
             Box::new(m20240105_000001_registration_schema::Migration),
             Box::new(m20240106_000001_room_floor_name_ar::Migration),
+            Box::new(m20240107_000001_academic_period_kind_assessment_enrichment::Migration),
         ]
     }
 }

@@ -13,6 +13,8 @@ pub struct Model {
     pub name_ar: Option<String>,
     pub code: Option<String>,
     pub period_type: String,
+    /// Semantic function: teaching, examination, break, registration, preparatory
+    pub period_kind: String,
     pub start_date: DateTime<Utc>,
     pub end_date: DateTime<Utc>,
     pub hijri_start: Option<String>,

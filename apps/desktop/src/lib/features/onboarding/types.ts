@@ -70,6 +70,8 @@ export interface PeriodEntry {
   start_date: string;
   end_date: string;
   period_type: string;
+  /** Semantic function: 'teaching' | 'examination' | 'break' | 'registration' | 'preparatory' */
+  period_kind: string;
   weight: number | null;
 }
 
