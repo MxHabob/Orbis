@@ -20,7 +20,7 @@ pub mod template_cmds;
 pub mod window_cmds;
 pub mod connection_cmds;
 pub mod database_cmds;
-pub mod bootstrap_cmds;
+pub mod system_cmds;
 pub mod ai_cmds;
 pub mod autopilot_cmds;
 
@@ -313,13 +313,11 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         database_cmds::database_pick_file,
         database_cmds::database_pick_folder,
         database_cmds::database_pick_save_path,
-        // ── Bootstrap & System ──────────────────────────────────
-        bootstrap_cmds::system_health,
-        bootstrap_cmds::system_has_organization,
-        bootstrap_cmds::system_get_readiness,
-        bootstrap_cmds::bootstrap_organization,
-        bootstrap_cmds::onboarding_complete,
-        bootstrap_cmds::system_get_entitlement,
+        // ── System ─────────────────────────────────────────────
+        system_cmds::system_health,
+        system_cmds::system_has_organization,
+        system_cmds::system_get_readiness,
+        system_cmds::system_get_entitlement,
         // ── AI Platform ─────────────────────────────────────────
         ai_cmds::ai_chat,
         ai_cmds::ai_list_tools,

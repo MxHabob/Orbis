@@ -20,7 +20,6 @@ Follows GitButler's "Chrome Shell" pattern:
 <script lang="ts">
 import AppSidebar from "./app-sidebar.svelte";
 import { uiStore } from "$lib/stores";
-import { bootstrapApp } from "$lib/core/bootstrap";
 import type { Snippet } from "svelte";
 import { slide } from "svelte/transition";
 import { page } from "$app/state";
@@ -39,12 +38,6 @@ let {
 } = $props();
 
 const queryClient = useQueryClient();
-
-// Bootstrap academic context, workflow inbox, and Tauri event listeners.
-// Runs once per session — idempotent, non-blocking.
-onMount(() => {
-  bootstrapApp(orgId);
-});
 
 function handleKeyDown(e: KeyboardEvent) {
   // Ctrl/Cmd + / -> Toggle Ask Orbis AI

@@ -122,10 +122,8 @@ pub struct AppState {
     pub ai_service: Arc<orbis_app::services::AiOrchestrationService>,
     pub autopilot_service: Arc<orbis_app::services::AutopilotService>,
     pub autopilot_task_repo: Arc<dyn orbis_app::ports::repositories::AutopilotTaskRepository>,
-    // ── Bootstrap & System Services ─────────────────────────────
+    // ── System Services ─────────────────────────────────────────
     pub system_repo: Arc<dyn SystemRepository>,
-    pub bootstrap_service: Arc<orbis_app::services::BootstrapService>,
-    pub onboarding_service: Arc<orbis_app::services::OnboardingService>,
     pub system_service: Arc<orbis_app::services::SystemService>,
     pub entitlement_provider: Arc<dyn EntitlementProvider>,
     pub solver_sidecar: Arc<crate::features::solver_sidecar::SolverSidecarManager>,
@@ -414,24 +412,7 @@ impl AppState {
             orbis_infra::adapters::entitlement_adapter::UnlicensedEntitlementProvider,
         );
 
-        let bootstrap_port: Arc<dyn orbis_app::ports::bootstrap::BulkBootstrapPort> = Arc::new(
-            orbis_infra::repositories::bootstrap_repo::BootstrapRepoImpl { db: db.clone() },
-        );
-
         let system_service = Arc::new(orbis_app::services::SystemService::new(
-            system_repo_impl.clone(),
-        ));
-
-        let bootstrap_service = Arc::new(orbis_app::services::BootstrapService::new(
-            bootstrap_port,
-            system_repo_impl.clone(),
-            password_hasher.clone(),
-            token_service.clone(),
-            entitlement_provider.clone(),
-        ));
-
-        let onboarding_service = Arc::new(orbis_app::services::OnboardingService::new(
-            Arc::new(orbis_infra::repositories::onboarding_repo::OnboardingRepoImpl { db: db.clone() }),
             system_repo_impl.clone(),
         ));
 
@@ -553,8 +534,6 @@ impl AppState {
             autopilot_service: autopilot_service.clone(),
             autopilot_task_repo: autopilot_task_repo.clone(),
             system_repo: system_repo_impl,
-            bootstrap_service,
-            onboarding_service,
             system_service,
             entitlement_provider,
             solver_sidecar,

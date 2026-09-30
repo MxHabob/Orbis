@@ -17,14 +17,12 @@ import {
 import { Banknotes, BookOpen, DocumentPage, Grid, Settings, Sparkles, UserGroup, Users } from "@orbis/icons";
 import OrgSidebarSwitcher from "./org-sidebar-switcher.svelte";
 import UserSidebarMenu from "./user-sidebar-menu.svelte";
-import OnboardingPopover from "./onboarding-popover.svelte";
 import UpgradeButton from "./upgrade-button.svelte";
 import GitIntegrationPopover from "./mulverse-integration-popover.svelte";
 import AutomationStatusPopover from "./orbis-autopilot-popover.svelte";
 import MoreActionsDropdown from "./more-actions-dropdown.svelte";
 
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
-import { onboardingState } from "$lib/features/onboarding/state.svelte";
 import { createOrganizationQuery } from "$lib/features/settings/queries";
 import { onMount } from "svelte";
 import { prefetchRouteData } from "$lib/api";
@@ -38,10 +36,6 @@ let {
 } = $props();
 
 const orgQuery = createOrganizationQuery(() => orgId);
-
-onMount(() => {
-  onboardingState.load();
-});
 
 const fallbackName = $derived.by(() => {
   if (initialOrgName && initialOrgName !== "Orbis School")
@@ -152,7 +146,6 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 
 		<div class="flex flex-col gap-2 items-center w-full relative">
 			<div class="flex flex-col items-center w-8 gap-1.5">
-				<OnboardingPopover />
 				<GitIntegrationPopover />
 				<UpgradeButton />
 				<AutomationStatusPopover {orgId} />

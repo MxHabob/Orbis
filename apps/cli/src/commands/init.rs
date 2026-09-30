@@ -274,45 +274,9 @@ pub async fn execute() -> Result<()> {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     output::print_phase_header(5, TOTAL_PHASES, "Initializing System");
 
-    // 5a. Bootstrap organization + admin + core data
-    output::print_progress_pending(
-        "Creating organization, admin account, chart of accounts, and cash/bank accounts...",
-    );
-    let system_repo = std::sync::Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl { db: db.clone() });
-    let entitlement_provider: std::sync::Arc<dyn orbis_app::ports::entitlement::EntitlementProvider> = std::sync::Arc::new(
-        orbis_infra::adapters::entitlement_adapter::UnlicensedEntitlementProvider,
-    );
-    let bootstrap_port: std::sync::Arc<dyn orbis_app::ports::bootstrap::BulkBootstrapPort> = std::sync::Arc::new(
-        orbis_infra::repositories::bootstrap_repo::BootstrapRepoImpl { db: db.clone() },
-    );
-    let password_hasher = std::sync::Arc::new(orbis_infra::security::bcrypt::BcryptHasher);
-    let token_service = std::sync::Arc::new(orbis_infra::security::jwt::JwtTokenService::new("cli-init-token-secret".to_string()));
-
-    let bootstrap_service = orbis_app::services::BootstrapService::new(
-        bootstrap_port,
-        system_repo,
-        password_hasher,
-        token_service,
-        entitlement_provider,
-    );
-
-    let request = orbis_app::services::BootstrapRequest {
-        org_name: org_name.clone(),
-        org_name_ar: Some(org_name_ar.clone()),
-        org_type: blueprint,
-        timezone: timezone.clone(),
-        locale: language.clone(),
-        currency: currency.clone(),
-        admin_full_name: admin_name.clone(),
-        admin_email: admin_username.clone(),
-        admin_password: admin_password.clone(),
-    };
-
-    let result = bootstrap_service.bootstrap_organization(request).await
-        .map_err(|e| anyhow!("Bootstrap failed: {e}"))?;
-    let _org_id = result.org_id;
+    // 5a. Database initialized
     output::print_progress_ok(
-        "Organization, chart of accounts, and cash/bank accounts created successfully",
+        "Database initialized and schema ready",
     );
 
     // 5e. Desktop download (production only)

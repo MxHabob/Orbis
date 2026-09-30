@@ -402,26 +402,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         report_provider_registry: provider_registry,
         report_renderer_registry: renderer_registry,
         report_org_context_resolver: org_context_resolver,
-        // ── Bootstrap & System Services ──────────────────────────
-        bootstrap_service: Arc::new(orbis_app::services::BootstrapService::new(
-            Arc::new(orbis_infra::repositories::bootstrap_repo::BootstrapRepoImpl {
-                db: db.clone(),
-            }),
-            Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl {
-                db: db.clone(),
-            }),
-            password_hasher.clone(),
-            token_service.clone(),
-            Arc::new(orbis_infra::adapters::entitlement_adapter::UnlicensedEntitlementProvider),
-        )),
-        onboarding_service: Arc::new(orbis_app::services::OnboardingService::new(
-            Arc::new(orbis_infra::repositories::onboarding_repo::OnboardingRepoImpl {
-                db: db.clone(),
-            }),
-            Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl {
-                db: db.clone(),
-            }),
-        )),
+        // ── System Services ────────────────────────────────────
         system_service: Arc::new(orbis_app::services::SystemService::new(
             Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl {
                 db: db.clone(),

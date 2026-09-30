@@ -92,8 +92,6 @@ pub struct AppState {
     pub report_provider_registry: Arc<dyn DataProviderRegistry>,
     pub report_renderer_registry: Arc<dyn RendererRegistry>,
     pub report_org_context_resolver: Arc<dyn OrgContextResolver>,
-    pub bootstrap_service: Arc<orbis_app::services::BootstrapService>,
-    pub onboarding_service: Arc<orbis_app::services::OnboardingService>,
     pub system_service: Arc<orbis_app::services::SystemService>,
     // ── Employee Affairs & User Groups ─────────────────────────
     pub employee_repo: Arc<dyn orbis_app::ports::repositories::EmployeeRepository>,

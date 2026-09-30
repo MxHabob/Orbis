@@ -262,34 +262,6 @@ async fn update_current_org(
     Ok(ApiResponse::ok(org_to_dto(org)))
 }
 
-#[utoipa::path(post, path = "/api/v1/bootstrap",
-    request_body = serde_json::Value,
-    responses((status = 200, description = "Organization bootstrapped")),
-    tag = "Organization")]
-pub async fn bootstrap_org_endpoint(
-    State(state): State<AppState>,
-    Json(payload): Json<orbis_app::services::BootstrapRequest>,
-) -> Result<Json<ApiResponse<orbis_app::services::BootstrapResult>>, ApiError> {
-    let res = state.bootstrap_service.bootstrap_organization(payload).await
-        .map_err(|e| ApiError::bad_request(e.to_string()))?;
-    Ok(ApiResponse::ok(res))
-}
-
-
-#[utoipa::path(post, path = "/api/v1/onboarding/complete",
-    request_body = serde_json::Value,
-    responses((status = 200, description = "Organization onboarding completed")),
-    security(("bearer" = [])), tag = "Organization")]
-pub async fn onboarding_complete_endpoint(
-    ctx: AuthContext,
-    State(state): State<AppState>,
-    Json(payload): Json<orbis_app::services::CompleteOrganizationOnboardingRequest>,
-) -> Result<Json<ApiResponse<orbis_app::services::OnboardingResult>>, ApiError> {
-    let res = state.onboarding_service.complete_onboarding(ctx.tenant_id, payload).await
-        .map_err(|e| ApiError::bad_request(e.to_string()))?;
-    Ok(ApiResponse::ok(res))
-}
-
 #[utoipa::path(get, path = "/api/v1/system/readiness",
     responses((status = 200, description = "Get system readiness")),
     tag = "System")]
@@ -310,19 +282,6 @@ pub async fn get_system_has_org_endpoint(
     let has_org = state.system_service.has_organization().await
         .map_err(|e| ApiError::internal(e.to_string()))?;
     Ok(ApiResponse::ok(serde_json::json!({ "has_organization": has_org })))
-}
-
-#[utoipa::path(get, path = "/api/v1/system/entitlement",
-    responses((status = 200, description = "Get system entitlement")),
-    tag = "System")]
-pub async fn get_system_entitlement_endpoint(
-    State(state): State<AppState>,
-) -> Result<Json<ApiResponse<orbis_domain::entities::entitlement::EntitlementResult>>, ApiError> {
-    let res = state.bootstrap_service.entitlement_provider
-        .check_entitlement("orbis-server", "default")
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
-    Ok(ApiResponse::ok(res))
 }
 
 // ── Settings DTOs ───────────────────────────────────────────────
@@ -787,12 +746,8 @@ async fn delete_org_unit(
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/api/v1/bootstrap", post(bootstrap_org_endpoint))
-        .route("/api/v1/onboarding/complete", post(onboarding_complete_endpoint))
-        .route("/api/v1/organizations/bootstrap", post(bootstrap_org_endpoint))
         .route("/api/v1/system/readiness", get(get_system_readiness_endpoint))
         .route("/api/v1/system/has-organization", get(get_system_has_org_endpoint))
-        .route("/api/v1/system/entitlement", get(get_system_entitlement_endpoint))
         .route("/api/v1/organizations", post(create_org))
         .route("/api/v1/organizations/current", get(get_current_org).put(update_current_org))
         .route("/api/v1/organizations/current/settings", get(get_settings).put(update_settings))
