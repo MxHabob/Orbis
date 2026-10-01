@@ -203,3 +203,4 @@ export { default as Sun } from './sun.svelte';
 export { default as Moon } from './moon.svelte';
 export { default as Maximize } from './maximize.svelte';
 export { default as Restore } from './restore.svelte';
+export { default as Logo } from './logo.svelte';

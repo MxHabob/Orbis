@@ -822,12 +822,106 @@ export interface OrganizationReadiness {
   pending_setup_items: SetupItem[];
 }
 
+export interface ReleaseChangelogItem {
+  version: string;
+  title_en: string;
+  title_ar: string;
+  release_date: string;
+  is_current: boolean;
+  is_latest: boolean;
+  html_url: string;
+  highlights_en: string[];
+  highlights_ar: string[];
+  raw_body?: string;
+}
+
+export interface MulversePillar {
+  id: string;
+  title_en: string;
+  title_ar: string;
+  description_en: string;
+  description_ar: string;
+  icon: string;
+  capabilities?: string[];
+}
+
+export interface MulverseEcosystemInfo {
+  ecosystem_name: string;
+  brand: string;
+  product_name: string;
+  product_code: string;
+  version: string;
+  build_profile: string;
+  target_os: string;
+  target_arch: string;
+  github_repo: string;
+  edition: string;
+  node_type: string;
+  node_id: string;
+  is_local_first: boolean;
+  database_engine: string;
+  description_en: string;
+  description_ar: string;
+  tagline_en: string;
+  tagline_ar: string;
+  pillars: MulversePillar[];
+  latest_release?: ReleaseChangelogItem;
+}
+
+export interface UpdateCheckResult {
+  current_version: string;
+  latest_version: string;
+  has_update: boolean;
+  release_notes?: string;
+  release_date?: string;
+  release_url?: string;
+  channel: string;
+  status: "up_to_date" | "update_available" | "checking_failed";
+  error_message?: string;
+}
+
+export interface EnvironmentDetectionResult {
+  detected_locale: string;
+  detected_language: string;
+  country_code: string;
+  country_name_en: string;
+  country_name_ar: string;
+  flag_emoji: string;
+  timezone: string;
+  timezone_offset: string;
+  timezone_offset_hours: number;
+  currency_code: string;
+  currency_symbol_en: string;
+  currency_symbol_ar: string;
+  currency_name_en: string;
+  currency_name_ar: string;
+  is_hijri_recommended: boolean;
+  date_format: string;
+  suggested_academic_year: string;
+  suggested_academic_year_ar: string;
+}
+
+export interface SlugGenerationResult {
+  slug: string;
+  is_available: boolean;
+  suggestions: string[];
+}
+
 export interface BootstrapRequest {
   institution_type: string;
   organization_name: string;
   organization_name_ar?: string;
-  organization_slug: string;
+  organization_slug?: string;
   organization_code?: string;
+  educational_track?: string;
+  organization_size?: string;
+  country_code?: string;
+  city?: string;
+  phone?: string;
+  website?: string;
+  tax_id?: string;
+  license_number?: string;
+  mulverse_node_id?: string;
   timezone: string;
   locale: string;
   date_format?: string;
@@ -1470,11 +1564,20 @@ export interface OrbisApiClient {
     offset?: number,
   ): Promise<AuditLogDto[]>;
 
-  // ── System & Bootstrap ──────────────────────────────────────
+  // ── System & Ecosystem ──────────────────────────────────────
   systemHealth(): Promise<HealthResponse>;
   systemHasOrganization(): Promise<boolean>;
   systemGetReadiness(): Promise<OrganizationReadiness>;
   systemGetEntitlement(): Promise<EntitlementResult>;
+  systemGetEcosystemInfo(): Promise<MulverseEcosystemInfo>;
+  systemGetChangelog(): Promise<ReleaseChangelogItem[]>;
+  systemCheckForUpdates(): Promise<UpdateCheckResult>;
+  openChangelogWindow(): Promise<void>;
+  openAgentWindow(): Promise<void>;
+
+  // ── Bootstrap & Regional Initialization ─────────────────────
+  bootstrapDetectEnvironment(): Promise<EnvironmentDetectionResult>;
+  bootstrapGenerateSlug(name: string, nameAr?: string): Promise<SlugGenerationResult>;
   bootstrapGetStatus(): Promise<BootstrapStatusResponse>;
   bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult>;
   completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult>;

@@ -177,6 +177,11 @@ import type {
   HealthResponse,
   OrganizationReadiness,
   EntitlementResult,
+  MulverseEcosystemInfo,
+  ReleaseChangelogItem,
+  UpdateCheckResult,
+  EnvironmentDetectionResult,
+  SlugGenerationResult,
   BootstrapRequest,
   BootstrapResult,
   BootstrapStatusResponse,
@@ -1225,6 +1230,27 @@ export class LocalClient implements OrbisApiClient {
   async systemGetEntitlement(): Promise<EntitlementResult> {
     return invoke<EntitlementResult>("system_get_entitlement");
   }
+  async systemGetEcosystemInfo(): Promise<MulverseEcosystemInfo> {
+    return invoke<MulverseEcosystemInfo>("system_get_ecosystem_info");
+  }
+  async systemGetChangelog(): Promise<ReleaseChangelogItem[]> {
+    return invoke<ReleaseChangelogItem[]>("system_get_changelog");
+  }
+  async systemCheckForUpdates(): Promise<UpdateCheckResult> {
+    return invoke<UpdateCheckResult>("system_check_for_updates");
+  }
+  async openChangelogWindow(): Promise<void> {
+    return invoke<void>("open_changelog_window");
+  }
+  async openAgentWindow(): Promise<void> {
+    return invoke<void>("open_agent_window");
+  }
+  async bootstrapDetectEnvironment(): Promise<EnvironmentDetectionResult> {
+    return invoke<EnvironmentDetectionResult>("bootstrap_detect_environment");
+  }
+  async bootstrapGenerateSlug(name: string, nameAr?: string): Promise<SlugGenerationResult> {
+    return invoke<SlugGenerationResult>("bootstrap_generate_slug", { name, nameAr: nameAr || null });
+  }
   async bootstrapGetStatus(): Promise<BootstrapStatusResponse> {
     return invoke<BootstrapStatusResponse>("bootstrap_get_status");
   }
@@ -1583,155 +1609,5 @@ export class LocalClient implements OrbisApiClient {
   async deleteFolder(id: string): Promise<void> {
     await invoke("folder_delete", { id });
   }
-
-  // ── System & Bootstrap ──────────────────────────────────────
-  async systemHealth(): Promise<HealthResponse> {
-    return unwrap(await invoke("system_health"));
-  }
-
-  async systemHasOrganization(): Promise<boolean> {
-    return unwrap(await invoke("system_has_organization"));
-  }
-
-  async systemGetReadiness(): Promise<OrganizationReadiness> {
-    return unwrap(await invoke("system_get_readiness"));
-  }
-
-  async systemGetEntitlement(): Promise<EntitlementResult> {
-    return unwrap(await invoke("system_get_entitlement"));
-  }
-
-  async bootstrapGetStatus(): Promise<BootstrapStatusResponse> {
-    return unwrap(await invoke("bootstrap_get_status"));
-  }
-
-  async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
-    return unwrap(await invoke("bootstrap_execute", { request: req }));
-  }
-
-  async completeOnboarding(_req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {
-    return { success: true };
-  }
-
-  // ── Onboarding & DAG Readiness ──────────────────────────────
-  async onboardingGetState(orgId?: string): Promise<OnboardingStateDto> {
-    return unwrap(await invoke("onboarding_get_state", { orgId: orgId ?? null }));
-  }
-
-  async onboardingProvisionDefaults(
-    req: ProvisionDefaultsReqDto,
-    orgId?: string,
-  ): Promise<ProvisionDefaultsResultDto> {
-    return unwrap(
-      await invoke("onboarding_provision_defaults", {
-        orgId: orgId ?? null,
-        request: req,
-      }),
-    );
-  }
-
-  // ── Connection & Database Management ─────────────────────────
-  async connectionGetConfig(): Promise<ConnectionConfig> {
-    return unwrap(await invoke("connection_get_config"));
-  }
-
-  async connectionSetConfig(params: {
-    mode: ConnectionMode;
-    serverUrl?: string;
-    dbFilename?: string;
-    customPath?: string;
-    host?: string;
-    port?: number;
-    databaseName?: string;
-    username?: string;
-    password?: string;
-    sslMode?: string;
-    walMode?: boolean;
-    busyTimeoutMs?: number;
-  }): Promise<ConnectionConfig> {
-    return unwrap(await invoke("connection_set_config", params));
-  }
-
-  async connectionReset(): Promise<ConnectionConfig> {
-    return unwrap(await invoke("connection_reset"));
-  }
-
-  async connectionValidate(): Promise<ConnectionValidation> {
-    return unwrap(await invoke("connection_validate"));
-  }
-
-  async connectionCheckRemoteHealth(serverUrl: string): Promise<RemoteHealthResult> {
-    return unwrap(await invoke("connection_check_remote_health", { serverUrl }));
-  }
-
-  async connectionConnect(): Promise<ConnectResult> {
-    return unwrap(await invoke("connection_connect"));
-  }
-
-  async connectionOpenWindow(): Promise<void> {
-    await invoke("connection_open_window");
-  }
-
-  async databaseGetStatus(): Promise<DatabaseStatusDto> {
-    return unwrap(await invoke("database_get_status"));
-  }
-
-  async databaseCreateLocal(params: { customDir?: string; filename: string }): Promise<DatabaseStatusDto> {
-    return unwrap(await invoke("database_create_local", params));
-  }
-
-  async databaseOpenExisting(filePath: string): Promise<DatabaseStatusDto> {
-    return unwrap(await invoke("database_open_existing", { filePath }));
-  }
-
-  async databaseBackup(destinationPath?: string): Promise<BackupResultDto> {
-    return unwrap(await invoke("database_backup", { destinationPath: destinationPath ?? null }));
-  }
-
-  async databaseValidateBackupFile(filePath: string): Promise<BackupInspectionDto> {
-    return unwrap(await invoke("database_validate_backup_file", { filePath }));
-  }
-
-  async databaseRestore(backupFilePath: string): Promise<RestoreResultDto> {
-    return unwrap(await invoke("database_restore", { backupFilePath }));
-  }
-
-  async databaseRunMigrations(): Promise<MigrationResultDto> {
-    return unwrap(await invoke("database_run_migrations"));
-  }
-
-  async databaseCheckIntegrity(): Promise<IntegrityResultDto> {
-    return unwrap(await invoke("database_check_integrity"));
-  }
-
-  async databaseOptimize(): Promise<OptimizeResultDto> {
-    return unwrap(await invoke("database_optimize"));
-  }
-
-  async databaseGetSettings(): Promise<DatabaseSettingsDto> {
-    return unwrap(await invoke("database_get_settings"));
-  }
-
-  async databaseUpdateSettings(settings: DatabaseSettingsDto): Promise<DatabaseSettingsDto> {
-    return unwrap(await invoke("database_update_settings", { settings }));
-  }
-
-  async databasePickFile(params?: { filterName?: string; extensions?: string[] }): Promise<string | null> {
-    return invoke<string | null>("database_pick_file", {
-      filterName: params?.filterName ?? null,
-      extensions: params?.extensions ?? null,
-    });
-  }
-
-  async databasePickFolder(): Promise<string | null> {
-    return invoke<string | null>("database_pick_folder");
-  }
-
-  async databasePickSavePath(params?: { defaultFilename?: string; filterName?: string; extensions?: string[] }): Promise<string | null> {
-    return invoke<string | null>("database_pick_save_path", {
-      defaultFilename: params?.defaultFilename ?? null,
-      filterName: params?.filterName ?? null,
-      extensions: params?.extensions ?? null,
-    });
-  }
 }
+

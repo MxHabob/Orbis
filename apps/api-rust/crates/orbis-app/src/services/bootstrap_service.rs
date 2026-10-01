@@ -51,8 +51,21 @@ pub struct BootstrapRequest {
     pub institution_type: String,
     pub organization_name: String,
     pub organization_name_ar: Option<String>,
-    pub organization_slug: String,
+    pub organization_slug: Option<String>,
     pub organization_code: Option<String>,
+
+    // ── Enriched Organization Profile ─────────────────────────
+    pub educational_track: Option<String>,
+    pub organization_size: Option<String>,
+    pub country_code: Option<String>,
+    pub city: Option<String>,
+    pub phone: Option<String>,
+    pub website: Option<String>,
+    pub tax_id: Option<String>,
+    pub license_number: Option<String>,
+
+    // ── Mulverse Ecosystem ─────────────────────────────────────
+    pub mulverse_node_id: Option<String>,
 
     // ── Localization ──────────────────────────────────────────
     pub timezone: String,
@@ -296,9 +309,6 @@ impl BootstrapService {
         if req.organization_name.trim().is_empty() {
             return Err(DomainError::Validation("Organization name is required".into()));
         }
-        if req.organization_slug.trim().is_empty() {
-            return Err(DomainError::Validation("Organization slug is required".into()));
-        }
         if req.admin_first_name.trim().is_empty() {
             return Err(DomainError::Validation("Administrator first name is required".into()));
         }
@@ -326,12 +336,6 @@ impl BootstrapService {
             return Err(DomainError::Validation("Invalid administrator email format".into()));
         }
 
-        // Validate slug format (lowercase, no spaces)
-        let slug = req.organization_slug.trim();
-        if slug.contains(' ') || slug != slug.to_lowercase() {
-            return Err(DomainError::Validation("Organization slug must be lowercase with no spaces".into()));
-        }
-
         Ok(())
     }
 
@@ -340,12 +344,26 @@ impl BootstrapService {
     // ─────────────────────────────────────────────────────────
 
     async fn create_organization(&self, req: &BootstrapRequest) -> Result<Organization, DomainError> {
-        // Check slug uniqueness
-        if let Some(_existing) = self.org_repo.find_by_slug(&req.organization_slug).await? {
-            return Err(DomainError::Conflict(format!(
-                "Organization with slug '{}' already exists",
-                req.organization_slug
-            )));
+        // Automatically determine base slug from request, English name, or Arabic name
+        let mut target_slug = req.organization_slug
+            .as_deref()
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .map(|s| slugify_string(s))
+            .unwrap_or_else(|| {
+                generate_smart_slug(&req.organization_name, req.organization_name_ar.as_deref())
+            });
+
+        if target_slug.is_empty() {
+            target_slug = "institution".to_string();
+        }
+
+        // Auto-resolve collisions by appending counter if needed
+        let mut final_slug = target_slug.clone();
+        let mut counter = 1;
+        while self.org_repo.find_by_slug(&final_slug).await?.is_some() {
+            counter += 1;
+            final_slug = format!("{}-{}", target_slug, counter);
         }
 
         let institution_type = InstitutionType::from_str_loose(&req.institution_type);
@@ -353,7 +371,7 @@ impl BootstrapService {
 
         let mut org = Organization::new(
             req.organization_name.clone(),
-            req.organization_slug.clone(),
+            final_slug,
             req.timezone.clone(),
             req.locale.clone(),
         )?;
@@ -368,6 +386,16 @@ impl BootstrapService {
         org.is_verified = true; // Bootstrap-created org is verified
         org.metadata = Some(serde_json::json!({
             "institution_type": institution_type.as_str(),
+            "educational_track": req.educational_track,
+            "organization_size": req.organization_size,
+            "country_code": req.country_code,
+            "city": req.city,
+            "phone": req.phone,
+            "website": req.website,
+            "tax_id": req.tax_id,
+            "license_number": req.license_number,
+            "mulverse_node_id": req.mulverse_node_id.clone().unwrap_or_else(|| Uuid::new_v4().to_string()),
+            "ecosystem": "Mulverse",
             "bootstrapped_at": now.to_rfc3339(),
             "bootstrap_version": "2.0",
         }));
@@ -745,3 +773,148 @@ impl BootstrapService {
         Ok(has_org && has_admin && has_settings && role_count > 0)
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Smart Transliteration & Slugification Helpers
+// ═══════════════════════════════════════════════════════════════
+
+/// Transliterates Arabic and English text to a clean URL-safe slug.
+pub fn generate_smart_slug(input_en: &str, input_ar: Option<&str>) -> String {
+    let base_text = if !input_en.trim().is_empty() {
+        input_en.trim().to_string()
+    } else if let Some(ar) = input_ar {
+        transliterate_arabic(ar)
+    } else {
+        String::new()
+    };
+
+    if base_text.is_empty() {
+        return "organization".to_string();
+    }
+
+    slugify_string(&base_text)
+}
+
+/// Slugify a string into lowercase kebab-case.
+pub fn slugify_string(text: &str) -> String {
+    let mut result = String::new();
+    let mut last_was_dash = false;
+
+    for c in text.chars() {
+        if c.is_ascii_alphanumeric() {
+            result.push(c.to_ascii_lowercase());
+            last_was_dash = false;
+        } else if c == ' ' || c == '-' || c == '_' || c == '.' || c == '/' {
+            if !last_was_dash && !result.is_empty() {
+                result.push('-');
+                last_was_dash = true;
+            }
+        }
+    }
+
+    while result.ends_with('-') {
+        result.pop();
+    }
+
+    if result.is_empty() {
+        "institution".to_string()
+    } else {
+        result
+    }
+}
+
+/// Convert Arabic text into clean English phonetic words.
+pub fn transliterate_arabic(text: &str) -> String {
+    let mut cleaned = text.to_string();
+
+    let replacements = [
+        ("مدارس", "madaris"),
+        ("مدرسة", "school"),
+        ("أكاديمية", "academy"),
+        ("اكاديمية", "academy"),
+        ("جامعة", "university"),
+        ("كلية", "college"),
+        ("معهد", "institute"),
+        ("مركز", "center"),
+        ("الأهلية", "al-ahliya"),
+        ("الاهلية", "al-ahliya"),
+        ("العالمية", "international"),
+        ("الدولية", "international"),
+        ("النموذجية", "model"),
+        ("الخاصة", "private"),
+        ("المستقبل", "future"),
+        ("النور", "al-noor"),
+        ("الرواد", "al-ruwwad"),
+        ("البيان", "al-bayan"),
+        ("المجد", "al-majd"),
+        ("الإبداع", "al-ibda"),
+        ("التميز", "al-tamayuz"),
+        ("الأندلس", "al-andalus"),
+        ("النهضة", "al-nahda"),
+        ("الأمل", "al-amal"),
+        ("الريادة", "al-riyadah"),
+        ("الفضيلة", "al-fadeela"),
+        ("الصفوة", "al-safwa"),
+        ("الحكمة", "al-hikma"),
+        ("الفرقان", "al-furqan"),
+        ("الرياض", "riyadh"),
+        ("جدة", "jeddah"),
+        ("عدن", "aden"),
+        ("صنعاء", "sanaa"),
+        ("دبي", "dubai"),
+        ("القاهرة", "cairo"),
+    ];
+
+    for (ar_word, en_word) in replacements {
+        cleaned = cleaned.replace(ar_word, &format!(" {} ", en_word));
+    }
+
+    let mut out = String::new();
+    for c in cleaned.chars() {
+        match c {
+            'ا' | 'أ' | 'إ' | 'آ' | 'ء' | 'ئ' | 'ؤ' => out.push('a'),
+            'ب' => out.push('b'),
+            'ت' | 'ة' => out.push('t'),
+            'ث' => out.push_str("th"),
+            'ج' => out.push('j'),
+            'ح' => out.push('h'),
+            'خ' => out.push_str("kh"),
+            'د' => out.push('d'),
+            'ذ' => out.push_str("dh"),
+            'ر' => out.push('r'),
+            'ز' => out.push('z'),
+            'س' => out.push('s'),
+            'ش' => out.push_str("sh"),
+            'ص' => out.push('s'),
+            'ض' => out.push('d'),
+            'ط' => out.push('t'),
+            'ظ' => out.push('z'),
+            'ع' => out.push('a'),
+            'غ' => out.push_str("gh"),
+            'ف' => out.push('f'),
+            'ق' => out.push('q'),
+            'ك' => out.push('k'),
+            'ل' => out.push('l'),
+            'م' => out.push('m'),
+            'ن' => out.push('n'),
+            'ه' => out.push('h'),
+            'و' => out.push('w'),
+            'ي' | 'ى' => out.push('y'),
+            '٠' => out.push('0'),
+            '١' => out.push('1'),
+            '٢' => out.push('2'),
+            '٣' => out.push('3'),
+            '٤' => out.push('4'),
+            '٥' => out.push('5'),
+            '٦' => out.push('6'),
+            '٧' => out.push('7'),
+            '٨' => out.push('8'),
+            '٩' => out.push('9'),
+            'َ' | 'ً' | 'ُ' | 'ٌ' | 'ِ' | 'ٍ' | 'ْ' | 'ّ' => {},
+            other => out.push(other),
+        }
+    }
+
+    out
+}
+

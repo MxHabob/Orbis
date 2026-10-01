@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { SVGAttributes } from "svelte/elements";
-import { cn, type WithElementRef } from "../../../utils.js";
 
 let {
   ref = $bindable(null),

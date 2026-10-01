@@ -138,7 +138,6 @@ export {
   BreadcrumbEllipsis,
 } from "./breadcrumb/index.js";
 export { Calendar } from "./calendar/index.js";
-export { Logo } from "./logo/index.js";
 export { Toaster } from "./sonner/index.js";
 export { default as Spinner } from "./spinner.svelte";
 export { toast, toastStore } from "./sonner/index.js";

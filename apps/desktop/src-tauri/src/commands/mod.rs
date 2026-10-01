@@ -326,6 +326,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         window_cmds::show_window,
         window_cmds::open_agent_window,
         window_cmds::open_connection_window,
+        window_cmds::open_changelog_window,
         window_cmds::check_for_updates,
         // ── Connection ──────────────────────────────────────────
         connection_cmds::connection_get_config,
@@ -349,11 +350,14 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         database_cmds::database_pick_file,
         database_cmds::database_pick_folder,
         database_cmds::database_pick_save_path,
-        // ── System ─────────────────────────────────────────────
+        // ── System & Ecosystem ─────────────────────────────────
         system_cmds::system_health,
         system_cmds::system_has_organization,
         system_cmds::system_get_readiness,
         system_cmds::system_get_entitlement,
+        system_cmds::system_get_ecosystem_info,
+        system_cmds::system_get_changelog,
+        system_cmds::system_check_for_updates,
         // ── AI Platform ─────────────────────────────────────────
         ai_cmds::ai_chat,
         ai_cmds::ai_list_tools,
@@ -371,6 +375,8 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         autopilot_cmds::autopilot_dismiss_task,
         autopilot_cmds::autopilot_get_diagnostics,
         // ── Bootstrap ───────────────────────────────────────────
+        bootstrap_cmds::bootstrap_detect_environment,
+        bootstrap_cmds::bootstrap_generate_slug,
         bootstrap_cmds::bootstrap_get_status,
         bootstrap_cmds::bootstrap_execute,
         // ── Onboarding ──────────────────────────────────────────

@@ -31,6 +31,35 @@ pub(crate) async fn do_open_agent_window<R: tauri::Runtime>(app: &tauri::AppHand
     Ok(())
 }
 
+pub(crate) async fn do_open_changelog_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<(), String> {
+    if let Some(existing) = app.get_webview_window("orbis-changelog") {
+        let _ = existing.unminimize();
+        existing.show().map_err(|e| e.to_string())?;
+        existing.set_focus().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+    let main_window = app.get_webview_window("main");
+    let mut builder = WebviewWindowBuilder::new(
+        app,
+        "orbis-changelog",
+        WebviewUrl::App("changelog".into()),
+    )
+    .title("Orbis — What's New & Changelog")
+    .inner_size(860.0, 680.0)
+    .min_inner_size(580.0, 460.0)
+    .resizable(true)
+    .shadow(true)
+    .decorations(true)
+    .visible(true);
+    if let Some(ref main) = main_window {
+        builder = builder.parent(main).map_err(|e| e.to_string())?;
+    }
+    let win = builder.build().map_err(|e| e.to_string())?;
+    let _ = win.show();
+    let _ = win.set_focus();
+    Ok(())
+}
+
 pub(crate) async fn do_open_connection_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<(), String> {
     if let Some(existing) = app.get_webview_window("orbis-connection") {
         existing.show().map_err(|e| e.to_string())?;
@@ -88,6 +117,11 @@ pub async fn open_agent_window<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> R
 #[tauri::command]
 pub async fn open_connection_window<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
     do_open_connection_window(&app).await
+}
+
+#[tauri::command]
+pub async fn open_changelog_window<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
+    do_open_changelog_window(&app).await
 }
 
 #[tauri::command]

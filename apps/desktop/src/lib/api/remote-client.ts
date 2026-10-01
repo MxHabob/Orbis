@@ -169,6 +169,11 @@ import type {
   HealthResponse,
   OrganizationReadiness,
   EntitlementResult,
+  MulverseEcosystemInfo,
+  ReleaseChangelogItem,
+  UpdateCheckResult,
+  EnvironmentDetectionResult,
+  SlugGenerationResult,
   BootstrapRequest,
   BootstrapResult,
   BootstrapStatusResponse,
@@ -1448,6 +1453,96 @@ export class RemoteClient implements OrbisApiClient {
     };
   }
 
+  async systemGetEcosystemInfo(): Promise<MulverseEcosystemInfo> {
+    return {
+      ecosystem_name: "Mulverse",
+      brand: "Mulverse Systems",
+      product_name: "Orbis Next-Gen SIS / ERP",
+      product_code: "MULVERSE-ORBIS-REMOTE",
+      version: "0.3.0",
+      build_profile: "Production",
+      target_os: "web",
+      target_arch: "wasm",
+      github_repo: "MxHabob/Orbis",
+      edition: "Cloud Connected Edition",
+      node_type: "Remote Client Node",
+      node_id: "node-remote",
+      is_local_first: false,
+      database_engine: "PostgreSQL Cloud Core",
+      description_en: "Orbis enterprise institutional operating system by Mulverse.",
+      description_ar: "أوربيس نظام إدارة المؤسسات التعليمية من منظومة Mulverse.",
+      tagline_en: "Institutional Sovereignty & Intelligent Operations",
+      tagline_ar: "السيادة المؤسسية والذكاء التشغيلي",
+      pillars: [],
+    };
+  }
+
+  async systemGetChangelog(): Promise<ReleaseChangelogItem[]> {
+    return [
+      {
+        version: "0.3.0",
+        title_en: "v0.3.0 — Mulverse Autonomous Core & DAG Setup",
+        title_ar: "الإصدار 0.3.0 — عقدة سطح المكتب المستقلة وتهيئة DAG الذكية",
+        release_date: "2026-10-01",
+        is_current: true,
+        is_latest: true,
+        html_url: "https://github.com/MxHabob/Orbis/releases/tag/v0.3.0",
+        highlights_en: ["Sovereign local-first SQLite core", "DAG onboarding engine", "DocForge visual publishing"],
+        highlights_ar: ["نواة محلية فائقة السرعة", "محرك تهيئة DAG الذكي", "محرك DocForge للنشر البصري"],
+      },
+    ];
+  }
+
+  async systemCheckForUpdates(): Promise<UpdateCheckResult> {
+    return {
+      current_version: "0.3.0",
+      latest_version: "0.3.0",
+      has_update: false,
+      channel: "stable",
+      status: "up_to_date",
+    };
+  }
+
+  async openChangelogWindow(): Promise<void> {
+    if (typeof window !== "undefined") {
+      window.open("/changelog", "_blank", "width=860,height=680");
+    }
+  }
+
+  async openAgentWindow(): Promise<void> {
+    if (typeof window !== "undefined") {
+      window.open("/agent", "_blank", "width=460,height=720");
+    }
+  }
+
+  async bootstrapDetectEnvironment(): Promise<EnvironmentDetectionResult> {
+    return {
+      detected_locale: "ar-SA",
+      detected_language: "العربية (Arabic)",
+      country_code: "SA",
+      country_name_en: "Saudi Arabia",
+      country_name_ar: "المملكة العربية السعودية",
+      flag_emoji: "🇸🇦",
+      timezone: "Asia/Riyadh",
+      timezone_offset: "UTC+3",
+      timezone_offset_hours: 3,
+      currency_code: "SAR",
+      currency_symbol_en: "SAR",
+      currency_symbol_ar: "ر.س",
+      currency_name_en: "Saudi Riyal",
+      currency_name_ar: "ريال سعودي",
+      is_hijri_recommended: true,
+      date_format: "YYYY-MM-DD",
+      suggested_academic_year: "2026/2027",
+      suggested_academic_year_ar: "2026/2027 م",
+    };
+  }
+
+  async bootstrapGenerateSlug(name: string, _nameAr?: string): Promise<SlugGenerationResult> {
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return { slug: slug || "institution", is_available: true, suggestions: [] };
+  }
+
   async bootstrapGetStatus(): Promise<BootstrapStatusResponse> {
     return this.call((sdk as any).bootstrapGetStatusEndpoint?.({ client: this.client }) ?? Promise.resolve({ status: "completed", has_admin: true }));
   }
@@ -1851,98 +1946,5 @@ export class RemoteClient implements OrbisApiClient {
   async deleteFolder(id: string): Promise<void> {
     await this.call(sdk.deleteFolder({ client: this.client, path: { id } }));
   }
-
-  // ── System & Bootstrap ──────────────────────────────────────
-  async systemHealth(): Promise<HealthResponse> {
-    const res = await fetch(`${this.baseUrl}/health`);
-    if (!res.ok) throw new ApiRequestError(res.status, "Health check failed");
-    return res.json();
-  }
-
-  async systemHasOrganization(): Promise<boolean> {
-    const res = await fetch(`${this.baseUrl}/api/v1/system/has-org`);
-    if (!res.ok) return false;
-    const json = await res.json();
-    return json.data?.has_org ?? json.has_org ?? false;
-  }
-
-  async systemGetReadiness(): Promise<OrganizationReadiness> {
-    const res = await fetch(`${this.baseUrl}/api/v1/system/readiness`);
-    if (!res.ok) throw new ApiRequestError(res.status, "Readiness check failed");
-    const json = await res.json();
-    return json.data ?? json;
-  }
-
-  async systemGetEntitlement(): Promise<EntitlementResult> {
-    return {
-      allowed: true,
-      tier: "enterprise",
-      features: ["all"],
-    };
-  }
-
-  async bootstrapGetStatus(): Promise<BootstrapStatusResponse> {
-    const res = await fetch(`${this.baseUrl}/api/v1/bootstrap/status`);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: res.statusText }));
-      throw new ApiRequestError(res.status, err);
-    }
-    const json = await res.json();
-    return json.data ?? json;
-  }
-
-  async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
-    const res = await fetch(`${this.baseUrl}/api/v1/bootstrap`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(req),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: res.statusText }));
-      throw new ApiRequestError(res.status, err);
-    }
-    const json = await res.json();
-    return json.data ?? json;
-  }
-
-  async completeOnboarding(_req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {
-    return { success: true };
-  }
-
-  // ── Onboarding & DAG Readiness ──────────────────────────────
-  async onboardingGetState(_orgId?: string): Promise<OnboardingStateDto> {
-    const res = await fetch(`${this.baseUrl}/api/v1/onboarding/state`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
-      },
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: res.statusText }));
-      throw new ApiRequestError(res.status, err);
-    }
-    const json = await res.json();
-    return json.data ?? json;
-  }
-
-  async onboardingProvisionDefaults(
-    req: ProvisionDefaultsReqDto,
-    _orgId?: string,
-  ): Promise<ProvisionDefaultsResultDto> {
-    const res = await fetch(`${this.baseUrl}/api/v1/onboarding/provision`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
-      },
-      body: JSON.stringify(req),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: res.statusText }));
-      throw new ApiRequestError(res.status, err);
-    }
-    const json = await res.json();
-    return json.data ?? json;
-  }
 }
+

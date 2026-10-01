@@ -10,7 +10,7 @@ import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
-import { Logo } from "@orbis/ui/logo";
+import { Logo } from "@orbis/icons";
 import { Badge } from "@orbis/ui/badge";
 import type { ConnectionMode, RemoteHealthResult } from "$lib/api/types";
 import { ArrowLeft, ArrowPath, ArrowRight, ChartBar, CheckCircle, Computer, Database, GlobeAlt, InfoCircle, UserBadgeCheck } from "@orbis/icons";

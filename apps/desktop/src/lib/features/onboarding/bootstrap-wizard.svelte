@@ -1,12 +1,17 @@
 <!--
   @component BootstrapWizard
   Master orchestrator for clean organization bootstrap & initial administrator initialization.
-  Designed with minimalist enterprise aesthetics, design tokens, and uncluttered layout.
+  Orchestrates 5 steps: Mulverse Intro -> Blueprint -> Organization -> Administrator -> Launch Review.
 -->
 <script lang="ts">
+import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { api } from "$lib/api/client";
-import type { BootstrapRequest, BootstrapResult } from "$lib/api/types";
+import type {
+  BootstrapRequest,
+  BootstrapResult,
+  EnvironmentDetectionResult,
+} from "$lib/api/types";
 import { authStore, systemStore } from "$lib/stores";
 import { extractErrorMessage } from "$lib/api";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
@@ -15,13 +20,22 @@ import {
   type OnboardingFormModel,
   INITIAL_ONBOARDING_VALUES,
 } from "./types";
+import StepMulverseIntro from "./components/step-mulverse-intro.svelte";
 import StepBlueprint from "./components/step-blueprint.svelte";
 import StepOrganization from "./components/step-organization.svelte";
 import StepAdmin from "./components/step-admin.svelte";
 import StepReview from "./components/step-review.svelte";
+import AboutDialog from "$lib/components/system/about-dialog.svelte";
+import ChangelogModal from "$lib/components/system/changelog-modal.svelte";
+import SupportDialog from "$lib/components/system/support-dialog.svelte";
 import { Button } from "@orbis/ui/button";
+import {
+  Cube,
+  Sparkles,
+  QuestionMarkCircle,
+} from "@orbis/icons";
 
-let currentStep = $state<OnboardingStep>("blueprint");
+let currentStep = $state<OnboardingStep>("mulverse");
 let form = $state<OnboardingFormModel>({ ...INITIAL_ONBOARDING_VALUES });
 let errors = $state<Record<string, string>>({});
 let isSubmitting = $state(false);
@@ -30,9 +44,17 @@ let bootstrapError = $state<string | null>(null);
 let activeTaskIndex = $state(0);
 let bootstrapResult = $state<BootstrapResult | null>(null);
 
+let envData = $state<EnvironmentDetectionResult | null>(null);
+let isLoadingEnv = $state(true);
+
+let isAboutOpen = $state(false);
+let isChangelogOpen = $state(false);
+let isSupportOpen = $state(false);
+
 const isRTL = $derived(getLocale().startsWith("ar"));
 
 const steps: Array<{ id: OnboardingStep; titleEn: string; titleAr: string }> = [
+  { id: "mulverse", titleEn: "Overview", titleAr: "نظرة عامة" },
   { id: "blueprint", titleEn: "Blueprint", titleAr: "النموذج" },
   { id: "organization", titleEn: "Organization", titleAr: "المؤسسة" },
   { id: "admin", titleEn: "Administrator", titleAr: "المشرف" },
@@ -41,23 +63,43 @@ const steps: Array<{ id: OnboardingStep; titleEn: string; titleAr: string }> = [
 
 const currentStepIndex = $derived(steps.findIndex((s) => s.id === currentStep));
 
+async function loadEnvironment() {
+  isLoadingEnv = true;
+  try {
+    const data = await api.bootstrapDetectEnvironment();
+    envData = data;
+    form.countryCode = data.country_code || "SA";
+    form.timezone = data.timezone || "Asia/Riyadh";
+    form.baseCurrencyCode = data.currency_code || "SAR";
+    form.isHijriEnabled = data.is_hijri_recommended ?? true;
+    form.dateFormat = data.date_format || "YYYY-MM-DD";
+  } catch (err) {
+    console.error("Failed to detect environment:", err);
+  } finally {
+    isLoadingEnv = false;
+  }
+}
+
+onMount(() => {
+  loadEnvironment();
+});
+
 function validateCurrentStep(): boolean {
   const newErrors: Record<string, string> = {};
 
-  if (currentStep === "blueprint") {
+  if (currentStep === "mulverse") {
+    // Pure intro step, always valid
+    return true;
+  } else if (currentStep === "blueprint") {
     if (!form.institutionType) {
       newErrors.institutionType = isRTL ? "يرجى اختيار نموذج المؤسسة" : "Please select a blueprint";
     }
   } else if (currentStep === "organization") {
     if (!form.organizationName.trim()) {
-      newErrors.organizationName = isRTL ? "اسم المنشأة مطلوب" : "Organization name is required";
+      newErrors.organizationName = isRTL ? "اسم المنشأة بالإنجليزية مطلوب" : "Organization name in English is required";
     }
-    if (!form.organizationSlug.trim()) {
-      newErrors.organizationSlug = isRTL ? "المعرف الفريد (Slug) مطلوب" : "Organization slug is required";
-    } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.organizationSlug.trim())) {
-      newErrors.organizationSlug = isRTL
-        ? "المعرف يجب أن يحتوي على أحرف إنجليزية صغيرة وأرقام وشرطات فقط"
-        : "Slug must contain only lowercase letters, numbers, and hyphens";
+    if (!form.organizationNameAr.trim()) {
+      newErrors.organizationNameAr = isRTL ? "اسم المنشأة بالعربية مطلوب" : "Organization name in Arabic is required";
     }
   } else if (currentStep === "admin") {
     if (!form.adminFirstName.trim()) {
@@ -116,8 +158,15 @@ async function handleLaunchBootstrap() {
     institution_type: form.institutionType,
     organization_name: form.organizationName.trim(),
     organization_name_ar: form.organizationNameAr.trim() || undefined,
-    organization_slug: form.organizationSlug.trim(),
     organization_code: form.organizationCode.trim() || undefined,
+    educational_track: form.educationalTrack,
+    organization_size: form.organizationSize,
+    country_code: form.countryCode,
+    city: form.city.trim() || undefined,
+    phone: form.phone.trim() || undefined,
+    website: form.website.trim() || undefined,
+    tax_id: form.taxId.trim() || undefined,
+    license_number: form.licenseNumber.trim() || undefined,
     timezone: form.timezone,
     locale: form.locale,
     date_format: form.dateFormat,
@@ -137,7 +186,7 @@ async function handleLaunchBootstrap() {
     if (activeTaskIndex < 4) {
       activeTaskIndex++;
     }
-  }, 700);
+  }, 650);
 
   try {
     const result = await api.bootstrapOrganization(req);
@@ -171,23 +220,28 @@ function enterWorkspace() {
 }
 </script>
 
-<div class="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-primary/20 selection:text-primary">
+<div class="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-primary/20 selection:text-primary font-sans">
   <!-- Minimal Header Bar -->
-  <header class="h-14 border-b border-border/50 bg-background/95 backdrop-blur-xs sticky top-0 z-30 flex items-center justify-between px-6 sm:px-10">
-    <div class="flex items-center gap-2.5">
-      <span class="text-sm font-semibold tracking-tight text-foreground">Orbis</span>
-      <span class="text-xs text-muted-foreground">•</span>
-      <span class="text-xs text-muted-foreground">
-        {isRTL ? "تهيئة المنشأة" : "Setup"}
-      </span>
+  <header class="h-14 border-b border-border/50 bg-background/95 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-4 sm:px-8">
+    <div class="flex items-center gap-3">
+      <div class="size-7 rounded-lg bg-primary/10 border border-primary/25 flex items-center justify-center text-primary">
+        <Cube size={16} />
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-sm font-bold tracking-tight text-foreground">Orbis</span>
+        <span class="text-xs text-muted-foreground">•</span>
+        <span class="text-xs text-muted-foreground font-medium">
+          {isRTL ? "المرشد الذكي لتأسيس المنشأة" : "Autonomous Setup"}
+        </span>
+      </div>
     </div>
 
     <!-- Step Progress Pills -->
-    <nav aria-label="Onboarding Steps" class="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/40">
+    <nav aria-label="Onboarding Steps" class="hidden md:flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/40">
       {#each steps as s, i}
         {@const isPast = i < currentStepIndex}
         {@const isCurrent = i === currentStepIndex}
-        
+
         <div
           class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-colors {isCurrent
             ? 'bg-background text-foreground shadow-xs font-medium'
@@ -202,15 +256,49 @@ function enterWorkspace() {
               : 'bg-muted-foreground/10 text-muted-foreground'}">
             {i + 1}
           </span>
-          <span class="hidden sm:inline">{isRTL ? s.titleAr : s.titleEn}</span>
+          <span>{isRTL ? s.titleAr : s.titleEn}</span>
         </div>
       {/each}
     </nav>
+
+    <!-- Top System Dialog Triggers -->
+    <div class="flex items-center gap-1.5">
+      <Button
+        variant="ghost"
+        size="sm"
+        onclick={() => (isAboutOpen = true)}
+        class="h-8 text-xs font-normal gap-1.5 px-2.5 text-muted-foreground hover:text-foreground"
+      >
+        <span class="hidden sm:inline">{isRTL ? "عن المنظومة" : "About"}</span>
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        onclick={() => (isChangelogOpen = true)}
+        class="h-8 text-xs font-normal gap-1.5 px-2.5 text-muted-foreground hover:text-foreground"
+      >
+        <Sparkles size={14} class="text-primary" />
+        <span class="hidden sm:inline">{isRTL ? "ما الجديد" : "What's New"}</span>
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        onclick={() => (isSupportOpen = true)}
+        class="h-8 text-xs font-normal gap-1.5 px-2.5 text-muted-foreground hover:text-foreground"
+      >
+        <QuestionMarkCircle size={14} />
+        <span class="hidden sm:inline">{isRTL ? "المساعدة" : "Help"}</span>
+      </Button>
+    </div>
   </header>
 
   <!-- Main Wizard Content Area -->
-  <main class="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-10">
-    {#if currentStep === "blueprint"}
+  <main class="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    {#if currentStep === "mulverse"}
+      <StepMulverseIntro {envData} {isLoadingEnv} {isRTL} />
+    {:else if currentStep === "blueprint"}
       <StepBlueprint bind:selectedType={form.institutionType} {isRTL} />
     {:else if currentStep === "organization"}
       <StepOrganization bind:form {errors} {isRTL} />
@@ -224,7 +312,6 @@ function enterWorkspace() {
         error={bootstrapError}
         {activeTaskIndex}
         onLaunch={handleLaunchBootstrap}
-        onRetry={handleLaunchBootstrap}
         onEnterWorkspace={enterWorkspace}
         {isRTL}
       />
@@ -233,7 +320,7 @@ function enterWorkspace() {
 
   <!-- Clean Bottom Navigation Bar (Hidden when executing or completed) -->
   {#if !isSubmitting && !isComplete}
-    <footer class="sticky bottom-0 border-t border-border/50 bg-background/95 backdrop-blur-xs py-3.5 px-6 sm:px-10 z-20">
+    <footer class="sticky bottom-0 border-t border-border/50 bg-background/95 backdrop-blur-md py-3.5 px-6 sm:px-10 z-20">
       <div class="max-w-4xl mx-auto flex items-center justify-between">
         {#if currentStepIndex > 0}
           <Button
@@ -241,7 +328,7 @@ function enterWorkspace() {
             variant="outline"
             size="sm"
             onclick={prevStep}
-            class="h-9 px-4 text-xs font-normal"
+            class="h-9 px-5 text-xs font-normal"
           >
             <span>{isRTL ? "السابق" : "Back"}</span>
           </Button>
@@ -255,7 +342,7 @@ function enterWorkspace() {
             variant="default"
             size="sm"
             onclick={nextStep}
-            class="h-9 px-5 text-xs font-medium"
+            class="h-9 px-6 text-xs font-medium gap-1.5 shadow-sm shadow-primary/20"
           >
             <span>{isRTL ? "المتابعة" : "Continue"}</span>
           </Button>
@@ -264,3 +351,8 @@ function enterWorkspace() {
     </footer>
   {/if}
 </div>
+
+<!-- System Dialogs -->
+<AboutDialog bind:open={isAboutOpen} />
+<ChangelogModal bind:open={isChangelogOpen} />
+<SupportDialog bind:open={isSupportOpen} />

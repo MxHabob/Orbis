@@ -25,11 +25,29 @@ pub struct BootstrapRequest {
     pub organization_name: String,
     /// Organization name in Arabic (optional)
     pub organization_name_ar: Option<String>,
-    /// URL-safe slug
+    /// URL-safe slug (optional — auto-generated from name if omitted)
     #[schema(example = "orbis-school")]
-    pub organization_slug: String,
+    pub organization_slug: Option<String>,
     /// Short organization code
     pub organization_code: Option<String>,
+    /// Educational curriculum track
+    pub educational_track: Option<String>,
+    /// Organization estimated size
+    pub organization_size: Option<String>,
+    /// ISO Country Code (e.g. SA, YE, AE)
+    pub country_code: Option<String>,
+    /// City / Province
+    pub city: Option<String>,
+    /// Contact phone
+    pub phone: Option<String>,
+    /// Official website URL
+    pub website: Option<String>,
+    /// Tax registration / VAT number
+    pub tax_id: Option<String>,
+    /// Ministry / Educational license number
+    pub license_number: Option<String>,
+    /// Mulverse Autonomous Node UUID
+    pub mulverse_node_id: Option<String>,
     /// IANA timezone
     #[schema(example = "Asia/Riyadh")]
     pub timezone: String,
@@ -140,6 +158,15 @@ pub async fn execute_bootstrap(
         organization_name_ar: req.organization_name_ar,
         organization_slug: req.organization_slug,
         organization_code: req.organization_code,
+        educational_track: req.educational_track,
+        organization_size: req.organization_size,
+        country_code: req.country_code,
+        city: req.city,
+        phone: req.phone,
+        website: req.website,
+        tax_id: req.tax_id,
+        license_number: req.license_number,
+        mulverse_node_id: req.mulverse_node_id,
         timezone: req.timezone,
         locale: req.locale,
         date_format: req.date_format,

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SVGAttributes } from 'svelte/elements';
+	import { cn } from './utils';
 
 	interface Props extends SVGAttributes<SVGSVGElement> {
 		class?: string;
@@ -14,9 +15,7 @@
 		size,
 		strokeWidth,
 		...restProps
-	}: Props = $props();
-
-	const computedClass = $derived([className || 'size-4', klass].filter(Boolean).join(' '));
+	}: Props = $props();
 </script>
 
 <svg
@@ -27,7 +26,7 @@
 	stroke-width={strokeWidth ?? '1.5'}
 	width={size}
 	height={size}
-	class={computedClass}
+	class={cn(className || 'size-4', klass)}
 	aria-hidden="true"
 	{...restProps}
 >

@@ -473,9 +473,21 @@ export type BootstrapRequest = {
      */
     base_currency_code?: string | null;
     /**
+     * City / Province
+     */
+    city?: string | null;
+    /**
+     * ISO Country Code (e.g. SA, YE, AE)
+     */
+    country_code?: string | null;
+    /**
      * Date format pattern
      */
     date_format?: string | null;
+    /**
+     * Educational curriculum track
+     */
+    educational_track?: string | null;
     /**
      * Institution type: "school", "university", "institute"
      */
@@ -485,9 +497,17 @@ export type BootstrapRequest = {
      */
     is_hijri_enabled?: boolean | null;
     /**
+     * Ministry / Educational license number
+     */
+    license_number?: string | null;
+    /**
      * BCP-47 locale
      */
     locale: string;
+    /**
+     * Mulverse Autonomous Node UUID
+     */
+    mulverse_node_id?: string | null;
     /**
      * Short organization code
      */
@@ -501,17 +521,33 @@ export type BootstrapRequest = {
      */
     organization_name_ar?: string | null;
     /**
-     * URL-safe slug
+     * Organization estimated size
      */
-    organization_slug: string;
+    organization_size?: string | null;
+    /**
+     * URL-safe slug (optional — auto-generated from name if omitted)
+     */
+    organization_slug?: string | null;
+    /**
+     * Contact phone
+     */
+    phone?: string | null;
     /**
      * Theme primary color hex
      */
     primary_color?: string | null;
     /**
+     * Tax registration / VAT number
+     */
+    tax_id?: string | null;
+    /**
      * IANA timezone
      */
     timezone: string;
+    /**
+     * Official website URL
+     */
+    website?: string | null;
 };
 
 export type BootstrapResultDto = {

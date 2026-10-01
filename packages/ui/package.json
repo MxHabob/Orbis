@@ -126,10 +126,6 @@
       "svelte": "./src/components/ui/timetable/index.ts",
       "default": "./src/components/ui/timetable/index.ts"
     },
-    "./logo": {
-      "svelte": "./src/components/ui/logo/index.ts",
-      "default": "./src/components/ui/logo/index.ts"
-    },
     "./sonner": {
       "svelte": "./src/components/ui/sonner/index.ts",
       "default": "./src/components/ui/sonner/index.ts"

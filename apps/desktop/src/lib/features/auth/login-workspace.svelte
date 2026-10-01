@@ -5,7 +5,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui/card";
-import { Logo } from "@orbis/ui/logo";
+import { Logo } from "@orbis/icons";
 
 import AnnouncementBanner from "./components/announcement-banner.svelte";
 import BackgroundPattern from "./components/background-pattern.svelte";

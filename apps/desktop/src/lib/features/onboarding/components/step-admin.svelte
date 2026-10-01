@@ -1,13 +1,14 @@
 <!--
   @component StepAdmin
-  Step 3: Initial Primary Administrator Account.
-  Minimalist form using @orbis/ui components and design tokens.
+  Step 4: Initial Primary Administrator Account.
+  Minimalist form using @orbis/ui components, design tokens, and avatar preview.
 -->
 <script lang="ts">
 import type { OnboardingFormModel } from "../types";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Card, CardContent } from "@orbis/ui/card";
+import { Avatar, AvatarController } from "@orbis/avatar-engine";
 
 let {
   form = $bindable<OnboardingFormModel>(),
@@ -18,6 +19,8 @@ let {
   errors?: Record<string, string>;
   isRTL?: boolean;
 } = $props();
+
+const avatarController = new AvatarController();
 
 const passwordStrength = $derived.by(() => {
   const pwd = form.adminPassword || "";
@@ -43,9 +46,14 @@ const passwordsMatch = $derived(
 );
 </script>
 
-<div class="space-y-6 max-w-2xl mx-auto">
-  <div class="space-y-1">
-    <h2 class="text-lg font-semibold tracking-tight text-foreground">
+<div class="space-y-6 max-w-2xl mx-auto py-1">
+  <div class="space-y-1 text-start">
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-semibold text-primary uppercase font-mono tracking-wider">
+        {isRTL ? "المرحلة ٤ من ٥" : "Step 4 of 5"}
+      </span>
+    </div>
+    <h2 class="text-xl font-bold tracking-tight text-foreground">
       {isRTL ? "إنشاء حساب المشرف العام" : "Primary Administrator Account"}
     </h2>
     <p class="text-xs text-muted-foreground">
@@ -55,9 +63,58 @@ const passwordsMatch = $derived(
     </p>
   </div>
 
-  <Card class="border-border/60 shadow-xs">
-    <CardContent class="p-5 space-y-4">
+  <Card class="border-border/60 shadow-md bg-card/95">
+    <CardContent class="p-6 space-y-5 text-start">
+      <!-- Avatar Header Preview -->
+      <div class="flex items-center gap-4 p-3.5 rounded-xl bg-muted/20 border border-border/50">
+        <div class="size-12 rounded-full bg-background border border-border/60 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+          <Avatar
+            controller={avatarController}
+            width="44px"
+            height="44px"
+          />
+        </div>
+        <div class="space-y-0.5 text-start overflow-hidden">
+          <div class="text-xs font-bold text-foreground truncate">
+            {form.adminFirstNameAr || form.adminFirstName || (isRTL ? "المشرف العام" : "Administrator")} {form.adminLastNameAr || form.adminLastName || ""}
+          </div>
+          <div class="text-[11px] font-mono text-muted-foreground truncate">
+            {form.adminEmail || "admin@institution.edu"}
+          </div>
+        </div>
+      </div>
+
       <!-- Admin Names -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="space-y-1.5">
+          <Label for="admin-fn-ar" class="text-xs font-medium text-foreground">
+            {isRTL ? "الاسم الأول (عربي) *" : "First Name (Arabic) *"}
+          </Label>
+          <Input
+            id="admin-fn-ar"
+            type="text"
+            dir="rtl"
+            placeholder="مثال: طارق"
+            bind:value={form.adminFirstNameAr}
+            class="h-9 text-xs"
+          />
+        </div>
+
+        <div class="space-y-1.5">
+          <Label for="admin-ln-ar" class="text-xs font-medium text-foreground">
+            {isRTL ? "اسم العائلة (عربي) *" : "Last Name (Arabic) *"}
+          </Label>
+          <Input
+            id="admin-ln-ar"
+            type="text"
+            dir="rtl"
+            placeholder="مثال: المنصور"
+            bind:value={form.adminLastNameAr}
+            class="h-9 text-xs"
+          />
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="space-y-1.5">
           <Label for="admin-fn-en" class="text-xs font-medium text-foreground">
@@ -89,36 +146,6 @@ const passwordsMatch = $derived(
           {#if errors.adminLastName}
             <p class="text-[11px] text-destructive">{errors.adminLastName}</p>
           {/if}
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="space-y-1.5">
-          <Label for="admin-fn-ar" class="text-xs font-medium text-foreground">
-            {isRTL ? "الاسم الأول (عربي)" : "First Name (Arabic)"}
-          </Label>
-          <Input
-            id="admin-fn-ar"
-            type="text"
-            dir="rtl"
-            placeholder="مثال: طارق"
-            bind:value={form.adminFirstNameAr}
-            class="h-9 text-xs"
-          />
-        </div>
-
-        <div class="space-y-1.5">
-          <Label for="admin-ln-ar" class="text-xs font-medium text-foreground">
-            {isRTL ? "اسم العائلة (عربي)" : "Last Name (Arabic)"}
-          </Label>
-          <Input
-            id="admin-ln-ar"
-            type="text"
-            dir="rtl"
-            placeholder="مثال: المنصور"
-            bind:value={form.adminLastNameAr}
-            class="h-9 text-xs"
-          />
         </div>
       </div>
 
