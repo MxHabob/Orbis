@@ -1,7 +1,7 @@
 <!--
   @component BootstrapWizard
-  Master orchestrator for the clean initialization lifecycle:
-  Blueprint Selection → Organization Creation → Admin Account → Bootstrap Execution → Readiness Verification.
+  Master orchestrator for clean organization bootstrap & initial administrator initialization.
+  Designed with minimalist enterprise aesthetics, design tokens, and uncluttered layout.
 -->
 <script lang="ts">
 import { goto } from "$app/navigation";
@@ -19,15 +19,6 @@ import StepBlueprint from "./components/step-blueprint.svelte";
 import StepOrganization from "./components/step-organization.svelte";
 import StepAdmin from "./components/step-admin.svelte";
 import StepReview from "./components/step-review.svelte";
-import {
-  AcademicCap,
-  ArrowLeft,
-  ArrowRight,
-  BuildingOffice,
-  Check,
-  Sparkles,
-  UserBadgeCheck,
-} from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 
 let currentStep = $state<OnboardingStep>("blueprint");
@@ -41,11 +32,11 @@ let bootstrapResult = $state<BootstrapResult | null>(null);
 
 const isRTL = $derived(getLocale().startsWith("ar"));
 
-const steps: Array<{ id: OnboardingStep; titleEn: string; titleAr: string; icon: any }> = [
-  { id: "blueprint", titleEn: "Blueprint", titleAr: "النموذج", icon: AcademicCap },
-  { id: "organization", titleEn: "Organization", titleAr: "المنشأة", icon: BuildingOffice },
-  { id: "admin", titleEn: "Administrator", titleAr: "المشرف العام", icon: UserBadgeCheck },
-  { id: "review", titleEn: "Launch", titleAr: "التشغيل", icon: Sparkles },
+const steps: Array<{ id: OnboardingStep; titleEn: string; titleAr: string }> = [
+  { id: "blueprint", titleEn: "Blueprint", titleAr: "النموذج" },
+  { id: "organization", titleEn: "Organization", titleAr: "المؤسسة" },
+  { id: "admin", titleEn: "Administrator", titleAr: "المشرف" },
+  { id: "review", titleEn: "Launch", titleAr: "التشغيل" },
 ];
 
 const currentStepIndex = $derived(steps.findIndex((s) => s.id === currentStep));
@@ -142,7 +133,6 @@ async function handleLaunchBootstrap() {
     admin_phone: form.adminPhone.trim() || undefined,
   };
 
-  // Animated task progress ticker
   const interval = setInterval(() => {
     if (activeTaskIndex < 4) {
       activeTaskIndex++;
@@ -155,7 +145,6 @@ async function handleLaunchBootstrap() {
     activeTaskIndex = 5;
     clearInterval(interval);
 
-    // Auto authenticate as newly created super administrator
     try {
       await authStore.login(form.adminEmail.trim().toLowerCase(), form.adminPassword);
       await systemStore.loadReadiness();
@@ -182,68 +171,45 @@ function enterWorkspace() {
 }
 </script>
 
-<div class="min-h-screen bg-background text-foreground flex flex-col selection:bg-primary/20 selection:text-primary relative overflow-x-hidden">
-  <!-- Subtle background glowing accents -->
-  <div class="fixed inset-0 pointer-events-none overflow-hidden">
-    <div class="absolute -top-40 start-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/10 blur-[120px] rounded-full"></div>
-    <div class="absolute -bottom-40 start-1/4 w-[400px] h-[250px] bg-sky-500/5 blur-[100px] rounded-full"></div>
-  </div>
-
-  <!-- Header Bar -->
-  <header class="h-16 border-b border-border/80 bg-background/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-6 sm:px-10">
-    <div class="flex items-center gap-3">
-      <div class="size-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-lg border border-primary/20 shadow-sm">
-        O
-      </div>
-      <div>
-        <h1 class="text-sm font-bold tracking-tight text-foreground">Orbis Enterprise</h1>
-        <p class="text-[10px] text-muted-foreground font-mono">
-          {isRTL ? "مساعد التهيئة والتأسيس" : "Setup & Onboarding Suite"}
-        </p>
-      </div>
+<div class="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-primary/20 selection:text-primary">
+  <!-- Minimal Header Bar -->
+  <header class="h-14 border-b border-border/50 bg-background/95 backdrop-blur-xs sticky top-0 z-30 flex items-center justify-between px-6 sm:px-10">
+    <div class="flex items-center gap-2.5">
+      <span class="text-sm font-semibold tracking-tight text-foreground">Orbis</span>
+      <span class="text-xs text-muted-foreground">•</span>
+      <span class="text-xs text-muted-foreground">
+        {isRTL ? "تهيئة المنشأة" : "Setup"}
+      </span>
     </div>
 
     <!-- Step Progress Pills -->
-    <nav aria-label="Onboarding Steps" class="hidden md:flex items-center gap-1.5 bg-muted/60 p-1 rounded-xl border border-border/60">
+    <nav aria-label="Onboarding Steps" class="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/40">
       {#each steps as s, i}
-        {@const Icon = s.icon}
         {@const isPast = i < currentStepIndex}
         {@const isCurrent = i === currentStepIndex}
         
         <div
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all {isCurrent
-            ? 'bg-background text-foreground shadow-sm shadow-black/5'
+          class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-colors {isCurrent
+            ? 'bg-background text-foreground shadow-xs font-medium'
             : isPast
-              ? 'text-primary hover:text-primary/80'
-              : 'text-muted-foreground/60'}"
+              ? 'text-foreground/80'
+              : 'text-muted-foreground/50'}"
         >
-          <div
-            class="size-4 rounded-full flex items-center justify-center text-[10px] {isPast
-              ? 'bg-primary text-primary-foreground'
-              : isCurrent
-                ? 'bg-foreground text-background font-bold'
-                : 'bg-muted-foreground/20 text-muted-foreground'}"
-          >
-            {#if isPast}
-              <Check size={10} strokeWidth={3} />
-            {:else}
-              {i + 1}
-            {/if}
-          </div>
-          <span>{isRTL ? s.titleAr : s.titleEn}</span>
+          <span class="size-3.5 rounded-full flex items-center justify-center text-[10px] font-mono {isCurrent
+            ? 'bg-foreground text-background font-bold'
+            : isPast
+              ? 'bg-muted-foreground/20 text-foreground'
+              : 'bg-muted-foreground/10 text-muted-foreground'}">
+            {i + 1}
+          </span>
+          <span class="hidden sm:inline">{isRTL ? s.titleAr : s.titleEn}</span>
         </div>
       {/each}
     </nav>
-
-    <div class="flex items-center gap-2">
-      <div class="px-2.5 py-1 rounded-lg border border-border text-[11px] font-mono text-muted-foreground bg-card/50">
-        v2.0
-      </div>
-    </div>
   </header>
 
   <!-- Main Wizard Content Area -->
-  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 z-10">
+  <main class="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-10">
     {#if currentStep === "blueprint"}
       <StepBlueprint bind:selectedType={form.institutionType} {isRTL} />
     {:else if currentStep === "organization"}
@@ -265,44 +231,33 @@ function enterWorkspace() {
     {/if}
   </main>
 
-  <!-- Sticky Bottom Navigation Bar (Hidden when executing or completed) -->
+  <!-- Clean Bottom Navigation Bar (Hidden when executing or completed) -->
   {#if !isSubmitting && !isComplete}
-    <footer class="sticky bottom-0 border-t border-border/80 bg-background/90 backdrop-blur-md py-4 px-6 sm:px-10 z-20">
-      <div class="max-w-5xl mx-auto flex items-center justify-between">
-        <!-- Back Button -->
+    <footer class="sticky bottom-0 border-t border-border/50 bg-background/95 backdrop-blur-xs py-3.5 px-6 sm:px-10 z-20">
+      <div class="max-w-4xl mx-auto flex items-center justify-between">
         {#if currentStepIndex > 0}
           <Button
             type="button"
             variant="outline"
+            size="sm"
             onclick={prevStep}
-            class="h-10 px-4 text-xs font-medium"
+            class="h-9 px-4 text-xs font-normal"
           >
-            {#if isRTL}
-              <ArrowRight size={14} class="ms-1.5" />
-              <span>السابق</span>
-            {:else}
-              <ArrowLeft size={14} class="me-1.5" />
-              <span>Back</span>
-            {/if}
+            <span>{isRTL ? "السابق" : "Back"}</span>
           </Button>
         {:else}
           <div></div>
         {/if}
 
-        <!-- Next / Continue Button -->
         {#if currentStepIndex < steps.length - 1}
           <Button
             type="button"
+            variant="default"
+            size="sm"
             onclick={nextStep}
-            class="h-10 px-6 text-xs font-semibold shadow-sm"
+            class="h-9 px-5 text-xs font-medium"
           >
-            {#if isRTL}
-              <span>المتابعة إلى {steps[currentStepIndex + 1].titleAr}</span>
-              <ArrowLeft size={14} class="me-1.5" />
-            {:else}
-              <span>Continue to {steps[currentStepIndex + 1].titleEn}</span>
-              <ArrowRight size={14} class="ms-1.5" />
-            {/if}
+            <span>{isRTL ? "المتابعة" : "Continue"}</span>
           </Button>
         {/if}
       </div>
