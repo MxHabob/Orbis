@@ -11,19 +11,14 @@ import type { ReleaseChangelogItem, UpdateCheckResult, MulverseEcosystemInfo } f
 import { getLocale } from "$lib/paraglide/runtime";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
-import { Card, CardContent } from "@orbis/ui/card";
 import {
   Sparkles,
   ArrowPath,
   Check,
-  ExternalLink,
   Calendar,
   Tag,
   ShieldCheck,
-  RocketLaunch,
   Cube,
-  ChevronRight,
-  ChevronLeft,
 } from "@orbis/icons";
 
 let releases = $state<ReleaseChangelogItem[]>([]);
@@ -134,7 +129,6 @@ onMount(() => {
         class="h-8 text-xs font-normal gap-1 px-2.5 text-muted-foreground hover:text-foreground"
       >
         <span>GitHub</span>
-        <ExternalLink size={12} />
       </Button>
     </div>
   </header>
@@ -146,7 +140,6 @@ onMount(() => {
       : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'}">
       <div class="flex items-center gap-2">
         {#if updateResult.has_update}
-          <RocketLaunch size={14} class="animate-bounce" />
           <span class="font-medium">
             {isRTL
               ? `يتوفر تحديث جديد (${updateResult.latest_version}) متاح للتحميل والترقية!`
@@ -170,7 +163,6 @@ onMount(() => {
           class="text-[11px] underline flex items-center gap-1 font-medium hover:opacity-80"
         >
           <span>{isRTL ? "تحميل التحديث من GitHub" : "Download from GitHub"}</span>
-          <ExternalLink size={12} />
         </a>
       {/if}
     </div>
@@ -262,7 +254,6 @@ onMount(() => {
                 class="h-8 text-xs font-normal gap-1.5 px-3"
               >
                 <span>{isRTL ? "عرض الإصدار في GitHub" : "GitHub Release"}</span>
-                <ExternalLink size={12} />
               </Button>
             </div>
           </div>

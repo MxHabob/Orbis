@@ -379,6 +379,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         bootstrap_cmds::bootstrap_generate_slug,
         bootstrap_cmds::bootstrap_get_status,
         bootstrap_cmds::bootstrap_execute,
+        bootstrap_cmds::bootstrap_init_mfa,
         // ── Onboarding ──────────────────────────────────────────
         onboarding_cmds::onboarding_get_state,
         onboarding_cmds::onboarding_provision_defaults,

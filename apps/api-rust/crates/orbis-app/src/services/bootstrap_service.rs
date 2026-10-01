@@ -371,14 +371,30 @@ impl BootstrapService {
 
         let mut org = Organization::new(
             req.organization_name.clone(),
-            final_slug,
+            final_slug.clone(),
             req.timezone.clone(),
             req.locale.clone(),
         )?;
 
         // Apply optional fields from bootstrap request
         org.name_ar = req.organization_name_ar.clone();
-        org.code = req.organization_code.clone();
+        let auto_code = req.organization_code.as_deref()
+            .map(|c| c.trim())
+            .filter(|c| !c.is_empty())
+            .map(|c| c.to_uppercase())
+            .unwrap_or_else(|| {
+                let prefix: String = final_slug.split('-')
+                    .filter_map(|w| w.chars().next())
+                    .take(4)
+                    .collect::<String>()
+                    .to_uppercase();
+                if prefix.len() >= 2 {
+                    format!("{}-01", prefix)
+                } else {
+                    format!("{}-01", final_slug.chars().take(3).collect::<String>().to_uppercase())
+                }
+            });
+        org.code = Some(auto_code);
         org.date_format = req.date_format.clone().or(Some("YYYY-MM-DD".to_string()));
         org.is_hijri_enabled = req.is_hijri_enabled.unwrap_or(false);
         org.base_currency_code = req.base_currency_code.clone();

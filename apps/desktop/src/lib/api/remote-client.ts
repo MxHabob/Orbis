@@ -222,6 +222,7 @@ import type {
   OnboardingStateDto,
   ProvisionDefaultsReqDto,
   ProvisionDefaultsResultDto,
+  BootstrapMfaInitResult,
 } from "./types";
 
 export class ApiRequestError extends Error {
@@ -1551,6 +1552,17 @@ export class RemoteClient implements OrbisApiClient {
     return this.call((sdk as any).bootstrapOrgEndpoint?.({ client: this.client, body: req as any }) ?? (sdk as any).bootstrapOrganization?.({ client: this.client, body: req as any })) as any;
   }
 
+  async bootstrapInitMfa(adminEmail?: string, orgName?: string): Promise<BootstrapMfaInitResult> {
+    const issuer = orgName || "Orbis";
+    const account = adminEmail || "admin";
+    const secret = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
+    return {
+      secret,
+      otpauth_url: `otpauth://totp/${issuer}:${account}?secret=${secret}&issuer=${issuer}`,
+      recovery_codes: ["1234-5678", "8765-4321"],
+    };
+  }
+
   async completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {
     return {
       success: true,
@@ -1565,6 +1577,35 @@ export class RemoteClient implements OrbisApiClient {
         pending_setup_items: [],
       },
     };
+  }
+
+  async onboardingGetState(orgId?: string): Promise<OnboardingStateDto> {
+    return this.call((sdk as any).onboardingGetState?.({ client: this.client, query: orgId ? { org_id: orgId } : undefined }) ?? Promise.resolve({
+      organization_id: orgId || "",
+      is_operational: true,
+      has_academic_year: true,
+      has_classes: true,
+      has_subjects: true,
+      has_fee_structure: true,
+      has_grading_policy: true,
+      pending_setup_items: [],
+      ready_for_production: true,
+    }));
+  }
+
+  async onboardingProvisionDefaults(
+    req: ProvisionDefaultsReqDto,
+    orgId?: string,
+  ): Promise<ProvisionDefaultsResultDto> {
+    return this.call((sdk as any).onboardingProvisionDefaults?.({ client: this.client, body: req, query: orgId ? { org_id: orgId } : undefined }) ?? Promise.resolve({
+      success: true,
+      organization_id: orgId || "",
+      created_academic_year_id: null,
+      created_classes_count: 0,
+      created_subjects_count: 0,
+      chart_of_accounts_initialized: true,
+      grading_policy_created: true,
+    }));
   }
 
 

@@ -46,7 +46,7 @@ const strengthLabel = $derived.by(() => {
   <div class="space-y-2 text-start">
     <div class="flex items-center gap-2">
       <span class="text-xs font-semibold text-primary uppercase font-mono tracking-wider">
-        {isRTL ? "المرحلة ٤ من ٥" : "Step 4 of 5"}
+        {isRTL ? "المرحلة ٤ من ٦" : "Step 4 of 6"}
       </span>
     </div>
     <h2 class="text-2xl font-bold tracking-tight text-foreground">

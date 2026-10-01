@@ -1,6 +1,6 @@
 import type { InstitutionType } from "@orbis/blueprints";
 
-export type OnboardingStep = "mulverse" | "blueprint" | "organization" | "admin" | "review";
+export type OnboardingStep = "mulverse" | "blueprint" | "organization" | "admin" | "mfa" | "review";
 
 export interface EducationalTrackOption {
   value: string;
@@ -45,6 +45,7 @@ export interface CountryOption {
 
 export interface ColorPreset {
   name: string;
+  value: string;
   hex: string;
   labelEn: string;
   labelAr: string;
@@ -166,13 +167,13 @@ export const CURRENCY_OPTIONS: CurrencyOption[] = [
 ];
 
 export const COLOR_PRESETS: ColorPreset[] = [
-  { name: "indigo", hex: "#4f46e5", accentHex: "#818cf8", labelEn: "Royal Indigo", labelAr: "نيلي ملكي" },
-  { name: "blue", hex: "#2563eb", accentHex: "#60a5fa", labelEn: "Ocean Blue", labelAr: "أزرق محيطي" },
-  { name: "emerald", hex: "#059669", accentHex: "#34d399", labelEn: "Forest Emerald", labelAr: "أخضر زمردي" },
-  { name: "teal", hex: "#0d9488", accentHex: "#2dd4bf", labelEn: "Cyber Teal", labelAr: "سماوي بحري" },
-  { name: "amber", hex: "#d97706", accentHex: "#fbbf24", labelEn: "Imperial Amber", labelAr: "كهرماني إمبراطوري" },
-  { name: "rose", hex: "#e11d48", accentHex: "#fb7185", labelEn: "Crimson Rose", labelAr: "وردي قرمزي" },
-  { name: "purple", hex: "#9333ea", accentHex: "#c084fc", labelEn: "Noble Violet", labelAr: "بنفسجي نبيل" },
+  { name: "indigo", value: "#4f46e5", hex: "#4f46e5", accentHex: "#818cf8", labelEn: "Royal Indigo", labelAr: "نيلي ملكي" },
+  { name: "blue", value: "#2563eb", hex: "#2563eb", accentHex: "#60a5fa", labelEn: "Ocean Blue", labelAr: "أزرق محيطي" },
+  { name: "emerald", value: "#059669", hex: "#059669", accentHex: "#34d399", labelEn: "Forest Emerald", labelAr: "أخضر زمردي" },
+  { name: "teal", value: "#0d9488", hex: "#0d9488", accentHex: "#2dd4bf", labelEn: "Cyber Teal", labelAr: "سماوي بحري" },
+  { name: "amber", value: "#d97706", hex: "#d97706", accentHex: "#fbbf24", labelEn: "Imperial Amber", labelAr: "كهرماني إمبراطوري" },
+  { name: "rose", value: "#e11d48", hex: "#e11d48", accentHex: "#fb7185", labelEn: "Crimson Rose", labelAr: "وردي قرمزي" },
+  { name: "purple", value: "#9333ea", hex: "#9333ea", accentHex: "#c084fc", labelEn: "Noble Violet", labelAr: "بنفسجي نبيل" },
 ];
 
 export interface OnboardingFormModel {

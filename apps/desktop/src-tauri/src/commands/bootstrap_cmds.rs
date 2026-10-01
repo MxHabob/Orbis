@@ -286,12 +286,6 @@ fn detect_os_locale_and_country() -> (String, String, Option<String>) {
             } else if lower.starts_with("ar") {
                 detected_locale = loc;
                 detected_lang_display = "العربية (Arabic)".to_string();
-            } else if lower.starts_with("fr") {
-                detected_locale = loc;
-                detected_lang_display = "Français (French)".to_string();
-            } else if lower.starts_with("tr") {
-                detected_locale = loc;
-                detected_lang_display = "Türkçe (Turkish)".to_string();
             } else {
                 detected_locale = loc.clone();
                 detected_lang_display = loc;
@@ -365,293 +359,23 @@ pub async fn bootstrap_detect_environment() -> Result<EnvironmentDetectionResult
         currency_name_ar,
         is_hijri,
     ) = match os_country.as_deref() {
-        Some("SA") => (
-            "SA",
-            "Saudi Arabia",
-            "المملكة العربية السعودية",
-            "🇸🇦",
-            "Asia/Riyadh",
-            "SAR",
-            "SAR",
-            "ر.س",
-            "Saudi Riyal",
-            "ريال سعودي",
-            true,
-        ),
-        Some("AE") => (
-            "AE",
-            "United Arab Emirates",
-            "الإمارات العربية المتحدة",
-            "🇦🇪",
-            "Asia/Dubai",
-            "AED",
-            "AED",
-            "د.إ",
-            "UAE Dirham",
-            "درهم إماراتي",
-            true,
-        ),
-        Some("EG") => (
-            "EG",
-            "Egypt",
-            "جمهورية مصر العربية",
-            "🇪🇬",
-            "Africa/Cairo",
-            "EGP",
-            "EGP",
-            "ج.م",
-            "Egyptian Pound",
-            "جنيه مصري",
-            true,
-        ),
-        Some("KW") => (
-            "KW",
-            "Kuwait",
-            "دولة الكويت",
-            "🇰🇼",
-            "Asia/Kuwait",
-            "KWD",
-            "KWD",
-            "د.ك",
-            "Kuwaiti Dinar",
-            "دينار كويتي",
-            true,
-        ),
-        Some("QA") => (
-            "QA",
-            "Qatar",
-            "دولة قطر",
-            "🇶🇦",
-            "Asia/Qatar",
-            "QAR",
-            "QAR",
-            "ر.ق",
-            "Qatari Riyal",
-            "ريال قطري",
-            true,
-        ),
-        Some("BH") => (
-            "BH",
-            "Bahrain",
-            "مملكة البحرين",
-            "🇧🇭",
-            "Asia/Bahrain",
-            "BHD",
-            "BHD",
-            "د.ب",
-            "Bahraini Dinar",
-            "دينار بحريني",
-            true,
-        ),
-        Some("OM") => (
-            "OM",
-            "Oman",
-            "سلطنة عمان",
-            "🇴🇲",
-            "Asia/Muscat",
-            "OMR",
-            "OMR",
-            "ر.ع",
-            "Omani Rial",
-            "ريال عماني",
-            true,
-        ),
-        Some("JO") => (
-            "JO",
-            "Jordan",
-            "المملكة الأردنية الهاشمية",
-            "🇯🇴",
-            "Asia/Amman",
-            "JOD",
-            "JOD",
-            "د.أ",
-            "Jordanian Dinar",
-            "دينار أردني",
-            true,
-        ),
-        Some("IQ") => (
-            "IQ",
-            "Iraq",
-            "جمهورية العراق",
-            "🇮🇶",
-            "Asia/Baghdad",
-            "IQD",
-            "IQD",
-            "د.ع",
-            "Iraqi Dinar",
-            "دينار عراقي",
-            true,
-        ),
-        Some("DZ") => (
-            "DZ",
-            "Algeria",
-            "الجمهورية الجزائرية",
-            "🇩🇿",
-            "Africa/Algiers",
-            "DZD",
-            "DZD",
-            "د.ج",
-            "Algerian Dinar",
-            "دينار جزائري",
-            true,
-        ),
-        Some("MA") => (
-            "MA",
-            "Morocco",
-            "المملكة المغربية",
-            "🇲🇦",
-            "Africa/Casablanca",
-            "MAD",
-            "MAD",
-            "د.م.",
-            "Moroccan Dirham",
-            "درهم مغربي",
-            true,
-        ),
-        Some("YE") => (
-            "YE",
-            "Yemen",
-            "الجمهورية اليمنية",
-            "🇾🇪",
-            "Asia/Aden",
-            "YER",
-            "YER",
-            "ر.ي",
-            "Yemeni Rial",
-            "ريال يمني",
-            true,
-        ),
-        Some("GB") => (
-            "GB",
-            "United Kingdom",
-            "المملكة المتحدة",
-            "🇬🇧",
-            "Europe/London",
-            "GBP",
-            "GBP (£)",
-            "جنيه (£)",
-            "British Pound",
-            "جنيه إسترليني",
-            false,
-        ),
-        Some("US") => (
-            "US",
-            "United States",
-            "الولايات المتحدة الأمريكية",
-            "🇺🇸",
-            "America/New_York",
-            "USD",
-            "USD ($)",
-            "دولار ($)",
-            "US Dollar",
-            "دولار أمريكي",
-            false,
-        ),
-        Some("TR") => (
-            "TR",
-            "Turkey",
-            "الجمهورية التركية",
-            "🇹🇷",
-            "Europe/Istanbul",
-            "TRY",
-            "TRY (₺)",
-            "ليرة (₺)",
-            "Turkish Lira",
-            "ليرة تركية",
-            false,
-        ),
+        Some("SA") => ("SA", "Saudi Arabia", "المملكة العربية السعودية", "🇸🇦", "Asia/Riyadh", "SAR", "SAR", "ر.س", "Saudi Riyal", "ريال سعودي", true),
+        Some("YE") => ("YE", "Yemen", "الجمهورية اليمنية", "🇾🇪", "Asia/Aden", "YER", "YER", "ر.ي", "Yemeni Rial", "ريال يمني", true),
+        Some("AE") => ("AE", "United Arab Emirates", "الإمارات العربية المتحدة", "🇦🇪", "Asia/Dubai", "AED", "AED", "د.إ", "UAE Dirham", "درهم إماراتي", true),
+        Some("QA") => ("QA", "Qatar", "دولة قطر", "🇶🇦", "Asia/Qatar", "QAR", "QAR", "ر.ق", "Qatari Rial", "ريال قطري", true),
+        Some("KW") => ("KW", "Kuwait", "دولة الكويت", "🇰🇼", "Asia/Kuwait", "KWD", "KWD", "د.ك", "Kuwaiti Dinar", "دينار كويتي", true),
+        Some("OM") => ("OM", "Oman", "سلطنة عمان", "🇴🇲", "Asia/Muscat", "OMR", "OMR", "ر.ع", "Omani Rial", "ريال عماني", true),
+        Some("BH") => ("BH", "Bahrain", "مملكة البحرين", "🇧🇭", "Asia/Bahrain", "BHD", "BHD", "د.ب", "Bahraini Dinar", "دينار بحريني", true),
+        Some("EG") => ("EG", "Egypt", "جمهورية مصر العربية", "🇪🇬", "Africa/Cairo", "EGP", "EGP", "ج.م", "Egyptian Pound", "جنيه مصري", false),
+        Some("JO") => ("JO", "Jordan", "المملكة الأردنية الهاشمية", "🇯🇴", "Asia/Amman", "JOD", "JOD", "د.أ", "Jordanian Dinar", "دينار أردني", true),
+        Some("IQ") => ("IQ", "Iraq", "جمهورية العراق", "🇮🇶", "Asia/Baghdad", "IQD", "IQD", "د.ع", "Iraqi Dinar", "دينار عراقي", true),
+        Some("US") => ("US", "United States", "الولايات المتحدة", "🇺🇸", "America/New_York", "USD", "$", "$", "US Dollar", "دولار أمريكي", false),
+        Some("GB") => ("GB", "United Kingdom", "المملكة المتحدة", "🇬🇧", "Europe/London", "GBP", "£", "£", "British Pound", "جنيه إسترليني", false),
         _ => match offset_hours {
-            3 => (
-                "SA",
-                "Saudi Arabia",
-                "المملكة العربية السعودية",
-                "🇸🇦",
-                "Asia/Riyadh",
-                "SAR",
-                "SAR",
-                "ر.س",
-                "Saudi Riyal",
-                "ريال سعودي",
-                true,
-            ),
-            4 => (
-                "AE",
-                "United Arab Emirates",
-                "الإمارات العربية المتحدة",
-                "🇦🇪",
-                "Asia/Dubai",
-                "AED",
-                "AED",
-                "د.إ",
-                "UAE Dirham",
-                "درهم إماراتي",
-                true,
-            ),
-            2 => (
-                "EG",
-                "Egypt",
-                "جمهورية مصر العربية",
-                "🇪🇬",
-                "Africa/Cairo",
-                "EGP",
-                "EGP",
-                "ج.م",
-                "Egyptian Pound",
-                "جنيه مصري",
-                true,
-            ),
-            1 => (
-                "DZ",
-                "Algeria",
-                "الجمهورية الجزائرية",
-                "🇩🇿",
-                "Africa/Algiers",
-                "DZD",
-                "DZD",
-                "د.ج",
-                "Algerian Dinar",
-                "دينار جزائري",
-                true,
-            ),
-            0 => (
-                "GB",
-                "United Kingdom",
-                "المملكة المتحدة",
-                "🇬🇧",
-                "Europe/London",
-                "GBP",
-                "GBP (£)",
-                "جنيه (£)",
-                "British Pound",
-                "جنيه إسترليني",
-                false,
-            ),
-            -5 => (
-                "US",
-                "United States",
-                "الولايات المتحدة الأمريكية",
-                "🇺🇸",
-                "America/New_York",
-                "USD",
-                "USD ($)",
-                "دولار ($)",
-                "US Dollar",
-                "دولار أمريكي",
-                false,
-            ),
-            _ => (
-                "SA",
-                "Saudi Arabia",
-                "المملكة العربية السعودية",
-                "🇸🇦",
-                "Asia/Riyadh",
-                "SAR",
-                "SAR",
-                "ر.س",
-                "Saudi Riyal",
-                "ريال سعودي",
-                true,
-            ),
+            3 => ("SA", "Saudi Arabia", "المملكة العربية السعودية", "🇸🇦", "Asia/Riyadh", "SAR", "SAR", "ر.س", "Saudi Riyal", "ريال سعودي", true),
+            4 => ("AE", "United Arab Emirates", "الإمارات العربية المتحدة", "🇦🇪", "Asia/Dubai", "AED", "AED", "د.إ", "UAE Dirham", "درهم إماراتي", true),
+            2 => ("EG", "Egypt", "جمهورية مصر العربية", "🇪🇬", "Africa/Cairo", "EGP", "EGP", "ج.م", "Egyptian Pound", "جنيه مصري", false),
+            _ => ("SA", "Saudi Arabia", "المملكة العربية السعودية", "🇸🇦", "Asia/Riyadh", "SAR", "SAR", "ر.س", "Saudi Riyal", "ريال سعودي", true),
         },
     };
 
@@ -780,6 +504,36 @@ pub async fn bootstrap_execute(
     let result = state.bootstrap_service.execute(service_req).await
         .map_err(|e| e.to_string())?;
 
+    // Register host desktop workstation into user_devices table for initial administrator
+    let admin_uuid = result.admin_user_id;
+    let now = chrono::Utc::now();
+    let hostname = std::env::var("COMPUTERNAME")
+        .or_else(|_| std::env::var("HOSTNAME"))
+        .unwrap_or_else(|_| "Desktop Workstation".to_string());
+
+    let os_name = std::env::consts::OS.to_string();
+    let device_id = uuid::Uuid::new_v4().to_string();
+
+    let new_device = orbis_infra::models::user_device::ActiveModel {
+        id: sea_orm::Set(uuid::Uuid::new_v4()),
+        user_id: sea_orm::Set(admin_uuid),
+        device_id: sea_orm::Set(device_id.clone()),
+        device_name: sea_orm::Set(format!("{} ({})", hostname, os_name)),
+        device_type: sea_orm::Set("desktop".to_string()),
+        os: sea_orm::Set(Some(os_name)),
+        browser: sea_orm::Set(Some("Orbis Desktop App".to_string())),
+        client_ip: sea_orm::Set(Some("127.0.0.1".to_string())),
+        user_agent: sea_orm::Set(Some("Orbis-Tauri-Client/0.3.0".to_string())),
+        fingerprint_hash: sea_orm::Set(device_id),
+        is_trusted: sea_orm::Set(true),
+        trusted_until: sea_orm::Set(Some(now + chrono::Duration::days(365))),
+        first_seen_at: sea_orm::Set(now),
+        last_active_at: sea_orm::Set(now),
+    };
+
+    use sea_orm::ActiveModelTrait;
+    let _ = new_device.insert(&state.db).await;
+
     Ok(BootstrapResult {
         success: result.success,
         organization_id: result.organization_id.to_string(),
@@ -790,5 +544,52 @@ pub async fn bootstrap_execute(
         admin_email: result.admin_email,
         setup_required: result.setup_required,
         warnings: result.warnings,
+    })
+}
+
+/// Strongly-typed TOTP enrollment result for bootstrap.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BootstrapMfaInitResult {
+    pub secret: String,
+    pub otpauth_url: String,
+    pub recovery_codes: Vec<String>,
+}
+
+/// Initialize authentic TOTP secret and recovery codes for master admin bootstrap.
+#[tauri::command]
+pub async fn bootstrap_init_mfa(
+    admin_email: Option<String>,
+    org_name: Option<String>,
+) -> Result<BootstrapMfaInitResult, String> {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    const BASE32_ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
+    let secret: String = (0..32)
+        .map(|_| {
+            let idx = rng.gen_range(0..BASE32_ALPHABET.len());
+            BASE32_ALPHABET[idx] as char
+        })
+        .collect();
+
+    let issuer = org_name.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()).unwrap_or("Orbis");
+    let account = admin_email.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()).unwrap_or("admin");
+    let otpauth_url = format!(
+        "otpauth://totp/{}:{}?secret={}&issuer={}&algorithm=SHA1&digits=6&period=30",
+        issuer, account, secret, issuer
+    );
+
+    let recovery_codes: Vec<String> = (0..8)
+        .map(|_| {
+            let a: String = (0..4).map(|_| rng.gen_range(0..10).to_string()).collect();
+            let b: String = (0..4).map(|_| rng.gen_range(0..10).to_string()).collect();
+            format!("{}-{}", a, b)
+        })
+        .collect();
+
+    Ok(BootstrapMfaInitResult {
+        secret,
+        otpauth_url,
+        recovery_codes,
     })
 }

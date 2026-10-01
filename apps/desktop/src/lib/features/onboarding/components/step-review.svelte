@@ -66,7 +66,7 @@ const tasks = $derived(isRTL ? executionTasksAr : executionTasksEn);
   <div class="space-y-2 text-start">
     <div class="flex items-center gap-2">
       <span class="text-xs font-semibold text-primary uppercase font-mono tracking-wider">
-        {isRTL ? "المرحلة ٥ من ٥" : "Step 5 of 5"}
+        {isRTL ? "المرحلة ٦ من ٦" : "Step 6 of 6"}
       </span>
     </div>
     <h2 class="text-2xl font-bold tracking-tight text-foreground">

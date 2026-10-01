@@ -1,7 +1,9 @@
 <!--
   @component BootstrapWizard
-  Master orchestrator for clean organization bootstrap & initial administrator initialization.
-  Orchestrates 5 steps: Mulverse Intro -> Blueprint -> Organization -> Administrator -> Launch Review.
+  Master orchestrator for clean organization bootstrap, regional calibration,
+  and initial administrator initialization.
+  Floating minimal header & footer with 6 progressive steps:
+  1. Mulverse Intro -> 2. Blueprint -> 3. Organization -> 4. Administrator -> 5. MFA (Skippable) -> 6. Launch Review.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
@@ -10,7 +12,6 @@ import { api } from "$lib/api/client";
 import type {
   BootstrapRequest,
   BootstrapResult,
-  EnvironmentDetectionResult,
 } from "$lib/api/types";
 import { authStore, systemStore } from "$lib/stores";
 import { extractErrorMessage } from "$lib/api";
@@ -20,18 +21,15 @@ import {
   type OnboardingFormModel,
   INITIAL_ONBOARDING_VALUES,
 } from "./types";
+import OnboardingHeader from "./components/onboarding-header.svelte";
+import OnboardingFooter from "./components/onboarding-footer.svelte";
 import StepMulverseIntro from "./components/step-mulverse-intro.svelte";
 import StepBlueprint from "./components/step-blueprint.svelte";
 import StepOrganization from "./components/step-organization.svelte";
 import StepAdmin from "./components/step-admin.svelte";
+import StepMfa from "./components/step-mfa.svelte";
 import StepReview from "./components/step-review.svelte";
-import { Button } from "@orbis/ui/button";
-import {
-  Cube,
-  Sparkles,
-  QuestionMarkCircle,
-} from "@orbis/icons";
-    import { SupportDialog } from "../system";
+import { SupportDialog } from "../system";
 
 let currentStep = $state<OnboardingStep>("mulverse");
 let form = $state<OnboardingFormModel>({ ...INITIAL_ONBOARDING_VALUES });
@@ -42,37 +40,37 @@ let bootstrapError = $state<string | null>(null);
 let activeTaskIndex = $state(0);
 let bootstrapResult = $state<BootstrapResult | null>(null);
 
-let envData = $state<EnvironmentDetectionResult | null>(null);
-let isLoadingEnv = $state(true);
-
 let isSupportOpen = $state(false);
 
 const isRTL = $derived(getLocale().startsWith("ar"));
 
-const steps: Array<{ id: OnboardingStep; titleEn: string; titleAr: string }> = [
-  { id: "mulverse", titleEn: "Overview", titleAr: "نظرة عامة" },
-  { id: "blueprint", titleEn: "Blueprint", titleAr: "النموذج" },
-  { id: "organization", titleEn: "Organization", titleAr: "المؤسسة" },
-  { id: "admin", titleEn: "Administrator", titleAr: "المشرف" },
-  { id: "review", titleEn: "Launch", titleAr: "التشغيل" },
+const steps: Array<{ id: OnboardingStep }> = [
+  { id: "mulverse" },
+  { id: "blueprint" },
+  { id: "organization" },
+  { id: "admin" },
+  { id: "mfa" },
+  { id: "review" },
 ];
 
 const currentStepIndex = $derived(steps.findIndex((s) => s.id === currentStep));
+const canGoBack = $derived(currentStepIndex > 0);
+const isSkippable = $derived(currentStep === "mfa");
+const isLastStep = $derived(currentStep === "review");
 
+// Silent background environment detection and calibration
 async function loadEnvironment() {
-  isLoadingEnv = true;
   try {
     const data = await api.bootstrapDetectEnvironment();
-    envData = data;
-    form.countryCode = data.country_code || "SA";
-    form.timezone = data.timezone || "Asia/Riyadh";
-    form.baseCurrencyCode = data.currency_code || "SAR";
-    form.isHijriEnabled = data.is_hijri_recommended ?? true;
-    form.dateFormat = data.date_format || "YYYY-MM-DD";
+    if (data) {
+      form.countryCode = data.country_code || "SA";
+      form.timezone = data.timezone || "Asia/Riyadh";
+      form.baseCurrencyCode = data.currency_code || "SAR";
+      form.isHijriEnabled = data.is_hijri_recommended ?? true;
+      form.dateFormat = data.date_format || "YYYY-MM-DD";
+    }
   } catch (err) {
-    console.error("Failed to detect environment:", err);
-  } finally {
-    isLoadingEnv = false;
+    console.warn("Silent environment detection completed with defaults:", err);
   }
 }
 
@@ -84,7 +82,6 @@ function validateCurrentStep(): boolean {
   const newErrors: Record<string, string> = {};
 
   if (currentStep === "mulverse") {
-    // Pure intro step, always valid
     return true;
   } else if (currentStep === "blueprint") {
     if (!form.institutionType) {
@@ -121,10 +118,21 @@ function validateCurrentStep(): boolean {
         ? "كلمتا المرور غير متطابقتين"
         : "Passwords do not match";
     }
+  } else if (currentStep === "mfa") {
+    return true;
   }
 
   errors = newErrors;
   return Object.keys(newErrors).length === 0;
+}
+
+function scrollToTop() {
+  const container = document.getElementById("onboarding-viewport");
+  if (container) {
+    container.scrollTo({ top: 0, behavior: "smooth" });
+  } else {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 }
 
 function nextStep() {
@@ -132,14 +140,21 @@ function nextStep() {
 
   if (currentStepIndex < steps.length - 1) {
     currentStep = steps[currentStepIndex + 1].id;
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToTop();
   }
 }
 
 function prevStep() {
   if (currentStepIndex > 0) {
     currentStep = steps[currentStepIndex - 1].id;
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToTop();
+  }
+}
+
+function skipStep() {
+  if (currentStepIndex < steps.length - 1) {
+    currentStep = steps[currentStepIndex + 1].id;
+    scrollToTop();
   }
 }
 
@@ -154,7 +169,6 @@ async function handleLaunchBootstrap() {
     institution_type: form.institutionType,
     organization_name: form.organizationName.trim(),
     organization_name_ar: form.organizationNameAr.trim() || undefined,
-    organization_code: form.organizationCode.trim() || undefined,
     educational_track: form.educationalTrack,
     organization_size: form.organizationSize,
     country_code: form.countryCode,
@@ -216,71 +230,31 @@ function enterWorkspace() {
 }
 </script>
 
-<div class="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-primary/20 selection:text-primary font-sans">
-  <!-- Minimal Header Bar -->
-  <header class="h-14 border-b border-border/50 bg-background/95 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-4 sm:px-8">
-    <div class="flex items-center gap-3">
-      <div class="size-7 rounded-lg bg-primary/10 border border-primary/25 flex items-center justify-center text-primary">
-        <Cube size={16} />
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="text-sm font-bold tracking-tight text-foreground">Orbis</span>
-        <span class="text-xs text-muted-foreground">•</span>
-        <span class="text-xs text-muted-foreground font-medium">
-          {isRTL ? "المرشد الذكي لتأسيس المنشأة" : "Autonomous Setup"}
-        </span>
-      </div>
-    </div>
+<div
+  id="onboarding-viewport"
+  class="h-screen w-screen overflow-y-auto bg-background text-foreground flex flex-col justify-between selection:bg-primary/20 selection:text-primary font-sans relative pt-20 pb-28"
+>
+  <!-- Floating Minimal Header Bar -->
+  <OnboardingHeader {currentStep} {steps} {isRTL} />
 
-    <!-- Step Progress Pills -->
-    <nav aria-label="Onboarding Steps" class="hidden md:flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/40">
-      {#each steps as s, i}
-        {@const isPast = i < currentStepIndex}
-        {@const isCurrent = i === currentStepIndex}
-
-        <div
-          class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-colors {isCurrent
-            ? 'bg-background text-foreground shadow-xs font-medium'
-            : isPast
-              ? 'text-foreground/80'
-              : 'text-muted-foreground/50'}"
-        >
-          <span class="size-3.5 rounded-full flex items-center justify-center text-[10px] font-mono {isCurrent
-            ? 'bg-foreground text-background font-bold'
-            : isPast
-              ? 'bg-muted-foreground/20 text-foreground'
-              : 'bg-muted-foreground/10 text-muted-foreground'}">
-            {i + 1}
-          </span>
-          <span>{isRTL ? s.titleAr : s.titleEn}</span>
-        </div>
-      {/each}
-    </nav>
-
-    <!-- Top System Dialog Triggers -->
-    <div class="flex items-center gap-1.5">
-      <Button
-        variant="ghost"
-        size="sm"
-        onclick={() => (isSupportOpen = true)}
-        class="h-8 text-xs font-normal gap-1.5 px-2.5 text-muted-foreground hover:text-foreground"
-      >
-        <QuestionMarkCircle size={14} />
-        <span class="hidden sm:inline">{isRTL ? "المساعدة" : "Help"}</span>
-      </Button>
-    </div>
-  </header>
-
-  <!-- Main Wizard Content Area -->
-  <main class="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+  <!-- Main Wizard Content Area with Full Screen Real Estate Utilization -->
+  <main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col justify-center">
     {#if currentStep === "mulverse"}
-      <StepMulverseIntro {envData} {isLoadingEnv} {isRTL} />
+      <StepMulverseIntro {isRTL} />
     {:else if currentStep === "blueprint"}
       <StepBlueprint bind:selectedType={form.institutionType} {isRTL} />
     {:else if currentStep === "organization"}
       <StepOrganization bind:form {errors} {isRTL} />
     {:else if currentStep === "admin"}
       <StepAdmin bind:form {errors} {isRTL} />
+    {:else if currentStep === "mfa"}
+      <StepMfa
+        adminEmail={form.adminEmail}
+        orgName={form.organizationName || form.organizationNameAr}
+        {isRTL}
+        onMfaActivated={() => nextStep()}
+        onSkip={skipStep}
+      />
     {:else if currentStep === "review"}
       <StepReview
         {form}
@@ -295,39 +269,20 @@ function enterWorkspace() {
     {/if}
   </main>
 
-  <!-- Clean Bottom Navigation Bar (Hidden when executing or completed) -->
-  {#if !isSubmitting && !isComplete}
-    <footer class="sticky bottom-0 border-t border-border/50 bg-background/95 backdrop-blur-md py-3.5 px-6 sm:px-10 z-20">
-      <div class="max-w-4xl mx-auto flex items-center justify-between">
-        {#if currentStepIndex > 0}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onclick={prevStep}
-            class="h-9 px-5 text-xs font-normal"
-          >
-            <span>{isRTL ? "السابق" : "Back"}</span>
-          </Button>
-        {:else}
-          <div></div>
-        {/if}
-
-        {#if currentStepIndex < steps.length - 1}
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            onclick={nextStep}
-            class="h-9 px-6 text-xs font-medium gap-1.5 shadow-sm shadow-primary/20"
-          >
-            <span>{isRTL ? "المتابعة" : "Continue"}</span>
-          </Button>
-        {/if}
-      </div>
-    </footer>
+  <!-- Floating Minimal Footer Bar (Hidden when successfully completed) -->
+  {#if !isComplete}
+    <OnboardingFooter
+      {canGoBack}
+      {isSkippable}
+      {isLastStep}
+      {isSubmitting}
+      onPrev={prevStep}
+      onNext={nextStep}
+      onSkip={skipStep}
+      onHelp={() => (isSupportOpen = true)}
+      {isRTL}
+    />
   {/if}
 </div>
-
 
 <SupportDialog bind:open={isSupportOpen} />
