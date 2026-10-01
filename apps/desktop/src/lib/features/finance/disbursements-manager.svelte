@@ -145,33 +145,16 @@ async function handleSaveDisbursement() {
 
   isSubmitting = true;
   try {
-    const payload = {
-      reference_number: referenceNumber.trim() || undefined,
-      accounting_date: voucherDate,
+    await api.processDisbursement({
+      treasury_account_id: treasuryAccountId,
+      beneficiary_account_id: beneficiaryAccountId,
       amount: Number(amount),
-      currency: selectedCurrency,
       currency_code: selectedCurrency,
-      debit_account_id: beneficiaryAccountId,
-      credit_account_id: treasuryAccountId,
-      description: notes.trim() || `سند صرف ${referenceNumber ? '#' + referenceNumber : ''}`,
-      description_ar: notes.trim() || `سند صرف ${referenceNumber ? '#' + referenceNumber : ''}`,
-      lines: [
-        {
-          account_id: beneficiaryAccountId,
-          debit: Number(amount),
-          credit: 0,
-          description: notes.trim() || "سند صرف - مستفيد",
-        },
-        {
-          account_id: treasuryAccountId,
-          debit: 0,
-          credit: Number(amount),
-          description: notes.trim() || "سند صرف - صندوق",
-        },
-      ],
-    };
-
-    await api.createJournalEntry(payload as any);
+      payment_method: paymentMethod.toLowerCase(),
+      reference: checkOrTransferRef.trim() || referenceNumber.trim() || undefined,
+      notes: notes.trim() || undefined,
+      voucher_date: voucherDate,
+    });
     toast.success("تم حفظ وترحيل سند الصرف بنجاح");
     clearForm();
     showAddForm = false;

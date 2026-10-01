@@ -57,7 +57,7 @@ async function loadData() {
       api.listAccounts().catch(() => []),
       api.listCurrencies().catch(() => []),
       api.listJournalEntries().catch(() => []),
-      api.listPayments(null, null).catch(() => []),
+      api.listPayments().catch(() => []),
     ]);
 
     accounts = accountsList || [];

@@ -205,6 +205,8 @@ export const queryKeys = {
       [...queryKeys.finance.all, "journalEntry", id] as const,
     discountTemplates: (orgId?: string) =>
       [...queryKeys.finance.all, "discountTemplates", orgId ?? "current"] as const,
+    statement: (filter?: unknown) =>
+      [...queryKeys.finance.all, "statement", (filter as Record<string, unknown>) ?? {}] as const,
   },
 
   // ── Document ────────────────────────────────────────────────

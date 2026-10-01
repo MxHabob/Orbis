@@ -22,6 +22,13 @@ import {
   type ReverseJournalRequest,
   type SplitFeeRequest,
   type RefundStudentFeeRequest,
+  type StatementResponseDto,
+  type StatementFilterParams,
+  type ProcessDisbursementRequest,
+  type CreateSubAccountRequest,
+  type SettleGatewayPayoutRequest,
+  type PostPayrollRequest,
+  type DisbursePayrollRequest,
 } from "$lib/api";
 
 /** Treasuries for an organization. */
@@ -552,4 +559,107 @@ export function createRefundStudentFeeMutation() {
     },
   }));
 }
+
+/** Account statement query */
+export function createAccountStatementQuery(
+  filter: () => StatementFilterParams,
+  enabled: () => boolean = () => true,
+) {
+  return createQuery<StatementResponseDto>(() => ({
+    queryKey: queryKeys.finance.statement(filter()),
+    queryFn: () => api.getAccountStatement(filter()),
+    enabled: enabled(),
+    staleTime: 60 * 1000,
+  }));
+}
+
+/** Process disbursement (سند صرف) mutation */
+export function createProcessDisbursementMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (req: ProcessDisbursementRequest) => api.processDisbursement(req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.accounts(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.journalEntries(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.statement(),
+      });
+    },
+  }));
+}
+
+/** Create sub-account mutation */
+export function createCreateSubAccountMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (req: CreateSubAccountRequest) => api.createSubAccount(req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.accounts(),
+      });
+    },
+  }));
+}
+
+/** Settle gateway payout mutation */
+export function createSettleGatewayPayoutMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (req: SettleGatewayPayoutRequest) => api.settleGatewayPayout(req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.accounts(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.journalEntries(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.statement(),
+      });
+    },
+  }));
+}
+
+/** Post payroll accrual mutation */
+export function createPostPayrollAccrualMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (req: PostPayrollRequest) => api.postPayrollAccrual(req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.accounts(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.journalEntries(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.statement(),
+      });
+    },
+  }));
+}
+
+/** Disburse payroll mutation */
+export function createDisbursePayrollMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (req: DisbursePayrollRequest) => api.disbursePayroll(req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.accounts(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.journalEntries(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.statement(),
+      });
+    },
+  }));
+}
+
 

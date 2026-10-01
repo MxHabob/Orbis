@@ -451,6 +451,104 @@ export interface PaymentFilterParams {
   sort_dir?: string;
 }
 
+export interface StatementTransactionItemDto {
+  id: string;
+  date: string;
+  reference_number: string;
+  source_type: string;
+  source_id?: string | null;
+  description: string;
+  description_ar?: string | null;
+  debit: number | string;
+  credit: number | string;
+  running_balance: number | string;
+  contra_account_name?: string | null;
+}
+
+export interface StatementResponseDto {
+  account_id?: string | null;
+  account_code?: string | null;
+  account_name?: string | null;
+  account_name_ar?: string | null;
+  entity_type?: string | null;
+  entity_id?: string | null;
+  currency: string;
+  opening_balance: number | string;
+  total_debit: number | string;
+  total_credit: number | string;
+  closing_balance: number | string;
+  transactions: StatementTransactionItemDto[];
+}
+
+export interface StatementFilterParams {
+  account_id?: string;
+  entity_type?: string;
+  entity_id?: string;
+  start_date?: string;
+  end_date?: string;
+  currency_code?: string;
+  currency?: string;
+}
+
+export interface ProcessDisbursementRequest {
+  treasury_account_id: string;
+  beneficiary_account_id: string;
+  amount: number | string;
+  currency_code?: string;
+  payment_method?: string;
+  reference?: string;
+  beneficiary_name?: string;
+  beneficiary_type?: string;
+  beneficiary_id?: string;
+  notes?: string;
+  voucher_date?: string;
+}
+
+export interface CreateSubAccountRequest {
+  parent_id?: string;
+  parent_code?: string;
+  code?: string;
+  name: string;
+  name_ar?: string;
+  entity_type?: string;
+  entity_id?: string;
+  currency_code?: string;
+}
+
+export interface SettleGatewayPayoutRequest {
+  clearing_account_id?: string;
+  bank_account_id: string;
+  gross_amount: number | string;
+  fee_amount: number | string;
+  net_amount: number | string;
+  payout_reference: string;
+  accounting_date?: string;
+}
+
+export interface PayrollItemInputDto {
+  employee_id: string;
+  employee_name: string;
+  is_academic: boolean;
+  base_salary: number | string;
+  allowances: number | string;
+  deductions: number | string;
+  gosi_deduction: number | string;
+  net_salary: number | string;
+}
+
+export interface PostPayrollRequest {
+  payroll_period: string;
+  accounting_date: string;
+  items: PayrollItemInputDto[];
+}
+
+export interface DisbursePayrollRequest {
+  bank_account_id: string;
+  payroll_period: string;
+  amount: number | string;
+  notes?: string;
+}
+
 export interface PrerequisiteCheckResultDto {
   subject_id: string;
   prerequisite_subject_id: string;
@@ -1258,6 +1356,12 @@ export interface OrbisApiClient {
     req: CreateDiscountTemplateRequest,
   ): Promise<DiscountTemplateDto>;
   deleteDiscountTemplate(id: string): Promise<boolean>;
+  getAccountStatement(filter: StatementFilterParams): Promise<StatementResponseDto>;
+  processDisbursement(req: ProcessDisbursementRequest): Promise<JournalEntryDto>;
+  createSubAccount(req: CreateSubAccountRequest): Promise<AccountDto>;
+  settleGatewayPayout(req: SettleGatewayPayoutRequest): Promise<JournalEntryDto>;
+  postPayrollAccrual(req: PostPayrollRequest): Promise<JournalEntryDto>;
+  disbursePayroll(req: DisbursePayrollRequest): Promise<JournalEntryDto>;
 
   // ── Document & Storage Management ───────────────────────────
   uploadDocument(req: UploadDocumentRequest): Promise<DocumentDto>;

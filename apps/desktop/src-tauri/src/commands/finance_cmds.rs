@@ -13,12 +13,122 @@ use orbis_domain::entities::student_fee::StudentFee;
 use orbis_domain::entities::discount_template::{DiscountTemplate, DiscountType};
 use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};
 use orbis_domain::queries::filters::{PaymentFilter, StudentFeeFilter, PaginationParams};
+use orbis_app::services::finance_service::{
+    DisbursementInput, CreateSubAccountInput, StatementFilter,
+    PayrollItemInput, PostPayrollInput, SettleGatewayPayoutInput,
+};
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
 
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
 // ── DTOs ─────────────────────────────────────────────────────────
+
+#[derive(Deserialize, Debug)]
+pub struct ProcessDisbursementInput {
+    pub treasury_account_id: String,
+    pub beneficiary_account_id: String,
+    pub amount: Decimal,
+    pub currency_code: Option<String>,
+    pub payment_method: Option<String>,
+    pub reference: Option<String>,
+    pub beneficiary_name: Option<String>,
+    pub beneficiary_type: Option<String>,
+    pub beneficiary_id: Option<String>,
+    pub notes: Option<String>,
+    pub voucher_date: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct CreateSubAccountInputDto {
+    pub parent_id: Option<String>,
+    pub parent_code: Option<String>,
+    pub code: Option<String>,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<String>,
+    pub currency_code: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct StatementFilterInput {
+    pub account_id: Option<String>,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<String>,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub currency_code: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct StatementTransactionItemDto {
+    pub id: String,
+    pub date: String,
+    pub reference_number: String,
+    pub source_type: String,
+    pub source_id: Option<String>,
+    pub description: String,
+    pub description_ar: Option<String>,
+    pub debit: Decimal,
+    pub credit: Decimal,
+    pub running_balance: Decimal,
+    pub contra_account_name: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct StatementResponseDto {
+    pub account_id: Option<String>,
+    pub account_code: Option<String>,
+    pub account_name: Option<String>,
+    pub account_name_ar: Option<String>,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<String>,
+    pub currency: String,
+    pub opening_balance: Decimal,
+    pub total_debit: Decimal,
+    pub total_credit: Decimal,
+    pub closing_balance: Decimal,
+    pub transactions: Vec<StatementTransactionItemDto>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct PayrollItemInputDto {
+    pub employee_id: String,
+    pub employee_name: String,
+    pub is_academic: bool,
+    pub base_salary: Decimal,
+    pub allowances: Decimal,
+    pub deductions: Decimal,
+    pub gosi_deduction: Decimal,
+    pub net_salary: Decimal,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct PostPayrollInputDto {
+    pub payroll_period: String,
+    pub accounting_date: String,
+    pub items: Vec<PayrollItemInputDto>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct DisbursePayrollInputDto {
+    pub bank_account_id: String,
+    pub payroll_period: String,
+    pub amount: Decimal,
+    pub notes: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct SettleGatewayPayoutInputDto {
+    pub clearing_account_id: Option<String>,
+    pub bank_account_id: String,
+    pub gross_amount: Decimal,
+    pub fee_amount: Decimal,
+    pub net_amount: Decimal,
+    pub payout_reference: String,
+    pub accounting_date: Option<String>,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AccountDto {
@@ -1246,5 +1356,212 @@ pub async fn finance_delete_journal_entry(
     state.finance_service.delete_journal_entry(&ctx, ctx.tenant_id, entry_id).await.map_err(|e| e.to_string())?;
     Ok(ok(true))
 }
+
+#[tauri::command]
+pub async fn finance_get_account_statement(
+    filter: StatementFilterInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<StatementResponseDto>, String> {
+    let ctx = make_ctx(&state);
+    let start_date = filter.start_date.as_deref().and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
+    let end_date = filter.end_date.as_deref().and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
+    let account_id = filter.account_id.as_deref().and_then(|id| Uuid::parse_str(id).ok());
+    let entity_id = filter.entity_id.as_deref().and_then(|id| Uuid::parse_str(id).ok());
+
+    let domain_filter = StatementFilter {
+        account_id,
+        entity_type: filter.entity_type,
+        entity_id,
+        start_date,
+        end_date,
+        currency_code: filter.currency_code,
+    };
+
+    let statement = state.finance_service.get_account_statement(&ctx, ctx.tenant_id, domain_filter)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let dto = StatementResponseDto {
+        account_id: statement.account_id.map(|u| u.to_string()),
+        account_code: statement.account_code,
+        account_name: statement.account_name,
+        account_name_ar: statement.account_name_ar,
+        entity_type: statement.entity_type,
+        entity_id: statement.entity_id.map(|u| u.to_string()),
+        currency: statement.currency,
+        opening_balance: statement.opening_balance,
+        total_debit: statement.total_debit,
+        total_credit: statement.total_credit,
+        closing_balance: statement.closing_balance,
+        transactions: statement.transactions.into_iter().map(|t| StatementTransactionItemDto {
+            id: t.id.to_string(),
+            date: t.date.to_string(),
+            reference_number: t.reference_number,
+            source_type: t.source_type,
+            source_id: t.source_id.map(|u| u.to_string()),
+            description: t.description,
+            description_ar: t.description_ar,
+            debit: t.debit,
+            credit: t.credit,
+            running_balance: t.running_balance,
+            contra_account_name: t.contra_account_name,
+        }).collect(),
+    };
+
+    Ok(ok(dto))
+}
+
+#[tauri::command]
+pub async fn finance_process_disbursement(
+    request: ProcessDisbursementInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<JournalEntryDto>, String> {
+    let ctx = make_ctx(&state);
+    let treasury_account_id = Uuid::parse_str(&request.treasury_account_id).map_err(|_| "Invalid treasury_account_id")?;
+    let beneficiary_account_id = Uuid::parse_str(&request.beneficiary_account_id).map_err(|_| "Invalid beneficiary_account_id")?;
+    let beneficiary_id = request.beneficiary_id.and_then(|id| Uuid::parse_str(&id).ok());
+    let voucher_date = request.voucher_date.as_deref().and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
+
+    let method = match request.payment_method.as_deref().unwrap_or("cash").to_lowercase().as_str() {
+        "bank" | "bank_transfer" => PaymentMethod::BankTransfer,
+        "check" => PaymentMethod::Check,
+        "mada" => PaymentMethod::Mada,
+        "credit_card" => PaymentMethod::CreditCard,
+        "apple_pay" => PaymentMethod::ApplePay,
+        _ => PaymentMethod::Cash,
+    };
+
+    let input = DisbursementInput {
+        treasury_account_id,
+        beneficiary_account_id,
+        amount: request.amount,
+        currency_code: request.currency_code,
+        payment_method: method,
+        reference: request.reference,
+        beneficiary_name: request.beneficiary_name,
+        beneficiary_type: request.beneficiary_type,
+        beneficiary_id,
+        notes: request.notes,
+        voucher_date,
+    };
+
+    let entry = state.finance_service.process_disbursement(&ctx, ctx.tenant_id, input)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(journal_entry_to_dto(entry)))
+}
+
+#[tauri::command]
+pub async fn finance_create_sub_account(
+    request: CreateSubAccountInputDto,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AccountDto>, String> {
+    let ctx = make_ctx(&state);
+    let parent_id = request.parent_id.and_then(|id| Uuid::parse_str(&id).ok());
+    let entity_id = request.entity_id.and_then(|id| Uuid::parse_str(&id).ok());
+
+    let input = CreateSubAccountInput {
+        parent_id,
+        parent_code: request.parent_code,
+        code: request.code,
+        name: request.name,
+        name_ar: request.name_ar,
+        entity_type: request.entity_type,
+        entity_id,
+        currency_code: request.currency_code,
+    };
+
+    let account = state.finance_service.create_sub_account(&ctx, ctx.tenant_id, input)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(account_to_dto(account)))
+}
+
+#[tauri::command]
+pub async fn finance_settle_gateway_payout(
+    request: SettleGatewayPayoutInputDto,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<JournalEntryDto>, String> {
+    let ctx = make_ctx(&state);
+    let clearing_account_id = request.clearing_account_id.and_then(|id| Uuid::parse_str(&id).ok());
+    let bank_account_id = Uuid::parse_str(&request.bank_account_id).map_err(|_| "Invalid bank_account_id")?;
+    let accounting_date = request.accounting_date.as_deref().and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
+
+    let input = SettleGatewayPayoutInput {
+        clearing_account_id,
+        bank_account_id,
+        gross_amount: request.gross_amount,
+        fee_amount: request.fee_amount,
+        net_amount: request.net_amount,
+        payout_reference: request.payout_reference,
+        accounting_date,
+    };
+
+    let entry = state.finance_service.settle_gateway_payout(&ctx, ctx.tenant_id, input)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(journal_entry_to_dto(entry)))
+}
+
+#[tauri::command]
+pub async fn finance_post_payroll_accrual(
+    request: PostPayrollInputDto,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<JournalEntryDto>, String> {
+    let ctx = make_ctx(&state);
+    let accounting_date = NaiveDate::parse_from_str(&request.accounting_date, "%Y-%m-%d")
+        .map_err(|_| "Invalid accounting_date (expected YYYY-MM-DD)")?;
+
+    let mut items = Vec::new();
+    for i in request.items {
+        let employee_id = Uuid::parse_str(&i.employee_id).map_err(|_| "Invalid employee_id")?;
+        items.push(PayrollItemInput {
+            employee_id,
+            employee_name: i.employee_name,
+            is_academic: i.is_academic,
+            base_salary: i.base_salary,
+            allowances: i.allowances,
+            deductions: i.deductions,
+            gosi_deduction: i.gosi_deduction,
+            net_salary: i.net_salary,
+        });
+    }
+
+    let input = PostPayrollInput {
+        payroll_period: request.payroll_period,
+        accounting_date,
+        items,
+    };
+
+    let entry = state.finance_service.post_payroll_journal(&ctx, ctx.tenant_id, input)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(journal_entry_to_dto(entry)))
+}
+
+#[tauri::command]
+pub async fn finance_disburse_payroll(
+    request: DisbursePayrollInputDto,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<JournalEntryDto>, String> {
+    let ctx = make_ctx(&state);
+    let bank_account_id = Uuid::parse_str(&request.bank_account_id).map_err(|_| "Invalid bank_account_id")?;
+
+    let entry = state.finance_service.disburse_payroll(
+        &ctx,
+        ctx.tenant_id,
+        bank_account_id,
+        request.payroll_period,
+        request.amount,
+        request.notes,
+    ).await.map_err(|e| e.to_string())?;
+
+    Ok(ok(journal_entry_to_dto(entry)))
+}
+
 
 

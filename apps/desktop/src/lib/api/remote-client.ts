@@ -200,6 +200,13 @@ import type {
   TransferClassInput,
   StudentFeeFilterParams,
   PaymentFilterParams,
+  StatementResponseDto,
+  StatementFilterParams,
+  ProcessDisbursementRequest,
+  CreateSubAccountRequest,
+  SettleGatewayPayoutRequest,
+  PostPayrollRequest,
+  DisbursePayrollRequest,
   AiChatRequest,
   AiChatResponse,
   AiToolDefinition,
@@ -1178,6 +1185,79 @@ export class RemoteClient implements OrbisApiClient {
   async deleteDiscountTemplate(id: string): Promise<boolean> {
     await this.call(sdk.deleteDiscountTemplate({ client: this.client, path: { id } }));
     return true;
+  }
+
+  private async fetchApi<T>(path: string, options: RequestInit = {}): Promise<T> {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...(options.headers as Record<string, string>),
+    };
+    if (this.token) {
+      headers["Authorization"] = `Bearer ${this.token}`;
+    }
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      ...options,
+      headers,
+    });
+    if (!res.ok) {
+      let errBody;
+      try {
+        errBody = await res.json();
+      } catch {
+        errBody = { message: res.statusText };
+      }
+      throw new ApiRequestError(res.status, errBody);
+    }
+    const json = await res.json();
+    return json?.data !== undefined ? json.data : json;
+  }
+
+  async getAccountStatement(filter: StatementFilterParams): Promise<StatementResponseDto> {
+    const query = new URLSearchParams();
+    if (filter.account_id) query.set("account_id", filter.account_id);
+    if (filter.entity_type) query.set("entity_type", filter.entity_type);
+    if (filter.entity_id) query.set("entity_id", filter.entity_id);
+    if (filter.start_date) query.set("start_date", filter.start_date);
+    if (filter.end_date) query.set("end_date", filter.end_date);
+    if (filter.currency_code || filter.currency) query.set("currency_code", (filter.currency_code || filter.currency)!);
+
+    const qs = query.toString();
+    return this.fetchApi<StatementResponseDto>(`/api/v1/finance/statement${qs ? `?${qs}` : ""}`);
+  }
+
+  async processDisbursement(req: ProcessDisbursementRequest): Promise<JournalEntryDto> {
+    return this.fetchApi<JournalEntryDto>("/api/v1/finance/disbursements", {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
+  }
+
+  async createSubAccount(req: CreateSubAccountRequest): Promise<AccountDto> {
+    return this.fetchApi<AccountDto>("/api/v1/finance/sub-accounts", {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
+  }
+
+  async settleGatewayPayout(req: SettleGatewayPayoutRequest): Promise<JournalEntryDto> {
+    return this.fetchApi<JournalEntryDto>("/api/v1/finance/gateway/settlement", {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
+  }
+
+  async postPayrollAccrual(req: PostPayrollRequest): Promise<JournalEntryDto> {
+    return this.fetchApi<JournalEntryDto>("/api/v1/finance/payroll/accrual", {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
+  }
+
+  async disbursePayroll(req: DisbursePayrollRequest): Promise<JournalEntryDto> {
+    return this.fetchApi<JournalEntryDto>("/api/v1/finance/payroll/disbursement", {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
   }
 
   // ── Integration ─────────────────────────────────────────────

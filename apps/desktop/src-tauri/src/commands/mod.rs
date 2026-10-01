@@ -241,6 +241,12 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         finance_cmds::finance_delete_discount_template,
         finance_cmds::finance_split_student_fee,
         finance_cmds::finance_refund_student_fee,
+        finance_cmds::finance_get_account_statement,
+        finance_cmds::finance_process_disbursement,
+        finance_cmds::finance_create_sub_account,
+        finance_cmds::finance_settle_gateway_payout,
+        finance_cmds::finance_post_payroll_accrual,
+        finance_cmds::finance_disburse_payroll,
         // ── Document ────────────────────────────────────────────
         document_cmds::document_upload,
         document_cmds::document_update,

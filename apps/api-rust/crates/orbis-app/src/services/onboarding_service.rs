@@ -28,6 +28,7 @@ use orbis_domain::entities::subject::Subject;
 use orbis_domain::entities::class::Class;
 use orbis_domain::entities::assessment_scheme::{AssessmentScheme, AssessmentComponent, AssessmentLevel, InstitutionScope};
 use orbis_domain::entities::fee_template::{FeeTemplate, FeeFrequency};
+use orbis_domain::entities::discount_template::{DiscountTemplate, DiscountType};
 use orbis_domain::entities::org_unit::OrgUnit;
 use orbis_domain::errors::DomainError;
 use orbis_domain::queries::filters::{SubjectFilter, ClassFilter, ClassSubjectFilter};
@@ -524,7 +525,7 @@ impl OnboardingService {
         ));
 
         // Task 11: Chart of Accounts & Ledger
-        let has_coa = accounts.iter().any(|a| a.code == "1000" || a.code == "1110" || a.code == "4000");
+        let has_coa = accounts.iter().any(|a| a.code == "110101" || a.code == "410101" || a.code == "1" || a.code == "1101" || a.code == "110301" || a.code == "1000");
         raw_tasks.push((
             "chart_of_accounts",
             OnboardingTaskCategory::Finance,
@@ -1368,8 +1369,8 @@ impl OnboardingService {
         let existing_fees = self.fee_template_repo.find_by_org(org_id).await?;
         if existing_fees.is_empty() && req.provision_tuition_fee_template.unwrap_or(true) {
             let accounts = self.account_repo.find_by_org(org_id).await?;
-            let rev_acct = accounts.iter().find(|a| a.code == "4000").map(|a| a.id).unwrap_or_else(Uuid::new_v4);
-            let rec_acct = accounts.iter().find(|a| a.code == "1120").map(|a| a.id).unwrap_or_else(Uuid::new_v4);
+            let rev_acct = accounts.iter().find(|a| a.code == "410101" || a.code == "4101" || a.code == "4000" || a.account_type == orbis_domain::entities::account::AccountType::Revenue).map(|a| a.id).unwrap_or_else(Uuid::new_v4);
+            let rec_acct = accounts.iter().find(|a| a.code == "110301" || a.code == "1103" || a.code == "1120" || (a.account_type == orbis_domain::entities::account::AccountType::Asset && a.code.starts_with("1103"))).map(|a| a.id).unwrap_or_else(Uuid::new_v4);
 
             let fee_tmpl = FeeTemplate {
                 id: Uuid::new_v4(),
@@ -1392,6 +1393,49 @@ impl OnboardingService {
             };
             self.fee_template_repo.save(&fee_tmpl).await?;
             created_items.push("Tuition Fee Template".to_string());
+        }
+
+        // 7. Provision Standard Discount Templates if empty
+        let existing_discounts = self.discount_template_repo.find_by_org(org_id).await?;
+        if existing_discounts.is_empty() {
+            let sibling_disc = DiscountTemplate {
+                id: Uuid::new_v4(),
+                org_id,
+                code: "DISC-SIBLING".to_string(),
+                name: "Sibling Discount (10%)".to_string(),
+                name_ar: Some("خصم الأخوة (10%)".to_string()),
+                discount_type: DiscountType::Percentage,
+                value: Decimal::from(10),
+                eligibility_rules: Some(serde_json::json!({ "type": "sibling", "account_code": "410301" })),
+                is_approval_required: false,
+                is_auto_apply: true,
+                is_stackable: false,
+                priority: 1,
+                is_active: true,
+                created_at: now,
+                updated_at: now,
+            };
+            self.discount_template_repo.save(&sibling_disc).await?;
+
+            let merit_disc = DiscountTemplate {
+                id: Uuid::new_v4(),
+                org_id,
+                code: "DISC-MERIT".to_string(),
+                name: "Academic Excellence Scholarship (20%)".to_string(),
+                name_ar: Some("منحة التفوق الأكاديمي (20%)".to_string()),
+                discount_type: DiscountType::Percentage,
+                value: Decimal::from(20),
+                eligibility_rules: Some(serde_json::json!({ "type": "merit", "account_code": "410302" })),
+                is_approval_required: true,
+                is_auto_apply: false,
+                is_stackable: false,
+                priority: 2,
+                is_active: true,
+                created_at: now,
+                updated_at: now,
+            };
+            self.discount_template_repo.save(&merit_disc).await?;
+            created_items.push("Standard Discount Templates (Sibling, Merit)".to_string());
         }
 
         let updated_state = self.get_state(org_id).await?;

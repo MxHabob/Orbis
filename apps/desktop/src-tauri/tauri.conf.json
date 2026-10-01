@@ -34,6 +34,11 @@
         "background": "./images/installer.png"
       }
     },
+    "windows": {
+      "nsis": {
+        "sidebarImage": "./images/orbis-installer-sidebar.bmp"
+      }
+    },
     "icon": [
       "icons/production/32x32.png",
       "icons/production/128x128.png",

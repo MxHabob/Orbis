@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use crate::ports::repositories::{PaymentRepository, JournalEntryRepository, StudentFeeRepository, FeeTemplateRepository, DiscountTemplateRepository, CurrencyRepository, PolicyRepository, AccountRepository};
 use crate::ports::event_bus::EventBus;
 use crate::ports::gateways::{PaymentGatewayPort, NotificationPort};
@@ -17,6 +18,139 @@ use uuid::Uuid;
 use chrono::Utc;
 use rust_decimal::Decimal;
 use std::sync::Arc;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AccountPurpose {
+    MainCashbox,               // 110101
+    MainBank,                  // 110102
+    PettyCash,                 // 110103
+    ElectronicGatewayClearing, // 110106
+    StudentReceivableTuition,  // 110301
+    StudentReceivableTransport,// 110302
+    StudentReceivableActivities,// 110304
+    CorporateReceivable,       // 110305
+    EmployeeAdvance,           // 110306
+    VatInputRecoverable,       // 110401
+    VendorPayable,             // 210101
+    ServiceContractorPayable,  // 210102
+    GeneralSupplierPayable,    // 210103
+    SalariesPayable,           // 210201
+    AllowancesPayable,         // 210202
+    SocialInsuranceGosiPayable,// 210203
+    EndOfServiceProvision,     // 210204
+    UnearnedTuition,           // 210301
+    VatOutputPayable,          // 210401
+    TuitionRevenue,            // 410101
+    TransportRevenue,          // 410201
+    BooksRevenue,              // 410202
+    RegistrationRevenue,       // 410203
+    SiblingDiscount,           // 410301
+    MeritScholarship,          // 410302
+    StaffChildDiscount,        // 410303
+    EarlyPaymentDiscount,      // 410304
+    AcademicSalariesExpense,   // 510101
+    AdminSalariesExpense,      // 520101
+    BankGatewayFeesExpense,    // 520301
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DisbursementInput {
+    pub treasury_account_id: Uuid,
+    pub beneficiary_account_id: Uuid,
+    pub amount: Decimal,
+    pub currency_code: Option<String>,
+    pub payment_method: PaymentMethod,
+    pub reference: Option<String>,
+    pub beneficiary_name: Option<String>,
+    pub beneficiary_type: Option<String>, // e.g. "vendor", "employee", "student", "general"
+    pub beneficiary_id: Option<Uuid>,
+    pub notes: Option<String>,
+    pub voucher_date: Option<chrono::NaiveDate>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateSubAccountInput {
+    pub parent_id: Option<Uuid>,
+    pub parent_code: Option<String>,
+    pub code: Option<String>,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub entity_type: Option<String>, // "student", "vendor", "employee", "sponsor", "cashbox", "bank"
+    pub entity_id: Option<Uuid>,
+    pub currency_code: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StatementFilter {
+    pub account_id: Option<Uuid>,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<Uuid>,
+    pub start_date: Option<chrono::NaiveDate>,
+    pub end_date: Option<chrono::NaiveDate>,
+    pub currency_code: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StatementTransactionItem {
+    pub id: Uuid,
+    pub date: chrono::NaiveDate,
+    pub reference_number: String,
+    pub source_type: String,
+    pub source_id: Option<Uuid>,
+    pub description: String,
+    pub description_ar: Option<String>,
+    pub debit: Decimal,
+    pub credit: Decimal,
+    pub running_balance: Decimal,
+    pub contra_account_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StatementResponse {
+    pub account_id: Option<Uuid>,
+    pub account_code: Option<String>,
+    pub account_name: Option<String>,
+    pub account_name_ar: Option<String>,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<Uuid>,
+    pub currency: String,
+    pub opening_balance: Decimal,
+    pub total_debit: Decimal,
+    pub total_credit: Decimal,
+    pub closing_balance: Decimal,
+    pub transactions: Vec<StatementTransactionItem>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PayrollItemInput {
+    pub employee_id: Uuid,
+    pub employee_name: String,
+    pub is_academic: bool,
+    pub base_salary: Decimal,
+    pub allowances: Decimal,
+    pub deductions: Decimal,
+    pub gosi_deduction: Decimal,
+    pub net_salary: Decimal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PostPayrollInput {
+    pub payroll_period: String, // e.g. "2026-10"
+    pub accounting_date: chrono::NaiveDate,
+    pub items: Vec<PayrollItemInput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SettleGatewayPayoutInput {
+    pub clearing_account_id: Option<Uuid>,
+    pub bank_account_id: Uuid,
+    pub gross_amount: Decimal,
+    pub fee_amount: Decimal,
+    pub net_amount: Decimal,
+    pub payout_reference: String,
+    pub accounting_date: Option<chrono::NaiveDate>,
+}
 
 pub struct FinanceService {
     pub payment_repo: Arc<dyn PaymentRepository>,
@@ -312,6 +446,83 @@ impl FinanceService {
         };
 
         self.student_fee_repo.save(&fee).await?;
+
+        // Double-entry ledger accrual for student fee invoice (قيد استحقاق الرسوم)
+        let journal_entry_id = Uuid::new_v4();
+        let mut lines = vec![
+            JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: template.receivable_account_id,
+                debit_amount: net_amount,
+                credit_amount: Decimal::ZERO,
+                description: Some(format!("Student fee invoice: {}", template.name)),
+                entity_type: Some("student".into()),
+                entity_id: Some(student_id),
+            },
+        ];
+
+        if discount > Decimal::ZERO {
+            let discount_acct = self.resolve_default_account(org_id, AccountPurpose::SiblingDiscount).await
+                .map(|a| a.id)
+                .unwrap_or(template.revenue_account_id);
+
+            lines.push(JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: discount_acct,
+                debit_amount: discount,
+                credit_amount: Decimal::ZERO,
+                description: Some("Fee concession / discount applied".into()),
+                entity_type: Some("student".into()),
+                entity_id: Some(student_id),
+            });
+        }
+
+        lines.push(JournalEntryLine {
+            id: Uuid::new_v4(),
+            account_id: template.revenue_account_id,
+            debit_amount: Decimal::ZERO,
+            credit_amount: template.default_amount,
+            description: Some(format!("Educational revenue: {}", template.name)),
+            entity_type: Some("student".into()),
+            entity_id: Some(student_id),
+        });
+
+        let invoice_entry = JournalEntry {
+            id: journal_entry_id,
+            org_id,
+            reference_number: format!("INV-{}", fee_id.to_string().chars().take(8).collect::<String>()),
+            accounting_date: now.date_naive(),
+            amount: template.default_amount,
+            currency_code: template.currency_code.clone(),
+            exchange_rate: Decimal::from(1),
+            base_amount: template.default_amount,
+            debit_account_id: template.receivable_account_id,
+            credit_account_id: template.revenue_account_id,
+            description: format!("Tuition fee invoice for student: {}", template.name),
+            description_ar: Some(format!("فاتورة رسوم دراسية: {}", template.name_ar.clone().unwrap_or_else(|| template.name.clone()))),
+            source_type: "student_fee_invoice".into(),
+            source_id: Some(fee_id),
+            status: JournalPostingStatus::Posted,
+            lines,
+            is_reversed: false,
+            reversed_by: None,
+            reversal_reason: None,
+            created_by: ctx.user_id(),
+            created_at: now,
+            updated_at: now,
+            updated_by: ctx.user_id(),
+            org_unit_id: None,
+            version: 1,
+        };
+
+        if invoice_entry.validate_balance().is_ok() {
+            let _ = self.journal_repo.save(&invoice_entry).await;
+            let _ = self.event_bus.publish(ctx, &DomainEvent::JournalEntryPosted {
+                entry_id: journal_entry_id,
+                amount: template.default_amount,
+                timestamp: now,
+            }).await;
+        }
 
         let _ = self.event_bus.publish(ctx, &DomainEvent::StudentFeeGenerated {
             fee_id,
@@ -990,5 +1201,640 @@ impl FinanceService {
         }).await;
 
         Ok(())
+    }
+
+    /// Resolve canonical account from the Chart of Accounts tree
+    pub async fn resolve_default_account(
+        &self,
+        org_id: Uuid,
+        purpose: AccountPurpose,
+    ) -> Result<Account, DomainError> {
+        let accounts = self.account_repo.find_by_org(org_id).await?;
+
+        let matching = match purpose {
+            AccountPurpose::MainCashbox => accounts.iter().find(|a| a.code == "110101" || a.code.starts_with("1101") || a.sub_type.as_deref() == Some("cash")),
+            AccountPurpose::MainBank => accounts.iter().find(|a| a.code == "110102" || a.sub_type.as_deref() == Some("bank")),
+            AccountPurpose::PettyCash => accounts.iter().find(|a| a.code == "110103"),
+            AccountPurpose::ElectronicGatewayClearing => accounts.iter().find(|a| a.code == "110106" || a.code == "110102"),
+            AccountPurpose::StudentReceivableTuition => accounts.iter().find(|a| a.code == "110301" || a.code == "1103" || (a.account_type == orbis_domain::entities::account::AccountType::Asset && a.code.starts_with("1103"))),
+            AccountPurpose::StudentReceivableTransport => accounts.iter().find(|a| a.code == "110302" || a.code == "110301"),
+            AccountPurpose::StudentReceivableActivities => accounts.iter().find(|a| a.code == "110304" || a.code == "110301"),
+            AccountPurpose::CorporateReceivable => accounts.iter().find(|a| a.code == "110305" || a.code == "110301"),
+            AccountPurpose::EmployeeAdvance => accounts.iter().find(|a| a.code == "110306" || a.code == "110301"),
+            AccountPurpose::VatInputRecoverable => accounts.iter().find(|a| a.code == "110401"),
+            AccountPurpose::VendorPayable => accounts.iter().find(|a| a.code == "210101" || a.code == "2101" || (a.account_type == orbis_domain::entities::account::AccountType::Liability && a.code.starts_with("2101"))),
+            AccountPurpose::ServiceContractorPayable => accounts.iter().find(|a| a.code == "210102" || a.code == "210101"),
+            AccountPurpose::GeneralSupplierPayable => accounts.iter().find(|a| a.code == "210103" || a.code == "210101"),
+            AccountPurpose::SalariesPayable => accounts.iter().find(|a| a.code == "210201" || a.code.starts_with("2102")),
+            AccountPurpose::AllowancesPayable => accounts.iter().find(|a| a.code == "210202" || a.code == "210201"),
+            AccountPurpose::SocialInsuranceGosiPayable => accounts.iter().find(|a| a.code == "210203" || a.code == "210201"),
+            AccountPurpose::EndOfServiceProvision => accounts.iter().find(|a| a.code == "210204" || a.code == "210201"),
+            AccountPurpose::UnearnedTuition => accounts.iter().find(|a| a.code == "210301" || a.code.starts_with("2103")),
+            AccountPurpose::VatOutputPayable => accounts.iter().find(|a| a.code == "210401"),
+            AccountPurpose::TuitionRevenue => accounts.iter().find(|a| a.code == "410101" || a.code == "4101" || (a.account_type == orbis_domain::entities::account::AccountType::Revenue && a.code.starts_with("4101"))),
+            AccountPurpose::TransportRevenue => accounts.iter().find(|a| a.code == "410201" || a.code == "410101"),
+            AccountPurpose::BooksRevenue => accounts.iter().find(|a| a.code == "410202" || a.code == "410101"),
+            AccountPurpose::RegistrationRevenue => accounts.iter().find(|a| a.code == "410203" || a.code == "410101"),
+            AccountPurpose::SiblingDiscount => accounts.iter().find(|a| a.code == "410301" || a.code.starts_with("4103")),
+            AccountPurpose::MeritScholarship => accounts.iter().find(|a| a.code == "410302" || a.code == "410301"),
+            AccountPurpose::StaffChildDiscount => accounts.iter().find(|a| a.code == "410303" || a.code == "410301"),
+            AccountPurpose::EarlyPaymentDiscount => accounts.iter().find(|a| a.code == "410304" || a.code == "410301"),
+            AccountPurpose::AcademicSalariesExpense => accounts.iter().find(|a| a.code == "510101" || a.code == "5101" || (a.account_type == orbis_domain::entities::account::AccountType::Expense && a.code.starts_with("51"))),
+            AccountPurpose::AdminSalariesExpense => accounts.iter().find(|a| a.code == "520101" || a.code == "5201" || (a.account_type == orbis_domain::entities::account::AccountType::Expense && a.code.starts_with("52"))),
+            AccountPurpose::BankGatewayFeesExpense => accounts.iter().find(|a| a.code == "520301" || a.code.starts_with("52")),
+        };
+
+        matching.cloned().ok_or_else(|| {
+            DomainError::NotFound(format!("No matching account found in Chart of Accounts for purpose '{:?}'", purpose))
+        })
+    }
+
+    /// Process a disbursement voucher (سند صرف)
+    pub async fn process_disbursement(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        input: DisbursementInput,
+    ) -> Result<JournalEntry, DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+
+        if input.amount <= Decimal::ZERO {
+            return Err(DomainError::Validation("Disbursement amount must be greater than zero".into()));
+        }
+
+        let now = Utc::now();
+        let accounting_date = input.voucher_date.unwrap_or_else(|| now.date_naive());
+        let journal_entry_id = Uuid::new_v4();
+
+        // 1. Fetch treasury (credit) and beneficiary (debit) accounts
+        let treasury = self.account_repo.find_by_id(input.treasury_account_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Treasury account {} not found", input.treasury_account_id)))?;
+        let beneficiary = self.account_repo.find_by_id(input.beneficiary_account_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Beneficiary account {} not found", input.beneficiary_account_id)))?;
+
+        if treasury.org_id != org_id || beneficiary.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch for accounts".into()));
+        }
+
+        let currency = input.currency_code.unwrap_or_else(|| treasury.currency_code.clone());
+
+        // 2. Multi-line balanced entry
+        let lines = vec![
+            JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: input.beneficiary_account_id,
+                debit_amount: input.amount,
+                credit_amount: Decimal::ZERO,
+                description: input.notes.clone().or_else(|| Some("Disbursement - Beneficiary / Expense".into())),
+                entity_type: input.beneficiary_type.clone(),
+                entity_id: input.beneficiary_id,
+            },
+            JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: input.treasury_account_id,
+                debit_amount: Decimal::ZERO,
+                credit_amount: input.amount,
+                description: input.notes.clone().or_else(|| Some("Disbursement - Treasury / Cashbox".into())),
+                entity_type: Some("treasury".into()),
+                entity_id: Some(input.treasury_account_id),
+            },
+        ];
+
+        let ref_num = input.reference.unwrap_or_else(|| {
+            format!("DISB-{}", journal_entry_id.to_string().chars().take(8).collect::<String>())
+        });
+
+        let entry = JournalEntry {
+            id: journal_entry_id,
+            org_id,
+            reference_number: ref_num,
+            accounting_date,
+            amount: input.amount,
+            currency_code: currency,
+            exchange_rate: Decimal::from(1),
+            base_amount: input.amount,
+            debit_account_id: input.beneficiary_account_id,
+            credit_account_id: input.treasury_account_id,
+            description: input.notes.clone().unwrap_or_else(|| format!("Disbursement to {}", beneficiary.name)),
+            description_ar: Some(input.notes.unwrap_or_else(|| format!("سند صرف إلى {}", beneficiary.name_ar.unwrap_or(beneficiary.name)))),
+            source_type: "disbursement_voucher".into(),
+            source_id: Some(journal_entry_id),
+            status: JournalPostingStatus::Posted,
+            lines,
+            is_reversed: false,
+            reversed_by: None,
+            reversal_reason: None,
+            created_by: ctx.user_id(),
+            created_at: now,
+            updated_at: now,
+            updated_by: ctx.user_id(),
+            org_unit_id: None,
+            version: 1,
+        };
+
+        if let Err(e) = entry.validate_balance() {
+            return Err(DomainError::Validation(e));
+        }
+
+        self.journal_repo.save(&entry).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::JournalEntryPosted {
+            entry_id: journal_entry_id,
+            amount: input.amount,
+            timestamp: now,
+        }).await;
+
+        Ok(entry)
+    }
+
+    /// Settle electronic gateway payout to bank account (تسوية مبالغ بوابة الدفع)
+    pub async fn settle_gateway_payout(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        input: SettleGatewayPayoutInput,
+    ) -> Result<JournalEntry, DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+
+        if input.gross_amount <= Decimal::ZERO {
+            return Err(DomainError::Validation("Gross settlement amount must be greater than zero".into()));
+        }
+
+        if input.net_amount + input.fee_amount != input.gross_amount {
+            return Err(DomainError::Validation(format!(
+                "Net amount ({}) + Fee amount ({}) != Gross amount ({})",
+                input.net_amount, input.fee_amount, input.gross_amount
+            )));
+        }
+
+        let now = Utc::now();
+        let accounting_date = input.accounting_date.unwrap_or_else(|| now.date_naive());
+        let journal_entry_id = Uuid::new_v4();
+
+        // 1. Resolve accounts
+        let clearing_acct_id = match input.clearing_account_id {
+            Some(id) => id,
+            None => self.resolve_default_account(org_id, AccountPurpose::ElectronicGatewayClearing).await?.id,
+        };
+
+        let bank = self.account_repo.find_by_id(input.bank_account_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Bank account {} not found", input.bank_account_id)))?;
+
+        let fee_acct = self.resolve_default_account(org_id, AccountPurpose::BankGatewayFeesExpense).await
+            .unwrap_or_else(|_| bank.clone());
+
+        let mut lines = vec![
+            // Dr Bank Account (Net received)
+            JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: bank.id,
+                debit_amount: input.net_amount,
+                credit_amount: Decimal::ZERO,
+                description: Some(format!("Gateway settlement deposit: {}", input.payout_reference)),
+                entity_type: Some("bank".into()),
+                entity_id: Some(bank.id),
+            },
+        ];
+
+        // Dr Fee Account if any
+        if input.fee_amount > Decimal::ZERO {
+            lines.push(JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: fee_acct.id,
+                debit_amount: input.fee_amount,
+                credit_amount: Decimal::ZERO,
+                description: Some(format!("Gateway processing commission: {}", input.payout_reference)),
+                entity_type: Some("gateway".into()),
+                entity_id: None,
+            });
+        }
+
+        // Cr Electronic Gateway Clearing Account (Gross collected)
+        lines.push(JournalEntryLine {
+            id: Uuid::new_v4(),
+            account_id: clearing_acct_id,
+            debit_amount: Decimal::ZERO,
+            credit_amount: input.gross_amount,
+            description: Some(format!("Electronic clearing settlement: {}", input.payout_reference)),
+            entity_type: Some("gateway_clearing".into()),
+            entity_id: Some(clearing_acct_id),
+        });
+
+        let entry = JournalEntry {
+            id: journal_entry_id,
+            org_id,
+            reference_number: format!("PAYOUT-{}", input.payout_reference),
+            accounting_date,
+            amount: input.gross_amount,
+            currency_code: bank.currency_code.clone(),
+            exchange_rate: Decimal::from(1),
+            base_amount: input.gross_amount,
+            debit_account_id: bank.id,
+            credit_account_id: clearing_acct_id,
+            description: format!("Payment Gateway Payout Settlement: {}", input.payout_reference),
+            description_ar: Some(format!("تسوية وإيداع مبالغ بوابة الدفع: {}", input.payout_reference)),
+            source_type: "gateway_settlement".into(),
+            source_id: Some(journal_entry_id),
+            status: JournalPostingStatus::Posted,
+            lines,
+            is_reversed: false,
+            reversed_by: None,
+            reversal_reason: None,
+            created_by: ctx.user_id(),
+            created_at: now,
+            updated_at: now,
+            updated_by: ctx.user_id(),
+            org_unit_id: None,
+            version: 1,
+        };
+
+        if let Err(e) = entry.validate_balance() {
+            return Err(DomainError::Validation(e));
+        }
+
+        self.journal_repo.save(&entry).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::JournalEntryPosted {
+            entry_id: journal_entry_id,
+            amount: input.gross_amount,
+            timestamp: now,
+        }).await;
+
+        Ok(entry)
+    }
+
+    /// Post monthly employee payroll journal entry (مسير استحقاق الرواتب والأجور)
+    pub async fn post_payroll_journal(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        input: PostPayrollInput,
+    ) -> Result<JournalEntry, DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+
+        if input.items.is_empty() {
+            return Err(DomainError::Validation("Payroll must contain at least one employee item".into()));
+        }
+
+        let now = Utc::now();
+        let journal_entry_id = Uuid::new_v4();
+
+        let academic_expense = self.resolve_default_account(org_id, AccountPurpose::AcademicSalariesExpense).await?;
+        let admin_expense = self.resolve_default_account(org_id, AccountPurpose::AdminSalariesExpense).await?;
+        let salaries_payable = self.resolve_default_account(org_id, AccountPurpose::SalariesPayable).await?;
+        let gosi_payable = self.resolve_default_account(org_id, AccountPurpose::SocialInsuranceGosiPayable).await
+            .unwrap_or_else(|_| salaries_payable.clone());
+        let advance_receivable = self.resolve_default_account(org_id, AccountPurpose::EmployeeAdvance).await
+            .unwrap_or_else(|_| salaries_payable.clone());
+
+        let mut lines = Vec::new();
+        let mut total_gross = Decimal::ZERO;
+
+        for item in &input.items {
+            let gross = item.base_salary + item.allowances;
+            total_gross += gross;
+
+            // Dr Salaries Expense
+            let expense_acct = if item.is_academic { &academic_expense } else { &admin_expense };
+            lines.push(JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: expense_acct.id,
+                debit_amount: gross,
+                credit_amount: Decimal::ZERO,
+                description: Some(format!("Salary: {} ({})", item.employee_name, input.payroll_period)),
+                entity_type: Some("employee".into()),
+                entity_id: Some(item.employee_id),
+            });
+
+            // Cr GOSI deduction if any
+            if item.gosi_deduction > Decimal::ZERO {
+                lines.push(JournalEntryLine {
+                    id: Uuid::new_v4(),
+                    account_id: gosi_payable.id,
+                    debit_amount: Decimal::ZERO,
+                    credit_amount: item.gosi_deduction,
+                    description: Some(format!("GOSI Social Security deduction: {}", item.employee_name)),
+                    entity_type: Some("employee".into()),
+                    entity_id: Some(item.employee_id),
+                });
+            }
+
+            // Cr Advance recovery if any
+            if item.deductions > Decimal::ZERO {
+                lines.push(JournalEntryLine {
+                    id: Uuid::new_v4(),
+                    account_id: advance_receivable.id,
+                    debit_amount: Decimal::ZERO,
+                    credit_amount: item.deductions,
+                    description: Some(format!("Salary loan / advance deduction: {}", item.employee_name)),
+                    entity_type: Some("employee".into()),
+                    entity_id: Some(item.employee_id),
+                });
+            }
+
+            // Cr Net Salary Payable
+            lines.push(JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: salaries_payable.id,
+                debit_amount: Decimal::ZERO,
+                credit_amount: item.net_salary,
+                description: Some(format!("Net salary payable: {}", item.employee_name)),
+                entity_type: Some("employee".into()),
+                entity_id: Some(item.employee_id),
+            });
+        }
+
+        let entry = JournalEntry {
+            id: journal_entry_id,
+            org_id,
+            reference_number: format!("PAYROLL-{}", input.payroll_period),
+            accounting_date: input.accounting_date,
+            amount: total_gross,
+            currency_code: academic_expense.currency_code.clone(),
+            exchange_rate: Decimal::from(1),
+            base_amount: total_gross,
+            debit_account_id: academic_expense.id,
+            credit_account_id: salaries_payable.id,
+            description: format!("Monthly Payroll Accrual: {}", input.payroll_period),
+            description_ar: Some(format!("مسير استحقاق الرواتب والأجور لشهر: {}", input.payroll_period)),
+            source_type: "payroll_accrual".into(),
+            source_id: Some(journal_entry_id),
+            status: JournalPostingStatus::Posted,
+            lines,
+            is_reversed: false,
+            reversed_by: None,
+            reversal_reason: None,
+            created_by: ctx.user_id(),
+            created_at: now,
+            updated_at: now,
+            updated_by: ctx.user_id(),
+            org_unit_id: None,
+            version: 1,
+        };
+
+        if let Err(e) = entry.validate_balance() {
+            return Err(DomainError::Validation(e));
+        }
+
+        self.journal_repo.save(&entry).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::JournalEntryPosted {
+            entry_id: journal_entry_id,
+            amount: total_gross,
+            timestamp: now,
+        }).await;
+
+        Ok(entry)
+    }
+
+    /// Disburse payroll from a bank or cash account
+    pub async fn disburse_payroll(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        bank_account_id: Uuid,
+        payroll_period: String,
+        amount: Decimal,
+        notes: Option<String>,
+    ) -> Result<JournalEntry, DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+
+        if amount <= Decimal::ZERO {
+            return Err(DomainError::Validation("Payroll disbursement amount must be greater than zero".into()));
+        }
+
+        let salaries_payable = self.resolve_default_account(org_id, AccountPurpose::SalariesPayable).await?;
+        let bank = self.account_repo.find_by_id(bank_account_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Bank account {} not found", bank_account_id)))?;
+
+        let input = DisbursementInput {
+            treasury_account_id: bank.id,
+            beneficiary_account_id: salaries_payable.id,
+            amount,
+            currency_code: Some(bank.currency_code),
+            payment_method: PaymentMethod::BankTransfer,
+            reference: Some(format!("PAYROLL-DISB-{}", payroll_period)),
+            beneficiary_name: Some("All Employees (Net Salaries)".into()),
+            beneficiary_type: Some("employee_payroll".into()),
+            beneficiary_id: None,
+            notes: notes.or_else(|| Some(format!("Disbursement of payroll for period: {}", payroll_period))),
+            voucher_date: None,
+        };
+
+        self.process_disbursement(ctx, org_id, input).await
+    }
+
+    /// Retrieve detailed general ledger or subsidiary account statement (كشف حساب)
+    pub async fn get_account_statement(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        filter: StatementFilter,
+    ) -> Result<StatementResponse, DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceRead).await?;
+
+        let mut target_account = None;
+        if let Some(acct_id) = filter.account_id {
+            target_account = self.account_repo.find_by_id(acct_id).await?;
+        }
+
+        // If no specific account_id but entity_type is provided:
+        if target_account.is_none() {
+            if let Some(ref etype) = filter.entity_type {
+                match etype.as_str() {
+                    "student" => {
+                        target_account = self.resolve_default_account(org_id, AccountPurpose::StudentReceivableTuition).await.ok();
+                    }
+                    "vendor" => {
+                        target_account = self.resolve_default_account(org_id, AccountPurpose::VendorPayable).await.ok();
+                    }
+                    "employee" => {
+                        target_account = self.resolve_default_account(org_id, AccountPurpose::SalariesPayable).await.ok();
+                    }
+                    "sponsor" | "corporate" => {
+                        target_account = self.resolve_default_account(org_id, AccountPurpose::CorporateReceivable).await.ok();
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        let all_entries = self.journal_repo.find_by_org(org_id).await?;
+        let org_settings = self.policy_repo.get_settings(org_id).await?;
+        let currency = filter.currency_code.unwrap_or(org_settings.finance.currency);
+
+        let mut opening_balance = Decimal::ZERO;
+        let mut total_debit = Decimal::ZERO;
+        let mut total_credit = Decimal::ZERO;
+        let mut transactions = Vec::new();
+
+        let acct_id_filter = filter.account_id;
+        let entity_type_filter = filter.entity_type.as_deref();
+        let entity_id_filter = filter.entity_id;
+        let start_date = filter.start_date;
+        let end_date = filter.end_date;
+
+        // Sort chronological
+        let mut sorted_entries = all_entries;
+        sorted_entries.sort_by(|a, b| a.accounting_date.cmp(&b.accounting_date).then(a.created_at.cmp(&b.created_at)));
+
+        let mut running_balance = Decimal::ZERO;
+
+        for entry in sorted_entries {
+            if entry.is_reversed || entry.status == JournalPostingStatus::Draft {
+                continue;
+            }
+
+            for line in &entry.lines {
+                let mut matches = true;
+
+                if let Some(target_id) = acct_id_filter {
+                    if line.account_id != target_id {
+                        matches = false;
+                    }
+                }
+
+                if let Some(etype) = entity_type_filter {
+                    if line.entity_type.as_deref() != Some(etype) {
+                        matches = false;
+                    }
+                }
+
+                if let Some(eid) = entity_id_filter {
+                    if line.entity_id != Some(eid) {
+                        matches = false;
+                    }
+                }
+
+                if !matches {
+                    continue;
+                }
+
+                let net_movement = line.debit_amount - line.credit_amount;
+
+                // Check date window
+                if let Some(start) = start_date {
+                    if entry.accounting_date < start {
+                        opening_balance += net_movement;
+                        running_balance += net_movement;
+                        continue;
+                    }
+                }
+
+                if let Some(end) = end_date {
+                    if entry.accounting_date > end {
+                        continue;
+                    }
+                }
+
+                running_balance += net_movement;
+                total_debit += line.debit_amount;
+                total_credit += line.credit_amount;
+
+                transactions.push(StatementTransactionItem {
+                    id: line.id,
+                    date: entry.accounting_date,
+                    reference_number: entry.reference_number.clone(),
+                    source_type: entry.source_type.clone(),
+                    source_id: entry.source_id,
+                    description: line.description.clone().unwrap_or(entry.description.clone()),
+                    description_ar: entry.description_ar.clone(),
+                    debit: line.debit_amount,
+                    credit: line.credit_amount,
+                    running_balance,
+                    contra_account_name: None,
+                });
+            }
+        }
+
+        let closing_balance = opening_balance + total_debit - total_credit;
+
+        Ok(StatementResponse {
+            account_id: target_account.as_ref().map(|a| a.id),
+            account_code: target_account.as_ref().map(|a| a.code.clone()),
+            account_name: target_account.as_ref().map(|a| a.name.clone()),
+            account_name_ar: target_account.as_ref().and_then(|a| a.name_ar.clone()),
+            entity_type: filter.entity_type,
+            entity_id: filter.entity_id,
+            currency,
+            opening_balance,
+            total_debit,
+            total_credit,
+            closing_balance,
+            transactions,
+        })
+    }
+
+    /// Create a structured child sub-account in the Chart of Accounts tree
+    pub async fn create_sub_account(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        input: CreateSubAccountInput,
+    ) -> Result<Account, DomainError> {
+        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+
+        // 1. Find parent account
+        let parent = if let Some(pid) = input.parent_id {
+            self.account_repo.find_by_id(pid).await?
+                .ok_or_else(|| DomainError::NotFound(format!("Parent account {} not found", pid)))?
+        } else if let Some(ref pcode) = input.parent_code {
+            self.account_repo.find_by_code(org_id, pcode).await?
+                .ok_or_else(|| DomainError::NotFound(format!("Parent account with code '{}' not found", pcode)))?
+        } else {
+            return Err(DomainError::Validation("Must provide parent_id or parent_code to create sub-account".into()));
+        };
+
+        if parent.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        let now = Utc::now();
+        let sub_id = Uuid::new_v4();
+
+        // Compute code if not supplied
+        let code = input.code.unwrap_or_else(|| {
+            format!("{}-{}", parent.code, sub_id.to_string().chars().take(4).collect::<String>())
+        });
+
+        let path = format!("{}{}/", parent.path, code);
+        let depth = parent.depth + 1;
+        let currency_code = input.currency_code.unwrap_or(parent.currency_code);
+
+        let sub_account = Account {
+            id: sub_id,
+            org_id,
+            code: code.clone(),
+            name: input.name,
+            name_ar: input.name_ar,
+            account_type: parent.account_type,
+            sub_type: parent.sub_type,
+            parent_id: Some(parent.id),
+            path,
+            depth,
+            currency_code,
+            entity_type: input.entity_type,
+            entity_id: input.entity_id,
+            is_control_account: false,
+            is_system_account: false,
+            is_active: true,
+            balances: serde_json::json!({}),
+            created_by: ctx.user_id(),
+            updated_by: ctx.user_id(),
+            version: 1,
+            created_at: now,
+            updated_at: now,
+        };
+
+        self.account_repo.save(&sub_account).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::AccountCreated {
+            account_id: sub_id,
+            org_id,
+            code,
+            timestamp: now,
+        }).await;
+
+        Ok(sub_account)
     }
 }

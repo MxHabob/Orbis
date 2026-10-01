@@ -144,6 +144,13 @@ import type {
   CreateDiscountTemplateRequest,
   StudentFeeFilterParams,
   PaymentFilterParams,
+  StatementResponseDto,
+  StatementFilterParams,
+  ProcessDisbursementRequest,
+  CreateSubAccountRequest,
+  SettleGatewayPayoutRequest,
+  PostPayrollRequest,
+  DisbursePayrollRequest,
   PrerequisiteCheckResultDto,
   EmployeeDetailDto,
   AccountProvisioningResultDto,
@@ -990,6 +997,48 @@ export class LocalClient implements OrbisApiClient {
   }
   async deleteDiscountTemplate(id: string): Promise<boolean> {
     return unwrap(await invoke("finance_delete_discount_template", { id }));
+  }
+  async getAccountStatement(
+    filter: StatementFilterParams,
+  ): Promise<StatementResponseDto> {
+    return unwrap(
+      await invoke("finance_get_account_statement", { filter }),
+    );
+  }
+  async processDisbursement(
+    req: ProcessDisbursementRequest,
+  ): Promise<JournalEntryDto> {
+    return unwrap(
+      await invoke("finance_process_disbursement", { request: req }),
+    );
+  }
+  async createSubAccount(
+    req: CreateSubAccountRequest,
+  ): Promise<AccountDto> {
+    return unwrap(
+      await invoke("finance_create_sub_account", { request: req }),
+    );
+  }
+  async settleGatewayPayout(
+    req: SettleGatewayPayoutRequest,
+  ): Promise<JournalEntryDto> {
+    return unwrap(
+      await invoke("finance_settle_gateway_payout", { request: req }),
+    );
+  }
+  async postPayrollAccrual(
+    req: PostPayrollRequest,
+  ): Promise<JournalEntryDto> {
+    return unwrap(
+      await invoke("finance_post_payroll_accrual", { request: req }),
+    );
+  }
+  async disbursePayroll(
+    req: DisbursePayrollRequest,
+  ): Promise<JournalEntryDto> {
+    return unwrap(
+      await invoke("finance_disburse_payroll", { request: req }),
+    );
   }
 
   // ── Integration ─────────────────────────────────────────────

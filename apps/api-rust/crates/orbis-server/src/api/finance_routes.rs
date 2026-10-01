@@ -13,6 +13,10 @@ use crate::state::AppState;
 use orbis_domain::entities::account::AccountType;
 use orbis_domain::entities::payment::PaymentMethod;
 use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};
+use orbis_app::services::finance_service::{
+    DisbursementInput, CreateSubAccountInput, StatementFilter,
+    PayrollItemInput, PostPayrollInput, SettleGatewayPayoutInput,
+};
 
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct AccountDto {
@@ -290,6 +294,113 @@ pub struct RefundStudentFeeRequest {
 pub struct SplitFeeRequest {
     pub num_installments: u32,
     pub due_dates: Vec<NaiveDate>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct ProcessDisbursementRequest {
+    pub treasury_account_id: Uuid,
+    pub beneficiary_account_id: Uuid,
+    pub amount: Decimal,
+    pub currency_code: Option<String>,
+    pub payment_method: Option<String>,
+    pub reference: Option<String>,
+    pub beneficiary_name: Option<String>,
+    pub beneficiary_type: Option<String>,
+    pub beneficiary_id: Option<Uuid>,
+    pub notes: Option<String>,
+    pub voucher_date: Option<NaiveDate>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct CreateSubAccountRequest {
+    pub parent_id: Option<Uuid>,
+    pub parent_code: Option<String>,
+    pub code: Option<String>,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<Uuid>,
+    pub currency_code: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct StatementFilterQuery {
+    pub account_id: Option<Uuid>,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<Uuid>,
+    pub start_date: Option<NaiveDate>,
+    pub end_date: Option<NaiveDate>,
+    pub currency_code: Option<String>,
+    pub currency: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
+pub struct StatementTransactionItemDto {
+    pub id: Uuid,
+    pub date: NaiveDate,
+    pub reference_number: String,
+    pub source_type: String,
+    pub source_id: Option<Uuid>,
+    pub description: String,
+    pub description_ar: Option<String>,
+    pub debit: Decimal,
+    pub credit: Decimal,
+    pub running_balance: Decimal,
+    pub contra_account_name: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
+pub struct StatementResponseDto {
+    pub account_id: Option<Uuid>,
+    pub account_code: Option<String>,
+    pub account_name: Option<String>,
+    pub account_name_ar: Option<String>,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<Uuid>,
+    pub currency: String,
+    pub opening_balance: Decimal,
+    pub total_debit: Decimal,
+    pub total_credit: Decimal,
+    pub closing_balance: Decimal,
+    pub transactions: Vec<StatementTransactionItemDto>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct PayrollItemDto {
+    pub employee_id: Uuid,
+    pub employee_name: String,
+    pub is_academic: bool,
+    pub base_salary: Decimal,
+    pub allowances: Decimal,
+    pub deductions: Decimal,
+    pub gosi_deduction: Decimal,
+    pub net_salary: Decimal,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct PostPayrollRequest {
+    pub payroll_period: String,
+    pub accounting_date: NaiveDate,
+    pub items: Vec<PayrollItemDto>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct DisbursePayrollRequest {
+    pub bank_account_id: Uuid,
+    pub payroll_period: String,
+    pub amount: Decimal,
+    pub notes: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct SettleGatewayPayoutRequest {
+    pub clearing_account_id: Option<Uuid>,
+    pub bank_account_id: Uuid,
+    pub gross_amount: Decimal,
+    pub fee_amount: Decimal,
+    pub net_amount: Decimal,
+    pub payout_reference: String,
+    pub accounting_date: Option<NaiveDate>,
 }
 
 #[derive(Deserialize)]
@@ -1112,6 +1223,196 @@ pub async fn delete_journal_entry(
     Ok(ApiResponse::ok(true))
 }
 
+#[utoipa::path(get, path = "/api/v1/finance/statement",
+    params(
+        ("account_id" = Option<Uuid>, Query, description = "Account ID"),
+        ("entity_type" = Option<String>, Query, description = "Entity Type: student, vendor, employee, sponsor"),
+        ("entity_id" = Option<Uuid>, Query, description = "Entity ID"),
+        ("start_date" = Option<NaiveDate>, Query, description = "Start Date"),
+        ("end_date" = Option<NaiveDate>, Query, description = "End Date"),
+        ("currency" = Option<String>, Query, description = "Currency"),
+    ),
+    responses((status = 200, body = StatementResponseDto)), security(("bearer" = [])), tag = "Finance")]
+pub async fn get_account_statement(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Query(q): Query<StatementFilterQuery>,
+) -> Result<Json<ApiResponse<StatementResponseDto>>, ApiError> {
+    let filter = StatementFilter {
+        account_id: q.account_id,
+        entity_type: q.entity_type,
+        entity_id: q.entity_id,
+        start_date: q.start_date,
+        end_date: q.end_date,
+        currency_code: q.currency_code.or(q.currency),
+    };
+    let statement = state.finance_service.get_account_statement(&ctx, ctx.tenant_id, filter).await?;
+    let dto = StatementResponseDto {
+        account_id: statement.account_id,
+        account_code: statement.account_code,
+        account_name: statement.account_name,
+        account_name_ar: statement.account_name_ar,
+        entity_type: statement.entity_type,
+        entity_id: statement.entity_id,
+        currency: statement.currency,
+        opening_balance: statement.opening_balance,
+        total_debit: statement.total_debit,
+        total_credit: statement.total_credit,
+        closing_balance: statement.closing_balance,
+        transactions: statement.transactions.into_iter().map(|t| StatementTransactionItemDto {
+            id: t.id,
+            date: t.date,
+            reference_number: t.reference_number,
+            source_type: t.source_type,
+            source_id: t.source_id,
+            description: t.description,
+            description_ar: t.description_ar,
+            debit: t.debit,
+            credit: t.credit,
+            running_balance: t.running_balance,
+            contra_account_name: t.contra_account_name,
+        }).collect(),
+    };
+    Ok(ApiResponse::ok(dto))
+}
+
+#[utoipa::path(post, path = "/api/v1/finance/disbursements", request_body = ProcessDisbursementRequest,
+    responses((status = 201, body = JournalEntryDto)), security(("bearer" = [])), tag = "Finance")]
+pub async fn process_disbursement(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<ProcessDisbursementRequest>,
+) -> Result<Json<ApiResponse<JournalEntryDto>>, ApiError> {
+    let method = match p.payment_method.as_deref().unwrap_or("cash").to_lowercase().as_str() {
+        "bank" | "bank_transfer" => PaymentMethod::BankTransfer,
+        "check" => PaymentMethod::Check,
+        "mada" => PaymentMethod::Mada,
+        "credit_card" => PaymentMethod::CreditCard,
+        "apple_pay" => PaymentMethod::ApplePay,
+        _ => PaymentMethod::Cash,
+    };
+
+    let input = DisbursementInput {
+        treasury_account_id: p.treasury_account_id,
+        beneficiary_account_id: p.beneficiary_account_id,
+        amount: p.amount,
+        currency_code: p.currency_code,
+        payment_method: method,
+        reference: p.reference,
+        beneficiary_name: p.beneficiary_name,
+        beneficiary_type: p.beneficiary_type,
+        beneficiary_id: p.beneficiary_id,
+        notes: p.notes,
+        voucher_date: p.voucher_date,
+    };
+
+    let entry = state.finance_service.process_disbursement(&ctx, ctx.tenant_id, input).await?;
+    Ok(ApiResponse::ok(map_journal_entry_to_dto(entry)))
+}
+
+#[utoipa::path(post, path = "/api/v1/finance/sub-accounts", request_body = CreateSubAccountRequest,
+    responses((status = 201, body = AccountDto)), security(("bearer" = [])), tag = "Finance")]
+pub async fn create_sub_account(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<CreateSubAccountRequest>,
+) -> Result<Json<ApiResponse<AccountDto>>, ApiError> {
+    let input = CreateSubAccountInput {
+        parent_id: p.parent_id,
+        parent_code: p.parent_code,
+        code: p.code,
+        name: p.name,
+        name_ar: p.name_ar,
+        entity_type: p.entity_type,
+        entity_id: p.entity_id,
+        currency_code: p.currency_code,
+    };
+
+    let a = state.finance_service.create_sub_account(&ctx, ctx.tenant_id, input).await?;
+    Ok(ApiResponse::ok(AccountDto {
+        id: a.id,
+        org_id: a.org_id,
+        code: a.code,
+        name: a.name,
+        name_ar: a.name_ar,
+        account_type: a.account_type.to_string(),
+        parent_id: a.parent_id,
+        currency: a.currency_code,
+        is_active: a.is_active,
+        balances: a.balances,
+        created_by: a.created_by,
+        updated_by: a.updated_by,
+        version: a.version,
+        created_at: a.created_at,
+        updated_at: a.updated_at,
+    }))
+}
+
+#[utoipa::path(post, path = "/api/v1/finance/gateway/settlement", request_body = SettleGatewayPayoutRequest,
+    responses((status = 201, body = JournalEntryDto)), security(("bearer" = [])), tag = "Finance")]
+pub async fn settle_gateway_payout(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<SettleGatewayPayoutRequest>,
+) -> Result<Json<ApiResponse<JournalEntryDto>>, ApiError> {
+    let input = SettleGatewayPayoutInput {
+        clearing_account_id: p.clearing_account_id,
+        bank_account_id: p.bank_account_id,
+        gross_amount: p.gross_amount,
+        fee_amount: p.fee_amount,
+        net_amount: p.net_amount,
+        payout_reference: p.payout_reference,
+        accounting_date: p.accounting_date,
+    };
+
+    let entry = state.finance_service.settle_gateway_payout(&ctx, ctx.tenant_id, input).await?;
+    Ok(ApiResponse::ok(map_journal_entry_to_dto(entry)))
+}
+
+#[utoipa::path(post, path = "/api/v1/finance/payroll/accrual", request_body = PostPayrollRequest,
+    responses((status = 201, body = JournalEntryDto)), security(("bearer" = [])), tag = "Finance")]
+pub async fn post_payroll_accrual(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<PostPayrollRequest>,
+) -> Result<Json<ApiResponse<JournalEntryDto>>, ApiError> {
+    let input = PostPayrollInput {
+        payroll_period: p.payroll_period,
+        accounting_date: p.accounting_date,
+        items: p.items.into_iter().map(|i| PayrollItemInput {
+            employee_id: i.employee_id,
+            employee_name: i.employee_name,
+            is_academic: i.is_academic,
+            base_salary: i.base_salary,
+            allowances: i.allowances,
+            deductions: i.deductions,
+            gosi_deduction: i.gosi_deduction,
+            net_salary: i.net_salary,
+        }).collect(),
+    };
+
+    let entry = state.finance_service.post_payroll_journal(&ctx, ctx.tenant_id, input).await?;
+    Ok(ApiResponse::ok(map_journal_entry_to_dto(entry)))
+}
+
+#[utoipa::path(post, path = "/api/v1/finance/payroll/disbursement", request_body = DisbursePayrollRequest,
+    responses((status = 201, body = JournalEntryDto)), security(("bearer" = [])), tag = "Finance")]
+pub async fn disburse_payroll_handler(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<DisbursePayrollRequest>,
+) -> Result<Json<ApiResponse<JournalEntryDto>>, ApiError> {
+    let entry = state.finance_service.disburse_payroll(
+        &ctx,
+        ctx.tenant_id,
+        p.bank_account_id,
+        p.payroll_period,
+        p.amount,
+        p.notes,
+    ).await?;
+    Ok(ApiResponse::ok(map_journal_entry_to_dto(entry)))
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/accounts", post(create_account).get(list_accounts))
@@ -1130,4 +1431,10 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/journal-entries", post(create_journal_entry).get(list_journal_entries))
         .route("/api/v1/journal-entries/:id", get(get_journal_entry).delete(delete_journal_entry))
         .route("/api/v1/journal-entries/:id/reverse", post(reverse_journal_entry))
+        .route("/api/v1/finance/statement", get(get_account_statement))
+        .route("/api/v1/finance/disbursements", post(process_disbursement))
+        .route("/api/v1/finance/sub-accounts", post(create_sub_account))
+        .route("/api/v1/finance/gateway/settlement", post(settle_gateway_payout))
+        .route("/api/v1/finance/payroll/accrual", post(post_payroll_accrual))
+        .route("/api/v1/finance/payroll/disbursement", post(disburse_payroll_handler))
 }
