@@ -1,13 +1,31 @@
 {
   "metadata": {
-    "name": "شجرة محاسبية للكيانات التعليمية",
-    "description": "شجرة محاسبية شاملة لمدارس، جامعات، معاهد (حكومية وخاصة)",
-    "standards": ["IFRS", "IPSAS", "AICPA NFP"],
-    "currency": "SAR",
+    "name": "الشجرة المحاسبية للمدارس",
+    "name_en": "School Chart of Accounts",
+    "description": "شجرة محاسبية مخصصة للمدارس، مع التركيز على الرسوم الدراسية والخدمات المدرسية والطلاب والتشغيل.",
+    "blueprint_id": "SCHOOL",
+    "source_blueprint": "educational_chart_of_accounts.json",
+    "source_version": "1.0.0",
+    "version": "2.0.0",
+    "currency": null,
+    "currency_policy": "Organization-configured; never hardcode SAR or another currency.",
     "levels": 4,
-    "version": "1.0.0",
-    "last_updated": "2026-06-25",
-    "total_accounts": 482
+    "account_count": 462,
+    "leaf_account_count": 357,
+    "sector_models": [
+      "PRIVATE",
+      "PUBLIC"
+    ],
+    "accounting_basis_options": [
+      "IFRS",
+      "IPSAS"
+    ],
+    "design_notes": [
+      "This blueprint is a starting institutional COA, not a replacement for the organization's statutory accounting policy.",
+      "Grades, classes, faculties, departments, campuses, branches and programs should be modeled as dimensions/cost centers/org units where supported, not by duplicating the account tree.",
+      "Bootstrap may install this blueprint as the initial protected/root structure; organization-specific child accounts remain configurable according to Orbis accounting rules.",
+      "Account IDs used at runtime must be resolved from the created organization's accounts; these source codes are stable blueprint codes, not database IDs."
+    ]
   },
   "accounts": [
     {
@@ -2189,76 +2207,6 @@
           ]
         },
         {
-          "code": "44",
-          "name_ar": "إيرادات البحث والتطوير",
-          "name_en": "Research and Development Revenue",
-          "type": "REVENUE",
-          "nature": "دائن",
-          "level": 2,
-          "children": [
-            {
-              "code": "4401",
-              "name_ar": "إيرادات البحث العلمي",
-              "name_en": "Scientific Research Revenue",
-              "type": "REVENUE",
-              "nature": "دائن",
-              "level": 3,
-              "children": [
-                {
-                  "code": "440101",
-                  "name_ar": "إيرادات عقود بحثية",
-                  "name_en": "Research Contract Revenue",
-                  "type": "REVENUE",
-                  "nature": "دائن",
-                  "level": 4
-                },
-                {
-                  "code": "440102",
-                  "name_ar": "إيرادات استشارات بحثية",
-                  "name_en": "Research Consultation Revenue",
-                  "type": "REVENUE",
-                  "nature": "دائن",
-                  "level": 4
-                },
-                {
-                  "code": "440103",
-                  "name_ar": "إيرادات براءات اختراع",
-                  "name_en": "Patent Revenue",
-                  "type": "REVENUE",
-                  "nature": "دائن",
-                  "level": 4
-                }
-              ]
-            },
-            {
-              "code": "4402",
-              "name_ar": "إيرادات التطوير التعليمي",
-              "name_en": "Educational Development Revenue",
-              "type": "REVENUE",
-              "nature": "دائن",
-              "level": 3,
-              "children": [
-                {
-                  "code": "440201",
-                  "name_ar": "إيرادات تطوير مناهج",
-                  "name_en": "Curriculum Development Revenue",
-                  "type": "REVENUE",
-                  "nature": "دائن",
-                  "level": 4
-                },
-                {
-                  "code": "440202",
-                  "name_ar": "إيرادات تطوير برامج",
-                  "name_en": "Program Development Revenue",
-                  "type": "REVENUE",
-                  "nature": "دائن",
-                  "level": 4
-                }
-              ]
-            }
-          ]
-        },
-        {
           "code": "45",
           "name_ar": "إيرادات الخدمات الأخرى",
           "name_en": "Other Services Revenue",
@@ -3670,110 +3618,6 @@
                   "code": "550703",
                   "name_ar": "خدمات بريد سريع",
                   "name_en": "Express Mail Services",
-                  "type": "EXPENSE",
-                  "nature": "مدين",
-                  "level": 4
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "code": "56",
-          "name_ar": "مصروفات التمويل والاستثمار",
-          "name_en": "Financing and Investment Expenses",
-          "type": "EXPENSE",
-          "nature": "مدين",
-          "level": 2,
-          "children": [
-            {
-              "code": "5601",
-              "name_ar": "مصروفات فوائد",
-              "name_en": "Interest Expenses",
-              "type": "EXPENSE",
-              "nature": "مدين",
-              "level": 3,
-              "children": [
-                {
-                  "code": "560101",
-                  "name_ar": "فوائد قروض بنكية",
-                  "name_en": "Bank Loan Interest",
-                  "type": "EXPENSE",
-                  "nature": "مدين",
-                  "level": 4
-                },
-                {
-                  "code": "560102",
-                  "name_ar": "فوائد قروض حكومية",
-                  "name_en": "Government Loan Interest",
-                  "type": "EXPENSE",
-                  "nature": "مدين",
-                  "level": 4
-                },
-                {
-                  "code": "560103",
-                  "name_ar": "فوائد أوراق دفع",
-                  "name_en": "Notes Payable Interest",
-                  "type": "EXPENSE",
-                  "nature": "مدين",
-                  "level": 4
-                }
-              ]
-            },
-            {
-              "code": "5602",
-              "name_ar": "مصروفات عمولات بنكية",
-              "name_en": "Bank Commission Expenses",
-              "type": "EXPENSE",
-              "nature": "مدين",
-              "level": 3,
-              "children": [
-                {
-                  "code": "560201",
-                  "name_ar": "عمولات تحويل",
-                  "name_en": "Transfer Commissions",
-                  "type": "EXPENSE",
-                  "nature": "مدين",
-                  "level": 4
-                },
-                {
-                  "code": "560202",
-                  "name_ar": "عمولات خطابات ضمان",
-                  "name_en": "Guarantee Letter Commissions",
-                  "type": "EXPENSE",
-                  "nature": "مدين",
-                  "level": 4
-                },
-                {
-                  "code": "560203",
-                  "name_ar": "رسوم خدمات بنكية",
-                  "name_en": "Bank Service Fees",
-                  "type": "EXPENSE",
-                  "nature": "مدين",
-                  "level": 4
-                }
-              ]
-            },
-            {
-              "code": "5603",
-              "name_ar": "مصروفات خسائر استثمارية",
-              "name_en": "Investment Loss Expenses",
-              "type": "EXPENSE",
-              "nature": "مدين",
-              "level": 3,
-              "children": [
-                {
-                  "code": "560301",
-                  "name_ar": "خسائر استثمارات",
-                  "name_en": "Investment Losses",
-                  "type": "EXPENSE",
-                  "nature": "مدين",
-                  "level": 4
-                },
-                {
-                  "code": "560302",
-                  "name_ar": "مخصص انخفاض قيمة استثمارات",
-                  "name_en": "Provision for Investment Decline",
                   "type": "EXPENSE",
                   "nature": "مدين",
                   "level": 4

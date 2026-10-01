@@ -22,6 +22,7 @@ pub mod bootstrap_service;
 pub mod file_storage_service;
 pub mod folder_service;
 pub mod onboarding_service;
+pub mod coa_loader;
 
 pub use student_service::{StudentService, RegisterStudentInput};
 pub use progression_service::ProgressionService;
@@ -50,4 +51,5 @@ pub use onboarding_service::{
     OnboardingService, OnboardingStateResponse, SetupTask, CategoryProgress,
     OnboardingTaskCategory, OnboardingTaskStatus, ProvisionDefaultsRequest, ProvisionDefaultsResult,
 };
+pub use coa_loader::{CoaBlueprintLoader, CoaMetadata, CoaFile, CoaNode};
 
