@@ -1,24 +1,31 @@
 <script lang="ts">
-import type { SVGAttributes } from "svelte/elements";
+	import type { SVGAttributes } from 'svelte/elements';
+	import { cn } from './utils';
 
-let {
-  ref = $bindable(null),
-  class: className,
-  dotClass,
-  ...restProps
-}: SVGAttributes<SVGSVGElement> & {
-  ref?: SVGSVGElement | null;
-  class?: string;
-  dotClass?: string;
-} = $props();
+	interface Props extends SVGAttributes<SVGSVGElement> {
+		class?: string;
+		className?: string;
+		dotClass?: string;
+		size?: number | string;
+	}
+
+	let {
+		class: klass = '',
+		className = '',
+		dotClass = '',
+		size,
+		...restProps
+	}: Props = $props();
 </script>
 
 <svg
-	bind:this={ref}
+	xmlns="http://www.w3.org/2000/svg"
 	viewBox="0 0 642 660"
 	fill="none"
-	xmlns="http://www.w3.org/2000/svg"
-	class={cn("h-6 w-auto", className)}
+	width={size}
+	height={size}
+	class={cn(className || 'size-4', klass)}
+	aria-hidden="true"
 	{...restProps}
 >
 	<path
@@ -29,7 +36,7 @@ let {
 	/>
 	<path
 		d="M461.208 126.279C450.979 89.5042 473.161 48.4644 509.122 37.6473C570.32 19.2473 622.788 82.9853 594.489 141.361C565.366 201.438 479.405 191.71 461.208 126.279Z"
-		fill={dotClass ? undefined : "#A821D9"}
+		fill={dotClass ? undefined : '#A821D9'}
 		class={dotClass}
 	/>
 </svg>

@@ -1,12 +1,12 @@
 <!--
   @component StepBlueprint
-  Step 1: Selection of Institution Blueprint.
-  Minimalist, elegant card selection with design tokens.
+  Step 2: Selection of Institution Blueprint.
+  Spacious, elegant 4-model selection with design tokens and feature highlights.
 -->
 <script lang="ts">
 import { BLUEPRINTS, type InstitutionType, type InstitutionBlueprint } from "@orbis/blueprints";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@orbis/ui/card";
 import { Badge } from "@orbis/ui/badge";
+import { Check } from "@orbis/icons";
 
 let {
   selectedType = $bindable<InstitutionType>(),
@@ -51,57 +51,69 @@ const blueprintsList: BlueprintOption[] = [
 ];
 </script>
 
-<div class="space-y-6 max-w-3xl mx-auto">
-  <div class="space-y-1">
-    <h2 class="text-lg font-semibold tracking-tight text-foreground">
-      {isRTL ? "اختر النموذج الأنسب لمؤسستك" : "Select Institution Blueprint"}
+<div class="space-y-6 max-w-5xl mx-auto py-2">
+  <div class="space-y-2 text-start">
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-semibold text-primary uppercase font-mono tracking-wider">
+        {isRTL ? "المرحلة ٢ من ٥" : "Step 2 of 5"}
+      </span>
+    </div>
+    <h2 class="text-2xl font-bold tracking-tight text-foreground">
+      {isRTL ? "اختر النموذج الأكاديمي لمؤسستك" : "Select Institutional Blueprint"}
     </h2>
-    <p class="text-xs text-muted-foreground">
+    <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
       {isRTL
-        ? "سيتم تهيئة الهيكل الأكاديمي واللائحة التقييمية والصلاحيات تلقائياً بناءً على هذا الاختيار."
-        : "Initial academic structures and evaluation policies will be pre-configured based on this model."}
+        ? "يتم تكييف الهيكل الأكاديمي، نظام التقييم، وتوزيع الفصول تلقائياً وفقاً للنموذج المختار."
+        : "Evaluation policies, academic structures, and core operational rules will be calibrated to this model."}
     </p>
   </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     {#each blueprintsList as item}
       {@const isSelected = selectedType === item.type}
-      
+
       <button
         type="button"
         onclick={() => (selectedType = item.type)}
-        class="text-start focus:outline-none"
+        class="text-start focus:outline-none w-full group"
       >
-        <Card class="h-full border transition-colors cursor-pointer {isSelected
-          ? 'border-primary bg-primary/5 shadow-xs'
-          : 'border-border/60 hover:border-border bg-card'}">
-          <CardHeader class="p-4 pb-2 space-y-1">
-            <div class="flex items-center justify-between gap-2">
-              <CardTitle class="text-sm font-semibold text-foreground">
-                {isRTL ? item.blueprint.nameAr : item.blueprint.nameEn}
-              </CardTitle>
-              {#if isSelected}
-                <span class="size-2 rounded-full bg-primary shrink-0"></span>
-              {/if}
-            </div>
-            <CardDescription class="text-xs text-muted-foreground line-clamp-2">
-              {isRTL ? item.blueprint.descriptionAr : item.blueprint.descriptionEn}
-            </CardDescription>
-          </CardHeader>
+        <div
+          class="h-full rounded-2xl border p-6 transition-all cursor-pointer relative flex flex-col justify-between {isSelected
+            ? 'border-primary bg-primary/[0.04] shadow-md shadow-primary/10 ring-1 ring-primary/40'
+            : 'border-border/70 hover:border-border bg-card shadow-xs'}"
+        >
+          <div class="space-y-3">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h3 class="text-base font-bold text-foreground group-hover:text-primary transition-colors">
+                  {isRTL ? item.blueprint.nameAr : item.blueprint.nameEn}
+                </h3>
+                <p class="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                  {isRTL ? item.blueprint.descriptionAr : item.blueprint.descriptionEn}
+                </p>
+              </div>
 
-          <CardContent class="p-4 pt-2">
-            <div class="flex flex-wrap gap-1 mt-2">
-              {#each (isRTL ? item.highlightsAr : item.highlightsEn) as highlight}
-                <Badge
-                  variant="outline"
-                  class="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground"
-                >
-                  {highlight}
-                </Badge>
-              {/each}
+              <div
+                class="size-6 rounded-full flex items-center justify-center shrink-0 transition-colors {isSelected
+                  ? 'bg-primary text-primary-foreground'
+                  : 'border border-border/70 bg-muted/40 text-transparent'}"
+              >
+                <Check size={14} strokeWidth={3} />
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          <div class="flex flex-wrap gap-1.5 mt-5 pt-3 border-t border-border/40">
+            {#each (isRTL ? item.highlightsAr : item.highlightsEn) as highlight}
+              <Badge
+                variant="outline"
+                class="text-[11px] px-2 py-0.5 font-normal text-muted-foreground border-border/60 bg-muted/20"
+              >
+                {highlight}
+              </Badge>
+            {/each}
+          </div>
+        </div>
       </button>
     {/each}
   </div>

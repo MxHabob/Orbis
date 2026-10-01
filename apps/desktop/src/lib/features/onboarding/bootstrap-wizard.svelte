@@ -25,15 +25,13 @@ import StepBlueprint from "./components/step-blueprint.svelte";
 import StepOrganization from "./components/step-organization.svelte";
 import StepAdmin from "./components/step-admin.svelte";
 import StepReview from "./components/step-review.svelte";
-import AboutDialog from "$lib/components/system/about-dialog.svelte";
-import ChangelogModal from "$lib/components/system/changelog-modal.svelte";
-import SupportDialog from "$lib/components/system/support-dialog.svelte";
 import { Button } from "@orbis/ui/button";
 import {
   Cube,
   Sparkles,
   QuestionMarkCircle,
 } from "@orbis/icons";
+    import { SupportDialog } from "../system";
 
 let currentStep = $state<OnboardingStep>("mulverse");
 let form = $state<OnboardingFormModel>({ ...INITIAL_ONBOARDING_VALUES });
@@ -47,8 +45,6 @@ let bootstrapResult = $state<BootstrapResult | null>(null);
 let envData = $state<EnvironmentDetectionResult | null>(null);
 let isLoadingEnv = $state(true);
 
-let isAboutOpen = $state(false);
-let isChangelogOpen = $state(false);
 let isSupportOpen = $state(false);
 
 const isRTL = $derived(getLocale().startsWith("ar"));
@@ -266,25 +262,6 @@ function enterWorkspace() {
       <Button
         variant="ghost"
         size="sm"
-        onclick={() => (isAboutOpen = true)}
-        class="h-8 text-xs font-normal gap-1.5 px-2.5 text-muted-foreground hover:text-foreground"
-      >
-        <span class="hidden sm:inline">{isRTL ? "عن المنظومة" : "About"}</span>
-      </Button>
-
-      <Button
-        variant="ghost"
-        size="sm"
-        onclick={() => (isChangelogOpen = true)}
-        class="h-8 text-xs font-normal gap-1.5 px-2.5 text-muted-foreground hover:text-foreground"
-      >
-        <Sparkles size={14} class="text-primary" />
-        <span class="hidden sm:inline">{isRTL ? "ما الجديد" : "What's New"}</span>
-      </Button>
-
-      <Button
-        variant="ghost"
-        size="sm"
         onclick={() => (isSupportOpen = true)}
         class="h-8 text-xs font-normal gap-1.5 px-2.5 text-muted-foreground hover:text-foreground"
       >
@@ -352,7 +329,5 @@ function enterWorkspace() {
   {/if}
 </div>
 
-<!-- System Dialogs -->
-<AboutDialog bind:open={isAboutOpen} />
-<ChangelogModal bind:open={isChangelogOpen} />
+
 <SupportDialog bind:open={isSupportOpen} />

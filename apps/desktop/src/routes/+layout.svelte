@@ -2,7 +2,7 @@
 import type { Pathname } from "$app/types";
 import { resolve } from "$app/paths";
 import { page } from "$app/state";
-import { locales, localizeHref } from "$lib/paraglide/runtime";
+import { locales, localizeHref, getLocale, getTextDirection } from "$lib/paraglide/runtime";
 import { themeStore } from "$lib/stores";
 import { isDesktopApp } from "$lib/api";
 import { onMount } from "svelte";
@@ -17,6 +17,16 @@ let { children } = $props();
 // Apply theme on mount
 $effect(() => {
   themeStore.applyToDOM();
+});
+
+// Apply lang & dir to documentElement
+$effect(() => {
+  const currentLocale = getLocale();
+  const dir = getTextDirection(currentLocale);
+  if (typeof document !== "undefined") {
+    document.documentElement.dir = dir;
+    document.documentElement.lang = currentLocale;
+  }
 });
 
 // Add desktop class to html element for Tauri shell styling

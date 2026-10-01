@@ -1,13 +1,13 @@
 <!--
   @component StepAdmin
   Step 4: Initial Primary Administrator Account.
-  Minimalist form using @orbis/ui components, design tokens, and avatar preview.
+  Spacious 2-column layout with live @orbis/avatar-engine preview, real-time password strength,
+  and elevated design tokens.
 -->
 <script lang="ts">
 import type { OnboardingFormModel } from "../types";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
-import { Card, CardContent } from "@orbis/ui/card";
 import { Avatar, AvatarController } from "@orbis/avatar-engine";
 
 let {
@@ -40,55 +40,67 @@ const strengthLabel = $derived.by(() => {
   if (passwordStrength <= 4) return { text: isRTL ? "جيدة" : "Good", color: "bg-blue-500", width: "80%" };
   return { text: isRTL ? "قوية" : "Strong", color: "bg-emerald-500", width: "100%" };
 });
-
-const passwordsMatch = $derived(
-  !form.adminConfirmPassword || form.adminPassword === form.adminConfirmPassword
-);
 </script>
 
-<div class="space-y-6 max-w-2xl mx-auto py-1">
-  <div class="space-y-1 text-start">
+<div class="space-y-6 max-w-5xl mx-auto py-2">
+  <div class="space-y-2 text-start">
     <div class="flex items-center gap-2">
       <span class="text-xs font-semibold text-primary uppercase font-mono tracking-wider">
         {isRTL ? "المرحلة ٤ من ٥" : "Step 4 of 5"}
       </span>
     </div>
-    <h2 class="text-xl font-bold tracking-tight text-foreground">
-      {isRTL ? "إنشاء حساب المشرف العام" : "Primary Administrator Account"}
+    <h2 class="text-2xl font-bold tracking-tight text-foreground">
+      {isRTL ? "إنشاء حساب المشرف العام للنظام" : "Primary Administrator Account"}
     </h2>
-    <p class="text-xs text-muted-foreground">
+    <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
       {isRTL
-        ? "سيتم منح هذا الحساب صلاحيات الإدارة الكاملة للتحكم بجميع وحدات النظام."
-        : "This account will be granted full administrative authority across all modules."}
+        ? "سيتم منح هذا الحساب صلاحيات الإشراف والتحكم الكاملة بجميع وحدات وقواعد بيانات المنظومة."
+        : "This master account will possess unrestricted authority across security policies and core operations."}
     </p>
   </div>
 
-  <Card class="border-border/60 shadow-md bg-card/95">
-    <CardContent class="p-6 space-y-5 text-start">
-      <!-- Avatar Header Preview -->
-      <div class="flex items-center gap-4 p-3.5 rounded-xl bg-muted/20 border border-border/50">
-        <div class="size-12 rounded-full bg-background border border-border/60 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 text-start">
+    <!-- Left Column: Avatar & Role Identity Preview -->
+    <div class="lg:col-span-4 rounded-2xl border border-border/70 bg-card p-6 flex flex-col items-center text-center justify-between shadow-xs">
+      <div class="space-y-4 w-full flex flex-col items-center">
+        <div class="size-20 rounded-full bg-background border-2 border-primary/30 flex items-center justify-center overflow-hidden shadow-sm ring-4 ring-primary/10">
           <Avatar
             controller={avatarController}
-            width="44px"
-            height="44px"
+            width="72px"
+            height="72px"
           />
         </div>
-        <div class="space-y-0.5 text-start overflow-hidden">
-          <div class="text-xs font-bold text-foreground truncate">
+
+        <div class="space-y-1 w-full">
+          <div class="text-sm font-bold text-foreground truncate">
             {form.adminFirstNameAr || form.adminFirstName || (isRTL ? "المشرف العام" : "Administrator")} {form.adminLastNameAr || form.adminLastName || ""}
           </div>
-          <div class="text-[11px] font-mono text-muted-foreground truncate">
+          <div class="text-xs font-mono text-muted-foreground truncate">
             {form.adminEmail || "admin@institution.edu"}
           </div>
         </div>
       </div>
 
-      <!-- Admin Names -->
+      <div class="w-full mt-6 pt-4 border-t border-border/40 text-xs text-muted-foreground leading-relaxed">
+        {isRTL
+          ? "يتم تشفير وتأمين كلمات المرور محلياً عبر خوارزمية Bcrypt مع توثيق كامل للعمليات الإدارية."
+          : "Credentials are cryptographically hashed on-device using Bcrypt with full audit logging."}
+      </div>
+    </div>
+
+    <!-- Right Column: Form Inputs -->
+    <div class="lg:col-span-8 rounded-2xl border border-border/70 bg-card p-6 space-y-5 shadow-xs">
+      <div class="border-b border-border/40 pb-3">
+        <h3 class="text-sm font-bold text-foreground uppercase tracking-wider font-mono">
+          {isRTL ? "بيانات الاعتماد والدخول" : "Administrator Credentials"}
+        </h3>
+      </div>
+
+      <!-- Arabic Names -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="space-y-1.5">
           <Label for="admin-fn-ar" class="text-xs font-medium text-foreground">
-            {isRTL ? "الاسم الأول (عربي) *" : "First Name (Arabic) *"}
+            {isRTL ? "الاسم الأول (بالعربية) *" : "First Name (Arabic) *"}
           </Label>
           <Input
             id="admin-fn-ar"
@@ -102,7 +114,7 @@ const passwordsMatch = $derived(
 
         <div class="space-y-1.5">
           <Label for="admin-ln-ar" class="text-xs font-medium text-foreground">
-            {isRTL ? "اسم العائلة (عربي) *" : "Last Name (Arabic) *"}
+            {isRTL ? "اسم العائلة (بالعربية) *" : "Last Name (Arabic) *"}
           </Label>
           <Input
             id="admin-ln-ar"
@@ -115,10 +127,11 @@ const passwordsMatch = $derived(
         </div>
       </div>
 
+      <!-- English Names -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="space-y-1.5">
           <Label for="admin-fn-en" class="text-xs font-medium text-foreground">
-            {isRTL ? "الاسم الأول (إنجليزي) *" : "First Name (English) *"}
+            {isRTL ? "الاسم الأول (بالإنجليزية) *" : "First Name (English) *"}
           </Label>
           <Input
             id="admin-fn-en"
@@ -134,7 +147,7 @@ const passwordsMatch = $derived(
 
         <div class="space-y-1.5">
           <Label for="admin-ln-en" class="text-xs font-medium text-foreground">
-            {isRTL ? "اسم العائلة (إنجليزي) *" : "Last Name (English) *"}
+            {isRTL ? "اسم العائلة (بالإنجليزية) *" : "Last Name (English) *"}
           </Label>
           <Input
             id="admin-ln-en"
@@ -149,50 +162,29 @@ const passwordsMatch = $derived(
         </div>
       </div>
 
-      <div class="border-t border-border/40 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <!-- Email -->
-        <div class="space-y-1.5">
-          <Label for="admin-email" class="text-xs font-medium text-foreground">
-            {isRTL ? "البريد الإلكتروني *" : "Email Address *"}
-          </Label>
-          <Input
-            id="admin-email"
-            type="email"
-            placeholder="admin@institution.edu"
-            bind:value={form.adminEmail}
-            class="h-9 text-xs"
-          />
-          {#if errors.adminEmail}
-            <p class="text-[11px] text-destructive">{errors.adminEmail}</p>
-          {/if}
-        </div>
-
-        <!-- Phone -->
-        <div class="space-y-1.5">
-          <Label for="admin-phone" class="text-xs font-medium text-foreground">
-            {isRTL ? "رقم الهاتف (اختياري)" : "Phone (Optional)"}
-          </Label>
-          <Input
-            id="admin-phone"
-            type="tel"
-            placeholder="+966 5X XXX XXXX"
-            bind:value={form.adminPhone}
-            class="h-9 text-xs"
-          />
-        </div>
+      <!-- Email Address -->
+      <div class="space-y-1.5">
+        <Label for="admin-email" class="text-xs font-medium text-foreground">
+          {isRTL ? "البريد الإلكتروني للإدارة *" : "Primary Email Address *"}
+        </Label>
+        <Input
+          id="admin-email"
+          type="email"
+          placeholder="admin@institution.edu"
+          bind:value={form.adminEmail}
+          class="h-9 text-xs font-mono"
+        />
+        {#if errors.adminEmail}
+          <p class="text-[11px] text-destructive">{errors.adminEmail}</p>
+        {/if}
       </div>
 
-      <!-- Password & Confirm -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+      <!-- Password and Confirmation -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="space-y-1.5">
-          <div class="flex items-center justify-between">
-            <Label for="admin-pwd" class="text-xs font-medium text-foreground">
-              {isRTL ? "كلمة المرور *" : "Password *"}
-            </Label>
-            {#if form.adminPassword && strengthLabel.text}
-              <span class="text-[10px] text-muted-foreground">{strengthLabel.text}</span>
-            {/if}
-          </div>
+          <Label for="admin-pwd" class="text-xs font-medium text-foreground">
+            {isRTL ? "كلمة المرور *" : "Password *"}
+          </Label>
           <Input
             id="admin-pwd"
             type="password"
@@ -200,16 +192,24 @@ const passwordsMatch = $derived(
             bind:value={form.adminPassword}
             class="h-9 text-xs"
           />
-          {#if form.adminPassword}
-            <div class="h-1 w-full bg-muted rounded-full overflow-hidden mt-1">
-              <div
-                class="h-full {strengthLabel.color} transition-all duration-300"
-                style="width: {strengthLabel.width};"
-              ></div>
-            </div>
-          {/if}
           {#if errors.adminPassword}
             <p class="text-[11px] text-destructive">{errors.adminPassword}</p>
+          {/if}
+
+          <!-- Real-Time Password Strength Meter -->
+          {#if form.adminPassword}
+            <div class="space-y-1 pt-1">
+              <div class="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                <div
+                  class="h-full {strengthLabel.color} transition-all duration-300"
+                  style="width: {strengthLabel.width};"
+                ></div>
+              </div>
+              <div class="flex justify-between items-center text-[10px] text-muted-foreground font-mono">
+                <span>{isRTL ? "قوة كلمة المرور:" : "Strength:"}</span>
+                <span class="font-bold">{strengthLabel.text}</span>
+              </div>
+            </div>
           {/if}
         </div>
 
@@ -222,18 +222,13 @@ const passwordsMatch = $derived(
             type="password"
             placeholder="••••••••••••"
             bind:value={form.adminConfirmPassword}
-            class="h-9 text-xs {!passwordsMatch ? 'border-destructive' : ''}"
+            class="h-9 text-xs"
           />
-          {#if !passwordsMatch}
-            <p class="text-[11px] text-destructive">
-              {isRTL ? "كلمتا المرور غير متطابقتين" : "Passwords do not match"}
-            </p>
-          {/if}
           {#if errors.adminConfirmPassword}
             <p class="text-[11px] text-destructive">{errors.adminConfirmPassword}</p>
           {/if}
         </div>
       </div>
-    </CardContent>
-  </Card>
+    </div>
+  </div>
 </div>

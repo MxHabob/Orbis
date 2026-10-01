@@ -1,7 +1,7 @@
 <!--
   @component StepReview
   Step 5: Pre-Flight Verification & System Bootstrap Launch.
-  Comprehensive overview of all parameters before executing 0-to-1 initialization.
+  Spacious overview dossier of all parameters + authentic 5-phase initialization execution pipeline.
 -->
 <script lang="ts">
 import {
@@ -14,12 +14,7 @@ import {
 } from "../types";
 import { getBlueprint } from "@orbis/blueprints";
 import { Button } from "@orbis/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
-import {
-  Tag,
-  ShieldCheck,
-  Check,
-} from "@orbis/icons";
+import { Check } from "@orbis/icons";
 
 let {
   form,
@@ -49,16 +44,16 @@ const track = $derived(EDUCATIONAL_TRACK_OPTIONS.find((t) => t.value === form.ed
 const size = $derived(ORGANIZATION_SIZE_OPTIONS.find((s) => s.value === form.organizationSize));
 
 const executionTasksEn = [
-  "Creating organization profile and metadata",
-  "Configuring institution blueprint & academic rules",
-  "Provisioning Primary Administrator credentials",
-  "Initializing Chart of Accounts & currency rates",
+  "Creating institutional identity records",
+  "Calibrating academic structure & blueprint rules",
+  "Provisioning master administrator credentials",
+  "Initializing local financial ledger & currency exchange",
   "Verifying autonomous node operational readiness",
 ];
 
 const executionTasksAr = [
-  "إنشاء سجل المؤسسة وبيانات الهوية",
-  "تهيئة نموذج المؤسسة الأكاديمي واللوائح",
+  "إنشاء سجل المنشأة وتوثيق الهوية الأكاديمية",
+  "تهيئة نموذج المؤسسة وهيكل الفصول واللوائح",
   "إنشاء حساب المشرف العام وتوثيق الصلاحيات",
   "تهيئة دليل الحسابات المالي والعملة الأساسية",
   "التحقق من الجاهزية التشغيلية للنواة المستقلة",
@@ -67,177 +62,176 @@ const executionTasksAr = [
 const tasks = $derived(isRTL ? executionTasksAr : executionTasksEn);
 </script>
 
-<div class="space-y-6 max-w-3xl mx-auto py-1">
-  <div class="space-y-1 text-start">
+<div class="space-y-6 max-w-5xl mx-auto py-2">
+  <div class="space-y-2 text-start">
     <div class="flex items-center gap-2">
       <span class="text-xs font-semibold text-primary uppercase font-mono tracking-wider">
         {isRTL ? "المرحلة ٥ من ٥" : "Step 5 of 5"}
       </span>
     </div>
-    <h2 class="text-xl font-bold tracking-tight text-foreground">
+    <h2 class="text-2xl font-bold tracking-tight text-foreground">
       {isComplete
-        ? (isRTL ? "تمت تهيئة النظام بنجاح" : "System Initialized Successfully")
+        ? (isRTL ? "اكتملت تهيئة المنظومة بنجاح" : "System Initialized Successfully")
         : isSubmitting
-          ? (isRTL ? "جاري تهيئة النظام وتأسيس العقدة..." : "Initializing Autonomous Node...")
-          : (isRTL ? "مراجعة الإعدادات وبدء التهيئة" : "Review & Launch Setup")}
+          ? (isRTL ? "جاري تهيئة النواة المستقلة..." : "Initializing Autonomous Node...")
+          : (isRTL ? "مراجعة البيانات وبدء التأسيس" : "Review & Launch Setup")}
     </h2>
-    <p class="text-xs text-muted-foreground">
+    <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
       {isComplete
-        ? (isRTL ? "تم تأسيس المؤسسة بنجاح، وجميع الوحدات الأساسية جاهزة للعمل." : "Your workspace has been provisioned and is ready for production.")
+        ? (isRTL ? "تم تأسيس المؤسسة بنجاح، والنظام جاهز لبدء العمليات." : "Your workspace has been provisioned and is ready for production.")
         : isSubmitting
-          ? (isRTL ? "يرجى الانتظار ريثما تكتمل التهيئة الأساسية للنظام المحلي." : "Please wait while Orbis provisions initial records and configurations.")
-          : (isRTL ? "تحقق من صحة البيانات أدناه قبل المتابعة لإنشاء المنشأة." : "Review your settings below before initiating autonomous bootstrap.")}
+          ? (isRTL ? "يرجى الانتظار ريثما تكتمل تهيئة السجلات وقواعد البيانات المحلية." : "Please wait while Orbis provisions initial records and configurations.")
+          : (isRTL ? "تحقق من صحة المعايير والإعدادات أدناه قبل بدء التأسيس الفعلي." : "Review your settings below before initiating autonomous bootstrap.")}
     </p>
   </div>
 
   {#if isComplete}
-    <Card class="border-border/60 shadow-lg text-center p-8 space-y-5 bg-card">
-      <div class="size-14 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20 shadow-md">
-        <Check size={28} strokeWidth={2.5} />
+    <div class="rounded-2xl border border-border/70 bg-card shadow-lg text-center p-10 space-y-6">
+      <div class="size-16 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20 shadow-sm">
+        <Check size={32} strokeWidth={2.5} />
       </div>
 
-      <div class="space-y-2">
-        <h3 class="text-lg font-bold text-foreground">
-          {isRTL ? "أهلاً بك في أوربيس • Mulverse OS" : "Welcome to Orbis • Mulverse OS"}
+      <div class="space-y-2 max-w-md mx-auto">
+        <h3 class="text-xl font-bold text-foreground">
+          {form.organizationNameAr || form.organizationName}
         </h3>
-        <p class="text-xs text-muted-foreground max-w-lg mx-auto leading-relaxed">
+        <p class="text-xs text-muted-foreground leading-relaxed">
           {isRTL
-            ? `تم تأسيس ${form.organizationNameAr || form.organizationName} بنجاح كعقدة ذاتية مستقلة، وتعيين ${form.adminEmail} كمشرف عام للنظام.`
-            : `${form.organizationName} has been initialized as an autonomous sovereign node with ${form.adminEmail} as Primary Administrator.`}
+            ? "تم إنشاء قاعدة البيانات المحلية وتوثيق حساب المشرف العام بنجاح. يمكنك الآن الدخول ومباشرة العمل."
+            : "The local database has been provisioned and your administrator account is active. You may now enter your workspace."}
         </p>
       </div>
 
-      <div class="pt-2">
+      <div class="pt-4">
         <Button
           type="button"
-          variant="default"
-          size="default"
+          size="lg"
           onclick={onEnterWorkspace}
-          class="h-10 px-8 text-xs font-semibold gap-2 shadow-md shadow-primary/20"
+          class="h-11 px-8 text-sm font-semibold shadow-md shadow-primary/20"
         >
           <span>{isRTL ? "الدخول إلى مساحة العمل" : "Enter Workspace"}</span>
         </Button>
       </div>
-    </Card>
+    </div>
   {:else if isSubmitting}
-    <Card class="border-border/60 shadow-md p-6 space-y-4 bg-card/95">
-      <div class="flex items-center gap-2.5 pb-2 border-b border-border/40">
-        <div class="size-2 rounded-full bg-primary animate-ping"></div>
-        <span class="text-xs font-semibold text-foreground font-mono">
-          {isRTL ? "مصفوفة مهام التهيئة المباشرة" : "Live Initialization Execution Pipeline"}
-        </span>
+    <!-- Real-Time Pipeline Progress Execution -->
+    <div class="rounded-2xl border border-border/70 bg-card p-8 space-y-6 shadow-md text-start">
+      <div class="flex items-center justify-between border-b border-border/40 pb-4">
+        <div class="space-y-1">
+          <div class="text-sm font-bold text-foreground">
+            {isRTL ? "خطوات التهيئة التنفيذية" : "Execution Pipeline"}
+          </div>
+          <div class="text-xs text-muted-foreground font-mono">
+            {isRTL ? `المرحلة ${Math.min(activeTaskIndex + 1, tasks.length)} من ${tasks.length}` : `Phase ${Math.min(activeTaskIndex + 1, tasks.length)} of ${tasks.length}`}
+          </div>
+        </div>
+
+        <div class="size-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
       </div>
 
-      <div class="space-y-2.5">
+      <div class="space-y-3">
         {#each tasks as task, idx}
           {@const isDone = idx < activeTaskIndex}
           {@const isCurrent = idx === activeTaskIndex}
 
-          <div
-            class="flex items-center gap-3 text-xs py-1.5 px-3 rounded-lg transition-colors {isCurrent
-              ? 'bg-primary/10 text-foreground font-medium border border-primary/20'
-              : isDone
-                ? 'text-muted-foreground bg-muted/20'
-                : 'text-muted-foreground/40'}"
-          >
-            <span class="size-2 rounded-full {isDone ? 'bg-emerald-500' : isCurrent ? 'bg-primary animate-pulse' : 'bg-muted'}"></span>
-            <span>{task}</span>
+          <div class="flex items-center gap-3 p-3 rounded-xl transition-all {isCurrent ? 'bg-primary/5 border border-primary/25' : isDone ? 'bg-muted/15' : 'opacity-40'}">
+            <div class="size-6 rounded-full flex items-center justify-center shrink-0 text-xs font-mono {isDone ? 'bg-emerald-500 text-white' : isCurrent ? 'bg-primary text-primary-foreground animate-pulse' : 'bg-muted text-muted-foreground'}">
+              {#if isDone}
+                <Check size={13} strokeWidth={3} />
+              {:else}
+                {idx + 1}
+              {/if}
+            </div>
+
+            <div class="text-xs font-medium {isCurrent ? 'text-foreground font-semibold' : isDone ? 'text-foreground/80' : 'text-muted-foreground'}">
+              {task}
+            </div>
           </div>
         {/each}
       </div>
-    </Card>
+    </div>
   {:else}
-    <div class="space-y-4">
-      {#if error}
-        <div class="p-4 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive text-xs space-y-1">
-          <div class="font-bold flex items-center gap-1.5">
-            <span>{isRTL ? "فشلت عملية التهيئة:" : "Bootstrap Error:"}</span>
-          </div>
-          <p class="leading-relaxed">{error}</p>
+    <!-- Summary Dossier Matrix -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-start">
+      <!-- Blueprint & Organization -->
+      <div class="rounded-2xl border border-border/70 bg-card p-6 space-y-4 shadow-xs">
+        <div class="border-b border-border/40 pb-2.5">
+          <h3 class="text-xs font-bold text-muted-foreground uppercase tracking-wider font-mono">
+            {isRTL ? "النموذج والمؤسسة" : "Blueprint & Institution"}
+          </h3>
         </div>
-      {/if}
 
-      <!-- 3 Columns Overview Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-start">
-        <!-- Blueprint -->
-        <Card class="border-border/60 shadow-xs bg-card/95">
-          <CardHeader class="p-4 pb-2 space-y-1">
-            <span class="text-[10px] text-muted-foreground uppercase font-mono flex items-center gap-1">
-              <Tag size={11} />
-              <span>{isRTL ? "النموذج الأكاديمي" : "Academic Blueprint"}</span>
-            </span>
-            <CardTitle class="text-sm font-semibold text-foreground">
-              {isRTL ? blueprint.nameAr : blueprint.nameEn}
-            </CardTitle>
-          </CardHeader>
-          <CardContent class="p-4 pt-1 text-xs text-muted-foreground space-y-1">
-            <div class="font-medium text-foreground">{isRTL ? track?.labelAr : track?.labelEn}</div>
-            <div class="text-[11px] text-muted-foreground">{isRTL ? size?.labelAr : size?.labelEn}</div>
-          </CardContent>
-        </Card>
+        <div class="space-y-3 text-xs">
+          <div class="flex justify-between items-center">
+            <span class="text-muted-foreground">{isRTL ? "النموذج الأكاديمي" : "Blueprint"}</span>
+            <span class="font-semibold text-foreground">{isRTL ? blueprint.nameAr : blueprint.nameEn}</span>
+          </div>
 
-        <!-- Org Profile -->
-        <Card class="border-border/60 shadow-xs bg-card/95">
-          <CardHeader class="p-4 pb-2 space-y-1">
-            <span class="text-[10px] text-muted-foreground uppercase font-mono flex items-center gap-1">
-              <span>{isRTL ? "بيانات المنشأة" : "Organization"}</span>
-            </span>
-            <CardTitle class="text-sm font-semibold text-foreground truncate">
-              {form.organizationNameAr || form.organizationName}
-            </CardTitle>
-          </CardHeader>
-          <CardContent class="p-4 pt-1 text-xs text-muted-foreground space-y-1">
-            <div class="text-foreground truncate">{form.organizationName}</div>
-            <div class="text-[11px] font-mono flex items-center gap-1.5">
-              <span>{country?.flag} {country?.code}</span>
-              <span>•</span>
-              <span>{cur?.code}</span>
-              <span>•</span>
-              <span>{tz?.offset}</span>
-            </div>
-          </CardContent>
-        </Card>
+          <div class="flex justify-between items-center">
+            <span class="text-muted-foreground">{isRTL ? "الاسم بالعربية" : "Arabic Name"}</span>
+            <span class="font-semibold text-foreground">{form.organizationNameAr || "—"}</span>
+          </div>
 
-        <!-- Admin -->
-        <Card class="border-border/60 shadow-xs bg-card/95">
-          <CardHeader class="p-4 pb-2 space-y-1">
-            <span class="text-[10px] text-muted-foreground uppercase font-mono flex items-center gap-1">
-              <span>{isRTL ? "المشرف العام" : "Administrator"}</span>
-            </span>
-            <CardTitle class="text-sm font-semibold text-foreground truncate">
-              {form.adminFirstName} {form.adminLastName}
-            </CardTitle>
-          </CardHeader>
-          <CardContent class="p-4 pt-1 text-xs text-muted-foreground space-y-1">
-            <div class="truncate font-mono text-foreground">{form.adminEmail}</div>
-            <div class="text-[11px] font-mono text-muted-foreground">{form.adminPhone || (isRTL ? "بدون هاتف" : "No phone")}</div>
-          </CardContent>
-        </Card>
+          <div class="flex justify-between items-center">
+            <span class="text-muted-foreground">{isRTL ? "الاسم بالإنجليزية" : "English Name"}</span>
+            <span class="font-semibold text-foreground">{form.organizationName || "—"}</span>
+          </div>
+
+          <div class="flex justify-between items-center">
+            <span class="text-muted-foreground">{isRTL ? "المسار التعليمي" : "Track"}</span>
+            <span class="font-semibold text-foreground">{isRTL ? track?.labelAr : track?.labelEn}</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Action Card -->
-      <Card class="border-border/60 shadow-sm p-5 text-center space-y-3 bg-gradient-to-b from-card to-muted/20">
-        <div class="flex items-center justify-center gap-1.5 text-xs text-muted-foreground font-mono">
-          <ShieldCheck size={14} class="text-emerald-500" />
-          <span>Mulverse Autonomous Core • Sovereign Local Database</span>
+      <!-- Regional & Administrator -->
+      <div class="rounded-2xl border border-border/70 bg-card p-6 space-y-4 shadow-xs">
+        <div class="border-b border-border/40 pb-2.5">
+          <h3 class="text-xs font-bold text-muted-foreground uppercase tracking-wider font-mono">
+            {isRTL ? "المنطقة والمشرف" : "Region & Master Admin"}
+          </h3>
         </div>
 
-        <p class="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-          {isRTL
-            ? "سيتم تأسيس قاعدة البيانات المحلية، إنشاء الحساب الإداري، وتهيئة دليل الحسابات المالي الأولي فور الضغط على زر التهيئة."
-            : "Clicking initialize will provision local tables, primary administrator credentials, and foundational ledger."}
-        </p>
+        <div class="space-y-3 text-xs">
+          <div class="flex justify-between items-center">
+            <span class="text-muted-foreground">{isRTL ? "الدولة والمنطقة" : "Country / Region"}</span>
+            <span class="font-semibold text-foreground">{country?.flag} {isRTL ? country?.nameAr : country?.nameEn}</span>
+          </div>
 
-        <Button
-          type="button"
-          variant="default"
-          size="default"
-          onclick={onLaunch}
-          class="h-10 px-8 text-xs font-semibold gap-2 shadow-md shadow-primary/20"
-        >
-          <span>{isRTL ? "بدء تهيئة النظام" : "Initialize System"}</span>
-        </Button>
-      </Card>
+          <div class="flex justify-between items-center">
+            <span class="text-muted-foreground">{isRTL ? "العملة الأساسية" : "Currency"}</span>
+            <span class="font-semibold text-foreground font-mono">{cur?.code} ({isRTL ? cur?.symbolAr : cur?.symbolEn})</span>
+          </div>
+
+          <div class="flex justify-between items-center">
+            <span class="text-muted-foreground">{isRTL ? "المشرف العام" : "Administrator"}</span>
+            <span class="font-semibold text-foreground">{form.adminFirstName} {form.adminLastName}</span>
+          </div>
+
+          <div class="flex justify-between items-center">
+            <span class="text-muted-foreground">{isRTL ? "البريد الإلكتروني" : "Email"}</span>
+            <span class="font-semibold text-foreground font-mono truncate max-w-[200px]">{form.adminEmail}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {#if error}
+      <div class="p-4 rounded-xl bg-destructive/10 border border-destructive/25 text-destructive text-xs space-y-1 text-start">
+        <div class="font-bold">{isRTL ? "تعذر تأسيس المنشأة" : "Initialization Failed"}</div>
+        <p>{error}</p>
+      </div>
+    {/if}
+
+    <div class="pt-4 flex justify-end">
+      <Button
+        type="button"
+        size="lg"
+        onclick={onLaunch}
+        class="h-11 px-8 text-sm font-semibold shadow-md shadow-primary/20"
+      >
+        <span>{isRTL ? "بدء التأسيس والتشغيل" : "Launch Bootstrap"}</span>
+      </Button>
     </div>
   {/if}
 </div>

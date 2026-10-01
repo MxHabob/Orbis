@@ -152,6 +152,10 @@
     "packages/icons": {
       "name": "@orbis/icons",
       "version": "1.0.0",
+      "dependencies": {
+        "clsx": "^2.1.1",
+        "tailwind-merge": "^3.6.0",
+      },
       "devDependencies": {
         "@orbis/tsconfig": "workspace:*",
         "@types/react": "~19.2.2",
@@ -203,15 +207,6 @@
       "devDependencies": {
         "@hey-api/openapi-ts": "^0.99.0",
         "typescript": "^5.4.0",
-      },
-    },
-    "packages/storage": {
-      "name": "@orbis/storage",
-      "version": "1.0.0",
-      "devDependencies": {
-        "@orbis/tsconfig": "workspace:*",
-        "@types/node": "^26.2.0",
-        "typescript": "^7.0.2",
       },
     },
     "packages/svelte-grid": {
@@ -746,8 +741,6 @@
     "@orbis/schemas": ["@orbis/schemas@workspace:packages/schemas"],
 
     "@orbis/sdk": ["@orbis/sdk@workspace:packages/sdk"],
-
-    "@orbis/storage": ["@orbis/storage@workspace:packages/storage"],
 
     "@orbis/svelte-grid": ["@orbis/svelte-grid@workspace:packages/svelte-grid"],
 
@@ -2678,8 +2671,6 @@
     "@orbis/mobile/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
     "@orbis/sdk/typescript": ["typescript@5.8.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="],
-
-    "@orbis/storage/@types/node": ["@types/node@26.2.0", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-5IviulTZeRNp2vAJ514cc/HUlY5nZ9fCbq9DMyC52BrhFZACo3nI0R7qBxhQmo/d27NFe96ur/b7Wwxklda+kg=="],
 
     "@orbis/utils/@types/node": ["@types/node@26.2.0", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-5IviulTZeRNp2vAJ514cc/HUlY5nZ9fCbq9DMyC52BrhFZACo3nI0R7qBxhQmo/d27NFe96ur/b7Wwxklda+kg=="],
 

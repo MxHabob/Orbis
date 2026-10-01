@@ -5,7 +5,7 @@
   import { authStore, themeStore, uiStore, workflowInbox } from "$lib/stores";
   import { Bell, Eye, Maximize, Minus, Moon, Restore, Search, Sparkles, Sun, XMark } from "@orbis/icons";
   import { Button } from "@orbis/ui/button";
-  import { Logo } from "@orbis/ui/logo";
+  import { Logo } from "@orbis/icons";
   import { onMount } from "svelte";
 
   import TitleBreadcrumbs from "./title-breadcrumbs.svelte";

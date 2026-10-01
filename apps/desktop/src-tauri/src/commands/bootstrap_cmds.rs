@@ -252,8 +252,96 @@ pub fn transliterate_arabic(text: &str) -> String {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// IPC Commands
+// IPC Commands & System Environment Detection
 // ═══════════════════════════════════════════════════════════════
+
+#[cfg(target_os = "windows")]
+fn detect_os_locale_and_country() -> (String, String, Option<String>) {
+    use std::ffi::OsString;
+    use std::os::windows::ffi::OsStringExt;
+
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn GetUserDefaultLocaleName(lpLocaleName: *mut u16, cchLocaleName: i32) -> i32;
+        fn GetLocaleInfoEx(
+            lpLocaleName: *const u16,
+            LCType: u32,
+            lpLCData: *mut u16,
+            cchData: i32,
+        ) -> i32;
+    }
+
+    let mut locale_buf = [0u16; 85];
+    let mut detected_locale = "en-US".to_string();
+    let mut detected_lang_display = "English (United States)".to_string();
+
+    let len = unsafe { GetUserDefaultLocaleName(locale_buf.as_mut_ptr(), locale_buf.len() as i32) };
+    if len > 1 {
+        let os_str = OsString::from_wide(&locale_buf[..(len as usize - 1)]);
+        if let Ok(loc) = os_str.into_string() {
+            let lower = loc.to_lowercase();
+            if lower.starts_with("en") {
+                detected_locale = loc;
+                detected_lang_display = "English (United States)".to_string();
+            } else if lower.starts_with("ar") {
+                detected_locale = loc;
+                detected_lang_display = "العربية (Arabic)".to_string();
+            } else if lower.starts_with("fr") {
+                detected_locale = loc;
+                detected_lang_display = "Français (French)".to_string();
+            } else if lower.starts_with("tr") {
+                detected_locale = loc;
+                detected_lang_display = "Türkçe (Turkish)".to_string();
+            } else {
+                detected_locale = loc.clone();
+                detected_lang_display = loc;
+            }
+        }
+    }
+
+    // LOCALE_SISO3166CTRYNAME = 0x0000005A (2-letter ISO country code from User Geo)
+    let mut country_buf = [0u16; 16];
+    let country_len = unsafe {
+        GetLocaleInfoEx(
+            std::ptr::null(),
+            0x0000005A,
+            country_buf.as_mut_ptr(),
+            country_buf.len() as i32,
+        )
+    };
+
+    let country_code = if country_len > 1 {
+        let os_str = OsString::from_wide(&country_buf[..(country_len as usize - 1)]);
+        os_str.into_string().ok().map(|s| s.trim().to_uppercase()).filter(|s| !s.is_empty())
+    } else {
+        None
+    };
+
+    (detected_locale, detected_lang_display, country_code)
+}
+
+#[cfg(not(target_os = "windows"))]
+fn detect_os_locale_and_country() -> (String, String, Option<String>) {
+    let lang = std::env::var("LC_ALL")
+        .or_else(|_| std::env::var("LC_MESSAGES"))
+        .or_else(|_| std::env::var("LANG"))
+        .unwrap_or_else(|_| "en_US.UTF-8".to_string());
+
+    let normalized = lang.split('.').next().unwrap_or("en-US").replace('_', "-");
+    let (loc, display) = if normalized.to_lowercase().starts_with("ar") {
+        (normalized, "العربية (Arabic)".to_string())
+    } else {
+        (normalized, "English (United States)".to_string())
+    };
+
+    let country_code = if loc.len() >= 5 && loc.contains('-') {
+        Some(loc.split('-').nth(1).unwrap_or("").to_uppercase())
+    } else {
+        None
+    };
+
+    (loc, display, country_code)
+}
 
 /// Detect system locale, timezone, currency, country, and regional preferences for onboarding.
 #[tauri::command]
@@ -261,6 +349,8 @@ pub async fn bootstrap_detect_environment() -> Result<EnvironmentDetectionResult
     let local_now = Local::now();
     let offset_seconds = local_now.offset().local_minus_utc();
     let offset_hours = offset_seconds / 3600;
+
+    let (detected_locale, detected_language, os_country) = detect_os_locale_and_country();
 
     let (
         country_code,
@@ -274,86 +364,8 @@ pub async fn bootstrap_detect_environment() -> Result<EnvironmentDetectionResult
         currency_name_en,
         currency_name_ar,
         is_hijri,
-    ) = match offset_hours {
-        3 => (
-            "SA",
-            "Saudi Arabia & GCC",
-            "المملكة العربية السعودية والخليج",
-            "🇸🇦",
-            "Asia/Riyadh",
-            "SAR",
-            "SAR",
-            "ر.س",
-            "Saudi Riyal",
-            "ريال سعودي",
-            true,
-        ),
-        4 => (
-            "AE",
-            "United Arab Emirates & Oman",
-            "الإمارات العربية المتحدة وعمان",
-            "🇦🇪",
-            "Asia/Dubai",
-            "AED",
-            "AED",
-            "د.إ",
-            "UAE Dirham",
-            "درهم إماراتي",
-            true,
-        ),
-        2 => (
-            "EG",
-            "Egypt & Jordan",
-            "مصر والأردن",
-            "🇪🇬",
-            "Africa/Cairo",
-            "EGP",
-            "EGP",
-            "ج.م",
-            "Egyptian Pound",
-            "جنيه مصري",
-            true,
-        ),
-        1 => (
-            "DZ",
-            "Algeria & North Africa",
-            "الجزائر وتونس والمغرب",
-            "🇩🇿",
-            "Africa/Algiers",
-            "DZD",
-            "DZD",
-            "د.ج",
-            "Algerian Dinar",
-            "دينار جزائري",
-            true,
-        ),
-        0 => (
-            "GB",
-            "United Kingdom / UTC",
-            "المملكة المتحدة والتوقيت العالمي",
-            "🇬🇧",
-            "Europe/London",
-            "GBP",
-            "GBP (£)",
-            "جنيه (£)",
-            "British Pound",
-            "جنيه إسترليني",
-            false,
-        ),
-        -5 => (
-            "US",
-            "United States (Eastern)",
-            "الولايات المتحدة (التوقيت الشرقي)",
-            "🇺🇸",
-            "America/New_York",
-            "USD",
-            "USD ($)",
-            "دولار ($)",
-            "US Dollar",
-            "دولار أمريكي",
-            false,
-        ),
-        _ => (
+    ) = match os_country.as_deref() {
+        Some("SA") => (
             "SA",
             "Saudi Arabia",
             "المملكة العربية السعودية",
@@ -366,6 +378,281 @@ pub async fn bootstrap_detect_environment() -> Result<EnvironmentDetectionResult
             "ريال سعودي",
             true,
         ),
+        Some("AE") => (
+            "AE",
+            "United Arab Emirates",
+            "الإمارات العربية المتحدة",
+            "🇦🇪",
+            "Asia/Dubai",
+            "AED",
+            "AED",
+            "د.إ",
+            "UAE Dirham",
+            "درهم إماراتي",
+            true,
+        ),
+        Some("EG") => (
+            "EG",
+            "Egypt",
+            "جمهورية مصر العربية",
+            "🇪🇬",
+            "Africa/Cairo",
+            "EGP",
+            "EGP",
+            "ج.م",
+            "Egyptian Pound",
+            "جنيه مصري",
+            true,
+        ),
+        Some("KW") => (
+            "KW",
+            "Kuwait",
+            "دولة الكويت",
+            "🇰🇼",
+            "Asia/Kuwait",
+            "KWD",
+            "KWD",
+            "د.ك",
+            "Kuwaiti Dinar",
+            "دينار كويتي",
+            true,
+        ),
+        Some("QA") => (
+            "QA",
+            "Qatar",
+            "دولة قطر",
+            "🇶🇦",
+            "Asia/Qatar",
+            "QAR",
+            "QAR",
+            "ر.ق",
+            "Qatari Riyal",
+            "ريال قطري",
+            true,
+        ),
+        Some("BH") => (
+            "BH",
+            "Bahrain",
+            "مملكة البحرين",
+            "🇧🇭",
+            "Asia/Bahrain",
+            "BHD",
+            "BHD",
+            "د.ب",
+            "Bahraini Dinar",
+            "دينار بحريني",
+            true,
+        ),
+        Some("OM") => (
+            "OM",
+            "Oman",
+            "سلطنة عمان",
+            "🇴🇲",
+            "Asia/Muscat",
+            "OMR",
+            "OMR",
+            "ر.ع",
+            "Omani Rial",
+            "ريال عماني",
+            true,
+        ),
+        Some("JO") => (
+            "JO",
+            "Jordan",
+            "المملكة الأردنية الهاشمية",
+            "🇯🇴",
+            "Asia/Amman",
+            "JOD",
+            "JOD",
+            "د.أ",
+            "Jordanian Dinar",
+            "دينار أردني",
+            true,
+        ),
+        Some("IQ") => (
+            "IQ",
+            "Iraq",
+            "جمهورية العراق",
+            "🇮🇶",
+            "Asia/Baghdad",
+            "IQD",
+            "IQD",
+            "د.ع",
+            "Iraqi Dinar",
+            "دينار عراقي",
+            true,
+        ),
+        Some("DZ") => (
+            "DZ",
+            "Algeria",
+            "الجمهورية الجزائرية",
+            "🇩🇿",
+            "Africa/Algiers",
+            "DZD",
+            "DZD",
+            "د.ج",
+            "Algerian Dinar",
+            "دينار جزائري",
+            true,
+        ),
+        Some("MA") => (
+            "MA",
+            "Morocco",
+            "المملكة المغربية",
+            "🇲🇦",
+            "Africa/Casablanca",
+            "MAD",
+            "MAD",
+            "د.م.",
+            "Moroccan Dirham",
+            "درهم مغربي",
+            true,
+        ),
+        Some("YE") => (
+            "YE",
+            "Yemen",
+            "الجمهورية اليمنية",
+            "🇾🇪",
+            "Asia/Aden",
+            "YER",
+            "YER",
+            "ر.ي",
+            "Yemeni Rial",
+            "ريال يمني",
+            true,
+        ),
+        Some("GB") => (
+            "GB",
+            "United Kingdom",
+            "المملكة المتحدة",
+            "🇬🇧",
+            "Europe/London",
+            "GBP",
+            "GBP (£)",
+            "جنيه (£)",
+            "British Pound",
+            "جنيه إسترليني",
+            false,
+        ),
+        Some("US") => (
+            "US",
+            "United States",
+            "الولايات المتحدة الأمريكية",
+            "🇺🇸",
+            "America/New_York",
+            "USD",
+            "USD ($)",
+            "دولار ($)",
+            "US Dollar",
+            "دولار أمريكي",
+            false,
+        ),
+        Some("TR") => (
+            "TR",
+            "Turkey",
+            "الجمهورية التركية",
+            "🇹🇷",
+            "Europe/Istanbul",
+            "TRY",
+            "TRY (₺)",
+            "ليرة (₺)",
+            "Turkish Lira",
+            "ليرة تركية",
+            false,
+        ),
+        _ => match offset_hours {
+            3 => (
+                "SA",
+                "Saudi Arabia",
+                "المملكة العربية السعودية",
+                "🇸🇦",
+                "Asia/Riyadh",
+                "SAR",
+                "SAR",
+                "ر.س",
+                "Saudi Riyal",
+                "ريال سعودي",
+                true,
+            ),
+            4 => (
+                "AE",
+                "United Arab Emirates",
+                "الإمارات العربية المتحدة",
+                "🇦🇪",
+                "Asia/Dubai",
+                "AED",
+                "AED",
+                "د.إ",
+                "UAE Dirham",
+                "درهم إماراتي",
+                true,
+            ),
+            2 => (
+                "EG",
+                "Egypt",
+                "جمهورية مصر العربية",
+                "🇪🇬",
+                "Africa/Cairo",
+                "EGP",
+                "EGP",
+                "ج.م",
+                "Egyptian Pound",
+                "جنيه مصري",
+                true,
+            ),
+            1 => (
+                "DZ",
+                "Algeria",
+                "الجمهورية الجزائرية",
+                "🇩🇿",
+                "Africa/Algiers",
+                "DZD",
+                "DZD",
+                "د.ج",
+                "Algerian Dinar",
+                "دينار جزائري",
+                true,
+            ),
+            0 => (
+                "GB",
+                "United Kingdom",
+                "المملكة المتحدة",
+                "🇬🇧",
+                "Europe/London",
+                "GBP",
+                "GBP (£)",
+                "جنيه (£)",
+                "British Pound",
+                "جنيه إسترليني",
+                false,
+            ),
+            -5 => (
+                "US",
+                "United States",
+                "الولايات المتحدة الأمريكية",
+                "🇺🇸",
+                "America/New_York",
+                "USD",
+                "USD ($)",
+                "دولار ($)",
+                "US Dollar",
+                "دولار أمريكي",
+                false,
+            ),
+            _ => (
+                "SA",
+                "Saudi Arabia",
+                "المملكة العربية السعودية",
+                "🇸🇦",
+                "Asia/Riyadh",
+                "SAR",
+                "SAR",
+                "ر.س",
+                "Saudi Riyal",
+                "ريال سعودي",
+                true,
+            ),
+        },
     };
 
     let tz_offset_formatted = if offset_hours >= 0 {
@@ -380,8 +667,8 @@ pub async fn bootstrap_detect_environment() -> Result<EnvironmentDetectionResult
     let suggested_academic_year_ar = format!("{}/{} م", current_year, next_year);
 
     Ok(EnvironmentDetectionResult {
-        detected_locale: "ar-SA".to_string(),
-        detected_language: "العربية (Arabic)".to_string(),
+        detected_locale,
+        detected_language,
         country_code: country_code.to_string(),
         country_name_en: country_name_en.to_string(),
         country_name_ar: country_name_ar.to_string(),

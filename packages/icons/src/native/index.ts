@@ -203,3 +203,4 @@ export { Sun, default as SunIcon } from './sun';
 export { Moon, default as MoonIcon } from './moon';
 export { Maximize, default as MaximizeIcon } from './maximize';
 export { Restore, default as RestoreIcon } from './restore';
+export { Logo, default as LogoIcon } from './logo';
