@@ -232,13 +232,13 @@ function enterWorkspace() {
 
 <div
   id="onboarding-viewport"
-  class="h-screen w-screen overflow-y-auto bg-background text-foreground flex flex-col justify-between selection:bg-primary/20 selection:text-primary font-sans relative pt-20 pb-28"
+  class="h-full w-full overflow-y-auto bg-background text-foreground flex flex-col justify-between selection:bg-primary/20 selection:text-primary font-sans relative px-4 sm:px-6 lg:px-8 py-3 space-y-4"
 >
   <!-- Floating Minimal Header Bar -->
   <OnboardingHeader {currentStep} {steps} {isRTL} />
 
   <!-- Main Wizard Content Area with Full Screen Real Estate Utilization -->
-  <main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col justify-center">
+  <main class="flex-1 w-full max-w-5xl mx-auto my-auto py-2">
     {#if currentStep === "mulverse"}
       <StepMulverseIntro {isRTL} />
     {:else if currentStep === "blueprint"}

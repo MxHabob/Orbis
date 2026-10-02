@@ -34,17 +34,9 @@ function toggleTheme() {
 }
 </script>
 
-<header class="fixed top-4 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-5xl rounded-full bg-background/80 backdrop-blur-xl border border-border/70 shadow-lg shadow-black/5 px-4 sm:px-6 py-2.5 flex items-center justify-between transition-all">
-  <!-- Brand Identity -->
-  <div class="flex items-center gap-2.5 select-none shrink-0">
-    <div class="size-7 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-primary shadow-xs">
-      <Cube size={15} />
-    </div>
-    <span class="text-sm font-bold tracking-tight text-foreground font-sans">Orbis</span>
-  </div>
-
+<header class="sticky top-2 z-30 w-full mx-auto flex backdrop-blur-2xl px-2 justify-center transition-all shrink-0">
   <!-- Minimalist Visual Progress (Pure Progress Segments Without Text) -->
-  <nav aria-label="Progress" class="flex items-center gap-1.5 sm:gap-2 px-2 select-none">
+  <nav aria-label="Progress" class="flex items-center gap-2 justify-center">
     {#each steps as s, idx}
       {@const isDone = idx < currentStepIndex}
       {@const isCurrent = idx === currentStepIndex}
@@ -59,33 +51,4 @@ function toggleTheme() {
       ></div>
     {/each}
   </nav>
-
-  <!-- Quick Utility Controls (Language & Theme) -->
-  <div class="flex items-center gap-1.5 shrink-0">
-    <!-- Language Switcher -->
-    <Button
-      variant="ghost"
-      size="sm"
-      onclick={toggleLanguage}
-      class="h-7 px-2.5 text-xs font-mono rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50"
-      title={isRTL ? "Switch to English" : "التحويل إلى العربية"}
-    >
-      <span>{isRTL ? "EN" : "عربي"}</span>
-    </Button>
-
-    <!-- Theme Toggle -->
-    <Button
-      variant="ghost"
-      size="sm"
-      onclick={toggleTheme}
-      class="h-7 w-7 p-0 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50"
-      title={isDark ? (isRTL ? "الوضع المضيء" : "Light Mode") : (isRTL ? "الوضع الليلي" : "Dark Mode")}
-    >
-      {#if isDark}
-        <Sun size={14} />
-      {:else}
-        <Moon size={14} />
-      {/if}
-    </Button>
-  </div>
 </header>

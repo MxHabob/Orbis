@@ -30,7 +30,7 @@ let {
 } = $props();
 </script>
 
-<footer class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-5xl rounded-full bg-background/80 backdrop-blur-xl border border-border/70 shadow-lg shadow-black/5 px-4 sm:px-6 py-2.5 flex items-center justify-between transition-all">
+<footer class="sticky bottom-2 z-30 w-full max-w-xl mx-auto rounded-full bg-card/90 backdrop-blur-xl border border-border/80 shadow-md shadow-black/5 px-4 sm:px-6 py-2.5 flex items-center justify-between transition-all shrink-0 mt-6">
   <!-- Start Side: Help Trigger Button -->
   <div class="flex items-center">
     <Button
