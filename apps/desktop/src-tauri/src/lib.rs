@@ -1,24 +1,21 @@
-use tauri::{
-    Manager, WebviewUrl,
-    WebviewWindowBuilder,
-};
+use image;
 #[cfg(target_os = "macos")]
 use tauri::TitleBarStyle;
+use tauri::image::Image;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_deep_link::DeepLinkExt;
-use tauri_plugin_updater;
 use tauri_plugin_dialog;
 use tauri_plugin_process;
-use tauri::menu::{Menu, MenuItem};
-use tauri::image::Image;
-use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use image;
-pub mod state;
+use tauri_plugin_updater;
 pub mod commands;
-pub mod features;
-pub mod events;
 pub mod connection;
-use state::AppState;
+pub mod events;
+pub mod features;
+pub mod state;
 use connection::ConnectionConfig;
+use state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -253,7 +250,4 @@ pub fn run() {
             }
             _ => {}
         });
-
 }
-
-

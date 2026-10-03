@@ -1,21 +1,25 @@
 //! Tauri IPC commands — Student (Registration, Profiles, Enrollments, Guardians).
 
-use tauri::State;
-use serde::{Deserialize, Serialize};
-use crate::state::AppState;
-use uuid::Uuid;
-use chrono::NaiveDate;
-use orbis_domain::entities::student::{Student, StudentStatus, AcademicStanding, StudentDetail};
-use orbis_domain::entities::person::Person;
-use orbis_domain::entities::enrollment::{Enrollment, StudyMode, EnrollmentStatus};
-use orbis_domain::entities::student_guardian::StudentGuardian;
-use orbis_domain::queries::filters::{StudentFilter, EnrollmentFilter, PaginationParams, PaginatedList};
-use orbis_app::services::student_service::RegisterStudentInput as ServiceRegisterStudentInput;
-use orbis_app::services::student_service::UpdateStudentProfileInput as ServiceUpdateProfileInput;
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
+use crate::state::AppState;
+use chrono::NaiveDate;
+use orbis_app::services::student_service::RegisterStudentInput as ServiceRegisterStudentInput;
+use orbis_app::services::student_service::UpdateStudentProfileInput as ServiceUpdateProfileInput;
+use orbis_domain::entities::enrollment::{Enrollment, EnrollmentStatus, StudyMode};
+use orbis_domain::entities::person::Person;
+use orbis_domain::entities::student::{AcademicStanding, Student, StudentDetail, StudentStatus};
+use orbis_domain::entities::student_guardian::StudentGuardian;
+use orbis_domain::queries::filters::{
+    EnrollmentFilter, PaginatedList, PaginationParams, StudentFilter,
+};
+use serde::{Deserialize, Serialize};
+use tauri::State;
+use uuid::Uuid;
 
-fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
+fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
+    ApiResponse { data }
+}
 
 // ── DTOs ─────────────────────────────────────────────────────────
 
@@ -219,7 +223,10 @@ pub struct PaginatedResponseDto<T: Serialize> {
     pub total_pages: u64,
 }
 
-fn paginated_to_dto<T: Serialize, U: Serialize, F: Fn(T) -> U>(p: PaginatedList<T>, f: F) -> PaginatedResponseDto<U> {
+fn paginated_to_dto<T: Serialize, U: Serialize, F: Fn(T) -> U>(
+    p: PaginatedList<T>,
+    f: F,
+) -> PaginatedResponseDto<U> {
     PaginatedResponseDto {
         items: p.items.into_iter().map(f).collect(),
         total_count: p.total_count,
@@ -419,15 +426,28 @@ pub async fn student_register_student(
     let ctx = make_ctx(&state);
     let person_id = request.person_id.and_then(|id| Uuid::parse_str(&id).ok());
     let user_id = request.user_id.and_then(|id| Uuid::parse_str(&id).ok());
-    let initial_period_id = request.initial_period_id.and_then(|id| Uuid::parse_str(&id).ok());
-    let initial_class_id = request.initial_class_id.and_then(|id| Uuid::parse_str(&id).ok());
-    let birth_date = request.birth_date.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
-    let study_mode = request.study_mode.as_deref().map(|s| parse_study_mode(Some(s)));
+    let initial_period_id = request
+        .initial_period_id
+        .and_then(|id| Uuid::parse_str(&id).ok());
+    let initial_class_id = request
+        .initial_class_id
+        .and_then(|id| Uuid::parse_str(&id).ok());
+    let birth_date = request
+        .birth_date
+        .and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
+    let study_mode = request
+        .study_mode
+        .as_deref()
+        .map(|s| parse_study_mode(Some(s)));
 
     let input = ServiceRegisterStudentInput {
         person_id,
         user_id,
-        student_number: if request.student_number.trim().is_empty() { None } else { Some(request.student_number) },
+        student_number: if request.student_number.trim().is_empty() {
+            None
+        } else {
+            Some(request.student_number)
+        },
         first_name: request.first_name,
         middle_name: request.middle_name,
         last_name: request.last_name,
@@ -453,7 +473,8 @@ pub async fn student_register_student(
         bypass_capacity_check: None,
     };
 
-    let result = state.student_service
+    let result = state
+        .student_service
         .register_student(&ctx, ctx.tenant_id, input)
         .await
         .map_err(|e| e.to_string())?;
@@ -482,7 +503,8 @@ pub async fn student_list_students(
         }),
     };
 
-    let result = state.student_service
+    let result = state
+        .student_service
         .list_students(ctx.tenant_id, domain_filter)
         .await
         .map_err(|e| e.to_string())?;
@@ -496,7 +518,8 @@ pub async fn student_get_student(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<StudentDetailDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid student ID")?;
-    let detail = state.student_service
+    let detail = state
+        .student_service
         .get_student(uid)
         .await
         .map_err(|e| e.to_string())?
@@ -512,9 +535,11 @@ pub async fn student_update_student_status(
 ) -> Result<ApiResponse<StudentDto>, String> {
     let ctx = make_ctx(&state);
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid student ID")?;
-    let status = parse_student_status(&request.status).ok_or_else(|| "Invalid status".to_string())?;
+    let status =
+        parse_student_status(&request.status).ok_or_else(|| "Invalid status".to_string())?;
 
-    let student = state.student_service
+    let student = state
+        .student_service
         .update_student_status(&ctx, student_id, status, request.reason)
         .await
         .map_err(|e| e.to_string())?;
@@ -529,7 +554,9 @@ pub async fn student_update_profile(
 ) -> Result<ApiResponse<StudentDetailDto>, String> {
     let ctx = make_ctx(&state);
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid student ID")?;
-    let birth_date = request.birth_date.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
+    let birth_date = request
+        .birth_date
+        .and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
 
     let input = ServiceUpdateProfileInput {
         first_name: request.first_name,
@@ -554,7 +581,8 @@ pub async fn student_update_profile(
         avatar_url: request.avatar_url,
     };
 
-    let detail = state.student_service
+    let detail = state
+        .student_service
         .update_student_profile(&ctx, student_id, input)
         .await
         .map_err(|e| e.to_string())?;
@@ -568,10 +596,12 @@ pub async fn student_change_study_mode(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<EnrollmentDto>, String> {
     let ctx = make_ctx(&state);
-    let enrollment_id = Uuid::parse_str(&request.enrollment_id).map_err(|_| "Invalid enrollment ID")?;
+    let enrollment_id =
+        Uuid::parse_str(&request.enrollment_id).map_err(|_| "Invalid enrollment ID")?;
     let study_mode = parse_study_mode(Some(&request.study_mode));
 
-    let enrollment = state.student_service
+    let enrollment = state
+        .student_service
         .change_study_mode(&ctx, enrollment_id, study_mode, request.reason)
         .await
         .map_err(|e| e.to_string())?;
@@ -592,10 +622,13 @@ pub async fn student_transfer_class(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<EnrollmentDto>, String> {
     let ctx = make_ctx(&state);
-    let enrollment_id = Uuid::parse_str(&request.enrollment_id).map_err(|_| "Invalid enrollment ID")?;
-    let target_class_id = Uuid::parse_str(&request.target_class_id).map_err(|_| "Invalid target class ID")?;
+    let enrollment_id =
+        Uuid::parse_str(&request.enrollment_id).map_err(|_| "Invalid enrollment ID")?;
+    let target_class_id =
+        Uuid::parse_str(&request.target_class_id).map_err(|_| "Invalid target class ID")?;
 
-    let enrollment = state.student_service
+    let enrollment = state
+        .student_service
         .transfer_class(&ctx, enrollment_id, target_class_id, request.reason)
         .await
         .map_err(|e| e.to_string())?;
@@ -614,8 +647,17 @@ pub async fn student_enroll_student(
     let class_id = request.class_id.and_then(|c| Uuid::parse_str(&c).ok());
     let study_mode = parse_study_mode(request.study_mode.as_deref());
 
-    let e = state.student_service
-        .enroll_student(&ctx, ctx.tenant_id, period_id, student_id, class_id, request.student_number, study_mode)
+    let e = state
+        .student_service
+        .enroll_student(
+            &ctx,
+            ctx.tenant_id,
+            period_id,
+            student_id,
+            class_id,
+            request.student_number,
+            study_mode,
+        )
         .await
         .map_err(|err| err.to_string())?;
 
@@ -643,12 +685,17 @@ pub async fn student_list_enrollments(
         }),
     };
 
-    let result = state.student_service
+    let result = state
+        .student_service
         .list_enrollments(ctx.tenant_id, domain_filter)
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(result.items.into_iter().map(enrollment_to_dto).collect()))
+    Ok(ok(result
+        .items
+        .into_iter()
+        .map(enrollment_to_dto)
+        .collect()))
 }
 
 #[tauri::command]
@@ -657,7 +704,8 @@ pub async fn student_get_enrollment(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<EnrollmentDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    let e = state.enrollment_repo
+    let e = state
+        .enrollment_repo
         .find_by_id(uid)
         .await
         .map_err(|e| e.to_string())?
@@ -674,7 +722,8 @@ pub async fn student_assign_guardian(
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
     let guardian_id = Uuid::parse_str(&request.guardian_id).map_err(|_| "Invalid guardianId")?;
 
-    let g = state.student_service
+    let g = state
+        .student_service
         .assign_guardian_full(
             &ctx,
             student_id,
@@ -704,7 +753,8 @@ pub async fn student_list_guardians(
 ) -> Result<ApiResponse<Vec<GuardianDto>>, String> {
     let ctx = make_ctx(&state);
     let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
-    let items = state.student_service
+    let items = state
+        .student_service
         .get_student_guardians(&ctx, sid)
         .await
         .map_err(|e| e.to_string())?;
@@ -742,7 +792,9 @@ pub async fn student_check_duplicate(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<DuplicateCheckResultDto>, String> {
     let ctx = make_ctx(&state);
-    let exclude_student_id = request.exclude_student_id.and_then(|id| Uuid::parse_str(&id).ok());
+    let exclude_student_id = request
+        .exclude_student_id
+        .and_then(|id| Uuid::parse_str(&id).ok());
     let input = orbis_app::services::student_service::DuplicateCheckInput {
         national_id: request.national_id,
         phone: request.phone,
@@ -750,19 +802,24 @@ pub async fn student_check_duplicate(
         exclude_student_id,
     };
 
-    let res = state.student_service
+    let res = state
+        .student_service
         .check_duplicate(&ctx, ctx.tenant_id, input)
         .await
         .map_err(|e| e.to_string())?;
 
-    let matches = res.matches.into_iter().map(|m| DuplicateMatchDto {
-        field: m.field,
-        value: m.value,
-        matched_person_id: m.matched_person_id.to_string(),
-        matched_person_name: m.matched_person_name,
-        student_id: m.student_id.map(|id| id.to_string()),
-        student_number: m.student_number,
-    }).collect();
+    let matches = res
+        .matches
+        .into_iter()
+        .map(|m| DuplicateMatchDto {
+            field: m.field,
+            value: m.value,
+            matched_person_id: m.matched_person_id.to_string(),
+            matched_person_name: m.matched_person_name,
+            student_id: m.student_id.map(|id| id.to_string()),
+            student_number: m.student_number,
+        })
+        .collect();
 
     Ok(ok(DuplicateCheckResultDto {
         has_duplicate: res.has_duplicate,
@@ -808,9 +865,21 @@ pub async fn student_bulk_register(
 
     for item in items {
         let input = orbis_app::services::student_service::RegisterStudentInput {
-            person_id: item.registration.person_id.as_deref().and_then(|id| Uuid::parse_str(id).ok()),
-            user_id: item.registration.user_id.as_deref().and_then(|id| Uuid::parse_str(id).ok()),
-            student_number: if item.registration.student_number.trim().is_empty() { None } else { Some(item.registration.student_number) },
+            person_id: item
+                .registration
+                .person_id
+                .as_deref()
+                .and_then(|id| Uuid::parse_str(id).ok()),
+            user_id: item
+                .registration
+                .user_id
+                .as_deref()
+                .and_then(|id| Uuid::parse_str(id).ok()),
+            student_number: if item.registration.student_number.trim().is_empty() {
+                None
+            } else {
+                Some(item.registration.student_number)
+            },
             first_name: item.registration.first_name,
             middle_name: item.registration.middle_name,
             last_name: item.registration.last_name,
@@ -821,7 +890,11 @@ pub async fn student_bulk_register(
             national_id: item.registration.national_id,
             passport_number: item.registration.passport_number,
             gender: item.registration.gender,
-            birth_date: item.registration.birth_date.as_deref().and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok()),
+            birth_date: item
+                .registration
+                .birth_date
+                .as_deref()
+                .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok()),
             place_of_birth: item.registration.place_of_birth,
             nationality: item.registration.nationality,
             blood_type: item.registration.blood_type,
@@ -830,37 +903,56 @@ pub async fn student_bulk_register(
             phone: item.registration.phone,
             email: item.registration.email,
             avatar_url: None,
-            initial_period_id: item.registration.initial_period_id.as_deref().and_then(|id| Uuid::parse_str(id).ok()),
-            initial_class_id: item.registration.initial_class_id.as_deref().and_then(|id| Uuid::parse_str(id).ok()),
+            initial_period_id: item
+                .registration
+                .initial_period_id
+                .as_deref()
+                .and_then(|id| Uuid::parse_str(id).ok()),
+            initial_class_id: item
+                .registration
+                .initial_class_id
+                .as_deref()
+                .and_then(|id| Uuid::parse_str(id).ok()),
             study_mode: Some(parse_study_mode(item.registration.study_mode.as_deref())),
             bypass_capacity_check: None,
         };
 
-        domain_items.push(orbis_app::services::student_service::BulkRegisterItemInput {
-            row_index: item.row_index,
-            registration: input,
-            guardian_name: item.guardian_name,
-            guardian_phone: item.guardian_phone,
-            guardian_relationship: item.guardian_relationship,
-        });
+        domain_items.push(
+            orbis_app::services::student_service::BulkRegisterItemInput {
+                row_index: item.row_index,
+                registration: input,
+                guardian_name: item.guardian_name,
+                guardian_phone: item.guardian_phone,
+                guardian_relationship: item.guardian_relationship,
+            },
+        );
     }
 
-    let res = state.student_service
-        .bulk_register_students(&ctx, ctx.tenant_id, orbis_app::services::student_service::BulkRegisterStudentsInput {
-            items: domain_items,
-            atomic,
-            dry_run,
-        })
+    let res = state
+        .student_service
+        .bulk_register_students(
+            &ctx,
+            ctx.tenant_id,
+            orbis_app::services::student_service::BulkRegisterStudentsInput {
+                items: domain_items,
+                atomic,
+                dry_run,
+            },
+        )
         .await
         .map_err(|e| e.to_string())?;
 
-    let items_dto = res.items.into_iter().map(|it| BulkRegisterItemCommandResultDto {
-        row_index: it.row_index,
-        success: it.success,
-        student_id: it.student_id.map(|id| id.to_string()),
-        student_number: it.student_number,
-        error: it.error,
-    }).collect();
+    let items_dto = res
+        .items
+        .into_iter()
+        .map(|it| BulkRegisterItemCommandResultDto {
+            row_index: it.row_index,
+            success: it.success,
+            student_id: it.student_id.map(|id| id.to_string()),
+            student_number: it.student_number,
+            error: it.error,
+        })
+        .collect();
 
     Ok(ok(BulkRegisterStudentCommandResultDto {
         total: res.total,
@@ -879,7 +971,8 @@ pub async fn student_remove_guardian(
     let ctx = make_ctx(&state);
     let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
     let gid = Uuid::parse_str(&guardian_id).map_err(|_| "Invalid guardian ID")?;
-    state.student_service
+    state
+        .student_service
         .remove_guardian(&ctx, sid, gid)
         .await
         .map_err(|e| e.to_string())?;
@@ -893,7 +986,8 @@ pub async fn student_delete_student(
 ) -> Result<ApiResponse<bool>, String> {
     let ctx = make_ctx(&state);
     let sid = Uuid::parse_str(&id).map_err(|_| "Invalid student ID")?;
-    state.student_service
+    state
+        .student_service
         .soft_delete_student(&ctx, sid)
         .await
         .map_err(|e| e.to_string())?;
@@ -907,11 +1001,10 @@ pub async fn student_restore_student(
 ) -> Result<ApiResponse<StudentDto>, String> {
     let ctx = make_ctx(&state);
     let sid = Uuid::parse_str(&id).map_err(|_| "Invalid student ID")?;
-    let student = state.student_service
+    let student = state
+        .student_service
         .restore_student(&ctx, sid)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(student_to_dto(student)))
 }
-
-

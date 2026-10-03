@@ -1,20 +1,22 @@
 //! Tauri IPC commands — Employee Affairs (Registration, Profiles, Status updates, Account Provisioning, Groups).
 
-use tauri::State;
-use serde::{Deserialize, Serialize};
-use crate::state::AppState;
-use uuid::Uuid;
-use chrono::NaiveDate;
-use orbis_domain::entities::employee::{EmployeeDetail, EmployeeStatus, EmploymentType};
-use orbis_domain::entities::identity_provisioning::{DeliveryChannel, AccountProvisioningResult};
-use orbis_app::ports::repositories::EmployeeFilter;
-use orbis_app::services::employee_service::{
-    RegisterEmployeeInput, UpdateEmployeeInput, AccountProvisioningConfig
-};
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
+use crate::state::AppState;
+use chrono::NaiveDate;
+use orbis_app::ports::repositories::EmployeeFilter;
+use orbis_app::services::employee_service::{
+    AccountProvisioningConfig, RegisterEmployeeInput, UpdateEmployeeInput,
+};
+use orbis_domain::entities::employee::{EmployeeDetail, EmployeeStatus, EmploymentType};
+use orbis_domain::entities::identity_provisioning::{AccountProvisioningResult, DeliveryChannel};
+use serde::{Deserialize, Serialize};
+use tauri::State;
+use uuid::Uuid;
 
-fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
+fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
+    ApiResponse { data }
+}
 
 // ── DTOs ─────────────────────────────────────────────────────────
 
@@ -294,8 +296,12 @@ pub async fn employee_register_employee(
 
     let person_id = request.person_id.and_then(|id| Uuid::parse_str(&id).ok());
     let org_unit_id = request.org_unit_id.and_then(|id| Uuid::parse_str(&id).ok());
-    let hire_date = request.hire_date.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
-    let birth_date = request.birth_date.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
+    let hire_date = request
+        .hire_date
+        .and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
+    let birth_date = request
+        .birth_date
+        .and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
 
     let status = request.status.as_deref().and_then(|s| match s {
         "active" => Some(EmployeeStatus::Active),
@@ -315,7 +321,11 @@ pub async fn employee_register_employee(
     });
 
     let account_cfg = request.account.map(|acc| {
-        let group_ids: Vec<Uuid> = acc.group_ids.into_iter().filter_map(|g| Uuid::parse_str(&g).ok()).collect();
+        let group_ids: Vec<Uuid> = acc
+            .group_ids
+            .into_iter()
+            .filter_map(|g| Uuid::parse_str(&g).ok())
+            .collect();
         AccountProvisioningConfig {
             enabled: acc.enabled,
             preferred_username: acc.preferred_username,
@@ -361,7 +371,9 @@ pub async fn employee_register_employee(
         account: account_cfg,
     };
 
-    let result = state.employee_service.register_employee(&ctx, org_id, input)
+    let result = state
+        .employee_service
+        .register_employee(&ctx, org_id, input)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -395,7 +407,9 @@ pub async fn employee_list_employees(
         offset: Some(offset),
     };
 
-    let list = state.employee_service.list_employees(&ctx, org_id, domain_filter)
+    let list = state
+        .employee_service
+        .list_employees(&ctx, org_id, domain_filter)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -418,7 +432,9 @@ pub async fn employee_get_employee(
     let ctx = make_ctx(&state);
     let employee_id = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
 
-    let detail = state.employee_service.get_employee(&ctx, employee_id)
+    let detail = state
+        .employee_service
+        .get_employee(&ctx, employee_id)
         .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| format!("Employee {} not found", id))?;
@@ -433,7 +449,9 @@ pub async fn employee_get_employee_stats(
     let ctx = make_ctx(&state);
     let org_id = ctx.tenant_id;
 
-    let stats = state.employee_service.count_employees_by_status(&ctx, org_id)
+    let stats = state
+        .employee_service
+        .count_employees_by_status(&ctx, org_id)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -449,8 +467,12 @@ pub async fn employee_update_employee(
     let ctx = make_ctx(&state);
     let employee_id = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
     let org_unit_id = request.org_unit_id.and_then(|i| Uuid::parse_str(&i).ok());
-    let hire_date = request.hire_date.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
-    let birth_date = request.birth_date.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
+    let hire_date = request
+        .hire_date
+        .and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
+    let birth_date = request
+        .birth_date
+        .and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
 
     let status = request.status.as_deref().and_then(|s| match s {
         "active" => Some(EmployeeStatus::Active),
@@ -501,7 +523,9 @@ pub async fn employee_update_employee(
         avatar_url: request.avatar_url,
     };
 
-    let updated = state.employee_service.update_employee(&ctx, employee_id, input)
+    let updated = state
+        .employee_service
+        .update_employee(&ctx, employee_id, input)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -526,7 +550,9 @@ pub async fn employee_update_employee_status(
         other => return Err(format!("Invalid employee status: {}", other)),
     };
 
-    let updated = state.employee_service.update_employee_status(&ctx, employee_id, new_status)
+    let updated = state
+        .employee_service
+        .update_employee_status(&ctx, employee_id, new_status)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -541,17 +567,25 @@ pub async fn employee_provision_account(
 ) -> Result<ApiResponse<AccountProvisioningResultDto>, String> {
     let ctx = make_ctx(&state);
     let employee_id = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
-    let group_ids: Vec<Uuid> = request.group_ids.into_iter().filter_map(|g| Uuid::parse_str(&g).ok()).collect();
+    let group_ids: Vec<Uuid> = request
+        .group_ids
+        .into_iter()
+        .filter_map(|g| Uuid::parse_str(&g).ok())
+        .collect();
     let delivery_channel = parse_delivery_channel(request.delivery_channel.as_deref());
 
-    let res = state.employee_service.provision_employee_account(
-        &ctx,
-        employee_id,
-        request.preferred_username,
-        request.role,
-        group_ids,
-        delivery_channel,
-    ).await.map_err(|e| e.to_string())?;
+    let res = state
+        .employee_service
+        .provision_employee_account(
+            &ctx,
+            employee_id,
+            request.preferred_username,
+            request.role,
+            group_ids,
+            delivery_channel,
+        )
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(ok(provisioning_to_dto(res)))
 }
@@ -564,9 +598,14 @@ pub async fn employee_assign_groups(
 ) -> Result<ApiResponse<bool>, String> {
     let ctx = make_ctx(&state);
     let employee_id = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
-    let parsed_group_ids: Vec<Uuid> = group_ids.into_iter().filter_map(|g| Uuid::parse_str(&g).ok()).collect();
+    let parsed_group_ids: Vec<Uuid> = group_ids
+        .into_iter()
+        .filter_map(|g| Uuid::parse_str(&g).ok())
+        .collect();
 
-    state.employee_service.assign_employee_groups(&ctx, employee_id, parsed_group_ids)
+    state
+        .employee_service
+        .assign_employee_groups(&ctx, employee_id, parsed_group_ids)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -611,13 +650,30 @@ pub async fn employee_bulk_register(
 
     for item in items {
         let input = orbis_app::services::employee_service::RegisterEmployeeInput {
-            person_id: item.registration.person_id.as_deref().and_then(|id| Uuid::parse_str(id).ok()),
-            employee_number: item.registration.employee_number.as_deref().map(|s| s.trim().to_string()).filter(|s| !s.is_empty()),
+            person_id: item
+                .registration
+                .person_id
+                .as_deref()
+                .and_then(|id| Uuid::parse_str(id).ok()),
+            employee_number: item
+                .registration
+                .employee_number
+                .as_deref()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty()),
             employee_type: item.registration.employee_type,
             job_title: item.registration.job_title,
             department: item.registration.department,
-            org_unit_id: item.registration.org_unit_id.as_deref().and_then(|id| Uuid::parse_str(id).ok()),
-            hire_date: item.registration.hire_date.as_deref().and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok()),
+            org_unit_id: item
+                .registration
+                .org_unit_id
+                .as_deref()
+                .and_then(|id| Uuid::parse_str(id).ok()),
+            hire_date: item
+                .registration
+                .hire_date
+                .as_deref()
+                .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok()),
             status: Some(EmployeeStatus::Active),
             employment_type: Some(EmploymentType::FullTime),
             work_shift: item.registration.work_shift,
@@ -632,7 +688,11 @@ pub async fn employee_bulk_register(
             national_id: item.registration.national_id,
             passport_number: item.registration.passport_number,
             gender: item.registration.gender,
-            birth_date: item.registration.birth_date.as_deref().and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok()),
+            birth_date: item
+                .registration
+                .birth_date
+                .as_deref()
+                .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok()),
             place_of_birth: item.registration.place_of_birth,
             nationality: item.registration.nationality,
             blood_type: item.registration.blood_type,
@@ -642,44 +702,64 @@ pub async fn employee_bulk_register(
             email: item.registration.email,
             address: item.registration.address,
             avatar_url: None,
-            account: item.registration.account.map(|acc| AccountProvisioningConfig {
-                enabled: acc.enabled,
-                preferred_username: acc.preferred_username,
-                role: acc.role,
-                group_ids: acc.group_ids.into_iter().filter_map(|g| Uuid::parse_str(&g).ok()).collect(),
-                delivery_channel: acc.delivery_channel.and_then(|c| match c.to_lowercase().as_str() {
-                    "email" => Some(DeliveryChannel::Email),
-                    "sms" => Some(DeliveryChannel::Sms),
-                    "whatsapp" => Some(DeliveryChannel::WhatsApp),
-                    _ => Some(DeliveryChannel::Manual),
+            account: item
+                .registration
+                .account
+                .map(|acc| AccountProvisioningConfig {
+                    enabled: acc.enabled,
+                    preferred_username: acc.preferred_username,
+                    role: acc.role,
+                    group_ids: acc
+                        .group_ids
+                        .into_iter()
+                        .filter_map(|g| Uuid::parse_str(&g).ok())
+                        .collect(),
+                    delivery_channel: acc.delivery_channel.and_then(|c| {
+                        match c.to_lowercase().as_str() {
+                            "email" => Some(DeliveryChannel::Email),
+                            "sms" => Some(DeliveryChannel::Sms),
+                            "whatsapp" => Some(DeliveryChannel::WhatsApp),
+                            _ => Some(DeliveryChannel::Manual),
+                        }
+                    }),
+                    custom_password: acc.custom_password,
                 }),
-                custom_password: acc.custom_password,
-            }),
         };
 
-        domain_items.push(orbis_app::services::employee_service::BulkRegisterEmployeeItemInput {
-            row_index: item.row_index,
-            registration: input,
-        });
+        domain_items.push(
+            orbis_app::services::employee_service::BulkRegisterEmployeeItemInput {
+                row_index: item.row_index,
+                registration: input,
+            },
+        );
     }
 
-    let res = state.employee_service
-        .bulk_register_employees(&ctx, ctx.tenant_id, orbis_app::services::employee_service::BulkRegisterEmployeesInput {
-            items: domain_items,
-            atomic,
-            dry_run,
-        })
+    let res = state
+        .employee_service
+        .bulk_register_employees(
+            &ctx,
+            ctx.tenant_id,
+            orbis_app::services::employee_service::BulkRegisterEmployeesInput {
+                items: domain_items,
+                atomic,
+                dry_run,
+            },
+        )
         .await
         .map_err(|e| e.to_string())?;
 
-    let items_dto = res.items.into_iter().map(|it| BulkRegisterEmployeeItemCommandResultDto {
-        row_index: it.row_index,
-        success: it.success,
-        employee_id: it.employee_id.map(|id| id.to_string()),
-        employee_number: it.employee_number,
-        user_id: it.user_id.map(|id| id.to_string()),
-        error: it.error,
-    }).collect();
+    let items_dto = res
+        .items
+        .into_iter()
+        .map(|it| BulkRegisterEmployeeItemCommandResultDto {
+            row_index: it.row_index,
+            success: it.success,
+            employee_id: it.employee_id.map(|id| id.to_string()),
+            employee_number: it.employee_number,
+            user_id: it.user_id.map(|id| id.to_string()),
+            error: it.error,
+        })
+        .collect();
 
     Ok(ok(BulkRegisterEmployeeCommandResultDto {
         total: res.total,
@@ -697,7 +777,9 @@ pub async fn employee_delete_employee(
     let ctx = make_ctx(&state);
     let employee_id = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
 
-    state.employee_service.delete_employee(&ctx, employee_id)
+    state
+        .employee_service
+        .delete_employee(&ctx, employee_id)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -712,10 +794,11 @@ pub async fn employee_restore_employee(
     let ctx = make_ctx(&state);
     let employee_id = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
 
-    let restored = state.employee_service.restore_employee(&ctx, employee_id)
+    let restored = state
+        .employee_service
+        .restore_employee(&ctx, employee_id)
         .await
         .map_err(|e| e.to_string())?;
 
     Ok(ok(employee_detail_to_dto(restored)))
 }
-

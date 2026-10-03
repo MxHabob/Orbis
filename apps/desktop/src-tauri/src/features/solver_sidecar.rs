@@ -10,11 +10,11 @@
 //!    to run silently without popup windows.
 //! 3. **Clean Shutdown**: Guarantees termination when the main Orbis Desktop application exits.
 
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
-use std::sync::Arc;
-use std::time::Duration;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
+use std::time::Duration;
 use tokio::process::Child;
 use tokio::sync::Mutex;
 use tracing::{debug, info, warn};
@@ -68,7 +68,8 @@ impl SolverSidecarManager {
     }
 
     pub fn mark_activity(&self) {
-        self.last_activity.store(chrono::Utc::now().timestamp(), Ordering::Relaxed);
+        self.last_activity
+            .store(chrono::Utc::now().timestamp(), Ordering::Relaxed);
     }
 
     pub fn increment_active_jobs(&self) {
@@ -77,9 +78,11 @@ impl SolverSidecarManager {
     }
 
     pub fn decrement_active_jobs(&self) {
-        let _ = self.active_jobs.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |val| {
-            Some(val.saturating_sub(1))
-        });
+        let _ = self
+            .active_jobs
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |val| {
+                Some(val.saturating_sub(1))
+            });
         self.mark_activity();
     }
 
@@ -115,8 +118,9 @@ impl SolverSidecarManager {
         }
 
         // 3. Locate the sidecar executable
-        let exe_path = Self::find_sidecar_binary()
-            .ok_or_else(|| "Solver sidecar executable not found in bundle or workspace".to_string())?;
+        let exe_path = Self::find_sidecar_binary().ok_or_else(|| {
+            "Solver sidecar executable not found in bundle or workspace".to_string()
+        })?;
 
         info!(path = ?exe_path, "Spawning solver sidecar native binary");
 
@@ -134,7 +138,10 @@ impl SolverSidecarManager {
         }
 
         let child = cmd.spawn().map_err(|e| {
-            format!("Failed to spawn solver sidecar ({}): {e}", exe_path.display())
+            format!(
+                "Failed to spawn solver sidecar ({}): {e}",
+                exe_path.display()
+            )
         })?;
 
         *child_guard = Some(child);
@@ -206,7 +213,10 @@ impl SolverSidecarManager {
                 if now - last > timeout_secs {
                     let mut guard = child_arc.lock().await;
                     if let Some(mut child) = guard.take() {
-                        info!("Watchdog: terminating idle solver sidecar after {}s inactivity", now - last);
+                        info!(
+                            "Watchdog: terminating idle solver sidecar after {}s inactivity",
+                            now - last
+                        );
                         let _ = child.kill().await;
                     }
                 }
@@ -248,12 +258,24 @@ impl SolverSidecarManager {
         candidates.push(PathBuf::from("binaries").join(&sidecar_name));
 
         // 3. Direct Maven native build output (during dev)
-        candidates.push(PathBuf::from("../../apps/solver-service/target/solver-service-2.0.0-runner.exe"));
-        candidates.push(PathBuf::from("../../apps/solver-service/target/solver-service-2.0.0-runner"));
-        candidates.push(PathBuf::from("../solver-service/target/solver-service-2.0.0-runner.exe"));
-        candidates.push(PathBuf::from("../solver-service/target/solver-service-2.0.0-runner"));
-        candidates.push(PathBuf::from("apps/solver-service/target/solver-service-2.0.0-runner.exe"));
-        candidates.push(PathBuf::from("apps/solver-service/target/solver-service-2.0.0-runner"));
+        candidates.push(PathBuf::from(
+            "../../apps/solver-service/target/solver-service-2.0.0-runner.exe",
+        ));
+        candidates.push(PathBuf::from(
+            "../../apps/solver-service/target/solver-service-2.0.0-runner",
+        ));
+        candidates.push(PathBuf::from(
+            "../solver-service/target/solver-service-2.0.0-runner.exe",
+        ));
+        candidates.push(PathBuf::from(
+            "../solver-service/target/solver-service-2.0.0-runner",
+        ));
+        candidates.push(PathBuf::from(
+            "apps/solver-service/target/solver-service-2.0.0-runner.exe",
+        ));
+        candidates.push(PathBuf::from(
+            "apps/solver-service/target/solver-service-2.0.0-runner",
+        ));
 
         for candidate in candidates {
             if candidate.is_file() {

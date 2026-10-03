@@ -1,10 +1,10 @@
 //! System Tauri IPC commands — system status, health, readiness, entitlements,
 //! Mulverse ecosystem telemetry, GitHub releases, and intelligent update management.
 
-use tauri::State;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use crate::state::AppState;
+use serde::{Deserialize, Serialize};
+use tauri::State;
+use uuid::Uuid;
 
 // ═══════════════════════════════════════════════════════════════
 // DTOs
@@ -214,9 +214,14 @@ pub async fn fetch_github_changelog(current_version: &str) -> Vec<ReleaseChangel
 
                             items.push(ReleaseChangelogItem {
                                 version: clean_version.clone(),
-                                title_en: r.name.clone().unwrap_or_else(|| format!("Orbis {}", r.tag_name)),
+                                title_en: r
+                                    .name
+                                    .clone()
+                                    .unwrap_or_else(|| format!("Orbis {}", r.tag_name)),
                                 title_ar: format!("أوربيس {}", r.tag_name),
-                                release_date: r.published_at.unwrap_or_else(|| "2026-10-01".to_string()),
+                                release_date: r
+                                    .published_at
+                                    .unwrap_or_else(|| "2026-10-01".to_string()),
                                 is_current: is_curr,
                                 is_latest: is_lat,
                                 html_url: r.html_url,
@@ -380,7 +385,9 @@ pub async fn system_check_for_updates() -> Result<UpdateCheckResult, String> {
 
 /// System health check.
 #[tauri::command]
-pub async fn system_health(state: State<'_, AppState>) -> Result<orbis_app::services::HealthResponse, String> {
+pub async fn system_health(
+    state: State<'_, AppState>,
+) -> Result<orbis_app::services::HealthResponse, String> {
     Ok(state.system_service.health().await)
 }
 
@@ -417,4 +424,3 @@ pub async fn system_get_entitlement(
         .await
         .map_err(|e| e.to_string())
 }
-

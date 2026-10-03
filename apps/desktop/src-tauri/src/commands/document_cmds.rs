@@ -1,13 +1,17 @@
 //! Tauri IPC commands — Document & Requirements Management.
 
-use tauri::State;
-use serde::{Deserialize, Serialize};
-use crate::state::AppState;
-use uuid::Uuid;
-use orbis_app::services::{CreateDocumentInput, UpdateDocumentInput, UpdateDocumentRequirementInput};
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
-pub fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
+use crate::state::AppState;
+use orbis_app::services::{
+    CreateDocumentInput, UpdateDocumentInput, UpdateDocumentRequirementInput,
+};
+use serde::{Deserialize, Serialize};
+use tauri::State;
+use uuid::Uuid;
+pub fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
+    ApiResponse { data }
+}
 
 #[derive(Serialize)]
 pub struct DocumentDto {
@@ -128,12 +132,17 @@ pub fn doc_dto(d: orbis_domain::entities::document::Document) -> DocumentDto {
 }
 
 #[tauri::command]
-pub async fn document_upload(request: UploadDocumentInput, state: State<'_, AppState>) -> Result<ApiResponse<DocumentDto>, String> {
+pub async fn document_upload(
+    request: UploadDocumentInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<DocumentDto>, String> {
     let ctx = make_ctx(&state);
     let entity_id = request.entity_id.and_then(|e| Uuid::parse_str(&e).ok());
     let org_unit_id = request.org_unit_id.and_then(|e| Uuid::parse_str(&e).ok());
     let folder_id = request.folder_id.and_then(|f| Uuid::parse_str(&f).ok());
-    let academic_year_id = request.academic_year_id.and_then(|y| Uuid::parse_str(&y).ok());
+    let academic_year_id = request
+        .academic_year_id
+        .and_then(|y| Uuid::parse_str(&y).ok());
     let term_id = request.term_id.and_then(|t| Uuid::parse_str(&t).ok());
     let uploaded_by = match ctx.actor {
         orbis_domain::iam::actor::Actor::User(uid) => Some(uid),
@@ -158,7 +167,9 @@ pub async fn document_upload(request: UploadDocumentInput, state: State<'_, AppS
         mime_type: request.mime_type,
         extension: request.extension,
         checksum_sha256: request.checksum_sha256,
-        storage_provider: request.storage_provider.unwrap_or_else(|| "local".to_string()),
+        storage_provider: request
+            .storage_provider
+            .unwrap_or_else(|| "local".to_string()),
         file_path: request.file_path.clone(),
         storage_key: request.storage_key.or(Some(request.file_path)),
         url: request.url,
@@ -166,7 +177,9 @@ pub async fn document_upload(request: UploadDocumentInput, state: State<'_, AppS
         preview_path: request.preview_path,
     };
 
-    let doc = state.document_service.create_document(&ctx, ctx.tenant_id, input)
+    let doc = state
+        .document_service
+        .create_document(&ctx, ctx.tenant_id, input)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -182,7 +195,9 @@ pub async fn document_update(
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
     let folder_id = request.folder_id.and_then(|f| Uuid::parse_str(&f).ok());
-    let academic_year_id = request.academic_year_id.and_then(|y| Uuid::parse_str(&y).ok());
+    let academic_year_id = request
+        .academic_year_id
+        .and_then(|y| Uuid::parse_str(&y).ok());
     let term_id = request.term_id.and_then(|t| Uuid::parse_str(&t).ok());
 
     let input = UpdateDocumentInput {
@@ -197,7 +212,9 @@ pub async fn document_update(
         visibility: request.visibility,
     };
 
-    let doc = state.document_service.update_document(&ctx, uid, input)
+    let doc = state
+        .document_service
+        .update_document(&ctx, uid, input)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -205,78 +222,147 @@ pub async fn document_update(
 }
 
 #[tauri::command]
-pub async fn document_list(state: State<'_, AppState>) -> Result<ApiResponse<Vec<DocumentDto>>, String> {
+pub async fn document_list(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<DocumentDto>>, String> {
     let ctx = make_ctx(&state);
-    let items = state.document_service.list_documents_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    let items = state
+        .document_service
+        .list_documents_by_org(ctx.tenant_id)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(doc_dto).collect()))
 }
 
 #[tauri::command]
-pub async fn document_list_by_entity(entity_type: String, entity_id: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<DocumentDto>>, String> {
+pub async fn document_list_by_entity(
+    entity_type: String,
+    entity_id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<DocumentDto>>, String> {
     let eid = Uuid::parse_str(&entity_id).map_err(|_| "Invalid Entity ID")?;
-    let items = state.document_service.list_documents_by_entity(&entity_type, eid).await.map_err(|e| e.to_string())?;
+    let items = state
+        .document_service
+        .list_documents_by_entity(&entity_type, eid)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(doc_dto).collect()))
 }
 
 #[tauri::command]
-pub async fn document_get(id: String, state: State<'_, AppState>) -> Result<ApiResponse<DocumentDto>, String> {
+pub async fn document_get(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<DocumentDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    let doc = state.document_service.get_document(uid).await.map_err(|e| e.to_string())?
+    let doc = state
+        .document_service
+        .get_document(uid)
+        .await
+        .map_err(|e| e.to_string())?
         .ok_or_else(|| "Document not found".to_string())?;
     Ok(ok(doc_dto(doc)))
 }
 
 #[tauri::command]
-pub async fn document_delete(id: String, state: State<'_, AppState>) -> Result<ApiResponse<()>, String> {
+pub async fn document_delete(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<()>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    state.document_service.delete_document(&ctx, uid).await.map_err(|e| e.to_string())?;
+    state
+        .document_service
+        .delete_document(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(()))
 }
 
 #[tauri::command]
-pub async fn document_archive(id: String, reason: Option<String>, state: State<'_, AppState>) -> Result<ApiResponse<DocumentDto>, String> {
+pub async fn document_archive(
+    id: String,
+    reason: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<DocumentDto>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    let doc = state.file_storage_service.archive_document(&ctx, uid, reason).await.map_err(|e| e.to_string())?;
+    let doc = state
+        .file_storage_service
+        .archive_document(&ctx, uid, reason)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(doc_dto(doc)))
 }
 
 #[tauri::command]
-pub async fn document_restore(id: String, state: State<'_, AppState>) -> Result<ApiResponse<DocumentDto>, String> {
+pub async fn document_restore(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<DocumentDto>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    let doc = state.file_storage_service.restore_document(&ctx, uid).await.map_err(|e| e.to_string())?;
+    let doc = state
+        .file_storage_service
+        .restore_document(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(doc_dto(doc)))
 }
 
 #[tauri::command]
-pub async fn document_trash(id: String, state: State<'_, AppState>) -> Result<ApiResponse<()>, String> {
+pub async fn document_trash(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<()>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    state.file_storage_service.trash_document(&ctx, uid).await.map_err(|e| e.to_string())?;
+    state
+        .file_storage_service
+        .trash_document(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(()))
 }
 
 #[tauri::command]
-pub async fn document_purge(id: String, state: State<'_, AppState>) -> Result<ApiResponse<()>, String> {
+pub async fn document_purge(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<()>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    state.file_storage_service.purge_document(&ctx, uid).await.map_err(|e| e.to_string())?;
+    state
+        .file_storage_service
+        .purge_document(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(()))
 }
 
 #[tauri::command]
-pub async fn document_list_archived(state: State<'_, AppState>) -> Result<ApiResponse<Vec<DocumentDto>>, String> {
+pub async fn document_list_archived(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<DocumentDto>>, String> {
     let ctx = make_ctx(&state);
-    let docs = state.document_repo.find_archived(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    let docs = state
+        .document_repo
+        .find_archived(ctx.tenant_id)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(docs.into_iter().map(doc_dto).collect()))
 }
 
 #[tauri::command]
-pub async fn document_list_trash(state: State<'_, AppState>) -> Result<ApiResponse<Vec<DocumentDto>>, String> {
+pub async fn document_list_trash(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<DocumentDto>>, String> {
     let ctx = make_ctx(&state);
-    let docs = state.document_repo.find_trash(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    let docs = state
+        .document_repo
+        .find_trash(ctx.tenant_id)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(docs.into_iter().map(doc_dto).collect()))
 }
 
@@ -298,7 +384,9 @@ pub struct DocumentRequirementDto {
     pub updated_at: String,
 }
 
-pub fn doc_req_dto(r: orbis_domain::entities::document_requirement::DocumentRequirement) -> DocumentRequirementDto {
+pub fn doc_req_dto(
+    r: orbis_domain::entities::document_requirement::DocumentRequirement,
+) -> DocumentRequirementDto {
     DocumentRequirementDto {
         id: r.id.to_string(),
         org_id: r.org_id.to_string(),
@@ -360,7 +448,9 @@ pub async fn document_create_requirement(
         condition,
     };
 
-    let req = state.document_service.create_document_requirement(&ctx, ctx.tenant_id, input)
+    let req = state
+        .document_service
+        .create_document_requirement(&ctx, ctx.tenant_id, input)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -373,7 +463,9 @@ pub async fn document_get_requirement(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<DocumentRequirementDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    let req = state.document_service.get_document_requirement(uid)
+    let req = state
+        .document_service
+        .get_document_requirement(uid)
         .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "Requirement not found".to_string())?;
@@ -407,7 +499,9 @@ pub async fn document_update_requirement(
         condition,
     };
 
-    let req = state.document_service.update_document_requirement(&ctx, uid, input)
+    let req = state
+        .document_service
+        .update_document_requirement(&ctx, uid, input)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -419,7 +513,9 @@ pub async fn document_list_requirements(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<DocumentRequirementDto>>, String> {
     let ctx = make_ctx(&state);
-    let items = state.document_service.list_document_requirements_by_org(ctx.tenant_id)
+    let items = state
+        .document_service
+        .list_document_requirements_by_org(ctx.tenant_id)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(doc_req_dto).collect()))
@@ -432,7 +528,9 @@ pub async fn document_delete_requirement(
 ) -> Result<ApiResponse<()>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    state.document_service.delete_document_requirement(&ctx, uid)
+    state
+        .document_service
+        .delete_document_requirement(&ctx, uid)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(()))
@@ -458,40 +556,57 @@ pub async fn document_evaluate_student_requirements(
     let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid Student ID")?;
     let gid = grade_level_id.and_then(|g| Uuid::parse_str(&g).ok());
 
-    let results = state.document_service.evaluate_student_requirements(
-        ctx.tenant_id,
-        sid,
-        gid,
-        is_national.unwrap_or(true),
-        is_transfer.unwrap_or(false),
-    )
-    .await
-    .map_err(|e| e.to_string())?;
+    let results = state
+        .document_service
+        .evaluate_student_requirements(
+            ctx.tenant_id,
+            sid,
+            gid,
+            is_national.unwrap_or(true),
+            is_transfer.unwrap_or(false),
+        )
+        .await
+        .map_err(|e| e.to_string())?;
 
-    let dtos = results.into_iter().map(|f| StudentDocumentFulfillmentDto {
-        requirement: doc_req_dto(f.requirement),
-        is_fulfilled: f.is_fulfilled,
-        uploaded_document: f.uploaded_document.map(doc_dto),
-        is_applicable: f.is_applicable,
-    }).collect();
+    let dtos = results
+        .into_iter()
+        .map(|f| StudentDocumentFulfillmentDto {
+            requirement: doc_req_dto(f.requirement),
+            is_fulfilled: f.is_fulfilled,
+            uploaded_document: f.uploaded_document.map(doc_dto),
+            is_applicable: f.is_applicable,
+        })
+        .collect();
 
     Ok(ok(dtos))
 }
 
-fn parse_target_type(s: &str) -> orbis_domain::entities::document_requirement::RequirementTargetType {
+fn parse_target_type(
+    s: &str,
+) -> orbis_domain::entities::document_requirement::RequirementTargetType {
     match s.to_lowercase().as_str() {
         "stage" => orbis_domain::entities::document_requirement::RequirementTargetType::Stage,
-        "grade_level" | "gradelevel" => orbis_domain::entities::document_requirement::RequirementTargetType::GradeLevel,
+        "grade_level" | "gradelevel" => {
+            orbis_domain::entities::document_requirement::RequirementTargetType::GradeLevel
+        }
         "program" => orbis_domain::entities::document_requirement::RequirementTargetType::Program,
         _ => orbis_domain::entities::document_requirement::RequirementTargetType::Global,
     }
 }
 
-fn parse_condition(s: Option<&str>) -> orbis_domain::entities::document_requirement::DocumentCondition {
+fn parse_condition(
+    s: Option<&str>,
+) -> orbis_domain::entities::document_requirement::DocumentCondition {
     match s {
-        Some("non_national_only") => orbis_domain::entities::document_requirement::DocumentCondition::NonNationalOnly,
-        Some("transfer_students_only") => orbis_domain::entities::document_requirement::DocumentCondition::TransferStudentsOnly,
-        Some("special_needs_only") => orbis_domain::entities::document_requirement::DocumentCondition::SpecialNeedsOnly,
+        Some("non_national_only") => {
+            orbis_domain::entities::document_requirement::DocumentCondition::NonNationalOnly
+        }
+        Some("transfer_students_only") => {
+            orbis_domain::entities::document_requirement::DocumentCondition::TransferStudentsOnly
+        }
+        Some("special_needs_only") => {
+            orbis_domain::entities::document_requirement::DocumentCondition::SpecialNeedsOnly
+        }
         _ => orbis_domain::entities::document_requirement::DocumentCondition::AllStudents,
     }
 }

@@ -1,13 +1,13 @@
 //! Tauri IPC commands — Orbis Autopilot System.
 
-use tauri::State;
 use serde::{Deserialize, Serialize};
+use tauri::State;
 use uuid::Uuid;
 
-use crate::state::AppState;
-use orbis_domain::autopilot::task::AutopilotTask;
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
+use crate::state::AppState;
+use orbis_domain::autopilot::task::AutopilotTask;
 
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
     ApiResponse { data }
@@ -214,8 +214,16 @@ pub async fn autopilot_get_diagnostics(
         is_healthy: diag.is_healthy,
         status: diag.status,
         mode: diag.mode,
-        stuck_tasks: diag.stuck_tasks.into_iter().map(AutopilotTaskDto::from).collect(),
-        overdue_tasks: diag.overdue_tasks.into_iter().map(AutopilotTaskDto::from).collect(),
+        stuck_tasks: diag
+            .stuck_tasks
+            .into_iter()
+            .map(AutopilotTaskDto::from)
+            .collect(),
+        overdue_tasks: diag
+            .overdue_tasks
+            .into_iter()
+            .map(AutopilotTaskDto::from)
+            .collect(),
         total_tasks_count: diag.total_tasks_count,
         pending_tasks_count: diag.pending_tasks_count,
         completed_tasks_count: diag.completed_tasks_count,

@@ -1,17 +1,21 @@
 //! Tauri IPC commands — Assessment (Schemes, Grades, Attendance, Behavior).
 
-use tauri::State;
-use serde::{Deserialize, Serialize};
-use crate::state::AppState;
-use uuid::Uuid;
-use chrono::NaiveDate;
-use rust_decimal::Decimal;
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
-use orbis_app::services::assessment_service::{BatchGradeItem, BatchAttendanceItem};
-use orbis_domain::entities::assessment_scheme::{AssessmentScheme, AssessmentComponent, AssessmentLevel, InstitutionScope};
+use crate::state::AppState;
+use chrono::NaiveDate;
+use orbis_app::services::assessment_service::{BatchAttendanceItem, BatchGradeItem};
+use orbis_domain::entities::assessment_scheme::{
+    AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
+};
+use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
+use tauri::State;
+use uuid::Uuid;
 
-fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
+fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
+    ApiResponse { data }
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct AssessmentSchemeDto {
@@ -294,7 +298,9 @@ fn attendance_to_dto(a: orbis_domain::entities::attendance::Attendance) -> Atten
     }
 }
 
-fn behavior_to_dto(r: orbis_domain::entities::behavior_record::BehaviorRecord) -> BehaviorRecordDto {
+fn behavior_to_dto(
+    r: orbis_domain::entities::behavior_record::BehaviorRecord,
+) -> BehaviorRecordDto {
     BehaviorRecordDto {
         id: r.id.to_string(),
         student_id: r.student_id.to_string(),
@@ -330,97 +336,132 @@ fn scheme_to_dto(s: AssessmentScheme) -> AssessmentSchemeDto {
 // ── Handlers ────────────────────────────────────────────────────
 
 #[tauri::command]
-pub async fn assessment_create_scheme(request: CreateSchemeInput, state: State<'_, AppState>) -> Result<ApiResponse<AssessmentSchemeDto>, String> {
+pub async fn assessment_create_scheme(
+    request: CreateSchemeInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AssessmentSchemeDto>, String> {
     let ctx = make_ctx(&state);
-    let s = state.assessment_service.create_assessment_scheme(
-        &ctx,
-        ctx.tenant_id,
-        request.name,
-        request.name_ar,
-        request.description,
-        request.max_score,
-        request.formula,
-        request.level,
-        request.institution_scope,
-        request.components,
-        request.is_default.unwrap_or(false),
-    )
-    .await
-    .map_err(|e| e.to_string())?;
+    let s = state
+        .assessment_service
+        .create_assessment_scheme(
+            &ctx,
+            ctx.tenant_id,
+            request.name,
+            request.name_ar,
+            request.description,
+            request.max_score,
+            request.formula,
+            request.level,
+            request.institution_scope,
+            request.components,
+            request.is_default.unwrap_or(false),
+        )
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(ok(scheme_to_dto(s)))
 }
 
 #[tauri::command]
-pub async fn assessment_list_schemes(state: State<'_, AppState>) -> Result<ApiResponse<Vec<AssessmentSchemeDto>>, String> {
+pub async fn assessment_list_schemes(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<AssessmentSchemeDto>>, String> {
     let ctx = make_ctx(&state);
-    let items = state.assessment_service.list_assessment_schemes(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    let items = state
+        .assessment_service
+        .list_assessment_schemes(ctx.tenant_id)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(scheme_to_dto).collect()))
 }
 
 #[tauri::command]
-pub async fn assessment_get_scheme(id: String, state: State<'_, AppState>) -> Result<ApiResponse<AssessmentSchemeDto>, String> {
+pub async fn assessment_get_scheme(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AssessmentSchemeDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    let s = state.assessment_scheme_repo.find_by_id(uid).await.map_err(|e| e.to_string())?.ok_or("Scheme not found")?;
+    let s = state
+        .assessment_scheme_repo
+        .find_by_id(uid)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or("Scheme not found")?;
     Ok(ok(scheme_to_dto(s)))
 }
 
 #[tauri::command]
-pub async fn assessment_update_scheme(request: UpdateSchemeInput, state: State<'_, AppState>) -> Result<ApiResponse<AssessmentSchemeDto>, String> {
+pub async fn assessment_update_scheme(
+    request: UpdateSchemeInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AssessmentSchemeDto>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&request.id).map_err(|_| "Invalid ID")?;
-    let s = state.assessment_service.update_assessment_scheme(
-        &ctx,
-        ctx.tenant_id,
-        uid,
-        request.name,
-        request.name_ar,
-        request.description,
-        request.max_score,
-        request.formula,
-        request.level,
-        request.institution_scope,
-        request.components,
-        request.is_default,
-    )
-    .await
-    .map_err(|e| e.to_string())?;
+    let s = state
+        .assessment_service
+        .update_assessment_scheme(
+            &ctx,
+            ctx.tenant_id,
+            uid,
+            request.name,
+            request.name_ar,
+            request.description,
+            request.max_score,
+            request.formula,
+            request.level,
+            request.institution_scope,
+            request.components,
+            request.is_default,
+        )
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(ok(scheme_to_dto(s)))
 }
 
 #[tauri::command]
-pub async fn assessment_delete_scheme(id: String, state: State<'_, AppState>) -> Result<ApiResponse<()>, String> {
+pub async fn assessment_delete_scheme(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<()>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    state.assessment_service.delete_assessment_scheme(&ctx, ctx.tenant_id, uid)
+    state
+        .assessment_service
+        .delete_assessment_scheme(&ctx, ctx.tenant_id, uid)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(()))
 }
 
 #[tauri::command]
-pub async fn assessment_record_grade(request: RecordGradeInput, state: State<'_, AppState>) -> Result<ApiResponse<GradeDto>, String> {
+pub async fn assessment_record_grade(
+    request: RecordGradeInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<GradeDto>, String> {
     let ctx = make_ctx(&state);
     let period_id = Uuid::parse_str(&request.period_id).map_err(|_| "Invalid periodId")?;
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
-    let class_subject_id = Uuid::parse_str(&request.class_subject_id).map_err(|_| "Invalid classSubjectId")?;
+    let class_subject_id =
+        Uuid::parse_str(&request.class_subject_id).map_err(|_| "Invalid classSubjectId")?;
     let component_id = request.component_id.and_then(|c| Uuid::parse_str(&c).ok());
     let max_score = request.max_score.unwrap_or_else(|| Decimal::from(100));
 
-    let g = state.assessment_service.record_grade(
-        &ctx,
-        ctx.tenant_id,
-        period_id,
-        student_id,
-        class_subject_id,
-        component_id,
-        request.score,
-        max_score,
-        false,
-    )
-    .await
-    .map_err(|e| e.to_string())?;
+    let g = state
+        .assessment_service
+        .record_grade(
+            &ctx,
+            ctx.tenant_id,
+            period_id,
+            student_id,
+            class_subject_id,
+            component_id,
+            request.score,
+            max_score,
+            false,
+        )
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(ok(grade_to_dto(g)))
 }
@@ -437,7 +478,8 @@ pub async fn assessment_batch_record_grades(
         let period_id = Uuid::parse_str(&item.period_id).map_err(|_| "Invalid periodId")?;
         let student_id = Uuid::parse_str(&item.student_id).map_err(|_| "Invalid studentId")?;
         let enrollment_id = item.enrollment_id.and_then(|e| Uuid::parse_str(&e).ok());
-        let class_subject_id = Uuid::parse_str(&item.class_subject_id).map_err(|_| "Invalid classSubjectId")?;
+        let class_subject_id =
+            Uuid::parse_str(&item.class_subject_id).map_err(|_| "Invalid classSubjectId")?;
         let component_id = item.component_id.and_then(|c| Uuid::parse_str(&c).ok());
 
         items.push(BatchGradeItem {
@@ -454,7 +496,9 @@ pub async fn assessment_batch_record_grades(
         });
     }
 
-    let grades = state.assessment_service.batch_record_grades(&ctx, ctx.tenant_id, items)
+    let grades = state
+        .assessment_service
+        .batch_record_grades(&ctx, ctx.tenant_id, items)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -474,34 +518,56 @@ pub async fn assessment_delete_grade(
 ) -> Result<ApiResponse<()>, String> {
     let ctx = make_ctx(&state);
     let grade_id = Uuid::parse_str(&id).map_err(|_| "Invalid grade ID")?;
-    state.assessment_service.delete_grade(&ctx, ctx.tenant_id, grade_id)
+    state
+        .assessment_service
+        .delete_grade(&ctx, ctx.tenant_id, grade_id)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(()))
 }
 
 #[tauri::command]
-pub async fn assessment_list_grades(filter: Option<GradeFilter>, state: State<'_, AppState>) -> Result<ApiResponse<Vec<GradeDto>>, String> {
+pub async fn assessment_list_grades(
+    filter: Option<GradeFilter>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<GradeDto>>, String> {
     let f = filter.unwrap_or_default();
-    let items = if let Some(sid) = f.student_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
+    let items = if let Some(sid) = f
+        .student_id
+        .as_deref()
+        .and_then(|s| Uuid::parse_str(s).ok())
+    {
         state.grade_repo.find_by_student(sid).await
-    } else if let Some(csid) = f.class_subject_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
+    } else if let Some(csid) = f
+        .class_subject_id
+        .as_deref()
+        .and_then(|s| Uuid::parse_str(s).ok())
+    {
         state.grade_repo.find_by_class_subject(csid).await
     } else {
         Ok(vec![])
-    }.map_err(|e| e.to_string())?;
+    }
+    .map_err(|e| e.to_string())?;
 
     Ok(ok(items.into_iter().map(grade_to_dto).collect()))
 }
 
 #[tauri::command]
-pub async fn assessment_calculate_grades(request: CalculateGradesInput, state: State<'_, AppState>) -> Result<ApiResponse<CalculationResultDto>, String> {
+pub async fn assessment_calculate_grades(
+    request: CalculateGradesInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<CalculationResultDto>, String> {
     let ctx = make_ctx(&state);
     let scheme_id = Uuid::parse_str(&request.scheme_id).map_err(|_| "Invalid schemeId")?;
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
-    let class_subject_id = request.class_subject_id.and_then(|cs| Uuid::parse_str(&cs).ok()).unwrap_or_else(Uuid::nil);
+    let class_subject_id = request
+        .class_subject_id
+        .and_then(|cs| Uuid::parse_str(&cs).ok())
+        .unwrap_or_else(Uuid::nil);
 
-    let final_score = state.assessment_service.calculate_scheme_grades(&ctx, scheme_id, student_id, class_subject_id)
+    let final_score = state
+        .assessment_service
+        .calculate_scheme_grades(&ctx, scheme_id, student_id, class_subject_id)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -520,7 +586,8 @@ pub async fn assessment_calculate_gpa(
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
     let period_id = Uuid::parse_str(&request.period_id).map_err(|_| "Invalid periodId")?;
 
-    let record = state.assessment_service
+    let record = state
+        .assessment_service
         .calculate_gpa(&ctx, ctx.tenant_id, period_id, student_id)
         .await
         .map_err(|e| e.to_string())?;
@@ -547,8 +614,8 @@ pub async fn assessment_calculate_gpa(
 pub async fn assessment_calculate_rankings(
     request: CalculateRankingsInput,
 ) -> Result<ApiResponse<Vec<RankingItemDto>>, String> {
-    use orbis_domain::entities::academic_policy::TiePolicy;
     use orbis_app::services::calculation_engine::AcademicCalculationEngine;
+    use orbis_domain::entities::academic_policy::TiePolicy;
 
     let tie_policy = match request.tie_policy.as_deref() {
         Some("dense") => TiePolicy::Dense,
@@ -575,13 +642,29 @@ pub async fn assessment_calculate_rankings(
 }
 
 #[tauri::command]
-pub async fn assessment_mark_attendance(request: MarkAttendanceInput, state: State<'_, AppState>) -> Result<ApiResponse<AttendanceDto>, String> {
+pub async fn assessment_mark_attendance(
+    request: MarkAttendanceInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AttendanceDto>, String> {
     let ctx = make_ctx(&state);
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
     let class_id = Uuid::parse_str(&request.class_id).map_err(|_| "Invalid classId")?;
-    let date = NaiveDate::parse_from_str(&request.date, "%Y-%m-%d").map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
+    let date = NaiveDate::parse_from_str(&request.date, "%Y-%m-%d")
+        .map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
 
-    let a = state.assessment_service.mark_attendance(&ctx, ctx.tenant_id, Uuid::nil(), student_id, Some(class_id), None, date, request.status, request.notes)
+    let a = state
+        .assessment_service
+        .mark_attendance(
+            &ctx,
+            ctx.tenant_id,
+            Uuid::nil(),
+            student_id,
+            Some(class_id),
+            None,
+            date,
+            request.status,
+            request.notes,
+        )
         .await
         .map_err(|e| e.to_string())?;
 
@@ -595,13 +678,18 @@ pub async fn assessment_batch_mark_attendance(
 ) -> Result<ApiResponse<BatchMarkAttendanceResponseDto>, String> {
     let ctx = make_ctx(&state);
     let class_id = Uuid::parse_str(&request.class_id).map_err(|_| "Invalid classId")?;
-    let date = NaiveDate::parse_from_str(&request.date, "%Y-%m-%d").map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
+    let date = NaiveDate::parse_from_str(&request.date, "%Y-%m-%d")
+        .map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
 
     let mut items = Vec::with_capacity(request.items.len());
     for item in request.items {
         let student_id = Uuid::parse_str(&item.student_id).map_err(|_| "Invalid studentId")?;
-        let class_subject_id = item.class_subject_id.and_then(|cs| Uuid::parse_str(&cs).ok());
-        let scheduled_lesson_id = item.scheduled_lesson_id.and_then(|sl| Uuid::parse_str(&sl).ok());
+        let class_subject_id = item
+            .class_subject_id
+            .and_then(|cs| Uuid::parse_str(&cs).ok());
+        let scheduled_lesson_id = item
+            .scheduled_lesson_id
+            .and_then(|sl| Uuid::parse_str(&sl).ok());
 
         items.push(BatchAttendanceItem {
             student_id,
@@ -612,7 +700,9 @@ pub async fn assessment_batch_mark_attendance(
         });
     }
 
-    let list = state.assessment_service.batch_mark_attendance(&ctx, ctx.tenant_id, class_id, date, items)
+    let list = state
+        .assessment_service
+        .batch_mark_attendance(&ctx, ctx.tenant_id, class_id, date, items)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -632,17 +722,28 @@ pub async fn assessment_delete_attendance(
 ) -> Result<ApiResponse<()>, String> {
     let ctx = make_ctx(&state);
     let attendance_id = Uuid::parse_str(&id).map_err(|_| "Invalid attendance ID")?;
-    state.assessment_service.delete_attendance(&ctx, ctx.tenant_id, attendance_id)
+    state
+        .assessment_service
+        .delete_attendance(&ctx, ctx.tenant_id, attendance_id)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(()))
 }
 
 #[tauri::command]
-pub async fn assessment_list_attendance(class_id: String, date: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<AttendanceDto>>, String> {
+pub async fn assessment_list_attendance(
+    class_id: String,
+    date: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<AttendanceDto>>, String> {
     let cid = Uuid::parse_str(&class_id).map_err(|_| "Invalid class ID")?;
-    let parsed_date = NaiveDate::parse_from_str(&date, "%Y-%m-%d").map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
-    let items = state.attendance_repo.find_by_class_and_date(cid, parsed_date).await.map_err(|e| e.to_string())?;
+    let parsed_date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
+        .map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
+    let items = state
+        .attendance_repo
+        .find_by_class_and_date(cid, parsed_date)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(attendance_to_dto).collect()))
 }
 
@@ -653,7 +754,11 @@ pub async fn assessment_list_student_attendance(
 ) -> Result<ApiResponse<Vec<AttendanceDto>>, String> {
     let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
     let ctx = make_ctx(&state);
-    let items = state.assessment_service.list_student_attendance(&ctx, sid).await.map_err(|e| e.to_string())?;
+    let items = state
+        .assessment_service
+        .list_student_attendance(&ctx, sid)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(attendance_to_dto).collect()))
 }
 
@@ -664,8 +769,16 @@ pub async fn assessment_record_behavior(
 ) -> Result<ApiResponse<BehaviorRecordDto>, String> {
     let ctx = make_ctx(&state);
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
-    let record = state.assessment_service
-        .record_behavior(&ctx, ctx.tenant_id, student_id, request.record_type, request.description, request.points)
+    let record = state
+        .assessment_service
+        .record_behavior(
+            &ctx,
+            ctx.tenant_id,
+            student_id,
+            request.record_type,
+            request.description,
+            request.points,
+        )
         .await
         .map_err(|e| e.to_string())?;
 
@@ -679,7 +792,9 @@ pub async fn assessment_delete_behavior(
 ) -> Result<ApiResponse<()>, String> {
     let ctx = make_ctx(&state);
     let behavior_id = Uuid::parse_str(&id).map_err(|_| "Invalid behavior record ID")?;
-    state.assessment_service.delete_behavior(&ctx, ctx.tenant_id, behavior_id)
+    state
+        .assessment_service
+        .delete_behavior(&ctx, ctx.tenant_id, behavior_id)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(()))
@@ -692,7 +807,8 @@ pub async fn assessment_list_student_behavior_records(
 ) -> Result<ApiResponse<Vec<BehaviorRecordDto>>, String> {
     let ctx = make_ctx(&state);
     let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid studentId")?;
-    let records = state.assessment_service
+    let records = state
+        .assessment_service
         .list_student_behavior_records(&ctx, sid)
         .await
         .map_err(|e| e.to_string())?;
@@ -705,7 +821,8 @@ pub async fn assessment_list_all_behavior(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<BehaviorRecordDto>>, String> {
     let ctx = make_ctx(&state);
-    let records = state.assessment_service
+    let records = state
+        .assessment_service
         .list_behavior_records(&ctx, ctx.tenant_id)
         .await
         .map_err(|e| e.to_string())?;

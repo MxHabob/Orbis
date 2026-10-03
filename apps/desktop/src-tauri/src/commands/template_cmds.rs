@@ -10,16 +10,18 @@
 //!   - Validation (schema/expression checking)
 //!   - Report Definitions (read-only browsing)
 
-use tauri::State;
-use serde::{Deserialize, Serialize};
 use crate::state::AppState;
-use orbis_domain::entities::report::*;
-use uuid::Uuid;
 use chrono::Utc;
+use orbis_domain::entities::report::*;
+use serde::{Deserialize, Serialize};
+use tauri::State;
+use uuid::Uuid;
 
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
-fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
+fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
+    ApiResponse { data }
+}
 
 // ═══════════════════════════════════════════════════════════════
 // DTOs
@@ -162,7 +164,9 @@ fn definition_dto(d: ReportDefinition) -> ReportDefinitionDto {
         description: d.description,
         description_ar: d.description_ar,
         supported_formats: d.supported_formats.iter().map(|f| f.to_string()).collect(),
-        parameters: d.parameters.iter()
+        parameters: d
+            .parameters
+            .iter()
             .filter_map(|p| serde_json::to_value(p).ok())
             .collect(),
         is_system: d.is_system,
@@ -231,7 +235,8 @@ pub async fn template_create(
         description_ar: input.description_ar,
         document_type: input.document_type,
         entity_type: input.entity_type,
-        master_template_id: input.master_template_id
+        master_template_id: input
+            .master_template_id
             .and_then(|id| Uuid::parse_str(&id).ok()),
         status: TemplateStatus::Draft,
         version: 1,
@@ -242,7 +247,9 @@ pub async fn template_create(
         page_width_mm: input.page_width_mm,
         page_height_mm: input.page_height_mm,
         orientation: input.orientation.unwrap_or_else(|| "portrait".into()),
-        margins_json: input.margins_json.unwrap_or_else(|| r#"{"top":15,"bottom":15,"left":15,"right":15}"#.into()),
+        margins_json: input
+            .margins_json
+            .unwrap_or_else(|| r#"{"top":15,"bottom":15,"left":15,"right":15}"#.into()),
         document_json: input.document_json.unwrap_or_else(|| "{}".into()),
         locale: input.locale.unwrap_or_else(|| "ar".into()),
         tags: input.tags,
@@ -254,7 +261,11 @@ pub async fn template_create(
         updated_at: now,
     };
 
-    state.report_service.save_template(&template).await.map_err(|e| e.to_string())?;
+    state
+        .report_service
+        .save_template(&template)
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(ok(template_dto(template)))
 }
@@ -265,7 +276,10 @@ pub async fn template_get(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<TemplateDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
-    let template = state.report_template_repo.find_by_id(uid).await
+    let template = state
+        .report_template_repo
+        .find_by_id(uid)
+        .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "Template not found".to_string())?;
     Ok(ok(template_dto(template)))
@@ -279,7 +293,8 @@ pub async fn template_list(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<TemplateDto>>, String> {
     let ctx = make_ctx(&state);
-    let templates = state.report_template_repo
+    let templates = state
+        .report_template_repo
         .list_by_org(
             ctx.tenant_id,
             status.as_deref(),
@@ -300,7 +315,10 @@ pub async fn template_update(
 ) -> Result<ApiResponse<TemplateDto>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
-    let mut template = state.report_template_repo.find_by_id(uid).await
+    let mut template = state
+        .report_template_repo
+        .find_by_id(uid)
+        .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "Template not found".to_string())?;
 
@@ -308,29 +326,49 @@ pub async fn template_update(
         return Err("Template belongs to another organization".to_string());
     }
 
-    if let Some(name) = input.name { template.name = name; }
-    if let Some(name_ar) = input.name_ar { template.name_ar = Some(name_ar); }
-    if let Some(desc) = input.description { template.description = Some(desc); }
-    if let Some(desc_ar) = input.description_ar { template.description_ar = Some(desc_ar); }
-    if let Some(doc) = input.document_json { template.document_json = doc; }
-    if let Some(ps) = input.page_size { template.page_size = ps; }
-    if let Some(o) = input.orientation { template.orientation = o; }
-    if let Some(m) = input.margins_json { template.margins_json = m; }
+    if let Some(name) = input.name {
+        template.name = name;
+    }
+    if let Some(name_ar) = input.name_ar {
+        template.name_ar = Some(name_ar);
+    }
+    if let Some(desc) = input.description {
+        template.description = Some(desc);
+    }
+    if let Some(desc_ar) = input.description_ar {
+        template.description_ar = Some(desc_ar);
+    }
+    if let Some(doc) = input.document_json {
+        template.document_json = doc;
+    }
+    if let Some(ps) = input.page_size {
+        template.page_size = ps;
+    }
+    if let Some(o) = input.orientation {
+        template.orientation = o;
+    }
+    if let Some(m) = input.margins_json {
+        template.margins_json = m;
+    }
     template.updated_at = Utc::now();
 
-    state.report_service.save_template(&template).await.map_err(|e| e.to_string())?;
+    state
+        .report_service
+        .save_template(&template)
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(ok(template_dto(template)))
 }
 
 #[tauri::command]
-pub async fn template_delete(
-    id: String,
-    state: State<'_, AppState>,
-) -> Result<(), String> {
+pub async fn template_delete(id: String, state: State<'_, AppState>) -> Result<(), String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
-    state.report_service.delete_template(&ctx, uid).await
+    state
+        .report_service
+        .delete_template(&ctx, uid)
+        .await
         .map_err(|e| e.to_string())
 }
 
@@ -345,19 +383,22 @@ pub async fn template_publish(
 ) -> Result<ApiResponse<TemplateDto>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
-    let template = state.report_service.publish_template(&ctx, uid).await
+    let template = state
+        .report_service
+        .publish_template(&ctx, uid)
+        .await
         .map_err(|e| e.to_string())?;
     Ok(ok(template_dto(template)))
 }
 
 #[tauri::command]
-pub async fn template_archive(
-    id: String,
-    state: State<'_, AppState>,
-) -> Result<(), String> {
+pub async fn template_archive(id: String, state: State<'_, AppState>) -> Result<(), String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
-    state.report_service.archive_template(&ctx, uid).await
+    state
+        .report_service
+        .archive_template(&ctx, uid)
+        .await
         .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -372,7 +413,11 @@ pub async fn template_get_versions(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<VersionDto>>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
-    let versions = state.report_template_repo.find_versions(uid).await.map_err(|e| e.to_string())?;
+    let versions = state
+        .report_template_repo
+        .find_versions(uid)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(versions.into_iter().map(version_dto).collect()))
 }
 
@@ -384,7 +429,10 @@ pub async fn template_revert_version(
 ) -> Result<ApiResponse<TemplateDto>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
-    let template = state.report_service.revert_template_version(&ctx, uid, target_version).await
+    let template = state
+        .report_service
+        .revert_template_version(&ctx, uid, target_version)
+        .await
         .map_err(|e| e.to_string())?;
     Ok(ok(template_dto(template)))
 }
@@ -399,7 +447,8 @@ pub async fn template_list_bindings(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<BindingDto>>, String> {
     let uid = Uuid::parse_str(&definition_id).map_err(|_| "Invalid definition ID")?;
-    let bindings = state.report_template_repo
+    let bindings = state
+        .report_template_repo
         .find_bindings_by_definition(uid)
         .await
         .map_err(|e| e.to_string())?;
@@ -427,7 +476,10 @@ pub async fn template_create_binding(
         created_at: Utc::now(),
     };
 
-    state.report_template_repo.save_binding(&binding).await
+    state
+        .report_template_repo
+        .save_binding(&binding)
+        .await
         .map_err(|e| e.to_string())?;
 
     Ok(ok(binding_dto(binding)))
@@ -445,10 +497,10 @@ pub async fn template_preview(
     _page_index: Option<u32>,
     _state: State<'_, AppState>,
 ) -> Result<Vec<u8>, String> {
-    use docforge_engine::model::document::TemplateDocument;
     use docforge_engine::layout::engine::LayoutEngine;
+    use docforge_engine::model::document::TemplateDocument;
     use docforge_engine::render::font_cache::FontCache;
-    use docforge_engine::render::pdf_renderer::{render_to_pdf, PdfRenderConfig};
+    use docforge_engine::render::pdf_renderer::{PdfRenderConfig, render_to_pdf};
 
     // 1. Parse the template document
     let doc: TemplateDocument = serde_json::from_str(&document_json)
@@ -459,7 +511,8 @@ pub async fn template_preview(
 
     // 3. Run layout engine
     let layout_engine = LayoutEngine::new(&fonts);
-    let layout = layout_engine.layout(&doc, &context_data)
+    let layout = layout_engine
+        .layout(&doc, &context_data)
         .map_err(|e| format!("Layout computation failed: {}", e))?;
 
     // 4. Render to PDF
@@ -564,42 +617,82 @@ fn validate_node_expressions(
         }
         TemplateNode::Page(page) => {
             for (i, child) in page.children.iter().enumerate() {
-                validate_node_expressions(child, errors, warnings, &format!("{}.children[{}]", path, i));
+                validate_node_expressions(
+                    child,
+                    errors,
+                    warnings,
+                    &format!("{}.children[{}]", path, i),
+                );
             }
         }
         TemplateNode::Frame(frame) => {
             for (i, child) in frame.children.iter().enumerate() {
-                validate_node_expressions(child, errors, warnings, &format!("{}.children[{}]", path, i));
+                validate_node_expressions(
+                    child,
+                    errors,
+                    warnings,
+                    &format!("{}.children[{}]", path, i),
+                );
             }
         }
         TemplateNode::Grid(grid) => {
             for (i, child) in grid.children.iter().enumerate() {
-                validate_node_expressions(child, errors, warnings, &format!("{}.children[{}]", path, i));
+                validate_node_expressions(
+                    child,
+                    errors,
+                    warnings,
+                    &format!("{}.children[{}]", path, i),
+                );
             }
         }
         TemplateNode::Repeater(repeater) => {
             for (i, child) in repeater.children.iter().enumerate() {
-                validate_node_expressions(child, errors, warnings, &format!("{}.children[{}]", path, i));
+                validate_node_expressions(
+                    child,
+                    errors,
+                    warnings,
+                    &format!("{}.children[{}]", path, i),
+                );
             }
         }
         TemplateNode::Conditional(cond) => {
             for (i, child) in cond.children.iter().enumerate() {
-                validate_node_expressions(child, errors, warnings, &format!("{}.then[{}]", path, i));
+                validate_node_expressions(
+                    child,
+                    errors,
+                    warnings,
+                    &format!("{}.then[{}]", path, i),
+                );
             }
             if let Some(ref else_nodes) = cond.else_children {
                 for (i, child) in else_nodes.iter().enumerate() {
-                    validate_node_expressions(child, errors, warnings, &format!("{}.else[{}]", path, i));
+                    validate_node_expressions(
+                        child,
+                        errors,
+                        warnings,
+                        &format!("{}.else[{}]", path, i),
+                    );
                 }
             }
         }
         TemplateNode::Header(header) => {
             for (i, child) in header.children.iter().enumerate() {
-                validate_node_expressions(child, errors, warnings, &format!("{}.children[{}]", path, i));
+                validate_node_expressions(
+                    child,
+                    errors,
+                    warnings,
+                    &format!("{}.children[{}]", path, i),
+                );
             }
         }
         TemplateNode::Footer(footer) => {
             for (i, child) in footer.children.iter().enumerate() {
-                validate_node_expressions(child, errors, warnings, &format!("{}.children[{}]", path, i));
+                validate_node_expressions(
+                    child,
+                    errors,
+                    warnings,
+                    &format!("{}.children[{}]", path, i),
+                );
             }
         }
         // Content-only nodes or nodes without children — nothing to recurse into
@@ -618,7 +711,8 @@ pub async fn report_list_definitions(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<ReportDefinitionDto>>, String> {
     let ctx = make_ctx(&state);
-    let defs = state.report_definition_repo
+    let defs = state
+        .report_definition_repo
         .list_by_org(ctx.tenant_id, domain.as_deref(), category.as_deref())
         .await
         .map_err(|e| e.to_string())?;
@@ -632,7 +726,8 @@ pub async fn report_get_definition(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<ReportDefinitionDto>, String> {
     let ctx = make_ctx(&state);
-    let def = state.report_definition_repo
+    let def = state
+        .report_definition_repo
         .find_by_code(ctx.tenant_id, &code)
         .await
         .map_err(|e| e.to_string())?

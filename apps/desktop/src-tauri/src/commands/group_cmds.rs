@@ -1,17 +1,19 @@
 //! Tauri IPC commands — User Groups (CRUD, Members, Bulk Assignment, Permissions).
 
-use tauri::State;
-use serde::{Deserialize, Serialize};
-use crate::state::AppState;
-use uuid::Uuid;
-use orbis_domain::entities::group::{GroupDetail, GroupMemberInfo};
-use orbis_app::services::group_service::{
-    CreateGroupInput, UpdateGroupInput, BulkAssignGroupInput
-};
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
+use crate::state::AppState;
+use orbis_app::services::group_service::{
+    BulkAssignGroupInput, CreateGroupInput, UpdateGroupInput,
+};
+use orbis_domain::entities::group::{GroupDetail, GroupMemberInfo};
+use serde::{Deserialize, Serialize};
+use tauri::State;
+use uuid::Uuid;
 
-fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
+fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
+    ApiResponse { data }
+}
 
 // ── DTOs ─────────────────────────────────────────────────────────
 
@@ -116,7 +118,9 @@ pub async fn group_create_group(
         permissions: request.permissions,
     };
 
-    let detail = state.group_service.create_group(&ctx, org_id, input)
+    let detail = state
+        .group_service
+        .create_group(&ctx, org_id, input)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -130,7 +134,9 @@ pub async fn group_list_groups(
     let ctx = make_ctx(&state);
     let org_id = ctx.tenant_id;
 
-    let groups = state.group_service.list_groups(&ctx, org_id)
+    let groups = state
+        .group_service
+        .list_groups(&ctx, org_id)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -146,7 +152,9 @@ pub async fn group_get_group(
     let ctx = make_ctx(&state);
     let group_id = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
 
-    let detail = state.group_service.get_group(&ctx, group_id)
+    let detail = state
+        .group_service
+        .get_group(&ctx, group_id)
         .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| format!("Group {} not found", id))?;
@@ -171,7 +179,9 @@ pub async fn group_update_group(
         permissions: request.permissions,
     };
 
-    let detail = state.group_service.update_group(&ctx, group_id, input)
+    let detail = state
+        .group_service
+        .update_group(&ctx, group_id, input)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -186,7 +196,9 @@ pub async fn group_delete_group(
     let ctx = make_ctx(&state);
     let group_id = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
 
-    state.group_service.delete_group(&ctx, group_id)
+    state
+        .group_service
+        .delete_group(&ctx, group_id)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -201,7 +213,9 @@ pub async fn group_get_members(
     let ctx = make_ctx(&state);
     let group_id = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
 
-    let members = state.group_service.get_group_members(&ctx, group_id)
+    let members = state
+        .group_service
+        .get_group_members(&ctx, group_id)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -219,7 +233,9 @@ pub async fn group_add_member(
     let group_id = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
     let user_uuid = Uuid::parse_str(&user_id).map_err(|e| e.to_string())?;
 
-    state.group_service.add_member(&ctx, group_id, user_uuid)
+    state
+        .group_service
+        .add_member(&ctx, group_id, user_uuid)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -236,7 +252,9 @@ pub async fn group_remove_member(
     let group_id = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
     let user_uuid = Uuid::parse_str(&user_id).map_err(|e| e.to_string())?;
 
-    state.group_service.remove_member(&ctx, group_id, user_uuid)
+    state
+        .group_service
+        .remove_member(&ctx, group_id, user_uuid)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -250,12 +268,17 @@ pub async fn group_bulk_assign(
 ) -> Result<ApiResponse<u64>, String> {
     let ctx = make_ctx(&state);
     let group_id = Uuid::parse_str(&request.group_id).map_err(|e| e.to_string())?;
-    let user_ids: Vec<Uuid> = request.user_ids.into_iter().filter_map(|u| Uuid::parse_str(&u).ok()).collect();
+    let user_ids: Vec<Uuid> = request
+        .user_ids
+        .into_iter()
+        .filter_map(|u| Uuid::parse_str(&u).ok())
+        .collect();
 
-    let count = state.group_service.bulk_assign_group(&ctx, BulkAssignGroupInput {
-        group_id,
-        user_ids,
-    }).await.map_err(|e| e.to_string())?;
+    let count = state
+        .group_service
+        .bulk_assign_group(&ctx, BulkAssignGroupInput { group_id, user_ids })
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(ok(count))
 }
@@ -269,7 +292,9 @@ pub async fn group_set_permissions(
     let ctx = make_ctx(&state);
     let group_id = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
 
-    state.group_service.set_permissions(&ctx, group_id, permissions)
+    state
+        .group_service
+        .set_permissions(&ctx, group_id, permissions)
         .await
         .map_err(|e| e.to_string())?;
 

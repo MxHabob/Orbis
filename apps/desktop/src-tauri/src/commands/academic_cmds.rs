@@ -1,14 +1,16 @@
 //! Tauri IPC commands — Academic (Subjects, Classes, ClassSubjects, Prerequisites).
 
-use tauri::State;
-use serde::{Deserialize, Serialize};
-use crate::state::AppState;
-use uuid::Uuid;
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
-fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
+use crate::state::AppState;
+use serde::{Deserialize, Serialize};
+use tauri::State;
+use uuid::Uuid;
+fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
+    ApiResponse { data }
+}
 
-use orbis_domain::queries::filters::{SubjectFilter, ClassFilter, ClassSubjectFilter};
+use orbis_domain::queries::filters::{ClassFilter, ClassSubjectFilter, SubjectFilter};
 use rust_decimal::Decimal;
 
 #[derive(Serialize)]
@@ -155,10 +157,23 @@ fn class_subject_dto(cs: orbis_domain::entities::class_subject::ClassSubject) ->
 }
 
 #[tauri::command]
-pub async fn academic_create_subject(request: CreateSubjectInput, state: State<'_, AppState>) -> Result<ApiResponse<SubjectDto>, String> {
+pub async fn academic_create_subject(
+    request: CreateSubjectInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<SubjectDto>, String> {
     let ctx = make_ctx(&state);
     let unit_id = request.unit_id.and_then(|u| Uuid::parse_str(&u).ok());
-    let s = state.academic_service.create_subject(&ctx, ctx.tenant_id, unit_id, request.code, request.name, request.credit_hours, request.is_core)
+    let s = state
+        .academic_service
+        .create_subject(
+            &ctx,
+            ctx.tenant_id,
+            unit_id,
+            request.code,
+            request.name,
+            request.credit_hours,
+            request.is_core,
+        )
         .await
         .map_err(|e| e.to_string())?;
 
@@ -166,26 +181,52 @@ pub async fn academic_create_subject(request: CreateSubjectInput, state: State<'
 }
 
 #[tauri::command]
-pub async fn academic_list_subjects(state: State<'_, AppState>) -> Result<ApiResponse<Vec<SubjectDto>>, String> {
+pub async fn academic_list_subjects(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<SubjectDto>>, String> {
     let ctx = make_ctx(&state);
-    let items = state.academic_service.list_subjects(ctx.tenant_id, SubjectFilter::default()).await.map_err(|e| e.to_string())?;
+    let items = state
+        .academic_service
+        .list_subjects(ctx.tenant_id, SubjectFilter::default())
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(items.items.into_iter().map(subject_dto).collect()))
 }
 
 #[tauri::command]
-pub async fn academic_get_subject(id: String, state: State<'_, AppState>) -> Result<ApiResponse<SubjectDto>, String> {
+pub async fn academic_get_subject(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<SubjectDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    let s = state.academic_service.get_subject(uid).await.map_err(|e| e.to_string())?.ok_or("Subject not found")?;
+    let s = state
+        .academic_service
+        .get_subject(uid)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or("Subject not found")?;
     Ok(ok(subject_dto(s)))
 }
 
 #[tauri::command]
-pub async fn academic_create_class(request: CreateClassInput, state: State<'_, AppState>) -> Result<ApiResponse<ClassDto>, String> {
+pub async fn academic_create_class(
+    request: CreateClassInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<ClassDto>, String> {
     let ctx = make_ctx(&state);
     let unit_id = Uuid::parse_str(&request.unit_id).map_err(|_| "Invalid unitId")?;
     let period_id = Uuid::parse_str(&request.period_id).map_err(|_| "Invalid periodId")?;
 
-    let c = state.academic_service.create_class(&ctx, ctx.tenant_id, unit_id, period_id, request.name, request.level)
+    let c = state
+        .academic_service
+        .create_class(
+            &ctx,
+            ctx.tenant_id,
+            unit_id,
+            period_id,
+            request.name,
+            request.level,
+        )
         .await
         .map_err(|e| e.to_string())?;
 
@@ -193,28 +234,55 @@ pub async fn academic_create_class(request: CreateClassInput, state: State<'_, A
 }
 
 #[tauri::command]
-pub async fn academic_list_classes(state: State<'_, AppState>) -> Result<ApiResponse<Vec<ClassDto>>, String> {
+pub async fn academic_list_classes(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<ClassDto>>, String> {
     let ctx = make_ctx(&state);
-    let items = state.academic_service.list_classes(ctx.tenant_id, ClassFilter::default()).await.map_err(|e| e.to_string())?;
+    let items = state
+        .academic_service
+        .list_classes(ctx.tenant_id, ClassFilter::default())
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(items.items.into_iter().map(class_dto).collect()))
 }
 
 #[tauri::command]
-pub async fn academic_get_class(id: String, state: State<'_, AppState>) -> Result<ApiResponse<ClassDto>, String> {
+pub async fn academic_get_class(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<ClassDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    let c = state.academic_service.get_class(uid).await.map_err(|e| e.to_string())?.ok_or("Class not found")?;
+    let c = state
+        .academic_service
+        .get_class(uid)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or("Class not found")?;
     Ok(ok(class_dto(c)))
 }
 
 #[tauri::command]
-pub async fn academic_assign_class_subject(request: AssignClassSubjectInput, state: State<'_, AppState>) -> Result<ApiResponse<ClassSubjectDto>, String> {
+pub async fn academic_assign_class_subject(
+    request: AssignClassSubjectInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<ClassSubjectDto>, String> {
     let ctx = make_ctx(&state);
     let class_id = Uuid::parse_str(&request.class_id).map_err(|_| "Invalid classId")?;
     let subject_id = Uuid::parse_str(&request.subject_id).map_err(|_| "Invalid subjectId")?;
     let period_id = Uuid::parse_str(&request.period_id).map_err(|_| "Invalid periodId")?;
-    let primary_teacher_id = Uuid::parse_str(&request.primary_teacher_id).map_err(|_| "Invalid primaryTeacherId")?;
+    let primary_teacher_id =
+        Uuid::parse_str(&request.primary_teacher_id).map_err(|_| "Invalid primaryTeacherId")?;
 
-    let cs = state.academic_service.assign_class_subject(&ctx, class_id, subject_id, period_id, primary_teacher_id, request.weekly_hours)
+    let cs = state
+        .academic_service
+        .assign_class_subject(
+            &ctx,
+            class_id,
+            subject_id,
+            period_id,
+            primary_teacher_id,
+            request.weekly_hours,
+        )
         .await
         .map_err(|e| e.to_string())?;
 
@@ -222,7 +290,11 @@ pub async fn academic_assign_class_subject(request: AssignClassSubjectInput, sta
 }
 
 #[tauri::command]
-pub async fn academic_list_class_subjects(class_id: String, period_id: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<ClassSubjectDto>>, String> {
+pub async fn academic_list_class_subjects(
+    class_id: String,
+    period_id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<ClassSubjectDto>>, String> {
     let ctx = make_ctx(&state);
     let cid = Uuid::parse_str(&class_id).map_err(|_| "Invalid class ID")?;
     let pid = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
@@ -231,7 +303,11 @@ pub async fn academic_list_class_subjects(class_id: String, period_id: String, s
         period_id: Some(pid),
         ..Default::default()
     };
-    let items = state.academic_service.list_class_subjects(ctx.tenant_id, filter).await.map_err(|e| e.to_string())?;
+    let items = state
+        .academic_service
+        .list_class_subjects(ctx.tenant_id, filter)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(items.items.into_iter().map(class_subject_dto).collect()))
 }
 
@@ -243,18 +319,22 @@ pub async fn academic_check_prerequisites(
 ) -> Result<ApiResponse<Vec<PrerequisiteCheckResultDto>>, String> {
     let st_id = Uuid::parse_str(&student_id).map_err(|_| "Invalid studentId")?;
     let sub_id = Uuid::parse_str(&subject_id).map_err(|_| "Invalid subjectId")?;
-    let results = state.academic_service
+    let results = state
+        .academic_service
         .check_prerequisites(st_id, sub_id)
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(results.into_iter().map(|r| PrerequisiteCheckResultDto {
-        subject_id: r.subject_id.to_string(),
-        prerequisite_subject_id: r.prerequisite_subject_id.to_string(),
-        requirement_type: format!("{:?}", r.requirement_type),
-        is_satisfied: r.is_satisfied,
-        min_score_required: r.min_score_required,
-        current_score: r.current_score,
-        failure_reason: r.failure_reason,
-    }).collect()))
+    Ok(ok(results
+        .into_iter()
+        .map(|r| PrerequisiteCheckResultDto {
+            subject_id: r.subject_id.to_string(),
+            prerequisite_subject_id: r.prerequisite_subject_id.to_string(),
+            requirement_type: format!("{:?}", r.requirement_type),
+            is_satisfied: r.is_satisfied,
+            min_score_required: r.min_score_required,
+            current_score: r.current_score,
+            failure_reason: r.failure_reason,
+        })
+        .collect()))
 }

@@ -1,25 +1,33 @@
 //! Tauri IPC commands — AI Platform (Stateless ReAct Chat, Tool Discovery & File-based Conversation/Context Persistence).
 
-use std::path::{Path, PathBuf};
-use tauri::State;
-use crate::state::AppState;
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
+use crate::state::AppState;
 use orbis_domain::entities::ai::{
-    AiChatRequest, AiChatResponse, AiToolDefinition, AiStoredSession,
+    AiChatRequest, AiChatResponse, AiStoredSession, AiToolDefinition,
 };
+use std::path::{Path, PathBuf};
+use tauri::State;
 
 fn ok<T: serde::Serialize>(data: T) -> ApiResponse<T> {
     ApiResponse { data }
 }
 
 fn get_conversations_dir(app_data_dir: &Path, org_id: &str) -> PathBuf {
-    let safe_org_id = if org_id.trim().is_empty() { "default" } else { org_id.trim() };
+    let safe_org_id = if org_id.trim().is_empty() {
+        "default"
+    } else {
+        org_id.trim()
+    };
     app_data_dir.join("ai_conversations").join(safe_org_id)
 }
 
 fn get_context_dir(app_data_dir: &Path, org_id: &str) -> PathBuf {
-    let safe_org_id = if org_id.trim().is_empty() { "default" } else { org_id.trim() };
+    let safe_org_id = if org_id.trim().is_empty() {
+        "default"
+    } else {
+        org_id.trim()
+    };
     app_data_dir.join("ai_context").join(safe_org_id)
 }
 

@@ -3,17 +3,13 @@
 //! These commands can be called BEFORE the database is connected.
 //! They read/write the connection config file, validate endpoints, and perform health checks.
 
-use tauri::{State, Manager};
-use std::sync::Arc;
-use serde::{Deserialize, Serialize};
 use crate::connection::{
-    ConnectionConfig,
-    ConnectionMode,
-    LocalConfig,
-    RemoteConfig,
-    ConnectionValidation,
+    ConnectionConfig, ConnectionMode, ConnectionValidation, LocalConfig, RemoteConfig,
     RemoteHealthResult,
 };
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use tauri::{Manager, State};
 
 /// Managed state for connection config — available before database init.
 pub struct ConnectionState {
@@ -42,7 +38,9 @@ pub struct SaveConfigRequest {
 pub async fn connection_get_config(
     conn_state: State<'_, ConnectionState>,
 ) -> Result<ConnectionConfig, String> {
-    let config = conn_state.config.read()
+    let config = conn_state
+        .config
+        .read()
         .map_err(|e| format!("Lock error: {e}"))?;
     Ok(config.sanitized())
 }
@@ -64,7 +62,9 @@ pub async fn connection_set_config(
     wal_mode: Option<bool>,
     busy_timeout_ms: Option<u64>,
 ) -> Result<ConnectionConfig, String> {
-    let existing = conn_state.config.read()
+    let existing = conn_state
+        .config
+        .read()
         .map_err(|e| format!("Lock error: {e}"))?
         .clone();
 
@@ -108,7 +108,9 @@ pub async fn connection_set_config(
     new_config.save(&conn_state.app_data_dir)?;
 
     // Update in-memory state
-    let mut config = conn_state.config.write()
+    let mut config = conn_state
+        .config
+        .write()
         .map_err(|e| format!("Lock error: {e}"))?;
     *config = new_config.clone();
 
@@ -123,7 +125,9 @@ pub async fn connection_reset(
     let default_config = ConnectionConfig::default_local();
     default_config.save(&conn_state.app_data_dir)?;
 
-    let mut config = conn_state.config.write()
+    let mut config = conn_state
+        .config
+        .write()
         .map_err(|e| format!("Lock error: {e}"))?;
     *config = default_config.clone();
 
@@ -135,7 +139,9 @@ pub async fn connection_reset(
 pub async fn connection_validate(
     conn_state: State<'_, ConnectionState>,
 ) -> Result<ConnectionValidation, String> {
-    let config = conn_state.config.read()
+    let config = conn_state
+        .config
+        .read()
         .map_err(|e| format!("Lock error: {e}"))?;
     Ok(config.validate(&conn_state.app_data_dir))
 }
@@ -155,7 +161,9 @@ pub async fn connection_connect(
     app: tauri::AppHandle,
     conn_state: State<'_, ConnectionState>,
 ) -> Result<serde_json::Value, String> {
-    let config = conn_state.config.read()
+    let config = conn_state
+        .config
+        .read()
         .map_err(|e| format!("Lock error: {e}"))?
         .clone();
 
@@ -170,7 +178,9 @@ pub async fn connection_connect(
             // Set DATABASE_URL env var for AppState::init to pick up
             if let Some(db_url) = config.resolve_local_db_url(&conn_state.app_data_dir) {
                 // SAFETY: Atomic configuration of the connection URL for this process.
-                unsafe { std::env::set_var("DATABASE_URL", &db_url); }
+                unsafe {
+                    std::env::set_var("DATABASE_URL", &db_url);
+                }
             }
 
             // Initialize AppState
@@ -188,7 +198,8 @@ pub async fn connection_connect(
             }))
         }
         ConnectionMode::Remote => {
-            let server_url = config.remote_server_url()
+            let server_url = config
+                .remote_server_url()
                 .ok_or("Remote server URL not configured")?
                 .to_string();
 
@@ -197,7 +208,9 @@ pub async fn connection_connect(
             if !health.reachable {
                 return Err(format!(
                     "Cannot connect to remote server: {}",
-                    health.error.unwrap_or_else(|| "Server unreachable".to_string())
+                    health
+                        .error
+                        .unwrap_or_else(|| "Server unreachable".to_string())
                 ));
             }
 
