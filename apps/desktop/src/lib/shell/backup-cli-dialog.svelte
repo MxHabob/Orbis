@@ -1,88 +1,80 @@
 <script lang="ts">
-  import {
-    Dialog,
-    DialogContent,
-  } from "@orbis/ui/dialog";
-  import { Input } from "@orbis/ui/input";
+import { Dialog, DialogContent } from "@orbis/ui/dialog";
+import { Input } from "@orbis/ui/input";
 
-  type SessionState = "locked" | "connecting" | "ready" | "error";
+type SessionState = "locked" | "connecting" | "ready" | "error";
 
-  let {
-    open = $bindable(false),
-    orgName = "Orbis School",
-    onunlock,
-  }: {
-    open: boolean;
-    orgName?: string;
-    onunlock?: (password: string) => Promise<string | void>;
-  } = $props();
+let {
+  open = $bindable(false),
+  orgName = "Orbis School",
+  onunlock,
+}: {
+  open: boolean;
+  orgName?: string;
+  onunlock?: (password: string) => Promise<string | void>;
+} = $props();
 
-  let password = $state("");
-  let sessionState = $state<SessionState>("locked");
+let password = $state("");
+let sessionState = $state<SessionState>("locked");
 
-  function createInitialOutput() {
-    return [
-      "   ____  ____  ____  _________   ________    ____",
-      "  / __ \/ __ \/ __ )/  _/ ___/  / ____/ /   /  _/",
-      " / / / / /_/ / __  |/ / \__ \  / /   / /    / /",
-      "/ /_/ / _, _/ /_/ // / ___/ / / /___/ /____/ /",
-      "\\____/_/ |_/_____/___//____/  \\____/_____/___/",
-      "",
-      "  Enterprise Management Console",
-      "  ========================================",
-      "  Status:      Locked",
-      "  Environment: Desktop",
-      "  ========================================",
-      `  Organization: ${orgName}`,
-      "",
+function createInitialOutput() {
+  return [
+    "   ____  ____  ____  _________   ________    ____",
+    "  / __ \/ __ \/ __ )/  _/ ___/  / ____/ /   /  _/",
+    " / / / / /_/ / __  |/ / \__ \  / /   / /    / /",
+    "/ /_/ / _, _/ /_/ // / ___/ / / /___/ /____/ /",
+    "\\____/_/ |_/_____/___//____/  \\____/_____/___/",
+    "",
+    "  Enterprise Management Console",
+    "  ========================================",
+    "  Status:      Locked",
+    "  Environment: Desktop",
+    "  ========================================",
+    `  Organization: ${orgName}`,
+    "",
+  ];
+}
+
+let output = $state<string[]>(createInitialOutput());
+
+function resetSession() {
+  password = "";
+  sessionState = "locked";
+  output = createInitialOutput();
+}
+
+async function unlock() {
+  if (!password.trim() || sessionState === "connecting") return;
+
+  sessionState = "connecting";
+  output = [...output, "super@MxHabob:~$ ********", "Authenticating..."];
+
+  try {
+    if (!onunlock) {
+      throw new Error("CLI session is not connected yet.");
+    }
+
+    const response = await onunlock(password);
+    password = "";
+    sessionState = "ready";
+    output = [...output, response || "Authenticated.", "", "orbis> _"];
+  } catch (error) {
+    password = "";
+    sessionState = "error";
+    output = [
+      ...output,
+      error instanceof Error ? error.message : "Authentication failed.",
+      "Enter password to retry.",
     ];
   }
+}
 
-  let output = $state<string[]>(createInitialOutput());
-
-  function resetSession() {
-    password = "";
-    sessionState = "locked";
-    output = createInitialOutput();
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    unlock();
   }
-
-  async function unlock() {
-    if (!password.trim() || sessionState === "connecting") return;
-
-    sessionState = "connecting";
-    output = [...output, "super@MxHabob:~$ ********", "Authenticating..."];
-
-    try {
-      if (!onunlock) {
-        throw new Error("CLI session is not connected yet.");
-      }
-
-      const response = await onunlock(password);
-      password = "";
-      sessionState = "ready";
-      output = [
-        ...output,
-        response || "Authenticated.",
-        "",
-        "orbis> _",
-      ];
-    } catch (error) {
-      password = "";
-      sessionState = "error";
-      output = [
-        ...output,
-        error instanceof Error ? error.message : "Authentication failed.",
-        "Enter password to retry.",
-      ];
-    }
-  }
-
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      unlock();
-    }
-  }
+}
 </script>
 
 <Dialog bind:open onOpenChange={(value) => !value && resetSession()}>

@@ -12,7 +12,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import { ZoomIn, ZoomOut, Maximize2, Magnet } from "@lucide/svelte";
+import { AdjustmentsHorizontal, Collapse, Expand, Knobs } from "@orbis/icons";
 
 let {
   store,
@@ -34,7 +34,7 @@ let {
     <Tooltip>
       <TooltipTrigger>
         <button type="button" class="status-btn" onclick={() => store.zoomOut()}>
-          <ZoomOut size={13} />
+          <Collapse size={13} />
         </button>
       </TooltipTrigger>
       <TooltipContent>{m.template_tooltip_zoom_out()}</TooltipContent>
@@ -54,7 +54,7 @@ let {
     <Tooltip>
       <TooltipTrigger>
         <button type="button" class="status-btn" onclick={() => store.zoomIn()}>
-          <ZoomIn size={13} />
+          <Expand size={13} />
         </button>
       </TooltipTrigger>
       <TooltipContent>{m.template_tooltip_zoom_in()}</TooltipContent>
@@ -63,7 +63,7 @@ let {
     <Tooltip>
       <TooltipTrigger>
         <button type="button" class="status-btn" onclick={() => store.zoomToFit(containerWidth, containerHeight)}>
-          <Maximize2 size={12} />
+          <Expand size={12} />
         </button>
       </TooltipTrigger>
       <TooltipContent>{m.template_tooltip_fullscreen()}</TooltipContent>
@@ -91,7 +91,7 @@ let {
           class:active={store.snapEnabled}
           onclick={() => store.snapEnabled = !store.snapEnabled}
         >
-          <Magnet size={12} />
+          <Knobs size={12} />
         </button>
       </TooltipTrigger>
       <TooltipContent>{store.snapEnabled ? m.template_tooltip_disable_snap() : m.template_tooltip_enable_snap()}</TooltipContent>

@@ -1,8 +1,8 @@
 [package]
 name = "Orbis-Svelte"
-version = "0.3.0"
+version = "1.1.0"
 description = ""
-authors = ["Mulverse"]
+authors = ["Mulverse","Mohamed Alhabob"]
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -31,35 +31,21 @@ tauri-plugin-dialog = "2.2.2"
 tauri-plugin-process = "2.2.1"
 tauri-plugin-fs = "2"
 tokio = { version = "1.38", features = ["full"] }
-shared-kernel = { path = "../../api-rust/crates/shared-kernel" }
-svc-iam = { path = "../../api-rust/crates/svc-iam" }
-svc-organization = { path = "../../api-rust/crates/svc-organization" }
-svc-academic = { path = "../../api-rust/crates/svc-academic" }
-svc-assessment = { path = "../../api-rust/crates/svc-assessment" }
-svc-scheduling = { path = "../../api-rust/crates/svc-scheduling" }
-svc-finance = { path = "../../api-rust/crates/svc-finance" }
-svc-exam = { path = "../../api-rust/crates/svc-exam" }
-autopilot = { path = "../../api-rust/crates/autopilot" }
-ai-gateway = { path = "../../api-rust/crates/ai-gateway" }
-infra-persistence = { path = "../../api-rust/crates/infra-persistence" }
-infra-scheduler = { path = "../../api-rust/crates/infra-scheduler" }
-infra-integration = { path = "../../api-rust/crates/infra-integration" }
-docforge-orbis = { path = "../../api-rust/crates/docforge-orbis" }
+orbis-domain = { path = "../../api-rust/crates/orbis-domain" }
+orbis-app = { path = "../../api-rust/crates/orbis-app" }
+orbis-infra = { path = "../../api-rust/crates/orbis-infra" }
 docforge-engine = { path = "../../api-rust/crates/docforge-engine" }
-svc-document = { path = "../../api-rust/crates/svc-document" }
-svc-report = { path = "../../api-rust/crates/svc-report" }
 sea-orm = { version = "1.1.0", features = ["sqlx-sqlite", "runtime-tokio-native-tls", "macros"] }
+sea-orm-migration = { version = "1.1.0", features = ["sqlx-postgres", "sqlx-sqlite", "runtime-tokio-native-tls"] }
 uuid = { version = "1.9.1", features = ["v4", "serde"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 bcrypt = "0.15.1"
 tracing = "0.1"
-platform-policy = { version = "0.1.0", path = "../../api-rust/crates/platform-policy" }
+rand = "0.8"
 reqwest = { version = "0.13.4", features = ["json"] }
+rust_decimal = { version = "1.36", features = ["serde", "maths"] }
 
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-updater = "2"
-
-svc-calendar = { path = "../../api-rust/crates/svc-calendar" }
-svc-enrollment-workflow = { path = "../../api-rust/crates/svc-enrollment-workflow" }

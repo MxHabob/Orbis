@@ -22,7 +22,7 @@ import {
 } from "@orbis/ui";
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api/client";
 
 import { onMount } from "svelte";
 
@@ -37,7 +37,9 @@ let {
 let customProjects = $state<{ id: string; label: string; logoType: string }[]>(
   [],
 );
-let branches = $state<{ id: string; name: string; name_ar?: string | null }[]>([]);
+let branches = $state<{ id: string; name: string; name_ar?: string | null }[]>(
+  [],
+);
 
 const orgNameDisplay = $derived.by(() => {
   if (initialOrgName && initialOrgName !== "Orbis School")
@@ -62,9 +64,12 @@ onMount(() => {
       customProjects = JSON.parse(storedCustom);
     } catch {}
   }
-  commands.organization.listOrgUnits()
+  api
+    .listOrgUnits()
     .then((units) => {
-      branches = units.filter((unit) => unit.is_active === 1 && unit.unit_type === "branch");
+      branches = units.filter(
+        (unit) => unit.is_active && unit.unit_type === "branch",
+      );
     })
     .catch(() => {
       branches = [];
@@ -117,7 +122,7 @@ function handleSelect(id: string) {
 }
 
 async function handleBranchSelect(id: string) {
-  await commands.organization.selectOrgUnit(id);
+  await api.selectOrgUnit(id);
   await goto(localizeHref(`/${orgId}`));
 }
 </script>
@@ -177,7 +182,7 @@ async function handleBranchSelect(id: string) {
       <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings`)}>
         {m.common_header_org_settings()}
       </DropdownMenuItem>
-      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings/branches`)}>
+      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings/units`)}>
         {m.common_header_org_branches()}
       </DropdownMenuItem>
       <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings/users`)}>
@@ -188,6 +193,9 @@ async function handleBranchSelect(id: string) {
       </DropdownMenuItem>
       <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/billing`)}>
         {m.common_header_org_billing()}
+      </DropdownMenuItem>
+      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => api.connectionOpenWindow()}>
+        {m.settings_connection_settings()}
       </DropdownMenuItem>
     </div>
 

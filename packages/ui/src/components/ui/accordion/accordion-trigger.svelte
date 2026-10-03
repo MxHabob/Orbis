@@ -1,10 +1,7 @@
 <script lang="ts">
 import { Accordion as AccordionPrimitive } from "bits-ui";
 import { cn, type WithoutChild } from "../../../utils.js";
-import {
-  ChevronDown as ChevronDownIcon,
-  ChevronUp as ChevronUpIcon,
-} from "@lucide/svelte";
+import { ChevronDown, ChevronUp } from "@orbis/icons";
 
 let {
   ref = $bindable(null),
@@ -30,7 +27,7 @@ let {
 		<span class="min-w-0 flex-1 text-start">
 			{@render children?.()}
 		</span>
-		<ChevronDownIcon data-slot="accordion-trigger-icon" class="cn-accordion-trigger-icon pointer-events-none shrink-0 group-aria-expanded/accordion-trigger:hidden" />
-		<ChevronUpIcon data-slot="accordion-trigger-icon" class="cn-accordion-trigger-icon pointer-events-none hidden shrink-0 group-aria-expanded/accordion-trigger:inline" />
+		<ChevronDown data-slot="accordion-trigger-icon" class="cn-accordion-trigger-icon pointer-events-none shrink-0 group-aria-expanded/accordion-trigger:hidden" />
+		<ChevronUp data-slot="accordion-trigger-icon" class="cn-accordion-trigger-icon pointer-events-none hidden shrink-0 group-aria-expanded/accordion-trigger:inline" />
 	</AccordionPrimitive.Trigger>
 </AccordionPrimitive.Header>

@@ -45,8 +45,9 @@ function defaultCompare(a: unknown, b: unknown): number {
  *
  * @example
  * ```svelte
- * <script lang="ts">
- * import { createTableState } from '@orbis/ui/table';
+ * import { AdjustmentsHorizontal } from "@orbis/icons";
+
+ * import { createTableState } from '@orbis/ui-svelte/table';
  *
  * const table = createTableState({
  *   data: students,
@@ -55,8 +56,7 @@ function defaultCompare(a: unknown, b: unknown): number {
  *   enableSorting: true,
  *   enableRowSelection: true,
  * });
- * </script>
- * ```
+ *  * ```
  */
 export function createTableState<T>(options: TableOptions<T>) {
   // ── Source Data ─────────────────────────────────────────────────
@@ -68,7 +68,7 @@ export function createTableState<T>(options: TableOptions<T>) {
     options.initialSorting ?? { column: null, direction: "asc" },
   );
 
-  // ── Filter State ───────────────────────────────────────────────
+  // ── AdjustmentsHorizontal State ───────────────────────────────────────────────
   let globalFilter = $state("");
   let columnFilters = $state<Record<string, string>>({});
 

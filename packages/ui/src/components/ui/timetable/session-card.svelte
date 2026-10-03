@@ -1,130 +1,135 @@
 <script lang="ts">
-  import { GripVertical, MapPin, Pencil, Trash2, Users, AlertTriangle, BookOpen, Clock } from "@lucide/svelte";
-  import { Button } from "@orbis/ui/button";
+import { AdjustmentsHorizontal, BookOpen, ClockRotateRight, InfoCircle, Pencil, Pin, Trash, Users } from "@orbis/icons";
+import { Button } from "@orbis/ui/button";
 
-  interface Props {
-    lesson: any;
-    timeSlot?: any;
-    viewMode?: "class" | "teacher" | "room" | "subject" | "matrix";
-    locale?: string;
-    getSubjectName?: (id: string) => string;
-    getTeacherName?: (id: string) => string;
-    getClassName?: (id: string) => string;
-    getRoomName?: (id: string) => string;
-    subjectColor?: string;
-    compact?: boolean;
-    hasConflict?: boolean;
-    conflictMessage?: string;
-    isDraft?: boolean;
-    ondragstart?: (event: DragEvent) => void;
-    onDelete?: (id: string) => void;
-    onEdit?: (lesson: any) => void;
-    onClick?: (lesson: any) => void;
-  }
+interface Props {
+  lesson: any;
+  timeSlot?: any;
+  viewMode?: "class" | "teacher" | "room" | "subject" | "matrix";
+  locale?: string;
+  getSubjectName?: (id: string) => string;
+  getTeacherName?: (id: string) => string;
+  getClassName?: (id: string) => string;
+  getRoomName?: (id: string) => string;
+  subjectColor?: string;
+  compact?: boolean;
+  hasConflict?: boolean;
+  conflictMessage?: string;
+  isDraft?: boolean;
+  ondragstart?: (event: DragEvent) => void;
+  onDelete?: (id: string) => void;
+  onEdit?: (lesson: any) => void;
+  onClick?: (lesson: any) => void;
+}
 
-  let {
-    lesson,
-    timeSlot,
-    viewMode = "class",
-    locale = "ar",
-    getSubjectName,
-    getTeacherName,
-    getClassName,
-    getRoomName,
-    subjectColor = "var(--primary)",
-    compact = false,
-    hasConflict = false,
-    conflictMessage = "",
-    isDraft = false,
-    ondragstart,
-    onDelete,
-    onEdit,
-    onClick,
-  }: Props = $props();
+let {
+  lesson,
+  timeSlot,
+  viewMode = "class",
+  locale = "ar",
+  getSubjectName,
+  getTeacherName,
+  getClassName,
+  getRoomName,
+  subjectColor = "var(--primary)",
+  compact = false,
+  hasConflict = false,
+  conflictMessage = "",
+  isDraft = false,
+  ondragstart,
+  onDelete,
+  onEdit,
+  onClick,
+}: Props = $props();
 
-  const isArabic = $derived(locale === "ar");
-  const subjectName = $derived(
-    lesson.subject_name ||
-      lesson.subjectName ||
-      (getSubjectName ? getSubjectName(lesson.subject_id) : "") ||
-      lesson.subject_id ||
-      (isArabic ? "مادة دراسية" : "Subject")
-  );
+const isArabic = $derived(locale === "ar");
+const subjectName = $derived(
+  lesson.subject_name ||
+    lesson.subjectName ||
+    (getSubjectName ? getSubjectName(lesson.subject_id) : "") ||
+    lesson.subject_id ||
+    (isArabic ? "مادة دراسية" : "Subject"),
+);
 
-  const teacherName = $derived(
-    lesson.teacher_name ||
-      lesson.teacherName ||
-      (getTeacherName ? getTeacherName(lesson.teacher_id) : "") ||
-      lesson.teacher_id ||
-      ""
-  );
+const teacherName = $derived(
+  lesson.teacher_name ||
+    lesson.teacherName ||
+    (getTeacherName ? getTeacherName(lesson.teacher_id) : "") ||
+    lesson.teacher_id ||
+    "",
+);
 
-  const className = $derived(
-    lesson.class_name ||
-      lesson.className ||
-      (getClassName ? getClassName(lesson.class_id) : "") ||
-      lesson.class_id ||
-      ""
-  );
+const className = $derived(
+  lesson.class_name ||
+    lesson.className ||
+    (getClassName ? getClassName(lesson.class_id) : "") ||
+    lesson.class_id ||
+    "",
+);
 
-  const roomName = $derived(
-    lesson.room_name ||
-      lesson.roomName ||
-      (getRoomName ? getRoomName(lesson.room_id) : "") ||
-      lesson.room ||
-      ""
-  );
+const roomName = $derived(
+  lesson.room_name ||
+    lesson.roomName ||
+    (getRoomName ? getRoomName(lesson.room_id) : "") ||
+    lesson.room ||
+    "",
+);
 
-  const isConflict = $derived(Boolean(hasConflict || lesson.has_conflict || lesson.conflict));
+const isConflict = $derived(
+  Boolean(hasConflict || lesson.has_conflict || lesson.conflict),
+);
 
-  function formatTime(val: string): string {
-    if (!val) return "";
-    const clean = val.slice(0, 5);
-    const [hStr, mStr] = clean.split(":");
-    let h = parseInt(hStr, 10);
-    const m = mStr || "00";
-    if (isNaN(h)) return val;
-    const period = h >= 12 ? (isArabic ? "م" : "PM") : (isArabic ? "ص" : "AM");
-    h = h % 12 || 12;
-    return `${h}:${m} ${period}`;
-  }
+function formatTime(val: string): string {
+  if (!val) return "";
+  const clean = val.slice(0, 5);
+  const [hStr, mStr] = clean.split(":");
+  let h = parseInt(hStr, 10);
+  const m = mStr || "00";
+  if (isNaN(h)) return val;
+  const period = h >= 12 ? (isArabic ? "م" : "PM") : isArabic ? "ص" : "AM";
+  h = h % 12 || 12;
+  return `${h}:${m} ${period}`;
+}
 
-  const timeLabel = $derived.by(() => {
-    const s = lesson.time_slot_start || timeSlot?.start_time;
-    const e = lesson.time_slot_end || timeSlot?.end_time;
-    return s && e ? `${formatTime(s)} - ${formatTime(e)}` : "";
-  });
+const timeLabel = $derived.by(() => {
+  const s = lesson.time_slot_start || timeSlot?.start_time;
+  const e = lesson.time_slot_end || timeSlot?.end_time;
+  return s && e ? `${formatTime(s)} - ${formatTime(e)}` : "";
+});
 
-  function handleCardClick(e: MouseEvent) {
-    e.stopPropagation();
+function handleCardClick(e: MouseEvent) {
+  e.stopPropagation();
+  onClick?.(lesson);
+}
+
+function handleCardKeydown(e: KeyboardEvent) {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
     onClick?.(lesson);
   }
+}
 
-  function handleCardKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onClick?.(lesson);
-    }
-  }
+function handleEditClick(e: MouseEvent) {
+  e.stopPropagation();
+  onEdit?.(lesson);
+}
 
-  function handleEditClick(e: MouseEvent) {
-    e.stopPropagation();
-    onEdit?.(lesson);
-  }
+function handleDeleteClick(e: MouseEvent) {
+  e.stopPropagation();
+  onDelete?.(lesson.id);
+}
 
-  function handleDeleteClick(e: MouseEvent) {
-    e.stopPropagation();
-    onDelete?.(lesson.id);
+function handleDragStart(e: DragEvent) {
+  e.stopPropagation();
+  if (e.dataTransfer) {
+    e.dataTransfer.setData(
+      "text/plain",
+      JSON.stringify({ lessonId: lesson.id, lesson }),
+    );
+    e.dataTransfer.effectAllowed = "move";
   }
-
-  function handleDragStart(e: DragEvent) {
-    e.stopPropagation();
-    if (e.dataTransfer) {
-      e.dataTransfer.setData("text/plain", JSON.stringify({ lessonId: lesson.id, lesson }));
-      e.dataTransfer.effectAllowed = "move";
-    }
-    ondragstart?.(e);
-  }
+  ondragstart?.(e);
+}
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
@@ -180,7 +185,7 @@
         class="shrink-0 flex items-center justify-center text-destructive animate-pulse"
         title={conflictMessage || (isArabic ? "يوجد تعارض في هذا الموعد" : "Schedule conflict")}
       >
-        <AlertTriangle size={13} strokeWidth={2.5} />
+        <InfoCircle size={13} strokeWidth={2.5} />
       </span>
     {/if}
   </div>
@@ -204,7 +209,7 @@
 
     {#if roomName}
       <span class="inline-flex items-center gap-1 truncate text-foreground/80 font-medium" title={roomName}>
-        <MapPin size={10} class="shrink-0 text-primary" />
+        <Pin size={10} class="shrink-0 text-primary" />
         <span class="truncate">{roomName}</span>
       </span>
     {/if}
@@ -238,7 +243,7 @@
             onclick={handleDeleteClick}
             aria-label={isArabic ? "حذف" : "Delete"}
           >
-            <Trash2 size={10} />
+            <Trash size={10} />
           </Button>
         {/if}
       </div>

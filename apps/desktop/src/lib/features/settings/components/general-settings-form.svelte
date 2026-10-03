@@ -9,11 +9,14 @@ import {
   BranchSettingsCard,
   AuthenticationSettingsCard,
 } from "$lib/features/settings";
+import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
+import { api, type OrganizationSettingsDto } from "$lib/api";
 import { generalSettingsInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { systemStore } from "$lib/stores";
 
 let { org, orgId, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
   $props<{
@@ -26,7 +29,7 @@ let { org, orgId, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
     onlanguagechange: (newLocale: string, currentValues: any) => void;
   }>();
 
-// Form state initialized once with props
+// Org Profile Form state
 let name = $state("");
 let nameAr = $state("");
 let slug = $state("");
@@ -37,6 +40,9 @@ let timezone = $state("Asia/Aden");
 let locale = $state("ar");
 let dateFormat = $state("YYYY-MM-DD");
 let hijriEnabled = $state(false);
+
+// Institutional Policy Settings State
+let rawSettings = $state<OrganizationSettingsDto | null>(null);
 
 let initialValues = $state<any>(null);
 const settingsForm = new FormController({
@@ -50,6 +56,15 @@ const settingsForm = new FormController({
   schema: generalSettingsInputSchema,
 });
 
+async function loadSettings() {
+  try {
+    const s = await api.getSettings();
+    // Settings loaded
+  } catch {
+    // Non-fatal if settings fail to load initially
+  }
+}
+
 $effect(() => {
   if (org && !initialValues) {
     name = org.name || "";
@@ -57,22 +72,25 @@ $effect(() => {
     slug = org.slug || "";
     logo = org.logo || "";
     primaryColor = org.primary_color || "#84cc16";
-    currency = org.currency || "YER";
+    currency = org.base_currency_code || org.currency || "YER";
     timezone = org.timezone || "Asia/Aden";
     locale = org.locale || "ar";
     dateFormat = org.date_format || "YYYY-MM-DD";
-    hijriEnabled = org.hijri_enabled === true || org.hijri_enabled === 1;
+    hijriEnabled = org.is_hijri_enabled !== undefined ? Boolean(org.is_hijri_enabled) : (org.hijri_enabled === true || org.hijri_enabled === 1);
 
-    initialValues = {
-      name,
-      nameAr,
-      primaryColor,
-      currency,
-      timezone,
-      locale,
-      dateFormat,
-      hijriEnabled,
-    };
+    loadSettings().finally(() => {
+      initialValues = {
+        name,
+        nameAr,
+        primaryColor,
+        currency,
+        timezone,
+        locale,
+        dateFormat,
+        hijriEnabled,
+      };
+    });
+    systemStore.loadEntitlement();
   }
 });
 
@@ -102,27 +120,38 @@ function handleReset() {
   hijriEnabled = initialValues.hijriEnabled;
 }
 
-function handleSubmit(e?: Event) {
+async function handleSubmit(e?: Event) {
   e?.preventDefault();
   settingsForm.values = { name, currency, timezone, locale, dateFormat };
-  settingsForm.submit(async (result) => {
+  const submitted = await settingsForm.submit(async (result) => {
     onsave({
       name: result.name,
       name_ar: nameAr || null,
       logo: logo || null,
       primary_color: primaryColor,
-      currency: result.currency,
+      base_currency_code: result.currency,
       timezone: result.timezone,
       locale: result.locale,
       date_format: result.dateFormat,
-      hijri_enabled: hijriEnabled,
+      is_hijri_enabled: hijriEnabled,
     });
-  }).then((submitted) => {
-    if (!submitted) {
-      toast.error(l("بيانات الإعدادات غير صالحة", "Settings contain invalid values"));
+
+    if (rawSettings) {
+      try {
+        const updated = await api.updateSettings({
+          ...rawSettings,
+          enrollment: rawSettings.enrollment,
+          finance: rawSettings.finance,
+          autopilot: rawSettings.autopilot,
+        });
+        rawSettings = updated;
+      } catch (err) {
+        toast.error(l("فشل حفظ إعدادات السياسات", "Failed to save institutional policy settings"));
+      }
     }
   });
-  if (initialValues) {
+
+  if (submitted) {
     initialValues = {
       name,
       nameAr,
@@ -133,6 +162,10 @@ function handleSubmit(e?: Event) {
       dateFormat,
       hijriEnabled,
     };
+  } else {
+    toast.error(
+      l("بيانات الإعدادات غير صالحة", "Settings contain invalid values"),
+    );
   }
 }
 
@@ -182,50 +215,57 @@ function handleSaveAvatar(e: Event) {
         onLanguageChange={handleLanguageChange}
       />
 
+
       <BranchSettingsCard {org} {isSaving} />
 
       <AuthenticationSettingsCard {org} {isSaving} />
 
-            <div class="border border-border rounded-md overflow-hidden flex flex-col">
-              <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-                حدود المنظمة
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x rtl:md:divide-x-reverse divide-border">
-                <div class="px-6 py-5 flex flex-col gap-1 text-start">
-                  <span class="text-xs font-semibold text-foreground">المستخدمون</span>
-                  <span class="text-2xl font-semibold tabular-nums">{org.max_users ?? "—"}</span>
-                  <span class="text-[11px] text-muted-foreground">الحد الأقصى المسموح به</span>
-                </div>
-                <div class="px-6 py-5 flex flex-col gap-1 text-start">
-                  <span class="text-xs font-semibold text-foreground">الطلاب</span>
-                  <span class="text-2xl font-semibold tabular-nums">{org.max_students ?? "—"}</span>
-                  <span class="text-[11px] text-muted-foreground">الحد الأقصى المسموح به</span>
-                </div>
-                <div class="px-6 py-5 flex flex-col gap-1 text-start">
-                  <span class="text-xs font-semibold text-foreground">التخزين</span>
-                  <span class="text-2xl font-semibold tabular-nums">{org.max_storage_gb ?? "—"} GB</span>
-                  <span class="text-[11px] text-muted-foreground">السعة المخصصة للمنظمة</span>
-                </div>
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {m.settings_entitlement_title()}
+          </CardTitle>
+        </CardHeader>
+        <CardContent class="p-0">
+          <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x rtl:md:divide-x-reverse divide-border">
+            <div class="px-6 py-5 flex flex-col gap-1 text-start">
+              <span class="text-xs font-semibold text-foreground">{m.settings_entitlement_users()}</span>
+              <span class="text-2xl font-semibold tabular-nums">{systemStore.entitlement?.max_users ?? m.settings_entitlement_unlimited()}</span>
+              <span class="text-[11px] text-muted-foreground">{m.settings_entitlement_max_allowed()}</span>
             </div>
+            <div class="px-6 py-5 flex flex-col gap-1 text-start">
+              <span class="text-xs font-semibold text-foreground">{m.settings_entitlement_students()}</span>
+              <span class="text-2xl font-semibold tabular-nums">{systemStore.entitlement?.max_students ?? m.settings_entitlement_unlimited()}</span>
+              <span class="text-[11px] text-muted-foreground">{m.settings_entitlement_max_allowed()}</span>
+            </div>
+            <div class="px-6 py-5 flex flex-col gap-1 text-start">
+              <span class="text-xs font-semibold text-foreground">{m.settings_entitlement_plan()}</span>
+              <span class="text-2xl font-semibold capitalize">{systemStore.entitlement?.plan ?? systemStore.entitlement?.status ?? m.settings_entitlement_status_active()}</span>
+              <span class="text-[11px] text-muted-foreground">{m.settings_entitlement_current_status()}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            {#if org.features}
-              {@const features = typeof org.features === "string" ? (() => { try { return JSON.parse(org.features); } catch { return {}; } })() : org.features}
-              {#if Object.keys(features || {}).length > 0}
-                <div class="border border-border rounded-md overflow-hidden flex flex-col">
-                  <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-                    الميزات المفعلة
-                  </div>
-                  <div class="px-6 py-5 flex flex-wrap gap-2">
-                    {#each Object.entries(features) as [feature, enabled]}
-                      {#if enabled}
-                        <span class="rounded-md border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium">{feature}</span>
-                      {/if}
-                    {/each}
-                  </div>
-                </div>
-              {/if}
-            {/if}
+      {#if org.features}
+        {@const features = typeof org.features === "string" ? (() => { try { return JSON.parse(org.features); } catch { return {}; } })() : org.features}
+        {#if Object.keys(features || {}).length > 0}
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {m.settings_entitlement_features_title()}
+              </CardTitle>
+            </CardHeader>
+            <CardContent class="px-6 py-5 flex flex-wrap gap-2">
+              {#each Object.entries(features) as [feature, enabled]}
+                {#if enabled}
+                  <span class="rounded-md border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium">{feature}</span>
+                {/if}
+              {/each}
+            </CardContent>
+          </Card>
+        {/if}
+      {/if}
     </form>
 
     <AvatarSettingsCard

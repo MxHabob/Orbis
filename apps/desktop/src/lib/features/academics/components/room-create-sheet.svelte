@@ -4,12 +4,7 @@ A slide-over Sheet component for creating or editing a room.
 Uses the shared @orbis/ui/sheet component.
 -->
 <script lang="ts">
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@orbis/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import RoomForm from "./room-form.svelte";
 import * as m from "$lib/paraglide/messages";
 

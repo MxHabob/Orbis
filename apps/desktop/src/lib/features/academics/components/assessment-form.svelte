@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands, OrbisError } from "$lib/core/ipc";
+import { api } from "$lib/api";
 import { createAssessmentInputSchema } from "@orbis/schemas";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -12,7 +12,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { Award } from "@lucide/svelte";
+import { AdjustmentsHorizontal } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
@@ -34,39 +34,52 @@ let {
 
 // Form state
 const form = new FormController({
-	initialValues: {
-		title: "",
-		title_ar: "",
-		max_score: 100,
-		weight: 15,
-		item_type: "exam" as const,
-	},
-	schema: createAssessmentInputSchema,
-	normalize: (values) => ({
-		class_id: classId,
-		subject_id: subjectId,
-		term_id: periodId,
-		month: defaultMonth,
-		...values,
-	}),
+  initialValues: {
+    title: "",
+    title_ar: "",
+    max_score: 100,
+    weight: 15,
+    item_type: "exam" as const,
+  },
+  schema: createAssessmentInputSchema,
+  normalize: (values) => ({
+    class_id: classId,
+    subject_id: subjectId,
+    term_id: periodId,
+    month: defaultMonth,
+    ...values,
+  }),
 });
 
 function fieldError(field: string): string | undefined {
-	return form.errors[field]?.[0];
+  return form.errors[field]?.[0];
 }
 
 const typeLabels: Record<"exam" | "quiz" | "homework" | "classwork", string> =
   $derived({
-	exam: m.common_assessment_option_exam(),
-	quiz: m.common_assessment_option_quiz(),
-	homework: m.common_assessments_type_homework(),
-	classwork: m.common_assessment_option_classwork(),
+    exam: m.common_assessment_option_exam(),
+    quiz: m.common_assessment_option_quiz(),
+    homework: m.common_assessments_type_homework(),
+    classwork: m.common_assessment_option_classwork(),
   });
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (payload) => {
-		await (commands.assessment as any).createAssessment(payload);
+    const title = payload.title_ar || payload.title || "Assessment";
+    await api.createAssessmentScheme({
+      name: title,
+      description: payload.title || payload.title_ar,
+      max_score: Number(payload.max_score) || 100,
+      formula: {
+        item_type: payload.item_type,
+        weight: Number(payload.weight) || 15,
+        class_id: classId,
+        subject_id: subjectId,
+        period_id: periodId,
+        month: defaultMonth ?? null,
+      },
+    });
     toast.success(m.common_assessment_toast_success());
   });
   if (submitted) {
@@ -83,7 +96,7 @@ async function handleSubmit(e: SubmitEvent) {
 <form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
 	<SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
 		<SheetTitle class="text-xl font-bold text-foreground flex items-center gap-2">
-			<Award size={18} class="text-primary" />
+			<AdjustmentsHorizontal size={18} class="text-primary" />
 			<span>{m.common_assessment_sheet_title()}</span>
 		</SheetTitle>
 	</SheetHeader>

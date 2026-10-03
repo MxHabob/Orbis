@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
  */
 import type { EditorStore } from "../stores/editor-store.svelte";
 import { Button } from "@orbis/ui/button";
-import { X } from "@lucide/svelte";
+import { ClockRotateRight, Code, Keyframes, Search, XMark } from "@orbis/icons";
 
 // Panels
 import AssetPanel from "../panels/asset-panel.svelte";
@@ -17,13 +17,8 @@ import HistoryPanel from "../panels/history-panel.svelte";
 import ElementsPanel from "../panels/elements-panel.svelte";
 import TextPresetsPanel from "../panels/text-presets-panel.svelte";
 import PageSetupPanel from "../panels/page-setup-panel.svelte";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@orbis/ui/tabs";
-import { Layers, Variable, History, Search } from "@lucide/svelte";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
+
 import { Input } from "@orbis/ui/input";
 
 let {
@@ -91,7 +86,7 @@ function stopResize() {
     <div class="flyout-header">
       <h3 class="flyout-title">{panelTitles[panel ?? ""] ?? ""}</h3>
       <Button variant="ghost" size="icon-xs" class="cursor-pointer shrink-0" onclick={close}>
-        <X size={14} />
+        <XMark size={14} />
       </Button>
     </div>
 
@@ -104,15 +99,15 @@ function stopResize() {
         <Tabs bind:value={toolsTab} class="flex flex-col h-full">
           <TabsList class="flex h-8 p-0 bg-muted/20 border-b border-border/30 rounded-none shrink-0 mx-3 mt-1">
             <TabsTrigger value="layers" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
-              <Layers size={11} />
+              <Keyframes size={11} />
               {m.template_panel_layers()}
             </TabsTrigger>
             <TabsTrigger value="variables" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
-              <Variable size={11} />
+              <Code size={11} />
               {m.template_panel_variables()}
             </TabsTrigger>
             <TabsTrigger value="history" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
-              <History size={11} />
+              <ClockRotateRight size={11} />
               {m.template_panel_history()}
             </TabsTrigger>
           </TabsList>

@@ -1,15 +1,15 @@
 <script lang="ts">
-  let {
-    size = 16,
-    strokeWidth = 2,
-    class: className = "",
-  }: {
-    size?: number;
-    strokeWidth?: number;
-    class?: string;
-  } = $props();
+let {
+  size = 16,
+  strokeWidth = 2,
+  class: className = "",
+}: {
+  size?: number;
+  strokeWidth?: number;
+  class?: string;
+} = $props();
 
-  const borderWidth = $derived(Math.max(1, strokeWidth));
+const borderWidth = $derived(Math.max(1, strokeWidth));
 </script>
 
 <span

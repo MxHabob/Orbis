@@ -4,7 +4,7 @@ A styled click-to-copy input bar with smooth checkmark state transition.
 -->
 <script lang="ts">
 import { cn } from "@orbis/ui/utils";
-import { Copy, Check } from "@lucide/svelte";
+import { Check, Clipboard } from "@orbis/icons";
 
 let {
   value,
@@ -52,14 +52,14 @@ function handleCopy() {
   </span>
 
   <div class="relative w-4 h-4 shrink-0 flex items-center justify-center">
-    <!-- Copy Icon -->
+    <!-- Clipboard Icon -->
     <span
       class="absolute transition-all duration-200 flex items-center justify-center"
       class:opacity-0={isCopied}
       class:scale-75={isCopied}
       class:rotate-12={isCopied}
     >
-      <Copy class="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+      <Clipboard class="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
     </span>
 
     <!-- Check Icon -->

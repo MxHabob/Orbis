@@ -10,15 +10,7 @@ import {
   CardContent,
   CardFooter,
 } from "@orbis/ui/card";
-import {
-  FileText,
-  Plus,
-  Trash2,
-  Edit,
-  Archive,
-  RefreshCw,
-  CheckCircle,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArchiveBox, CheckCircle, DocumentPage, Pencil, Plus, Refresh, Trash } from "@orbis/icons";
 
 import { l } from "$lib/core/i18n";
 
@@ -81,7 +73,7 @@ let {
 {:else if templates.length === 0}
   <div class="flex flex-col items-center justify-center py-20 px-4 bg-card/20 border border-border/40 border-dashed rounded-[2rem] gap-5 mx-auto w-full max-w-3xl my-8">
     <div class="h-16 w-16 bg-muted/30 rounded-2xl flex items-center justify-center text-muted-foreground">
-      <FileText size={32} strokeWidth={1.5} />
+      <DocumentPage size={32} strokeWidth={1.5} />
     </div>
     <div class="text-center flex flex-col gap-1.5">
       <h3 class="text-base font-bold text-foreground">{m.settings_templates_empty()}</h3>
@@ -98,8 +90,8 @@ let {
       <Card class="flex flex-col h-full">
         <CardHeader class="p-4 pb-2">
           <div class="flex items-start justify-between gap-3">
-            <CardTitle class="text-sm font-bold text-foreground line-clamp-1 leading-snug" title={l(template.name_ar, template.name)}>
-              {l(template.name_ar, template.name)}
+            <CardTitle class="text-sm font-bold text-foreground line-clamp-1 leading-snug" title={l(template.nameAr ?? template.name_ar, template.name)}>
+              {l(template.nameAr ?? template.name_ar, template.name)}
             </CardTitle>
             <Badge variant={template.status === 'published' ? 'success' : (template.status === 'archived' ? 'outline' : 'secondary')} class="shrink-0 h-5 px-1.5 text-[10px] leading-none">
               {template.status === 'published' ? m.common_phase_active() : (template.status === 'archived' ? m.common_year_status_archived() : m.common_status_draft())}
@@ -113,9 +105,9 @@ let {
           </p>
           
           <div class="mt-auto pt-1 flex flex-wrap items-center gap-1.5">
-            <Badge variant="secondary" class="h-5 px-1.5 text-[10px] bg-muted/50 font-normal hover:bg-muted/50">{template.document_type}</Badge>
-            <Badge variant="secondary" class="h-5 px-1.5 text-[10px] bg-muted/50 font-normal hover:bg-muted/50">{template.entity_type}</Badge>
-            <Badge variant="secondary" class="h-5 px-1.5 text-[10px] bg-muted/50 font-normal hover:bg-muted/50">{template.page_size}</Badge>
+            <Badge variant="secondary" class="h-5 px-1.5 text-[10px] bg-muted/50 font-normal hover:bg-muted/50">{template.documentType ?? template.document_type}</Badge>
+            <Badge variant="secondary" class="h-5 px-1.5 text-[10px] bg-muted/50 font-normal hover:bg-muted/50">{template.entityType ?? template.entity_type}</Badge>
+            <Badge variant="secondary" class="h-5 px-1.5 text-[10px] bg-muted/50 font-normal hover:bg-muted/50">{template.pageSize ?? template.page_size}</Badge>
             <span class="text-[10px] text-muted-foreground/50 font-mono ms-auto">v{template.version}</span>
           </div>
         </CardContent>
@@ -128,7 +120,7 @@ let {
             onclick={() => onconfirmdelete(template.id)}
             title={m.common_action_delete()}
           >
-            <Trash2 size={13} />
+            <Trash size={13} />
           </Button>
           
           <div class="flex items-center gap-1.5 shrink-0">
@@ -139,7 +131,7 @@ let {
               href={`/${orgId}/templates/${template.id}`}
               title={m.common_action_edit_simple()}
             >
-              <Edit size={13} />
+              <Pencil size={13} />
             </Button>
 
             {#if template.status === 'published'}
@@ -150,7 +142,7 @@ let {
                 onclick={() => onarchive(template.id)}
                 title={m.settings_templates_action_archive()}
               >
-                <Archive size={13} />
+                <ArchiveBox size={13} />
               </Button>
             {:else}
               {#if template.status === 'archived'}
@@ -161,7 +153,7 @@ let {
                   onclick={() => onrestore(template.id)}
                   title={m.common_titlebar_restore()}
                 >
-                  <RefreshCw size={13} />
+                  <Refresh size={13} />
                 </Button>
               {:else}
                 <Button

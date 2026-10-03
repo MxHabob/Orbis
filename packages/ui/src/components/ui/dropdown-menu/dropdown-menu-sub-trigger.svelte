@@ -1,6 +1,6 @@
 <script lang="ts">
 import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
-import { ChevronRight as ChevronRightIcon } from "@lucide/svelte";
+import { ChevronRight } from "@orbis/icons";
 import { cn } from "../../../utils.js";
 
 let {
@@ -25,5 +25,5 @@ let {
 	{...restProps}
 >
 	{@render children?.()}
-	<ChevronRightIcon class="ms-auto rtl:rotate-180" />
+	<ChevronRight class="ms-auto rtl:rotate-180" />
 </DropdownMenuPrimitive.SubTrigger>

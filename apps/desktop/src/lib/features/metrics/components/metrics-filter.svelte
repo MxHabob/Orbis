@@ -11,9 +11,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@orbis/ui/dropdown-menu";
-import { Filter, ChevronDown } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ChevronDown } from "@orbis/icons";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api";
 
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -36,7 +36,7 @@ let classes = $state<any[]>([]);
 async function loadOptions() {
   try {
     // Load Terms (Periods of type 'term')
-    const periods = await commands.calendar.listAcademicPeriods();
+    const periods = await api.listAcademicPeriods();
     terms = periods
       ? periods.filter(
           (c) =>
@@ -47,7 +47,7 @@ async function loadOptions() {
       : [];
 
     // Load Classes
-    const cl = await commands.academic.listClasses();
+    const cl = await api.listClasses();
     classes = cl || [];
   } catch (e) {
     console.error("Error loading filter options:", e);
@@ -96,7 +96,7 @@ const className = $derived(() => {
 		<DropdownMenuTrigger>
 			{#snippet child({ props }: { props: any })}
 				<Button {...props} variant="outline" class="gap-2 px-2.5 h-8 text-xs font-medium bg-background border-border hover:bg-muted/40 cursor-pointer">
-					<Filter size={13} class="text-[#666]" />
+					<AdjustmentsHorizontal size={13} class="text-[#666]" />
 					<span>{m.reports_metrics_filters()}</span>
 					<ChevronDown size={12} class="text-[#666] opacity-60" />
 				</Button>

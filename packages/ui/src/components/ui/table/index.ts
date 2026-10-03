@@ -1,5 +1,5 @@
-// ── @orbis/ui/table ─────────────────────────────────────────────────
-// Table infrastructure: primitive components + headless hooks + utilities.
+// ── @orbis/ui-svelte/table ──────────────────────────────────────────
+// Grid infrastructure: primitive components + headless hooks + utilities.
 
 // ── Primitive Components (shadcn-svelte) ────────────────────────────
 
@@ -22,7 +22,7 @@ export {
   Header,
   Row,
   //
-  Root as Table,
+  Root as Grid,
   Body as TableBody,
   Caption as TableCaption,
   Cell as TableCell,

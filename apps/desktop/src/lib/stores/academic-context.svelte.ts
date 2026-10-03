@@ -1,35 +1,27 @@
-import * as m from "$lib/paraglide/messages";
 /**
  * Academic Context Store — centralized academic state for the entire app.
  *
- * Migrated from period-based to unified year+period model.
+ * Unified academic year + period model adhering to Orbis Target Architecture.
  */
 import type {
-  AcademicYear,
-  AcademicYearInfo,
+  AcademicYearDto,
+  AcademicPeriodDto,
   AcademicContextResponse,
-  AcademicPeriod,
-} from "@orbis/sdk-core";
-import { commands } from "$lib/core/ipc";
-import { extractErrorMessage } from "$lib/core/ipc";
+} from "@orbis/sdk";
+import { api } from "$lib/api/client";
+import { extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
 
 class AcademicContextStore {
-  currentYear = $state<AcademicYear | null>(null);
-  allYears = $state<AcademicYearInfo[]>([]);
-  periods = $state<AcademicPeriod[]>([]);
-  yearStatus = $state<"planning" | "active" | "closing" | "archived">("active");
+  currentYear = $state<AcademicYearDto | null>(null);
+  allYears = $state<AcademicYearDto[]>([]);
+  periods = $state<AcademicPeriodDto[]>([]);
+  yearStatus = $state<string>("active");
   private _isReadOnly = $state(false);
   isSwitching = $state(false);
   isLoading = $state(false);
   isInitialized = $state(false);
   orgId = $state<string>("");
-
-  // ── Assessment Engine State ────────────────────────────────
-  /** Active grade scale items (loaded from the org's default scale). */
-  gradeScaleItems = $state<any[]>([]);
-  /** Active calculation policy for the current period. */
-  activeCalcPolicy = $state<any | null>(null);
 
   private _selectedPeriodId = $state<string>(
     localStorage.getItem("orbis_academic_period_id") ?? "",
@@ -67,88 +59,40 @@ class AcademicContextStore {
     this._isReadOnly || this.currentYear?.status === "archived",
   );
   hasYears = $derived(this.allYears.length > 0);
-  canEnroll = $derived(
-    this.activePeriod?.is_enrollment_open === 1 && !this.isReadOnly,
-  );
-  canEditGrades = $derived(
-    this.activePeriod?.is_grade_entry_open === 1 && !this.isReadOnly,
-  );
-  isLocked = $derived(this.currentYear?.is_locked === 1);
   yearLabel = $derived(this.currentYear?.name ?? "");
   yearLabelAr = $derived(
     this.currentYear?.name_ar ?? this.currentYear?.name ?? "",
-  );
-  statusBadge = $derived<"planning" | "active" | "closing" | "archived">(
-    this.yearStatus,
   );
   effectivePeriodId = $derived(
     this._selectedPeriodId || this.activePeriod?.id || "",
   );
 
   /** First active period or first period in list */
-  get activePeriod(): AcademicPeriod | null {
+  get activePeriod(): AcademicPeriodDto | null {
     return (
       this.periods.find((p) => p.status === "active") ?? this.periods[0] ?? null
     );
   }
 
-  /** Alias for periods — used by TitleBar and other shell components. */
-  get allPeriods(): AcademicPeriod[] {
+  /** All periods for current academic context */
+  get allPeriods(): AcademicPeriodDto[] {
     return this.periods;
-  }
-
-  /**
-   * Derived phase of the active period.
-   * Computed from period status, enrollment, and grade-entry flags.
-   */
-  get periodPhase():
-    | "pre_start"
-    | "active"
-    | "exams"
-    | "grade_entry"
-    | "closed"
-    | null {
-    const period = this.activePeriod;
-    if (!period) return null;
-    if (period.status === "closed" || period.status === "archived")
-      return "closed";
-    if (period.is_grade_entry_open === 1) return "grade_entry";
-    if (period.exam_start && period.exam_end) {
-      const now = new Date().toISOString().slice(0, 10);
-      if (now >= period.exam_start && now <= period.exam_end) return "exams";
-    }
-    if (period.status === "active") return "active";
-    return "pre_start";
   }
 
   async resolveContext(orgId: string) {
     this.orgId = orgId;
     this.isLoading = true;
     try {
-      const current_year = await commands.calendar.getCurrent();
-      const all_years = await commands.calendar.listAcademicPeriods();
-      const ctx: AcademicContextResponse = {
-        current_year,
-        all_years: all_years || [],
-        periods: all_years || [], // Assuming periods and years are the same in autopilot
-        year_status:
-          current_year?.status === "archived" ? "archived" : "active",
-        is_read_only: current_year?.status === "archived",
-      };
+      const ctx: AcademicContextResponse = await api.getAcademicContext();
       this.currentYear = ctx.current_year ?? null;
       this.allYears = ctx.all_years ?? [];
       this.periods = ctx.periods ?? [];
-      this.yearStatus = ctx.year_status ?? "active";
-      this._isReadOnly = ctx.is_read_only ?? false;
+      this.yearStatus = ctx.current_year?.status ?? "active";
+      this._isReadOnly = ctx.current_year?.status === "archived";
       if (!this._selectedPeriodId && this.activePeriod) {
         this._selectedPeriodId = this.activePeriod.id;
       }
       this.isInitialized = true;
-
-      // ── Load Assessment Engine data (non-blocking) ─────────
-      this.loadAssessmentConfig().catch((e) =>
-        console.warn("Failed to load assessment config:", e),
-      );
     } catch (e: unknown) {
       console.warn(
         "Failed to resolve academic context:",
@@ -159,56 +103,39 @@ class AcademicContextStore {
     }
   }
 
-  async loadCurrentYear(orgId?: string) {
+  async loadCurrentYear() {
     try {
-      const id = orgId || this.orgId;
-      if (!id) return;
-      this.currentYear = await commands.calendar.getCurrent();
+      const ctx = await api.getAcademicContext();
+      this.currentYear = ctx.current_year ?? null;
     } catch (e: unknown) {
       console.warn("Failed to load current year:", extractErrorMessage(e));
     }
   }
 
-  async loadYears(orgId: string) {
+  async loadYears() {
     try {
-      this.allYears = await commands.calendar.listAcademicPeriods();
+      this.allYears = await api.listAcademicYears();
     } catch (e: unknown) {
       toast.error(extractErrorMessage(e));
     }
   }
 
-  async switchYear(periodId: string) {
+  async switchYear(yearId: string) {
     if (this.isSwitching) return;
     this.isSwitching = true;
     try {
-      await commands.calendar.getAcademicPeriod(periodId);
-      await this.loadCurrentYear();
+      const year = await api.getAcademicYear(yearId);
+      this.currentYear = year;
+      const periods = await api.listAcademicPeriods();
+      this.periods = periods.filter((p) => p.year_id === yearId);
+      if (this.activePeriod) {
+        this.selectedPeriodId = this.activePeriod.id;
+      }
       toast.success(`Switched to ${this.yearLabel}`);
     } catch (e: unknown) {
       toast.error(extractErrorMessage(e));
     } finally {
       this.isSwitching = false;
-    }
-  }
-
-  /**
-   * Load Assessment Engine configuration (grade scale items + calc policy).
-   * Called after academic context is resolved. Non-blocking.
-   */
-  async loadAssessmentConfig() {
-    try {
-      // Load grade scales → pick the first one → load its items
-      const scales: any[] = await commands.assessment.listGradeScales();
-      if (scales && scales.length > 0) {
-        const items = await commands.assessment.listGradeScaleItems(scales[0].id);
-        this.gradeScaleItems = items || [];
-      }
-
-      // Load calculation policies → pick the first one
-      const policies: any[] = await commands.assessment.listCalculationPolicies();
-      this.activeCalcPolicy = policies?.[0] ?? null;
-    } catch (e) {
-      console.warn("Assessment config load failed:", e);
     }
   }
 

@@ -1,18 +1,17 @@
 /**
  * Assessment Configuration Queries
- * TanStack Query wrappers for Grade Scales, Calculation Policies,
- * and Assessment Snapshots — the dynamic Assessment Engine data.
+ * TanStack Query wrappers for Assessment Schemes and Grades.
  */
 import { createQuery } from "@tanstack/svelte-query";
-import { commands } from "$lib/core/ipc";
+import { api, queryKeys } from "$lib/api";
 
 // ── Grade Scales ────────────────────────────────────────────
 
 /** All grade scales for the current organization. */
 export function createGradeScalesQuery(orgId: () => string) {
   return createQuery(() => ({
-    queryKey: ["grade-scales", orgId()],
-    queryFn: () => commands.assessment.listGradeScales(),
+    queryKey: queryKeys.assessment.schemes(),
+    queryFn: () => api.listAssessmentSchemes(),
     enabled: !!orgId(),
     staleTime: 10 * 60 * 1000,
   }));
@@ -21,8 +20,8 @@ export function createGradeScalesQuery(orgId: () => string) {
 /** Items for a specific grade scale. */
 export function createGradeScaleItemsQuery(scaleId: () => string | undefined) {
   return createQuery(() => ({
-    queryKey: ["grade-scale-items", scaleId()],
-    queryFn: () => commands.assessment.listGradeScaleItems(scaleId()!),
+    queryKey: queryKeys.assessment.schemes(),
+    queryFn: () => api.listAssessmentSchemes(),
     enabled: !!scaleId(),
     staleTime: 10 * 60 * 1000,
   }));
@@ -33,8 +32,8 @@ export function createGradeScaleItemsQuery(scaleId: () => string | undefined) {
 /** All calculation policies for the current organization. */
 export function createCalcPoliciesQuery(orgId: () => string) {
   return createQuery(() => ({
-    queryKey: ["calc-policies", orgId()],
-    queryFn: () => commands.assessment.listCalculationPolicies(),
+    queryKey: queryKeys.assessment.schemes(),
+    queryFn: () => api.listAssessmentSchemes(),
     enabled: !!orgId(),
     staleTime: 10 * 60 * 1000,
   }));
@@ -43,8 +42,8 @@ export function createCalcPoliciesQuery(orgId: () => string) {
 /** Single calculation policy by ID. */
 export function createCalcPolicyQuery(policyId: () => string | undefined) {
   return createQuery(() => ({
-    queryKey: ["calc-policy", policyId()],
-    queryFn: () => commands.assessment.getCalculationPolicy(policyId()!),
+    queryKey: queryKeys.assessment.scheme(policyId()!),
+    queryFn: () => api.getAssessmentScheme(policyId()!),
     enabled: !!policyId(),
     staleTime: 10 * 60 * 1000,
   }));
@@ -55,18 +54,20 @@ export function createCalcPolicyQuery(policyId: () => string | undefined) {
 /** All assessment schemes for current organization. */
 export function createAssessmentSchemesQuery(orgId: () => string) {
   return createQuery(() => ({
-    queryKey: ["assessment-schemes", orgId()],
-    queryFn: () => commands.assessment.listAssessmentSchemes(),
+    queryKey: queryKeys.assessment.schemes(),
+    queryFn: () => api.listAssessmentSchemes(),
     enabled: !!orgId(),
     staleTime: 10 * 60 * 1000,
   }));
 }
 
 /** Components for a specific assessment scheme. */
-export function createSchemeComponentsQuery(schemeId: () => string | undefined) {
+export function createSchemeComponentsQuery(
+  schemeId: () => string | undefined,
+) {
   return createQuery(() => ({
-    queryKey: ["scheme-components", schemeId()],
-    queryFn: () => commands.assessment.listComponents(schemeId()!),
+    queryKey: queryKeys.assessment.scheme(schemeId()!),
+    queryFn: () => api.getAssessmentScheme(schemeId()!),
     enabled: !!schemeId(),
     staleTime: 10 * 60 * 1000,
   }));

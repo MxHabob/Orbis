@@ -6,23 +6,14 @@ using <MainViewport>. Uses the shared SidebarNav component.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { createClassesQuery } from "$lib/features/academics";
-import {
-  GraduationCap,
-  Calendar,
-  Compass,
-  ClipboardList,
-  ShieldCheck,
-  CalendarDays,
-  CalendarClock,
-  TrendingUp,
-  BarChart3,
-} from "@lucide/svelte";
+import { AcademicCap, AdjustmentsHorizontal, BookOpen, Calendar, ChartBar, DocumentCheck, TaskList, UserBadgeCheck } from "@orbis/icons";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import ArchivedBanner from "$lib/features/academics/archived-banner.svelte";
 import type { Snippet } from "svelte";
+import type { LayoutData } from "./$types";
 
-let { data, children }: { data: { orgId: string }; children: Snippet } =
+let { data, children }: { data: LayoutData; children: Snippet } =
   $props();
 
 const classesQuery = createClassesQuery(() => data.orgId);
@@ -34,12 +25,12 @@ const navItems = $derived([
   {
     path: "",
     label: m.common_nav_overview(),
-    icon: Compass,
+    icon: AcademicCap,
   },
   {
     path: "classes",
     label: m.common_search_group_classes(),
-    icon: GraduationCap,
+    icon: BookOpen,
     badge: classesCount > 0 ? classesCount : null,
   },
   {
@@ -49,18 +40,18 @@ const navItems = $derived([
   },
   {
     path: "exams",
-    label: m.common_nav_exams ? m.common_nav_exams() : "الامتحانات",
-    icon: ClipboardList,
+    label: m.common_nav_exams(),
+    icon: DocumentCheck,
   },
   {
     path: "promotion",
     label: m.common_promo_title(),
-    icon: TrendingUp,
+    icon: ChartBar,
   },
   {
     path: "reports",
-    label: m.common_nav_reports ? m.common_nav_reports() : "التقارير",
-    icon: BarChart3,
+    label: m.common_nav_reports(),
+    icon: ChartBar,
   },
 ]);
 </script>

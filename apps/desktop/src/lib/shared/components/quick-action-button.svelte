@@ -3,25 +3,24 @@
 Generic action button with icon, label, and optional action indicator.
 -->
 <script lang="ts">
-  import type { ComponentType } from "svelte";
-  import type { Icon } from "@lucide/svelte";
-  import { Button } from "@orbis/ui";
+import type { Component } from "svelte";
+import { Button } from "@orbis/ui";
 
-  let {
-    label,
-    icon: IconComponent,
-    onclick,
-    href,
-    variant = "secondary",
-    class: className = "",
-  }: {
-    label: string;
-    icon?: ComponentType<Icon> | any;
-    onclick?: () => void;
-    href?: string;
-    variant?: "default" | "secondary" | "outline" | "ghost" | "link";
-    class?: string;
-  } = $props();
+let {
+  label,
+  icon: IconComponent,
+  onclick,
+  href,
+  variant = "secondary",
+  class: className = "",
+}: {
+  label: string;
+  icon?: Component<any> | any;
+  onclick?: () => void;
+  href?: string;
+  variant?: "default" | "secondary" | "outline" | "ghost" | "link";
+  class?: string;
+} = $props();
 </script>
 
 <Button

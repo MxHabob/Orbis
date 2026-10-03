@@ -1,2 +1,2 @@
-export { default as OnboardingWizard } from "./onboarding-wizard.svelte";
-export { onboardingState } from "./state.svelte";
+export { default as BootstrapWizard } from "./bootstrap-wizard.svelte";
+export * from "./types";

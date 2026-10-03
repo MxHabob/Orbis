@@ -2,11 +2,11 @@
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
-import { ArrowRight } from "@lucide/svelte";
+import { ArrowRight } from "@orbis/icons";
 
 let {
   orgId,
@@ -32,7 +32,7 @@ async function loadData() {
   isLoading = true;
   try {
     // Query stats to extract behavior details
-    const res = await commands.organization.getDashboardStats();
+    const res = await api.getDashboard();
     if (
       res &&
       res.behavior_summary &&

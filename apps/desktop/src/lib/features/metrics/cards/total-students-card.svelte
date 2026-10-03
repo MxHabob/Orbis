@@ -1,8 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
-import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 import { getLocale } from "$lib/paraglide/runtime";
@@ -33,7 +32,7 @@ async function loadData() {
     if (selectedClass !== "all") params.class_id = selectedClass;
     if (selectedTerm !== "all") params.period_id = selectedTerm;
 
-    const enrollments = await commands.academic.listEnrollments(params);
+    const enrollments = await api.listEnrollments(params);
 
     // We want to generate a 12-month timeline ending in the current month
     const months: { label: string; key: string; dateObj: Date }[] = [];

@@ -5,7 +5,8 @@
   "workspaces": [
     "packages/*",
     "apps/api-rust",
-    "apps/desktop"
+    "apps/desktop",
+    "apps/mobile"
   ],
   "catalog": {
     "react": "19.2.3",
@@ -14,26 +15,24 @@
     "date-fns": "^4.1.0"
   },
   "scripts": {
-    "generate": "bun run scripts/generate-types.ts && bun run scripts/generate-rpc.ts",
+    "generate": "cargo run --manifest-path apps/api-rust/Cargo.toml -p orbis-server --bin export_openapi && bun run --cwd packages/sdk generate",
     "i18n:audit": "bun run scripts/i18n-audit.ts",
-    "build": "turbo build",
-    "clean": "git clean -xdf node_modules",
-    "clean:workspaces": "turbo clean",
-    "dev": "turbo dev --parallel --continue",
-    "test": "turbo test --parallel",
-    "dev:desktop": "turbo dev --filter=@orbis/desktop",
-    "dev:desktop:dev": "turbo run tauri:dev --filter=@orbis/desktop",
+    "build": "turbo run build",
+    "dev": "turbo run dev --continue",
+    "test": "turbo run test",
+    "dev:api": "cargo run --manifest-path apps/api-rust/Cargo.toml -p orbis-server --bin orbis-server",
+    "dev:mobile": "turbo run dev --filter=@orbis/mobile",
+    "dev:mobile:tunnel": "turbo run start:tunnel --filter=@orbis/mobile",
+    "mobile:android": "turbo run android:device --filter=@orbis/mobile",
+    "mobile:prebuild": "turbo run prebuild:clean --filter=@orbis/mobile",
+    "dev:desktop": "turbo run tauri:dev --filter=@orbis/desktop",
     "dev:desktop:staging": "turbo run tauri:staging --filter=@orbis/desktop",
     "dev:desktop:prod": "turbo run tauri:prod --filter=@orbis/desktop",
     "build:desktop:staging": "turbo run tauri:build:staging --filter=@orbis/desktop",
     "build:desktop:prod": "turbo run tauri:build:prod --filter=@orbis/desktop",
     "format": "biome format --write .",
-    "lint": "turbo lint && manypkg check",
-    "typecheck": "turbo typecheck",
-    "docker:up": "docker compose -f docker-compose.local.yml up -d",
-    "docker:down": "docker compose -f docker-compose.local.yml down",
-    "docker:reset": "docker compose -f docker-compose.local.yml down -v",
-    "docker:logs": "docker compose -f docker-compose.local.yml logs -f",
+    "lint": "turbo run lint && manypkg check",
+    "typecheck": "turbo run typecheck",
     "cli": "cargo run --manifest-path apps/cli/Cargo.toml",
     "cli:init": "cargo run --manifest-path apps/cli/Cargo.toml -- init"
   },
@@ -41,7 +40,7 @@
     "@biomejs/biome": "2.3.13",
     "@manypkg/cli": "^0.25.1",
     "@orbis/tsconfig": "workspace:*",
-    "turbo": "^2.10.12",
+    "turbo": "^2.11.5",
     "typescript": "^7.0.2"
   },
   "overrides": {

@@ -1,20 +1,16 @@
-<!--
-  Reports / Analytics dashboard.
--->
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
-import MetricsView from "$lib/features/metrics/metrics-view.svelte";
-import type { PageData } from "./$types";
+  import * as m from "$lib/paraglide/messages";
+  import { page } from "$app/state";
+  import ReportingWorkspace from "$lib/features/reporting/reporting-workspace.svelte";
 
-let { data }: { data: PageData } = $props();
+  let { data }: { data: { orgId: string } } = $props();
+  const orgId = $derived(data?.orgId || page.params.orgId || "");
 </script>
 
 <svelte:head>
-	<title>{m.common_page_title_reports()}</title>
+  <title>{m.nav_reports?.() || "مركز التقارير والمستندات"} - Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-auto mx-4">
-	<div class="mx-auto w-full">
-		<MetricsView orgId={data.orgId} />
-	</div>
+<div class="h-full w-full overflow-hidden">
+  <ReportingWorkspace {orgId} />
 </div>

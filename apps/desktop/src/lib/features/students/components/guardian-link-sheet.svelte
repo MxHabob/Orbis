@@ -5,24 +5,21 @@
 <script lang="ts">
 import * as Sheet from "@orbis/ui/sheet";
 import GuardianForm from "$lib/features/students/components/guardian-form.svelte";
-import type { GuardianLink } from "@orbis/sdk-core";
-import * as m from "$lib/paraglide/messages";
+import type { GuardianDto } from "$lib/api";
 
 let {
   open = $bindable(false),
   orgId,
   studentId,
-  editData,
+  editData = null,
   onSuccess,
 }: {
   open?: boolean;
   orgId: string;
   studentId: string;
-  editData?: GuardianLink | null;
+  editData?: GuardianDto | null;
   onSuccess?: () => void;
 } = $props();
-
-const isEdit = $derived(!!editData);
 
 function handleSuccess() {
   open = false;

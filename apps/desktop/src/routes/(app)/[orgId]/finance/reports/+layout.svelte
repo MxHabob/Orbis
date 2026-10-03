@@ -1,16 +1,29 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-import { BarChart3, Scale, FileSpreadsheet, Landmark } from "@lucide/svelte";
+import { BuildingLibrary, ChartBar, DocumentChartBar, Scale } from "@orbis/icons";
 import type { Snippet } from "svelte";
 
-let { data, children }: { data: { orgId: string }; children: Snippet } = $props();
+let { data, children }: { data: { orgId: string }; children: Snippet } =
+  $props();
 const basePath = $derived(`/${data.orgId}/finance/reports`);
 const items = $derived([
-  { path: "", label: "النظرة العامة", icon: BarChart3 },
-  { path: "trial-balance", label: m.finance_reports_trial_balance(), icon: Scale },
-  { path: "income-statement", label: m.finance_reports_income_statement_tab(), icon: FileSpreadsheet },
-  { path: "balance-sheet", label: m.finance_reports_balance_sheet_tab(), icon: Landmark },
+  { path: "", label: "النظرة العامة", icon: ChartBar },
+  {
+    path: "trial-balance",
+    label: m.finance_reports_trial_balance(),
+    icon: Scale,
+  },
+  {
+    path: "income-statement",
+    label: m.finance_reports_income_statement_tab(),
+    icon: DocumentChartBar,
+  },
+  {
+    path: "balance-sheet",
+    label: m.finance_reports_balance_sheet_tab(),
+    icon: BuildingLibrary,
+  },
 ]);
 </script>
 

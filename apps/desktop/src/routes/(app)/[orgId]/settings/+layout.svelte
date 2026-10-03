@@ -7,28 +7,27 @@ Now includes rooms and subjects (moved from academics).
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import {
-  Settings,
-  Bell,
-  Lock,
-  Users,
-  Calendar,
-  Network,
-  History,
-  FileDown,
-  Shield,
-  Coins,
-  ListOrdered,
-  FileText,
-  MapPin,
+  AppNotification,
+  ArchiveBox,
+  ArrowUpTray,
   BookOpen,
-  Receipt,
-  Percent,
-  CheckSquare,
-  Sliders,
+  BuildingOffice,
+  Calendar,
+  CheckCircle,
+  ClockRotateRight,
+  Database,
+  DocumentPage,
+  GlobeAlt,
+  Keyframes,
+  Pin,
+  ReceiptPercent,
   Scale,
-  Calculator,
-  Layers,
-} from "@lucide/svelte";
+  Settings,
+  ShieldCheck,
+  Trash,
+  UserGroup,
+  Users,
+} from "@orbis/icons";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import type { Snippet } from "svelte";
@@ -52,7 +51,7 @@ const navGroups = $derived([
       {
         path: "notifications",
         label: m.common_nav_notifications(),
-        icon: Bell,
+        icon: AppNotification,
       },
     ],
   },
@@ -65,14 +64,19 @@ const navGroups = $derived([
         icon: Users,
       },
       {
+        path: "groups",
+        label: m.groups_nav_title ? m.groups_nav_title() : "User Groups",
+        icon: UserGroup,
+      },
+      {
         path: "permissions",
         label: m.settings_nav_permissions(),
-        icon: Shield,
+        icon: ShieldCheck,
       },
       {
         path: "units",
         label: m.settings_nav_units(),
-        icon: Network,
+        icon: BuildingOffice,
       },
     ],
   },
@@ -81,7 +85,9 @@ const navGroups = $derived([
     items: [
       {
         path: "periods",
-        label: m.settings_nav_cycles ? m.settings_nav_cycles() : "Academic Periods",
+        label: m.settings_nav_cycles
+          ? m.settings_nav_cycles()
+          : "Academic Periods",
         icon: Calendar,
       },
       {
@@ -92,47 +98,27 @@ const navGroups = $derived([
       {
         path: "rooms",
         label: m.common_nav_rooms(),
-        icon: MapPin,
+        icon: Pin,
       },
       {
         path: "academic-policy",
         label: m.common_nav_academic_policy(),
-        icon: Sliders,
+        icon: Scale,
       },
       {
         path: "assessment-schemes",
         label: getLocale() === "ar" ? "هياكل التقييم" : "Assessment Schemes",
-        icon: Layers,
-      },
-      {
-        path: "grade-scales",
-        label: getLocale() === "ar" ? "مقاييس الدرجات" : "Grade Scales",
-        icon: Scale,
-      },
-      {
-        path: "calc-policies",
-        label: getLocale() === "ar" ? "سياسات الحساب" : "Calculation Policies",
-        icon: Calculator,
-      },
-      {
-        path: "ranking-policies",
-        label: getLocale() === "ar" ? "سياسات الترتيب" : "Ranking Policies",
-        icon: Sliders,
+        icon: Keyframes,
       },
       {
         path: "registration",
         label: m.settings_nav_registration(),
-        icon: FileText,
-      },
-      {
-        path: "ordering",
-        label: m.common_nav_ordering(),
-        icon: ListOrdered,
+        icon: DocumentPage,
       },
       {
         path: "approvals",
         label: m.settings_nav_approvals(),
-        icon: CheckSquare,
+        icon: CheckCircle,
       },
     ],
   },
@@ -142,17 +128,17 @@ const navGroups = $derived([
       {
         path: "currencies",
         label: m.settings_nav_currencies(),
-        icon: Coins,
+        icon: GlobeAlt,
       },
       {
         path: "fee-templates",
         label: m.common_breadcrumb_fees(),
-        icon: Receipt,
+        icon: DocumentPage,
       },
       {
         path: "discount-templates",
         label: m.common_dt_title(),
-        icon: Percent,
+        icon: ReceiptPercent,
       },
     ],
   },
@@ -162,23 +148,33 @@ const navGroups = $derived([
       {
         path: "branches",
         label: getLocale() === "ar" ? "الفروع" : "Branches",
-        icon: Network,
+        icon: BuildingOffice,
       },
       {
         path: "bulk-input",
         label: m.settings_nav_import_export(),
-        icon: FileDown,
+        icon: ArrowUpTray,
       },
       {
         path: "archive",
         label: m.settings_nav_archive(),
-        icon: FileText,
+        icon: ArchiveBox,
+      },
+      {
+        path: "archive/trash",
+        label: getLocale() === "ar" ? "سلة المحذوفات" : "Trash",
+        icon: Trash,
+      },
+      {
+        path: "database",
+        label: m.settings_nav_database(),
+        icon: Database,
       },
       {
         path: "audit",
         label: m.common_nav_audit(),
-        icon: History,
-      }
+        icon: ClockRotateRight,
+      },
     ],
   },
 ]);

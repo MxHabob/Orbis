@@ -1,4 +1,6 @@
 <script lang="ts">
+import { Grid } from "@orbis/icons";
+
 /**
  * CanvasNode — Recursive node renderer for the SVG canvas.
  * Renders each node type (Text, Image, Shape, Frame, Barcode, QR, etc.)
@@ -309,7 +311,7 @@ import { resolveDocumentUrl } from "$lib/features/documents/queries";
       <rect x={w * 0.2} y={h * 0.65} width={w * 0.15} height={h * 0.15} fill="white" rx="1" />
 
     {:else if node.type === "Table"}
-      <!-- Table -->
+      <!-- Grid -->
       <rect width={w} height={h} fill="white" stroke="#d1d5db" stroke-width="1" />
       {#if nodeProps.columns}
         {@const cols = nodeProps.columns as any[]}

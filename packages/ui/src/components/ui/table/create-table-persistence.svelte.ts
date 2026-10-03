@@ -38,6 +38,8 @@ export interface TablePersistenceState {
  * @example
  * ```svelte
  * <script>
+import { FloppyDisk } from "@orbis/icons";
+
  * const persistence = createTablePersistence({ tableId: 'students' });
  *
  * const table = createTableState({
@@ -107,7 +109,7 @@ export function createTablePersistence(
     saved?.sorting ?? defaults.sorting ?? { column: null, direction: "asc" },
   );
 
-  // ── Debounced Save ──────────────────────────────────────────────
+  // ── Debounced FloppyDisk ──────────────────────────────────────────────
 
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
   let isInitial = true;

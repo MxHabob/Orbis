@@ -8,7 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import { fly } from "svelte/transition";
 import { quintOut } from "svelte/easing";
 import { Button } from "@orbis/ui/button";
-import { Loader2, AlertCircle } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowPath, InfoCircle } from "@orbis/icons";
 
 interface Props {
   visible?: boolean;
@@ -37,20 +37,16 @@ let {
 }: Props = $props();
 
 const displaySaveLabel = $derived(
-  saveLabel || m.settings_action_save_changes()
+  saveLabel || m.settings_action_save_changes(),
 );
 
-const displaySavingLabel = $derived(
-  savingLabel || m.common_state_saving()
-);
+const displaySavingLabel = $derived(savingLabel || m.common_state_saving());
 
 const displayResetLabel = $derived(
-  resetLabel || m.settings_action_discard_changes()
+  resetLabel || m.settings_action_discard_changes(),
 );
 
-const displayMessage = $derived(
-  message || m.settings_unsaved_changes()
-);
+const displayMessage = $derived(message || m.settings_unsaved_changes());
 </script>
 
 {#if visible && isDirty}
@@ -62,7 +58,7 @@ const displayMessage = $derived(
       <!-- Unsaved Changes Status Indicator -->
       <div class="flex min-w-0 items-center gap-2 text-start">
         <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
-          <AlertCircle size={15} strokeWidth={2} />
+          <InfoCircle size={15} strokeWidth={2} />
         </span>
         <span class="truncate text-sm font-medium text-foreground">
           {displayMessage}
@@ -93,7 +89,7 @@ const displayMessage = $derived(
           onclick={onsave}
         >
           {#if isSaving}
-            <Loader2 size={13} class="animate-spin me-1.5" />
+            <ArrowPath size={13} class="animate-spin me-1.5" />
           {:else}
             {displaySaveLabel}
           {/if}

@@ -3,19 +3,19 @@
 Generic, modular workspace card container with header actions and body slot.
 -->
 <script lang="ts">
-  import type { Snippet } from "svelte";
+import type { Snippet } from "svelte";
 
-  let {
-    title,
-    actions = undefined,
-    children,
-    class: className = "",
-  }: {
-    title: string;
-    actions?: Snippet;
-    children: Snippet;
-    class?: string;
-  } = $props();
+let {
+  title,
+  actions = undefined,
+  children,
+  class: className = "",
+}: {
+  title: string;
+  actions?: Snippet;
+  children: Snippet;
+  class?: string;
+} = $props();
 </script>
 
 <div class="flex flex-col bg-card border border-border/50 rounded-lg overflow-hidden {className}">

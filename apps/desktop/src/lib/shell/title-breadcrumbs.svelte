@@ -90,7 +90,7 @@ const breadcrumbs = $derived.by(() => {
     } else if (pathname.includes("/control")) {
       items.push({
         label: m.common_control_label ? m.common_control_label() : "الكنترول",
-        href: `/${currentOrgId}/academics/control`,
+        href: `/${currentOrgId}/academics/exams/control`,
       });
     }
   } else if (pathname.includes("/finance")) {

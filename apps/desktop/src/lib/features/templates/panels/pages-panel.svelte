@@ -21,17 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@orbis/ui/dropdown-menu";
-import {
-  Plus,
-  Trash2,
-  Copy,
-  MoreVertical,
-  FileText,
-  ChevronUp,
-  ChevronDown,
-  ArrowUp,
-  ArrowDown,
-} from "@lucide/svelte";
+import { ArrowDownTray, BarsArrowUp, ChevronDown, ChevronUp, Clipboard, DocumentPage, EllipsisVertical, Plus, Trash } from "@orbis/icons";
 
 let {
   store,
@@ -157,7 +147,7 @@ function reassignIds(node: any) {
   <!-- Header -->
   <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
     <div class="flex items-center gap-2">
-      <FileText size={13} class="text-primary" />
+      <DocumentPage size={13} class="text-primary" />
       <h3 class="text-xs font-bold text-foreground">{m.template_title_pages()}</h3>
     </div>
     <div class="flex items-center gap-1">
@@ -240,30 +230,30 @@ function reassignIds(node: any) {
             <DropdownMenu>
               <DropdownMenuTrigger>
                 <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5">
-                  <MoreVertical size={11} />
+                  <EllipsisVertical size={11} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" class="min-w-[140px]">
                 <DropdownMenuItem class="text-[10px] cursor-pointer" onclick={() => duplicatePage(i)}>
-                  <Copy size={11} class="me-2" />
+                  <Clipboard size={11} class="me-2" />
                   {m.template_menu_duplicate_page()}
                 </DropdownMenuItem>
                 {#if i > 0}
                   <DropdownMenuItem class="text-[10px] cursor-pointer" onclick={() => movePage(i, "up")}>
-                    <ArrowUp size={11} class="me-2" />
+                    <BarsArrowUp size={11} class="me-2" />
                     {m.template_menu_move_up()}
                   </DropdownMenuItem>
                 {/if}
                 {#if i < store.pages.length - 1}
                   <DropdownMenuItem class="text-[10px] cursor-pointer" onclick={() => movePage(i, "down")}>
-                    <ArrowDown size={11} class="me-2" />
+                    <ArrowDownTray size={11} class="me-2" />
                     {m.template_menu_move_down()}
                   </DropdownMenuItem>
                 {/if}
                 {#if store.pages.length > 1}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem class="text-[10px] text-destructive cursor-pointer" onclick={() => store.removePage(i)}>
-                    <Trash2 size={11} class="me-2" />
+                    <Trash size={11} class="me-2" />
                     {m.template_menu_delete_page()}
                   </DropdownMenuItem>
                 {/if}

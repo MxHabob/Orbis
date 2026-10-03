@@ -1,87 +1,76 @@
 <script lang="ts">
-  import {
-    Calendar as CalendarIcon,
-    Search,
-    WandSparkles,
-    Printer,
-    Clock,
-    Users,
-    User,
-    MapPin,
-    BookOpen,
-    Layers,
-  } from "@lucide/svelte";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import {
-    Select,
-    SelectTrigger,
-    SelectContent,
-    SelectItem,
-  } from "@orbis/ui/select";
-  import { l } from "$lib/core/i18n";
-  import * as m from "$lib/paraglide/messages";
+import { AdjustmentsHorizontal, BookOpen, Calendar, ClockRotateRight, Keyframes, Pin, Search, Sparkles, User, Users } from "@orbis/icons";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
+import { l } from "$lib/core/i18n";
+import * as m from "$lib/paraglide/messages";
 
-  type ViewMode = "class" | "teacher" | "room" | "subject" | "matrix";
+type ViewMode = "class" | "teacher" | "room" | "subject" | "matrix";
 
-  interface Props {
-    activePeriodId: string;
-    periods: any[];
-    viewMode: ViewMode;
-    selectedClassId: string;
-    selectedTeacherId: string;
-    selectedRoomId: string;
-    selectedSubjectId: string;
-    searchTerm?: string;
-    compactView?: boolean;
-    classes: any[];
-    teachers: any[];
-    rooms: any[];
-    subjects: any[];
-    onPeriodChange?: (periodId: string) => void;
-    onAutoScheduleClick?: () => void;
-    onTimeSlotsClick?: () => void;
-    onExportClick?: () => void;
-    onNewLessonClick?: () => void;
-  }
+interface Props {
+  activePeriodId: string;
+  periods: any[];
+  viewMode: ViewMode;
+  selectedClassId: string;
+  selectedTeacherId: string;
+  selectedRoomId: string;
+  selectedSubjectId: string;
+  searchTerm?: string;
+  compactView?: boolean;
+  classes: any[];
+  teachers: any[];
+  rooms: any[];
+  subjects: any[];
+  onPeriodChange?: (periodId: string) => void;
+  onAutoScheduleClick?: () => void;
+  onTimeSlotsClick?: () => void;
+  onExportClick?: () => void;
+  onNewLessonClick?: () => void;
+}
 
-  let {
-    activePeriodId = $bindable(""),
-    periods = [],
-    viewMode = $bindable("class"),
-    selectedClassId = $bindable(""),
-    selectedTeacherId = $bindable(""),
-    selectedRoomId = $bindable(""),
-    selectedSubjectId = $bindable(""),
-    searchTerm = $bindable(""),
-    compactView = $bindable(false),
-    classes = [],
-    teachers = [],
-    rooms = [],
-    subjects = [],
-    onPeriodChange,
-    onAutoScheduleClick,
-    onTimeSlotsClick,
-    onExportClick,
-    onNewLessonClick,
-  }: Props = $props();
+let {
+  activePeriodId = $bindable(""),
+  periods = [],
+  viewMode = $bindable("class"),
+  selectedClassId = $bindable(""),
+  selectedTeacherId = $bindable(""),
+  selectedRoomId = $bindable(""),
+  selectedSubjectId = $bindable(""),
+  searchTerm = $bindable(""),
+  compactView = $bindable(false),
+  classes = [],
+  teachers = [],
+  rooms = [],
+  subjects = [],
+  onPeriodChange,
+  onAutoScheduleClick,
+  onTimeSlotsClick,
+  onExportClick,
+  onNewLessonClick,
+}: Props = $props();
 
-  const selectedPeriod = $derived(
-    periods.find((p) => String(p.id) === String(activePeriodId))
-  );
-  function handlePeriodSelect(val: string | null) {
-    if (!val) return;
-    activePeriodId = val;
-    onPeriodChange?.(val);
-  }
+const selectedPeriod = $derived(
+  periods.find((p) => String(p.id) === String(activePeriodId)),
+);
+function handlePeriodSelect(val: string | null) {
+  if (!val) return;
+  activePeriodId = val;
+  onPeriodChange?.(val);
+}
 
-  const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
-    { id: "class", label: m.academics_studio_classes, icon: Users },
-    { id: "teacher", label: m.academics_studio_teachers, icon: User },
-    { id: "room", label: m.academics_studio_rooms, icon: MapPin },
-    { id: "subject", label: m.academics_studio_subject, icon: BookOpen },
-    { id: "matrix", label: m.academics_planning_studio_title, icon: Layers },
-  ];
+const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
+  { id: "class", label: m.academics_studio_classes, icon: Users },
+  { id: "teacher", label: m.academics_studio_teachers, icon: User },
+  { id: "room", label: m.academics_studio_rooms, icon: Pin },
+  { id: "subject", label: m.academics_studio_subject, icon: BookOpen },
+  { id: "matrix", label: m.academics_planning_studio_title, icon: Keyframes },
+];
 </script>
 
 <div class="w-full shrink-0 border-b border-border/60 bg-card select-none">
@@ -97,7 +86,7 @@
       >
         <SelectTrigger class="h-8 w-40 bg-muted/30 text-xs font-bold border-border/60">
           <div class="flex items-center gap-1.5 truncate">
-            <CalendarIcon size={13} class="text-primary shrink-0" />
+            <Calendar size={13} class="text-primary shrink-0" />
             <span class="truncate">
               {selectedPeriod
                 ? l(selectedPeriod.name_ar, selectedPeriod.name)
@@ -158,7 +147,7 @@
         onclick={onTimeSlotsClick}
         title={m.academics_schedule_time_slots_title()}
       >
-        <Clock size={13} />
+        <ClockRotateRight size={13} />
         <span class="hidden xl:inline">{m.academics_schedule_time_slots_label()}</span>
       </Button>
 
@@ -170,7 +159,7 @@
         onclick={onExportClick}
         title={m.academics_schedule_export_title()}
       >
-        <Printer size={13} />
+        <AdjustmentsHorizontal size={13} />
         <span class="hidden xl:inline">{m.academics_schedule_export_label()}</span>
       </Button>
       <!-- AI Generator Studio Button -->
@@ -179,13 +168,13 @@
         class="h-8 gap-1.5 px-2.5 text-xs font-bold"
         onclick={onAutoScheduleClick}
       >
-        <WandSparkles size={13} />
+        <Sparkles size={13} />
         <span class="hidden sm:inline">{m.academics_schedule_year_planner()}</span>
       </Button>
     </div>
   </div>
 
-  <!-- Bottom Secondary Row: Contextual Resource Dropdowns & Filter Chips -->
+  <!-- Bottom Secondary Row: Contextual Resource Dropdowns & AdjustmentsHorizontal Chips -->
   {#if viewMode !== "matrix"}
     <div class="flex h-10 w-full items-center justify-between px-3 gap-2 bg-muted/15 border-t border-border/40 text-xs">
       <div class="flex items-center gap-2 min-w-0 flex-1">

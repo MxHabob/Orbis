@@ -1,5 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { confirmStore } from "$lib/stores";
 /**
  * AssetPanel — Image/logo/stamp library.
  * Browse, upload, and drag assets onto the canvas.
@@ -14,14 +15,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import {
-  ImageIcon,
-  Search,
-  Plus,
-  Trash2,
-  Upload,
-  Loader2,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowPath, ArrowUpTray, Photo, Plus, Search, Trash } from "@orbis/icons";
 import {
   useDocuments,
   useUploadDocument,
@@ -49,7 +43,7 @@ let serverAssets = $derived(
   documentsQuery.data?.pages.flatMap((p) => p.items) || [],
 );
 
-// Filter by search query
+// AdjustmentsHorizontal by search query
 let filteredAssets = $derived(
   serverAssets.filter((doc) => {
     if (!searchQuery) return true;
@@ -88,13 +82,19 @@ async function insertAssetAsImage(doc: any) {
 
 // ── Remove asset ─────────────────────────────────────────────
 
-function removeAsset(doc: any) {
-  if (confirm(m.template_confirm_delete_asset?.() || "Are you sure?")) {
+async function removeAsset(doc: any) {
+  const confirmed = await confirmStore.prompt({
+    title: m.template_confirm_delete_asset?.() || "Delete asset?",
+    description: m.template_confirm_delete_asset?.() || "Are you sure?",
+    confirmText: m.common_action_delete(),
+    variant: "destructive",
+  });
+  if (confirmed) {
     deleteMutation.mutate(doc.id);
   }
 }
 
-// ── Upload ───────────────────────────────────────
+// ── ArrowUpTray ───────────────────────────────────────
 
 function handleFileSelect(e: Event) {
   const target = e.target as HTMLInputElement;
@@ -130,7 +130,7 @@ function triggerUpload() {
   <!-- Header -->
   <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
     <div class="flex items-center gap-2">
-      <ImageIcon size={13} class="text-primary" />
+      <Photo size={13} class="text-primary" />
       <h3 class="text-xs font-bold text-foreground">{m.template_title_assets()}</h3>
     </div>
     <div class="flex items-center gap-1">
@@ -139,9 +139,9 @@ function triggerUpload() {
         <TooltipTrigger>
           <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={triggerUpload} disabled={uploadMutation.isPending}>
             {#if uploadMutation.isPending}
-              <Loader2 size={11} class="animate-spin" />
+              <ArrowPath size={11} class="animate-spin" />
             {:else}
-              <Upload size={11} />
+              <ArrowUpTray size={11} />
             {/if}
           </Button>
         </TooltipTrigger>
@@ -174,11 +174,11 @@ function triggerUpload() {
   <div class="grow overflow-y-auto scrollbar-hide p-2 flex flex-col gap-2">
     {#if documentsQuery.isLoading && serverAssets.length === 0}
       <div class="flex justify-center p-4">
-        <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+        <ArrowPath class="h-4 w-4 animate-spin text-muted-foreground" />
       </div>
     {:else if filteredAssets.length === 0}
       <div class="flex flex-col items-center justify-center py-8 px-4 gap-2">
-        <ImageIcon size={20} class="text-muted-foreground/30" />
+        <Photo size={20} class="text-muted-foreground/30" />
         <p class="text-[10px] text-muted-foreground text-center">
           {searchQuery ? m.template_msg_no_results() : m.template_msg_no_assets()}
         </p>
@@ -195,7 +195,7 @@ function triggerUpload() {
             <!-- Thumbnail -->
             <div class="aspect-4/3 bg-muted/20 flex items-center justify-center overflow-hidden">
               {#await resolveDocumentUrl(getDocumentSource(doc))}
-                <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+                <ArrowPath class="h-4 w-4 animate-spin text-muted-foreground" />
               {:then srcUrl}
                 <img
                   src={srcUrl}
@@ -204,7 +204,7 @@ function triggerUpload() {
                   loading="lazy"
                 />
               {:catch}
-                <ImageIcon size={20} class="text-muted-foreground/30" />
+                <Photo size={20} class="text-muted-foreground/30" />
               {/await}
             </div>
 
@@ -222,7 +222,7 @@ function triggerUpload() {
                 <Plus size={10} class="text-primary" />
               </button>
               <button type="button" class="p-0.5 rounded bg-background/80 hover:bg-accent cursor-pointer" onclick={() => removeAsset(doc)}>
-                <Trash2 size={10} class="text-destructive" />
+                <Trash size={10} class="text-destructive" />
               </button>
             </div>
           </div>
@@ -238,7 +238,7 @@ function triggerUpload() {
           onclick={() => documentsQuery.fetchNextPage()}
         >
           {#if documentsQuery.isFetchingNextPage}
-            <Loader2 class="me-1 h-3 w-3 animate-spin" /> {m.template_loading?.() || "Loading..."}
+            <ArrowPath class="me-1 h-3 w-3 animate-spin" /> {m.template_loading?.() || "Loading..."}
           {:else}
             {m.template_load_more?.() || "Load More"}
           {/if}

@@ -7,7 +7,7 @@ import {
   SelectTrigger,
 } from "@orbis/ui/select";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api/client";
 
 import { authStore } from "$lib/stores";
 
@@ -28,7 +28,7 @@ async function loadYears() {
   let orgId = selectedBranch;
 
   try {
-    const org = await commands.organization.getOrganization();
+    const org = await api.getCurrentOrg();
     if (org && org.id) {
       orgId = org.id;
       selectedBranch = org.id;
@@ -42,7 +42,7 @@ async function loadYears() {
   }
 
   try {
-    const years = await commands.calendar.listAcademicPeriods();
+    const years = await api.listAcademicPeriods();
     academicYears = years.map((y: any) => ({
       value: y.id,
       label: y.name_ar || y.name,

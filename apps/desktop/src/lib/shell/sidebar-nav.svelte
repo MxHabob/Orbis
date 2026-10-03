@@ -7,7 +7,8 @@ and collapsibility.
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { Button } from "@orbis/ui/button";
-import { deLocalizeUrl, localizeHref, getLocale } from "$lib/paraglide/runtime";
+import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
+import { Sidebar } from "@orbis/icons";
 import type { Snippet } from "svelte";
 
 type NavItem = {
@@ -80,21 +81,7 @@ const resolvedGroups = $derived(groups || [{ items }]);
       onclick={collapseSidebar}
       title={m.common_action_collapse()}
     >
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        class="transition-transform duration-200 rtl:rotate-180"
-      >
-        <rect width="18" height="18" x="3" y="3" rx="2" />
-        <path d="M9 3v18" />
-        <path d="m16 15-3-3 3-3" />
-      </svg>
+      <Sidebar size={18} class="transition-transform duration-200 rtl:rotate-180" />
     </Button>
   </div>
 

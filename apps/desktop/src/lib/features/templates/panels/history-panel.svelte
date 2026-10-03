@@ -13,15 +13,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import {
-  History,
-  Undo2,
-  Redo2,
-  Trash2,
-  Clock,
-  CheckCircle,
-  Circle,
-} from "@lucide/svelte";
+import { ArrowForward, CheckCircle, ClockRotateRight, Trash, UndoAction } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 
 let {
@@ -48,14 +40,14 @@ function jumpToState(index: number) {
   <!-- Header -->
   <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
     <div class="flex items-center gap-2">
-      <History size={13} class="text-primary" />
+      <ClockRotateRight size={13} class="text-primary" />
       <h3 class="text-xs font-bold text-foreground">{m.template_panel_history()}</h3>
     </div>
     <div class="flex items-center gap-1">
       <Tooltip>
         <TooltipTrigger>
           <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={() => store.undo()} disabled={!canUndo}>
-            <Undo2 size={11} />
+            <UndoAction size={11} />
           </Button>
         </TooltipTrigger>
         <TooltipContent>{m.template_history_undo()}</TooltipContent>
@@ -63,7 +55,7 @@ function jumpToState(index: number) {
       <Tooltip>
         <TooltipTrigger>
           <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={() => store.redo()} disabled={!canRedo}>
-            <Redo2 size={11} />
+            <ArrowForward size={11} />
           </Button>
         </TooltipTrigger>
         <TooltipContent>{m.template_history_redo()}</TooltipContent>
@@ -71,11 +63,11 @@ function jumpToState(index: number) {
     </div>
   </div>
 
-  <!-- History List -->
+  <!-- ClockRotateRight List -->
   <div class="flex-grow overflow-y-auto scrollbar-hide">
     {#if history.length === 0}
       <div class="flex flex-col items-center justify-center py-8 px-4 gap-2">
-        <Clock size={20} class="text-muted-foreground/30" />
+        <ClockRotateRight size={20} class="text-muted-foreground/30" />
         <p class="text-[10px] text-muted-foreground text-center">
           {m.template_history_empty()}
         </p>

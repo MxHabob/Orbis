@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api";
 import { orgUnitInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
@@ -14,19 +14,9 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
+import { EmployeeSelect } from "$lib/features/employees";
 import { toast } from "@orbis/ui";
-import {
-  Building2,
-  School,
-  GraduationCap,
-  Layers,
-  DoorOpen,
-  Briefcase,
-  ShieldCheck,
-  MapPin,
-  Users,
-  BookOpen,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, BookOpen, BuildingOffice, Home, Keyframes, Pin, UserBadgeCheck, Users } from "@orbis/icons";
 import { onMount, untrack } from "svelte";
 import {
   Accordion,
@@ -56,7 +46,6 @@ const initParentId = untrack(() => defaultParentId);
 
 // Form state
 let unitsList = $state<any[]>([]);
-let staffList = $state<any[]>([]);
 
 const form = new FormController({
   initialValues: {
@@ -80,29 +69,27 @@ function fieldError(field: string): string | undefined {
 }
 
 const unitTypeOptions = [
-  { value: "branch", label: m.common_org_unit_branch(), icon: School },
-  { value: "stage", label: m.common_org_unit_stage(), icon: Layers },
+  { value: "branch", label: m.common_org_unit_branch(), icon: Home },
+  { value: "stage", label: m.common_org_unit_stage(), icon: Keyframes },
   { value: "section", label: m.common_org_unit_section(), icon: Users },
-  { value: "college", label: m.common_org_unit_college(), icon: GraduationCap },
-  { value: "department", label: m.common_org_unit_department(), icon: Briefcase },
+  { value: "college", label: m.common_org_unit_college(), icon: BookOpen },
+  {
+    value: "department",
+    label: m.common_org_unit_department(),
+    icon: BuildingOffice,
+  },
   { value: "program", label: m.common_org_unit_program(), icon: BookOpen },
-  { value: "building", label: m.common_org_unit_building(), icon: Building2 },
-  { value: "facility", label: m.common_org_unit_facility(), icon: DoorOpen },
+  { value: "building", label: m.common_org_unit_building(), icon: Home },
+  { value: "facility", label: m.common_org_unit_facility(), icon: Pin },
 ];
 
 async function loadReferenceData() {
   if (!orgId) return;
   try {
-    const [allUnits, allUsers] = await Promise.all([
-      commands.organization.listOrgUnits().catch(() => []),
-      commands.iam.listUsers().catch(() => []),
-    ]);
-
+    const allUnits = await api.listOrgUnits().catch(() => []);
     unitsList = (allUnits || []).filter(
       (u: any) => !isEdit || String(u.id) !== String(unit?.id),
     );
-
-    staffList = allUsers || [];
   } catch (e) {
     console.error("Failed to load reference data for org unit:", e);
   }
@@ -123,23 +110,24 @@ async function handleSubmit(e: SubmitEvent) {
       head_id: values.head_id || undefined,
     };
     if (isEdit && unit) {
-      await commands.organization.updateOrgUnit(unit.id, payload);
+      await api.updateOrgUnit(unit.id, payload);
       toast.success(m.common_org_unit_update_success());
     } else {
-      await commands.organization.createOrgUnit(payload);
+      await api.createOrgUnit(payload);
       toast.success(m.common_org_unit_create_success());
     }
   });
   if (submitted) onSuccess();
   else if (form.formError) toast.error(form.formError);
-  else if (Object.keys(form.errors).length > 0) toast.error(m.common_org_unit_error_name_required());
+  else if (Object.keys(form.errors).length > 0)
+    toast.error(m.common_org_unit_error_name_required());
 }
 </script>
 
 <form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0 text-start">
   <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
     <SheetTitle class="text-base font-bold text-foreground flex items-center gap-2">
-      <Building2 size={18} class="text-primary" />
+      <Home size={18} class="text-primary" />
       {isEdit ? m.common_org_unit_edit_title() : m.common_org_unit_add_title()}
     </SheetTitle>
   </SheetHeader>
@@ -239,19 +227,11 @@ async function handleSubmit(e: SubmitEvent) {
 
       <FormField label={m.common_org_unit_head()} error={fieldError("head_id")}>
         {#snippet children()}
-        <Select type="single" value={form.values.head_id} onValueChange={(v) => (form.values.head_id = v ?? "")}>
-          <SelectTrigger class="h-9 text-xs w-full">
-            {staffList.find(s => String(s.id) === headId) ? (staffList.find(s => String(s.id) === headId).name_ar || staffList.find(s => String(s.id) === headId).full_name) : m.common_org_unit_none()}
-          </SelectTrigger>
-          <SelectContent class="text-xs">
-            <SelectItem value="">{m.common_org_unit_none()}</SelectItem>
-            {#each staffList as s}
-              <SelectItem value={String(s.id)}>
-                {s.name_ar || s.full_name || s.username}
-              </SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
+        <EmployeeSelect
+          bind:value={form.values.head_id}
+          {orgId}
+          placeholder={m.common_org_unit_none?.() || "اختر رئيس الوحدة من الموظفين..."}
+        />
         {/snippet}
       </FormField>
     </div>
@@ -268,7 +248,7 @@ async function handleSubmit(e: SubmitEvent) {
       {#snippet children()}
       <Select type="single" value={form.values.data_isolation} onValueChange={(v) => { if (v) form.values.data_isolation = v; }}>
         <SelectTrigger class="h-9 text-xs w-full">
-          {dataIsolation === "isolated" ? m.common_org_unit_isolated() : dataIsolation === "read_only" ? m.common_org_unit_read_only() : m.common_org_unit_shared()}
+          {form.values.data_isolation === "isolated" ? m.common_org_unit_isolated() : form.values.data_isolation === "read_only" ? m.common_org_unit_read_only() : m.common_org_unit_shared()}
         </SelectTrigger>
         <SelectContent class="text-xs">
           <SelectItem value="shared">{m.common_org_unit_shared()}</SelectItem>

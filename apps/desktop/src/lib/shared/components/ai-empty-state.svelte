@@ -13,7 +13,7 @@ Features:
 import { onDestroy } from "svelte";
 import { Avatar, AvatarController, type AvatarHat } from "@orbis/avatar-engine";
 import { Button } from "@orbis/ui/button";
-import { Sparkles, ArrowRight } from "@lucide/svelte";
+import { ArrowRight, Sparkles } from "@orbis/icons";
 
 let {
   text = "أهلاً بك! لا توجد بيانات مسجلة هنا حالياً. يمكنك بدء العمل عبر إضافة أول عنصر أو تشغيل الأتمتة التلقائية.",

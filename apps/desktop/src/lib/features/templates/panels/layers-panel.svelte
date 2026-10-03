@@ -8,24 +8,7 @@ import type { EditorStore } from "../stores/editor-store.svelte";
 import type { TemplateNode } from "@docforge/core";
 import { isContainerNode } from "@docforge/core";
 import { Button } from "@orbis/ui/button";
-import {
-  Type,
-  ImageIcon,
-  Square,
-  LayoutGrid,
-  Table,
-  Barcode,
-  QrCode,
-  Minus,
-  ChevronDown,
-  ChevronRight,
-  Eye,
-  EyeOff,
-  Lock,
-  Unlock,
-  Plus,
-  FileText,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, Bold, CheckBox, CheckSquare, ChevronDown, ChevronRight, DocumentPage, Eye, EyeSlash, Grid, H1, Hashtag, Lock, Minus, Photo, Plus } from "@orbis/icons";
 
 let {
   store,
@@ -46,24 +29,24 @@ function toggleCollapse(id: string) {
 function getIcon(type: string) {
   switch (type) {
     case "Text":
-      return Type;
+      return H1;
     case "Image":
-      return ImageIcon;
+      return Photo;
     case "Shape":
-      return Square;
+      return CheckBox;
     case "Frame":
     case "Grid":
-      return LayoutGrid;
+      return Grid;
     case "Table":
-      return Table;
+      return Grid;
     case "Barcode":
-      return Barcode;
+      return Hashtag;
     case "QRCode":
-      return QrCode;
+      return CheckSquare;
     case "Separator":
       return Minus;
     default:
-      return FileText;
+      return DocumentPage;
   }
 }
 
@@ -169,7 +152,7 @@ function getIconColor(type: string): string {
             <!-- Visibility toggle (on hover) -->
             <span class="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
               {#if node.visible === false}
-                <EyeOff size={10} class="text-muted-foreground/50" />
+                <EyeSlash size={10} class="text-muted-foreground/50" />
               {:else}
                 <Eye size={10} class="text-muted-foreground/30" />
               {/if}

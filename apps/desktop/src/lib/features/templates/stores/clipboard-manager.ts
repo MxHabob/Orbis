@@ -1,7 +1,8 @@
+import { Clipboard } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 // ═══════════════════════════════════════════════════════════════
 // Template Designer — Clipboard Manager
-// Copy, cut, paste for template nodes.
+// Clipboard, cut, paste for template nodes.
 // Uses JSON serialization to the system clipboard.
 // ═══════════════════════════════════════════════════════════════
 
@@ -24,7 +25,7 @@ export interface ClipboardEntry {
 }
 
 /**
- * Copy selected nodes to the system clipboard.
+ * Clipboard selected nodes to the system clipboard.
  */
 export async function copyNodes(
   doc: TemplateDocument,

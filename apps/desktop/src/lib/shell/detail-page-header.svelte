@@ -5,7 +5,7 @@ Provides a back button, title slot, and actions slot in a consistent layout.
 -->
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
-import { ArrowRight, ArrowLeft, Printer } from "@lucide/svelte";
+import { ArrowLeft, ArrowRight, Printer } from "@orbis/icons";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { goto } from "$app/navigation";
 import type { Snippet } from "svelte";

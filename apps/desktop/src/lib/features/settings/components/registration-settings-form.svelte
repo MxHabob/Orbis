@@ -1,40 +1,56 @@
+<!--
+  @component RegistrationSettingsForm
+  Next-Generation 2026 ERP Admission & Registration Policy Center.
+  Features:
+  - Interactive Student Number Token Pattern Builder with live sample chip preview.
+  - Institutional Admission Governance & Capacity limits.
+  - AddDocumentRequirementSheet integration for dynamic per-class/grade document requirements.
+  - Dynamic Application Form Fields Matrix.
+  - SettingsBottomBar with zero-latency dirty detection.
+-->
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
+import { onMount } from "svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
-import { Checkbox } from "@orbis/ui/checkbox";
 import { Switch } from "@orbis/ui/switch";
 import { Badge } from "@orbis/ui/badge";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardAction,
+} from "@orbis/ui/card";
 import {
   Select,
   SelectTrigger,
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
+import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@orbis/ui/table";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@orbis/ui/tabs";
-import { Plus, Trash2, Sparkles, ShieldCheck, Layers, BookOpen } from "@lucide/svelte";
+  AdjustmentsHorizontal,
+  BookOpen,
+  CheckCircle,
+  DocumentCheck,
+  FloppyDisk,
+  Lock,
+  Plus,
+  Sparkles,
+  Trash,
+  UserBadgeCheck,
+  Tag,
+  Funnel,
+} from "@orbis/icons";
 import { toast } from "@orbis/ui";
-
-import { getLocale } from "$lib/paraglide/runtime";
-import { registrationSettingsSchema } from "@orbis/schemas";
-import { FormController } from "$lib/shared/forms/form-controller.svelte";
-import { FormField } from "@orbis/ui";
-import { INSTITUTION_PROFILES } from "$lib/features/onboarding/templates";
+import { l } from "$lib/core/i18n";
+import { api, type ClassDto, type DocumentRequirementDto } from "$lib/api";
+import { ClassSelect } from "$lib/features/academics";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import AddDocumentRequirementSheet from "./add-document-requirement-sheet.svelte";
 
 let { org, isSaving, onsave } = $props<{
   org: any;
@@ -42,734 +58,808 @@ let { org, isSaving, onsave } = $props<{
   onsave: (registrationConfig: any) => void;
 }>();
 
-// Form state initialized once with props
-let institutionType = $state("school");
-let studentNumberPattern = $state("STU-{YEAR}-{SEQ}");
-let rawStages = $state<string[]>(["primary", "middle", "high"]);
-let stageInput = $state("");
-let requiredDocuments = $state<string[]>([
-  "Birth Certificate",
-  "National ID or Passport",
-]);
-let documentInput = $state("");
+// Required Documents Interface
+interface DocItem {
+  id: string;
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  isRequired: boolean;
+  blocksEnrollment: boolean;
+  gradeLevelId?: string; // specific class/grade ID or undefined for all
+  condition: string; // all_students | national_only | foreign_only | transfer_students
+  description?: string;
+}
 
-// Policy settings state
-let requiresApproval = $state(false);
-let allowNoGuardian = $state(true);
-let autoAssignFees = $state(true);
-let allowDuplicateNationalId = $state(false);
-let maxClassCapacity = $state<number | null>(null);
+// Application Form Fields Configuration Interface & Defaults
+interface FieldConfig {
+  key: string;
+  nameAr: string;
+  nameEn: string;
+  isActive: boolean;
+  isRequired: boolean;
+  preventDuplicate: boolean;
+  supportsDuplicate: boolean;
+}
 
-// Field configurations
-let requiredFields = $state<Record<string, boolean>>({
-  national_id: true,
-  email: false,
-  phone: true,
-  birth_date: true,
-  sex: true,
-  address: false,
-  nationality: false,
-  place_of_birth: false,
-  passport_number: false,
-  blood_type: false,
-  emergency_contact: true,
-  medical_notes: false,
-  previous_school: false,
-  documents: true,
-});
-
-let activeFields = $state<Record<string, boolean>>({
-  national_id: true,
-  email: true,
-  phone: true,
-  birth_date: true,
-  sex: true,
-  address: true,
-  nationality: true,
-  place_of_birth: true,
-  passport_number: true,
-  blood_type: true,
-  emergency_contact: true,
-  medical_notes: true,
-  previous_school: true,
-  documents: true,
-});
-
-let preventDuplicates = $state<Record<string, boolean>>({
-  national_id: true,
-  email: false,
-  phone: false,
-});
-
-const SYSTEM_FIELDS = [
-  { key: "national_id", label: m.common_form_profile_nid_label(), supportsDuplicate: true },
-  { key: "email", label: m.common_word_email(), supportsDuplicate: true },
-  { key: "phone", label: m.common_word_phone(), supportsDuplicate: true },
-  { key: "birth_date", label: m.common_bulk_col_dob(), supportsDuplicate: false },
-  { key: "sex", label: m.common_form_sex(), supportsDuplicate: false },
-  { key: "address", label: m.common_word_address(), supportsDuplicate: false },
-  { key: "nationality", label: "الجنسية الرسمية", supportsDuplicate: false },
-  { key: "place_of_birth", label: "مكان الميلاد", supportsDuplicate: false },
-  { key: "passport_number", label: "رقم جواز السفر", supportsDuplicate: false },
-  { key: "blood_type", label: "فصيلة الدم للطوارئ", supportsDuplicate: false },
-  { key: "emergency_contact", label: "جهة الاتصال بالطوارئ", supportsDuplicate: false },
-  { key: "medical_notes", label: "الملاحظات والبيانات الطبية", supportsDuplicate: false },
-  { key: "previous_school", label: m.settings_registration_field_previous_school(), supportsDuplicate: false },
-  { key: "documents", label: m.common_form_tab_documents(), supportsDuplicate: false },
+const defaultFormFields: FieldConfig[] = [
+  { key: "national_id", nameAr: "الرقم الوطني / رقم الهوية", nameEn: "National ID Number", isActive: true, isRequired: true, preventDuplicate: true, supportsDuplicate: true },
+  { key: "phone", nameAr: "رقم هاتف الطالب / التواصل", nameEn: "Student Phone Number", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: true },
+  { key: "email", nameAr: "البريد الإلكتروني", nameEn: "Email Address", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: true },
+  { key: "birth_date", nameAr: "تاريخ الميلاد", nameEn: "Date of Birth", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
+  { key: "sex", nameAr: "الجنس", nameEn: "Gender", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
+  { key: "nationality", nameAr: "الجنسية الرسمية", nameEn: "Nationality", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
+  { key: "address", nameAr: "عنوان السكن والحي", nameEn: "Residential Address", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
+  { key: "place_of_birth", nameAr: "مكان الميلاد", nameEn: "Place of Birth", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
+  { key: "blood_type", nameAr: "فصيلة الدم", nameEn: "Blood Type", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
+  { key: "emergency_contact", nameAr: "جهة الاتصال للطوارئ", nameEn: "Emergency Contact", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
+  { key: "medical_notes", nameAr: "الملاحظات الطبية والحساسية", nameEn: "Medical Notes & Allergies", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
+  { key: "previous_school", nameAr: "المدرسة / المؤسسة السابقة", nameEn: "Previous Institution", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
 ];
 
-let isInitialized = $state(false);
-let initialSnapshot = $state("");
-const registrationForm = new FormController({
-  initialValues: {
-    institution_type: "school",
-    student_number_pattern: "STU-{YEAR}-{SEQ}",
-    stages: ["primary", "middle", "high"],
-    active_fields: [],
-    required_fields: [],
-    prevent_duplicates: [],
-    required_documents: [],
-    student_number_prefix: "STU",
-    student_number_digits: 6,
-    requires_approval: false,
-    max_class_capacity: null as number | null,
-    allow_no_guardian: true,
-    allow_duplicate_national_id: false,
-    auto_assign_fees: true,
-    default_fee_template_ids: [],
-  },
-  schema: registrationSettingsSchema,
-});
+function parseOrgRegistration(rawOrg: any) {
+  let settingsObj: any = {};
+  try {
+    settingsObj = typeof rawOrg?.settings === "string" ? JSON.parse(rawOrg.settings) : rawOrg?.settings || {};
+  } catch {
+    settingsObj = {};
+  }
 
-function getFormSnapshot() {
-  return JSON.stringify({
-    institutionType,
-    studentNumberPattern,
-    rawStages,
-    requiredDocuments,
-    requiresApproval,
-    allowNoGuardian,
-    autoAssignFees,
-    allowDuplicateNationalId,
-    maxClassCapacity,
-    requiredFields,
-    activeFields,
-    preventDuplicates,
-  });
+  const adm = settingsObj.admission || settingsObj.registration || settingsObj.registration_config || {};
+  const enr = settingsObj.enrollment || {};
+  const num = adm.numbering || {};
+  const pol = adm.policy || adm.policy_settings || adm;
+  const fields = adm.fields || adm.form_fields_list || [];
+
+  return {
+    institutionType: adm.institution_type || "school",
+    studentNumberPrefix: num.prefix || adm.student_number_prefix || "STU",
+    studentNumberYearFormat: num.year_format === "full" ? "YEAR" : num.year_format === "short" ? "YEAR2" : num.year_format === "none" ? "NONE" : (adm.student_number_year_format || "YEAR"),
+    studentNumberDigits: num.sequence_digits ? Number(num.sequence_digits) : (adm.student_number_digits ? Number(adm.student_number_digits) : 4),
+    registrationEnabled: enr.registration_enabled !== undefined ? Boolean(enr.registration_enabled) : true,
+    requiresApproval: enr.require_admin_approval !== undefined ? Boolean(enr.require_admin_approval) : (pol.requires_approval !== undefined ? Boolean(pol.requires_approval) : true),
+    allowWaitlist: enr.allow_waitlist !== undefined ? Boolean(enr.allow_waitlist) : (pol.allow_waitlist !== undefined ? Boolean(pol.allow_waitlist) : true),
+    siblingPriorityEnabled: enr.sibling_priority_enabled !== undefined ? Boolean(enr.sibling_priority_enabled) : (pol.sibling_priority_enabled !== undefined ? Boolean(pol.sibling_priority_enabled) : true),
+    allowLateEnrollment: enr.allow_late_enrollment !== undefined ? Boolean(enr.allow_late_enrollment) : (pol.allow_late_enrollment !== undefined ? Boolean(pol.allow_late_enrollment) : false),
+    allowNoGuardian: pol.allow_no_guardian !== undefined ? Boolean(pol.allow_no_guardian) : false,
+    allowDuplicateNationalId: pol.allow_duplicate_national_id !== undefined ? Boolean(pol.allow_duplicate_national_id) : false,
+    autoAssignFees: pol.auto_assign_fees !== undefined ? Boolean(pol.auto_assign_fees) : true,
+    maxClassCapacity: enr.max_class_size_default ? Number(enr.max_class_size_default) : (pol.max_class_capacity ? Number(pol.max_class_capacity) : 30),
+    requiredDocuments: Array.isArray(adm.required_documents_list) ? adm.required_documents_list : [],
+    formFields: Array.isArray(fields) && fields.length > 0
+      ? fields.map((f: any) => ({
+          key: f.key,
+          nameAr: f.name_ar || f.nameAr || f.name,
+          nameEn: f.name_en || f.nameEn || f.key,
+          isActive: f.is_active !== undefined ? Boolean(f.is_active) : (f.isActive ?? true),
+          isRequired: f.is_required !== undefined ? Boolean(f.is_required) : (f.isRequired ?? false),
+          preventDuplicate: f.prevent_duplicate !== undefined ? Boolean(f.prevent_duplicate) : (f.preventDuplicate ?? false),
+          supportsDuplicate: f.supports_duplicate !== undefined ? Boolean(f.supports_duplicate) : (f.supportsDuplicate ?? true),
+        }))
+      : defaultFormFields,
+  };
 }
 
-const isDirty = $derived(
-  isInitialized && initialSnapshot !== "" && getFormSnapshot() !== initialSnapshot,
+const parsed = parseOrgRegistration(org);
+
+// Editable Form State
+let institutionType = $state<string>(parsed.institutionType);
+let studentNumberPrefix = $state<string>(parsed.studentNumberPrefix);
+let studentNumberYearFormat = $state<string>(parsed.studentNumberYearFormat);
+let studentNumberDigits = $state<number>(parsed.studentNumberDigits);
+let registrationEnabled = $state<boolean>(parsed.registrationEnabled);
+let requiresApproval = $state<boolean>(parsed.requiresApproval);
+let allowWaitlist = $state<boolean>(parsed.allowWaitlist);
+let siblingPriorityEnabled = $state<boolean>(parsed.siblingPriorityEnabled);
+let allowLateEnrollment = $state<boolean>(parsed.allowLateEnrollment);
+let allowNoGuardian = $state<boolean>(parsed.allowNoGuardian);
+let allowDuplicateNationalId = $state<boolean>(parsed.allowDuplicateNationalId);
+let autoAssignFees = $state<boolean>(parsed.autoAssignFees);
+let maxClassCapacity = $state<number>(parsed.maxClassCapacity);
+let requiredDocuments = $state<DocItem[]>(JSON.parse(JSON.stringify(parsed.requiredDocuments)));
+let formFields = $state<FieldConfig[]>(JSON.parse(JSON.stringify(parsed.formFields)));
+
+// Database Classes & Sheet State
+let dbClasses = $state<ClassDto[]>([]);
+let isAddDocSheetOpen = $state(false);
+let selectedClassFilter = $state<string>("all");
+
+// Active Tab
+let activeTab = $state<"policies" | "documents" | "fields">("policies");
+
+// Initial state snapshot for dirty checking
+const initialState = {
+  institutionType: parsed.institutionType,
+  studentNumberPrefix: parsed.studentNumberPrefix,
+  studentNumberYearFormat: parsed.studentNumberYearFormat,
+  studentNumberDigits: parsed.studentNumberDigits,
+  registrationEnabled: parsed.registrationEnabled,
+  requiresApproval: parsed.requiresApproval,
+  allowWaitlist: parsed.allowWaitlist,
+  siblingPriorityEnabled: parsed.siblingPriorityEnabled,
+  allowLateEnrollment: parsed.allowLateEnrollment,
+  allowNoGuardian: parsed.allowNoGuardian,
+  allowDuplicateNationalId: parsed.allowDuplicateNationalId,
+  autoAssignFees: parsed.autoAssignFees,
+  maxClassCapacity: parsed.maxClassCapacity,
+  requiredDocuments: JSON.parse(JSON.stringify(parsed.requiredDocuments)),
+  formFields: JSON.parse(JSON.stringify(parsed.formFields)),
+};
+
+const isDirty = $derived.by(() => {
+  return (
+    institutionType !== initialState.institutionType ||
+    studentNumberPrefix !== initialState.studentNumberPrefix ||
+    studentNumberYearFormat !== initialState.studentNumberYearFormat ||
+    studentNumberDigits !== initialState.studentNumberDigits ||
+    registrationEnabled !== initialState.registrationEnabled ||
+    requiresApproval !== initialState.requiresApproval ||
+    allowWaitlist !== initialState.allowWaitlist ||
+    siblingPriorityEnabled !== initialState.siblingPriorityEnabled ||
+    allowLateEnrollment !== initialState.allowLateEnrollment ||
+    allowNoGuardian !== initialState.allowNoGuardian ||
+    allowDuplicateNationalId !== initialState.allowDuplicateNationalId ||
+    autoAssignFees !== initialState.autoAssignFees ||
+    maxClassCapacity !== initialState.maxClassCapacity ||
+    JSON.stringify(requiredDocuments) !== JSON.stringify(initialState.requiredDocuments) ||
+    JSON.stringify(formFields) !== JSON.stringify(initialState.formFields)
+  );
+});
+
+onMount(async () => {
+  try {
+    const [backendReqs, classesList, currentSettings] = await Promise.all([
+      api.listDocumentRequirements().catch(() => []),
+      api.listClasses().catch(() => []),
+      api.getSettings().catch(() => null),
+    ]);
+
+    if (classesList && Array.isArray(classesList)) {
+      dbClasses = classesList;
+    }
+
+    if (currentSettings) {
+      if (currentSettings.enrollment) {
+        const e = currentSettings.enrollment;
+        if (e.registration_enabled !== undefined) registrationEnabled = Boolean(e.registration_enabled);
+        if (e.require_admin_approval !== undefined) requiresApproval = Boolean(e.require_admin_approval);
+        if (e.allow_waitlist !== undefined) allowWaitlist = Boolean(e.allow_waitlist);
+        if (e.sibling_priority_enabled !== undefined) siblingPriorityEnabled = Boolean(e.sibling_priority_enabled);
+        if (e.max_class_size_default !== undefined) maxClassCapacity = Number(e.max_class_size_default);
+        if (e.allow_late_enrollment !== undefined) allowLateEnrollment = Boolean(e.allow_late_enrollment);
+      }
+      if (currentSettings.admission) {
+        const a = currentSettings.admission;
+        if (a.institution_type) institutionType = a.institution_type;
+        if (a.numbering?.prefix) studentNumberPrefix = a.numbering.prefix;
+        if (a.numbering?.sequence_digits) studentNumberDigits = Number(a.numbering.sequence_digits);
+        if (a.numbering?.year_format) {
+          studentNumberYearFormat = a.numbering.year_format === "full" ? "YEAR" : a.numbering.year_format === "short" ? "YEAR2" : "NONE";
+        }
+        if (a.policy) {
+          if (a.policy.requires_approval !== undefined) requiresApproval = Boolean(a.policy.requires_approval);
+          if (a.policy.allow_no_guardian !== undefined) allowNoGuardian = Boolean(a.policy.allow_no_guardian);
+          if (a.policy.allow_duplicate_national_id !== undefined) allowDuplicateNationalId = Boolean(a.policy.allow_duplicate_national_id);
+          if (a.policy.auto_assign_fees !== undefined) autoAssignFees = Boolean(a.policy.auto_assign_fees);
+          if (a.policy.max_class_capacity !== undefined) maxClassCapacity = Number(a.policy.max_class_capacity);
+          if (a.policy.allow_waitlist !== undefined) allowWaitlist = Boolean(a.policy.allow_waitlist);
+          if (a.policy.sibling_priority_enabled !== undefined) siblingPriorityEnabled = Boolean(a.policy.sibling_priority_enabled);
+          if (a.policy.allow_late_enrollment !== undefined) allowLateEnrollment = Boolean(a.policy.allow_late_enrollment);
+        }
+      }
+      // Re-synchronize initial state
+      initialState.institutionType = institutionType;
+      initialState.studentNumberPrefix = studentNumberPrefix;
+      initialState.studentNumberYearFormat = studentNumberYearFormat;
+      initialState.studentNumberDigits = studentNumberDigits;
+      initialState.registrationEnabled = registrationEnabled;
+      initialState.requiresApproval = requiresApproval;
+      initialState.allowWaitlist = allowWaitlist;
+      initialState.siblingPriorityEnabled = siblingPriorityEnabled;
+      initialState.allowLateEnrollment = allowLateEnrollment;
+      initialState.allowNoGuardian = allowNoGuardian;
+      initialState.allowDuplicateNationalId = allowDuplicateNationalId;
+      initialState.autoAssignFees = autoAssignFees;
+      initialState.maxClassCapacity = maxClassCapacity;
+    }
+
+    if (backendReqs && backendReqs.length > 0) {
+      const mapped: DocItem[] = backendReqs.map((r: DocumentRequirementDto) => ({
+        id: r.id,
+        code: r.code,
+        nameAr: r.name_ar || r.name_en || r.code,
+        nameEn: r.name_en || r.name_ar || r.code,
+        isRequired: r.is_mandatory,
+        blocksEnrollment: r.blocks_enrollment,
+        gradeLevelId: r.target_id || undefined,
+        condition: r.condition || "all_students",
+      }));
+      requiredDocuments = mapped;
+      initialState.requiredDocuments = JSON.parse(JSON.stringify(mapped));
+    }
+  } catch (err) {
+    console.error("Failed to load registration requirements data:", err);
+  }
+});
+
+function resetToInitial() {
+  institutionType = initialState.institutionType;
+  studentNumberPrefix = initialState.studentNumberPrefix;
+  studentNumberYearFormat = initialState.studentNumberYearFormat;
+  studentNumberDigits = initialState.studentNumberDigits;
+  registrationEnabled = initialState.registrationEnabled;
+  requiresApproval = initialState.requiresApproval;
+  allowWaitlist = initialState.allowWaitlist;
+  siblingPriorityEnabled = initialState.siblingPriorityEnabled;
+  allowLateEnrollment = initialState.allowLateEnrollment;
+  allowNoGuardian = initialState.allowNoGuardian;
+  allowDuplicateNationalId = initialState.allowDuplicateNationalId;
+  autoAssignFees = initialState.autoAssignFees;
+  maxClassCapacity = initialState.maxClassCapacity;
+  requiredDocuments = JSON.parse(JSON.stringify(initialState.requiredDocuments));
+  formFields = JSON.parse(JSON.stringify(initialState.formFields));
+}
+
+// Generated ID Preview
+const studentNumberPreview = $derived.by(() => {
+  const year = new Date().getFullYear();
+  const yearStr = studentNumberYearFormat === "YEAR" ? `${year}-` : studentNumberYearFormat === "YEAR2" ? `${String(year).slice(2)}-` : "";
+  const seq = "1".padStart(studentNumberDigits, "0");
+  return `${studentNumberPrefix}-${yearStr}${seq}`;
+});
+
+// Filtered Documents
+const filteredDocuments = $derived.by(() => {
+  if (selectedClassFilter === "all" || !selectedClassFilter) return requiredDocuments;
+  return requiredDocuments.filter(d => d.gradeLevelId === selectedClassFilter || !d.gradeLevelId);
+});
+
+function handleRequirementCreated(created: DocumentRequirementDto) {
+  const item: DocItem = {
+    id: created.id,
+    code: created.code,
+    nameAr: created.name_ar || created.name_en || created.code,
+    nameEn: created.name_en || created.name_ar || created.code,
+    isRequired: created.is_mandatory,
+    blocksEnrollment: created.blocks_enrollment,
+    gradeLevelId: created.target_id || undefined,
+    condition: created.condition || "all_students",
+  };
+  requiredDocuments = [...requiredDocuments, item];
+}
+
+// Remove document
+async function removeDocument(doc: DocItem) {
+  if (doc.id && !doc.id.startsWith("doc_")) {
+    try {
+      await api.deleteDocumentRequirement(doc.id).catch(() => null);
+    } catch (err) {
+      console.warn("Backend requirement deletion skipped:", err);
+    }
+  }
+  requiredDocuments = requiredDocuments.filter((d) => d.id !== doc.id && d.code !== doc.code);
+}
+
+// ── OrbisGrid Source & Columns for Document Requirements Studio ──
+const documentActions: ActionItem[] = [
+  { id: "toggle-mandatory", label: l("تبديل الإلزامية", "Toggle Mandatory"), icon: "CheckCircle" },
+  { id: "toggle-blocks", label: l("تبديل الحجب", "Toggle Blocks"), icon: "Lock" },
+  { id: "delete", label: l("حذف", "Delete"), icon: "Trash2", variant: "destructive" },
+];
+
+const docGridSource = $derived(
+  filteredDocuments.map((doc, idx) => {
+    const mappedClass = dbClasses.find(c => String(c.id) === doc.gradeLevelId);
+    return {
+      ...doc,
+      __idx: idx + 1,
+      doc_name: l(doc.nameAr, doc.nameEn),
+      class_name: mappedClass ? (mappedClass.name || mappedClass.level) : l("كافة الصفوف", "All Classes"),
+      condition_label: doc.condition === "all_students"
+        ? l("كافة الطلاب", "All Students")
+        : doc.condition === "national_only"
+        ? l("وطنيون فقط", "Nationals Only")
+        : doc.condition === "foreign_only"
+        ? l("وافدون فقط", "Expats Only")
+        : doc.condition === "transfer_students"
+        ? l("طلاب محولون", "Transfers")
+        : doc.condition,
+      is_required_display: doc.isRequired ? l("إلزامي", "Mandatory") : l("اختياري", "Optional"),
+      blocks_display: doc.blocksEnrollment ? l("يحجب القيد", "Blocks") : l("لا يحجب", "No Block"),
+    };
+  })
 );
 
-function restoreSnapshot() {
-  if (!initialSnapshot) return;
-  const snapshot = JSON.parse(initialSnapshot);
-  institutionType = snapshot.institutionType;
-  studentNumberPattern = snapshot.studentNumberPattern;
-  rawStages = snapshot.rawStages;
-  requiredDocuments = snapshot.requiredDocuments;
-  requiresApproval = snapshot.requiresApproval;
-  allowNoGuardian = snapshot.allowNoGuardian;
-  autoAssignFees = snapshot.autoAssignFees;
-  allowDuplicateNationalId = snapshot.allowDuplicateNationalId;
-  maxClassCapacity = snapshot.maxClassCapacity;
-  requiredFields = snapshot.requiredFields;
-  activeFields = snapshot.activeFields;
-  preventDuplicates = snapshot.preventDuplicates;
+const docGridColumns = $derived<OrbisColumnDef[]>([
+  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center" },
+  { id: "doc_name", prop: "doc_name", header: l("اسم الوثيقة والمستند", "Document Title"), name: l("اسم الوثيقة والمستند", "Document Title"), width: 220, size: 220, readonly: true, cellClass: "font-semibold" },
+  { id: "code", prop: "code", header: l("الرمز", "Code"), name: l("الرمز", "Code"), width: 110, size: 110, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "class_name", prop: "class_name", header: l("الصف / المرحلة", "Class / Grade"), name: l("الصف / المرحلة", "Class / Grade"), width: 150, size: 150, readonly: true },
+  { id: "condition_label", prop: "condition_label", header: l("شرط القبول", "Condition"), name: l("شرط القبول", "Condition"), width: 130, size: 130, readonly: true },
+  { id: "is_required_display", prop: "is_required_display", header: l("الإلزامية", "Mandatory"), name: l("الإلزامية", "Mandatory"), width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  { id: "blocks_display", prop: "blocks_display", header: l("أثر الحجب", "Blocks"), name: l("أثر الحجب", "Blocks"), width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  {
+    id: "actions",
+    prop: "actions",
+    header: l("إجراءات", "Actions"),
+    name: l("إجراءات", "Actions"),
+    width: 140,
+    size: 140,
+    type: "action",
+    align: "center",
+    readonly: true,
+    meta: { items: documentActions },
+  },
+]);
+
+function handleDocGridAction(event: GridActionEvent) {
+  const row = event.row as unknown as DocItem;
+  if (!row) return;
+
+  if (event.actionId === "toggle-mandatory") {
+    requiredDocuments = requiredDocuments.map(d => d.id === row.id || d.code === row.code ? { ...d, isRequired: !d.isRequired } : d);
+  } else if (event.actionId === "toggle-blocks") {
+    requiredDocuments = requiredDocuments.map(d => d.id === row.id || d.code === row.code ? { ...d, blocksEnrollment: !d.blocksEnrollment } : d);
+  } else if (event.actionId === "delete") {
+    removeDocument(row);
+  }
 }
 
-$effect(() => {
-  if (org && !isInitialized) {
-    isInitialized = true;
-    let settingsObj: any = {};
-    try {
-      settingsObj =
-        typeof org.settings === "string"
-          ? JSON.parse(org.settings)
-          : org.settings || {};
-    } catch {}
-    
-    // Single Source of Truth: org.settings.registration (fallback to registration_config if legacy data)
-    const reg = settingsObj.registration || settingsObj.registration_config || {};
+// ── OrbisGrid Source & Columns for Form Fields Matrix ──
+const fieldActions: ActionItem[] = [
+  { id: "toggle-active", label: l("تفعيل / تعطيل", "Toggle Active") },
+  { id: "toggle-required", label: l("إلزامي / اختياري", "Toggle Required") },
+  { id: "toggle-duplicate", label: l("تبديل منع التكرار", "Toggle Unique") },
+];
 
-    if (reg.institution_type) institutionType = reg.institution_type;
-    if (reg.student_number_pattern) studentNumberPattern = reg.student_number_pattern;
-    if (Array.isArray(reg.stages)) rawStages = reg.stages;
-    if (Array.isArray(reg.required_documents)) requiredDocuments = reg.required_documents;
+const fieldGridSource = $derived(
+  formFields.map((field, idx) => ({
+    ...field,
+    __idx: idx + 1,
+    field_name: l(field.nameAr, field.nameEn),
+    active_display: field.isActive ? l("مفعل بالاستمارة", "Active") : l("معطل", "Disabled"),
+    required_display: field.isActive ? (field.isRequired ? l("إلزامي التعبئة", "Required") : l("اختياري", "Optional")) : "—",
+    duplicate_display: field.supportsDuplicate ? (field.preventDuplicate ? l("صارم (فريد)", "Strict Unique") : l("يسمح بالتكرار", "Allow Duplicate")) : "—",
+  }))
+);
 
-    if (reg.active_fields) {
-      if (Array.isArray(reg.active_fields)) {
-        const actMap: Record<string, boolean> = {};
-        for (const k of reg.active_fields) actMap[k] = true;
-        activeFields = { ...activeFields, ...actMap };
-      } else {
-        activeFields = { ...activeFields, ...reg.active_fields };
-      }
+const fieldGridColumns = $derived<OrbisColumnDef[]>([
+  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center" },
+  { id: "field_name", prop: "field_name", header: l("حقل الاستمارة", "Field Name"), name: l("حقل الاستمارة", "Field Name"), width: 220, size: 220, readonly: true, cellClass: "font-semibold" },
+  { id: "key", prop: "key", header: l("المعرف البرمجي", "Key"), name: l("المعرف البرمجي", "Key"), width: 160, size: 160, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "active_display", prop: "active_display", header: l("الحالة", "Status"), name: l("الحالة", "Status"), width: 130, size: 130, type: "badge", align: "center", readonly: true },
+  { id: "required_display", prop: "required_display", header: l("الإلزامية", "Required"), name: l("الإلزامية", "Required"), width: 130, size: 130, type: "badge", align: "center", readonly: true },
+  { id: "duplicate_display", prop: "duplicate_display", header: l("منع التكرار", "Unique"), name: l("منع التكرار", "Unique"), width: 140, size: 140, type: "badge", align: "center", readonly: true },
+  {
+    id: "actions",
+    prop: "actions",
+    header: l("إجراءات الضبط", "Settings Actions"),
+    name: l("إجراءات الضبط", "Settings Actions"),
+    width: 150,
+    size: 150,
+    type: "action",
+    align: "center",
+    readonly: true,
+    meta: { items: fieldActions },
+  },
+]);
+
+function handleFieldGridAction(event: GridActionEvent) {
+  const row = event.row as unknown as FieldConfig;
+  if (!row) return;
+
+  if (event.actionId === "toggle-active") {
+    formFields = formFields.map(f => f.key === row.key ? { ...f, isActive: !f.isActive } : f);
+  } else if (event.actionId === "toggle-required") {
+    formFields = formFields.map(f => f.key === row.key ? { ...f, isRequired: !f.isRequired } : f);
+  } else if (event.actionId === "toggle-duplicate") {
+    if (row.supportsDuplicate) {
+      formFields = formFields.map(f => f.key === row.key ? { ...f, preventDuplicate: !f.preventDuplicate } : f);
     }
-
-    if (reg.required_fields) {
-      if (Array.isArray(reg.required_fields)) {
-        const reqMap: Record<string, boolean> = {};
-        for (const k of reg.required_fields) reqMap[k] = true;
-        requiredFields = { ...requiredFields, ...reqMap };
-      } else {
-        requiredFields = { ...requiredFields, ...reg.required_fields };
-      }
-    }
-
-    if (reg.prevent_duplicates) {
-      if (Array.isArray(reg.prevent_duplicates)) {
-        const dupMap: Record<string, boolean> = {};
-        for (const k of reg.prevent_duplicates) dupMap[k] = true;
-        preventDuplicates = { ...preventDuplicates, ...dupMap };
-      } else {
-        preventDuplicates = { ...preventDuplicates, ...reg.prevent_duplicates };
-      }
-    }
-
-    const pol = reg.policy_settings || reg;
-    if (pol.requires_approval !== undefined) requiresApproval = !!pol.requires_approval;
-    if (pol.allow_no_guardian !== undefined) allowNoGuardian = !!pol.allow_no_guardian;
-    if (pol.auto_assign_fees !== undefined) autoAssignFees = pol.auto_assign_fees !== false;
-    if (pol.allow_duplicate_national_id !== undefined) allowDuplicateNationalId = !!pol.allow_duplicate_national_id;
-    if (pol.max_class_capacity !== undefined) maxClassCapacity = pol.max_class_capacity == null ? null : Number(pol.max_class_capacity);
-
-    initialSnapshot = getFormSnapshot();
-  }
-});
-
-const currentProfile = $derived(INSTITUTION_PROFILES[institutionType] || INSTITUTION_PROFILES.school);
-
-function applySmartPreset(type?: string) {
-  const targetType = type || institutionType;
-  const profile = INSTITUTION_PROFILES[targetType];
-  if (!profile) return;
-
-  institutionType = targetType;
-  studentNumberPattern = profile.numberingPattern || "STU-{YEAR}-{SEQ}";
-  rawStages = profile.stages.map((s) => s.name_ar || s.name);
-  requiredDocuments = [...profile.requiredDocuments];
-  activeFields = { ...activeFields, ...profile.activeFields };
-  requiredFields = { ...requiredFields, ...profile.requiredFields };
-  if (profile.preventDuplicates) {
-    preventDuplicates = { ...preventDuplicates, ...profile.preventDuplicates };
-  }
-  if (profile.policySettings) {
-    requiresApproval = profile.policySettings.requires_approval;
-    allowNoGuardian = profile.policySettings.allow_no_guardian;
-    autoAssignFees = profile.policySettings.auto_assign_fees;
-    allowDuplicateNationalId = profile.policySettings.allow_duplicate_national_id;
-  }
-
-  toast.success(`تم تطبيق الإعدادات الموصى بها لـ (${profile.name_ar}) بنجاح`);
-}
-
-function addStage() {
-  const clean = stageInput.trim();
-  if (clean && !rawStages.includes(clean)) {
-    rawStages = [...rawStages, clean];
-    stageInput = "";
   }
 }
 
-function removeStage(stage: string) {
-  rawStages = rawStages.filter((s) => s !== stage);
-}
-
-function addDocument(docName?: string) {
-  const clean = (docName || documentInput).trim();
-  if (clean && !requiredDocuments.includes(clean)) {
-    requiredDocuments = [...requiredDocuments, clean];
-    if (!docName) documentInput = "";
-  }
-}
-
-function removeDocument(doc: string) {
-  requiredDocuments = requiredDocuments.filter((d) => d !== doc);
-}
-
-function handleSubmit(e?: Event) {
-  e?.preventDefault();
-
-  const activeFieldsArray = Object.keys(activeFields).filter((k) => activeFields[k]);
-  const requiredFieldsArray = Object.keys(requiredFields).filter((k) => requiredFields[k] && activeFields[k]);
-  const preventDuplicatesArray = Object.keys(preventDuplicates).filter((k) => preventDuplicates[k] && activeFields[k]);
-
-  const registrationSettings = {
-    institution_type: institutionType,
-    student_number_pattern: studentNumberPattern,
-    stages: rawStages,
-    active_fields: activeFieldsArray,
-    required_fields: requiredFieldsArray,
-    prevent_duplicates: preventDuplicatesArray,
-    required_documents: requiredDocuments,
-    student_number_prefix: studentNumberPattern.split("-")[0] || "STU",
-    student_number_digits: 6,
-    requires_approval: requiresApproval,
-    max_class_capacity: maxClassCapacity,
-    allow_no_guardian: allowNoGuardian,
-    allow_duplicate_national_id: allowDuplicateNationalId,
-    auto_assign_fees: autoAssignFees,
-    default_fee_template_ids: [],
+// Save form
+function handleFormSave() {
+  const payload = {
+    admission: {
+      institution_type: institutionType,
+      numbering: {
+        prefix: studentNumberPrefix,
+        year_format: studentNumberYearFormat === "YEAR" ? "full" : studentNumberYearFormat === "YEAR2" ? "short" : "none",
+        sequence_digits: studentNumberDigits,
+        separator: "-",
+      },
+      policy: {
+        requires_approval: requiresApproval,
+        allow_no_guardian: allowNoGuardian,
+        allow_duplicate_national_id: allowDuplicateNationalId,
+        auto_assign_fees: autoAssignFees,
+        max_class_capacity: maxClassCapacity,
+        allow_late_enrollment: allowLateEnrollment,
+        allow_waitlist: allowWaitlist,
+        sibling_priority_enabled: siblingPriorityEnabled,
+      },
+      fields: formFields.map((f) => ({
+        key: f.key,
+        name_ar: f.nameAr,
+        name_en: f.nameEn,
+        is_active: f.isActive,
+        is_required: f.isRequired,
+        prevent_duplicate: f.preventDuplicate,
+        supports_duplicate: f.supportsDuplicate,
+      })),
+    },
+    enrollment: {
+      registration_enabled: registrationEnabled,
+      require_admin_approval: requiresApproval,
+      allow_waitlist: allowWaitlist,
+      sibling_priority_enabled: siblingPriorityEnabled,
+      max_class_size_default: maxClassCapacity,
+      allow_late_enrollment: allowLateEnrollment,
+    },
   };
 
-  registrationForm.values = registrationSettings;
-  registrationForm.submit(async (result) => {
-    onsave({ registration: result });
-  }).then((submitted) => {
-    if (!submitted) toast.error("تحقق من قواعد التسجيل والحقول المطلوبة");
-  });
+  onsave(payload);
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide text-start text-foreground">
-  <div class="max-w-7xl mx-auto p-6 flex flex-col gap-6">
-    <form onsubmit={handleSubmit} class="flex flex-col gap-6">
-      <Tabs value="general" class="w-full">
-        <TabsList class="flex justify-start border-b border-border bg-transparent gap-6 rounded-none p-0 h-auto mb-6">
-          <TabsTrigger 
-            value="general" 
-            class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
-          >
-            {m.settings_registration_tab_general()}
-          </TabsTrigger>
-          <TabsTrigger 
-            value="stages_docs" 
-            class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
-          >
-            {m.settings_registration_tab_stages_docs()}
-          </TabsTrigger>
-          <TabsTrigger 
-            value="fields" 
-            class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
-          >
-            {m.settings_registration_tab_fields()}
-          </TabsTrigger>
-          <TabsTrigger 
-            value="policies" 
-            class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
-          >
-            سياسات وقواعد التسجيل
-          </TabsTrigger>
-        </TabsList>
+<div class="flex flex-col gap-6 text-start pb-24">
+  <!-- Top Profile Selector Banner -->
+  <Card class="border-border/80 shadow-xs">
+    <CardHeader>
+      <div class="flex items-center gap-3 text-start">
+        <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+          <BookOpen class="w-4 h-4" />
+        </div>
+        <div class="flex flex-col">
+          <CardTitle>
+            {l("نوع المؤسسة التعليمية والنمط الافتراضي", "Educational Institution Type")}
+          </CardTitle>
+          <CardDescription>
+            {l("تخصيص قواعد القبول والترقيم والمستندات وفق طبيعة المؤسسة", "Customize admission and numbering schemas by institution profile")}
+          </CardDescription>
+        </div>
+      </div>
+      <CardAction>
+        <Badge variant="outline" class="px-3 py-1 h-7 text-xs font-bold gap-1.5 bg-muted/40 border-border text-foreground">
+          <Lock class="w-3 h-3 text-muted-foreground" />
+          <span>
+            {#if institutionType === "school"}
+              {l("مدرسة تعليم عام (K-12)", "K-12 School")}
+            {:else if institutionType === "university"}
+              {l("جامعة / كلية أكاديمية", "University / College")}
+            {:else if institutionType === "institute"}
+              {l("معهد تدريبي / مهني", "Training Institute")}
+            {:else if institutionType === "quran_center"}
+              {l("مركز تحفيظ قرآن كريم", "Quranic Center")}
+            {:else}
+              {institutionType}
+            {/if}
+          </span>
+        </Badge>
+      </CardAction>
+    </CardHeader>
+  </Card>
 
-        <!-- TAB 1: General Settings -->
-        <TabsContent value="general" class="mt-0 flex flex-col gap-6">
-          <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
-            <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-              {m.settings_registration_type_and_numbering()}
-            </div>
+  <!-- Tabs Navigation -->
+  <Tabs value={activeTab} onValueChange={(v) => (activeTab = v as any)}>
+    <TabsList class="h-9 p-1 bg-muted/50 rounded-lg border border-border/40">
+      <TabsTrigger value="policies" class="text-xs font-semibold gap-1.5 px-4 h-7">
+        <UserBadgeCheck class="w-3.5 h-3.5" />
+        <span>{l("سياسات القبول والترقيم", "Admission & Numbering")}</span>
+      </TabsTrigger>
+      <TabsTrigger value="documents" class="text-xs font-semibold gap-1.5 px-4 h-7">
+        <DocumentCheck class="w-3.5 h-3.5" />
+        <span>{l("استوديو وثائق المراحل والصفوف", "Class Requirements Studio")}</span>
+        <Badge variant="secondary" class="ms-1 px-1.5 py-0 text-[10px] font-mono">
+          {requiredDocuments.length}
+        </Badge>
+      </TabsTrigger>
+      <TabsTrigger value="fields" class="text-xs font-semibold gap-1.5 px-4 h-7">
+        <AdjustmentsHorizontal class="w-3.5 h-3.5" />
+        <span>{l("حقول استمارة التسجيل", "Form Fields Matrix")}</span>
+      </TabsTrigger>
+    </TabsList>
 
-            <div class="flex flex-col">
-              <!-- Institution Type -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="inst_type" class="text-xs font-semibold text-foreground">
-                    {m.common_registration_inst_type()}
-                  </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">
-                    {m.settings_registration_inst_desc()}
-                  </span>
-                </div>
-                <div class="w-full md:w-80 shrink-0">
-                  <FormField id="inst_type" label={m.common_registration_inst_type()} required>
-                    {#snippet children()}
-                    <Select bind:value={institutionType} type="single" onValueChange={(val: string | undefined) => val && applySmartPreset(val)}>
-                    <SelectTrigger id="inst_type" class="h-9 text-xs flex justify-between items-center border border-input bg-background w-full">
-                      <span>
-                        {institutionType === "school" ? m.settings_registration_school() : 
-                         institutionType === "university" ? m.settings_registration_university() :
-                         institutionType === "institute" ? m.settings_registration_institute() :
-                         m.settings_registration_training_center()}
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent class="text-start">
-                      <SelectItem value="school">{m.settings_registration_school()}</SelectItem>
-                      <SelectItem value="university">{m.settings_registration_university()}</SelectItem>
-                      <SelectItem value="institute">{m.settings_registration_institute()}</SelectItem>
-                      <SelectItem value="training_center">{m.settings_registration_training_center()}</SelectItem>
-                    </SelectContent>
-                    </Select>
-                    {/snippet}
-                  </FormField>
-                </div>
-              </div>
-
-              <!-- Student Number Pattern -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b-0 gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="num_pattern" class="text-xs font-semibold text-foreground">
-                    {m.settings_registration_num_pattern()}
-                  </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">
-                    {m.settings_registration_pattern_desc()}
-                  </span>
-                </div>
-                <div class="w-full md:w-80 shrink-0">
-                  <FormField id="num_pattern" label={m.settings_registration_num_pattern()} required>
-                    {#snippet children()}
-                    <Input id="num_pattern" bind:value={studentNumberPattern} class="h-9 text-xs border border-input bg-background w-full font-mono" />
-                    {/snippet}
-                  </FormField>
-                </div>
-              </div>
-            </div>
+    <!-- TAB 1: Policies & Student Numbering -->
+    <TabsContent value="policies" class="space-y-6 pt-4">
+      <!-- Student Numbering Card -->
+      <Card class="border-border/80 shadow-xs">
+        <CardHeader>
+          <div class="flex flex-col text-start">
+            <CardTitle>
+              {l("نمط توليد الرقم الأكاديمي للطالب", "Student ID Numbering Format")}
+            </CardTitle>
+            <CardDescription>
+              {l("التركيبة التلقائية المعتمدة لتوليد الرقم الجامعي أو المدرسي للطلاب الجدد", "Automated sequence schema for new admissions")}
+            </CardDescription>
           </div>
-
-          <!-- Terminology Live Preview Card -->
-          <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
-            <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none flex items-center gap-2">
-              <Layers class="h-3.5 w-3.5 text-primary" />
-              <span>معاينة مصطلحات النظام لمؤسسة ({currentProfile.name_ar})</span>
-            </div>
-            <div class="p-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-start">
-              <div class="flex flex-col p-3 rounded-lg border border-border/60 bg-background/50 gap-1">
-                <span class="text-[10px] text-muted-foreground">المرحلة / المستوى:</span>
-                <span class="text-xs font-bold text-foreground">{currentProfile.terminology.stage_ar}</span>
-              </div>
-              <div class="flex flex-col p-3 rounded-lg border border-border/60 bg-background/50 gap-1">
-                <span class="text-[10px] text-muted-foreground">الصف / القاعة:</span>
-                <span class="text-xs font-bold text-foreground">{currentProfile.terminology.classroom_ar}</span>
-              </div>
-              <div class="flex flex-col p-3 rounded-lg border border-border/60 bg-background/50 gap-1">
-                <span class="text-[10px] text-muted-foreground">المادة / المساق:</span>
-                <span class="text-xs font-bold text-foreground">{currentProfile.terminology.subject_ar}</span>
-              </div>
-              <div class="flex flex-col p-3 rounded-lg border border-border/60 bg-background/50 gap-1">
-                <span class="text-[10px] text-muted-foreground">الدورة / العام:</span>
-                <span class="text-xs font-bold text-foreground">{currentProfile.terminology.calendar_ar}</span>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        <!-- TAB 2: Academic Stages & Required Documents -->
-        <TabsContent value="stages_docs" class="mt-0 flex flex-col gap-6">
-          <!-- Academic Stages -->
-          <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
-            <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-              {m.settings_registration_stages_title()} ({currentProfile.terminology.stage_ar})
-            </div>
-
-            <div class="flex flex-col px-6 py-4 gap-4">
-              <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label class="text-xs font-semibold text-foreground">
-                    {m.settings_registration_add_stage_title()}
-                  </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">
-                    {m.settings_registration_add_stage_desc()}
-                  </span>
-                </div>
-                <div class="w-full md:w-[320px] shrink-0 flex gap-2">
-                  <Input 
-                    placeholder={m.settings_registration_add_stage_placeholder()} 
-                    bind:value={stageInput} 
-                    class="h-9 text-xs flex-1 border border-input bg-background"
-                    onkeydown={(e) => e.key === "Enter" && (e.preventDefault(), addStage())}
-                  />
-                  <Button type="button" variant="outline" size="sm" class="cursor-pointer font-semibold shrink-0" onclick={() => addStage()}>
-                    <Plus size={14} class="me-1.5" />
-                    {m.common_onboarding_add()}
-                  </Button>
-                </div>
-              </div>
-
-              <div class="flex flex-wrap gap-2 pt-2 border-t border-border/40">
-                {#each rawStages as stage}
-                  <div class="flex items-center gap-1.5 px-3 py-1 border border-border rounded-full bg-background text-xs text-foreground select-none">
-                    <span class="font-medium">{stage}</span>
-                    <Button 
-                      type="button" 
-                      variant="ghost"
-                      size="icon-xs"
-                      class="text-muted-foreground hover:text-destructive transition-colors cursor-pointer h-auto w-auto p-0"
-                      onclick={() => removeStage(stage)}
-                    >
-                      <Trash2 size={12} />
-                    </Button>
-                  </div>
-                {/each}
-                {#if rawStages.length === 0}
-                  <p class="text-xs text-muted-foreground py-1">
-                    {m.settings_registration_no_stages()}
-                  </p>
-                {/if}
-              </div>
-            </div>
-          </div>
-
-          <!-- Required Documents Checklist & Tailored Presets -->
-          <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
-            <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none flex items-center justify-between">
-              <span>{m.settings_registration_docs_title()}</span>
-              <Badge variant="outline" class="text-[10px] font-normal">
-                المقترح لـ {currentProfile.name_ar}
+          <CardAction>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-muted-foreground">{l("معاينة الرقم:", "Preview:")}</span>
+              <Badge variant="lime" class="font-mono text-xs px-2.5 py-0.5 font-bold">
+                {studentNumberPreview}
               </Badge>
             </div>
+          </CardAction>
+        </CardHeader>
 
-            <div class="flex flex-col px-6 py-4 gap-4">
-              <!-- Preset Recommendations Bar -->
-              {#if currentProfile.requiredDocuments.length > 0}
-                <div class="flex flex-col gap-2 p-3 bg-muted/20 border border-border/60 rounded-lg">
-                  <span class="text-[11px] font-semibold text-foreground text-start">
-                    مقترحات مستندات تسجيل لـ ({currentProfile.name_ar}):
-                  </span>
-                  <div class="flex flex-wrap gap-2">
-                    {#each currentProfile.requiredDocuments as recDoc}
-                      {@const isAdded = requiredDocuments.includes(recDoc)}
-                      <button
-                        type="button"
-                        class="text-xs px-2.5 py-1 rounded-md border text-start flex items-center gap-1.5 transition-all cursor-pointer {isAdded ? 'bg-primary/10 border-primary/30 text-primary font-semibold' : 'bg-background hover:bg-accent/40 border-border text-foreground'}"
-                        onclick={() => addDocument(recDoc)}
-                      >
-                        <Plus size={12} class={isAdded ? "hidden" : "inline"} />
-                        <span>{recDoc}</span>
-                      </button>
-                    {/each}
-                  </div>
-                </div>
-              {/if}
-
-              <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label class="text-xs font-semibold text-foreground">
-                    {m.settings_registration_add_doc_title()}
-                  </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">
-                    {m.settings_registration_add_doc_desc()}
-                  </span>
-                </div>
-                <div class="w-full md:w-[320px] shrink-0 flex gap-2">
-                  <Input 
-                    placeholder={m.settings_registration_add_doc_placeholder()} 
-                    bind:value={documentInput} 
-                    class="h-9 text-xs flex-1 border border-input bg-background"
-                    onkeydown={(e) => e.key === "Enter" && (e.preventDefault(), addDocument())}
-                  />
-                  <Button type="button" variant="outline" size="sm" class="cursor-pointer font-semibold shrink-0" onclick={() => addDocument()}>
-                    <Plus size={14} class="me-1.5" />
-                    {m.common_onboarding_add()}
-                  </Button>
-                </div>
-              </div>
-
-              <div class="flex flex-wrap gap-2 pt-2 border-t border-border/40">
-                {#each requiredDocuments as doc}
-                  <div class="flex items-center gap-1.5 px-3 py-1 border border-border rounded-full bg-background text-xs text-foreground select-none">
-                    <span class="font-medium">{doc}</span>
-                    <Button 
-                      type="button" 
-                      variant="ghost"
-                      size="icon-xs"
-                      class="text-muted-foreground hover:text-destructive transition-colors cursor-pointer h-auto w-auto p-0"
-                      onclick={() => removeDocument(doc)}
-                    >
-                      <Trash2 size={12} />
-                    </Button>
-                  </div>
-                {/each}
-                {#if requiredDocuments.length === 0}
-                  <p class="text-xs text-muted-foreground py-1">
-                    {m.settings_registration_no_docs()}
-                  </p>
-                {/if}
-              </div>
-            </div>
+        <CardContent class="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-start">
+          <!-- Prefix -->
+          <div class="flex flex-col gap-1.5">
+            <Label class="text-xs font-semibold text-foreground">
+              {l("البادئة (Prefix)", "Prefix")}
+            </Label>
+            <Input
+              bind:value={studentNumberPrefix}
+              placeholder="e.g. STU"
+              class="h-9 text-xs font-mono uppercase"
+            />
           </div>
-        </TabsContent>
 
-        <!-- TAB 3: Registration Fields Table -->
-        <TabsContent value="fields" class="mt-0">
-          <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
-            <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-              {m.settings_registration_custom_fields_title()}
-            </div>
-
-            <div class="p-6 overflow-x-auto">
-              <Table class="w-full text-xs text-start">
-                <TableHeader>
-                  <TableRow class="border-b border-border/60 hover:bg-transparent">
-                    <TableHead class="py-2 text-start font-semibold text-muted-foreground">{m.settings_registration_table_field()}</TableHead>
-                    <TableHead class="py-2 text-center font-semibold text-muted-foreground">{m.common_phase_active()}</TableHead>
-                    <TableHead class="py-2 text-center font-semibold text-muted-foreground">{m.settings_registration_table_required()}</TableHead>
-                    <TableHead class="py-2 text-center font-semibold text-muted-foreground">{m.settings_registration_table_duplicate()}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {#each SYSTEM_FIELDS as sysField (sysField.key)}
-                    <TableRow class="border-b border-border/40 hover:bg-muted/5">
-                      <TableCell class="py-3 font-semibold text-foreground text-start">
-                        {sysField.label}
-                      </TableCell>
-                      <TableCell class="py-3 text-center">
-                        <Checkbox 
-                          id={`active_${sysField.key}`} 
-                          checked={activeFields[sysField.key] ?? false} 
-                          onCheckedChange={(val) => {
-                            activeFields[sysField.key] = !!val;
-                            if (!val) {
-                              requiredFields[sysField.key] = false;
-                              preventDuplicates[sysField.key] = false;
-                            }
-                          }} 
-                          class="mx-auto"
-                        />
-                      </TableCell>
-                      <TableCell class="py-3 text-center">
-                        <Checkbox 
-                          id={`required_${sysField.key}`} 
-                          checked={requiredFields[sysField.key] ?? false} 
-                          disabled={!activeFields[sysField.key]}
-                          onCheckedChange={(val) => requiredFields[sysField.key] = !!val} 
-                          class="mx-auto"
-                        />
-                      </TableCell>
-                      <TableCell class="py-3 text-center">
-                        {#if sysField.supportsDuplicate}
-                          <Checkbox 
-                            id={`duplicate_${sysField.key}`} 
-                            checked={preventDuplicates[sysField.key] ?? false} 
-                            disabled={!activeFields[sysField.key]}
-                            onCheckedChange={(val) => preventDuplicates[sysField.key] = !!val} 
-                            class="mx-auto"
-                          />
-                        {:else}
-                          <span class="text-muted-foreground">-</span>
-                        {/if}
-                      </TableCell>
-                    </TableRow>
-                  {/each}
-                </TableBody>
-              </Table>
-            </div>
+          <!-- Year Token Format -->
+          <div class="flex flex-col gap-1.5">
+            <Label class="text-xs font-semibold text-foreground">
+              {l("تضمين العام الدراسي", "Include Year")}
+            </Label>
+            <Select
+              type="single"
+              value={studentNumberYearFormat}
+              onValueChange={(v) => (studentNumberYearFormat = v ?? "YEAR")}
+            >
+              <SelectTrigger class="h-9 text-xs">
+                {studentNumberYearFormat === "YEAR"
+                  ? l("العام كاملاً (مثال: 2026)", "Full 4-digit Year (2026)")
+                  : studentNumberYearFormat === "YEAR2"
+                  ? l("آخر خانتين (مثال: 26)", "Short 2-digit Year (26)")
+                  : l("بدون العام", "No Year")}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="YEAR" class="text-xs">{l("العام كاملاً (مثال: 2026)", "Full 4-digit Year (2026)")}</SelectItem>
+                <SelectItem value="YEAR2" class="text-xs">{l("آخر خانتين (مثال: 26)", "Short 2-digit Year (26)")}</SelectItem>
+                <SelectItem value="NONE" class="text-xs">{l("بدون العام", "No Year")}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </TabsContent>
 
-        <!-- TAB 4: Registration Workflow & Policy Rules -->
-        <TabsContent value="policies" class="mt-0">
-          <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
-            <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none flex items-center gap-2">
-              <ShieldCheck class="h-3.5 w-3.5 text-primary" />
-              <span>سياسات وقواعد قبول الطالب والتسجيل</span>
-            </div>
-
-            <div class="flex flex-col">
-              <!-- Admin Approval Rule -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="req_approval" class="text-xs font-semibold text-foreground cursor-pointer">
-                    اشتراط موافقة الإدارة قبل الاعتماد النشط للطالب
-                  </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">
-                    عند تفعيل هذا الخيار، يتم تقديم الطلبات بحالة (قيد المراجعة) بدلاً من القيد المباشر.
-                  </span>
-                </div>
-                <div class="shrink-0 flex items-center gap-2">
-                  <Switch
-                    id="req_approval"
-                    checked={requiresApproval}
-                    onCheckedChange={(val) => requiresApproval = val}
-                  />
-                  <span class="text-xs font-medium text-muted-foreground">{requiresApproval ? "مفعل" : "معطل"}</span>
-                </div>
-              </div>
-
-              <!-- Allow No Guardian Rule -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="max_class_capacity" class="text-xs font-semibold text-foreground">
-                    الحد الأقصى لعدد الطلاب في الصف
-                  </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">
-                    اتركه فارغًا لاستخدام سعة الصف المحددة في البيانات الأكاديمية.
-                  </span>
-                </div>
-                <Input
-                  id="max_class_capacity"
-                  type="number"
-                  value={maxClassCapacity ?? ""}
-                  oninput={(event) => {
-                    const value = event.currentTarget.value.trim();
-                    maxClassCapacity = value === "" ? null : Math.max(1, Number(value));
-                  }}
-                  min="1"
-                  step="1"
-                  class="h-9 w-full md:w-40"
-                />
-              </div>
-
-              <!-- Allow No Guardian Rule -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="allow_no_g" class="text-xs font-semibold text-foreground cursor-pointer">
-                    السماح بالتسجيل بدون ولي أمر (للبالغين / الجامعات والمراكز)
-                  </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">
-                    يتيح للطلاب البالغين التسجيل مباشرة دون الحاجة لربط ولي أمر.
-                  </span>
-                </div>
-                <div class="shrink-0 flex items-center gap-2">
-                  <Switch
-                    id="allow_no_g"
-                    checked={allowNoGuardian}
-                    onCheckedChange={(val) => allowNoGuardian = val}
-                  />
-                  <span class="text-xs font-medium text-muted-foreground">{allowNoGuardian ? "مسموح" : "غير مسموح"}</span>
-                </div>
-              </div>
-
-              <!-- Auto Assign Mandatory Fees -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="auto_fees" class="text-xs font-semibold text-foreground cursor-pointer">
-                    الربط التلقائي بالرسوم الإلزامية للمرحلة
-                  </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">
-                    توليد الرسوم الإلزامية تلقائياً على الطالب المستجد بمجرد قيده في الصف أو المساق.
-                  </span>
-                </div>
-                <div class="shrink-0 flex items-center gap-2">
-                  <Switch
-                    id="auto_fees"
-                    checked={autoAssignFees}
-                    onCheckedChange={(val) => autoAssignFees = val}
-                  />
-                  <span class="text-xs font-medium text-muted-foreground">{autoAssignFees ? "مفعل" : "معطل"}</span>
-                </div>
-              </div>
-
-              <!-- Allow Duplicate National ID -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b-0 gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="allow_dup_id" class="text-xs font-semibold text-foreground cursor-pointer">
-                    السماح بتكرار الرقم القومي / رقم الهوية
-                  </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">
-                    السماح بتسجيل أكثر من طالب بنفس رقم الهوية الوطنية (مثل الإخوة في حال استخدام رقم هوية ولي الأمر).
-                  </span>
-                </div>
-                <div class="shrink-0 flex items-center gap-2">
-                  <Switch
-                    id="allow_dup_id"
-                    checked={allowDuplicateNationalId}
-                    onCheckedChange={(val) => allowDuplicateNationalId = val}
-                  />
-                  <span class="text-xs font-medium text-muted-foreground">{allowDuplicateNationalId ? "مسموح" : "ممنوع"}</span>
-                </div>
-              </div>
-            </div>
+          <!-- Digits Sequence -->
+          <div class="flex flex-col gap-1.5">
+            <Label class="text-xs font-semibold text-foreground">
+              {l("خانة التسلسل الرقمي", "Sequence Digits")}
+            </Label>
+            <Select
+              type="single"
+              value={String(studentNumberDigits)}
+              onValueChange={(v) => (studentNumberDigits = Number(v || 4))}
+            >
+              <SelectTrigger class="h-9 text-xs font-mono">
+                {studentNumberDigits} {l("خانات", "digits")} (مثال: {"1".padStart(studentNumberDigits, "0")})
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="3" class="text-xs font-mono">3 {l("خانات", "digits")} (001)</SelectItem>
+                <SelectItem value="4" class="text-xs font-mono">4 {l("خانات", "digits")} (0001)</SelectItem>
+                <SelectItem value="5" class="text-xs font-mono">5 {l("خانات", "digits")} (00001)</SelectItem>
+                <SelectItem value="6" class="text-xs font-mono">6 {l("خانات", "digits")} (000001)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
 
-    </form>
-  </div>
+      <!-- Admission Policies Toggles Card -->
+      <Card class="border-border/80 shadow-xs">
+        <CardHeader>
+          <div class="flex flex-col text-start">
+            <CardTitle>
+              {l("ضوابط وإجراءات القبول والتسجيل", "Admission & Enrollment Governance Rules")}
+            </CardTitle>
+            <CardDescription>
+              {l("التحكم في بوابات التسجيل، اعتمادات القيد، قوائم الانتظار، وسياسات الاستيعاب", "Manage registration portals, approval workflows, waitlists, and capacity limits")}
+            </CardDescription>
+          </div>
+        </CardHeader>
+
+        <CardContent class="p-6 flex flex-col divide-y divide-border">
+          <!-- Enable Registration Portal -->
+          <div class="py-3 flex items-center justify-between gap-4 first:pt-0">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-xs font-bold text-foreground">
+                {l("تفعيل بوابة واستمارة التسجيل", "Enable Registration Portal")}
+              </span>
+              <span class="text-[11px] text-muted-foreground">
+                {l("السماح بقبول طلبات التسجيل والقيد للعام الدراسي النشط", "Allow incoming student admission requests for active terms")}
+              </span>
+            </div>
+            <Switch bind:checked={registrationEnabled} />
+          </div>
+
+          <!-- Approval Workflow -->
+          <div class="py-3 flex items-center justify-between gap-4">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-xs font-bold text-foreground">
+                {l("اشتراط موافقة المسجل الأكاديمي / الإدارة", "Require Academic Registrar / Admin Approval")}
+              </span>
+              <span class="text-[11px] text-muted-foreground">
+                {l("إخضاع طلبات التسجيل الجديدة لمرحلة المراجعة والاعتماد قبل التسكين في الشعب", "New applicants remain pending approval before enrollment")}
+              </span>
+            </div>
+            <Switch bind:checked={requiresApproval} />
+          </div>
+
+          <!-- Allow Waitlist -->
+          <div class="py-3 flex items-center justify-between gap-4">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-xs font-bold text-foreground">
+                {l("تفعيل قوائم الانتظار عند اكتمال الشعب", "Enable Waitlist on Capacity")}
+              </span>
+              <span class="text-[11px] text-muted-foreground">
+                {l("وضع الطلاب تلقائياً في قائمة الانتظار عند اكتمال الطاقة الاستيعابية للشعبة", "Place students on waitlist when classes reach capacity")}
+              </span>
+            </div>
+            <Switch bind:checked={allowWaitlist} />
+          </div>
+
+          <!-- Sibling Priority -->
+          <div class="py-3 flex items-center justify-between gap-4">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-xs font-bold text-foreground">
+                {l("أولوية القبول للإخوة والأقارب", "Sibling Priority Enrollment")}
+              </span>
+              <span class="text-[11px] text-muted-foreground">
+                {l("منح أولوية القبول والتسكين لإخوة الطلاب المسجلين مسبقاً بالمؤسسة", "Prioritize siblings of already enrolled students")}
+              </span>
+            </div>
+            <Switch bind:checked={siblingPriorityEnabled} />
+          </div>
+
+          <!-- Allow Late Enrollment -->
+          <div class="py-3 flex items-center justify-between gap-4">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-xs font-bold text-foreground">
+                {l("السماح بالتسجيل المتأخر بعد بدء الفصل", "Allow Late Enrollment")}
+              </span>
+              <span class="text-[11px] text-muted-foreground">
+                {l("قبول طلبات القيد والتسجيل بعد بدء الفصل الدراسي أو انقضاء الموعد النهائي", "Accept enrollment applications after period start or deadline")}
+              </span>
+            </div>
+            <Switch bind:checked={allowLateEnrollment} />
+          </div>
+
+          <!-- Allow No Guardian -->
+          <div class="py-3 flex items-center justify-between gap-4">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-xs font-bold text-foreground">
+                {l("السماح بالتسجيل بدون ولي أمر (تسجيل مستقل)", "Allow Independent Enrollment (No Guardian)")}
+              </span>
+              <span class="text-[11px] text-muted-foreground">
+                {l("مناسب لطلاب الجامعات والمعاهد والدراسات العليا", "Applicable for adult university and vocational students")}
+              </span>
+            </div>
+            <Switch bind:checked={allowNoGuardian} />
+          </div>
+
+          <!-- Prevent Duplicate National ID -->
+          <div class="py-3 flex items-center justify-between gap-4">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-xs font-bold text-foreground">
+                {l("التحقق الصارم من عدم تكرار الرقم الوطني / الهوية", "Strict Unique National ID Enforcement")}
+              </span>
+              <span class="text-[11px] text-muted-foreground">
+                {l("منع تسجيل أي طالب برقم هوية مسجل مسبقاً في النظام", "Rejects duplicate national ID entries across the institution")}
+              </span>
+            </div>
+            <Switch
+              checked={!allowDuplicateNationalId}
+              onCheckedChange={(v) => (allowDuplicateNationalId = !v)}
+            />
+          </div>
+
+          <!-- Auto Assign Tuition Fees -->
+          <div class="py-3 flex items-center justify-between gap-4">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-xs font-bold text-foreground">
+                {l("إسناد الرسوم الدراسية تلقائياً فور اعتماد القيد", "Auto-Assign Tuition Fee Template on Enrollment")}
+              </span>
+              <span class="text-[11px] text-muted-foreground">
+                {l("إنشاء قيود وفواتير الرسوم تلقائياً للطالب بناءً على الصف والشعبة المسكن بها", "Automatically maps default fee templates based on grade level")}
+              </span>
+            </div>
+            <Switch bind:checked={autoAssignFees} />
+          </div>
+
+          <!-- Max Capacity -->
+          <div class="py-3 flex items-center justify-between gap-4 last:pb-0">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-xs font-bold text-foreground">
+                {l("السعة القصوى الافتراضية للفصل / الشعبة", "Default Class Capacity Limit")}
+              </span>
+              <span class="text-[11px] text-muted-foreground">
+                {l("الحد الأقصى لعدد الطلاب المسموح بتسكينهم في الشعبة الدراسية الواحدة", "Maximum enrollment limit per classroom section")}
+              </span>
+            </div>
+            <Input
+              type="number"
+              bind:value={maxClassCapacity}
+              min={5}
+              max={200}
+              class="h-9 w-24 text-xs font-mono text-center"
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </TabsContent>
+
+    <!-- TAB 2: Class/Grade Requirements Studio with OrbisGrid -->
+    <TabsContent value="documents" class="space-y-4 pt-4">
+      <!-- Studio Header Actions Bar -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <Funnel class="w-4 h-4 text-muted-foreground" />
+          <span class="text-xs font-semibold text-muted-foreground">{l("تصفية حسب الصف / المرحلة:", "Filter Class / Grade:")}</span>
+          <div class="w-56">
+            <ClassSelect
+              bind:value={selectedClassFilter}
+              showAllOption={true}
+              allOptionLabel={l("كافة الصفوف والمراحل", "All Classes & Grades")}
+              placeholder={l("كافة الصفوف والمراحل", "All Classes & Grades")}
+            />
+          </div>
+        </div>
+
+        <Button
+          variant="lime"
+          size="sm"
+          class="h-8 px-4 text-xs font-bold gap-1.5 cursor-pointer shrink-0"
+          onclick={() => (isAddDocSheetOpen = true)}
+        >
+          <Plus class="w-3.5 h-3.5" />
+          <span>{l("إضافة متطلب وثيقة جديد", "Add Document Requirement")}</span>
+        </Button>
+      </div>
+
+      <!-- Requirements OrbisGrid Container -->
+      <div class="rounded-xl border border-border/80 bg-background overflow-hidden">
+        <OrbisGrid
+          columns={docGridColumns}
+          source={docGridSource}
+          height="min(55vh, 480px)"
+          rowSize={44}
+          rtl={true}
+          onaction={handleDocGridAction}
+          emptyTitle={l("لا توجد متطلبات وثائق مسجلة", "No Document Requirements Configured")}
+        />
+      </div>
+    </TabsContent>
+
+    <!-- TAB 3: Form Fields Matrix with OrbisGrid -->
+    <TabsContent value="fields" class="space-y-4 pt-4">
+      <div class="rounded-xl border border-border/80 bg-background overflow-hidden">
+        <OrbisGrid
+          columns={fieldGridColumns}
+          source={fieldGridSource}
+          height="min(60vh, 520px)"
+          rowSize={44}
+          rtl={true}
+          onaction={handleFieldGridAction}
+          emptyTitle={l("لا توجد حقول معرفة", "No Form Fields")}
+        />
+      </div>
+    </TabsContent>
+  </Tabs>
+
+  <!-- Add Document Requirement Slide-over Sheet -->
+  <AddDocumentRequirementSheet
+    bind:open={isAddDocSheetOpen}
+    oncreated={handleRequirementCreated}
+  />
+
+  <!-- Bottom Save Bar -->
   <SettingsBottomBar
-    {isSaving}
     {isDirty}
-    onsave={handleSubmit}
-    onreset={restoreSnapshot}
+    {isSaving}
+    onsave={handleFormSave}
+    onreset={resetToInitial}
   />
 </div>
+

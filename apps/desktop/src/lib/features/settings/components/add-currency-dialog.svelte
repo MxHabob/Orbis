@@ -6,10 +6,10 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api";
 import { toast } from "@orbis/ui";
 import { uniqueCurrencies } from "@orbis/location/currencies";
-import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import { Button } from "@orbis/ui/button";
 import { FormField } from "@orbis/ui";
 import { Input } from "@orbis/ui/input";
@@ -35,14 +35,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import {
-  Sparkles,
-  Coins,
-  ArrowRightLeft,
-  Check,
-  Globe,
-  Loader2,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowPath, Check, DocumentChartBar, GlobeAlt, Sparkles } from "@orbis/icons";
 import { currencyInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
@@ -65,7 +58,9 @@ let cachedEnDisplayNames: Intl.DisplayNames | null = null;
 function getArDisplayNames(): Intl.DisplayNames | null {
   if (cachedArDisplayNames === null) {
     try {
-      cachedArDisplayNames = new Intl.DisplayNames(["ar"], { type: "currency" });
+      cachedArDisplayNames = new Intl.DisplayNames(["ar"], {
+        type: "currency",
+      });
     } catch {
       cachedArDisplayNames = null;
     }
@@ -76,7 +71,9 @@ function getArDisplayNames(): Intl.DisplayNames | null {
 function getEnDisplayNames(): Intl.DisplayNames | null {
   if (cachedEnDisplayNames === null) {
     try {
-      cachedEnDisplayNames = new Intl.DisplayNames(["en"], { type: "currency" });
+      cachedEnDisplayNames = new Intl.DisplayNames(["en"], {
+        type: "currency",
+      });
     } catch {
       cachedEnDisplayNames = null;
     }
@@ -85,8 +82,12 @@ function getEnDisplayNames(): Intl.DisplayNames | null {
 }
 
 // Pre-computed preset dropdown items (built once for instant opening)
-let cachedPresetItems: { id: string; label: string; value: string }[] | null = null;
-let cachedPresetMap: Map<string, { id: string; label: string; value: string }> | null = null;
+let cachedPresetItems: { id: string; label: string; value: string }[] | null =
+  null;
+let cachedPresetMap: Map<
+  string,
+  { id: string; label: string; value: string }
+> | null = null;
 
 function getPresetItemsData() {
   if (!cachedPresetItems) {
@@ -135,7 +136,13 @@ const form = new FormController({
 const isSubmitting = $derived(form.isSubmitting);
 
 const selectedPresetItem = $derived(
-  code ? presetMap.get(code.toUpperCase()) || { id: code, label: code, value: code } : null,
+  code
+    ? presetMap.get(code.toUpperCase()) || {
+        id: code,
+        label: code,
+        value: code,
+      }
+    : null,
 );
 
 // Formatted Live Preview Text
@@ -148,7 +155,11 @@ let livePreview = $derived.by(() => {
 /**
  * Optimized auto-completion handler using cached Intl instances
  */
-function handlePresetSelect(item: { id: string; label: string; value: string }) {
+function handlePresetSelect(item: {
+  id: string;
+  label: string;
+  value: string;
+}) {
   const curCode = item.value.toUpperCase();
   code = curCode;
 
@@ -211,7 +222,7 @@ async function handleSubmit(e: Event) {
     is_base: isBase,
   };
   const submitted = await form.submit(async (values) => {
-    await commands.finance.createCurrency(
+    await api.createCurrency(
       values.code,
       values.name,
       values.name_ar ?? null,
@@ -238,7 +249,7 @@ async function handleSubmit(e: Event) {
     <DialogHeader>
       <div class="flex items-center justify-between">
         <DialogTitle class="text-sm font-semibold flex items-center gap-2">
-          <Coins size={16} class="text-primary" />
+          <DocumentChartBar size={16} class="text-primary" />
           <span>{m.settings_currencies_add_dialog_title()}</span>
         </DialogTitle>
         {#if code}
@@ -255,17 +266,25 @@ async function handleSubmit(e: Event) {
           <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.settings_nav_currencies()}</AccordionTrigger>
           <AccordionContent>
       <!-- Preset Quick Selection -->
-      <div class="flex flex-col gap-1.5 p-3 rounded-lg border border-border/40 bg-muted/20">
+      <div class="flex flex-col gap-1.5 py-3">
         <div class="flex items-center gap-1.5 text-xs text-primary font-medium">
           <Sparkles size={13} />
           <span>{m.common_header_search()} ({m.settings_nav_currencies()})</span>
         </div>
-        <ComboboxDropdown
-          placeholder="اختر عملة للتعبيئة السريعة..."
-          searchPlaceholder="ابحث باسم العملة أو الرمز (مثال: USD, EUR, YER)..."
-          selectedItem={selectedPresetItem}
+        <SearchableSelect
+          value={code}
           items={presetItems}
-          onSelect={handlePresetSelect}
+          placeholder="اختر عملة للتعبئة السريعة..."
+          searchPlaceholder="ابحث باسم العملة أو الرمز (مثال: USD, EUR, YER)..."
+          getItemValue={(item) => item.value}
+          getItemLabel={(item) => item.label}
+          getItemSubtitle={(item) => item.value}
+          onchange={(val) => {
+            if (val) {
+              const item = presetItems.find((p) => p.value === val);
+              if (item) handlePresetSelect(item);
+            }
+          }}
           class="w-full bg-background border-border/60 text-xs h-8"
         />
       </div>
@@ -372,9 +391,9 @@ async function handleSubmit(e: Event) {
       </div>
 
       <!-- Base Currency Switch -->
-      <div class="flex items-center justify-between p-3 rounded-lg border border-border/40 bg-muted/10">
+      <div class="flex items-center justify-between py-3">
         <div class="flex items-center gap-2">
-          <Globe size={14} class="text-muted-foreground" />
+          <GlobeAlt size={14} class="text-muted-foreground" />
           <div class="flex flex-col gap-0.5">
             <Label class="text-xs font-medium cursor-pointer">
               {m.settings_currencies_type_base()}
@@ -420,7 +439,7 @@ async function handleSubmit(e: Event) {
           class="text-xs cursor-pointer gap-1.5 font-bold"
         >
           {#if isSubmitting}
-            <Loader2 size={12} class="animate-spin" />
+            <ArrowPath size={12} class="animate-spin" />
           {:else}
             <Check size={12} />
           {/if}

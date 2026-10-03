@@ -1,0 +1,10 @@
+# Tauri External Binaries Directory
+# 
+# Tauri sidecar executables should be named using the target triple:
+# - Windows: solver-service-x86_64-pc-windows-msvc.exe
+# - macOS Apple Silicon: solver-service-aarch64-apple-darwin
+# - macOS Intel: solver-service-x86_64-apple-darwin
+# - Linux: solver-service-x86_64-unknown-linux-gnu
+#
+# Generated during production CI/CD via GraalVM/Mandrel:
+# mvn package -Dnative -DskipTests (in apps/solver-service)

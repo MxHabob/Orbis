@@ -1,17 +1,12 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Label } from "@orbis/ui/label";
-import { Input } from "@orbis/ui/input";
 import { Switch } from "@orbis/ui/switch";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
+import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
 import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
+import SettingsRow from "$lib/shared/components/settings-row.svelte";
 
 interface Props {
   currency: string;
@@ -34,19 +29,17 @@ let {
 }: Props = $props();
 
 const dateFormats = [
-  { value: "YYYY-MM-DD", label: "YYYY-MM-DD (2026-06-24)" },
-  { value: "DD/MM/YYYY", label: "DD/MM/YYYY (24/06/2026)" },
-  { value: "MM/DD/YYYY", label: "MM/DD/YYYY (06/24/2026)" },
+  { value: "YYYY-MM-DD", label: "YYYY-MM-DD (2026-06-24)", example: "ISO Standard" },
+  { value: "DD/MM/YYYY", label: "DD/MM/YYYY (24/06/2026)", example: "British / Arabic Standard" },
+  { value: "MM/DD/YYYY", label: "MM/DD/YYYY (06/24/2026)", example: "US Standard" },
 ];
 </script>
 
-<div class="border border-border rounded-md overflow-hidden flex flex-col">
-  <!-- Card Header -->
-  <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-    {m.settings_general_section_regional()}
-  </div>
-
-  <div class="flex flex-col">
+<Card>
+  <CardHeader>
+    <CardTitle>{m.settings_general_section_regional()}</CardTitle>
+  </CardHeader>
+  <CardContent>
     <!-- Currency -->
     <CurrencySelector
       title={m.finance_ledger_currency()}
@@ -60,52 +53,54 @@ const dateFormats = [
       title={m.common_general_timezone()}
       description={m.settings_general_timezone_desc()}
       bind:currentTimezone={timezone}
+      disabled={isSaving}
     />
 
+    <!-- Locale / Language -->
     <LocaleSettings
       title={m.settings_general_locale()}
       description={m.settings_general_locale_desc()}
       bind:currentLocale={locale}
+      disabled={isSaving}
       onchange={onLanguageChange}
     />
 
     <!-- Date Format -->
-    <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-      <div class="flex flex-col gap-1 text-start">
-        <Label class="text-xs font-semibold text-foreground">
-          {m.settings_general_date_format()}
-        </Label>
-        <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_date_format_desc()}</span>
-      </div>
-      <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
-        <Select type="single" value={dateFormat} onValueChange={(v: string | undefined) => (dateFormat = v ?? "")} disabled={isSaving}>
-          <SelectTrigger class="h-9 w-full">
-            {dateFormats.find(df => df.value === dateFormat)?.label || dateFormat}
-          </SelectTrigger>
-          <SelectContent>
-            {#each dateFormats as df}
-              <SelectItem value={df.value}>{df.label}</SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
+    <SettingsRow
+      title={m.settings_general_date_format()}
+      description={m.settings_general_date_format_desc()}
+    >
+      {#snippet children()}
+        <SearchableSelect
+          bind:value={dateFormat}
+          items={dateFormats}
+          placeholder={m.settings_general_date_format?.() || "اختر صيغة التاريخ..."}
+          searchPlaceholder="ابحث عن صيغة التاريخ..."
+          disabled={isSaving}
+          getItemValue={(df) => df.value}
+          getItemLabel={(df) => df.label}
+          getItemSubtitle={(df) => df.example}
+          getItemBadge={(df) => df.value}
+          class="w-full"
+        />
+      {/snippet}
+    </SettingsRow>
 
     <!-- Hijri Calendar Toggle -->
-    <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
-      <div class="flex flex-col gap-1 text-start">
-        <Label for="hijri_enabled" class="text-xs font-semibold text-foreground">
-          {m.settings_general_hijri()}
-        </Label>
-        <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_hijri_desc()}</span>
-      </div>
-      <div class="w-full md:w-120 shrink-0 flex items-center justify-start md:justify-start">
+    <SettingsRow
+      title={m.settings_general_hijri()}
+      description={m.settings_general_hijri_desc()}
+      labelFor="hijri_enabled"
+      controlClass="justify-start md:justify-start"
+      last
+    >
+      {#snippet children()}
         <Switch
           id="hijri_enabled"
           bind:checked={hijriEnabled}
           disabled={isSaving}
         />
-      </div>
-    </div>
-  </div>
-</div>
+      {/snippet}
+    </SettingsRow>
+  </CardContent>
+</Card>

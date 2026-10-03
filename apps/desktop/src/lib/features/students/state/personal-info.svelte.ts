@@ -1,3 +1,5 @@
+import type { StudentDetailDto } from "$lib/api";
+
 export class PersonalInfoState {
   nameAr = $state("");
   nameEn = $state("");
@@ -34,15 +36,20 @@ export class PersonalInfoState {
   bloodType = $state("");
   emergencyContact = $state("");
   medicalNotes = $state("");
+  specialNeedsNotes = $state("");
 
-  populate(originalStudent: any) {
+  populate(originalStudent: StudentDetailDto | null) {
     if (!originalStudent) return;
-    this.nameAr = originalStudent.full_name || originalStudent.name_ar || "";
-    this.nameEn = originalStudent.name_en || "";
-    this.nationalId = originalStudent.national_id || "";
+    const p = originalStudent.person;
+    const s = originalStudent.student;
+    const e = originalStudent.enrollment;
 
-    const birth = originalStudent.birth_date
-      ? String(originalStudent.birth_date).slice(0, 10)
+    this.nameAr = (p.first_name_ar && p.last_name_ar ? `${p.first_name_ar} ${p.last_name_ar}` : "") || p.full_name_ar || p.full_name || "";
+    this.nameEn = p.full_name || (p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : "");
+    this.nationalId = p.national_id || "";
+
+    const birth = p.birth_date
+      ? String(p.birth_date).slice(0, 10)
       : "";
     if (birth) {
       const parts = birth.split("-");
@@ -53,21 +60,18 @@ export class PersonalInfoState {
       }
     }
 
-    this.sex = originalStudent.sex || "male";
-    this.classId = String(originalStudent.class_id || "");
-    this.studentNumber = originalStudent.student_number || "";
-    this.email = originalStudent.email || "";
-    this.phone = originalStudent.phone_number || originalStudent.phone || "";
-    this.address = originalStudent.address || "";
-    this.previousSchool = originalStudent.previous_school || originalStudent.previousSchool || "";
-    this.district = originalStudent.district || "";
-    this.governorate = originalStudent.governorate || "";
-    this.nationality = originalStudent.nationality || "";
-    this.placeOfBirth = originalStudent.place_of_birth || "";
-    this.passportNumber = originalStudent.passport_number || "";
-    this.bloodType = originalStudent.blood_type || "";
-    this.emergencyContact = originalStudent.emergency_contact || "";
-    this.medicalNotes = originalStudent.medical_notes || "";
-    this.status = originalStudent.status || "active";
+    this.sex = p.gender || "male";
+    this.classId = String(e?.class_id || "");
+    this.studentNumber = s.student_number || "";
+    this.email = p.email || "";
+    this.phone = p.phone || "";
+    this.address = p.address || "";
+    this.nationality = p.nationality || "";
+    this.placeOfBirth = p.place_of_birth || "";
+    this.passportNumber = p.passport_number || "";
+    this.bloodType = p.blood_type || "";
+    this.medicalNotes = p.medical_notes || "";
+    this.specialNeedsNotes = p.special_needs_notes || "";
+    this.status = s.status || "active";
   }
 }

@@ -3,7 +3,14 @@ import type { Snippet, ComponentType } from "svelte";
 import { cn } from "../../../utils.js";
 import { Card } from "../card/index.js";
 
-export type MetricTone = "primary" | "success" | "warning" | "destructive" | "muted" | "info" | "purple";
+export type MetricTone =
+  | "primary"
+  | "success"
+  | "warning"
+  | "destructive"
+  | "muted"
+  | "info"
+  | "purple";
 
 export type MetricSegment = {
   label: string;
@@ -45,9 +52,14 @@ let {
   class?: string;
 } = $props();
 
-const percentage = $derived(Math.min(100, Math.max(0, (value / Math.max(max, 1)) * 100)));
+const percentage = $derived(
+  Math.min(100, Math.max(0, (value / Math.max(max, 1)) * 100)),
+);
 const segmentTotal = $derived(
-  Math.max(segments.reduce((total, segment) => total + Math.max(0, segment.value), 0), 1),
+  Math.max(
+    segments.reduce((total, segment) => total + Math.max(0, segment.value), 0),
+    1,
+  ),
 );
 
 function toneClass(segmentTone?: MetricTone, customColor?: string): string {

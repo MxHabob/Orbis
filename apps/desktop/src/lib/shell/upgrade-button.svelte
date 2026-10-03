@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui";
-import { Zap } from "@lucide/svelte";
+import { Bolt } from "@orbis/icons";
 import { uiStore } from "$lib/stores";
 </script>
 
@@ -17,7 +17,7 @@ import { uiStore } from "$lib/stores";
 						onclick={() => uiStore.setUpgradeDialog(true)}
 						aria-label={m.common_upgrade_title()}
 					>
-						<Zap size={16} strokeWidth={1.8} class="text-foreground" />
+						<Bolt size={16} strokeWidth={1.8} class="text-foreground" />
 						<span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
 					</Button>
 		{/snippet}

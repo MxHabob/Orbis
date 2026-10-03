@@ -1,12 +1,11 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
-import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
-import { TrendingUp, ArrowRight } from "@lucide/svelte";
+import { ArrowRight, ChartBar } from "@orbis/icons";
 
 let {
   orgId,
@@ -39,7 +38,7 @@ async function loadData() {
   isLoading = true;
   try {
     // Try to load dynamic profit stats or calculate from database
-    const payments = await commands.finance.listPayments();
+    const payments = await api.listPayments();
     if (payments && payments.length > 0) {
       // Calculate monthly average payment as a proxy for profit
       const totalAmount = payments.reduce(
@@ -85,7 +84,7 @@ $effect(() => {
     <div class="flex flex-col w-full text-start select-none">
       <div class="flex items-center justify-between w-full h-5">
         <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <TrendingUp size={14} class="text-muted-foreground/80" />
+          <ChartBar size={14} class="text-muted-foreground/80" />
           <span>{m.reports_profit_title()}</span>
         </div>
         {#if isEditing}

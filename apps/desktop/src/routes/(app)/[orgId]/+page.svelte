@@ -1,10 +1,10 @@
 <!--
   Overview / Dashboard page.
-  Renders the Midday-style widgets dashboard.
+  Renders the canonical DashboardPage feature component.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import OverviewView from "$lib/features/dashboard/components/dashboard-widgets.svelte";
+import { DashboardPage } from "$lib/features/dashboard";
 import type { LayoutData } from "./$types";
 
 let { data }: { data: LayoutData } = $props();
@@ -14,6 +14,6 @@ let { data }: { data: LayoutData } = $props();
 	<title>{m.common_page_title_dashboard()}</title>
 </svelte:head>
 
-<div class="h-full w-full ">
-	<OverviewView orgId={data.orgId} />
+<div class="h-full w-full min-h-0 flex-1">
+	<DashboardPage orgId={data.orgId} />
 </div>

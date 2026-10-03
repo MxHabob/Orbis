@@ -1,21 +1,17 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@orbis/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
-import { Megaphone } from "@lucide/svelte";
-import { isDesktopApp } from "$lib/core/ipc";
+import { Sparkles } from "@orbis/icons";
+import { isDesktopApp } from "$lib/api";
 
 import orbisEcosystem from "$lib/assets/orbis-ecosystem.png";
 import mulverseOrbis from "$lib/assets/mulverse-orbis.png";
 
 const handleLearnMore = async () => {
   const url = "https://mulverse.com";
-  if (isDesktopApp()) {
+  if (isDesktopApp) {
     try {
       const { openUrl } = await import("@tauri-apps/plugin-opener");
       await openUrl(url);
@@ -37,7 +33,7 @@ const handleLearnMore = async () => {
       title={m.common_whats_new_header_title()}
       aria-label={m.common_whats_new_header_title()}
     >
-      <Megaphone size={14} class="text-foreground stroke-[2px]" />
+      <Sparkles size={14} class="text-foreground stroke-[2px]" />
     </Button>
   </PopoverTrigger>
   

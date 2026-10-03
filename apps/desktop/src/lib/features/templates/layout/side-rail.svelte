@@ -12,14 +12,7 @@ import {
   TooltipProvider,
 } from "@orbis/ui/tooltip";
 import * as m from "$lib/paraglide/messages";
-import {
-  LayoutTemplate,
-  Shapes,
-  Type,
-  ImageIcon,
-  Wrench,
-  Settings2,
-} from "@lucide/svelte";
+import { Bold, Component, DocumentPage, Grid, H1, Photo, SettingsAlt, Wrench } from "@orbis/icons";
 
 let {
   store,
@@ -35,12 +28,12 @@ type RailItem = {
 };
 
 const topItems: RailItem[] = [
-  { id: "templates", icon: LayoutTemplate, label: m.common_td_panel_pages() },
-  { id: "elements", icon: Shapes, label: m.common_td_panel_elements() },
-  { id: "text", icon: Type, label: m.common_td_panel_text() },
-  { id: "uploads", icon: ImageIcon, label: m.common_td_panel_media() },
+  { id: "templates", icon: DocumentPage, label: m.common_td_panel_pages() },
+  { id: "elements", icon: Component, label: m.common_td_panel_elements() },
+  { id: "text", icon: H1, label: m.common_td_panel_text() },
+  { id: "uploads", icon: Photo, label: m.common_td_panel_media() },
   { id: "tools", icon: Wrench, label: m.common_td_panel_tools() },
-  { id: "page-setup", icon: Settings2, label: m.common_td_panel_settings() },
+  { id: "page-setup", icon: SettingsAlt, label: m.common_td_panel_settings() },
 ];
 </script>
 

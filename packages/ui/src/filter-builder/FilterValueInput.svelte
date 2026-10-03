@@ -1,20 +1,33 @@
 <script lang="ts">
-    import { Input } from "../components/ui/input";
-    import { Select, SelectTrigger, SelectContent, SelectItem } from "../components/ui/select";
-    import { FilterOperator, type FilterCondition, type FieldDefinition } from "./types";
+import { Input } from "../components/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "../components/ui/select";
+import {
+  FilterOperator,
+  type FilterCondition,
+  type FieldDefinition,
+} from "./types";
 
-    let {
-        condition = $bindable(),
-        fields = []
-    }: {
-        condition: FilterCondition;
-        fields: FieldDefinition[];
-    } = $props();
+let {
+  condition = $bindable(),
+  fields = [],
+}: {
+  condition: FilterCondition;
+  fields: FieldDefinition[];
+} = $props();
 
-    let selectedField = $derived(fields.find(f => f.id === condition.field));
-    
-    // Some operators don't need a value input
-    let needsValue = $derived(![FilterOperator.IsNull, FilterOperator.IsNotNull].includes(condition.operator));
+let selectedField = $derived(fields.find((f) => f.id === condition.field));
+
+// Some operators don't need a value input
+let needsValue = $derived(
+  ![FilterOperator.IsNull, FilterOperator.IsNotNull].includes(
+    condition.operator,
+  ),
+);
 </script>
 
 {#if needsValue}

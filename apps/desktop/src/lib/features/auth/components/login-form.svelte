@@ -5,7 +5,7 @@ import { authStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
-import { Eye, EyeOff, Loader2 } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowPath, Eye, EyeSlash } from "@orbis/icons";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "@orbis/ui";
@@ -17,27 +17,27 @@ import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 let showPassword = $state(false);
 const form = new FormController({
-	initialValues: { identifier: "", password: "" },
-	schema: loginInputSchema,
+  initialValues: { identifier: "", password: "" },
+  schema: loginInputSchema,
 });
 
 function fieldError(field: string): string | undefined {
-	return form.errors[field]?.[0];
+  return form.errors[field]?.[0];
 }
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-	const submitted = await form.submit(async (payload) => {
-		await authStore.login(payload.identifier, payload.password);
+  const submitted = await form.submit(async (payload) => {
+    await authStore.login(payload.identifier, payload.password);
     const targetOrgId = authStore.orgId || "default";
     await goto(localizeHref(`/${targetOrgId}`), {
       invalidateAll: true,
       replaceState: true,
     });
-	});
-	if (!submitted && !form.formError && Object.keys(form.errors).length === 0) {
-		form.formError = m.auth_login_failed();
-	}
+  });
+  if (!submitted && !form.formError && Object.keys(form.errors).length === 0) {
+    form.formError = m.auth_login_failed();
+  }
 }
 
 function handleForgotPassword() {
@@ -95,7 +95,7 @@ function handleForgotPassword() {
 				aria-label={showPassword ? m.auth_login_hide_password() : m.auth_login_show_password()}
 			>
 				{#if showPassword}
-					<EyeOff size={15} strokeWidth={2} />
+					<EyeSlash size={15} strokeWidth={2} />
 				{:else}
 					<Eye size={15} strokeWidth={2} />
 				{/if}
@@ -113,7 +113,7 @@ function handleForgotPassword() {
 			disabled={form.isSubmitting}
 		>
 			{#if form.isSubmitting}
-				<Loader2 size={13} strokeWidth={2} class="mr-1.5 animate-spin" />
+				<ArrowPath size={13} strokeWidth={2} class="mr-1.5 animate-spin" />
 				{m.auth_login_submitting()}
 			{:else}
 				{m.auth_login_continue()}

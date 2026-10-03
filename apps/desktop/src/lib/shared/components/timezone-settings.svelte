@@ -1,58 +1,72 @@
 <!--
-@component TimezoneSettings
-A reusable timezone selection component using `@orbis/location` and `ComboboxDropdown`.
+  @component TimezoneSettings
+  A reusable timezone selection row using `@orbis/location`, `SearchableSelect`, and `SettingsRow`.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Label } from "@orbis/ui/label";
 import { getTimezones } from "@orbis/location/timezones";
-import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
+import SettingsRow from "$lib/shared/components/settings-row.svelte";
 
 let {
-  title = "Timezone",
-  description = "Choose the default timezone for the organization.",
-  currentTimezone = $bindable("UTC"),
+  title = m.common_general_timezone?.() || "المنطقة الزمنية",
+  description = m.settings_general_timezone_desc?.() || "المنطقة الزمنية الافتراضية للجدولة والسجلات.",
+  currentTimezone = $bindable("Asia/Aden"),
+  disabled = false,
+  last = false,
   onchange,
 }: {
   title?: string;
   description?: string;
   currentTimezone?: string;
+  disabled?: boolean;
+  last?: boolean;
   onchange?: (timezone: string) => void;
 } = $props();
 
-const timezoneItems = getTimezones().map((tz, index) => ({
-  id: index.toString(),
-  label: tz.label,
-  value: tz.tzCode,
-}));
+const timezones = getTimezones();
 
-const selectedItem = $derived(
-  timezoneItems.find((item) => item.value === currentTimezone),
-);
+function getTimezoneValue(tz: any): string {
+  return tz?.tzCode || "";
+}
 
-function handleSelect(item: { id: string; label: string; value: string }) {
-  if (item.value !== currentTimezone) {
-    currentTimezone = item.value;
-    onchange?.(item.value);
+function getTimezoneLabel(tz: any): string {
+  return tz?.label || tz?.tzCode || "";
+}
+
+function getTimezoneSubtitle(tz: any): string | undefined {
+  if (tz?.name && tz?.name !== tz?.label) {
+    return tz.name;
   }
+  return undefined;
+}
+
+function getTimezoneBadge(tz: any): string | undefined {
+  return tz?.utc || undefined;
+}
+
+function handleChange(val: string | null) {
+  const next = val || "UTC";
+  currentTimezone = next;
+  onchange?.(next);
 }
 </script>
 
-<div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-  <div class="flex flex-col gap-1 text-start">
-    <Label class="text-xs font-semibold text-foreground">
-      {title}
-    </Label>
-    <span class="text-[11px] text-muted-foreground leading-relaxed">{description}</span>
-  </div>
-  <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-    <ComboboxDropdown
-      placeholder="Select timezone..."
-      searchPlaceholder="Search timezone..."
-      {selectedItem}
-      items={timezoneItems}
-      onSelect={handleSelect}
+<SettingsRow {title} {description} {last}>
+  {#snippet children()}
+    <SearchableSelect
+      bind:value={currentTimezone}
+      items={timezones}
+      placeholder={m.common_general_timezone?.() || "اختر المنطقة الزمنية..."}
+      searchPlaceholder="ابحث باسم المدينة أو المنطقة (مثال: Riyadh, Aden, Cairo, London)..."
+      emptyText="لا توجد منطقة زمنية مطابقة"
+      {disabled}
+      getItemValue={getTimezoneValue}
+      getItemLabel={getTimezoneLabel}
+      getItemSubtitle={getTimezoneSubtitle}
+      getItemBadge={getTimezoneBadge}
+      onchange={handleChange}
       class="w-full"
     />
-  </div>
-</div>
+  {/snippet}
+</SettingsRow>

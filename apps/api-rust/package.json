@@ -3,8 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "dev": "cargo run --package api-gateway",
-    "build": "cargo build --package api-gateway --release || echo 'Cargo compiler not found, skipping local build'",
-    "clean": "cargo clean"
+    "dev": "cargo run --package orbis-server --bin orbis-server",
+    "build": "cargo build --package orbis-server --bin orbis-server --release"
   }
 }

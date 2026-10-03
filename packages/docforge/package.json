@@ -1,0 +1,28 @@
+{
+  "name": "@docforge/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Standalone document template engine — Document Model, Expression Engine, Validation, Operations",
+  "sideEffects": false,
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./model": "./src/model/index.ts",
+    "./expression": "./src/expression/index.ts",
+    "./operations": "./src/operations/index.ts",
+    "./validation": "./src/validation/index.ts",
+    "./data": "./src/data/index.ts",
+    "./editor": "./src/editor/index.ts",
+    "./utils": "./src/utils/index.ts",
+    "./canvas": "./src/canvas/index.ts"
+  },
+  "devDependencies": {
+    "@orbis/tsconfig": "workspace:*",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,13 +1,21 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardAction,
+  CardContent,
+  CardFooter,
+} from "@orbis/ui/card";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
-import { ArrowRight } from "@lucide/svelte";
+import { ArrowRight } from "@orbis/icons";
 
 let {
   orgId,
@@ -35,15 +43,15 @@ async function loadData() {
     if (selectedClass !== "all") params.class_id = selectedClass;
     if (selectedTerm !== "all") params.period_id = selectedTerm;
 
-    const paymentsList = await commands.finance.listPayments();
-    const feesList = await commands.finance.listStudentFeesByOrg();
+    const paymentsList = await api.listPayments();
+    const feesList = await api.listStudentFees();
 
     if (paymentsList && paymentsList.length > 0) {
       const monthsMap: Record<string, { invoiced: number; collected: number }> =
         {};
 
       for (const p of paymentsList) {
-        const dateStr = (p.payment_date || p.created_at || "") as string;
+        const dateStr = (p.paid_at || p.created_at || "") as string;
         if (!dateStr) continue;
         const monthKey = dateStr.substring(0, 7);
         if (!monthsMap[monthKey]) {
@@ -181,137 +189,138 @@ function formatVal(val: number) {
 }
 </script>
 
-<div class="card-tactile h-full w-full p-6 bg-card border border-border/60 flex flex-col justify-between text-start relative overflow-hidden shadow-sm min-h-[315px] font-sans">
+<Card class="h-full w-full flex flex-col justify-between text-start relative overflow-hidden shadow-sm min-h-[315px] font-sans">
   {#if isLoading}
-    <div class="flex-grow w-full relative flex items-center justify-center">
+    <div class="flex-grow w-full p-6 relative flex items-center justify-center">
       <Skeleton class="h-full w-full rounded-lg animate-pulse" />
     </div>
   {:else}
     <!-- Top Row Header + Legend -->
-    <div class="flex items-start justify-between w-full select-none mb-3">
-      <div class="flex flex-col text-start">
-        <span class="text-sm font-semibold text-foreground/90">
-          {m.finance_overview_collection_trend ? m.finance_overview_collection_trend() : "Cash Flow Trend"}
-        </span>
-      </div>
+    <CardHeader class="py-3 px-4">
       <div class="flex items-center gap-2">
+        <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
+          {m.finance_overview_collection_trend ? m.finance_overview_collection_trend() : "Cash Flow Trend"}
+        </CardTitle>
         {#if isEditing}
           <DragIndicator />
         {/if}
       </div>
-      
-      <!-- Legends: Invoiced (Primary color) and Collected (Emerald color) -->
-      <div class="flex items-center gap-4 text-[10px] text-muted-foreground font-semibold">
-        <div class="flex items-center gap-1.5">
-          <span class="h-2.5 w-2.5 rounded-sm bg-muted-foreground/30 inline-block"></span>
-          <span>{m.finance_overview_trend_invoiced ? m.finance_overview_trend_invoiced() : m.finance_overview_trend_invoiced()}</span>
+
+      <CardAction>
+        <div class="flex items-center gap-4 text-[10px] text-muted-foreground font-semibold select-none">
+          <div class="flex items-center gap-1.5">
+            <span class="h-2.5 w-2.5 rounded-sm bg-muted-foreground/30 inline-block"></span>
+            <span>{m.finance_overview_trend_invoiced ? m.finance_overview_trend_invoiced() : "Invoiced"}</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="h-2.5 w-2.5 rounded-sm bg-foreground inline-block"></span>
+            <span>{m.finance_overview_trend_collected ? m.finance_overview_trend_collected() : "Collected"}</span>
+          </div>
         </div>
-        <div class="flex items-center gap-1.5">
-          <span class="h-2.5 w-2.5 rounded-sm bg-foreground inline-block"></span>
-          <span>{m.finance_overview_trend_collected ? m.finance_overview_trend_collected() : m.finance_overview_trend_collected()}</span>
-        </div>
-      </div>
-    </div>
+      </CardAction>
+    </CardHeader>
 
     <!-- HTML Chart Area -->
-    <div 
-      class="flex-grow relative w-full h-[225px] select-none mt-2 flex flex-col justify-between" 
-      role="application"
-      onmouseleave={handleMouseLeave}
-    >
-      <!-- Horizontal Grid Lines background -->
-      <div class="absolute inset-0 flex flex-col justify-between pb-8 pt-4 pointer-events-none">
-        {#each Array(5) as _, i}
-          {@const tickVal = maxVal - (i / 4) * maxVal}
-          <div class="flex items-center w-full h-0">
-            <span class="w-16 text-end text-[9px] font-bold text-muted-foreground/80 font-mono pe-2 select-none">
-              {formatVal(tickVal)}
-            </span>
-            <div class="flex-grow border-t border-dashed border-border/40"></div>
-          </div>
-        {/each}
-      </div>
-
-      <!-- Columns Container -->
+    <CardContent class="p-4 pt-2 flex-grow flex flex-col justify-between">
       <div 
-        class="absolute inset-0 flex items-end justify-between ps-16 pe-2 pb-8 pt-4 cursor-crosshair"
+        class="flex-grow relative w-full h-[225px] select-none flex flex-col justify-between" 
         role="application"
-        onmousemove={handleMouseMove}
+        onmouseleave={handleMouseLeave}
       >
-        {#each bars as bar, idx}
-          {@const isActive = hoveredIdx === idx}
-          <div class="flex-grow flex flex-col items-center justify-end h-full relative group/col">
-            <!-- Active slice highlight background -->
-            {#if isActive && data.length > 0}
-              <div class="absolute inset-x-1 top-0 bottom-0 bg-foreground/5 rounded-md pointer-events-none"></div>
-            {/if}
-
-            <!-- The Double Bars -->
-            {#if data.length > 0}
-              <div class="flex items-end gap-1 md:gap-1.5 h-full pb-1 z-10">
-                <!-- Invoiced Bar (Primary color tactile) -->
-                <div 
-                  class="w-2.5 sm:w-3.5 bar-tactile-last cursor-pointer"
-                  style="height: {bar.invPct}%"
-                  title="Invoiced"
-                ></div>
-                <!-- Collected Bar (Emerald tactile) -->
-                <div 
-                  class="w-2.5 sm:w-3.5 bar-tactile-this cursor-pointer"
-                  style="height: {bar.colPct}%"
-                  title="Collected"
-                ></div>
-              </div>
-            {/if}
-
-            <!-- X-Axis Label Centered Under Bars -->
-            <div class="absolute bottom-[-24px] text-[9px] font-bold text-muted-foreground/90 font-mono select-none">
-              {bar.label}
+        <!-- Horizontal Grid Lines background -->
+        <div class="absolute inset-0 flex flex-col justify-between pb-8 pt-4 pointer-events-none">
+          {#each Array(5) as _, i}
+            {@const tickVal = maxVal - (i / 4) * maxVal}
+            <div class="flex items-center w-full h-0">
+              <span class="w-16 text-end text-[9px] font-bold text-muted-foreground/80 font-mono pe-2 select-none">
+                {formatVal(tickVal)}
+              </span>
+              <div class="flex-grow border-t border-dashed border-border/40"></div>
             </div>
-          </div>
-        {/each}
-      </div>
+          {/each}
+        </div>
 
-      <!-- Floating Tooltip Box -->
-      {#if hoveredIdx !== null && tooltipPos && data.length > 0}
-        {@const activeBar = bars[hoveredIdx]}
+        <!-- Columns Container -->
         <div 
-          class="absolute z-30 p-2.5 text-[10px] font-sans border bg-card border-border text-foreground rounded-lg shadow-xl pointer-events-none flex flex-col gap-1 min-w-[130px] text-start"
-          style="left: {tooltipPos.x + 15}px; top: {tooltipPos.y - 65}px;"
+          class="absolute inset-0 flex items-end justify-between ps-16 pe-2 pb-8 pt-4 cursor-crosshair"
+          role="application"
+          onmousemove={handleMouseMove}
         >
-          <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{activeBar.label}</span>
-          <div class="flex flex-col gap-0.5">
-            <div class="flex items-center justify-between gap-4">
-              <span class="text-muted-foreground">{m.finance_overview_trend_invoiced ? m.finance_overview_trend_invoiced() : m.finance_overview_trend_invoiced()}:</span>
-              <span class="font-bold font-mono text-foreground">{formatCurrency(activeBar.invoiced)}</span>
+          {#each bars as bar, idx}
+            {@const isActive = hoveredIdx === idx}
+            <div class="flex-grow flex flex-col items-center justify-end h-full relative group/col">
+              <!-- Active slice highlight background -->
+              {#if isActive && data.length > 0}
+                <div class="absolute inset-x-1 top-0 bottom-0 bg-foreground/5 rounded-md pointer-events-none"></div>
+              {/if}
+
+              <!-- The Double Bars -->
+              {#if data.length > 0}
+                <div class="flex items-end gap-1 md:gap-1.5 h-full pb-1 z-10">
+                  <!-- Invoiced Bar (Primary color tactile) -->
+                  <div 
+                    class="w-2.5 sm:w-3.5 bar-tactile-last cursor-pointer"
+                    style="height: {bar.invPct}%"
+                    title="Invoiced"
+                  ></div>
+                  <!-- Collected Bar (Emerald tactile) -->
+                  <div 
+                    class="w-2.5 sm:w-3.5 bar-tactile-this cursor-pointer"
+                    style="height: {bar.colPct}%"
+                    title="Collected"
+                  ></div>
+                </div>
+              {/if}
+
+              <!-- X-Axis Label Centered Under Bars -->
+              <div class="absolute bottom-[-24px] text-[9px] font-bold text-muted-foreground/90 font-mono select-none">
+                {bar.label}
+              </div>
             </div>
-            <div class="flex items-center justify-between gap-4">
-              <span class="text-muted-foreground">{m.finance_overview_trend_collected ? m.finance_overview_trend_collected() : m.finance_overview_trend_collected()}:</span>
-              <span class="font-bold font-mono text-foreground">{formatCurrency(activeBar.collected)}</span>
+          {/each}
+        </div>
+
+        <!-- Floating Tooltip Box -->
+        {#if hoveredIdx !== null && tooltipPos && data.length > 0}
+          {@const activeBar = bars[hoveredIdx]}
+          <div 
+            class="absolute z-30 p-2.5 text-[10px] font-sans border bg-card border-border text-foreground rounded-lg shadow-xl pointer-events-none flex flex-col gap-1 min-w-[130px] text-start"
+            style="left: {tooltipPos.x + 15}px; top: {tooltipPos.y - 65}px;"
+          >
+            <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{activeBar.label}</span>
+            <div class="flex flex-col gap-0.5">
+              <div class="flex items-center justify-between gap-4">
+                <span class="text-muted-foreground">{m.finance_overview_trend_invoiced ? m.finance_overview_trend_invoiced() : "Invoiced"}:</span>
+                <span class="font-bold font-mono text-foreground">{formatCurrency(activeBar.invoiced)}</span>
+              </div>
+              <div class="flex items-center justify-between gap-4">
+                <span class="text-muted-foreground">{m.finance_overview_trend_collected ? m.finance_overview_trend_collected() : "Collected"}:</span>
+                <span class="font-bold font-mono text-foreground">{formatCurrency(activeBar.collected)}</span>
+              </div>
             </div>
           </div>
-        </div>
-      {/if}
+        {/if}
 
-      <!-- Backdrop Blur Overlay -->
-      {#if data.length === 0}
-        <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3.5px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
-          <span class="font-bold text-xs text-foreground/90">{m.finance_overview_empty_records()}</span>
-          <span class="text-[9px] text-muted-foreground max-w-[340px] leading-relaxed">
-            {m.finance_overview_empty_records_desc()}
-          </span>
-        </div>
-      {/if}
-    </div>
+        <!-- Backdrop Blur Overlay -->
+        {#if data.length === 0}
+          <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3.5px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
+            <span class="font-bold text-xs text-foreground/90">{m.finance_overview_empty_records()}</span>
+            <span class="text-[9px] text-muted-foreground max-w-[340px] leading-relaxed">
+              {m.finance_overview_empty_records_desc()}
+            </span>
+          </div>
+        {/if}
+      </div>
+    </CardContent>
 
-    <!-- Elegant Footer Links -->
-    <div class="border-t border-border/40 pt-2 flex items-center justify-between w-full select-none text-[9px] font-bold mt-2">
+    <!-- Footer Links -->
+    <CardFooter class="border-t border-border/40 py-2.5 px-4 flex items-center justify-between w-full select-none text-[9px] font-bold">
       <div class="flex items-center gap-4">
         <a href={localizeHref(`/${orgId}/finance/statement`)} class="text-primary hover:underline flex items-center gap-1 group/statement">
-          <span>{m.finance_overview_btn_statement ? m.finance_overview_btn_statement() : m.finance_overview_btn_statement()}</span>
+          <span>{m.finance_overview_btn_statement ? m.finance_overview_btn_statement() : "Statement"}</span>
           <ArrowRight size={10} class="transition-transform group-hover/statement:translate-x-0.5 rtl:rotate-180" />
         </a>
       </div>
-    </div>
+    </CardFooter>
   {/if}
-</div>
+</Card>

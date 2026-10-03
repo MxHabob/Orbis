@@ -1,21 +1,10 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
-import {
-  Lock,
-  Unlock,
-  CalendarClock,
-  CalendarOff,
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  RefreshCw,
-  BarChart3,
-  Users,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowPath, ChartBar, CheckCircle, Clock, Lock, LockClosed, Refresh, Users, XMark } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 
-import { formatNumber } from "$lib/core/i18n";
+import { formatNumber, formatDate } from "$lib/core/i18n";
 
 interface Props {
   selectedPeriod: any;
@@ -79,22 +68,22 @@ let {
           <span class="text-muted-foreground">{m.common_control_grade_entry()}</span>
           <span class="flex items-center gap-1 font-semibold {isGradeEntryOpen ? 'text-emerald-500' : 'text-amber-500'}">
             {#if isGradeEntryOpen}
-              <CheckCircle2 size={12} /> {m.common_exams_open_section()}
+              <CheckCircle size={12} /> {m.common_exams_open_section()}
             {:else}
-              <XCircle size={12} /> {m.common_phase_locked()}
+              <XMark size={12} /> {m.common_phase_locked()}
             {/if}
           </span>
         </div>
         {#if selectedPeriod.grade_entry_start}
           <div class="flex items-center justify-between">
             <span class="text-muted-foreground">{m.common_control_grade_entry_start()}</span>
-            <span class="font-mono text-[10px]">{new Date(selectedPeriod.grade_entry_start).toLocaleDateString(getLocale())}</span>
+            <span class="font-mono text-[10px]">{formatDate(selectedPeriod.grade_entry_start)}</span>
           </div>
         {/if}
         {#if selectedPeriod.grade_entry_end}
           <div class="flex items-center justify-between">
             <span class="text-muted-foreground">{m.common_control_grade_entry_end()}</span>
-            <span class="font-mono text-[10px]">{new Date(selectedPeriod.grade_entry_end).toLocaleDateString(getLocale())}</span>
+            <span class="font-mono text-[10px]">{formatDate(selectedPeriod.grade_entry_end)}</span>
           </div>
         {/if}
         {#if selectedPeriod.locked_by}
@@ -118,7 +107,7 @@ let {
             disabled={isPeriodActionLoading}
           >
             {#if isPeriodActionLoading}
-              <Loader2 size={14} class="animate-spin" />
+              <ArrowPath size={14} class="animate-spin" />
             {:else}
               <Unlock size={14} />
             {/if}
@@ -132,7 +121,7 @@ let {
             disabled={isPeriodActionLoading}
           >
             {#if isPeriodActionLoading}
-              <Loader2 size={14} class="animate-spin" />
+              <ArrowPath size={14} class="animate-spin" />
             {:else}
               <Lock size={14} />
             {/if}
@@ -147,9 +136,9 @@ let {
               disabled={isPeriodActionLoading}
             >
               {#if isPeriodActionLoading}
-                <Loader2 size={14} class="animate-spin" />
+                <ArrowPath size={14} class="animate-spin" />
               {:else}
-                <CalendarOff size={14} />
+                <LockClosed size={14} />
               {/if}
               {m.common_control_close_entry()}
             </Button>
@@ -161,9 +150,9 @@ let {
               disabled={isPeriodActionLoading}
             >
               {#if isPeriodActionLoading}
-                <Loader2 size={14} class="animate-spin" />
+                <ArrowPath size={14} class="animate-spin" />
               {:else}
-                <CalendarClock size={14} />
+                <Clock size={14} />
               {/if}
               {m.common_control_open_entry()}
             </Button>
@@ -179,9 +168,9 @@ let {
           disabled={isCompileLoading}
         >
           {#if isCompileLoading}
-            <Loader2 size={14} class="animate-spin" />
+            <ArrowPath size={14} class="animate-spin" />
           {:else}
-            <RefreshCw size={14} />
+            <Refresh size={14} />
           {/if}
           {m.common_control_compile_grades()}
         </Button>
@@ -193,7 +182,7 @@ let {
   {#if stats}
     <div class="bg-background/50 border border-border rounded-lg p-4 flex flex-col gap-3">
       <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-        <BarChart3 size={12} />
+        <ChartBar size={12} />
         {m.common_control_stats()}
       </h3>
       <div class="flex flex-col gap-2 text-xs">

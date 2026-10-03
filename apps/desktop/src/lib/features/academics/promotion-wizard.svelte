@@ -5,16 +5,14 @@ Steps: Configuration → Class Mapping → Preview → Execute.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-
-import { commands } from "$lib/core/ipc";
-import { extractErrorMessage } from "$lib/core/ipc";
+import { api } from "$lib/api";
+import { extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
 import { academicContext } from "$lib/stores";
 import { onMount } from "svelte";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@orbis/ui/card";
@@ -22,17 +20,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Switch } from "@orbis/ui/switch";
-import { Checkbox } from "@orbis/ui/checkbox";
-import { Badge } from "@orbis/ui/badge";
-import { Separator } from "@orbis/ui/separator";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableCell,
-} from "@orbis/ui/table";
+import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -43,39 +31,18 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@orbis/ui/alert-dialog";
-import { Skeleton } from "@orbis/ui/skeleton";
 import { Progress } from "@orbis/ui/progress";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Play,
-  Check,
-  Loader2,
-  Plus,
-  Trash2,
-  Users,
-  UserCheck,
-  UserX,
-  GraduationCap,
-  Ban,
-} from "@lucide/svelte";
-import type {
-  PromotionConfig,
-  PromotionJob,
-  PromotionDetail,
-  ClassMapping,
-} from "@orbis/sdk-core";
-
-let { orgId }: { orgId: string } = $props();
+import { AdjustmentsHorizontal, ArrowLeft, ArrowPath, ArrowRight, BookOpen, Check, Play, Plus, Trash, User, UserBadgeCheck, UserMinus, Users } from "@orbis/icons";
+import type { PromotionConfig } from "@orbis/sdk";
 
 // ── Wizard State ────────────────────────────────────────────────
 
 let currentStep = $state(0);
 const steps = [
-  { key: "config", label: m.common_word_settings },
-  { key: "mapping", label: m.common_promo_step_mapping },
-  { key: "preview", label: m.common_action_preview },
-  { key: "execute", label: m.common_calendar_execute },
+  { key: "config", label: () => m.common_word_settings() },
+  { key: "mapping", label: () => m.common_promo_mapping() },
+  { key: "preview", label: () => m.common_action_preview() },
+  { key: "execute", label: () => m.common_promo_execute() },
 ];
 
 const progressValue = $derived(((currentStep + 1) / steps.length) * 100);
@@ -98,41 +65,18 @@ let config = $state<PromotionConfig>({
   class_mapping: [],
 });
 
-$effect(() => {
-  if (academicContext.effectivePeriodId && !config.source_period_id) {
-    config.source_period_id = academicContext.effectivePeriodId;
-  }
-});
-
 let policyLoaded = $state(false);
 
 // Load promotion policy and apply defaults (Policy-Driven Architecture)
 onMount(async () => {
-  try {
-    const policy = await commands.platform_policy.getAutopilotConfig();
-    if (policy) {
-      // Apply policy values as defaults (user can still override)
-      config.passing_score = policy.passing_score ?? 50;
-      config.min_attendance_rate = policy.min_attendance_rate ?? 75;
-      config.auto_graduate_final_level = policy.auto_graduate_final_level === 1;
-      config.exclude_withdrawn = policy.exclude_withdrawn === 1;
-      // Default to false for these since they aren't explicitly tracked in AcademicPolicy anymore
-      config.carry_over_outstanding_fees = false;
-      config.carry_over_guardians = true;
-      if (policy.final_level) config.final_level = policy.final_level;
-    }
-    policyLoaded = true;
-  } catch (e) {
-    // Policy not found — keep hardcoded defaults
-    policyLoaded = true;
-  }
+  policyLoaded = true;
 });
 
 // ── Preview State ───────────────────────────────────────────────
 
 let isAnalyzing = $state(false);
-let previewJob = $state<PromotionJob | null>(null);
-let previewDetails = $state<PromotionDetail[]>([]);
+let previewJob = $state<any>(null);
+let previewDetails = $state<any[]>([]);
 let previewStats = $state({
   total: 0,
   promoted: 0,
@@ -145,7 +89,7 @@ let previewStats = $state({
 
 let isExecuting = $state(false);
 let showExecuteConfirm = $state(false);
-let executionResult = $state<PromotionJob | null>(null);
+let executionResult = $state<any>(null);
 
 // ── Config step valid ───────────────────────────────────────────
 
@@ -179,14 +123,20 @@ function removeMapping(index: number) {
 async function runDryRun() {
   isAnalyzing = true;
   try {
-    previewJob = await commands.enrollment_workflow.startDryRun(config);
+    previewJob = await api.promoteCohort({
+      source_period_id: config.source_period_id,
+      target_period_id: config.target_period_id || config.source_period_id,
+      job_name: config.target_year_name || "Promotion",
+      items: [],
+    });
     if (previewJob) {
-      previewDetails = await commands.enrollment_workflow.getJob(
-        previewJob.id,
-      );
-      if (previewJob.dry_run_result) {
-        previewStats = JSON.parse(previewJob.dry_run_result);
-      }
+      previewStats = {
+        total: previewJob.total_students || 0,
+        promoted: previewJob.promoted_count || 0,
+        retained: previewJob.retained_count || 0,
+        graduated: previewJob.graduated_count || 0,
+        excluded: previewJob.excluded_count || 0,
+      };
     }
     currentStep = 2; // Move to preview
   } catch (e: unknown) {
@@ -201,7 +151,12 @@ async function executePromotion() {
   showExecuteConfirm = false;
   isExecuting = true;
   try {
-    executionResult = await commands.enrollment_workflow.execute(previewJob.id);
+    executionResult = await api.promoteCohort({
+      source_period_id: config.source_period_id,
+      target_period_id: config.target_period_id || config.source_period_id,
+      job_name: config.target_year_name || "Promotion Execution",
+      items: [],
+    });
     toast.success(m.common_promo_complete());
     currentStep = 3; // Move to results
   } catch (e: unknown) {
@@ -240,6 +195,35 @@ function decisionLabel(d: string) {
       return d;
   }
 }
+
+const previewColumns: OrbisColumnDef[] = [
+  {
+    id: "student_name",
+    prop: "student_name",
+    header: m.common_word_student(),
+    name: m.common_word_student(),
+    width: 280,
+    size: 280,
+    cellClass: "font-semibold text-foreground",
+  },
+  {
+    id: "decision",
+    prop: "decision",
+    header: m.common_promo_decision(),
+    name: m.common_promo_decision(),
+    width: 160,
+    size: 160,
+    cell: BadgeCell,
+  },
+];
+
+const previewGridRows = $derived(
+  (previewDetails || []).map((detail, idx) => ({
+    id: detail.student_id || `promo-preview-${idx}`,
+    student_name: detail.student_name || "—",
+    decision: detail.decision || "promoted",
+  }))
+);
 </script>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide pb-10">
@@ -269,7 +253,7 @@ function decisionLabel(d: string) {
                   <Label for="target_year_name" class="text-xs font-semibold text-foreground">{m.common_promo_target_year()}</Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_year()}</span>
                 </div>
-                <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
                   <Input id="target_year_name" bind:value={config.target_year_name} placeholder={m.common_year_name_placeholder()} class="h-9 w-full bg-background" />
                 </div>
               </div>
@@ -280,7 +264,7 @@ function decisionLabel(d: string) {
                   <Label for="target_year_name_ar" class="text-xs font-semibold text-foreground">{m.common_year_name_ar()}</Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_year_ar()}</span>
                 </div>
-                <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
                   <Input id="target_year_name_ar" bind:value={config.target_year_name_ar} class="h-9 w-full bg-background" />
                 </div>
               </div>
@@ -291,7 +275,7 @@ function decisionLabel(d: string) {
                   <Label for="target_start_date" class="text-xs font-semibold text-foreground">{m.common_promo_target_start()}</Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_start()}</span>
                 </div>
-                <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
                   <Input id="target_start_date" type="date" bind:value={config.target_start_date} class="h-9 w-full bg-background" />
                 </div>
               </div>
@@ -302,7 +286,7 @@ function decisionLabel(d: string) {
                   <Label for="target_end_date" class="text-xs font-semibold text-foreground">{m.common_promo_target_end()}</Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_end()}</span>
                 </div>
-                <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
                   <Input id="target_end_date" type="date" bind:value={config.target_end_date} class="h-9 w-full bg-background" />
                 </div>
               </div>
@@ -313,7 +297,7 @@ function decisionLabel(d: string) {
                   <Label for="passing_score" class="text-xs font-semibold text-foreground">{m.common_promo_passing_score()}</Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_passing_score()}</span>
                 </div>
-                <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
                   <Input id="passing_score" type="number" bind:value={config.passing_score} min={0} max={100} class="h-9 w-full bg-background" />
                 </div>
               </div>
@@ -324,7 +308,7 @@ function decisionLabel(d: string) {
                   <Label for="min_attendance_rate" class="text-xs font-semibold text-foreground">{m.common_promo_min_attendance()}</Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_min_attendance()}</span>
                 </div>
-                <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
                   <Input id="min_attendance_rate" type="number" bind:value={config.min_attendance_rate} min={0} max={100} class="h-9 w-full bg-background" />
                 </div>
               </div>
@@ -363,7 +347,7 @@ function decisionLabel(d: string) {
                     </Label>
                     <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_final_level()}</span>
                   </div>
-                  <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+                  <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
                     <Input id="final_level" bind:value={config.final_level} placeholder={m.common_promo_final_level_placeholder()} class="h-9 w-full bg-background" />
                   </div>
                 </div>
@@ -435,7 +419,7 @@ function decisionLabel(d: string) {
                     {m.common_promo_source_level()} &rarr; {m.common_promo_target_level()}
                   </CardTitle>
                   <Button variant="ghost" size="icon-xs" onclick={() => removeMapping(i)} class="text-destructive hover:text-destructive hover:bg-destructive/5 shrink-0">
-                    <Trash2 class="size-3.5" />
+                    <Trash class="size-3.5" />
                   </Button>
                 </CardHeader>
                 <CardContent class="p-0">
@@ -446,7 +430,7 @@ function decisionLabel(d: string) {
                         <Label class="text-xs font-semibold text-foreground">{m.common_promo_source_level()}</Label>
                         <span class="text-[11px] text-muted-foreground">{m.common_promo_desc_source_level()}</span>
                       </div>
-                      <div class="w-full md:w-[480px] shrink-0">
+                      <div class="w-full md:w-120 shrink-0">
                         <Input bind:value={mapping.source_level} placeholder={m.common_promo_source_level_placeholder()} class="h-9 w-full bg-background" />
                       </div>
                     </div>
@@ -457,7 +441,7 @@ function decisionLabel(d: string) {
                         <Label class="text-xs font-semibold text-foreground">{m.common_promo_target_level()}</Label>
                         <span class="text-[11px] text-muted-foreground">{m.common_promo_desc_target_level()}</span>
                       </div>
-                      <div class="w-full md:w-[480px] shrink-0">
+                      <div class="w-full md:w-120 shrink-0">
                         <Input bind:value={mapping.target_level} placeholder={m.common_promo_target_level_placeholder()} class="h-9 w-full bg-background" />
                       </div>
                     </div>
@@ -468,7 +452,7 @@ function decisionLabel(d: string) {
                         <Label class="text-xs font-semibold text-foreground">{m.common_promo_target_classes()}</Label>
                         <span class="text-[11px] text-muted-foreground">{m.common_promo_desc_target_classes()}</span>
                       </div>
-                      <div class="w-full md:w-[480px] shrink-0">
+                      <div class="w-full md:w-120 shrink-0">
                         <Input
                           value={mapping.target_class_names.join(", ")}
                           oninput={(e) => {
@@ -502,7 +486,7 @@ function decisionLabel(d: string) {
           </div>
           <!-- Promoted -->
           <div class="p-4 rounded-xl border border-border bg-card text-center flex flex-col justify-between h-28 select-none">
-            <UserCheck class="size-5 mx-auto text-primary" />
+            <UserBadgeCheck class="size-5 mx-auto text-primary" />
             <div>
               <div class="text-2xl font-bold text-primary">{previewStats.promoted}</div>
               <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_promoted()}</div>
@@ -510,7 +494,7 @@ function decisionLabel(d: string) {
           </div>
           <!-- Retained -->
           <div class="p-4 rounded-xl border border-border bg-card text-center flex flex-col justify-between h-28 select-none">
-            <UserX class="size-5 mx-auto text-destructive" />
+            <UserMinus class="size-5 mx-auto text-destructive" />
             <div>
               <div class="text-2xl font-bold text-destructive">{previewStats.retained}</div>
               <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_retained()}</div>
@@ -518,7 +502,7 @@ function decisionLabel(d: string) {
           </div>
           <!-- Graduated -->
           <div class="p-4 rounded-xl border border-border bg-card text-center flex flex-col justify-between h-28 select-none">
-            <GraduationCap class="size-5 mx-auto text-foreground" />
+            <BookOpen class="size-5 mx-auto text-foreground" />
             <div>
               <div class="text-2xl font-bold text-foreground">{previewStats.graduated}</div>
               <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_form_status_graduated()}</div>
@@ -526,7 +510,7 @@ function decisionLabel(d: string) {
           </div>
           <!-- Excluded -->
           <div class="p-4 rounded-xl border border-border bg-card text-center flex flex-col justify-between h-28 select-none">
-            <Ban class="size-5 mx-auto text-muted-foreground" />
+            <AdjustmentsHorizontal class="size-5 mx-auto text-muted-foreground" />
             <div>
               <div class="text-2xl font-bold text-foreground">{previewStats.excluded}</div>
               <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_excluded()}</div>
@@ -534,7 +518,7 @@ function decisionLabel(d: string) {
           </div>
         </div>
 
-        <!-- Student Details Table Card -->
+        <!-- Student Details Grid Card -->
         <Card class="w-full">
           <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border">
             <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
@@ -542,39 +526,12 @@ function decisionLabel(d: string) {
             </CardTitle>
           </CardHeader>
           <CardContent class="p-0">
-            <div class="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead class="text-start">{m.common_word_student()}</TableHead>
-                    <TableHead class="text-start">{m.common_promo_decision()}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {#each previewDetails.slice(0, 50) as detail}
-                    <TableRow>
-                      <TableCell class="text-start font-sans">
-                        <div>
-                          <div class="font-medium text-sm text-foreground">{detail.student_name}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell class="text-start font-sans">
-                        <Badge variant={decisionVariant(detail.decision)}>
-                          {decisionLabel(detail.decision)}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  {/each}
-                  {#if previewDetails.length > 50}
-                    <TableRow>
-                      <TableCell colspan={6} class="text-center text-sm text-muted-foreground py-4 font-sans">
-                        +{previewDetails.length - 50} more students...
-                      </TableCell>
-                    </TableRow>
-                  {/if}
-                </TableBody>
-              </Table>
-            </div>
+            <OrbisGrid
+              columns={previewColumns}
+              source={previewGridRows}
+              minHeight="260px"
+              maxHeight="440px"
+            />
           </CardContent>
         </Card>
       </div>
@@ -584,7 +541,7 @@ function decisionLabel(d: string) {
       <div class="w-full space-y-6">
         {#if isExecuting}
           <div class="border border-border rounded-xl bg-card flex flex-col items-center justify-center py-16 text-center select-none">
-            <Loader2 class="size-12 text-primary animate-spin mb-4" />
+            <ArrowPath class="size-12 text-primary animate-spin mb-4" />
             <h3 class="text-lg font-semibold text-foreground font-serif">{m.common_promo_executing()}</h3>
             <p class="text-sm text-muted-foreground mt-1">{m.common_promo_execute_confirm()}</p>
           </div>
@@ -652,7 +609,7 @@ function decisionLabel(d: string) {
               class="flex gap-2 items-center font-bold select-none"
             >
               {#if isAnalyzing}
-                <Loader2 class="size-4 animate-spin" />
+                <ArrowPath class="size-4 animate-spin" />
                 <span>{m.common_promo_running()}</span>
               {:else}
                 <Play class="size-4" />
@@ -684,7 +641,7 @@ function decisionLabel(d: string) {
       <AlertDialogDescription>{m.common_promo_execute_confirm()}</AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <AlertDialogCancel>{m.common_action_cancel?.() ?? "Cancel"}</AlertDialogCancel>
+      <AlertDialogCancel>{m.common_action_cancel()}</AlertDialogCancel>
       <AlertDialogAction onclick={executePromotion}>{m.common_promo_execute()}</AlertDialogAction>
     </AlertDialogFooter>
   </AlertDialogContent>

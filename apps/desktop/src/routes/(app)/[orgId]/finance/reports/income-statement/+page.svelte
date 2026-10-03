@@ -1,7 +1,7 @@
 <script lang="ts">
-import FinancialReportPage from "$lib/features/finance/components/financial-report-page.svelte";
+import { IncomeStatementReport } from "$lib/features/finance/components/reports";
 
 let { data }: { data: { orgId: string } } = $props();
 </script>
 
-<FinancialReportPage kind="income_statement" orgId={data.orgId} />
+<IncomeStatementReport orgId={data.orgId} />

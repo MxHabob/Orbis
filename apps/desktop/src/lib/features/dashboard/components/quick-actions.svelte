@@ -3,16 +3,16 @@ import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import {
-  UserPlus,
-  Wallet,
   BookOpen,
-  BarChart3,
-  ShieldCheck,
+  ChartBar,
   ClipboardCheck,
-} from "@lucide/svelte";
+  CreditCard,
+  UserBadgeCheck,
+  UserPlus,
+} from "@orbis/icons";
 
 import { localizeHref } from "$lib/paraglide/runtime";
-import { academicContext, workflowInbox, authStore } from "$lib/stores";
+import { academicContext, workflowInbox, effectiveContext } from "$lib/stores";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -20,12 +20,14 @@ let { orgId }: { orgId: string } = $props();
 const ACTIONS = $derived.by(() => {
   const phase = academicContext.periodPhase;
   const ro = academicContext.isReadOnly;
-  const role = authStore.user?.primary_role ?? "viewer";
-  const isAdmin = ["admin", "super_admin", "principal"].includes(role);
+  const canManageApprovals =
+    effectiveContext.hasPermission("workflow:manage") ||
+    effectiveContext.hasPermission("approvals:read") ||
+    effectiveContext.hasPermission("*");
 
   const actions: Array<{
     label: string;
-    icon: typeof UserPlus;
+    icon: any;
     href: string;
     show: boolean;
     badge?: string;
@@ -39,7 +41,7 @@ const ACTIONS = $derived.by(() => {
     },
     {
       label: m.common_action_record_payment(),
-      icon: Wallet,
+      icon: CreditCard,
       href: `/${orgId}/finance/payments`,
       show: !ro,
     },
@@ -52,13 +54,13 @@ const ACTIONS = $derived.by(() => {
     // Phase-specific actions
     {
       label: m.common_control_label ? m.common_control_label() : "Control",
-      icon: ShieldCheck,
-      href: `/${orgId}/academics/control`,
+      icon: UserBadgeCheck,
+      href: `/${orgId}/academics/exams/control`,
       show: phase === "grade_entry" || phase === "exams",
     },
     {
       label: m.common_action_view_reports(),
-      icon: BarChart3,
+      icon: ChartBar,
       href: `/${orgId}/reports`,
       show: true,
     },
@@ -69,7 +71,7 @@ const ACTIONS = $derived.by(() => {
         : "Approvals",
       icon: ClipboardCheck,
       href: `/${orgId}/settings/approvals`,
-      show: workflowInbox.hasActions && isAdmin,
+      show: workflowInbox.hasActions && canManageApprovals,
       badge:
         workflowInbox.totalCount > 0
           ? String(workflowInbox.totalCount)

@@ -1,14 +1,14 @@
 <!--
 @component UpgradeDialog
 A premium modal dialog for upgrading to the Business Plan.
-Triggered by the Zap icon in the sidebar. Matches Sentry's upgrade layout.
+Triggered by the Bolt icon in the sidebar. Matches Sentry's upgrade layout.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Dialog, DialogContent } from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui";
 
-import { Check } from "@lucide/svelte";
+import { Bolt, Check } from "@orbis/icons";
 
 let { open = $bindable(false) }: { open: boolean } = $props();
 

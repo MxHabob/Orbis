@@ -8,21 +8,7 @@ pub struct CliConfig {
 
 impl CliConfig {
     pub fn default() -> Self {
-        let identifier = if cfg!(debug_assertions) {
-            "com.mulverse.orbis.dev"
-        } else {
-            "com.mulverse.orbis"
-        };
-
-        let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
-            if let Some(mut data_dir) = dirs::data_dir() {
-                data_dir.push(identifier);
-                data_dir.push("orbis.db");
-                format!("sqlite://{}?mode=rwc", data_dir.to_string_lossy())
-            } else {
-                "sqlite://orbis.db?mode=rwc".to_string()
-            }
-        });
+        let db_url = orbis_infra::config::resolve_database_url();
 
         Self {
             db_url,

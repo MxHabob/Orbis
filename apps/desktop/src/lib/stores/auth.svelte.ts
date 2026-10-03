@@ -1,35 +1,44 @@
 // ── Auth Store ───────────────────────────────────────────────────────
 // Svelte 5 Runes-based authentication state.
 
-import { commands } from "$lib/core/ipc";
-import type { User } from "$lib/core/ipc";
-import { extractErrorMessage } from "$lib/core/ipc";
+import { api } from "$lib/api/client";
+import type { UserDto, EffectiveContextDto } from "$lib/api/types";
+import { extractErrorMessage } from "$lib/api";
+import { effectiveContext } from "./effective-context.svelte";
+import { systemStore } from "./system.svelte";
 
 class AuthStore {
-  user = $state<User | null>(null);
+  user = $state<UserDto | null>(null);
   token = $state<string | null>(null);
   isLoading = $state(false);
   error = $state<string | null>(null);
-  isSetupComplete = $state<boolean | null>(null);
 
   isAuthenticated = $derived(!!this.token && !!this.user);
   orgId = $derived(this.user?.org_id ?? "");
   userId = $derived(this.user?.id ?? "");
+  
+  // Organization readiness integration
+  isSetupComplete = $derived(
+    systemStore.orgReadiness ? systemStore.isOperational : null
+  );
   needsOnboarding = $derived(
-    this.isAuthenticated && this.isSetupComplete === false,
+    this.isAuthenticated && systemStore.orgLifecycleState === "core_ready"
   );
 
   async login(email: string, password: string) {
     this.isLoading = true;
     this.error = null;
     try {
-      const res = await commands.iam.login(email, password);
+      const res = await api.login({ email, password });
       this.user = res.user;
-      this.token = res.access_token;
+      this.token = res.token;
       this.restorePromise = null;
-      localStorage.setItem("orbis_token", res.access_token);
+      localStorage.setItem("orbis_token", res.token);
       localStorage.setItem("orbis_user", JSON.stringify(res.user));
-      await this.checkSetupStatus();
+      if (res.effective_context) {
+        effectiveContext.setEffectiveContext(res.effective_context);
+      }
+      await systemStore.loadReadiness();
     } catch (e) {
       this.error = extractErrorMessage(e);
       throw e;
@@ -38,17 +47,36 @@ class AuthStore {
     }
   }
 
+  async setSession(res: {
+    token: string;
+    user: UserDto;
+    effective_context?: EffectiveContextDto | null;
+  }) {
+    this.user = res.user;
+    this.token = res.token;
+    this.error = null;
+    this.restorePromise = null;
+    localStorage.setItem("orbis_token", res.token);
+    localStorage.setItem("orbis_user", JSON.stringify(res.user));
+    if (res.effective_context) {
+      effectiveContext.setEffectiveContext(res.effective_context);
+    }
+    await systemStore.loadReadiness();
+  }
+
   async logout() {
-    if (this.token) {
-      await commands.iam.logout(this.token).catch(() => {});
+    try {
+      await api.logout();
+    } catch {
+      // Ignore network errors on logout
     }
     this.user = null;
     this.token = null;
-    this.isSetupComplete = null;
     this.restorePromise = null;
+    effectiveContext.reset();
+    systemStore.reset();
     localStorage.removeItem("orbis_token");
     localStorage.removeItem("orbis_user");
-    localStorage.removeItem("orbis_is_setup_complete");
   }
 
   private restorePromise: Promise<void> | null = null;
@@ -65,21 +93,32 @@ class AuthStore {
     try {
       const token = localStorage.getItem("orbis_token");
       const userStr = localStorage.getItem("orbis_user");
-      const isSetupCompleteStr = localStorage.getItem(
-        "orbis_is_setup_complete",
-      );
       if (token && userStr) {
         try {
-          const res = await commands.iam.restoreSession(token);
-          this.token = res.access_token;
-          this.user = res.user;
-          if (isSetupCompleteStr !== null) {
-            this.isSetupComplete = isSetupCompleteStr === "true";
+          this.token = token;
+          this.user = JSON.parse(userStr);
+          const res = await api.getSession();
+          if (res?.user) {
+            this.user = res.user;
+            localStorage.setItem("orbis_user", JSON.stringify(res.user));
+            if (res.effective_context) {
+              effectiveContext.setEffectiveContext(res.effective_context);
+            }
           }
+          await systemStore.loadReadiness();
         } catch (e) {
-          console.error("Failed to restore session on backend:", e);
-          this.token = null;
-          this.user = null;
+          console.warn("Session revalidation notice:", e);
+          const errMessage = extractErrorMessage(e);
+          if (
+            errMessage.toLowerCase().includes("unauthorized") ||
+            errMessage.toLowerCase().includes("revoked") ||
+            errMessage.toLowerCase().includes("invalid token")
+          ) {
+            this.token = null;
+            this.user = null;
+            localStorage.removeItem("orbis_token");
+            localStorage.removeItem("orbis_user");
+          }
         }
       }
     } catch {
@@ -87,31 +126,10 @@ class AuthStore {
     }
   }
 
-  async checkSetupStatus() {
-    if (!this.isAuthenticated || !this.orgId) {
-      this.isSetupComplete = null;
-      return;
-    }
-    try {
-      const res = await commands.organization.checkSetup();
-      const isComplete =
-        typeof res === "boolean" ? res : Boolean(res?.setup_completed ?? true);
-      this.isSetupComplete = isComplete;
-      localStorage.setItem("orbis_is_setup_complete", String(isComplete));
-    } catch (e) {
-      console.error("Error checking setup status:", e);
-      const cached = localStorage.getItem("orbis_is_setup_complete");
-      if (cached !== null) {
-        this.isSetupComplete = cached === "true";
-      } else {
-        this.isSetupComplete = true;
-      }
-    }
-  }
-
   markSetupComplete() {
-    this.isSetupComplete = true;
-    localStorage.setItem("orbis_is_setup_complete", "true");
+    // Reload readiness from the backend to get the authoritative state
+    // instead of manually overriding the derived value.
+    systemStore.loadReadiness();
   }
 }
 

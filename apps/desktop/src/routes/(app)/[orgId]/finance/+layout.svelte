@@ -6,16 +6,11 @@ using <MainViewport>. Uses the shared SidebarNav component.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { createCashAccountsQuery, createStudentFeesQuery } from "$lib/features/finance";
 import {
-  Wallet,
-  CreditCard,
-  Landmark,
-  BarChart3,
-  Compass,
-  BookOpen,
-  ClipboardList,
-} from "@lucide/svelte";
+  createCashAccountsQuery,
+  createStudentFeesQuery,
+} from "$lib/features/finance";
+import { Banknotes, BookOpen, BuildingLibrary, ChartBar, CreditCard, DocumentChartBar } from "@orbis/icons";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import ArchivedBanner from "$lib/features/academics/archived-banner.svelte";
@@ -27,7 +22,7 @@ let { data, children }: { data: { orgId: string }; children: Snippet } =
 let sidebarStatsReady = $state(false);
 const feesQuery = createStudentFeesQuery(
   () => data.orgId,
-  true,
+  undefined,
   () => sidebarStatsReady,
 );
 const treasuriesQuery = createCashAccountsQuery(
@@ -55,24 +50,29 @@ const navItems = $derived([
   {
     path: "",
     label: m.common_nav_overview(),
-    icon: Compass,
+    icon: Banknotes,
   },
   {
     path: "fees",
     label: m.finance_layout_nav_fees(),
-    icon: Wallet,
+    icon: DocumentChartBar,
     badge: unpaidFeesCount > 0 ? unpaidFeesCount : null,
   },
   {
     path: "payments",
-    label: m.finance_layout_nav_payments(),
+    label: "سندات القبض",
     icon: CreditCard,
+  },
+  {
+    path: "disbursements",
+    label: "سندات الصرف",
+    icon: Banknotes,
   },
 
   {
     path: "accounts",
     label: m.finance_layout_nav_cash_accounts(),
-    icon: Landmark,
+    icon: BuildingLibrary,
     badge: treasuriesCount > 0 ? treasuriesCount : null,
   },
   {
@@ -85,12 +85,12 @@ const navItems = $derived([
     label: m.finance_layout_nav_ledger
       ? m.finance_layout_nav_ledger()
       : "كشف الحساب",
-    icon: ClipboardList,
+    icon: DocumentChartBar,
   },
   {
     path: "reports",
     label: m.finance_layout_nav_reports(),
-    icon: BarChart3,
+    icon: ChartBar,
   },
 ]);
 </script>

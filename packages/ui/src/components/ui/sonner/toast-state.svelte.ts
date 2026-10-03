@@ -1,6 +1,15 @@
 import type { Component } from "svelte";
 
-type ToastVariant = "default" | "success" | "error" | "info" | "warning" | "progress" | "spinner" | "destructive" | "ai";
+type ToastVariant =
+  | "default"
+  | "success"
+  | "error"
+  | "info"
+  | "warning"
+  | "progress"
+  | "spinner"
+  | "destructive"
+  | "ai";
 type ToastMessage = string | Component<any>;
 
 export interface ToastAction {
@@ -20,7 +29,9 @@ export interface ToastData {
   open: boolean;
 }
 
-export type ToastOptions = Partial<Omit<ToastData, "id" | "open" | "variant">> & {
+export type ToastOptions = Partial<
+  Omit<ToastData, "id" | "open" | "variant">
+> & {
   id?: string;
   variant?: ToastVariant;
 };
@@ -89,48 +100,64 @@ class ToastStore {
     else this.toasts = [];
   }
 
-  promise<T>(promise: Promise<T> | (() => Promise<T>), options: {
-    loading?: string;
-    success?: string | ((value: T) => string);
-    error?: string | ((error: unknown) => string);
-    finally?: () => void | Promise<void>;
-  } & ToastOptions = {}) {
+  promise<T>(
+    promise: Promise<T> | (() => Promise<T>),
+    options: {
+      loading?: string;
+      success?: string | ((value: T) => string);
+      error?: string | ((error: unknown) => string);
+      finally?: () => void | Promise<void>;
+    } & ToastOptions = {},
+  ) {
     const handle = this.add(options.loading ?? "Loading...", {
       ...options,
       variant: "spinner",
       duration: Number.POSITIVE_INFINITY,
     });
     const task = typeof promise === "function" ? promise() : promise;
-    task.then((value) => {
-      this.update(handle.id, {
-        title: typeof options.success === "function" ? options.success(value) : options.success ?? "Completed",
-        variant: "success",
-        duration: 4000,
-      });
-      return value;
-    }).catch((error) => {
-      this.update(handle.id, {
-        title: typeof options.error === "function" ? options.error(error) : options.error ?? "Something went wrong",
-        variant: "error",
-        duration: 5000,
-      });
-    }).finally(() => options.finally?.());
+    task
+      .then((value) => {
+        this.update(handle.id, {
+          title:
+            typeof options.success === "function"
+              ? options.success(value)
+              : (options.success ?? "Completed"),
+          variant: "success",
+          duration: 4000,
+        });
+        return value;
+      })
+      .catch((error) => {
+        this.update(handle.id, {
+          title:
+            typeof options.error === "function"
+              ? options.error(error)
+              : (options.error ?? "Something went wrong"),
+          variant: "error",
+          duration: 5000,
+        });
+      })
+      .finally(() => options.finally?.());
     return handle.id;
   }
 
   private scheduleDismiss(item: ToastData) {
     const duration = item.duration;
-    if (duration === undefined || !Number.isFinite(duration) || duration <= 0) return;
+    if (duration === undefined || !Number.isFinite(duration) || duration <= 0)
+      return;
     this.removeLater(item.id, duration);
   }
 
   private removeLater(id: string, delay: number) {
     const current = this.timers.get(id);
     if (current) clearTimeout(current);
-    this.timers.set(id, setTimeout(() => {
-      this.timers.delete(id);
-      this.remove(id);
-    }, delay));
+    this.timers.set(
+      id,
+      setTimeout(() => {
+        this.timers.delete(id);
+        this.remove(id);
+      }, delay),
+    );
   }
 
   private handle(id: string): ToastHandle {
@@ -156,7 +183,8 @@ function createShortcut(variant: ToastVariant) {
 }
 
 export const toast = Object.assign(
-  (title: ToastMessage, options?: ToastOptions) => toastStore.add(title, options),
+  (title: ToastMessage, options?: ToastOptions) =>
+    toastStore.add(title, options),
   {
     success: createShortcut("success"),
     error: createShortcut("error"),
@@ -164,7 +192,8 @@ export const toast = Object.assign(
     warning: createShortcut("warning"),
     loading: createShortcut("spinner"),
     promise: toastStore.promise.bind(toastStore),
-    update: (id: string, data: Partial<ToastData>) => toastStore.update(id, data),
+    update: (id: string, data: Partial<ToastData>) =>
+      toastStore.update(id, data),
     dismiss: (id?: string) => toastStore.dismiss(id),
   },
 );

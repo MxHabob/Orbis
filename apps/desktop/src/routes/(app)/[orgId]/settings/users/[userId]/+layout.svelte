@@ -8,21 +8,27 @@ import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import { confirmStore } from "$lib/stores";
-import { commands } from "$lib/core/ipc";
-import type { User } from "$lib/core/ipc";
+import { api } from "$lib/api";
+import type { User, AccountProvisioningResultDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
-import { Trash2 } from "@lucide/svelte";
+import { Lock, ShieldCheck, Trash } from "@orbis/icons";
+import { l } from "$lib/core/i18n";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
+import RelatedActions, {
+  type ActionGroup,
+  type FooterAction,
+} from "$lib/shared/components/related-actions.svelte";
 import type { Snippet } from "svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import UserResetPasswordDialog from "$lib/features/settings/components/user-reset-password-dialog.svelte";
+import CredentialDeliveryModal from "$lib/shared/components/credential-delivery-modal.svelte";
 import { createUserQuery } from "$lib/features/settings/queries";
 import { useQueryClient } from "@tanstack/svelte-query";
 
@@ -32,15 +38,20 @@ const orgId = $derived(page.params.orgId);
 const userId = $derived(page.params.userId);
 
 // Shared user state
-const userQuery = createUserQuery(() => String(orgId || ""), () => String(userId || ""));
+const userQuery = createUserQuery(
+  () => String(orgId || ""),
+  () => String(userId || ""),
+);
 const queryClient = useQueryClient();
 const user = $derived((userQuery.data as any) ?? null);
 const isLoading = $derived(userQuery.isLoading);
 const fullName = $derived(user?.full_name ?? "");
 const email = $derived(user?.email ?? "");
-const role = $derived(user?.primary_role ?? user?.role ?? "teacher");
-const isActiveState = $derived(user?.is_active !== undefined ? Boolean(user.is_active) : true);
-const avatarUrl = $derived(user?.avatar_url || user?.avatar || null);
+const role = $derived(user?.roles?.[0] ?? "staff");
+const isActiveState = $derived(
+  user?.is_active !== undefined ? Boolean(user.is_active) : true,
+);
+const avatarUrl = $derived(user?.avatar_url ?? null);
 
 function handleAvatarUpload(url: string) {
   queryClient.setQueryData(["user", orgId, userId], (current: any) =>
@@ -48,7 +59,33 @@ function handleAvatarUpload(url: string) {
   );
 }
 
-// Reset password modal
+// CSPRNG Temporary Password Generation
+let credentialModalOpen = $state(false);
+let activeProvisioningResult = $state<AccountProvisioningResultDto | null>(null);
+
+async function handleGenerateTempPassword() {
+  if (!userId) return;
+  const confirmed = await confirmStore.prompt({
+    title: (m.settings_user_detail_btn_reset_pass?.() || "إعادة تعيين كلمة المرور") + "؟",
+    description: l(
+      `هل أنت متأكد من إعادة توليد كلمة مرور مؤقتة للمستخدم (${fullName || email})؟`,
+      `Are you sure you want to generate a new temporary password for ${fullName || email}?`
+    ),
+    confirmText: m.settings_user_detail_btn_reset_pass?.() || "إعادة تعيين",
+  });
+  if (confirmed) {
+    try {
+      const result = await api.resetUserPassword(userId);
+      activeProvisioningResult = result;
+      credentialModalOpen = true;
+      toast.success(m.employees_password_reset_success?.() || "تمت إعادة ضبط كلمة المرور بنجاح");
+    } catch (e: unknown) {
+      toast.error((e as any)?.message || "Failed to reset password");
+    }
+  }
+}
+
+// Reset password modal (manual input)
 let showResetModal = $state(false);
 let newPassword = $state("");
 let confirmPassword = $state("");
@@ -63,7 +100,7 @@ async function handleResetPassword(e: Event) {
   if (!userId) return;
   isResettingPassword = true;
   try {
-    await commands.iam.changePassword(userId as string, {
+    await api.updateUser(userId as string, {
       new_password: newPassword,
     });
     toast.success(m.settings_user_detail_reset_success());
@@ -87,7 +124,7 @@ async function handleDeleteUser() {
   });
   if (!confirmed) return;
   try {
-    await commands.iam.deleteUser(userId as string);
+    await api.updateUser(userId as string, { is_active: false } as any);
     toast.success(m.settings_user_detail_deleted());
     await goto(localizeHref(`/${orgId}/settings/users`));
   } catch (e: unknown) {
@@ -115,6 +152,60 @@ const menuItems = $derived([
     label: m.settings_user_detail_tab_settings(),
   },
 ]);
+
+const relatedActionGroups = $derived<ActionGroup[]>(user ? [
+  {
+    id: "account_security",
+    title: l("أمان الحساب والجلسات", "Account Security & Access"),
+    icon: Lock,
+    defaultExpanded: true,
+    subLinks: [
+      {
+        id: "generate_temp_password",
+        label: l("توليد كلمة مرور مؤقتة (CSPRNG)", "Generate Temp Password"),
+        onclick: handleGenerateTempPassword,
+      },
+      {
+        id: "reset_password",
+        label: m.settings_user_detail_btn_reset_pass(),
+        onclick: () => (showResetModal = true),
+      },
+      {
+        id: "active_sessions",
+        label: m.settings_security_sessions(),
+        href: `/${orgId}/settings/users/${userId}/sessions`,
+      },
+    ],
+  },
+  {
+    id: "permissions_audit",
+    title: l("الصلاحيات والتدقيق", "Roles & Audit"),
+    icon: ShieldCheck,
+    defaultExpanded: true,
+    subLinks: [
+      {
+        id: "user_roles",
+        label: m.settings_nav_permissions(),
+        href: `/${orgId}/settings/users/${userId}/roles`,
+      },
+      {
+        id: "user_audit",
+        label: l("سجل عمليات هذا المستخدم", "User Audit Logs"),
+        href: `/${orgId}/settings/audit?userId=${userId}`,
+      },
+    ],
+  },
+] : []);
+
+const relatedFooterActions = $derived<FooterAction[]>(user ? [
+  {
+    id: "delete_user",
+    label: m.settings_user_detail_btn_delete(),
+    icon: Trash,
+    variant: "destructive",
+    onclick: handleDeleteUser,
+  },
+] : []);
 </script>
 
 <svelte:head>
@@ -168,7 +259,7 @@ const menuItems = $derived([
         class="text-destructive border-destructive/20 hover:bg-destructive/5"
         onclick={handleDeleteUser}
       >
-        <Trash2 size={13} class="me-1" />
+        <Trash size={13} class="me-1" />
         {m.settings_user_detail_btn_delete()}
       </Button>
     {/snippet}
@@ -225,6 +316,15 @@ const menuItems = $derived([
             <div class="w-full flex-1">
               {@render children()}
             </div>
+
+            <!-- Contextual Related Actions (Full Width Footer) -->
+            {#if user}
+              <RelatedActions
+                title={l("العمليات والإجراءات المرتبطة", "Related support")}
+                groups={relatedActionGroups}
+                footerActions={relatedFooterActions}
+              />
+            {/if}
           </div>
         </div>
       {/snippet}
@@ -233,3 +333,9 @@ const menuItems = $derived([
 </div>
 
 <UserResetPasswordDialog bind:open={showResetModal} fullName={fullName} bind:newPassword bind:confirmPassword isResettingPassword={isResettingPassword} onsubmit={handleResetPassword} oncancel={() => { showResetModal = false; newPassword = ""; confirmPassword = ""; }} />
+
+<CredentialDeliveryModal
+  bind:open={credentialModalOpen}
+  provisioning={activeProvisioningResult}
+  userName={fullName || email}
+/>

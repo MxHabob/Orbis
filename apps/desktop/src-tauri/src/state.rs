@@ -1,516 +1,676 @@
 use std::sync::Arc;
-use std::path::Path;
 use sea_orm::DatabaseConnection;
-use tokio::sync::RwLock;
+use orbis_app::ports::repositories::{
+    OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository,
+    SessionRepository, AcademicYearRepository, AcademicPeriodRepository,
+    PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository,
+    EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository,
+    ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository,
+    AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository,
+    ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository,
+    ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository,
+    StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository,
+    WorkflowRepository, CurrencyRepository, PolicyRepository,
+    SettingsRepository, DashboardRepository, OverrideRequestRepository, CoursePrerequisiteRepository,
+    GpaRecordRepository, PromotionRepository, DiscountTemplateRepository,
+    SystemRepository,
+};
+use orbis_app::ports::reporting::{
+    ReportDefinitionRepository, ReportTemplateRepository, ReportJobRepository,
+    ReportAuditRepository, DataProviderRegistry, RendererRegistry,
+};
+use orbis_app::ports::entitlement::EntitlementProvider;
+use orbis_app::services::OrgContextResolver;
+use orbis_app::ports::event_bus::EventBus;
+use orbis_app::ports::security::{TokenService, PasswordHasher};
+use orbis_app::ports::iam::PermissionCheckerPort;
+use uuid::Uuid;
+use serde::{Deserialize, Serialize};
 
-// Re-export provider from infra-persistence
-pub use infra_persistence::provider::DatabaseProvider;
-pub use shared_kernel::config::Config;
-
-use shared_kernel::context::ServiceContext;
-use shared_kernel::event_bus::EventBus;
-use shared_kernel::tenant_guard::TenantGuard;
-use shared_kernel::period_gate::PeriodGate;
-use shared_kernel::traits::Actor;
-use svc_report::org_context::OrgContext;
-
-/// Authenticated session context — set at login, cleared at logout.
-///
-/// The `org_id` is fixed for the session lifetime. This prevents the frontend
-/// from passing arbitrary org_ids.
-#[derive(Debug, Clone)]
-pub struct SessionContext {
-    pub user_id: String,
-    pub org_id: String,
-    pub org_unit_id: Option<String>,
-    pub roles: Vec<String>,
-    pub guard: TenantGuard,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ActiveSession {
+    pub user_id: Uuid,
+    pub org_id: Uuid,
+    pub active_unit_id: Option<Uuid>,
+    pub token: String,
 }
 
-/// Platform services container — holds all Arc'd trait implementations.
-/// Created once at startup, reused for all requests.
-pub struct PlatformServices {
-    pub permissions: Arc<dyn shared_kernel::traits::PermissionChecker>,
-    pub audit: Arc<dyn shared_kernel::traits::AuditLogger>,
-    pub settings: Arc<dyn shared_kernel::traits::SettingsProvider>,
-    pub policy: Arc<dyn shared_kernel::traits::PolicyEngine>,
-    pub notifier: Arc<dyn shared_kernel::traits::NotificationSender>,
-    pub fee_assigner: Arc<dyn shared_kernel::traits::FeeAssigner>,
-    pub period_gate: Arc<PeriodGate>,
-    pub event_bus: Arc<EventBus>,
-    pub event_store: Arc<shared_kernel::event_store::EventStore>,
-    pub reactive: Arc<shared_kernel::reactive::ReactivePipeline>,
-    pub plugins: Arc<shared_kernel::plugin::PluginRegistry>,
-    pub storage: Arc<dyn infra_integration::traits::StorageProvider>,
-    pub job_queue: Arc<shared_kernel::job_queue::JobQueue>,
-}
-
-impl PlatformServices {
-    /// Build all platform services from a database connection.
-    pub fn new(db: DatabaseConnection, event_bus: Arc<EventBus>) -> Self {
-        Self::new_with_storage(db, event_bus, "app_data/storage")
-    }
-
-    pub fn new_with_storage(
-        db: DatabaseConnection,
-        event_bus: Arc<EventBus>,
-        storage_path: impl AsRef<Path>,
-    ) -> Self {
-        use svc_iam::ops::permission_checker::IamPermissionChecker;
-        use svc_iam::ops::audit_logger::DbAuditLogger;
-        use svc_organization::ops::settings::OrgSettingsProvider;
-        use platform_policy::engine::PlatformPolicyEngine;
-        use svc_finance::ops::fee_assigner::FinanceFeeAssigner;
-        use infra_integration::notification_sender::DbNotificationSender;
-
-        // Build reactive pipeline with analyzers
-        let mut reactive = shared_kernel::reactive::ReactivePipeline::new();
-        reactive.register(Arc::new(
-            svc_assessment::ops::at_risk_predictor::AtRiskPredictor::new(),
-        ));
-        reactive.register(Arc::new(
-            svc_finance::ops::reactive_analyzers::FinanceAnalyzer::new(),
-        ));
-
-        let db_for_store = db.clone();
-        
-        let storage = infra_integration::adapters::storage::local::LocalStorageProvider::new(storage_path);
-
-        Self {
-            permissions: Arc::new(IamPermissionChecker::new(db.clone())),
-            audit: Arc::new(DbAuditLogger::new(db.clone())),
-            settings: Arc::new(OrgSettingsProvider::new(db.clone())),
-            policy: Arc::new(PlatformPolicyEngine::new(db.clone())),
-            notifier: Arc::new(DbNotificationSender::new(db.clone())),
-            fee_assigner: Arc::new(FinanceFeeAssigner::new(db)),
-            period_gate: Arc::new(PeriodGate::new()),
-            event_bus,
-            event_store: Arc::new(shared_kernel::event_store::EventStore::new(db_for_store)),
-            reactive: Arc::new(reactive),
-            plugins: Arc::new(shared_kernel::plugin::PluginRegistry::new()),
-            storage: Arc::new(storage),
-            job_queue: Arc::new(shared_kernel::job_queue::JobQueue::new(1024)),
-        }
-    }
-
-    /// Start the background domain event loop (reactive + plugins + DocForge).
-    pub fn start_event_loop(self: &Arc<Self>) {
-        shared_kernel::outbox_relay::OutboxRelay::new(
-            self.event_store.db().clone(),
-            self.event_bus.clone(),
-        ).spawn();
-
-        shared_kernel::event_loop::DomainEventLoop {
-            event_bus: self.event_bus.clone(),
-            db: self.event_store.db().clone(),
-            reactive: self.reactive.clone(),
-            plugins: self.plugins.clone(),
-            event_store: self.event_store.clone(),
-            projection_handler: Some(docforge_orbis::projection_handler::handler()),
-        }
-        .spawn();
-    }
-
-    /// Start autopilot background scheduler (15-minute interval).
-    pub fn start_autopilot_scheduler(self: &Arc<Self>) {
-        autopilot::subscriber::AutopilotSubscriber::spawn(
-            self.event_store.db().clone(),
-            self.event_bus.clone(),
-            self.period_gate.clone(),
-        );
-
-        autopilot::scheduler::spawn_scheduler(
-            self.event_store.db().clone(),
-            self.event_bus.clone(),
-            self.period_gate.clone(),
-            std::time::Duration::from_secs(15 * 60),
-        );
-    }
-
-    /// Run global catch-up on startup.
-    pub fn start_autopilot_catch_up(self: &Arc<Self>) {
-        autopilot::resumption::ResumptionService::spawn_catch_up_all(
-            self.event_store.db().clone(),
-            self.event_bus.clone(),
-            self.period_gate.clone(),
-        );
-    }
-
-
-
-    /// Create a `ServiceContext` for a specific request.
-    pub fn context_for(&self, db: DatabaseConnection, org_id: &str, actor: Actor) -> ServiceContext {
-        ServiceContext::new(
-            db,
-            org_id,
-            "",
-            actor,
-            self.permissions.clone(),
-            self.audit.clone(),
-            self.settings.clone(),
-            self.policy.clone(),
-            self.notifier.clone(),
-            self.fee_assigner.clone(),
-            self.period_gate.clone(),
-            self.event_bus.clone(),
-            self.event_store.clone(),
-            self.reactive.clone(),
-            self.plugins.clone(),
-            self.job_queue.clone(),
-        )
-    }
-}
-
-/// Shared application state passed to all Tauri commands.
 #[derive(Clone)]
 pub struct AppState {
-    /// Database provider.
-    pub provider: Arc<DatabaseProvider>,
-    
-    /// Global application configuration.
-    pub config: Arc<Config>,
-
-    /// Platform services (new architecture).
-    pub platform: Arc<PlatformServices>,
-
-    /// Canonical backend report service shared by all Tauri report commands.
-    pub report_service: Arc<svc_report::service::ReportService>,
-
-    /// Authenticated session — set at login, cleared at logout.
-    pub session: Arc<RwLock<Option<SessionContext>>>,
+    pub db: DatabaseConnection,
+    /// The active session for the current desktop application.
+    /// Set during login/session hydration and used by `make_ctx()` to scope all queries.
+    pub active_session: Arc<std::sync::RwLock<Option<ActiveSession>>>,
+    pub org_repo: Arc<dyn OrganizationRepository>,
+    pub org_unit_repo: Arc<dyn OrgUnitRepository>,
+    pub user_repo: Arc<dyn UserRepository>,
+    pub person_repo: Arc<dyn PersonRepository>,
+    pub session_repo: Arc<dyn SessionRepository>,
+    pub year_repo: Arc<dyn AcademicYearRepository>,
+    pub period_repo: Arc<dyn AcademicPeriodRepository>,
+    pub period_template_repo: Arc<dyn PeriodTemplateRepository>,
+    pub subject_repo: Arc<dyn SubjectRepository>,
+    pub class_repo: Arc<dyn ClassRepository>,
+    pub class_subject_repo: Arc<dyn ClassSubjectRepository>,
+    pub student_repo: Arc<dyn orbis_app::ports::repositories::StudentRepository>,
+    pub enrollment_repo: Arc<dyn EnrollmentRepository>,
+    pub student_guardian_repo: Arc<dyn StudentGuardianRepository>,
+    pub override_repo: Arc<dyn OverrideRequestRepository>,
+    pub prerequisite_repo: Arc<dyn CoursePrerequisiteRepository>,
+    pub gpa_repo: Arc<dyn GpaRecordRepository>,
+    pub promotion_repo: Arc<dyn PromotionRepository>,
+    pub discount_template_repo: Arc<dyn DiscountTemplateRepository>,
+    pub room_repo: Arc<dyn RoomRepository>,
+    pub time_slot_repo: Arc<dyn TimeSlotRepository>,
+    pub lesson_repo: Arc<dyn ScheduledLessonRepository>,
+    pub assessment_scheme_repo: Arc<dyn AssessmentSchemeRepository>,
+    pub grade_repo: Arc<dyn GradeRepository>,
+    pub attendance_repo: Arc<dyn AttendanceRepository>,
+    pub behavior_record_repo: Arc<dyn BehaviorRecordRepository>,
+    pub exam_session_repo: Arc<dyn ExamSessionRepository>,
+    pub exam_schedule_repo: Arc<dyn ExamScheduleRepository>,
+    pub seating_number_repo: Arc<dyn SeatingNumberRepository>,
+    pub secret_number_repo: Arc<dyn SecretNumberRepository>,
+    pub exam_proctor_repo: Arc<dyn ExamProctorRepository>,
+    pub account_repo: Arc<dyn AccountRepository>,
+    pub journal_entry_repo: Arc<dyn JournalEntryRepository>,
+    pub fee_template_repo: Arc<dyn FeeTemplateRepository>,
+    pub student_fee_repo: Arc<dyn StudentFeeRepository>,
+    pub payment_repo: Arc<dyn PaymentRepository>,
+    pub document_repo: Arc<dyn DocumentRepository>,
+    pub doc_req_repo: Arc<dyn orbis_app::ports::repositories::DocumentRequirementRepository>,
+    pub sequence_repo: Arc<dyn orbis_app::ports::repositories::SequenceCounterRepository>,
+    pub integration_repo: Arc<dyn IntegrationRepository>,
+    pub workflow_repo: Arc<dyn WorkflowRepository>,
+    pub report_definition_repo: Arc<dyn ReportDefinitionRepository>,
+    pub report_template_repo: Arc<dyn ReportTemplateRepository>,
+    pub report_job_repo: Arc<dyn ReportJobRepository>,
+    pub report_audit_repo: Arc<dyn ReportAuditRepository>,
+    pub report_provider_registry: Arc<dyn DataProviderRegistry>,
+    pub report_renderer_registry: Arc<dyn RendererRegistry>,
+    pub report_org_context_resolver: Arc<dyn OrgContextResolver>,
+    pub currency_repo: Arc<dyn CurrencyRepository>,
+    pub policy_repo: Arc<dyn PolicyRepository>,
+    pub settings_repo: Arc<dyn SettingsRepository>,
+    pub dashboard_repo: Arc<dyn DashboardRepository>,
+    pub event_bus: Arc<dyn EventBus>,
+    pub token_service: Arc<dyn TokenService>,
+    pub password_hasher: Arc<dyn PasswordHasher>,
+    pub integration_resolver: Arc<orbis_infra::adapters::resolver::IntegrationResolver>,
+    pub permission_checker: Arc<dyn PermissionCheckerPort>,
+    // ── Identity, MFA & Devices ─────────────────────────────────
+    pub identity_repo: Arc<dyn orbis_app::ports::repositories::UserIdentityRepository>,
+    pub mfa_factor_repo: Arc<dyn orbis_app::ports::repositories::MfaFactorRepository>,
+    pub recovery_code_repo: Arc<dyn orbis_app::ports::repositories::MfaRecoveryCodeRepository>,
+    pub device_repo: Arc<dyn orbis_app::ports::repositories::UserDeviceRepository>,
+    pub totp_service: Arc<dyn orbis_app::ports::security::TotpService>,
+    pub oidc_service: Arc<dyn orbis_app::ports::security::OidcService>,
+    // ── Domain Services ─────────────────────────────────────────
+    pub student_service: Arc<orbis_app::services::StudentService>,
+    pub progression_service: Arc<orbis_app::services::ProgressionService>,
+    pub academic_service: Arc<orbis_app::services::AcademicService>,
+    pub finance_service: Arc<orbis_app::services::FinanceService>,
+    pub assessment_service: Arc<orbis_app::services::AssessmentService>,
+    pub auth_service: Arc<orbis_app::services::AuthService>,
+    pub organization_service: Arc<orbis_app::services::OrganizationService>,
+    pub calendar_service: Arc<orbis_app::services::CalendarService>,
+    pub scheduling_service: Arc<orbis_app::services::SchedulingService>,
+    pub document_service: Arc<orbis_app::services::DocumentService>,
+    pub folder_repo: Arc<dyn orbis_app::ports::repositories::FolderRepository>,
+    pub folder_service: Arc<orbis_app::services::FolderService>,
+    pub file_storage_service: Arc<orbis_app::services::FileStorageService>,
+    pub storage_resolver: Arc<orbis_infra::adapters::storage::StorageResolver>,
+    pub storage_adapter: Arc<dyn orbis_app::ports::storage::StorageAdapter>,
+    pub integration_service: Arc<orbis_app::services::IntegrationService>,
+    pub workflow_service: Arc<orbis_app::services::WorkflowService>,
+    pub report_service: Arc<orbis_app::services::ReportService>,
+    pub ai_service: Arc<orbis_app::services::AiOrchestrationService>,
+    pub autopilot_service: Arc<orbis_app::services::AutopilotService>,
+    pub autopilot_task_repo: Arc<dyn orbis_app::ports::repositories::AutopilotTaskRepository>,
+    // ── System Services ─────────────────────────────────────────
+    pub system_repo: Arc<dyn SystemRepository>,
+    pub system_service: Arc<orbis_app::services::SystemService>,
+    pub entitlement_provider: Arc<dyn EntitlementProvider>,
+    pub solver_sidecar: Arc<crate::features::solver_sidecar::SolverSidecarManager>,
+    pub app_data_dir: std::path::PathBuf,
+    // ── Employee Affairs & User Groups ─────────────────────────
+    pub employee_repo: Arc<dyn orbis_app::ports::repositories::EmployeeRepository>,
+    pub group_repo: Arc<dyn orbis_app::ports::repositories::GroupRepository>,
+    pub identity_provisioning_service: Arc<orbis_app::services::IdentityProvisioningService>,
+    pub employee_service: Arc<orbis_app::services::EmployeeService>,
+    pub group_service: Arc<orbis_app::services::GroupService>,
+    pub bootstrap_service: Arc<orbis_app::services::BootstrapService>,
+    pub onboarding_service: Arc<orbis_app::services::OnboardingService>,
 }
+
 
 impl AppState {
-    /// Initialize the AppState with full platform services.
-    pub async fn init(app_data_dir: &Path) -> Result<Self, Box<dyn std::error::Error>> {
-        let provider = Arc::new(DatabaseProvider::init(app_data_dir).await?);
-        let config = Arc::new(Config::load());
-        
-        // Initialize platform services with the active database
-        let db = provider.db();
-        let event_bus = Arc::new(EventBus::new());
-        let platform = Arc::new(PlatformServices::new_with_storage(
+    pub async fn init(app_data_dir: &std::path::Path) -> Result<Self, String> {
+        let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
+            let db_path = app_data_dir.join("orbis.db");
+            format!("sqlite://{}?mode=rwc", db_path.display())
+        });
+        let db = sea_orm::Database::connect(&db_url).await.map_err(|e| e.to_string())?;
+
+        // Run migrations
+        use orbis_infra::migration::Migrator;
+        use sea_orm_migration::MigratorTrait;
+        Migrator::up(&db, None).await.map_err(|e| e.to_string())?;
+
+        let active_session = Arc::new(std::sync::RwLock::new(None));
+
+        let org_repo = Arc::new(orbis_infra::repositories::org_repo::OrgRepoImpl { db: db.clone() });
+        let org_unit_repo = Arc::new(orbis_infra::repositories::org_unit_repo::OrgUnitRepoImpl { db: db.clone() });
+        let user_repo = Arc::new(orbis_infra::repositories::user_repo::UserRepoImpl { db: db.clone() });
+        let person_repo = Arc::new(orbis_infra::repositories::person_repo::PersonRepoImpl { db: db.clone() });
+        let session_repo = Arc::new(orbis_infra::repositories::session_repo::SessionRepoImpl { db: db.clone() });
+        let calendar_repo = Arc::new(orbis_infra::repositories::calendar_repos::CalendarRepoImpl { db: db.clone() });
+        let academic_repo = Arc::new(orbis_infra::repositories::academic_repos::AcademicRepoImpl { db: db.clone() });
+        let student_repo = Arc::new(orbis_infra::repositories::student_repos::StudentRepoImpl { db: db.clone() });
+        let scheduling_repo = Arc::new(orbis_infra::repositories::scheduling_repos::SchedulingRepoImpl { db: db.clone() });
+        let assessment_repo = Arc::new(orbis_infra::repositories::assessment_repos::AssessmentRepoImpl { db: db.clone() });
+        let exam_repo = Arc::new(orbis_infra::repositories::exam_repos::ExamRepoImpl { db: db.clone() });
+        let finance_repo = Arc::new(orbis_infra::repositories::finance_repos::FinanceRepoImpl { db: db.clone() });
+        let document_repo = Arc::new(orbis_infra::repositories::document_repos::DocumentRepoImpl { db: db.clone() });
+        let integration_repo = Arc::new(orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() });
+        let workflow_repo = Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
+        let override_repo = Arc::new(orbis_infra::repositories::override_repos::OverrideRepoImpl { db: db.clone() });
+        let progression_repo = Arc::new(orbis_infra::repositories::progression_repos::ProgressionRepoImpl { db: db.clone() });
+        let report_definition_repo = Arc::new(orbis_infra::repositories::report_repos::ReportDefinitionRepoImpl { db: db.clone() });
+        let report_template_repo = Arc::new(orbis_infra::repositories::report_repos::ReportTemplateRepoImpl { db: db.clone() });
+        let report_job_repo = Arc::new(orbis_infra::repositories::report_repos::ReportJobRepoImpl { db: db.clone() });
+        let report_audit_repo = Arc::new(orbis_infra::repositories::report_repos::ReportAuditRepoImpl { db: db.clone() });
+        let policy_repo = Arc::new(orbis_infra::repositories::policy_repo::PgPolicyRepo { db: db.clone() });
+        let settings_repo = Arc::new(orbis_infra::repositories::settings_repo::SettingsRepoImpl { db: db.clone() });
+        let dashboard_repo = Arc::new(orbis_infra::repositories::dashboard_repo::DashboardRepoImpl { db: db.clone() });
+
+        use orbis_infra::adapters::report_adapter::*;
+        let mut provider_registry = InMemoryDataProviderRegistry::new();
+        provider_registry.register_provider(Box::new(FeeCollectionDataProvider { db: db.clone() }));
+        provider_registry.register_provider(Box::new(StudentListDataProvider { db: db.clone() }));
+        provider_registry.register_provider(Box::new(TermResultDataProvider { db: db.clone() }));
+        provider_registry.register_provider(Box::new(AnnualResultDataProvider { db: db.clone() }));
+        provider_registry.register_provider(Box::new(ExamSeatingPlanDataProvider { db: db.clone() }));
+        provider_registry.register_provider(Box::new(ExamAttendanceSheetDataProvider { db: db.clone() }));
+        provider_registry.register_provider(Box::new(PaymentReceiptDataProvider { db: db.clone() }));
+        provider_registry.register_provider(Box::new(StudentStatementDataProvider { db: db.clone() }));
+        let report_provider_registry = Arc::new(provider_registry);
+
+        let mut renderer_registry = InMemoryRendererRegistry::new();
+        renderer_registry.register_renderer(Box::new(DataOnlyRenderer));
+        renderer_registry.register_renderer(Box::new(JsonRenderer));
+        renderer_registry.register_renderer(Box::new(CsvRenderer));
+        renderer_registry.register_renderer(Box::new(HtmlRenderer));
+        renderer_registry.register_renderer(Box::new(PdfRenderer));
+        let report_renderer_registry = Arc::new(renderer_registry);
+
+        let report_org_context_resolver = Arc::new(DbOrgContextResolver { db: db.clone() });
+
+        let permission_checker = Arc::new(orbis_infra::adapters::iam::db_permission_checker::DbPermissionChecker {
+            db: db.clone(),
+        });
+
+        let autopilot_task_repo = Arc::new(orbis_infra::autopilot::task_repo::PgAutopilotTaskRepo::new(db.clone()));
+
+        let event_bus = Arc::new(orbis_infra::event_bus::MemoryEventBus {
+            workflow_engine: None,
+        });
+        // Generate or load a per-installation JWT secret.
+        // Stored as a file in AppData — never hardcoded.
+        let jwt_secret = Self::load_or_generate_jwt_secret(app_data_dir)?;
+        let token_service = Arc::new(orbis_infra::security::jwt::JwtTokenService::new(jwt_secret));
+        let password_hasher = Arc::new(orbis_infra::security::bcrypt::BcryptHasher);
+
+        let integration_resolver = Arc::new(orbis_infra::adapters::resolver::IntegrationResolver::new(integration_repo.clone()));
+
+        let identity_repo = Arc::new(orbis_infra::repositories::identity_repo::UserIdentityRepoImpl { db: db.clone() });
+        let mfa_factor_repo = Arc::new(orbis_infra::repositories::mfa_repo::MfaFactorRepoImpl { db: db.clone() });
+        let recovery_code_repo = Arc::new(orbis_infra::repositories::mfa_repo::MfaRecoveryCodeRepoImpl { db: db.clone() });
+        let device_repo = Arc::new(orbis_infra::repositories::device_repo::UserDeviceRepoImpl { db: db.clone() });
+        let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl);
+        let oidc_service = Arc::new(orbis_infra::adapters::identity::GoogleIdentityAdapter::new());
+
+        let sequence_repo = Arc::new(orbis_infra::repositories::sequence_repo::SequenceCounterRepoImpl::new(db.clone()));
+        let doc_req_repo = Arc::new(orbis_infra::repositories::document_repos::DocumentRequirementRepoImpl::new(db.clone()));
+
+        // Build Domain Services
+        let student_service = Arc::new(orbis_app::services::StudentService::new(
+            student_repo.clone(),
+            person_repo.clone(),
+            student_repo.clone(),
+            student_repo.clone(),
+            settings_repo.clone(),
+            sequence_repo.clone(),
+            academic_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            override_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let progression_service = Arc::new(orbis_app::services::ProgressionService::new(
+            progression_repo.clone(),
+            student_repo.clone(),
+            student_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let academic_service = Arc::new(orbis_app::services::AcademicService::new(
+            academic_repo.clone(),
+            academic_repo.clone(),
+            academic_repo.clone(),
+            academic_repo.clone(),
+            assessment_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let finance_service = Arc::new(orbis_app::services::FinanceService::new(
+            finance_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            policy_repo.clone(),
+            event_bus.clone(),
+            integration_resolver.clone(),
+            integration_resolver.clone(),
+            permission_checker.clone(),
+        ));
+
+        let assessment_service = Arc::new(orbis_app::services::AssessmentService::new(
+            assessment_repo.clone(),
+            assessment_repo.clone(),
+            assessment_repo.clone(),
+            assessment_repo.clone(),
+            assessment_repo.clone(),
+            academic_repo.clone(),
+            academic_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let auth_service = Arc::new(orbis_app::services::AuthService::new(
+            user_repo.clone(),
+            person_repo.clone(),
+            session_repo.clone(),
+            mfa_factor_repo.clone(),
+            recovery_code_repo.clone(),
+            device_repo.clone(),
+            identity_repo.clone(),
+            token_service.clone(),
+            password_hasher.clone(),
+            totp_service.clone(),
+            oidc_service.clone(),
+            Some(integration_repo.clone()),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ).with_context_repos(
+            Some(calendar_repo.clone()),
+            Some(student_repo.clone()),
+            Some(student_repo.clone()),
+            Some(student_repo.clone()),
+        ));
+
+        let organization_service = Arc::new(orbis_app::services::OrganizationService::new(
+            org_repo.clone(),
+            org_unit_repo.clone(),
+            settings_repo.clone(),
+            dashboard_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let calendar_service = Arc::new(orbis_app::services::CalendarService::new(
+            calendar_repo.clone(),
+            calendar_repo.clone(),
+            calendar_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let scheduling_service = Arc::new(orbis_app::services::SchedulingService::new(
+            scheduling_repo.clone(),
+            scheduling_repo.clone(),
+            scheduling_repo.clone(),
+            exam_repo.clone(),
+            exam_repo.clone(),
+            exam_repo.clone(),
+            exam_repo.clone(),
+            exam_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let document_service = Arc::new(orbis_app::services::DocumentService::new(
+            document_repo.clone(),
+            doc_req_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let folder_repo = Arc::new(orbis_infra::repositories::folder_repo::FolderRepoImpl { db: db.clone() });
+        let folder_service = Arc::new(orbis_app::services::FolderService::new(
+            folder_repo.clone(),
+            document_repo.clone(),
+            permission_checker.clone(),
+        ));
+
+        let storage_root = app_data_dir.join("storage");
+        let storage_resolver = Arc::new(orbis_infra::adapters::storage::StorageResolver::new(
+            storage_root,
+            integration_repo.clone(),
+        ));
+        let storage_adapter = storage_resolver.default_adapter();
+        let file_storage_service = Arc::new(orbis_app::services::FileStorageService::new(
+            storage_adapter.clone(),
+            document_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let integration_service = Arc::new(orbis_app::services::IntegrationService::new(
+            integration_repo.clone(),
+            permission_checker.clone(),
+        ));
+
+        let workflow_service = Arc::new(orbis_app::services::WorkflowService::new(
+            override_repo.clone(),
+            workflow_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let report_service = Arc::new(orbis_app::services::ReportService::new(
+            report_definition_repo.clone(),
+            report_template_repo.clone(),
+            report_job_repo.clone(),
+            report_audit_repo.clone(),
+            report_provider_registry.clone(),
+            report_renderer_registry.clone(),
+            report_org_context_resolver.clone(),
+        ));
+
+        let autopilot_engine = Arc::new(orbis_app::autopilot::engine::AutopilotEngine::new(
+            policy_repo.clone(),
+            autopilot_task_repo.clone(),
+            calendar_service.clone(),
+            progression_service.clone(),
+            finance_service.clone(),
+            report_service.clone(),
+            workflow_service.clone(),
+        ));
+
+        let autopilot_evaluator = Arc::new(orbis_app::autopilot::evaluator::AutopilotEvaluator::new(
+            policy_repo.clone(),
+            calendar_repo.clone(),
+            calendar_repo.clone(),
+            student_repo.clone(),
+            finance_repo.clone(),
+        ));
+
+        let autopilot_service = Arc::new(orbis_app::services::AutopilotService::new(
+            autopilot_evaluator.clone(),
+            autopilot_engine.clone(),
+            autopilot_task_repo.clone(),
+            policy_repo.clone(),
+            permission_checker.clone(),
+        ));
+
+        let ai_service = Arc::new(orbis_app::services::AiOrchestrationService::new(
+            integration_resolver.clone(),
+            permission_checker.clone(),
+            student_service.clone(),
+            academic_service.clone(),
+            assessment_service.clone(),
+            finance_service.clone(),
+            scheduling_service.clone(),
+            report_service.clone(),
+            organization_service.clone(),
+        ).with_autopilot_service(autopilot_service.clone()));
+
+        // ── Bootstrap & System Services ─────────────────────────────
+        let system_repo_impl = Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl { db: db.clone() });
+        let entitlement_provider: Arc<dyn EntitlementProvider> = Arc::new(
+            orbis_infra::adapters::entitlement_adapter::UnlicensedEntitlementProvider,
+        );
+
+        let system_service = Arc::new(orbis_app::services::SystemService::new(
+            system_repo_impl.clone(),
+        ));
+
+        let solver_sidecar = Arc::new(crate::features::solver_sidecar::SolverSidecarManager::new());
+
+        // ── Employee Affairs & User Groups Wiring ───────────────────
+        let employee_repo = Arc::new(orbis_infra::repositories::employee_repo::EmployeeRepoImpl { db: db.clone() });
+        let group_repo = Arc::new(orbis_infra::repositories::group_repo::GroupRepoImpl { db: db.clone() });
+
+        let identity_provisioning_service = Arc::new(orbis_app::services::IdentityProvisioningService::new(
+            user_repo.clone(),
+            person_repo.clone(),
+            identity_repo.clone(),
+            group_repo.clone(),
+            Some(integration_repo.clone()),
+            Some(session_repo.clone()),
+            Some(org_repo.clone()),
+            None,
+            password_hasher.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let employee_service = Arc::new(orbis_app::services::EmployeeService::new(
+            employee_repo.clone(),
+            person_repo.clone(),
+            group_repo.clone(),
+            identity_provisioning_service.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let group_service = Arc::new(orbis_app::services::GroupService::new(
+            group_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let bootstrap_service = Arc::new(orbis_app::services::BootstrapService::new(
+            org_repo.clone(),
+            user_repo.clone(),
+            person_repo.clone(),
+            identity_repo.clone(),
+            Arc::new(orbis_infra::repositories::role_repo::RoleRepoImpl::new(db.clone())),
+            settings_repo.clone(),
+            system_repo_impl.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            password_hasher.clone(),
+            event_bus.clone(),
+        ));
+
+        let onboarding_service = Arc::new(orbis_app::services::OnboardingService::new(
+            org_repo.clone(),
+            org_unit_repo.clone(),
+            calendar_repo.clone(),
+            calendar_repo.clone(),
+            academic_repo.clone(),
+            academic_repo.clone(),
+            academic_repo.clone(),
+            assessment_repo.clone(),
+            settings_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            scheduling_repo.clone(),
+            doc_req_repo.clone(),
+            report_template_repo.clone(),
+            integration_repo.clone(),
+            permission_checker.clone(),
+        ));
+
+        let state = Self {
             db,
+            active_session,
+            org_repo: org_repo.clone(),
+            org_unit_repo,
+            user_repo,
+            person_repo,
+            session_repo,
+            year_repo: calendar_repo.clone(),
+            period_repo: calendar_repo.clone(),
+            period_template_repo: calendar_repo,
+            subject_repo: academic_repo.clone(),
+            class_repo: academic_repo.clone(),
+            class_subject_repo: academic_repo.clone(),
+            student_repo: student_repo.clone(),
+            enrollment_repo: student_repo.clone(),
+            student_guardian_repo: student_repo,
+            override_repo,
+            prerequisite_repo: academic_repo,
+            gpa_repo: assessment_repo.clone(),
+            promotion_repo: progression_repo,
+            discount_template_repo: finance_repo.clone(),
+            room_repo: scheduling_repo.clone(),
+            time_slot_repo: scheduling_repo.clone(),
+            lesson_repo: scheduling_repo,
+            assessment_scheme_repo: assessment_repo.clone(),
+            grade_repo: assessment_repo.clone(),
+            attendance_repo: assessment_repo.clone(),
+            behavior_record_repo: assessment_repo,
+            exam_session_repo: exam_repo.clone(),
+            exam_schedule_repo: exam_repo.clone(),
+            seating_number_repo: exam_repo.clone(),
+            secret_number_repo: exam_repo.clone(),
+            exam_proctor_repo: exam_repo,
+            account_repo: finance_repo.clone(),
+            journal_entry_repo: finance_repo.clone(),
+            fee_template_repo: finance_repo.clone(),
+            student_fee_repo: finance_repo.clone(),
+            payment_repo: finance_repo.clone(),
+            document_repo,
+            doc_req_repo,
+            sequence_repo,
+            integration_repo,
+            workflow_repo,
+            report_definition_repo,
+            report_template_repo,
+            report_job_repo,
+            report_audit_repo,
+            report_provider_registry,
+            report_renderer_registry,
+            report_org_context_resolver,
+            currency_repo: finance_repo.clone(),
+            policy_repo,
+            settings_repo,
+            dashboard_repo,
             event_bus,
-            app_data_dir.join("storage"),
-        ));
-        
-        // Start background event loop + autopilot scheduler + catch-up
-        platform.start_event_loop();
-        platform.start_autopilot_scheduler();
-        platform.start_autopilot_catch_up();
-
-        let report_registry = Arc::new(svc_report::registry::ReportRegistry::new());
-        let report_service = Arc::new(svc_report::service::ReportService::new(
-            report_registry,
-            Arc::new(provider.db()),
-        ));
-        report_service.register_builtin_reports();
-        
-        Ok(Self {
-            provider,
-            config,
-            platform,
+            token_service,
+            password_hasher,
+            integration_resolver,
+            permission_checker,
+            identity_repo,
+            mfa_factor_repo,
+            recovery_code_repo,
+            device_repo,
+            totp_service,
+            oidc_service,
+            student_service,
+            progression_service,
+            academic_service,
+            finance_service,
+            assessment_service,
+            auth_service,
+            organization_service,
+            calendar_service,
+            scheduling_service,
+            document_service,
+            folder_repo,
+            folder_service: folder_service.clone(),
+            file_storage_service,
+            storage_resolver,
+            storage_adapter,
+            integration_service,
+            workflow_service,
             report_service,
-            session: Arc::new(RwLock::new(None)),
-        })
-    }
-
-    /// Accessor for the database connection.
-    pub fn db(&self) -> DatabaseConnection {
-        self.provider.db()
-    }
-
-    /// Resolve report branding and locale from the authenticated tenant record.
-    pub async fn report_org_context(&self, org_id: &str) -> Result<OrgContext, shared_kernel::errors::AppError> {
-        use sea_orm::{ConnectionTrait, Statement};
-
-        let row = self.db()
-            .query_one(Statement::from_sql_and_values(
-                self.db().get_database_backend(),
-                "SELECT id, name, name_ar, code, logo, locale, timezone, hijri_enabled, settings FROM organizations WHERE id = $1",
-                vec![org_id.to_string().into()],
-            ))
-            .await?
-            .ok_or_else(|| shared_kernel::errors::AppError::not_found("organization", org_id))?;
-
-        let settings_json: String = row.try_get("", "settings").unwrap_or_default();
-        let settings: shared_kernel::settings::OrgSettings = serde_json::from_str(&settings_json).unwrap_or_default();
-        let currency = settings.finance.default_currency;
-        let currency_symbol = match currency.as_str() {
-            "SAR" => "ر.س".to_string(),
-            "YER" => "ر.ي".to_string(),
-            "USD" => "$".to_string(),
-            "EUR" => "€".to_string(),
-            _ => currency.clone(),
+            ai_service,
+            autopilot_service: autopilot_service.clone(),
+            autopilot_task_repo: autopilot_task_repo.clone(),
+            system_repo: system_repo_impl,
+            system_service,
+            entitlement_provider,
+            solver_sidecar,
+            app_data_dir: app_data_dir.to_path_buf(),
+            // ── Employee Affairs & User Groups ─────────────────────────
+            employee_repo,
+            group_repo,
+            identity_provisioning_service,
+            employee_service,
+            group_service,
+            bootstrap_service,
+            onboarding_service,
         };
 
-        Ok(OrgContext {
-            id: row.try_get("", "id").unwrap_or_else(|_| org_id.to_string()),
-            name: row.try_get("", "name").unwrap_or_default(),
-            name_ar: row.try_get("", "name_ar").unwrap_or_default(),
-            code: row.try_get("", "code").unwrap_or_default(),
-            logo_url: row.try_get("", "logo").unwrap_or_default(),
-            locale: row.try_get("", "locale").unwrap_or_else(|_| "ar".into()),
-            timezone: row.try_get("", "timezone").unwrap_or_else(|_| "Asia/Riyadh".into()),
-            hijri_enabled: row.try_get::<i32>("", "hijri_enabled").unwrap_or(0) != 0,
-            currency,
-            currency_symbol,
-            ..Default::default()
-        })
+        // Spawn Autopilot Background Scheduler (checks every 60 seconds)
+        let autopilot_scheduler = Arc::new(orbis_infra::autopilot::scheduler::AutopilotScheduler::new(
+            autopilot_service.clone(),
+            org_repo.clone(),
+        ));
+        let _scheduler_handle = autopilot_scheduler.spawn(60);
+
+        Ok(state)
     }
 
-    // ── Session Management ──────────────────────────────────────────
-
-    /// Set the authenticated session after login.
-    pub async fn set_session(&self, user_id: String, org_id: String, roles: Vec<String>) {
-        let guard = TenantGuard::new(&org_id);
-        let ctx = SessionContext {
-            user_id,
-            org_id,
-            org_unit_id: None,
-            roles,
-            guard,
-        };
-        *self.session.write().await = Some(ctx);
+    pub fn get_active_session(&self) -> Option<ActiveSession> {
+        self.active_session.read().ok().and_then(|guard| guard.clone())
     }
 
-    /// Select the active branch for the authenticated session.
-    ///
-    /// Branch access is resolved from the user's organization-scoped role
-    /// assignments. Organization administrators may select any active unit;
-    /// other users require a global, direct, or subtree assignment.
-    pub async fn set_active_org_unit(
-        &self,
-        org_unit_id: Option<String>,
-    ) -> Result<(), shared_kernel::errors::AppError> {
-        use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+    pub fn set_active_session(&self, session: ActiveSession) {
+        if let Ok(mut guard) = self.active_session.write() {
+            *guard = Some(session);
+        }
+    }
 
-        let mut session = self
-            .session
-            .write()
-            .await;
-        let current = session
-            .as_mut()
-            .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("No active session"))?;
-
-        let Some(org_unit_id) = org_unit_id else {
-            current.org_unit_id = None;
-            return Ok(());
-        };
-
-        let unit = svc_organization::entities::org_unit::Entity::find()
-            .filter(svc_organization::entities::org_unit::Column::Id.eq(&org_unit_id))
-            .filter(svc_organization::entities::org_unit::Column::OrgId.eq(&current.org_id))
-            .filter(svc_organization::entities::org_unit::Column::IsActive.eq(1))
-            .one(&self.db())
-            .await?
-            .ok_or_else(|| shared_kernel::errors::AppError::not_found("org_unit", &org_unit_id))?;
-
-        let is_org_admin = current.roles.iter().any(|role| {
-            matches!(role.to_ascii_lowercase().as_str(), "admin" | "super_admin")
-        });
-
-        if !is_org_admin {
-            let assignments = svc_iam::entities::user_role::Entity::find()
-                .filter(svc_iam::entities::user_role::Column::UserId.eq(&current.user_id))
-                .filter(svc_iam::entities::user_role::Column::OrgId.eq(&current.org_id))
-                .all(&self.db())
-                .await?;
-
-            let allowed = assignments.iter().any(|assignment| {
-                match assignment.scope_type.to_ascii_lowercase().as_str() {
-                    "global" | "organization" | "org" => true,
-                    "branch" | "org_unit" | "unit" => {
-                        assignment.scope_id.as_deref() == Some(org_unit_id.as_str())
-                    }
-                    "subtree" => assignment.scope_id.as_deref().is_some_and(|scope_id| {
-                        unit.path == scope_id
-                            || unit.path.starts_with(&format!("{}/", scope_id.trim_end_matches('/')))
-                    }),
-                    _ => false,
-                }
-            });
-
-            if !allowed {
-                return Err(shared_kernel::errors::AppError::unauthorized(
-                    "You are not assigned to this organizational unit",
-                ));
+    pub fn set_active_unit(&self, unit_id: Option<Uuid>) {
+        if let Ok(mut guard) = self.active_session.write() {
+            if let Some(ref mut session) = *guard {
+                session.active_unit_id = unit_id;
             }
         }
-
-        current.org_unit_id = Some(org_unit_id);
-        Ok(())
     }
 
-    /// Set a Super Admin session with access to multiple orgs.
-    pub async fn set_super_admin_session(
-        &self,
-        user_id: String,
-        org_id: String,
-        roles: Vec<String>,
-        allowed_org_ids: Vec<String>,
-    ) {
-        let guard = TenantGuard::with_allowed_orgs(&org_id, allowed_org_ids);
-        let ctx = SessionContext {
-            user_id,
-            org_id,
-            org_unit_id: None,
-            roles,
-            guard,
-        };
-        *self.session.write().await = Some(ctx);
+    pub fn clear_active_session(&self) {
+        if let Ok(mut guard) = self.active_session.write() {
+            *guard = None;
+        }
     }
 
-    /// Clear the session on logout.
-    pub async fn clear_session(&self) {
-        *self.session.write().await = None;
-    }
-
-    // ── Context Building ────────────────────────────────────────────
-
-    /// Build a ServiceContext from the active session.
-    ///
-    /// This is the **primary** context builder. It reads `org_id` from the
-    /// session — the frontend never passes it.
-    pub async fn build_guarded_context(
-        &self,
-    ) -> Result<ServiceContext, shared_kernel::errors::AppError> {
-        let session_lock = self.session.read().await;
-        let session = session_lock
-            .as_ref()
-            .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("No active session"))?;
-
-        let user_id = session.user_id.clone();
-        let org_id = session.org_id.clone();
-        let active_org_unit_id = session.org_unit_id.clone();
-        let roles = session.roles.clone();
-        drop(session_lock);
-
-        let settings = self.platform.settings.get_org_settings(&org_id).await?;
-
-        let is_org_admin = roles.iter().any(|role| {
-            matches!(role.to_ascii_lowercase().as_str(), "admin" | "super_admin")
-        });
-
-        if active_org_unit_id.is_none() && !is_org_admin {
-            use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
-
-            let assignments = svc_iam::entities::user_role::Entity::find()
-                .filter(svc_iam::entities::user_role::Column::UserId.eq(&user_id))
-                .filter(svc_iam::entities::user_role::Column::OrgId.eq(&org_id))
-                .all(&self.db())
-                .await?;
-
-            let has_restricted_scope = assignments.iter().any(|assignment| {
-                !matches!(
-                    assignment.scope_type.to_ascii_lowercase().as_str(),
-                    "global" | "organization" | "org"
-                )
-            });
-
-            let branch_selection_required = settings.branch_policy.selection_required
-                || settings.branch_policy.data_isolation.eq_ignore_ascii_case("isolated");
-            if has_restricted_scope && branch_selection_required {
-                return Err(shared_kernel::errors::AppError::unauthorized(
-                    "Select an organizational unit before accessing scoped data",
-                ));
+    /// Load or generate a per-installation JWT secret.
+    /// Stored in AppData/jwt_secret — never hardcoded.
+    fn load_or_generate_jwt_secret(app_data_dir: &std::path::Path) -> Result<String, String> {
+        let secret_path = app_data_dir.join("jwt_secret");
+        if secret_path.exists() {
+            std::fs::read_to_string(&secret_path)
+                .map(|s| s.trim().to_string())
+                .map_err(|e| format!("Failed to read JWT secret: {e}"))
+        } else {
+            use rand::Rng;
+            let secret: String = rand::thread_rng()
+                .sample_iter(&rand::distributions::Alphanumeric)
+                .take(64)
+                .map(char::from)
+                .collect();
+            // Ensure parent directory exists
+            if let Some(parent) = secret_path.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|e| format!("Failed to create AppData dir: {e}"))?;
             }
+            std::fs::write(&secret_path, &secret)
+                .map_err(|e| format!("Failed to write JWT secret: {e}"))?;
+            Ok(secret)
         }
-
-        let db = self.db();
-        let actor = Actor::User(user_id);
-        let mut ctx = self.platform.context_for(db, &org_id, actor);
-        ctx.org_unit_id = active_org_unit_id;
-        ctx.ensure_correlation_id();
-        Ok(ctx)
-    }
-
-    /// Build a ServiceContext for a **specific** org_id (Super Admin only).
-    ///
-    /// Validates against the TenantGuard before building.
-    pub async fn build_context_for_org(
-        &self,
-        target_org_id: &str,
-    ) -> Result<ServiceContext, shared_kernel::errors::AppError> {
-        let session_lock = self.session.read().await;
-        let session = session_lock
-            .as_ref()
-            .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("No active session"))?;
-
-        // Validate tenant boundary
-        session.guard.validate(target_org_id)?;
-
-        let db = self.db();
-        let actor = Actor::User(session.user_id.clone());
-        let mut ctx = self.platform.context_for(db, target_org_id, actor);
-        ctx.ensure_correlation_id();
-        Ok(ctx)
-    }
-
-    /// Build a ServiceContext for the current session (legacy — delegates to guarded).
-    ///
-    /// Kept for backward compatibility during migration. New code should use
-    /// `build_guarded_context()`.
-    pub async fn build_context(
-        &self,
-        org_id: &str,
-    ) -> Result<ServiceContext, shared_kernel::errors::AppError> {
-        // If there's a session, validate against it
-        let session_lock = self.session.read().await;
-        if let Some(ref session) = *session_lock {
-            session.guard.validate(org_id)?;
-        }
-        drop(session_lock);
-
-        let db = self.db();
-        
-        // Resolve current actor from the latest session
-        use sea_orm::{EntityTrait, QueryOrder};
-        let session = svc_iam::entities::user_session::Entity::find()
-            .order_by_desc(svc_iam::entities::user_session::Column::CreatedAt)
-            .one(&db)
-            .await?
-            .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("No active session"))?;
-
-        let actor = Actor::User(session.user_id);
-        let mut ctx = self.platform.context_for(db, org_id, actor);
-        ctx.ensure_correlation_id();
-        Ok(ctx)
-    }
-
-    /// Build a system-level ServiceContext (for background tasks, events).
-    pub async fn build_system_context(&self, org_id: &str) -> ServiceContext {
-        let db = self.db();
-        let mut ctx = self.platform.context_for(db, org_id, Actor::System);
-        ctx.ensure_correlation_id();
-        ctx
-    }
-
-    /// Legacy: verify RBAC permissions for the current active user session.
-    pub async fn check_tauri_permission(
-        &self,
-        db: &DatabaseConnection,
-        permission: shared_kernel::traits::Permission,
-        context: Option<&svc_iam::services::authz::AuthzContext>,
-    ) -> Result<(), shared_kernel::errors::AppError> {
-        use sea_orm::{EntityTrait, QueryOrder};
-        
-        let latest_session = svc_iam::entities::user_session::Entity::find()
-            .order_by_desc(svc_iam::entities::user_session::Column::CreatedAt)
-            .one(db)
-            .await?
-            .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("No active session found"))?;
-
-        let user = svc_iam::entities::user::Entity::find_by_id(latest_session.user_id)
-            .one(db)
-            .await?
-            .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("Active session user not found"))?;
-
-        let authz = svc_iam::services::authz::AuthzService::new();
-        authz.check_permission(db, &user, permission, context).await?;
-
-        Ok(())
     }
 }
-

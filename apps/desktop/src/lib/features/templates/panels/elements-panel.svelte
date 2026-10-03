@@ -6,28 +6,7 @@ import * as m from "$lib/paraglide/messages";
  */
 import type { EditorStore } from "../stores/editor-store.svelte";
 import { Input } from "@orbis/ui/input";
-import { Badge } from "@orbis/ui/badge";
-import {
-  Search,
-  Type,
-  Image,
-  Square,
-  Circle,
-  Minus,
-  Table,
-  Barcode,
-  QrCode,
-  Frame,
-  Grid3X3,
-  Repeat2,
-  GitBranch,
-  Component,
-  FileDown,
-  PanelTop,
-  PanelBottom,
-  Stamp,
-  MoveVertical,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, AlignVertical, ArrowDownTray, ArrowPath, CheckBox, CheckCircle, CheckSquare, Component, Cube, Grid, H1, Hashtag, Merge, Minus, Photo, Search, Sidebar } from "@orbis/icons";
 
 let {
   store,
@@ -50,7 +29,7 @@ const elements: ElementItem[] = [
   {
     id: "text",
     type: "Text",
-    icon: Type,
+    icon: H1,
     label: "Text",
     labelAr: m.template_element_text(),
     category: "basic",
@@ -58,7 +37,7 @@ const elements: ElementItem[] = [
   {
     id: "image",
     type: "Image",
-    icon: Image,
+    icon: Photo,
     label: "Image",
     labelAr: m.template_element_image(),
     category: "basic",
@@ -66,7 +45,7 @@ const elements: ElementItem[] = [
   {
     id: "shape-rect",
     type: "Shape",
-    icon: Square,
+    icon: CheckBox,
     label: "Rectangle",
     labelAr: m.template_element_rect(),
     category: "shapes",
@@ -74,7 +53,7 @@ const elements: ElementItem[] = [
   {
     id: "shape-circle",
     type: "Shape",
-    icon: Circle,
+    icon: AdjustmentsHorizontal,
     label: "Circle",
     labelAr: m.template_element_circle(),
     category: "shapes",
@@ -90,7 +69,7 @@ const elements: ElementItem[] = [
   {
     id: "table",
     type: "Table",
-    icon: Table,
+    icon: Grid,
     label: "Table",
     labelAr: m.template_element_table(),
     category: "data",
@@ -98,7 +77,7 @@ const elements: ElementItem[] = [
   {
     id: "barcode",
     type: "Barcode",
-    icon: Barcode,
+    icon: Hashtag,
     label: "Barcode",
     labelAr: m.template_element_barcode(),
     category: "data",
@@ -106,7 +85,7 @@ const elements: ElementItem[] = [
   {
     id: "qrcode",
     type: "QRCode",
-    icon: QrCode,
+    icon: CheckSquare,
     label: "QR Code",
     labelAr: m.template_element_qrcode(),
     category: "data",
@@ -114,20 +93,83 @@ const elements: ElementItem[] = [
   {
     id: "frame",
     type: "Frame",
-    icon: Frame,
+    icon: Cube,
     label: "Frame",
     labelAr: m.template_element_frame(),
     category: "layout",
   },
-  { id: "grid", type: "Grid", icon: Grid3X3, label: "Grid", labelAr: "شبكة", category: "layout" },
-  { id: "repeater", type: "Repeater", icon: Repeat2, label: "Repeater", labelAr: "مكرر", category: "logic" },
-  { id: "conditional", type: "Conditional", icon: GitBranch, label: "Conditional", labelAr: "شرط", category: "logic" },
-  { id: "component", type: "ComponentRef", icon: Component, label: "Component", labelAr: "مكوّن", category: "layout" },
-  { id: "page-break", type: "PageBreak", icon: FileDown, label: "Page Break", labelAr: "فاصل صفحة", category: "flow" },
-  { id: "header", type: "Header", icon: PanelTop, label: "Header", labelAr: "رأس الصفحة", category: "flow" },
-  { id: "footer", type: "Footer", icon: PanelBottom, label: "Footer", labelAr: "تذييل الصفحة", category: "flow" },
-  { id: "watermark", type: "Watermark", icon: Stamp, label: "Watermark", labelAr: "علامة مائية", category: "basic" },
-  { id: "spacer", type: "Spacer", icon: MoveVertical, label: "Spacer", labelAr: "مسافة", category: "layout" },
+  {
+    id: "grid",
+    type: "Grid",
+    icon: Grid,
+    label: "Grid",
+    labelAr: "شبكة",
+    category: "layout",
+  },
+  {
+    id: "repeater",
+    type: "Repeater",
+    icon: ArrowPath,
+    label: "Repeater",
+    labelAr: "مكرر",
+    category: "logic",
+  },
+  {
+    id: "conditional",
+    type: "Conditional",
+    icon: Merge,
+    label: "Conditional",
+    labelAr: "شرط",
+    category: "logic",
+  },
+  {
+    id: "component",
+    type: "ComponentRef",
+    icon: Component,
+    label: "Component",
+    labelAr: "مكوّن",
+    category: "layout",
+  },
+  {
+    id: "page-break",
+    type: "PageBreak",
+    icon: ArrowDownTray,
+    label: "Page Break",
+    labelAr: "فاصل صفحة",
+    category: "flow",
+  },
+  {
+    id: "header",
+    type: "Header",
+    icon: Sidebar,
+    label: "Header",
+    labelAr: "رأس الصفحة",
+    category: "flow",
+  },
+  {
+    id: "footer",
+    type: "Footer",
+    icon: Sidebar,
+    label: "Footer",
+    labelAr: "تذييل الصفحة",
+    category: "flow",
+  },
+  {
+    id: "watermark",
+    type: "Watermark",
+    icon: CheckCircle,
+    label: "Watermark",
+    labelAr: "علامة مائية",
+    category: "basic",
+  },
+  {
+    id: "spacer",
+    type: "Spacer",
+    icon: AlignVertical,
+    label: "Spacer",
+    labelAr: "مسافة",
+    category: "layout",
+  },
 ];
 
 const categories = [

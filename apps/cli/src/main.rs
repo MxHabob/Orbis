@@ -2,7 +2,6 @@ use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand};
 use colored::*;
 use sea_orm::{ConnectionTrait, Database, DbBackend, Statement, TransactionTrait};
-use std::path::PathBuf;
 
 pub mod commands;
 pub mod core;
@@ -31,26 +30,8 @@ pub enum Commands {
     Backup,
     /// Manage product license and activation
     License,
-    /// Validate and install versioned DocForge template packages
-    Templates {
-        #[command(subcommand)]
-        command: TemplateCommands,
-    },
 }
 
-#[derive(Subcommand, Clone)]
-pub enum TemplateCommands {
-    /// Validate a template package directory
-    Validate { package: PathBuf },
-    /// Create templates and system assets from a package
-    Create { package: PathBuf },
-    /// List installed templates for the first organization
-    List,
-    /// Install a template package into the first organization
-    Install { package: PathBuf },
-    /// Update an installed package without overwriting local edits
-    Update { package: PathBuf },
-}
 
 /// Menu choices as an enum for robust matching.
 #[derive(Debug, Clone, PartialEq)]
@@ -61,8 +42,6 @@ enum MenuChoice {
     Backup,
     License,
     ResetDatabase,
-    SeedDefaultData,
-    CreateDefaultTemplates,
     Exit,
 }
 
@@ -88,9 +67,6 @@ async fn handle_command(command: &Commands) -> Result<()> {
         Commands::License => {
             commands::license::execute().await?;
         }
-        Commands::Templates { command } => {
-            commands::templates::execute(command).await?;
-        }
     }
     Ok(())
 }
@@ -109,50 +85,28 @@ fn build_menu(status: &core::database::SystemStatus) -> Vec<MenuItem> {
     };
 
     if status.is_setup_complete() {
-        push("Start System", MenuChoice::Start);
+        push("Start System (Launch Desktop)", MenuChoice::Start);
         push("Run Diagnostics (Doctor)", MenuChoice::Doctor);
-        push("Backup Database", MenuChoice::Backup);
-        push("Manage License", MenuChoice::License);
-        push("Repair / Reinstall", MenuChoice::Init);
-        push("Reset Database (Wipe All Data)", MenuChoice::ResetDatabase);
+        push("Backup Database Snapshot", MenuChoice::Backup);
+        push("Manage License & Plan", MenuChoice::License);
+        push("Workspace Setup / Repair", MenuChoice::Init);
+        push("Reset Database Store", MenuChoice::ResetDatabase);
     } else if status.is_initialized() {
         push("Start System (Complete Onboarding)", MenuChoice::Start);
         push("Run Diagnostics (Doctor)", MenuChoice::Doctor);
-        push("Manage License", MenuChoice::License);
-        push("Repair / Reinstall", MenuChoice::Init);
-        push("Backup Database", MenuChoice::Backup);
-        push("Reset Database (Wipe All Data)", MenuChoice::ResetDatabase);
+        push("Manage License & Plan", MenuChoice::License);
+        push("Workspace Setup / Repair", MenuChoice::Init);
+        push("Backup Database Snapshot", MenuChoice::Backup);
+        push("Reset Database Store", MenuChoice::ResetDatabase);
     } else {
-        push("Initialize System (Required)", MenuChoice::Init);
-        push("Manage License", MenuChoice::License);
+        push("Initialize Workspace (Setup Database & Admin)", MenuChoice::Init);
+        push("Manage Product License", MenuChoice::License);
         push("Run Diagnostics (Doctor)", MenuChoice::Doctor);
-        push("Reset Database (Wipe All Data)", MenuChoice::ResetDatabase);
+        push("Reset Database Store", MenuChoice::ResetDatabase);
     }
 
-    if is_development_environment() {
-        push(
-            "Create Default Development Data",
-            MenuChoice::SeedDefaultData,
-        );
-    }
-
-    push(
-        "Create Default Templates",
-        MenuChoice::CreateDefaultTemplates,
-    );
-
-    push("Exit", MenuChoice::Exit);
+    push("Exit Console", MenuChoice::Exit);
     items
-}
-
-fn is_development_environment() -> bool {
-    matches!(
-        std::env::var("APP_ENV")
-            .unwrap_or_else(|_| "development".to_string())
-            .to_lowercase()
-            .as_str(),
-        "development" | "dev"
-    )
 }
 
 /// Handles the "Reset Database" action with confirmation.
@@ -279,6 +233,19 @@ async fn reset_postgres(url: &str) -> Result<()> {
     Ok(())
 }
 
+async fn ensure_authenticated(status: &core::database::SystemStatus) -> Result<Option<core::auth::AuthenticatedAdmin>> {
+    if !status.is_initialized() {
+        return Ok(None);
+    }
+
+    let config = core::config::CliConfig::default();
+    let db = Database::connect(&config.db_url).await
+        .map_err(|e| anyhow!("Failed to connect to database for authentication: {e}"))?;
+
+    let admin = core::auth::authenticate_admin(&db).await?;
+    Ok(Some(admin))
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // Enable ANSI escape codes on Windows CMD/PowerShell
@@ -291,23 +258,60 @@ async fn main() -> Result<()> {
         .init();
 
     let cli = Cli::parse();
+    let initial_status = core::database::get_full_status().await;
 
     if let Some(cmd) = &cli.command {
         // Run specific command passed via CLI args directly
-        let (db_exists, setup_completed) = core::database::get_system_status().await;
+        let (db_exists, setup_completed) =
+            (initial_status.is_initialized(), initial_status.is_setup_complete());
         ui::output::print_banner(db_exists, setup_completed);
+
+        // Enforce authentication for protected commands when initialized
+        let needs_auth = match cmd {
+            Commands::Doctor | Commands::Init => false,
+            _ => initial_status.is_initialized(),
+        };
+
+        if needs_auth {
+            ensure_authenticated(&initial_status).await?;
+        }
+
         handle_command(cmd).await?;
     } else {
-        // Interactive Launcher Mode (when double-clicked without arguments)
+        // Interactive Launcher Mode (when double-clicked or run without arguments)
+        let (db_exists, setup_completed) =
+            (initial_status.is_initialized(), initial_status.is_setup_complete());
+        ui::output::print_banner(db_exists, setup_completed);
+
+        // Enforce authentication gate upon opening CLI if system is initialized
+        let auth_admin = ensure_authenticated(&initial_status).await?;
+
         loop {
             let status = core::database::get_full_status().await;
             let (db_exists, setup_completed) =
                 (status.is_initialized(), status.is_setup_complete());
             ui::output::print_banner(db_exists, setup_completed);
 
-            // Show org name if available
+            // Show active org & authenticated admin
             if let Some(ref name) = status.org_name {
-                println!("  Organization: {}\n", name.bold());
+                let dot = "•".truecolor(ui::output::COLOR_MUTED.0, ui::output::COLOR_MUTED.1, ui::output::COLOR_MUTED.2);
+                if let Some(ref admin) = auth_admin {
+                    println!("  {} {} {}  {}  {} {} ({})\n",
+                        "✦".truecolor(ui::output::COLOR_PURPLE.0, ui::output::COLOR_PURPLE.1, ui::output::COLOR_PURPLE.2),
+                        "Workspace:".truecolor(ui::output::COLOR_MUTED.0, ui::output::COLOR_MUTED.1, ui::output::COLOR_MUTED.2),
+                        name.truecolor(ui::output::COLOR_WHITE.0, ui::output::COLOR_WHITE.1, ui::output::COLOR_WHITE.2).bold(),
+                        dot,
+                        "Admin:".truecolor(ui::output::COLOR_MUTED.0, ui::output::COLOR_MUTED.1, ui::output::COLOR_MUTED.2),
+                        admin.full_name.truecolor(ui::output::COLOR_WHITE.0, ui::output::COLOR_WHITE.1, ui::output::COLOR_WHITE.2).bold(),
+                        admin.role.truecolor(ui::output::COLOR_EMERALD.0, ui::output::COLOR_EMERALD.1, ui::output::COLOR_EMERALD.2)
+                    );
+                } else {
+                    println!("  {} {} {}\n",
+                        "✦".truecolor(ui::output::COLOR_PURPLE.0, ui::output::COLOR_PURPLE.1, ui::output::COLOR_PURPLE.2),
+                        "Workspace:".truecolor(ui::output::COLOR_MUTED.0, ui::output::COLOR_MUTED.1, ui::output::COLOR_MUTED.2),
+                        name.truecolor(ui::output::COLOR_WHITE.0, ui::output::COLOR_WHITE.1, ui::output::COLOR_WHITE.2).bold()
+                    );
+                }
             }
 
             let menu = build_menu(&status);
@@ -356,21 +360,6 @@ async fn main() -> Result<()> {
                             MenuChoice::ResetDatabase => {
                                 handle_reset_database().await;
                             }
-                            MenuChoice::SeedDefaultData => {
-                                if let Err(e) = commands::dev_seed::execute().await {
-                                    ui::output::print_error(&e.to_string());
-                                }
-                            }
-                            MenuChoice::CreateDefaultTemplates => {
-                                if let Err(e) =
-                                    commands::templates::execute(&TemplateCommands::Update {
-                                        package: default_template_package_path(),
-                                    })
-                                    .await
-                                {
-                                    ui::output::print_error(&e.to_string());
-                                }
-                            }
                             MenuChoice::Exit => break,
                         }
 
@@ -389,11 +378,3 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn default_template_package_path() -> PathBuf {
-    let repository_path = PathBuf::from("apps/cli/templates/school-defaults");
-    if repository_path.is_dir() {
-        repository_path
-    } else {
-        PathBuf::from("templates/school-defaults")
-    }
-}

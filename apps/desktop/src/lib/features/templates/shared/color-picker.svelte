@@ -9,12 +9,8 @@ import * as m from "$lib/paraglide/messages";
  */
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@orbis/ui/popover";
-import { Pipette } from "@lucide/svelte";
+import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
+import { AdjustmentsHorizontal } from "@orbis/icons";
 
 let {
   value = "#000000",

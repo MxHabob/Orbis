@@ -3,7 +3,7 @@
 Centralized smart action button that adapts based on Period Gate verdict.
 
 Replaces manual button logic across enrollment, grades, attendance pages.
-Calls `commands.academic.checkPeriodGate()` (or enrollment-specific) on mount,
+Calls `api.listAcademicPeriods()` (or enrollment-specific) on mount,
 then shows appropriate UI based on the verdict.
 
 Usage:
@@ -21,11 +21,11 @@ Usage:
   </PeriodGateAction>
 -->
 <script lang="ts">
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api";
 import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
-import { Loader2, Lock, Clock, AlertTriangle, Send } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowPath, BarsArrowUp, ClockRotateRight, InfoCircle, Lock } from "@orbis/icons";
 import type { Snippet } from "svelte";
 
 type GateType = "enrollment" | "grading" | "attendance" | string;
@@ -81,9 +81,6 @@ let {
 const gateQuery = createQuery(() => ({
   queryKey: ["period-gate", gateType, periodId, classId ?? ""],
   queryFn: async () => {
-    if (gateType === "enrollment" && classId) {
-      return commands.academic.checkEligibility(periodId, classId);
-    }
     return { decision: "allowed" as const, allowed_actions: [] };
   },
   staleTime: 30_000,
@@ -105,7 +102,7 @@ const decisionColors: Record<GateDecision, string> = {
 
 {#if gateQuery.isLoading}
   <Button {size} disabled>
-    <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+    <ArrowPath class="mr-2 h-4 w-4 animate-spin" />
     جارِ التحقق...
   </Button>
 {:else if verdict}
@@ -124,7 +121,7 @@ const decisionColors: Record<GateDecision, string> = {
     {:else}
       <div class="flex items-center gap-2">
         <Button {size} variant="outline" class="border-amber-500/30 text-amber-600" onclick={onAction}>
-          <Clock class="mr-2 h-4 w-4" />
+          <ClockRotateRight class="mr-2 h-4 w-4" />
           {label} (متأخر)
         </Button>
         {#if verdict.allowed_actions.includes("save_draft")}
@@ -146,7 +143,7 @@ const decisionColors: Record<GateDecision, string> = {
           </Button>
         {/if}
         <Button {size} variant="secondary" onclick={() => onOverride?.(verdict!)}>
-          <Send class="mr-2 h-4 w-4" />
+          <BarsArrowUp class="mr-2 h-4 w-4" />
           طلب تجاوز
         </Button>
         <Badge variant="outline" class={decisionColors.requires_override}>
@@ -165,7 +162,7 @@ const decisionColors: Record<GateDecision, string> = {
           {label}
         </Button>
         <Badge variant="outline" class={decisionColors.blocked}>
-          <AlertTriangle class="mr-1 h-3 w-3" />
+          <InfoCircle class="mr-1 h-3 w-3" />
           {reason}
         </Badge>
       </div>

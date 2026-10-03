@@ -1,3 +1,4 @@
+import { FloppyDisk, Grid } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 // ═══════════════════════════════════════════════════════════════
 // Template Designer — Editor Store (Svelte 5 Runes)
@@ -78,7 +79,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
   let rulersVisible = $state(true);
   let guidesVisible = $state(true);
 
-  // ── Layout UI (Canva-style) ──────────────────────────────
+  // ── Grid UI (Canva-style) ──────────────────────────────
   type RailPanel =
     | "templates"
     | "elements"
@@ -90,7 +91,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
   let activeRailPanel = $state<RailPanel>(null);
   let flyoutWidth = $state(320);
 
-  // ── Layout Cache ─────────────────────────────────────────
+  // ── Grid Cache ─────────────────────────────────────────
   let nodeLayouts = $state<Map<string, NodeLayoutInfo>>(new Map());
 
   // ── Undo/Redo ────────────────────────────────────────────
@@ -302,11 +303,19 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     }
   }
 
-  function updateNodeProps(nodeId: string, props: Record<string, unknown>): void {
-    executeCommand(new UpdatePropsCommand(nodeId, props, findNode(document, nodeId)?.name));
+  function updateNodeProps(
+    nodeId: string,
+    props: Record<string, unknown>,
+  ): void {
+    executeCommand(
+      new UpdatePropsCommand(nodeId, props, findNode(document, nodeId)?.name),
+    );
   }
 
-  function addAsset(assetId: string, type: "image" | "logo" | "signature" | "stamp" = "image"): void {
+  function addAsset(
+    assetId: string,
+    type: "image" | "logo" | "signature" | "stamp" = "image",
+  ): void {
     if (!assetId || document.assets[assetId]) return;
     const previousAssets = { ...document.assets };
     executeCommand({
@@ -434,7 +443,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     });
   }
 
-  // ── Save ─────────────────────────────────────────────────
+  // ── FloppyDisk ─────────────────────────────────────────────────
 
   function markSaved(): void {
     savedSnapshot = JSON.stringify(document);
@@ -453,7 +462,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     }, 30_000); // 30 seconds
   }
 
-  // ── Layout Cache ─────────────────────────────────────────
+  // ── Grid Cache ─────────────────────────────────────────
 
   function updateNodeLayout(nodeId: string, layout: NodeLayoutInfo): void {
     const newMap = new Map(nodeLayouts);
@@ -717,11 +726,11 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     setPan,
     updatePageSetup,
 
-    // Save
+    // FloppyDisk
     markSaved,
     setAutoSaveCallback,
 
-    // Layout
+    // Grid
     updateNodeLayout,
     getNodeBounds,
 

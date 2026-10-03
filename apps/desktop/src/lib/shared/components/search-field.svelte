@@ -6,7 +6,7 @@ and Escape key shortcut to clear the search query.
 <script lang="ts">
 import { Input } from "@orbis/ui/input";
 import { cn } from "@orbis/ui/utils";
-import { Search } from "@lucide/svelte";
+import { Search } from "@orbis/icons";
 
 let {
   placeholder = "Search...",
@@ -47,7 +47,7 @@ function handleKeyDown(event: KeyboardEvent) {
     {value}
     oninput={handleInput}
     onkeydown={handleKeyDown}
-    class="ps-9 w-full h-9 text-xs"
+    class="ps-9 w-full text-xs"
     autocomplete="off"
     autocapitalize="none"
     autocorrect="off"

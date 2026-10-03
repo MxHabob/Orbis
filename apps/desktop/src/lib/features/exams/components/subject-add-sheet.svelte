@@ -5,12 +5,7 @@ Allows selecting an existing subject or creating a new one on-the-fly.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@orbis/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
@@ -28,7 +23,7 @@ import {
   AccordionTrigger,
 } from "@orbis/ui/accordion";
 
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api";
 import { examSubjectInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
@@ -93,7 +88,7 @@ $effect(() => {
   if (open && orgId) {
     (async () => {
       try {
-        const res = await commands.academic.listSubjects();
+        const res = await api.listSubjects();
         subjectsList = res || [];
       } catch (e: unknown) {
         console.error("Failed to load school subjects list:", e);
@@ -117,7 +112,7 @@ async function handleSubmit() {
     isSaving = true;
     try {
       // 1. Create the subject in school catalog
-      const newSub = await commands.academic.createSubject({
+      const newSub = await api.createSubject({
         name: newSubjectName || newSubjectNameAr,
         name_ar: newSubjectNameAr,
         code: newSubjectCode,
@@ -138,14 +133,14 @@ async function handleSubmit() {
   }
 
   form.values = {
-      session_id: sessionId,
-      subject_id: targetSubjectId,
-      max_score: Number(maxScore),
-      duration_minutes: Number(durationMinutes),
-      exam_type: examType as "written" | "oral" | "practical" | "mixed",
+    session_id: sessionId,
+    subject_id: targetSubjectId,
+    max_score: Number(maxScore),
+    duration_minutes: Number(durationMinutes),
+    exam_type: examType as "written" | "oral" | "practical" | "mixed",
   };
   const submitted = await form.submit(async (payload) => {
-    await commands.exam.add(payload);
+    await api.scheduleExam(payload as any);
     toast.success("تمت إضافة المادة للدورة بنجاح");
   });
   if (submitted) {

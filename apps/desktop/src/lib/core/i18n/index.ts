@@ -1,10 +1,11 @@
 // ── Core i18n Utilities ─────────────────────────────────────────────
-// Locale-aware formatting and detection.
+// Organization-aware formatting and locale detection.
 
 export {
   formatCurrency,
   formatDate,
   formatPercent,
   formatNumber,
+  formatDecimal,
 } from "./format";
 export { l, isAr } from "./locale";

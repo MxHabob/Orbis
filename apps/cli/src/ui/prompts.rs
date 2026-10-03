@@ -1,21 +1,83 @@
 use anyhow::Result;
 use colored::*;
-use inquire::{Confirm, Password, PasswordDisplayMode, Select, Text};
+use inquire::{
+    ui::{Color, RenderConfig, StyleSheet, Styled},
+    Autocomplete, Confirm, CustomUserError, Password, PasswordDisplayMode, Select, Text,
+};
 
 use crate::core::validator;
+
+#[derive(Clone)]
+pub struct ValueAutocompleter {
+    pub value: String,
+}
+
+impl Autocomplete for ValueAutocompleter {
+    fn get_suggestions(&mut self, _input: &str) -> Result<Vec<String>, CustomUserError> {
+        Ok(vec![])
+    }
+
+    fn get_completion(
+        &mut self,
+        input: &str,
+        highlighted_suggestion: Option<String>,
+    ) -> Result<Option<String>, CustomUserError> {
+        if let Some(s) = highlighted_suggestion {
+            return Ok(Some(s));
+        }
+        if input.is_empty() || self.value.starts_with(input) {
+            Ok(Some(self.value.clone()))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+pub fn get_render_config() -> RenderConfig<'static> {
+    let mut render_config = RenderConfig::default_colored();
+    render_config.prompt_prefix = Styled::new("> ").with_fg(Color::LightCyan);
+    render_config.answered_prompt_prefix = Styled::new("✔ ").with_fg(Color::LightGreen);
+    render_config.highlighted_option_prefix = Styled::new("  > ").with_fg(Color::LightMagenta);
+    render_config.scroll_up_prefix = Styled::new("▲ ");
+    render_config.scroll_down_prefix = Styled::new("▼ ");
+    render_config.help_message = StyleSheet::new().with_fg(Color::DarkGrey);
+    render_config.placeholder = StyleSheet::new().with_fg(Color::DarkGrey);
+    render_config.default_value = StyleSheet::new().with_fg(Color::DarkGrey);
+    render_config
+}
+
+pub fn init_theme() {
+    inquire::set_global_render_config(get_render_config());
+}
 
 // ── Basic Prompts ─────────────────────────────────────────────────────
 
 pub fn prompt_text(message: &str) -> Result<String> {
+    init_theme();
     Ok(Text::new(message).prompt()?)
 }
 
 pub fn prompt_text_with_default(message: &str, default: &str) -> Result<String> {
-    Ok(Text::new(message).with_default(default).prompt()?)
+    init_theme();
+    let autocompleter = ValueAutocompleter {
+        value: default.to_string(),
+    };
+    let val = Text::new(message)
+        .with_placeholder(default)
+        .with_autocomplete(autocompleter)
+        .prompt()?;
+    if val.trim().is_empty() {
+        Ok(default.to_string())
+    } else {
+        Ok(val.trim().to_string())
+    }
 }
 
 pub fn prompt_password(message: &str, help: Option<&str>) -> Result<String> {
-    let mut prompt = Password::new(message).without_confirmation();
+    init_theme();
+    let mut prompt = Password::new(message)
+        .with_display_mode(PasswordDisplayMode::Masked)
+        .without_confirmation();
     if let Some(h) = help {
         prompt = prompt.with_help_message(h);
     }
@@ -23,34 +85,35 @@ pub fn prompt_password(message: &str, help: Option<&str>) -> Result<String> {
 }
 
 pub fn prompt_select<'a>(message: &str, options: Vec<&'a str>) -> Result<&'a str> {
+    init_theme();
     Ok(Select::new(message, options)
-        .with_help_message("Use arrow keys to navigate, Enter to select")
+        .with_help_message("Use ↑/↓ to navigate • Enter to select")
         .prompt()?)
 }
 
 pub fn prompt_confirm(message: &str, default: bool) -> Result<bool> {
+    init_theme();
     Ok(Confirm::new(message).with_default(default).prompt()?)
 }
 
 // ── Validated Prompts ─────────────────────────────────────────────────
 
-/// Prompts for text input, retrying until the validator passes.
 pub fn prompt_text_validated<F>(message: &str, validate: F) -> Result<String>
 where
     F: Fn(&str) -> Result<()>,
 {
+    init_theme();
     loop {
         let value = Text::new(message).prompt()?;
         match validate(&value) {
             Ok(()) => return Ok(value),
             Err(e) => {
-                println!("{} {}", "[!]".yellow(), e);
+                println!("    {} {}", "▲".yellow(), e.to_string().yellow());
             }
         }
     }
 }
 
-/// Prompts for text input with a default value, retrying until the validator passes.
 pub fn prompt_text_validated_with_default<F>(
     message: &str,
     default: &str,
@@ -59,63 +122,72 @@ pub fn prompt_text_validated_with_default<F>(
 where
     F: Fn(&str) -> Result<()>,
 {
+    prompt_text_validated_with_placeholder(message, default, validate)
+}
+
+pub fn prompt_text_validated_with_placeholder<F>(
+    message: &str,
+    placeholder: &str,
+    validate: F,
+) -> Result<String>
+where
+    F: Fn(&str) -> Result<()>,
+{
+    init_theme();
+    let autocompleter = ValueAutocompleter {
+        value: placeholder.to_string(),
+    };
     loop {
-        let value = Text::new(message).with_default(default).prompt()?;
-        match validate(&value) {
-            Ok(()) => return Ok(value),
+        let value = Text::new(message)
+            .with_placeholder(placeholder)
+            .with_autocomplete(autocompleter.clone())
+            .prompt()?;
+        
+        let final_value = value.trim().to_string();
+
+        match validate(&final_value) {
+            Ok(()) => return Ok(final_value),
             Err(e) => {
-                println!("{} {}", "[!]".yellow(), e);
+                println!("    {} {}", "▲".yellow(), e.to_string().yellow());
             }
         }
     }
 }
 
-/// Prompts for an organization name with validation.
 pub fn prompt_org_name(message: &str) -> Result<String> {
     prompt_text_validated(message, |v| validator::validate_org_name(v))
 }
 
-/// Prompts for a slug with validation.
 pub fn prompt_slug(message: &str, default: &str) -> Result<String> {
-    prompt_text_validated_with_default(message, default, |v| validator::validate_slug(v))
+    prompt_text_validated_with_placeholder(message, default, |v| validator::validate_slug(v))
 }
 
-/// Prompts for an email address with validation.
 pub fn prompt_email(message: &str) -> Result<String> {
-    prompt_text_validated(message, |v| validator::validate_email(v))
+    prompt_text_validated_with_placeholder(message, "admin@orbis.edu", |v| validator::validate_email(v))
 }
 
-/// Prompts for a full name with validation.
+pub fn prompt_email_with_default(message: &str, default: &str) -> Result<String> {
+    prompt_text_validated_with_placeholder(message, default, |v| validator::validate_email(v))
+}
+
 pub fn prompt_full_name(message: &str) -> Result<String> {
     prompt_text_validated(message, |v| validator::validate_full_name(v))
 }
 
-/// Prompts for a password with confirmation and strength indicator.
 pub fn prompt_password_confirmed(message: &str) -> Result<String> {
+    init_theme();
     loop {
         let password = Password::new(message)
             .with_display_mode(PasswordDisplayMode::Masked)
-            .with_help_message("Min 8 chars, 1 uppercase, 1 lowercase, 1 digit")
+            .with_help_message("Minimum 8 chars (1 uppercase, 1 lowercase, 1 digit)")
             .without_confirmation()
             .prompt()?;
 
-        // Validate strength
         if let Err(e) = validator::validate_password(&password) {
-            println!("{} {}", "[!]".yellow(), e);
+            println!("    {} {}", "▲".yellow(), e.to_string().yellow());
             continue;
         }
 
-        let strength = validator::password_strength(&password);
-        let strength_display = match strength {
-            "Weak" => strength.red(),
-            "Fair" => strength.yellow(),
-            "Strong" => strength.green(),
-            "Very Strong" => strength.green().bold(),
-            _ => strength.normal(),
-        };
-        println!("{} Password Strength: {}", "[i]".blue(), strength_display);
-
-        // Confirmation
         let confirm = Password::new("Confirm password:")
             .with_display_mode(PasswordDisplayMode::Masked)
             .without_confirmation()
@@ -123,8 +195,8 @@ pub fn prompt_password_confirmed(message: &str) -> Result<String> {
 
         if password != confirm {
             println!(
-                "{} Passwords do not match. Please try again.",
-                "[!]".yellow()
+                "    {} Passwords do not match. Please try again.",
+                "▲".yellow()
             );
             continue;
         }
@@ -133,7 +205,6 @@ pub fn prompt_password_confirmed(message: &str) -> Result<String> {
     }
 }
 
-/// Prompts for a license key with format validation.
 pub fn prompt_license_key(message: &str) -> Result<String> {
     prompt_text_validated(message, |v| validator::validate_license_key(v))
 }

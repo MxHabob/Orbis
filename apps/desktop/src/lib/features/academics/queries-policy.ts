@@ -1,14 +1,20 @@
-import * as m from "$lib/paraglide/messages";
 /**
- * Policy queries — TanStack Query wrappers for academic policy and promotion rules.
+ * Policy queries — TanStack Query wrappers for academic policy.
  */
-import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
-import { commands } from "$lib/core/ipc";
+import {
+  createQuery,
+  createMutation,
+  useQueryClient,
+} from "@tanstack/svelte-query";
+import { api, queryKeys } from "$lib/api";
 
 export function createOrgAcademicPolicyQuery(orgId: () => string) {
   return createQuery(() => ({
-    queryKey: ["org-academic-policy", orgId()],
-    queryFn: () => commands.platform_policy.getAcademicPolicy(orgId()),
+    queryKey: queryKeys.org.settings(),
+    queryFn: async () => {
+      const settings = await api.getSettings();
+      return settings.academic;
+    },
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
   }));
@@ -16,8 +22,11 @@ export function createOrgAcademicPolicyQuery(orgId: () => string) {
 
 export function createPromotionPolicyQuery(orgId: () => string) {
   return createQuery(() => ({
-    queryKey: ["promotion-policy", orgId()],
-    queryFn: () => commands.platform_policy.getAcademicPolicy(orgId()),
+    queryKey: queryKeys.org.settings(),
+    queryFn: async () => {
+      const settings = await api.getSettings();
+      return settings.enrollment;
+    },
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
   }));
@@ -26,17 +35,23 @@ export function createPromotionPolicyQuery(orgId: () => string) {
 export function useUpdateAcademicPolicy() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: (vars: { orgId: string; payload: Record<string, any> }) =>
-      commands.platform_policy.updateAcademicPolicy(vars.orgId, vars.payload),
-    onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({
-        queryKey: ["org-academic-policy", vars.orgId],
+    mutationFn: async (vars: {
+      orgId: string;
+      payload: Record<string, any>;
+    }) => {
+      const current = await api.getSettings();
+      return api.updateSettings({
+        ...current,
+        academic: {
+          default_grading_system:
+            current.academic?.default_grading_system || "standard",
+          ...vars.payload,
+        },
       });
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["promotion-policy", vars.orgId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["autopilot-config", vars.orgId],
+        queryKey: queryKeys.org.settings(),
       });
     },
   }));

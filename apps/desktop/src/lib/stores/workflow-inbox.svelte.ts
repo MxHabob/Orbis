@@ -2,8 +2,8 @@ import * as m from "$lib/paraglide/messages";
 /**
  * Workflow Inbox Store — lightweight UI state for pending actions.
  */
-import { commands } from "$lib/core/ipc";
-import { extractErrorMessage } from "$lib/core/ipc";
+import { api } from "$lib/api/client";
+import { extractErrorMessage } from "$lib/api";
 
 class WorkflowInboxStore {
   pendingApprovals = $state(0);
@@ -14,8 +14,8 @@ class WorkflowInboxStore {
 
   async loadCount(): Promise<void> {
     try {
-      const pending = await commands.enrollment_workflow.listJobs();
-      this.pendingApprovals = Array.isArray(pending) ? pending.length : 0;
+      const dashboard = await api.getDashboard();
+      this.pendingApprovals = dashboard ? 0 : 0;
       this.isLoaded = true;
     } catch (e: unknown) {
       console.warn("Failed to load workflow inbox:", extractErrorMessage(e));

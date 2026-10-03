@@ -4,7 +4,7 @@ Shared dialog for creating override/approval requests.
 
 Used when a user attempts an action that is currently blocked
 (e.g., editing grades after grade_entry_close, late enrollment).
-Calls `commands.enrollment_workflow.getJob()` and shows success/error feedback.
+Calls `api.submitOverride()` and shows success/error feedback.
 
 Usage:
   <OverrideRequestDialog
@@ -20,7 +20,7 @@ Usage:
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import { authStore } from "$lib/stores";
 import { toast } from "@orbis/ui";
 import {
@@ -34,8 +34,8 @@ import { Button } from "@orbis/ui/button";
 import { Textarea } from "@orbis/ui/textarea";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
-import { Loader2, AlertTriangle, Shield } from "@lucide/svelte";
-import type { OverrideType, RiskLevel } from "@orbis/sdk-core";
+import { AdjustmentsHorizontal, ArrowPath, InfoCircle, UserBadgeCheck } from "@orbis/icons";
+import type { OverrideType, RiskLevel } from "@orbis/sdk";
 
 interface Props {
   open: boolean;
@@ -172,7 +172,17 @@ async function submit() {
   }
   isSubmitting = true;
   try {
-    await commands.enrollment_workflow.getJob(entityId);
+    await api.submitOverride({
+      overrideType: overrideType as any,
+      targetEntityId: entityId,
+      reason,
+      payload: {
+        fieldName,
+        oldValue,
+        newValue,
+        entityType,
+      },
+    });
     toast.success(
       m.common_override_submitted
         ? m.common_override_submitted()
@@ -193,7 +203,7 @@ async function submit() {
   <DialogContent class="sm:max-w-md">
     <DialogHeader>
       <DialogTitle class="flex items-center gap-2">
-        <Shield class="size-5 text-primary" />
+        <UserBadgeCheck class="size-5 text-primary" />
         {m.common_override_request_title ? m.common_override_request_title() : "Override Request"}
       </DialogTitle>
     </DialogHeader>
@@ -209,7 +219,7 @@ async function submit() {
         </div>
         <Badge variant={riskBadgeVariant} class="text-xs">
           {#if riskLevel === "high" || riskLevel === "critical"}
-            <AlertTriangle class="size-3 me-1" />
+            <InfoCircle class="size-3 me-1" />
           {/if}
           {riskLabel}
         </Badge>
@@ -246,7 +256,7 @@ async function submit() {
 
       <!-- Approval Chain Preview -->
       <div class="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 flex items-center gap-2">
-        <Shield class="size-3.5 shrink-0" />
+        <UserBadgeCheck class="size-3.5 shrink-0" />
         {approvalChainPreview}
       </div>
     </div>
@@ -257,7 +267,7 @@ async function submit() {
       </Button>
       <Button onclick={submit} disabled={isSubmitting || !reason.trim()}>
         {#if isSubmitting}
-          <Loader2 class="size-4 animate-spin me-2" />
+          <ArrowPath class="size-4 animate-spin me-2" />
         {/if}
         {m.common_override_submit ? m.common_override_submit() : "Submit Request"}
       </Button>

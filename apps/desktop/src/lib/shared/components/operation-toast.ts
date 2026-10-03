@@ -33,9 +33,10 @@ export function createOperationToast(
       description: message,
       variant: status === "running" ? "progress" : status,
       progress,
-      action: options.actionLabel && options.onAction
-        ? { label: options.actionLabel, onClick: options.onAction }
-        : undefined,
+      action:
+        options.actionLabel && options.onAction
+          ? { label: options.actionLabel, onClick: options.onAction }
+          : undefined,
     } as const;
 
     if (!hasRendered) {

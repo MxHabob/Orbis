@@ -14,28 +14,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@orbis/ui";
-import {
-  LayoutDashboard,
-  Users,
-  BookOpen,
-  Wallet,
-  Settings,
-  FileText,
-  Brain,
-} from "@lucide/svelte";
+import { Banknotes, BookOpen, DocumentPage, Grid, Settings, Sparkles, UserGroup, Users } from "@orbis/icons";
 import OrgSidebarSwitcher from "./org-sidebar-switcher.svelte";
 import UserSidebarMenu from "./user-sidebar-menu.svelte";
-import OnboardingPopover from "./onboarding-popover.svelte";
 import UpgradeButton from "./upgrade-button.svelte";
 import GitIntegrationPopover from "./mulverse-integration-popover.svelte";
 import AutomationStatusPopover from "./orbis-autopilot-popover.svelte";
 import MoreActionsDropdown from "./more-actions-dropdown.svelte";
 
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
-import { onboardingState } from "$lib/features/onboarding/state.svelte";
 import { createOrganizationQuery } from "$lib/features/settings/queries";
 import { onMount } from "svelte";
-import { prefetchRouteData } from "$lib/core/ipc";
+import { prefetchRouteData } from "$lib/api";
 
 let {
   orgId,
@@ -46,10 +36,6 @@ let {
 } = $props();
 
 const orgQuery = createOrganizationQuery(() => orgId);
-
-onMount(() => {
-  onboardingState.load();
-});
 
 const fallbackName = $derived.by(() => {
   if (initialOrgName && initialOrgName !== "Orbis School")
@@ -68,7 +54,7 @@ const orgNameDisplay = $derived(orgQuery.data?.name || fallbackName);
 const navItems = $derived([
   {
     href: `/${orgId}`,
-    icon: LayoutDashboard,
+    icon: Grid,
     label: m.common_nav_overview(),
     match: "exact",
   },
@@ -79,6 +65,12 @@ const navItems = $derived([
     match: "prefix",
   },
   {
+    href: `/${orgId}/employees`,
+    icon: UserGroup,
+    label: m.employees_nav_title ? m.employees_nav_title() : "Employee Affairs",
+    match: "prefix",
+  },
+  {
     href: `/${orgId}/academics`,
     icon: BookOpen,
     label: m.common_nav_academics(),
@@ -86,20 +78,20 @@ const navItems = $derived([
   },
   {
     href: `/${orgId}/finance`,
-    icon: Wallet,
+    icon: Banknotes,
     label: m.common_nav_finance(),
     match: "prefix",
   },
   {
     href: `/${orgId}/templates`,
-    icon: FileText,
+    icon: DocumentPage,
     label: m.settings_nav_templates(),
     match: "prefix",
   },
   {
     href: `/${orgId}/ai-center`,
-    icon: Brain,
-    label: "AI Center",
+    icon: Sparkles,
+    label: m.common_autopilot_popover_ai_center(),
     match: "prefix",
   },
   {
@@ -154,7 +146,6 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 
 		<div class="flex flex-col gap-2 items-center w-full relative">
 			<div class="flex flex-col items-center w-8 gap-1.5">
-				<OnboardingPopover />
 				<GitIntegrationPopover />
 				<UpgradeButton />
 				<AutomationStatusPopover {orgId} />

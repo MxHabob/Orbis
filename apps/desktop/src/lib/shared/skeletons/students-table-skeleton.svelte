@@ -5,6 +5,8 @@ search bar + action buttons + table header + 12 data rows.
 Used during initial data fetch to provide instant visual feedback.
 -->
 <script lang="ts">
+import { Grid } from "@orbis/icons";
+
 import { Skeleton } from "@orbis/ui/skeleton";
 </script>
 
@@ -19,9 +21,9 @@ import { Skeleton } from "@orbis/ui/skeleton";
 		</div>
 	</div>
 
-	<!-- Table -->
+	<!-- Grid -->
 	<div class="flex-1 min-h-0 bg-card border border-border rounded-lg overflow-hidden">
-		<!-- Table Header -->
+		<!-- Grid Header -->
 		<div class="flex items-center gap-4 px-4 py-3 border-b border-border bg-muted/30">
 			<Skeleton class="h-4 w-4 rounded" />
 			<Skeleton class="h-3.5 w-28" />
@@ -31,7 +33,7 @@ import { Skeleton } from "@orbis/ui/skeleton";
 			<Skeleton class="h-3.5 w-16" />
 		</div>
 
-		<!-- Table Rows -->
+		<!-- Grid Rows -->
 		{#each { length: 12 } as _, i}
 			<div
 				class="flex items-center gap-4 px-4 py-3 border-b border-border/30"

@@ -1,0 +1,3949 @@
+{
+  "metadata": {
+    "name": "الشجرة المحاسبية للمعاهد",
+    "name_en": "Institute Chart of Accounts",
+    "description": "شجرة محاسبية للمعاهد التعليمية والأكاديمية التي تقدم برامج ودورات وشهادات وخدمات تدريبية.",
+    "blueprint_id": "INSTITUTE",
+    "source_blueprint": "educational_chart_of_accounts.json",
+    "source_version": "1.0.0",
+    "version": "2.0.0",
+    "currency": null,
+    "currency_policy": "Organization-configured; never hardcode SAR or another currency.",
+    "levels": 4,
+    "account_count": 463,
+    "leaf_account_count": 358,
+    "sector_models": [
+      "PRIVATE",
+      "PUBLIC",
+      "NONPROFIT"
+    ],
+    "accounting_basis_options": [
+      "IFRS",
+      "IPSAS",
+      "AICPA_NFP"
+    ],
+    "design_notes": [
+      "This blueprint is a starting institutional COA, not a replacement for the organization's statutory accounting policy.",
+      "Grades, classes, faculties, departments, campuses, branches and programs should be modeled as dimensions/cost centers/org units where supported, not by duplicating the account tree.",
+      "Bootstrap may install this blueprint as the initial protected/root structure; organization-specific child accounts remain configurable according to Orbis accounting rules.",
+      "Account IDs used at runtime must be resolved from the created organization's accounts; these source codes are stable blueprint codes, not database IDs."
+    ]
+  },
+  "accounts": [
+    {
+      "code": "1",
+      "name_ar": "الأصول",
+      "name_en": "Assets",
+      "type": "ASSET",
+      "nature": "مدين",
+      "level": 1,
+      "children": [
+        {
+          "code": "11",
+          "name_ar": "الأصول المتداولة",
+          "name_en": "Current Assets",
+          "type": "ASSET",
+          "nature": "مدين",
+          "level": 2,
+          "children": [
+            {
+              "code": "1101",
+              "name_ar": "النقدية والبنوك",
+              "name_en": "Cash and Banks",
+              "type": "ASSET",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "110101",
+                  "name_ar": "صندوق النقدية",
+                  "name_en": "Cash on Hand",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110102",
+                  "name_ar": "البنك المحلي - الجاري",
+                  "name_en": "Local Bank - Current",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110103",
+                  "name_ar": "البنك المحلي - التوفير",
+                  "name_en": "Local Bank - Savings",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110104",
+                  "name_ar": "البنك الأجنبي",
+                  "name_en": "Foreign Bank",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110105",
+                  "name_ar": "ودائع لأجل أقل من سنة",
+                  "name_en": "Short-term Deposits",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110106",
+                  "name_ar": "شيكات تحت التحصيل",
+                  "name_en": "Checks under Collection",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "1102",
+              "name_ar": "الاستثمارات قصيرة الأجل",
+              "name_en": "Short-term Investments",
+              "type": "ASSET",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "110201",
+                  "name_ar": "أوراق مالية متداولة",
+                  "name_en": "Marketable Securities",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110202",
+                  "name_ar": "صناديق استثمار",
+                  "name_en": "Investment Funds",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110203",
+                  "name_ar": "مخصص انخفاض قيمة الاستثمارات",
+                  "name_en": "Provision for Investment Decline",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "1103",
+              "name_ar": "الحسابات المدينة",
+              "name_en": "Accounts Receivable",
+              "type": "ASSET",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "110301",
+                  "name_ar": "ذمم الطلاب - الرسوم الدراسية",
+                  "name_en": "Student Receivables - Tuition",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110302",
+                  "name_ar": "ذمم الطلاب - السكن",
+                  "name_en": "Student Receivables - Housing",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110303",
+                  "name_ar": "ذمم الطلاب - النقل",
+                  "name_en": "Student Receivables - Transportation",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110304",
+                  "name_ar": "ذمم الطلاب - الأنشطة",
+                  "name_en": "Student Receivables - Activities",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110305",
+                  "name_ar": "ذمم المنح والهبات",
+                  "name_en": "Grants and Donations Receivable",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110306",
+                  "name_ar": "ذمم الحكومة - دعم تشغيلي",
+                  "name_en": "Government Receivables - Operating Support",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110307",
+                  "name_ar": "ذمم الحكومة - منح بحثية",
+                  "name_en": "Government Receivables - Research Grants",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110308",
+                  "name_ar": "ذمم أخرى",
+                  "name_en": "Other Receivables",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110309",
+                  "name_ar": "مخصص الديون المشكوك في تحصيلها",
+                  "name_en": "Allowance for Doubtful Debts",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "1104",
+              "name_ar": "المخزون",
+              "name_en": "Inventory",
+              "type": "ASSET",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "110401",
+                  "name_ar": "مخزون الكتب والمقررات",
+                  "name_en": "Books and Curriculum Inventory",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110402",
+                  "name_ar": "مخزون القرطاسية والمستلزمات",
+                  "name_en": "Stationery and Supplies Inventory",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110403",
+                  "name_ar": "مخزون المختبرات",
+                  "name_en": "Laboratory Inventory",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110404",
+                  "name_ar": "مخزون المقصف والكافتيريا",
+                  "name_en": "Cafeteria Inventory",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110405",
+                  "name_ar": "مخزون المكتبة",
+                  "name_en": "Library Inventory",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110406",
+                  "name_ar": "مخزون الوقود والطاقة",
+                  "name_en": "Fuel and Energy Inventory",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110407",
+                  "name_ar": "مخزون أخر",
+                  "name_en": "Other Inventory",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110408",
+                  "name_ar": "مخصص انخفاض قيمة المخزون",
+                  "name_en": "Provision for Inventory Decline",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "1105",
+              "name_ar": "مصروفات مدفوعة مقدماً",
+              "name_en": "Prepaid Expenses",
+              "type": "ASSET",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "110501",
+                  "name_ar": "تأمين مدفوع مقدماً",
+                  "name_en": "Prepaid Insurance",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110502",
+                  "name_ar": "إيجار مدفوع مقدماً",
+                  "name_en": "Prepaid Rent",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110503",
+                  "name_ar": "اشتراكات مدفوعة مقدماً",
+                  "name_en": "Prepaid Subscriptions",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110504",
+                  "name_ar": "رواتب مدفوعة مقدماً",
+                  "name_en": "Prepaid Salaries",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110505",
+                  "name_ar": "رسوم برامج مدفوعة مقدماً",
+                  "name_en": "Prepaid Program Fees",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110506",
+                  "name_ar": "مصروفات أخرى مدفوعة مقدماً",
+                  "name_en": "Other Prepaid Expenses",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "1106",
+              "name_ar": "أرصدة مدينة أخرى",
+              "name_en": "Other Debit Balances",
+              "type": "ASSET",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "110601",
+                  "name_ar": "ضريبة القيمة المضافة المستردة",
+                  "name_en": "Recoverable VAT",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110602",
+                  "name_ar": "ضريبة الدخل المستردة",
+                  "name_en": "Recoverable Income Tax",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110603",
+                  "name_ar": "عمولات بنكية مستردة",
+                  "name_en": "Recoverable Bank Commissions",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "110604",
+                  "name_ar": "تأمينات مستردة",
+                  "name_en": "Recoverable Deposits",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "12",
+          "name_ar": "الأصول غير المتداولة",
+          "name_en": "Non-Current Assets",
+          "type": "ASSET",
+          "nature": "مدين",
+          "level": 2,
+          "children": [
+            {
+              "code": "1201",
+              "name_ar": "الاستثمارات طويلة الأجل",
+              "name_en": "Long-term Investments",
+              "type": "ASSET",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "120101",
+                  "name_ar": "استثمارات في شركات تابعة",
+                  "name_en": "Investments in Subsidiaries",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120102",
+                  "name_ar": "استثمارات في شركات زميلة",
+                  "name_en": "Investments in Associates",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120103",
+                  "name_ar": "استثمارات في أوراق مالية",
+                  "name_en": "Investments in Securities",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120104",
+                  "name_ar": "ودائع لأجل أكثر من سنة",
+                  "name_en": "Long-term Deposits",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120105",
+                  "name_ar": "مخصص انخفاض قيمة الاستثمارات طويلة الأجل",
+                  "name_en": "Provision for Long-term Investment Decline",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "1202",
+              "name_ar": "الأصول الثابتة",
+              "name_en": "Fixed Assets",
+              "type": "ASSET",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "120201",
+                  "name_ar": "أراضي",
+                  "name_en": "Land",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120202",
+                  "name_ar": "مباني",
+                  "name_en": "Buildings",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120203",
+                  "name_ar": "مباني قيد الإنشاء",
+                  "name_en": "Buildings under Construction",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120204",
+                  "name_ar": "معدات وآلات",
+                  "name_en": "Machinery and Equipment",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120205",
+                  "name_ar": "معدات مختبرات",
+                  "name_en": "Laboratory Equipment",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120206",
+                  "name_ar": "أجهزة حاسوب وشبكات",
+                  "name_en": "Computers and Networks",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120207",
+                  "name_ar": "أثاث ومفروشات",
+                  "name_en": "Furniture and Fixtures",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120208",
+                  "name_ar": "سيارات ونقل",
+                  "name_en": "Vehicles and Transportation",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120209",
+                  "name_ar": "أجهزة تعليمية",
+                  "name_en": "Educational Equipment",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120210",
+                  "name_ar": "أجهزة رياضية",
+                  "name_en": "Sports Equipment",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120211",
+                  "name_ar": "أجهزة صوتية وبصرية",
+                  "name_en": "Audio and Visual Equipment",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120212",
+                  "name_ar": "أصول أخرى",
+                  "name_en": "Other Assets",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "1203",
+              "name_ar": "مجمع الإهلاك",
+              "name_en": "Accumulated Depreciation",
+              "type": "ASSET",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "120301",
+                  "name_ar": "مجمع إهلاك المباني",
+                  "name_en": "Accumulated Depreciation - Buildings",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "120302",
+                  "name_ar": "مجمع إهلاك المعدات والآلات",
+                  "name_en": "Accumulated Depreciation - Machinery",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "120303",
+                  "name_ar": "مجمع إهلاك معدات المختبرات",
+                  "name_en": "Accumulated Depreciation - Lab Equipment",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "120304",
+                  "name_ar": "مجمع إهلاك الحاسوب والشبكات",
+                  "name_en": "Accumulated Depreciation - Computers",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "120305",
+                  "name_ar": "مجمع إهلاك الأثاث والمفروشات",
+                  "name_en": "Accumulated Depreciation - Furniture",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "120306",
+                  "name_ar": "مجمع إهلاك السيارات والنقل",
+                  "name_en": "Accumulated Depreciation - Vehicles",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "120307",
+                  "name_ar": "مجمع إهلاك الأجهزة التعليمية",
+                  "name_en": "Accumulated Depreciation - Educational Equipment",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "120308",
+                  "name_ar": "مجمع إهلاك الأجهزة الرياضية",
+                  "name_en": "Accumulated Depreciation - Sports Equipment",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "120309",
+                  "name_ar": "مجمع إهلاك الأجهزة الصوتية والبصرية",
+                  "name_en": "Accumulated Depreciation - AV Equipment",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "120310",
+                  "name_ar": "مجمع إهلاك أصول أخرى",
+                  "name_en": "Accumulated Depreciation - Other Assets",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "1204",
+              "name_ar": "الأصول غير الملموسة",
+              "name_en": "Intangible Assets",
+              "type": "ASSET",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "120401",
+                  "name_ar": "براءات اختراع",
+                  "name_en": "Patents",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120402",
+                  "name_ar": "حقوق نشر",
+                  "name_en": "Copyrights",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120403",
+                  "name_ar": "علامات تجارية",
+                  "name_en": "Trademarks",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120404",
+                  "name_ar": "برامج حاسوب",
+                  "name_en": "Computer Software",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120405",
+                  "name_ar": "تراخيص تشغيل",
+                  "name_en": "Operating Licenses",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120406",
+                  "name_ar": "أصول غير ملموسة أخرى",
+                  "name_en": "Other Intangible Assets",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120407",
+                  "name_ar": "مجمع الإطفاء - أصول غير ملموسة",
+                  "name_en": "Accumulated Amortization - Intangible Assets",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "1205",
+              "name_ar": "أصول أخرى غير متداولة",
+              "name_en": "Other Non-Current Assets",
+              "type": "ASSET",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "120501",
+                  "name_ar": "تأمينات طويلة الأجل",
+                  "name_en": "Long-term Deposits",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120502",
+                  "name_ar": "مصروفات إنشاء وتأسيس",
+                  "name_en": "Preliminary and Formation Expenses",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "120503",
+                  "name_ar": "مجمع إطفاء مصروفات التأسيس",
+                  "name_en": "Accumulated Amortization - Formation Expenses",
+                  "type": "ASSET",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "120504",
+                  "name_ar": "أصول أخرى",
+                  "name_en": "Other Assets",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name_ar": "الخصوم",
+      "name_en": "Liabilities",
+      "type": "LIABILITY",
+      "nature": "دائن",
+      "level": 1,
+      "children": [
+        {
+          "code": "21",
+          "name_ar": "الخصوم المتداولة",
+          "name_en": "Current Liabilities",
+          "type": "LIABILITY",
+          "nature": "دائن",
+          "level": 2,
+          "children": [
+            {
+              "code": "2101",
+              "name_ar": "الحسابات الدائنة",
+              "name_en": "Accounts Payable",
+              "type": "LIABILITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "210101",
+                  "name_ar": "ذمم الموردين - كتب ومقررات",
+                  "name_en": "Suppliers - Books and Curriculum",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210102",
+                  "name_ar": "ذمم الموردين - قرطاسية ومستلزمات",
+                  "name_en": "Suppliers - Stationery and Supplies",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210103",
+                  "name_ar": "ذمم الموردين - معدات ومختبرات",
+                  "name_en": "Suppliers - Equipment and Labs",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210104",
+                  "name_ar": "ذمم الموردين - خدمات",
+                  "name_en": "Suppliers - Services",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210105",
+                  "name_ar": "ذمم الموردين - مقاولات",
+                  "name_en": "Suppliers - Contractors",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210106",
+                  "name_ar": "ذمم الموردين - أخرى",
+                  "name_en": "Suppliers - Other",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "2102",
+              "name_ar": "القروض قصيرة الأجل",
+              "name_en": "Short-term Loans",
+              "type": "LIABILITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "210201",
+                  "name_ar": "قروض بنكية قصيرة الأجل",
+                  "name_en": "Short-term Bank Loans",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210202",
+                  "name_ar": "قروض حكومية قصيرة الأجل",
+                  "name_en": "Short-term Government Loans",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210203",
+                  "name_ar": "قروض مؤسسات تمويلية",
+                  "name_en": "Financing Institution Loans",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210204",
+                  "name_ar": "جزء قصير الأجل من قروض طويلة الأجل",
+                  "name_en": "Current Portion of Long-term Loans",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "2103",
+              "name_ar": "الالتزامات المالية المتداولة",
+              "name_en": "Current Financial Obligations",
+              "type": "LIABILITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "210301",
+                  "name_ar": "أوراق دفع",
+                  "name_en": "Notes Payable",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210302",
+                  "name_ar": "شيكات تحت الصرف",
+                  "name_en": "Checks under Payment",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210303",
+                  "name_ar": "سندات دفع قصيرة الأجل",
+                  "name_en": "Short-term Bonds Payable",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210304",
+                  "name_ar": "فوائد مستحقة الدفع",
+                  "name_en": "Accrued Interest Payable",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "2104",
+              "name_ar": "الالتزامات التشغيلية المتداولة",
+              "name_en": "Current Operating Obligations",
+              "type": "LIABILITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "210401",
+                  "name_ar": "رواتب ومستحقات موظفين",
+                  "name_en": "Salaries and Employee Benefits Payable",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210402",
+                  "name_ar": "مكافآت نهاية الخدمة مستحقة",
+                  "name_en": "Accrued End-of-Service Benefits",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210403",
+                  "name_ar": "إيجار مستحق الدفع",
+                  "name_en": "Accrued Rent Payable",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210404",
+                  "name_ar": "فواتير خدمات مستحقة الدفع",
+                  "name_en": "Accrued Utility Bills",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210405",
+                  "name_ar": "مصروفات إدارية مستحقة الدفع",
+                  "name_en": "Accrued Administrative Expenses",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210406",
+                  "name_ar": "مصروفات تسويقية مستحقة الدفع",
+                  "name_en": "Accrued Marketing Expenses",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210407",
+                  "name_ar": "مصروفات صيانة مستحقة الدفع",
+                  "name_en": "Accrued Maintenance Expenses",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "2105",
+              "name_ar": "التزامات ضريبية متداولة",
+              "name_en": "Current Tax Liabilities",
+              "type": "LIABILITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "210501",
+                  "name_ar": "ضريبة القيمة المضافة مستحقة",
+                  "name_en": "VAT Payable",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210502",
+                  "name_ar": "ضريبة القيمة المضافة محصلة عن الجهات الحكومية",
+                  "name_en": "VAT Collected on Behalf of Government",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210503",
+                  "name_ar": "ضريبة الدخل مستحقة",
+                  "name_en": "Income Tax Payable",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210504",
+                  "name_ar": "ضريبة الاستقطاع مستحقة",
+                  "name_en": "Withholding Tax Payable",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210505",
+                  "name_ar": "ضريبة الأملاك مستحقة",
+                  "name_en": "Property Tax Payable",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210506",
+                  "name_ar": "ضريبة الرسوم الدراسية مستحقة",
+                  "name_en": "Tuition Tax Payable",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "2106",
+              "name_ar": "إيرادات مقدمة",
+              "name_en": "Deferred Revenue",
+              "type": "LIABILITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "210601",
+                  "name_ar": "رسوم دراسية مقدمة",
+                  "name_en": "Deferred Tuition Fees",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210602",
+                  "name_ar": "رسوم سكن مقدمة",
+                  "name_en": "Deferred Housing Fees",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210603",
+                  "name_ar": "رسوم أنشطة مقدمة",
+                  "name_en": "Deferred Activity Fees",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210604",
+                  "name_ar": "رسوم نقل مقدمة",
+                  "name_en": "Deferred Transportation Fees",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210605",
+                  "name_ar": "منح وإعانات مقدمة",
+                  "name_en": "Deferred Grants and Subsidies",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210606",
+                  "name_ar": "إيرادات أخرى مقدمة",
+                  "name_en": "Other Deferred Revenue",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "2107",
+              "name_ar": "التزامات تجاه الطلاب",
+              "name_en": "Student Obligations",
+              "type": "LIABILITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "210701",
+                  "name_ar": "تأمينات طلاب",
+                  "name_en": "Student Deposits",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210702",
+                  "name_ar": "أمانات طلابية",
+                  "name_en": "Student Trusts",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210703",
+                  "name_ar": "مبالغ مستردة للطلاب",
+                  "name_en": "Refunds to Students",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "210704",
+                  "name_ar": "منح دراسية مستحقة الصرف",
+                  "name_en": "Scholarships Payable",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "22",
+          "name_ar": "الخصوم غير المتداولة",
+          "name_en": "Non-Current Liabilities",
+          "type": "LIABILITY",
+          "nature": "دائن",
+          "level": 2,
+          "children": [
+            {
+              "code": "2201",
+              "name_ar": "القروض طويلة الأجل",
+              "name_en": "Long-term Loans",
+              "type": "LIABILITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "220101",
+                  "name_ar": "قروض بنكية طويلة الأجل",
+                  "name_en": "Long-term Bank Loans",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "220102",
+                  "name_ar": "قروض حكومية طويلة الأجل",
+                  "name_en": "Long-term Government Loans",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "220103",
+                  "name_ar": "قروض مؤسسات تمويلية طويلة الأجل",
+                  "name_en": "Long-term Financing Institution Loans",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "220104",
+                  "name_ar": "سندات دفع طويلة الأجل",
+                  "name_en": "Long-term Bonds Payable",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "220105",
+                  "name_ar": "قروض من مؤسسات دولية",
+                  "name_en": "International Institution Loans",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "2202",
+              "name_ar": "التزامات مالية طويلة الأجل",
+              "name_en": "Long-term Financial Obligations",
+              "type": "LIABILITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "220201",
+                  "name_ar": "التزامات تأجير تمويلي طويلة الأجل",
+                  "name_en": "Long-term Finance Lease Obligations",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "220202",
+                  "name_ar": "التزامات معاشات تقاعدية",
+                  "name_en": "Pension Obligations",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "220203",
+                  "name_ar": "مخصصات مكافآت نهاية خدمة",
+                  "name_en": "End-of-Service Benefits Provision",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "2203",
+              "name_ar": "التزامات ضريبية مؤجلة",
+              "name_en": "Deferred Tax Liabilities",
+              "type": "LIABILITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "220301",
+                  "name_ar": "التزامات ضريبية مؤجلة",
+                  "name_en": "Deferred Tax Liabilities",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "2204",
+              "name_ar": "التزامات حكومية طويلة الأجل",
+              "name_en": "Long-term Government Obligations",
+              "type": "LIABILITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "220401",
+                  "name_ar": "التزامات تجاه الجهات الحكومية",
+                  "name_en": "Obligations to Government Entities",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "220402",
+                  "name_ar": "منح حكومية مؤجلة",
+                  "name_en": "Deferred Government Grants",
+                  "type": "LIABILITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name_ar": "حقوق الملكية",
+      "name_en": "Equity",
+      "type": "EQUITY",
+      "nature": "دائن",
+      "level": 1,
+      "children": [
+        {
+          "code": "31",
+          "name_ar": "رأس المال والاحتياطيات",
+          "name_en": "Capital and Reserves",
+          "type": "EQUITY",
+          "nature": "دائن",
+          "level": 2,
+          "children": [
+            {
+              "code": "3101",
+              "name_ar": "رأس المال",
+              "name_en": "Capital",
+              "type": "EQUITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "310101",
+                  "name_ar": "رأس المال المدفوع",
+                  "name_en": "Paid-in Capital",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "310102",
+                  "name_ar": "رأس المال المصرح به",
+                  "name_en": "Authorized Capital",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "310103",
+                  "name_ar": "رأس المال غير المدفوع",
+                  "name_en": "Unpaid Capital",
+                  "type": "EQUITY",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "310104",
+                  "name_ar": "رأس المال المسترد",
+                  "name_en": "Withdrawn Capital",
+                  "type": "EQUITY",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "3102",
+              "name_ar": "الاحتياطيات",
+              "name_en": "Reserves",
+              "type": "EQUITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "310201",
+                  "name_ar": "احتياطي قانوني",
+                  "name_en": "Legal Reserve",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "310202",
+                  "name_ar": "احتياطي نظامي",
+                  "name_en": "Statutory Reserve",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "310203",
+                  "name_ar": "احتياطي عام",
+                  "name_en": "General Reserve",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "310204",
+                  "name_ar": "احتياطي توسع",
+                  "name_en": "Expansion Reserve",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "310205",
+                  "name_ar": "احتياطي استثماري",
+                  "name_en": "Investment Reserve",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "310206",
+                  "name_ar": "احتياطي طوارئ",
+                  "name_en": "Emergency Reserve",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "310207",
+                  "name_ar": "احتياطي تعليمي",
+                  "name_en": "Educational Reserve",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "310208",
+                  "name_ar": "احتياطي بحثي",
+                  "name_en": "Research Reserve",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "310209",
+                  "name_ar": "احتياطي تطوير البنية التحتية",
+                  "name_en": "Infrastructure Development Reserve",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "32",
+          "name_ar": "الأرباح والخسائر",
+          "name_en": "Retained Earnings and Losses",
+          "type": "EQUITY",
+          "nature": "دائن",
+          "level": 2,
+          "children": [
+            {
+              "code": "3201",
+              "name_ar": "أرباح محتجزة",
+              "name_en": "Retained Earnings",
+              "type": "EQUITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "320101",
+                  "name_ar": "أرباح محتجزة - سنوات سابقة",
+                  "name_en": "Retained Earnings - Prior Years",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "320102",
+                  "name_ar": "أرباح محتجزة - السنة الحالية",
+                  "name_en": "Retained Earnings - Current Year",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "3202",
+              "name_ar": "خسائر متراكمة",
+              "name_en": "Accumulated Losses",
+              "type": "EQUITY",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "320201",
+                  "name_ar": "خسائر متراكمة - سنوات سابقة",
+                  "name_en": "Accumulated Losses - Prior Years",
+                  "type": "EQUITY",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "320202",
+                  "name_ar": "خسائر متراكمة - السنة الحالية",
+                  "name_en": "Accumulated Losses - Current Year",
+                  "type": "EQUITY",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "33",
+          "name_ar": "حقوق ملكية خاصة بالمؤسسات التعليمية",
+          "name_en": "Educational Institution Specific Equity",
+          "type": "EQUITY",
+          "nature": "دائن",
+          "level": 2,
+          "children": [
+            {
+              "code": "3301",
+              "name_ar": "الأموال المقيدة",
+              "name_en": "Restricted Funds",
+              "type": "EQUITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "330101",
+                  "name_ar": "أموال مقيدة - منح بحثية",
+                  "name_en": "Restricted Funds - Research Grants",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "330102",
+                  "name_ar": "أموال مقيدة - منح دراسية",
+                  "name_en": "Restricted Funds - Scholarships",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "330103",
+                  "name_ar": "أموال مقيدة - تبرعات خاصة",
+                  "name_en": "Restricted Funds - Specific Donations",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "330104",
+                  "name_ar": "أموال مقيدة - مشاريع تعليمية",
+                  "name_en": "Restricted Funds - Educational Projects",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "330105",
+                  "name_ar": "أموال مقيدة - مشاريع بناء",
+                  "name_en": "Restricted Funds - Construction Projects",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "330106",
+                  "name_ar": "أموال مقيدة - صناديق استثمارية",
+                  "name_en": "Restricted Funds - Investment Funds",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "3302",
+              "name_ar": "الأموال غير المقيدة",
+              "name_en": "Unrestricted Funds",
+              "type": "EQUITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "330201",
+                  "name_ar": "أموال غير مقيدة - تبرعات عامة",
+                  "name_en": "Unrestricted Funds - General Donations",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "330202",
+                  "name_ar": "أموال غير مقيدة - دعم حكومي",
+                  "name_en": "Unrestricted Funds - Government Support",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "330203",
+                  "name_ar": "أموال غير مقيدة - إيرادات تشغيلية",
+                  "name_en": "Unrestricted Funds - Operating Revenue",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "3303",
+              "name_ar": "صناديق الطلاب",
+              "name_en": "Student Funds",
+              "type": "EQUITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "330301",
+                  "name_ar": "صندوق الطلاب - أنشطة",
+                  "name_en": "Student Fund - Activities",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "330302",
+                  "name_ar": "صندوق الطلاب - رعاية",
+                  "name_en": "Student Fund - Welfare",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "330303",
+                  "name_ar": "صندوق الطلاب - رحلات",
+                  "name_en": "Student Fund - Trips",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "34",
+          "name_ar": "حقوق ملكية حكومية",
+          "name_en": "Government Equity",
+          "type": "EQUITY",
+          "nature": "دائن",
+          "level": 2,
+          "children": [
+            {
+              "code": "3401",
+              "name_ar": "التخصيصات الحكومية",
+              "name_en": "Government Appropriations",
+              "type": "EQUITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "340101",
+                  "name_ar": "تخصيصات حكومية - تشغيلية",
+                  "name_en": "Government Appropriations - Operating",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "340102",
+                  "name_ar": "تخصيصات حكومية - رأسمالية",
+                  "name_en": "Government Appropriations - Capital",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "340103",
+                  "name_ar": "تخصيصات حكومية - مشاريع",
+                  "name_en": "Government Appropriations - Projects",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "3402",
+              "name_ar": "المنح الحكومية",
+              "name_en": "Government Grants",
+              "type": "EQUITY",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "340201",
+                  "name_ar": "منح حكومية - تشغيلية",
+                  "name_en": "Government Grants - Operating",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "340202",
+                  "name_ar": "منح حكومية - رأسمالية",
+                  "name_en": "Government Grants - Capital",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "340203",
+                  "name_ar": "منح حكومية - بحثية",
+                  "name_en": "Government Grants - Research",
+                  "type": "EQUITY",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name_ar": "الإيرادات",
+      "name_en": "Revenue",
+      "type": "REVENUE",
+      "nature": "دائن",
+      "level": 1,
+      "children": [
+        {
+          "code": "41",
+          "name_ar": "إيرادات الرسوم الدراسية",
+          "name_en": "Tuition Fee Revenue",
+          "type": "REVENUE",
+          "nature": "دائن",
+          "level": 2,
+          "children": [
+            {
+              "code": "4101",
+              "name_ar": "رسوم دراسية - برامج البكالوريوس",
+              "name_en": "Tuition Fees - Bachelor Programs",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "410101",
+                  "name_ar": "رسوم دراسية - الفصل الدراسي الأول",
+                  "name_en": "Tuition Fees - First Semester",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "410102",
+                  "name_ar": "رسوم دراسية - الفصل الدراسي الثاني",
+                  "name_en": "Tuition Fees - Second Semester",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "410103",
+                  "name_ar": "رسوم دراسية - الفصل الصيفي",
+                  "name_en": "Tuition Fees - Summer Semester",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "410104",
+                  "name_ar": "رسوم دراسية - برامج مسائية",
+                  "name_en": "Tuition Fees - Evening Programs",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4102",
+              "name_ar": "رسوم دراسية - برامج الدراسات العليا",
+              "name_en": "Tuition Fees - Graduate Programs",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "410201",
+                  "name_ar": "رسوم دراسية - ماجستير",
+                  "name_en": "Tuition Fees - Master's",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "410202",
+                  "name_ar": "رسوم دراسية - دكتوراه",
+                  "name_en": "Tuition Fees - Doctorate",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "410203",
+                  "name_ar": "رسوم دراسية - دبلوم عالي",
+                  "name_en": "Tuition Fees - Higher Diploma",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4103",
+              "name_ar": "رسوم دراسية - برامج المدارس",
+              "name_en": "Tuition Fees - School Programs",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "410301",
+                  "name_ar": "رسوم دراسية - المرحلة الابتدائية",
+                  "name_en": "Tuition Fees - Primary",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "410302",
+                  "name_ar": "رسوم دراسية - المرحلة المتوسطة",
+                  "name_en": "Tuition Fees - Middle School",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "410303",
+                  "name_ar": "رسوم دراسية - المرحلة الثانوية",
+                  "name_en": "Tuition Fees - High School",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "410304",
+                  "name_ar": "رسوم دراسية - رياض الأطفال",
+                  "name_en": "Tuition Fees - Kindergarten",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4104",
+              "name_ar": "رسوم دراسية - برامج التعليم المستمر",
+              "name_en": "Tuition Fees - Continuing Education",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "410401",
+                  "name_ar": "رسوم دورات تدريبية",
+                  "name_en": "Training Course Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "410402",
+                  "name_ar": "رسوم برامج تطوير مهني",
+                  "name_en": "Professional Development Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "410403",
+                  "name_ar": "رسوم برامج تعليم عن بعد",
+                  "name_en": "Distance Learning Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "410404",
+                  "name_ar": "رسوم شهادات مهنية",
+                  "name_en": "Professional Certificate Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4105",
+              "name_ar": "رسوم دراسية - برامج المعاهد",
+              "name_en": "Tuition Fees - Institute Programs",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "410501",
+                  "name_ar": "رسوم برامج تقنية",
+                  "name_en": "Technical Program Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "410502",
+                  "name_ar": "رسوم برامج مهنية",
+                  "name_en": "Vocational Program Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "410503",
+                  "name_ar": "رسوم برامج لغوية",
+                  "name_en": "Language Program Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "42",
+          "name_ar": "إيرادات الخدمات الطلابية",
+          "name_en": "Student Services Revenue",
+          "type": "REVENUE",
+          "nature": "دائن",
+          "level": 2,
+          "children": [
+            {
+              "code": "4201",
+              "name_ar": "إيرادات السكن",
+              "name_en": "Housing Revenue",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "420101",
+                  "name_ar": "رسوم سكن داخلي",
+                  "name_en": "On-campus Housing Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "420102",
+                  "name_ar": "رسوم سكن خارجي",
+                  "name_en": "Off-campus Housing Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "420103",
+                  "name_ar": "رسوم خدمات سكنية",
+                  "name_en": "Housing Service Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4202",
+              "name_ar": "إيرادات النقل",
+              "name_en": "Transportation Revenue",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "420201",
+                  "name_ar": "رسوم نقل طلابي",
+                  "name_en": "Student Transportation Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "420202",
+                  "name_ar": "رسوم مواقف سيارات",
+                  "name_en": "Parking Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4203",
+              "name_ar": "إيرادات الأنشطة الطلابية",
+              "name_en": "Student Activities Revenue",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "420301",
+                  "name_ar": "رسوم أنشطة رياضية",
+                  "name_en": "Sports Activities Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "420302",
+                  "name_ar": "رسوم أنشطة ثقافية",
+                  "name_en": "Cultural Activities Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "420303",
+                  "name_ar": "رسوم أنشطة فنية",
+                  "name_en": "Artistic Activities Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "420304",
+                  "name_ar": "رسوم أنشطة اجتماعية",
+                  "name_en": "Social Activities Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "420305",
+                  "name_ar": "رسوم أنشطة علمية",
+                  "name_en": "Scientific Activities Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4204",
+              "name_ar": "إيرادات الخدمات الصحية",
+              "name_en": "Health Services Revenue",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "420401",
+                  "name_ar": "رسوم الخدمات الصحية",
+                  "name_en": "Health Service Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "420402",
+                  "name_ar": "رسوم التأمين الصحي",
+                  "name_en": "Health Insurance Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "43",
+          "name_ar": "إيرادات المنح والهبات والدعم",
+          "name_en": "Grants, Donations and Support Revenue",
+          "type": "REVENUE",
+          "nature": "دائن",
+          "level": 2,
+          "children": [
+            {
+              "code": "4301",
+              "name_ar": "منح حكومية",
+              "name_en": "Government Grants",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "430101",
+                  "name_ar": "منح تشغيلية",
+                  "name_en": "Operating Grants",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "430102",
+                  "name_ar": "منح رأسمالية",
+                  "name_en": "Capital Grants",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "430103",
+                  "name_ar": "منح بحثية",
+                  "name_en": "Research Grants",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "430104",
+                  "name_ar": "منح تعليمية",
+                  "name_en": "Educational Grants",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "430105",
+                  "name_ar": "منح مشاريع",
+                  "name_en": "Project Grants",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4302",
+              "name_ar": "منح وهبات خاصة",
+              "name_en": "Private Grants and Donations",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "430201",
+                  "name_ar": "تبرعات أفراد",
+                  "name_en": "Individual Donations",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "430202",
+                  "name_ar": "تبرعات شركات",
+                  "name_en": "Corporate Donations",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "430203",
+                  "name_ar": "تبرعات مؤسسات خيرية",
+                  "name_en": "Charitable Institution Donations",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "430204",
+                  "name_ar": "تبرعات خريجين",
+                  "name_en": "Alumni Donations",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "430205",
+                  "name_ar": "تبرعات أولياء الأمور",
+                  "name_en": "Parent Donations",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4303",
+              "name_ar": "منح وهبات دولية",
+              "name_en": "International Grants and Donations",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "430301",
+                  "name_ar": "منح من مؤسسات دولية",
+                  "name_en": "International Institution Grants",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "430302",
+                  "name_ar": "منح من جامعات أجنبية",
+                  "name_en": "Foreign University Grants",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "430303",
+                  "name_ar": "منح من منظمات دولية",
+                  "name_en": "International Organization Grants",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "45",
+          "name_ar": "إيرادات الخدمات الأخرى",
+          "name_en": "Other Services Revenue",
+          "type": "REVENUE",
+          "nature": "دائن",
+          "level": 2,
+          "children": [
+            {
+              "code": "4501",
+              "name_ar": "إيرادات المكتبة",
+              "name_en": "Library Revenue",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "450101",
+                  "name_ar": "رسوم الاشتراك في المكتبة",
+                  "name_en": "Library Subscription Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450102",
+                  "name_ar": "رسوم استنساخ وطباعة",
+                  "name_en": "Copying and Printing Fees",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450103",
+                  "name_ar": "إيرادات بيع الكتب",
+                  "name_en": "Book Sales Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4502",
+              "name_ar": "إيرادات المقصف والكافتيريا",
+              "name_en": "Cafeteria Revenue",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "450201",
+                  "name_ar": "إيرادات بيع الوجبات",
+                  "name_en": "Meal Sales Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450202",
+                  "name_ar": "إيرادات بيع المشروبات",
+                  "name_en": "Beverage Sales Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450203",
+                  "name_ar": "إيرادات بيع الوجبات الخفيفة",
+                  "name_en": "Snack Sales Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4503",
+              "name_ar": "إيرادات المحلات التجارية",
+              "name_en": "Commercial Outlets Revenue",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "450301",
+                  "name_ar": "إيرادات بيع الزي المدرسي",
+                  "name_en": "Uniform Sales Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450302",
+                  "name_ar": "إيرادات بيع القرطاسية",
+                  "name_en": "Stationery Sales Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450303",
+                  "name_ar": "إيرادات بيع المستلزمات الرياضية",
+                  "name_en": "Sports Equipment Sales Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4504",
+              "name_ar": "إيرادات التأجير",
+              "name_en": "Rental Revenue",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "450401",
+                  "name_ar": "إيرادات تأجير المرافق",
+                  "name_en": "Facility Rental Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450402",
+                  "name_ar": "إيرادات تأجير المعدات",
+                  "name_en": "Equipment Rental Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450403",
+                  "name_ar": "إيرادات تأجير الملاعب",
+                  "name_en": "Sports Field Rental Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4505",
+              "name_ar": "إيرادات الاستشارات والخدمات المهنية",
+              "name_en": "Consultation and Professional Services Revenue",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "450501",
+                  "name_ar": "إيرادات استشارات تعليمية",
+                  "name_en": "Educational Consultation Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450502",
+                  "name_ar": "إيرادات استشارات إدارية",
+                  "name_en": "Administrative Consultation Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450503",
+                  "name_ar": "إيرادات خدمات فحص واختبار",
+                  "name_en": "Testing and Examination Services Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4506",
+              "name_ar": "إيرادات الاستثمار",
+              "name_en": "Investment Revenue",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "450601",
+                  "name_ar": "إيرادات فوائد بنكية",
+                  "name_en": "Bank Interest Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450602",
+                  "name_ar": "إيرادات أرباح استثمارية",
+                  "name_en": "Investment Profit Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450603",
+                  "name_ar": "إيرادات أرباح شركات تابعة",
+                  "name_en": "Subsidiary Profit Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4507",
+              "name_ar": "إيرادات متنوعة",
+              "name_en": "Miscellaneous Revenue",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": [
+                {
+                  "code": "450701",
+                  "name_ar": "إيرادات رسوم إدارية",
+                  "name_en": "Administrative Fee Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450702",
+                  "name_ar": "إيرادات رسوم تأخير",
+                  "name_en": "Late Fee Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450703",
+                  "name_ar": "إيرادات رسوم إعادة اختبار",
+                  "name_en": "Retest Fee Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450704",
+                  "name_ar": "إيرادات رسوم شهادات",
+                  "name_en": "Certificate Fee Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450705",
+                  "name_ar": "إيرادات رسوم نقل بين فروع",
+                  "name_en": "Inter-branch Transfer Fee Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                },
+                {
+                  "code": "450706",
+                  "name_ar": "إيرادات أخرى",
+                  "name_en": "Other Revenue",
+                  "type": "REVENUE",
+                  "nature": "دائن",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "4508",
+              "name_ar": "إيرادات الشهادات والاعتماد",
+              "name_en": "Certification and Accreditation Revenue",
+              "type": "REVENUE",
+              "nature": "دائن",
+              "level": 3,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name_ar": "المصروفات",
+      "name_en": "Expenses",
+      "type": "EXPENSE",
+      "nature": "مدين",
+      "level": 1,
+      "children": [
+        {
+          "code": "51",
+          "name_ar": "مصروفات التعليم والتدريس",
+          "name_en": "Teaching and Instruction Expenses",
+          "type": "EXPENSE",
+          "nature": "مدين",
+          "level": 2,
+          "children": [
+            {
+              "code": "5101",
+              "name_ar": "رواتب وأجور هيئة التدريس",
+              "name_en": "Faculty Salaries and Wages",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "510101",
+                  "name_ar": "رواتب أساتذة جامعيين",
+                  "name_en": "University Professors Salaries",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510102",
+                  "name_ar": "رواتب معلمين",
+                  "name_en": "Teachers Salaries",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510103",
+                  "name_ar": "رواتب محاضرين",
+                  "name_en": "Lecturers Salaries",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510104",
+                  "name_ar": "رواتب معلمين مساعدين",
+                  "name_en": "Assistant Teachers Salaries",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510105",
+                  "name_ar": "بدلات تدريس إضافية",
+                  "name_en": "Extra Teaching Allowances",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510106",
+                  "name_ar": "بدلات إشراف",
+                  "name_en": "Supervision Allowances",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510107",
+                  "name_ar": "بدلات لجان امتحانية",
+                  "name_en": "Examination Committee Allowances",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510108",
+                  "name_ar": "مكافآت نهاية خدمة - هيئة تدريس",
+                  "name_en": "End-of-Service Benefits - Faculty",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5102",
+              "name_ar": "مصروفات المناهج والمقررات",
+              "name_en": "Curriculum and Course Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "510201",
+                  "name_ar": "تكلفة كتب ومقررات دراسية",
+                  "name_en": "Books and Curriculum Costs",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510202",
+                  "name_ar": "تكلفة مطبوعات تعليمية",
+                  "name_en": "Educational Printing Costs",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510203",
+                  "name_ar": "رسوم حقوق نشر",
+                  "name_en": "Copyright Fees",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510204",
+                  "name_ar": "مصروفات تطوير المناهج",
+                  "name_en": "Curriculum Development Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510205",
+                  "name_ar": "مصروفات ترجمة",
+                  "name_en": "Translation Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5103",
+              "name_ar": "مصروفات المختبرات",
+              "name_en": "Laboratory Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "510301",
+                  "name_ar": "مواد كيميائية ومستلزمات مختبرات",
+                  "name_en": "Chemicals and Lab Supplies",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510302",
+                  "name_ar": "صيانة معدات مختبرات",
+                  "name_en": "Lab Equipment Maintenance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510303",
+                  "name_ar": "تجهيزات مختبرات",
+                  "name_en": "Lab Furnishings",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510304",
+                  "name_ar": "رسوم تصاريح مختبرات",
+                  "name_en": "Lab Permit Fees",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5104",
+              "name_ar": "مصروفات البحث العلمي",
+              "name_en": "Scientific Research Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "510401",
+                  "name_ar": "رواتب باحثين",
+                  "name_en": "Researchers Salaries",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510402",
+                  "name_ar": "مواد بحثية",
+                  "name_en": "Research Materials",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510403",
+                  "name_ar": "مصروفات مؤتمرات علمية",
+                  "name_en": "Scientific Conference Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510404",
+                  "name_ar": "مصروفات نشر أبحاث",
+                  "name_en": "Research Publication Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "510405",
+                  "name_ar": "مصروفات براءات اختراع",
+                  "name_en": "Patent Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "52",
+          "name_ar": "مصروفات الموارد البشرية",
+          "name_en": "Human Resources Expenses",
+          "type": "EXPENSE",
+          "nature": "مدين",
+          "level": 2,
+          "children": [
+            {
+              "code": "5201",
+              "name_ar": "رواتب وأجور إدارية",
+              "name_en": "Administrative Salaries and Wages",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "520101",
+                  "name_ar": "رواتب إدارة عليا",
+                  "name_en": "Senior Management Salaries",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520102",
+                  "name_ar": "رواتب إدارة وسطى",
+                  "name_en": "Middle Management Salaries",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520103",
+                  "name_ar": "رواتب موظفين إداريين",
+                  "name_en": "Administrative Staff Salaries",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520104",
+                  "name_ar": "رواتب موظفين ماليين",
+                  "name_en": "Finance Staff Salaries",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520105",
+                  "name_ar": "رواتب موظفين تقنيين",
+                  "name_en": "Technical Staff Salaries",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5202",
+              "name_ar": "بدلات ومكافآت",
+              "name_en": "Allowances and Bonuses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "520201",
+                  "name_ar": "بدل سكن",
+                  "name_en": "Housing Allowance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520202",
+                  "name_ar": "بدل نقل",
+                  "name_en": "Transportation Allowance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520203",
+                  "name_ar": "بدل طعام",
+                  "name_en": "Food Allowance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520204",
+                  "name_ar": "بدل اتصالات",
+                  "name_en": "Communication Allowance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520205",
+                  "name_ar": "مكافآت سنوية",
+                  "name_en": "Annual Bonuses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520206",
+                  "name_ar": "مكافآت أداء",
+                  "name_en": "Performance Bonuses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5203",
+              "name_ar": "مصروفات التأمينات الاجتماعية",
+              "name_en": "Social Insurance Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "520301",
+                  "name_ar": "حصة المنشأة في التأمينات الاجتماعية",
+                  "name_en": "Employer Social Insurance Share",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520302",
+                  "name_ar": "تأمين طبي",
+                  "name_en": "Medical Insurance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520303",
+                  "name_ar": "تأمين حوادث",
+                  "name_en": "Accident Insurance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520304",
+                  "name_ar": "تأمين حياة",
+                  "name_en": "Life Insurance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5204",
+              "name_ar": "مصروفات التدريب والتطوير",
+              "name_en": "Training and Development Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "520401",
+                  "name_ar": "مصروفات دورات تدريبية",
+                  "name_en": "Training Course Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520402",
+                  "name_ar": "مصروفات مؤتمرات وندوات",
+                  "name_en": "Conference and Seminar Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520403",
+                  "name_ar": "مصروفات منح دراسية للموظفين",
+                  "name_en": "Employee Scholarship Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520404",
+                  "name_ar": "مصروفات تطوير مهني",
+                  "name_en": "Professional Development Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5205",
+              "name_ar": "مصروفات الاستقطاعات",
+              "name_en": "Deduction Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "520501",
+                  "name_ar": "استقطاعات ضريبية",
+                  "name_en": "Tax Deductions",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "520502",
+                  "name_ar": "استقطاعات تأمينية",
+                  "name_en": "Insurance Deductions",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "53",
+          "name_ar": "مصروفات الطلاب والأنشطة",
+          "name_en": "Student and Activities Expenses",
+          "type": "EXPENSE",
+          "nature": "مدين",
+          "level": 2,
+          "children": [
+            {
+              "code": "5301",
+              "name_ar": "مصروفات الأنشطة الطلابية",
+              "name_en": "Student Activities Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "530101",
+                  "name_ar": "مصروفات أنشطة رياضية",
+                  "name_en": "Sports Activities Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "530102",
+                  "name_ar": "مصروفات أنشطة ثقافية",
+                  "name_en": "Cultural Activities Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "530103",
+                  "name_ar": "مصروفات أنشطة فنية",
+                  "name_en": "Artistic Activities Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "530104",
+                  "name_ar": "مصروفات أنشطة اجتماعية",
+                  "name_en": "Social Activities Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "530105",
+                  "name_ar": "مصروفات أنشطة علمية",
+                  "name_en": "Scientific Activities Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "530106",
+                  "name_ar": "مصروفات رحلات طلابية",
+                  "name_en": "Student Trip Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5302",
+              "name_ar": "مصروفات الخدمات الطلابية",
+              "name_en": "Student Services Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "530201",
+                  "name_ar": "مصروفات السكن الطلابي",
+                  "name_en": "Student Housing Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "530202",
+                  "name_ar": "مصروفات النقل الطلابي",
+                  "name_en": "Student Transportation Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "530203",
+                  "name_ar": "مصروفات الخدمات الصحية",
+                  "name_en": "Health Services Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "530204",
+                  "name_ar": "مصروفات التأمين الصحي للطلاب",
+                  "name_en": "Student Health Insurance Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "530205",
+                  "name_ar": "مصروفات الإرشاد الطلابي",
+                  "name_en": "Student Counseling Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5303",
+              "name_ar": "مصروفات المنح والإعانات",
+              "name_en": "Scholarships and Grants Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "530301",
+                  "name_ar": "منح دراسية داخلية",
+                  "name_en": "Internal Scholarships",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "530302",
+                  "name_ar": "منح دراسية خارجية",
+                  "name_en": "External Scholarships",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "530303",
+                  "name_ar": "إعانات طلابية",
+                  "name_en": "Student Subsidies",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "530304",
+                  "name_ar": "إعفاءات رسوم دراسية",
+                  "name_en": "Tuition Fee Exemptions",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "54",
+          "name_ar": "مصروفات المرافق والبنية التحتية",
+          "name_en": "Facilities and Infrastructure Expenses",
+          "type": "EXPENSE",
+          "nature": "مدين",
+          "level": 2,
+          "children": [
+            {
+              "code": "5401",
+              "name_ar": "مصروفات الكهرباء والماء",
+              "name_en": "Electricity and Water Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "540101",
+                  "name_ar": "فواتير كهرباء",
+                  "name_en": "Electricity Bills",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "540102",
+                  "name_ar": "فواتير ماء",
+                  "name_en": "Water Bills",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "540103",
+                  "name_ar": "فواتير صرف صحي",
+                  "name_en": "Sewage Bills",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5402",
+              "name_ar": "مصروفات الإيجار",
+              "name_en": "Rent Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "540201",
+                  "name_ar": "إيجار مباني",
+                  "name_en": "Building Rent",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "540202",
+                  "name_ar": "إيجار معدات",
+                  "name_en": "Equipment Rent",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "540203",
+                  "name_ar": "إيجار مرافق",
+                  "name_en": "Facility Rent",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5403",
+              "name_ar": "مصروفات الصيانة",
+              "name_en": "Maintenance Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "540301",
+                  "name_ar": "صيانة مباني",
+                  "name_en": "Building Maintenance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "540302",
+                  "name_ar": "صيانة معدات",
+                  "name_en": "Equipment Maintenance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "540303",
+                  "name_ar": "صيانة حاسوب وشبكات",
+                  "name_en": "Computer and Network Maintenance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "540304",
+                  "name_ar": "صيانة أنظمة تكييف",
+                  "name_en": "Air Conditioning Maintenance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "540305",
+                  "name_ar": "صيانة مصاعد",
+                  "name_en": "Elevator Maintenance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "540306",
+                  "name_ar": "صيانة أمن وسلامة",
+                  "name_en": "Security and Safety Maintenance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5404",
+              "name_ar": "مصروفات الأمن والسلامة",
+              "name_en": "Security and Safety Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "540401",
+                  "name_ar": "رواتب حراس",
+                  "name_en": "Security Guards Salaries",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "540402",
+                  "name_ar": "معدات أمن",
+                  "name_en": "Security Equipment",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "540403",
+                  "name_ar": "أنظمة مراقبة",
+                  "name_en": "Surveillance Systems",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "540404",
+                  "name_ar": "معدات إطفاء",
+                  "name_en": "Firefighting Equipment",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "540405",
+                  "name_ar": "تدريب السلامة",
+                  "name_en": "Safety Training",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5405",
+              "name_ar": "مصروفات النظافة",
+              "name_en": "Cleaning Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "540501",
+                  "name_ar": "رواتب عمال نظافة",
+                  "name_en": "Cleaning Staff Salaries",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "540502",
+                  "name_ar": "مواد تنظيف",
+                  "name_en": "Cleaning Materials",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "540503",
+                  "name_ar": "عقود نظافة خارجية",
+                  "name_en": "External Cleaning Contracts",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "55",
+          "name_ar": "مصروفات الإدارة والتشغيل",
+          "name_en": "Administration and Operations Expenses",
+          "type": "EXPENSE",
+          "nature": "مدين",
+          "level": 2,
+          "children": [
+            {
+              "code": "5501",
+              "name_ar": "مصروفات القرطاسية والمكتبية",
+              "name_en": "Stationery and Office Supplies Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "550101",
+                  "name_ar": "ورق ومستلزمات طباعة",
+                  "name_en": "Paper and Printing Supplies",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550102",
+                  "name_ar": "أقلام وقرطاسية",
+                  "name_en": "Pens and Stationery",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550103",
+                  "name_ar": "مستلزمات مكتبية",
+                  "name_en": "Office Supplies",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5502",
+              "name_ar": "مصروفات الاتصالات",
+              "name_en": "Communication Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "550201",
+                  "name_ar": "فواتير هاتف أرضي",
+                  "name_en": "Landline Phone Bills",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550202",
+                  "name_ar": "فواتير إنترنت",
+                  "name_en": "Internet Bills",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550203",
+                  "name_ar": "فواتير جوال",
+                  "name_en": "Mobile Phone Bills",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550204",
+                  "name_ar": "اشتراكات برمجيات",
+                  "name_en": "Software Subscriptions",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5503",
+              "name_ar": "مصروفات التسويق والإعلان",
+              "name_en": "Marketing and Advertising Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "550301",
+                  "name_ar": "إعلانات إلكترونية",
+                  "name_en": "Online Advertising",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550302",
+                  "name_ar": "إعلانات مطبوعة",
+                  "name_en": "Print Advertising",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550303",
+                  "name_ar": "معارض تعليمية",
+                  "name_en": "Educational Exhibitions",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550304",
+                  "name_ar": "مواد تسويقية",
+                  "name_en": "Marketing Materials",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550305",
+                  "name_ar": "علاقات عامة",
+                  "name_en": "Public Relations",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5504",
+              "name_ar": "مصروفات السفر والإقامة",
+              "name_en": "Travel and Accommodation Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "550401",
+                  "name_ar": "تذاكر سفر",
+                  "name_en": "Travel Tickets",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550402",
+                  "name_ar": "إقامة فنادق",
+                  "name_en": "Hotel Accommodation",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550403",
+                  "name_ar": "مصروفات نقل داخلي",
+                  "name_en": "Local Transportation Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550404",
+                  "name_ar": "بدل سفر يومي",
+                  "name_en": "Daily Travel Allowance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5505",
+              "name_ar": "مصروفات الاستشارات والخدمات المهنية",
+              "name_en": "Consultation and Professional Services Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "550501",
+                  "name_ar": "استشارات قانونية",
+                  "name_en": "Legal Consultations",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550502",
+                  "name_ar": "استشارات مالية",
+                  "name_en": "Financial Consultations",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550503",
+                  "name_ar": "استشارات تعليمية",
+                  "name_en": "Educational Consultations",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550504",
+                  "name_ar": "خدمات مراجعة حسابات",
+                  "name_en": "Audit Services",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550505",
+                  "name_ar": "خدمات تقنية معلومات",
+                  "name_en": "IT Services",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5506",
+              "name_ar": "مصروفات التأمين",
+              "name_en": "Insurance Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "550601",
+                  "name_ar": "تأمين مباني",
+                  "name_en": "Building Insurance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550602",
+                  "name_ar": "تأمين معدات",
+                  "name_en": "Equipment Insurance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550603",
+                  "name_ar": "تأمين مسؤولية مدنية",
+                  "name_en": "Civil Liability Insurance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550604",
+                  "name_ar": "تأمين مركبات",
+                  "name_en": "Vehicle Insurance",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5507",
+              "name_ar": "مصروفات البريد والشحن",
+              "name_en": "Postage and Shipping Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "550701",
+                  "name_ar": "بريد",
+                  "name_en": "Postage",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550702",
+                  "name_ar": "شحن",
+                  "name_en": "Shipping",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "550703",
+                  "name_ar": "خدمات بريد سريع",
+                  "name_en": "Express Mail Services",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "57",
+          "name_ar": "مصروفات الإهلاك والإطفاء",
+          "name_en": "Depreciation and Amortization Expenses",
+          "type": "EXPENSE",
+          "nature": "مدين",
+          "level": 2,
+          "children": [
+            {
+              "code": "5701",
+              "name_ar": "إهلاك الأصول الثابتة",
+              "name_en": "Fixed Assets Depreciation",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "570101",
+                  "name_ar": "إهلاك المباني",
+                  "name_en": "Buildings Depreciation",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "570102",
+                  "name_ar": "إهلاك المعدات والآلات",
+                  "name_en": "Machinery Depreciation",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "570103",
+                  "name_ar": "إهلاك معدات المختبرات",
+                  "name_en": "Lab Equipment Depreciation",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "570104",
+                  "name_ar": "إهلاك الحاسوب والشبكات",
+                  "name_en": "Computers Depreciation",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "570105",
+                  "name_ar": "إهلاك الأثاث والمفروشات",
+                  "name_en": "Furniture Depreciation",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "570106",
+                  "name_ar": "إهلاك السيارات والنقل",
+                  "name_en": "Vehicles Depreciation",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "570107",
+                  "name_ar": "إهلاك الأجهزة التعليمية",
+                  "name_en": "Educational Equipment Depreciation",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "570108",
+                  "name_ar": "إهلاك الأجهزة الرياضية",
+                  "name_en": "Sports Equipment Depreciation",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "570109",
+                  "name_ar": "إهلاك الأجهزة الصوتية والبصرية",
+                  "name_en": "AV Equipment Depreciation",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5702",
+              "name_ar": "إطفاء الأصول غير الملموسة",
+              "name_en": "Intangible Assets Amortization",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "570201",
+                  "name_ar": "إطفاء براءات اختراع",
+                  "name_en": "Patents Amortization",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "570202",
+                  "name_ar": "إطفاء حقوق نشر",
+                  "name_en": "Copyrights Amortization",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "570203",
+                  "name_ar": "إطفاء برامج حاسوب",
+                  "name_en": "Software Amortization",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "570204",
+                  "name_ar": "إطفاء تراخيص تشغيل",
+                  "name_en": "Operating Licenses Amortization",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "570205",
+                  "name_ar": "إطفاء مصروفات التأسيس",
+                  "name_en": "Formation Expenses Amortization",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "58",
+          "name_ar": "مصروفات الضرائب",
+          "name_en": "Tax Expenses",
+          "type": "EXPENSE",
+          "nature": "مدين",
+          "level": 2,
+          "children": [
+            {
+              "code": "5801",
+              "name_ar": "ضريبة الدخل",
+              "name_en": "Income Tax",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "580101",
+                  "name_ar": "ضريبة الدخل الحالية",
+                  "name_en": "Current Income Tax",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "580102",
+                  "name_ar": "ضريبة الدخل المؤجلة",
+                  "name_en": "Deferred Income Tax",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5802",
+              "name_ar": "ضريبة القيمة المضافة",
+              "name_en": "Value Added Tax",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "580201",
+                  "name_ar": "ضريبة قيمة مضافة غير مستردة",
+                  "name_en": "Non-recoverable VAT",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            },
+            {
+              "code": "5803",
+              "name_ar": "ضرائب أخرى",
+              "name_en": "Other Taxes",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "580301",
+                  "name_ar": "ضريبة أملاك",
+                  "name_en": "Property Tax",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "580302",
+                  "name_ar": "رسوم تراخيص",
+                  "name_en": "License Fees",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "580303",
+                  "name_ar": "ضرائب ورسوم حكومية أخرى",
+                  "name_en": "Other Government Taxes and Fees",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "59",
+          "name_ar": "مصروفات أخرى",
+          "name_en": "Other Expenses",
+          "type": "EXPENSE",
+          "nature": "مدين",
+          "level": 2,
+          "children": [
+            {
+              "code": "5901",
+              "name_ar": "مصروفات متنوعة",
+              "name_en": "Miscellaneous Expenses",
+              "type": "EXPENSE",
+              "nature": "مدين",
+              "level": 3,
+              "children": [
+                {
+                  "code": "590101",
+                  "name_ar": "مصروفات ضيافة",
+                  "name_en": "Hospitality Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "590102",
+                  "name_ar": "مصروفات هدايا",
+                  "name_en": "Gift Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "590103",
+                  "name_ar": "مصروفات إهداءات",
+                  "name_en": "Donation Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "590104",
+                  "name_ar": "مصروفات غرامات",
+                  "name_en": "Penalty Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "590105",
+                  "name_ar": "مصروفات خسائر ديون",
+                  "name_en": "Bad Debt Losses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "590106",
+                  "name_ar": "مصروفات خسائر مخزون",
+                  "name_en": "Inventory Loss Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "590107",
+                  "name_ar": "مصروفات أخرى",
+                  "name_en": "Other Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

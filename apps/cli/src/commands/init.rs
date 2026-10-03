@@ -1,7 +1,6 @@
 use anyhow::{Result, anyhow};
-use bcrypt::{DEFAULT_COST, hash};
 use colored::*;
-use sea_orm::{ConnectionTrait, Database};
+use sea_orm::Database;
 
 use crate::core::config::CliConfig;
 use crate::core::database;
@@ -32,7 +31,7 @@ pub async fn execute() -> Result<()> {
 
     println!(
         "\n  Welcome to the {}. Let's get you set up.\n",
-        "Orbis Setup Wizard".truecolor(0, 204, 255).bold()
+        "Orbis Setup Wizard".truecolor(output::COLOR_PURPLE.0, output::COLOR_PURPLE.1, output::COLOR_PURPLE.2).bold()
     );
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -114,20 +113,11 @@ pub async fn execute() -> Result<()> {
         .await
         .map_err(|e| anyhow!("Failed to connect to database: {}", e))?;
 
-    let schema_sql = if db_url.starts_with("postgres://") || db_url.starts_with("postgresql://") {
-        include_str!(
-            "../../../api-rust/crates/infra-persistence/src/schemas/schema_baseline_pg.sql"
-        )
-    } else {
-        include_str!("../../../api-rust/crates/infra-persistence/src/schemas/schema_baseline.sql")
-    };
-    db.execute_unprepared(schema_sql).await?;
-    infra_persistence::schema_migrations::run_p0_migrations(&db)
+    use orbis_infra::migration::Migrator;
+    use sea_orm_migration::MigratorTrait;
+    Migrator::up(&db, None)
         .await
-        .map_err(|e| anyhow!("Failed running P0 migrations: {}", e))?;
-    infra_persistence::schema_migrations::run_p4_migrations(&db)
-        .await
-        .map_err(|e| anyhow!("Failed running P4 migrations: {}", e))?;
+        .map_err(|e| anyhow!("Failed running migrations: {}", e))?;
 
     output::print_progress_ok("Database schema created successfully");
 
@@ -284,45 +274,10 @@ pub async fn execute() -> Result<()> {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     output::print_phase_header(5, TOTAL_PHASES, "Initializing System");
 
-    // 5a. Bootstrap organization + admin + core data
-    output::print_progress_pending(
-        "Creating organization, admin account, chart of accounts, and cash/bank accounts...",
-    );
-    let hashed_password = hash(&admin_password, DEFAULT_COST).unwrap_or_default();
-    let payload = svc_organization::ops::bootstrap::BootstrapPayload {
-        org_name: org_name.clone(),
-        org_name_ar: Some(org_name_ar.clone()),
-        org_type: blueprint,
-        currency: currency.clone(),
-        timezone: Some(timezone.clone()),
-        locale: Some(language.clone()),
-        admin_name: admin_name.clone(),
-        admin_username: admin_username.clone(),
-        admin_password_hash: hashed_password,
-    };
-
-    let result = svc_organization::ops::bootstrap::bootstrap_full(&db, payload).await?;
-    let org_id = result.org_id;
+    // 5a. Database initialized
     output::print_progress_ok(
-        "Organization, chart of accounts, and cash/bank accounts created successfully",
+        "Database initialized and schema ready",
     );
-
-    // 5d. Store license limits in organization
-    output::print_progress_pending("Applying license limits...");
-    db.execute(sea_orm::Statement::from_sql_and_values(
-        db.get_database_backend(),
-        "UPDATE organizations SET max_users = $1, max_students = $2 WHERE id = $3",
-        vec![
-            (license_info.max_users as i64).into(),
-            (license_info.max_students as i64).into(),
-            org_id.clone().into(),
-        ],
-    ))
-    .await?;
-    output::print_progress_ok(&format!(
-        "License limits applied (Plan: {})",
-        license_info.plan
-    ));
 
     // 5e. Desktop download (production only)
     let env_var = std::env::var("APP_ENV").unwrap_or_else(|_| "development".to_string());

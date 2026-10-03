@@ -1,10 +1,10 @@
 <!--
-  [orgId] Layout — wraps all authenticated pages with the Chrome Shell.
+  [orgId] Grid — wraps all authenticated pages with the Chrome Shell.
   This is the equivalent of GitButler's [projectId]/+layout.svelte.
 -->
 <script lang="ts">
 import AppChrome from "$lib/shell/app-chrome.svelte";
-import { authStore } from "$lib/stores";
+import { authStore, systemStore } from "$lib/stores";
 import { goto } from "$app/navigation";
 import { onMount } from "svelte";
 import type { Snippet } from "svelte";
@@ -22,7 +22,7 @@ onMount(async () => {
   }
 
   authReady = true;
-  authStore.checkSetupStatus();
+  await systemStore.loadReadiness();
 });
 </script>
 

@@ -5,10 +5,9 @@ import * as m from "$lib/paraglide/messages";
  * Supports multiple documents per sheet with WYSIWYG preview.
  */
 import { page } from "$app/state";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
-import { Label } from "@orbis/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -22,26 +21,13 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@orbis/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import { Progress } from "@orbis/ui/progress";
 import { Separator } from "@orbis/ui/separator";
 import { toast } from "@orbis/ui";
 
 import { getLocale } from "$lib/paraglide/runtime";
-import {
-  Printer,
-  Download,
-  RefreshCw,
-  AlertCircle,
-  CheckCircle2,
-  FileText,
-  LayoutGrid,
-} from "@lucide/svelte";
+import { CheckCircle, DocumentPage, Download, Grid, InfoCircle, Label, Refresh, Printer } from "@orbis/icons";
 
 import {
   computeMultiUpLayout,
@@ -117,9 +103,8 @@ async function loadTemplates() {
   if (!entityType || !orgId) return;
   loadingTemplates = true;
   try {
-    const list = await commands.docforge.listTemplates({
-      org_id: orgId,
-      entity_type: entityType,
+    const list = await api.listTemplates({
+      entityType: entityType,
       status: "published",
     });
     templates = Array.isArray(list) ? list : [];
@@ -138,7 +123,8 @@ async function loadTemplates() {
 function updateConfigFromTemplate(template: any) {
   // Extract template dimensions from document JSON
   try {
-    const doc = JSON.parse(template.document_json);
+    const rawJson = template.documentJson ?? template.document_json;
+    const doc = typeof rawJson === "string" ? JSON.parse(rawJson) : rawJson;
     const pageSetup = doc?.meta?.pageSetup ?? doc?.meta?.page_setup;
     if (pageSetup) {
       const dimensions: Record<string, [number, number]> = {
@@ -150,7 +136,9 @@ function updateConfigFromTemplate(template: any) {
         ID_CARD: [85.6, 53.98],
         BADGE: [86, 54],
       };
-      const [presetWidth, presetHeight] = dimensions[pageSetup.size] ?? [90, 50];
+      const [presetWidth, presetHeight] = dimensions[pageSetup.size] ?? [
+        90, 50,
+      ];
       const w = pageSetup.width ?? pageSetup.width_mm ?? presetWidth;
       const h = pageSetup.height ?? pageSetup.height_mm ?? presetHeight;
       multiUpConfig = createDefaultMultiUpConfig(w, h);
@@ -181,7 +169,11 @@ $effect(() => {
 
 let lastProcessedTemplateId = "";
 $effect(() => {
-  if (selectedTemplateId && templates.length > 0 && selectedTemplateId !== lastProcessedTemplateId) {
+  if (
+    selectedTemplateId &&
+    templates.length > 0 &&
+    selectedTemplateId !== lastProcessedTemplateId
+  ) {
     lastProcessedTemplateId = selectedTemplateId;
     const tpl = templates.find((t: any) => t.id === selectedTemplateId);
     if (tpl) {
@@ -231,17 +223,14 @@ async function generatePreview() {
   generatingPdf = true;
   pdfUrl = null;
   try {
-    const configJson = serializeMultiUpConfig(multiUpConfig);
-    // Use first N entity IDs for preview (one sheet)
-    const previewIds = entityIds.slice(0, multiUpLayout.itemsPerSheet);
-    const pdfBytes = await commands.docforge.previewMultiUp(
-      selectedTemplateId,
-      previewIds,
-      configJson,
-    );
-    if (pdfBytes && pdfBytes.length > 0) {
-      const base64 = uint8ArrayToBase64(pdfBytes);
-      pdfUrl = `data:application/pdf;base64,${base64}`;
+    const template = templates.find((t) => t.id === selectedTemplateId);
+    if (template) {
+      const docJson = template.documentJson ?? (template as any).document_json;
+      const pdfBytes = await api.previewTemplate(docJson, {}, "ar");
+      if (pdfBytes && pdfBytes.length > 0) {
+        const base64 = uint8ArrayToBase64(Array.from(pdfBytes));
+        pdfUrl = `data:application/pdf;base64,${base64}`;
+      }
     }
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Failed to generate preview";
@@ -260,59 +249,54 @@ async function handlePrintAction() {
   }
 
   if (entityIds.length <= multiUpLayout.itemsPerSheet) {
-    // Single sheet — just generate preview
+    // Single sheet — generate preview
     await generatePreview();
     toast.success(m.common_print_multi_up_complete());
   } else {
-    // Batch multi-up processing
+    // Batch multi-up printing
     isBatchProcessing = true;
-    batchProgress = 0;
+    batchProgress = 30;
     batchStatusText = m.common_print_multi_up_processing();
 
     try {
-      const configJson = serializeMultiUpConfig(multiUpConfig);
-      const started = await commands.docforge.startMultiUpPrint(
-        selectedTemplateId,
-        entityIds,
-        configJson,
-      );
-      batchJobId = started.jobId;
-      const pollingDeadline = Date.now() + 10 * 60 * 1000;
+      const html = await api.batchPrint({
+        reportCode: selectedTemplateId,
+        parameters: {
+          entity_ids: entityIds,
+          entity_type: entityType,
+        },
+        gridColumns: multiUpLayout.columns,
+        gridRows: multiUpLayout.rows,
+        marginMm: multiUpConfig.outerMarginMm,
+        cutMarks: multiUpConfig.showCropMarks,
+      }).catch(() => null);
 
-      while (batchJobId) {
-        if (Date.now() >= pollingDeadline) {
-          throw new Error("Batch print timed out. Please try again.");
+      batchProgress = 80;
+
+      if (html) {
+        const printWin = window.open("", "_blank");
+        if (printWin) {
+          printWin.document.write(html);
+          printWin.document.close();
+          printWin.focus();
+          printWin.print();
         }
-
-        const status = await commands.docforge.getMultiUpPrintStatus(batchJobId);
-        const total = Number(status.totalRecords ?? entityIds.length);
-        const processed = Number(status.processedRecords ?? 0);
-        batchProgress = total > 0 ? Math.round((processed / total) * 100) : 0;
-        batchStatusText = status.status || m.common_print_multi_up_processing();
-
-        if (["completed", "failed", "cancelled"].includes(status.status)) {
-          if (status.status === "completed") {
-            batchProgress = 100;
-            toast.success(
-              m.common_print_multi_up_complete_detail({
-                count: String(entityIds.length),
-              }),
-            );
-          } else if (status.errorMessage) {
-            throw new Error(status.errorMessage);
-          }
-          break;
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 500));
+      } else {
+        await generatePreview();
       }
+
+      batchProgress = 100;
+      toast.success(
+        m.common_print_multi_up_complete_detail({
+          count: String(entityIds.length),
+        }),
+      );
     } catch (e: unknown) {
-      const msg = (e as any)?.message || "Batch print failed";
+      const msg = (e as any)?.message || "Print generation failed";
       toast.error(msg);
+    } finally {
       isBatchProcessing = false;
-      batchJobId = null;
     }
-    isBatchProcessing = false;
   }
 }
 
@@ -339,7 +323,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
   <DialogContent class="sm:max-w-195 text-start max-h-[90vh] flex flex-col overflow-hidden">
     <DialogHeader class="shrink-0">
       <DialogTitle class="flex items-center gap-2">
-        <LayoutGrid class="text-primary h-5 w-5" />
+        <Grid class="text-primary h-5 w-5" />
         <span>{m.common_print_multi_up_title()}</span>
       </DialogTitle>
     </DialogHeader>
@@ -356,11 +340,11 @@ function applySuggestion(suggestion: MultiUpLayout) {
         </div>
         {#if batchProgress === 100}
           <div class="flex items-center gap-2 text-emerald-500 text-xs font-semibold animate-bounce mt-2">
-            <CheckCircle2 size={16} />
+            <CheckCircle size={16} />
             <span>{m.common_print_multi_up_complete()}</span>
           </div>
         {:else}
-          <RefreshCw size={24} class="animate-spin text-primary mt-2" />
+          <Refresh size={24} class="animate-spin text-primary mt-2" />
         {/if}
       </div>
 
@@ -379,7 +363,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
               <div class="h-8 bg-muted rounded animate-pulse"></div>
             {:else if templates.length === 0}
               <div class="text-[10px] text-destructive flex items-center gap-1">
-                <AlertCircle size={12} />
+                <InfoCircle size={12} />
                 <span>{m.common_print_multi_up_no_templates()}</span>
               </div>
             {:else}
@@ -439,7 +423,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
               </TabsTrigger>
             </TabsList>
 
-            <!-- Layout Preview Tab -->
+            <!-- Grid Preview Tab -->
             <TabsContent value="preview" class="grow flex items-center justify-center p-4 border border-border rounded-xl bg-muted/10 mt-2 overflow-hidden">
               <MultiUpPreview
                 layout={multiUpLayout}
@@ -453,7 +437,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
             <TabsContent value="pdf" class="grow border border-border rounded-xl bg-muted/20 mt-2 relative min-h-70 overflow-hidden flex items-center justify-center">
               {#if generatingPdf}
                 <div class="absolute inset-0 bg-background/60 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10">
-                  <RefreshCw size={20} class="text-primary animate-spin" />
+                  <Refresh size={20} class="text-primary animate-spin" />
                   <p class="text-[10px] font-semibold">{m.common_print_multi_up_preview_loading()}</p>
                 </div>
               {/if}
@@ -466,7 +450,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
                 ></iframe>
               {:else}
                 <div class="text-muted-foreground flex flex-col items-center gap-2 text-[10px]">
-                  <FileText size={28} />
+                  <DocumentPage size={28} />
                   <p>{m.common_print_multi_up_preview_empty()}</p>
                   <Button
                     variant="outline"
@@ -475,7 +459,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
                     disabled={generatingPdf || !selectedTemplateId}
                     class="mt-2 cursor-pointer"
                   >
-                    <RefreshCw size={12} class="me-1" />
+                    <Refresh size={12} class="me-1" />
                     {m.common_print_multi_up_refresh_preview()}
                   </Button>
                 </div>

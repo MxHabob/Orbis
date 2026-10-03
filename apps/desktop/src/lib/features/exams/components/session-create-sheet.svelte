@@ -5,19 +5,19 @@ Includes choosing the academic period.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@orbis/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
 import { toast } from "@orbis/ui";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api";
 import { examSessionInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
@@ -42,7 +42,6 @@ let sessionType = $state<"final" | "midterm" | "quiz" | "practical">("final");
 let startDate = $state("");
 let endDate = $state("");
 let periodId = $state("");
-let periodsList = $state<any[]>([]);
 
 const form = new FormController({
   initialValues: {
@@ -67,45 +66,37 @@ $effect(() => {
   periodId = session?.period_id ? String(session.period_id) : "";
 });
 
-// Load academic periods on open
-$effect(() => {
-  if (open && orgId) {
-    commands.calendar
-      .listAcademicPeriods()
-      .then((res: any) => {
-        periodsList = res || [];
-        if (!periodId && periodsList.length > 0) {
-          periodId = String(periodsList[0].id);
-        }
-      })
-      .catch((e) => {
-        console.error("Failed to load periods:", e);
-      });
-  }
-});
-
 async function handleSubmit() {
-  form.values = { name, name_ar: nameAr, session_type: sessionType, start_date: startDate, end_date: endDate, period_id: periodId };
+  form.values = {
+    name,
+    name_ar: nameAr,
+    session_type: sessionType,
+    start_date: startDate,
+    end_date: endDate,
+    period_id: periodId,
+  };
   const submitted = await form.submit(async (payload) => {
-    if (isEdit && session) {
-      await commands.exam.updateSession(
-        session.id,
-        payload.name || payload.name_ar,
-        session.status || null,
-        payload.start_date,
-        payload.end_date,
-      );
-    } else {
-      await commands.exam.createSession({
+    if (isEdit && session?.id) {
+      await api.updateExamSession(session.id, {
         name: payload.name || payload.name_ar,
-
+        name_ar: payload.name_ar || undefined,
         session_type: payload.session_type,
         start_date: payload.start_date,
         end_date: payload.end_date,
         period_id: payload.period_id,
       });
+      toast.success("تم تحديث دورة الامتحانات بنجاح");
+    } else {
+      await api.createExamSession({
+        name: payload.name || payload.name_ar,
+        name_ar: payload.name_ar || undefined,
+        session_type: payload.session_type,
+        start_date: payload.start_date,
+        end_date: payload.end_date,
+        period_id: payload.period_id,
+      });
+      toast.success(m.common_exams_create_success());
     }
-    toast.success(m.common_exams_create_success());
     // Reset form
     name = "";
     nameAr = "";
@@ -139,7 +130,6 @@ async function handleSubmit() {
         <PeriodSelect
           id="session-period"
           bind:value={periodId}
-          periods={periodsList}
           placeholder={m.exams_session_select_term()}
           class="text-sm"
         />

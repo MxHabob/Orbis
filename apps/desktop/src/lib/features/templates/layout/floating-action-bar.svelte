@@ -13,16 +13,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import {
-  Trash2,
-  Copy,
-  ClipboardCopy,
-  Lock,
-  Unlock,
-  ArrowUpToLine,
-  ArrowDownToLine,
-  MoreHorizontal,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, BarsArrowUp, Clipboard, EllipsisHorizontal, Lock, Trash } from "@orbis/icons";
 
 let {
   store,
@@ -69,7 +60,7 @@ const isLocked = $derived(node?.locked ?? false);
       <Tooltip>
         <TooltipTrigger>
           <button type="button" class="fab-btn" onclick={() => store.duplicateSelected()}>
-            <Copy size={13} />
+            <Clipboard size={13} />
           </button>
         </TooltipTrigger>
         <TooltipContent>{m.template_tooltip_duplicate()}</TooltipContent>
@@ -78,7 +69,7 @@ const isLocked = $derived(node?.locked ?? false);
       <Tooltip>
         <TooltipTrigger>
           <button type="button" class="fab-btn" onclick={() => store.deleteSelected()}>
-            <Trash2 size={13} />
+            <Trash size={13} />
           </button>
         </TooltipTrigger>
         <TooltipContent>{m.template_tooltip_delete()}</TooltipContent>
@@ -90,7 +81,7 @@ const isLocked = $derived(node?.locked ?? false);
             {#if isLocked}
               <Lock size={13} />
             {:else}
-              <Unlock size={13} />
+              <Lock size={13} />
             {/if}
           </button>
         </TooltipTrigger>
@@ -102,7 +93,7 @@ const isLocked = $derived(node?.locked ?? false);
       <Tooltip>
         <TooltipTrigger>
           <button type="button" class="fab-btn" onclick={() => store.bringToFront()}>
-            <ArrowUpToLine size={13} />
+            <BarsArrowUp size={13} />
           </button>
         </TooltipTrigger>
         <TooltipContent>{m.template_tooltip_bring_forward()}</TooltipContent>
@@ -111,7 +102,7 @@ const isLocked = $derived(node?.locked ?? false);
       <Tooltip>
         <TooltipTrigger>
           <button type="button" class="fab-btn" onclick={() => store.sendToBack()}>
-            <ArrowDownToLine size={13} />
+            <BarsArrowUp size={13} />
           </button>
         </TooltipTrigger>
         <TooltipContent>{m.template_tooltip_send_backward()}</TooltipContent>

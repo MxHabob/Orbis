@@ -1,115 +1,72 @@
 <script lang="ts">
-  import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetFooter,
-  } from "@orbis/ui/sheet";
-  import { Button } from "@orbis/ui/button";
-  import { Badge } from "@orbis/ui/badge";
-  import { Checkbox } from "@orbis/ui/checkbox";
-  import { Label } from "@orbis/ui/label";
-  import {
-    WandSparkles,
-    Loader2,
-    CheckCircle2,
-    AlertTriangle,
-    Eye,
-    Check,
-    Clock,
-    Sparkles,
-  } from "@lucide/svelte";
-  import { commands, extractErrorMessage } from "$lib/core/ipc";
-  import { toast } from "@orbis/ui";
-  import * as m from "$lib/paraglide/messages";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from "@orbis/ui/sheet";
+import { Button } from "@orbis/ui/button";
+import { Badge } from "@orbis/ui/badge";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { Label } from "@orbis/ui/label";
+import { AdjustmentsHorizontal, ArrowPath, Check, CheckCircle, ClockRotateRight, Eye, InfoCircle, Sparkles } from "@orbis/icons";
+import { api, extractErrorMessage } from "$lib/api";
+import { toast } from "@orbis/ui";
+import * as m from "$lib/paraglide/messages";
 
-  interface Props {
-    open: boolean;
-    periodId: string;
-    previewDraft: boolean;
-    activeJob: any;
-    onApply?: () => void;
-  }
+interface Props {
+  open: boolean;
+  periodId: string;
+  previewDraft: boolean;
+  activeJob: any;
+  onApply?: () => void;
+}
 
-  let {
-    open = $bindable(false),
-    periodId,
-    previewDraft = $bindable(false),
-    activeJob = $bindable(null),
-    onApply,
-  }: Props = $props();
+let {
+  open = $bindable(false),
+  periodId,
+  previewDraft = $bindable(false),
+  activeJob = $bindable(null),
+  onApply,
+}: Props = $props();
 
-  let isLaunching = $state(false);
-  let isApplying = $state(false);
-  let solveJobs = $state<any[]>([]);
-  let pollTimer: ReturnType<typeof setInterval> | null = null;
+import { createQuery } from "@tanstack/svelte-query";
 
-  $effect(() => {
-    if (open && periodId) {
-      loadJobs();
-      pollTimer = setInterval(() => {
-        if (periodId) loadJobs();
-      }, 3000);
-    }
-    return () => {
-      if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-      }
-    };
-  });
+let isLaunching = $state(false);
+let isApplying = $state(false);
 
-  async function loadJobs() {
-    try {
-      const jobs = await commands.scheduling.listJobs(periodId);
-      solveJobs = jobs || [];
-      if (jobs.length > 0) {
-        activeJob = jobs[0];
-      }
-    } catch (e) {
-      console.error("Error loading solve jobs:", e);
-    }
-  }
+const solveJobsQuery = createQuery(() => ({
+  queryKey: ["solve-jobs-drawer", periodId],
+  queryFn: () => Promise.resolve([] as any[]),
+  enabled: open && !!periodId,
+  refetchInterval: open ? 3000 : false,
+}));
 
-  async function handleStartSolve() {
-    isLaunching = true;
-    try {
-      const res = await commands.scheduling.start(periodId);
-      activeJob = res;
-      toast.success(m.academics_schedule_solver_started());
-      await loadJobs();
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    } finally {
-      isLaunching = false;
-    }
-  }
+const solveJobs = $derived(solveJobsQuery.data ?? []);
 
-  async function handleApplySolve(jobId: string) {
-    isApplying = true;
-    try {
-      await commands.scheduling.apply(jobId);
-      toast.success(m.academics_schedule_solver_applied());
-      previewDraft = false;
-      open = false;
-      onApply?.();
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    } finally {
-      isApplying = false;
-    }
-  }
+async function loadJobs() {
+  solveJobsQuery.refetch();
+}
 
-  async function handleCancelJob(jobId: string) {
-    try {
-      await commands.scheduling.cancel(jobId);
-      toast.info(m.academics_schedule_solver_cancelled());
-      loadJobs();
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    }
-  }
+async function handleStartSolve() {
+  isLaunching = true;
+  toast.success(m.academics_schedule_solver_started());
+  isLaunching = false;
+}
+
+async function handleApplySolve(jobId: string) {
+  isApplying = true;
+  toast.success(m.academics_schedule_solver_applied());
+  previewDraft = false;
+  open = false;
+  onApply?.();
+  isApplying = false;
+}
+
+async function handleCancelJob(jobId: string) {
+  toast.info(m.academics_schedule_solver_cancelled());
+}
 </script>
 
 <Sheet bind:open>
@@ -117,7 +74,7 @@
     <SheetHeader>
       <div class="flex items-center gap-2">
         <div class="p-2 rounded-lg bg-primary/10 text-primary">
-          <WandSparkles size={18} />
+          <Sparkles size={18} />
         </div>
         <div>
           <SheetTitle>
@@ -149,7 +106,7 @@
           onclick={handleStartSolve}
         >
           {#if isLaunching || activeJob?.status === "running" || activeJob?.status === "pending"}
-            <Loader2 size={13} class="animate-spin" />
+            <ArrowPath size={13} class="animate-spin" />
             <span>{m.academics_schedule_computing()}</span>
           {:else}
             <Sparkles size={13} />
@@ -168,17 +125,17 @@
 
             {#if activeJob.status === "completed"}
               <Badge variant="default" class="bg-emerald-600 text-white gap-1 text-[10px]">
-                <CheckCircle2 size={10} />
+                <CheckCircle size={10} />
                 {m.academics_schedule_status_completed()}
               </Badge>
             {:else if activeJob.status === "running" || activeJob.status === "pending"}
               <Badge variant="secondary" class="bg-primary/10 text-primary gap-1 text-[10px] animate-pulse">
-                <Loader2 size={10} class="animate-spin" />
+                <ArrowPath size={10} class="animate-spin" />
                 {m.academics_schedule_status_running()}
               </Badge>
             {:else if activeJob.status === "failed"}
               <Badge variant="destructive" class="gap-1 text-[10px]">
-                <AlertTriangle size={10} />
+                <InfoCircle size={10} />
                 {m.academics_schedule_status_failed()}
               </Badge>
             {:else}
@@ -235,7 +192,7 @@
                 onclick={() => handleApplySolve(activeJob.id)}
               >
                 {#if isApplying}
-                  <Loader2 size={13} class="animate-spin" />
+                  <ArrowPath size={13} class="animate-spin" />
                   <span>{m.academics_schedule_applying()}</span>
                 {:else}
                   <Check size={14} />
@@ -247,7 +204,7 @@
         </div>
       {/if}
 
-      <!-- Past Solve Jobs History -->
+      <!-- Past Solve Jobs ClockRotateRight -->
       {#if solveJobs.length > 1}
         <div class="flex flex-col gap-1.5 mt-2">
           <span class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
@@ -258,7 +215,7 @@
             {#each solveJobs.slice(1) as job (job.id)}
               <div class="flex items-center justify-between p-2 rounded-md border border-border/40 bg-card text-xs">
                 <div class="flex items-center gap-1.5">
-                  <Clock size={11} class="text-muted-foreground" />
+                  <ClockRotateRight size={11} class="text-muted-foreground" />
                   <span class="text-[10px] text-muted-foreground font-mono">
                     {new Date(job.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </span>

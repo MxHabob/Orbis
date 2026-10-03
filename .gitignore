@@ -85,6 +85,7 @@ dist-ssr
 *.njsproj
 *.sw?
 
+.agents
 # Rust build artifacts
 target/
 

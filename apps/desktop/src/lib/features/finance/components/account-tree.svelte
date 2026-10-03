@@ -1,140 +1,257 @@
+<!--
+  @component AccountTree
+  Ultra-compact, professional C# / .NET WinForms & WPF style TreeView.
+  Renders the authentic hierarchical Chart of Accounts directly from the backend (Root nodes -> Child nodes).
+  Features:
+  - Dense, compact 22px item rows with classic hierarchical tree guide lines
+  - Authentic [+] / [-] collapsible node toggles and crisp folder icons
+  - Account code, account name, subtype badge, and balance
+  - Expand/Collapse All and fast search filtering
+-->
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
+import { formatCurrency } from "$lib/core/i18n";
+import { Input } from "@orbis/ui/input";
+import { Button } from "@orbis/ui/button";
 import {
-  ChevronDown,
-  ChevronRight,
-  CheckSquare,
-  FileText,
   Folder,
   FolderOpen,
-  Square,
-} from "@lucide/svelte";
-import { slide } from "svelte/transition";
+  Document,
+  Search,
+  Expand,
+  Collapse,
+} from "@orbis/icons";
+
+export interface AccountNode {
+  id: string;
+  code: string;
+  name: string;
+  name_ar?: string;
+  name_en?: string;
+  type?: string;
+  account_type?: string;
+  sub_type?: string;
+  item_type?: string;
+  currency?: string;
+  balances?: Record<string, number>;
+  is_active?: number | boolean;
+  children?: AccountNode[];
+}
 
 let {
-  categories = [],
-  selectedIds = $bindable(new Set<string>()),
+  accounts = [],
+  orgId = "",
+  onSelectAccount,
 }: {
-  categories?: any[];
-  selectedIds?: Set<string>;
+  accounts?: AccountNode[];
+  orgId?: string;
+  onSelectAccount?: (account: AccountNode) => void;
 } = $props();
 
-let expandedCategories = $state<Record<string, boolean>>({ asset: true });
-let expandedAccounts = $state<Record<string, boolean>>({});
-let isTreeExpanded = $state(true);
+// ── State ──────────────────────────────────────────────────────────────
+let searchQuery = $state("");
+let expandedNodeIds = $state<Set<string>>(new Set());
+let selectedAccountId = $state<string | null>(null);
 
-const selectableAccounts = $derived(
-  categories.flatMap((category) => flatten(category.accounts || [])),
-);
+const rtl = $derived(getLocale() === "ar");
 
-function flatten(nodes: any[]): any[] {
-  return nodes.flatMap((node) => [node, ...flatten(node.children || [])]);
+function isExpanded(id: string): boolean {
+  if (searchQuery.trim().length > 0) return true;
+  return expandedNodeIds.has(id);
 }
 
-function descendants(node: any): string[] {
-  return [node.id, ...flatten(node.children || []).map((child) => child.id)];
+function toggleExpand(id: string, event?: MouseEvent) {
+  if (event) event.stopPropagation();
+  const next = new Set(expandedNodeIds);
+  if (next.has(id)) {
+    next.delete(id);
+  } else {
+    next.add(id);
+  }
+  expandedNodeIds = next;
 }
 
-function checkboxState(node: any): "checked" | "partial" | "unchecked" {
-  const ids = descendants(node);
-  const count = ids.filter((id) => selectedIds.has(id)).length;
-  return count === ids.length ? "checked" : count > 0 ? "partial" : "unchecked";
+function expandAll() {
+  const allIds = new Set<string>();
+  function collect(nodes: AccountNode[]) {
+    for (const node of nodes) {
+      allIds.add(node.id);
+      if (node.children && node.children.length > 0) {
+        collect(node.children);
+      }
+    }
+  }
+  collect(accounts);
+  expandedNodeIds = allIds;
 }
 
-function toggleIds(ids: string[]) {
-  const next = new Set(selectedIds);
-  const shouldSelect = ids.some((id) => !next.has(id));
-  ids.forEach((id) => shouldSelect ? next.add(id) : next.delete(id));
-  selectedIds = next;
+function collapseAll() {
+  expandedNodeIds = new Set();
 }
 
-function toggleCategory(category: any) {
-  const ids = flatten(category.accounts || []).map((account) => account.id);
-  toggleIds(ids);
+function filterTree(nodes: AccountNode[], query: string): AccountNode[] {
+  if (!query.trim()) return nodes;
+  const q = query.trim().toLowerCase();
+
+  const res: AccountNode[] = [];
+  for (const node of nodes) {
+    const nameMatch = (node.name_ar || node.name || "").toLowerCase().includes(q);
+    const codeMatch = (node.code || "").toLowerCase().includes(q);
+    const matchingChildren = node.children ? filterTree(node.children, query) : [];
+
+    if (nameMatch || codeMatch || matchingChildren.length > 0) {
+      res.push({
+        ...node,
+        children: matchingChildren.length > 0 ? matchingChildren : node.children,
+      });
+    }
+  }
+  return res;
 }
 
-function toggleAll() {
-  const ids = selectableAccounts.map((account) => account.id);
-  toggleIds(ids);
+const filteredTree = $derived(filterTree(accounts, searchQuery));
+
+function handleSelect(node: AccountNode) {
+  selectedAccountId = node.id;
+  if (onSelectAccount) {
+    onSelectAccount(node);
+  }
+}
+
+function getBalance(node: AccountNode): number {
+  if (!node.balances) return 0;
+  const curr = node.currency || "YER";
+  return Number(node.balances[curr] || node.balances[curr.toUpperCase()] || 0);
+}
+
+function getSubtype(node: AccountNode): string | null {
+  const type = String(node.sub_type || node.item_type || "").toLowerCase();
+  const map: Record<string, string> = {
+    cash: "صندوق",
+    bank: "بنك",
+    supplier: "مورد",
+    customer: "عميل",
+    employee: "موظف",
+  };
+  return map[type] || null;
 }
 </script>
 
-<section class="flex h-46 min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-background p-2 shadow-sm" aria-label={m.finance_ledger_chart_of_accounts()}>
-  <div class="flex shrink-0 items-center justify-between border-b border-border/60 pb-1.5">
-    <button
-      type="button"
-      class="flex min-w-0 items-center gap-1 text-start text-[10px] font-semibold text-foreground hover:text-primary"
-      onclick={() => isTreeExpanded = !isTreeExpanded}
-    >
-      {#if isTreeExpanded}
-        <ChevronDown size={12} class="shrink-0 text-muted-foreground" />
-        <FolderOpen size={12} class="shrink-0 text-primary" />
-      {:else}
-        <ChevronRight size={12} class="shrink-0 text-muted-foreground {getLocale() === 'ar' ? 'rotate-180' : ''}" />
-        <Folder size={12} class="shrink-0 text-primary" />
-      {/if}
-      <span class="truncate">{m.finance_ledger_chart_of_accounts()}</span>
-    </button>
-    <button type="button" class="shrink-0 p-0.5 text-muted-foreground hover:text-primary" onclick={toggleAll} title={m.finance_ledger_chart_of_accounts()}>
-      {#if selectedIds.size === selectableAccounts.length && selectableAccounts.length > 0}
-        <CheckSquare size={12} class="text-primary" />
-      {:else if selectedIds.size > 0}
-        <span class="flex h-3 w-3 items-center justify-center rounded border border-primary bg-primary/20"><span class="h-1 w-1 rounded-sm bg-primary"></span></span>
-      {:else}
-        <Square size={12} />
-      {/if}
-    </button>
+<div class="flex h-full min-h-0 w-full flex-col overflow-hidden font-sans select-none text-start bg-card/60">
+  
+  <!-- Mini .NET Style Toolbar -->
+  <div class="flex shrink-0 items-center justify-between gap-2 px-2.5 py-1.5 border-b border-border/50 bg-muted/20 text-xs">
+    <div class="relative flex-1 max-w-xs">
+      <Search size={12} class="absolute inset-s-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+      <Input
+        type="text"
+        placeholder="بحث سريع في الشجرة بالاسم أو الرقم..."
+        bind:value={searchQuery}
+        class="h-6 ps-7 text-[11px] bg-background border-border/60 py-0"
+      />
+    </div>
+
+    <div class="flex items-center gap-1">
+      <Button
+        variant="ghost"
+        size="sm"
+        class="h-6 text-[11px] px-1.5 gap-1 text-muted-foreground hover:text-foreground"
+        onclick={expandAll}
+      >
+        <Expand size={12} />
+        <span>توسيع</span>
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        class="h-6 text-[11px] px-1.5 gap-1 text-muted-foreground hover:text-foreground"
+        onclick={collapseAll}
+      >
+        <Collapse size={12} />
+        <span>طي</span>
+      </Button>
+    </div>
   </div>
 
-  {#if isTreeExpanded}
-    <div class="min-h-0 flex-1 overflow-y-auto pt-1" transition:slide={{ duration: 150 }}>
-      {#snippet renderNodes(nodes: any[], depth: number)}
+  <!-- Tree Viewport with Classic Connecting Hierarchy Lines -->
+  <div class="flex-1 min-h-0 overflow-auto p-2 font-sans text-xs">
+    {#if filteredTree.length === 0}
+      <div class="py-6 text-center text-[11px] text-muted-foreground">
+        لا توجد حسابات مطابقة
+      </div>
+    {:else}
+      {#snippet renderNodes(nodes: AccountNode[], depth: number)}
         {#each nodes as node (node.id)}
-          {@const hasChildren = (node.children || []).length > 0}
-          {@const isExpanded = expandedAccounts[node.id] !== false}
-          {@const state = checkboxState(node)}
-          <div class="flex flex-col" style="padding-inline-start: {depth * 10}px">
-            <div class="flex min-h-6 items-center justify-between gap-1 rounded px-1 hover:bg-accent/15">
-              <button type="button" class="flex min-w-0 flex-1 items-center gap-1 text-start text-[9px] text-foreground" onclick={() => hasChildren ? expandedAccounts = { ...expandedAccounts, [node.id]: !isExpanded } : toggleIds([node.id])}>
+          {@const hasChildren = node.children && node.children.length > 0}
+          {@const expanded = isExpanded(node.id)}
+          {@const isSelected = selectedAccountId === node.id}
+          {@const bal = getBalance(node)}
+          {@const subtype = getSubtype(node)}
+          {@const name = node.name_ar || node.name || "حساب"}
+
+          <div class="flex flex-col">
+            <!-- Tree Item Row (Classic 22px Compact) -->
+            <div
+              class="flex items-center justify-between gap-1.5 px-1.5 py-0.5 rounded cursor-pointer text-[11px] transition-colors {isSelected ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'hover:bg-muted/40 text-foreground'}"
+              onclick={() => handleSelect(node)}
+            >
+              <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                <!-- Expand Toggle [+] / [-] or Leaf Indicator -->
                 {#if hasChildren}
-                  {#if isExpanded}<ChevronDown size={10} class="shrink-0 text-muted-foreground" />{:else}<ChevronRight size={10} class="shrink-0 text-muted-foreground {getLocale() === 'ar' ? 'rotate-180' : ''}" />{/if}
-                  <Folder size={10} class="shrink-0 text-primary/80" />
+                  <button
+                    type="button"
+                    class="inline-flex items-center justify-center w-3.5 h-3.5 border border-border {isSelected ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-background text-muted-foreground'} rounded-xs text-[10px] font-mono leading-none shrink-0 cursor-pointer"
+                    onclick={(e) => toggleExpand(node.id, e)}
+                  >
+                    {expanded ? "−" : "+"}
+                  </button>
+                  {#if expanded}
+                    <FolderOpen size={13} class={isSelected ? "text-primary-foreground" : "text-amber-500 shrink-0"} />
+                  {:else}
+                    <Folder size={13} class={isSelected ? "text-primary-foreground" : "text-amber-500 shrink-0"} />
+                  {/if}
                 {:else}
-                  <FileText size={10} class="shrink-0 text-muted-foreground/70" />
+                  <span class="w-3.5 shrink-0 text-center text-muted-foreground/40 text-[9px]">─</span>
+                  <Document size={12} class={isSelected ? "text-primary-foreground" : "text-muted-foreground shrink-0"} />
                 {/if}
-                <span class="truncate">{node.name_ar || node.name}</span>
-              </button>
-              <div class="flex shrink-0 items-center gap-1">
-                <span class="font-mono text-[8px] text-muted-foreground">{node.code}</span>
-                <button type="button" class="p-0.5 text-muted-foreground hover:text-primary" onclick={() => toggleIds(descendants(node))}>
-                  {#if state === "checked"}<CheckSquare size={10} class="text-primary" />{:else if state === "partial"}<span class="flex h-2.5 w-2.5 items-center justify-center rounded border border-primary bg-primary/20"><span class="h-0.5 w-0.5 bg-primary"></span></span>{:else}<Square size={10} />{/if}
-                </button>
+
+                <!-- Account Code -->
+                <span class="font-mono text-[10px] px-1 py-0.2 rounded {isSelected ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted/70 text-muted-foreground font-semibold'} shrink-0">
+                  {node.code}
+                </span>
+
+                <!-- Account Name -->
+                <span class="truncate {isSelected ? 'text-primary-foreground font-bold' : 'text-foreground font-medium'}">
+                  {name}
+                </span>
+
+                {#if subtype}
+                  <span class="text-[9px] px-1 py-0.2 rounded border {isSelected ? 'border-primary-foreground/40 text-primary-foreground' : 'border-border text-muted-foreground'} font-normal shrink-0">
+                    {subtype}
+                  </span>
+                {/if}
               </div>
+
+              <!-- Balance Display -->
+              {#if bal !== 0}
+                <div class="shrink-0 font-mono text-[10px] {isSelected ? 'text-primary-foreground' : 'text-emerald-600 dark:text-emerald-400'} font-bold">
+                  {formatCurrency(bal, node.currency || "YER")}
+                </div>
+              {/if}
             </div>
-            {#if hasChildren && isExpanded}
-              <div class="border-s border-border/40" transition:slide={{ duration: 120 }}>{@render renderNodes(node.children, depth + 1)}</div>
+
+            <!-- Recursive Sub-tree with connecting line -->
+            {#if hasChildren && expanded}
+              <div class="border-s border-border/60 ms-2 ps-1">
+                {@render renderNodes(node.children || [], depth + 1)}
+              </div>
             {/if}
           </div>
         {/each}
       {/snippet}
 
-      {#each categories as category (category.id)}
-        {@const categoryAccounts = flatten(category.accounts || [])}
-        {@const categoryState = categoryAccounts.length === 0 ? "unchecked" : checkboxState({ id: category.id, children: categoryAccounts })}
-        <div class="mb-0.5">
-          <div class="flex min-h-6 items-center justify-between gap-1 rounded px-1 hover:bg-accent/15">
-            <button type="button" class="flex min-w-0 flex-1 items-center gap-1 text-start text-[9px] font-semibold text-foreground hover:text-primary" onclick={() => expandedCategories = { ...expandedCategories, [category.id]: !expandedCategories[category.id] }}>
-              {#if expandedCategories[category.id]}<ChevronDown size={10} class="text-muted-foreground" />{:else}<ChevronRight size={10} class="text-muted-foreground {getLocale() === 'ar' ? 'rotate-180' : ''}" />{/if}
-              <Folder size={10} class="text-primary/80" /><span class="truncate">{getLocale() === "ar" ? category.name_ar : category.name_en}</span>
-            </button>
-            <button type="button" class="p-0.5 text-muted-foreground hover:text-primary" onclick={() => toggleCategory(category)}>
-              {#if categoryState === "checked"}<CheckSquare size={10} class="text-primary" />{:else if categoryState === "partial"}<span class="flex h-2.5 w-2.5 items-center justify-center rounded border border-primary bg-primary/20"><span class="h-0.5 w-0.5 bg-primary"></span></span>{:else}<Square size={10} />{/if}
-            </button>
-          </div>
-          {#if expandedCategories[category.id]}<div class="border-s border-border/40">{@render renderNodes(category.accounts || [], 1)}</div>{/if}
-        </div>
-      {/each}
-    </div>
-  {/if}
-</section>
+      {@render renderNodes(filteredTree, 0)}
+    {/if}
+  </div>
+</div>

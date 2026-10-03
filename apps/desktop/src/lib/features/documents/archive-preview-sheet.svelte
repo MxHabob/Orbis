@@ -1,24 +1,37 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
+import { Sheet, SheetContent, SheetFooter } from "@orbis/ui/sheet";
 import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-} from "@orbis/ui/sheet";
-import { Download, File, Trash2, ZoomIn, ZoomOut, Maximize2 } from "@lucide/svelte";
-import type { Documents } from "@orbis/sdk-core";
+  Collapse,
+  DocumentPage,
+  Download,
+  Expand,
+  Trash,
+  ArchiveBox,
+  Sparkles,
+  Refresh,
+} from "@orbis/icons";
+import type { DocumentDto } from "$lib/api";
 
 let {
   open = $bindable(false),
   document,
   url,
+  isTrash = false,
   ondelete,
+  onarchive,
+  onrestore,
+  onpurge,
 }: {
   open: boolean;
-  document: Documents | null;
+  document: DocumentDto | null;
   url: string;
-  ondelete: (id: string) => void;
+  isTrash?: boolean;
+  ondelete?: (id: string) => void;
+  onarchive?: (id: string) => void;
+  onrestore?: (id: string) => void;
+  onpurge?: (id: string) => void;
 } = $props();
 
 let imageWidth = $state(0);
@@ -32,10 +45,11 @@ let panStartY = 0;
 let panOriginX = 0;
 let panOriginY = 0;
 
-const isImage = $derived(document?.mime_type?.startsWith("image/") ?? false);
-const isVideo = $derived(document?.mime_type?.startsWith("video/") ?? false);
-const isAudio = $derived(document?.mime_type?.startsWith("audio/") ?? false);
-const isPdf = $derived(document?.mime_type === "application/pdf");
+const mimeType = $derived(document?.mime_type?.toLowerCase() ?? "");
+const isImage = $derived(mimeType.startsWith("image/"));
+const isVideo = $derived(mimeType.startsWith("video/"));
+const isAudio = $derived(mimeType.startsWith("audio/"));
+const isPdf = $derived(mimeType === "application/pdf" || document?.extension?.toLowerCase() === "pdf");
 const documentId = $derived(document?.id);
 
 $effect(() => {
@@ -47,15 +61,39 @@ $effect(() => {
   imageHeight = 0;
 });
 
-function formatDate(value?: string) {
+function formatDate(value?: string | null) {
   if (!value) return "-";
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function formatSize(bytes?: number | null) {
+  if (!bytes || bytes <= 0) return "0 KB";
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
 function removeDocument() {
   if (!document) return;
   open = false;
-  ondelete(document.id);
+  if (onpurge) {
+    onpurge(document.id);
+  } else if (ondelete) {
+    ondelete(document.id);
+  }
+}
+
+function restoreDocument() {
+  if (!document) return;
+  open = false;
+  onrestore?.(document.id);
+}
+
+function archiveDoc() {
+  if (!document) return;
+  onarchive?.(document.id);
 }
 
 function setImageZoom(value: number) {
@@ -71,7 +109,6 @@ function handleCanvasWheel(event: WheelEvent) {
 function startPan(event: PointerEvent) {
   if (!isImage || event.button !== 0) return;
   event.preventDefault();
-  const target = event.currentTarget as HTMLElement;
   isPanning = true;
   panStartX = event.clientX;
   panStartY = event.clientY;
@@ -88,8 +125,7 @@ function movePan(event: PointerEvent) {
   imagePanY = panOriginY + event.clientY - panStartY;
 }
 
-function endPan(event: PointerEvent) {
-  if (!isPanning) return;
+function endPan() {
   isPanning = false;
   window.removeEventListener("pointermove", movePan);
   window.removeEventListener("pointerup", endPan);
@@ -98,116 +134,220 @@ function endPan(event: PointerEvent) {
 </script>
 
 <Sheet bind:open>
-  <SheetContent
-    contentClass="sm:max-w-5xl lg:max-w-275"
-    class="flex h-full flex-col gap-0 overflow-hidden p-0"
-  >
+  <SheetContent side="left" class="w-full sm:max-w-2xl p-0 flex flex-col h-full bg-background">
     {#if document}
-      <div class="relative min-h-0 grow overflow-auto bg-muted/20 p-6">
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b border-border/40 px-6 py-4">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+            <DocumentPage class="w-5 h-5" />
+          </div>
+          <div class="min-w-0">
+            <h3 class="font-semibold text-foreground text-sm truncate leading-tight">{document.name}</h3>
+            <p class="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
+              <span class="uppercase font-mono font-medium">{document.extension || "FILE"}</span>
+              <span>•</span>
+              <span>{formatSize(document.file_size_bytes)}</span>
+              {#if isTrash}
+                <span>•</span>
+                <span class="text-rose-500 font-medium">في سلة المحذوفات</span>
+              {/if}
+            </p>
+          </div>
+        </div>
+
         {#if isImage}
-          <div class="absolute inset-e-4 top-4 z-10 flex items-center gap-1 rounded-md border border-border/60 bg-background/90 p-1 shadow-sm">
-            <Button variant="ghost" size="icon-xs" onclick={() => setImageZoom(imageZoom - 0.25)} disabled={imageZoom <= 0.5} title={m.archive_zoom_out()} aria-label={m.archive_zoom_out()}>
-              <ZoomOut size={14} />
+          <div class="flex items-center gap-1 bg-muted/40 rounded-lg p-1 border border-border/30">
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-7 w-7 text-muted-foreground hover:text-foreground"
+              onclick={() => setImageZoom(imageZoom - 0.25)}
+              title="تصغير"
+            >
+              <Collapse class="h-3.5 w-3.5" />
             </Button>
-            <span class="min-w-12 text-center text-[10px] font-medium text-muted-foreground">{Math.round(imageZoom * 100)}%</span>
-            <Button variant="ghost" size="icon-xs" onclick={() => setImageZoom(imageZoom + 0.25)} disabled={imageZoom >= 4} title={m.archive_zoom_in()} aria-label={m.archive_zoom_in()}>
-              <ZoomIn size={14} />
-            </Button>
-            <Button variant="ghost" size="icon-xs" onclick={() => { imageZoom = 1; imagePanX = 0; imagePanY = 0; }} disabled={imageZoom === 1 && imagePanX === 0 && imagePanY === 0} title={m.archive_zoom_reset()} aria-label={m.archive_zoom_reset()}>
-              <Maximize2 size={14} />
+            <span class="text-[11px] font-mono font-medium px-1 text-muted-foreground">{Math.round(imageZoom * 100)}%</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-7 w-7 text-muted-foreground hover:text-foreground"
+              onclick={() => setImageZoom(imageZoom + 0.25)}
+              title="تكبير"
+            >
+              <Expand class="h-3.5 w-3.5" />
             </Button>
           </div>
         {/if}
+      </div>
 
-        <div
-          class="flex min-h-full items-center justify-center {isPanning ? 'cursor-grabbing' : 'cursor-grab'}"
-          style="touch-action: none;"
-          role="application"
-          aria-label={document.name}
-          onwheel={handleCanvasWheel}
-          onpointerdown={startPan}
-        >
-          {#if isImage}
-            <img
+      <!-- Preview Stage -->
+      <div class="relative flex-1 min-h-[320px] bg-muted/20 flex items-center justify-center overflow-hidden">
+        {#if isImage}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            class="relative flex h-full w-full items-center justify-center overflow-hidden select-none"
+            onwheel={handleCanvasWheel}
+            onpointerdown={startPan}
+          >
+            {#if url}
+              <img
+                src={url}
+                alt={document.name}
+                class="max-h-full max-w-full object-contain transition-transform duration-75"
+                style="transform: translate({imagePanX}px, {imagePanY}px) scale({imageZoom}); cursor: {isPanning ? 'grabbing' : 'grab'};"
+                onload={(event) => {
+                  const target = event.currentTarget as HTMLImageElement;
+                  imageWidth = target.naturalWidth;
+                  imageHeight = target.naturalHeight;
+                }}
+              />
+            {:else}
+              <div class="text-center p-6 text-muted-foreground">
+                <DocumentPage class="w-12 h-12 mx-auto mb-2 opacity-40" />
+                <p class="text-xs">جاري تحميل المعاينة...</p>
+              </div>
+            {/if}
+          </div>
+        {:else if isVideo}
+          {#if url}
+            <video
               src={url}
-              alt={document.name}
-              draggable="false"
-              class="max-h-[68vh] max-w-full object-contain shadow-sm transition-transform duration-150"
-              style={`transform: translate(${imagePanX}px, ${imagePanY}px) scale(${imageZoom}); cursor: ${isPanning ? "grabbing" : "grab"};`}
-              onload={(event) => {
-                const image = event.currentTarget as HTMLImageElement;
-                imageWidth = image.naturalWidth;
-                imageHeight = image.naturalHeight;
-              }}
-            />
-          {:else if isVideo}
-            <!-- Uploaded videos do not currently provide a captions track. -->
-            <!-- svelte-ignore a11y_media_has_caption -->
-            <video src={url} controls preload="metadata" class="max-h-[68vh] max-w-full bg-black shadow-sm" aria-label={document.name}></video>
-          {:else if isAudio}
-            <audio src={url} controls preload="metadata" class="w-full max-w-xl" aria-label={document.name}></audio>
-          {:else if isPdf}
-            <iframe src={url} title={document.name} class="h-[68vh] min-h-105 w-full border-0 bg-background"></iframe>
-          {:else}
-            <div class="flex flex-col items-center gap-3 text-center text-muted-foreground">
-              <File class="h-16 w-16" strokeWidth={1.25} />
-              <p class="text-sm">{document.mime_type || m.archive_preview_unsupported()}</p>
+              controls
+              autoplay={false}
+              class="max-h-full max-w-full rounded-lg bg-black"
+            >
+              <track kind="captions" />
+            </video>
+          {/if}
+        {:else if isAudio}
+          {#if url}
+            <div class="p-8 w-full max-w-md bg-card rounded-2xl border border-border/50 shadow-sm text-center">
+              <div class="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+                <Sparkles class="w-8 h-8" />
+              </div>
+              <h4 class="font-medium text-sm mb-4 truncate text-foreground">{document.name}</h4>
+              <audio src={url} controls class="w-full"></audio>
+            </div>
+          {/if}
+        {:else if isPdf}
+          {#if url}
+            <iframe
+              src={url}
+              title={document.name}
+              class="w-full h-full border-0"
+            ></iframe>
+          {/if}
+        {:else}
+          <div class="text-center p-8 max-w-sm">
+            <div class="w-16 h-16 rounded-2xl bg-muted/60 text-muted-foreground flex items-center justify-center mx-auto mb-3">
+              <DocumentPage class="w-8 h-8" />
+            </div>
+            <h4 class="font-medium text-sm text-foreground mb-1">{document.name}</h4>
+            <p class="text-xs text-muted-foreground">لا تتوفر معاينة مباشرة لهذا التنسيق، يمكنك تنزيل الملف للاطلاع عليه.</p>
+          </div>
+        {/if}
+      </div>
+
+      <!-- Metadata Attributes -->
+      <div class="border-t border-border/40 bg-card/40 px-6 py-4 space-y-3">
+        <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">تفاصيل الملف</h4>
+        
+        <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+          <div>
+            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">نوع الملف</span>
+            <span class="font-mono text-foreground mt-0.5 block truncate">{document.mime_type || "غير محدد"}</span>
+          </div>
+          
+          <div>
+            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">الحجم</span>
+            <span class="text-foreground mt-0.5 block">{formatSize(document.file_size_bytes)}</span>
+          </div>
+
+          <div>
+            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">التصنيف</span>
+            <span class="text-foreground mt-0.5 block truncate">{document.category || "عام"}</span>
+          </div>
+
+          <div>
+            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">تاريخ الإضافة</span>
+            <span class="text-foreground mt-0.5 block truncate">{formatDate(document.created_at)}</span>
+          </div>
+
+          {#if isTrash && document.deleted_at}
+            <div class="col-span-2">
+              <span class="text-[10px] font-semibold uppercase text-rose-500 block">تاريخ الحذف</span>
+              <span class="text-rose-600 dark:text-rose-400 font-medium mt-0.5 block truncate">{formatDate(document.deleted_at)}</span>
+            </div>
+          {/if}
+
+          {#if document.checksum_sha256}
+            <div class="col-span-2">
+              <span class="text-[10px] font-semibold uppercase text-muted-foreground block">بصمة التشفير (SHA-256)</span>
+              <span class="font-mono text-[10px] text-muted-foreground block truncate" title={document.checksum_sha256}>{document.checksum_sha256}</span>
+            </div>
+          {/if}
+
+          {#if document.storage_provider}
+            <div>
+              <span class="text-[10px] font-semibold uppercase text-muted-foreground block">مزود التخزين</span>
+              <span class="text-foreground mt-0.5 block font-mono capitalize">{document.storage_provider}</span>
+            </div>
+          {/if}
+
+          {#if isImage && imageWidth > 0}
+            <div>
+              <span class="text-[10px] font-semibold uppercase text-muted-foreground block">أبعاد الصورة</span>
+              <span class="font-mono text-foreground mt-0.5 block">{imageWidth} × {imageHeight} بكسل</span>
             </div>
           {/if}
         </div>
       </div>
 
-      <div class="grid shrink-0 grid-cols-2 gap-x-6 gap-y-3 border-t border-border/40 px-6 py-4 text-start sm:grid-cols-3">
-        <div class="col-span-2 sm:col-span-3">
-          <p class="mt-1 truncate text-xs text-foreground" title={document.name}>{document.name}</p>
+      <!-- Action Footer -->
+      <SheetFooter class="shrink-0 flex-row justify-between items-center gap-2 border-t border-border/40 bg-card px-6 py-3">
+        <div class="flex items-center gap-2">
+          {#if isTrash}
+            <Button variant="default" size="sm" class="bg-emerald-600 hover:bg-emerald-700 text-white" onclick={restoreDocument}>
+              <Refresh class="w-3.5 h-3.5 me-1.5" />
+              <span>استعادة الملف</span>
+            </Button>
+          {:else if onarchive && !document.is_archived}
+            <Button variant="outline" size="sm" onclick={archiveDoc}>
+              <ArchiveBox class="w-3.5 h-3.5 me-1.5" />
+              <span>أرشفة الملف</span>
+            </Button>
+          {/if}
         </div>
-        <div>
-          <p class="text-[10px] font-semibold uppercase text-muted-foreground">{m.archive_detail_type()}</p>
-          <p class="mt-1 truncate text-xs text-foreground">{document.mime_type || "-"}</p>
-        </div>
-        <div>
-          <p class="text-[10px] font-semibold uppercase text-muted-foreground">{m.archive_detail_size()}</p>
-          <p class="mt-1 text-xs text-foreground">{((document.size || 0) / 1024).toFixed(1)} KB</p>
-        </div>
-        <div>
-          <p class="text-[10px] font-semibold uppercase text-muted-foreground">{m.archive_detail_category()}</p>
-          <p class="mt-1 truncate text-xs text-foreground">{document.category || "-"}</p>
-        </div>
-        {#if isImage}
-          <div>
-            <p class="text-[10px] font-semibold uppercase text-muted-foreground">{m.archive_detail_dimensions()}</p>
-            <p class="mt-1 text-xs text-foreground">{imageWidth > 0 ? `${imageWidth} x ${imageHeight} px` : "-"}</p>
-          </div>
-        {/if}
-        <div>
-          <p class="text-[10px] font-semibold uppercase text-muted-foreground">{m.archive_detail_uploaded()}</p>
-          <p class="mt-1 text-xs text-foreground">{formatDate(document.created_at)}</p>
-        </div>
-        <div class="col-span-2 sm:col-span-1">
-          <p class="text-[10px] font-semibold uppercase text-muted-foreground">{m.archive_detail_visibility()}</p>
-          <p class="mt-1 text-xs text-foreground">{document.visibility || "-"}</p>
-        </div>
-      </div>
 
-      <SheetFooter class="shrink-0 flex-row justify-end gap-2 border-t border-border/40 px-6 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={() => {
-            const link = window.document.createElement("a");
-            link.href = url;
-            link.download = document.name;
-            link.click();
-          }}
-          disabled={!url}
-        >
-          <Download size={14} class="me-1.5" />
-          {m.settings_archive_action_download()}
-        </Button>
-        <Button variant="destructive" size="sm" onclick={removeDocument}>
-          <Trash2 size={14} class="me-1.5" />
-          {m.common_action_delete()}
-        </Button>
+        <div class="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={() => {
+              const link = window.document.createElement("a");
+              link.href = url;
+              link.download = document.name;
+              link.click();
+            }}
+            disabled={!url}
+          >
+            <Download class="w-3.5 h-3.5 me-1.5" />
+            <span>تحميل الملف</span>
+          </Button>
+
+          {#if isTrash}
+            <Button variant="destructive" size="sm" onclick={removeDocument}>
+              <Trash class="w-3.5 h-3.5 me-1.5" />
+              <span>حذف نهائي</span>
+            </Button>
+          {:else}
+            <Button variant="destructive" size="sm" onclick={removeDocument}>
+              <Trash class="w-3.5 h-3.5 me-1.5" />
+              <span>حذف</span>
+            </Button>
+          {/if}
+        </div>
       </SheetFooter>
     {/if}
   </SheetContent>

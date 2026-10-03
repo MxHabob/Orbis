@@ -1,24 +1,28 @@
 <script lang="ts">
-  import { createQuery } from "@tanstack/svelte-query";
-  import { commands } from "$lib/core/ipc";
-  import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import { Settings2, AlertCircle } from "@lucide/svelte";
-  import { getLocale } from "$lib/paraglide/runtime";
+import { createQuery } from "@tanstack/svelte-query";
+import { api } from "$lib/api";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { InfoCircle, SettingsAlt } from "@orbis/icons";
+import { getLocale } from "$lib/paraglide/runtime";
 
-  let { open = $bindable(false), classSubjectId, periodId }: { open: boolean, classSubjectId: string, periodId: string } = $props();
+let {
+  open = $bindable(false),
+  classSubjectId,
+  periodId,
+}: { open: boolean; classSubjectId: string; periodId: string } = $props();
 
-  const isArabic = $derived(getLocale() === "ar");
+const isArabic = $derived(getLocale() === "ar");
 
-  const componentsQuery = createQuery(() => ({
-    queryKey: ["assessment-components", classSubjectId, periodId],
-    queryFn: () => commands.assessment.listComponentsForClassSubject(classSubjectId, periodId),
-    enabled: !!classSubjectId && !!periodId && open,
-  }));
+const componentsQuery = createQuery(() => ({
+  queryKey: ["assessment-components", classSubjectId, periodId],
+  queryFn: () => api.listAssessmentSchemes(),
+  enabled: !!classSubjectId && !!periodId && open,
+}));
 
-  const components = $derived((componentsQuery.data || []) as any[]);
+const components = $derived((componentsQuery.data || []) as any[]);
 </script>
 
 <Sheet bind:open>
@@ -26,7 +30,7 @@
     <div class="p-6 border-b border-border/40 bg-muted/20">
       <SheetHeader>
         <SheetTitle class="flex items-center gap-2 text-lg">
-          <Settings2 size={18} class="text-primary" />
+          <SettingsAlt size={18} class="text-primary" />
           Assessment Configuration
         </SheetTitle>
       </SheetHeader>
@@ -41,7 +45,7 @@
         </div>
       {:else if componentsQuery.error}
         <div class="flex flex-col items-center justify-center py-12 text-destructive gap-2 text-center border border-destructive/20 bg-destructive/5 rounded-xl">
-          <AlertCircle size={24} />
+          <InfoCircle size={24} />
           <h3 class="text-sm font-bold">Failed to load</h3>
           <p class="text-xs opacity-80">{componentsQuery.error.message}</p>
         </div>

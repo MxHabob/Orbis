@@ -14,7 +14,7 @@ import {
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
 import { FormField } from "@orbis/ui";
-import { Loader2 } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowPath, FloppyDisk } from "@orbis/icons";
 
 let {
   title = "Display Name",
@@ -91,10 +91,10 @@ function handleSave(event: Event) {
         class="min-w-20 h-8 text-xs cursor-pointer transition-transform active:scale-95"
       >
         {#if isSubmitting}
-          <Loader2 class="animate-spin mr-1.5 shrink-0" size={13} />
+          <ArrowPath class="animate-spin mr-1.5 shrink-0" size={13} />
           Saving...
         {:else}
-          Save
+          FloppyDisk
         {/if}
       </Button>
     </CardFooter>

@@ -4,7 +4,7 @@ A styled logo uploader with loading indicator, image preview, and hover states.
 -->
 <script lang="ts">
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui/avatar";
-import { Loader2, Upload } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowPath, ArrowUpTray } from "@orbis/icons";
 import {
   useUploadDocument,
   resolveDocumentUrl,
@@ -92,7 +92,7 @@ function handleFileChange(event: Event) {
 >
   {#if isLoading || uploadMutation.isPending}
     <div class="flex items-center justify-center w-full h-full bg-background/50 backdrop-blur-xs">
-      <Loader2 class="animate-spin text-primary shrink-0" size={Math.max(16, size / 3)} />
+      <ArrowPath class="animate-spin text-primary shrink-0" size={Math.max(16, size / 3)} />
     </div>
   {:else}
     <Avatar class="w-full h-full rounded-none bg-transparent flex items-center justify-center">
@@ -104,7 +104,7 @@ function handleFileChange(event: Event) {
         />
       {:else}
         <AvatarFallback class="bg-transparent flex flex-col items-center justify-center text-muted-foreground transition-colors group-hover:text-primary">
-          <Upload size={Math.max(16, size / 3)} class="transition-transform group-hover:-translate-y-0.5" />
+          <ArrowUpTray size={Math.max(16, size / 3)} class="transition-transform group-hover:-translate-y-0.5" />
         </AvatarFallback>
       {/if}
     </Avatar>
@@ -112,7 +112,7 @@ function handleFileChange(event: Event) {
     <!-- Overlay on Hover -->
     {#if displayUrl}
       <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-        <Upload class="text-white" size={Math.max(16, size / 3)} />
+        <ArrowUpTray class="text-white" size={Math.max(16, size / 3)} />
       </div>
     {/if}
   {/if}

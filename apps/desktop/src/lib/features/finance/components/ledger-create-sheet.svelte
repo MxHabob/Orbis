@@ -1,9 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import {
-  Sheet,
-  SheetContent,
-} from "@orbis/ui/sheet";
+import { Sheet, SheetContent } from "@orbis/ui/sheet";
 
 let {
   open = $bindable(false),

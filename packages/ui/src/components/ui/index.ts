@@ -1,4 +1,4 @@
-// ── @orbis/ui ────────────────────────────────────────────────────────
+// ── @orbis/ui-svelte ─────────────────────────────────────────────────
 // Re-export all shadcn-svelte components for use across the monorepo.
 
 export {
@@ -85,7 +85,7 @@ export {
 export { Skeleton } from "./skeleton/index.js";
 export { Switch } from "./switch/index.js";
 export {
-  Table,
+  Grid,
   TableBody,
   TableCaption,
   TableCell,
@@ -101,8 +101,7 @@ export {
   getExportableColumnCount,
   type TableState,
   type StickyColumnsState,
-  type TablePersistenceState,
-  type ColumnDef,
+  type TablePersistenceState,  type ColumnDef,
   type CellContext,
   type HeaderContext,
   type SortDirection,
@@ -139,15 +138,22 @@ export {
   BreadcrumbEllipsis,
 } from "./breadcrumb/index.js";
 export { Calendar } from "./calendar/index.js";
-export { Logo } from "./logo/index.js";
 export { Toaster } from "./sonner/index.js";
 export { default as Spinner } from "./spinner.svelte";
 export { toast, toastStore } from "./sonner/index.js";
-export type { ToastAction, ToastData, ToastHandle, ToastOptions } from "./sonner/index.js";
+export type {
+  ToastAction,
+  ToastData,
+  ToastHandle,
+  ToastOptions,
+} from "./sonner/index.js";
 export {
   TimetableGrid,
   SessionCard,
   TimeGutter,
   CalendarHeader,
   BreakRow,
+  enrichTimeSlots,
+  formatTimeSlotTime,
 } from "./timetable/index.js";
+export type { EnrichedTimeSlot } from "./timetable/index.js";

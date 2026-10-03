@@ -4,7 +4,23 @@ import {
   createMutation,
   useQueryClient,
 } from "@tanstack/svelte-query";
-import { commands } from "$lib/core/ipc";
+import {
+  api,
+  queryKeys,
+  type DocumentDto,
+  type FolderDto,
+  type FolderContentsDto,
+  type CreateFolderRequest,
+  type UpdateFolderRequest,
+  type CreateCurriculumFolderRequest,
+  type UploadDocumentRequest,
+  type StorageUploadRequest,
+  type UpdateDocumentRequest,
+  type DocumentRequirementDto,
+  type CreateDocumentRequirementRequest,
+  type UpdateDocumentRequirementRequest,
+  type StudentDocumentFulfillmentDto,
+} from "$lib/api";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir, join } from "@tauri-apps/api/path";
 
@@ -22,7 +38,14 @@ export async function resolveDocumentUrl(
 ): Promise<string> {
   if (!pathOrUrl) return "";
 
-  if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) {
+  // 1. Direct URLs (web, data, blob, Tauri asset protocol)
+  if (
+    pathOrUrl.startsWith("http://") ||
+    pathOrUrl.startsWith("https://") ||
+    pathOrUrl.startsWith("data:") ||
+    pathOrUrl.startsWith("blob:") ||
+    pathOrUrl.startsWith("asset:")
+  ) {
     return pathOrUrl;
   }
 
@@ -30,25 +53,43 @@ export async function resolveDocumentUrl(
   if (cachedUrl) return cachedUrl;
 
   try {
-    // If running in Tauri desktop, get absolute path to app_data/storage
-    storageDirectoryPromise ??= appDataDir().then((dataDir) => join(dataDir, "storage"));
-    const storageDirectory = await storageDirectoryPromise;
-    // Assuming backend path like "1/users/avatars/abc.png"
-    // And base path is "app_data/storage" relative to dataDir
-    // We construct absolute path: dataDir + "/storage/" + pathOrUrl (if path isn't absolute already)
+    // 2. If it's already an absolute Windows or Unix path, convert directly
+    const isWindowsAbsolute =
+      /^[a-zA-Z]:[\\/]/.test(pathOrUrl) || pathOrUrl.startsWith("\\\\");
+    const isPosixAbsolute =
+      pathOrUrl.startsWith("/") && !pathOrUrl.startsWith("/storage/");
 
-    // Clean up if it starts with /storage/
+    if (isWindowsAbsolute || isPosixAbsolute) {
+      const resolvedUrl = convertFileSrc(pathOrUrl);
+      resolvedDocumentUrls.set(pathOrUrl, resolvedUrl);
+      return resolvedUrl;
+    }
+
+    // 3. Handle relative storage paths
+    storageDirectoryPromise ??= appDataDir().then((dataDir) =>
+      join(dataDir, "storage"),
+    );
+    const storageDirectory = await storageDirectoryPromise;
+
     let relativePath = pathOrUrl;
     if (relativePath.startsWith("/storage/")) {
-      relativePath = relativePath.replace("/storage/", "");
+      relativePath = relativePath.slice(9);
+    } else if (relativePath.startsWith("\\storage\\")) {
+      relativePath = relativePath.slice(9);
+    } else if (relativePath.startsWith("storage/")) {
+      relativePath = relativePath.slice(8);
+    } else if (relativePath.startsWith("storage\\")) {
+      relativePath = relativePath.slice(8);
     }
+
+    // Clean any leading slash or backslash
+    relativePath = relativePath.replace(/^[/\\]+/, "");
 
     const absolutePath = await join(storageDirectory, relativePath);
     const resolvedUrl = convertFileSrc(absolutePath);
     resolvedDocumentUrls.set(pathOrUrl, resolvedUrl);
     return resolvedUrl;
   } catch (e) {
-    // Fallback if not in Tauri
     console.warn("Tauri path resolution failed, using fallback:", e);
     return pathOrUrl;
   }
@@ -56,108 +97,140 @@ export async function resolveDocumentUrl(
 
 export function getDocumentSource(document: {
   url?: string | null;
-  path?: string | null;
+  file_path?: string | null;
 }): string {
-  return document.url || document.path || "";
+  return document.url || document.file_path || "";
 }
 
-export const documentKeys = {
-  all: ["documents"] as const,
-  byFilter: (filter: {
-    ownerId?: string;
-    entityType?: string;
-    category?: string;
-    search?: string;
-    assetType?: string;
-    schoolYear?: string;
-    term?: string;
-    entityId?: string;
-  }) => ["documents", "filter", filter] as const,
-};
+export interface DocumentPageResult {
+  items: DocumentDto[];
+  count: number;
+  has_more: boolean;
+  next_cursor: string | null;
+}
 
-export function useDocuments(filter: () => {
-  ownerId?: string;
-  entityType?: string;
-  category?: string;
-  search?: string;
-  assetType?: string;
-  schoolYear?: string;
-  term?: string;
-  entityId?: string;
-}) {
-  return createInfiniteQuery(() => ({
-    queryKey: documentKeys.byFilter(filter()),
-    placeholderData: (previousData: any) => previousData,
-    queryFn: ({ pageParam }) => {
-      const currentFilter = filter();
-      return commands.document.getDocuments({
-        ownerId: currentFilter.ownerId,
-        entityType: currentFilter.entityType,
-        category: currentFilter.category || undefined,
-        cursor: pageParam,
-        limit: 50,
-        filter:
-          currentFilter.search?.trim() || currentFilter.entityId || currentFilter.assetType || currentFilter.schoolYear || currentFilter.term
-            ? {
-                search: currentFilter.search?.trim() || undefined,
-                conditions: [
-                  ...(currentFilter.entityId
-                    ? [{ field: "entity_id", operator: "eq", value: currentFilter.entityId }]
-                    : []),
-                  ...(currentFilter.assetType
-                    ? [{ field: "asset_type", operator: "eq", value: currentFilter.assetType }]
-                    : []),
-                  ...(currentFilter.schoolYear
-                    ? [{ field: "school_year", operator: "eq", value: currentFilter.schoolYear }]
-                    : []),
-                  ...(currentFilter.term
-                    ? [{ field: "term", operator: "eq", value: currentFilter.term }]
-                    : []),
-                ],
-                logic: "and",
-              }
-            : undefined,
-      });
-    },
-    initialPageParam: undefined as string | undefined,
-      getNextPageParam: (lastPage: any) => {
+export function useDocuments(
+  filter?: () => {
+    entityType?: string;
+    entityId?: string;
+  },
+) {
+  return createInfiniteQuery<DocumentPageResult, Error, DocumentPageResult, readonly unknown[], string | undefined>(() => {
+    const f = filter ? filter() : undefined;
+    return {
+      queryKey: queryKeys.document.list(f ? { entity_type: f.entityType, entity_id: f.entityId } : undefined),
+      placeholderData: (previousData) => previousData,
+      queryFn: async () => {
+        const items = f?.entityType && f?.entityId
+          ? await api.listDocumentsByEntity(f.entityType, f.entityId)
+          : await api.listDocuments(f ? { entity_type: f.entityType, entity_id: f.entityId } : undefined);
+        return {
+          items,
+          count: items.length,
+          has_more: false,
+          next_cursor: null,
+        };
+      },
+      initialPageParam: undefined,
+      getNextPageParam: (lastPage) => {
         if (lastPage?.has_more && lastPage?.next_cursor) {
           return lastPage.next_cursor;
         }
         return undefined;
       },
+    };
+  });
+}
+
+export function useDocumentsByEntity(
+  entityType: () => string,
+  entityId: () => string,
+) {
+  return createQuery(() => ({
+    queryKey: queryKeys.document.byEntity(entityType(), entityId()),
+    queryFn: () => api.listDocumentsByEntity(entityType(), entityId()),
+    enabled: Boolean(entityType() && entityId()),
+    staleTime: 2 * 60 * 1000,
   }));
+}
+
+export function useDocument(id: () => string) {
+  return createQuery(() => ({
+    queryKey: queryKeys.document.detail(id()),
+    queryFn: () => api.getDocument(id()),
+    enabled: Boolean(id()),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+export function useDocumentRequirements() {
+  return createQuery(() => ({
+    queryKey: queryKeys.document.requirements(),
+    queryFn: () => api.listDocumentRequirements(),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+export function useDocumentRequirement(id: () => string) {
+  return createQuery(() => ({
+    queryKey: queryKeys.document.requirement(id()),
+    queryFn: () => api.getDocumentRequirement(id()),
+    enabled: Boolean(id()),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+export function useStudentDocumentRequirements(
+  studentId: () => string,
+  params?: () => {
+    grade_level_id?: string;
+    is_national?: boolean;
+    is_transfer?: boolean;
+  },
+) {
+  return createQuery(() => {
+    const p = params ? params() : undefined;
+    return {
+      queryKey: queryKeys.document.studentFulfillment(studentId(), p),
+      queryFn: () => api.evaluateStudentDocumentRequirements(studentId(), p),
+      enabled: Boolean(studentId()),
+      staleTime: 3 * 60 * 1000,
+    };
+  });
 }
 
 // --- Mutations ---
 
-export function useUploadDocument(options: { invalidateOnSuccess?: boolean } = {}) {
+export function useUploadDocument(
+  options: { invalidateOnSuccess?: boolean } = {},
+) {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: async (payload: {
-      file: File;
-      entity_type: string;
-      entity_id: string;
-      category: string;
-      visibility: string;
-    }) => {
-      const bytes = Array.from(new Uint8Array(await payload.file.arrayBuffer()));
-      return commands.document.uploadDocument(
-        payload.file.name,
-        payload.file.type || "application/octet-stream",
-        bytes,
-        payload.entity_type,
-        payload.entity_id,
-        payload.category,
-        payload.visibility,
-      );
+    mutationFn: async (req: UploadDocumentRequest) => {
+      return api.uploadDocument(req);
     },
-    onSuccess: (data, variables) => {
+    onSuccess: () => {
       if (options.invalidateOnSuccess === false) return;
       queryClient.invalidateQueries({
-        queryKey: documentKeys.all,
+        queryKey: queryKeys.document.all,
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.student.all,
+      });
+    },
+  }));
+}
+
+export function useUpdateDocument() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: ({ id, req }: { id: string; req: UpdateDocumentRequest }) =>
+      api.updateDocument(id, req),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.detail(vars.id) });
     },
   }));
 }
@@ -166,9 +239,246 @@ export function useDeleteDocument() {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: (id: string) => commands.document.deleteDocument(id),
+    mutationFn: (id: string) => api.deleteDocument(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: documentKeys.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
     },
   }));
 }
+
+export function useCreateDocumentRequirement() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (req: CreateDocumentRequirementRequest) =>
+      api.createDocumentRequirement(req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirements() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    },
+  }));
+}
+
+export function useUpdateDocumentRequirement() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: ({ id, req }: { id: string; req: UpdateDocumentRequirementRequest }) =>
+      api.updateDocumentRequirement(id, req),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirements() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirement(vars.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    },
+  }));
+}
+
+export function useDeleteDocumentRequirement() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.deleteDocumentRequirement(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirements() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    },
+  }));
+}
+
+// ── Storage & Archive Hooks ─────────────────────────────────
+
+export function useUploadFile(
+  options: { invalidateOnSuccess?: boolean } = {},
+) {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: async (req: StorageUploadRequest) => {
+      return api.uploadFile(req);
+    },
+    onSuccess: () => {
+      if (options.invalidateOnSuccess === false) return;
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.student.all,
+      });
+    },
+  }));
+}
+
+export function useArchivedDocuments() {
+  return createQuery(() => ({
+    queryKey: [...queryKeys.document.all, "archived"] as const,
+    queryFn: () => api.listArchivedDocuments(),
+    staleTime: 2 * 60 * 1000,
+  }));
+}
+
+export function useTrashDocuments() {
+  return createQuery(() => ({
+    queryKey: [...queryKeys.document.all, "trash"] as const,
+    queryFn: () => api.listTrashDocuments(),
+    staleTime: 2 * 60 * 1000,
+  }));
+}
+
+export function useArchiveDocument() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      api.archiveDocument(id, reason),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.detail(vars.id) });
+    },
+  }));
+}
+
+export function useRestoreDocument() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.restoreDocument(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.detail(id) });
+    },
+  }));
+}
+
+export function useTrashDocument() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.trashDocument(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    },
+  }));
+}
+
+export function usePurgeDocument() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.purgeDocument(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    },
+  }));
+}
+
+// ── Folder & Curriculum Knowledge Base Hooks ────────────────
+
+export function useFolders(parentId?: () => string | undefined) {
+  return createQuery(() => {
+    const pid = parentId ? parentId() : undefined;
+    return {
+      queryKey: queryKeys.folder.list(pid),
+      queryFn: () => api.listFolders(pid),
+      staleTime: 2 * 60 * 1000,
+    };
+  });
+}
+
+export function useFolder(id: () => string) {
+  return createQuery(() => ({
+    queryKey: queryKeys.folder.detail(id()),
+    queryFn: () => api.getFolder(id()),
+    enabled: Boolean(id()),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+export function useFolderContents(id: () => string) {
+  return createQuery(() => ({
+    queryKey: queryKeys.folder.contents(id()),
+    queryFn: () => api.getFolderContents(id()),
+    enabled: Boolean(id()),
+    staleTime: 2 * 60 * 1000,
+  }));
+}
+
+export function useStudentFolder(
+  studentId: () => string,
+  studentName?: () => string | undefined,
+) {
+  return createQuery(() => {
+    const sid = studentId();
+    const sname = studentName ? studentName() : undefined;
+    return {
+      queryKey: queryKeys.folder.student(sid),
+      queryFn: () => api.getOrCreateStudentFolder(sid, sname),
+      enabled: Boolean(sid),
+      staleTime: 5 * 60 * 1000,
+    };
+  });
+}
+
+export function useCurriculumFolders() {
+  return createQuery(() => ({
+    queryKey: queryKeys.folder.curriculum(),
+    queryFn: () => api.listCurriculumFolders(),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+export function useCreateFolder() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (req: CreateFolderRequest) => api.createFolder(req),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
+      if (vars.parent_id) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.folder.contents(vars.parent_id) });
+      }
+    },
+  }));
+}
+
+export function useCreateCurriculumFolder() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (req: CreateCurriculumFolderRequest) => api.getOrCreateCurriculumFolder(req),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.curriculum() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
+    },
+  }));
+}
+
+export function useUpdateFolder() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: ({ id, req }: { id: string; req: UpdateFolderRequest }) =>
+      api.updateFolder(id, req),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.detail(vars.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.contents(vars.id) });
+    },
+  }));
+}
+
+export function useDeleteFolder() {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: (id: string) => api.deleteFolder(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+    },
+  }));
+}
+

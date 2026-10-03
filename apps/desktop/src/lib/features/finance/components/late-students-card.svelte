@@ -1,8 +1,13 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Card } from "@orbis/ui";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardAction,
+  CardContent,
+} from "@orbis/ui/card";
 import { Button } from "@orbis/ui/button";
-import { Badge } from "@orbis/ui/badge";
 import { Avatar, AvatarFallback } from "@orbis/ui/avatar";
 import { formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
@@ -16,34 +21,39 @@ let {
 } = $props();
 </script>
 
-<Card class="lg:col-span-2 p-5 bg-card border border-border/60 flex flex-col justify-between text-start shadow-sm min-h-[315px] h-full transition-all duration-200 card-tactile">
-  <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-3">
-    <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
-      <span class="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse"></span>
-      {m.finance_overview_late_students()}
-    </div>
+<Card class="lg:col-span-2 flex flex-col justify-between text-start shadow-sm min-h-[315px] h-full">
+  <CardHeader class="py-3 px-4">
     <div class="flex items-center gap-2">
-      <a href={localizeHref(`/${orgId}/finance/fees`)}>
-        <Button variant="outline" size="xs" class="h-6 text-[9px] font-bold cursor-pointer">
-          {m.common_fee_button_assign()}
-        </Button>
-      </a>
-      <a href={localizeHref(`/${orgId}/finance/fees`)}>
-        <Button variant="outline" size="xs" class="h-6 text-[9px] font-bold cursor-pointer">
-          {m.common_overview_view_all()}
-        </Button>
-      </a>
+      <span class="h-2 w-2 rounded-full bg-destructive animate-pulse"></span>
+      <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
+        {m.finance_overview_late_students()}
+      </CardTitle>
     </div>
-  </div>
 
-  <div class="flex flex-col gap-2 mt-2 flex-grow justify-center">
+    <CardAction>
+      <div class="flex items-center gap-1.5">
+        <a href={localizeHref(`/${orgId}/finance/fees`)}>
+          <Button variant="outline" size="xs" class="h-6 text-[9px] font-bold cursor-pointer">
+            {m.common_fee_button_assign()}
+          </Button>
+        </a>
+        <a href={localizeHref(`/${orgId}/finance/fees`)}>
+          <Button variant="outline" size="xs" class="h-6 text-[9px] font-bold cursor-pointer">
+            {m.common_overview_view_all()}
+          </Button>
+        </a>
+      </div>
+    </CardAction>
+  </CardHeader>
+
+  <CardContent class="p-4 flex flex-col gap-2 flex-grow justify-center">
     {#if lateStudents.length === 0}
       <div class="py-8 text-center text-muted-foreground text-xs select-none">
         {m.finance_overview_no_late_students()}
       </div>
     {:else}
       {#each lateStudents.slice(0, 3) as item (item.feeId)}
-        <div class="flex items-center justify-between p-2.5 rounded-xl border border-border/40 bg-card/30 hover:bg-card/50 transition-all duration-200">
+        <div class="flex items-center justify-between p-2.5 rounded-xl border border-border/40 bg-card hover:bg-muted/20 transition-all duration-200">
           <div class="flex items-center gap-2.5 text-start min-w-0">
             <Avatar class="h-7 w-7 border border-border/70 select-none">
               <AvatarFallback class="text-[9px] font-bold bg-primary/5 text-primary">
@@ -77,5 +87,5 @@ let {
         </div>
       {/each}
     {/if}
-  </div>
+  </CardContent>
 </Card>

@@ -1,0 +1,41 @@
+{
+  "name": "@orbis/svelte-grid",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "svelte": "./src/index.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "svelte": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./OrbisGrid.svelte": {
+      "svelte": "./src/OrbisGrid.svelte",
+      "default": "./src/OrbisGrid.svelte"
+    },
+    "./types": {
+      "svelte": "./src/types.ts",
+      "default": "./src/types.ts"
+    },
+    "./engine": {
+      "svelte": "./src/engine/index.ts",
+      "default": "./src/engine/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "bun test src/engine",
+    "bench": "bun test src/engine/engine.test.ts -t performance"
+  },
+  "dependencies": {
+    "@orbis/ui": "workspace:*",
+    "@orbis/icons": "workspace:*"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

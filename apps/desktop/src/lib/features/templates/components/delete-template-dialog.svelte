@@ -10,7 +10,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@orbis/ui/alert-dialog";
-import { AlertCircle } from "@lucide/svelte";
+import { InfoCircle } from "@orbis/icons";
 
 interface Props {
   open: boolean;
@@ -24,7 +24,7 @@ let { open = $bindable(), onconfirm }: Props = $props();
   <AlertDialogContent class="text-start">
     <AlertDialogHeader>
       <AlertDialogTitle class="flex items-center gap-2 text-destructive">
-        <AlertCircle size={20} />
+        <InfoCircle size={20} />
         <span>{m.template_title_confirm_delete()}</span>
       </AlertDialogTitle>
       <AlertDialogDescription>

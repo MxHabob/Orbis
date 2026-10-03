@@ -9,7 +9,7 @@ import { Label } from "@orbis/ui/label";
 import { Button } from "@orbis/ui/button";
 import { Separator } from "@orbis/ui/separator";
 import ColorPicker from "../shared/color-picker.svelte";
-import { FileText, RotateCcw } from "@lucide/svelte";
+import { DocumentPage, Refresh } from "@orbis/icons";
 
 let {
   store,
@@ -63,7 +63,7 @@ function toggleOrientation() {
             onclick={() => updatePageSetup({ size: size.id })}
           >
             <div class="size-icon" class:landscape={pageSetup.orientation === "landscape" && pageSetup.size === size.id}>
-              <FileText size={14} />
+              <DocumentPage size={14} />
             </div>
             <div class="size-info">
               <span class="size-name">{size.id}</span>

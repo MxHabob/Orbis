@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 import { getLocale } from "$lib/paraglide/runtime";
@@ -42,11 +42,9 @@ async function loadData() {
     }
 
     const year = new Date().getFullYear();
-    const records = await commands.assessment.report(
-      classId || "all",
-      `${year}-01-01`,
-      `${year}-12-31`,
-    );
+    const records = await api
+      .listAttendance(classId || "", `${year}-01-01`)
+      .catch(() => []);
 
     if (records && records.length > 0) {
       const groups: Record<string, { present: number; total: number }> = {};

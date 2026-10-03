@@ -14,10 +14,10 @@
     "security": {
       "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'",
       "dangerousDisableAssetCspModification": false,
-      "freezePrototype": true,
+      "freezePrototype": false,
       "assetProtocol": {
         "enable": true,
-        "scope": ["$APPDATA/**"]
+        "scope": ["$APPDATA/**", "$LOCALAPPDATA/**", "$RESOURCE/**", "$TEMP/**"]
       },
       "capabilities": ["default", "desktop-capability"]
     }
@@ -25,10 +25,18 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "externalBin": [
+      "binaries/solver-service"
+    ],
     "createUpdaterArtifacts": false,
     "macOS": {
       "dmg": {
         "background": "./images/installer.png"
+      }
+    },
+    "windows": {
+      "nsis": {
+        "sidebarImage": "./images/orbis-installer-sidebar.bmp"
       }
     },
     "icon": [
@@ -46,10 +54,10 @@
       }
     },
     "updater": {
-        "pubkey": "",
-        "endpoints": [],
-        "createUpdaterArtifacts": false,
-        "dangerousInsecureTransportProtocol": false
+      "pubkey": "",
+      "endpoints": [],
+      "createUpdaterArtifacts": false,
+      "dangerousInsecureTransportProtocol": false
     }
   }
 }

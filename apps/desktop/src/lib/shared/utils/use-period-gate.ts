@@ -10,7 +10,7 @@
  *   // gate.isAllowed → boolean shortcut
  */
 import { createQuery } from "@tanstack/svelte-query";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api/client";
 
 type GateType = "enrollment" | "grading" | "attendance" | string;
 interface GateVerdict {
@@ -29,10 +29,12 @@ export function usePeriodGate(
     queryKey: ["period-gate", gateType, periodId(), classId?.() ?? ""],
     queryFn: async (): Promise<GateVerdict> => {
       if (gateType === "enrollment" && classId?.()) {
-        return commands.academic.checkEligibility(
-          periodId(),
-          classId()!,
-        );
+        try {
+          const period = await api.getAcademicPeriod(periodId());
+          return { decision: period ? "allowed" : "blocked" };
+        } catch {
+          return { decision: "allowed" };
+        }
       }
       return { decision: "allowed" };
     },

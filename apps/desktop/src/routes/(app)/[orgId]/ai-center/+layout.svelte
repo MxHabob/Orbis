@@ -4,14 +4,7 @@ Full-width workspace layout for AI Center with a header sub-navigation bar using
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import {
-  Compass,
-  ScrollText,
-  Settings,
-  Shield,
-  Video,
-  Plug,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, Camera, Cube, GlobeAlt, Settings, TaskList, UserBadgeCheck } from "@orbis/icons";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import type { Snippet } from "svelte";
 let { data, children }: { data: { orgId: string }; children: Snippet } =
@@ -22,23 +15,29 @@ const basePath = $derived(`/${data.orgId}/ai-center`);
 const navItems = $derived([
   {
     path: "",
-    label: m.ai_center_nav_overview ? m.ai_center_nav_overview() : "النظرة العامة",
-    icon: Compass,
+    label: m.ai_center_nav_overview
+      ? m.ai_center_nav_overview()
+      : "النظرة العامة",
+    icon: GlobeAlt,
   },
   {
     path: "live",
     label: m.ai_center_nav_live ? m.ai_center_nav_live() : "البث المباشر",
-    icon: Video,
+    icon: Camera,
   },
   {
     path: "integrations",
-    label: m.ai_center_nav_integrations ? m.ai_center_nav_integrations() : "التكاملات",
-    icon: Plug,
+    label: m.ai_center_nav_integrations
+      ? m.ai_center_nav_integrations()
+      : "التكاملات",
+    icon: Cube,
   },
   {
     path: "permissions",
-    label: m.ai_center_nav_permissions ? m.ai_center_nav_permissions() : "الصلاحيات",
-    icon: Shield,
+    label: m.ai_center_nav_permissions
+      ? m.ai_center_nav_permissions()
+      : "الصلاحيات",
+    icon: UserBadgeCheck,
   },
   {
     path: "settings",
@@ -48,7 +47,7 @@ const navItems = $derived([
   {
     path: "ai-logs",
     label: m.ai_center_nav_logs ? m.ai_center_nav_logs() : "سجل الأنشطة",
-    icon: ScrollText,
+    icon: TaskList,
   },
 ]);
 </script>

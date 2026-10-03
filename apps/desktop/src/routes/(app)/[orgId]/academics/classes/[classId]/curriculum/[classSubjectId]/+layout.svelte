@@ -1,76 +1,100 @@
+<!--
+  @component ClassSubjectLayout
+  SvelteKit Layout for specific Subject Offering under a Class.
+  Provides tab navigation between Coursework Gradebook and Term Results,
+  along with assessments scheme configuration and PDF print triggers.
+-->
 <script lang="ts">
-  import { page } from "$app/state";
-  import { createQuery } from "@tanstack/svelte-query";
-  import { commands } from "$lib/core/ipc";
-  import { Button } from "@orbis/ui/button";
-  import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-  import { getLocale } from "$lib/paraglide/runtime";
-  import { academicContext } from "$lib/stores";
-  import AssessmentSchemeSheet from "$lib/features/assessment/assessment-scheme-sheet.svelte";
-    import { Clock } from "@lucide/svelte";
+import { page } from "$app/state";
+import { createQuery } from "@tanstack/svelte-query";
+import { api } from "$lib/api";
+import type { ClassSubjectDto, SubjectDto, UserDto } from "$lib/api/types";
+import { Button } from "@orbis/ui/button";
+import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
+import * as m from "$lib/paraglide/messages";
+import { academicContext } from "$lib/stores";
+import AssessmentSchemeSheet from "$lib/features/assessment/assessment-scheme-sheet.svelte";
+import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+import type { Snippet } from "svelte";
+import type { LayoutData } from "./$types";
 
-  let { children } = $props();
+let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
-  const orgId = $derived(String(page.params.orgId || ""));
-  const classId = $derived(String(page.params.classId || ""));
-  const classSubjectId = $derived(String(page.params.classSubjectId || ""));
-  const isArabic = $derived(getLocale() === "ar");
+const orgId = $derived(data.orgId || String(page.params.orgId || ""));
+const classId = $derived(data.classId || String(page.params.classId || ""));
+const classSubjectId = $derived(
+  data.classSubjectId || String(page.params.classSubjectId || ""),
+);
 
-  let showConfigSheet = $state(false);
+let showConfigSheet = $state(false);
+let showPrintDialog = $state(false);
 
-  // Subject Offering Details
-  const subjectQuery = createQuery(() => ({
-    queryKey: ["subject-info-sub-layout", classId, classSubjectId],
-    queryFn: async () => {
-      const offerings = await commands.academic.listClassSubjects(classId, academicContext.effectivePeriodId || "");
-      const offering = offerings.find((o: any) => String(o.id) === classSubjectId);
-      if (!offering) throw new Error("Subject not found");
-      const catalog = await commands.academic.listSubjects();
-      const catSub = catalog.find((s: any) => String(s.id) === String(offering.subject_id));
-      return { ...offering, catalog: catSub };
-    },
-    enabled: !!classId && !!classSubjectId,
-  }));
+export interface ClassSubjectWithCatalog extends ClassSubjectDto {
+  catalog?: SubjectDto;
+  teacher_name?: string | null;
+}
 
-  const usersQuery = createQuery(() => ({
-    queryKey: ["all-users-subject-sub-layout"],
-    queryFn: () => commands.iam.listUsers(null),
-    staleTime: 10 * 60 * 1000,
-  }));
+// Subject Offering Details
+const subjectQuery = createQuery(() => ({
+  queryKey: ["subject-info-sub-layout", classId, classSubjectId],
+  queryFn: async (): Promise<ClassSubjectWithCatalog> => {
+    const offerings = await api.listClassSubjects(
+      classId,
+      academicContext.effectivePeriodId || "",
+    );
+    const offering = offerings.find(
+      (o: ClassSubjectDto) => String(o.id) === classSubjectId,
+    );
+    if (!offering) throw new Error("Subject not found");
+    const catalog = await api.listSubjects();
+    const catSub = catalog.find(
+      (s: SubjectDto) => String(s.id) === String(offering.subject_id),
+    );
+    return { ...offering, catalog: catSub };
+  },
+  enabled: !!classId && !!classSubjectId,
+}));
 
-  const subjectInfo = $derived(subjectQuery.data);
-  const users = $derived((usersQuery.data || []) as any[]);
+const usersQuery = createQuery(() => ({
+  queryKey: ["all-users-subject-sub-layout"],
+  queryFn: (): Promise<UserDto[]> => api.listUsers(),
+  staleTime: 10 * 60 * 1000,
+}));
 
-  const teacherDisplayName = $derived.by(() => {
-    if (!subjectInfo) return "";
-    if (subjectInfo.teacher_name) return subjectInfo.teacher_name;
-    const tid = subjectInfo.primary_teacher_id;
-    if (!tid) return isArabic ? "غير مسند لمعلم" : "Unassigned";
-    const foundUser = users.find((u) => String(u.id) === String(tid));
-    if (foundUser) return isArabic ? foundUser.name_ar || foundUser.full_name || foundUser.name : foundUser.full_name || foundUser.name || foundUser.name_ar;
-    if (String(tid).startsWith("dev-")) return isArabic ? "معلم تجريبي" : "Demo Teacher";
-    return isArabic ? "معلم المادة" : "Subject Teacher";
-  });
+const subjectInfo = $derived(subjectQuery.data);
+const users = $derived(usersQuery.data ?? []);
 
-  const basePath = $derived(`/${orgId}/academics/classes/${classId}/curriculum/${classSubjectId}`);
+const teacherDisplayName = $derived.by(() => {
+  if (!subjectInfo) return "";
+  if (subjectInfo.teacher_name) return subjectInfo.teacher_name;
+  const tid = subjectInfo.primary_teacher_id;
+  if (!tid) return m.common_unassigned();
+  const foundUser = users.find((u: UserDto) => String(u.id) === String(tid));
+  if (foundUser) {
+    return foundUser.full_name_ar || foundUser.full_name;
+  }
+  return m.common_teacher();
+});
 
-  const menuItems = $derived([
-    {
-      path: "",
-      label: isArabic ? "دفتر الدرجات" : "Coursework Gradebook",
-    },
-    {
-      path: "term-results",
-      label: isArabic ? "نتائج الترم" : "Term Results",
-    },
-  ]);
+const basePath = $derived(
+  `/${orgId}/academics/classes/${classId}/curriculum/${classSubjectId}`,
+);
+
+const menuItems = $derived([
+  {
+    path: "",
+    label: m.common_coursework_gradebook(),
+  },
+  {
+    path: "term-results",
+    label: m.common_term_results(),
+  },
+]);
 </script>
 
 <div class="flex h-full w-full flex-col font-sans text-start gap-4">
-  
   <!-- Sub-Toolbar: SecondaryMenu Tabs & Subject Action Controls -->
   <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 pb-3 shrink-0">
-    
     <!-- Secondary Menu Tab Switcher -->
     <SecondaryMenu items={menuItems} {basePath} />
 
@@ -81,7 +105,7 @@
           <span class="font-medium text-foreground">{teacherDisplayName}</span>
           {#if subjectInfo.weekly_hours}
             <span class="opacity-30">•</span>
-               <span>{subjectInfo.weekly_hours} {isArabic ? "ساعات/أسبوع" : "hrs/wk"}</span>
+            <span>{subjectInfo.weekly_hours} {m.common_hours_per_week()}</span>
           {/if}
         </div>
       {/if}
@@ -92,28 +116,33 @@
         class="h-8 gap-1.5 text-xs font-semibold"
         onclick={() => showConfigSheet = true}
       >
-        <span>{isArabic ? "إعداد التقييمات" : "Assessments Scheme"}</span>
+        <span>{m.common_assessment_scheme()}</span>
       </Button>
 
       <Button
         variant="outline"
         size="sm"
         class="h-8 gap-1.5 text-xs font-semibold"
-        onclick={() => window.print()}
+        onclick={() => showPrintDialog = true}
       >
-        <span class="hidden sm:inline">{isArabic ? "طباعة" : "Print"}</span>
+        <span class="hidden sm:inline">{m.common_action_print()}</span>
       </Button>
     </div>
-
   </div>
 
   <!-- Main Content Space -->
   <div class="flex-1 w-full overflow-hidden flex flex-col">
     {@render children()}
   </div>
-
 </div>
 
 {#if showConfigSheet}
   <AssessmentSchemeSheet bind:open={showConfigSheet} {classSubjectId} periodId={academicContext.effectivePeriodId || ""} />
 {/if}
+
+<PdfReportViewer
+  bind:open={showPrintDialog}
+  templateId="33333333-3333-3333-3333-333333333333"
+  parameters={{ class_subject_id: classSubjectId, period_id: academicContext.effectivePeriodId }}
+  reportTitle={m.common_print_gradebook()}
+/>

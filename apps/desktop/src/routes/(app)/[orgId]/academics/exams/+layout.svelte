@@ -6,7 +6,7 @@ Wraps all Exams routes under academics.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-import { ClipboardList, FileText, BarChart3, ShieldCheck } from "@lucide/svelte";
+import { ChartBar, DocumentPage, TaskList, UserBadgeCheck } from "@orbis/icons";
 import type { Snippet } from "svelte";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } =
@@ -17,27 +17,23 @@ const basePath = $derived(`/${data.orgId}/academics/exams`);
 const menuItems = $derived([
   {
     path: "",
-    label: m.common_nav_overview ? m.common_nav_overview() : "نظرة عامة",
-    icon: BarChart3,
+    label: m.common_nav_overview(),
+    icon: ChartBar,
   },
   {
     path: "sessions",
-    label: m.common_exams_sessions_title
-      ? m.common_exams_sessions_title()
-      : "جلسات الاختبار",
-    icon: ClipboardList,
+    label: m.common_exams_sessions_title(),
+    icon: TaskList,
   },
   {
     path: "control",
-    label: m.common_control_label
-      ? m.common_control_label()
-      : "الكنترول ورصد الدرجات",
-    icon: ShieldCheck,
+    label: m.common_control_label(),
+    icon: UserBadgeCheck,
   },
   {
     path: "reports",
-    label: m.common_nav_reports ? m.common_nav_reports() : "التقارير",
-    icon: FileText,
+    label: m.common_nav_reports(),
+    icon: DocumentPage,
   },
 ]);
 </script>

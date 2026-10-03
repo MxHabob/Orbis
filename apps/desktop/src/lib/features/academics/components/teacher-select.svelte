@@ -1,100 +1,92 @@
+<!--
+  @component TeacherSelect
+  Self-fetching Searchable Teacher Selector powered by TanStack Query & Employee Affairs repository.
+  Includes a sticky search bar and optional "Add new teacher" creation button.
+-->
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
+import { page } from "$app/state";
 import { l } from "$lib/core/i18n";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
+import { createEmployeesQuery } from "$lib/features/employees/queries";
+import * as m from "$lib/paraglide/messages";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
+import { authStore } from "$lib/stores";
 
-let {
-  value = $bindable<string | null>(null),
-  teachers = [],
-  placeholder = "",
-  disabled = false,
-  id = undefined,
-  showAllOption = false,
-  allOptionLabel = "",
-  class: className = "",
-  onchange = undefined,
-}: {
+interface Props {
   value?: string | null;
-  teachers?: any[];
+  orgId?: string;
   placeholder?: string;
+  searchPlaceholder?: string;
   disabled?: boolean;
   id?: string;
   showAllOption?: boolean;
   allOptionLabel?: string;
+  createLabel?: string;
+  onCreate?: () => void;
   class?: string;
   onchange?: (val: string | null) => void;
-} = $props();
-
-function getTeacherLabel(t: any) {
-  if (!t) return "";
-  const arName = t.name_ar || t.nameAr || t.full_name;
-  const enName = t.name_en || t.nameEn || t.full_name || t.email;
-  const localized = l(arName, enName);
-  if (localized) return localized;
-  return String(t.full_name || t.email || t.id || "");
 }
 
-const selectedTeacher = $derived(
-  teachers.find((t) => String(t.id) === String(value || "")),
+let {
+  value = $bindable<string | null>(null),
+  orgId,
+  placeholder = m.common_cs_form_select_teacher?.() || "اختر المعلم...",
+  searchPlaceholder = "ابحث بالاسم أو الرقم الوظيفي...",
+  disabled = false,
+  id = undefined,
+  showAllOption = false,
+  allOptionLabel = m.common_cs_form_all_teachers?.() || "جميع المعلمين",
+  createLabel = "إضافة معلم جديد...",
+  onCreate = undefined,
+  class: className = "",
+  onchange = undefined,
+}: Props = $props();
+
+const resolvedOrgId = $derived(
+  orgId || page.params.orgId || authStore.orgId || "default",
 );
 
-const displayLabel = $derived(
-  value === "all" || value === "" || !value
-    ? showAllOption
-      ? allOptionLabel || m.common_cs_form_all_teachers()
-      : placeholder || m.common_cs_form_select_teacher()
-    : selectedTeacher
-      ? getTeacherLabel(selectedTeacher)
-      : value,
+// Self-contained TanStack Query
+const teachersQuery = createEmployeesQuery(
+  () => resolvedOrgId,
+  () => ({ employee_type: "teacher", status: "active", limit: 300 }),
 );
 
-function handleValueChange(newVal: string | undefined) {
-  const val = newVal ?? null;
-  value = val;
-  if (onchange) {
-    onchange(val);
-  }
+const teachers = $derived(teachersQuery.data?.items ?? []);
+
+function getTeacherLabel(t: any): string {
+  if (!t) return "";
+  const arName = t.full_name_ar || t.name_ar || t.nameAr || t.full_name;
+  const enName = t.full_name || t.name_en || t.nameEn || t.email;
+  const localized = l(arName, enName);
+  if (localized) return localized;
+  const composite = `${t.first_name || ""} ${t.last_name || ""}`.trim();
+  if (composite) return composite;
+  return String(t.full_name || t.full_name_ar || t.email || t.employee_number || t.id || "");
+}
+
+function getTeacherSubtitle(t: any): string | undefined {
+  if (t?.employee_number) return `#${t.employee_number}`;
+  if (t?.job_title) return t.job_title;
+  if (t?.department) return t.department;
+  return undefined;
 }
 </script>
 
-<Select
-  type="single"
-  value={value ?? ""}
-  onValueChange={handleValueChange}
+<SearchableSelect
+  bind:value
+  items={teachers}
+  {placeholder}
+  {searchPlaceholder}
+  emptyText={m.common_cs_form_no_teachers?.() || "لا يوجد معلمون مطابقون"}
   {disabled}
->
-  <SelectTrigger
-    {id}
-    class="w-full h-9 text-xs text-start flex items-center justify-between bg-background {className}"
-  >
-    <span class="truncate">{displayLabel}</span>
-  </SelectTrigger>
-  <SelectContent class="text-start max-h-56 overflow-y-auto" align="end">
-    {#if showAllOption}
-      <SelectItem
-        value="all"
-        class="text-xs text-start justify-start cursor-pointer"
-      >
-        {allOptionLabel || m.common_cs_form_all_teachers()}
-      </SelectItem>
-    {/if}
-    {#each teachers as t (t.id)}
-      <SelectItem
-        value={String(t.id)}
-        class="text-xs text-start justify-start cursor-pointer"
-      >
-        {getTeacherLabel(t)}
-      </SelectItem>
-    {/each}
-    {#if teachers.length === 0 && !showAllOption}
-      <div class="px-3 py-2 text-xs text-muted-foreground text-start">
-        {m.common_cs_form_no_teachers()}
-      </div>
-    {/if}
-  </SelectContent>
-</Select>
+  {id}
+  {showAllOption}
+  {allOptionLabel}
+  {createLabel}
+  {onCreate}
+  class={className}
+  getItemValue={(t) => String(t?.id ?? "")}
+  getItemLabel={getTeacherLabel}
+  getItemSubtitle={getTeacherSubtitle}
+  {onchange}
+/>

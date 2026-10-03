@@ -1,179 +1,188 @@
 <script lang="ts">
-  import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetFooter,
-  } from "@orbis/ui/sheet";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import { FormField } from "@orbis/ui";
-  import { Label } from "@orbis/ui/label";
-  import { Checkbox } from "@orbis/ui/checkbox";
-  import {
-    Select,
-    SelectTrigger,
-    SelectContent,
-    SelectItem,
-  } from "@orbis/ui/select";
-  import { Clock, Plus, Trash2, Edit2, Coffee, Save, X } from "@lucide/svelte";
-  import { commands, extractErrorMessage } from "$lib/core/ipc";
-  import { toast } from "@orbis/ui";
-  import * as m from "$lib/paraglide/messages";
-  import { createTimeSlotInputSchema } from "@orbis/schemas";
-  import { FormController } from "$lib/shared/forms/form-controller.svelte";
-  import TimeSlotForm from "./time-slot-form.svelte";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from "@orbis/ui/sheet";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { FormField } from "@orbis/ui";
+import { Label } from "@orbis/ui/label";
+import { Checkbox } from "@orbis/ui/checkbox";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
+import { ClockRotateRight, FloppyDisk, Heart, Pencil, Plus, Trash, XMark } from "@orbis/icons";
+import { api, extractErrorMessage, type CreateTimeSlotRequest, type UpdateTimeSlotRequest } from "$lib/api";
+import { toast } from "@orbis/ui";
+import * as m from "$lib/paraglide/messages";
+import { createTimeSlotInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import TimeSlotForm from "./time-slot-form.svelte";
 
-  interface Props {
-    open: boolean;
-    periodId: string;
-    timeSlots: any[];
-    onSuccess?: () => void;
+interface Props {
+  open: boolean;
+  periodId: string;
+  timeSlots: any[];
+  onSuccess?: () => void;
+}
+
+let {
+  open = $bindable(false),
+  periodId,
+  timeSlots = [],
+  onSuccess,
+}: Props = $props();
+
+let editingSlotId = $state<string | null>(null);
+let isAdding = $state(false);
+
+// Form State
+let nameAr = $state("");
+let name = $state("");
+let startTime = $state("08:00");
+let endTime = $state("08:45");
+let isBreak = $state(false);
+let breakType = $state("recess");
+let isSubmitting = $state(false);
+
+const form = new FormController({
+  initialValues: {
+    period_id: "",
+    slot_number: 1,
+    name: "",
+    name_ar: "",
+    start_time: "08:00",
+    end_time: "08:45",
+    duration_minutes: 45,
+    is_break: false,
+    applicable_days: "1,2,3,4,5",
+  },
+  schema: createTimeSlotInputSchema,
+});
+
+function resetForm() {
+  editingSlotId = null;
+  isAdding = false;
+  nameAr = "";
+  name = "";
+  startTime = "08:00";
+  endTime = "08:45";
+  isBreak = false;
+  breakType = "recess";
+}
+
+function startEdit(slot: any) {
+  editingSlotId = String(slot.id);
+  isAdding = false;
+  nameAr = slot.name_ar || "";
+  name = slot.name || "";
+  startTime = String(slot.start_time || "").slice(0, 5);
+  endTime = String(slot.end_time || "").slice(0, 5);
+  isBreak = Boolean(slot.is_break);
+  breakType = slot.break_type || "recess";
+}
+
+function startAdd() {
+  resetForm();
+  isAdding = true;
+  const nextSlotNum =
+    timeSlots
+      .filter((s) => !s.is_break)
+      .reduce((max, s) => Math.max(max, Number(s.slot_number) || 0), 0) + 1;
+  nameAr = m.academics_schedule_placeholder_period({ number: nextSlotNum });
+  name = m.academics_schedule_placeholder_period_en({ number: nextSlotNum });
+}
+
+function calcDuration(start: string, end: string): number {
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  return eh * 60 + em - (sh * 60 + sm);
+}
+
+async function handleSaveSlot(e: SubmitEvent) {
+  e.preventDefault();
+  form.values = {
+    period_id: periodId,
+    slot_number:
+      timeSlots.reduce(
+        (max, s) => Math.max(max, Number(s.slot_number) || 0),
+        0,
+      ) + 1,
+    name: name.trim() || nameAr.trim(),
+    name_ar: nameAr.trim(),
+    start_time: startTime,
+    end_time: endTime,
+    duration_minutes: calcDuration(startTime, endTime),
+    is_break: isBreak,
+    applicable_days: "1,2,3,4,5",
+  };
+  if (!form.validate()) {
+    toast.error(m.academics_schedule_time_slot_end_error());
+    return;
   }
 
-  let {
-    open = $bindable(false),
-    periodId,
-    timeSlots = [],
-    onSuccess,
-  }: Props = $props();
+  isSubmitting = true;
+  try {
+    if (editingSlotId) {
+      // Update
+      const request: UpdateTimeSlotRequest = {
+        name: name.trim() || nameAr.trim(),
+        name_ar: nameAr.trim(),
+        start_time: startTime,
+        end_time: endTime,
+        is_break: isBreak,
+        break_type: isBreak ? breakType : null,
+      };
+      await api.updateTimeSlot(editingSlotId, request);
+      toast.success(m.academics_schedule_time_slot_updated());
+    } else {
+      // Create
+      const slotNumber =
+        timeSlots.reduce(
+          (max, s) => Math.max(max, Number(s.slot_index || s.slot_number) || 0),
+          0,
+        ) + 1;
 
-  let editingSlotId = $state<string | null>(null);
-  let isAdding = $state(false);
+      const request: CreateTimeSlotRequest = {
+        period_id: periodId,
+        day_of_week: 1,
+        slot_index: slotNumber,
+        name: name.trim() || nameAr.trim(),
+        name_ar: nameAr.trim(),
+        start_time: startTime,
+        end_time: endTime,
+        is_break: isBreak,
+        break_type: isBreak ? breakType : null,
+      };
+      await api.createTimeSlot(request);
+      toast.success(m.academics_schedule_time_slot_added());
+    }
 
-  // Form State
-  let nameAr = $state("");
-  let name = $state("");
-  let startTime = $state("08:00");
-  let endTime = $state("08:45");
-  let isBreak = $state(false);
-  let breakType = $state("recess");
-  let isSubmitting = $state(false);
-
-  const form = new FormController({
-    initialValues: {
-      period_id: "",
-      slot_number: 1,
-      name: "",
-      name_ar: "",
-      start_time: "08:00",
-      end_time: "08:45",
-      duration_minutes: 45,
-      is_break: false,
-      applicable_days: "1,2,3,4,5",
-    },
-    schema: createTimeSlotInputSchema,
-  });
-
-  function resetForm() {
-    editingSlotId = null;
-    isAdding = false;
-    nameAr = "";
-    name = "";
-    startTime = "08:00";
-    endTime = "08:45";
-    isBreak = false;
-    breakType = "recess";
-  }
-
-  function startEdit(slot: any) {
-    editingSlotId = String(slot.id);
-    isAdding = false;
-    nameAr = slot.name_ar || "";
-    name = slot.name || "";
-    startTime = String(slot.start_time || "").slice(0, 5);
-    endTime = String(slot.end_time || "").slice(0, 5);
-    isBreak = Boolean(slot.is_break);
-    breakType = slot.break_type || "recess";
-  }
-
-  function startAdd() {
     resetForm();
-    isAdding = true;
-    const nextSlotNum =
-      timeSlots.filter((s) => !s.is_break).reduce((max, s) => Math.max(max, Number(s.slot_number) || 0), 0) + 1;
-    nameAr = m.academics_schedule_placeholder_period({ number: nextSlotNum });
-    name = m.academics_schedule_placeholder_period_en({ number: nextSlotNum });
+    onSuccess?.();
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
+  } finally {
+    isSubmitting = false;
   }
+}
 
-  function calcDuration(start: string, end: string): number {
-    const [sh, sm] = start.split(":").map(Number);
-    const [eh, em] = end.split(":").map(Number);
-    return eh * 60 + em - (sh * 60 + sm);
+async function handleDeleteSlot(id: string) {
+  try {
+    await api.deleteTimeSlot(id);
+    toast.success(m.academics_schedule_time_slot_deleted());
+    if (editingSlotId === id) resetForm();
+    onSuccess?.();
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
   }
-
-  async function handleSaveSlot(e: SubmitEvent) {
-    e.preventDefault();
-    form.values = {
-      period_id: periodId,
-      slot_number: timeSlots.reduce((max, s) => Math.max(max, Number(s.slot_number) || 0), 0) + 1,
-      name: name.trim() || nameAr.trim(),
-      name_ar: nameAr.trim(),
-      start_time: startTime,
-      end_time: endTime,
-      duration_minutes: calcDuration(startTime, endTime),
-      is_break: isBreak,
-      applicable_days: "1,2,3,4,5",
-    };
-    if (!form.validate()) {
-      toast.error(m.academics_schedule_time_slot_end_error());
-      return;
-    }
-
-    isSubmitting = true;
-    try {
-      if (editingSlotId) {
-        // Update
-        await commands.scheduling.updateTimeSlot(editingSlotId, {
-          name: name.trim() || nameAr.trim(),
-          name_ar: nameAr.trim(),
-          start_time: startTime,
-          end_time: endTime,
-          duration_minutes: calcDuration(startTime, endTime),
-          is_break: isBreak ? 1 : 0,
-          break_type: isBreak ? breakType : null,
-        } as any);
-        toast.success(m.academics_schedule_time_slot_updated());
-      } else {
-        // Create
-        const slotNumber =
-          timeSlots.reduce((max, s) => Math.max(max, Number(s.slot_number) || 0), 0) + 1;
-
-        await commands.scheduling.createTimeSlot({
-          period_id: periodId,
-          slot_number: slotNumber,
-          name: name.trim() || nameAr.trim(),
-          name_ar: nameAr.trim(),
-          start_time: startTime,
-          end_time: endTime,
-          duration_minutes: calcDuration(startTime, endTime),
-          is_break: isBreak ? 1 : 0,
-          break_type: isBreak ? breakType : null,
-          applicable_days: "1,2,3,4,5",
-        } as any);
-        toast.success(m.academics_schedule_time_slot_added());
-      }
-
-      resetForm();
-      onSuccess?.();
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    } finally {
-      isSubmitting = false;
-    }
-  }
-
-  async function handleDeleteSlot(id: string) {
-    try {
-      await commands.scheduling.deleteTimeSlot(id);
-      toast.success(m.academics_schedule_time_slot_deleted());
-      if (editingSlotId === id) resetForm();
-      onSuccess?.();
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    }
-  }
+}
 </script>
 
 <Sheet bind:open>
@@ -193,7 +202,7 @@
               {editingSlotId ? m.academics_schedule_time_slot_edit() : m.academics_schedule_time_slot_new()}
             </span>
             <Button variant="ghost" size="icon" class="h-6 w-6" onclick={resetForm}>
-              <X size={12} />
+              <XMark size={12} />
             </Button>
           </div>
 
@@ -261,7 +270,7 @@
               {m.common_action_cancel()}
             </Button>
             <Button type="submit" size="sm" class="h-8 text-xs font-semibold" disabled={isSubmitting}>
-              <Save size={13} class="me-1" />
+              <FloppyDisk size={13} class="me-1" />
               {m.academics_schedule_save_slot()}
             </Button>
           </div>
@@ -286,7 +295,7 @@
 
         {#if timeSlots.length === 0}
           <div class="flex flex-col items-center justify-center p-8 border border-dashed border-border/60 rounded-xl bg-muted/10 text-center gap-2">
-            <Clock size={24} class="text-muted-foreground/60" />
+            <ClockRotateRight size={24} class="text-muted-foreground/60" />
             <p class="text-xs text-muted-foreground">
               {m.academics_schedule_no_slots()}
             </p>
@@ -302,7 +311,7 @@
                   class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md font-bold text-xs {isSlotBreak ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-primary/10 text-primary'}"
                 >
                   {#if isSlotBreak}
-                    <Coffee size={13} />
+                    <Heart size={13} />
                   {:else}
                     {slot.slot_number}
                   {/if}
@@ -326,7 +335,7 @@
                   onclick={() => startEdit(slot)}
                   aria-label={m.academics_schedule_edit()}
                 >
-                  <Edit2 size={12} />
+                  <Pencil size={12} />
                 </Button>
                 <Button
                   variant="ghost"
@@ -335,7 +344,7 @@
                   onclick={() => handleDeleteSlot(String(slot.id))}
                   aria-label={m.common_action_delete()}
                 >
-                  <Trash2 size={12} />
+                  <Trash size={12} />
                 </Button>
               </div>
             </div>

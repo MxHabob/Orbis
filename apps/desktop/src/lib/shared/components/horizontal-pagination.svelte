@@ -5,7 +5,7 @@ A simple, compact horizontal pagination layout with back and forward navigation 
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
 import { cn } from "@orbis/ui/utils";
-import { ChevronLeft, ChevronRight } from "@lucide/svelte";
+import { ChevronLeft, ChevronRight } from "@orbis/icons";
 
 let {
   canScrollLeft,

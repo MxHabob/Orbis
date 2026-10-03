@@ -5,34 +5,19 @@ import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { Dialog, DialogContent } from "@orbis/ui/dialog";
 import { uiStore, authStore } from "$lib/stores";
-import { commands } from "$lib/core/ipc";
-import { queryClient } from "$lib/core/query/client";
+import { api, queryKeys, type EnrollmentDto, type ClassDto, type SubjectDto } from "$lib/api";
+import { queryClient } from "$lib/api";
 
 import { matchStudent } from "$lib/shared/utils/search";
-import {
-  Search,
-  Zap,
-  CornerDownLeft,
-  Users,
-  GraduationCap,
-  BookOpen,
-  FileText,
-  Settings,
-  Plus,
-  BarChart3,
-  Calendar,
-  Shield,
-  ArrowRightLeft,
-  Wallet,
-} from "@lucide/svelte";
+import { AdjustmentsHorizontal, AppNotification, ArrowPath, ArrowUturnLeft, Banknotes, Bolt, BookOpen, BuildingLibrary, BuildingOffice, Calendar, ChartBar, CreditCard, Document, DocumentChartBar, DocumentCheck, DocumentPage, GlobeAlt, Pin, Plus, ReceiptPercent, Search, Settings, ShieldCheck, UserBadgeCheck, Users } from "@orbis/icons";
 
 let searchQuery = $state("");
 let inputEl = $state<HTMLInputElement | null>(null);
 
 // In-memory data sets
-let students = $state<any[]>([]);
-let classes = $state<any[]>([]);
-let subjects = $state<any[]>([]);
+let students = $state<EnrollmentDto[]>([]);
+let classes = $state<ClassDto[]>([]);
+let subjects = $state<SubjectDto[]>([]);
 
 let selectedIndex = $state(0);
 
@@ -54,18 +39,15 @@ async function loadSearchData() {
   if (!currentOrgId) return;
 
   // Use TanStack cache if available — avoids redundant IPC calls
-  const cachedStudents = queryClient.getQueryData<any[]>([
-    "enrollments",
-    currentOrgId,
-  ]);
-  const cachedClasses = queryClient.getQueryData<any[]>([
-    "classes",
-    currentOrgId,
-  ]);
-  const cachedSubjects = queryClient.getQueryData<any[]>([
-    "subjects",
-    currentOrgId,
-  ]);
+  const cachedStudents = queryClient.getQueryData<EnrollmentDto[]>(
+    queryKeys.student.enrollments(currentOrgId),
+  );
+  const cachedClasses = queryClient.getQueryData<ClassDto[]>(
+    queryKeys.academic.classes(currentOrgId),
+  );
+  const cachedSubjects = queryClient.getQueryData<SubjectDto[]>(
+    queryKeys.academic.subjects(currentOrgId),
+  );
 
   if (cachedStudents && cachedClasses && cachedSubjects) {
     students = cachedStudents;
@@ -76,23 +58,20 @@ async function loadSearchData() {
 
   try {
     const [studentsData, classesData, subjectsData] = await Promise.all([
-      cachedStudents ??
-        commands.academic.listEnrollments(currentOrgId).catch(() => []),
-      cachedClasses ??
-        commands.academic.listClasses(currentOrgId).catch(() => []),
-      cachedSubjects ??
-        commands.academic.listSubjects(currentOrgId).catch(() => []),
+      cachedStudents ?? api.listEnrollments().catch(() => []),
+      cachedClasses ?? api.listClasses().catch(() => []),
+      cachedSubjects ?? api.listSubjects().catch(() => []),
     ]);
     students = studentsData;
     classes = classesData;
     subjects = subjectsData;
     // Populate cache for future use
     if (!cachedStudents)
-      queryClient.setQueryData(["enrollments", currentOrgId], studentsData);
+      queryClient.setQueryData(queryKeys.student.enrollments(currentOrgId), studentsData);
     if (!cachedClasses)
-      queryClient.setQueryData(["classes", currentOrgId], classesData);
+      queryClient.setQueryData(queryKeys.academic.classes(currentOrgId), classesData);
     if (!cachedSubjects)
-      queryClient.setQueryData(["subjects", currentOrgId], subjectsData);
+      queryClient.setQueryData(queryKeys.academic.subjects(currentOrgId), subjectsData);
   } catch (e) {
     console.error("Failed to load search data:", e);
   }
@@ -114,7 +93,7 @@ const shortcuts = $derived([
     title: m.settings_nav_templates
       ? m.settings_nav_templates()
       : "قوالب المستندات",
-    icon: FileText,
+    icon: DocumentPage,
     action: () => goto(`/${currentOrgId}/templates`),
     group: m.common_search_group_shortcuts
       ? m.common_search_group_shortcuts()
@@ -125,7 +104,7 @@ const shortcuts = $derived([
     title: m.reports_extract_report
       ? m.reports_extract_report()
       : "استخراج التقارير",
-    icon: BarChart3,
+    icon: ChartBar,
     action: () => goto(`/${currentOrgId}/reports`),
     group: m.common_search_group_shortcuts
       ? m.common_search_group_shortcuts()
@@ -152,40 +131,40 @@ const systemPages = $derived([
       ? m.finance_layout_nav_fees()
       : "Student Fees",
     path: `/${currentOrgId}/finance/fees`,
-    icon: FileText,
+    icon: DocumentChartBar,
   },
   {
     title: m.finance_layout_nav_payments
       ? m.finance_layout_nav_payments()
       : "Receipts",
     path: `/${currentOrgId}/finance/payments`,
-    icon: Wallet,
+    icon: CreditCard,
   },
   {
     title: m.finance_layout_nav_cash_accounts
       ? m.finance_layout_nav_cash_accounts()
       : "Disbursals",
     path: `/${currentOrgId}/finance/accounts`,
-    icon: Wallet,
+    icon: BuildingLibrary,
   },
   {
     title: m.common_je_title ? m.common_je_title() : "Journal Entries",
     path: `/${currentOrgId}/finance/journal-entries`,
-    icon: FileText,
+    icon: BookOpen,
   },
   {
     title: m.finance_layout_nav_ledger
       ? m.finance_layout_nav_ledger()
       : "Ledger",
     path: `/${currentOrgId}/finance/statement`,
-    icon: FileText,
+    icon: DocumentChartBar,
   },
   {
     title: m.finance_layout_nav_reports
       ? m.finance_layout_nav_reports()
       : "Financial Reports",
     path: `/${currentOrgId}/finance/reports`,
-    icon: BarChart3,
+    icon: ChartBar,
   },
   // Academics
   {
@@ -193,7 +172,7 @@ const systemPages = $derived([
       ? m.common_search_group_classes()
       : "Classes",
     path: `/${currentOrgId}/academics/classes`,
-    icon: GraduationCap,
+    icon: BookOpen,
   },
   {
     title: m.common_exams_detail_schedule
@@ -205,12 +184,12 @@ const systemPages = $derived([
   {
     title: m.common_nav_exams ? m.common_nav_exams() : "Exams",
     path: `/${currentOrgId}/academics/exams`,
-    icon: FileText,
+    icon: DocumentCheck,
   },
   {
     title: m.common_control_label ? m.common_control_label() : "Control Board",
     path: `/${currentOrgId}/academics/control`,
-    icon: Shield,
+    icon: AdjustmentsHorizontal,
   },
   // Settings
   {
@@ -218,12 +197,12 @@ const systemPages = $derived([
       ? m.common_nav_notifications()
       : "Notifications",
     path: `/${currentOrgId}/settings/notifications`,
-    icon: Settings,
+    icon: AppNotification,
   },
   {
     title: m.common_nav_security ? m.common_nav_security() : "Security",
     path: `/${currentOrgId}/settings/security`,
-    icon: Settings,
+    icon: ShieldCheck,
   },
   {
     title: m.settings_nav_users ? m.settings_nav_users() : "Users & Staff",
@@ -235,7 +214,7 @@ const systemPages = $derived([
       ? m.settings_nav_permissions()
       : "Permissions",
     path: `/${currentOrgId}/settings/permissions`,
-    icon: Shield,
+    icon: ShieldCheck,
   },
   {
     title: m.settings_nav_cycles ? m.settings_nav_cycles() : "Academic Periods",
@@ -247,12 +226,12 @@ const systemPages = $derived([
       ? m.settings_nav_units()
       : "Organizational Units",
     path: `/${currentOrgId}/settings/units`,
-    icon: Settings,
+    icon: BuildingOffice,
   },
   {
     title: m.common_nav_rooms ? m.common_nav_rooms() : "Rooms & Halls",
     path: `/${currentOrgId}/settings/rooms`,
-    icon: Settings,
+    icon: Pin,
   },
   {
     title: m.common_exams_detail_subjects
@@ -266,21 +245,21 @@ const systemPages = $derived([
       ? m.settings_nav_currencies()
       : "Currencies",
     path: `/${currentOrgId}/settings/currencies`,
-    icon: ArrowRightLeft,
+    icon: GlobeAlt,
   },
   {
     title: m.common_breadcrumb_fees
       ? m.common_breadcrumb_fees()
       : "Fee Templates",
     path: `/${currentOrgId}/settings/fee-templates`,
-    icon: FileText,
+    icon: DocumentPage,
   },
   {
     title: m.common_form_summary_discount
       ? m.common_form_summary_discount()
       : "Discount Templates",
     path: `/${currentOrgId}/settings/discount-templates`,
-    icon: FileText,
+    icon: ReceiptPercent,
   },
   // User Account
   {
@@ -328,7 +307,7 @@ const filteredItems = $derived.by(() => {
         title: s.full_name || s.name_ar || s.name_en || "Student",
         subtitle: s.student_number || "",
         icon: Users,
-        action: () => goto(`/${currentOrgId}/students/${s.id}/grades`),
+        action: () => goto(`/${currentOrgId}/students/${s.id}`),
         group: m.common_word_students ? m.common_word_students() : "Students",
       }));
     list.push(...matchedStudents.slice(0, 10)); // limit to 10
@@ -345,7 +324,7 @@ const filteredItems = $derived.by(() => {
       .map((c) => ({
         id: `class-${c.id}`,
         title: c.name || "Class",
-        icon: GraduationCap,
+        icon: BookOpen,
         action: () => goto(`/${currentOrgId}/academics/classes`),
         group: m.common_search_group_classes
           ? m.common_search_group_classes()
@@ -476,7 +455,7 @@ function handleKeydown(e: KeyboardEvent) {
                     {/if}
                   </div>
                   <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <CornerDownLeft class="size-3 text-muted-foreground group-hover:text-accent-foreground" />
+                    <ArrowUturnLeft class="size-3 text-muted-foreground group-hover:text-accent-foreground" />
                   </div>
                 </button>
               {/each}
@@ -489,7 +468,7 @@ function handleKeydown(e: KeyboardEvent) {
     <!-- Search Footer -->
     <div class="h-10 px-4 border-t border-border bg-muted/30 flex items-center justify-between text-xs text-muted-foreground select-none shrink-0 rounded-b-xl">
       <div class="flex items-center gap-1.5">
-        <Zap class="size-3.5 fill-primary text-primary animate-pulse" />
+        <Bolt class="size-3.5 fill-primary text-primary animate-pulse" />
         <span class="font-bold text-foreground">Orbis Search</span>
       </div>
       <div class="flex items-center gap-3 font-medium">

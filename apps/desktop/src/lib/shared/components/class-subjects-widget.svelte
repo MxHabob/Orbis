@@ -1,39 +1,42 @@
 <script lang="ts">
-  import { createQuery } from "@tanstack/svelte-query";
-  import { commands } from "$lib/core/ipc";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { BookOpen, Plus, User, Clock, ChevronRight, ArrowLeft, ArrowRight } from "@lucide/svelte";
-  import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-  import WorkspaceCard from "./workspace-card.svelte";
-  import { page } from "$app/state";
+import { createQuery } from "@tanstack/svelte-query";
+import { api } from "$lib/api";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { ArrowLeft, ArrowRight, BookOpen, ChevronRight, ClockRotateRight, Plus, User } from "@orbis/icons";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import WorkspaceCard from "./workspace-card.svelte";
+import { page } from "$app/state";
 
-  let { classId, periodId }: { classId: string; periodId: string } = $props();
+let { classId, periodId }: { classId: string; periodId: string } = $props();
 
-  const orgId = $derived(String(page.params.orgId || ""));
-  const isArabic = $derived(getLocale() === "ar");
+const orgId = $derived(String(page.params.orgId || ""));
+const isArabic = $derived(getLocale() === "ar");
 
-  const subjectsQuery = createQuery(() => ({
-    queryKey: ["class-subjects-widget", classId, periodId],
-    queryFn: async () => {
-      const offerings = await commands.academic.listClassSubjects(classId, periodId);
-      const catalog = await commands.academic.listSubjects();
-      const byId = new Map(catalog.map((s: any) => [String(s.id), s]));
-      return offerings.map((o: any) => ({ ...o, catalog: byId.get(String(o.subject_id)) }));
-    },
-    enabled: !!classId && !!periodId,
-    staleTime: 5 * 60 * 1000,
-  }));
+const subjectsQuery = createQuery(() => ({
+  queryKey: ["class-subjects-widget", classId, periodId],
+  queryFn: async () => {
+    const offerings = await api.listClassSubjects(classId, periodId);
+    const catalog = await api.listSubjects();
+    const byId = new Map(catalog.map((s: any) => [String(s.id), s]));
+    return offerings.map((o: any) => ({
+      ...o,
+      catalog: byId.get(String(o.subject_id)),
+    }));
+  },
+  enabled: !!classId && !!periodId,
+  staleTime: 5 * 60 * 1000,
+}));
 
-  const subjects = $derived((subjectsQuery.data || []) as any[]);
-  const isLoading = $derived(subjectsQuery.isLoading);
+const subjects = $derived((subjectsQuery.data || []) as any[]);
+const isLoading = $derived(subjectsQuery.isLoading);
 
-  function subjectName(subject: any): string {
-    return isArabic
-      ? subject.catalog?.name_ar || subject.catalog?.name || subject.subject_id
-      : subject.catalog?.name || subject.catalog?.name_ar || subject.subject_id;
-  }
+function subjectName(subject: any): string {
+  return isArabic
+    ? subject.catalog?.name_ar || subject.catalog?.name || subject.subject_id
+    : subject.catalog?.name || subject.catalog?.name_ar || subject.subject_id;
+}
 </script>
 
 <WorkspaceCard title={isArabic ? "المواد الدراسية" : "Class Subjects"}>
@@ -104,7 +107,7 @@
                 {#if subject.weekly_hours}
                   <span class="opacity-40">•</span>
                   <span class="flex items-center gap-1 shrink-0">
-                    <Clock size={10} class="opacity-70" />
+                    <ClockRotateRight size={10} class="opacity-70" />
                     {subject.weekly_hours} {isArabic ? "س" : "h"}
                   </span>
                 {/if}

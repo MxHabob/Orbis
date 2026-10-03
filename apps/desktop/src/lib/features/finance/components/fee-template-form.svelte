@@ -1,8 +1,10 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
-import { commands, OrbisError } from "$lib/core/ipc";
+import { api, queryKeys } from "$lib/api";
+import { useQueryClient } from "@tanstack/svelte-query";
 import { feeTemplateInputSchema } from "@orbis/schemas";
+import { createClassesQuery } from "$lib/features/academics/queries";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
@@ -36,47 +38,97 @@ let {
   onCancel: () => void;
 } = $props();
 
-// Form state
+function parseInitialApplicableLevels(raw: any): { levels: string[]; applyToAll: boolean } {
+  if (!raw) return { levels: [], applyToAll: true };
+  try {
+    let levels: string[] = [];
+    if (typeof raw === "string") {
+      const parsed = JSON.parse(raw);
+      levels = Array.isArray(parsed) ? parsed : (parsed.levels || (parsed.level ? [parsed.level] : []));
+    } else if (Array.isArray(raw)) {
+      levels = raw;
+    } else if (typeof raw === "object") {
+      const obj = raw as any;
+      levels = Array.isArray(obj.levels) ? obj.levels : (obj.level ? [obj.level] : []);
+    }
+    if (levels.length > 0) {
+      return { levels, applyToAll: false };
+    }
+  } catch (e) {
+    // Ignore parse error
+  }
+  return { levels: [], applyToAll: true };
+}
+
+const initialLevelsData = parseInitialApplicableLevels(template?.applicable_levels);
+let applyToAllGrades = $state(initialLevelsData.applyToAll);
+let selectedLevels = $state<string[]>(initialLevelsData.levels);
+
+// Form state initialized directly from template or defaults
 const form = new FormController({
   initialValues: {
-    name: "",
-    name_ar: null,
-    code: null,
-    category: "tuition",
-    default_amount: 0,
-    revenue_account_id: null,
-    receivable_account_id: null,
-    applicable_levels: null,
-    frequency: "yearly",
-    is_mandatory: true,
+    name: template?.name || "",
+    name_ar: template?.name_ar || null,
+    code: template?.code || null,
+    category: template?.category || "tuition",
+    default_amount: template?.default_amount || 0,
+    revenue_account_id: template?.revenue_account_id || null,
+    receivable_account_id: template?.receivable_account_id || null,
+    applicable_levels: template?.applicable_levels || null,
+    frequency: template?.frequency === "annual" ? "yearly" : (template?.frequency || "yearly"),
+    is_mandatory: template ? (template.is_mandatory === 1 || template.is_mandatory === true) : true,
   },
   schema: feeTemplateInputSchema,
 });
 
-function fieldError(field: string): string | undefined {
-  return form.errors[field]?.[0];
-}
+const queryClient = useQueryClient();
 
-// Grade levels applicability state
-let classes = $state<any[]>([]);
-let isLoadingClasses = $state(false);
-let uniqueLevels = $state<{ level: string; label: string }[]>([]);
-let applyToAllGrades = $state(true);
-let selectedLevels = $state<string[]>([]);
+// TanStack Query for Classes
+const classesQuery = createClassesQuery(() => orgId);
+const classes = $derived(classesQuery.data ?? []);
+const isLoadingClasses = $derived(classesQuery.isLoading);
+
+// Dynamic grade levels extracted directly from the classes database table
+const uniqueLevels = $derived.by(() => {
+  const levelMap = new Map<string, { ar: string; en: string }>();
+  for (const cls of classes) {
+    if (cls.level) {
+      if (!levelMap.has(cls.level)) {
+        const rawAr = (cls as any).name_ar || cls.name || cls.level;
+        const rawEn = cls.name || (cls as any).name_ar || cls.level;
+        levelMap.set(cls.level, {
+          ar: rawAr,
+          en: rawEn,
+        });
+      }
+    }
+  }
+
+  // Ensure any selected levels from existing template are visible
+  for (const lvl of selectedLevels) {
+    if (!levelMap.has(lvl)) {
+      levelMap.set(lvl, {
+        ar: lvl,
+        en: lvl,
+      });
+    }
+  }
+
+  return Array.from(levelMap.entries()).map(([lvl, nameObj]) => ({
+    level: lvl,
+    label: l(nameObj.ar, nameObj.en),
+  }));
+});
 
 // Derived categories and frequencies for Orbis Select components
 const categories = $derived([
   {
     value: "tuition",
-    label: m.common_ft_category_tuition
-      ? m.common_ft_category_tuition()
-      : m.common_ft_category_tuition(),
+    label: m.common_ft_category_tuition(),
   },
   {
     value: "transport",
-    label: m.common_ft_category_transport
-      ? m.common_ft_category_transport()
-      : m.common_ft_category_transport(),
+    label: m.common_ft_category_transport(),
   },
   {
     value: "books",
@@ -84,21 +136,15 @@ const categories = $derived([
   },
   {
     value: "uniform",
-    label: m.common_ft_category_uniform
-      ? m.common_ft_category_uniform()
-      : m.common_ft_category_uniform(),
+    label: m.common_ft_category_uniform(),
   },
   {
     value: "exam",
-    label: m.common_ft_category_exam
-      ? m.common_ft_category_exam()
-      : m.common_ft_category_exam(),
+    label: m.common_ft_category_exam(),
   },
   {
     value: "other",
-    label: m.common_guardians_relationship_other
-      ? m.common_guardians_relationship_other()
-      : m.common_guardians_relationship_other(),
+    label: m.common_guardians_relationship_other(),
   },
 ]);
 const categoryLabels = $derived(
@@ -107,32 +153,30 @@ const categoryLabels = $derived(
     {} as Record<string, string>,
   ),
 );
-const selectedCategoryLabel = $derived(categoryLabels[form.values.category] ?? form.values.category);
+const selectedCategoryLabel = $derived(
+  categoryLabels[form.values.category] ?? form.values.category,
+);
 
 const frequencies = $derived([
   {
     value: "once",
-    label: m.common_ft_frequency_once
-      ? m.common_ft_frequency_once()
-      : m.common_ft_frequency_once(),
+    label: m.common_ft_frequency_once(),
   },
   {
     value: "monthly",
-    label: m.common_ft_frequency_monthly
-      ? m.common_ft_frequency_monthly()
-      : m.common_ft_frequency_monthly(),
+    label: m.common_ft_frequency_monthly(),
   },
   {
     value: "termly",
-    label: m.common_ft_frequency_termly
-      ? m.common_ft_frequency_termly()
-      : m.common_ft_frequency_termly(),
+    label: m.common_ft_frequency_termly(),
   },
   {
     value: "yearly",
-    label: m.common_ft_frequency_yearly
-      ? m.common_ft_frequency_yearly()
-      : m.common_ft_frequency_yearly(),
+    label: m.common_ft_frequency_yearly(),
+  },
+  {
+    value: "annual",
+    label: m.common_ft_frequency_yearly(),
   },
 ]);
 const frequencyLabels = $derived(
@@ -145,118 +189,32 @@ const selectedFrequencyLabel = $derived(
   frequencyLabels[form.values.frequency] ?? form.values.frequency,
 );
 
-// Initialize form if in edit mode
-$effect(() => {
-  if (template) {
-    form.values.name = template.name || "";
-    form.values.name_ar = template.name_ar || null;
-    form.values.code = template.code || null;
-    form.values.category = template.category || "tuition";
-    form.values.frequency = template.frequency || "yearly";
-    form.values.is_mandatory = template.is_mandatory === 1;
-
-    // Load amount directly from default_amount
-    form.values.default_amount = template.default_amount || 0;
-
-    // Load applicable levels
-    if (template.applicable_levels) {
-      try {
-        const rules = JSON.parse(template.applicable_levels);
-        const levels = rules.levels || (rules.level ? [rules.level] : []);
-        if (levels.length > 0) {
-          selectedLevels = levels;
-          applyToAllGrades = false;
-        } else {
-          selectedLevels = [];
-          applyToAllGrades = true;
-        }
-      } catch (e) {
-        selectedLevels = [];
-        applyToAllGrades = true;
-      }
-    } else {
-      selectedLevels = [];
-      applyToAllGrades = true;
-    }
-  }
-});
-
-async function loadClasses() {
-  if (!orgId) return;
-  isLoadingClasses = true;
-  try {
-    const list = await commands.academic.listClasses();
-    classes = list;
-
-    const levelNames: Record<string, { en: string; ar: string }> = {
-      kg1: { en: "KG 1", ar: "روضة أولى" },
-      kg2: { en: "KG 2", ar: "روضة ثانية" },
-      grade1: { en: "Grade 1", ar: "الصف الأول" },
-      grade2: { en: "Grade 2", ar: "الصف الثاني" },
-      grade3: { en: "Grade 3", ar: "الصف الثالث" },
-      grade4: { en: "Grade 4", ar: "الصف الرابع" },
-      grade5: { en: "Grade 5", ar: "الصف الخامس" },
-      grade6: { en: "Grade 6", ar: "الصف السادس" },
-      grade7: { en: "Grade 7", ar: "الصف السابع" },
-      grade8: { en: "Grade 8", ar: "الصف الثامن" },
-      grade9: { en: "Grade 9", ar: "الصف التاسع" },
-    };
-
-    const levelsSet = new Set<string>();
-    for (const cls of list) {
-      if (cls.level) {
-        levelsSet.add(cls.level);
-      }
-    }
-
-    uniqueLevels = Array.from(levelsSet).map((lvl) => {
-      const nameObj = levelNames[lvl] || { en: lvl, ar: lvl };
-      return {
-        level: lvl,
-        label: l(nameObj.ar, nameObj.en),
-      };
-    });
-  } catch (e) {
-    console.error("Error loading classes for fee template form:", e);
-  } finally {
-    isLoadingClasses = false;
-  }
-}
-
-$effect(() => {
-  if (orgId) {
-    loadClasses();
-  }
-});
-
 async function handleSubmit() {
   const applicableLevels =
     !applyToAllGrades && selectedLevels.length > 0
       ? JSON.stringify({ levels: selectedLevels })
       : null;
   if (!applyToAllGrades && selectedLevels.length === 0) {
-    toast.error(
-      m.common_ft_error_levels_required(),
-    );
+    toast.error(m.common_ft_error_levels_required());
     return;
   }
   const submitted = await form.submit(async (payload) => {
     const request = { ...payload, applicable_levels: applicableLevels };
-    if (template) {
-      await commands.finance.updateFeeTemplate(template.id, request);
-      toast.success(
-        m.common_ft_update_success(),
-      );
+    if (template?.id) {
+      await api.updateFeeTemplate(template.id, request);
+      toast.success(m.common_ft_update_success());
     } else {
-      await commands.finance.createFeeTemplate(request);
-      toast.success(
-        m.common_ft_create_success(),
-      );
+      await api.createFeeTemplate(request);
+      toast.success(m.common_ft_create_success());
     }
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.finance.feeTemplates(orgId),
+    });
   });
   if (submitted) onSuccess();
   else if (form.formError) toast.error(form.formError);
-  else if (Object.keys(form.errors).length > 0) toast.error(m.common_ft_error_name_required());
+  else if (Object.keys(form.errors).length > 0)
+    toast.error(m.common_ft_error_name_required());
 }
 </script>
 
@@ -416,7 +374,7 @@ async function handleSubmit() {
                       selectedLevels = selectedLevels.filter(x => x !== lvl.level);
                     }
                   }}
-                  disabled={isSubmitting}
+                  disabled={form.isSubmitting}
                 />
                 <Label for={`ft_level_${lvl.level}`} class="text-xs cursor-pointer text-start">
                   {lvl.label}

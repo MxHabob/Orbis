@@ -1,4 +1,7 @@
-use sea_orm::{ConnectionTrait, Database, DatabaseBackend, Statement};
+use std::sync::Arc;
+use sea_orm::Database;
+use orbis_app::services::SystemService;
+use orbis_infra::repositories::system_repo::SystemRepoImpl;
 
 use crate::core::license;
 
@@ -42,69 +45,26 @@ pub async fn get_full_status() -> SystemStatus {
         };
     };
 
-    // Check organizations
-    let (has_org, org_name) = match db
-        .query_one(Statement::from_string(
-            DatabaseBackend::Sqlite,
-            "SELECT name FROM organizations LIMIT 1;".to_owned(),
-        ))
-        .await
-    {
-        Ok(Some(row)) => {
-            let name: Option<String> = row.try_get("", "name").ok();
-            (true, name)
-        }
-        _ => (false, None),
-    };
+    let system_repo = Arc::new(SystemRepoImpl { db });
+    let system_service = SystemService::new(system_repo);
 
-    if !has_org {
-        return SystemStatus {
+    match system_service.get_readiness().await {
+        Ok(readiness) => SystemStatus {
+            db_exists: true,
+            has_organization: readiness.has_organization,
+            has_admin: readiness.has_admin,
+            has_academic_years: readiness.has_academic_year,
+            license_status: lic_status,
+            org_name: readiness.org_name,
+        },
+        Err(_) => SystemStatus {
             db_exists: true,
             has_organization: false,
             has_admin: false,
             has_academic_years: false,
             license_status: lic_status,
             org_name: None,
-        };
-    }
-
-    // Check admin users
-    let has_admin = match db
-        .query_one(Statement::from_string(
-            DatabaseBackend::Sqlite,
-            "SELECT COUNT(*) as cnt FROM users WHERE primary_role = 'super_admin';".to_owned(),
-        ))
-        .await
-    {
-        Ok(Some(row)) => {
-            let count: i64 = row.try_get("", "cnt").unwrap_or(0);
-            count > 0
-        }
-        _ => false,
-    };
-
-    // Check academic years (setup completed via Desktop)
-    let has_academic_years = match db
-        .query_one(Statement::from_string(
-            DatabaseBackend::Sqlite,
-            "SELECT COUNT(*) as cnt FROM academic_years;".to_owned(),
-        ))
-        .await
-    {
-        Ok(Some(row)) => {
-            let count: i64 = row.try_get("", "cnt").unwrap_or(0);
-            count > 0
-        }
-        _ => false,
-    };
-
-    SystemStatus {
-        db_exists: true,
-        has_organization: has_org,
-        has_admin,
-        has_academic_years,
-        license_status: lic_status,
-        org_name,
+        },
     }
 }
 

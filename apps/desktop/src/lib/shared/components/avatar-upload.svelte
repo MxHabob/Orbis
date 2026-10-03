@@ -5,7 +5,7 @@ A circular avatar image uploader with hover edit states and customizable fallbac
 <script lang="ts">
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui/avatar";
 import { cn } from "@orbis/ui/utils";
-import { Loader2, User } from "@lucide/svelte";
+import { AdjustmentsHorizontal, ArrowPath, User } from "@orbis/icons";
 import {
   useUploadDocument,
   resolveDocumentUrl,
@@ -13,6 +13,7 @@ import {
 
 let {
   avatarUrl = $bindable(null),
+  file = $bindable<File | null>(null),
   size = 64,
   isLoading = false,
   fallbackText = "",
@@ -20,9 +21,12 @@ let {
   entityType = "user",
   entityId,
   category = "avatar",
+  deferred = false,
   onupload,
+  onchange,
 }: {
   avatarUrl?: string | null;
+  file?: File | null;
   size?: number;
   isLoading?: boolean;
   fallbackText?: string;
@@ -30,15 +34,20 @@ let {
   entityType?: string;
   entityId: string;
   category?: string;
+  deferred?: boolean;
   onupload?: (url: string) => void;
+  onchange?: (file: File) => void;
 } = $props();
+
+import { onMount } from "svelte";
 
 const uploadMutation = useUploadDocument();
 let fileInputRef: HTMLInputElement | undefined = $state();
 let localPreviewUrl: string | null = $state(null);
 
 let resolvedAvatarUrl: string | null = $state(null);
-$effect(() => {
+
+onMount(() => {
   if (avatarUrl && !localPreviewUrl) {
     resolveDocumentUrl(avatarUrl).then((url) => {
       resolvedAvatarUrl = url;
@@ -46,7 +55,7 @@ $effect(() => {
   }
 });
 
-let displayUrl = $derived(localPreviewUrl || resolvedAvatarUrl);
+let displayUrl = $derived(localPreviewUrl || resolvedAvatarUrl || avatarUrl);
 
 function triggerFileInput() {
   if (isLoading || uploadMutation.isPending) return;
@@ -55,20 +64,28 @@ function triggerFileInput() {
 
 function handleFileChange(event: Event) {
   const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (!file) return;
+  const selectedFile = target.files?.[0];
+  if (!selectedFile) return;
+
+  file = selectedFile;
+  onchange?.(selectedFile);
 
   // Local preview immediately
   const reader = new FileReader();
   reader.onload = () => {
     localPreviewUrl = reader.result as string;
   };
-  reader.readAsDataURL(file);
+  reader.readAsDataURL(selectedFile);
 
-  // Background upload
+  // If deferred, do NOT upload immediately — the parent form handles upload upon save
+  if (deferred) {
+    return;
+  }
+
+  // Direct Background upload for standalone profile views
   uploadMutation.mutate(
     {
-      file,
+      file: selectedFile,
       entity_type: entityType,
       entity_id: entityId,
       category: category,
@@ -102,7 +119,7 @@ function handleFileChange(event: Event) {
 >
   {#if isLoading || uploadMutation.isPending}
     <div class="flex items-center justify-center w-full h-full bg-background/50 backdrop-blur-xs">
-      <Loader2 class="animate-spin text-primary shrink-0" size={Math.max(16, size / 3.5)} />
+      <ArrowPath class="animate-spin text-primary shrink-0" size={Math.max(16, size / 3.5)} />
     </div>
   {:else}
     <Avatar class="w-full h-full rounded-md">

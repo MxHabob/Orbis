@@ -2,15 +2,15 @@
 import type { Pathname } from "$app/types";
 import { resolve } from "$app/paths";
 import { page } from "$app/state";
-import { locales, localizeHref } from "$lib/paraglide/runtime";
+import { locales, localizeHref, getLocale, getTextDirection } from "$lib/paraglide/runtime";
 import { themeStore } from "$lib/stores";
-import { isDesktopApp } from "$lib/core/ipc";
+import { isDesktopApp } from "$lib/api";
 import { onMount } from "svelte";
 import { QueryClientProvider } from "@tanstack/svelte-query";
-import { queryClient } from "$lib/core/query/client";
+import { queryClient } from "$lib/api";
 import "./layout.css";
 import favicon from "$lib/assets/favicon.svg";
-    import { Toaster } from "@orbis/ui";
+import { Toaster } from "@orbis/ui";
 
 let { children } = $props();
 
@@ -19,9 +19,19 @@ $effect(() => {
   themeStore.applyToDOM();
 });
 
+// Apply lang & dir to documentElement
+$effect(() => {
+  const currentLocale = getLocale();
+  const dir = getTextDirection(currentLocale);
+  if (typeof document !== "undefined") {
+    document.documentElement.dir = dir;
+    document.documentElement.lang = currentLocale;
+  }
+});
+
 // Add desktop class to html element for Tauri shell styling
 onMount(() => {
-  if (isDesktopApp()) {
+  if (isDesktopApp) {
     document.documentElement.classList.add("desktop");
   }
 });

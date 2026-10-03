@@ -46,36 +46,50 @@ export function matchStudent(student: any, query: string): boolean {
 
   if (queryWords.length === 0) return true;
 
+  // Handle both StudentDetailDto ({ student, person, enrollment }) and direct models
+  const s = student?.student || student;
+  const p = student?.person || student;
+  const e = student?.enrollment || student;
+
   // Gather and normalize student fields
   const fullName = normalizeArabic(
-    String(student.full_name || student.student_name || "").toLowerCase(),
+    String(
+      (p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : "") ||
+      p.full_name ||
+      p.name_ar ||
+      p.name_en ||
+      s.student_name ||
+      ""
+    ).toLowerCase(),
   );
-  const nameAr = normalizeArabic(String(student.name_ar || "").toLowerCase());
-  const nameEn = String(student.name_en || "").toLowerCase();
-  const email = String(student.email || "").toLowerCase();
+  const nameAr = normalizeArabic(String(p.name_ar || "").toLowerCase());
+  const nameEn = String(p.name_en || "").toLowerCase();
+  const email = String(p.email || "").toLowerCase();
+  const phone = String(p.phone || "").toLowerCase();
+  const nationalId = String(p.national_id || "").toLowerCase();
 
   // Student numbers might contain dashes/dots/slashes, we normalize digits and also keep clean version
-  const rawStudentNumber = String(student.student_number || "").toLowerCase();
+  const rawStudentNumber = String(s.student_number || student.student_number || "").toLowerCase();
   const normalizedStudentNumber = normalizeDigits(rawStudentNumber);
   const cleanStudentNumber = normalizedStudentNumber.replace(/[^a-z0-9]/g, "");
 
-  const rawId = String(student.id || "").toLowerCase();
+  const rawId = String(s.id || student.id || "").toLowerCase();
   const cleanId = rawId.replace(/[^a-z0-9]/g, "");
 
-  // Construct search pool for word-based matching (general names/emails)
-  const searchPool = `${fullName} ${nameAr} ${nameEn} ${email}`;
+  // Construct search pool for word-based matching
+  const searchPool = `${fullName} ${nameAr} ${nameEn} ${email} ${phone} ${nationalId}`;
 
   // Check if all query words are present in the search pool
   const nameMatch = queryWords.every((word) => searchPool.includes(word));
 
-  // For academic number, we also support searching by matching the normalized number directly.
-  // We clean the query from any special characters for number matching to support "2026001" matching "2026-001"
+  // For academic number, ID, or national ID matching
   const cleanQueryForNumber = normalizedQuery.replace(/[^a-z0-9]/g, "");
   const numberMatch =
     cleanQueryForNumber.length > 0 &&
     (cleanStudentNumber.includes(cleanQueryForNumber) ||
       rawStudentNumber.includes(cleanQuery) ||
-      cleanId.includes(cleanQueryForNumber));
+      cleanId.includes(cleanQueryForNumber) ||
+      nationalId.includes(cleanQueryForNumber));
 
   return nameMatch || numberMatch;
 }
