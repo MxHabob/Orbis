@@ -42,7 +42,7 @@ export default function RegisterScreen() {
   const theme = useTheme();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const { t, isRTL } = useI18n();
+  const { t, isArabic } = useI18n();
   const toast = useToast();
   const { login } = useAuth();
 
@@ -96,21 +96,18 @@ export default function RegisterScreen() {
         throwOnError: true,
       });
 
-      toast.show({
-        message: t("auth_register_success"),
-        type: "success",
-      });
+      toast.success(t("auth_register_success"));
 
       try {
         await login(trimmedEmail, password);
-        router.replace("/(auth)/wallet-setup");
+        router.replace("/");
       } catch {
         router.replace("/(auth)/sign-in");
       }
     } catch (err: any) {
       const msg = err?.message || t("auth_error_failed");
       setErrorMsg(msg);
-      toast.show({ message: msg, type: "error" });
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -123,7 +120,7 @@ export default function RegisterScreen() {
     else router.back();
   };
 
-  const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+  const BackIcon = isArabic ? ArrowRight : ArrowLeft;
 
   return (
     <View
@@ -141,7 +138,7 @@ export default function RegisterScreen() {
         }
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 0.5 }}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
 
@@ -269,7 +266,7 @@ export default function RegisterScreen() {
                     styles.largePillTextInput,
                     {
                       color: isDark ? "#FFFFFF" : "#0F172A",
-                      textAlign: isRTL ? "right" : "left",
+                      textAlign: isArabic ? "right" : "left",
                     },
                   ]}
                   placeholder={t("auth_full_name_ph")}
@@ -442,7 +439,7 @@ export default function RegisterScreen() {
                       styles.largePillTextInput,
                       {
                         color: isDark ? "#FFFFFF" : "#0F172A",
-                        textAlign: isRTL ? "right" : "left",
+                        textAlign: isArabic ? "right" : "left",
                       },
                     ]}
                     placeholder={t("auth_email_placeholder")}
@@ -476,7 +473,7 @@ export default function RegisterScreen() {
                       styles.largePillTextInput,
                       {
                         color: isDark ? "#FFFFFF" : "#0F172A",
-                        textAlign: isRTL ? "right" : "left",
+                        textAlign: isArabic ? "right" : "left",
                       },
                     ]}
                     placeholder="••••••••"

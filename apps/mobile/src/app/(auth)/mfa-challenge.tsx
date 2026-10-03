@@ -107,16 +107,13 @@ export default function MFAChallengeScreen() {
         code: codeToSubmit,
       });
 
-      toast.show({
-        message: t("auth_verify"),
-        type: "success",
-      });
+      toast.success(t("auth_verify"));
 
-      router.replace("/(auth)/wallet-setup");
+      router.replace("/");
     } catch (err: any) {
       const msg = err?.message || t("auth_error_invalid_credentials");
       setErrorMsg(msg);
-      toast.show({ message: msg, type: "error" });
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -156,7 +153,7 @@ export default function MFAChallengeScreen() {
         }
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 0.6 }}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
 
