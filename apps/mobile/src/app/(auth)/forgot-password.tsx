@@ -32,7 +32,7 @@ export default function ForgotPasswordScreen() {
   const theme = useTheme();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const { t, isRTL } = useI18n();
+  const { t, isArabic } = useI18n();
   const toast = useToast();
 
   const [email, setEmail] = useState("");
@@ -52,10 +52,7 @@ export default function ForgotPasswordScreen() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 600));
       setIsSubmitted(true);
-      toast.show({
-        message: t("auth_forgot_success_title"),
-        type: "success",
-      });
+      toast.success(t("auth_forgot_success_title"));
     } catch {
       setErrorMsg(t("auth_error_failed"));
     } finally {
@@ -63,8 +60,8 @@ export default function ForgotPasswordScreen() {
     }
   };
 
-  const BackIcon = isRTL ? ArrowRight : ArrowLeft;
-  const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
+  const BackIcon = isArabic ? ArrowRight : ArrowLeft;
+  const ArrowIcon = isArabic ? ArrowLeft : ArrowRight;
 
   return (
     <View
@@ -81,7 +78,7 @@ export default function ForgotPasswordScreen() {
         }
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 0.5 }}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
 
@@ -173,7 +170,7 @@ export default function ForgotPasswordScreen() {
                   styles.largePillTextInput,
                   {
                     color: isDark ? "#FFFFFF" : "#0F172A",
-                    textAlign: isRTL ? "right" : "left",
+                    textAlign: isArabic ? "right" : "left",
                   },
                 ]}
                 placeholder={t("auth_email_placeholder")}

@@ -53,7 +53,7 @@ export default function SignInScreen() {
   const theme = useTheme();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const { t, isRTL, language } = useI18n();
+  const { t, isArabic, locale } = useI18n();
   const toast = useToast();
   const { login, loginWithGoogle, isLoading } = useAuth();
 
@@ -101,11 +101,11 @@ export default function SignInScreen() {
         });
         return;
       }
-      router.replace("/(auth)/wallet-setup");
+      router.replace("/");
     } catch (err: any) {
       const msg = err?.message || t("auth_error_invalid_credentials");
       setErrorMsg(msg);
-      toast.show({ message: msg, type: "error" });
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -115,12 +115,9 @@ export default function SignInScreen() {
     setIsSubmitting(true);
     try {
       await loginWithGoogle("google-token");
-      router.replace("/(auth)/wallet-setup");
+      router.replace("/");
     } catch (err: any) {
-      toast.show({
-        message: err?.message || t("auth_error_google"),
-        type: "error",
-      });
+      toast.error(err?.message || t("auth_error_google"));
     } finally {
       setIsSubmitting(false);
     }
@@ -128,7 +125,7 @@ export default function SignInScreen() {
 
   const activeCap = CAPABILITIES[activeCapabilityIndex];
   const ActiveIcon = activeCap.icon;
-  const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
+  const ArrowIcon = isArabic ? ArrowLeft : ArrowRight;
 
   return (
     <View
@@ -177,7 +174,7 @@ export default function SignInScreen() {
                           { color: isDark ? "#FFFFFF" : "#0F172A" },
                         ]}
                       >
-                        {language === "ar" ? cap.labelAr : cap.label}
+                        {locale === "ar" ? cap.labelAr : cap.label}
                       </Text>
                     </View>
                   ) : (
@@ -191,7 +188,7 @@ export default function SignInScreen() {
                         },
                       ]}
                     >
-                      {language === "ar" ? cap.labelAr : cap.label}
+                      {locale === "ar" ? cap.labelAr : cap.label}
                     </Text>
                   )}
                 </View>

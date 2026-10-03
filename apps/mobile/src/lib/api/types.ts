@@ -11,6 +11,23 @@ import type {
   IntegrationDto,
 } from "@orbis/sdk";
 
+export type {
+  AcademicContextResponse,
+  AttendanceDto,
+  ClassDto,
+  DashboardCountsDto,
+  EnrollmentDto,
+  GradeDto,
+  GuardianDto,
+  MarkAttendanceRequest,
+  OrgDto,
+  OrganizationSettingsDto,
+  RecordGradeRequest,
+  ScheduledLessonDto,
+  StudentFeeDto,
+  UserDto,
+} from "@orbis/sdk";
+
 export type ValidationResult = ValidationResultDto;
 export type { ValidationIssueDto };
 
