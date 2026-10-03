@@ -12,7 +12,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "typescript": "^7.0.2",
-    "date-fns": "^4.1.0"
+    "date-fns": "^4.4.0"
   },
   "scripts": {
     "generate": "cargo run --manifest-path apps/api-rust/Cargo.toml -p orbis-server --bin export_openapi && bun run --cwd packages/sdk generate",
@@ -36,10 +36,11 @@
     "cli": "cargo run --manifest-path apps/cli/Cargo.toml",
     "cli:init": "cargo run --manifest-path apps/cli/Cargo.toml -- init"
   },
-  "dependencies": {
+  "devDependencies": {
     "@biomejs/biome": "2.3.13",
     "@manypkg/cli": "^0.25.1",
     "@orbis/tsconfig": "workspace:*",
+    "@types/node": "^26.1.1",
     "turbo": "^2.11.5",
     "typescript": "^7.0.2"
   },
@@ -47,8 +48,5 @@
     "tailwindcss": "4.3.1",
     "@tailwindcss/postcss": "4.3.1",
     "@tailwindcss/vite": "4.3.1"
-  },
-  "devDependencies": {
-    "@types/node": "^26.1.1"
   }
 }
