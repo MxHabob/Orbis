@@ -172,9 +172,9 @@ function insertPreset(preset: TextPreset) {
           text-align: start;
         ">
           {preset.sampleAr}
-        </button>
+        </div>
         <span class="preset-label">{preset.label}</span>
-      </div>
+      </button>
     {/each}
   </div>
 

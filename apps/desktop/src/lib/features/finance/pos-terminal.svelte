@@ -525,7 +525,7 @@ const rtl = $derived(getLocale() === "ar");
         <!-- Payment Method Tabs (Dynamically Resolved via Integration Layer) -->
         <div class="flex flex-col gap-1.5">
           <div class="flex items-center justify-between">
-            <label class="text-[11px] font-semibold text-foreground">طريقة الدفع (مربوطة بالتكاملات)</label>
+            <p class="text-[11px] font-semibold text-foreground">{m.finance_pos_payment_method_integrations()}</p>
             {#if selectedPaymentMethodObj?.is_digital_gateway}
               <span class="text-[9px] bg-primary/10 text-primary border border-primary/20 rounded px-1.5 py-0.5 font-medium">
                 بوابة {selectedPaymentMethodObj.provider_name}

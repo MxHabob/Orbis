@@ -19,7 +19,7 @@ let {
 $effect(() => {
   if (showSuggestions && suggestionsContainer) {
     const activeEl = suggestionsContainer.querySelector(
-      '[aria-selected="true"]',
+      'button[aria-pressed="true"]',
     );
     if (activeEl) {
       activeEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -36,7 +36,7 @@ $effect(() => {
     {#each filteredSuggestions as item, idx}
       <button
         type="button"
-        aria-selected={idx === selectedIndex}
+        aria-pressed={idx === selectedIndex}
         class="w-full text-start px-3.5 py-2 flex flex-col gap-0.5 transition-colors cursor-pointer select-none {idx === selectedIndex ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-muted/50'}"
         onclick={() => onSelect(item)}
         onmouseenter={() => onHover(idx)}

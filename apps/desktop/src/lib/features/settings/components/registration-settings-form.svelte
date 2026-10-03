@@ -75,8 +75,9 @@ interface DocItem {
 // Application Form Fields Configuration Interface & Defaults
 interface FieldConfig {
   key: string;
-  nameAr: string;
-  nameEn: string;
+  nameAr?: string;
+  nameEn?: string;
+  label?: () => string;
   isActive: boolean;
   isRequired: boolean;
   preventDuplicate: boolean;
@@ -84,18 +85,18 @@ interface FieldConfig {
 }
 
 const defaultFormFields: FieldConfig[] = [
-  { key: "national_id", nameAr: "الرقم الوطني / رقم الهوية", nameEn: "National ID Number", isActive: true, isRequired: true, preventDuplicate: true, supportsDuplicate: true },
-  { key: "phone", nameAr: "رقم هاتف الطالب / التواصل", nameEn: "Student Phone Number", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: true },
-  { key: "email", nameAr: "البريد الإلكتروني", nameEn: "Email Address", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: true },
-  { key: "birth_date", nameAr: "تاريخ الميلاد", nameEn: "Date of Birth", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
-  { key: "sex", nameAr: "الجنس", nameEn: "Gender", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
-  { key: "nationality", nameAr: "الجنسية الرسمية", nameEn: "Nationality", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
-  { key: "address", nameAr: "عنوان السكن والحي", nameEn: "Residential Address", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
-  { key: "place_of_birth", nameAr: "مكان الميلاد", nameEn: "Place of Birth", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
-  { key: "blood_type", nameAr: "فصيلة الدم", nameEn: "Blood Type", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
-  { key: "emergency_contact", nameAr: "جهة الاتصال للطوارئ", nameEn: "Emergency Contact", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
-  { key: "medical_notes", nameAr: "الملاحظات الطبية والحساسية", nameEn: "Medical Notes & Allergies", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
-  { key: "previous_school", nameAr: "المدرسة / المؤسسة السابقة", nameEn: "Previous Institution", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
+  { key: "national_id", label: m.common_form_doc_national_id, isActive: true, isRequired: true, preventDuplicate: true, supportsDuplicate: true },
+  { key: "phone", label: m.common_form_student_phone, isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: true },
+  { key: "email", label: m.common_form_student_email, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: true },
+  { key: "birth_date", label: m.registration_field_birth_date, isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
+  { key: "sex", label: m.common_form_sex, isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
+  { key: "nationality", label: m.common_form_nationality, isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
+  { key: "address", label: m.common_form_address, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
+  { key: "place_of_birth", label: m.common_form_place_of_birth, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
+  { key: "blood_type", label: m.registration_field_blood_type, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
+  { key: "emergency_contact", label: m.common_form_guardian_role_emergency, isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
+  { key: "medical_notes", label: m.registration_field_medical_notes, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
+  { key: "previous_school", label: m.common_form_previous_school, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
 ];
 
 function parseOrgRegistration(rawOrg: any) {
@@ -158,7 +159,7 @@ let allowDuplicateNationalId = $state<boolean>(parsed.allowDuplicateNationalId);
 let autoAssignFees = $state<boolean>(parsed.autoAssignFees);
 let maxClassCapacity = $state<number>(parsed.maxClassCapacity);
 let requiredDocuments = $state<DocItem[]>(JSON.parse(JSON.stringify(parsed.requiredDocuments)));
-let formFields = $state<FieldConfig[]>(JSON.parse(JSON.stringify(parsed.formFields)));
+let formFields = $state<FieldConfig[]>(parsed.formFields.map((field) => ({ ...field })));
 
 // Database Classes & Sheet State
 let dbClasses = $state<ClassDto[]>([]);
@@ -184,7 +185,7 @@ const initialState = {
   autoAssignFees: parsed.autoAssignFees,
   maxClassCapacity: parsed.maxClassCapacity,
   requiredDocuments: JSON.parse(JSON.stringify(parsed.requiredDocuments)),
-  formFields: JSON.parse(JSON.stringify(parsed.formFields)),
+  formFields: parsed.formFields.map((field) => ({ ...field })),
 };
 
 const isDirty = $derived.by(() => {
@@ -298,7 +299,7 @@ function resetToInitial() {
   autoAssignFees = initialState.autoAssignFees;
   maxClassCapacity = initialState.maxClassCapacity;
   requiredDocuments = JSON.parse(JSON.stringify(initialState.requiredDocuments));
-  formFields = JSON.parse(JSON.stringify(initialState.formFields));
+  formFields = initialState.formFields.map((field) => ({ ...field }));
 }
 
 // Generated ID Preview
@@ -417,7 +418,7 @@ const fieldGridSource = $derived(
   formFields.map((field, idx) => ({
     ...field,
     __idx: idx + 1,
-    field_name: l(field.nameAr, field.nameEn),
+    field_name: field.label?.() ?? l(field.nameAr ?? "", field.nameEn ?? ""),
     active_display: field.isActive ? m.ui_copy_active_60ced915() : m.academics_exams_center_disabled(),
     required_display: field.isActive ? (field.isRequired ? m.ui_copy_required_1c464044() : m.ui_onboarding_progress_optional()) : "—",
     duplicate_display: field.supportsDuplicate ? (field.preventDuplicate ? m.ui_copy_strict_unique_be0bf346() : m.ui_copy_allow_duplicate_9bdc69d7()) : "—",

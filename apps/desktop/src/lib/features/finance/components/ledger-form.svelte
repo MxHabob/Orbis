@@ -1,5 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { untrack } from "svelte";
 import { api, queryKeys } from "$lib/api";
 import { useQueryClient } from "@tanstack/svelte-query";
 import { createAccountsQuery } from "../queries";
@@ -47,7 +48,9 @@ const isLoading = $derived(accountsQuery.isLoading);
 // Authoritative Base Currency from Organization Store
 const baseCurrency = $derived(orgContext.baseCurrency || "SAR");
 
-let activeTab = $state<"gl" | "cash_account" | "entity">(defaultTab);
+let activeTab = $state<"gl" | "cash_account" | "entity">(
+  untrack(() => defaultTab),
+);
 
 // Form Controllers for each tab (Initialized during component initialization)
 const glForm = new FormController({

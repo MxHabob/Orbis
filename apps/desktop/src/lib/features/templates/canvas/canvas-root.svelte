@@ -260,7 +260,15 @@ function handleDrop(e: DragEvent) {
   bind:this={containerEl}
   class="relative grow overflow-hidden bg-muted/20 select-none"
   role="application"
-  aria-label="Template Canvas"
+  aria-label={m.docforge_canvas_label()}
+  tabindex="0"
+  onmousemove={handleMouseMove}
+  onmousedown={handleMouseDown}
+  onmouseup={handleMouseUp}
+  onmouseleave={handleMouseUp}
+  ondragover={handleDragOver}
+  ondragleave={handleDragLeave}
+  ondrop={handleDrop}
 >
   <!-- Rulers -->
   {#if store.rulersVisible}
@@ -287,19 +295,10 @@ function handleDrop(e: DragEvent) {
   <!-- SVG Canvas -->
   <svg
     bind:this={svgEl}
-    role="application"
-    aria-label={m.docforge_canvas_label()}
     width={containerWidth}
     height={containerHeight}
     class="absolute inset-0 {isPanning ? 'cursor-grabbing' : ''}"
     style="top: {store.rulersVisible ? '24px' : '0'}; left: {store.rulersVisible ? '24px' : '0'};"
-    onmousemove={handleMouseMove}
-    onmousedown={handleMouseDown}
-    onmouseup={handleMouseUp}
-    onmouseleave={handleMouseUp}
-    ondragover={handleDragOver}
-    ondragleave={handleDragLeave}
-    ondrop={handleDrop}
   >
     <!-- Background pattern -->
     <defs>

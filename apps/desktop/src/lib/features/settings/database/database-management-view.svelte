@@ -969,9 +969,9 @@ const advisorInsights = $derived.by(() => {
 
               <!-- Step 1: File Selection -->
               <div class="space-y-2">
-                <label class="text-xs font-bold text-foreground">
+                <p class="text-xs font-bold text-foreground">
                   {m.database_restore_step1_title?.() || m.database_restore_step1_title()}
-                </label>
+                </p>
                 <div class="flex gap-2">
                   <Input
                     type="text"

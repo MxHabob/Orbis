@@ -176,9 +176,9 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
           {#if events.length > 0}
             {#each events as event (event.id)}
               {@const s = eventStyles[event.type]}
+              {@const EventIcon = s.icon}
               <div class="px-4 py-3 hover:bg-muted/30 transition-colors">
                 <div class="flex items-start gap-2.5">
-                  {@const EventIcon = s.icon}
                   <EventIcon size={14} class="{s.color} mt-0.5 shrink-0" />
                   <div>
                     <p class="text-xs font-semibold text-foreground">{event.camera_name}</p>

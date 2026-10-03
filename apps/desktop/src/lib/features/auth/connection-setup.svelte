@@ -189,9 +189,9 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
 
             <!-- Mode Selector Cards -->
             <div class="space-y-2">
-              <label class="text-xs font-bold text-foreground">
+              <p class="text-xs font-bold text-foreground">
                 {m.ui_copy_select_connection_mode_acd68c8e()}
-              </label>
+              </p>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 
                 <!-- Local Option -->
