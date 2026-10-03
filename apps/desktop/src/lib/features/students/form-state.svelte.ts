@@ -366,7 +366,8 @@ export class StudentFormState {
 
   // Save operation
   async handleSave(queryClient?: QueryClient) {
-    if (!this.personal.nameAr.trim()) {
+    const displayName = (this.personal.nameAr || this.personal.nameEn || "").trim();
+    if (!displayName) {
       toast.error(m.common_form_error_name_required());
       return;
     }
@@ -411,7 +412,7 @@ export class StudentFormState {
           first_name_ar: firstNameAr,
           middle_name_ar: middleNameAr,
           last_name_ar: lastNameAr,
-          display_name: this.personal.nameAr.trim() || this.personal.nameEn.trim(),
+          display_name: displayName,
           national_id: this.personal.nationalId || undefined,
           passport_number: this.personal.passportNumber || undefined,
           gender: this.personal.sex || "male",
@@ -434,7 +435,7 @@ export class StudentFormState {
         toast.success(m.common_form_success_create());
       } else {
         targetStudentId = this.originalStudent?.student?.id || this.studentId!;
-        targetEnrollmentId = this.originalStudent?.enrollment?.id || this.studentId!;
+        targetEnrollmentId = this.originalStudent?.enrollment?.id || "";
 
         const namePartsAr = (this.personal.nameAr || "").trim().split(/\s+/);
         const namePartsEn = (this.personal.nameEn || "").trim().split(/\s+/);
@@ -455,6 +456,7 @@ export class StudentFormState {
           first_name_ar: firstNameAr,
           middle_name_ar: middleNameAr,
           last_name_ar: lastNameAr,
+          display_name: displayName,
           national_id: this.personal.nationalId || undefined,
           passport_number: this.personal.passportNumber || undefined,
           gender: this.personal.sex || "male",
@@ -493,7 +495,7 @@ export class StudentFormState {
       // 3. Assign optional fees
       const activePeriod = effectiveContext.currentPeriodId;
       const today = new Date().toISOString().slice(0, 10);
-      if (activePeriod && targetStudentId) {
+      if (activePeriod && targetStudentId && targetEnrollmentId) {
         for (const key in this.financial.selectedOptionalFees) {
           if (this.financial.selectedOptionalFees[key].checked) {
             try {
@@ -540,7 +542,7 @@ export class StudentFormState {
             risk_level: "medium",
             entity_type: "student",
             entity_id: targetStudentId,
-            reason: `طلب مراجعة واعتماد قيد الطالب: ${this.personal.nameAr || this.personal.nameEn} (${this.selectedClassName})`,
+            reason: `طلب مراجعة واعتماد قيد الطالب: ${displayName} (${this.selectedClassName})`,
             field_name: "registration_approval",
             new_value: "approved",
             old_value: "pending_review",
