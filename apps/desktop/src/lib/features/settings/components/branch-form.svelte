@@ -4,6 +4,7 @@ Form for creating or editing an organizational branch / campus.
 Follows the standard Orbis Settings Sheet design system and shared UI components.
 -->
 <script lang="ts">
+import { untrack } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { api, type OrgUnitDto, extractErrorMessage } from "$lib/api";
 import { FormField } from "@orbis/ui";
@@ -39,18 +40,19 @@ let {
 } = $props();
 
 const isEdit = $derived(!!branch);
+const initialBranch = untrack(() => branch);
 
 // Form Fields
-let nameAr = $state(branch?.name_ar || "");
-let nameEn = $state(branch?.name || "");
-let code = $state(branch?.code || "");
-let headId = $state<string | null>(branch?.head_id || null);
-let dataIsolation = $state<string>(branch?.data_isolation || "shared");
-let capacity = $state<number | null>(branch?.capacity ?? null);
-let building = $state(branch?.building || "");
-let floor = $state<number | null>(branch?.floor ?? null);
-let roomNumber = $state(branch?.room_number || "");
-let isActive = $state(branch ? branch.is_active : true);
+let nameAr = $state(initialBranch?.name_ar || "");
+let nameEn = $state(initialBranch?.name || "");
+let code = $state(initialBranch?.code || "");
+let headId = $state<string | null>(initialBranch?.head_id || null);
+let dataIsolation = $state<string>(initialBranch?.data_isolation || "shared");
+let capacity = $state<number | null>(initialBranch?.capacity ?? null);
+let building = $state(initialBranch?.building || "");
+let floor = $state<number | null>(initialBranch?.floor ?? null);
+let roomNumber = $state(initialBranch?.room_number || "");
+let isActive = $state(initialBranch ? initialBranch.is_active : true);
 
 let isSubmitting = $state(false);
 let errors = $state<Record<string, string>>({});

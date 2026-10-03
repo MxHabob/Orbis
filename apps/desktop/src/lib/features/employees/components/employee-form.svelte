@@ -5,6 +5,7 @@
   and live payroll & compensation calculations.
 -->
 <script lang="ts">
+import { untrack } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui/input";
 import { Textarea } from "@orbis/ui/textarea";
@@ -58,38 +59,40 @@ let {
   onCancel,
 }: Props = $props();
 
-// Form State (Initialized directly from employee prop without $effect)
-let firstName = $state(employee?.first_name || "");
-let middleName = $state(employee?.middle_name || "");
-let lastName = $state(employee?.last_name || "");
-let firstNameAr = $state(employee?.first_name_ar || "");
-let middleNameAr = $state(employee?.middle_name_ar || "");
-let lastNameAr = $state(employee?.last_name_ar || "");
-let nationalId = $state(employee?.national_id || "");
-let passportNumber = $state(employee?.passport_number || "");
-let gender = $state(employee?.gender || "male");
-let birthDate = $state(employee?.birth_date || "");
-let nationality = $state(employee?.nationality || "Saudi");
-let bloodType = $state(employee?.blood_type || "");
-let phone = $state(employee?.phone || "");
-let email = $state(employee?.email || "");
-let address = $state(employee?.address || "");
+const initialEmployee = untrack(() => employee);
 
-let employeeNumber = $state(employee?.employee_number || "");
-let employeeType = $state(employee?.employee_type?.toLowerCase() || "teacher");
-let jobTitle = $state(employee?.job_title || "");
-let department = $state(employee?.department || "");
-let orgUnitId = $state(employee?.org_unit_id || "");
-let hireDate = $state(employee?.hire_date || new Date().toISOString().split("T")[0]);
-let employmentType = $state(employee?.employment_type?.toLowerCase() || "full_time");
-let workShift = $state(employee?.work_shift?.toLowerCase() || "morning");
-let status = $state(employee?.status?.toLowerCase() || "active");
+// Form State (Initialized directly from employee prop without $effect)
+let firstName = $state(initialEmployee?.first_name || "");
+let middleName = $state(initialEmployee?.middle_name || "");
+let lastName = $state(initialEmployee?.last_name || "");
+let firstNameAr = $state(initialEmployee?.first_name_ar || "");
+let middleNameAr = $state(initialEmployee?.middle_name_ar || "");
+let lastNameAr = $state(initialEmployee?.last_name_ar || "");
+let nationalId = $state(initialEmployee?.national_id || "");
+let passportNumber = $state(initialEmployee?.passport_number || "");
+let gender = $state(initialEmployee?.gender || "male");
+let birthDate = $state(initialEmployee?.birth_date || "");
+let nationality = $state(initialEmployee?.nationality || "Saudi");
+let bloodType = $state(initialEmployee?.blood_type || "");
+let phone = $state(initialEmployee?.phone || "");
+let email = $state(initialEmployee?.email || "");
+let address = $state(initialEmployee?.address || "");
+
+let employeeNumber = $state(initialEmployee?.employee_number || "");
+let employeeType = $state(initialEmployee?.employee_type?.toLowerCase() || "teacher");
+let jobTitle = $state(initialEmployee?.job_title || "");
+let department = $state(initialEmployee?.department || "");
+let orgUnitId = $state(initialEmployee?.org_unit_id || "");
+let hireDate = $state(initialEmployee?.hire_date || new Date().toISOString().split("T")[0]);
+let employmentType = $state(initialEmployee?.employment_type?.toLowerCase() || "full_time");
+let workShift = $state(initialEmployee?.work_shift?.toLowerCase() || "morning");
+let status = $state(initialEmployee?.status?.toLowerCase() || "active");
 
 // Payroll & Compensation State
 let rawPayroll: Record<string, any> = {};
 try {
-  if (employee?.notes && employee.notes.startsWith("{")) {
-    rawPayroll = JSON.parse(employee.notes);
+  if (initialEmployee?.notes && initialEmployee.notes.startsWith("{")) {
+    rawPayroll = JSON.parse(initialEmployee.notes);
   }
 } catch {}
 
@@ -103,7 +106,7 @@ let bankName = $state<string>(rawPayroll.bank_name || "");
 let bankIban = $state<string>(rawPayroll.bank_iban || "");
 let paymentMethod = $state<string>(rawPayroll.payment_method || "bank_transfer");
 let textNotes = $state<string>(
-  rawPayroll.text_notes || (employee?.notes && !employee.notes.startsWith("{") ? employee.notes : "")
+  rawPayroll.text_notes || (initialEmployee?.notes && !initialEmployee.notes.startsWith("{") ? initialEmployee.notes : "")
 );
 
 // Derived Payroll Totals

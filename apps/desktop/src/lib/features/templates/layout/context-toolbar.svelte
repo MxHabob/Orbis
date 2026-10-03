@@ -1,4 +1,5 @@
 <script lang="ts">
+import { untrack } from "svelte";
 import * as m from "$lib/paraglide/messages";
 /**
  * ContextToolbar — Contextual top toolbar that changes based on selection.
@@ -74,7 +75,7 @@ function updateProp(key: string, value: unknown) {
 }
 
 // Keep track of local name value to prevent cursor jump during typing
-let editingName = $state(templateName);
+let editingName = $state(untrack(() => templateName));
 $effect(() => {
   editingName = templateName;
 });
@@ -403,8 +404,9 @@ function handleAlign(
                 { icon: AlignVertical, type: "middle" as const },
                 { icon: AlignVertical, type: "bottom" as const },
               ] as btn, i (i)}
+                {@const ButtonIcon = btn.icon}
                 <button type="button" class="ctx-format-btn" onclick={() => handleAlign(btn.type)}>
-                  <svelte:component this={btn.icon} size={13} />
+                  <ButtonIcon size={13} />
                 </button>
               {/each}
             </div>

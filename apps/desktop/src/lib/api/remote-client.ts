@@ -1545,11 +1545,11 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async bootstrapGetStatus(): Promise<BootstrapStatusResponse> {
-    return this.call((sdk as any).bootstrapGetStatusEndpoint?.({ client: this.client }) ?? Promise.resolve({ status: "completed", has_admin: true }));
+    return this.call(sdk.getBootstrapStatus({ client: this.client }));
   }
 
   async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
-    return this.call((sdk as any).bootstrapOrgEndpoint?.({ client: this.client, body: req as any }) ?? (sdk as any).bootstrapOrganization?.({ client: this.client, body: req as any })) as any;
+    return this.call(sdk.executeBootstrap({ client: this.client, body: req }));
   }
 
   async bootstrapInitMfa(adminEmail?: string, orgName?: string): Promise<BootstrapMfaInitResult> {
@@ -1579,33 +1579,17 @@ export class RemoteClient implements OrbisApiClient {
     };
   }
 
-  async onboardingGetState(orgId?: string): Promise<OnboardingStateDto> {
-    return this.call((sdk as any).onboardingGetState?.({ client: this.client, query: orgId ? { org_id: orgId } : undefined }) ?? Promise.resolve({
-      organization_id: orgId || "",
-      is_operational: true,
-      has_academic_year: true,
-      has_classes: true,
-      has_subjects: true,
-      has_fee_structure: true,
-      has_grading_policy: true,
-      pending_setup_items: [],
-      ready_for_production: true,
-    }));
+  async onboardingGetState(_orgId?: string): Promise<OnboardingStateDto> {
+    return this.call(sdk.getOnboardingState({ client: this.client }));
   }
 
   async onboardingProvisionDefaults(
     req: ProvisionDefaultsReqDto,
-    orgId?: string,
+    _orgId?: string,
   ): Promise<ProvisionDefaultsResultDto> {
-    return this.call((sdk as any).onboardingProvisionDefaults?.({ client: this.client, body: req, query: orgId ? { org_id: orgId } : undefined }) ?? Promise.resolve({
-      success: true,
-      organization_id: orgId || "",
-      created_academic_year_id: null,
-      created_classes_count: 0,
-      created_subjects_count: 0,
-      chart_of_accounts_initialized: true,
-      grading_policy_created: true,
-    }));
+    return this.call(
+      sdk.provisionBlueprintDefaults({ client: this.client, body: req }),
+    );
   }
 
 
@@ -1988,4 +1972,3 @@ export class RemoteClient implements OrbisApiClient {
     await this.call(sdk.deleteFolder({ client: this.client, path: { id } }));
   }
 }
-

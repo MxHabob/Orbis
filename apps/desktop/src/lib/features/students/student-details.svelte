@@ -542,7 +542,7 @@ async function saveStudentDetails(e: Event) {
           <!-- Row 6: National ID & Passport Number -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{m.common_form_national_id_label()} / {m.ui_copy_passport_33cc7232()}</span>
+              <span class="text-xs font-bold text-foreground">{m.common_form_doc_national_id()} / {m.ui_copy_passport_33cc7232()}</span>
               <span class="text-[10px] text-muted-foreground">{m.ui_copy_national_id_or_passport_number_fca40628()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0 grid grid-cols-2 gap-2">
@@ -554,7 +554,7 @@ async function saveStudentDetails(e: Event) {
           <!-- Row 7: Nationality & Place of Birth -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{m.common_bulk_col_nat()} / {m.common_form_place_of_birth()}</span>
+              <span class="text-xs font-bold text-foreground">{m.common_form_nationality()} / {m.common_form_place_of_birth()}</span>
               <span class="text-[10px] text-muted-foreground">{m.ui_copy_student_nationality_and_official_place_of__07b08712()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0 grid grid-cols-2 gap-2">

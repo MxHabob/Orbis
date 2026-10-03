@@ -178,7 +178,8 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
               {@const s = eventStyles[event.type]}
               <div class="px-4 py-3 hover:bg-muted/30 transition-colors">
                 <div class="flex items-start gap-2.5">
-                  <svelte:component this={s.icon} size={14} class="{s.color} mt-0.5 shrink-0" />
+                  {@const EventIcon = s.icon}
+                  <EventIcon size={14} class="{s.color} mt-0.5 shrink-0" />
                   <div>
                     <p class="text-xs font-semibold text-foreground">{event.camera_name}</p>
                     <p class="text-[10px] text-muted-foreground font-mono mt-0.5">{event.timestamp}</p>

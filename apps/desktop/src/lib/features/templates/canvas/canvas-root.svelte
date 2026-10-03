@@ -287,6 +287,8 @@ function handleDrop(e: DragEvent) {
   <!-- SVG Canvas -->
   <svg
     bind:this={svgEl}
+    role="application"
+    aria-label={m.docforge_canvas_label()}
     width={containerWidth}
     height={containerHeight}
     class="absolute inset-0 {isPanning ? 'cursor-grabbing' : ''}"
@@ -374,4 +376,3 @@ function handleDrop(e: DragEvent) {
   <!-- HTML Overlays -->
   <FloatingActionBar {store} {offsetX} {offsetY} />
 </div>
-

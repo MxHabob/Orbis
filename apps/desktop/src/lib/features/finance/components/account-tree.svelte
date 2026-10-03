@@ -194,7 +194,17 @@ function getSubtype(node: AccountNode): string | null {
             <!-- Tree Item Row (Classic 22px Compact) -->
             <div
               class="flex items-center justify-between gap-1.5 px-1.5 py-0.5 rounded cursor-pointer text-[11px] transition-colors {isSelected ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'hover:bg-muted/40 text-foreground'}"
+              role="treeitem"
+              tabindex="0"
+              aria-selected={isSelected}
+              aria-expanded={hasChildren ? expanded : undefined}
               onclick={() => handleSelect(node)}
+              onkeydown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  handleSelect(node);
+                }
+              }}
             >
               <div class="flex items-center gap-1.5 min-w-0 flex-1">
                 <!-- Expand Toggle [+] / [-] or Leaf Indicator -->

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import { OrbisGrid } from "@orbis/svelte-grid";
   import { Button } from "@orbis/ui/button";
   import { Badge } from "@orbis/ui/badge";
@@ -44,7 +45,9 @@
     hideProfileSelector?: boolean;
   } = $props();
 
-  let selectedProfileId = $state<BulkProfileId>(initialProfileId);
+  let selectedProfileId = $state<BulkProfileId>(
+    untrack(() => initialProfileId),
+  );
   let currentProfile = $derived(getBulkProfile(selectedProfileId));
 
   // Declarative TanStack Query for Reference Data (Zero $effect data loading!)

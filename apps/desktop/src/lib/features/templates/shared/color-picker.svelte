@@ -1,4 +1,5 @@
 <script lang="ts">
+import { untrack } from "svelte";
 import * as m from "$lib/paraglide/messages";
 /**
  * ColorPicker — Advanced color picker with spectrum, HEX/RGB inputs,
@@ -29,7 +30,7 @@ let {
 } = $props();
 
 // ── State ────────────────────────────────────────────────────
-let hexInput = $state(value);
+let hexInput = $state(untrack(() => value));
 let isOpen = $state(false);
 
 // Recent colors (persisted in memory)

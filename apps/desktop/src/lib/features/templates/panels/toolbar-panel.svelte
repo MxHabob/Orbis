@@ -67,6 +67,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
   <TooltipProvider delayDuration={300}>
     <div class="flex items-center gap-0.5">
       {#each tools as tool (tool.id)}
+        {@const ToolIcon = tool.icon}
         <Tooltip>
           <TooltipTrigger>
             <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -81,7 +82,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
                 class="cursor-pointer pointer-events-auto"
                 onclick={() => selectTool(tool.id)}
               >
-                <svelte:component this={tool.icon} size={14} />
+                <ToolIcon size={14} />
               </Button>
             </div>
           </TooltipTrigger>
@@ -102,6 +103,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
         { icon: AlignVertical, action: "middle", label: "Align Middle" },
         { icon: AlignVertical, action: "bottom", label: "Align Bottom" },
       ] as item (item.action)}
+        {@const ItemIcon = item.icon}
         <Tooltip>
           <TooltipTrigger>
             <Button
@@ -110,7 +112,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
               class="cursor-pointer"
               disabled={store.selectedIds.length < 2}
             >
-              <svelte:component this={item.icon} size={13} />
+              <ItemIcon size={13} />
             </Button>
           </TooltipTrigger>
           <TooltipContent>{item.label}</TooltipContent>

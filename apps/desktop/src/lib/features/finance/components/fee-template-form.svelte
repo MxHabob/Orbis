@@ -1,4 +1,5 @@
 <script lang="ts">
+import { untrack } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 import { api, queryKeys } from "$lib/api";
@@ -60,26 +61,27 @@ function parseInitialApplicableLevels(raw: any): { levels: string[]; applyToAll:
   return { levels: [], applyToAll: true };
 }
 
-const initialLevelsData = parseInitialApplicableLevels(template?.applicable_levels);
+const initialTemplate = untrack(() => template);
+const initialLevelsData = parseInitialApplicableLevels(initialTemplate?.applicable_levels);
 let applyToAllGrades = $state(initialLevelsData.applyToAll);
 let selectedLevels = $state<string[]>(initialLevelsData.levels);
 
 // Form state initialized directly from template or defaults
-const form = new FormController({
+const form = untrack(() => new FormController({
   initialValues: {
-    name: template?.name || "",
-    name_ar: template?.name_ar || null,
-    code: template?.code || null,
-    category: template?.category || "tuition",
-    default_amount: template?.default_amount || 0,
-    revenue_account_id: template?.revenue_account_id || null,
-    receivable_account_id: template?.receivable_account_id || null,
-    applicable_levels: template?.applicable_levels || null,
-    frequency: template?.frequency === "annual" ? "yearly" : (template?.frequency || "yearly"),
-    is_mandatory: template ? (template.is_mandatory === 1 || template.is_mandatory === true) : true,
+    name: initialTemplate?.name || "",
+    name_ar: initialTemplate?.name_ar || null,
+    code: initialTemplate?.code || null,
+    category: initialTemplate?.category || "tuition",
+    default_amount: initialTemplate?.default_amount || 0,
+    revenue_account_id: initialTemplate?.revenue_account_id || null,
+    receivable_account_id: initialTemplate?.receivable_account_id || null,
+    applicable_levels: initialTemplate?.applicable_levels || null,
+    frequency: initialTemplate?.frequency === "annual" ? "yearly" : (initialTemplate?.frequency || "yearly"),
+    is_mandatory: initialTemplate ? (initialTemplate.is_mandatory === 1 || initialTemplate.is_mandatory === true) : true,
   },
   schema: feeTemplateInputSchema,
-});
+}));
 
 const queryClient = useQueryClient();
 

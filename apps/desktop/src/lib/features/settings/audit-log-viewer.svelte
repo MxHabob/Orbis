@@ -122,7 +122,7 @@ const columns = $derived<OrbisColumnDef[]>([
   {
     id: "user_name",
     prop: "user_name",
-    header: m.common_audit_col_member?.() || m.ui_copy_member_916bd8ec(),
+    header: m.ui_copy_member_916bd8ec(),
     name: "Member",
     width: 190,
     size: 190,
@@ -132,7 +132,7 @@ const columns = $derived<OrbisColumnDef[]>([
   {
     id: "action",
     prop: "action",
-    header: m.common_audit_col_action?.() || m.ui_copy_action_b6f7953e(),
+    header: m.ui_copy_action_b6f7953e(),
     name: "Action",
     width: 140,
     size: 140,

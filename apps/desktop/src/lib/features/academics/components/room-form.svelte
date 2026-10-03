@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import * as m from "$lib/paraglide/messages";
   import { api } from "$lib/api";
   import { createRoomInputSchema } from "@orbis/schemas";
@@ -37,7 +38,7 @@
 
   const isEdit = $derived(!!room);
 
-  const form = new FormController({
+  const form = untrack(() => new FormController({
     initialValues: {
       name: room?.name || "",
       name_ar: room?.name_ar || "",
@@ -47,7 +48,7 @@
       floor: room?.floor ?? null,
     },
     schema: createRoomInputSchema,
-  });
+  }));
 
   function fieldError(field: string): string | undefined {
     return form.errors[field]?.[0];

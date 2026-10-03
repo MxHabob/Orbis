@@ -21,6 +21,7 @@ are persisted to localStorage.
 ```
 -->
 <script lang="ts">
+import { untrack } from "svelte";
 import { Button } from "@orbis/ui";
 import Resizer from "./resizer.svelte";
 import SashLayer from "./sash-layer.svelte";
@@ -64,8 +65,8 @@ function pxToRem(px: number): number {
 }
 
 // Panel preferred widths (in rem)
-let leftPreferredWidth = $state(pxToRem(leftWidth.default));
-let rightPreferredWidth = $state(pxToRem(rightWidth.default));
+let leftPreferredWidth = $state(untrack(() => pxToRem(leftWidth.default)));
+let rightPreferredWidth = $state(untrack(() => pxToRem(rightWidth.default)));
 
 // Panel DOM refs
 let leftDiv = $state<HTMLDivElement>();

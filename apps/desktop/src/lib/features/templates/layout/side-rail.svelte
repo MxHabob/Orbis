@@ -42,6 +42,7 @@ const topItems: RailItem[] = [
   <div class="rail-items">
     {#each topItems as item (item.id)}
       {@const isActive = store.activeRailPanel === item.id}
+      {@const RailIcon = item.icon}
       <Tooltip>
         <TooltipTrigger>
           <button
@@ -51,7 +52,7 @@ const topItems: RailItem[] = [
             onclick={() => store.toggleRailPanel(item.id)}
             aria-pressed={isActive}
           >
-            <svelte:component this={item.icon} size={20} strokeWidth={isActive ? 2.2 : 1.6} />
+            <RailIcon size={20} strokeWidth={isActive ? 2.2 : 1.6} />
             <span class="rail-label">{item.label}</span>
           </button>
         </TooltipTrigger>

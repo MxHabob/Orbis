@@ -47,7 +47,7 @@ const IconComponent = $derived(iconMap[item.key] ?? Sparkles);
         ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500'
         : 'border-border bg-background text-muted-foreground group-hover/item:text-foreground group-hover/item:border-primary/50'}"
     >
-      <svelte:component this={IconComponent} class="size-4" />
+      <IconComponent class="size-4" />
     </div>
 
     <div class="flex flex-col min-w-0">

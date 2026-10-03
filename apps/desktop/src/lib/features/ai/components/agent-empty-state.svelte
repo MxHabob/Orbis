@@ -1,8 +1,8 @@
 <script lang="ts">
 import { Avatar, type AvatarController } from "@orbis/avatar-engine";
-import { Sparkles, ArrowLeft, ArrowRight } from "@orbis/icons";
-import { Badge } from "@orbis/ui/badge";
+import { ArrowLeft, ArrowRight } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 
 let {
   avatarController,
@@ -16,24 +16,24 @@ let {
 
 const isRtl = $derived(getLocale() === "ar");
 
-const defaultSuggestions = [
+const defaultSuggestions = $derived([
   {
-    title: isRtl ? "إحصائيات الطلاب والدرجات" : "Student Stats & Grades",
-    desc: isRtl ? "ما هي إحصائيات الحضور والغياب والدرجات لهذا الفصل؟" : "What are the attendance and academic grade statistics for this term?",
+    title: m.ai_copilot_suggestion_student_stats_title(),
+    desc: m.ai_copilot_suggestion_student_stats_description(),
   },
   {
-    title: isRtl ? "المستحقات والمتابعة المالية" : "Financial Follow-up",
-    desc: isRtl ? "ابحث عن الطلاب وقدم ملخصاً عن الرسوم المستحقة وغير المسددة" : "Search students and summarize outstanding tuition fees",
+    title: m.ai_copilot_suggestion_financial_title(),
+    desc: m.ai_copilot_suggestion_financial_description(),
   },
   {
-    title: isRtl ? "الفصول والجدول الأسبوعي" : "Active Classes & Schedule",
-    desc: isRtl ? "ما هي الفصول والمواد الدراسية النشطة حالياً في النظام؟" : "List active classrooms, courses and weekly schedule",
+    title: m.ai_copilot_suggestion_classes_title(),
+    desc: m.ai_copilot_suggestion_classes_description(),
   },
   {
-    title: isRtl ? "تقرير إداري تحليلي" : "Comprehensive Management Report",
-    desc: isRtl ? "أنشئ تقريراً إحصائياً شاملاً عن أداء المدرسة هذا الفصل" : "Generate an executive report analyzing overall school performance",
+    title: m.ai_copilot_suggestion_report_title(),
+    desc: m.ai_copilot_suggestion_report_description(),
   },
-];
+]);
 </script>
 
 <div class="flex-1 flex flex-col items-center justify-center px-4 py-6 select-none overflow-y-auto">
@@ -43,7 +43,7 @@ const defaultSuggestions = [
   </div>
 
   <p class="text-[11.5px] text-muted-foreground text-center max-w-[310px] leading-relaxed mb-5 select-none">
-    {isRtl ? "مساعدك المتكامل للتحليل الأكاديمي، كشوف الطلاب، الجداول، والمتابعة المالية." : "Your unified copilot for school management, academic analysis, and financial tracking."}
+    {m.ai_copilot_empty_state_description()}
   </p>
 
   <!-- Quick Action Suggestion Cards -->

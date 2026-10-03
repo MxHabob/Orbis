@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
+import { onMount, untrack } from "svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -141,7 +141,7 @@ function parseOrgRegistration(rawOrg: any) {
   };
 }
 
-const parsed = parseOrgRegistration(org);
+const parsed = untrack(() => parseOrgRegistration(org));
 
 // Editable Form State
 let institutionType = $state<string>(parsed.institutionType);
@@ -863,4 +863,3 @@ function handleFormSave() {
     onreset={resetToInitial}
   />
 </div>
-

@@ -15,7 +15,8 @@
         ".expo/**",
         "dist/**",
         "build/**",
-        "lib/**"
+        "lib/**",
+        "target/release/**"
       ]
     },
     "start": {
