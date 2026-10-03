@@ -3,8 +3,6 @@
   This is the equivalent of GitButler's [projectId]/+layout.svelte.
 -->
 <script lang="ts">
-import { Grid } from "@orbis/icons";
-
 import AppChrome from "$lib/shell/app-chrome.svelte";
 import { authStore, systemStore } from "$lib/stores";
 import { goto } from "$app/navigation";
