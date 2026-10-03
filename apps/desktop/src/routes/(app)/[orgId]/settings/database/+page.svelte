@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { DatabaseManagementView } from "$lib/features/settings";
+import DatabaseManagementView from "$lib/features/settings/database/database-management-view.svelte";
 
 const orgId = $derived(page.params.orgId || "");
 </script>

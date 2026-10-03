@@ -256,6 +256,9 @@ function handleDrop(e: DragEvent) {
 }
 </script>
 
+<!-- The application canvas uses pointer events here; keyboard shortcuts are handled by TemplateStudio. -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
   bind:this={containerEl}
   class="relative grow overflow-hidden bg-muted/20 select-none"

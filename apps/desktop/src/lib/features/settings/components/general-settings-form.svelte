@@ -1,14 +1,12 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import {
-  InfoSettingsCard,
-  BrandingSettingsCard,
-  RegionalSettingsCard,
-  AvatarSettingsCard,
-  DangerZoneSettingsCard,
-  BranchSettingsCard,
-  AuthenticationSettingsCard,
-} from "$lib/features/settings";
+import InfoSettingsCard from "./info-settings-card.svelte";
+import BrandingSettingsCard from "./branding-settings-card.svelte";
+import RegionalSettingsCard from "./regional-settings-card.svelte";
+import AvatarSettingsCard from "./avatar-settings-card.svelte";
+import DangerZoneSettingsCard from "./danger-zone-settings-card.svelte";
+import BranchSettingsCard from "./branch-settings-card.svelte";
+import AuthenticationSettingsCard from "./authentication-settings-card.svelte";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { toast } from "@orbis/ui";

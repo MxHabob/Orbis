@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { SubjectsManager } from "$lib/features/settings";
+import SubjectsManager from "$lib/features/settings/subjects-manager.svelte";
 
 const orgId = $derived(page.params.orgId || "");
 </script>

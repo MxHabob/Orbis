@@ -64,7 +64,8 @@ export default defineConfig(({ mode }) => {
           },
         },
       },
-      chunkSizeWarningLimit: 350,
+      // XLSX is lazy-loaded and compresses to ~142 kB; route chunks remain below 350 kB.
+      chunkSizeWarningLimit: 450,
     },
     // Tauri expects a fixed port; fail if that port is not available
     server: {

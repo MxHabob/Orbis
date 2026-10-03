@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { RolesPermissionsManager } from "$lib/features/settings";
+import RolesPermissionsManager from "$lib/features/settings/roles-permissions-manager.svelte";
 
 const orgId = $derived(page.params.orgId || "");
 </script>
