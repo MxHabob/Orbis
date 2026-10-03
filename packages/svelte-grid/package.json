@@ -29,13 +29,14 @@
     "bench": "bun test src/engine/engine.test.ts -t performance"
   },
   "dependencies": {
-    "@orbis/ui": "workspace:*",
-    "@orbis/icons": "workspace:*"
+    "@orbis/icons": "workspace:*",
+    "@orbis/ui": "workspace:*"
   },
   "peerDependencies": {
     "svelte": "^5.0.0"
   },
   "devDependencies": {
+    "svelte": "^5.56.1",
     "typescript": "^7.0.2"
   }
 }

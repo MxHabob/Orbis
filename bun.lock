@@ -4,15 +4,13 @@
   "workspaces": {
     "": {
       "name": "orbis",
-      "dependencies": {
+      "devDependencies": {
         "@biomejs/biome": "2.3.13",
         "@manypkg/cli": "^0.25.1",
         "@orbis/tsconfig": "workspace:*",
+        "@types/node": "^26.1.1",
         "turbo": "^2.11.5",
         "typescript": "^7.0.2",
-      },
-      "devDependencies": {
-        "@types/node": "^26.1.1",
       },
     },
     "apps/api-rust": {
@@ -107,7 +105,7 @@
         "@types/react": "~19.2.2",
         "eslint": "^9.0.0",
         "eslint-config-expo": "57.0.2",
-        "typescript": "~6.0.3",
+        "typescript": "^7.0.2",
       },
     },
     "packages/app-store": {
@@ -206,7 +204,7 @@
       },
       "devDependencies": {
         "@hey-api/openapi-ts": "^0.99.0",
-        "typescript": "^5.4.0",
+        "typescript": "^7.0.2",
       },
     },
     "packages/svelte-grid": {
@@ -217,6 +215,7 @@
         "@orbis/ui": "workspace:*",
       },
       "devDependencies": {
+        "svelte": "^5.56.1",
         "typescript": "^7.0.2",
       },
       "peerDependencies": {
@@ -267,7 +266,7 @@
       "name": "@orbis/utils",
       "version": "1.0.0",
       "dependencies": {
-        "date-fns": "^4.1.0",
+        "date-fns": "^4.4.0",
         "file-saver": "^2.0.5",
         "papaparse": "^5.5.3",
       },
@@ -275,7 +274,7 @@
         "@orbis/tsconfig": "workspace:*",
         "@types/bun": "latest",
         "@types/file-saver": "^2.0.7",
-        "@types/node": "^26.2.0",
+        "@types/node": "^26.1.1",
         "@types/papaparse": "^5.5.2",
         "bun-types": "^1.3.8",
         "typescript": "^7.0.2",
@@ -288,7 +287,7 @@
     "tailwindcss": "4.3.1",
   },
   "catalog": {
-    "date-fns": "^4.1.0",
+    "date-fns": "^4.4.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "typescript": "^7.0.2",
@@ -2667,10 +2666,6 @@
     "@melt-ui/svelte/nanoid": ["nanoid@5.1.16", "", { "bin": { "nanoid": "bin/nanoid.js" } }, "sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ=="],
 
     "@orbis/app-store/@types/node": ["@types/node@26.2.0", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-5IviulTZeRNp2vAJ514cc/HUlY5nZ9fCbq9DMyC52BrhFZACo3nI0R7qBxhQmo/d27NFe96ur/b7Wwxklda+kg=="],
-
-    "@orbis/mobile/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
-
-    "@orbis/sdk/typescript": ["typescript@5.8.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="],
 
     "@orbis/utils/@types/node": ["@types/node@26.2.0", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-5IviulTZeRNp2vAJ514cc/HUlY5nZ9fCbq9DMyC52BrhFZACo3nI0R7qBxhQmo/d27NFe96ur/b7Wwxklda+kg=="],
 
