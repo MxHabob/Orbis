@@ -1,4 +1,3 @@
-import * as XLSX from "xlsx";
 import { open } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import type { BulkImportProfile, BulkRowState } from "../types";
@@ -36,11 +35,12 @@ export async function parseDroppedFile(file: File, profile: BulkImportProfile<an
   return parseSpreadsheetBytes(fileBytes, file.name, profile);
 }
 
-export function parseSpreadsheetBytes(
+export async function parseSpreadsheetBytes(
   bytes: Uint8Array,
   fileName: string,
   profile: BulkImportProfile<any, any>,
-): ParsedFileResult {
+): Promise<ParsedFileResult> {
+  const XLSX = await import("xlsx");
   const workbook = XLSX.read(bytes, { type: "array", cellDates: true });
 
   // Use the first non-reference sheet
