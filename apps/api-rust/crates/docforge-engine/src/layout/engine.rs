@@ -883,19 +883,28 @@ mod tests {
             unit: "mm".to_string(),
         };
 
-        // Tahoma font for Arabic support
-        let mut fonts = FontCache::new("Tahoma");
-        let font_path = "C:\\Windows\\Fonts\\tahoma.ttf";
-        if std::path::Path::new(font_path).exists() {
-            fonts
-                .load_font_file(
-                    "Tahoma",
-                    400,
-                    crate::render::font_cache::FontStyleKind::Normal,
-                    font_path,
-                )
-                .ok();
-        }
+        let font_candidates = [
+            ("Tahoma", "C:\\Windows\\Fonts\\tahoma.ttf"),
+            ("DejaVu Sans", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+            (
+                "Arial",
+                "/System/Library/Fonts/Supplemental/Arial.ttf",
+            ),
+        ];
+        let (font_family, font_path) = font_candidates
+            .iter()
+            .find(|(_, path)| std::path::Path::new(path).exists())
+            .copied()
+            .expect("A supported system font must be installed for PDF rendering tests");
+        let mut fonts = FontCache::new(font_family);
+        fonts
+            .load_font_file(
+                font_family,
+                400,
+                crate::render::font_cache::FontStyleKind::Normal,
+                font_path,
+            )
+            .expect("Should load the system font successfully");
 
         // Layout containing flex container with text, shape, spacer, barcode and qr code
         let frame_node = TemplateNode::Frame(FrameNode {
@@ -916,7 +925,7 @@ mod tests {
                         content: "مرحبا بك يا {{name}} في نظام Orbis TMS v3 الجديد".to_string(),
                         position: None,
                         font_size: 16.0,
-                        font_family: "Tahoma".to_string(),
+                        font_family: font_family.to_string(),
                         font_weight: Some("bold".to_string()),
                         color: Some("#003366".to_string()),
                         text_align: Some("center".to_string()),
