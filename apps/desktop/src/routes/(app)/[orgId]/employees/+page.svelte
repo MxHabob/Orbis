@@ -7,7 +7,7 @@ const orgId = $derived(page.params.orgId || "");
 </script>
 
 <svelte:head>
-  <title>{m.employees_nav_title ? m.employees_nav_title() : "Employee Affairs"} | Orbis</title>
+  <title>{m.employees_nav_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-hidden">

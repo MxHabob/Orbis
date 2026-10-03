@@ -12,7 +12,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@orbis/ui/dialog";
-import { l } from "$lib/core/i18n";
+
 import type { UserDto } from "$lib/api/types";
 
 let {
@@ -48,10 +48,10 @@ const filteredUsers = $derived.by(() => {
         </div>
         <div>
           <DialogTitle class="text-base font-bold text-foreground">
-            {l("فحص وتعديل أدوار مستخدم", "Inspect User Permissions")}
+            {m.ui_copy_inspect_user_permissions_faa6e818()}
           </DialogTitle>
           <DialogDescription class="text-xs text-muted-foreground mt-0.5">
-            {l("اختر مستخدماً لإدارة وتعديل أدواره وصلاحياته في المنظومة", "Select a user to manage their assigned roles and permissions")}
+            {m.ui_copy_select_a_user_to_manage_their_assigned_rol_1aea58a5()}
           </DialogDescription>
         </div>
       </div>
@@ -62,7 +62,7 @@ const filteredUsers = $derived.by(() => {
       <Search class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
       <Input
         type="search"
-        placeholder={l("البحث باسم المستخدم أو بريده الإلكتروني...", "Search by user name or email...")}
+        placeholder={m.ui_copy_search_by_user_name_or_email_b5a271a6()}
         bind:value={searchQuery}
         class="h-9 ps-9 text-xs"
       />
@@ -73,7 +73,7 @@ const filteredUsers = $derived.by(() => {
       {#if filteredUsers.length === 0}
         <div class="text-xs text-muted-foreground text-center py-8 border border-dashed rounded-xl flex flex-col items-center gap-2">
           <Users class="w-6 h-6 text-muted-foreground/50" />
-          <span>{l("لا يوجد مستخدمين مطابقين للبحث", "No matching users found")}</span>
+          <span>{m.ui_copy_no_matching_users_found_92d2fff4()}</span>
         </div>
       {:else}
         {#each filteredUsers as user}
@@ -120,7 +120,7 @@ const filteredUsers = $derived.by(() => {
         class="h-8 text-xs font-medium"
         onclick={() => (open = false)}
       >
-        {m.common_titlebar_close ? m.common_titlebar_close() : l("إغلاق", "Close")}
+        {m.common_titlebar_close ? m.common_titlebar_close() : m.common_action_close()}
       </Button>
     </DialogFooter>
   </DialogContent>

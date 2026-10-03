@@ -220,7 +220,7 @@ async function handleSubmit(e: SubmitEvent) {
                 type="number" 
                 min="1"
                 bind:value={form.values.priority}
-                placeholder={m.common_dt_form_priority_placeholder ? m.common_dt_form_priority_placeholder() : "e.g., 1 (highest)"}
+                placeholder={m.common_dt_form_priority_placeholder()}
                 disabled={isSubmitting}
               />
             {/snippet}

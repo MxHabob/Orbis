@@ -31,21 +31,21 @@ async function loadSessions() {
 
 async function handleRevoke(deviceId: string, deviceName: string) {
   const confirmed = await confirmStore.prompt({
-    title: l("إنهاء جلسة الجهاز؟", "Revoke Device Session?"),
+    title: m.ui_copy_revoke_device_session_359e4435(),
     description: l(
       `هل أنت متأكد من إنهاء جلسة الجهاز (${deviceName}) وفصل تسجيل الدخول؟`,
       `Are you sure you want to revoke the session for ${deviceName}?`
     ),
-    confirmText: l("إنهاء الجلسة", "Revoke Session"),
+    confirmText: m.ui_copy_revoke_session_3a121f98(),
     variant: "destructive",
   });
   if (confirmed) {
     try {
       await api.revokeDevice(deviceId);
       activeSessions = activeSessions.filter((s) => s.id !== deviceId);
-      toast.success(l("تم إنهاء الجلسة بنجاح", "Device session revoked"));
+      toast.success(m.ui_copy_device_session_revoked_1690099f());
     } catch (e: any) {
-      toast.error(e?.message || l("فشل إنهاء الجلسة", "Failed to revoke device"));
+      toast.error(e?.message || m.ui_copy_failed_to_revoke_device_fa2a67e6());
     }
   }
 }
@@ -97,7 +97,7 @@ onMount(loadSessions);
                   class="text-[9px] font-semibold py-0 px-1.5 h-4.5 rounded gap-1"
                 >
                   <ShieldCheck class="w-3 h-3" />
-                  <span>{l("موثوق", "Trusted")}</span>
+                  <span>{m.ui_copy_trusted_1c40faa5()}</span>
                 </Badge>
               {/if}
             </div>
@@ -114,7 +114,7 @@ onMount(loadSessions);
           onclick={() => handleRevoke(session.id, deviceTitle)}
         >
           <Trash size={13} />
-          <span>{l("إنهاء الجلسة", "Revoke")}</span>
+          <span>{m.common_account_sessions_revoke_btn()}</span>
         </Button>
       </div>
     {/each}

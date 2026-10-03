@@ -4,6 +4,7 @@
   Spacious overview dossier of all parameters + authentic 5-phase initialization execution pipeline.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import {
   type OnboardingFormModel,
   CURRENCY_OPTIONS,
@@ -43,45 +44,35 @@ const country = $derived(COUNTRIES_LIST.find((c) => c.code === form.countryCode)
 const track = $derived(EDUCATIONAL_TRACK_OPTIONS.find((t) => t.value === form.educationalTrack));
 const size = $derived(ORGANIZATION_SIZE_OPTIONS.find((s) => s.value === form.organizationSize));
 
-const executionTasksEn = [
-  "Creating institutional identity records",
-  "Calibrating academic structure & blueprint rules",
-  "Provisioning master administrator credentials",
-  "Initializing local financial ledger & currency exchange",
-  "Verifying autonomous node operational readiness",
-];
-
-const executionTasksAr = [
-  "إنشاء سجل المنشأة وتوثيق الهوية الأكاديمية",
-  "تهيئة نموذج المؤسسة وهيكل الفصول واللوائح",
-  "إنشاء حساب المشرف العام وتوثيق الصلاحيات",
-  "تهيئة دليل الحسابات المالي والعملة الأساسية",
-  "التحقق من الجاهزية التشغيلية للنواة المستقلة",
-];
-
-const tasks = $derived(isRTL ? executionTasksAr : executionTasksEn);
+const tasks = $derived([
+  m.ui_onboarding_review_task_identity_records(),
+  m.ui_onboarding_review_task_academic_structure(),
+  m.ui_onboarding_review_task_admin_credentials(),
+  m.ui_onboarding_review_task_financial_ledger(),
+  m.ui_onboarding_review_task_node_readiness(),
+]);
 </script>
 
 <div class="space-y-6 max-w-5xl mx-auto py-2">
   <div class="space-y-2 text-start">
     <div class="flex items-center gap-2">
       <span class="text-xs font-semibold text-primary uppercase font-mono tracking-wider">
-        {isRTL ? "المرحلة ٦ من ٦" : "Step 6 of 6"}
+        {m.ui_onboarding_review_step_6_of_6()}
       </span>
     </div>
     <h2 class="text-2xl font-bold tracking-tight text-foreground">
       {isComplete
-        ? (isRTL ? "اكتملت تهيئة المنظومة بنجاح" : "System Initialized Successfully")
+        ? (m.ui_onboarding_review_system_initialized_successfully())
         : isSubmitting
-          ? (isRTL ? "جاري تهيئة النواة المستقلة..." : "Initializing Autonomous Node...")
-          : (isRTL ? "مراجعة البيانات وبدء التأسيس" : "Review & Launch Setup")}
+          ? (m.ui_onboarding_review_initializing_autonomous_node())
+          : (m.ui_onboarding_review_review_launch_setup())}
     </h2>
     <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
       {isComplete
-        ? (isRTL ? "تم تأسيس المؤسسة بنجاح، والنظام جاهز لبدء العمليات." : "Your workspace has been provisioned and is ready for production.")
+        ? (m.ui_onboarding_review_your_workspace_has_been_provisioned_and_is_ready_for_production())
         : isSubmitting
-          ? (isRTL ? "يرجى الانتظار ريثما تكتمل تهيئة السجلات وقواعد البيانات المحلية." : "Please wait while Orbis provisions initial records and configurations.")
-          : (isRTL ? "تحقق من صحة المعايير والإعدادات أدناه قبل بدء التأسيس الفعلي." : "Review your settings below before initiating autonomous bootstrap.")}
+          ? (m.ui_onboarding_review_please_wait_while_orbis_provisions_initial_records_and_configurations())
+          : (m.ui_onboarding_review_review_your_settings_below_before_initiating_autonomous_bootstrap())}
     </p>
   </div>
 
@@ -96,9 +87,7 @@ const tasks = $derived(isRTL ? executionTasksAr : executionTasksEn);
           {form.organizationNameAr || form.organizationName}
         </h3>
         <p class="text-xs text-muted-foreground leading-relaxed">
-          {isRTL
-            ? "تم إنشاء قاعدة البيانات المحلية وتوثيق حساب المشرف العام بنجاح. يمكنك الآن الدخول ومباشرة العمل."
-            : "The local database has been provisioned and your administrator account is active. You may now enter your workspace."}
+          {m.ui_onboarding_review_success_description()}
         </p>
       </div>
 
@@ -109,7 +98,7 @@ const tasks = $derived(isRTL ? executionTasksAr : executionTasksEn);
           onclick={onEnterWorkspace}
           class="h-11 px-8 text-sm font-semibold shadow-md shadow-primary/20"
         >
-          <span>{isRTL ? "الدخول إلى مساحة العمل" : "Enter Workspace"}</span>
+          <span>{m.ui_onboarding_review_enter_workspace()}</span>
         </Button>
       </div>
     </div>
@@ -119,10 +108,10 @@ const tasks = $derived(isRTL ? executionTasksAr : executionTasksEn);
       <div class="flex items-center justify-between border-b border-border/40 pb-4">
         <div class="space-y-1">
           <div class="text-sm font-bold text-foreground">
-            {isRTL ? "خطوات التهيئة التنفيذية" : "Execution Pipeline"}
+            {m.ui_onboarding_review_execution_pipeline()}
           </div>
           <div class="text-xs text-muted-foreground font-mono">
-            {isRTL ? `المرحلة ${Math.min(activeTaskIndex + 1, tasks.length)} من ${tasks.length}` : `Phase ${Math.min(activeTaskIndex + 1, tasks.length)} of ${tasks.length}`}
+            {m.ui_onboarding_review_phase_of({ value1: Math.min(activeTaskIndex + 1, tasks.length), value2: tasks.length })}
           </div>
         </div>
 
@@ -157,29 +146,29 @@ const tasks = $derived(isRTL ? executionTasksAr : executionTasksEn);
       <div class="rounded-2xl border border-border/70 bg-card p-6 space-y-4 shadow-xs">
         <div class="border-b border-border/40 pb-2.5">
           <h3 class="text-xs font-bold text-muted-foreground uppercase tracking-wider font-mono">
-            {isRTL ? "النموذج والمؤسسة" : "Blueprint & Institution"}
+            {m.ui_onboarding_review_blueprint_institution()}
           </h3>
         </div>
 
         <div class="space-y-3 text-xs">
           <div class="flex justify-between items-center">
-            <span class="text-muted-foreground">{isRTL ? "النموذج الأكاديمي" : "Blueprint"}</span>
+            <span class="text-muted-foreground">{m.ui_onboarding_review_blueprint()}</span>
             <span class="font-semibold text-foreground">{isRTL ? blueprint.nameAr : blueprint.nameEn}</span>
           </div>
 
           <div class="flex justify-between items-center">
-            <span class="text-muted-foreground">{isRTL ? "الاسم بالعربية" : "Arabic Name"}</span>
+            <span class="text-muted-foreground">{m.common_rooms_label_name_ar()}</span>
             <span class="font-semibold text-foreground">{form.organizationNameAr || "—"}</span>
           </div>
 
           <div class="flex justify-between items-center">
-            <span class="text-muted-foreground">{isRTL ? "الاسم بالإنجليزية" : "English Name"}</span>
+            <span class="text-muted-foreground">{m.common_rooms_label_name_en()}</span>
             <span class="font-semibold text-foreground">{form.organizationName || "—"}</span>
           </div>
 
           <div class="flex justify-between items-center">
-            <span class="text-muted-foreground">{isRTL ? "المسار التعليمي" : "Track"}</span>
-            <span class="font-semibold text-foreground">{isRTL ? track?.labelAr : track?.labelEn}</span>
+            <span class="text-muted-foreground">{m.ui_onboarding_review_track()}</span>
+            <span class="font-semibold text-foreground">{track?.label()}</span>
           </div>
         </div>
       </div>
@@ -188,28 +177,28 @@ const tasks = $derived(isRTL ? executionTasksAr : executionTasksEn);
       <div class="rounded-2xl border border-border/70 bg-card p-6 space-y-4 shadow-xs">
         <div class="border-b border-border/40 pb-2.5">
           <h3 class="text-xs font-bold text-muted-foreground uppercase tracking-wider font-mono">
-            {isRTL ? "المنطقة والمشرف" : "Region & Master Admin"}
+            {m.ui_onboarding_review_region_master_admin()}
           </h3>
         </div>
 
         <div class="space-y-3 text-xs">
           <div class="flex justify-between items-center">
-            <span class="text-muted-foreground">{isRTL ? "الدولة والمنطقة" : "Country / Region"}</span>
-            <span class="font-semibold text-foreground">{country?.flag} {isRTL ? country?.nameAr : country?.nameEn}</span>
+            <span class="text-muted-foreground">{m.ui_onboarding_review_country_region()}</span>
+            <span class="font-semibold text-foreground">{country?.flag} {country?.name()}</span>
           </div>
 
           <div class="flex justify-between items-center">
-            <span class="text-muted-foreground">{isRTL ? "العملة الأساسية" : "Currency"}</span>
-            <span class="font-semibold text-foreground font-mono">{cur?.code} ({isRTL ? cur?.symbolAr : cur?.symbolEn})</span>
+            <span class="text-muted-foreground">{m.setup_bootstrap_currency_label()}</span>
+            <span class="font-semibold text-foreground font-mono">{cur?.code} ({cur?.symbol()})</span>
           </div>
 
           <div class="flex justify-between items-center">
-            <span class="text-muted-foreground">{isRTL ? "المشرف العام" : "Administrator"}</span>
+            <span class="text-muted-foreground">{m.ui_onboarding_admin_administrator()}</span>
             <span class="font-semibold text-foreground">{form.adminFirstName} {form.adminLastName}</span>
           </div>
 
           <div class="flex justify-between items-center">
-            <span class="text-muted-foreground">{isRTL ? "البريد الإلكتروني" : "Email"}</span>
+            <span class="text-muted-foreground">{m.common_word_email()}</span>
             <span class="font-semibold text-foreground font-mono truncate max-w-[200px]">{form.adminEmail}</span>
           </div>
         </div>
@@ -218,7 +207,7 @@ const tasks = $derived(isRTL ? executionTasksAr : executionTasksEn);
 
     {#if error}
       <div class="p-4 rounded-xl bg-destructive/10 border border-destructive/25 text-destructive text-xs space-y-1 text-start">
-        <div class="font-bold">{isRTL ? "تعذر تأسيس المنشأة" : "Initialization Failed"}</div>
+        <div class="font-bold">{m.ui_onboarding_review_initialization_failed()}</div>
         <p>{error}</p>
       </div>
     {/if}
@@ -230,7 +219,7 @@ const tasks = $derived(isRTL ? executionTasksAr : executionTasksEn);
         onclick={onLaunch}
         class="h-11 px-8 text-sm font-semibold shadow-md shadow-primary/20"
       >
-        <span>{isRTL ? "بدء التأسيس والتشغيل" : "Launch Bootstrap"}</span>
+        <span>{m.ui_onboarding_review_launch_bootstrap()}</span>
       </Button>
     </div>
   {/if}

@@ -17,7 +17,7 @@ let {
   description = m.settings_general_currency_desc(),
   currentCurrency = $bindable("SAR"),
   includeAll = false,
-  allLabel = m.common_filter_all?.() || "جميع العملات",
+  allLabel = m.common_filter_all(),
   compact = false,
   disabled = false,
   last = false,
@@ -95,7 +95,7 @@ function handleChange(val: string | null) {
       <SearchableSelect
         bind:value={currentCurrency}
         items={dbCurrencies}
-        placeholder={isLoading ? "جارٍ تحميل العملات..." : (m.finance_ledger_currency?.() || "اختر العملة...")}
+        placeholder={isLoading ? "جارٍ تحميل العملات..." : (m.finance_ledger_currency())}
         searchPlaceholder="ابحث باسم العملة أو الرمز (مثال: USD, SAR, YER)..."
         emptyText="لا توجد عملات مطابقة"
         showAllOption={includeAll}
@@ -116,7 +116,7 @@ function handleChange(val: string | null) {
       <SearchableSelect
         bind:value={currentCurrency}
         items={dbCurrencies}
-        placeholder={isLoading ? "جارٍ تحميل العملات..." : (m.finance_ledger_currency?.() || "اختر العملة...")}
+        placeholder={isLoading ? "جارٍ تحميل العملات..." : (m.finance_ledger_currency())}
         searchPlaceholder="ابحث باسم العملة أو الرمز (مثال: USD, SAR, YER)..."
         emptyText="لا توجد عملات مطابقة"
         showAllOption={includeAll}

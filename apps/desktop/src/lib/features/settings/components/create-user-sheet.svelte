@@ -380,7 +380,7 @@ function handleSelectGuardianRecord(g: GuardianDto) {
 async function handleSubmit() {
   const finalUsername = username.trim().toLowerCase();
   if (!finalUsername) {
-    toast.error(l("يرجى إدخال اسم المستخدم", "Please enter a valid username"));
+    toast.error(m.ui_copy_please_enter_a_valid_username_5bef8f34());
     return;
   }
 
@@ -395,19 +395,19 @@ async function handleSubmit() {
   }
 
   if (!selectedRole) {
-    toast.error(l("يرجى تحديد الدور الوظيفي للمستخدم", "Please select a user role"));
+    toast.error(m.ui_copy_please_select_a_user_role_e59e6c02());
     return;
   }
 
   if (passwordMode === "custom") {
     if (!customPassword || customPassword.length < 6) {
       toast.error(
-        l("كلمة المرور يجب ألا تقل عن 6 خانات", "Password must be at least 6 characters"),
+        m.ui_copy_password_must_be_at_least_6_characters_921652ea(),
       );
       return;
     }
     if (customPassword !== confirmPassword) {
-      toast.error(l("كلمتا المرور غير متطابقتين", "Passwords do not match"));
+      toast.error(m.setup_bootstrap_err_password_mismatch());
       return;
     }
   }
@@ -481,7 +481,7 @@ async function handleSubmit() {
     onsuccess?.(result, displayName);
   } catch (err: any) {
     console.error("User provisioning error:", err);
-    toast.error(err?.message || l("فشل إنشاء حساب المستخدم", "Failed to provision user account"));
+    toast.error(err?.message || m.ui_copy_failed_to_provision_user_account_a5de6e16());
   } finally {
     isSubmitting = false;
   }
@@ -501,7 +501,7 @@ async function handleSubmit() {
       <Sheet.Header class="px-6 py-4 border-b border-border/40 shrink-0 text-start">
         <Sheet.Title class="text-base font-bold text-foreground flex items-center gap-2">
           <UserPlus size={18} class="text-primary" />
-          <span>{l("إنشاء وتعيين حساب مستخدم", "Provision User Account")}</span>
+          <span>{m.ui_copy_provision_user_account_796336f2()}</span>
         </Sheet.Title>
         <p class="text-xs text-muted-foreground mt-0.5">
           {l(
@@ -523,7 +523,7 @@ async function handleSubmit() {
             <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline">
               <div class="flex items-center gap-2">
                 <User size={15} class="text-primary" />
-                <span>{l("نوع الهوية والمستفيد", "Account Persona & Target Entity")}</span>
+                <span>{m.ui_copy_account_persona_target_entity_a82adc96()}</span>
               </div>
             </AccordionTrigger>
             <AccordionContent class="px-4 pb-4 pt-1 space-y-4">
@@ -541,7 +541,7 @@ async function handleSubmit() {
                       <CheckCircle size={12} class="text-primary" />
                     {/if}
                   </div>
-                  <span class="text-xs text-foreground mt-0.5">{l("موظف / معلم", "Employee")}</span>
+                  <span class="text-xs text-foreground mt-0.5">{m.ui_copy_employee_d0311cb2()}</span>
                 </button>
 
                 <!-- Student Card -->
@@ -556,7 +556,7 @@ async function handleSubmit() {
                       <CheckCircle size={12} class="text-primary" />
                     {/if}
                   </div>
-                  <span class="text-xs text-foreground mt-0.5">{l("طالب", "Student")}</span>
+                  <span class="text-xs text-foreground mt-0.5">{m.common_ledger_entity_student()}</span>
                 </button>
 
                 <!-- Guardian Card -->
@@ -571,7 +571,7 @@ async function handleSubmit() {
                       <CheckCircle size={12} class="text-primary" />
                     {/if}
                   </div>
-                  <span class="text-xs text-foreground mt-0.5">{l("ولي أمر", "Guardian")}</span>
+                  <span class="text-xs text-foreground mt-0.5">{m.common_users_filter_guardian()}</span>
                 </button>
 
                 <!-- Custom Card -->
@@ -586,20 +586,20 @@ async function handleSubmit() {
                       <CheckCircle size={12} class="text-primary" />
                     {/if}
                   </div>
-                  <span class="text-xs text-foreground mt-0.5">{l("مخصص", "Custom")}</span>
+                  <span class="text-xs text-foreground mt-0.5">{m.common_onboarding_break_custom()}</span>
                 </button>
               </div>
 
               <!-- Persona Picker (Employee) -->
               {#if personaType === "employee"}
-                <FormField id="emp_picker" label={l("سجل الموظف / المعلم المراد ربطه", "Linked Employee Profile")} required>
+                <FormField id="emp_picker" label={m.ui_copy_linked_employee_profile_2de2ffb8()} required>
                   {#snippet children()}
                   <SearchableSelect
                     id="emp_picker"
                     items={rawEmployees}
                     value={selectedEmployeeId}
-                    placeholder={l("ابحث بالاسم، الرقم الوظيفي أو القسم...", "Search by name, ID or department...")}
-                    emptyText={l("لم يتم العثور على موظفين", "No employees found")}
+                    placeholder={m.ui_copy_search_by_name_id_or_department_3f1dc5aa()}
+                    emptyText={m.ui_copy_no_employees_found_3814cebc()}
                     getItemValue={(emp: EmployeeDetailDto) => emp.id}
                     getItemLabel={(emp: EmployeeDetailDto) =>
                       l(
@@ -609,7 +609,7 @@ async function handleSubmit() {
                     getItemSubtitle={(emp: EmployeeDetailDto) =>
                       `${emp.employee_number || "—"} • ${l(emp.department, emp.department) || emp.employee_type}`}
                     getItemBadge={(emp: EmployeeDetailDto) =>
-                      emp.user_id ? l("لديه حساب", "Has account") : l("متاح للربط", "Available")}
+                      emp.user_id ? m.ui_copy_has_account_ffd704f7() : m.ui_copy_available_eebdcd8c()}
                     onchange={handleSelectEmployee}
                   />
                   {/snippet}
@@ -632,14 +632,14 @@ async function handleSubmit() {
                   </div>
                 {/if}
               {:else if personaType === "student"}
-                <FormField id="std_picker" label={l("سجل الطالب المراد ربطه", "Linked Student Profile")} required>
+                <FormField id="std_picker" label={m.ui_copy_linked_student_profile_72144e3a()} required>
                   {#snippet children()}
                   <SearchableSelect
                     id="std_picker"
                     items={rawStudents}
                     value={selectedStudentId}
-                    placeholder={l("ابحث بالاسم، الرقم الأكاديمي أو الفصل...", "Search by name, student # or class...")}
-                    emptyText={l("لم يتم العثور على طلاب", "No students found")}
+                    placeholder={m.ui_copy_search_by_name_student_or_class_7958c831()}
+                    emptyText={m.common_table_no_students()}
                     getItemValue={(std: StudentDetailDto) => std.student?.id || ""}
                     getItemLabel={(std: StudentDetailDto) =>
                       l(
@@ -647,9 +647,9 @@ async function handleSubmit() {
                         `${std.person?.first_name || ""} ${std.person?.last_name || ""}`.trim(),
                       ) || "طالب"}
                     getItemSubtitle={(std: StudentDetailDto) =>
-                      `${std.student?.student_number || "—"} • ${std.enrollment?.class_name || l("غير مسكن", "Unassigned")}`}
+                      `${std.student?.student_number || "—"} • ${std.enrollment?.class_name || m.ui_copy_unassigned_df62ef28()}`}
                     getItemBadge={(std: StudentDetailDto) =>
-                      std.student?.user_id ? l("لديه حساب", "Has account") : l("متاح للربط", "Available")}
+                      std.student?.user_id ? m.ui_copy_has_account_ffd704f7() : m.ui_copy_available_eebdcd8c()}
                     onchange={handleSelectStudent}
                   />
                   {/snippet}
@@ -673,14 +673,14 @@ async function handleSubmit() {
                 {/if}
               {:else if personaType === "guardian"}
                 <div class="space-y-3">
-                  <FormField id="g_std_picker" label={l("اختر الطالب لاستعراض أولياء الأمور المرتبطين به", "Select Student to Find Linked Guardians")}>
+                  <FormField id="g_std_picker" label={m.ui_copy_select_student_to_find_linked_guardians_0f20f702()}>
                     {#snippet children()}
                     <SearchableSelect
                       id="g_std_picker"
                       items={rawStudents}
                       value={selectedGuardianStudentId}
-                      placeholder={l("ابحث بالاسم أو الرقم الأكاديمي للطالب...", "Search student by name or number...")}
-                      emptyText={l("لم يتم العثور على طلاب", "No students found")}
+                      placeholder={m.ui_copy_search_student_by_name_or_number_494f6958()}
+                      emptyText={m.common_table_no_students()}
                       getItemValue={(std: StudentDetailDto) => std.student?.id || ""}
                       getItemLabel={(std: StudentDetailDto) =>
                         l(
@@ -697,12 +697,12 @@ async function handleSubmit() {
                   {#if isLoadingGuardians}
                     <div class="flex items-center gap-2 text-xs text-muted-foreground p-2">
                       <Refresh size={13} class="animate-spin text-primary" />
-                      <span>{l("جاري جلب أولياء الأمور المسجلين...", "Loading registered guardians...")}</span>
+                      <span>{m.ui_copy_loading_registered_guardians_16d08b44()}</span>
                     </div>
                   {:else if selectedGuardianStudentId}
                     {#if guardianList.length > 0}
                       <div class="space-y-1.5">
-                        <Label class="text-xs font-semibold">{l("اختر ولي الأمر لربط حسابه بهويته الأصلية:", "Select Guardian to Link Account:")}</Label>
+                        <Label class="text-xs font-semibold">{m.ui_copy_select_guardian_to_link_account_700d1ac5()}</Label>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {#each guardianList as g (g.id)}
                             <button
@@ -713,7 +713,7 @@ async function handleSubmit() {
                               <div class="flex items-center justify-between w-full">
                                 <span class="text-xs text-foreground">{l(g.relationship_ar, g.relationship) || g.relationship}</span>
                                 {#if g.is_primary}
-                                  <Badge variant="outline" class="text-[9px] bg-primary/10 text-primary">{l("أساسي", "Primary")}</Badge>
+                                  <Badge variant="outline" class="text-[9px] bg-primary/10 text-primary">{m.ui_copy_primary_13a3febb()}</Badge>
                                 {/if}
                               </div>
                               {#if g.work_phone}
@@ -727,7 +727,7 @@ async function handleSubmit() {
                       </div>
                     {:else}
                       <div class="text-xs text-muted-foreground p-2 bg-muted/30 rounded-lg">
-                        {l("لا يوجد أولياء أمور مسجلين لهذا الطالب. يمكنك ملء البيانات في القسم التالي.", "No registered guardians found. You may fill details in the next section.")}
+                        {m.ui_copy_no_registered_guardians_found_you_may_fill_0fe73d2f()}
                       </div>
                     {/if}
                   {/if}
@@ -741,13 +741,13 @@ async function handleSubmit() {
             <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline">
               <div class="flex items-center gap-2">
                 <ShieldCheck size={15} class="text-primary" />
-                <span>{l("بيانات الهوية والحساب", "Identity & Account Details")}</span>
+                <span>{m.ui_copy_identity_account_details_b5154e18()}</span>
               </div>
             </AccordionTrigger>
             <AccordionContent class="px-4 pb-4 pt-1 space-y-3">
               <!-- Full Name Grid -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FormField id="dt_user_name_en" label={l("الاسم الكامل (بالإنجليزية)", "Full Name (EN)")}>
+                <FormField id="dt_user_name_en" label={m.ui_copy_full_name_en_84cacaf7()}>
                   {#snippet children()}
                   <Input
                     id="dt_user_name_en"
@@ -761,7 +761,7 @@ async function handleSubmit() {
                   {/snippet}
                 </FormField>
 
-                <FormField id="dt_user_name_ar" label={l("الاسم الكامل (بالعربية)", "Full Name (AR)")}>
+                <FormField id="dt_user_name_ar" label={m.ui_copy_full_name_ar_9214cac5()}>
                   {#snippet children()}
                   <Input
                     id="dt_user_name_ar"
@@ -778,7 +778,7 @@ async function handleSubmit() {
               <!-- Username & Role Grid -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <!-- Username -->
-                <FormField id="dt_username" label={l("اسم المستخدم / المعرف", "Username / Handle")} required>
+                <FormField id="dt_username" label={m.ui_copy_username_handle_914729f0()} required>
                   {#snippet children()}
                   <div class="relative">
                     <Input
@@ -796,14 +796,14 @@ async function handleSubmit() {
                       onclick={generateSuggestedUsername}
                     >
                       <Sparkles size={11} />
-                      <span>{l("اقتراح", "Suggest")}</span>
+                      <span>{m.ui_copy_suggest_5645a4c7()}</span>
                     </button>
                   </div>
                   {/snippet}
                 </FormField>
 
                 <!-- Role -->
-                <FormField id="dt_role" label={l("الدور الوظيفي / الصلاحية", "System Role")} required>
+                <FormField id="dt_role" label={m.ui_copy_system_role_ae5b071c()} required>
                   {#snippet children()}
                   <RoleSelect
                     bind:value={selectedRole}
@@ -816,7 +816,7 @@ async function handleSubmit() {
 
               <!-- Contact Details Grid -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FormField id="dt_email" label={l("البريد الإلكتروني", "Email Address")}>
+                <FormField id="dt_email" label={m.employees_email()}>
                   {#snippet children()}
                   <Input
                     id="dt_email"
@@ -829,7 +829,7 @@ async function handleSubmit() {
                   {/snippet}
                 </FormField>
 
-                <FormField id="dt_phone" label={l("رقم الهاتف / الجوال", "Phone Number")}>
+                <FormField id="dt_phone" label={m.ui_copy_phone_number_d163a03d()}>
                   {#snippet children()}
                   <Input
                     id="dt_phone"
@@ -850,7 +850,7 @@ async function handleSubmit() {
             <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline">
               <div class="flex items-center gap-2">
                 <LockClosed size={15} class="text-primary" />
-                <span>{l("كلمة المرور والأمان", "Password & Security")}</span>
+                <span>{m.ui_copy_password_security_0d1cc84e()}</span>
               </div>
             </AccordionTrigger>
             <AccordionContent class="px-4 pb-4 pt-1 space-y-3">
@@ -868,11 +868,11 @@ async function handleSubmit() {
                   </div>
                   <div class="flex flex-col gap-0.5">
                     <span class="text-xs text-foreground flex items-center gap-1.5">
-                      <span>{l("توليد كلمة مرور عشوائية آمنة", "Auto-Generate Password")}</span>
-                      <Badge variant="outline" class="text-[9px] px-1 py-0 bg-primary/10 text-primary">{l("موصى به", "Recommended")}</Badge>
+                      <span>{m.ui_copy_auto_generate_password_b761f0fd()}</span>
+                      <Badge variant="outline" class="text-[9px] px-1 py-0 bg-primary/10 text-primary">{m.ui_copy_recommended_4917dbf2()}</Badge>
                     </span>
                     <span class="text-[10px] text-muted-foreground leading-normal">
-                      {l("كلمة مرور مؤقتة مؤمنة تُعرض لمرة واحدة عند الحفظ", "Secure 12-char temp password shown once on save")}
+                      {m.ui_copy_secure_12_char_temp_password_shown_once_on_75af1dae()}
                     </span>
                   </div>
                 </button>
@@ -888,9 +888,9 @@ async function handleSubmit() {
                     {/if}
                   </div>
                   <div class="flex flex-col gap-0.5">
-                    <span class="text-xs text-foreground">{l("تعيين كلمة مرور محددة", "Custom Password")}</span>
+                    <span class="text-xs text-foreground">{m.ui_copy_custom_password_c4ade6bf()}</span>
                     <span class="text-[10px] text-muted-foreground leading-normal">
-                      {l("إدخال كلمة مرور يدوية مطابقة للسياسة", "Specify a direct custom password")}
+                      {m.ui_copy_specify_a_direct_custom_password_748d3be2()}
                     </span>
                   </div>
                 </button>
@@ -899,7 +899,7 @@ async function handleSubmit() {
               <!-- Custom Password Fields -->
               {#if passwordMode === "custom"}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  <FormField id="dt_pass" label={l("كلمة المرور الجديدة", "New Password")} required>
+                  <FormField id="dt_pass" label={m.settings_security_new_password()} required>
                     {#snippet children()}
                     <div class="relative">
                       <Input
@@ -925,7 +925,7 @@ async function handleSubmit() {
                     {/snippet}
                   </FormField>
 
-                  <FormField id="dt_pass_confirm" label={l("تأكيد كلمة المرور", "Confirm Password")} required>
+                  <FormField id="dt_pass_confirm" label={m.settings_security_confirm_password()} required>
                     {#snippet children()}
                     <Input
                       id="dt_pass_confirm"
@@ -947,7 +947,7 @@ async function handleSubmit() {
             <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline">
               <div class="flex items-center gap-2">
                 <Printer size={15} class="text-primary" />
-                <span>{l("قنوات الإرسال والتكاملات المتصلة", "Delivery Channels & Connected Gateways")}</span>
+                <span>{m.ui_copy_delivery_channels_connected_gateways_31a74a07()}</span>
               </div>
             </AccordionTrigger>
             <AccordionContent class="px-4 pb-4 pt-1 space-y-3">
@@ -968,7 +968,7 @@ async function handleSubmit() {
                       if (channel.isAvailable) {
                         deliveryChannel = channel.id;
                       } else {
-                        toast.info(l(`تكامل (${channel.name}) غير مفعل في المؤسسة`, `Integration for ${channel.nameEn} is not configured`));
+                        toast.info(m.ui_integration_not_configured({ channelName: channel.name }));
                       }
                     }}
                   >
@@ -998,14 +998,14 @@ async function handleSubmit() {
                 <div class="flex items-center justify-between">
                   <span class="text-xs font-semibold text-foreground flex items-center gap-1.5">
                     <UserGroup size={13} class="text-primary" />
-                    <span>{l("المجموعات والأقسام", "User Groups")}</span>
+                    <span>{m.ui_copy_user_groups_fa7b35be()}</span>
                   </span>
                   <button
                     type="button"
                     class="text-[11px] text-primary hover:underline cursor-pointer"
                     onclick={() => (showGroupsSection = !showGroupsSection)}
                   >
-                    {showGroupsSection ? l("إخفاء", "Hide") : l("تخصيص المجموعات...", "Assign Groups...")}
+                    {showGroupsSection ? m.ui_copy_hide_5290eebc() : m.ui_copy_assign_groups_6067d0c9()}
                   </button>
                 </div>
 
@@ -1020,7 +1020,7 @@ async function handleSubmit() {
                 {:else if selectedGroupIds.length > 0}
                   <div class="flex items-center gap-2 mt-1.5">
                     <Badge variant="secondary" class="text-[10px]">
-                      {selectedGroupIds.length} {l("مجموعات محددة", "groups selected")}
+                      {selectedGroupIds.length} {m.ui_copy_groups_selected_dded0212()}
                     </Badge>
                   </div>
                 {/if}
@@ -1039,7 +1039,7 @@ async function handleSubmit() {
           disabled={isSubmitting}
           class="flex-1 h-9 text-sm cursor-pointer"
         >
-          {m.common_action_cancel?.() || "إلغاء"}
+          {m.common_action_cancel()}
         </Button>
         <Button
           type="submit"
@@ -1048,10 +1048,10 @@ async function handleSubmit() {
         >
           {#if isSubmitting}
             <Refresh size={14} class="animate-spin" />
-            <span>{m.common_state_saving?.() || "جاري الحفظ..."}</span>
+            <span>{m.common_state_saving()}</span>
           {:else}
             <Check size={14} />
-            <span>{l("إنشاء وتعيين الحساب", "Provision User")}</span>
+            <span>{m.ui_copy_provision_user_3502e985()}</span>
           {/if}
         </Button>
       </div>

@@ -8,7 +8,7 @@
 </script>
 
 <svelte:head>
-  <title>{m.nav_reports?.() || "مركز التقارير والمستندات"} - Orbis</title>
+  <title>{m.nav_reports()} - Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-hidden">

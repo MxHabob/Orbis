@@ -199,7 +199,7 @@ function formatVal(val: number) {
     <CardHeader class="py-3 px-4">
       <div class="flex items-center gap-2">
         <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-          {m.finance_overview_collection_trend ? m.finance_overview_collection_trend() : "Cash Flow Trend"}
+          {m.finance_overview_collection_trend()}
         </CardTitle>
         {#if isEditing}
           <DragIndicator />
@@ -210,11 +210,11 @@ function formatVal(val: number) {
         <div class="flex items-center gap-4 text-[10px] text-muted-foreground font-semibold select-none">
           <div class="flex items-center gap-1.5">
             <span class="h-2.5 w-2.5 rounded-sm bg-muted-foreground/30 inline-block"></span>
-            <span>{m.finance_overview_trend_invoiced ? m.finance_overview_trend_invoiced() : "Invoiced"}</span>
+            <span>{m.finance_overview_trend_invoiced()}</span>
           </div>
           <div class="flex items-center gap-1.5">
             <span class="h-2.5 w-2.5 rounded-sm bg-foreground inline-block"></span>
-            <span>{m.finance_overview_trend_collected ? m.finance_overview_trend_collected() : "Collected"}</span>
+            <span>{m.finance_overview_trend_collected()}</span>
           </div>
         </div>
       </CardAction>
@@ -290,11 +290,11 @@ function formatVal(val: number) {
             <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{activeBar.label}</span>
             <div class="flex flex-col gap-0.5">
               <div class="flex items-center justify-between gap-4">
-                <span class="text-muted-foreground">{m.finance_overview_trend_invoiced ? m.finance_overview_trend_invoiced() : "Invoiced"}:</span>
+                <span class="text-muted-foreground">{m.finance_overview_trend_invoiced()}:</span>
                 <span class="font-bold font-mono text-foreground">{formatCurrency(activeBar.invoiced)}</span>
               </div>
               <div class="flex items-center justify-between gap-4">
-                <span class="text-muted-foreground">{m.finance_overview_trend_collected ? m.finance_overview_trend_collected() : "Collected"}:</span>
+                <span class="text-muted-foreground">{m.finance_overview_trend_collected()}:</span>
                 <span class="font-bold font-mono text-foreground">{formatCurrency(activeBar.collected)}</span>
               </div>
             </div>
@@ -317,7 +317,7 @@ function formatVal(val: number) {
     <CardFooter class="border-t border-border/40 py-2.5 px-4 flex items-center justify-between w-full select-none text-[9px] font-bold">
       <div class="flex items-center gap-4">
         <a href={localizeHref(`/${orgId}/finance/statement`)} class="text-primary hover:underline flex items-center gap-1 group/statement">
-          <span>{m.finance_overview_btn_statement ? m.finance_overview_btn_statement() : "Statement"}</span>
+          <span>{m.finance_overview_btn_statement()}</span>
           <ArrowRight size={10} class="transition-transform group-hover/statement:translate-x-0.5 rtl:rotate-180" />
         </a>
       </div>

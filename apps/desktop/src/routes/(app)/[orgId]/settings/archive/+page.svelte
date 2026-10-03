@@ -7,7 +7,7 @@ const orgId = $derived(page.params.orgId || "");
 </script>
 
 <svelte:head>
-  <title>{m.settings_nav_archive ? m.settings_nav_archive() : "Archive"} | Orbis</title>
+  <title>{m.settings_nav_archive()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-hidden">

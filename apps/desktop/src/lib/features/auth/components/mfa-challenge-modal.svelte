@@ -82,7 +82,7 @@ async function handleSubmitChallenge() {
           class="w-full text-center tracking-[0.35em] font-mono text-xl font-bold h-11"
         />
         <span class="text-[11px] text-muted-foreground">
-          {isRecoveryMode ? "Emergency recovery code" : m.common_mfa_enroll_digit_hint()}
+          {isRecoveryMode ? m.common_mfa_challenge_recovery_hint() : m.common_mfa_enroll_digit_hint()}
         </span>
       </div>
 
@@ -118,7 +118,7 @@ async function handleSubmitChallenge() {
 
     <DialogFooter class="border-t border-border pt-3 mt-2 flex items-center justify-between">
       <Button variant="ghost" size="sm" class="text-xs" onclick={() => { open = false; onClose(); }}>
-        {m.common_titlebar_close ? m.common_titlebar_close() : "Cancel"}
+        {m.common_titlebar_close()}
       </Button>
       <Button
         size="sm"

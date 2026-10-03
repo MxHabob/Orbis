@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { createQuery } from "@tanstack/svelte-query";
 import { api } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
@@ -94,7 +95,7 @@ const weekdays = $derived.by(() => {
 
 function getSubjectName(subjectId: string): string {
   const sub = subjects.find((s) => String(s.id) === String(subjectId));
-  if (!sub) return isArabic ? "مادة غير معروفة" : "Unknown Subject";
+  if (!sub) return m.ui_class_schedule_unknown_subject();
   return isArabic ? sub.name_ar || sub.name : sub.name || sub.name_ar;
 }
 
@@ -121,14 +122,14 @@ function getSubjectColor(subjectId: string): string {
 const isLoading = $derived(scheduleQuery.isLoading || timeSlotsQuery.isLoading);
 </script>
 
-<WorkspaceCard title={isArabic ? "الجدول الدراسي الأسبوعي" : "Weekly Class Timetable"}>
+<WorkspaceCard title={m.ui_class_schedule_weekly_class_timetable()}>
   {#snippet actions()}
     <a
       href={localizeHref(`/${orgId}/academics/schedule?classId=${classId}`)}
       class="flex items-center gap-1.5 text-xs text-primary hover:underline font-semibold"
     >
       <Calendar size={13} />
-      <span>{isArabic ? "عرض وإدارة الجدول" : "Full Schedule"}</span>
+      <span>{m.ui_class_schedule_full_schedule()}</span>
       <ArrowForward size={11} class="opacity-70" />
     </a>
   {/snippet}
@@ -143,9 +144,9 @@ const isLoading = $derived(scheduleQuery.isLoading || timeSlotsQuery.isLoading);
       <div class="p-3 bg-primary/10 rounded-full text-primary mb-2">
         <ClockRotateRight size={24} />
       </div>
-      <p class="text-sm font-bold text-foreground">{isArabic ? "لا توجد حصص مجدولة" : "No Lessons Scheduled"}</p>
+      <p class="text-sm font-bold text-foreground">{m.ui_class_schedule_no_lessons_scheduled()}</p>
       <p class="text-[11px] text-muted-foreground mt-1 max-w-sm">
-        {isArabic ? "لم يتم تعيين حصص دراسية لهذا الفصل في هذه الفترة الأكاديمية." : "No lesson timetable has been configured for this class in this period."}
+        {m.ui_class_schedule_no_lesson_timetable_has_been_configured_for_this_class_in_this_period()}
       </p>
     </div>
   {:else}

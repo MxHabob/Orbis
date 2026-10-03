@@ -27,7 +27,7 @@ import {
 } from "@orbis/ui/select";
 import { DocumentCheck, Plus, Lock, Sparkles, BuildingOffice } from "@orbis/icons";
 import { toast } from "@orbis/ui";
-import { l } from "$lib/core/i18n";
+
 import { api, type ClassDto, type DocumentRequirementDto } from "$lib/api";
 import { ClassSelect } from "$lib/features/academics";
 
@@ -78,7 +78,7 @@ function autoGenerateCode() {
 async function handleSubmit(e?: Event) {
   e?.preventDefault();
   if (!nameAr.trim() && !nameEn.trim()) {
-    toast.error(l("الرجاء إدخال اسم المستند المطلوب", "Document name is required"));
+    toast.error(m.ui_copy_document_name_is_required_933c340a());
     return;
   }
 
@@ -100,12 +100,12 @@ async function handleSubmit(e?: Event) {
       condition,
     });
 
-    toast.success(l("تم إنشاء متطلب المستند بنجاح", "Document requirement created successfully"));
+    toast.success(m.ui_copy_document_requirement_created_successfully_07533818());
     oncreated?.(created);
     open = false;
   } catch (err: any) {
     console.error("Failed to create document requirement:", err);
-    toast.error(l("فشل إنشاء متطلب المستند", "Failed to create document requirement"));
+    toast.error(m.ui_copy_failed_to_create_document_requirement_081fa272());
   } finally {
     isSubmitting = false;
   }
@@ -122,10 +122,10 @@ async function handleSubmit(e?: Event) {
           </div>
           <div class="flex flex-col text-start">
             <SheetTitle class="text-sm font-bold text-foreground">
-              {l("إضافة متطلب مستند أو وثيقة قبول جديدة", "New Admission Document Requirement")}
+              {m.ui_copy_new_admission_document_requirement_5f33626c()}
             </SheetTitle>
             <SheetDescription class="text-[11px] text-muted-foreground">
-              {l("تخصيص قواعد الوثائق المطلوبة وإلزاميتها وحجب التسجيل حسب الصف الدراسي", "Configure document prerequisites, mandatory rules, and enrollment blockers")}
+              {m.ui_copy_configure_document_prerequisites_mandatory_c9264d58()}
             </SheetDescription>
           </div>
         </div>
@@ -135,12 +135,12 @@ async function handleSubmit(e?: Event) {
         <!-- Arabic Name -->
         <div class="flex flex-col gap-1.5">
           <Label for="docNameAr" class="text-xs font-semibold text-foreground flex items-center gap-1">
-            {l("اسم المستند (بالعربية)", "Document Title (Arabic)")}
+            {m.ui_copy_document_title_arabic_43c58298()}
             <span class="text-destructive">*</span>
           </Label>
           <Input
             id="docNameAr"
-            placeholder={l("مثال: شهادة الميلاد الأصلية المعتمدة", "e.g. Certified Birth Certificate")}
+            placeholder={m.ui_copy_e_g_certified_birth_certificate_22f4f391()}
             bind:value={nameAr}
             class="h-9 text-xs"
             onblur={autoGenerateCode}
@@ -151,7 +151,7 @@ async function handleSubmit(e?: Event) {
         <!-- English Name -->
         <div class="flex flex-col gap-1.5">
           <Label for="docNameEn" class="text-xs font-semibold text-foreground">
-            {l("اسم المستند (بالإنجليزية)", "Document Title (English)")}
+            {m.ui_copy_document_title_english_80382f1d()}
           </Label>
           <Input
             id="docNameEn"
@@ -166,7 +166,7 @@ async function handleSubmit(e?: Event) {
         <!-- Code Identifier -->
         <div class="flex flex-col gap-1.5">
           <Label for="docCode" class="text-xs font-semibold text-foreground">
-            {l("الرمز التعريفي الفريد (Code)", "Identifier Code")}
+            {m.ui_copy_identifier_code_2a0602de()}
           </Label>
           <Input
             id="docCode"
@@ -180,20 +180,20 @@ async function handleSubmit(e?: Event) {
         <!-- Target Class / Grade Level via pre-built ClassSelect -->
         <div class="flex flex-col gap-1.5">
           <Label class="text-xs font-semibold text-foreground">
-            {l("الصف أو المرحلة التعليمية المستهدفة", "Target Class / Grade Level")}
+            {m.ui_copy_target_class_grade_level_057499df()}
           </Label>
           <ClassSelect
             bind:value={selectedClassId}
             showAllOption={true}
-            allOptionLabel={l("كافة الصفوف والمراحل الدراسية", "All Classes & Grade Levels")}
-            placeholder={l("اختر الصف أو المرحلة...", "Select Class / Grade...")}
+            allOptionLabel={m.ui_copy_all_classes_grade_levels_cd709249()}
+            placeholder={m.ui_copy_select_class_grade_2d561044()}
           />
         </div>
 
         <!-- Student Condition -->
         <div class="flex flex-col gap-1.5">
           <Label class="text-xs font-semibold text-foreground">
-            {l("شرط انطباق المتطلب على الطالب", "Applicability Condition")}
+            {m.ui_copy_applicability_condition_edba6012()}
           </Label>
           <Select 
             type="single"
@@ -202,22 +202,22 @@ async function handleSubmit(e?: Event) {
           >
             <SelectTrigger class="h-9 text-xs text-start">
               {#if condition === "all_students"}
-                {l("كافة الطلاب الجدد دون استثناء", "All New Students")}
+                {m.ui_copy_all_new_students_b14cd3e5()}
               {:else if condition === "national_only"}
-                {l("الطلاب الوطنيون (المواطنون فقط)", "Nationals / Citizens Only")}
+                {m.ui_copy_nationals_citizens_only_9e9f080e()}
               {:else if condition === "foreign_only"}
-                {l("الطلاب الوافدون / الأجانب فقط", "Foreign / Expatriate Students Only")}
+                {m.ui_copy_foreign_expatriate_students_only_93492941()}
               {:else if condition === "transfer_students"}
-                {l("الطلاب المحولون من مدارس أخرى فقط", "Transfer Students Only")}
+                {m.ui_copy_transfer_students_only_bf6acf94()}
               {:else}
                 {condition}
               {/if}
             </SelectTrigger>
             <SelectContent class="text-start">
-              <SelectItem value="all_students" class="text-xs">{l("كافة الطلاب الجدد دون استثناء", "All New Students")}</SelectItem>
-              <SelectItem value="national_only" class="text-xs">{l("الطلاب الوطنيون (المواطنون فقط)", "Nationals / Citizens Only")}</SelectItem>
-              <SelectItem value="foreign_only" class="text-xs">{l("الطلاب الوافدون / الأجانب فقط", "Foreign / Expatriate Students Only")}</SelectItem>
-              <SelectItem value="transfer_students" class="text-xs">{l("الطلاب المحولون من مدارس أخرى فقط", "Transfer Students Only")}</SelectItem>
+              <SelectItem value="all_students" class="text-xs">{m.ui_copy_all_new_students_b14cd3e5()}</SelectItem>
+              <SelectItem value="national_only" class="text-xs">{m.ui_copy_nationals_citizens_only_9e9f080e()}</SelectItem>
+              <SelectItem value="foreign_only" class="text-xs">{m.ui_copy_foreign_expatriate_students_only_93492941()}</SelectItem>
+              <SelectItem value="transfer_students" class="text-xs">{m.ui_copy_transfer_students_only_bf6acf94()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -226,8 +226,8 @@ async function handleSubmit(e?: Event) {
         <div class="flex flex-col gap-3 p-3.5 rounded-lg bg-muted/30 border border-border/60">
           <div class="flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
-              <span class="text-xs font-bold text-foreground">{l("متطلب إلزامي للقبول", "Mandatory Requirement")}</span>
-              <span class="text-[10px] text-muted-foreground">{l("يلزم الطالب بتقديم الوثيقة لاستكمال إجراءات القبول", "Required for admission completion")}</span>
+              <span class="text-xs font-bold text-foreground">{m.ui_copy_mandatory_requirement_9a00fd7c()}</span>
+              <span class="text-[10px] text-muted-foreground">{m.ui_copy_required_for_admission_completion_016fc0af()}</span>
             </div>
             <Switch bind:checked={isMandatory} />
           </div>
@@ -238,9 +238,9 @@ async function handleSubmit(e?: Event) {
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-amber-500 flex items-center gap-1">
                 <Lock class="w-3 h-3" />
-                {l("حجب اعتماد القيد حتى رفع الوثيقة", "Block Final Enrollment")}
+                {m.ui_copy_block_final_enrollment_08364e7c()}
               </span>
-              <span class="text-[10px] text-muted-foreground">{l("يمنع تسكين الطالب واعتماد ملفه نهائياً حتى يتم رفع الوثيقة", "Prevents final enrollment confirmation until uploaded")}</span>
+              <span class="text-[10px] text-muted-foreground">{m.ui_copy_prevents_final_enrollment_confirmation_unt_f324bf22()}</span>
             </div>
             <Switch bind:checked={blocksEnrollment} />
           </div>
@@ -249,11 +249,11 @@ async function handleSubmit(e?: Event) {
         <!-- Description / Instructions -->
         <div class="flex flex-col gap-1.5">
           <Label for="docDesc" class="text-xs font-semibold text-foreground">
-            {l("ملاحظات وتعليمات تقديم الوثيقة (اختياري)", "Submission Guidelines (Optional)")}
+            {m.ui_copy_submission_guidelines_optional_2fc61745()}
           </Label>
           <Textarea
             id="docDesc"
-            placeholder={l("مثال: يجب أن تكون الشهادة مصدقة من وزارة التربية والتعليم...", "e.g. Must be officially certified...")}
+            placeholder={m.ui_copy_e_g_must_be_officially_certified_2cb2dcd7()}
             bind:value={description}
             class="h-18 text-xs resize-none"
           />
@@ -281,7 +281,7 @@ async function handleSubmit(e?: Event) {
         disabled={isSubmitting}
       >
         <Plus class="w-4 h-4" />
-        <span>{isSubmitting ? m.common_state_saving() : l("حفظ وإضافة المتطلب", "Create Requirement")}</span>
+        <span>{isSubmitting ? m.common_state_saving() : m.ui_copy_create_requirement_d83dc34e()}</span>
       </Button>
     </SheetFooter>
   </SheetContent>

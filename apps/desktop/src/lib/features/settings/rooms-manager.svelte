@@ -56,8 +56,8 @@ onMount(() => {
 });
 
 const roomActions: ActionItem[] = [
-  { id: "edit", label: l("تعديل", "Edit"), variant: "default" },
-  { id: "delete", label: l("حذف", "Delete"), variant: "destructive" },
+  { id: "edit", label: m.academics_schedule_edit(), variant: "default" },
+  { id: "delete", label: m.common_action_delete(), variant: "destructive" },
 ];
 
 const gridSource = $derived(
@@ -87,9 +87,9 @@ const columns: OrbisColumnDef[] = [
   { id: "floor", prop: "floor", header: "Floor", name: "Floor", width: 90, size: 90, readonly: true, align: "center" },
   { id: "capacity", prop: "capacity", header: m.common_rooms_col_capacity(), name: m.common_rooms_col_capacity(), width: 100, size: 100, readonly: true, align: "center", type: "number" },
   { id: "status", prop: "status", header: "Status", name: "Status", width: 100, size: 100, type: "badge", align: "center", readonly: true },
-  { id: "created_at_display", prop: "created_at_display", header: l("تاريخ الإنشاء", "Created At"), name: "Created At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "updated_at_display", prop: "updated_at_display", header: l("آخر تحديث", "Updated At"), name: "Updated At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "actions", prop: "actions", header: l("إجراءات", "Actions"), name: "Actions", width: 120, size: 120, type: "action", align: "center", readonly: true, meta: { items: roomActions } },
+  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: "Created At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "updated_at_display", prop: "updated_at_display", header: m.ui_copy_updated_at_ba0d0a9f(), name: "Updated At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "actions", prop: "actions", header: m.ui_copy_actions_c48127a5(), name: "Actions", width: 120, size: 120, type: "action", align: "center", readonly: true, meta: { items: roomActions } },
 ];
 
 function openCreateSheet() {
@@ -99,14 +99,14 @@ function openCreateSheet() {
 
 function promptDelete(room: RoomDto) {
   confirmStore.open({
-    title: l("حذف القاعة", "Delete Room"),
-    message: l(`هل أنت متأكد من رغبتك في حذف القاعة "${room.name_ar || room.name}"؟`, `Are you sure you want to delete room "${room.name_ar || room.name}"?`),
-    confirmLabel: l("حذف", "Delete"),
+    title: m.ui_copy_delete_room_b9cc731b(),
+    message: m.ui_room_delete_confirmation({ roomName: room.name_ar || room.name }),
+    confirmLabel: m.common_action_delete(),
     variant: "destructive",
     onConfirm: async () => {
       try {
         await api.deleteRoom(room.id);
-        toast.success(l("تم حذف القاعة بنجاح", "Room deleted successfully"));
+        toast.success(m.ui_copy_room_deleted_successfully_6298d43a());
         loadRooms();
       } catch (err) {
         toast.error(extractErrorMessage(err));

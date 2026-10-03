@@ -40,7 +40,7 @@ const themes = [
   <CardContent>
     <!-- Theme -->
     <SettingsRow
-      title={m.settings_appearance_theme ? m.settings_appearance_theme() : "Theme"}
+      title={m.settings_appearance_theme()}
       description={m.common_account_preferences_theme_desc()}
     >
       {#snippet children()}
@@ -64,7 +64,7 @@ const themes = [
 
     <!-- Language -->
     <LocaleSettings
-      title={m.settings_appearance_language ? m.settings_appearance_language() : "Language"}
+      title={m.settings_appearance_language()}
       description={m.common_account_preferences_lang_desc()}
       bind:currentLocale={selectedLanguage}
       last

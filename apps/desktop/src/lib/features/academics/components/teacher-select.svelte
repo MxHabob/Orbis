@@ -29,12 +29,12 @@ interface Props {
 let {
   value = $bindable<string | null>(null),
   orgId,
-  placeholder = m.common_cs_form_select_teacher?.() || "اختر المعلم...",
+  placeholder = m.common_cs_form_select_teacher(),
   searchPlaceholder = "ابحث بالاسم أو الرقم الوظيفي...",
   disabled = false,
   id = undefined,
   showAllOption = false,
-  allOptionLabel = m.common_cs_form_all_teachers?.() || "جميع المعلمين",
+  allOptionLabel = m.common_cs_form_all_teachers(),
   createLabel = "إضافة معلم جديد...",
   onCreate = undefined,
   class: className = "",
@@ -77,7 +77,7 @@ function getTeacherSubtitle(t: any): string | undefined {
   items={teachers}
   {placeholder}
   {searchPlaceholder}
-  emptyText={m.common_cs_form_no_teachers?.() || "لا يوجد معلمون مطابقون"}
+  emptyText={m.common_cs_form_no_teachers()}
   {disabled}
   {id}
   {showAllOption}

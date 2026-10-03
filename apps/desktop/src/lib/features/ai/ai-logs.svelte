@@ -137,7 +137,7 @@ function formatTime(dtStr: string): string {
     <div class="w-full sm:max-w-md">
       <SearchField
         bind:value={searchQuery}
-        placeholder={m.ai_center_logs_search_placeholder ? m.ai_center_logs_search_placeholder() : "بحث في السجلات والمهام المنفذة..."}
+        placeholder={m.ai_center_logs_search_placeholder()}
         class="w-full"
       />
     </div>
@@ -165,7 +165,7 @@ function formatTime(dtStr: string): string {
         class="h-8.5 px-3.5 text-xs font-semibold gap-1.5 cursor-pointer shadow-xs rounded-lg"
       >
         <Play size={12} fill="currentColor" />
-        <span>{m.ai_center_logs_btn_run_tick ? m.ai_center_logs_btn_run_tick() : "تشغيل الفحص"}</span>
+        <span>{m.ai_center_logs_btn_run_tick()}</span>
       </Button>
     </div>
   </div>

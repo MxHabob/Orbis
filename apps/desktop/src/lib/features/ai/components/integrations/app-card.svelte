@@ -32,22 +32,22 @@ let {
         <div class="flex gap-1.5 flex-wrap justify-end">
           {#if app.status === "connected"}
             <Badge variant="outline" class="text-[10px] font-semibold text-primary border-primary/20 bg-primary/10 px-2 py-0.5">
-              {m.ai_center_integrations_status_connected ? m.ai_center_integrations_status_connected() : "Connected"}
+              {m.ai_center_integrations_status_connected()}
             </Badge>
           {/if}
           {#if app.status === "error"}
             <Badge variant="destructive" class="text-[10px] font-semibold px-2 py-0.5">
-              {m.ai_center_integrations_status_error ? m.ai_center_integrations_status_error() : "Error"}
+              {m.ai_center_integrations_status_error()}
             </Badge>
           {/if}
           {#if app.beta}
             <Badge variant="secondary" class="text-[10px] font-semibold px-2 py-0.5">
-              {m.ai_center_integrations_status_beta ? m.ai_center_integrations_status_beta() : "Beta"}
+              {m.ai_center_integrations_status_beta()}
             </Badge>
           {/if}
           {#if !app.active}
             <Badge variant="outline" class="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-0.5">
-              {m.ai_center_integrations_status_coming_soon ? m.ai_center_integrations_status_coming_soon() : "Coming Soon"}
+              {m.ai_center_integrations_status_coming_soon()}
             </Badge>
           {/if}
         </div>

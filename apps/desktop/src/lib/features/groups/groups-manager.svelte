@@ -92,7 +92,7 @@ function openEditDialog(group: GroupDetailDto) {
 
 async function handleSaveGroup() {
   if (!formName.trim() && !formNameAr.trim()) {
-    toast.error(l("يرجى إدخال اسم المجموعة", "Please enter group name"));
+    toast.error(m.ui_copy_please_enter_group_name_74edc117());
     return;
   }
 
@@ -104,7 +104,7 @@ async function handleSaveGroup() {
         description: formDesc.trim() || undefined,
       };
       await updateMutation.mutateAsync({ id: editingGroup.id, req: payload });
-      toast.success(m.groups_save_success?.() || "تم حفظ بيانات المجموعة بنجاح");
+      toast.success(m.groups_save_success());
     } else {
       const payload: CreateGroupRequest = {
         name: formName.trim() || formNameAr.trim(),
@@ -112,7 +112,7 @@ async function handleSaveGroup() {
         description: formDesc.trim() || undefined,
       };
       await createMutation.mutateAsync(payload);
-      toast.success(m.groups_save_success?.() || "تم إنشاء المجموعة بنجاح");
+      toast.success(m.groups_save_success());
     }
     isEditDialogOpen = false;
   } catch (err) {
@@ -122,12 +122,12 @@ async function handleSaveGroup() {
 
 async function promptDeleteGroup(group: GroupDetailDto) {
   const confirmed = await confirmStore.prompt({
-    title: l("تأكيد حذف مجموعة المستخدمين", "Delete User Group"),
+    title: m.ui_copy_delete_user_group_2da27c25(),
     description: l(
       `هل أنت متأكد من رغبتك في حذف المجموعة "${group.name_ar || group.name}"؟ سيفقد الأعضاء الصلاحيات الممنوحة من خلالها.`,
       `Are you sure you want to delete group "${group.name}"? Members will lose permissions granted via this group.`
     ),
-    confirmText: l("حذف المجموعة", "Delete Group"),
+    confirmText: m.ui_copy_delete_group_d873cd2b(),
     variant: "destructive",
   });
 
@@ -135,7 +135,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
 
   try {
     await deleteMutation.mutateAsync(group.id);
-    toast.success(m.groups_delete_success?.() || "تم حذف المجموعة بنجاح");
+    toast.success(m.groups_delete_success());
   } catch (err) {
     toast.error(extractErrorMessage(err));
   }
@@ -149,7 +149,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
       <Search size={14} class="absolute start-2.5 top-2.5 text-muted-foreground pointer-events-none" />
       <Input
         type="search"
-        placeholder={l("بحث عن مجموعة...", "Search groups...")}
+        placeholder={m.ui_copy_search_groups_d05b5ef5()}
         class="ps-8 h-9 text-xs bg-card"
         bind:value={searchQuery}
       />
@@ -162,7 +162,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
         size="icon"
         onclick={() => groupsQuery.refetch()}
         class="h-9 w-9 cursor-pointer"
-        title={m.common_control_refresh ? m.common_control_refresh() : "تحديث"}
+        title={m.common_control_refresh()}
       >
         <Refresh size={13} class={groupsQuery.isLoading ? "animate-spin" : ""} />
       </Button>
@@ -174,7 +174,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
         class="h-9 text-xs flex items-center gap-1.5 font-bold cursor-pointer"
       >
         <Plus size={14} />
-        <span>{m.groups_create_btn?.() || "إنشاء مجموعة"}</span>
+        <span>{m.groups_create_btn()}</span>
       </Button>
     </div>
   </div>
@@ -184,13 +184,13 @@ async function promptDeleteGroup(group: GroupDetailDto) {
     {#if groupsQuery.isLoading}
       <div class="h-full w-full flex flex-col items-center justify-center p-8 gap-3 text-muted-foreground">
         <ArrowPath size={24} class="animate-spin text-primary" />
-        <span class="text-xs">{l("جاري تحميل المجموعات...", "Loading user groups...")}</span>
+        <span class="text-xs">{m.ui_copy_loading_user_groups_ff96ce28()}</span>
       </div>
     {:else if groupsQuery.error}
       <div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">
         <p class="text-xs text-destructive font-semibold">{extractErrorMessage(groupsQuery.error)}</p>
         <Button variant="outline" size="sm" class="text-xs" onclick={() => groupsQuery.refetch()}>
-          {m.common_retry?.() || "إعادة المحاولة"}
+          {m.common_retry()}
         </Button>
       </div>
     {:else if groups.length === 0}
@@ -198,11 +198,11 @@ async function promptDeleteGroup(group: GroupDetailDto) {
         <div class="size-14 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
           <UserGroup size={28} />
         </div>
-        <h3 class="text-sm font-bold text-foreground">{l("لا توجد مجموعات معرفة", "No groups found")}</h3>
-        <p class="text-xs text-muted-foreground max-w-xs">{l("قم بإنشاء مجموعات مستخدمين لتنظيم الكادر وتوزيع الصلاحيات.", "Create groups to organize staff.")}</p>
+        <h3 class="text-sm font-bold text-foreground">{m.ui_copy_no_groups_found_fd77c6df()}</h3>
+        <p class="text-xs text-muted-foreground max-w-xs">{m.ui_copy_create_groups_to_organize_staff_4874538a()}</p>
         <Button variant="lime" size="sm" class="text-xs mt-2 font-bold cursor-pointer" onclick={openCreateDialog}>
           <Plus size={14} class="me-1.5" />
-          {m.groups_create_btn?.() || "إنشاء مجموعة"}
+          {m.groups_create_btn()}
         </Button>
       </div>
     {:else}
@@ -224,26 +224,26 @@ async function promptDeleteGroup(group: GroupDetailDto) {
 
                 {#if group.is_system}
                   <Badge variant="secondary" class="text-[10px] shrink-0 font-medium">
-                    {m.groups_system_badge?.() || "نظام"}
+                    {m.groups_system_badge()}
                   </Badge>
                 {/if}
               </div>
 
               <!-- Description -->
               <p class="text-xs text-muted-foreground min-h-10 line-clamp-2 leading-relaxed">
-                {group.description || l("لا يوجد وصف للمجموعة.", "No description provided.")}
+                {group.description || m.ui_copy_no_description_provided_081f8206()}
               </p>
 
               <!-- Metrics -->
               <div class="flex items-center gap-3 pt-2 text-xs text-muted-foreground border-t border-border/50">
                 <span class="flex items-center gap-1.5 font-medium text-foreground">
                   <Users size={13} class="text-primary" />
-                  {formatNumber(group.member_count)} {m.groups_members_count?.() || "عضو"}
+                  {formatNumber(group.member_count)} {m.groups_members_count()}
                 </span>
                 <span>•</span>
                 <span class="flex items-center gap-1.5 font-mono">
                   <Keyframes size={13} />
-                  {formatNumber(group.permissions.length)} {l("صلاحية", "perms")}
+                  {formatNumber(group.permissions.length)} {m.ui_copy_perms_dd19d499()}
                 </span>
               </div>
             </div>
@@ -257,7 +257,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
                 onclick={() => goto(localizeHref(`/${orgId}/settings/groups/${group.id}`))}
               >
                 <Pencil size={12} class="me-1.5" />
-                {l("الأعضاء والصلاحيات", "Members & Permissions")}
+                {m.ui_copy_members_permissions_bd07beaa()}
               </Button>
 
               <div class="flex items-center gap-1">
@@ -294,13 +294,13 @@ async function promptDeleteGroup(group: GroupDetailDto) {
       <DialogHeader>
         <DialogTitle class="text-base font-bold flex items-center gap-2">
           <UserGroup size={18} class="text-primary" />
-          {editingGroup ? (m.groups_edit_title?.() || "تعديل المجموعة") : (m.groups_create_btn?.() || "إنشاء مجموعة جديدة")}
+          {editingGroup ? (m.groups_edit_title()) : (m.groups_create_btn())}
         </DialogTitle>
       </DialogHeader>
 
       <div class="flex flex-col gap-4 py-3 text-xs">
         <div class="flex flex-col gap-1.5">
-          <Label class="text-xs font-medium">{m.groups_name_ar?.() || "اسم المجموعة (بالعربية)"}</Label>
+          <Label class="text-xs font-medium">{m.groups_name_ar()}</Label>
           <Input
             type="text"
             placeholder="مثال: هيئة التدريس والمشرفين"
@@ -310,7 +310,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <Label class="text-xs font-medium">{m.groups_name?.() || "Group Name (Latin)"}</Label>
+          <Label class="text-xs font-medium">{m.groups_name()}</Label>
           <Input
             type="text"
             placeholder="e.g. Faculty & Supervisors"
@@ -320,7 +320,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <Label class="text-xs font-medium">{m.groups_description?.() || "الوصف"}</Label>
+          <Label class="text-xs font-medium">{m.groups_description()}</Label>
           <Textarea
             placeholder="وصف مهام وصلاحيات هذه المجموعة..."
             class="text-xs min-h-20"
@@ -331,13 +331,13 @@ async function promptDeleteGroup(group: GroupDetailDto) {
 
       <DialogFooter class="flex items-center justify-end gap-2 pt-3 border-t border-border">
         <Button variant="outline" size="sm" class="text-xs cursor-pointer" onclick={() => (isEditDialogOpen = false)}>
-          {m.common_action_cancel?.() || "إلغاء"}
+          {m.common_action_cancel()}
         </Button>
         <Button size="sm" class="text-xs cursor-pointer" disabled={createMutation.isPending || updateMutation.isPending} onclick={handleSaveGroup}>
           {#if createMutation.isPending || updateMutation.isPending}
             <ArrowPath size={13} class="animate-spin me-1.5" />
           {/if}
-          {m.settings_action_save_changes?.() || "حفظ"}
+          {m.settings_action_save_changes()}
         </Button>
       </DialogFooter>
     </DialogContent>

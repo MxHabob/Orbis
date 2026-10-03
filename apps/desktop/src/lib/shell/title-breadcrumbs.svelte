@@ -89,7 +89,7 @@ const breadcrumbs = $derived.by(() => {
       });
     } else if (pathname.includes("/control")) {
       items.push({
-        label: m.common_control_label ? m.common_control_label() : "الكنترول",
+        label: m.common_control_label(),
         href: `/${currentOrgId}/academics/exams/control`,
       });
     }
@@ -116,7 +116,7 @@ const breadcrumbs = $derived.by(() => {
       });
     } else if (pathname.includes("/journal-entries")) {
       items.push({
-        label: m.common_je_title ? m.common_je_title() : "القيود اليومية",
+        label: m.common_je_title(),
         href: `/${currentOrgId}/finance/journal-entries`,
       });
     } else if (
@@ -124,9 +124,7 @@ const breadcrumbs = $derived.by(() => {
       pathname.includes("/statement")
     ) {
       items.push({
-        label: m.finance_layout_nav_ledger
-          ? m.finance_layout_nav_ledger()
-          : "كشف الحساب",
+        label: m.finance_layout_nav_ledger(),
         href: `/${currentOrgId}/finance/statement`,
       });
     } else if (pathname.includes("/reports")) {
@@ -151,21 +149,17 @@ const breadcrumbs = $derived.by(() => {
       items.push({ label: m.settings_nav_permissions() });
     } else if (pathname.includes("/periods")) {
       items.push({
-        label: m.settings_nav_cycles
-          ? m.settings_nav_cycles()
-          : "Academic Periods",
+        label: m.settings_nav_cycles(),
       });
     } else if (pathname.includes("/units")) {
       items.push({ label: m.settings_nav_units() });
     } else if (pathname.includes("/rooms")) {
       items.push({
-        label: m.common_nav_rooms ? m.common_nav_rooms() : "الغرف والقاعات",
+        label: m.common_nav_rooms(),
       });
     } else if (pathname.includes("/subjects")) {
       items.push({
-        label: m.common_exams_detail_subjects
-          ? m.common_exams_detail_subjects()
-          : "المواد الدراسية",
+        label: m.common_exams_detail_subjects(),
       });
     } else if (pathname.includes("/audit")) {
       items.push({ label: m.common_nav_audit() });
@@ -173,39 +167,29 @@ const breadcrumbs = $derived.by(() => {
       items.push({ label: m.settings_nav_import_export() });
     } else if (pathname.includes("/currencies")) {
       items.push({
-        label: m.settings_nav_currencies
-          ? m.settings_nav_currencies()
-          : "العملات وأسعار الصرف",
+        label: m.settings_nav_currencies(),
       });
     } else if (pathname.includes("/ordering")) {
       items.push({
-        label: m.common_nav_ordering ? m.common_nav_ordering() : "ترتيب الطلاب",
+        label: m.common_nav_ordering(),
       });
     } else if (pathname.includes("/fee-templates")) {
       items.push({
-        label: m.common_breadcrumb_fees
-          ? m.common_breadcrumb_fees()
-          : "قوالب الرسوم",
+        label: m.common_breadcrumb_fees(),
       });
     } else if (pathname.includes("/discount-templates")) {
       items.push({
-        label: m.common_form_summary_discount
-          ? m.common_form_summary_discount()
-          : "قوالب الخصومات",
+        label: m.common_form_summary_discount(),
       });
     }
   } else if (pathname.includes("/templates")) {
     items.push({
-      label: m.settings_nav_templates
-        ? m.settings_nav_templates()
-        : "قوالب المستندات",
+      label: m.settings_nav_templates(),
       href: `/${currentOrgId}/templates`,
     });
   } else if (pathname.includes("/account")) {
     items.push({
-      label: m.common_account_settings_title
-        ? m.common_account_settings_title()
-        : "إعدادات الحساب",
+      label: m.common_account_settings_title(),
     });
   }
 

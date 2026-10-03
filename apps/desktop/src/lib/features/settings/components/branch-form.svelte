@@ -24,7 +24,7 @@ import {
 } from "@orbis/ui/sheet";
 import { EmployeeSelect } from "$lib/features/employees";
 import { toast } from "@orbis/ui";
-import { l } from "$lib/core/i18n";
+
 
 let {
   orgId,
@@ -58,7 +58,7 @@ let errors = $state<Record<string, string>>({});
 function validate(): boolean {
   errors = {};
   if (!nameAr.trim() && !nameEn.trim()) {
-    errors.nameAr = l("اسم الفرع مطلوب", "Branch name is required");
+    errors.nameAr = m.ui_copy_branch_name_is_required_6a82e12f();
   }
   return Object.keys(errors).length === 0;
 }
@@ -86,7 +86,7 @@ async function handleSubmit(e: SubmitEvent) {
         data_isolation: dataIsolation,
         is_active: isActive,
       });
-      toast.success(l("تم تحديث بيانات الفرع بنجاح", "Branch updated successfully"));
+      toast.success(m.ui_copy_branch_updated_successfully_b1250bdb());
     } else {
       await api.createOrgUnit({
         name: finalNameEn,
@@ -101,7 +101,7 @@ async function handleSubmit(e: SubmitEvent) {
         data_isolation: dataIsolation,
         is_active: isActive,
       });
-      toast.success(l("تم إنشاء الفرع بنجاح", "Branch created successfully"));
+      toast.success(m.ui_copy_branch_created_successfully_7eab8b34());
     }
     onSuccess();
   } catch (err) {
@@ -116,23 +116,23 @@ async function handleSubmit(e: SubmitEvent) {
   <!-- Sheet Header -->
   <SheetHeader class="px-6 py-4 border-b border-border/40 shrink-0">
     <SheetTitle class="text-base font-bold text-foreground">
-      {isEdit ? l("تعديل بيانات الفرع", "Edit Branch") : l("إضافة فرع جديد", "Add Branch")}
+      {isEdit ? m.ui_copy_edit_branch_8fab4955() : m.ui_copy_add_branch_bbb91ff4()}
     </SheetTitle>
     <SheetDescription class="text-xs text-muted-foreground">
-      {isEdit ? l("تعديل معلومات وتفاصيل الفرع التشغيلي", "Update branch details and operational scope") : l("إدخال بيانات الفرع الجديد وتحديد مديره ونطاق البيانات", "Enter branch details, assign manager, and configure isolation")}
+      {isEdit ? m.ui_copy_update_branch_details_and_operational_scop_638ab3ef() : m.ui_copy_enter_branch_details_assign_manager_and_co_56814293()}
     </SheetDescription>
   </SheetHeader>
 
   <!-- Form Body -->
   <div class="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
     <!-- Branch Name Arabic -->
-    <FormField id="branch_name_ar" label={l("اسم الفرع (بالعربية)", "Branch Name (Arabic)")} error={errors.nameAr} required>
+    <FormField id="branch_name_ar" label={m.ui_copy_branch_name_arabic_008219c2()} error={errors.nameAr} required>
       {#snippet children()}
       <Input
         id="branch_name_ar"
         type="text"
         bind:value={nameAr}
-        placeholder={l("مثال: الفرع الرئيسي - الرياض", "e.g. Main Branch - Riyadh")}
+        placeholder={m.ui_copy_e_g_main_branch_riyadh_7bbe0d3f()}
         disabled={isSubmitting}
         class="h-9 text-sm"
         required
@@ -141,7 +141,7 @@ async function handleSubmit(e: SubmitEvent) {
     </FormField>
 
     <!-- Branch Name English -->
-    <FormField id="branch_name_en" label={l("اسم الفرع (بالإنجليزية)", "Branch Name (English)")}>
+    <FormField id="branch_name_en" label={m.ui_copy_branch_name_english_533d70f3()}>
       {#snippet children()}
       <Input
         id="branch_name_en"
@@ -156,7 +156,7 @@ async function handleSubmit(e: SubmitEvent) {
 
     <!-- Code & Capacity Grid -->
     <div class="grid grid-cols-2 gap-4">
-      <FormField id="branch_code" label={l("كود الفرع", "Branch Code")}>
+      <FormField id="branch_code" label={m.ui_copy_branch_code_4ed70f95()}>
         {#snippet children()}
         <Input
           id="branch_code"
@@ -169,7 +169,7 @@ async function handleSubmit(e: SubmitEvent) {
         {/snippet}
       </FormField>
 
-      <FormField id="branch_capacity" label={l("السعة الطلابية", "Capacity")}>
+      <FormField id="branch_capacity" label={m.ui_copy_capacity_6432d6d2()}>
         {#snippet children()}
         <Input
           id="branch_capacity"
@@ -185,28 +185,28 @@ async function handleSubmit(e: SubmitEvent) {
     </div>
 
     <!-- Branch Manager Selector (Using EmployeeSelect) -->
-    <FormField id="branch_head" label={l("مدير الفرع / المشرف الإداري", "Branch Manager")}>
+    <FormField id="branch_head" label={m.ui_copy_branch_manager_f6ad9d5a()}>
       {#snippet children()}
       <EmployeeSelect
         bind:value={headId}
         {orgId}
-        placeholder={l("اختر مدير الفرع من الكادر الوظيفي...", "Select branch manager from employees...")}
+        placeholder={m.ui_copy_select_branch_manager_from_employees_859e6d36()}
         disabled={isSubmitting}
       />
       {/snippet}
     </FormField>
 
     <!-- Data Isolation Selector -->
-    <FormField id="branch_isolation" label={l("نطاق عزل البيانات", "Data Isolation Scope")} required>
+    <FormField id="branch_isolation" label={m.ui_copy_data_isolation_scope_a497a98b()} required>
       {#snippet children()}
       <Select type="single" value={dataIsolation} onValueChange={(v) => (dataIsolation = v ?? "shared")} disabled={isSubmitting}>
         <SelectTrigger class="h-9 text-sm w-full">
-          {dataIsolation === "isolated" ? l("معزول بالكامل (بيانات منفصلة للفرع)", "Strict Isolated") : dataIsolation === "read_only" ? l("قراءة فقط للمركز", "Read-Only") : l("مشترك مع باقي الفروع", "Shared")}
+          {dataIsolation === "isolated" ? m.ui_copy_strict_isolated_05b9e70c() : dataIsolation === "read_only" ? m.ui_copy_read_only_23a7a348() : m.ui_copy_shared_9692d50d()}
         </SelectTrigger>
         <SelectContent class="text-sm">
-          <SelectItem value="shared">{l("مشترك مع باقي الفروع", "Shared")}</SelectItem>
-          <SelectItem value="isolated">{l("معزول بالكامل (بيانات منفصلة للفرع)", "Strict Isolated")}</SelectItem>
-          <SelectItem value="read_only">{l("قراءة فقط للمركز", "Read-Only")}</SelectItem>
+          <SelectItem value="shared">{m.ui_copy_shared_9692d50d()}</SelectItem>
+          <SelectItem value="isolated">{m.ui_copy_strict_isolated_05b9e70c()}</SelectItem>
+          <SelectItem value="read_only">{m.ui_copy_read_only_23a7a348()}</SelectItem>
         </SelectContent>
       </Select>
       {/snippet}
@@ -214,20 +214,20 @@ async function handleSubmit(e: SubmitEvent) {
 
     <!-- Location details Grid -->
     <div class="grid grid-cols-3 gap-3 pt-1">
-      <FormField id="branch_building" label={l("المبنى", "Building")}>
+      <FormField id="branch_building" label={m.common_rooms_label_building()}>
         {#snippet children()}
         <Input
           id="branch_building"
           type="text"
           bind:value={building}
-          placeholder={l("المبنى A", "Hall A")}
+          placeholder={m.ui_copy_hall_a_394d4980()}
           disabled={isSubmitting}
           class="h-9 text-sm"
         />
         {/snippet}
       </FormField>
 
-      <FormField id="branch_floor" label={l("الطابق", "Floor")}>
+      <FormField id="branch_floor" label={m.common_rooms_label_floor()}>
         {#snippet children()}
         <Input
           id="branch_floor"
@@ -240,7 +240,7 @@ async function handleSubmit(e: SubmitEvent) {
         {/snippet}
       </FormField>
 
-      <FormField id="branch_room" label={l("المكتب", "Office")}>
+      <FormField id="branch_room" label={m.ui_copy_office_2a64e5ec()}>
         {#snippet children()}
         <Input
           id="branch_room"
@@ -263,7 +263,7 @@ async function handleSubmit(e: SubmitEvent) {
         disabled={isSubmitting}
       />
       <Label for="branch_is_active" class="text-xs font-medium cursor-pointer">
-        {l("تفعيل الفرع للعمليات الأكاديمية والإدارية", "Activate branch for academic operations")}
+        {m.ui_copy_activate_branch_for_academic_operations_b394f284()}
       </Label>
     </div>
   </div>

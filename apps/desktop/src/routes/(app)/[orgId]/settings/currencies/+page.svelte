@@ -7,7 +7,7 @@ const orgId = $derived(page.params.orgId || "");
 </script>
 
 <svelte:head>
-  <title>{m.settings_nav_currencies ? m.settings_nav_currencies() : "Currencies"} | Orbis</title>
+  <title>{m.settings_nav_currencies()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-hidden">

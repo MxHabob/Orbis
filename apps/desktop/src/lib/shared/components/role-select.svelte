@@ -26,8 +26,8 @@ interface Props {
 let {
   value = $bindable(""),
   allowAll = false,
-  allLabel = m.common_filter_all?.() || "جميع الأدوار",
-  placeholder = m.common_select_role?.() || "اختر الدور الوظيفي...",
+  allLabel = m.common_filter_all(),
+  placeholder = m.common_select_role(),
   disabled = false,
   size = "default",
   class: className = "",

@@ -67,8 +67,8 @@ const columns: OrbisColumnDef[] = [
   { id: "code", prop: "code", header: m.common_subject_label_code(), name: m.common_subject_label_code(), width: 120, size: 120, readonly: true, cellClass: "font-mono font-medium" },
   { id: "credit_hours", prop: "credit_hours", header: m.common_subject_label_periods(), name: m.common_subject_label_periods(), width: 130, size: 130, readonly: true, align: "center", type: "number" },
   { id: "status", prop: "status", header: m.common_word_status(), name: m.common_word_status(), width: 100, size: 100, type: "badge", align: "center", readonly: true },
-  { id: "created_at_display", prop: "created_at_display", header: l("تاريخ الإنشاء", "Created At"), name: "Created At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "updated_at_display", prop: "updated_at_display", header: l("آخر تحديث", "Updated At"), name: "Updated At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: "Created At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "updated_at_display", prop: "updated_at_display", header: m.ui_copy_updated_at_ba0d0a9f(), name: "Updated At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
 ];
 
 function openCreateSheet() {

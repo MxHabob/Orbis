@@ -53,7 +53,7 @@ const ACTIONS = $derived.by(() => {
     },
     // Phase-specific actions
     {
-      label: m.common_control_label ? m.common_control_label() : "Control",
+      label: m.common_control_label(),
       icon: UserBadgeCheck,
       href: `/${orgId}/academics/exams/control`,
       show: phase === "grade_entry" || phase === "exams",
@@ -66,9 +66,7 @@ const ACTIONS = $derived.by(() => {
     },
     // Pending approvals shortcut (only when there are pending items)
     {
-      label: m.settings_nav_approvals
-        ? m.settings_nav_approvals()
-        : "Approvals",
+      label: m.settings_nav_approvals(),
       icon: ClipboardCheck,
       href: `/${orgId}/settings/approvals`,
       show: workflowInbox.hasActions && canManageApprovals,

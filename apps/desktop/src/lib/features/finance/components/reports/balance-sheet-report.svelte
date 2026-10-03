@@ -290,7 +290,7 @@ const rtl = $derived(getLocale() === "ar");
       <FinanceSkeleton />
     {:else if queryError}
       <ErrorState
-        title={m.finance_report_load_error ? m.finance_report_load_error() : "خطأ في تحميل التقرير"}
+        title={m.finance_report_load_error()}
         message={extractErrorMessage(queryError)}
         onRetry={refetchAll}
       />

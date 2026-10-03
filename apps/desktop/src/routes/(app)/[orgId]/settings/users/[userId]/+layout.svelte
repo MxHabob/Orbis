@@ -66,19 +66,19 @@ let activeProvisioningResult = $state<AccountProvisioningResultDto | null>(null)
 async function handleGenerateTempPassword() {
   if (!userId) return;
   const confirmed = await confirmStore.prompt({
-    title: (m.settings_user_detail_btn_reset_pass?.() || "إعادة تعيين كلمة المرور") + "؟",
+    title: (m.settings_user_detail_btn_reset_pass()) + "؟",
     description: l(
       `هل أنت متأكد من إعادة توليد كلمة مرور مؤقتة للمستخدم (${fullName || email})؟`,
       `Are you sure you want to generate a new temporary password for ${fullName || email}?`
     ),
-    confirmText: m.settings_user_detail_btn_reset_pass?.() || "إعادة تعيين",
+    confirmText: m.settings_user_detail_btn_reset_pass(),
   });
   if (confirmed) {
     try {
       const result = await api.resetUserPassword(userId);
       activeProvisioningResult = result;
       credentialModalOpen = true;
-      toast.success(m.employees_password_reset_success?.() || "تمت إعادة ضبط كلمة المرور بنجاح");
+      toast.success(m.employees_password_reset_success());
     } catch (e: unknown) {
       toast.error((e as any)?.message || "Failed to reset password");
     }
@@ -156,13 +156,13 @@ const menuItems = $derived([
 const relatedActionGroups = $derived<ActionGroup[]>(user ? [
   {
     id: "account_security",
-    title: l("أمان الحساب والجلسات", "Account Security & Access"),
+    title: m.ui_copy_account_security_access_8a19d0e5(),
     icon: Lock,
     defaultExpanded: true,
     subLinks: [
       {
         id: "generate_temp_password",
-        label: l("توليد كلمة مرور مؤقتة (CSPRNG)", "Generate Temp Password"),
+        label: m.ui_copy_generate_temp_password_5e2ee7d3(),
         onclick: handleGenerateTempPassword,
       },
       {
@@ -179,7 +179,7 @@ const relatedActionGroups = $derived<ActionGroup[]>(user ? [
   },
   {
     id: "permissions_audit",
-    title: l("الصلاحيات والتدقيق", "Roles & Audit"),
+    title: m.ui_copy_roles_audit_aff035ef(),
     icon: ShieldCheck,
     defaultExpanded: true,
     subLinks: [
@@ -190,7 +190,7 @@ const relatedActionGroups = $derived<ActionGroup[]>(user ? [
       },
       {
         id: "user_audit",
-        label: l("سجل عمليات هذا المستخدم", "User Audit Logs"),
+        label: m.ui_copy_user_audit_logs_55f2f1f7(),
         href: `/${orgId}/settings/audit?userId=${userId}`,
       },
     ],
@@ -320,7 +320,7 @@ const relatedFooterActions = $derived<FooterAction[]>(user ? [
             <!-- Contextual Related Actions (Full Width Footer) -->
             {#if user}
               <RelatedActions
-                title={l("العمليات والإجراءات المرتبطة", "Related support")}
+                title={m.ui_copy_related_support_bf36e16f()}
                 groups={relatedActionGroups}
                 footerActions={relatedFooterActions}
               />

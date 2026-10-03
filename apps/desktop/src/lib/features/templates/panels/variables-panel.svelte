@@ -247,7 +247,7 @@ function handleDragStart(e: DragEvent, varName: string) {
             class="absolute inset-s-2.5 size-3.5 text-muted-foreground pointer-events-none"
           />
           <Input
-            placeholder={m.common_header_search ? m.common_header_search() : "البحث في المتغيرات..."}
+            placeholder={m.common_header_search()}
             bind:value={searchQuery}
             class="h-7 text-[10px] ps-7"
           />

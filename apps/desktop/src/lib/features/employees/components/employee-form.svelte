@@ -40,7 +40,7 @@ import {
   createUpdateEmployeeMutation,
 } from "../queries";
 import NationalitySelect from "$lib/shared/components/nationality-select.svelte";
-import { formatNumber, l } from "$lib/core/i18n";
+import { formatNumber } from "$lib/core/i18n";
 
 interface Props {
   orgId: string;
@@ -131,7 +131,7 @@ const isSaving = $derived(registerMutation.isPending || updateMutation.isPending
 
 async function handleSubmit() {
   if (!firstNameAr.trim() && !firstName.trim()) {
-    toast.error(m.employees_error_name_required?.() || "يرجى إدخال اسم الموظف");
+    toast.error(m.employees_error_name_required());
     return;
   }
 
@@ -185,7 +185,7 @@ async function handleSubmit() {
 
     try {
       const response = await registerMutation.mutateAsync(payload);
-      toast.success(m.employees_save_success?.() || "تم تسجيل الموظف بنجاح");
+      toast.success(m.employees_save_success());
 
       if (onSuccess) {
         onSuccess(response.employee);
@@ -224,7 +224,7 @@ async function handleSubmit() {
 
     try {
       const res = await updateMutation.mutateAsync({ id: employee.id, req: payload });
-      toast.success(m.employees_save_success?.() || "تم حفظ بيانات الموظف بنجاح");
+      toast.success(m.employees_save_success());
       if (onSuccess) {
         onSuccess(res.employee);
       }
@@ -268,12 +268,12 @@ function handleCancelClick() {
       <div class="flex flex-col">
         <Sheet.Title class="text-base font-bold text-foreground">
           {mode === "create" 
-            ? (m.employees_new_title?.() || "تسجيل موظف جديد") 
-            : (m.employees_edit_title?.() || "تعديل ملف الموظف")}
+            ? (m.employees_new_title()) 
+            : (m.employees_edit_title())}
         </Sheet.Title>
         <span class="text-xs text-muted-foreground">
           {mode === "create" 
-            ? l("إدخال السجل الشخصي والوظيفي والمالي", "Enter personal, employment, and payroll records.") 
+            ? m.ui_copy_enter_personal_employment_and_payroll_reco_f1caab5e() 
             : (employee?.full_name || employee?.first_name || "")}
         </span>
       </div>
@@ -289,14 +289,14 @@ function handleCancelClick() {
         <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline text-foreground">
           <div class="flex items-center gap-2">
             <User size={16} class="text-primary" />
-            <span>{m.employees_tab_personal?.() || "البيانات الشخصية والهوية"}</span>
+            <span>{m.employees_tab_personal()}</span>
           </div>
         </AccordionTrigger>
         <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
           
           <!-- Arabic Names -->
           <div class="grid grid-cols-3 gap-3">
-            <FormField label={m.employees_first_name_ar?.() || "الاسم الأول (بالعربية)"} required>
+            <FormField label={m.employees_first_name_ar()} required>
               {#snippet children()}
               <Input
                 type="text"
@@ -308,7 +308,7 @@ function handleCancelClick() {
               />
               {/snippet}
             </FormField>
-            <FormField label={m.employees_middle_name_ar?.() || "اسم الأب (بالعربية)"}>
+            <FormField label={m.employees_middle_name_ar()}>
               {#snippet children()}
               <Input
                 type="text"
@@ -319,7 +319,7 @@ function handleCancelClick() {
               />
               {/snippet}
             </FormField>
-            <FormField label={m.employees_last_name_ar?.() || "اسم العائلة (بالعربية)"}>
+            <FormField label={m.employees_last_name_ar()}>
               {#snippet children()}
               <Input
                 type="text"
@@ -334,7 +334,7 @@ function handleCancelClick() {
 
           <!-- Latin / English Names -->
           <div class="grid grid-cols-3 gap-3">
-            <FormField label={m.employees_first_name?.() || "First Name (Latin)"}>
+            <FormField label={m.employees_first_name()}>
               {#snippet children()}
               <Input
                 type="text"
@@ -345,7 +345,7 @@ function handleCancelClick() {
               />
               {/snippet}
             </FormField>
-            <FormField label={m.employees_middle_name?.() || "Middle Name"}>
+            <FormField label={m.employees_middle_name()}>
               {#snippet children()}
               <Input
                 type="text"
@@ -356,7 +356,7 @@ function handleCancelClick() {
               />
               {/snippet}
             </FormField>
-            <FormField label={m.employees_last_name?.() || "Last Name"}>
+            <FormField label={m.employees_last_name()}>
               {#snippet children()}
               <Input
                 type="text"
@@ -371,7 +371,7 @@ function handleCancelClick() {
 
           <!-- ID & Demographic Grid -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <FormField label={m.employees_national_id?.() || "الهوية الوطنية / الإقامة"}>
+            <FormField label={m.employees_national_id()}>
               {#snippet children()}
               <Input
                 type="text"
@@ -383,7 +383,7 @@ function handleCancelClick() {
               {/snippet}
             </FormField>
 
-            <FormField label={m.employees_passport_number?.() || "رقم جواز السفر"}>
+            <FormField label={m.employees_passport_number()}>
               {#snippet children()}
               <Input
                 type="text"
@@ -395,21 +395,21 @@ function handleCancelClick() {
               {/snippet}
             </FormField>
 
-            <FormField label={m.employees_gender?.() || "الجنس"}>
+            <FormField label={m.employees_gender()}>
               {#snippet children()}
               <Select type="single" value={gender} onValueChange={(v) => { if (v) gender = v; }} disabled={isSaving}>
                 <SelectTrigger class="text-xs h-9">
-                  {gender === "male" ? (m.employees_gender_male?.() || "ذكر") : (m.employees_gender_female?.() || "أنثى")}
+                  {gender === "male" ? (m.employees_gender_male()) : (m.employees_gender_female())}
                 </SelectTrigger>
                 <SelectContent class="text-xs font-sans">
-                  <SelectItem value="male">{m.employees_gender_male?.() || "ذكر"}</SelectItem>
-                  <SelectItem value="female">{m.employees_gender_female?.() || "أنثى"}</SelectItem>
+                  <SelectItem value="male">{m.employees_gender_male()}</SelectItem>
+                  <SelectItem value="female">{m.employees_gender_female()}</SelectItem>
                 </SelectContent>
               </Select>
               {/snippet}
             </FormField>
 
-            <FormField label={m.employees_birth_date?.() || "تاريخ الميلاد"}>
+            <FormField label={m.employees_birth_date()}>
               {#snippet children()}
               <Input
                 type="date"
@@ -423,7 +423,7 @@ function handleCancelClick() {
 
           <!-- Contact & Nationality -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <FormField label={m.employees_phone?.() || "رقم الهاتف"}>
+            <FormField label={m.employees_phone()}>
               {#snippet children()}
               <Input
                 type="tel"
@@ -435,7 +435,7 @@ function handleCancelClick() {
               {/snippet}
             </FormField>
 
-            <FormField label={m.employees_email?.() || "البريد الإلكتروني"}>
+            <FormField label={m.employees_email()}>
               {#snippet children()}
               <Input
                 type="email"
@@ -447,13 +447,13 @@ function handleCancelClick() {
               {/snippet}
             </FormField>
 
-            <FormField label={m.employees_nationality?.() || "الجنسية"}>
+            <FormField label={m.employees_nationality()}>
               {#snippet children()}
               <NationalitySelect bind:value={nationality} disabled={isSaving} />
               {/snippet}
             </FormField>
 
-            <FormField label={m.employees_blood_type?.() || "فصيلة الدم"}>
+            <FormField label={m.employees_blood_type()}>
               {#snippet children()}
               <Select type="single" value={bloodType} onValueChange={(v) => { if (v) bloodType = v; }} disabled={isSaving}>
                 <SelectTrigger class="text-xs h-9">
@@ -475,7 +475,7 @@ function handleCancelClick() {
           </div>
 
           <!-- Address -->
-          <FormField label={m.employees_address?.() || "العنوان الوطني ومحل الإقامة"}>
+          <FormField label={m.employees_address()}>
             {#snippet children()}
             <Input
               type="text"
@@ -495,13 +495,13 @@ function handleCancelClick() {
         <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline text-foreground">
           <div class="flex items-center gap-2">
             <BuildingOffice size={16} class="text-primary" />
-            <span>{m.employees_tab_employment?.() || "البيانات الوظيفية والتعاقدية"}</span>
+            <span>{m.employees_tab_employment()}</span>
           </div>
         </AccordionTrigger>
         <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
           
           <div class="grid grid-cols-2 gap-3">
-            <FormField label={m.employees_employee_number?.() || "الرقم الوظيفي"}>
+            <FormField label={m.employees_employee_number()}>
               {#snippet children()}
               <Input
                 type="text"
@@ -513,7 +513,7 @@ function handleCancelClick() {
               {/snippet}
             </FormField>
 
-            <FormField label={m.employees_job_title?.() || "المسمى الوظيفي"}>
+            <FormField label={m.employees_job_title()}>
               {#snippet children()}
               <Input
                 type="text"
@@ -527,7 +527,7 @@ function handleCancelClick() {
           </div>
 
           <div class="grid grid-cols-2 gap-3">
-            <FormField label={m.employees_department?.() || "القسم / الإدارة"}>
+            <FormField label={m.employees_department()}>
               {#snippet children()}
               <Input
                 type="text"
@@ -539,19 +539,19 @@ function handleCancelClick() {
               {/snippet}
             </FormField>
 
-            <FormField label={m.employees_type?.() || "الفئة الوظيفية"}>
+            <FormField label={m.employees_type()}>
               {#snippet children()}
               <Select type="single" value={employeeType} onValueChange={(v) => { if (v) employeeType = v; }} disabled={isSaving}>
                 <SelectTrigger class="text-xs h-9">
-                  {employeeType === "teacher" ? (m.employees_type_teacher?.() || "معلم / كادر تعليمي") :
-                   employeeType === "admin" ? (m.employees_type_admin?.() || "إداري") :
-                   employeeType === "staff" ? (m.employees_type_staff?.() || "موظف خدمات") : employeeType}
+                  {employeeType === "teacher" ? (m.employees_type_teacher()) :
+                   employeeType === "admin" ? (m.employees_type_admin()) :
+                   employeeType === "staff" ? (m.employees_type_staff()) : employeeType}
                 </SelectTrigger>
                 <SelectContent class="text-xs font-sans">
-                  <SelectItem value="teacher">{m.employees_type_teacher?.() || "معلم / كادر تعليمي"}</SelectItem>
-                  <SelectItem value="admin">{m.employees_type_admin?.() || "إداري"}</SelectItem>
-                  <SelectItem value="staff">{m.employees_type_staff?.() || "موظف خدمات"}</SelectItem>
-                  <SelectItem value="other">{m.common_guardians_relationship_other?.() || "أخرى"}</SelectItem>
+                  <SelectItem value="teacher">{m.employees_type_teacher()}</SelectItem>
+                  <SelectItem value="admin">{m.employees_type_admin()}</SelectItem>
+                  <SelectItem value="staff">{m.employees_type_staff()}</SelectItem>
+                  <SelectItem value="other">{m.common_guardians_relationship_other()}</SelectItem>
                 </SelectContent>
               </Select>
               {/snippet}
@@ -559,39 +559,39 @@ function handleCancelClick() {
           </div>
 
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <FormField label={m.employees_employment_type?.() || "نوع العقد"}>
+            <FormField label={m.employees_employment_type()}>
               {#snippet children()}
               <Select type="single" value={employmentType} onValueChange={(v) => { if (v) employmentType = v; }} disabled={isSaving}>
                 <SelectTrigger class="text-xs h-9">
-                  {employmentType === "full_time" ? (m.employees_contract_fulltime?.() || "دوام كامل") :
-                   employmentType === "part_time" ? (m.employees_contract_parttime?.() || "دوام جزئي") : (m.employees_contract_contract?.() || "عقد محدد")}
+                  {employmentType === "full_time" ? (m.employees_contract_fulltime()) :
+                   employmentType === "part_time" ? (m.employees_contract_parttime()) : (m.employees_contract_contract())}
                 </SelectTrigger>
                 <SelectContent class="text-xs font-sans">
-                  <SelectItem value="full_time">{m.employees_contract_fulltime?.() || "دوام كامل"}</SelectItem>
-                  <SelectItem value="part_time">{m.employees_contract_parttime?.() || "دوام جزئي"}</SelectItem>
-                  <SelectItem value="contract">{m.employees_contract_contract?.() || "عقد محدد"}</SelectItem>
+                  <SelectItem value="full_time">{m.employees_contract_fulltime()}</SelectItem>
+                  <SelectItem value="part_time">{m.employees_contract_parttime()}</SelectItem>
+                  <SelectItem value="contract">{m.employees_contract_contract()}</SelectItem>
                 </SelectContent>
               </Select>
               {/snippet}
             </FormField>
 
-            <FormField label={m.employees_work_shift?.() || "فترة العمل"}>
+            <FormField label={m.employees_work_shift()}>
               {#snippet children()}
               <Select type="single" value={workShift} onValueChange={(v) => { if (v) workShift = v; }} disabled={isSaving}>
                 <SelectTrigger class="text-xs h-9">
-                  {workShift === "morning" ? (m.employees_shift_morning?.() || "صباحي") :
-                   workShift === "evening" ? (m.employees_shift_evening?.() || "مسائي") : (m.employees_shift_flexible?.() || "مرن")}
+                  {workShift === "morning" ? (m.employees_shift_morning()) :
+                   workShift === "evening" ? (m.employees_shift_evening()) : (m.employees_shift_flexible())}
                 </SelectTrigger>
                 <SelectContent class="text-xs font-sans">
-                  <SelectItem value="morning">{m.employees_shift_morning?.() || "صباحي"}</SelectItem>
-                  <SelectItem value="evening">{m.employees_shift_evening?.() || "مسائي"}</SelectItem>
-                  <SelectItem value="flexible">{m.employees_shift_flexible?.() || "مرن"}</SelectItem>
+                  <SelectItem value="morning">{m.employees_shift_morning()}</SelectItem>
+                  <SelectItem value="evening">{m.employees_shift_evening()}</SelectItem>
+                  <SelectItem value="flexible">{m.employees_shift_flexible()}</SelectItem>
                 </SelectContent>
               </Select>
               {/snippet}
             </FormField>
 
-            <FormField label={m.employees_hire_date?.() || "تاريخ التعيين"}>
+            <FormField label={m.employees_hire_date()}>
               {#snippet children()}
               <Input
                 type="date"
@@ -602,17 +602,17 @@ function handleCancelClick() {
               {/snippet}
             </FormField>
 
-            <FormField label={m.common_word_status?.() || "حالة الملف"}>
+            <FormField label={m.common_word_status()}>
               {#snippet children()}
               <Select type="single" value={status} onValueChange={(v) => { if (v) status = v; }} disabled={isSaving}>
                 <SelectTrigger class="text-xs h-9">
-                  {status === "active" ? (m.employees_status_active?.() || "على رأس العمل") :
-                   status === "suspended" ? (m.employees_status_suspended?.() || "موقوف") : (m.employees_status_terminated?.() || "منتهي عقده")}
+                  {status === "active" ? (m.employees_status_active()) :
+                   status === "suspended" ? (m.employees_status_suspended()) : (m.employees_status_terminated())}
                 </SelectTrigger>
                 <SelectContent class="text-xs font-sans">
-                  <SelectItem value="active">{m.employees_status_active?.() || "على رأس العمل"}</SelectItem>
-                  <SelectItem value="suspended">{m.employees_status_suspended?.() || "موقوف"}</SelectItem>
-                  <SelectItem value="terminated">{m.employees_status_terminated?.() || "منتهي عقده"}</SelectItem>
+                  <SelectItem value="active">{m.employees_status_active()}</SelectItem>
+                  <SelectItem value="suspended">{m.employees_status_suspended()}</SelectItem>
+                  <SelectItem value="terminated">{m.employees_status_terminated()}</SelectItem>
                 </SelectContent>
               </Select>
               {/snippet}
@@ -627,14 +627,14 @@ function handleCancelClick() {
         <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline text-foreground">
           <div class="flex items-center gap-2">
             <Banknotes size={16} class="text-emerald-500" />
-            <span>{l("الرواتب والبدلات والتعويضات", "Payroll & Compensation")}</span>
+            <span>{m.ui_copy_payroll_compensation_93b1d7a4()}</span>
           </div>
         </AccordionTrigger>
         <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
           
           <!-- Salary & Allowances Grid -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <FormField label={l("الراتب الأساسي", "Basic Salary")}>
+            <FormField label={m.ui_copy_basic_salary_0385806d()}>
               {#snippet children()}
               <Input
                 type="number"
@@ -648,7 +648,7 @@ function handleCancelClick() {
               {/snippet}
             </FormField>
 
-            <FormField label={l("بدل السكن", "Housing Allowance")}>
+            <FormField label={m.ui_copy_housing_allowance_5244c34d()}>
               {#snippet children()}
               <Input
                 type="number"
@@ -662,7 +662,7 @@ function handleCancelClick() {
               {/snippet}
             </FormField>
 
-            <FormField label={l("بدل النقل", "Transport Allowance")}>
+            <FormField label={m.ui_copy_transport_allowance_28c7b865()}>
               {#snippet children()}
               <Input
                 type="number"
@@ -676,7 +676,7 @@ function handleCancelClick() {
               {/snippet}
             </FormField>
 
-            <FormField label={l("بدلات ومكافآت أخرى", "Other Allowances")}>
+            <FormField label={m.ui_copy_other_allowances_865ee31f()}>
               {#snippet children()}
               <Input
                 type="number"
@@ -693,7 +693,7 @@ function handleCancelClick() {
 
           <!-- Deductions Grid -->
           <div class="grid grid-cols-2 gap-3">
-            <FormField label={l("استقطاع التأمينات (GOSI)", "GOSI / Social Insurance")}>
+            <FormField label={m.ui_copy_gosi_social_insurance_03abbd70()}>
               {#snippet children()}
               <Input
                 type="number"
@@ -707,7 +707,7 @@ function handleCancelClick() {
               {/snippet}
             </FormField>
 
-            <FormField label={l("استقطاعات أخرى", "Other Deductions")}>
+            <FormField label={m.ui_copy_other_deductions_8d08c919()}>
               {#snippet children()}
               <Input
                 type="number"
@@ -725,42 +725,42 @@ function handleCancelClick() {
           <!-- Summary KPI Banner -->
           <div class="grid grid-cols-3 gap-3 p-3.5 bg-muted/30 border border-border/40 rounded-lg">
             <div class="flex flex-col text-start">
-              <span class="text-[11px] text-muted-foreground">{l("إجمالي الراتب (Gross)", "Total Gross")}</span>
+              <span class="text-[11px] text-muted-foreground">{m.ui_copy_total_gross_49972225()}</span>
               <span class="text-sm font-bold font-mono text-foreground">{formatNumber(totalGrossSalary)} YER</span>
             </div>
             <div class="flex flex-col text-start">
-              <span class="text-[11px] text-muted-foreground">{l("إجمالي الاستقطاعات", "Total Deductions")}</span>
+              <span class="text-[11px] text-muted-foreground">{m.ui_copy_total_deductions_045a8067()}</span>
               <span class="text-sm font-bold font-mono text-rose-500">-{formatNumber(totalDeductions)} YER</span>
             </div>
             <div class="flex flex-col text-start border-s border-border/40 ps-3">
-              <span class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">{l("صافي الراتب المستحق (Net)", "Net Payable")}</span>
+              <span class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">{m.ui_copy_net_payable_23b86c48()}</span>
               <span class="text-base font-black font-mono text-emerald-600 dark:text-emerald-400">{formatNumber(netPayableSalary)} YER</span>
             </div>
           </div>
 
           <!-- Bank & Routing Details -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <FormField label={l("طريقة الدفع", "Payment Method")}>
+            <FormField label={m.ui_copy_payment_method_f140647a()}>
               {#snippet children()}
               <Select type="single" value={paymentMethod} onValueChange={(v) => { if (v) paymentMethod = v; }} disabled={isSaving}>
                 <SelectTrigger class="text-xs h-9">
-                  {paymentMethod === "bank_transfer" ? l("تحويل بنكي", "Bank Transfer") :
-                   paymentMethod === "cheque" ? l("شيك", "Cheque") : l("نقداً / صندوق", "Cash")}
+                  {paymentMethod === "bank_transfer" ? m.finance_pos_bank_transfer() :
+                   paymentMethod === "cheque" ? m.ui_copy_cheque_4f37d4c3() : m.ui_copy_cash_ec480ad1()}
                 </SelectTrigger>
                 <SelectContent class="text-xs font-sans">
-                  <SelectItem value="bank_transfer">{l("تحويل بنكي", "Bank Transfer")}</SelectItem>
-                  <SelectItem value="cheque">{l("شيك", "Cheque")}</SelectItem>
-                  <SelectItem value="cash">{l("نقداً / صندوق", "Cash")}</SelectItem>
+                  <SelectItem value="bank_transfer">{m.finance_pos_bank_transfer()}</SelectItem>
+                  <SelectItem value="cheque">{m.ui_copy_cheque_4f37d4c3()}</SelectItem>
+                  <SelectItem value="cash">{m.ui_copy_cash_ec480ad1()}</SelectItem>
                 </SelectContent>
               </Select>
               {/snippet}
             </FormField>
 
-            <FormField label={l("اسم البنك", "Bank Name")}>
+            <FormField label={m.ui_copy_bank_name_7c740997()}>
               {#snippet children()}
               <Input
                 type="text"
-                placeholder={l("مثال: بنك الراجحي / بنك التضامن", "e.g. Al Rajhi Bank")}
+                placeholder={m.ui_copy_e_g_al_rajhi_bank_5c1a77cc()}
                 class="text-xs h-9"
                 bind:value={bankName}
                 disabled={isSaving}
@@ -768,7 +768,7 @@ function handleCancelClick() {
               {/snippet}
             </FormField>
 
-            <FormField label={l("رقم الآيبان (IBAN)", "IBAN Account Number")}>
+            <FormField label={m.ui_copy_iban_account_number_7ea55e25()}>
               {#snippet children()}
               <Input
                 type="text"
@@ -782,11 +782,11 @@ function handleCancelClick() {
           </div>
 
           <!-- Notes Textarea -->
-          <FormField label={m.employees_notes?.() || "ملاحظات إضافية"}>
+          <FormField label={m.employees_notes()}>
             {#snippet children()}
             <Textarea
               rows={2}
-              placeholder={m.employees_notes_placeholder?.() || "أدخل أي ملاحظات مهنية أو تعاقدية إضافية..."}
+              placeholder={m.employees_notes_placeholder()}
               class="text-xs resize-none"
               bind:value={textNotes}
               disabled={isSaving}
@@ -809,7 +809,7 @@ function handleCancelClick() {
       disabled={isSaving}
       class="flex-1 h-9 text-sm"
     >
-      {m.common_action_cancel?.() || "إلغاء"}
+      {m.common_action_cancel()}
     </Button>
     <Button
       type="submit"
@@ -817,9 +817,9 @@ function handleCancelClick() {
       class="flex-1 h-9 text-sm font-semibold"
     >
       {#if isSaving}
-        {m.common_state_saving?.() || "جاري الحفظ..."}
+        {m.common_state_saving()}
       {:else}
-        {m.common_action_save?.() || "حفظ"}
+        {m.common_action_save()}
       {/if}
     </Button>
   </div>

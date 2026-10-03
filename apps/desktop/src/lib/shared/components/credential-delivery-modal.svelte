@@ -27,7 +27,7 @@ import {
   User,
 } from "@orbis/icons";
 import type { AccountProvisioningResultDto } from "$lib/api/types";
-import { l } from "$lib/core/i18n";
+
 
 interface Props {
   open: boolean;
@@ -61,10 +61,10 @@ async function copyToClipboard(text: string, type: "password" | "username" | "al
       copiedAll = true;
       setTimeout(() => (copiedAll = false), 2000);
     }
-    toast.success(m.credentials_copied?.() || "تم نسخ بيانات الدخول إلى الحافظة");
+    toast.success(m.credentials_copied());
   } catch (err) {
     console.error("Clipboard write error:", err);
-    toast.error(l("تعذر النسخ إلى الحافظة", "Failed to copy to clipboard"));
+    toast.error(m.ui_copy_failed_to_copy_to_clipboard_99a3869e());
   }
 }
 
@@ -97,10 +97,10 @@ function handleClose() {
         </div>
         <div class="flex flex-col">
           <DialogTitle class="text-base font-bold text-foreground">
-            {m.credentials_modal_title?.() || "بيانات الدخول المؤقتة"}
+            {m.credentials_modal_title()}
           </DialogTitle>
           <span class="text-xs text-muted-foreground">
-            {userName ? `${userName}` : (m.credentials_modal_desc?.() || "تم إنشاء بيانات الدخول لمرة واحدة")}
+            {userName ? `${userName}` : (m.credentials_modal_desc())}
           </span>
         </div>
       </div>
@@ -113,7 +113,7 @@ function handleClose() {
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
               <User size={13} />
-              {m.credentials_username?.() || "اسم المستخدم / المعرف"}
+              {m.credentials_username()}
             </span>
             <button
               type="button"
@@ -122,10 +122,10 @@ function handleClose() {
             >
               {#if copiedUsername}
                 <Check size={12} class="text-emerald-500" />
-                <span class="text-emerald-500">{l("تم النسخ", "Copied")}</span>
+                <span class="text-emerald-500">{m.common_mfa_enroll_copied()}</span>
               {:else}
                 <Clipboard size={12} />
-                <span>{l("نسخ", "Copy")}</span>
+                <span>{m.common_mfa_enroll_copy()}</span>
               {/if}
             </button>
           </div>
@@ -140,7 +140,7 @@ function handleClose() {
             <div class="flex items-center justify-between">
               <span class="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
                 <LockClosed size={13} />
-                {m.credentials_password?.() || "كلمة المرور المؤقتة"}
+                {m.credentials_password()}
               </span>
               <div class="flex items-center gap-2">
                 <button
@@ -162,10 +162,10 @@ function handleClose() {
                 >
                   {#if copiedPassword}
                     <Check size={12} class="text-emerald-500" />
-                    <span class="text-emerald-500">{l("تم النسخ", "Copied")}</span>
+                    <span class="text-emerald-500">{m.common_mfa_enroll_copied()}</span>
                   {:else}
                     <Clipboard size={12} />
-                    <span>{l("نسخ", "Copy")}</span>
+                    <span>{m.common_mfa_enroll_copy()}</span>
                   {/if}
                 </button>
               </div>
@@ -181,17 +181,17 @@ function handleClose() {
           <InfoCircle size={15} class="shrink-0 text-amber-500 mt-0.5" />
           <div class="flex flex-col gap-0.5">
             <span class="font-semibold text-foreground">
-              {m.credentials_must_change?.() || "يجب على المستخدم تغيير كلمة المرور عند أول تسجيل دخول."}
+              {m.credentials_must_change()}
             </span>
             <span class="text-[11px] leading-relaxed">
-              {m.credentials_close_warning?.() || "تنبيه: لن تتمكن من استعراض كلمة المرور هذه مرة أخرى بعد إغلاق النافذة لحماية الأمان."}
+              {m.credentials_close_warning()}
             </span>
           </div>
         </div>
 
         <!-- Delivery Channel Badge -->
         <div class="flex items-center justify-between text-xs text-muted-foreground pt-1 px-1">
-          <span>{m.employees_delivery_channel?.() || "طريقة التسليم"}:</span>
+          <span>{m.employees_delivery_channel()}:</span>
           <Badge variant="outline" class="font-mono text-[11px] uppercase">
             {provisioning.delivery_channel || "manual"}
           </Badge>
@@ -209,10 +209,10 @@ function handleClose() {
       >
         {#if copiedAll}
           <Check size={13} class="text-emerald-500" />
-          <span class="text-emerald-500">{l("تم النسخ", "Copied")}</span>
+          <span class="text-emerald-500">{m.common_mfa_enroll_copied()}</span>
         {:else}
           <Clipboard size={13} />
-          <span>{m.credentials_copy_all?.() || "نسخ بيانات الدخول"}</span>
+          <span>{m.credentials_copy_all()}</span>
         {/if}
       </Button>
 
@@ -223,7 +223,7 @@ function handleClose() {
         class="text-xs px-4 cursor-pointer"
         onclick={handleClose}
       >
-        {m.common_done?.() || "تم"}
+        {m.common_done()}
       </Button>
     </DialogFooter>
   </DialogContent>

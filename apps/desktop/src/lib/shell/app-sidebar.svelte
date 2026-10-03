@@ -67,7 +67,7 @@ const navItems = $derived([
   {
     href: `/${orgId}/employees`,
     icon: UserGroup,
-    label: m.employees_nav_title ? m.employees_nav_title() : "Employee Affairs",
+    label: m.employees_nav_title(),
     match: "prefix",
   },
   {

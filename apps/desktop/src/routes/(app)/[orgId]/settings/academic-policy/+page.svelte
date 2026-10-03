@@ -7,7 +7,7 @@ const orgId = $derived(page.params.orgId || "");
 </script>
 
 <svelte:head>
-  <title>{m.settings_nav_grading_schemes ? m.settings_nav_grading_schemes() : "Academic Policy"} | Orbis</title>
+  <title>{m.settings_nav_grading_schemes()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-hidden">

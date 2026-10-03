@@ -5,6 +5,7 @@
   and elevated design tokens.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import type { OnboardingFormModel } from "../types";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -35,10 +36,10 @@ const passwordStrength = $derived.by(() => {
 
 const strengthLabel = $derived.by(() => {
   if (!form.adminPassword) return { text: "", color: "bg-muted", width: "0%" };
-  if (passwordStrength <= 2) return { text: isRTL ? "ضعيفة" : "Weak", color: "bg-destructive", width: "30%" };
-  if (passwordStrength <= 3) return { text: isRTL ? "متوسطة" : "Fair", color: "bg-amber-500", width: "60%" };
-  if (passwordStrength <= 4) return { text: isRTL ? "جيدة" : "Good", color: "bg-blue-500", width: "80%" };
-  return { text: isRTL ? "قوية" : "Strong", color: "bg-emerald-500", width: "100%" };
+  if (passwordStrength <= 2) return { text: m.ui_onboarding_admin_weak(), color: "bg-destructive", width: "30%" };
+  if (passwordStrength <= 3) return { text: m.ui_onboarding_admin_fair(), color: "bg-amber-500", width: "60%" };
+  if (passwordStrength <= 4) return { text: m.ui_onboarding_admin_good(), color: "bg-blue-500", width: "80%" };
+  return { text: m.ui_onboarding_admin_strong(), color: "bg-emerald-500", width: "100%" };
 });
 </script>
 
@@ -46,11 +47,11 @@ const strengthLabel = $derived.by(() => {
   <div class="space-y-2 text-start">
     <div class="flex items-center gap-2">
       <span class="text-xs font-semibold text-primary uppercase font-mono tracking-wider">
-        {isRTL ? "المرحلة ٤ من ٦" : "Step 4 of 6"}
+        {m.ui_onboarding_admin_step_4_of_6()}
       </span>
     </div>
     <h2 class="text-2xl font-bold tracking-tight text-foreground">
-      {isRTL ? "إنشاء حساب المشرف العام للنظام" : "Primary Administrator Account"}
+      {m.ui_onboarding_admin_primary_administrator_account()}
     </h2>
     <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
       {isRTL
@@ -73,7 +74,7 @@ const strengthLabel = $derived.by(() => {
 
         <div class="space-y-1 w-full">
           <div class="text-sm font-bold text-foreground truncate">
-            {form.adminFirstNameAr || form.adminFirstName || (isRTL ? "المشرف العام" : "Administrator")} {form.adminLastNameAr || form.adminLastName || ""}
+            {form.adminFirstNameAr || form.adminFirstName || (m.ui_onboarding_admin_administrator())} {form.adminLastNameAr || form.adminLastName || ""}
           </div>
           <div class="text-xs font-mono text-muted-foreground truncate">
             {form.adminEmail || "admin@institution.edu"}
@@ -92,7 +93,7 @@ const strengthLabel = $derived.by(() => {
     <div class="lg:col-span-8 rounded-2xl border border-border/70 bg-card p-6 space-y-5 shadow-xs">
       <div class="border-b border-border/40 pb-3">
         <h3 class="text-sm font-bold text-foreground uppercase tracking-wider font-mono">
-          {isRTL ? "بيانات الاعتماد والدخول" : "Administrator Credentials"}
+          {m.ui_onboarding_admin_administrator_credentials()}
         </h3>
       </div>
 
@@ -100,7 +101,7 @@ const strengthLabel = $derived.by(() => {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="space-y-1.5">
           <Label for="admin-fn-ar" class="text-xs font-medium text-foreground">
-            {isRTL ? "الاسم الأول (بالعربية) *" : "First Name (Arabic) *"}
+            {m.ui_onboarding_admin_first_name_arabic()}
           </Label>
           <Input
             id="admin-fn-ar"
@@ -114,7 +115,7 @@ const strengthLabel = $derived.by(() => {
 
         <div class="space-y-1.5">
           <Label for="admin-ln-ar" class="text-xs font-medium text-foreground">
-            {isRTL ? "اسم العائلة (بالعربية) *" : "Last Name (Arabic) *"}
+            {m.ui_onboarding_admin_last_name_arabic()}
           </Label>
           <Input
             id="admin-ln-ar"
@@ -131,7 +132,7 @@ const strengthLabel = $derived.by(() => {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="space-y-1.5">
           <Label for="admin-fn-en" class="text-xs font-medium text-foreground">
-            {isRTL ? "الاسم الأول (بالإنجليزية) *" : "First Name (English) *"}
+            {m.ui_onboarding_admin_first_name_english()}
           </Label>
           <Input
             id="admin-fn-en"
@@ -147,7 +148,7 @@ const strengthLabel = $derived.by(() => {
 
         <div class="space-y-1.5">
           <Label for="admin-ln-en" class="text-xs font-medium text-foreground">
-            {isRTL ? "اسم العائلة (بالإنجليزية) *" : "Last Name (English) *"}
+            {m.ui_onboarding_admin_last_name_english()}
           </Label>
           <Input
             id="admin-ln-en"
@@ -165,7 +166,7 @@ const strengthLabel = $derived.by(() => {
       <!-- Email Address -->
       <div class="space-y-1.5">
         <Label for="admin-email" class="text-xs font-medium text-foreground">
-          {isRTL ? "البريد الإلكتروني للإدارة *" : "Primary Email Address *"}
+          {m.ui_onboarding_admin_primary_email_address()}
         </Label>
         <Input
           id="admin-email"
@@ -183,7 +184,7 @@ const strengthLabel = $derived.by(() => {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="space-y-1.5">
           <Label for="admin-pwd" class="text-xs font-medium text-foreground">
-            {isRTL ? "كلمة المرور *" : "Password *"}
+            {m.ui_onboarding_admin_password()}
           </Label>
           <Input
             id="admin-pwd"
@@ -206,7 +207,7 @@ const strengthLabel = $derived.by(() => {
                 ></div>
               </div>
               <div class="flex justify-between items-center text-[10px] text-muted-foreground font-mono">
-                <span>{isRTL ? "قوة كلمة المرور:" : "Strength:"}</span>
+                <span>{m.ui_onboarding_admin_strength()}</span>
                 <span class="font-bold">{strengthLabel.text}</span>
               </div>
             </div>
@@ -215,7 +216,7 @@ const strengthLabel = $derived.by(() => {
 
         <div class="space-y-1.5">
           <Label for="admin-pwd-confirm" class="text-xs font-medium text-foreground">
-            {isRTL ? "تأكيد كلمة المرور *" : "Confirm Password *"}
+            {m.ui_onboarding_admin_confirm_password()}
           </Label>
           <Input
             id="admin-pwd-confirm"

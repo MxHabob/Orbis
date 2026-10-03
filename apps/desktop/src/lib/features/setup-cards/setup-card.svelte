@@ -3,6 +3,7 @@
   Matches DesktopBanner design language with dot-grid aesthetic, clean borders, and smooth transitions.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import type { SetupItem } from "$lib/api/types";
@@ -56,15 +57,15 @@ const IconComponent = $derived(iconMap[item.key] ?? Sparkles);
         </span>
         {#if item.is_required && !item.is_completed}
           <span class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-            {isArabic ? "مطلوب" : "Required"}
+            {m.ui_setup_card_required()}
           </span>
         {/if}
       </div>
       <p class="text-[10px] text-muted-foreground truncate">
         {#if item.is_completed}
-          {isArabic ? "مكتمل وجاهز للعمل" : "Completed and configured"}
+          {m.ui_setup_card_completed_and_configured()}
         {:else}
-          {isArabic ? "بانتظار التهيئة والإعداد" : "Pending configuration"}
+          {m.ui_setup_card_pending_configuration()}
         {/if}
       </p>
     </div>
@@ -81,7 +82,7 @@ const IconComponent = $derived(iconMap[item.key] ?? Sparkles);
         onclick={() => goto(localizeHref(`/${orgId}${href}`))}
         class="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors px-2.5 py-1 rounded-md border border-primary/20 bg-primary/5 hover:bg-primary/10"
       >
-        <span>{isArabic ? "إعداد" : "Configure"}</span>
+        <span>{m.ui_setup_card_configure()}</span>
         {#if isArabic}
           <ArrowLeft class="size-3" />
         {:else}

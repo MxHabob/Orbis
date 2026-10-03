@@ -17,7 +17,7 @@ import { Calendar, ClockRotateRight, UserBadgeCheck, UserMinus } from "@orbis/ic
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
-import { formatNumber, formatPercent, formatDate, l } from "$lib/core/i18n";
+import { formatNumber, formatPercent, formatDate } from "$lib/core/i18n";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import { academicContext } from "$lib/stores";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
@@ -157,8 +157,8 @@ const rtl = $derived(getLocale() === "ar");
           loading={isLoading}
           clientQuery
           filter={activeFilter}
-          emptyTitle={l("لا توجد سجلات حضور", "No attendance records")}
-          emptyDescription={l("لم يتم تسجيل أي حضور لهذا الطالب بعد", "No attendance recorded for this student yet.")}
+          emptyTitle={m.ui_copy_no_attendance_records_7b6831c5()}
+          emptyDescription={m.ui_copy_no_attendance_recorded_for_this_student_ye_f2c2d408()}
           {rtl}
           readonly
         />

@@ -14,7 +14,7 @@ import {
   UserGroup,
   XMark,
 } from "@orbis/icons";
-import { l, formatNumber } from "$lib/core/i18n";
+import { formatNumber } from "$lib/core/i18n";
 import { createGroupsQuery } from "../queries";
 
 interface Props {
@@ -75,7 +75,7 @@ function clearAll() {
       <Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="text"
-        placeholder={l("بحث في مجموعات المستخدمين...", "Search user groups...")}
+        placeholder={m.ui_copy_search_user_groups_6409355a()}
         class="input-sunken ps-8 text-xs py-1.5 h-8"
         bind:value={searchQuery}
       />
@@ -83,14 +83,14 @@ function clearAll() {
 
     <div class="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
       <Badge variant="outline" class="font-mono text-[10px]">
-        {formatNumber(selectedGroupIds.length)} {l("محدد", "selected")}
+        {formatNumber(selectedGroupIds.length)} {m.ui_copy_selected_d24fa4a6()}
       </Badge>
       <button
         type="button"
         class="text-primary hover:underline text-[11px] cursor-pointer"
         onclick={selectAll}
       >
-        {l("تحديد الكل", "Select all")}
+        {m.ui_copy_select_all_99dda350()}
       </button>
       <span>•</span>
       <button
@@ -98,7 +98,7 @@ function clearAll() {
         class="text-muted-foreground hover:underline text-[11px] cursor-pointer"
         onclick={clearAll}
       >
-        {l("إلغاء", "Clear")}
+        {m.ui_copy_clear_9bb7e538()}
       </button>
     </div>
   </div>
@@ -108,11 +108,11 @@ function clearAll() {
     {#if groupsQuery.isLoading}
       <div class="col-span-2 p-6 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
         <ArrowPath size={14} class="animate-spin text-primary" />
-        <span>{l("جاري تحميل مجموعات المستخدمين...", "Loading groups...")}</span>
+        <span>{m.ui_copy_loading_groups_a0b56ad6()}</span>
       </div>
     {:else if groups.length === 0}
       <div class="col-span-2 p-6 text-center text-xs text-muted-foreground">
-        {l("لا توجد مجموعات مطابقة لبحثك.", "No matching user groups found.")}
+        {m.ui_copy_no_matching_user_groups_found_399e3059()}
       </div>
     {:else}
       {#each groups as group (group.id)}
@@ -135,7 +135,7 @@ function clearAll() {
               </span>
               {#if group.is_system}
                 <Badge variant="secondary" class="text-[9px] px-1 py-0 shrink-0">
-                  {m.groups_system_badge?.() || "نظام"}
+                  {m.groups_system_badge()}
                 </Badge>
               {/if}
             </div>

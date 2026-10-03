@@ -381,7 +381,7 @@ export class StudentFormState {
       this.duplicateWarnings.phone ||
       this.duplicateWarnings.email
     ) {
-      toast.error(l("يرجى معالجة تنبيهات تكرار البيانات قبل المتابعة", "Please resolve duplicate warnings before proceeding"));
+      toast.error(m.ui_copy_please_resolve_duplicate_warnings_before_p_d77b26cb());
       return;
     }
 
@@ -572,7 +572,7 @@ export class StudentFormState {
   // Document print/download logic
   async handleDownloadRegistrationForm() {
     if (!this.selectedTemplateId) {
-      toast.error(l("يرجى اختيار قالب الطباعة أولاً", "Please select a print template first"));
+      toast.error(m.ui_copy_please_select_a_print_template_first_42eed155());
       return;
     }
     this.isDownloadingForm = true;
@@ -580,7 +580,7 @@ export class StudentFormState {
       const templateRecord = await api.getTemplate(this.selectedTemplateId);
       if (!templateRecord) {
         toast.error(
-          l(`القالب '${this.selectedTemplateId}' غير موجود في قاعدة البيانات`, `Template '${this.selectedTemplateId}' not found`),
+          m.ui_template_not_found({ templateId: this.selectedTemplateId }),
         );
         return;
       }
@@ -623,14 +623,14 @@ export class StudentFormState {
         document.body.removeChild(link);
         URL.revokeObjectURL(pdfUrl);
 
-        toast.success(l("تم توليد وتحميل المستند بنجاح", "Document generated and downloaded successfully"));
+        toast.success(m.ui_copy_document_generated_and_downloaded_successf_456c90b7());
       } else {
-        toast.error(l("فشل توليد ملف PDF", "Failed to generate PDF document"));
+        toast.error(m.ui_copy_failed_to_generate_pdf_document_b7b11e81());
       }
     } catch (e: unknown) {
       console.error("Failed to download registration form:", e);
       toast.error(
-        `${l("خطأ أثناء تحميل الاستمارة:", "Error downloading form:")} ${extractErrorMessage(e)}`,
+        `${m.ui_copy_error_downloading_form_c76eff53()} ${extractErrorMessage(e)}`,
       );
     } finally {
       this.isDownloadingForm = false;

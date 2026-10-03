@@ -18,7 +18,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     type ActionGroup,
     type FooterAction,
   } from "$lib/shared/components/related-actions.svelte";
-  import { l } from "$lib/core/i18n";
+  
   import {
     AcademicCap,
     ArrowsRightLeft,
@@ -214,13 +214,13 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
   const relatedActionGroups = $derived<ActionGroup[]>(studentDetail ? [
     {
       id: "academic_actions",
-      title: l("الإجراءات الأكاديمية", "Academic Operations"),
+      title: m.ui_copy_academic_operations_42dbfc55(),
       icon: AcademicCap,
       defaultExpanded: true,
       subLinks: [
         {
           id: "print_cert",
-          label: l("طباعة شهادة قيد / تسجيل", "Print Enrollment Certificate"),
+          label: m.ui_copy_print_enrollment_certificate_d360ef39(),
           icon: Printer,
           onclick: () => (showPrintCertificate = true),
         },
@@ -232,7 +232,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
         },
         ...(currentClass?.id ? [{
           id: "class_curriculum",
-          label: l("الخطة والمنهج الدراسي", "Class Curriculum"),
+          label: m.ui_copy_class_curriculum_8b6731cd(),
           icon: BookOpen,
           href: `/${orgId}/academics/classes/${currentClass.id}/curriculum`,
         }] : []),
@@ -240,19 +240,19 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     },
     {
       id: "financial_actions",
-      title: l("الحركات والعمليات المالية", "Financial Operations"),
+      title: m.ui_copy_financial_operations_c98b7d37(),
       icon: Banknotes,
       defaultExpanded: true,
       subLinks: [
         {
           id: "record_payment",
-          label: l("تسجيل سند قبض / دفعة", "Record Payment"),
+          label: m.ui_copy_record_payment_2d05fe8e(),
           icon: Banknotes,
           href: `/${orgId}/finance/payments?studentId=${actualStudentId}`,
         },
         {
           id: "account_statement",
-          label: l("كشف حساب الطالب", "Account Statement"),
+          label: m.ui_copy_account_statement_6b810b21(),
           icon: Document,
           href: `/${orgId}/finance/statement?studentId=${actualStudentId}`,
         },
@@ -583,7 +583,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
             <!-- Contextual Related Actions (Footer across page width) -->
             {#if student}
               <RelatedActions
-                title={l("العمليات والإجراءات المرتبطة", "Related support")}
+                title={m.ui_copy_related_support_bf36e16f()}
                 groups={relatedActionGroups}
                 footerActions={relatedFooterActions}
               />

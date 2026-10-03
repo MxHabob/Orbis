@@ -122,7 +122,7 @@ const columns = $derived<OrbisColumnDef[]>([
   {
     id: "user_name",
     prop: "user_name",
-    header: m.common_audit_col_member?.() || l("المستخدم", "Member"),
+    header: m.common_audit_col_member?.() || m.ui_copy_member_916bd8ec(),
     name: "Member",
     width: 190,
     size: 190,
@@ -132,7 +132,7 @@ const columns = $derived<OrbisColumnDef[]>([
   {
     id: "action",
     prop: "action",
-    header: m.common_audit_col_action?.() || l("العملية", "Action"),
+    header: m.common_audit_col_action?.() || m.ui_copy_action_b6f7953e(),
     name: "Action",
     width: 140,
     size: 140,
@@ -143,7 +143,7 @@ const columns = $derived<OrbisColumnDef[]>([
   {
     id: "entity_display",
     prop: "entity_display",
-    header: l("الكيان المستهدف", "Target Entity"),
+    header: m.ui_copy_target_entity_5e64064a(),
     name: "Target Entity",
     width: 180,
     size: 180,
@@ -153,7 +153,7 @@ const columns = $derived<OrbisColumnDef[]>([
   {
     id: "formatted_created_at",
     prop: "formatted_created_at",
-    header: l("الوقت والتاريخ", "Timestamp"),
+    header: m.ui_copy_timestamp_0a682aad(),
     name: "Timestamp",
     width: 160,
     size: 160,
@@ -163,7 +163,7 @@ const columns = $derived<OrbisColumnDef[]>([
   {
     id: "ip_address_display",
     prop: "ip_address_display",
-    header: l("عنوان IP", "IP Address"),
+    header: m.ui_copy_ip_address_36eeef84(),
     name: "IP Address",
     width: 120,
     size: 120,
@@ -173,7 +173,7 @@ const columns = $derived<OrbisColumnDef[]>([
   {
     id: "details_summary",
     prop: "details_summary",
-    header: l("تفاصيل السجل", "Log Details"),
+    header: m.ui_copy_log_details_a2799095(),
     name: "Log Details",
     width: 260,
     size: 260,
@@ -187,10 +187,10 @@ const columns = $derived<OrbisColumnDef[]>([
   <div class="flex items-center justify-between gap-4 flex-nowrap shrink-0">
     <div class="flex flex-col">
       <h1 class="text-lg font-bold text-foreground truncate">
-        {m.common_nav_audit?.() || l("سجل التدقيق والمراقبة", "Audit Logs & Security Trail")}
+        {m.common_nav_audit?.() || m.ui_copy_audit_logs_security_trail_64efdffc()}
       </h1>
       <p class="text-xs text-muted-foreground">
-        {l("سجل تدقيق كامل للعمليات والتغييرات الحساسة الصادرة من المستخدمين والنظام", "Immutable record of system operations and user modifications")}
+        {m.ui_copy_immutable_record_of_system_operations_and__1591c0b6()}
       </p>
     </div>
     
@@ -205,7 +205,7 @@ const columns = $derived<OrbisColumnDef[]>([
         onclick={() => auditLogsQuery.refetch()}
         disabled={isFetching}
         class="text-muted-foreground hover:text-foreground"
-        title={l("تحديث السجلات", "Refresh")}
+        title={m.ui_copy_refresh_9d82f148()}
       >
         <Refresh size={14} class={isFetching ? "animate-spin" : ""} />
       </Button>
@@ -220,8 +220,8 @@ const columns = $derived<OrbisColumnDef[]>([
       loading={isLoading}
       clientQuery
       filter={activeFilter}
-      emptyTitle={l("لا توجد سجلات تدقيق", "No audit logs found")}
-      emptyDescription={l("لم يتم تسجيل أي عمليات بعد في النظام.", "No operations have been recorded yet.")}
+      emptyTitle={m.ui_copy_no_audit_logs_found_6a299836()}
+      emptyDescription={m.ui_copy_no_operations_have_been_recorded_yet_a16f9eb7()}
       rtl={getLocale() === "ar"}
       readonly
       onaction={handleGridAction}

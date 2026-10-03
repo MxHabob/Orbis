@@ -46,9 +46,9 @@ function handleUserProvisioned(result: AccountProvisioningResultDto, name: strin
 }
 
 const userActions: ActionItem[] = [
-  { id: "edit", label: m.common_action_edit?.() || "تعديل", icon: "Pencil" },
-  { id: "reset_password", label: m.settings_user_detail_btn_reset_pass?.() || "إعادة تعيين كلمة المرور", icon: "LockClosed" },
-  { id: "delete", label: m.common_action_delete?.() || "حذف", icon: "Trash2", variant: "destructive" },
+  { id: "edit", label: m.common_action_edit(), icon: "Pencil" },
+  { id: "reset_password", label: m.settings_user_detail_btn_reset_pass(), icon: "LockClosed" },
+  { id: "delete", label: m.common_action_delete(), icon: "Trash2", variant: "destructive" },
 ];
 
 // ── Data Loading ────────────────────────────────────────────────────────
@@ -103,13 +103,13 @@ const columns: OrbisColumnDef[] = [
   { id: "email", prop: "email", header: m.common_word_email(), name: m.common_word_email(), width: 200, minWidth: 160, readonly: true, flex: 1.5 },
   { id: "phone", prop: "phone", header: m.common_bulk_col_phone(), name: m.common_bulk_col_phone(), width: 140, minWidth: 120, readonly: true, cellClass: "font-mono", flex: 1 },
   { id: "role", prop: "role", header: m.common_user_form_role(), name: m.common_user_form_role(), width: 110, minWidth: 100, readonly: true, align: "center", flex: 1 },
-  { id: "status", prop: "status", header: m.common_word_status?.() || "Status", name: "Status", width: 100, minWidth: 90, type: "badge", align: "center", readonly: true, flex: 0 },
-  { id: "created_at_display", prop: "created_at_display", header: l("تاريخ الإنشاء", "Created At"), name: "Created At", width: 130, minWidth: 120, readonly: true, cellClass: "font-mono text-xs text-muted-foreground", flex: 1 },
-  { id: "updated_at_display", prop: "updated_at_display", header: l("آخر تحديث", "Updated At"), name: "Updated At", width: 130, minWidth: 120, readonly: true, cellClass: "font-mono text-xs text-muted-foreground", flex: 1 },
+  { id: "status", prop: "status", header: m.common_word_status(), name: "Status", width: 100, minWidth: 90, type: "badge", align: "center", readonly: true, flex: 0 },
+  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: "Created At", width: 130, minWidth: 120, readonly: true, cellClass: "font-mono text-xs text-muted-foreground", flex: 1 },
+  { id: "updated_at_display", prop: "updated_at_display", header: m.ui_copy_updated_at_ba0d0a9f(), name: "Updated At", width: 130, minWidth: 120, readonly: true, cellClass: "font-mono text-xs text-muted-foreground", flex: 1 },
   {
     id: "actions",
     prop: "actions",
-    header: m.common_je_col_actions?.() || "Actions",
+    header: m.common_je_col_actions(),
     name: "Actions",
     width: 120,
     minWidth: 110,
@@ -128,12 +128,12 @@ async function handleAction(event: GridActionEvent) {
     goto(localizeHref(`/${orgId}/settings/users/${user.id}`));
   } else if (event.actionId === "reset_password") {
     const confirmed = await confirmStore.prompt({
-      title: (m.settings_user_detail_btn_reset_pass?.() || "إعادة تعيين كلمة المرور") + "؟",
+      title: (m.settings_user_detail_btn_reset_pass()) + "؟",
       description: l(
         `هل أنت متأكد من إعادة توليد كلمة مرور مؤقتة للمستخدم (${user.full_name || user.email})؟`,
         `Are you sure you want to generate a new temporary password for ${user.full_name || user.email}?`
       ),
-      confirmText: m.settings_user_detail_btn_reset_pass?.() || "إعادة تعيين",
+      confirmText: m.settings_user_detail_btn_reset_pass(),
     });
     if (confirmed) {
       try {
@@ -141,7 +141,7 @@ async function handleAction(event: GridActionEvent) {
         activeProvisioningResult = result;
         activeUserName = user.full_name || user.email;
         credentialModalOpen = true;
-        toast.success(m.employees_password_reset_success?.() || "تمت إعادة تعيين كلمة المرور بنجاح");
+        toast.success(m.employees_password_reset_success());
       } catch (e) {
         toast.error((e as any)?.message || "Failed to reset password");
       }
@@ -214,7 +214,7 @@ async function handleAction(event: GridActionEvent) {
         onclick={() => goto(localizeHref(`/${orgId}/employees`))}
       >
         <ShieldCheck size={14} class="text-primary" />
-        <span>{l("شؤون الموظفين", "Employee Affairs")}</span>
+        <span>{m.employees_nav_title()}</span>
       </Button>
       <Button
         variant="default"
@@ -222,7 +222,7 @@ async function handleAction(event: GridActionEvent) {
         onclick={() => (createUserSheetOpen = true)}
       >
         <UserPlus size={14} />
-        <span>{l("إنشاء حساب مستخدم", "Provision User")}</span>
+        <span>{m.ui_copy_provision_user_7ee34dd9()}</span>
       </Button>
     </div>
   </div>

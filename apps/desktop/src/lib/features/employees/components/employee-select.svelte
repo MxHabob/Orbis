@@ -4,6 +4,7 @@ Self-fetching Searchable Employee Selector powered by TanStack Query & Employee 
 Includes a sticky search bar, subtitle with job title/employee number, and support for Orbis Design System.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { l } from "$lib/core/i18n";
 import { createEmployeesQuery } from "$lib/features/employees/queries";
@@ -28,12 +29,12 @@ interface Props {
 let {
   value = $bindable<string | null>(null),
   orgId,
-  placeholder = l("اختر الموظف / المسؤول...", "Select employee / manager..."),
-  searchPlaceholder = l("ابحث بالاسم، المسمى الوظيفي، أو الرقم...", "Search by name, job title, or ID..."),
+  placeholder = m.ui_copy_select_employee_manager_a1c8062d(),
+  searchPlaceholder = m.ui_copy_search_by_name_job_title_or_id_3ca669eb(),
   disabled = false,
   id = undefined,
   showAllOption = false,
-  allOptionLabel = l("الكل", "All"),
+  allOptionLabel = m.common_filter_all(),
   createLabel = undefined,
   onCreate = undefined,
   class: className = "",
@@ -80,7 +81,7 @@ function getEmployeeSubtitle(e: any): string | undefined {
   items={employees}
   {placeholder}
   {searchPlaceholder}
-  emptyText={l("لا يوجد موظفون مطابقون", "No matching employees found")}
+  emptyText={m.ui_copy_no_matching_employees_found_942bb7ff()}
   {disabled}
   {id}
   {showAllOption}

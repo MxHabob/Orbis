@@ -287,7 +287,7 @@ async function handleVerifyAndActivate() {
     <DialogFooter class="border-t border-border pt-3 mt-2 flex items-center justify-between">
       {#if step === 'qr'}
         <Button variant="ghost" size="sm" class="text-xs" onclick={() => { open = false; onClose(); }}>
-          {m.common_titlebar_close ? m.common_titlebar_close() : "Cancel"}
+          {m.common_titlebar_close()}
         </Button>
         <Button size="sm" class="text-xs font-semibold gap-1.5" onclick={() => (step = 'codes')}>
           <span>{m.common_mfa_enroll_step_codes_btn()}</span>
@@ -296,7 +296,7 @@ async function handleVerifyAndActivate() {
       {:else if step === 'codes'}
         <Button variant="ghost" size="sm" class="text-xs gap-1" onclick={() => (step = 'qr')}>
           <ArrowLeft class="w-3.5 h-3.5 rtl:rotate-180" />
-          <span>{m.common_titlebar_close ? m.common_titlebar_close() : "Back"}</span>
+          <span>{m.common_titlebar_close()}</span>
         </Button>
         <Button size="sm" class="text-xs font-semibold gap-1.5" onclick={() => (step = 'verify')}>
           <span>{m.common_mfa_enroll_step_verify_btn()}</span>
@@ -305,7 +305,7 @@ async function handleVerifyAndActivate() {
       {:else if step === 'verify'}
         <Button variant="ghost" size="sm" class="text-xs gap-1" onclick={() => (step = 'codes')}>
           <ArrowLeft class="w-3.5 h-3.5 rtl:rotate-180" />
-          <span>{m.common_titlebar_close ? m.common_titlebar_close() : "Back"}</span>
+          <span>{m.common_titlebar_close()}</span>
         </Button>
         <Button
           size="sm"

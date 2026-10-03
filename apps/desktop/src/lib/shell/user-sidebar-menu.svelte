@@ -129,7 +129,7 @@ async function handleLogout() {
       <!-- Items -->
       <div class="py-1">
         <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={() => handleNavigate(`/${orgId}/account`)}>
-          {m.common_account_settings_title ? m.common_account_settings_title() : 'User Settings'}
+          {m.common_account_settings_title()}
         </DropdownMenuItem>
         <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={() => api.connectionOpenWindow()}>
           {m.settings_connection_settings()}

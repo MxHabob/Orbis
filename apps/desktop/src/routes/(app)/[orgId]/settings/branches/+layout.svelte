@@ -4,10 +4,11 @@ Layout for Multi-Branch Management & Institutional Governance.
 Wraps all branch sub-routes with the shared SecondaryMenu navigation bar.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import { BuildingOffice, ShieldCheck } from "@orbis/icons";
-import { l } from "$lib/core/i18n";
+
 import type { Snippet } from "svelte";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } = $props();
@@ -18,12 +19,12 @@ const basePath = $derived(`/${orgId}/settings/branches`);
 const menuItems = $derived([
   {
     path: "",
-    label: l("دليل الفروع والعمليات", "Branches Directory"),
+    label: m.ui_copy_branches_directory_cf4c7981(),
     icon: BuildingOffice,
   },
   {
     path: "governance",
-    label: l("سياسات وحوكمة الفروع", "Governance & Policies"),
+    label: m.ui_copy_governance_policies_49350c9f(),
     icon: ShieldCheck,
   },
 ]);

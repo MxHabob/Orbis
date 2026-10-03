@@ -138,9 +138,7 @@ const domainLabels: Record<string, string> = {
         <div class="flex items-center gap-2">
           <Lock size={14} class="text-primary" />
           <CardTitle>
-            {m.ai_center_permissions_gates
-              ? m.ai_center_permissions_gates()
-              : "بوابات الاعتماد والموافقة البشرية"}
+            {m.ai_center_permissions_gates()}
           </CardTitle>
         </div>
         <CardAction>

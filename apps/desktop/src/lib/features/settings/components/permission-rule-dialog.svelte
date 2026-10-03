@@ -95,13 +95,10 @@ function clearActions() {
         </div>
         <div>
           <DialogTitle class="text-base font-bold text-foreground">
-            {l("إضافة قاعدة أمان متقدمة", "Add Security Rule")}
+            {m.ui_copy_add_security_rule_e0787ed3()}
           </DialogTitle>
           <DialogDescription class="text-xs text-muted-foreground mt-0.5">
-            {l(
-              "تخصيص سياسة وصول دقيقة لدور محدد على مورد معين بالمنظومة",
-              "Define granular access policies for a specific role and resource"
-            )}
+            {m.ui_copy_define_granular_access_policies_for_a_spec_53281d5a()}
           </DialogDescription>
         </div>
       </div>
@@ -113,7 +110,7 @@ function clearActions() {
         <!-- Target Role -->
         <div class="flex flex-col gap-1.5 text-start">
           <Label class="text-xs font-semibold text-foreground">
-            {l("الدور المستهدف", "Target Role")} <span class="text-destructive">*</span>
+            {m.ui_copy_target_role_1bf9cba3()} <span class="text-destructive">*</span>
           </Label>
           <Select
             type="single"
@@ -123,7 +120,7 @@ function clearActions() {
             }}
           >
             <SelectTrigger class="h-9 w-full text-xs font-medium">
-              {role || l("اختر الدور", "Select Role")}
+              {role || m.ui_copy_select_role_4cf9593f()}
             </SelectTrigger>
             <SelectContent class="max-h-56">
               {#each availableRoles as r}
@@ -138,7 +135,7 @@ function clearActions() {
         <!-- Resource (DocType) -->
         <div class="flex flex-col gap-1.5 text-start">
           <Label class="text-xs font-semibold text-foreground">
-            {l("المورد / المستند", "Resource / DocType")} <span class="text-destructive">*</span>
+            {m.ui_copy_resource_doctype_0f384427()} <span class="text-destructive">*</span>
           </Label>
           <Select
             type="single"
@@ -171,7 +168,7 @@ function clearActions() {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl border border-border/60 bg-muted/20 items-center">
         <div class="flex flex-col gap-1 text-start">
           <Label for="rule_precedence_level" class="text-xs font-semibold text-foreground">
-            {l("مستوى الأسبقية (Precedence Level)", "Precedence Level")}
+            {m.ui_copy_precedence_level_4fafdba3()}
           </Label>
           <Input
             id="rule_precedence_level"
@@ -190,7 +187,7 @@ function clearActions() {
             onCheckedChange={(checked) => (onlyIfCreator = Boolean(checked))}
           />
           <Label for="only_creator_check" class="text-xs font-medium text-foreground cursor-pointer">
-            {l("سريان الصلاحية لمنشئ السجل فقط", "Only apply if user is creator")}
+            {m.ui_copy_only_apply_if_user_is_creator_5b8420b8()}
           </Label>
         </div>
       </div>
@@ -199,7 +196,7 @@ function clearActions() {
       <div class="space-y-2 pt-1">
         <div class="flex items-center justify-between">
           <span class="text-xs font-bold text-foreground">
-            {l("العمليات المسموح بها:", "Allowed Actions:")}
+            {m.ui_copy_allowed_actions_7cfbc4c2()}
           </span>
           <div class="flex items-center gap-2">
             <Button
@@ -208,7 +205,7 @@ function clearActions() {
               class="h-6 text-[11px] px-2 text-muted-foreground hover:text-foreground"
               onclick={selectAllActions}
             >
-              {l("تحديد الكل", "All")}
+              {m.ui_copy_all_0f563309()}
             </Button>
             <Button
               variant="ghost"
@@ -216,7 +213,7 @@ function clearActions() {
               class="h-6 text-[11px] px-2 text-muted-foreground hover:text-destructive"
               onclick={clearActions}
             >
-              {l("إلغاء", "None")}
+              {m.ui_copy_none_c7801201()}
             </Button>
           </div>
         </div>
@@ -263,7 +260,7 @@ function clearActions() {
         class="h-8 text-xs font-medium"
         onclick={() => (open = false)}
       >
-        {m.common_action_cancel ? m.common_action_cancel() : l("إلغاء", "Cancel")}
+        {m.common_action_cancel ? m.common_action_cancel() : m.auth_provider_cancel()}
       </Button>
       <Button
         variant="lime"
@@ -273,7 +270,7 @@ function clearActions() {
         onclick={onsubmit}
       >
         <Plus class="w-3.5 h-3.5" />
-        {l("إضافة القاعدة", "Add Rule")}
+        {m.settings_permissions_btn_add()}
       </Button>
     </DialogFooter>
   </DialogContent>

@@ -7,7 +7,7 @@ const orgId = $derived(page.params.orgId || "");
 </script>
 
 <svelte:head>
-  <title>{m.settings_nav_discount_templates ? m.settings_nav_discount_templates() : "Discount Templates"} | Orbis</title>
+  <title>{m.settings_nav_discount_templates()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-hidden">

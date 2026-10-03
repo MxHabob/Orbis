@@ -3,13 +3,14 @@
   Configures institutional finance policies and invoice defaults.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@orbis/ui/card";
 import { Label } from "@orbis/ui/label";
 import { Switch } from "@orbis/ui/switch";
 import { Input } from "@orbis/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui/select";
 import { ReceiptPercent } from "@orbis/icons";
-import { l } from "$lib/core/i18n";
+
 
 let {
   currency = $bindable("SAR"),
@@ -37,15 +38,15 @@ let {
         <ReceiptPercent class="w-4 h-4" />
       </div>
       <div class="flex flex-col">
-        <CardTitle>{l("سياسات الفواتير والتحصيل المالي", "Billing & Financial Policies")}</CardTitle>
-        <CardDescription>{l("تحديد نسب الضريبة وشروط الاستحقاق وغرامات التأخير", "Define institutional tax rates, invoice due terms, and late fee policies")}</CardDescription>
+        <CardTitle>{m.ui_copy_billing_financial_policies_9353d39e()}</CardTitle>
+        <CardDescription>{m.ui_copy_define_institutional_tax_rates_invoice_due_f4132822()}</CardDescription>
       </div>
     </div>
   </CardHeader>
   <CardContent class="flex flex-col gap-5">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
       <div class="flex flex-col gap-2 p-3.5 rounded-lg border border-border/50 bg-muted/20 text-start">
-        <Label class="text-xs font-semibold">{l("نسبة الضريبة الافتراضية (%)", "Default Tax Rate (%)")}</Label>
+        <Label class="text-xs font-semibold">{m.ui_copy_default_tax_rate_1ebc240f()}</Label>
         <Input
           type="number"
           step="0.01"
@@ -56,11 +57,11 @@ let {
           disabled={isSaving}
           class="h-8 text-xs w-36"
         />
-        <span class="text-[10px] text-muted-foreground">{l("مثال: 0.15 تمثل ضريبة 15%", "e.g. 0.15 represents 15% VAT")}</span>
+        <span class="text-[10px] text-muted-foreground">{m.ui_copy_e_g_0_15_represents_15_vat_3eb644d1()}</span>
       </div>
 
       <div class="flex flex-col gap-2 p-3.5 rounded-lg border border-border/50 bg-muted/20 text-start">
-        <Label class="text-xs font-semibold">{l("فترة استحقاق الفواتير (أيام)", "Invoice Due Days")}</Label>
+        <Label class="text-xs font-semibold">{m.ui_copy_invoice_due_days_604a36c8()}</Label>
         <Input
           type="number"
           min="1"
@@ -69,11 +70,11 @@ let {
           disabled={isSaving}
           class="h-8 text-xs w-36"
         />
-        <span class="text-[10px] text-muted-foreground">{l("عدد الأيام المسموح بها للسداد قبل استحقاق الفاتورة", "Days allowed for payment before becoming overdue")}</span>
+        <span class="text-[10px] text-muted-foreground">{m.ui_copy_days_allowed_for_payment_before_becoming_o_be9960ff()}</span>
       </div>
 
       <div class="flex flex-col gap-2 p-3.5 rounded-lg border border-border/50 bg-muted/20 text-start">
-        <Label class="text-xs font-semibold">{l("نوع غرامة التأخير", "Late Fee Type")}</Label>
+        <Label class="text-xs font-semibold">{m.ui_copy_late_fee_type_e7186de3()}</Label>
         <Select
           type="single"
           value={lateFeeType}
@@ -81,17 +82,17 @@ let {
           disabled={isSaving}
         >
           <SelectTrigger class="h-8 text-xs w-48">
-            <span>{lateFeeType === "percentage" ? l("نسبة مئوية", "Percentage") : l("مبلغ ثابت", "Fixed Amount")}</span>
+            <span>{lateFeeType === "percentage" ? m.common_cycle_form_grading_percentage() : m.common_dt_method_fixed()}</span>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="fixed">{l("مبلغ ثابت", "Fixed Amount")}</SelectItem>
-            <SelectItem value="percentage">{l("نسبة مئوية (%)", "Percentage (%)")}</SelectItem>
+            <SelectItem value="fixed">{m.common_dt_method_fixed()}</SelectItem>
+            <SelectItem value="percentage">{m.common_dt_method_percentage()}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div class="flex flex-col gap-2 p-3.5 rounded-lg border border-border/50 bg-muted/20 text-start">
-        <Label class="text-xs font-semibold">{l("قيمة غرامة التأخير", "Late Fee Value")}</Label>
+        <Label class="text-xs font-semibold">{m.ui_copy_late_fee_value_6da26129()}</Label>
         <Input
           type="number"
           step="0.01"
@@ -105,8 +106,8 @@ let {
 
       <div class="flex items-center justify-between p-3.5 rounded-lg border border-border/50 bg-muted/20 md:col-span-2">
         <div class="flex flex-col text-start">
-          <Label class="text-xs font-semibold">{l("السماح بالدفع الجزئي", "Allow Partial Payments")}</Label>
-          <span class="text-[11px] text-muted-foreground">{l("تمكين سداد رسوم الفاتورة على دفعات متعددة", "Enable paying invoice fees in installments")}</span>
+          <Label class="text-xs font-semibold">{m.ui_copy_allow_partial_payments_4d1af6e1()}</Label>
+          <span class="text-[11px] text-muted-foreground">{m.ui_copy_enable_paying_invoice_fees_in_installments_5caee8f9()}</span>
         </div>
         <Switch bind:checked={allowPartialPayments} disabled={isSaving} />
       </div>

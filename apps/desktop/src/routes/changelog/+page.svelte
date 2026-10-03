@@ -4,6 +4,7 @@
   Renders genuine Markdown from GitHub Releases using 'marked' with zero fake data.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { marked } from "marked";
 import { api } from "$lib/api/client";
@@ -82,7 +83,7 @@ onMount(() => {
 </script>
 
 <svelte:head>
-  <title>{isRTL ? "سجل التحديثات وما الجديد — Orbis" : "What's New & Changelog — Orbis"}</title>
+  <title>{m.ui_changelog_what_s_new_changelog_orbis()}</title>
 </svelte:head>
 
 <div class="min-h-screen bg-background text-foreground flex flex-col selection:bg-primary/20 selection:text-primary font-sans">
@@ -96,7 +97,7 @@ onMount(() => {
         <span class="text-sm font-bold tracking-tight text-foreground">Orbis</span>
         <span class="text-xs text-muted-foreground">•</span>
         <span class="text-xs text-muted-foreground font-medium">
-          {isRTL ? "سجل التحديثات وما الجديد" : "What's New & Releases"}
+          {m.ui_changelog_what_s_new_releases()}
         </span>
       </div>
       <Badge variant="outline" class="text-[10px] font-mono px-1.5 py-0 h-4 border-primary/40 text-primary bg-primary/5">
@@ -117,8 +118,8 @@ onMount(() => {
         </span>
         <span>
           {isCheckingUpdate
-            ? (isRTL ? "جاري الفحص..." : "Checking...")
-            : (isRTL ? "التحقق من التحديثات" : "Check for Updates")}
+            ? (m.ui_changelog_checking())
+            : (m.ui_changelog_check_for_updates())}
         </span>
       </Button>
 
@@ -162,7 +163,7 @@ onMount(() => {
           rel="noreferrer"
           class="text-[11px] underline flex items-center gap-1 font-medium hover:opacity-80"
         >
-          <span>{isRTL ? "تحميل التحديث من GitHub" : "Download from GitHub"}</span>
+          <span>{m.ui_changelog_download_from_github()}</span>
         </a>
       {/if}
     </div>
@@ -173,12 +174,12 @@ onMount(() => {
     <!-- Version Rail -->
     <aside class="md:col-span-4 border-r border-border/40 p-4 sm:p-5 flex flex-col gap-2 overflow-y-auto bg-muted/10">
       <div class="px-2 py-1 text-[11px] font-bold text-muted-foreground uppercase tracking-wider font-mono">
-        {isRTL ? "سجل الإصدارات المعتمدة" : "Release History"}
+        {m.ui_changelog_release_history()}
       </div>
 
       {#if isLoading}
         <div class="p-6 text-center text-xs text-muted-foreground animate-pulse">
-          {isRTL ? "جاري تحميل البيانات الحقيقية من GitHub..." : "Fetching live release data from GitHub..."}
+          {m.ui_changelog_fetching_live_release_data_from_github()}
         </div>
       {:else}
         {#each releases as rel}
@@ -194,11 +195,11 @@ onMount(() => {
               <span class="font-mono font-bold text-foreground text-sm">v{rel.version}</span>
               {#if rel.is_latest}
                 <Badge variant="default" class="text-[9px] px-1.5 py-0 h-4 bg-primary text-primary-foreground font-mono">
-                  {isRTL ? "الأحدث" : "Latest"}
+                  {m.ui_changelog_latest()}
                 </Badge>
               {:else if rel.is_current}
                 <Badge variant="secondary" class="text-[9px] px-1.5 py-0 h-4 font-mono">
-                  {isRTL ? "المثبت حالياً" : "Installed"}
+                  {m.ui_changelog_installed()}
                 </Badge>
               {/if}
             </div>
@@ -253,7 +254,7 @@ onMount(() => {
                 onclick={() => window.open(activeRelease.html_url, "_blank")}
                 class="h-8 text-xs font-normal gap-1.5 px-3"
               >
-                <span>{isRTL ? "عرض الإصدار في GitHub" : "GitHub Release"}</span>
+                <span>{m.ui_changelog_github_release()}</span>
               </Button>
             </div>
           </div>
@@ -279,7 +280,7 @@ onMount(() => {
         <div class="space-y-2.5 pt-4 border-t border-border/40">
           <h3 class="text-xs font-bold uppercase tracking-wider text-foreground font-mono flex items-center gap-1.5">
             <Sparkles size={13} class="text-primary" />
-            <span>{isRTL ? "مصفوفة الميزات والتحسينات المعتمدة" : "Release Verification Matrix"}</span>
+            <span>{m.ui_changelog_release_verification_matrix()}</span>
           </h3>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -295,7 +296,7 @@ onMount(() => {
         </div>
       {:else}
         <div class="py-24 text-center text-sm text-muted-foreground">
-          {isRTL ? "جاري تحميل سجل التحديثات..." : "Loading release changelog..."}
+          {m.ui_changelog_loading_release_changelog()}
         </div>
       {/if}
     </main>

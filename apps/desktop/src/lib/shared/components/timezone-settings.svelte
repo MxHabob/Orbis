@@ -9,8 +9,8 @@ import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 
 let {
-  title = m.common_general_timezone?.() || "المنطقة الزمنية",
-  description = m.settings_general_timezone_desc?.() || "المنطقة الزمنية الافتراضية للجدولة والسجلات.",
+  title = m.common_general_timezone(),
+  description = m.settings_general_timezone_desc(),
   currentTimezone = $bindable("Asia/Aden"),
   disabled = false,
   last = false,
@@ -57,7 +57,7 @@ function handleChange(val: string | null) {
     <SearchableSelect
       bind:value={currentTimezone}
       items={timezones}
-      placeholder={m.common_general_timezone?.() || "اختر المنطقة الزمنية..."}
+      placeholder={m.common_general_timezone()}
       searchPlaceholder="ابحث باسم المدينة أو المنطقة (مثال: Riyadh, Aden, Cairo, London)..."
       emptyText="لا توجد منطقة زمنية مطابقة"
       {disabled}

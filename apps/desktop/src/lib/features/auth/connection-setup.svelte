@@ -16,7 +16,7 @@ import type { ConnectionMode, RemoteHealthResult } from "$lib/api/types";
 import { ArrowLeft, ArrowPath, ArrowRight, ChartBar, CheckCircle, Computer, Database, GlobeAlt, InfoCircle, UserBadgeCheck } from "@orbis/icons";
 import { z } from "zod";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
-import { l } from "$lib/core/i18n";
+
 
 const isRTL = $derived(getLocale().startsWith("ar"));
 
@@ -140,41 +140,32 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
             <div class="flex items-center gap-2 pb-1 border-b border-border/40">
               <Database size={15} class="text-primary" />
               <h3 class="font-bold text-xs sm:text-sm text-foreground">
-                {l("البنية التحتية للنظام", "System Architecture")}
+                {m.ui_copy_system_architecture_c18b3d52()}
               </h3>
             </div>
             
             <p class="text-xs text-muted-foreground leading-relaxed">
-              {l(
-                "يدعم نظام أوربس نمطي تشغيل مرنين للتوافق مع مختلف بيئات العمل المدرسية والمؤسسية:",
-                "Orbis supports two flexible operating modes to adapt to various institutional environments:"
-              )}
+              {m.ui_copy_orbis_supports_two_flexible_operating_mode_f562dda7()}
             </p>
 
             <div class="space-y-3">
               <div class="p-3 rounded-xl border border-border/50 bg-card/60 space-y-1">
                 <div class="flex items-center gap-2 font-bold text-xs text-foreground">
                   <Computer size={13} class="text-primary" />
-                  <span>{l("النمط المحلي (Local Embedded)", "Local Embedded Mode")}</span>
+                  <span>{m.ui_copy_local_embedded_mode_9a445d7e()}</span>
                 </div>
                 <p class="text-[11px] text-muted-foreground leading-normal">
-                  {l(
-                    "يعمل النظام بشكل مستقل بالكامل مع محرك SQLite مدمج وسريع دون الحاجة لاتصال بالإنترنت.",
-                    "Operates completely offline with an embedded, fast SQLite engine."
-                  )}
+                  {m.ui_copy_operates_completely_offline_with_an_embedd_6b260871()}
                 </p>
               </div>
 
               <div class="p-3 rounded-xl border border-border/50 bg-card/60 space-y-1">
                 <div class="flex items-center gap-2 font-bold text-xs text-foreground">
                   <GlobeAlt size={13} class="text-primary" />
-                  <span>{l("نمط الخادم السحابي (Remote Cloud)", "Remote Cloud Mode")}</span>
+                  <span>{m.ui_copy_remote_cloud_mode_0bab5a3e()}</span>
                 </div>
                 <p class="text-[11px] text-muted-foreground leading-normal">
-                  {l(
-                    "يتصل بخادم أوربس المركزي لإتاحة العمل الجماعي ومزامنة البيانات اللحظية بين الأفرع.",
-                    "Connects to a central Orbis API server for real-time multi-branch synchronization."
-                  )}
+                  {m.ui_copy_connects_to_a_central_orbis_api_server_for_ed966b7f()}
                 </p>
               </div>
             </div>
@@ -182,7 +173,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
 
           <div class="flex items-center gap-2 pt-2 border-t border-border/30 text-[11px] text-muted-foreground">
             <UserBadgeCheck size={12} class="text-primary shrink-0" />
-            <span>{l("جميع الاتصالات والبيانات مشفرة ومعزولة بأمان عالي", "All connections and data are strictly isolated and encrypted")}</span>
+            <span>{m.ui_copy_all_connections_and_data_are_strictly_isol_e420944a()}</span>
           </div>
         </div>
 
@@ -199,7 +190,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
             <!-- Mode Selector Cards -->
             <div class="space-y-2">
               <label class="text-xs font-bold text-foreground">
-                {l("اختر وضع الاتصال المطلوب", "Select Connection Mode")}
+                {m.ui_copy_select_connection_mode_acd68c8e()}
               </label>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 

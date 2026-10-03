@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { l } from "$lib/core/i18n";
+
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
@@ -42,7 +42,7 @@ async function handleBrowseFolder() {
 
 async function handleCreate() {
   if (!filename.trim()) {
-    errorMessage = l("اسم ملف قاعدة البيانات مطلوب", "Database filename is required");
+    errorMessage = m.ui_copy_database_filename_is_required_f6924780();
     return;
   }
 
@@ -54,7 +54,7 @@ async function handleCreate() {
       customDir: customDir.trim() || undefined,
       filename: filename.trim(),
     });
-    toast.success(l("تم إنشاء وتهيئة قاعدة البيانات بنجاح", "Database created and initialized successfully"));
+    toast.success(m.ui_copy_database_created_and_initialized_successfu_6e09e55d());
     open = false;
   } catch (e) {
     errorMessage = e instanceof Error ? e.message : String(e);
@@ -74,10 +74,10 @@ async function handleCreate() {
         </div>
         <div>
           <DialogTitle class="text-base font-bold text-foreground">
-            {m.database_create_dialog_title?.() || l("إنشاء قاعدة بيانات جديدة", "Create New Database")}
+            {m.database_create_dialog_title?.() || m.database_action_create()}
           </DialogTitle>
           <DialogDescription class="text-xs text-muted-foreground mt-0.5">
-            {m.database_create_dialog_desc?.() || l("تهيئة ملف قاعدة بيانات SQLite وتطبيق مخططات Orbis تلقائياً", "Initialize SQLite database and run schema migrations")}
+            {m.database_create_dialog_desc?.() || m.ui_copy_initialize_sqlite_database_and_run_schema__58f96b74()}
           </DialogDescription>
         </div>
       </div>
@@ -92,14 +92,14 @@ async function handleCreate() {
       {/if}
 
       <!-- Folder Selection -->
-      <FormField id="customDir" label={m.database_create_folder_label?.() || l("مجلد التخزين (اختياري)", "Storage Folder (Optional)")}>
+      <FormField id="customDir" label={m.database_create_folder_label?.() || m.ui_copy_storage_folder_optional_1f6159bb()}>
         {#snippet children()}
           <div class="flex gap-2">
             <Input
               id="customDir"
               type="text"
               bind:value={customDir}
-              placeholder={l("المجلد الافتراضي للتطبيق", "Default Application Data Folder")}
+              placeholder={m.ui_copy_default_application_data_folder_cc5cf159()}
               class="h-9 text-xs font-mono bg-background border-input flex-1"
               style="direction: ltr;"
             />
@@ -111,14 +111,14 @@ async function handleCreate() {
               onclick={handleBrowseFolder}
             >
               <FolderOpen size={14} class="text-primary" />
-              <span>{m.database_browse_folder?.() || l("تصفح", "Browse")}</span>
+              <span>{m.database_browse_folder?.() || m.ui_copy_browse_f7b87051()}</span>
             </Button>
           </div>
         {/snippet}
       </FormField>
 
       <!-- Database Filename -->
-      <FormField id="filename" label={m.database_create_filename_label?.() || l("اسم ملف قاعدة البيانات", "Database File Name")} required>
+      <FormField id="filename" label={m.database_create_filename_label?.() || m.database_create_filename_label()} required>
         {#snippet children()}
           <Input
             id="filename"
@@ -134,12 +134,12 @@ async function handleCreate() {
       <div class="p-3 rounded-xl bg-muted/40 border border-border/50 text-[11px] text-muted-foreground space-y-1">
         <div class="flex items-center gap-1.5 font-semibold text-foreground">
           <Sparkles size={12} class="text-primary" />
-          <span>{l("العمليات التلقائية عند الإنشاء:", "Automatic operations on creation:")}</span>
+          <span>{m.ui_copy_automatic_operations_on_creation_e325bdb6()}</span>
         </div>
         <ul class="list-disc list-inside space-y-0.5 text-muted-foreground ps-1">
-          <li>{l("تفعيل نمط التزامن الفائق (WAL Mode)", "Enable SQLite WAL Concurrency Mode")}</li>
-          <li>{l("تطبيق جميع ترحيلات الجداول والمؤشرات", "Apply all database schema migrations")}</li>
-          <li>{l("فحص وتأكيد سلامة الملف فور الإنشاء", "Immediate integrity check & connection switch")}</li>
+          <li>{m.ui_copy_enable_sqlite_wal_concurrency_mode_9ba69977()}</li>
+          <li>{m.ui_copy_apply_all_database_schema_migrations_0845832a()}</li>
+          <li>{m.ui_copy_immediate_integrity_check_connection_switc_bf803157()}</li>
         </ul>
       </div>
     </div>
@@ -153,7 +153,7 @@ async function handleCreate() {
         onclick={() => open = false}
         disabled={isSubmitting}
       >
-        {l("إلغاء", "Cancel")}
+        {m.auth_provider_cancel()}
       </Button>
 
       <Button
@@ -166,10 +166,10 @@ async function handleCreate() {
       >
         {#if isSubmitting}
           <ArrowPath size={14} class="animate-spin" />
-          <span>{l("جاري الإنشاء والتهيئة...", "Creating & Initializing...")}</span>
+          <span>{m.ui_copy_creating_initializing_cbf4c4bf()}</span>
         {:else}
           <Database size={14} />
-          <span>{m.database_create_confirm_btn?.() || l("إنشاء وتهيئة القاعدة", "Create & Initialize")}</span>
+          <span>{m.database_create_confirm_btn?.() || m.ui_copy_create_initialize_e16f9b0e()}</span>
         {/if}
       </Button>
     </DialogFooter>

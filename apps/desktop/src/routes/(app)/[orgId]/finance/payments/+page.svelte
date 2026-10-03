@@ -6,7 +6,7 @@ let { data }: { data: { orgId: string } } = $props();
 </script>
 
 <svelte:head>
-  <title>{m.common_sidebar_payments ? m.common_sidebar_payments() : "المقبوضات والتحصيل"} | Orbis</title>
+  <title>{m.common_sidebar_payments()} | Orbis</title>
 </svelte:head>
 
 <PaymentsManager orgId={data.orgId} />

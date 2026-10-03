@@ -542,32 +542,32 @@ async function saveStudentDetails(e: Event) {
           <!-- Row 6: National ID & Passport Number -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{m.common_form_national_id_label()} / {l("جواز السفر", "Passport")}</span>
-              <span class="text-[10px] text-muted-foreground">{l("رقم الهوية الوطنية أو الإقامة ورقم جواز السفر", "National ID or Passport number")}</span>
+              <span class="text-xs font-bold text-foreground">{m.common_form_national_id_label()} / {m.ui_copy_passport_33cc7232()}</span>
+              <span class="text-[10px] text-muted-foreground">{m.ui_copy_national_id_or_passport_number_fca40628()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0 grid grid-cols-2 gap-2">
               <Input type="text" class="text-xs h-9 font-mono" placeholder={m.common_form_national_id_placeholder()} bind:value={nationalId} />
-              <Input type="text" class="text-xs h-9 font-mono" placeholder={l("رقم الجواز", "Passport No")} bind:value={passportNumber} />
+              <Input type="text" class="text-xs h-9 font-mono" placeholder={m.ui_copy_passport_no_ad264b9a()} bind:value={passportNumber} />
             </div>
           </div>
 
           <!-- Row 7: Nationality & Place of Birth -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{m.common_bulk_col_nat()} / {l("مكان الميلاد", "Place of Birth")}</span>
-              <span class="text-[10px] text-muted-foreground">{l("الجنسية ومحل الميلاد الرسمي للطالب", "Student nationality and official place of birth")}</span>
+              <span class="text-xs font-bold text-foreground">{m.common_bulk_col_nat()} / {m.common_form_place_of_birth()}</span>
+              <span class="text-[10px] text-muted-foreground">{m.ui_copy_student_nationality_and_official_place_of__07b08712()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0 grid grid-cols-2 gap-2">
               <NationalitySelect bind:value={nationality} />
-              <Input type="text" class="text-xs h-9" placeholder={l("مكان الميلاد", "Place of Birth")} bind:value={placeOfBirth} />
+              <Input type="text" class="text-xs h-9" placeholder={m.common_form_place_of_birth()} bind:value={placeOfBirth} />
             </div>
           </div>
 
           <!-- Row 8: Blood Type -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{l("فصيلة الدم", "Blood Type")}</span>
-              <span class="text-[10px] text-muted-foreground">{l("فصيلة دم الطالب للحالات الطبية والطارئة", "Blood type for medical emergencies")}</span>
+              <span class="text-xs font-bold text-foreground">{m.employees_blood_type()}</span>
+              <span class="text-[10px] text-muted-foreground">{m.ui_copy_blood_type_for_medical_emergencies_0765ea0d()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
               <Input type="text" class="text-xs h-9 font-mono" placeholder="مثال: O+, A+, B-, AB+..." bind:value={bloodType} />
@@ -577,12 +577,12 @@ async function saveStudentDetails(e: Event) {
           <!-- Row 9: Medical & Special Needs Notes -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{l("الحالة الصحية والاحتياجات الخاصة", "Medical & Special Needs")}</span>
-              <span class="text-[10px] text-muted-foreground">{l("ملاحظات الأمراض المزمنة أو الحساسية أو رعاية خاصة", "Chronic conditions, allergies, or special care requirements")}</span>
+              <span class="text-xs font-bold text-foreground">{m.ui_copy_medical_special_needs_c30793bd()}</span>
+              <span class="text-[10px] text-muted-foreground">{m.ui_copy_chronic_conditions_allergies_or_special_ca_8c96894a()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0 flex flex-col gap-2">
-              <Input type="text" class="text-xs h-9" placeholder={l("الملاحظات الطبية والحساسية...", "Medical notes / allergies...")} bind:value={medicalNotes} />
-              <Input type="text" class="text-xs h-9" placeholder={l("ملاحظات الرعاية والاحتياجات الخاصة...", "Special needs / accommodations...")} bind:value={specialNeedsNotes} />
+              <Input type="text" class="text-xs h-9" placeholder={m.ui_copy_medical_notes_allergies_7ed23c0e()} bind:value={medicalNotes} />
+              <Input type="text" class="text-xs h-9" placeholder={m.ui_copy_special_needs_accommodations_95953f5b()} bind:value={specialNeedsNotes} />
             </div>
           </div>
 

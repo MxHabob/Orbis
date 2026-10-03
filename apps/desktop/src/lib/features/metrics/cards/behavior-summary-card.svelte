@@ -189,7 +189,7 @@ const displayItems = $derived(
         href={localizeHref(`/${orgId}/students`)}
         class="text-primary hover:underline flex items-center gap-1 group/link"
       >
-        <span>{m.reports_behavior_view_all ? m.reports_behavior_view_all() : "View all incidents"}</span>
+        <span>{m.reports_behavior_view_all()}</span>
         <ArrowRight size={10} class="transition-transform group-hover/link:translate-x-0.5 rtl:rotate-180" />
       </a>
     </div>

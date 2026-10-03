@@ -27,7 +27,7 @@ import {
   Plus,
 } from "@orbis/icons";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
-import { l, isAr, formatDate } from "$lib/core/i18n";
+import { isAr, formatDate } from "$lib/core/i18n";
 import OrgUnitSheet from "$lib/features/academics/components/org-unit-sheet.svelte";
 import RoomCreateSheet from "$lib/features/academics/components/room-create-sheet.svelte";
 
@@ -114,7 +114,7 @@ async function refresh() {
   isRefreshing = true;
   try {
     await loadBranchData();
-    toast.success(l("تم تحديث بيانات الفرع", "Branch details refreshed"));
+    toast.success(m.ui_copy_branch_details_refreshed_28c083b4());
   } catch (err) {
     toast.error(extractErrorMessage(err));
   } finally {
@@ -141,12 +141,12 @@ const branchSettings = $derived(() => {
 // Grid Definitions for Classes Tab
 const classColumns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center", pin: "left" },
-  { id: "name", prop: "name", header: l("اسم الفصل", "Class Name"), name: "Class Name", width: 200, size: 200, readonly: true, pin: "left", cellClass: "font-semibold text-foreground" },
-  { id: "level", prop: "level", header: l("المستوى / المرحلة", "Grade Level"), name: "Grade Level", width: 140, size: 140, readonly: true },
-  { id: "division", prop: "division", header: l("الشعبة", "Division"), name: "Division", width: 100, size: 100, readonly: true, align: "center" },
-  { id: "students", prop: "students", header: l("الطلاب المقيدون", "Enrolled"), name: "Enrolled", width: 120, size: 120, readonly: true, align: "center", type: "number" },
-  { id: "capacity", prop: "capacity", header: l("السعة", "Capacity"), name: "Capacity", width: 100, size: 100, readonly: true, align: "center", type: "number" },
-  { id: "status", prop: "status", header: l("الحالة", "Status"), name: "Status", width: 100, size: 100, readonly: true, align: "center", type: "badge" },
+  { id: "name", prop: "name", header: m.ui_copy_class_name_d6838016(), name: "Class Name", width: 200, size: 200, readonly: true, pin: "left", cellClass: "font-semibold text-foreground" },
+  { id: "level", prop: "level", header: m.ui_copy_grade_level_75f9548e(), name: "Grade Level", width: 140, size: 140, readonly: true },
+  { id: "division", prop: "division", header: m.ui_copy_division_57edc3a3(), name: "Division", width: 100, size: 100, readonly: true, align: "center" },
+  { id: "students", prop: "students", header: m.ui_copy_enrolled_0d835d63(), name: "Enrolled", width: 120, size: 120, readonly: true, align: "center", type: "number" },
+  { id: "capacity", prop: "capacity", header: m.settings_units_column_capacity(), name: "Capacity", width: 100, size: 100, readonly: true, align: "center", type: "number" },
+  { id: "status", prop: "status", header: m.common_status(), name: "Status", width: 100, size: 100, readonly: true, align: "center", type: "badge" },
 ];
 
 const classGridSource = $derived(
@@ -165,11 +165,11 @@ const classGridSource = $derived(
 // Grid Definitions for Rooms Tab
 const roomColumns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center", pin: "left" },
-  { id: "name", prop: "name", header: l("اسم القاعة / المعمل", "Room Name"), name: "Room Name", width: 220, size: 220, readonly: true, pin: "left", cellClass: "font-semibold text-foreground" },
-  { id: "room_type", prop: "room_type", header: l("النوع", "Room Type"), name: "Room Type", width: 140, size: 140, readonly: true },
-  { id: "capacity", prop: "capacity", header: l("السعة", "Capacity"), name: "Capacity", width: 110, size: 110, readonly: true, align: "center", type: "number" },
-  { id: "building", prop: "building", header: l("المبنى", "Building"), name: "Building", width: 140, size: 140, readonly: true },
-  { id: "floor", prop: "floor", header: l("الطابق", "Floor"), name: "Floor", width: 90, size: 90, readonly: true, align: "center" },
+  { id: "name", prop: "name", header: m.ui_copy_room_name_f2cc6a9e(), name: "Room Name", width: 220, size: 220, readonly: true, pin: "left", cellClass: "font-semibold text-foreground" },
+  { id: "room_type", prop: "room_type", header: m.ui_copy_room_type_1a8fbda3(), name: "Room Type", width: 140, size: 140, readonly: true },
+  { id: "capacity", prop: "capacity", header: m.settings_units_column_capacity(), name: "Capacity", width: 110, size: 110, readonly: true, align: "center", type: "number" },
+  { id: "building", prop: "building", header: m.common_rooms_label_building(), name: "Building", width: 140, size: 140, readonly: true },
+  { id: "floor", prop: "floor", header: m.common_rooms_label_floor(), name: "Floor", width: 90, size: 90, readonly: true, align: "center" },
 ];
 
 const roomGridSource = $derived(
@@ -187,11 +187,11 @@ const roomGridSource = $derived(
 // Grid Definitions for Staff Tab
 const staffColumns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center", pin: "left" },
-  { id: "fullName", prop: "fullName", header: l("الاسم", "Name"), name: "Name", width: 220, size: 220, readonly: true, pin: "left", cellClass: "font-semibold text-foreground" },
-  { id: "empNumber", prop: "empNumber", header: l("الرقم الوظيفي", "Employee #"), name: "Employee #", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs" },
-  { id: "jobTitle", prop: "jobTitle", header: l("المسمى الوظيفي", "Job Title"), name: "Job Title", width: 180, size: 180, readonly: true },
-  { id: "empType", prop: "empType", header: l("النوع", "Type"), name: "Type", width: 130, size: 130, readonly: true, align: "center" },
-  { id: "phone", prop: "phone", header: l("رقم الهاتف", "Phone"), name: "Phone", width: 140, size: 140, readonly: true, cellClass: "font-mono text-xs" },
+  { id: "fullName", prop: "fullName", header: m.common_col_name(), name: "Name", width: 220, size: 220, readonly: true, pin: "left", cellClass: "font-semibold text-foreground" },
+  { id: "empNumber", prop: "empNumber", header: m.ui_copy_employee_da995e19(), name: "Employee #", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs" },
+  { id: "jobTitle", prop: "jobTitle", header: m.employees_job_title(), name: "Job Title", width: 180, size: 180, readonly: true },
+  { id: "empType", prop: "empType", header: m.common_word_type(), name: "Type", width: 130, size: 130, readonly: true, align: "center" },
+  { id: "phone", prop: "phone", header: m.ui_copy_phone_f2f307cb(), name: "Phone", width: 140, size: 140, readonly: true, cellClass: "font-mono text-xs" },
 ];
 
 const staffGridSource = $derived(
@@ -218,7 +218,7 @@ const staffGridSource = $derived(
         class="h-9 px-3 gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
       >
         <ArrowRight size={14} class={isAr() ? "" : "rotate-180"} />
-        <span>{l("العودة لقائمة الفروع", "Back to Branches")}</span>
+        <span>{m.ui_copy_back_to_branches_e9cb6af9()}</span>
       </Button>
 
       <div class="h-4 w-px bg-border/60"></div>
@@ -232,11 +232,11 @@ const staffGridSource = $derived(
         {/if}
         {#if branch.is_active}
           <Badge variant="secondary" class="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            {l("نشط", "Active")}
+            {m.common_phase_active()}
           </Badge>
         {:else}
           <Badge variant="outline" class="text-[10px] text-muted-foreground">
-            {l("معطل", "Inactive")}
+            {m.common_status_disabled()}
           </Badge>
         {/if}
       </div>
@@ -251,7 +251,7 @@ const staffGridSource = $derived(
         class="h-8 px-3 text-xs gap-1.5 cursor-pointer"
       >
         <Refresh size={13} class={isRefreshing ? "animate-spin" : ""} />
-        <span>{l("تحديث", "Refresh")}</span>
+        <span>{m.common_refresh()}</span>
       </Button>
 
       <Button
@@ -261,7 +261,7 @@ const staffGridSource = $derived(
         class="h-8 px-3 text-xs font-semibold gap-1.5 cursor-pointer"
       >
         <Pencil size={13} />
-        <span>{l("تعديل الفرع", "Edit Branch")}</span>
+        <span>{m.ui_copy_edit_branch_a1c270d0()}</span>
       </Button>
     </div>
   </div>
@@ -271,39 +271,39 @@ const staffGridSource = $derived(
     <!-- Classes Count -->
     <Card class="border border-border/50 bg-card/60">
       <CardContent class="p-4">
-        <span class="text-xs text-muted-foreground">{l("الفصول الدراسية", "Classes")}</span>
+        <span class="text-xs text-muted-foreground">{m.ui_copy_classes_2d1babad()}</span>
         <div class="text-2xl font-bold tabular-nums mt-0.5 text-foreground">{classes.length}</div>
-        <span class="text-[11px] text-muted-foreground mt-0.5 block">{l("فصل دراسي مخصص للفرع", "Assigned classes")}</span>
+        <span class="text-[11px] text-muted-foreground mt-0.5 block">{m.ui_copy_assigned_classes_346a061f()}</span>
       </CardContent>
     </Card>
 
     <!-- Rooms Count -->
     <Card class="border border-border/50 bg-card/60">
       <CardContent class="p-4">
-        <span class="text-xs text-muted-foreground">{l("القاعات والمرافق", "Rooms & Halls")}</span>
+        <span class="text-xs text-muted-foreground">{m.ui_copy_rooms_halls_05e4b3ce()}</span>
         <div class="text-2xl font-bold tabular-nums mt-0.5 text-foreground">{rooms.length}</div>
-        <span class="text-[11px] text-muted-foreground mt-0.5 block">{l("قاعة ومختبر ومرفق تعليمي", "Educational venues")}</span>
+        <span class="text-[11px] text-muted-foreground mt-0.5 block">{m.ui_copy_educational_venues_f4dc5ba1()}</span>
       </CardContent>
     </Card>
 
     <!-- Sub-Units Count -->
     <Card class="border border-border/50 bg-card/60">
       <CardContent class="p-4">
-        <span class="text-xs text-muted-foreground">{l("الأقسام والمراحل الفرعية", "Sub-Units")}</span>
+        <span class="text-xs text-muted-foreground">{m.ui_copy_sub_units_eb5fa3d8()}</span>
         <div class="text-2xl font-bold tabular-nums mt-0.5 text-foreground">{childSubUnits.length}</div>
-        <span class="text-[11px] text-muted-foreground mt-0.5 block">{l("مرحلة وقسم تحت هذا الفرع", "Stages and divisions")}</span>
+        <span class="text-[11px] text-muted-foreground mt-0.5 block">{m.ui_copy_stages_and_divisions_50004a37()}</span>
       </CardContent>
     </Card>
 
     <!-- Students & Capacity -->
     <Card class="border border-border/50 bg-card/60">
       <CardContent class="p-4">
-        <span class="text-xs text-muted-foreground">{l("الطلاب المقيدون / السعة", "Enrollment / Capacity")}</span>
+        <span class="text-xs text-muted-foreground">{m.ui_copy_enrollment_capacity_1496075d()}</span>
         <div class="text-xl font-bold tabular-nums mt-0.5 text-foreground">
           {totalStudentsCount} <span class="text-xs font-normal text-muted-foreground">/ {branch.capacity ? branch.capacity.toLocaleString() : "∞"}</span>
         </div>
         <span class="text-[11px] text-muted-foreground mt-0.5 block">
-          {branch.capacity ? `${Math.min(100, Math.round((totalStudentsCount / branch.capacity) * 100))}% ${l("نسبة الإشغال", "Occupancy")}` : l("سعة غير مقيدة", "Uncapped capacity")}
+          {branch.capacity ? `${Math.min(100, Math.round((totalStudentsCount / branch.capacity) * 100))}% ${m.ui_copy_occupancy_4b03a14e()}` : m.ui_copy_uncapped_capacity_169a4e4e()}
         </span>
       </CardContent>
     </Card>
@@ -313,19 +313,19 @@ const staffGridSource = $derived(
   <Tabs value={activeTab} onValueChange={(val: any) => (activeTab = val)} class="w-full space-y-4">
     <TabsList class="bg-muted/30 p-1 border border-border/50 rounded-xl">
       <TabsTrigger value="overview" class="text-xs font-semibold px-4 py-2">
-        {l("نظرة عامة", "Overview")}
+        {m.ui_copy_overview_31deac42()}
       </TabsTrigger>
       <TabsTrigger value="classes" class="text-xs font-semibold px-4 py-2">
-        {l("الفصول الدراسية", "Classes")} ({classes.length})
+        {m.ui_copy_classes_2d1babad()} ({classes.length})
       </TabsTrigger>
       <TabsTrigger value="rooms" class="text-xs font-semibold px-4 py-2">
-        {l("القاعات والمرافق", "Rooms & Halls")} ({rooms.length})
+        {m.ui_copy_rooms_halls_05e4b3ce()} ({rooms.length})
       </TabsTrigger>
       <TabsTrigger value="subunits" class="text-xs font-semibold px-4 py-2">
-        {l("الهيكل والأقسام", "Sub-Units")} ({childSubUnits.length})
+        {m.ui_copy_sub_units_368aef5f()} ({childSubUnits.length})
       </TabsTrigger>
       <TabsTrigger value="staff" class="text-xs font-semibold px-4 py-2">
-        {l("الكادر الإداري والتعليمي", "Staff & Faculty")} ({employees.length})
+        {m.ui_copy_staff_faculty_23997a15()} ({employees.length})
       </TabsTrigger>
     </TabsList>
 
@@ -335,33 +335,33 @@ const staffGridSource = $derived(
         <!-- Branch General Specs -->
         <Card class="border border-border/50 bg-card/60">
           <CardHeader class="pb-3">
-            <CardTitle class="text-sm font-bold">{l("البيانات الإدارية والتنظيمية", "Organizational Specifications")}</CardTitle>
+            <CardTitle class="text-sm font-bold">{m.ui_copy_organizational_specifications_b47f1867()}</CardTitle>
           </CardHeader>
           <CardContent class="space-y-3 text-xs">
             <div class="flex justify-between py-1.5 border-b border-border/30">
-              <span class="text-muted-foreground">{l("الاسم بالعربية", "Arabic Name")}:</span>
+              <span class="text-muted-foreground">{m.common_org_unit_name_ar()}:</span>
               <span class="font-semibold">{branch.name_ar || "—"}</span>
             </div>
             <div class="flex justify-between py-1.5 border-b border-border/30">
-              <span class="text-muted-foreground">{l("الاسم بالإنجليزية", "English Name")}:</span>
+              <span class="text-muted-foreground">{m.common_org_unit_name_en()}:</span>
               <span class="font-semibold">{branch.name || "—"}</span>
             </div>
             <div class="flex justify-between py-1.5 border-b border-border/30">
-              <span class="text-muted-foreground">{l("كود الفرع", "Branch Code")}:</span>
+              <span class="text-muted-foreground">{m.ui_copy_branch_code_4ed70f95()}:</span>
               <span class="font-mono font-semibold">{branch.code || "—"}</span>
             </div>
             <div class="flex justify-between py-1.5 border-b border-border/30">
-              <span class="text-muted-foreground">{l("مدير الفرع / المشرف", "Branch Manager")}:</span>
-              <span class="font-semibold text-primary">{manager?.name_ar || manager?.full_name || manager?.username || l("غير محدد", "Unassigned")}</span>
+              <span class="text-muted-foreground">{m.ui_copy_branch_manager_5e90b291()}:</span>
+              <span class="font-semibold text-primary">{manager?.name_ar || manager?.full_name || manager?.username || m.common_unassigned()}</span>
             </div>
             <div class="flex justify-between py-1.5 border-b border-border/30">
-              <span class="text-muted-foreground">{l("نطاق عزل البيانات", "Data Isolation")}:</span>
+              <span class="text-muted-foreground">{m.ui_copy_data_isolation_4d35efbe()}:</span>
               <Badge variant="outline" class="text-[10px]">
-                {branch.data_isolation === "isolated" ? l("معزول", "Isolated") : branch.data_isolation === "read_only" ? l("قراءة فقط", "Read-Only") : l("مشترك", "Shared")}
+                {branch.data_isolation === "isolated" ? m.ui_copy_isolated_09d34bff() : branch.data_isolation === "read_only" ? m.ui_copy_read_only_05cda70d() : m.ui_copy_shared_cdf39825()}
               </Badge>
             </div>
             <div class="flex justify-between py-1.5">
-              <span class="text-muted-foreground">{l("تاريخ الإنشاء", "Created At")}:</span>
+              <span class="text-muted-foreground">{m.ui_copy_created_at_01f6ea5f()}:</span>
               <span class="font-mono text-muted-foreground">{branch.created_at ? formatDate(branch.created_at, "datetime") : "—"}</span>
             </div>
           </CardContent>
@@ -370,31 +370,31 @@ const staffGridSource = $derived(
         <!-- Location & Contact Specs -->
         <Card class="border border-border/50 bg-card/60">
           <CardHeader class="pb-3">
-            <CardTitle class="text-sm font-bold">{l("الموقع الميداني ومعلومات التواصل", "Location & Contact Details")}</CardTitle>
+            <CardTitle class="text-sm font-bold">{m.ui_copy_location_contact_details_8fa7945d()}</CardTitle>
           </CardHeader>
           <CardContent class="space-y-3 text-xs">
             <div class="flex justify-between py-1.5 border-b border-border/30">
-              <span class="text-muted-foreground">{l("المجمع / المبنى", "Building")}:</span>
+              <span class="text-muted-foreground">{m.ui_copy_building_d3ad3660()}:</span>
               <span class="font-semibold">{branch.building || "—"}</span>
             </div>
             <div class="flex justify-between py-1.5 border-b border-border/30">
-              <span class="text-muted-foreground">{l("الطابق", "Floor")}:</span>
+              <span class="text-muted-foreground">{m.common_rooms_label_floor()}:</span>
               <span class="font-semibold">{branch.floor ?? "—"}</span>
             </div>
             <div class="flex justify-between py-1.5 border-b border-border/30">
-              <span class="text-muted-foreground">{l("المكتب / الجناح", "Office")}:</span>
+              <span class="text-muted-foreground">{m.ui_copy_office_915f1781()}:</span>
               <span class="font-semibold">{branch.room_number || "—"}</span>
             </div>
             <div class="flex justify-between py-1.5 border-b border-border/30">
-              <span class="text-muted-foreground">{l("المدينة / العنوان", "City / Address")}:</span>
+              <span class="text-muted-foreground">{m.ui_copy_city_address_b50863f7()}:</span>
               <span class="font-semibold">{branchSettings().city || branchSettings().address || "—"}</span>
             </div>
             <div class="flex justify-between py-1.5 border-b border-border/30">
-              <span class="text-muted-foreground">{l("هاتف التواصل", "Phone")}:</span>
+              <span class="text-muted-foreground">{m.ui_copy_phone_ac913176()}:</span>
               <span class="font-mono font-semibold">{branchSettings().phone || "—"}</span>
             </div>
             <div class="flex justify-between py-1.5">
-              <span class="text-muted-foreground">{l("البريد الإلكتروني", "Email")}:</span>
+              <span class="text-muted-foreground">{m.common_word_email()}:</span>
               <span class="font-mono">{branchSettings().email || "—"}</span>
             </div>
           </CardContent>
@@ -416,7 +416,7 @@ const staffGridSource = $derived(
     <!-- Tab 3: Rooms Grid -->
     <TabsContent value="rooms" class="space-y-4">
       <div class="flex items-center justify-between">
-        <span class="text-xs text-muted-foreground">{l("قاعات ومختبرات الفرع المسجلة", "Registered venues in this campus")}</span>
+        <span class="text-xs text-muted-foreground">{m.ui_copy_registered_venues_in_this_campus_cb721c61()}</span>
         <Button
           size="sm"
           variant="outline"
@@ -424,7 +424,7 @@ const staffGridSource = $derived(
           class="h-8 text-xs gap-1 font-semibold cursor-pointer"
         >
           <Plus size={13} />
-          <span>{l("إضافة قاعة جديدة", "Add Room")}</span>
+          <span>{m.ui_copy_add_room_95e7067e()}</span>
         </Button>
       </div>
 
@@ -440,7 +440,7 @@ const staffGridSource = $derived(
     <!-- Tab 4: Sub-units Grid -->
     <TabsContent value="subunits" class="space-y-4">
       <div class="flex items-center justify-between">
-        <span class="text-xs text-muted-foreground">{l("المراحل والأقسام والكليات التابعة لهذا الفرع", "Stages, departments, and programs under this branch")}</span>
+        <span class="text-xs text-muted-foreground">{m.ui_copy_stages_departments_and_programs_under_this_650b156b()}</span>
         <Button
           size="sm"
           variant="outline"
@@ -451,14 +451,14 @@ const staffGridSource = $derived(
           class="h-8 text-xs gap-1 font-semibold cursor-pointer"
         >
           <Plus size={13} />
-          <span>{l("إضافة قسم / مرحلة", "Add Sub-Unit")}</span>
+          <span>{m.ui_copy_add_sub_unit_9976bb53()}</span>
         </Button>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         {#if childSubUnits.length === 0}
           <div class="col-span-2 py-12 text-center text-xs text-muted-foreground border border-dashed border-border/60 rounded-xl">
-            {l("لا توجد أقسام أو مراحل فرعية تابعة لهذا الفرع", "No sub-units found")}
+            {m.ui_copy_no_sub_units_found_1d26b1fd()}
           </div>
         {:else}
           {#each childSubUnits as sub (sub.id)}
@@ -473,7 +473,7 @@ const staffGridSource = $derived(
                 <div class="flex items-center gap-2 text-[11px] text-muted-foreground mt-1">
                   <span class="capitalize">{sub.unit_type}</span>
                   {#if sub.capacity}
-                    <span>• {sub.capacity} {l("طالب", "capacity")}</span>
+                    <span>• {sub.capacity} {m.ui_copy_capacity_980fee3d()}</span>
                   {/if}
                   {#if sub.building}
                     <span>• {sub.building}</span>
@@ -491,7 +491,7 @@ const staffGridSource = $derived(
                 class="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground"
               >
                 <Pencil size={12} class="mr-1 inline" />
-                <span>{l("تعديل", "Edit")}</span>
+                <span>{m.academics_schedule_edit()}</span>
               </Button>
             </div>
           {/each}

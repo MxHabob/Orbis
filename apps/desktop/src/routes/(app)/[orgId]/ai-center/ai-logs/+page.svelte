@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-  <title>{m.ai_center_logs_title ? m.ai_center_logs_title() : "سجلات الذكاء الاصطناعي"} | Orbis</title>
+  <title>{m.ai_center_logs_title()} | Orbis</title>
 </svelte:head>
 
 <AiLogs {orgId} />

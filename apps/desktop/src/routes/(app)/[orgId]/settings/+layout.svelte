@@ -32,7 +32,6 @@ import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import type { Snippet } from "svelte";
 
-import { getLocale } from "$lib/paraglide/runtime";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } =
   $props();
@@ -41,7 +40,7 @@ const basePath = $derived(`/${data.orgId}/settings`);
 
 const navGroups = $derived([
   {
-    title: getLocale() === "ar" ? "عام" : "General",
+    title: m.settings_sidebar_general(),
     items: [
       {
         path: "",
@@ -56,7 +55,7 @@ const navGroups = $derived([
     ],
   },
   {
-    title: getLocale() === "ar" ? "المؤسسة" : "Organization",
+    title: m.settings_sidebar_organization(),
     items: [
       {
         path: "users",
@@ -65,7 +64,7 @@ const navGroups = $derived([
       },
       {
         path: "groups",
-        label: m.groups_nav_title ? m.groups_nav_title() : "User Groups",
+        label: m.groups_nav_title(),
         icon: UserGroup,
       },
       {
@@ -81,13 +80,11 @@ const navGroups = $derived([
     ],
   },
   {
-    title: getLocale() === "ar" ? "الشؤون الأكاديمية" : "Academic Rules",
+    title: m.settings_sidebar_academic_rules(),
     items: [
       {
         path: "periods",
-        label: m.settings_nav_cycles
-          ? m.settings_nav_cycles()
-          : "Academic Periods",
+        label: m.settings_nav_cycles(),
         icon: Calendar,
       },
       {
@@ -107,7 +104,7 @@ const navGroups = $derived([
       },
       {
         path: "assessment-schemes",
-        label: getLocale() === "ar" ? "هياكل التقييم" : "Assessment Schemes",
+        label: m.settings_sidebar_assessment_schemes(),
         icon: Keyframes,
       },
       {
@@ -123,7 +120,7 @@ const navGroups = $derived([
     ],
   },
   {
-    title: getLocale() === "ar" ? "المالية" : "Finance",
+    title: m.settings_sidebar_finance(),
     items: [
       {
         path: "currencies",
@@ -143,11 +140,11 @@ const navGroups = $derived([
     ],
   },
   {
-    title: getLocale() === "ar" ? "العمليات" : "Operations",
+    title: m.settings_sidebar_operations(),
     items: [
       {
         path: "branches",
-        label: getLocale() === "ar" ? "الفروع" : "Branches",
+        label: m.settings_sidebar_branches(),
         icon: BuildingOffice,
       },
       {
@@ -162,7 +159,7 @@ const navGroups = $derived([
       },
       {
         path: "archive/trash",
-        label: getLocale() === "ar" ? "سلة المحذوفات" : "Trash",
+        label: m.settings_sidebar_trash(),
         icon: Trash,
       },
       {

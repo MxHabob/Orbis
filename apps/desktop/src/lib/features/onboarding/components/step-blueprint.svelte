@@ -4,6 +4,7 @@
   Spacious, elegant 4-model selection with design tokens and feature highlights.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { BLUEPRINTS, type InstitutionType, type InstitutionBlueprint } from "@orbis/blueprints";
 import { Badge } from "@orbis/ui/badge";
 import { Check } from "@orbis/icons";
@@ -55,11 +56,11 @@ const blueprintsList: BlueprintOption[] = [
   <div class="space-y-2 text-start">
     <div class="flex items-center gap-2">
       <span class="text-xs font-semibold text-primary uppercase font-mono tracking-wider">
-        {isRTL ? "المرحلة ٢ من ٦" : "Step 2 of 6"}
+        {m.ui_onboarding_blueprint_step_2_of_6()}
       </span>
     </div>
     <h2 class="text-2xl font-bold tracking-tight text-foreground">
-      {isRTL ? "اختر النموذج الأكاديمي لمؤسستك" : "Select Institutional Blueprint"}
+      {m.ui_onboarding_blueprint_select_institutional_blueprint()}
     </h2>
     <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
       {isRTL

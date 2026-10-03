@@ -29,12 +29,12 @@ interface Props {
 let {
   value = $bindable<string | null>(null),
   orgId,
-  placeholder = m.common_form_select_class?.() || "اختر الفصل...",
+  placeholder = m.common_form_select_class(),
   searchPlaceholder = "ابحث عن فصل أو مرحلة...",
   disabled = false,
   id = undefined,
   showAllOption = false,
-  allOptionLabel = m.common_filter_all_classes?.() || "جميع الفصول",
+  allOptionLabel = m.common_filter_all_classes(),
   createLabel = "إضافة فصل جديد...",
   onCreate = undefined,
   class: className = "",
@@ -76,7 +76,7 @@ function getClassSubtitle(cls: any): string | undefined {
   items={classes}
   {placeholder}
   {searchPlaceholder}
-  emptyText={m.common_classes_empty_title?.() || "لا توجد فصول مطابقة"}
+  emptyText={m.common_classes_empty_title()}
   {disabled}
   {id}
   {showAllOption}

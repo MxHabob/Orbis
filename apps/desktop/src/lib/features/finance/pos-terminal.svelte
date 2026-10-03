@@ -149,15 +149,15 @@ async function handlePaymentSubmit(e: SubmitEvent) {
   e.preventDefault();
 
   if (!selectedStudent) {
-    toast.error(m.common_fee_toast_error_student ? m.common_fee_toast_error_student() : "يرجى اختيار طالب أولاً");
+    toast.error(m.common_fee_toast_error_student());
     return;
   }
   if (!activeAccountId) {
-    toast.error(m.common_payment_toast_error_cash_account ? m.common_payment_toast_error_cash_account() : "يرجى اختيار الخزينة أو الحساب المالي");
+    toast.error(m.common_payment_toast_error_cash_account());
     return;
   }
   if (!formAmount || formAmount <= 0) {
-    toast.error(m.common_fee_toast_error_amount ? m.common_fee_toast_error_amount() : "المبلغ يجب أن يكون أكبر من صفر");
+    toast.error(m.common_fee_toast_error_amount());
     return;
   }
 
@@ -173,7 +173,7 @@ async function handlePaymentSubmit(e: SubmitEvent) {
       payer_name: `${selectedStudent.first_name || ""} ${selectedStudent.last_name || ""}`.trim() || undefined,
     });
 
-    toast.success(m.common_payment_toast_success ? m.common_payment_toast_success() : "تم تسجيل الدفعة وترحيل القيد بنجاح");
+    toast.success(m.common_payment_toast_success());
     lastReceiptPayment = payment;
 
     // Reset payment fields
@@ -267,7 +267,7 @@ const rtl = $derived(getLocale() === "ar");
       </div>
       <div>
         <h1 class="text-xs font-bold text-foreground leading-none">
-          {m.finance_pos_quick_pos_payment_register ? m.finance_pos_quick_pos_payment_register() : "نقطة التحصيل السريع (POS)"}
+          {m.finance_pos_quick_pos_payment_register()}
         </h1>
         <p class="text-[10px] text-muted-foreground mt-0.5">
           سندات قبض مباشرة مع ترحيل محاسبي فوري للقيود اليومية

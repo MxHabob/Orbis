@@ -78,7 +78,7 @@ async function refreshData() {
   isRefreshing = true;
   try {
     await loadData();
-    toast.success(l("تم تحديث البيانات", "Data refreshed"));
+    toast.success(m.ui_copy_data_refreshed_362b604a());
   } catch (err) {
     toast.error(extractErrorMessage(err));
   } finally {
@@ -135,9 +135,9 @@ const staffMap = $derived(new Map(staffList.map((s) => [s.id, s])));
 
 // Actions for Grid View
 const gridActions: ActionItem[] = [
-  { id: "details", label: l("عرض التفاصيل", "Details"), variant: "default" },
-  { id: "edit", label: l("تعديل", "Edit"), variant: "default" },
-  { id: "delete", label: l("حذف", "Delete"), variant: "destructive" },
+  { id: "details", label: m.ui_copy_details_c4833503(), variant: "default" },
+  { id: "edit", label: m.academics_schedule_edit(), variant: "default" },
+  { id: "delete", label: m.common_action_delete(), variant: "destructive" },
 ];
 
 const gridSource = $derived(
@@ -148,11 +148,11 @@ const gridSource = $derived(
       __idx: i + 1,
       displayName: b.name_ar || b.name,
       displayCode: b.code || "—",
-      managerName: mgr ? (mgr.name_ar || mgr.full_name || mgr.username) : l("غير محدد", "Unassigned"),
-      displayCapacity: b.capacity ? b.capacity.toLocaleString() : l("غير محددة", "Uncapped"),
+      managerName: mgr ? (mgr.name_ar || mgr.full_name || mgr.username) : m.common_unassigned(),
+      displayCapacity: b.capacity ? b.capacity.toLocaleString() : m.ui_copy_uncapped_eb8a96f3(),
       subUnitsCount: b.children_count || 0,
-      isolationLabel: b.data_isolation === "isolated" ? l("معزول", "Isolated") : b.data_isolation === "read_only" ? l("قراءة فقط", "Read-Only") : l("مشترك", "Shared"),
-      statusLabel: b.is_active ? l("نشط", "Active") : l("معطل", "Inactive"),
+      isolationLabel: b.data_isolation === "isolated" ? m.ui_copy_isolated_09d34bff() : b.data_isolation === "read_only" ? m.ui_copy_read_only_05cda70d() : m.ui_copy_shared_cdf39825(),
+      statusLabel: b.is_active ? m.common_phase_active() : m.common_status_disabled(),
       created_at_display: b.created_at ? formatDate(b.created_at, "datetime") : "—",
     };
   })
@@ -160,15 +160,15 @@ const gridSource = $derived(
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 50, size: 50, readonly: true, pin: "left", align: "center" },
-  { id: "displayName", prop: "displayName", header: l("اسم الفرع", "Branch Name"), name: "Branch Name", width: 220, size: 220, readonly: true, pin: "left", cellClass: "font-semibold text-foreground cursor-pointer hover:underline" },
-  { id: "displayCode", prop: "displayCode", header: l("الكود", "Code"), name: "Code", width: 110, size: 110, readonly: true, cellClass: "font-mono text-xs uppercase" },
-  { id: "managerName", prop: "managerName", header: l("مدير الفرع", "Manager"), name: "Manager", width: 180, size: 180, readonly: true },
-  { id: "displayCapacity", prop: "displayCapacity", header: l("السعة الطلابية", "Capacity"), name: "Capacity", width: 120, size: 120, readonly: true, align: "center", type: "number" },
-  { id: "subUnitsCount", prop: "subUnitsCount", header: l("الأقسام التابعة", "Sub-units"), name: "Sub-units", width: 110, size: 110, readonly: true, align: "center", type: "number" },
-  { id: "isolationLabel", prop: "isolationLabel", header: l("العزل الأمني", "Isolation"), name: "Isolation", width: 120, size: 120, readonly: true, align: "center" },
-  { id: "statusLabel", prop: "statusLabel", header: l("الحالة", "Status"), name: "Status", width: 100, size: 100, readonly: true, align: "center", type: "badge" },
-  { id: "created_at_display", prop: "created_at_display", header: l("تاريخ الإنشاء", "Created At"), name: "Created At", width: 140, size: 140, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "actions", prop: "actions", header: l("إجراءات", "Actions"), name: "Actions", width: 140, size: 140, type: "action", align: "center", readonly: true, meta: { items: gridActions } },
+  { id: "displayName", prop: "displayName", header: m.ui_copy_branch_name_954ef523(), name: "Branch Name", width: 220, size: 220, readonly: true, pin: "left", cellClass: "font-semibold text-foreground cursor-pointer hover:underline" },
+  { id: "displayCode", prop: "displayCode", header: m.ui_copy_code_3119a46b(), name: "Code", width: 110, size: 110, readonly: true, cellClass: "font-mono text-xs uppercase" },
+  { id: "managerName", prop: "managerName", header: m.ui_copy_manager_a230935a(), name: "Manager", width: 180, size: 180, readonly: true },
+  { id: "displayCapacity", prop: "displayCapacity", header: m.ui_copy_capacity_6432d6d2(), name: "Capacity", width: 120, size: 120, readonly: true, align: "center", type: "number" },
+  { id: "subUnitsCount", prop: "subUnitsCount", header: m.ui_copy_sub_units_93f58eca(), name: "Sub-units", width: 110, size: 110, readonly: true, align: "center", type: "number" },
+  { id: "isolationLabel", prop: "isolationLabel", header: m.ui_copy_isolation_5fef6f7f(), name: "Isolation", width: 120, size: 120, readonly: true, align: "center" },
+  { id: "statusLabel", prop: "statusLabel", header: m.common_status(), name: "Status", width: 100, size: 100, readonly: true, align: "center", type: "badge" },
+  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: "Created At", width: 140, size: 140, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "actions", prop: "actions", header: m.ui_copy_actions_c48127a5(), name: "Actions", width: 140, size: 140, type: "action", align: "center", readonly: true, meta: { items: gridActions } },
 ];
 
 function handleGridAction(event: CustomEvent<GridActionEvent>) {
@@ -208,17 +208,17 @@ function promptDeleteBranch(branch: OrgUnitDto) {
   }
 
   confirmStore.open({
-    title: l("حذف الفرع التشغيلي", "Delete Branch"),
+    title: m.ui_copy_delete_branch_f22fe5e8(),
     message: l(
       `هل أنت متأكد من رغبتك في حذف فرع "${branch.name_ar || branch.name}" بشكل نهائي؟`,
       `Are you sure you want to permanently delete branch "${branch.name_ar || branch.name}"?`
     ),
-    confirmLabel: l("تأكيد الحذف", "Confirm Delete"),
+    confirmLabel: m.settings_currencies_btn_delete_confirm(),
     variant: "destructive",
     onConfirm: async () => {
       try {
         await api.deleteOrgUnit(branch.id);
-        toast.success(l("تم حذف الفرع بنجاح", "Branch deleted successfully"));
+        toast.success(m.ui_copy_branch_deleted_successfully_09d39e40());
         if (selectedBranch?.id === branch.id) selectedBranch = null;
         loadData();
       } catch (err) {
@@ -237,7 +237,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
       default_branch_id: branch.id,
     };
     await api.updateSettings({ branch_policy: updatedPolicy });
-    toast.success(l(`تم تعيين "${branch.name_ar || branch.name}" كفرع افتراضي للمؤسسة`, `Set "${branch.name_ar || branch.name}" as default branch`));
+    toast.success(m.ui_branch_set_default_success({ branchName: branch.name_ar || branch.name }));
     loadData();
   } catch (err) {
     toast.error(extractErrorMessage(err));
@@ -246,7 +246,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
 </script>
 
 <svelte:head>
-  <title>{l("إدارة الفروع والمراكز التشغيلية", "Branch Management")} | Orbis</title>
+  <title>{m.ui_copy_branch_management_db17ea37()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full flex flex-col gap-4 overflow-y-auto p-4 scrollbar-hide text-start font-sans">
@@ -266,11 +266,11 @@ async function setDefaultBranch(branch: OrgUnitDto) {
           <TabsList class="bg-muted/40 p-1 border border-border/50 rounded-xl">
             <TabsTrigger value="branches" class="gap-2 text-xs font-semibold px-4 py-2">
               <BuildingOffice size={15} />
-              <span>{l("قائمة الفروع", "Branches")} ({branches.length})</span>
+              <span>{m.ui_copy_branches_8e6f7b91()} ({branches.length})</span>
             </TabsTrigger>
             <TabsTrigger value="governance" class="gap-2 text-xs font-semibold px-4 py-2">
               <ShieldCheck size={15} />
-              <span>{l("سياسات وحوكمة الفروع", "Branch Policies")}</span>
+              <span>{m.ui_copy_branch_policies_6c418f2c()}</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -285,7 +285,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
           class="h-9 px-3 text-xs gap-1.5 cursor-pointer"
         >
           <Refresh size={13} class={isRefreshing ? "animate-spin" : ""} />
-          <span>{l("تحديث", "Refresh")}</span>
+          <span>{m.common_refresh()}</span>
         </Button>
 
         <Button
@@ -295,7 +295,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
           class="h-9 px-4 text-xs font-semibold gap-1.5 shadow-sm cursor-pointer"
         >
           <Plus size={15} />
-          <span>{l("إضافة فرع جديد", "Add Branch")}</span>
+          <span>{m.ui_copy_add_branch_bbb91ff4()}</span>
         </Button>
       </div>
     </div>
@@ -310,7 +310,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
             <Input
               type="text"
               bind:value={searchQuery}
-              placeholder={l("البحث في الفروع...", "Search branches...")}
+              placeholder={m.ui_copy_search_branches_24f7a872()}
               class="h-9 text-xs pr-9 pl-3 bg-card border-border/60"
             />
           </div>
@@ -318,25 +318,25 @@ async function setDefaultBranch(branch: OrgUnitDto) {
           <!-- Status Filter -->
           <Select type="single" value={statusFilter} onValueChange={(val: any) => (statusFilter = val || "all")}>
             <SelectTrigger class="h-9 text-xs w-36 bg-card border-border/60">
-              {statusFilter === "active" ? l("نشط فقط", "Active Only") : statusFilter === "inactive" ? l("معطل فقط", "Inactive Only") : l("جميع الحالات", "All Statuses")}
+              {statusFilter === "active" ? m.ui_copy_active_only_327db595() : statusFilter === "inactive" ? m.ui_copy_inactive_only_acc30677() : m.ui_copy_all_statuses_384fd23c()}
             </SelectTrigger>
             <SelectContent class="text-xs">
-              <SelectItem value="all">{l("جميع الحالات", "All Statuses")}</SelectItem>
-              <SelectItem value="active">{l("نشط فقط", "Active Only")}</SelectItem>
-              <SelectItem value="inactive">{l("معطل فقط", "Inactive Only")}</SelectItem>
+              <SelectItem value="all">{m.ui_copy_all_statuses_384fd23c()}</SelectItem>
+              <SelectItem value="active">{m.ui_copy_active_only_327db595()}</SelectItem>
+              <SelectItem value="inactive">{m.ui_copy_inactive_only_acc30677()}</SelectItem>
             </SelectContent>
           </Select>
 
           <!-- Isolation Filter -->
           <Select type="single" value={isolationFilter} onValueChange={(val: any) => (isolationFilter = val || "all")}>
             <SelectTrigger class="h-9 text-xs w-36 bg-card border-border/60">
-              {isolationFilter === "isolated" ? l("معزول", "Isolated") : isolationFilter === "read_only" ? l("قراءة فقط", "Read-Only") : isolationFilter === "shared" ? l("مشترك", "Shared") : l("كل نطاقات العزل", "All Isolations")}
+              {isolationFilter === "isolated" ? m.ui_copy_isolated_09d34bff() : isolationFilter === "read_only" ? m.ui_copy_read_only_05cda70d() : isolationFilter === "shared" ? m.ui_copy_shared_cdf39825() : m.ui_copy_all_isolations_7849dd7e()}
             </SelectTrigger>
             <SelectContent class="text-xs">
-              <SelectItem value="all">{l("كل نطاقات العزل", "All Isolations")}</SelectItem>
-              <SelectItem value="shared">{l("مشترك", "Shared")}</SelectItem>
-              <SelectItem value="isolated">{l("معزول", "Isolated")}</SelectItem>
-              <SelectItem value="read_only">{l("قراءة فقط", "Read-Only")}</SelectItem>
+              <SelectItem value="all">{m.ui_copy_all_isolations_7849dd7e()}</SelectItem>
+              <SelectItem value="shared">{m.ui_copy_shared_cdf39825()}</SelectItem>
+              <SelectItem value="isolated">{m.ui_copy_isolated_09d34bff()}</SelectItem>
+              <SelectItem value="read_only">{m.ui_copy_read_only_05cda70d()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -347,14 +347,14 @@ async function setDefaultBranch(branch: OrgUnitDto) {
             type="button"
             onclick={() => (viewMode = "grid")}
             class="p-1.5 rounded-md transition-colors {viewMode === 'grid' ? 'bg-background shadow-xs text-primary' : 'text-muted-foreground hover:text-foreground'}"
-            title={l("جدول البيانات", "Grid View")}
+            title={m.ui_copy_grid_view_eb56e45c()}
           >
           </button>
           <button
             type="button"
             onclick={() => (viewMode = "cards")}
             class="p-1.5 rounded-md transition-colors {viewMode === 'cards' ? 'bg-background shadow-xs text-primary' : 'text-muted-foreground hover:text-foreground'}"
-            title={l("عرض البطاقات", "Cards View")}
+            title={m.ui_copy_cards_view_9f9064c5()}
           >
           </button>
         </div>
@@ -363,7 +363,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
       <!-- Main Content -->
       {#if isLoading}
         <div class="h-[520px] w-full rounded-xl border border-border/50 bg-muted/10 flex items-center justify-center">
-          <span class="text-xs text-muted-foreground">{l("جاري تحميل بيانات الفروع...", "Loading branches...")}</span>
+          <span class="text-xs text-muted-foreground">{m.ui_copy_loading_branches_bf291b7e()}</span>
         </div>
       {:else if viewMode === "grid"}
         <div class="h-[560px] w-full rounded-xl border border-border/50 overflow-hidden bg-card/50">

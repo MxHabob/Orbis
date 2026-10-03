@@ -132,7 +132,7 @@ function formatSize(bytes?: number | null) {
             href={sourceUrl}
             download={document.name}
             class="inline-flex items-center justify-center h-7 w-7 rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 text-xs shadow-sm transition-colors"
-            title={m.settings_archive_action_download ? m.settings_archive_action_download() : "تحميل"}
+            title={m.settings_archive_action_download()}
             onclick={stopPropagation}
           >
             <Download class="h-3.5 w-3.5" />
@@ -156,7 +156,7 @@ function formatSize(bytes?: number | null) {
           variant="destructive"
           size="icon-xs"
           onclick={(event) => { stopPropagation(event); ondelete?.(document.id); }}
-          title={m.common_action_delete ? m.common_action_delete() : "حذف"}
+          title={m.common_action_delete()}
         >
           <Trash class="h-3.5 w-3.5" />
         </Button>

@@ -151,7 +151,7 @@ function handleAlign(
       </Tooltip>
     {/if}
     {#if onrename}
-      <div class="ctx-title-wrapper" title={m.common_action_edit?.() || "Edit"}>
+      <div class="ctx-title-wrapper" title={m.common_action_edit()}>
         <span class="ctx-title-hidden" aria-hidden="true">{editingName || "..."}</span>
         <input
           type="text"
@@ -267,7 +267,7 @@ function handleAlign(
               <AlignHorizontal size={13} />
             </button>
           </TooltipTrigger>
-          <TooltipContent>{m.template_auto_alignment ? m.template_auto_alignment() : "Alignment"}</TooltipContent>
+          <TooltipContent>{m.template_auto_alignment()}</TooltipContent>
         </Tooltip>
       </div>
 
@@ -381,7 +381,7 @@ function handleAlign(
               <Component size={13} />
             </button>
           </TooltipTrigger>
-          <TooltipContent>{m.template_auto_group ? m.template_auto_group() : "Group"}</TooltipContent>
+          <TooltipContent>{m.template_auto_group()}</TooltipContent>
         </Tooltip>
       </div>
       <div class="ctx-group">
@@ -389,7 +389,7 @@ function handleAlign(
           <PopoverTrigger>
             {#snippet child({ props })}
               <Button {...props} variant="ghost" size="xs" class="cursor-pointer text-[11px] h-6 px-2">
-                {m.template_auto_position ? m.template_auto_position() : "Position"}
+                {m.template_auto_position()}
               </Button>
             {/snippet}
           </PopoverTrigger>

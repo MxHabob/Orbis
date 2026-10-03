@@ -29,7 +29,7 @@ interface Props {
 let {
   value = $bindable<string | null>(null),
   orgId,
-  placeholder = m.common_cs_form_select_subject?.() || "اختر المادة...",
+  placeholder = m.common_cs_form_select_subject(),
   searchPlaceholder = "ابحث عن اسم أو رمز المادة...",
   disabled = false,
   id = undefined,

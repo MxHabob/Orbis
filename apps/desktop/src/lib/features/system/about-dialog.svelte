@@ -4,6 +4,7 @@
   Mulverse ecosystem architecture, hardware & OS runtime telemetry, and diagnostic copy capability.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api/client";
 import type { MulverseEcosystemInfo } from "$lib/api/types";
@@ -114,8 +115,8 @@ $effect(() => {
 
       <DialogDescription class="text-xs text-muted-foreground leading-relaxed pt-1">
         {isRTL
-          ? (info?.description_ar || "نظام التشغيل وإدارة المؤسسات التعليمية والأكاديمية المتقدم، المطور كعقدة تشغيلية مستقلة ضمن منظومة Mulverse.")
-          : (info?.description_en || "Enterprise institutional operating system engineered by Mulverse as an autonomous, zero-latency local-first desktop node.")}
+          ? (info?.description_ar || m.ui_system_about_default_description())
+          : (info?.description_en || m.ui_system_about_default_description())}
       </DialogDescription>
     </DialogHeader>
 
@@ -125,7 +126,7 @@ $effect(() => {
       <div class="space-y-2">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold uppercase tracking-wider text-foreground font-mono flex items-center gap-1.5">
-            <span>{isRTL ? "معلومات البناء والبيئة التشغيلية" : "Build & Runtime Telemetry"}</span>
+            <span>{m.ui_system_about_build_runtime_telemetry()}</span>
           </span>
           <span class="text-[10px] text-muted-foreground font-mono">
             Node: {info?.node_id || "node-local"}
@@ -134,29 +135,29 @@ $effect(() => {
 
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
           <div class="p-3 rounded-lg border border-border/50 bg-muted/20 space-y-0.5">
-            <span class="text-[10px] text-muted-foreground block uppercase font-mono">{isRTL ? "الإصدار" : "Version"}</span>
+            <span class="text-[10px] text-muted-foreground block uppercase font-mono">{m.ui_system_about_version()}</span>
             <span class="text-xs font-semibold text-foreground font-mono">v{info?.version || "0.3.0"}</span>
           </div>
 
           <div class="p-3 rounded-lg border border-border/50 bg-muted/20 space-y-0.5">
-            <span class="text-[10px] text-muted-foreground block uppercase font-mono">{isRTL ? "نمط البناء" : "Build Profile"}</span>
+            <span class="text-[10px] text-muted-foreground block uppercase font-mono">{m.ui_system_about_build_profile()}</span>
             <span class="text-xs font-semibold text-foreground">{info?.build_profile || "Development"}</span>
           </div>
 
           <div class="p-3 rounded-lg border border-border/50 bg-muted/20 space-y-0.5">
-            <span class="text-[10px] text-muted-foreground block uppercase font-mono">{isRTL ? "نظام التشغيل" : "Target OS / Arch"}</span>
+            <span class="text-[10px] text-muted-foreground block uppercase font-mono">{m.ui_system_about_target_os_arch()}</span>
             <span class="text-xs font-semibold text-foreground font-mono uppercase">{info?.target_os} / {info?.target_arch}</span>
           </div>
 
           <div class="p-3 rounded-lg border border-border/50 bg-muted/20 space-y-0.5 sm:col-span-2">
-            <span class="text-[10px] text-muted-foreground block uppercase font-mono">{isRTL ? "محرك البيانات" : "Database Core"}</span>
+            <span class="text-[10px] text-muted-foreground block uppercase font-mono">{m.ui_system_about_database_core()}</span>
             <span class="text-xs font-semibold text-foreground flex items-center gap-1.5">
               <span>{info?.database_engine || "Embedded SQLite 3"}</span>
             </span>
           </div>
 
           <div class="p-3 rounded-lg border border-border/50 bg-muted/20 space-y-0.5">
-            <span class="text-[10px] text-muted-foreground block uppercase font-mono">{isRTL ? "نوع العقدة" : "Node Role"}</span>
+            <span class="text-[10px] text-muted-foreground block uppercase font-mono">{m.ui_system_about_node_role()}</span>
             <span class="text-xs font-semibold text-foreground font-mono">{info?.node_type || "Autonomous Node"}</span>
           </div>
         </div>
@@ -165,7 +166,7 @@ $effect(() => {
       <!-- Mulverse Architectural Pillars -->
       <div class="space-y-2.5 pt-2">
         <span class="text-xs font-semibold uppercase tracking-wider text-foreground font-mono flex items-center gap-1.5">
-          <span>{isRTL ? "ركائز منظومة Mulverse" : "Mulverse Architectural Pillars"}</span>
+          <span>{m.ui_system_about_mulverse_architectural_pillars()}</span>
         </span>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -189,7 +190,7 @@ $effect(() => {
         <div class="space-y-0.5">
           <span class="font-medium text-foreground">© 2026 Mulverse Systems. All Rights Reserved.</span>
           <p class="text-[11px] text-muted-foreground">
-            {isRTL ? "مرخص للاستخدام المؤسسي المستقل." : "Licensed for sovereign autonomous institution deployment."}
+            {m.ui_system_about_licensed_for_sovereign_autonomous_institution_deployment()}
           </p>
         </div>
 
@@ -214,10 +215,10 @@ $effect(() => {
       >
         {#if isCopied}
           <span class="text-emerald-600 dark:text-emerald-400 font-medium">
-            {isRTL ? "تم نسخ البيانات!" : "Copied Diagnostics!"}
+            {m.ui_system_about_copied_diagnostics()}
           </span>
         {:else}
-          <span>{isRTL ? "نسخ تقرير النظام" : "Copy Diagnostics"}</span>
+          <span>{m.ui_system_about_copy_diagnostics()}</span>
         {/if}
       </Button>
 
@@ -227,7 +228,7 @@ $effect(() => {
         onclick={() => (open = false)}
         class="h-8 px-5 text-xs font-medium"
       >
-        <span>{isRTL ? "حسناً" : "Close"}</span>
+        <span>{m.ui_system_about_close()}</span>
       </Button>
     </div>
   </DialogContent>

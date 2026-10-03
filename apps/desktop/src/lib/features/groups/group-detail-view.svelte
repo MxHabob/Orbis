@@ -224,7 +224,7 @@ async function handleSavePermissions() {
       id: group.id,
       permissions: Array.from(selectedPermissions),
     });
-    toast.success(m.groups_permissions_saved?.() || "تم تحديث صلاحيات المجموعة بنجاح");
+    toast.success(m.groups_permissions_saved());
     isPermissionsDirty = false;
   } catch (err) {
     toast.error(extractErrorMessage(err));
@@ -234,12 +234,12 @@ async function handleSavePermissions() {
 async function promptRemoveMember(member: GroupMemberInfoDto) {
 
   const confirmed = await confirmStore.prompt({
-    title: l("تأكيد استبعاد العضو", "Remove Member"),
+    title: m.ui_copy_remove_member_a32249bd(),
     description: l(
       `هل أنت متأكد من رغبتك في استبعاد "${member.full_name}" من هذه المجموعة؟`,
       `Are you sure you want to remove "${member.full_name}" from this group?`
     ),
-    confirmText: m.groups_remove_member?.() || "استبعاد",
+    confirmText: m.groups_remove_member(),
     variant: "destructive",
   });
 
@@ -250,7 +250,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
       groupId,
       userId: member.user_id,
     });
-    toast.success(l("تم استبعاد العضو من المجموعة بنجاح", "Member removed from group successfully"));
+    toast.success(m.ui_copy_member_removed_from_group_successfully_d752bc90());
   } catch (err) {
     toast.error(extractErrorMessage(err));
   }
@@ -261,13 +261,13 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
   {#if groupQuery.isLoading}
     <div class="h-full w-full flex flex-col items-center justify-center gap-3 text-muted-foreground">
       <ArrowPath size={24} class="animate-spin text-primary" />
-      <span class="text-xs">{l("جاري تحميل بيانات المجموعة...", "Loading group...")}</span>
+      <span class="text-xs">{m.ui_copy_loading_group_e09b26dc()}</span>
     </div>
   {:else if groupQuery.error || !group}
     <div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">
       <p class="text-xs text-destructive font-semibold">{extractErrorMessage(groupQuery.error) || "Group not found"}</p>
       <Button variant="outline" size="sm" class="text-xs" onclick={() => goto(localizeHref(`/${orgId}/settings/groups`))}>
-        {l("العودة لقائمة المجموعات", "Back to Groups")}
+        {m.ui_copy_back_to_groups_f1d6a091()}
       </Button>
     </div>
   {:else}
@@ -294,12 +294,12 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
             </h1>
             {#if group.is_system}
               <Badge variant="secondary" class="text-[10px]">
-                {m.groups_system_badge?.() || "نظام"}
+                {m.groups_system_badge()}
               </Badge>
             {/if}
           </div>
           <span class="text-xs text-muted-foreground">
-            {group.description || l("إدارة أعضاء وصلاحيات المجموعة", "Manage members and permissions")}
+            {group.description || m.ui_copy_manage_members_and_permissions_18487d56()}
           </span>
         </div>
       </div>
@@ -321,7 +321,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
           onclick={() => (activeTab = "permissions")}
         >
           <Keyframes size={13} />
-          <span>{m.groups_tab_permissions?.() || "مصفوفة الصلاحيات"}</span>
+          <span>{m.groups_tab_permissions()}</span>
           {#if isPermissionsDirty}
             <span class="size-1.5 rounded-full bg-amber-500"></span>
           {/if}
@@ -339,7 +339,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
             <div class="flex items-center justify-between border-b border-border/60 pb-3">
               <div class="flex items-center gap-2">
                 <Users size={16} class="text-primary" />
-                <h2 class="text-xs font-bold text-foreground uppercase tracking-wider">{l("قائمة المستخدمين الأعضاء في المجموعة", "Group Members")}</h2>
+                <h2 class="text-xs font-bold text-foreground uppercase tracking-wider">{m.ui_copy_group_members_558b5bd6()}</h2>
               </div>
 
               <Button
@@ -349,21 +349,21 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                 onclick={() => (bulkAssignOpen = true)}
               >
                 <Plus size={13} />
-                <span>{m.groups_bulk_assign?.() || "إسناد مستخدمين للمجموعة"}</span>
+                <span>{m.groups_bulk_assign()}</span>
               </Button>
             </div>
 
             {#if membersQuery.isLoading}
               <div class="p-8 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
                 <ArrowPath size={14} class="animate-spin text-primary" />
-                <span>{l("جاري تحميل الأعضاء...", "Loading members...")}</span>
+                <span>{m.ui_copy_loading_members_a59e1afa()}</span>
               </div>
             {:else if members.length === 0}
               <div class="p-8 text-center text-xs text-muted-foreground flex flex-col items-center justify-center gap-2">
                 <UserGroup size={24} class="text-muted-foreground/60" />
-                <span>{l("لا يوجد أعضاء في هذه المجموعة حالياً.", "No members in this group.")}</span>
+                <span>{m.ui_copy_no_members_in_this_group_9ad47c68()}</span>
                 <Button variant="outline" size="sm" class="text-xs mt-2" onclick={() => (bulkAssignOpen = true)}>
-                  {m.groups_bulk_assign?.() || "إسناد أعضاء الآن"}
+                  {m.groups_bulk_assign()}
                 </Button>
               </div>
             {:else}
@@ -387,7 +387,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                           {#if member.phone}
                             <span>• {member.phone}</span>
                           {/if}
-                          <span>• {l("انضم", "Joined")}: {formatDate(member.joined_at, "date")}</span>
+                          <span>• {m.ui_copy_joined_7a91794e()}: {formatDate(member.joined_at, "date")}</span>
                         </div>
                       </div>
                     </div>
@@ -399,7 +399,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                       onclick={() => promptRemoveMember(member)}
                     >
                       <XMark size={13} />
-                      <span>{m.groups_remove_member?.() || "استبعاد"}</span>
+                      <span>{m.groups_remove_member()}</span>
                     </Button>
                   </div>
                 {/each}
@@ -420,14 +420,14 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                 <div class="flex flex-col">
                   <div class="flex items-center gap-2">
                     <h2 class="text-sm font-bold text-foreground">
-                      {l("مصفوفة صلاحيات المجموعة", "Group Permissions Matrix")}
+                      {m.ui_copy_group_permissions_matrix_c204dd4c()}
                     </h2>
                     <Badge variant="default" class="font-mono text-xs">
-                      {totalGrantedPerms} {l("صلاحية نشطة", "active perms")}
+                      {totalGrantedPerms} {m.ui_copy_active_perms_750b7318()}
                     </Badge>
                   </div>
                   <p class="text-[11px] text-muted-foreground pt-0.5">
-                    {l("تمنح هذه الصلاحيات تلقائياً لكافة أعضاء المجموعة عبر منظومة الصلاحيات الفعالة (Effective Permissions).", "Granted to all group members via Effective Permissions.")}
+                    {m.ui_copy_granted_to_all_group_members_via_effective_6cabedbb()}
                   </p>
                 </div>
               </div>
@@ -435,12 +435,12 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
               <!-- Matrix Summary Stats -->
               <div class="flex items-center gap-2 bg-card p-1.5 rounded-lg border border-border/50 text-xs shrink-0">
                 <div class="flex flex-col items-center px-3 py-1">
-                  <span class="text-[10px] text-muted-foreground uppercase">{l("المجالات المغطاة", "Domains")}</span>
+                  <span class="text-[10px] text-muted-foreground uppercase">{m.ui_copy_domains_3ba7f409()}</span>
                   <span class="font-mono font-bold text-foreground">{activeDomainsCount} / {IAM_DOMAINS.length}</span>
                 </div>
                 <div class="h-6 w-px bg-border/60"></div>
                 <div class="flex flex-col items-center px-3 py-1">
-                  <span class="text-[10px] text-muted-foreground uppercase">{l("نسبة التغطية", "Coverage")}</span>
+                  <span class="text-[10px] text-muted-foreground uppercase">{m.ui_copy_coverage_33d59781()}</span>
                   <span class="font-mono font-bold text-primary">{totalSystemPerms > 0 ? Math.round((totalGrantedPerms / totalSystemPerms) * 100) : 0}%</span>
                 </div>
               </div>
@@ -454,7 +454,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                   <Search size={14} class="absolute inset-s-2.5 top-2.5 text-muted-foreground pointer-events-none" />
                   <Input
                     type="search"
-                    placeholder={l("بحث في الصلاحيات، المجالات، والعمليات...", "Search permissions, domains...")}
+                    placeholder={m.ui_copy_search_permissions_domains_a694396c()}
                     class="ps-8 h-8 text-xs bg-card"
                     bind:value={permSearch}
                   />
@@ -467,21 +467,21 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                     class="px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer {permFilterScope === 'all' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
                     onclick={() => (permFilterScope = "all")}
                   >
-                    {l("الكل", "All")} ({totalSystemPerms})
+                    {m.common_filter_all()} ({totalSystemPerms})
                   </button>
                   <button
                     type="button"
                     class="px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer {permFilterScope === 'granted' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
                     onclick={() => (permFilterScope = "granted")}
                   >
-                    {l("الممنوحة فقط", "Granted")} ({totalGrantedPerms})
+                    {m.ui_copy_granted_5ca6208a()} ({totalGrantedPerms})
                   </button>
                   <button
                     type="button"
                     class="px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer {permFilterScope === 'ungranted' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
                     onclick={() => (permFilterScope = "ungranted")}
                   >
-                    {l("غير الممنوحة", "Ungranted")} ({totalSystemPerms - totalGrantedPerms})
+                    {m.ui_copy_ungranted_c882c857()} ({totalSystemPerms - totalGrantedPerms})
                   </button>
                 </div>
               </div>
@@ -493,7 +493,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                   class="px-2.5 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap text-xs border {selectedDomainId === 'all' ? 'bg-primary/10 border-primary text-primary font-bold' : 'border-border/60 bg-muted/20 text-muted-foreground hover:text-foreground'}"
                   onclick={() => (selectedDomainId = "all")}
                 >
-                  {l("كافة المجالات", "All Domains")}
+                  {m.ui_copy_all_domains_bf738d98()}
                 </button>
                 {#each domainMatrixData as d (d.id)}
                   <button
@@ -516,8 +516,8 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
             {#if visibleDomains.length === 0}
               <div class="p-12 flex flex-col items-center justify-center text-center gap-2 text-muted-foreground border border-dashed border-border rounded-xl bg-card">
                 <Search size={28} class="text-muted-foreground/40 mb-1" />
-                <span class="text-xs font-semibold text-foreground">{l("لا توجد صلاحيات مطابقة للبحث أو الفلتر", "No matching permissions found")}</span>
-                <span class="text-[11px] text-muted-foreground">{l("جرب تغيير عبارة البحث أو اختيار نطاق آخر.", "Try adjusting search terms or filters.")}</span>
+                <span class="text-xs font-semibold text-foreground">{m.ui_copy_no_matching_permissions_found_44c3e5b1()}</span>
+                <span class="text-[11px] text-muted-foreground">{m.ui_copy_try_adjusting_search_terms_or_filters_247cf49a()}</span>
               </div>
             {:else}
               <div class="flex flex-col gap-4">
@@ -550,7 +550,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                           variant={domain.grantedCount > 0 ? "default" : "outline"}
                           class="font-mono text-[10px] px-2 py-0.5"
                         >
-                          {domain.grantedCount} / {domain.totalCount} {l("مفعلة", "active")}
+                          {domain.grantedCount} / {domain.totalCount} {m.ui_copy_active_858559ba()}
                         </Badge>
 
                         <div class="flex items-center gap-2 ps-2 border-s border-border/60">
@@ -559,7 +559,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                             class="text-[11px] text-primary hover:underline cursor-pointer"
                             onclick={() => selectAllInDomain(domain)}
                           >
-                            {l("تحديد الكل", "Select all")}
+                            {m.ui_copy_select_all_99dda350()}
                           </button>
                           <span class="text-muted-foreground text-[10px]">•</span>
                           <button
@@ -567,7 +567,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                             class="text-[11px] text-muted-foreground hover:underline cursor-pointer"
                             onclick={() => clearAllInDomain(domain)}
                           >
-                            {l("إلغاء التحديد", "Clear all")}
+                            {m.ui_copy_clear_all_47145b72()}
                           </button>
                         </div>
                       </div>
@@ -630,7 +630,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
         visible={true}
         isSaving={setPermissionsMutation.isPending}
         isDirty={isPermissionsDirty}
-        saveLabel={m.settings_action_save_changes?.() || "حفظ الصلاحيات"}
+        saveLabel={m.settings_action_save_changes()}
         onsave={handleSavePermissions}
         onreset={() => {
           if (group) {
@@ -638,7 +638,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
             isPermissionsDirty = false;
           }
         }}
-        resetLabel={m.settings_action_discard_changes?.() || "تراجع"}
+        resetLabel={m.settings_action_discard_changes()}
       />
     {/if}
   {/if}

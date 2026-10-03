@@ -120,12 +120,12 @@ function toggleSelect(id: string) {
 // Status Change Handler via Global confirmStore
 async function promptStatusChange(emp: EmployeeDetailDto, targetStatus: string) {
   const confirmed = await confirmStore.prompt({
-    title: l("تأكيد تغيير الحالة الوظيفية", "Confirm Status Change"),
+    title: m.ui_copy_confirm_status_change_7af3a189(),
     description: l(
       `هل أنت متأكد من تغيير حالة الموظف (${emp.full_name || emp.first_name}) إلى "${getStatusLabel(targetStatus)}"?`,
       `Are you sure you want to change this employee status to ${getStatusLabel(targetStatus)}?`
     ),
-    confirmText: l("تأكيد التغيير", "Confirm Change"),
+    confirmText: m.ui_copy_confirm_change_6cd511d4(),
     variant: targetStatus === "suspended" || targetStatus === "terminated" ? "destructive" : "default",
   });
 
@@ -133,7 +133,7 @@ async function promptStatusChange(emp: EmployeeDetailDto, targetStatus: string) 
 
   try {
     await statusMutation.mutateAsync({ id: emp.id, status: targetStatus });
-    toast.success(m.employees_status_updated?.() || "تم تحديث حالة الموظف بنجاح");
+    toast.success(m.employees_status_updated());
     if (selectedEmployee && selectedEmployee.id === emp.id) {
       selectedEmployee = { ...selectedEmployee, status: targetStatus };
     }
@@ -145,12 +145,12 @@ async function promptStatusChange(emp: EmployeeDetailDto, targetStatus: string) 
 // Soft Delete Handler via Global confirmStore
 async function promptDelete(emp: EmployeeDetailDto) {
   const confirmed = await confirmStore.prompt({
-    title: l("حذف ملف الموظف", "Delete Employee Record"),
+    title: m.ui_copy_delete_employee_record_0b2d4552(),
     description: l(
       `هل أنت متأكد من حذف ملف الموظف (${emp.full_name || emp.first_name})؟ يمكن استعادة الملف لاحقاً.`,
       `Are you sure you want to delete this employee record? It can be restored later.`
     ),
-    confirmText: l("حذف الملف", "Delete"),
+    confirmText: m.ui_copy_delete_681d59c5(),
     variant: "destructive",
   });
 
@@ -158,7 +158,7 @@ async function promptDelete(emp: EmployeeDetailDto) {
 
   try {
     await deleteMutation.mutateAsync(emp.id);
-    toast.success(l("تم حذف سجل الموظف بنجاح", "Employee deleted successfully"));
+    toast.success(m.ui_copy_employee_deleted_successfully_d6f925d3());
     selectedIds.delete(emp.id);
     if (selectedEmployee && selectedEmployee.id === emp.id) {
       sheetOpen = false;
@@ -199,13 +199,13 @@ function handleExport() {
 function getStatusLabel(s: string): string {
   switch (s.toLowerCase()) {
     case "active":
-      return m.employees_status_active?.() || "نشط";
+      return m.employees_status_active();
     case "on_leave":
-      return m.employees_status_on_leave?.() || "إجازة";
+      return m.employees_status_on_leave();
     case "suspended":
-      return m.employees_status_suspended?.() || "موقوف";
+      return m.employees_status_suspended();
     case "terminated":
-      return m.employees_status_terminated?.() || "منتهي الخدمة";
+      return m.employees_status_terminated();
     default:
       return s;
   }
@@ -214,14 +214,14 @@ function getStatusLabel(s: string): string {
 function getTypeLabel(t: string): string {
   switch (t.toLowerCase()) {
     case "teacher":
-      return m.employees_type_teacher?.() || "معلم";
+      return m.employees_type_teacher();
     case "admin":
     case "administrative":
-      return m.employees_type_admin?.() || "إداري";
+      return m.employees_type_admin();
     case "support":
-      return m.employees_type_support?.() || "خدمات مساندة";
+      return m.employees_type_support();
     case "specialist":
-      return m.employees_type_specialist?.() || "أخصائي";
+      return m.employees_type_specialist();
     default:
       return t;
   }
@@ -229,12 +229,12 @@ function getTypeLabel(t: string): string {
 
 // ── OrbisGrid Actions & Columns (Icon-Only Pure Icons) ─────────────────
 const employeeActions: ActionItem[] = [
-  { id: "preview", label: l("عرض الملف", "View Dossier"), icon: "Eye" },
-  { id: "edit", label: l("تعديل البيانات", "Edit Details"), icon: "PencilSquare" },
-  { id: "set_active", label: l("تفعيل الموظف", "Set Active"), icon: "CheckCircle" },
-  { id: "set_on_leave", label: l("تعيين في إجازة", "Set On Leave"), icon: "BuildingOffice" },
-  { id: "set_suspended", label: l("إيقاف مؤقت", "Suspend"), icon: "ShieldCheck", variant: "destructive" },
-  { id: "delete", label: l("حذف الموظف", "Delete Employee"), icon: "Trash", variant: "destructive" },
+  { id: "preview", label: m.ui_copy_view_dossier_ca7e9625(), icon: "Eye" },
+  { id: "edit", label: m.ui_copy_edit_details_bb482293(), icon: "PencilSquare" },
+  { id: "set_active", label: m.ui_copy_set_active_7c3b569e(), icon: "CheckCircle" },
+  { id: "set_on_leave", label: m.ui_copy_set_on_leave_4946e4f1(), icon: "BuildingOffice" },
+  { id: "set_suspended", label: m.ui_copy_suspend_50430438(), icon: "ShieldCheck", variant: "destructive" },
+  { id: "delete", label: m.ui_copy_delete_employee_ef02f4a9(), icon: "Trash", variant: "destructive" },
 ];
 
 const gridSource = $derived(
@@ -249,7 +249,7 @@ const gridSource = $derived(
       job_dept: emp.department || emp.org_unit_name ? `${emp.job_title || ''} • ${emp.department || emp.org_unit_name || ''}` : (emp.job_title || "—"),
       type_display: getTypeLabel(emp.employee_type),
       status_display: getStatusLabel(emp.status),
-      account_display: emp.username || l("غير مربوط", "Not Linked"),
+      account_display: emp.username || m.ui_copy_not_linked_798eb72b(),
       hire_date_display: emp.hire_date ? formatDate(emp.hire_date, "date") : "—",
       created_at_display: emp.created_at ? formatDate(emp.created_at, "datetime") : "—",
       updated_at_display: emp.updated_at ? formatDate(emp.updated_at, "datetime") : "—",
@@ -284,7 +284,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
     id: "full_name",
     prop: "full_name",
-    header: l("الموظف", "Employee"),
+    header: m.ui_copy_employee_f6c1c741(),
     name: "Employee",
     width: 230,
     size: 230,
@@ -295,7 +295,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
     id: "employee_number",
     prop: "employee_number",
-    header: m.employees_employee_number?.() || "الرقم الوظيفي",
+    header: m.employees_employee_number(),
     name: "Employee No",
     width: 120,
     size: 120,
@@ -305,7 +305,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
     id: "job_dept",
     prop: "job_dept",
-    header: m.employees_job_title?.() || "المسمى والوظيفة",
+    header: m.employees_job_title(),
     name: "Job / Department",
     width: 200,
     size: 200,
@@ -314,7 +314,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
     id: "type_display",
     prop: "type_display",
-    header: m.employees_filter_type?.() || "الفئة",
+    header: m.employees_filter_type(),
     name: "Category",
     width: 110,
     size: 110,
@@ -325,7 +325,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
     id: "status",
     prop: "status",
-    header: m.employees_filter_status?.() || "الحالة",
+    header: m.employees_filter_status(),
     name: "Status",
     width: 110,
     size: 110,
@@ -336,7 +336,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
     id: "account_display",
     prop: "account_display",
-    header: l("حساب النظام", "User Account"),
+    header: m.ui_copy_user_account_1f9dba18(),
     name: "Account",
     width: 140,
     size: 140,
@@ -346,7 +346,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
     id: "hire_date_display",
     prop: "hire_date_display",
-    header: m.employees_hire_date?.() || "تاريخ التعيين",
+    header: m.employees_hire_date(),
     name: "Hire Date",
     width: 120,
     size: 120,
@@ -356,7 +356,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
     id: "created_at_display",
     prop: "created_at_display",
-    header: l("تاريخ الإنشاء", "Created At"),
+    header: m.ui_copy_created_at_01f6ea5f(),
     name: "Created At",
     width: 130,
     size: 130,
@@ -366,7 +366,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
     id: "updated_at_display",
     prop: "updated_at_display",
-    header: l("آخر تحديث", "Updated At"),
+    header: m.ui_copy_updated_at_ba0d0a9f(),
     name: "Updated At",
     width: 130,
     size: 130,
@@ -376,7 +376,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
     id: "actions",
     prop: "actions",
-    header: l("إجراءات", "Actions"),
+    header: m.ui_copy_actions_c48127a5(),
     name: "Actions",
     width: 140,
     size: 140,
@@ -418,37 +418,37 @@ function handleGridAction(event: GridActionEvent) {
     <!-- Left Panel: Filter Navigation -->
     {#snippet left()}
       <SidebarNav
-        title={m.employees_nav_title?.() || "شؤون الموظفين"}
+        title={m.employees_nav_title()}
         groups={[
           {
-            title: m.employees_filter_status?.() || "الحالة الوظيفية",
+            title: m.employees_filter_status(),
             items: [
               {
-                label: m.employees_filter_all?.() || "كافة الموظفين",
+                label: m.employees_filter_all(),
                 badge: formatNumber(stats.total),
                 isActive: statusFilter === "all",
                 onclick: () => (statusFilter = "all"),
               },
               {
-                label: m.employees_status_active?.() || "على رأس العمل",
+                label: m.employees_status_active(),
                 badge: formatNumber(stats.active),
                 isActive: statusFilter === "active",
                 onclick: () => (statusFilter = "active"),
               },
               {
-                label: m.employees_status_on_leave?.() || "في إجازة",
+                label: m.employees_status_on_leave(),
                 badge: formatNumber(stats.on_leave),
                 isActive: statusFilter === "on_leave",
                 onclick: () => (statusFilter = "on_leave"),
               },
               {
-                label: m.employees_status_suspended?.() || "موقوف",
+                label: m.employees_status_suspended(),
                 badge: formatNumber(stats.suspended),
                 isActive: statusFilter === "suspended",
                 onclick: () => (statusFilter = "suspended"),
               },
               {
-                label: m.employees_status_terminated?.() || "منتهي الخدمة",
+                label: m.employees_status_terminated(),
                 badge: formatNumber(stats.terminated),
                 isActive: statusFilter === "terminated",
                 onclick: () => (statusFilter = "terminated"),
@@ -456,31 +456,31 @@ function handleGridAction(event: GridActionEvent) {
             ],
           },
           {
-            title: m.employees_filter_type?.() || "فئة الموظف",
+            title: m.employees_filter_type(),
             items: [
               {
-                label: l("الكل", "All Types"),
+                label: m.ui_copy_all_types_f376a2ae(),
                 badge: formatNumber(stats.total),
                 isActive: typeFilter === "all",
                 onclick: () => (typeFilter = "all"),
               },
               {
-                label: m.employees_type_teacher?.() || "كادر تعليمي (معلم)",
+                label: m.employees_type_teacher(),
                 isActive: typeFilter === "teacher",
                 onclick: () => (typeFilter = "teacher"),
               },
               {
-                label: m.employees_type_admin?.() || "كادر إداري",
+                label: m.employees_type_admin(),
                 isActive: typeFilter === "admin",
                 onclick: () => (typeFilter = "admin"),
               },
               {
-                label: m.employees_type_specialist?.() || "أخصائيين",
+                label: m.employees_type_specialist(),
                 isActive: typeFilter === "specialist",
                 onclick: () => (typeFilter = "specialist"),
               },
               {
-                label: m.employees_type_support?.() || "خدمات مساندة",
+                label: m.employees_type_support(),
                 isActive: typeFilter === "support",
                 onclick: () => (typeFilter = "support"),
               },
@@ -495,7 +495,7 @@ function handleGridAction(event: GridActionEvent) {
               size="icon"
               class="size-6 text-muted-foreground hover:text-foreground cursor-pointer"
               onclick={clearFilters}
-              title={m.common_filter_clear?.() || "إعادة تعيين التصفية"}
+              title={m.common_filter_clear()}
             >
               <XMark size={14} />
             </Button>
@@ -511,28 +511,28 @@ function handleGridAction(event: GridActionEvent) {
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0 select-none">
           <Card class="flex items-center justify-between p-3.5 shadow-2xs">
             <div class="flex flex-col min-w-0 text-start">
-              <span class="text-[11px] font-medium text-muted-foreground truncate">{m.employees_total_count?.() || "إجمالي الموظفين"}</span>
+              <span class="text-[11px] font-medium text-muted-foreground truncate">{m.employees_total_count()}</span>
               <span class="font-mono text-lg font-bold text-foreground mt-0.5">{formatNumber(stats.total)}</span>
             </div>
           </Card>
 
           <Card class="flex items-center justify-between p-3.5 shadow-2xs">
             <div class="flex flex-col min-w-0 text-start">
-              <span class="text-[11px] font-medium text-muted-foreground truncate">{m.employees_active_count?.() || "على رأس العمل"}</span>
+              <span class="text-[11px] font-medium text-muted-foreground truncate">{m.employees_active_count()}</span>
               <span class="font-mono text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{formatNumber(stats.active)}</span>
             </div>
           </Card>
 
           <Card class="flex items-center justify-between p-3.5 shadow-2xs">
             <div class="flex flex-col min-w-0 text-start">
-              <span class="text-[11px] font-medium text-muted-foreground truncate">{m.employees_on_leave_count?.() || "في إجازة"}</span>
+              <span class="text-[11px] font-medium text-muted-foreground truncate">{m.employees_on_leave_count()}</span>
               <span class="font-mono text-lg font-bold text-amber-600 dark:text-amber-400 mt-0.5">{formatNumber(stats.on_leave)}</span>
             </div>
           </Card>
 
           <Card class="flex items-center justify-between p-3.5 shadow-2xs">
             <div class="flex flex-col min-w-0 text-start">
-              <span class="text-[11px] font-medium text-muted-foreground truncate">{m.employees_suspended_count?.() || "موقوف / منتهي"}</span>
+              <span class="text-[11px] font-medium text-muted-foreground truncate">{m.employees_suspended_count()}</span>
               <span class="font-mono text-lg font-bold text-rose-600 dark:text-rose-400 mt-0.5">{formatNumber(stats.suspended + stats.terminated)}</span>
             </div>
           </Card>
@@ -544,7 +544,7 @@ function handleGridAction(event: GridActionEvent) {
             <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
-              placeholder={m.employees_search_placeholder?.() || "بحث بالاسم، الرقم الوظيفي، الهوية..."}
+              placeholder={m.employees_search_placeholder()}
               class="input-sunken ps-9 text-xs py-2"
               bind:value={localSearch}
               oninput={() => updateSearch(localSearch)}
@@ -558,7 +558,7 @@ function handleGridAction(event: GridActionEvent) {
               onclick={handleExport}
             >
               <DocumentChartBar size={14} class="me-1.5" />
-              {m.common_export?.() || "تصدير"}
+              {m.common_export()}
             </Button>
 
             <Button
@@ -567,7 +567,7 @@ function handleGridAction(event: GridActionEvent) {
               onclick={() => openEmployeeSheet(null, "create")}
             >
               <Plus size={14} class="me-1.5" />
-              {m.employees_new_title?.() || "تسجيل موظف جديد"}
+              {m.employees_new_title()}
             </Button>
           </div>
         </div>
@@ -577,13 +577,13 @@ function handleGridAction(event: GridActionEvent) {
           {#if isLoading}
             <div class="h-full w-full flex flex-col items-center justify-center p-8 gap-3 text-muted-foreground">
               <ArrowPath size={24} class="animate-spin text-primary" />
-              <span class="text-xs">{l("جاري تحميل سجلات الموظفين...", "Loading employees...")}</span>
+              <span class="text-xs">{m.ui_copy_loading_employees_3e3b45d1()}</span>
             </div>
           {:else if error}
             <div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">
               <p class="text-xs text-destructive font-semibold">{extractErrorMessage(error)}</p>
               <Button variant="outline" size="sm" class="text-xs" onclick={() => employeesQuery.refetch()}>
-                {m.common_retry?.() || "إعادة المحاولة"}
+                {m.common_retry()}
               </Button>
             </div>
           {:else if employees.length === 0}
@@ -592,12 +592,12 @@ function handleGridAction(event: GridActionEvent) {
                 <Users size={24} />
               </div>
               <div class="flex flex-col gap-1">
-                <h3 class="text-sm font-semibold text-foreground">{l("لا يوجد موظفين مطابقين", "No employees found")}</h3>
-                <p class="text-xs text-muted-foreground max-w-xs">{l("لم يتم العثور على موظفين وفق معايير التصفية المحددة.", "Try adjusting your search or filters.")}</p>
+                <h3 class="text-sm font-semibold text-foreground">{m.ui_copy_no_employees_found_967f15bd()}</h3>
+                <p class="text-xs text-muted-foreground max-w-xs">{m.ui_copy_try_adjusting_your_search_or_filters_2c9b3cb2()}</p>
               </div>
               {#if hasActiveFilters}
                 <Button variant="outline" size="sm" class="text-xs mt-2" onclick={clearFilters}>
-                  {m.common_filter_clear?.() || "مسح التصفية"}
+                  {m.common_filter_clear()}
                 </Button>
               {/if}
             </div>
@@ -632,7 +632,7 @@ function handleGridAction(event: GridActionEvent) {
             <Users size={15} strokeWidth={2.5} />
           </span>
           <span class="truncate text-xs font-bold text-foreground">
-            {formatNumber(selectedIds.size)} {l("موظف محدد", "selected")}
+            {formatNumber(selectedIds.size)} {m.ui_copy_selected_d87673e9()}
           </span>
         </div>
 
@@ -660,7 +660,7 @@ function handleGridAction(event: GridActionEvent) {
             onclick={handleExport}
           >
             <DocumentChartBar size={13} />
-            <span>{m.common_export?.() || "تصدير"}</span>
+            <span>{m.common_export()}</span>
           </Button>
         </div>
       </div>

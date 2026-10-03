@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-  <title>{m.ai_center_integrations_title ? m.ai_center_integrations_title() : "Integrations"} | Orbis</title>
+  <title>{m.ai_center_integrations_title()} | Orbis</title>
 </svelte:head>
 
 <IntegrationsGallery {orgId} />

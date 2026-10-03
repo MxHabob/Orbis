@@ -220,9 +220,7 @@ async function handleSave(e?: Event) {
       },
     });
     toast.success(
-      m.settings_policy_save_success
-        ? m.settings_policy_save_success()
-        : "تم حفظ السياسات الأكاديمية والمالية بنجاح",
+      m.settings_policy_save_success(),
     );
   } catch (err: unknown) {
     toast.error(extractErrorMessage(err));
@@ -242,9 +240,7 @@ async function handleSave(e?: Event) {
   {:else if policyQuery.error}
     <div class="w-full text-center py-12 text-destructive">
       <p>
-        {m.settings_policy_load_error
-          ? m.settings_policy_load_error()
-          : "فشل تحميل السياسات الأكاديمية"}
+        {m.settings_policy_load_error()}
       </p>
       <Button
         variant="outline"

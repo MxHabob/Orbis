@@ -4,6 +4,7 @@
   Built with clean typography, UI design tokens, and uncluttered layout.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
@@ -70,20 +71,20 @@ function getCategoryLabel(cat: string) {
   const c = categories.find((item) => item.category === cat);
   if (c) return isArabic ? c.label_ar : c.label;
   switch (cat) {
-    case "organization": return isArabic ? "بيانات المؤسسة" : "Organization";
-    case "calendar": return isArabic ? "التقويم الأكاديمي" : "Calendar";
-    case "academics": return isArabic ? "الهيكل الأكاديمي" : "Academics";
-    case "assessment": return isArabic ? "لائحة التقييم" : "Assessment";
-    case "finance": return isArabic ? "الرسوم والمالية" : "Finance";
-    case "students": return isArabic ? "القبول والتسجيل" : "Students";
-    case "templates": return isArabic ? "الوثائق والتقارير" : "Documents";
-    case "integrations": return isArabic ? "التكاملات التقنية" : "Integrations";
+    case "organization": return m.ui_onboarding_progress_organization();
+    case "calendar": return m.ui_onboarding_progress_calendar();
+    case "academics": return m.ui_onboarding_progress_academics();
+    case "assessment": return m.ui_onboarding_progress_assessment();
+    case "finance": return m.ui_onboarding_progress_finance();
+    case "students": return m.ui_onboarding_progress_students();
+    case "templates": return m.ui_onboarding_progress_documents();
+    case "integrations": return m.ui_onboarding_progress_integrations();
     default: return cat;
   }
 }
 
 const selectedCategoryLabel = $derived.by(() => {
-  if (selectedCategory === "all") return isArabic ? "كافة الأقسام" : "All Categories";
+  if (selectedCategory === "all") return m.ui_onboarding_progress_all_categories();
   const c = categories.find((item) => item.category === selectedCategory);
   if (c) return isArabic ? c.label_ar : c.label;
   return getCategoryLabel(selectedCategory);
@@ -94,31 +95,31 @@ function getStatusInfo(status: OnboardingTaskStatus) {
   switch (status) {
     case "completed":
       return {
-        label: isArabic ? "مكتملة" : "Completed",
+        label: m.common_exams_status_completed(),
         variant: "outline" as const,
         classes: "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5",
       };
     case "in_progress":
       return {
-        label: isArabic ? "قيد الإعداد" : "In Progress",
+        label: m.ui_onboarding_progress_in_progress(),
         variant: "secondary" as const,
         classes: "text-amber-600 dark:text-amber-400 bg-amber-500/10",
       };
     case "blocked":
       return {
-        label: isArabic ? "بانتظار متطلبات" : "Blocked",
+        label: m.ui_onboarding_progress_blocked(),
         variant: "secondary" as const,
         classes: "text-muted-foreground bg-muted/60",
       };
     case "optional":
       return {
-        label: isArabic ? "اختياري" : "Optional",
+        label: m.ui_onboarding_progress_optional(),
         variant: "outline" as const,
         classes: "text-muted-foreground",
       };
     default:
       return {
-        label: isArabic ? "لم تبدأ" : "Not Started",
+        label: m.ui_onboarding_progress_not_started(),
         variant: "secondary" as const,
         classes: "text-muted-foreground",
       };
@@ -174,7 +175,7 @@ async function handleProvisionDefaults() {
     );
     isProvisionModalOpen = false;
   } catch (e: any) {
-    provisioningError = e?.message || (isArabic ? "فشل تجهيز الهيكل الأساسي" : "Failed to provision defaults");
+    provisioningError = e?.message || (m.ui_onboarding_progress_failed_to_provision_defaults());
   } finally {
     isProvisioning = false;
   }
@@ -182,7 +183,7 @@ async function handleProvisionDefaults() {
 </script>
 
 <svelte:head>
-  <title>{isArabic ? "تهيئة المؤسسة والجاهزية التشغيلية" : "Institution Onboarding & Readiness"} — Orbis</title>
+  <title>{m.ui_onboarding_progress_institution_onboarding_readiness()} — Orbis</title>
 </svelte:head>
 
 <div class="max-w-6xl mx-auto space-y-6 p-4 sm:p-6 pb-20">
@@ -190,7 +191,7 @@ async function handleProvisionDefaults() {
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/40 pb-5">
     <div>
       <h1 class="text-xl font-semibold tracking-tight text-foreground">
-        {isArabic ? "تهيئة المؤسسة والجاهزية التشغيلية" : "Institution Setup & Readiness"}
+        {m.ui_onboarding_progress_institution_setup_readiness()}
       </h1>
       <p class="text-xs text-muted-foreground mt-1">
         {isArabic
@@ -206,7 +207,7 @@ async function handleProvisionDefaults() {
         onclick={() => (isProvisionModalOpen = true)}
         class="h-9 text-xs"
       >
-        <span>{isArabic ? "توليد الهيكل المقترح" : "Auto-Scaffold Blueprint"}</span>
+        <span>{m.ui_onboarding_progress_auto_scaffold_blueprint()}</span>
       </Button>
 
       <Button
@@ -216,7 +217,7 @@ async function handleProvisionDefaults() {
         disabled={systemStore.isLoading}
         class="h-9 text-xs"
       >
-        <span>{isArabic ? "تحديث" : "Refresh"}</span>
+        <span>{m.common_control_refresh()}</span>
       </Button>
     </div>
   </div>
@@ -228,7 +229,7 @@ async function handleProvisionDefaults() {
         <div class="space-y-1">
           <div class="flex items-center gap-2">
             <span class="text-sm font-semibold text-foreground">
-              {isArabic ? "نسبة الإنجاز الكلية" : "Overall Readiness"}
+              {m.ui_onboarding_progress_overall_readiness()}
             </span>
             <span class="text-sm font-mono font-medium text-primary">
               {state?.progress_percentage ?? 0}%
@@ -243,24 +244,24 @@ async function handleProvisionDefaults() {
 
         <div class="flex items-center flex-wrap gap-2 text-xs">
           <Badge variant="outline" class="font-normal">
-            {isArabic ? "المهام الإلزامية:" : "Required:"}
+            {m.ui_onboarding_progress_required()}
             <span class="font-medium ms-1 font-mono">{state?.required_completed ?? 0}/{state?.required_tasks ?? 0}</span>
           </Badge>
 
           {#if (state?.blocked_tasks ?? 0) > 0}
             <Badge variant="secondary" class="font-normal text-muted-foreground">
-              {isArabic ? "المقفلة:" : "Blocked:"}
+              {m.ui_onboarding_progress_blocked_2()}
               <span class="font-medium ms-1 font-mono">{state?.blocked_tasks}</span>
             </Badge>
           {/if}
 
           {#if state?.is_institution_ready}
             <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 font-normal">
-              {isArabic ? "جاهز للتشغيل" : "Ready for Operations"}
+              {m.ui_onboarding_progress_ready_for_operations()}
             </Badge>
           {:else}
             <Badge variant="secondary" class="text-amber-600 dark:text-amber-400 font-normal">
-              {isArabic ? "قيد التجهيز" : "In Preparation"}
+              {m.ui_onboarding_progress_in_preparation()}
             </Badge>
           {/if}
         </div>
@@ -276,7 +277,7 @@ async function handleProvisionDefaults() {
     <div class="rounded-xl border border-border/80 bg-muted/30 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div class="space-y-0.5">
         <span class="text-[11px] font-medium text-muted-foreground">
-          {isArabic ? "الخطوة التالية المقترحة:" : "Recommended Next Step:"}
+          {m.ui_onboarding_progress_recommended_next_step()}
         </span>
         <h3 class="text-sm font-semibold text-foreground">
           {isArabic ? next.title_ar : next.title}
@@ -292,7 +293,7 @@ async function handleProvisionDefaults() {
         onclick={() => handleNavigate(next)}
         class="h-8 text-xs shrink-0"
       >
-        <span>{isArabic ? "بدء الإعداد" : "Configure"}</span>
+        <span>{m.ui_onboarding_progress_configure()}</span>
       </Button>
     </div>
   {/if}
@@ -302,7 +303,7 @@ async function handleProvisionDefaults() {
     <div class="relative flex-1 max-w-sm">
       <Input
         type="text"
-        placeholder={isArabic ? "البحث في المهام..." : "Search tasks..."}
+        placeholder={m.ui_onboarding_progress_search_tasks()}
         bind:value={searchQuery}
         class="h-9 text-xs"
       />
@@ -316,35 +317,35 @@ async function handleProvisionDefaults() {
           onclick={() => (selectedStatus = "all")}
           class="px-2.5 py-1 rounded-md transition-colors {selectedStatus === 'all' ? 'bg-background text-foreground shadow-xs font-medium' : 'text-muted-foreground hover:text-foreground'}"
         >
-          {isArabic ? "الكل" : "All"} ({tasks.length})
+          {m.common_filter_all()} ({tasks.length})
         </button>
         <button
           type="button"
           onclick={() => (selectedStatus = "required")}
           class="px-2.5 py-1 rounded-md transition-colors {selectedStatus === 'required' ? 'bg-background text-foreground shadow-xs font-medium' : 'text-muted-foreground hover:text-foreground'}"
         >
-          {isArabic ? "الإلزامية" : "Required"} ({tasks.filter((t) => t.is_required).length})
+          {m.ui_onboarding_progress_required_2()} ({tasks.filter((t) => t.is_required).length})
         </button>
         <button
           type="button"
           onclick={() => (selectedStatus = "pending")}
           class="px-2.5 py-1 rounded-md transition-colors {selectedStatus === 'pending' ? 'bg-background text-foreground shadow-xs font-medium' : 'text-muted-foreground hover:text-foreground'}"
         >
-          {isArabic ? "المتبقية" : "Pending"} ({tasks.filter((t) => t.status !== 'completed').length})
+          {m.ui_onboarding_progress_pending()} ({tasks.filter((t) => t.status !== 'completed').length})
         </button>
         <button
           type="button"
           onclick={() => (selectedStatus = "blocked")}
           class="px-2.5 py-1 rounded-md transition-colors {selectedStatus === 'blocked' ? 'bg-background text-foreground shadow-xs font-medium' : 'text-muted-foreground hover:text-foreground'}"
         >
-          {isArabic ? "المقفلة" : "Blocked"} ({tasks.filter((t) => t.status === 'blocked').length})
+          {m.ui_onboarding_progress_blocked_3()} ({tasks.filter((t) => t.status === 'blocked').length})
         </button>
         <button
           type="button"
           onclick={() => (selectedStatus = "completed")}
           class="px-2.5 py-1 rounded-md transition-colors {selectedStatus === 'completed' ? 'bg-background text-foreground shadow-xs font-medium' : 'text-muted-foreground hover:text-foreground'}"
         >
-          {isArabic ? "المكتملة" : "Done"} ({tasks.filter((t) => t.status === 'completed').length})
+          {m.ui_onboarding_progress_done()} ({tasks.filter((t) => t.status === 'completed').length})
         </button>
       </div>
 
@@ -359,7 +360,7 @@ async function handleProvisionDefaults() {
             {selectedCategoryLabel}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{isArabic ? "كافة الأقسام" : "All Categories"}</SelectItem>
+            <SelectItem value="all">{m.ui_onboarding_progress_all_categories()}</SelectItem>
             {#each categories as cat}
               <SelectItem value={cat.category}>
                 {isArabic ? cat.label_ar : cat.label} ({cat.completed_tasks}/{cat.total_tasks})
@@ -389,7 +390,7 @@ async function handleProvisionDefaults() {
                 </h3>
                 {#if task.is_required}
                   <Badge variant="outline" class="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground">
-                    {isArabic ? "إلزامي" : "Required"}
+                    {m.ui_onboarding_progress_required_3()}
                   </Badge>
                 {/if}
               </div>
@@ -414,7 +415,7 @@ async function handleProvisionDefaults() {
           <!-- Prerequisite condition (if blocked or helpful) -->
           {#if isBlocked && task.blocking_reason}
             <div class="text-[11px] text-muted-foreground border-t border-border/40 pt-2">
-              <span class="font-medium text-foreground">{isArabic ? "يتطلب إكمال:" : "Prerequisite:"}</span>
+              <span class="font-medium text-foreground">{m.ui_onboarding_progress_prerequisite()}</span>
               <span class="ms-1">{isArabic && task.blocking_reason_ar ? task.blocking_reason_ar : task.blocking_reason}</span>
             </div>
           {/if}
@@ -434,19 +435,19 @@ async function handleProvisionDefaults() {
             class="h-8 text-xs font-medium"
           >
             {#if isComplete}
-              <span>{isArabic ? "مراجعة" : "Review"}</span>
+              <span>{m.ui_onboarding_progress_review()}</span>
             {:else if isBlocked}
-              <span>{isArabic ? "مقفل" : "Locked"}</span>
+              <span>{m.academics_exams_center_locked()}</span>
             {:else}
-              <span>{isArabic ? "إعداد" : "Configure"}</span>
+              <span>{m.ui_setup_card_configure()}</span>
             {/if}
           </Button>
         </CardFooter>
       </Card>
     {:else}
       <div class="col-span-full py-16 text-center text-muted-foreground space-y-1">
-        <p class="text-sm font-medium">{isArabic ? "لا توجد مهام تطابق خيارات التصفية." : "No tasks match your filters."}</p>
-        <p class="text-xs">{isArabic ? "جرب تغيير مصطلح البحث أو اختيار تصفية أخرى." : "Try adjusting your search query or status filter."}</p>
+        <p class="text-sm font-medium">{m.ui_onboarding_progress_no_tasks_match_your_filters()}</p>
+        <p class="text-xs">{m.ui_onboarding_progress_try_adjusting_your_search_query_or_status_filter()}</p>
       </div>
     {/each}
   </div>
@@ -457,7 +458,7 @@ async function handleProvisionDefaults() {
   <DialogContent class="sm:max-w-md">
     <DialogHeader>
       <DialogTitle class="text-base font-semibold">
-        {isArabic ? "توليد الهيكل المقترح للمؤسسة" : "Auto-Scaffold Blueprint Defaults"}
+        {m.ui_onboarding_progress_auto_scaffold_blueprint_defaults()}
       </DialogTitle>
       <DialogDescription class="text-xs">
         {isArabic
@@ -476,7 +477,7 @@ async function handleProvisionDefaults() {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div class="space-y-1.5">
           <Label for="prov-year-name" class="text-xs font-medium text-foreground">
-            {isArabic ? "اسم العام (إنجليزي)" : "Year Name (EN)"}
+            {m.ui_onboarding_progress_year_name_en()}
           </Label>
           <Input
             id="prov-year-name"
@@ -488,7 +489,7 @@ async function handleProvisionDefaults() {
         </div>
         <div class="space-y-1.5">
           <Label for="prov-year-name-ar" class="text-xs font-medium text-foreground">
-            {isArabic ? "اسم العام (عربي)" : "Year Name (AR)"}
+            {m.ui_onboarding_progress_year_name_ar()}
           </Label>
           <Input
             id="prov-year-name-ar"
@@ -502,34 +503,34 @@ async function handleProvisionDefaults() {
 
       <div class="space-y-2 pt-2 border-t border-border/40">
         <span class="text-xs font-medium text-foreground block">
-          {isArabic ? "العناصر المراد إنشاؤها:" : "Components to Generate:"}
+          {m.ui_onboarding_progress_components_to_generate()}
         </span>
 
         <div class="flex items-center gap-2.5 py-1">
           <Checkbox bind:checked={provStagesAndGrades} id="prov-stages" />
           <Label for="prov-stages" class="text-xs font-normal text-foreground cursor-pointer">
-            {isArabic ? "الشعب والفصول الدراسية الأولية (الصفوف 1-3)" : "Classroom Sections (Grades 1-3)"}
+            {m.ui_onboarding_progress_classroom_sections_grades_1_3()}
           </Label>
         </div>
 
         <div class="flex items-center gap-2.5 py-1">
           <Checkbox bind:checked={provSubjects} id="prov-subjects" />
           <Label for="prov-subjects" class="text-xs font-normal text-foreground cursor-pointer">
-            {isArabic ? "المواد الدراسية الأساسية (رياضيات، لغة عربية، علوم...)" : "Core Curriculum Subjects"}
+            {m.ui_onboarding_progress_core_curriculum_subjects()}
           </Label>
         </div>
 
         <div class="flex items-center gap-2.5 py-1">
           <Checkbox bind:checked={provAssessmentScheme} id="prov-assessment" />
           <Label for="prov-assessment" class="text-xs font-normal text-foreground cursor-pointer">
-            {isArabic ? "لائحة التقييم الشهري القياسية (100 درجة)" : "Standard 100-Point Assessment Scheme"}
+            {m.ui_onboarding_progress_standard_100_point_assessment_scheme()}
           </Label>
         </div>
 
         <div class="flex items-center gap-2.5 py-1">
           <Checkbox bind:checked={provTuitionFee} id="prov-fee" />
           <Label for="prov-fee" class="text-xs font-normal text-foreground cursor-pointer">
-            {isArabic ? "قالب الرسوم الدراسية السنوية" : "Standard Annual Tuition Template"}
+            {m.ui_onboarding_progress_standard_annual_tuition_template()}
           </Label>
         </div>
       </div>
@@ -543,7 +544,7 @@ async function handleProvisionDefaults() {
         disabled={isProvisioning}
         class="text-xs"
       >
-        {isArabic ? "إلغاء" : "Cancel"}
+        {m.common_action_cancel()}
       </Button>
 
       <Button
@@ -554,8 +555,8 @@ async function handleProvisionDefaults() {
         class="text-xs"
       >
         {isProvisioning
-          ? (isArabic ? "جاري التوليد..." : "Scaffolding...")
-          : (isArabic ? "توليد الهيكل" : "Scaffold Now")}
+          ? (m.ui_onboarding_progress_scaffolding())
+          : (m.ui_onboarding_progress_scaffold_now())}
       </Button>
     </DialogFooter>
   </DialogContent>

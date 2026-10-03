@@ -6,7 +6,7 @@ let { data }: { data: { orgId: string } } = $props();
 </script>
 
 <svelte:head>
-  <title>{m.common_sidebar_ledgers ? m.common_sidebar_ledgers() : "الحسابات"} | Orbis</title>
+  <title>{m.common_sidebar_ledgers()} | Orbis</title>
 </svelte:head>
 
 <AccountsManager orgId={data.orgId} />

@@ -15,38 +15,32 @@ const basePath = $derived(`/${data.orgId}/ai-center`);
 const navItems = $derived([
   {
     path: "",
-    label: m.ai_center_nav_overview
-      ? m.ai_center_nav_overview()
-      : "النظرة العامة",
+    label: m.ai_center_nav_overview(),
     icon: GlobeAlt,
   },
   {
     path: "live",
-    label: m.ai_center_nav_live ? m.ai_center_nav_live() : "البث المباشر",
+    label: m.ai_center_nav_live(),
     icon: Camera,
   },
   {
     path: "integrations",
-    label: m.ai_center_nav_integrations
-      ? m.ai_center_nav_integrations()
-      : "التكاملات",
+    label: m.ai_center_nav_integrations(),
     icon: Cube,
   },
   {
     path: "permissions",
-    label: m.ai_center_nav_permissions
-      ? m.ai_center_nav_permissions()
-      : "الصلاحيات",
+    label: m.ai_center_nav_permissions(),
     icon: UserBadgeCheck,
   },
   {
     path: "settings",
-    label: m.ai_center_nav_settings ? m.ai_center_nav_settings() : "الإعدادات",
+    label: m.ai_center_nav_settings(),
     icon: Settings,
   },
   {
     path: "ai-logs",
-    label: m.ai_center_nav_logs ? m.ai_center_nav_logs() : "سجل الأنشطة",
+    label: m.ai_center_nav_logs(),
     icon: TaskList,
   },
 ]);

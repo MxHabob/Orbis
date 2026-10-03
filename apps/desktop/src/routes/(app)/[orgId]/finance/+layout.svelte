@@ -77,14 +77,12 @@ const navItems = $derived([
   },
   {
     path: "journal-entries",
-    label: m.common_je_title ? m.common_je_title() : "القيود اليومية",
+    label: m.common_je_title(),
     icon: BookOpen,
   },
   {
     path: "statement",
-    label: m.finance_layout_nav_ledger
-      ? m.finance_layout_nav_ledger()
-      : "كشف الحساب",
+    label: m.finance_layout_nav_ledger(),
     icon: DocumentChartBar,
   },
   {

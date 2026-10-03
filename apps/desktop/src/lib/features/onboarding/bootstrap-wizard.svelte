@@ -6,6 +6,7 @@
   1. Mulverse Intro -> 2. Blueprint -> 3. Organization -> 4. Administrator -> 5. MFA (Skippable) -> 6. Launch Review.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { api } from "$lib/api/client";
@@ -85,29 +86,29 @@ function validateCurrentStep(): boolean {
     return true;
   } else if (currentStep === "blueprint") {
     if (!form.institutionType) {
-      newErrors.institutionType = isRTL ? "يرجى اختيار نموذج المؤسسة" : "Please select a blueprint";
+      newErrors.institutionType = m.ui_onboarding_bootstrap_please_select_a_blueprint();
     }
   } else if (currentStep === "organization") {
     if (!form.organizationName.trim()) {
-      newErrors.organizationName = isRTL ? "اسم المنشأة بالإنجليزية مطلوب" : "Organization name in English is required";
+      newErrors.organizationName = m.ui_onboarding_bootstrap_organization_name_in_english_is_required();
     }
     if (!form.organizationNameAr.trim()) {
-      newErrors.organizationNameAr = isRTL ? "اسم المنشأة بالعربية مطلوب" : "Organization name in Arabic is required";
+      newErrors.organizationNameAr = m.ui_onboarding_bootstrap_organization_name_in_arabic_is_required();
     }
   } else if (currentStep === "admin") {
     if (!form.adminFirstName.trim()) {
-      newErrors.adminFirstName = isRTL ? "الاسم الأول مطلوب" : "First name is required";
+      newErrors.adminFirstName = m.ui_onboarding_bootstrap_first_name_is_required();
     }
     if (!form.adminLastName.trim()) {
-      newErrors.adminLastName = isRTL ? "اسم العائلة مطلوب" : "Last name is required";
+      newErrors.adminLastName = m.ui_onboarding_bootstrap_last_name_is_required();
     }
     if (!form.adminEmail.trim()) {
-      newErrors.adminEmail = isRTL ? "البريد الإلكتروني مطلوب" : "Email address is required";
+      newErrors.adminEmail = m.ui_onboarding_bootstrap_email_address_is_required();
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.adminEmail.trim())) {
-      newErrors.adminEmail = isRTL ? "صيغة البريد الإلكتروني غير صحيحة" : "Invalid email format";
+      newErrors.adminEmail = m.ui_onboarding_bootstrap_invalid_email_format();
     }
     if (!form.adminPassword) {
-      newErrors.adminPassword = isRTL ? "كلمة المرور مطلوبة" : "Password is required";
+      newErrors.adminPassword = m.ui_onboarding_bootstrap_password_is_required();
     } else if (form.adminPassword.length < 8) {
       newErrors.adminPassword = isRTL
         ? "يجب ألا تقل كلمة المرور عن 8 خانات"

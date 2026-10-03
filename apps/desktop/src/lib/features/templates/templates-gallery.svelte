@@ -221,9 +221,7 @@ async function handleCreateTemplate() {
 async function confirmDelete(id: string) {
   const confirmed = await confirmStore.prompt({
     title: m.common_action_delete() + "؟",
-    description: m.common_docs_delete_confirm
-      ? m.common_docs_delete_confirm()
-      : "Are you sure you want to delete this template?",
+    description: m.common_docs_delete_confirm(),
     confirmText: m.common_action_delete(),
     variant: "destructive",
   });
