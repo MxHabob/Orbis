@@ -1,11 +1,11 @@
 use async_trait::async_trait;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use uuid::Uuid;
 
+use crate::models::person::{self, Entity as PersonEntity};
 use orbis_app::ports::repositories::PersonRepository;
 use orbis_domain::entities::person::Person;
 use orbis_domain::errors::DomainError;
-use crate::models::person::{self, Entity as PersonEntity};
 
 pub struct PersonRepoImpl {
     pub db: DatabaseConnection,
@@ -25,7 +25,9 @@ fn map_model_to_person(m: person::Model) -> Person {
         national_id: m.national_id,
         passport_number: m.passport_number,
         gender: m.gender,
-        birth_date: m.birth_date.and_then(|d| chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
+        birth_date: m
+            .birth_date
+            .and_then(|d| chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
         place_of_birth: m.place_of_birth,
         nationality: m.nationality,
         blood_type: m.blood_type,
@@ -51,30 +53,51 @@ impl PersonRepository for PersonRepoImpl {
         Ok(model.map(map_model_to_person))
     }
 
-    async fn find_by_national_id(&self, org_id: Option<Uuid>, national_id: &str) -> Result<Option<Person>, DomainError> {
+    async fn find_by_national_id(
+        &self,
+        org_id: Option<Uuid>,
+        national_id: &str,
+    ) -> Result<Option<Person>, DomainError> {
         let mut query = PersonEntity::find().filter(person::Column::NationalId.eq(national_id));
         if let Some(oid) = org_id {
             query = query.filter(person::Column::OrgId.eq(oid));
         }
-        let model = query.one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let model = query
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(map_model_to_person))
     }
 
-    async fn find_by_email(&self, org_id: Option<Uuid>, email: &str) -> Result<Option<Person>, DomainError> {
+    async fn find_by_email(
+        &self,
+        org_id: Option<Uuid>,
+        email: &str,
+    ) -> Result<Option<Person>, DomainError> {
         let mut query = PersonEntity::find().filter(person::Column::Email.eq(email));
         if let Some(oid) = org_id {
             query = query.filter(person::Column::OrgId.eq(oid));
         }
-        let model = query.one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let model = query
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(map_model_to_person))
     }
 
-    async fn find_by_phone(&self, org_id: Option<Uuid>, phone: &str) -> Result<Option<Person>, DomainError> {
+    async fn find_by_phone(
+        &self,
+        org_id: Option<Uuid>,
+        phone: &str,
+    ) -> Result<Option<Person>, DomainError> {
         let mut query = PersonEntity::find().filter(person::Column::Phone.eq(phone));
         if let Some(oid) = org_id {
             query = query.filter(person::Column::OrgId.eq(oid));
         }
-        let model = query.one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let model = query
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(map_model_to_person))
     }
 
@@ -115,10 +138,21 @@ impl PersonRepository for PersonRepoImpl {
             updated_at: Set(person.updated_at),
         };
 
-        if PersonEntity::find_by_id(person.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active_model.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if PersonEntity::find_by_id(person.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active_model
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active_model.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active_model
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
 
         Ok(())

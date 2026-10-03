@@ -14,30 +14,29 @@
 //! - Verify initialization completeness
 //! - Return strongly-typed bootstrap result
 
-use std::sync::Arc;
-use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use uuid::Uuid;
 
+use orbis_domain::entities::identity::{IdentityProvider, UserIdentity};
 use orbis_domain::entities::organization::{InstitutionType, Organization};
 use orbis_domain::entities::person::Person;
-use orbis_domain::entities::user::User;
-use orbis_domain::entities::identity::{UserIdentity, IdentityProvider};
 use orbis_domain::entities::role::Role;
 use orbis_domain::entities::role_permission::RolePermission;
-use orbis_domain::entities::user_role_assignment::UserRoleAssignment;
 use orbis_domain::entities::settings::OrganizationSettings;
+use orbis_domain::entities::user::User;
+use orbis_domain::entities::user_role_assignment::UserRoleAssignment;
 use orbis_domain::errors::DomainError;
 
+use super::coa_loader::CoaBlueprintLoader;
+use crate::ports::event_bus::EventBus;
 use crate::ports::repositories::{
-    OrganizationRepository, UserRepository, PersonRepository,
-    UserIdentityRepository, RoleRepository, SettingsRepository, SystemRepository,
-    CurrencyRepository, AccountRepository,
+    AccountRepository, CurrencyRepository, OrganizationRepository, PersonRepository,
+    RoleRepository, SettingsRepository, SystemRepository, UserIdentityRepository, UserRepository,
 };
 use crate::ports::security::PasswordHasher;
-use crate::ports::event_bus::EventBus;
 use orbis_domain::entities::currency::Currency;
-use super::coa_loader::CoaBlueprintLoader;
 
 // ═══════════════════════════════════════════════════════════════
 // Bootstrap Request
@@ -198,11 +197,13 @@ impl BootstrapService {
 
         // Determine institution type from organization metadata
         let institution_type = if let Some(oid) = org_id {
-            self.org_repo.find_by_id(oid).await?
-                .and_then(|o| o.metadata.as_ref()
+            self.org_repo.find_by_id(oid).await?.and_then(|o| {
+                o.metadata
+                    .as_ref()
                     .and_then(|m| m.get("institution_type"))
                     .and_then(|v| v.as_str())
-                    .map(|s| s.to_string()))
+                    .map(|s| s.to_string())
+            })
         } else {
             None
         };
@@ -253,10 +254,12 @@ impl BootstrapService {
             // Recovery: organization exists but admin doesn't.
             // Reuse the existing organization.
             warnings.push("Organization already existed — resuming bootstrap".to_string());
-            let org_id = self.system_repo.get_first_org_id().await?
-                .ok_or_else(|| DomainError::Internal("Organization flag set but no org found".into()))?;
-            self.org_repo.find_by_id(org_id).await?
-                .ok_or_else(|| DomainError::Internal("Organization ID exists but record not found".into()))?
+            let org_id = self.system_repo.get_first_org_id().await?.ok_or_else(|| {
+                DomainError::Internal("Organization flag set but no org found".into())
+            })?;
+            self.org_repo.find_by_id(org_id).await?.ok_or_else(|| {
+                DomainError::Internal("Organization ID exists but record not found".into())
+            })?
         } else {
             self.create_organization(&req).await?
         };
@@ -265,7 +268,8 @@ impl BootstrapService {
         let institution_type = InstitutionType::from_str_loose(&req.institution_type);
 
         // ── Step 4: Initialize organization settings ──────────
-        self.initialize_settings(org_id, &institution_type, &req).await?;
+        self.initialize_settings(org_id, &institution_type, &req)
+            .await?;
 
         // ── Step 5: Seed system reference currencies ──────────
         self.seed_system_currencies(org_id, &req).await?;
@@ -307,19 +311,29 @@ impl BootstrapService {
 
     fn validate_request(&self, req: &BootstrapRequest) -> Result<(), DomainError> {
         if req.organization_name.trim().is_empty() {
-            return Err(DomainError::Validation("Organization name is required".into()));
+            return Err(DomainError::Validation(
+                "Organization name is required".into(),
+            ));
         }
         if req.admin_first_name.trim().is_empty() {
-            return Err(DomainError::Validation("Administrator first name is required".into()));
+            return Err(DomainError::Validation(
+                "Administrator first name is required".into(),
+            ));
         }
         if req.admin_last_name.trim().is_empty() {
-            return Err(DomainError::Validation("Administrator last name is required".into()));
+            return Err(DomainError::Validation(
+                "Administrator last name is required".into(),
+            ));
         }
         if req.admin_email.trim().is_empty() {
-            return Err(DomainError::Validation("Administrator email is required".into()));
+            return Err(DomainError::Validation(
+                "Administrator email is required".into(),
+            ));
         }
         if req.admin_password.len() < 8 {
-            return Err(DomainError::Validation("Administrator password must be at least 8 characters".into()));
+            return Err(DomainError::Validation(
+                "Administrator password must be at least 8 characters".into(),
+            ));
         }
         if req.timezone.trim().is_empty() {
             return Err(DomainError::Validation("Timezone is required".into()));
@@ -333,7 +347,9 @@ impl BootstrapService {
 
         // Validate email format (basic)
         if !req.admin_email.contains('@') || !req.admin_email.contains('.') {
-            return Err(DomainError::Validation("Invalid administrator email format".into()));
+            return Err(DomainError::Validation(
+                "Invalid administrator email format".into(),
+            ));
         }
 
         Ok(())
@@ -343,9 +359,13 @@ impl BootstrapService {
     // Internal: Create Organization
     // ─────────────────────────────────────────────────────────
 
-    async fn create_organization(&self, req: &BootstrapRequest) -> Result<Organization, DomainError> {
+    async fn create_organization(
+        &self,
+        req: &BootstrapRequest,
+    ) -> Result<Organization, DomainError> {
         // Automatically determine base slug from request, English name, or Arabic name
-        let mut target_slug = req.organization_slug
+        let mut target_slug = req
+            .organization_slug
             .as_deref()
             .map(|s| s.trim())
             .filter(|s| !s.is_empty())
@@ -378,12 +398,15 @@ impl BootstrapService {
 
         // Apply optional fields from bootstrap request
         org.name_ar = req.organization_name_ar.clone();
-        let auto_code = req.organization_code.as_deref()
+        let auto_code = req
+            .organization_code
+            .as_deref()
             .map(|c| c.trim())
             .filter(|c| !c.is_empty())
             .map(|c| c.to_uppercase())
             .unwrap_or_else(|| {
-                let prefix: String = final_slug.split('-')
+                let prefix: String = final_slug
+                    .split('-')
                     .filter_map(|w| w.chars().next())
                     .take(4)
                     .collect::<String>()
@@ -391,7 +414,14 @@ impl BootstrapService {
                 if prefix.len() >= 2 {
                     format!("{}-01", prefix)
                 } else {
-                    format!("{}-01", final_slug.chars().take(3).collect::<String>().to_uppercase())
+                    format!(
+                        "{}-01",
+                        final_slug
+                            .chars()
+                            .take(3)
+                            .collect::<String>()
+                            .to_uppercase()
+                    )
                 }
             });
         org.code = Some(auto_code);
@@ -472,7 +502,11 @@ impl BootstrapService {
         req: &BootstrapRequest,
     ) -> Result<(), DomainError> {
         let now = Utc::now();
-        let base_code = req.base_currency_code.as_deref().unwrap_or("SAR").to_uppercase();
+        let base_code = req
+            .base_currency_code
+            .as_deref()
+            .unwrap_or("SAR")
+            .to_uppercase();
 
         let standard_currencies = [
             ("SAR", "Saudi Riyal", Some("ريال سعودي"), "ر.س", "after", 2),
@@ -480,9 +514,30 @@ impl BootstrapService {
             ("AED", "UAE Dirham", Some("درهم إماراتي"), "د.إ", "after", 2),
             ("YER", "Yemeni Rial", Some("ريال يمني"), "ر.ي", "after", 2),
             ("EUR", "Euro", Some("يورو"), "€", "after", 2),
-            ("GBP", "British Pound", Some("جنيه إسترليني"), "£", "before", 2),
-            ("KWD", "Kuwaiti Dinar", Some("دينار كويتي"), "د.ك", "after", 3),
-            ("BHD", "Bahraini Dinar", Some("دينار بحريني"), "د.ب", "after", 3),
+            (
+                "GBP",
+                "British Pound",
+                Some("جنيه إسترليني"),
+                "£",
+                "before",
+                2,
+            ),
+            (
+                "KWD",
+                "Kuwaiti Dinar",
+                Some("دينار كويتي"),
+                "د.ك",
+                "after",
+                3,
+            ),
+            (
+                "BHD",
+                "Bahraini Dinar",
+                Some("دينار بحريني"),
+                "د.ب",
+                "after",
+                3,
+            ),
             ("QAR", "Qatari Riyal", Some("ريال قطري"), "ر.ق", "after", 2),
             ("OMR", "Omani Rial", Some("ريال عماني"), "ر.ع", "after", 3),
         ];
@@ -517,18 +572,35 @@ impl BootstrapService {
         org_id: Uuid,
         req: &BootstrapRequest,
     ) -> Result<(), DomainError> {
-        let currency_code = req.base_currency_code.clone().unwrap_or_else(|| "SAR".to_string());
+        let currency_code = req
+            .base_currency_code
+            .clone()
+            .unwrap_or_else(|| "SAR".to_string());
 
-        let accounts = match CoaBlueprintLoader::parse_accounts(org_id, &currency_code, &req.institution_type) {
-            Ok(accs) => accs,
-            Err(e) => {
-                tracing::error!("Failed to parse COA blueprint for {}: {}", req.institution_type, e);
-                return Err(DomainError::Internal(format!("Failed to parse COA blueprint: {}", e)));
-            }
-        };
+        let accounts =
+            match CoaBlueprintLoader::parse_accounts(org_id, &currency_code, &req.institution_type)
+            {
+                Ok(accs) => accs,
+                Err(e) => {
+                    tracing::error!(
+                        "Failed to parse COA blueprint for {}: {}",
+                        req.institution_type,
+                        e
+                    );
+                    return Err(DomainError::Internal(format!(
+                        "Failed to parse COA blueprint: {}",
+                        e
+                    )));
+                }
+            };
 
         for account in accounts {
-            if self.account_repo.find_by_code(org_id, &account.code).await?.is_none() {
+            if self
+                .account_repo
+                .find_by_code(org_id, &account.code)
+                .await?
+                .is_none()
+            {
                 self.account_repo.save(&account).await?;
             }
         }
@@ -547,7 +619,11 @@ impl BootstrapService {
 
         let system_roles = vec![
             ("super_admin", "Super Administrator", Some("مدير النظام")),
-            ("org_admin", "Organization Administrator", Some("مدير المؤسسة")),
+            (
+                "org_admin",
+                "Organization Administrator",
+                Some("مدير المؤسسة"),
+            ),
             ("principal", "Principal", Some("المدير")),
             ("teacher", "Teacher", Some("معلم")),
             ("guardian", "Guardian", Some("ولي أمر")),
@@ -579,30 +655,61 @@ impl BootstrapService {
 
     /// Assign all permissions to an admin role.
     /// Idempotent — replaces existing permissions.
-    async fn create_admin_permissions(&self, org_id: Uuid, role_id: &str) -> Result<(), DomainError> {
+    async fn create_admin_permissions(
+        &self,
+        org_id: Uuid,
+        role_id: &str,
+    ) -> Result<(), DomainError> {
         let now = Utc::now();
 
         // All permission strings from the Permission enum
         let all_permissions = [
             ("organization", vec!["read", "write"]),
-            ("user", vec!["read", "write", "delete", "role_write", "password_write"]),
-            ("period", vec!["read", "write", "activate", "lock", "unlock"]),
+            (
+                "user",
+                vec!["read", "write", "delete", "role_write", "password_write"],
+            ),
+            (
+                "period",
+                vec!["read", "write", "activate", "lock", "unlock"],
+            ),
             ("org_unit", vec!["read", "write", "delete"]),
             ("class", vec!["read", "write", "delete"]),
             ("subject", vec!["read", "write", "delete"]),
             ("schedule", vec!["read", "write", "delete"]),
             ("assessment", vec!["read", "write", "delete"]),
-            ("grade", vec!["read", "write", "entry_manage", "analytics", "report"]),
-            ("student", vec!["read", "write", "create", "update", "delete"]),
+            (
+                "grade",
+                vec!["read", "write", "entry_manage", "analytics", "report"],
+            ),
+            (
+                "student",
+                vec!["read", "write", "create", "update", "delete"],
+            ),
             ("guardian", vec!["read", "write", "delete"]),
             ("enrollment", vec!["read", "write", "promote", "transfer"]),
             ("workflow", vec!["read", "write", "approve", "execute"]),
             ("attendance", vec!["read", "write", "analytics", "report"]),
             ("behavior", vec!["read", "write", "delete", "ai"]),
             ("document", vec!["read", "write", "delete"]),
-            ("template", vec!["read", "write", "publish", "delete", "import", "export",
-                             "generate_single", "generate_batch", "generate_download",
-                             "asset_upload", "asset_delete", "component_write", "component_delete"]),
+            (
+                "template",
+                vec![
+                    "read",
+                    "write",
+                    "publish",
+                    "delete",
+                    "import",
+                    "export",
+                    "generate_single",
+                    "generate_batch",
+                    "generate_download",
+                    "asset_upload",
+                    "asset_delete",
+                    "component_write",
+                    "component_delete",
+                ],
+            ),
             ("exam_session", vec!["read", "write", "activate", "delete"]),
             ("seating_number", vec!["generate", "read"]),
             ("secret_number", vec!["generate", "read", "reveal"]),
@@ -616,7 +723,10 @@ impl BootstrapService {
             ("data", vec!["import", "export"]),
             ("finance", vec!["read", "write", "payment"]),
             ("promotion", vec!["read", "write", "execute"]),
-            ("employee", vec!["read", "write", "create", "update", "delete"]),
+            (
+                "employee",
+                vec!["read", "write", "create", "update", "delete"],
+            ),
             ("group", vec!["read", "write", "delete", "assign"]),
             ("system", vec!["autopilot"]),
         ];
@@ -636,7 +746,9 @@ impl BootstrapService {
             }
         }
 
-        self.role_repo.save_role_permissions(org_id, role_id, &perms).await?;
+        self.role_repo
+            .save_role_permissions(org_id, role_id, &perms)
+            .await?;
 
         Ok(())
     }
@@ -653,8 +765,13 @@ impl BootstrapService {
         // Check if admin email already exists (idempotency)
         if let Some(existing_user) = self.user_repo.find_by_email(&req.admin_email).await? {
             // Admin already exists — return existing (recovery scenario)
-            let person = self.person_repo.find_by_id(existing_user.person_id).await?
-                .ok_or_else(|| DomainError::Internal("Admin user exists but person record missing".into()))?;
+            let person = self
+                .person_repo
+                .find_by_id(existing_user.person_id)
+                .await?
+                .ok_or_else(|| {
+                    DomainError::Internal("Admin user exists but person record missing".into())
+                })?;
             return Ok((existing_user, person));
         }
 
@@ -926,11 +1043,10 @@ pub fn transliterate_arabic(text: &str) -> String {
             '٧' => out.push('7'),
             '٨' => out.push('8'),
             '٩' => out.push('9'),
-            'َ' | 'ً' | 'ُ' | 'ٌ' | 'ِ' | 'ٍ' | 'ْ' | 'ّ' => {},
+            'َ' | 'ً' | 'ُ' | 'ٌ' | 'ِ' | 'ٍ' | 'ْ' | 'ّ' => {}
             other => out.push(other),
         }
     }
 
     out
 }
-

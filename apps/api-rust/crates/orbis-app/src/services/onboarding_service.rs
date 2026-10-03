@@ -15,35 +15,39 @@
 //! - Never directly bypasses domain rules
 //! - Blueprint-aware (School vs University vs Institute)
 
-use std::sync::Arc;
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use uuid::Uuid;
 
-use orbis_domain::entities::organization::InstitutionType;
+use orbis_domain::entities::academic_period::{
+    AcademicPeriod, AcademicPeriodState, PeriodKind, PeriodType,
+};
 use orbis_domain::entities::academic_year::AcademicYear;
-use orbis_domain::entities::academic_period::{AcademicPeriod, PeriodType, PeriodKind, AcademicPeriodState};
-use orbis_domain::entities::subject::Subject;
+use orbis_domain::entities::assessment_scheme::{
+    AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
+};
 use orbis_domain::entities::class::Class;
-use orbis_domain::entities::assessment_scheme::{AssessmentScheme, AssessmentComponent, AssessmentLevel, InstitutionScope};
-use orbis_domain::entities::fee_template::{FeeTemplate, FeeFrequency};
 use orbis_domain::entities::discount_template::{DiscountTemplate, DiscountType};
+use orbis_domain::entities::fee_template::{FeeFrequency, FeeTemplate};
 use orbis_domain::entities::org_unit::OrgUnit;
+use orbis_domain::entities::organization::InstitutionType;
+use orbis_domain::entities::subject::Subject;
 use orbis_domain::errors::DomainError;
-use orbis_domain::queries::filters::{SubjectFilter, ClassFilter, ClassSubjectFilter};
 use orbis_domain::iam::permission::Permission;
+use orbis_domain::queries::filters::{ClassFilter, ClassSubjectFilter, SubjectFilter};
 
 use crate::context::RequestContext;
-use crate::ports::repositories::{
-    OrganizationRepository, OrgUnitRepository, AcademicYearRepository,
-    AcademicPeriodRepository, SubjectRepository, ClassRepository,
-    ClassSubjectRepository, AssessmentSchemeRepository, SettingsRepository,
-    AccountRepository, FeeTemplateRepository, DiscountTemplateRepository,
-    RoomRepository, DocumentRequirementRepository, IntegrationRepository,
-};
-use crate::ports::reporting::ReportTemplateRepository;
 use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::reporting::ReportTemplateRepository;
+use crate::ports::repositories::{
+    AcademicPeriodRepository, AcademicYearRepository, AccountRepository,
+    AssessmentSchemeRepository, ClassRepository, ClassSubjectRepository,
+    DiscountTemplateRepository, DocumentRequirementRepository, FeeTemplateRepository,
+    IntegrationRepository, OrgUnitRepository, OrganizationRepository, RoomRepository,
+    SettingsRepository, SubjectRepository,
+};
 
 // ═══════════════════════════════════════════════════════════════
 // Models & Data Transfer Objects (DTOs)
@@ -244,10 +248,14 @@ impl OnboardingService {
 
     /// Dynamically evaluates real database state to produce the full DAG onboarding state.
     pub async fn get_state(&self, org_id: Uuid) -> Result<OnboardingStateResponse, DomainError> {
-        let org = self.org_repo.find_by_id(org_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Organization {} not found", org_id)))?;
+        let org =
+            self.org_repo.find_by_id(org_id).await?.ok_or_else(|| {
+                DomainError::NotFound(format!("Organization {} not found", org_id))
+            })?;
 
-        let institution_type_str = org.metadata.as_ref()
+        let institution_type_str = org
+            .metadata
+            .as_ref()
             .and_then(|m| m.get("institution_type"))
             .and_then(|v| v.as_str())
             .unwrap_or("school");
@@ -264,16 +272,30 @@ impl OnboardingService {
             self.period_repo.find_by_org(org_id).await?
         };
 
-        let subjects_res = self.subject_repo.list(org_id, SubjectFilter::default()).await?;
+        let subjects_res = self
+            .subject_repo
+            .list(org_id, SubjectFilter::default())
+            .await?;
         let classes_res = self.class_repo.list(org_id, ClassFilter::default()).await?;
-        let class_subjects_res = self.class_subject_repo.list(org_id, ClassSubjectFilter::default()).await?;
+        let class_subjects_res = self
+            .class_subject_repo
+            .list(org_id, ClassSubjectFilter::default())
+            .await?;
         let schemes = self.assessment_scheme_repo.find_by_org(org_id).await?;
-        let settings = self.settings_repo.get_settings(org_id).await.unwrap_or_default();
+        let settings = self
+            .settings_repo
+            .get_settings(org_id)
+            .await
+            .unwrap_or_default();
         let accounts = self.account_repo.find_by_org(org_id).await?;
         let fee_templates = self.fee_template_repo.find_by_org(org_id).await?;
         let discount_templates = self.discount_template_repo.find_by_org(org_id).await?;
         let doc_reqs = self.doc_req_repo.find_by_org(org_id).await?;
-        let templates = self.template_repo.list_by_org(org_id, None, None, None).await.unwrap_or_default();
+        let templates = self
+            .template_repo
+            .list_by_org(org_id, None, None, None)
+            .await
+            .unwrap_or_default();
         let integrations = self.integration_repo.find_configs_by_org(org_id).await?;
 
         // ── 2. Raw Task Completion & Progress Checks ───────────
@@ -321,7 +343,10 @@ impl OnboardingService {
             vec!["school".into(), "university".into(), "institute".into()],
             vec!["org_unit:write".into()],
             "At least one active branch or organizational unit created.",
-            Some(("Requires organization profile completion.", "يتطلب إكمال الملف التعريفي أولاً.")),
+            Some((
+                "Requires organization profile completion.",
+                "يتطلب إكمال الملف التعريفي أولاً.",
+            )),
         ));
 
         // Task 3: Facilities & Rooms (Optional)
@@ -342,7 +367,10 @@ impl OnboardingService {
             vec!["school".into(), "university".into(), "institute".into()],
             vec!["org_unit:write".into()],
             "Educational rooms or facilities defined.",
-            Some(("Requires at least one branch or campus.", "يتطلب وجود فرع أو مقر واحد على الأقل.")),
+            Some((
+                "Requires at least one branch or campus.",
+                "يتطلب وجود فرع أو مقر واحد على الأقل.",
+            )),
         ));
 
         // Task 4: Academic Year
@@ -381,13 +409,23 @@ impl OnboardingService {
             0
         };
         let period_desc_en = match inst_type {
-            InstitutionType::School => "Configure Term 1 & Term 2, with monthly evaluation periods and exam sessions.",
-            InstitutionType::University => "Configure Semester 1 (Fall), Semester 2 (Spring), and enrollment windows.",
-            InstitutionType::Institute => "Configure modular training cycles and cohort evaluation periods.",
+            InstitutionType::School => {
+                "Configure Term 1 & Term 2, with monthly evaluation periods and exam sessions."
+            }
+            InstitutionType::University => {
+                "Configure Semester 1 (Fall), Semester 2 (Spring), and enrollment windows."
+            }
+            InstitutionType::Institute => {
+                "Configure modular training cycles and cohort evaluation periods."
+            }
         };
         let period_desc_ar = match inst_type {
-            InstitutionType::School => "تهيئة الفصول الدراسية (الأول والثاني) مع الفترات التقويمية الشهرية وجلسات الاختبارات.",
-            InstitutionType::University => "تهيئة الفصول الجامعية (الخريف والربيع) وفترات التسجيل والحذف والإضافة.",
+            InstitutionType::School => {
+                "تهيئة الفصول الدراسية (الأول والثاني) مع الفترات التقويمية الشهرية وجلسات الاختبارات."
+            }
+            InstitutionType::University => {
+                "تهيئة الفصول الجامعية (الخريف والربيع) وفترات التسجيل والحذف والإضافة."
+            }
             InstitutionType::Institute => "تهيئة الدورات التدريبية والدفعات وفترات التقييم المهني.",
         };
         raw_tasks.push((
@@ -406,7 +444,10 @@ impl OnboardingService {
             vec!["school".into(), "university".into(), "institute".into()],
             vec!["period:write".into()],
             "Configured terms and periods under the active academic year.",
-            Some(("Requires an active Academic Year.", "يتطلب إنشاء وتفعيل العام الدراسي أولاً.")),
+            Some((
+                "Requires an active Academic Year.",
+                "يتطلب إنشاء وتفعيل العام الدراسي أولاً.",
+            )),
         ));
 
         // Task 6: Academic Subjects / Courses
@@ -427,7 +468,10 @@ impl OnboardingService {
             vec!["school".into(), "university".into(), "institute".into()],
             vec!["subject:write".into()],
             "At least one subject or course defined.",
-            Some(("Requires branch configuration.", "يتطلب وجود فرع تعليمي واحد على الأقل.")),
+            Some((
+                "Requires branch configuration.",
+                "يتطلب وجود فرع تعليمي واحد على الأقل.",
+            )),
         ));
 
         // Task 7: Classes / Sections
@@ -469,19 +513,32 @@ impl OnboardingService {
             vec!["school".into(), "university".into(), "institute".into()],
             vec!["class:write".into()],
             "Class-subject teacher assignments configured.",
-            Some(("Requires classes and subjects to be configured.", "يتطلب إنشاء الفصول والمواد أولاً.")),
+            Some((
+                "Requires classes and subjects to be configured.",
+                "يتطلب إنشاء الفصول والمواد أولاً.",
+            )),
         ));
 
         // Task 9: Assessment Scheme & Grading Policy
         let has_schemes = !schemes.is_empty();
         let scheme_desc_en = match inst_type {
-            InstitutionType::School => "Configure 100-point monthly scheme (Homework, Oral, Attendance, Written Exam) and term weighting.",
-            InstitutionType::University => "Configure course assessment breakdown (Midterm, Projects, Final Exam) and GPA grading scale.",
-            InstitutionType::Institute => "Configure competency-based practical assessment and pass/fail thresholds.",
+            InstitutionType::School => {
+                "Configure 100-point monthly scheme (Homework, Oral, Attendance, Written Exam) and term weighting."
+            }
+            InstitutionType::University => {
+                "Configure course assessment breakdown (Midterm, Projects, Final Exam) and GPA grading scale."
+            }
+            InstitutionType::Institute => {
+                "Configure competency-based practical assessment and pass/fail thresholds."
+            }
         };
         let scheme_desc_ar = match inst_type {
-            InstitutionType::School => "تهيئة كشف المحصلة الشهرية من 100 (واجبات، شفوي، مواظبة، اختبار تحريري) ووزن الفصل.",
-            InstitutionType::University => "تهيئة توزيع درجات المقرر (نصفي، مشاريع، نهائي) وسلم المعدل التراكمي GPA.",
+            InstitutionType::School => {
+                "تهيئة كشف المحصلة الشهرية من 100 (واجبات، شفوي، مواظبة، اختبار تحريري) ووزن الفصل."
+            }
+            InstitutionType::University => {
+                "تهيئة توزيع درجات المقرر (نصفي، مشاريع، نهائي) وسلم المعدل التراكمي GPA."
+            }
             InstitutionType::Institute => "تهيئة كفايات التقييم العملي والمهني ومعايير الاجتياز.",
         };
         raw_tasks.push((
@@ -500,7 +557,10 @@ impl OnboardingService {
             vec!["school".into(), "university".into(), "institute".into()],
             vec!["assessment:write".into()],
             "At least one assessment scheme created with component weights.",
-            Some(("Requires subjects to be created first.", "يتطلب إنشاء المواد الدراسية أولاً.")),
+            Some((
+                "Requires subjects to be created first.",
+                "يتطلب إنشاء المواد الدراسية أولاً.",
+            )),
         ));
 
         // Task 10: Academic Policy & Pass/Fail Criteria
@@ -525,7 +585,14 @@ impl OnboardingService {
         ));
 
         // Task 11: Chart of Accounts & Ledger
-        let has_coa = accounts.iter().any(|a| a.code == "110101" || a.code == "410101" || a.code == "1" || a.code == "1101" || a.code == "110301" || a.code == "1000");
+        let has_coa = accounts.iter().any(|a| {
+            a.code == "110101"
+                || a.code == "410101"
+                || a.code == "1"
+                || a.code == "1101"
+                || a.code == "110301"
+                || a.code == "1000"
+        });
         raw_tasks.push((
             "chart_of_accounts",
             OnboardingTaskCategory::Finance,
@@ -584,7 +651,10 @@ impl OnboardingService {
             vec!["school".into(), "university".into(), "institute".into()],
             vec!["finance:write".into()],
             "Discount templates configured.",
-            Some(("Requires fee templates to be created first.", "يتطلب إنشاء قوالب الرسوم أولاً.")),
+            Some((
+                "Requires fee templates to be created first.",
+                "يتطلب إنشاء قوالب الرسوم أولاً.",
+            )),
         ));
 
         // Task 14: Student Registration & Admission Policy
@@ -705,7 +775,8 @@ impl OnboardingService {
             perms,
             condition,
             blocking_hint,
-        ) in raw_tasks {
+        ) in raw_tasks
+        {
             let id_str = id.to_string();
 
             // Check if all prerequisites are fulfilled
@@ -795,7 +866,10 @@ impl OnboardingService {
         for cat in all_categories {
             let cat_tasks: Vec<_> = tasks.iter().filter(|t| t.category == cat).collect();
             let total = cat_tasks.len();
-            let completed = cat_tasks.iter().filter(|t| t.status == OnboardingTaskStatus::Completed).count();
+            let completed = cat_tasks
+                .iter()
+                .filter(|t| t.status == OnboardingTaskStatus::Completed)
+                .count();
             let prog = if total == 0 {
                 100
             } else {
@@ -829,12 +903,21 @@ impl OnboardingService {
         let is_institution_ready = required_completed >= required_count;
 
         // Find the first unblocked, uncompleted required task (or first optional)
-        let recommended_next_task = tasks.iter()
-            .find(|t| t.is_required && (t.status == OnboardingTaskStatus::NotStarted || t.status == OnboardingTaskStatus::InProgress))
+        let recommended_next_task = tasks
+            .iter()
+            .find(|t| {
+                t.is_required
+                    && (t.status == OnboardingTaskStatus::NotStarted
+                        || t.status == OnboardingTaskStatus::InProgress)
+            })
             .cloned()
             .or_else(|| {
-                tasks.iter()
-                    .find(|t| t.status == OnboardingTaskStatus::Optional || t.status == OnboardingTaskStatus::InProgress)
+                tasks
+                    .iter()
+                    .find(|t| {
+                        t.status == OnboardingTaskStatus::Optional
+                            || t.status == OnboardingTaskStatus::InProgress
+                    })
                     .cloned()
             });
 
@@ -880,11 +963,17 @@ impl OnboardingService {
         org_id: Uuid,
         req: ProvisionDefaultsRequest,
     ) -> Result<ProvisionDefaultsResult, DomainError> {
-        self.permission_checker.check(ctx, Permission::OrganizationWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::OrganizationWrite)
+            .await?;
 
-        let org = self.org_repo.find_by_id(org_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Organization {} not found", org_id)))?;
-        let institution_type_str = org.metadata.as_ref()
+        let org =
+            self.org_repo.find_by_id(org_id).await?.ok_or_else(|| {
+                DomainError::NotFound(format!("Organization {} not found", org_id))
+            })?;
+        let institution_type_str = org
+            .metadata
+            .as_ref()
             .and_then(|m| m.get("institution_type"))
             .and_then(|v| v.as_str())
             .unwrap_or("school");
@@ -937,14 +1026,26 @@ impl OnboardingService {
             let year_id = Uuid::new_v4();
             let current_year_num = chrono::Datelike::year(&now);
             let next_year_num = current_year_num + 1;
-            let year_name = req.academic_year_name.unwrap_or_else(|| format!("{}-{}", current_year_num, next_year_num));
-            let year_name_ar = req.academic_year_name_ar.unwrap_or_else(|| format!("{}-{}", current_year_num, next_year_num));
+            let year_name = req
+                .academic_year_name
+                .unwrap_or_else(|| format!("{}-{}", current_year_num, next_year_num));
+            let year_name_ar = req
+                .academic_year_name_ar
+                .unwrap_or_else(|| format!("{}-{}", current_year_num, next_year_num));
 
             let start_date = req.start_date.unwrap_or_else(|| {
-                chrono::NaiveDate::from_ymd_opt(current_year_num, 9, 1).unwrap().and_hms_opt(0, 0, 0).unwrap().and_utc()
+                chrono::NaiveDate::from_ymd_opt(current_year_num, 9, 1)
+                    .unwrap()
+                    .and_hms_opt(0, 0, 0)
+                    .unwrap()
+                    .and_utc()
             });
             let end_date = req.end_date.unwrap_or_else(|| {
-                chrono::NaiveDate::from_ymd_opt(next_year_num, 6, 30).unwrap().and_hms_opt(23, 59, 59).unwrap().and_utc()
+                chrono::NaiveDate::from_ymd_opt(next_year_num, 6, 30)
+                    .unwrap()
+                    .and_hms_opt(23, 59, 59)
+                    .unwrap()
+                    .and_utc()
             });
 
             let year = AcademicYear {
@@ -977,7 +1078,11 @@ impl OnboardingService {
                     // Term 1 (Sep - Jan)
                     let t1_id = Uuid::new_v4();
                     let t1_start = start_date;
-                    let t1_end = chrono::NaiveDate::from_ymd_opt(current_year_num + 1, 1, 31).unwrap().and_hms_opt(23, 59, 59).unwrap().and_utc();
+                    let t1_end = chrono::NaiveDate::from_ymd_opt(current_year_num + 1, 1, 31)
+                        .unwrap()
+                        .and_hms_opt(23, 59, 59)
+                        .unwrap()
+                        .and_utc();
                     let t1 = AcademicPeriod {
                         id: t1_id,
                         org_id,
@@ -1013,7 +1118,11 @@ impl OnboardingService {
 
                     // Term 2 (Feb - Jun)
                     let t2_id = Uuid::new_v4();
-                    let t2_start = chrono::NaiveDate::from_ymd_opt(current_year_num + 1, 2, 1).unwrap().and_hms_opt(0, 0, 0).unwrap().and_utc();
+                    let t2_start = chrono::NaiveDate::from_ymd_opt(current_year_num + 1, 2, 1)
+                        .unwrap()
+                        .and_hms_opt(0, 0, 0)
+                        .unwrap()
+                        .and_utc();
                     let t2_end = end_date;
                     let t2 = AcademicPeriod {
                         id: t2_id,
@@ -1064,7 +1173,11 @@ impl OnboardingService {
                         period_kind: PeriodKind::Teaching,
                         state: AcademicPeriodState::ActiveTeaching,
                         start_date,
-                        end_date: chrono::NaiveDate::from_ymd_opt(current_year_num + 1, 1, 31).unwrap().and_hms_opt(23, 59, 59).unwrap().and_utc(),
+                        end_date: chrono::NaiveDate::from_ymd_opt(current_year_num + 1, 1, 31)
+                            .unwrap()
+                            .and_hms_opt(23, 59, 59)
+                            .unwrap()
+                            .and_utc(),
                         hijri_start: None,
                         hijri_end: None,
                         enrollment_starts_at: None,
@@ -1098,7 +1211,11 @@ impl OnboardingService {
                         period_type: PeriodType::Semester,
                         period_kind: PeriodKind::Teaching,
                         state: AcademicPeriodState::Planning,
-                        start_date: chrono::NaiveDate::from_ymd_opt(current_year_num + 1, 2, 1).unwrap().and_hms_opt(0, 0, 0).unwrap().and_utc(),
+                        start_date: chrono::NaiveDate::from_ymd_opt(current_year_num + 1, 2, 1)
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap()
+                            .and_utc(),
                         end_date,
                         hijri_start: None,
                         hijri_end: None,
@@ -1164,7 +1281,10 @@ impl OnboardingService {
         };
 
         // 3. Provision Core Subjects if requested & empty
-        let existing_subjects = self.subject_repo.list(org_id, SubjectFilter::default()).await?;
+        let existing_subjects = self
+            .subject_repo
+            .list(org_id, SubjectFilter::default())
+            .await?;
         if existing_subjects.total_count == 0 && req.provision_subjects.unwrap_or(true) {
             let sample_subjects = match inst_type {
                 InstitutionType::School => vec![
@@ -1173,18 +1293,66 @@ impl OnboardingService {
                     ("ENG", "English Language", Some("اللغة الإنجليزية"), true, 4),
                     ("SCI", "General Science", Some("العلوم العامة"), true, 4),
                     ("ISLAM", "Islamic Studies", Some("التربية الإسلامية"), true, 3),
-                    ("SOC", "Social Studies", Some("الدراسات الاجتماعية"), false, 2),
-                    ("CS", "Computer & Digital Skills", Some("الحاسب والمهارات الرقمية"), false, 2),
+                    (
+                        "SOC",
+                        "Social Studies",
+                        Some("الدراسات الاجتماعية"),
+                        false,
+                        2,
+                    ),
+                    (
+                        "CS",
+                        "Computer & Digital Skills",
+                        Some("الحاسب والمهارات الرقمية"),
+                        false,
+                        2,
+                    ),
                 ],
                 InstitutionType::University => vec![
-                    ("CS101", "Introduction to Computer Science", Some("مقدمة في علوم الحاسب"), true, 3),
-                    ("ENG101", "Academic Writing & Research", Some("الكتابة الأكاديمية والبحث"), true, 3),
-                    ("MATH101", "Calculus I", Some("حساب التفاضل والتكامل 1"), true, 4),
-                    ("PHYS101", "General Physics", Some("الفيزياء العامة"), true, 4),
+                    (
+                        "CS101",
+                        "Introduction to Computer Science",
+                        Some("مقدمة في علوم الحاسب"),
+                        true,
+                        3,
+                    ),
+                    (
+                        "ENG101",
+                        "Academic Writing & Research",
+                        Some("الكتابة الأكاديمية والبحث"),
+                        true,
+                        3,
+                    ),
+                    (
+                        "MATH101",
+                        "Calculus I",
+                        Some("حساب التفاضل والتكامل 1"),
+                        true,
+                        4,
+                    ),
+                    (
+                        "PHYS101",
+                        "General Physics",
+                        Some("الفيزياء العامة"),
+                        true,
+                        4,
+                    ),
                 ],
                 InstitutionType::Institute => vec![
-                    ("TECH101", "Applied Technical Foundations", Some("الأسس التقنية التطبيقية"), true, 4),
-                    ("COMM101", "Professional Communication", Some("مهارات الاتصال المهني"), true, 2),
+                    (
+                        "TECH101",
+                        "Applied Technical Foundations",
+                        Some("الأسس التقنية التطبيقية"),
+                        true,
+                        4,
+                    ),
+                    (
+                        "COMM101",
+                        "Professional Communication",
+                        Some("مهارات الاتصال المهني"),
+                        true,
+                        2,
+                    ),
                 ],
             };
 
@@ -1219,22 +1387,60 @@ impl OnboardingService {
         // 4. Provision Starter Classes if requested & empty
         let existing_classes = self.class_repo.list(org_id, ClassFilter::default()).await?;
         if existing_classes.total_count == 0 && req.provision_stages_and_grades.unwrap_or(true) {
-            let active_period = self.period_repo.find_by_year(active_year_id).await?.into_iter().next();
+            let active_period = self
+                .period_repo
+                .find_by_year(active_year_id)
+                .await?
+                .into_iter()
+                .next();
             if let Some(period) = active_period {
                 let sample_classes = match inst_type {
                     InstitutionType::School => vec![
-                        ("Grade 1 - Section A", Some("الصف الأول - شعبة أ"), "Grade 1", "A"),
-                        ("Grade 1 - Section B", Some("الصف الأول - شعبة ب"), "Grade 1", "B"),
-                        ("Grade 2 - Section A", Some("الصف الثاني - شعبة أ"), "Grade 2", "A"),
-                        ("Grade 3 - Section A", Some("الصف الثالث - شعبة أ"), "Grade 3", "A"),
+                        (
+                            "Grade 1 - Section A",
+                            Some("الصف الأول - شعبة أ"),
+                            "Grade 1",
+                            "A",
+                        ),
+                        (
+                            "Grade 1 - Section B",
+                            Some("الصف الأول - شعبة ب"),
+                            "Grade 1",
+                            "B",
+                        ),
+                        (
+                            "Grade 2 - Section A",
+                            Some("الصف الثاني - شعبة أ"),
+                            "Grade 2",
+                            "A",
+                        ),
+                        (
+                            "Grade 3 - Section A",
+                            Some("الصف الثالث - شعبة أ"),
+                            "Grade 3",
+                            "A",
+                        ),
                     ],
                     InstitutionType::University => vec![
-                        ("CS101 - Section 01", Some("مقدمة علوم الحاسب - شعبة 01"), "Year 1", "01"),
-                        ("MATH101 - Section 01", Some("تفاضل 1 - شعبة 01"), "Year 1", "01"),
+                        (
+                            "CS101 - Section 01",
+                            Some("مقدمة علوم الحاسب - شعبة 01"),
+                            "Year 1",
+                            "01",
+                        ),
+                        (
+                            "MATH101 - Section 01",
+                            Some("تفاضل 1 - شعبة 01"),
+                            "Year 1",
+                            "01",
+                        ),
                     ],
-                    InstitutionType::Institute => vec![
-                        ("Cohort 1 - Morning Track", Some("الدفعة 1 - المسار الصباحي"), "Level 1", "A"),
-                    ],
+                    InstitutionType::Institute => vec![(
+                        "Cohort 1 - Morning Track",
+                        Some("الدفعة 1 - المسار الصباحي"),
+                        "Level 1",
+                        "A",
+                    )],
                 };
 
                 for (name, name_ar, level, div) in sample_classes {
@@ -1369,8 +1575,27 @@ impl OnboardingService {
         let existing_fees = self.fee_template_repo.find_by_org(org_id).await?;
         if existing_fees.is_empty() && req.provision_tuition_fee_template.unwrap_or(true) {
             let accounts = self.account_repo.find_by_org(org_id).await?;
-            let rev_acct = accounts.iter().find(|a| a.code == "410101" || a.code == "4101" || a.code == "4000" || a.account_type == orbis_domain::entities::account::AccountType::Revenue).map(|a| a.id).unwrap_or_else(Uuid::new_v4);
-            let rec_acct = accounts.iter().find(|a| a.code == "110301" || a.code == "1103" || a.code == "1120" || (a.account_type == orbis_domain::entities::account::AccountType::Asset && a.code.starts_with("1103"))).map(|a| a.id).unwrap_or_else(Uuid::new_v4);
+            let rev_acct = accounts
+                .iter()
+                .find(|a| {
+                    a.code == "410101"
+                        || a.code == "4101"
+                        || a.code == "4000"
+                        || a.account_type == orbis_domain::entities::account::AccountType::Revenue
+                })
+                .map(|a| a.id)
+                .unwrap_or_else(Uuid::new_v4);
+            let rec_acct = accounts
+                .iter()
+                .find(|a| {
+                    a.code == "110301"
+                        || a.code == "1103"
+                        || a.code == "1120"
+                        || (a.account_type == orbis_domain::entities::account::AccountType::Asset
+                            && a.code.starts_with("1103"))
+                })
+                .map(|a| a.id)
+                .unwrap_or_else(Uuid::new_v4);
 
             let fee_tmpl = FeeTemplate {
                 id: Uuid::new_v4(),
@@ -1380,7 +1605,10 @@ impl OnboardingService {
                 name_ar: Some("الرسوم الدراسية السنوية".to_string()),
                 category: "tuition".to_string(),
                 default_amount: Decimal::from(5000),
-                currency_code: org.base_currency_code.clone().unwrap_or_else(|| "SAR".to_string()),
+                currency_code: org
+                    .base_currency_code
+                    .clone()
+                    .unwrap_or_else(|| "SAR".to_string()),
                 revenue_account_id: rev_acct,
                 receivable_account_id: rec_acct,
                 applicable_levels: None, // Applies to all unless filtered
@@ -1406,7 +1634,9 @@ impl OnboardingService {
                 name_ar: Some("خصم الأخوة (10%)".to_string()),
                 discount_type: DiscountType::Percentage,
                 value: Decimal::from(10),
-                eligibility_rules: Some(serde_json::json!({ "type": "sibling", "account_code": "410301" })),
+                eligibility_rules: Some(
+                    serde_json::json!({ "type": "sibling", "account_code": "410301" }),
+                ),
                 is_approval_required: false,
                 is_auto_apply: true,
                 is_stackable: false,
@@ -1425,7 +1655,9 @@ impl OnboardingService {
                 name_ar: Some("منحة التفوق الأكاديمي (20%)".to_string()),
                 discount_type: DiscountType::Percentage,
                 value: Decimal::from(20),
-                eligibility_rules: Some(serde_json::json!({ "type": "merit", "account_code": "410302" })),
+                eligibility_rules: Some(
+                    serde_json::json!({ "type": "merit", "account_code": "410302" }),
+                ),
                 is_approval_required: true,
                 is_auto_apply: false,
                 is_stackable: false,

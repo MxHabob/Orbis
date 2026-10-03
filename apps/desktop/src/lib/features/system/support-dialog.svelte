@@ -4,6 +4,7 @@
   OS build metadata, node telemetry, and allows seamless submission or copying of support payloads.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api/client";
 import type { MulverseEcosystemInfo } from "$lib/api/types";
@@ -53,12 +54,12 @@ let showDiagnosticsPreview = $state(false);
 const isRTL = $derived(getLocale().startsWith("ar"));
 
 const categories = [
-  { value: "technical_support", labelEn: "Technical Bug / Issue", labelAr: "مشكلة فنية أو خطأ برمجي" },
-  { value: "onboarding_setup", labelEn: "Setup & Onboarding Assistance", labelAr: "مساعدة في التهيئة والتأسيس" },
-  { value: "finance_accounting", labelEn: "Finance & Double-Entry Ledger", labelAr: "الحسابات والمالية والشجرة المحاسبية" },
-  { value: "academics_grading", labelEn: "Academics & Grading Policy", labelAr: "التقييمات والدرجات والشهادات" },
-  { value: "feature_request", labelEn: "Feature Request / Suggestion", labelAr: "اقتراح ميزة جديدة أو تحسين" },
-  { value: "other", labelEn: "General Inquiry", labelAr: "استفسار عام" },
+  { value: "technical_support", label: m.ui_system_support_category_technical },
+  { value: "onboarding_setup", label: m.ui_system_support_category_onboarding },
+  { value: "finance_accounting", label: m.ui_system_support_category_finance },
+  { value: "academics_grading", label: m.ui_system_support_category_academics },
+  { value: "feature_request", label: m.ui_system_support_category_feature_request },
+  { value: "other", label: m.ui_system_support_category_general },
 ];
 
 const selectedCat = $derived(categories.find((c) => c.value === category));
@@ -138,13 +139,11 @@ onMount(async () => {
           <QuestionMarkCircle size={14} />
         </div>
         <DialogTitle class="text-base font-semibold text-foreground tracking-tight">
-          {isRTL ? "الدعم الفني والمساعدة • Mulverse" : "Support & Diagnostic Assistance • Mulverse"}
+          {m.ui_system_support_support_diagnostic_assistance_mulverse()}
         </DialogTitle>
       </div>
       <DialogDescription class="text-xs text-muted-foreground">
-        {isRTL
-          ? "أرسل استفسارك أو أبلغ عن أي مشكلة مع إرفاق تلقائي لمعلومات الإصدار والبيئة التشغيلية."
-          : "Submit your inquiry or bug report with automatic runtime & build telemetry attached."}
+        {m.ui_system_support_description()}
       </DialogDescription>
     </DialogHeader>
 
@@ -156,12 +155,12 @@ onMount(async () => {
         </div>
         <div class="space-y-1.5">
           <h3 class="text-base font-bold text-foreground">
-            {isRTL ? "تم تسجيل طلب الدعم بنجاح" : "Support Request Logged"}
+            {m.ui_system_support_support_request_logged()}
           </h3>
           <p class="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-            {isRTL
-              ? `تم حفظ التقرير وإرفاق المعرف التشغيلي للعقدة (${info?.node_id || "node-local"}). يمكنك أيضاً نسخ التقرير لمشاركته مباشرة مع فريق الدعم.`
-              : `Your inquiry has been packaged with telemetry from node (${info?.node_id || "node-local"}).`}
+            {m.ui_system_support_success_details({
+              nodeId: info?.node_id || "node-local",
+            })}
           </p>
         </div>
 
@@ -174,9 +173,9 @@ onMount(async () => {
           >
             {#if isCopied}
               <Check size={13} class="text-emerald-500" />
-              <span>{isRTL ? "تم النسخ!" : "Copied!"}</span>
+              <span>{m.ui_system_support_copied()}</span>
             {:else}
-              <span>{isRTL ? "نسخ التقرير الشامل" : "Copy Full Report"}</span>
+              <span>{m.ui_system_support_copy_full_report()}</span>
             {/if}
           </Button>
 
@@ -189,7 +188,7 @@ onMount(async () => {
             }}
             class="h-8 px-4 text-xs font-medium"
           >
-            {isRTL ? "إغلاق" : "Done"}
+            {m.ui_system_support_done()}
           </Button>
         </div>
       </div>
@@ -200,7 +199,7 @@ onMount(async () => {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="space-y-1.5">
             <Label class="text-xs font-medium text-foreground">
-              {isRTL ? "نوع الطلب *" : "Category *"}
+              {m.ui_system_support_category()}
             </Label>
             <Select
               type="single"
@@ -208,12 +207,12 @@ onMount(async () => {
               onValueChange={(v) => (category = v ?? "technical_support")}
             >
               <SelectTrigger class="w-full h-9 text-xs">
-                {selectedCat ? (isRTL ? selectedCat.labelAr : selectedCat.labelEn) : category}
+                {selectedCat ? selectedCat.label() : category}
               </SelectTrigger>
               <SelectContent>
                 {#each categories as cat}
                   <SelectItem value={cat.value}>
-                    {isRTL ? cat.labelAr : cat.labelEn}
+                    {cat.label()}
                   </SelectItem>
                 {/each}
               </SelectContent>
@@ -222,7 +221,7 @@ onMount(async () => {
 
           <div class="space-y-1.5">
             <Label for="support-email" class="text-xs font-medium text-foreground">
-              {isRTL ? "البريد الإلكتروني للتواصل (اختياري)" : "Contact Email (Optional)"}
+              {m.ui_system_support_contact_email_optional()}
             </Label>
             <Input
               id="support-email"
@@ -237,13 +236,13 @@ onMount(async () => {
         <!-- Subject -->
         <div class="space-y-1.5">
           <Label for="support-subj" class="text-xs font-medium text-foreground">
-            {isRTL ? "عنوان المشكلة / الموضوع *" : "Subject / Title *"}
+            {m.ui_system_support_subject_title()}
           </Label>
           <Input
             id="support-subj"
             type="text"
             required
-            placeholder={isRTL ? "مثال: استفسار عن إعدادات تقويم الفصل الثاني" : "e.g. Issue with double-entry journal balance"}
+            placeholder={m.ui_system_support_e_g_issue_with_double_entry_journal_balance()}
             bind:value={subject}
             class="h-9 text-xs"
           />
@@ -252,13 +251,13 @@ onMount(async () => {
         <!-- Description -->
         <div class="space-y-1.5">
           <Label for="support-msg" class="text-xs font-medium text-foreground">
-            {isRTL ? "تفاصيل المشكلة أو الاستفسار *" : "Description & Details *"}
+            {m.ui_system_support_description_details()}
           </Label>
           <Textarea
             id="support-msg"
             rows={4}
             required
-            placeholder={isRTL ? "اشرح ما حدث بالتفصيل، والخطوات التي قمت بها..." : "Describe the steps taken and what you expected to happen..."}
+            placeholder={m.ui_system_support_describe_the_steps_taken_and_what_you_expected_to_happen()}
             bind:value={message}
             class="text-xs resize-none"
           />
@@ -273,7 +272,7 @@ onMount(async () => {
           >
             <div class="flex items-center gap-2">
               <span class="font-medium text-[11px]">
-                {isRTL ? "البيانات التشغيلية المرفقة تلقائياً" : "Auto-Attached Diagnostic Telemetry"}
+                {m.ui_system_support_auto_attached_diagnostic_telemetry()}
               </span>
               <Badge variant="outline" class="text-[9px] font-mono px-1 py-0 h-3.5 border-border">
                 {info?.target_os} • v{info?.version}
@@ -309,10 +308,10 @@ onMount(async () => {
           {#if isCopied}
             <Check size={13} class="text-emerald-500" />
             <span class="text-emerald-600 dark:text-emerald-400 font-medium">
-              {isRTL ? "تم نسخ التقرير!" : "Report Copied!"}
+              {m.ui_system_support_report_copied()}
             </span>
           {:else}
-            <span>{isRTL ? "نسخ التقرير" : "Copy Report"}</span>
+            <span>{m.ui_system_support_copy_report()}</span>
           {/if}
         </Button>
 
@@ -324,7 +323,7 @@ onMount(async () => {
             onclick={() => (open = false)}
             class="h-8 px-3 text-xs"
           >
-            {isRTL ? "إلغاء" : "Cancel"}
+            {m.common_action_cancel()}
           </Button>
 
           <Button
@@ -337,9 +336,9 @@ onMount(async () => {
           >
             {#if isSubmitting}
               <span class="animate-spin text-xs">⏳</span>
-              <span>{isRTL ? "جاري الإرسال..." : "Sending..."}</span>
+              <span>{m.ui_system_support_sending()}</span>
             {:else}
-              <span>{isRTL ? "إرسال التقرير" : "Send Report"}</span>
+              <span>{m.ui_system_support_send_report()}</span>
             {/if}
           </Button>
         </div>

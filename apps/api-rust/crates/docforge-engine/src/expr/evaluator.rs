@@ -3,9 +3,9 @@
 // Evaluates parsed template expressions against a JSON context.
 // ═══════════════════════════════════════════════════════════════
 
-use serde_json::Value;
-use crate::expr::parser::{parse_expression, Token};
 use crate::expr::formatters::format_value;
+use crate::expr::parser::{parse_expression, Token};
+use serde_json::Value;
 
 /// Evaluate a template string against a JSON data context.
 pub fn evaluate_expression(template: &str, context: &Value) -> String {
@@ -29,10 +29,10 @@ fn evaluate_tokens(tokens: &[Token], context: &Value) -> String {
                     if fmt.name == "default" && is_empty_value(&current_val) {
                         if !fmt.quoted_args.first().copied().unwrap_or(false) {
                             if let Some(fallback_path) = fmt.args.first() {
-                            if let Some(fallback_value) = resolve_path(context, fallback_path) {
-                                current_val = fallback_value;
-                                continue;
-                            }
+                                if let Some(fallback_value) = resolve_path(context, fallback_path) {
+                                    current_val = fallback_value;
+                                    continue;
+                                }
                             }
                         }
                     }
@@ -80,7 +80,7 @@ pub fn resolve_path(context: &Value, path: &str) -> Option<Value> {
     if path.trim().is_empty() {
         return Some(context.clone());
     }
-    
+
     let parts = path.split('.');
     let mut current = context;
 
@@ -143,10 +143,10 @@ pub fn evaluate_condition(condition: &str, context: &Value) -> bool {
         if let Some(idx) = trimmed.find(op) {
             let left_str = trimmed[..idx].trim();
             let right_str = trimmed[idx + op.len()..].trim();
-            
+
             let left = resolve_value(left_str, context);
             let right = resolve_value(right_str, context);
-            
+
             return compare_values(&left, &right, op);
         }
     }
@@ -221,7 +221,7 @@ fn split_top_level(expr: &str, operator: &str) -> Vec<String> {
 /// Resolve condition token: string literal, number, boolean, null, or path.
 fn resolve_value(token: &str, context: &Value) -> Value {
     let trimmed = token.trim();
-    
+
     // String literal
     if (trimmed.starts_with('\'') && trimmed.ends_with('\''))
         || (trimmed.starts_with('"') && trimmed.ends_with('"'))
@@ -264,7 +264,13 @@ fn get_f64(val: &Value) -> f64 {
     match val {
         Value::Number(n) => n.as_f64().unwrap_or(0.0),
         Value::String(s) => s.parse::<f64>().unwrap_or(0.0),
-        Value::Bool(b) => if *b { 1.0 } else { 0.0 },
+        Value::Bool(b) => {
+            if *b {
+                1.0
+            } else {
+                0.0
+            }
+        }
         _ => 0.0,
     }
 }
@@ -328,7 +334,10 @@ mod tests {
     fn test_nested_conditions_eval() {
         let ctx = json!({ "outer": true, "inner": false });
         assert_eq!(
-            evaluate_expression("{{#if outer}}Outer {{#if inner}}Inner{{#else}}InnerElse{{/if}}{{/if}}", &ctx),
+            evaluate_expression(
+                "{{#if outer}}Outer {{#if inner}}Inner{{#else}}InnerElse{{/if}}{{/if}}",
+                &ctx
+            ),
             "Outer InnerElse"
         );
     }

@@ -166,17 +166,15 @@ impl ConnectionConfig {
         let path = Self::config_path(app_data_dir);
         if path.exists() {
             match std::fs::read_to_string(&path) {
-                Ok(contents) => {
-                    match serde_json::from_str::<ConnectionConfig>(&contents) {
-                        Ok(config) => {
-                            info!("Loaded connection config from {:?}", path);
-                            return config;
-                        }
-                        Err(e) => {
-                            tracing::warn!("Failed to parse connection config: {e}, using default");
-                        }
+                Ok(contents) => match serde_json::from_str::<ConnectionConfig>(&contents) {
+                    Ok(config) => {
+                        info!("Loaded connection config from {:?}", path);
+                        return config;
                     }
-                }
+                    Err(e) => {
+                        tracing::warn!("Failed to parse connection config: {e}, using default");
+                    }
+                },
                 Err(e) => {
                     tracing::warn!("Failed to read connection config: {e}, using default");
                 }
@@ -255,7 +253,7 @@ impl ConnectionConfig {
             ConnectionMode::Local => {
                 let resolved_path = self.resolve_local_db_path(app_data_dir);
                 let resolved_url = self.resolve_local_db_url(app_data_dir);
-                
+
                 if let Some(path) = &resolved_path {
                     if let Some(parent) = path.parent() {
                         if !parent.exists() {
@@ -280,37 +278,35 @@ impl ConnectionConfig {
                     resolved_path: resolved_path.map(|p| p.to_string_lossy().to_string()),
                 }
             }
-            ConnectionMode::Remote => {
-                match &self.remote {
-                    Some(remote) if !remote.server_url.trim().is_empty() => {
-                        let url = remote.server_url.trim();
-                        if url.starts_with("http://") || url.starts_with("https://") {
-                            ConnectionValidation {
-                                is_valid: true,
-                                mode: "remote".to_string(),
-                                message: format!("Remote server configured: {}", url),
-                                resolved_url: Some(url.to_string()),
-                                resolved_path: None,
-                            }
-                        } else {
-                            ConnectionValidation {
-                                is_valid: false,
-                                mode: "remote".to_string(),
-                                message: "Server URL must start with http:// or https://".to_string(),
-                                resolved_url: None,
-                                resolved_path: None,
-                            }
+            ConnectionMode::Remote => match &self.remote {
+                Some(remote) if !remote.server_url.trim().is_empty() => {
+                    let url = remote.server_url.trim();
+                    if url.starts_with("http://") || url.starts_with("https://") {
+                        ConnectionValidation {
+                            is_valid: true,
+                            mode: "remote".to_string(),
+                            message: format!("Remote server configured: {}", url),
+                            resolved_url: Some(url.to_string()),
+                            resolved_path: None,
+                        }
+                    } else {
+                        ConnectionValidation {
+                            is_valid: false,
+                            mode: "remote".to_string(),
+                            message: "Server URL must start with http:// or https://".to_string(),
+                            resolved_url: None,
+                            resolved_path: None,
                         }
                     }
-                    _ => ConnectionValidation {
-                        is_valid: false,
-                        mode: "remote".to_string(),
-                        message: "Remote server URL is required".to_string(),
-                        resolved_url: None,
-                        resolved_path: None,
-                    },
                 }
-            }
+                _ => ConnectionValidation {
+                    is_valid: false,
+                    mode: "remote".to_string(),
+                    message: "Remote server URL is required".to_string(),
+                    resolved_url: None,
+                    resolved_path: None,
+                },
+            },
         }
     }
 }
@@ -334,9 +330,18 @@ pub async fn check_remote_health(server_url: &str) -> RemoteHealthResult {
                 match response.json::<serde_json::Value>().await {
                     Ok(body) => RemoteHealthResult {
                         reachable: true,
-                        status: body.get("status").and_then(|v| v.as_str()).map(|s| s.to_string()),
-                        version: body.get("version").and_then(|v| v.as_str()).map(|s| s.to_string()),
-                        api_version: body.get("api_version").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                        status: body
+                            .get("status")
+                            .and_then(|v| v.as_str())
+                            .map(|s| s.to_string()),
+                        version: body
+                            .get("version")
+                            .and_then(|v| v.as_str())
+                            .map(|s| s.to_string()),
+                        api_version: body
+                            .get("api_version")
+                            .and_then(|v| v.as_str())
+                            .map(|s| s.to_string()),
                         latency_ms: latency,
                         error: None,
                     },
@@ -410,7 +415,10 @@ mod tests {
         });
 
         let sanitized = config.sanitized();
-        assert_eq!(sanitized.remote.as_ref().unwrap().password, Some("••••••••".to_string()));
+        assert_eq!(
+            sanitized.remote.as_ref().unwrap().password,
+            Some("••••••••".to_string())
+        );
     }
 
     #[test]
@@ -446,4 +454,3 @@ mod tests {
         assert!(val2.is_valid);
     }
 }
-

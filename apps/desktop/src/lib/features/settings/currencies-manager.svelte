@@ -81,7 +81,7 @@ const columns: OrbisColumnDef[] = [
   {
     id: "actions",
     prop: "actions",
-    header: m.common_je_col_actions?.() || "Actions",
+    header: m.common_je_col_actions(),
     name: "Actions",
     width: 90,
     size: 90,

@@ -1,8 +1,10 @@
 use async_trait::async_trait;
 use orbis_app::ports::repositories::OverrideRequestRepository;
-use orbis_domain::entities::override_request::{AcademicOverrideRequest, OverrideType, RiskLevel, OverrideStatus, ApprovalStep};
+use orbis_domain::entities::override_request::{
+    AcademicOverrideRequest, ApprovalStep, OverrideStatus, OverrideType, RiskLevel,
+};
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use uuid::Uuid;
 
 use crate::models::override_request::{self, Entity as OverrideEntity};
@@ -21,12 +23,19 @@ impl OverrideRequestRepository for OverrideRepoImpl {
         Ok(model.map(map_model_to_domain))
     }
 
-    async fn find_by_org(&self, org_id: Uuid, status: Option<&str>) -> Result<Vec<AcademicOverrideRequest>, DomainError> {
+    async fn find_by_org(
+        &self,
+        org_id: Uuid,
+        status: Option<&str>,
+    ) -> Result<Vec<AcademicOverrideRequest>, DomainError> {
         let mut query = OverrideEntity::find().filter(override_request::Column::OrgId.eq(org_id));
         if let Some(st) = status {
             query = query.filter(override_request::Column::Status.eq(st));
         }
-        let models = query.all(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let models = query
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(models.into_iter().map(map_model_to_domain).collect())
     }
 
@@ -49,7 +58,11 @@ impl OverrideRequestRepository for OverrideRepoImpl {
         Ok(model.map(map_model_to_domain))
     }
 
-    async fn find_pending_for_role(&self, org_id: Uuid, role: &str) -> Result<Vec<AcademicOverrideRequest>, DomainError> {
+    async fn find_pending_for_role(
+        &self,
+        org_id: Uuid,
+        role: &str,
+    ) -> Result<Vec<AcademicOverrideRequest>, DomainError> {
         let models = OverrideEntity::find()
             .filter(override_request::Column::OrgId.eq(org_id))
             .filter(override_request::Column::Status.eq("pending"))
@@ -88,10 +101,21 @@ impl OverrideRequestRepository for OverrideRepoImpl {
             updated_at: Set(r.updated_at),
         };
 
-        if OverrideEntity::find_by_id(r.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if OverrideEntity::find_by_id(r.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }

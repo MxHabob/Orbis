@@ -88,10 +88,10 @@ function handleMouseLeave() {
         <Sparkles size={14} class="text-primary" />
         <div class="flex flex-col text-start">
           <CardTitle>
-            {m.ai_center_overview_trend_title ? m.ai_center_overview_trend_title() : "نشاط وأداء الذكاء الاصطناعي"}
+            {m.ai_center_overview_trend_title()}
           </CardTitle>
           <CardDescription>
-            {m.ai_center_overview_trend_subtitle ? m.ai_center_overview_trend_subtitle() : "معدل سرعة المعالجة والطلبات عبر الوكلاء والمحركات"}
+            {m.ai_center_overview_trend_subtitle()}
           </CardDescription>
         </div>
       </div>

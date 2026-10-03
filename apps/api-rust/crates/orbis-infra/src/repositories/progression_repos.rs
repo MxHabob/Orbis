@@ -1,13 +1,15 @@
 use async_trait::async_trait;
 use orbis_app::ports::repositories::PromotionRepository;
-use orbis_domain::entities::progression::{PromotionJob, PromotionDetail, PromotionJobStatus, PromotionDecision};
+use orbis_domain::entities::progression::{
+    PromotionDecision, PromotionDetail, PromotionJob, PromotionJobStatus,
+};
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use uuid::Uuid;
 
 use crate::models::{
-    promotion_job::{self, Entity as PromotionJobEntity},
     promotion_detail::{self, Entity as PromotionDetailEntity},
+    promotion_job::{self, Entity as PromotionJobEntity},
 };
 
 pub struct ProgressionRepoImpl {
@@ -53,30 +55,33 @@ impl PromotionRepository for ProgressionRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| PromotionJob {
-            id: m.id,
-            org_id: m.org_id,
-            source_period_id: m.source_period_id,
-            target_period_id: m.target_period_id,
-            name: m.name,
-            status: match m.status.as_str() {
-                "preview_ready" => PromotionJobStatus::PreviewReady,
-                "executing" => PromotionJobStatus::Executing,
-                "completed" => PromotionJobStatus::Completed,
-                "failed" => PromotionJobStatus::Failed,
-                "rolled_back" => PromotionJobStatus::RolledBack,
-                _ => PromotionJobStatus::Draft,
-            },
-            total_students: m.total_students as u32,
-            promoted_count: m.promoted_count as u32,
-            retained_count: m.retained_count as u32,
-            graduated_count: m.graduated_count as u32,
-            excluded_count: m.excluded_count as u32,
-            executed_by: m.executed_by,
-            executed_at: m.executed_at.map(Into::into),
-            created_at: m.created_at.into(),
-            updated_at: m.updated_at.into(),
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| PromotionJob {
+                id: m.id,
+                org_id: m.org_id,
+                source_period_id: m.source_period_id,
+                target_period_id: m.target_period_id,
+                name: m.name,
+                status: match m.status.as_str() {
+                    "preview_ready" => PromotionJobStatus::PreviewReady,
+                    "executing" => PromotionJobStatus::Executing,
+                    "completed" => PromotionJobStatus::Completed,
+                    "failed" => PromotionJobStatus::Failed,
+                    "rolled_back" => PromotionJobStatus::RolledBack,
+                    _ => PromotionJobStatus::Draft,
+                },
+                total_students: m.total_students as u32,
+                promoted_count: m.promoted_count as u32,
+                retained_count: m.retained_count as u32,
+                graduated_count: m.graduated_count as u32,
+                excluded_count: m.excluded_count as u32,
+                executed_by: m.executed_by,
+                executed_at: m.executed_at.map(Into::into),
+                created_at: m.created_at.into(),
+                updated_at: m.updated_at.into(),
+            })
+            .collect())
     }
 
     async fn find_details_by_job(&self, job_id: Uuid) -> Result<Vec<PromotionDetail>, DomainError> {
@@ -85,27 +90,30 @@ impl PromotionRepository for ProgressionRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| PromotionDetail {
-            id: m.id,
-            job_id: m.job_id,
-            student_id: m.student_id,
-            enrollment_id: m.enrollment_id,
-            source_class_id: m.source_class_id,
-            target_class_id: m.target_class_id,
-            decision: match m.decision.as_str() {
-                "retain" => PromotionDecision::Retain,
-                "graduate" => PromotionDecision::Graduate,
-                "exclude" => PromotionDecision::Exclude,
-                _ => PromotionDecision::Promote,
-            },
-            reason: m.reason,
-            manual_override: m.manual_override,
-            override_by: m.override_by,
-            override_reason: m.override_reason,
-            final_gpa: m.final_gpa,
-            attendance_rate: m.attendance_rate,
-            created_at: m.created_at.into(),
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| PromotionDetail {
+                id: m.id,
+                job_id: m.job_id,
+                student_id: m.student_id,
+                enrollment_id: m.enrollment_id,
+                source_class_id: m.source_class_id,
+                target_class_id: m.target_class_id,
+                decision: match m.decision.as_str() {
+                    "retain" => PromotionDecision::Retain,
+                    "graduate" => PromotionDecision::Graduate,
+                    "exclude" => PromotionDecision::Exclude,
+                    _ => PromotionDecision::Promote,
+                },
+                reason: m.reason,
+                manual_override: m.manual_override,
+                override_by: m.override_by,
+                override_reason: m.override_reason,
+                final_gpa: m.final_gpa,
+                attendance_rate: m.attendance_rate,
+                created_at: m.created_at.into(),
+            })
+            .collect())
     }
 
     async fn save_job(&self, job: &PromotionJob) -> Result<(), DomainError> {
@@ -134,10 +142,21 @@ impl PromotionRepository for ProgressionRepoImpl {
             updated_at: Set(job.updated_at.into()),
         };
 
-        if PromotionJobEntity::find_by_id(job.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if PromotionJobEntity::find_by_id(job.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
@@ -160,10 +179,21 @@ impl PromotionRepository for ProgressionRepoImpl {
             created_at: Set(detail.created_at.into()),
         };
 
-        if PromotionDetailEntity::find_by_id(detail.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if PromotionDetailEntity::find_by_id(detail.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
@@ -175,4 +205,3 @@ impl PromotionRepository for ProgressionRepoImpl {
         Ok(())
     }
 }
-

@@ -32,7 +32,6 @@ pub enum ImageColorType {
 /// JPEG images can often be embedded directly into PDF without re-encoding,
 /// so we keep the original bytes.
 pub fn decode_image(data: &[u8]) -> Result<DecodedImage, DocforgeError> {
-
     let img = image::load_from_memory(data)
         .map_err(|e| DocforgeError::Render(format!("Image decode error: {}", e)))?;
 
@@ -50,9 +49,10 @@ pub fn decode_image(data: &[u8]) -> Result<DecodedImage, DocforgeError> {
         image::ColorType::L8 | image::ColorType::L16 => {
             (ImageColorType::Grayscale, img.to_luma8().into_raw())
         }
-        image::ColorType::La8 | image::ColorType::La16 => {
-            (ImageColorType::GrayscaleAlpha, img.to_luma_alpha8().into_raw())
-        }
+        image::ColorType::La8 | image::ColorType::La16 => (
+            ImageColorType::GrayscaleAlpha,
+            img.to_luma_alpha8().into_raw(),
+        ),
         _ => {
             // Fallback: convert to RGBA
             (ImageColorType::Rgba, img.to_rgba8().into_raw())

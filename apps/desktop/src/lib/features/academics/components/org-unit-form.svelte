@@ -230,7 +230,7 @@ async function handleSubmit(e: SubmitEvent) {
         <EmployeeSelect
           bind:value={form.values.head_id}
           {orgId}
-          placeholder={m.common_org_unit_none?.() || "اختر رئيس الوحدة من الموظفين..."}
+          placeholder={m.common_org_unit_none()}
         />
         {/snippet}
       </FormField>

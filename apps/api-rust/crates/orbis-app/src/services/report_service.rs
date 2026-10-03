@@ -1,19 +1,18 @@
+use chrono::Utc;
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
-use chrono::Utc;
 
-use orbis_domain::entities::report::{
-    ReportDefinition, ReportTemplate, ReportJob, OutputFormat, ReportLocale,
-    ParamValue, ParameterDef, ParamType, JobStatus, OrgReportContext,
-    ReportAuditEntry, ExportResult, TemplateStatus,
-};
-use orbis_domain::errors::DomainError;
 use crate::context::RequestContext;
 use crate::ports::reporting::{
-    ReportDefinitionRepository, ReportTemplateRepository, ReportJobRepository,
-    ReportAuditRepository, DataProviderRegistry, RendererRegistry,
+    DataProviderRegistry, RendererRegistry, ReportAuditRepository, ReportDefinitionRepository,
+    ReportJobRepository, ReportTemplateRepository,
 };
+use orbis_domain::entities::report::{
+    ExportResult, JobStatus, OrgReportContext, OutputFormat, ParamType, ParamValue, ParameterDef,
+    ReportAuditEntry, ReportDefinition, ReportJob, ReportLocale, ReportTemplate, TemplateStatus,
+};
+use orbis_domain::errors::DomainError;
 
 /// Port for resolving organization branding context.
 #[async_trait::async_trait]
@@ -72,10 +71,8 @@ impl ReportService {
             .list_by_org(ctx.tenant_id, domain, category)
             .await?;
 
-        let active: Vec<ReportDefinition> = definitions
-            .into_iter()
-            .filter(|d| d.is_active)
-            .collect();
+        let active: Vec<ReportDefinition> =
+            definitions.into_iter().filter(|d| d.is_active).collect();
 
         Ok(active)
     }
@@ -100,10 +97,17 @@ impl ReportService {
             .definition_repo
             .find_by_code(ctx.tenant_id, &input.report_code)
             .await?
-            .ok_or_else(|| DomainError::NotFound(format!("Report definition not found: {}", input.report_code)))?;
+            .ok_or_else(|| {
+                DomainError::NotFound(format!(
+                    "Report definition not found: {}",
+                    input.report_code
+                ))
+            })?;
 
         if !definition.is_active {
-            return Err(DomainError::Validation("Report definition is inactive".into()));
+            return Err(DomainError::Validation(
+                "Report definition is inactive".into(),
+            ));
         }
 
         // 2. Check output format is supported
@@ -141,7 +145,9 @@ impl ReportService {
         // 5. Update to processing
         job.status = JobStatus::Processing;
         job.started_at = Some(Utc::now());
-        self.job_repo.update_status(job.id, &JobStatus::Processing, None, None, None).await?;
+        self.job_repo
+            .update_status(job.id, &JobStatus::Processing, None, None, None)
+            .await?;
 
         let start_time = Utc::now();
 
@@ -149,13 +155,32 @@ impl ReportService {
         let org_context = self.org_context_resolver.resolve(ctx.tenant_id).await?;
 
         // 7. Fetch data from data provider
-        let dataset = match self.provider_registry.get_provider(&definition.data_provider_key) {
+        let dataset = match self
+            .provider_registry
+            .get_provider(&definition.data_provider_key)
+        {
             Some(provider) => {
-                match provider.fetch_data(ctx.tenant_id, &org_context, &input.parameters, &input.locale).await {
+                match provider
+                    .fetch_data(
+                        ctx.tenant_id,
+                        &org_context,
+                        &input.parameters,
+                        &input.locale,
+                    )
+                    .await
+                {
                     Ok(ds) => ds,
                     Err(e) => {
                         let err_msg = format!("Data provider failed: {}", e);
-                        self.job_repo.update_status(job.id, &JobStatus::Failed, None, None, Some(err_msg.clone())).await?;
+                        self.job_repo
+                            .update_status(
+                                job.id,
+                                &JobStatus::Failed,
+                                None,
+                                None,
+                                Some(err_msg.clone()),
+                            )
+                            .await?;
                         job.status = JobStatus::Failed;
                         job.error_message = Some(err_msg);
                         return Err(e);
@@ -163,8 +188,19 @@ impl ReportService {
                 }
             }
             None => {
-                let err_msg = format!("Data provider not registered: {}", definition.data_provider_key);
-                self.job_repo.update_status(job.id, &JobStatus::Failed, None, None, Some(err_msg.clone())).await?;
+                let err_msg = format!(
+                    "Data provider not registered: {}",
+                    definition.data_provider_key
+                );
+                self.job_repo
+                    .update_status(
+                        job.id,
+                        &JobStatus::Failed,
+                        None,
+                        None,
+                        Some(err_msg.clone()),
+                    )
+                    .await?;
                 job.status = JobStatus::Failed;
                 job.error_message = Some(err_msg.clone());
                 return Err(DomainError::Internal(err_msg));
@@ -174,7 +210,11 @@ impl ReportService {
         // 8. Resolve template (if binding exists)
         let binding = self
             .template_repo
-            .find_binding(definition.id, input.locale.primary_lang(), &input.output_format)
+            .find_binding(
+                definition.id,
+                input.locale.primary_lang(),
+                &input.output_format,
+            )
             .await?;
 
         let template = if let Some(b) = binding {
@@ -192,18 +232,25 @@ impl ReportService {
             .renderer_registry
             .get_renderer(&input.output_format)
             .ok_or_else(|| {
-                DomainError::Internal(format!("No renderer registered for format: {}", input.output_format))
+                DomainError::Internal(format!(
+                    "No renderer registered for format: {}",
+                    input.output_format
+                ))
             })?;
 
-        let export_result = match renderer.render(
-            &dataset,
-            template.as_ref(),
-            None,
-        ).await {
+        let export_result = match renderer.render(&dataset, template.as_ref(), None).await {
             Ok(res) => res,
             Err(e) => {
                 let err_msg = format!("Renderer failed: {}", e);
-                self.job_repo.update_status(job.id, &JobStatus::Failed, None, None, Some(err_msg.clone())).await?;
+                self.job_repo
+                    .update_status(
+                        job.id,
+                        &JobStatus::Failed,
+                        None,
+                        None,
+                        Some(err_msg.clone()),
+                    )
+                    .await?;
                 job.status = JobStatus::Failed;
                 job.error_message = Some(err_msg);
                 return Err(e);
@@ -252,7 +299,9 @@ impl ReportService {
 
     /// List templates for organization
     pub async fn list_templates(&self, org_id: Uuid) -> Result<Vec<ReportTemplate>, DomainError> {
-        self.template_repo.list_by_org(org_id, None, None, None).await
+        self.template_repo
+            .list_by_org(org_id, None, None, None)
+            .await
     }
 
     /// Save or update report template
@@ -267,23 +316,37 @@ impl ReportService {
 
     /// Delete (soft delete) a template
     pub async fn delete_template(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
-        let template = self.template_repo.find_by_id(id).await?
+        let template = self
+            .template_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("Template not found".into()))?;
 
         if template.org_id != ctx.tenant_id {
-            return Err(DomainError::Forbidden("Template belongs to another organization".into()));
+            return Err(DomainError::Forbidden(
+                "Template belongs to another organization".into(),
+            ));
         }
 
         self.template_repo.soft_delete(id).await
     }
 
     /// Publish a template
-    pub async fn publish_template(&self, ctx: &RequestContext, id: Uuid) -> Result<ReportTemplate, DomainError> {
-        let mut template = self.template_repo.find_by_id(id).await?
+    pub async fn publish_template(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<ReportTemplate, DomainError> {
+        let mut template = self
+            .template_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("Template not found".into()))?;
 
         if template.org_id != ctx.tenant_id {
-            return Err(DomainError::Forbidden("Template belongs to another organization".into()));
+            return Err(DomainError::Forbidden(
+                "Template belongs to another organization".into(),
+            ));
         }
 
         template.status = TemplateStatus::Published;
@@ -297,12 +360,21 @@ impl ReportService {
     }
 
     /// Archive a template
-    pub async fn archive_template(&self, ctx: &RequestContext, id: Uuid) -> Result<ReportTemplate, DomainError> {
-        let mut template = self.template_repo.find_by_id(id).await?
+    pub async fn archive_template(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<ReportTemplate, DomainError> {
+        let mut template = self
+            .template_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("Template not found".into()))?;
 
         if template.org_id != ctx.tenant_id {
-            return Err(DomainError::Forbidden("Template belongs to another organization".into()));
+            return Err(DomainError::Forbidden(
+                "Template belongs to another organization".into(),
+            ));
         }
 
         template.status = TemplateStatus::Archived;
@@ -313,21 +385,40 @@ impl ReportService {
     }
 
     /// Revert template to a previous version
-    pub async fn revert_template_version(&self, ctx: &RequestContext, id: Uuid, version: i32) -> Result<ReportTemplate, DomainError> {
-        let mut template = self.template_repo.find_by_id(id).await?
+    pub async fn revert_template_version(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+        version: i32,
+    ) -> Result<ReportTemplate, DomainError> {
+        let mut template = self
+            .template_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("Template not found".into()))?;
 
         if template.org_id != ctx.tenant_id {
-            return Err(DomainError::Forbidden("Template belongs to another organization".into()));
+            return Err(DomainError::Forbidden(
+                "Template belongs to another organization".into(),
+            ));
         }
 
-        let ver = self.template_repo.find_version(id, version).await?
+        let ver = self
+            .template_repo
+            .find_version(id, version)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Version {} not found", version)))?;
 
         template.document_json = ver.document_json;
-        if let Some(ps) = ver.page_size { template.page_size = ps; }
-        if let Some(ori) = ver.orientation { template.orientation = ori; }
-        if let Some(mar) = ver.margins_json { template.margins_json = mar; }
+        if let Some(ps) = ver.page_size {
+            template.page_size = ps;
+        }
+        if let Some(ori) = ver.orientation {
+            template.orientation = ori;
+        }
+        if let Some(mar) = ver.margins_json {
+            template.margins_json = mar;
+        }
         template.version += 1;
         template.updated_at = Utc::now();
 

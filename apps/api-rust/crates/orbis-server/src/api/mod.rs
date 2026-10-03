@@ -1,8 +1,8 @@
 //! Orbis API — Shared contracts, error handling, and module re-exports.
 
+use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::Json;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -20,10 +20,16 @@ pub struct ApiResponse<T: Serialize> {
 
 impl<T: Serialize> ApiResponse<T> {
     pub fn ok(data: T) -> Json<Self> {
-        Json(Self { data, request_id: None })
+        Json(Self {
+            data,
+            request_id: None,
+        })
     }
     pub fn ok_with_id(data: T, request_id: String) -> Json<Self> {
-        Json(Self { data, request_id: Some(request_id) })
+        Json(Self {
+            data,
+            request_id: Some(request_id),
+        })
     }
 }
 
@@ -37,7 +43,9 @@ pub struct PaginatedResponse<T: Serialize> {
 }
 
 impl<T: Serialize> PaginatedResponse<T> {
-    pub fn from_cursor_page(page: orbis_domain::queries::pagination::CursorPage<T>) -> Json<ApiResponse<Self>> {
+    pub fn from_cursor_page(
+        page: orbis_domain::queries::pagination::CursorPage<T>,
+    ) -> Json<ApiResponse<Self>> {
         ApiResponse::ok(Self {
             count: page.count,
             next_cursor: page.next_cursor,
@@ -161,8 +169,12 @@ impl From<DomainError> for ApiError {
             DomainError::AuthenticationFailed => Self::unauthorized("Authentication failed"),
             DomainError::Unauthorized(_) => Self::unauthorized(err.to_string()),
             DomainError::Forbidden(_) => Self::forbidden(err.to_string()),
-            DomainError::AlreadyInitialized => Self::conflict("System has already been initialized"),
-            DomainError::BootstrapFailed(msg) => Self::bad_request(format!("Bootstrap failed: {msg}")),
+            DomainError::AlreadyInitialized => {
+                Self::conflict("System has already been initialized")
+            }
+            DomainError::BootstrapFailed(msg) => {
+                Self::bad_request(format!("Bootstrap failed: {msg}"))
+            }
             DomainError::ConcurrencyConflict(_) => Self::conflict(err.to_string()),
             DomainError::Storage(msg) => Self::internal(format!("Storage error: {msg}")),
             DomainError::Internal(_) => Self::internal(err.to_string()),
@@ -172,27 +184,26 @@ impl From<DomainError> for ApiError {
 
 // ── Route modules ──────────────────────────────────────────────
 
-pub mod extractors;
-pub mod iam_routes;
-pub mod org_routes;
-pub mod calendar_routes;
 pub mod academic_routes;
-pub mod student_routes;
-pub mod employee_routes;
-pub mod group_routes;
-pub mod scheduling_routes;
-pub mod assessment_routes;
-pub mod exam_routes;
-pub mod finance_routes;
-pub mod document_routes;
-pub mod storage_routes;
-pub mod folder_routes;
-pub mod integration_routes;
-pub mod report_routes;
-pub mod override_routes;
-pub mod progression_routes;
 pub mod ai_routes;
+pub mod assessment_routes;
 pub mod autopilot_routes;
 pub mod bootstrap_routes;
+pub mod calendar_routes;
+pub mod document_routes;
+pub mod employee_routes;
+pub mod exam_routes;
+pub mod extractors;
+pub mod finance_routes;
+pub mod folder_routes;
+pub mod group_routes;
+pub mod iam_routes;
+pub mod integration_routes;
 pub mod onboarding_routes;
-
+pub mod org_routes;
+pub mod override_routes;
+pub mod progression_routes;
+pub mod report_routes;
+pub mod scheduling_routes;
+pub mod storage_routes;
+pub mod student_routes;

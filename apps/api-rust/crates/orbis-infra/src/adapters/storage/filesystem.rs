@@ -41,9 +41,9 @@ impl FilesystemStorageAdapter {
 
     async fn ensure_parent_dir(&self, file_path: &Path) -> Result<(), StorageError> {
         if let Some(parent) = file_path.parent() {
-            fs::create_dir_all(parent)
-                .await
-                .map_err(|e| StorageError::Io(format!("Failed to create storage directory: {e}")))?;
+            fs::create_dir_all(parent).await.map_err(|e| {
+                StorageError::Io(format!("Failed to create storage directory: {e}"))
+            })?;
         }
         Ok(())
     }
@@ -67,9 +67,9 @@ impl StorageAdapter for FilesystemStorageAdapter {
     }
 
     async fn check_health(&self) -> Result<(), StorageError> {
-        fs::create_dir_all(&self.base_path)
-            .await
-            .map_err(|e| StorageError::Connection(format!("Filesystem storage base path inaccessible: {e}")))?;
+        fs::create_dir_all(&self.base_path).await.map_err(|e| {
+            StorageError::Connection(format!("Filesystem storage base path inaccessible: {e}"))
+        })?;
         Ok(())
     }
 
@@ -84,8 +84,18 @@ impl StorageAdapter for FilesystemStorageAdapter {
         self.ensure_parent_dir(&target_path).await?;
 
         // Stage write to a temporary file in the same directory for atomic rename
-        let temp_filename = format!(".tmp_{}_{}", Uuid::new_v4(), target_path.file_name().and_then(|f| f.to_str()).unwrap_or("file"));
-        let temp_path = target_path.parent().unwrap_or(&self.base_path).join(temp_filename);
+        let temp_filename = format!(
+            ".tmp_{}_{}",
+            Uuid::new_v4(),
+            target_path
+                .file_name()
+                .and_then(|f| f.to_str())
+                .unwrap_or("file")
+        );
+        let temp_path = target_path
+            .parent()
+            .unwrap_or(&self.base_path)
+            .join(temp_filename);
 
         let mut file = File::create(&temp_path)
             .await
@@ -121,14 +131,20 @@ impl StorageAdapter for FilesystemStorageAdapter {
         // Atomic replace to target path
         if let Err(e) = fs::rename(&temp_path, &target_path).await {
             let _ = fs::remove_file(&temp_path).await;
-            return Err(StorageError::Io(format!("Failed to finalize storage file: {e}")));
+            return Err(StorageError::Io(format!(
+                "Failed to finalize storage file: {e}"
+            )));
         }
 
         let checksum = hex::encode(hasher.finalize());
 
         Ok(StoredObjectMetadata {
             key: key.to_string(),
-            size_bytes: if size_bytes > 0 { size_bytes } else { total_written },
+            size_bytes: if size_bytes > 0 {
+                size_bytes
+            } else {
+                total_written
+            },
             mime_type: mime_type.to_string(),
             sha256_checksum: checksum,
             etag: None,
@@ -140,7 +156,9 @@ impl StorageAdapter for FilesystemStorageAdapter {
     async fn get_object(&self, key: &str) -> Result<ObjectStream, StorageError> {
         let path = self.resolve_path(key)?;
         if !path.exists() {
-            return Err(StorageError::NotFound(format!("File not found in storage: {key}")));
+            return Err(StorageError::NotFound(format!(
+                "File not found in storage: {key}"
+            )));
         }
         let file = File::open(path)
             .await
@@ -151,7 +169,9 @@ impl StorageAdapter for FilesystemStorageAdapter {
     async fn get_bytes(&self, key: &str) -> Result<Vec<u8>, StorageError> {
         let path = self.resolve_path(key)?;
         if !path.exists() {
-            return Err(StorageError::NotFound(format!("File not found in storage: {key}")));
+            return Err(StorageError::NotFound(format!(
+                "File not found in storage: {key}"
+            )));
         }
         fs::read(path)
             .await
@@ -164,7 +184,8 @@ impl StorageAdapter for FilesystemStorageAdapter {
             .await
             .map_err(|_| StorageError::NotFound(format!("File not found: {key}")))?;
 
-        let modified: chrono::DateTime<Utc> = metadata.modified()
+        let modified: chrono::DateTime<Utc> = metadata
+            .modified()
             .map(|t| t.into())
             .unwrap_or_else(|_| Utc::now());
 
@@ -194,12 +215,18 @@ impl StorageAdapter for FilesystemStorageAdapter {
         Ok(())
     }
 
-    async fn copy_object(&self, source_key: &str, target_key: &str) -> Result<StoredObjectMetadata, StorageError> {
+    async fn copy_object(
+        &self,
+        source_key: &str,
+        target_key: &str,
+    ) -> Result<StoredObjectMetadata, StorageError> {
         let src_path = self.resolve_path(source_key)?;
         let dst_path = self.resolve_path(target_key)?;
 
         if !src_path.exists() {
-            return Err(StorageError::NotFound(format!("Source file not found: {source_key}")));
+            return Err(StorageError::NotFound(format!(
+                "Source file not found: {source_key}"
+            )));
         }
 
         self.ensure_parent_dir(&dst_path).await?;
@@ -210,12 +237,18 @@ impl StorageAdapter for FilesystemStorageAdapter {
         self.head_object(target_key).await
     }
 
-    async fn move_object(&self, source_key: &str, target_key: &str) -> Result<StoredObjectMetadata, StorageError> {
+    async fn move_object(
+        &self,
+        source_key: &str,
+        target_key: &str,
+    ) -> Result<StoredObjectMetadata, StorageError> {
         let src_path = self.resolve_path(source_key)?;
         let dst_path = self.resolve_path(target_key)?;
 
         if !src_path.exists() {
-            return Err(StorageError::NotFound(format!("Source file not found: {source_key}")));
+            return Err(StorageError::NotFound(format!(
+                "Source file not found: {source_key}"
+            )));
         }
 
         self.ensure_parent_dir(&dst_path).await?;

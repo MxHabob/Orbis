@@ -1,9 +1,10 @@
 use async_trait::async_trait;
 use chrono::NaiveDate;
-use uuid::Uuid;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use orbis_domain::{
+    autopilot::task::AutopilotTask,
     entities::{
         academic_period::AcademicPeriod,
         academic_year::AcademicYear,
@@ -19,7 +20,6 @@ use orbis_domain::{
         discount_template::DiscountTemplate,
         document::Document,
         document_requirement::DocumentRequirement,
-        folder::Folder,
         employee::{Employee, EmployeeDetail},
         enrollment::{Enrollment, EnrollmentStatus},
         exam_proctor::ExamProctor,
@@ -27,6 +27,7 @@ use orbis_domain::{
         exam_session::ExamSession,
         exchange_rate::ExchangeRate,
         fee_template::FeeTemplate,
+        folder::Folder,
         grade::Grade,
         group::{Group, GroupDetail, GroupMemberInfo, UserGroupMembership},
         identity::UserIdentity,
@@ -40,6 +41,8 @@ use orbis_domain::{
         period_template::PeriodTemplate,
         person::Person,
         progression::{PromotionDetail, PromotionJob},
+        role::Role,
+        role_permission::RolePermission,
         room::Room,
         scheduled_lesson::ScheduledLesson,
         seating_number::SeatingNumber,
@@ -51,12 +54,9 @@ use orbis_domain::{
         subject::Subject,
         time_slot::TimeSlot,
         user::User,
-        role::Role,
-        role_permission::RolePermission,
         user_role_assignment::UserRoleAssignment,
         workflow::{WorkflowAction, WorkflowExecution, WorkflowRule},
     },
-    autopilot::task::AutopilotTask,
     errors::DomainError,
     queries::filters::{EnrollmentFilter, PaginatedList, StudentFilter},
 };
@@ -79,7 +79,11 @@ pub trait OrgUnitRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<OrgUnit>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<OrgUnit>, DomainError>;
     async fn find_children(&self, parent_id: Uuid) -> Result<Vec<OrgUnit>, DomainError>;
-    async fn find_descendants(&self, org_id: Uuid, path_prefix: &str) -> Result<Vec<OrgUnit>, DomainError>;
+    async fn find_descendants(
+        &self,
+        org_id: Uuid,
+        path_prefix: &str,
+    ) -> Result<Vec<OrgUnit>, DomainError>;
     async fn count_branches(&self, org_id: Uuid) -> Result<u32, DomainError>;
     async fn save(&self, unit: &OrgUnit) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
@@ -100,15 +104,27 @@ pub trait UserRepository: Send + Sync {
 #[async_trait]
 pub trait PersonRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Person>, DomainError>;
-    async fn find_by_national_id(&self, org_id: Option<Uuid>, national_id: &str) -> Result<Option<Person>, DomainError> {
+    async fn find_by_national_id(
+        &self,
+        org_id: Option<Uuid>,
+        national_id: &str,
+    ) -> Result<Option<Person>, DomainError> {
         let _ = (org_id, national_id);
         Ok(None)
     }
-    async fn find_by_email(&self, org_id: Option<Uuid>, email: &str) -> Result<Option<Person>, DomainError> {
+    async fn find_by_email(
+        &self,
+        org_id: Option<Uuid>,
+        email: &str,
+    ) -> Result<Option<Person>, DomainError> {
         let _ = (org_id, email);
         Ok(None)
     }
-    async fn find_by_phone(&self, org_id: Option<Uuid>, phone: &str) -> Result<Option<Person>, DomainError> {
+    async fn find_by_phone(
+        &self,
+        org_id: Option<Uuid>,
+        phone: &str,
+    ) -> Result<Option<Person>, DomainError> {
         let _ = (org_id, phone);
         Ok(None)
     }
@@ -121,7 +137,11 @@ pub trait PersonRepository: Send + Sync {
 
 #[async_trait]
 pub trait UserIdentityRepository: Send + Sync {
-    async fn find_by_provider(&self, provider: &str, provider_user_id: &str) -> Result<Option<UserIdentity>, DomainError>;
+    async fn find_by_provider(
+        &self,
+        provider: &str,
+        provider_user_id: &str,
+    ) -> Result<Option<UserIdentity>, DomainError>;
     async fn find_by_user(&self, user_id: Uuid) -> Result<Vec<UserIdentity>, DomainError>;
     async fn save(&self, identity: &UserIdentity) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
@@ -130,15 +150,25 @@ pub trait UserIdentityRepository: Send + Sync {
 #[async_trait]
 pub trait UserDeviceRepository: Send + Sync {
     async fn find_by_user(&self, user_id: Uuid) -> Result<Vec<UserDevice>, DomainError>;
-    async fn find_by_device_id(&self, user_id: Uuid, device_id: &str) -> Result<Option<UserDevice>, DomainError>;
+    async fn find_by_device_id(
+        &self,
+        user_id: Uuid,
+        device_id: &str,
+    ) -> Result<Option<UserDevice>, DomainError>;
     async fn save(&self, device: &UserDevice) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait SessionRepository: Send + Sync {
-    async fn find_by_token(&self, token: &str) -> Result<Option<orbis_domain::entities::session::Session>, DomainError>;
-    async fn save(&self, session: &orbis_domain::entities::session::Session) -> Result<(), DomainError>;
+    async fn find_by_token(
+        &self,
+        token: &str,
+    ) -> Result<Option<orbis_domain::entities::session::Session>, DomainError>;
+    async fn save(
+        &self,
+        session: &orbis_domain::entities::session::Session,
+    ) -> Result<(), DomainError>;
     async fn invalidate(&self, token: &str) -> Result<(), DomainError>;
 }
 
@@ -152,7 +182,8 @@ pub trait MfaFactorRepository: Send + Sync {
 
 #[async_trait]
 pub trait MfaRecoveryCodeRepository: Send + Sync {
-    async fn find_active_by_user(&self, user_id: Uuid) -> Result<Vec<MfaRecoveryCode>, DomainError>;
+    async fn find_active_by_user(&self, user_id: Uuid)
+    -> Result<Vec<MfaRecoveryCode>, DomainError>;
     async fn save_all(&self, codes: &[MfaRecoveryCode]) -> Result<(), DomainError>;
     async fn mark_used(&self, id: Uuid) -> Result<(), DomainError>;
 }
@@ -194,9 +225,21 @@ pub trait StudentRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Student>, DomainError>;
     async fn find_detail_by_id(&self, id: Uuid) -> Result<Option<StudentDetail>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Student>, DomainError>;
-    async fn list(&self, org_id: Uuid, filter: StudentFilter) -> Result<PaginatedList<StudentDetail>, DomainError>;
-    async fn find_by_student_number(&self, org_id: Uuid, number: &str) -> Result<Option<Student>, DomainError>;
-    async fn find_by_national_id(&self, org_id: Uuid, national_id: &str) -> Result<Option<Student>, DomainError>;
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: StudentFilter,
+    ) -> Result<PaginatedList<StudentDetail>, DomainError>;
+    async fn find_by_student_number(
+        &self,
+        org_id: Uuid,
+        number: &str,
+    ) -> Result<Option<Student>, DomainError>;
+    async fn find_by_national_id(
+        &self,
+        org_id: Uuid,
+        national_id: &str,
+    ) -> Result<Option<Student>, DomainError>;
     async fn find_by_person_id(&self, person_id: Uuid) -> Result<Option<Student>, DomainError> {
         let _ = person_id;
         Ok(None)
@@ -210,19 +253,30 @@ pub trait StudentRepository: Send + Sync {
 #[async_trait]
 pub trait EnrollmentRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Enrollment>, DomainError>;
-    async fn list(&self, org_id: Uuid, filter: EnrollmentFilter) -> Result<PaginatedList<Enrollment>, DomainError>;
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: EnrollmentFilter,
+    ) -> Result<PaginatedList<Enrollment>, DomainError>;
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
     async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
     async fn save(&self, enrollment: &Enrollment) -> Result<(), DomainError>;
     async fn save_batch(&self, enrollments: &[Enrollment]) -> Result<(), DomainError>;
-    async fn update_status_batch(&self, enrollment_ids: &[Uuid], status: EnrollmentStatus) -> Result<(), DomainError>;
+    async fn update_status_batch(
+        &self,
+        enrollment_ids: &[Uuid],
+        status: EnrollmentStatus,
+    ) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait StudentGuardianRepository: Send + Sync {
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<StudentGuardian>, DomainError>;
-    async fn find_by_guardian(&self, guardian_id: Uuid) -> Result<Vec<StudentGuardian>, DomainError>;
+    async fn find_by_guardian(
+        &self,
+        guardian_id: Uuid,
+    ) -> Result<Vec<StudentGuardian>, DomainError>;
     async fn save(&self, guardian: &StudentGuardian) -> Result<(), DomainError>;
     async fn delete(&self, student_id: Uuid, guardian_id: Uuid) -> Result<(), DomainError>;
 }
@@ -231,9 +285,19 @@ pub use StudentGuardianRepository as GuardianRepository;
 
 #[async_trait]
 pub trait GpaRecordRepository: Send + Sync {
-    async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<orbis_domain::entities::gpa_record::CumulativeGpaRecord>, DomainError>;
-    async fn find_by_student_and_period(&self, student_id: Uuid, period_id: Uuid) -> Result<Option<orbis_domain::entities::gpa_record::CumulativeGpaRecord>, DomainError>;
-    async fn save(&self, record: &orbis_domain::entities::gpa_record::CumulativeGpaRecord) -> Result<(), DomainError>;
+    async fn find_by_student(
+        &self,
+        student_id: Uuid,
+    ) -> Result<Vec<orbis_domain::entities::gpa_record::CumulativeGpaRecord>, DomainError>;
+    async fn find_by_student_and_period(
+        &self,
+        student_id: Uuid,
+        period_id: Uuid,
+    ) -> Result<Option<orbis_domain::entities::gpa_record::CumulativeGpaRecord>, DomainError>;
+    async fn save(
+        &self,
+        record: &orbis_domain::entities::gpa_record::CumulativeGpaRecord,
+    ) -> Result<(), DomainError>;
 }
 
 // =========================================================================
@@ -244,7 +308,11 @@ pub trait GpaRecordRepository: Send + Sync {
 pub trait SubjectRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Subject>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Subject>, DomainError>;
-    async fn list(&self, org_id: Uuid, filter: orbis_domain::queries::filters::SubjectFilter) -> Result<PaginatedList<Subject>, DomainError>;
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: orbis_domain::queries::filters::SubjectFilter,
+    ) -> Result<PaginatedList<Subject>, DomainError>;
     async fn save(&self, subject: &Subject) -> Result<(), DomainError>;
 }
 
@@ -253,7 +321,11 @@ pub trait ClassRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Class>, DomainError>;
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<Class>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Class>, DomainError>;
-    async fn list(&self, org_id: Uuid, filter: orbis_domain::queries::filters::ClassFilter) -> Result<PaginatedList<Class>, DomainError>;
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: orbis_domain::queries::filters::ClassFilter,
+    ) -> Result<PaginatedList<Class>, DomainError>;
     async fn save(&self, class: &Class) -> Result<(), DomainError>;
 }
 
@@ -261,15 +333,30 @@ pub trait ClassRepository: Send + Sync {
 pub trait ClassSubjectRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ClassSubject>, DomainError>;
     async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<ClassSubject>, DomainError>;
-    async fn find_by_class_and_period(&self, class_id: Uuid, period_id: Uuid) -> Result<Vec<ClassSubject>, DomainError>;
-    async fn find_by_teacher(&self, teacher_id: Uuid, period_id: Uuid) -> Result<Vec<ClassSubject>, DomainError>;
-    async fn list(&self, org_id: Uuid, filter: orbis_domain::queries::filters::ClassSubjectFilter) -> Result<PaginatedList<ClassSubject>, DomainError>;
+    async fn find_by_class_and_period(
+        &self,
+        class_id: Uuid,
+        period_id: Uuid,
+    ) -> Result<Vec<ClassSubject>, DomainError>;
+    async fn find_by_teacher(
+        &self,
+        teacher_id: Uuid,
+        period_id: Uuid,
+    ) -> Result<Vec<ClassSubject>, DomainError>;
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: orbis_domain::queries::filters::ClassSubjectFilter,
+    ) -> Result<PaginatedList<ClassSubject>, DomainError>;
     async fn save(&self, class_subject: &ClassSubject) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait CoursePrerequisiteRepository: Send + Sync {
-    async fn find_by_subject(&self, subject_id: Uuid) -> Result<Vec<CoursePrerequisite>, DomainError>;
+    async fn find_by_subject(
+        &self,
+        subject_id: Uuid,
+    ) -> Result<Vec<CoursePrerequisite>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<CoursePrerequisite>, DomainError>;
     async fn save(&self, prereq: &CoursePrerequisite) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
@@ -291,11 +378,26 @@ pub trait AssessmentSchemeRepository: Send + Sync {
 pub trait GradeRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Grade>, DomainError>;
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<Grade>, DomainError>;
-    async fn find_by_student_and_period(&self, student_id: Uuid, period_id: Uuid) -> Result<Vec<Grade>, DomainError>;
-    async fn find_by_student_and_subject(&self, student_id: Uuid, class_subject_id: Uuid) -> Result<Vec<Grade>, DomainError>;
+    async fn find_by_student_and_period(
+        &self,
+        student_id: Uuid,
+        period_id: Uuid,
+    ) -> Result<Vec<Grade>, DomainError>;
+    async fn find_by_student_and_subject(
+        &self,
+        student_id: Uuid,
+        class_subject_id: Uuid,
+    ) -> Result<Vec<Grade>, DomainError>;
     async fn find_by_enrollment(&self, enrollment_id: Uuid) -> Result<Vec<Grade>, DomainError>;
-    async fn find_by_class_subject(&self, class_subject_id: Uuid) -> Result<Vec<Grade>, DomainError>;
-    async fn list(&self, org_id: Uuid, filter: orbis_domain::queries::filters::GradeFilter) -> Result<PaginatedList<Grade>, DomainError>;
+    async fn find_by_class_subject(
+        &self,
+        class_subject_id: Uuid,
+    ) -> Result<Vec<Grade>, DomainError>;
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: orbis_domain::queries::filters::GradeFilter,
+    ) -> Result<PaginatedList<Grade>, DomainError>;
     async fn save(&self, grade: &Grade) -> Result<(), DomainError>;
     async fn save_batch(&self, grades: &[Grade]) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
@@ -304,9 +406,17 @@ pub trait GradeRepository: Send + Sync {
 #[async_trait]
 pub trait AttendanceRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Attendance>, DomainError>;
-    async fn find_by_class_and_date(&self, class_id: Uuid, date: NaiveDate) -> Result<Vec<Attendance>, DomainError>;
+    async fn find_by_class_and_date(
+        &self,
+        class_id: Uuid,
+        date: NaiveDate,
+    ) -> Result<Vec<Attendance>, DomainError>;
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<Attendance>, DomainError>;
-    async fn list(&self, org_id: Uuid, filter: orbis_domain::queries::filters::AttendanceFilter) -> Result<PaginatedList<Attendance>, DomainError>;
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: orbis_domain::queries::filters::AttendanceFilter,
+    ) -> Result<PaginatedList<Attendance>, DomainError>;
     async fn save(&self, attendance: &Attendance) -> Result<(), DomainError>;
     async fn save_batch(&self, attendances: &[Attendance]) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
@@ -348,7 +458,10 @@ pub trait ScheduledLessonRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ScheduledLesson>, DomainError>;
     async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError>;
     async fn find_by_teacher(&self, teacher_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError>;
-    async fn find_by_class_subject(&self, class_subject_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError>;
+    async fn find_by_class_subject(
+        &self,
+        class_subject_id: Uuid,
+    ) -> Result<Vec<ScheduledLesson>, DomainError>;
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError>;
     async fn save(&self, lesson: &ScheduledLesson) -> Result<(), DomainError>;
     async fn save_bulk(&self, lessons: &[ScheduledLesson]) -> Result<(), DomainError>;
@@ -376,7 +489,11 @@ pub trait ExamScheduleRepository: Send + Sync {
 pub trait SeatingNumberRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<SeatingNumber>, DomainError>;
     async fn find_by_session(&self, session_id: Uuid) -> Result<Vec<SeatingNumber>, DomainError>;
-    async fn find_by_session_and_student(&self, session_id: Uuid, student_id: Uuid) -> Result<Option<SeatingNumber>, DomainError>;
+    async fn find_by_session_and_student(
+        &self,
+        session_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Option<SeatingNumber>, DomainError>;
     async fn save(&self, seating: &SeatingNumber) -> Result<(), DomainError>;
     async fn save_bulk(&self, seatings: &[SeatingNumber]) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
@@ -387,7 +504,11 @@ pub trait SeatingNumberRepository: Send + Sync {
 pub trait SecretNumberRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<SecretNumber>, DomainError>;
     async fn find_by_schedule(&self, schedule_id: Uuid) -> Result<Vec<SecretNumber>, DomainError>;
-    async fn find_by_schedule_and_seating(&self, schedule_id: Uuid, student_id: Uuid) -> Result<Option<SecretNumber>, DomainError>;
+    async fn find_by_schedule_and_seating(
+        &self,
+        schedule_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Option<SecretNumber>, DomainError>;
     async fn save(&self, secret: &SecretNumber) -> Result<(), DomainError>;
     async fn save_bulk(&self, secrets: &[SecretNumber]) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
@@ -445,7 +566,11 @@ pub trait StudentFeeRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<StudentFee>, DomainError>;
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<StudentFee>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<StudentFee>, DomainError>;
-    async fn list(&self, org_id: Uuid, filter: orbis_domain::queries::filters::StudentFeeFilter) -> Result<PaginatedList<StudentFee>, DomainError>;
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: orbis_domain::queries::filters::StudentFeeFilter,
+    ) -> Result<PaginatedList<StudentFee>, DomainError>;
     async fn save(&self, fee: &StudentFee) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
@@ -455,18 +580,32 @@ pub trait PaymentRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Payment>, DomainError>;
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<Payment>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Payment>, DomainError>;
-    async fn list(&self, org_id: Uuid, filter: orbis_domain::queries::filters::PaymentFilter) -> Result<PaginatedList<Payment>, DomainError>;
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: orbis_domain::queries::filters::PaymentFilter,
+    ) -> Result<PaginatedList<Payment>, DomainError>;
     async fn save(&self, payment: &Payment) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait CurrencyRepository: Send + Sync {
-    async fn find_by_code(&self, org_id: Uuid, code: &str) -> Result<Option<Currency>, DomainError>;
+    async fn find_by_code(&self, org_id: Uuid, code: &str)
+    -> Result<Option<Currency>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Currency>, DomainError>;
     async fn save(&self, currency: &Currency) -> Result<(), DomainError>;
-    async fn get_rate(&self, from_id: Uuid, to_id: Uuid) -> Result<Option<ExchangeRate>, DomainError>;
-    async fn get_exchange_rate(&self, org_id: Uuid, from: &str, to: &str) -> Result<Option<ExchangeRate>, DomainError>;
+    async fn get_rate(
+        &self,
+        from_id: Uuid,
+        to_id: Uuid,
+    ) -> Result<Option<ExchangeRate>, DomainError>;
+    async fn get_exchange_rate(
+        &self,
+        org_id: Uuid,
+        from: &str,
+        to: &str,
+    ) -> Result<Option<ExchangeRate>, DomainError>;
     async fn save_rate(&self, rate: &ExchangeRate) -> Result<(), DomainError>;
 }
 
@@ -487,7 +626,11 @@ pub trait PromotionRepository: Send + Sync {
 #[async_trait]
 pub trait OverrideRequestRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<AcademicOverrideRequest>, DomainError>;
-    async fn find_by_org(&self, org_id: Uuid, status: Option<&str>) -> Result<Vec<AcademicOverrideRequest>, DomainError>;
+    async fn find_by_org(
+        &self,
+        org_id: Uuid,
+        status: Option<&str>,
+    ) -> Result<Vec<AcademicOverrideRequest>, DomainError>;
     async fn find_active_override(
         &self,
         org_id: Uuid,
@@ -495,7 +638,11 @@ pub trait OverrideRequestRepository: Send + Sync {
         entity_type: &str,
         entity_id: Uuid,
     ) -> Result<Option<AcademicOverrideRequest>, DomainError>;
-    async fn find_pending_for_role(&self, org_id: Uuid, role: &str) -> Result<Vec<AcademicOverrideRequest>, DomainError>;
+    async fn find_pending_for_role(
+        &self,
+        org_id: Uuid,
+        role: &str,
+    ) -> Result<Vec<AcademicOverrideRequest>, DomainError>;
     async fn save(&self, req: &AcademicOverrideRequest) -> Result<(), DomainError>;
 }
 
@@ -503,12 +650,15 @@ pub trait OverrideRequestRepository: Send + Sync {
 // Workflows, Documents & Integrations
 // =========================================================================
 
-
-
 #[async_trait]
 pub trait WorkflowRepository: Send + Sync {
-    async fn find_rules_by_trigger(&self, org_id: Uuid, trigger_event: &str) -> Result<Vec<WorkflowRule>, DomainError>;
-    async fn find_actions_by_rule(&self, rule_id: Uuid) -> Result<Vec<WorkflowAction>, DomainError>;
+    async fn find_rules_by_trigger(
+        &self,
+        org_id: Uuid,
+        trigger_event: &str,
+    ) -> Result<Vec<WorkflowRule>, DomainError>;
+    async fn find_actions_by_rule(&self, rule_id: Uuid)
+    -> Result<Vec<WorkflowAction>, DomainError>;
     async fn save_execution(&self, execution: &WorkflowExecution) -> Result<(), DomainError>;
 }
 
@@ -516,9 +666,22 @@ pub trait WorkflowRepository: Send + Sync {
 pub trait DocumentRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Document>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Document>, DomainError>;
-    async fn find_by_entity(&self, entity_type: &str, entity_id: Uuid) -> Result<Vec<Document>, DomainError>;
-    async fn find_by_folder(&self, org_id: Uuid, folder_id: Uuid) -> Result<Vec<Document>, DomainError>;
-    async fn find_by_curriculum(&self, org_id: Uuid, academic_year_id: Option<Uuid>, term_id: Option<Uuid>) -> Result<Vec<Document>, DomainError>;
+    async fn find_by_entity(
+        &self,
+        entity_type: &str,
+        entity_id: Uuid,
+    ) -> Result<Vec<Document>, DomainError>;
+    async fn find_by_folder(
+        &self,
+        org_id: Uuid,
+        folder_id: Uuid,
+    ) -> Result<Vec<Document>, DomainError>;
+    async fn find_by_curriculum(
+        &self,
+        org_id: Uuid,
+        academic_year_id: Option<Uuid>,
+        term_id: Option<Uuid>,
+    ) -> Result<Vec<Document>, DomainError>;
     async fn find_archived(&self, org_id: Uuid) -> Result<Vec<Document>, DomainError>;
     async fn find_trash(&self, org_id: Uuid) -> Result<Vec<Document>, DomainError>;
     async fn save(&self, document: &Document) -> Result<(), DomainError>;
@@ -526,16 +689,30 @@ pub trait DocumentRepository: Send + Sync {
     async fn restore(&self, id: Uuid) -> Result<(), DomainError>;
     async fn purge(&self, id: Uuid) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
-    async fn delete_by_entity(&self, entity_type: &str, entity_id: Uuid) -> Result<(), DomainError>;
+    async fn delete_by_entity(&self, entity_type: &str, entity_id: Uuid)
+    -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait FolderRepository: Send + Sync {
     async fn find_by_id(&self, org_id: Uuid, id: Uuid) -> Result<Option<Folder>, DomainError>;
     async fn find_by_path(&self, org_id: Uuid, path: &str) -> Result<Option<Folder>, DomainError>;
-    async fn find_by_entity(&self, org_id: Uuid, entity_type: &str, entity_id: Uuid) -> Result<Option<Folder>, DomainError>;
-    async fn list_children(&self, org_id: Uuid, parent_id: Option<Uuid>) -> Result<Vec<Folder>, DomainError>;
-    async fn list_by_type(&self, org_id: Uuid, folder_type: &str) -> Result<Vec<Folder>, DomainError>;
+    async fn find_by_entity(
+        &self,
+        org_id: Uuid,
+        entity_type: &str,
+        entity_id: Uuid,
+    ) -> Result<Option<Folder>, DomainError>;
+    async fn list_children(
+        &self,
+        org_id: Uuid,
+        parent_id: Option<Uuid>,
+    ) -> Result<Vec<Folder>, DomainError>;
+    async fn list_by_type(
+        &self,
+        org_id: Uuid,
+        folder_type: &str,
+    ) -> Result<Vec<Folder>, DomainError>;
     async fn list_all(&self, org_id: Uuid) -> Result<Vec<Folder>, DomainError>;
     async fn save(&self, folder: &Folder) -> Result<(), DomainError>;
     async fn delete(&self, org_id: Uuid, id: Uuid) -> Result<(), DomainError>;
@@ -543,19 +720,37 @@ pub trait FolderRepository: Send + Sync {
 
 #[async_trait]
 pub trait IntegrationRepository: Send + Sync {
-    async fn find_configs_by_org(&self, org_id: Uuid) -> Result<Vec<IntegrationConfig>, DomainError>;
-    async fn get_secrets_by_config(&self, config_id: Uuid) -> Result<Vec<IntegrationSecret>, DomainError>;
+    async fn find_configs_by_org(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<IntegrationConfig>, DomainError>;
+    async fn get_secrets_by_config(
+        &self,
+        config_id: Uuid,
+    ) -> Result<Vec<IntegrationSecret>, DomainError>;
     async fn save_config(&self, config: &IntegrationConfig) -> Result<(), DomainError>;
     async fn save_secret(&self, secret: &IntegrationSecret) -> Result<(), DomainError>;
-    async fn find_config_by_provider(&self, org_id: Uuid, provider_name: &str) -> Result<Option<IntegrationConfig>, DomainError>;
+    async fn find_config_by_provider(
+        &self,
+        org_id: Uuid,
+        provider_name: &str,
+    ) -> Result<Option<IntegrationConfig>, DomainError>;
     async fn delete_config(&self, config_id: Uuid) -> Result<(), DomainError>;
-    async fn delete_by_provider(&self, org_id: Uuid, provider_name: &str) -> Result<(), DomainError>;
+    async fn delete_by_provider(
+        &self,
+        org_id: Uuid,
+        provider_name: &str,
+    ) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait SettingsRepository: Send + Sync {
     async fn get_settings(&self, org_id: Uuid) -> Result<OrganizationSettings, DomainError>;
-    async fn save_settings(&self, org_id: Uuid, settings: &OrganizationSettings) -> Result<(), DomainError>;
+    async fn save_settings(
+        &self,
+        org_id: Uuid,
+        settings: &OrganizationSettings,
+    ) -> Result<(), DomainError>;
 }
 
 #[async_trait]
@@ -616,7 +811,10 @@ pub trait SystemRepository: Send + Sync {
 #[async_trait]
 pub trait AutopilotTaskRepository: Send + Sync {
     /// Retrieve all pending tasks due for execution across all orgs (or for a specific org)
-    async fn find_pending_tasks(&self, org_id: Option<Uuid>) -> Result<Vec<AutopilotTask>, DomainError>;
+    async fn find_pending_tasks(
+        &self,
+        org_id: Option<Uuid>,
+    ) -> Result<Vec<AutopilotTask>, DomainError>;
 
     /// Find a specific task by its ID
     async fn find_by_id(&self, id: Uuid) -> Result<Option<AutopilotTask>, DomainError>;
@@ -638,7 +836,11 @@ pub trait AutopilotTaskRepository: Send + Sync {
     async fn delete_task(&self, id: Uuid) -> Result<(), DomainError>;
 
     /// Find stuck tasks in Executing status exceeding threshold seconds
-    async fn find_stuck_tasks(&self, org_id: Uuid, threshold_seconds: i64) -> Result<Vec<AutopilotTask>, DomainError>;
+    async fn find_stuck_tasks(
+        &self,
+        org_id: Uuid,
+        threshold_seconds: i64,
+    ) -> Result<Vec<AutopilotTask>, DomainError>;
 
     /// Find overdue tasks in Pending status where scheduled_at < now
     async fn find_overdue_tasks(&self, org_id: Uuid) -> Result<Vec<AutopilotTask>, DomainError>;
@@ -662,13 +864,36 @@ pub struct EmployeeFilter {
 #[async_trait]
 pub trait EmployeeRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Employee>, DomainError>;
-    async fn find_by_person_id(&self, org_id: Uuid, person_id: Uuid) -> Result<Option<Employee>, DomainError>;
-    async fn find_by_user_id(&self, org_id: Uuid, user_id: Uuid) -> Result<Option<Employee>, DomainError>;
-    async fn find_by_employee_number(&self, org_id: Uuid, employee_number: &str) -> Result<Option<Employee>, DomainError>;
+    async fn find_by_person_id(
+        &self,
+        org_id: Uuid,
+        person_id: Uuid,
+    ) -> Result<Option<Employee>, DomainError>;
+    async fn find_by_user_id(
+        &self,
+        org_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<Option<Employee>, DomainError>;
+    async fn find_by_employee_number(
+        &self,
+        org_id: Uuid,
+        employee_number: &str,
+    ) -> Result<Option<Employee>, DomainError>;
     async fn find_detail_by_id(&self, id: Uuid) -> Result<Option<EmployeeDetail>, DomainError>;
-    async fn list(&self, org_id: Uuid, filter: EmployeeFilter) -> Result<PaginatedList<EmployeeDetail>, DomainError>;
-    async fn list_by_type(&self, org_id: Uuid, employee_type: &str) -> Result<Vec<Employee>, DomainError>;
-    async fn count_by_status(&self, org_id: Uuid) -> Result<std::collections::HashMap<String, i64>, DomainError>;
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: EmployeeFilter,
+    ) -> Result<PaginatedList<EmployeeDetail>, DomainError>;
+    async fn list_by_type(
+        &self,
+        org_id: Uuid,
+        employee_type: &str,
+    ) -> Result<Vec<Employee>, DomainError>;
+    async fn count_by_status(
+        &self,
+        org_id: Uuid,
+    ) -> Result<std::collections::HashMap<String, i64>, DomainError>;
     async fn save(&self, employee: &Employee) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
@@ -691,12 +916,20 @@ pub trait GroupRepository: Send + Sync {
     async fn get_user_groups(&self, user_id: Uuid) -> Result<Vec<Group>, DomainError>;
     async fn add_member(&self, membership: &UserGroupMembership) -> Result<(), DomainError>;
     async fn remove_member(&self, user_id: Uuid, group_id: Uuid) -> Result<(), DomainError>;
-    async fn bulk_add_members(&self, memberships: &[UserGroupMembership]) -> Result<u64, DomainError>;
+    async fn bulk_add_members(
+        &self,
+        memberships: &[UserGroupMembership],
+    ) -> Result<u64, DomainError>;
     async fn is_member(&self, user_id: Uuid, group_id: Uuid) -> Result<bool, DomainError>;
 
     // Permissions
     async fn get_group_permissions(&self, group_id: Uuid) -> Result<Vec<String>, DomainError>;
-    async fn set_group_permissions(&self, org_id: Uuid, group_id: Uuid, permissions: &[String]) -> Result<(), DomainError>;
+    async fn set_group_permissions(
+        &self,
+        org_id: Uuid,
+        group_id: Uuid,
+        permissions: &[String],
+    ) -> Result<(), DomainError>;
     async fn get_user_group_permissions(&self, user_id: Uuid) -> Result<Vec<String>, DomainError>;
 }
 
@@ -708,7 +941,12 @@ pub trait GroupRepository: Send + Sync {
 pub trait DocumentRequirementRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DocumentRequirement>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DocumentRequirement>, DomainError>;
-    async fn find_by_target(&self, org_id: Uuid, target_type: &str, target_id: Option<Uuid>) -> Result<Vec<DocumentRequirement>, DomainError>;
+    async fn find_by_target(
+        &self,
+        org_id: Uuid,
+        target_type: &str,
+        target_id: Option<Uuid>,
+    ) -> Result<Vec<DocumentRequirement>, DomainError>;
     async fn save(&self, req: &DocumentRequirement) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
@@ -719,7 +957,12 @@ pub trait DocumentRequirementRepository: Send + Sync {
 
 #[async_trait]
 pub trait SequenceCounterRepository: Send + Sync {
-    async fn next_sequence(&self, org_id: Uuid, sequence_type: &str, academic_year: i32) -> Result<u64, DomainError>;
+    async fn next_sequence(
+        &self,
+        org_id: Uuid,
+        sequence_type: &str,
+        academic_year: i32,
+    ) -> Result<u64, DomainError>;
 }
 
 // =========================================================================
@@ -732,9 +975,17 @@ pub trait RoleRepository: Send + Sync {
     async fn list_by_org(&self, org_id: Uuid) -> Result<Vec<Role>, DomainError>;
     async fn count_by_org(&self, org_id: Uuid) -> Result<u64, DomainError>;
     async fn save_role(&self, role: &Role) -> Result<(), DomainError>;
-    async fn save_role_permissions(&self, org_id: Uuid, role_id: &str, permissions: &[RolePermission]) -> Result<(), DomainError>;
+    async fn save_role_permissions(
+        &self,
+        org_id: Uuid,
+        role_id: &str,
+        permissions: &[RolePermission],
+    ) -> Result<(), DomainError>;
     async fn assign_role(&self, assignment: &UserRoleAssignment) -> Result<(), DomainError>;
-    async fn find_assignment(&self, org_id: Uuid, user_id: Uuid, role_id: &str) -> Result<Option<UserRoleAssignment>, DomainError>;
+    async fn find_assignment(
+        &self,
+        org_id: Uuid,
+        user_id: Uuid,
+        role_id: &str,
+    ) -> Result<Option<UserRoleAssignment>, DomainError>;
 }
-
-

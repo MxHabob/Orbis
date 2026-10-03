@@ -64,63 +64,49 @@ const error = $derived(
 const reportItems = $derived([
   {
     id: "timetable",
-    title: m.common_exams_reports_timetable
-      ? m.common_exams_reports_timetable()
-      : "جدول مواعيد الاختبارات",
+    title: m.common_exams_reports_timetable(),
     desc: "كشف تفصيلي بمواعيد الاختبارات اليومية حسب الصفوف والمواد والفترات.",
     icon: Calendar,
     badge: "جدول الاختبارات",
   },
   {
     id: "seating_list",
-    title: m.common_exams_reports_seating_list
-      ? m.common_exams_reports_seating_list()
-      : "كشوفات أرقام الجلوس واللجان",
+    title: m.common_exams_reports_seating_list(),
     desc: "قوائم أسماء الطلاب الموزعين على اللجان مع أرقام الجلوس والأرقام السرية.",
     icon: Hashtag,
     badge: "أرقام الجلوس",
   },
   {
     id: "hall_map",
-    title: m.common_exams_reports_hall_map
-      ? m.common_exams_reports_hall_map()
-      : "خريطة توزيع قاعات الامتحان",
+    title: m.common_exams_reports_hall_map(),
     desc: "توزيع القاعات والسعة الاستيعابية ومواقع الجلوس لكل لجنة امتحانية.",
     icon: Home,
     badge: "توزيع القاعات",
   },
   {
     id: "proctor_sheet",
-    title: m.common_exams_reports_proctor_sheet
-      ? m.common_exams_reports_proctor_sheet()
-      : "جدول تكليف الملاحظين والمراقبين",
+    title: m.common_exams_reports_proctor_sheet(),
     desc: "جدول توزيع المعلمين والملاحظين على اللجان والفترات الامتحانية اليومية.",
     icon: UserBadgeCheck,
     badge: "الملاحظين",
   },
   {
     id: "student_cards",
-    title: m.common_exams_reports_student_cards
-      ? m.common_exams_reports_student_cards()
-      : "بطاقات دخول الامتحان للطلاب",
+    title: m.common_exams_reports_student_cards(),
     desc: "بطاقات تعريفية رسمية تحتوي على رقم الجلوس واللجنة والقاعة الامتحانية.",
     icon: Document,
     badge: "بطاقات الجلوس",
   },
   {
     id: "attendance",
-    title: m.common_exams_reports_attendance
-      ? m.common_exams_reports_attendance()
-      : "كشوفات توقيع حضور الامتحانات",
+    title: m.common_exams_reports_attendance(),
     desc: "محاضر التحضير والتوقيع اليومي للطلاب داخل اللجان أثناء سير الامتحان.",
     icon: ClipboardCheck,
     badge: "كشوف الحضور",
   },
   {
     id: "summary",
-    title: m.common_exams_reports_summary
-      ? m.common_exams_reports_summary()
-      : "سجل رصد الدرجات الشامل (الشيت)",
+    title: m.common_exams_reports_summary(),
     desc: "الشيت المعتمد لرصد درجات الاختبارات الشفهية والتحريرية ونتيجة الكنترول.",
     icon: ChartBar,
     badge: "شيت الدرجات",

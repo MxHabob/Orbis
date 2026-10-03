@@ -1,5 +1,5 @@
-use sea_orm::entity::prelude::*;
 use chrono::{DateTime, Utc};
+use sea_orm::entity::prelude::*;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
@@ -42,7 +42,7 @@ pub enum Relation {
     Person,
     #[sea_orm(has_many = "super::user_session::Entity")]
     UserSessions,
-    }
+}
 
 impl Related<super::organization::Entity> for Entity {
     fn to() -> RelationDef {
@@ -61,6 +61,5 @@ impl Related<super::user_session::Entity> for Entity {
         Relation::UserSessions.def()
     }
 }
-
 
 impl ActiveModelBehavior for ActiveModel {}

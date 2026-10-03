@@ -1,5 +1,6 @@
 <script lang="ts">
 import { Grid } from "@orbis/icons";
+import CanvasNode from "./canvas-node.svelte";
 
 /**
  * CanvasNode — Recursive node renderer for the SVG canvas.
@@ -347,7 +348,7 @@ import { resolveDocumentUrl } from "$lib/features/documents/queries";
       <!-- Render children recursively -->
       {#if "children" in node && Array.isArray((node as any).children)}
         {#each (node as any).children as child (child.id)}
-          <svelte:self node={child} {store} {pageSizePx} />
+          <CanvasNode node={child} {store} {pageSizePx} />
         {/each}
       {/if}
 

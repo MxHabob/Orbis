@@ -1,30 +1,37 @@
 use async_trait::async_trait;
 use orbis_app::ports::repositories::{
-    AccountRepository, JournalEntryRepository, FeeTemplateRepository,
-    DiscountTemplateRepository, StudentFeeRepository, PaymentRepository, CurrencyRepository
+    AccountRepository, CurrencyRepository, DiscountTemplateRepository, FeeTemplateRepository,
+    JournalEntryRepository, PaymentRepository, StudentFeeRepository,
 };
 use orbis_domain::entities::account::{Account as DomainAccount, AccountType};
-use orbis_domain::entities::journal_entry::{JournalEntry as DomainJournalEntry, JournalPostingStatus};
-use orbis_domain::entities::fee_template::{FeeTemplate as DomainFeeTemplate, FeeFrequency};
-use orbis_domain::entities::discount_template::{DiscountTemplate as DomainDiscountTemplate, DiscountType};
-use orbis_domain::entities::student_fee::{StudentFee as DomainStudentFee, FeeStatus};
-use orbis_domain::entities::payment::{Payment as DomainPayment, PaymentMethod};
 use orbis_domain::entities::currency::Currency as DomainCurrency;
+use orbis_domain::entities::discount_template::{
+    DiscountTemplate as DomainDiscountTemplate, DiscountType,
+};
 use orbis_domain::entities::exchange_rate::ExchangeRate as DomainExchangeRate;
+use orbis_domain::entities::fee_template::{FeeFrequency, FeeTemplate as DomainFeeTemplate};
+use orbis_domain::entities::journal_entry::{
+    JournalEntry as DomainJournalEntry, JournalPostingStatus,
+};
+use orbis_domain::entities::payment::{Payment as DomainPayment, PaymentMethod};
+use orbis_domain::entities::student_fee::{FeeStatus, StudentFee as DomainStudentFee};
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, ConnectionTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter, PaginatorTrait};
-use uuid::Uuid;
 use rust_decimal::Decimal;
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait,
+    PaginatorTrait, QueryFilter, Set,
+};
+use uuid::Uuid;
 
 use crate::models::{
     account::{self, Entity as AccountEntity},
-    journal_entry::{self, Entity as JournalEntryEntity},
-    fee_template::{self, Entity as FeeTemplateEntity},
-    discount_template::{self, Entity as DiscountTemplateEntity},
-    student_fee::{self, Entity as StudentFeeEntity},
-    payment::{self, Entity as PaymentEntity},
     currency::{self, Entity as CurrencyEntity},
+    discount_template::{self, Entity as DiscountTemplateEntity},
     exchange_rate::{self, Entity as ExchangeRateEntity},
+    fee_template::{self, Entity as FeeTemplateEntity},
+    journal_entry::{self, Entity as JournalEntryEntity},
+    payment::{self, Entity as PaymentEntity},
+    student_fee::{self, Entity as StudentFeeEntity},
 };
 
 pub struct FinanceRepoImpl {
@@ -34,7 +41,10 @@ pub struct FinanceRepoImpl {
 #[async_trait]
 impl AccountRepository for FinanceRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainAccount>, DomainError> {
-        let model = AccountEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let model = AccountEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(map_account_model_to_domain))
     }
 
@@ -44,10 +54,17 @@ impl AccountRepository for FinanceRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_account_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_account_model_to_domain)
+            .collect())
     }
 
-    async fn find_by_code(&self, org_id: Uuid, code: &str) -> Result<Option<DomainAccount>, DomainError> {
+    async fn find_by_code(
+        &self,
+        org_id: Uuid,
+        code: &str,
+    ) -> Result<Option<DomainAccount>, DomainError> {
         let model = AccountEntity::find()
             .filter(account::Column::OrgId.eq(org_id))
             .filter(account::Column::Code.eq(code))
@@ -75,10 +92,21 @@ impl AccountRepository for FinanceRepoImpl {
             updated_at: Set(a.updated_at.into()),
         };
 
-        if AccountEntity::find_by_id(a.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if AccountEntity::find_by_id(a.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
@@ -153,7 +181,10 @@ fn map_journal_entry_model_to_domain(m: journal_entry::Model) -> DomainJournalEn
         reversal_reason: m.reversal_reason,
         created_by: m.created_by,
         created_at: m.created_at.into(),
-        updated_at: m.updated_at.map(Into::into).unwrap_or_else(|| m.created_at.into()),
+        updated_at: m
+            .updated_at
+            .map(Into::into)
+            .unwrap_or_else(|| m.created_at.into()),
         updated_by: m.updated_by,
         org_unit_id: m.org_unit_id,
         version: m.version,
@@ -163,7 +194,10 @@ fn map_journal_entry_model_to_domain(m: journal_entry::Model) -> DomainJournalEn
 #[async_trait]
 impl JournalEntryRepository for FinanceRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainJournalEntry>, DomainError> {
-        let model = JournalEntryEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let model = JournalEntryEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(map_journal_entry_model_to_domain))
     }
 
@@ -173,7 +207,10 @@ impl JournalEntryRepository for FinanceRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_journal_entry_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_journal_entry_model_to_domain)
+            .collect())
     }
 
     async fn save(&self, entry: &DomainJournalEntry) -> Result<(), DomainError> {
@@ -204,10 +241,21 @@ impl JournalEntryRepository for FinanceRepoImpl {
             updated_at: Set(Some(entry.updated_at.into())),
         };
 
-        if JournalEntryEntity::find_by_id(entry.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if JournalEntryEntity::find_by_id(entry.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
@@ -221,7 +269,6 @@ impl JournalEntryRepository for FinanceRepoImpl {
     }
 }
 
-
 fn map_fee_template_model_to_domain(m: fee_template::Model) -> DomainFeeTemplate {
     DomainFeeTemplate {
         id: m.id,
@@ -234,8 +281,12 @@ fn map_fee_template_model_to_domain(m: fee_template::Model) -> DomainFeeTemplate
         currency_code: m.currency_code.unwrap_or_else(|| "SAR".into()),
         revenue_account_id: m.revenue_account_id,
         receivable_account_id: m.receivable_account_id,
-        applicable_levels: m.applicable_levels.and_then(|v| serde_json::from_value(v).ok()),
-        applicable_study_modes: m.applicable_study_modes.and_then(|v| serde_json::from_value(v).ok()),
+        applicable_levels: m
+            .applicable_levels
+            .and_then(|v| serde_json::from_value(v).ok()),
+        applicable_study_modes: m
+            .applicable_study_modes
+            .and_then(|v| serde_json::from_value(v).ok()),
         frequency: match m.frequency.as_deref().unwrap_or("per_term") {
             "once" => FeeFrequency::Once,
             "monthly" => FeeFrequency::Monthly,
@@ -252,7 +303,10 @@ fn map_fee_template_model_to_domain(m: fee_template::Model) -> DomainFeeTemplate
 #[async_trait]
 impl FeeTemplateRepository for FinanceRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainFeeTemplate>, DomainError> {
-        let model = FeeTemplateEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let model = FeeTemplateEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(map_fee_template_model_to_domain))
     }
 
@@ -262,7 +316,10 @@ impl FeeTemplateRepository for FinanceRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_fee_template_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_fee_template_model_to_domain)
+            .collect())
     }
 
     async fn save(&self, template: &DomainFeeTemplate) -> Result<(), DomainError> {
@@ -277,8 +334,14 @@ impl FeeTemplateRepository for FinanceRepoImpl {
             currency_code: Set(Some(template.currency_code.clone())),
             revenue_account_id: Set(template.revenue_account_id),
             receivable_account_id: Set(template.receivable_account_id),
-            applicable_levels: Set(template.applicable_levels.as_ref().and_then(|v| serde_json::to_value(v).ok())),
-            applicable_study_modes: Set(template.applicable_study_modes.as_ref().and_then(|v| serde_json::to_value(v).ok())),
+            applicable_levels: Set(template
+                .applicable_levels
+                .as_ref()
+                .and_then(|v| serde_json::to_value(v).ok())),
+            applicable_study_modes: Set(template
+                .applicable_study_modes
+                .as_ref()
+                .and_then(|v| serde_json::to_value(v).ok())),
             frequency: Set(Some(template.frequency.to_string())),
             is_mandatory: Set(template.is_mandatory),
             is_active: Set(Some(template.is_active)),
@@ -286,10 +349,21 @@ impl FeeTemplateRepository for FinanceRepoImpl {
             updated_at: Set(template.updated_at.into()),
         };
 
-        if FeeTemplateEntity::find_by_id(template.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if FeeTemplateEntity::find_by_id(template.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
@@ -329,7 +403,10 @@ fn map_discount_template_model_to_domain(m: discount_template::Model) -> DomainD
 #[async_trait]
 impl DiscountTemplateRepository for FinanceRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainDiscountTemplate>, DomainError> {
-        let model = DiscountTemplateEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let model = DiscountTemplateEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(map_discount_template_model_to_domain))
     }
 
@@ -339,7 +416,10 @@ impl DiscountTemplateRepository for FinanceRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_discount_template_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_discount_template_model_to_domain)
+            .collect())
     }
 
     async fn save(&self, d: &DomainDiscountTemplate) -> Result<(), DomainError> {
@@ -364,10 +444,21 @@ impl DiscountTemplateRepository for FinanceRepoImpl {
             updated_at: Set(d.updated_at.into()),
         };
 
-        if DiscountTemplateEntity::find_by_id(d.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if DiscountTemplateEntity::find_by_id(d.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
@@ -384,7 +475,10 @@ impl DiscountTemplateRepository for FinanceRepoImpl {
 #[async_trait]
 impl StudentFeeRepository for FinanceRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainStudentFee>, DomainError> {
-        let model = StudentFeeEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let model = StudentFeeEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(|m| DomainStudentFee {
             id: m.id,
             org_id: m.org_id,
@@ -421,19 +515,32 @@ impl StudentFeeRepository for FinanceRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_student_fee_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_student_fee_model_to_domain)
+            .collect())
     }
 
-    async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<DomainStudentFee>, DomainError> {
+    async fn find_by_student(
+        &self,
+        student_id: Uuid,
+    ) -> Result<Vec<DomainStudentFee>, DomainError> {
         let models = StudentFeeEntity::find()
             .filter(student_fee::Column::StudentId.eq(student_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_student_fee_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_student_fee_model_to_domain)
+            .collect())
     }
 
-    async fn list(&self, org_id: Uuid, filter: orbis_domain::queries::filters::StudentFeeFilter) -> Result<orbis_domain::queries::filters::PaginatedList<DomainStudentFee>, DomainError> {
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: orbis_domain::queries::filters::StudentFeeFilter,
+    ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainStudentFee>, DomainError> {
         let mut query = StudentFeeEntity::find().filter(student_fee::Column::OrgId.eq(org_id));
         if let Some(student_id) = filter.student_id {
             query = query.filter(student_fee::Column::StudentId.eq(student_id));
@@ -445,10 +552,24 @@ impl StudentFeeRepository for FinanceRepoImpl {
         let page = pagination.page();
         let page_size = pagination.page_size();
         let paginator = query.paginate(&self.db, page_size);
-        let total_count = paginator.num_items().await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        let rows = paginator.fetch_page(page - 1).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        let items = rows.into_iter().map(map_student_fee_model_to_domain).collect();
-        Ok(orbis_domain::queries::filters::PaginatedList::new(items, total_count, page, page_size))
+        let total_count = paginator
+            .num_items()
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        let rows = paginator
+            .fetch_page(page - 1)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        let items = rows
+            .into_iter()
+            .map(map_student_fee_model_to_domain)
+            .collect();
+        Ok(orbis_domain::queries::filters::PaginatedList::new(
+            items,
+            total_count,
+            page,
+            page_size,
+        ))
     }
 
     async fn save(&self, fee: &DomainStudentFee) -> Result<(), DomainError> {
@@ -474,10 +595,21 @@ impl StudentFeeRepository for FinanceRepoImpl {
             updated_at: Set(fee.updated_at.into()),
         };
 
-        if StudentFeeEntity::find_by_id(fee.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if StudentFeeEntity::find_by_id(fee.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
@@ -494,7 +626,10 @@ impl StudentFeeRepository for FinanceRepoImpl {
 #[async_trait]
 impl PaymentRepository for FinanceRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainPayment>, DomainError> {
-        let model = PaymentEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let model = PaymentEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(map_payment_model_to_domain))
     }
 
@@ -504,7 +639,10 @@ impl PaymentRepository for FinanceRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_payment_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_payment_model_to_domain)
+            .collect())
     }
 
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<DomainPayment>, DomainError> {
@@ -513,10 +651,17 @@ impl PaymentRepository for FinanceRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_payment_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_payment_model_to_domain)
+            .collect())
     }
 
-    async fn list(&self, org_id: Uuid, filter: orbis_domain::queries::filters::PaymentFilter) -> Result<orbis_domain::queries::filters::PaginatedList<DomainPayment>, DomainError> {
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: orbis_domain::queries::filters::PaymentFilter,
+    ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainPayment>, DomainError> {
         let mut query = PaymentEntity::find().filter(payment::Column::OrgId.eq(org_id));
         if let Some(student_id) = filter.student_id {
             query = query.filter(payment::Column::StudentId.eq(student_id));
@@ -528,10 +673,21 @@ impl PaymentRepository for FinanceRepoImpl {
         let page = pagination.page();
         let page_size = pagination.page_size();
         let paginator = query.paginate(&self.db, page_size);
-        let total_count = paginator.num_items().await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        let rows = paginator.fetch_page(page - 1).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let total_count = paginator
+            .num_items()
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        let rows = paginator
+            .fetch_page(page - 1)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         let items = rows.into_iter().map(map_payment_model_to_domain).collect();
-        Ok(orbis_domain::queries::filters::PaginatedList::new(items, total_count, page, page_size))
+        Ok(orbis_domain::queries::filters::PaginatedList::new(
+            items,
+            total_count,
+            page,
+            page_size,
+        ))
     }
 
     async fn save(&self, p: &DomainPayment) -> Result<(), DomainError> {
@@ -560,10 +716,21 @@ impl PaymentRepository for FinanceRepoImpl {
             updated_at: Set(Some(p.updated_at.into())),
         };
 
-        if PaymentEntity::find_by_id(p.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if PaymentEntity::find_by_id(p.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
@@ -579,7 +746,11 @@ impl PaymentRepository for FinanceRepoImpl {
 
 #[async_trait]
 impl CurrencyRepository for FinanceRepoImpl {
-    async fn find_by_code(&self, _org_id: Uuid, code: &str) -> Result<Option<DomainCurrency>, DomainError> {
+    async fn find_by_code(
+        &self,
+        _org_id: Uuid,
+        code: &str,
+    ) -> Result<Option<DomainCurrency>, DomainError> {
         let model = CurrencyEntity::find_by_id(code.to_string())
             .one(&self.db)
             .await
@@ -599,11 +770,16 @@ impl CurrencyRepository for FinanceRepoImpl {
     }
 
     async fn find_by_org(&self, _org_id: Uuid) -> Result<Vec<DomainCurrency>, DomainError> {
-        let base_currency_row = self.db.query_one(sea_orm::Statement::from_sql_and_values(
-            self.db.get_database_backend(),
-            "SELECT base_currency_code FROM organizations WHERE id = $1 LIMIT 1",
-            vec![_org_id.into()]
-        )).await.ok().flatten();
+        let base_currency_row = self
+            .db
+            .query_one(sea_orm::Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                "SELECT base_currency_code FROM organizations WHERE id = $1 LIMIT 1",
+                vec![_org_id.into()],
+            ))
+            .await
+            .ok()
+            .flatten();
 
         let base_code: String = base_currency_row
             .and_then(|r| r.try_get("", "base_currency_code").ok())
@@ -613,21 +789,24 @@ impl CurrencyRepository for FinanceRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| {
-            let is_base = m.id.to_uppercase() == base_code.to_uppercase();
-            DomainCurrency {
-                code: m.id.clone(),
-                org_id: _org_id,
-                name: m.name,
-                name_ar: m.name_ar,
-                symbol: m.symbol,
-                symbol_position: "after".into(),
-                decimal_places: m.decimal_places as u32,
-                is_base,
-                is_active: is_base || m.is_active,
-                updated_at: m.created_at,
-            }
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| {
+                let is_base = m.id.to_uppercase() == base_code.to_uppercase();
+                DomainCurrency {
+                    code: m.id.clone(),
+                    org_id: _org_id,
+                    name: m.name,
+                    name_ar: m.name_ar,
+                    symbol: m.symbol,
+                    symbol_position: "after".into(),
+                    decimal_places: m.decimal_places as u32,
+                    is_base,
+                    is_active: is_base || m.is_active,
+                    updated_at: m.created_at,
+                }
+            })
+            .collect())
     }
 
     async fn save(&self, c: &DomainCurrency) -> Result<(), DomainError> {
@@ -641,15 +820,30 @@ impl CurrencyRepository for FinanceRepoImpl {
             created_at: Set(c.updated_at),
         };
 
-        if CurrencyEntity::find_by_id(c.code.clone()).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if CurrencyEntity::find_by_id(c.code.clone())
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
 
-    async fn get_rate(&self, from_id: Uuid, _to_id: Uuid) -> Result<Option<DomainExchangeRate>, DomainError> {
+    async fn get_rate(
+        &self,
+        from_id: Uuid,
+        _to_id: Uuid,
+    ) -> Result<Option<DomainExchangeRate>, DomainError> {
         let model = ExchangeRateEntity::find_by_id(from_id)
             .one(&self.db)
             .await
@@ -665,7 +859,12 @@ impl CurrencyRepository for FinanceRepoImpl {
         }))
     }
 
-    async fn get_exchange_rate(&self, org_id: Uuid, from: &str, to: &str) -> Result<Option<DomainExchangeRate>, DomainError> {
+    async fn get_exchange_rate(
+        &self,
+        org_id: Uuid,
+        from: &str,
+        to: &str,
+    ) -> Result<Option<DomainExchangeRate>, DomainError> {
         let model = ExchangeRateEntity::find()
             .filter(exchange_rate::Column::OrgId.eq(org_id))
             .filter(exchange_rate::Column::BaseCurrencyId.eq(from))
@@ -695,10 +894,21 @@ impl CurrencyRepository for FinanceRepoImpl {
             created_at: Set(rate.created_at),
         };
 
-        if ExchangeRateEntity::find_by_id(rate.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if ExchangeRateEntity::find_by_id(rate.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
@@ -764,7 +974,10 @@ fn map_payment_model_to_domain(m: payment::Model) -> DomainPayment {
         paid_at: m.paid_at.into(),
         created_by: m.created_by,
         created_at: m.created_at.into(),
-        updated_at: m.updated_at.map(Into::into).unwrap_or_else(|| m.created_at.into()),
+        updated_at: m
+            .updated_at
+            .map(Into::into)
+            .unwrap_or_else(|| m.created_at.into()),
         org_unit_id: m.org_unit_id,
     }
 }

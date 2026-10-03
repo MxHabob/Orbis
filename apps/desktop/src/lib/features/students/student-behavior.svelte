@@ -82,10 +82,10 @@ async function handleAISummarize() {
   isGeneratingAI = true;
   aiSummary = null;
   try {
-    aiSummary = m.academics_behavior_ai_success_desc_1?.() || "Good overall behavior records.";
+    aiSummary = m.academics_behavior_ai_success_desc_1();
     toast.success(m.academics_behavior_ai_success());
   } catch {
-    aiSummary = m.academics_behavior_ai_success_desc_2?.() || "Behavior patterns are stable.";
+    aiSummary = m.academics_behavior_ai_success_desc_2();
     toast.success(m.academics_behavior_ai_success());
   } finally {
     isGeneratingAI = false;
@@ -237,10 +237,10 @@ const rtl = $derived(getLocale() === "ar");
 
       <div class="flex gap-2 justify-end mt-2">
         <Button variant="outline" class="text-xs h-8" onclick={() => (showAddModal = false)}>
-          {m.common_action_cancel ? m.common_action_cancel() : "Cancel"}
+          {m.common_action_cancel()}
         </Button>
         <Button class="text-xs h-8" onclick={handleAddRecord} disabled={isSaving || !newDescription.trim()}>
-          {isSaving ? (m.common_promo_running ? m.common_promo_running() : "Saving...") : (m.common_action_save ? m.common_action_save() : "Save")}
+          {isSaving ? (m.common_promo_running()) : (m.common_action_save())}
         </Button>
       </div>
     </div>

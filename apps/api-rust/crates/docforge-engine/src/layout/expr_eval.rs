@@ -4,9 +4,9 @@
 // Resolves repeaters, conditionals and template string variables.
 // ═══════════════════════════════════════════════════════════════
 
-use serde_json::Value;
+use crate::expr::evaluator::{evaluate_condition, evaluate_expression, resolve_path};
 use crate::model::nodes::*;
-use crate::expr::evaluator::{evaluate_expression, evaluate_condition, resolve_path};
+use serde_json::Value;
 
 #[derive(Debug, Clone)]
 pub enum EvaluatedNode {
@@ -289,7 +289,7 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
         TemplateNode::Repeater(n) => {
             let mut results = Vec::new();
             let data_val = resolve_path(context, &n.props.data_source).unwrap_or(Value::Null);
-            
+
             if let Value::Array(arr) = data_val {
                 for (idx, item) in arr.iter().enumerate() {
                     // Create scoped context
@@ -300,7 +300,7 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
                             map.insert(idx_var.clone(), Value::Number(idx.into()));
                         }
                     }
-                    
+
                     // Evaluate children in this scoped context
                     for child in &n.children {
                         results.extend(evaluate_node_tree(child, &scoped_ctx));
@@ -312,7 +312,10 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
         TemplateNode::ComponentRef(n) => {
             // Components resolution would ideally search template registry.
             // For PoC / basic engine we log a warning or pass through empty
-            tracing::warn!("Component references not fully supported in standalone PoC layout engine (id: {})", n.props.component_id);
+            tracing::warn!(
+                "Component references not fully supported in standalone PoC layout engine (id: {})",
+                n.props.component_id
+            );
             Vec::new()
         }
     }

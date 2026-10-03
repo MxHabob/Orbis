@@ -1,17 +1,23 @@
 //! Assessment routes — Schemes, Grades, Attendance, Behavior.
 
-use axum::{extract::{State, Path, Query}, routing::{get, post, delete}, Json, Router};
+use axum::{
+    Json, Router,
+    extract::{Path, Query, State},
+    routing::{delete, get, post},
+};
+use chrono::NaiveDate;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use chrono::NaiveDate;
 use uuid::Uuid;
-use rust_decimal::Decimal;
 
-use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
+use super::{ApiError, ApiResponse};
 use crate::state::AppState;
-use orbis_app::services::assessment_service::{BatchGradeItem, BatchAttendanceItem};
-use orbis_domain::entities::assessment_scheme::{AssessmentScheme, AssessmentComponent, AssessmentLevel, InstitutionScope};
+use orbis_app::services::assessment_service::{BatchAttendanceItem, BatchGradeItem};
+use orbis_domain::entities::assessment_scheme::{
+    AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
+};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct AssessmentSchemeDto {
@@ -243,10 +249,16 @@ pub struct RankingItemDto {
 }
 
 #[derive(Deserialize)]
-pub struct GradeQuery { pub student_id: Option<Uuid>, pub class_subject_id: Option<Uuid> }
+pub struct GradeQuery {
+    pub student_id: Option<Uuid>,
+    pub class_subject_id: Option<Uuid>,
+}
 
 #[derive(Deserialize)]
-pub struct AttendanceQuery { pub class_id: Uuid, pub date: NaiveDate }
+pub struct AttendanceQuery {
+    pub class_id: Uuid,
+    pub date: NaiveDate,
+}
 
 fn grade_to_dto(g: orbis_domain::entities::grade::Grade) -> GradeDto {
     GradeDto {
@@ -313,30 +325,39 @@ fn scheme_to_dto(s: AssessmentScheme) -> AssessmentSchemeDto {
 #[utoipa::path(post, path = "/api/v1/assessment-schemes", request_body = CreateSchemeRequest,
     responses((status = 201, body = AssessmentSchemeDto)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn create_scheme(
-    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateSchemeRequest>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<CreateSchemeRequest>,
 ) -> Result<Json<ApiResponse<AssessmentSchemeDto>>, ApiError> {
-    let s = state.assessment_service.create_assessment_scheme(
-        &ctx,
-        ctx.tenant_id,
-        p.name,
-        p.name_ar,
-        p.description,
-        p.max_score,
-        p.formula,
-        p.level,
-        p.institution_scope,
-        p.components,
-        p.is_default.unwrap_or(false),
-    ).await?;
+    let s = state
+        .assessment_service
+        .create_assessment_scheme(
+            &ctx,
+            ctx.tenant_id,
+            p.name,
+            p.name_ar,
+            p.description,
+            p.max_score,
+            p.formula,
+            p.level,
+            p.institution_scope,
+            p.components,
+            p.is_default.unwrap_or(false),
+        )
+        .await?;
     Ok(ApiResponse::ok(scheme_to_dto(s)))
 }
 
 #[utoipa::path(get, path = "/api/v1/assessment-schemes",
     responses((status = 200, body = Vec<AssessmentSchemeDto>)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn list_schemes(
-    ctx: AuthContext, State(state): State<AppState>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<AssessmentSchemeDto>>>, ApiError> {
-    let schemes = state.assessment_service.list_assessment_schemes(ctx.tenant_id).await?;
+    let schemes = state
+        .assessment_service
+        .list_assessment_schemes(ctx.tenant_id)
+        .await?;
     let dtos = schemes.into_iter().map(scheme_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -345,9 +366,15 @@ pub async fn list_schemes(
     params(("id" = Uuid, Path, description = "Assessment Scheme ID")),
     responses((status = 200, body = AssessmentSchemeDto)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn get_scheme(
-    _ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+    _ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<AssessmentSchemeDto>>, ApiError> {
-    let s = state.assessment_scheme_repo.find_by_id(id).await?.ok_or_else(|| ApiError::not_found("Scheme not found"))?;
+    let s = state
+        .assessment_scheme_repo
+        .find_by_id(id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("Scheme not found"))?;
     Ok(ApiResponse::ok(scheme_to_dto(s)))
 }
 
@@ -355,22 +382,28 @@ pub async fn get_scheme(
     params(("id" = Uuid, Path, description = "Assessment Scheme ID")),
     responses((status = 200, body = AssessmentSchemeDto)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn update_scheme(
-    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<UpdateSchemeRequest>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(p): Json<UpdateSchemeRequest>,
 ) -> Result<Json<ApiResponse<AssessmentSchemeDto>>, ApiError> {
-    let s = state.assessment_service.update_assessment_scheme(
-        &ctx,
-        ctx.tenant_id,
-        id,
-        p.name,
-        p.name_ar,
-        p.description,
-        p.max_score,
-        p.formula,
-        p.level,
-        p.institution_scope,
-        p.components,
-        p.is_default,
-    ).await?;
+    let s = state
+        .assessment_service
+        .update_assessment_scheme(
+            &ctx,
+            ctx.tenant_id,
+            id,
+            p.name,
+            p.name_ar,
+            p.description,
+            p.max_score,
+            p.formula,
+            p.level,
+            p.institution_scope,
+            p.components,
+            p.is_default,
+        )
+        .await?;
     Ok(ApiResponse::ok(scheme_to_dto(s)))
 }
 
@@ -378,32 +411,38 @@ pub async fn update_scheme(
     params(("id" = Uuid, Path, description = "Assessment Scheme ID")),
     responses((status = 200, body = ())), security(("bearer" = [])), tag = "Assessment")]
 pub async fn delete_scheme(
-    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    state.assessment_service.delete_assessment_scheme(
-        &ctx,
-        ctx.tenant_id,
-        id,
-    ).await?;
+    state
+        .assessment_service
+        .delete_assessment_scheme(&ctx, ctx.tenant_id, id)
+        .await?;
     Ok(ApiResponse::ok(()))
 }
 
 #[utoipa::path(post, path = "/api/v1/grades", request_body = RecordGradeRequest,
     responses((status = 201, body = GradeDto)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn record_grade(
-    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<RecordGradeRequest>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<RecordGradeRequest>,
 ) -> Result<Json<ApiResponse<GradeDto>>, ApiError> {
-    let g = state.assessment_service.record_grade(
-        &ctx,
-        ctx.tenant_id,
-        p.period_id,
-        p.student_id,
-        p.class_subject_id,
-        p.component_id,
-        p.score,
-        p.max_score.unwrap_or_else(|| Decimal::from(100)),
-        false,
-    ).await?;
+    let g = state
+        .assessment_service
+        .record_grade(
+            &ctx,
+            ctx.tenant_id,
+            p.period_id,
+            p.student_id,
+            p.class_subject_id,
+            p.component_id,
+            p.score,
+            p.max_score.unwrap_or_else(|| Decimal::from(100)),
+            false,
+        )
+        .await?;
 
     Ok(ApiResponse::ok(grade_to_dto(g)))
 }
@@ -411,22 +450,31 @@ pub async fn record_grade(
 #[utoipa::path(post, path = "/api/v1/grades/batch", request_body = BatchRecordGradesRequest,
     responses((status = 200, body = BatchRecordGradesResponseDto)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn batch_record_grades(
-    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<BatchRecordGradesRequest>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<BatchRecordGradesRequest>,
 ) -> Result<Json<ApiResponse<BatchRecordGradesResponseDto>>, ApiError> {
-    let items = p.items.into_iter().map(|i| BatchGradeItem {
-        period_id: i.period_id,
-        student_id: i.student_id,
-        enrollment_id: i.enrollment_id,
-        class_subject_id: i.class_subject_id,
-        component_id: i.component_id,
-        score: i.score,
-        max_score: i.max_score,
-        is_excused: i.is_excused.unwrap_or(false),
-        is_exempt: i.is_exempt.unwrap_or(false),
-        notes: i.notes,
-    }).collect();
+    let items = p
+        .items
+        .into_iter()
+        .map(|i| BatchGradeItem {
+            period_id: i.period_id,
+            student_id: i.student_id,
+            enrollment_id: i.enrollment_id,
+            class_subject_id: i.class_subject_id,
+            component_id: i.component_id,
+            score: i.score,
+            max_score: i.max_score,
+            is_excused: i.is_excused.unwrap_or(false),
+            is_exempt: i.is_exempt.unwrap_or(false),
+            notes: i.notes,
+        })
+        .collect();
 
-    let grades = state.assessment_service.batch_record_grades(&ctx, ctx.tenant_id, items).await?;
+    let grades = state
+        .assessment_service
+        .batch_record_grades(&ctx, ctx.tenant_id, items)
+        .await?;
     let dtos: Vec<GradeDto> = grades.into_iter().map(grade_to_dto).collect();
     let count = dtos.len();
 
@@ -440,22 +488,31 @@ pub async fn batch_record_grades(
     params(("id" = Uuid, Path, description = "Grade ID")),
     responses((status = 200, body = ())), security(("bearer" = [])), tag = "Assessment")]
 pub async fn delete_grade(
-    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    state.assessment_service.delete_grade(&ctx, ctx.tenant_id, id).await?;
+    state
+        .assessment_service
+        .delete_grade(&ctx, ctx.tenant_id, id)
+        .await?;
     Ok(ApiResponse::ok(()))
 }
 
 #[utoipa::path(get, path = "/api/v1/grades",
     responses((status = 200, body = Vec<GradeDto>)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn list_grades(
-    _ctx: AuthContext, State(state): State<AppState>, Query(q): Query<GradeQuery>,
+    _ctx: AuthContext,
+    State(state): State<AppState>,
+    Query(q): Query<GradeQuery>,
 ) -> Result<Json<ApiResponse<Vec<GradeDto>>>, ApiError> {
     let grades = if let Some(sid) = q.student_id {
         state.grade_repo.find_by_student(sid).await?
     } else if let Some(csid) = q.class_subject_id {
         state.grade_repo.find_by_class_subject(csid).await?
-    } else { vec![] };
+    } else {
+        vec![]
+    };
     let dtos = grades.into_iter().map(grade_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -463,10 +520,15 @@ pub async fn list_grades(
 #[utoipa::path(post, path = "/api/v1/grades/actions/calculate", request_body = CalculateGradesRequest,
     responses((status = 200, body = CalculationResultDto)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn calculate_grades(
-    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CalculateGradesRequest>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<CalculateGradesRequest>,
 ) -> Result<Json<ApiResponse<CalculationResultDto>>, ApiError> {
     let class_subject_id = p.class_subject_id.unwrap_or_else(Uuid::nil);
-    let score = state.assessment_service.calculate_scheme_grades(&ctx, p.scheme_id, p.student_id, class_subject_id).await?;
+    let score = state
+        .assessment_service
+        .calculate_scheme_grades(&ctx, p.scheme_id, p.student_id, class_subject_id)
+        .await?;
     Ok(ApiResponse::ok(CalculationResultDto {
         final_score: score,
         message: "Grade calculated successfully".into(),
@@ -476,9 +538,14 @@ pub async fn calculate_grades(
 #[utoipa::path(post, path = "/api/v1/grades/actions/calculate-gpa", request_body = CalculateGpaRequest,
     responses((status = 200, body = CumulativeGpaRecordDto)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn calculate_gpa(
-    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CalculateGpaRequest>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<CalculateGpaRequest>,
 ) -> Result<Json<ApiResponse<CumulativeGpaRecordDto>>, ApiError> {
-    let record = state.assessment_service.calculate_gpa(&ctx, ctx.tenant_id, p.period_id, p.student_id).await?;
+    let record = state
+        .assessment_service
+        .calculate_gpa(&ctx, ctx.tenant_id, p.period_id, p.student_id)
+        .await?;
     Ok(ApiResponse::ok(CumulativeGpaRecordDto {
         id: record.id,
         org_id: record.org_id,
@@ -500,10 +567,12 @@ pub async fn calculate_gpa(
 #[utoipa::path(post, path = "/api/v1/grades/actions/calculate-rankings", request_body = CalculateRankingsRequest,
     responses((status = 200, body = Vec<RankingItemDto>)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn calculate_rankings(
-    _ctx: AuthContext, State(_state): State<AppState>, Json(p): Json<CalculateRankingsRequest>,
+    _ctx: AuthContext,
+    State(_state): State<AppState>,
+    Json(p): Json<CalculateRankingsRequest>,
 ) -> Result<Json<ApiResponse<Vec<RankingItemDto>>>, ApiError> {
-    use orbis_domain::entities::academic_policy::TiePolicy;
     use orbis_app::services::calculation_engine::AcademicCalculationEngine;
+    use orbis_domain::entities::academic_policy::TiePolicy;
 
     let tie_policy = match p.tie_policy.as_deref() {
         Some("dense") => TiePolicy::Dense,
@@ -514,43 +583,60 @@ pub async fn calculate_rankings(
     let items_tuples: Vec<(Uuid, Decimal)> = p.items.into_iter().map(|i| (i.id, i.score)).collect();
     let rankings = AcademicCalculationEngine::compute_rankings(&items_tuples, tie_policy);
 
-    let dtos = rankings.into_iter().map(|(id, rank)| RankingItemDto { id, rank }).collect();
+    let dtos = rankings
+        .into_iter()
+        .map(|(id, rank)| RankingItemDto { id, rank })
+        .collect();
     Ok(ApiResponse::ok(dtos))
 }
 
 #[utoipa::path(post, path = "/api/v1/attendance", request_body = MarkAttendanceRequest,
     responses((status = 201, body = AttendanceDto)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn mark_attendance(
-    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<MarkAttendanceRequest>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<MarkAttendanceRequest>,
 ) -> Result<Json<ApiResponse<AttendanceDto>>, ApiError> {
-    let a = state.assessment_service.mark_attendance(
-        &ctx,
-        ctx.tenant_id,
-        Uuid::nil(),
-        p.student_id,
-        Some(p.class_id),
-        None,
-        p.date,
-        p.status,
-        p.notes,
-    ).await?;
+    let a = state
+        .assessment_service
+        .mark_attendance(
+            &ctx,
+            ctx.tenant_id,
+            Uuid::nil(),
+            p.student_id,
+            Some(p.class_id),
+            None,
+            p.date,
+            p.status,
+            p.notes,
+        )
+        .await?;
     Ok(ApiResponse::ok(attendance_to_dto(a)))
 }
 
 #[utoipa::path(post, path = "/api/v1/attendance/batch", request_body = BatchMarkAttendanceRequest,
     responses((status = 200, body = BatchMarkAttendanceResponseDto)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn batch_mark_attendance(
-    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<BatchMarkAttendanceRequest>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<BatchMarkAttendanceRequest>,
 ) -> Result<Json<ApiResponse<BatchMarkAttendanceResponseDto>>, ApiError> {
-    let items = p.items.into_iter().map(|i| BatchAttendanceItem {
-        student_id: i.student_id,
-        status: i.status,
-        notes: i.notes,
-        class_subject_id: i.class_subject_id,
-        scheduled_lesson_id: i.scheduled_lesson_id,
-    }).collect();
+    let items = p
+        .items
+        .into_iter()
+        .map(|i| BatchAttendanceItem {
+            student_id: i.student_id,
+            status: i.status,
+            notes: i.notes,
+            class_subject_id: i.class_subject_id,
+            scheduled_lesson_id: i.scheduled_lesson_id,
+        })
+        .collect();
 
-    let list = state.assessment_service.batch_mark_attendance(&ctx, ctx.tenant_id, p.class_id, p.date, items).await?;
+    let list = state
+        .assessment_service
+        .batch_mark_attendance(&ctx, ctx.tenant_id, p.class_id, p.date, items)
+        .await?;
     let dtos: Vec<AttendanceDto> = list.into_iter().map(attendance_to_dto).collect();
     let count = dtos.len();
 
@@ -564,18 +650,28 @@ pub async fn batch_mark_attendance(
     params(("id" = Uuid, Path, description = "Attendance ID")),
     responses((status = 200, body = ())), security(("bearer" = [])), tag = "Assessment")]
 pub async fn delete_attendance(
-    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    state.assessment_service.delete_attendance(&ctx, ctx.tenant_id, id).await?;
+    state
+        .assessment_service
+        .delete_attendance(&ctx, ctx.tenant_id, id)
+        .await?;
     Ok(ApiResponse::ok(()))
 }
 
 #[utoipa::path(get, path = "/api/v1/attendance",
     responses((status = 200, body = Vec<AttendanceDto>)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn list_attendance(
-    _ctx: AuthContext, State(state): State<AppState>, Query(q): Query<AttendanceQuery>,
+    _ctx: AuthContext,
+    State(state): State<AppState>,
+    Query(q): Query<AttendanceQuery>,
 ) -> Result<Json<ApiResponse<Vec<AttendanceDto>>>, ApiError> {
-    let list = state.attendance_repo.find_by_class_and_date(q.class_id, q.date).await?;
+    let list = state
+        .attendance_repo
+        .find_by_class_and_date(q.class_id, q.date)
+        .await?;
     let dtos = list.into_iter().map(attendance_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -584,9 +680,14 @@ pub async fn list_attendance(
     params(("id" = Uuid, Path, description = "Student ID")),
     responses((status = 200, body = Vec<AttendanceDto>)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn list_student_attendance(
-    ctx: AuthContext, State(state): State<AppState>, Path(student_id): Path<Uuid>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(student_id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<Vec<AttendanceDto>>>, ApiError> {
-    let list = state.assessment_service.list_student_attendance(&ctx, student_id).await?;
+    let list = state
+        .assessment_service
+        .list_student_attendance(&ctx, student_id)
+        .await?;
     let dtos = list.into_iter().map(attendance_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -594,21 +695,31 @@ pub async fn list_student_attendance(
 #[utoipa::path(post, path = "/api/v1/behavior", request_body = RecordBehaviorRequest,
     responses((status = 201, body = BehaviorRecordDto)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn record_behavior(
-    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<RecordBehaviorRequest>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<RecordBehaviorRequest>,
 ) -> Result<Json<ApiResponse<BehaviorRecordDto>>, ApiError> {
-    let r = state.assessment_service.record_behavior(
-        &ctx,
-        ctx.tenant_id,
-        p.student_id,
-        p.record_type,
-        p.description,
-        p.points,
-    ).await?;
+    let r = state
+        .assessment_service
+        .record_behavior(
+            &ctx,
+            ctx.tenant_id,
+            p.student_id,
+            p.record_type,
+            p.description,
+            p.points,
+        )
+        .await?;
     Ok(ApiResponse::ok(BehaviorRecordDto {
-        id: r.id, student_id: r.student_id, org_id: r.org_id,
-        reporter_id: r.reporter_id, record_type: r.record_type,
-        description: r.description, points: r.points,
-        created_at: r.created_at, updated_at: r.updated_at,
+        id: r.id,
+        student_id: r.student_id,
+        org_id: r.org_id,
+        reporter_id: r.reporter_id,
+        record_type: r.record_type,
+        description: r.description,
+        points: r.points,
+        created_at: r.created_at,
+        updated_at: r.updated_at,
     }))
 }
 
@@ -616,24 +727,41 @@ pub async fn record_behavior(
     params(("id" = Uuid, Path, description = "Behavior Record ID")),
     responses((status = 200, body = ())), security(("bearer" = [])), tag = "Assessment")]
 pub async fn delete_behavior(
-    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    state.assessment_service.delete_behavior(&ctx, ctx.tenant_id, id).await?;
+    state
+        .assessment_service
+        .delete_behavior(&ctx, ctx.tenant_id, id)
+        .await?;
     Ok(ApiResponse::ok(()))
 }
 
 #[utoipa::path(get, path = "/api/v1/behavior",
     responses((status = 200, body = Vec<BehaviorRecordDto>)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn list_all_behavior(
-    ctx: AuthContext, State(state): State<AppState>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<BehaviorRecordDto>>>, ApiError> {
-    let list = state.assessment_service.list_behavior_records(&ctx, ctx.tenant_id).await?;
-    let dtos = list.into_iter().map(|r| BehaviorRecordDto {
-        id: r.id, student_id: r.student_id, org_id: r.org_id,
-        reporter_id: r.reporter_id, record_type: r.record_type,
-        description: r.description, points: r.points,
-        created_at: r.created_at, updated_at: r.updated_at,
-    }).collect();
+    let list = state
+        .assessment_service
+        .list_behavior_records(&ctx, ctx.tenant_id)
+        .await?;
+    let dtos = list
+        .into_iter()
+        .map(|r| BehaviorRecordDto {
+            id: r.id,
+            student_id: r.student_id,
+            org_id: r.org_id,
+            reporter_id: r.reporter_id,
+            record_type: r.record_type,
+            description: r.description,
+            points: r.points,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+        })
+        .collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -641,33 +769,64 @@ pub async fn list_all_behavior(
     params(("id" = Uuid, Path, description = "Student ID")),
     responses((status = 200, body = Vec<BehaviorRecordDto>)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn list_student_behavior(
-    ctx: AuthContext, State(state): State<AppState>, Path(student_id): Path<Uuid>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(student_id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<Vec<BehaviorRecordDto>>>, ApiError> {
-    let list = state.assessment_service.list_student_behavior_records(&ctx, student_id).await?;
-    let dtos = list.into_iter().map(|r| BehaviorRecordDto {
-        id: r.id, student_id: r.student_id, org_id: r.org_id,
-        reporter_id: r.reporter_id, record_type: r.record_type,
-        description: r.description, points: r.points,
-        created_at: r.created_at, updated_at: r.updated_at,
-    }).collect();
+    let list = state
+        .assessment_service
+        .list_student_behavior_records(&ctx, student_id)
+        .await?;
+    let dtos = list
+        .into_iter()
+        .map(|r| BehaviorRecordDto {
+            id: r.id,
+            student_id: r.student_id,
+            org_id: r.org_id,
+            reporter_id: r.reporter_id,
+            record_type: r.record_type,
+            description: r.description,
+            points: r.points,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+        })
+        .collect();
     Ok(ApiResponse::ok(dtos))
 }
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/api/v1/assessment-schemes", post(create_scheme).get(list_schemes))
-        .route("/api/v1/assessment-schemes/:id", get(get_scheme).put(update_scheme).delete(delete_scheme))
+        .route(
+            "/api/v1/assessment-schemes",
+            post(create_scheme).get(list_schemes),
+        )
+        .route(
+            "/api/v1/assessment-schemes/:id",
+            get(get_scheme).put(update_scheme).delete(delete_scheme),
+        )
         .route("/api/v1/grades", post(record_grade).get(list_grades))
         .route("/api/v1/grades/batch", post(batch_record_grades))
         .route("/api/v1/grades/:id", delete(delete_grade))
         .route("/api/v1/grades/actions/calculate", post(calculate_grades))
         .route("/api/v1/grades/actions/calculate-gpa", post(calculate_gpa))
-        .route("/api/v1/grades/actions/calculate-rankings", post(calculate_rankings))
-        .route("/api/v1/attendance", post(mark_attendance).get(list_attendance))
+        .route(
+            "/api/v1/grades/actions/calculate-rankings",
+            post(calculate_rankings),
+        )
+        .route(
+            "/api/v1/attendance",
+            post(mark_attendance).get(list_attendance),
+        )
         .route("/api/v1/attendance/batch", post(batch_mark_attendance))
         .route("/api/v1/attendance/:id", delete(delete_attendance))
-        .route("/api/v1/students/:id/attendance", get(list_student_attendance))
-        .route("/api/v1/behavior", post(record_behavior).get(list_all_behavior))
+        .route(
+            "/api/v1/students/:id/attendance",
+            get(list_student_attendance),
+        )
+        .route(
+            "/api/v1/behavior",
+            post(record_behavior).get(list_all_behavior),
+        )
         .route("/api/v1/behavior/:id", delete(delete_behavior))
         .route("/api/v1/students/:id/behavior", get(list_student_behavior))
 }

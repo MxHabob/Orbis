@@ -19,7 +19,12 @@ impl SequenceCounterRepoImpl {
 
 #[async_trait]
 impl SequenceCounterRepository for SequenceCounterRepoImpl {
-    async fn next_sequence(&self, org_id: Uuid, sequence_type: &str, academic_year: i32) -> Result<u64, DomainError> {
+    async fn next_sequence(
+        &self,
+        org_id: Uuid,
+        sequence_type: &str,
+        academic_year: i32,
+    ) -> Result<u64, DomainError> {
         let now = Utc::now();
         let existing = SequenceCounterEntity::find()
             .filter(sequence_counter::Column::OrgId.eq(org_id))
@@ -34,7 +39,10 @@ impl SequenceCounterRepository for SequenceCounterRepoImpl {
             let mut active: sequence_counter::ActiveModel = model.into();
             active.current_val = Set(next_val);
             active.updated_at = Set(now);
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
             Ok(next_val as u64)
         } else {
             let next_val = 1i64;
@@ -46,7 +54,10 @@ impl SequenceCounterRepository for SequenceCounterRepoImpl {
                 current_val: Set(next_val),
                 updated_at: Set(now),
             };
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
             Ok(next_val as u64)
         }
     }

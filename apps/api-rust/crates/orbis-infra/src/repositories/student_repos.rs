@@ -1,18 +1,27 @@
 use async_trait::async_trait;
-use orbis_app::ports::repositories::{StudentRepository, EnrollmentRepository, StudentGuardianRepository};
-use orbis_domain::entities::student::{Student as DomainStudent, StudentDetail, StudentStatus, AcademicStanding};
+use orbis_app::ports::repositories::{
+    EnrollmentRepository, StudentGuardianRepository, StudentRepository,
+};
+use orbis_domain::entities::enrollment::{
+    Enrollment as DomainEnrollment, EnrollmentStatus, StudyMode,
+};
 use orbis_domain::entities::person::Person as DomainPerson;
-use orbis_domain::entities::enrollment::{Enrollment as DomainEnrollment, StudyMode, EnrollmentStatus};
+use orbis_domain::entities::student::{
+    AcademicStanding, Student as DomainStudent, StudentDetail, StudentStatus,
+};
 use orbis_domain::entities::student_guardian::StudentGuardian as DomainStudentGuardian;
-use orbis_domain::queries::filters::{StudentFilter, EnrollmentFilter, PaginatedList};
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter, QueryOrder, PaginatorTrait};
+use orbis_domain::queries::filters::{EnrollmentFilter, PaginatedList, StudentFilter};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+    QueryOrder, Set,
+};
 use uuid::Uuid;
 
 use crate::models::{
-    student::{self, Entity as StudentEntity},
-    person::{self, Entity as PersonEntity},
     enrollment::{self, Entity as EnrollmentEntity},
+    person::{self, Entity as PersonEntity},
+    student::{self, Entity as StudentEntity},
     student_guardian::{self, Entity as StudentGuardianEntity},
 };
 
@@ -54,10 +63,17 @@ impl StudentRepository for StudentRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_student_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_student_model_to_domain)
+            .collect())
     }
 
-    async fn list(&self, org_id: Uuid, filter: StudentFilter) -> Result<PaginatedList<StudentDetail>, DomainError> {
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: StudentFilter,
+    ) -> Result<PaginatedList<StudentDetail>, DomainError> {
         let mut query = StudentEntity::find()
             .find_also_related(PersonEntity)
             .filter(student::Column::OrgId.eq(org_id))
@@ -75,9 +91,10 @@ impl StudentRepository for StudentRepoImpl {
             if !s.is_empty() {
                 let search_pat = format!("%{}%", s);
                 query = query.filter(
-                    student::Column::StudentNumber.like(&search_pat)
+                    student::Column::StudentNumber
+                        .like(&search_pat)
                         .or(student::Column::FullName.like(&search_pat))
-                        .or(student::Column::NationalId.like(&search_pat))
+                        .or(student::Column::NationalId.like(&search_pat)),
                 );
             }
         }
@@ -89,46 +106,59 @@ impl StudentRepository for StudentRepoImpl {
         let page_size = pagination.page_size();
 
         let paginator = query.paginate(&self.db, page_size);
-        let total_count = paginator.num_items().await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        let rows = paginator.fetch_page(page - 1).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let total_count = paginator
+            .num_items()
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        let rows = paginator
+            .fetch_page(page - 1)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        let items = rows.into_iter().filter_map(|(sm, pm_opt)| {
-            let pm = pm_opt.unwrap_or_else(|| person::Model {
-                id: sm.person_id,
-                org_id: Some(sm.org_id),
-                first_name: sm.first_name.clone(),
-                middle_name: None,
-                last_name: sm.last_name.clone(),
-                first_name_ar: None,
-                middle_name_ar: None,
-                last_name_ar: None,
-                display_name: None,
-                national_id: sm.national_id.clone(),
-                passport_number: sm.passport_number.clone(),
-                gender: Some(sm.gender.clone()),
-                birth_date: sm.date_of_birth.map(|d| d.to_string()),
-                place_of_birth: sm.place_of_birth.clone(),
-                nationality: sm.nationality.clone(),
-                blood_type: sm.blood_type.clone(),
-                medical_notes: sm.medical_notes.clone(),
-                special_needs_notes: sm.special_needs_notes.clone(),
-                phone: None,
-                email: None,
-                address: None,
-                avatar_url: None,
-                created_at: sm.created_at,
-                updated_at: sm.updated_at,
-            });
-            Some(StudentDetail {
-                student: map_student_model_to_domain(sm),
-                person: map_person_model_to_domain(pm),
+        let items = rows
+            .into_iter()
+            .filter_map(|(sm, pm_opt)| {
+                let pm = pm_opt.unwrap_or_else(|| person::Model {
+                    id: sm.person_id,
+                    org_id: Some(sm.org_id),
+                    first_name: sm.first_name.clone(),
+                    middle_name: None,
+                    last_name: sm.last_name.clone(),
+                    first_name_ar: None,
+                    middle_name_ar: None,
+                    last_name_ar: None,
+                    display_name: None,
+                    national_id: sm.national_id.clone(),
+                    passport_number: sm.passport_number.clone(),
+                    gender: Some(sm.gender.clone()),
+                    birth_date: sm.date_of_birth.map(|d| d.to_string()),
+                    place_of_birth: sm.place_of_birth.clone(),
+                    nationality: sm.nationality.clone(),
+                    blood_type: sm.blood_type.clone(),
+                    medical_notes: sm.medical_notes.clone(),
+                    special_needs_notes: sm.special_needs_notes.clone(),
+                    phone: None,
+                    email: None,
+                    address: None,
+                    avatar_url: None,
+                    created_at: sm.created_at,
+                    updated_at: sm.updated_at,
+                });
+                Some(StudentDetail {
+                    student: map_student_model_to_domain(sm),
+                    person: map_person_model_to_domain(pm),
+                })
             })
-        }).collect();
+            .collect();
 
         Ok(PaginatedList::new(items, total_count, page, page_size))
     }
 
-    async fn find_by_student_number(&self, org_id: Uuid, number: &str) -> Result<Option<DomainStudent>, DomainError> {
+    async fn find_by_student_number(
+        &self,
+        org_id: Uuid,
+        number: &str,
+    ) -> Result<Option<DomainStudent>, DomainError> {
         let model = StudentEntity::find()
             .filter(student::Column::OrgId.eq(org_id))
             .filter(student::Column::StudentNumber.eq(number))
@@ -138,7 +168,11 @@ impl StudentRepository for StudentRepoImpl {
         Ok(model.map(map_student_model_to_domain))
     }
 
-    async fn find_by_national_id(&self, org_id: Uuid, national_id: &str) -> Result<Option<DomainStudent>, DomainError> {
+    async fn find_by_national_id(
+        &self,
+        org_id: Uuid,
+        national_id: &str,
+    ) -> Result<Option<DomainStudent>, DomainError> {
         let model = StudentEntity::find()
             .filter(student::Column::OrgId.eq(org_id))
             .filter(student::Column::NationalId.eq(national_id))
@@ -148,7 +182,10 @@ impl StudentRepository for StudentRepoImpl {
         Ok(model.map(map_student_model_to_domain))
     }
 
-    async fn find_by_person_id(&self, person_id: Uuid) -> Result<Option<DomainStudent>, DomainError> {
+    async fn find_by_person_id(
+        &self,
+        person_id: Uuid,
+    ) -> Result<Option<DomainStudent>, DomainError> {
         let model = StudentEntity::find()
             .filter(student::Column::PersonId.eq(person_id))
             .filter(student::Column::IsDeleted.eq(false))
@@ -192,20 +229,38 @@ impl StudentRepository for StudentRepoImpl {
             updated_at: Set(s.updated_at),
         };
 
-        if StudentEntity::find_by_id(s.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if StudentEntity::find_by_id(s.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
 
     async fn update_status(&self, id: Uuid, status: &str) -> Result<(), DomainError> {
-        if let Some(s) = StudentEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))? {
+        if let Some(s) = StudentEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+        {
             let mut active: student::ActiveModel = s.into();
             active.status = Set(status.to_string());
             active.updated_at = Set(chrono::Utc::now());
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
@@ -280,7 +335,9 @@ fn map_person_model_to_domain(m: person::Model) -> DomainPerson {
         national_id: m.national_id,
         passport_number: m.passport_number,
         gender: m.gender,
-        birth_date: m.birth_date.and_then(|d| chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
+        birth_date: m
+            .birth_date
+            .and_then(|d| chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
         place_of_birth: m.place_of_birth,
         nationality: m.nationality,
         blood_type: m.blood_type,
@@ -305,9 +362,12 @@ impl EnrollmentRepository for StudentRepoImpl {
         Ok(model.map(map_enrollment_model_to_domain))
     }
 
-    async fn list(&self, org_id: Uuid, filter: EnrollmentFilter) -> Result<PaginatedList<DomainEnrollment>, DomainError> {
-        let mut query = EnrollmentEntity::find()
-            .filter(enrollment::Column::OrgId.eq(org_id));
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: EnrollmentFilter,
+    ) -> Result<PaginatedList<DomainEnrollment>, DomainError> {
+        let mut query = EnrollmentEntity::find().filter(enrollment::Column::OrgId.eq(org_id));
 
         if let Some(period_id) = filter.period_id {
             query = query.filter(enrollment::Column::PeriodId.eq(period_id));
@@ -336,20 +396,35 @@ impl EnrollmentRepository for StudentRepoImpl {
         let page_size = pagination.page_size();
 
         let paginator = query.paginate(&self.db, page_size);
-        let total_count = paginator.num_items().await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        let rows = paginator.fetch_page(page - 1).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let total_count = paginator
+            .num_items()
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        let rows = paginator
+            .fetch_page(page - 1)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        let items = rows.into_iter().map(map_enrollment_model_to_domain).collect();
+        let items = rows
+            .into_iter()
+            .map(map_enrollment_model_to_domain)
+            .collect();
         Ok(PaginatedList::new(items, total_count, page, page_size))
     }
 
-    async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<DomainEnrollment>, DomainError> {
+    async fn find_by_student(
+        &self,
+        student_id: Uuid,
+    ) -> Result<Vec<DomainEnrollment>, DomainError> {
         let models = EnrollmentEntity::find()
             .filter(enrollment::Column::StudentId.eq(student_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_enrollment_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_enrollment_model_to_domain)
+            .collect())
     }
 
     async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<DomainEnrollment>, DomainError> {
@@ -358,7 +433,10 @@ impl EnrollmentRepository for StudentRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_enrollment_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_enrollment_model_to_domain)
+            .collect())
     }
 
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<DomainEnrollment>, DomainError> {
@@ -367,7 +445,10 @@ impl EnrollmentRepository for StudentRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_enrollment_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_enrollment_model_to_domain)
+            .collect())
     }
 
     async fn save(&self, e: &DomainEnrollment) -> Result<(), DomainError> {
@@ -393,10 +474,21 @@ impl EnrollmentRepository for StudentRepoImpl {
             updated_at: Set(e.updated_at.into()),
         };
 
-        if EnrollmentEntity::find_by_id(e.id).one(&self.db).await.map_err(|err| DomainError::Internal(err.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|err| DomainError::Internal(err.to_string()))?;
+        if EnrollmentEntity::find_by_id(e.id)
+            .one(&self.db)
+            .await
+            .map_err(|err| DomainError::Internal(err.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|err| DomainError::Internal(err.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|err| DomainError::Internal(err.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|err| DomainError::Internal(err.to_string()))?;
         }
         Ok(())
     }
@@ -408,7 +500,11 @@ impl EnrollmentRepository for StudentRepoImpl {
         Ok(())
     }
 
-    async fn update_status_batch(&self, enrollment_ids: &[Uuid], status: EnrollmentStatus) -> Result<(), DomainError> {
+    async fn update_status_batch(
+        &self,
+        enrollment_ids: &[Uuid],
+        status: EnrollmentStatus,
+    ) -> Result<(), DomainError> {
         for id in enrollment_ids {
             if let Some(mut e) = EnrollmentRepository::find_by_id(self, *id).await? {
                 e.status = status;
@@ -483,22 +579,34 @@ fn map_guardian_model_to_domain(m: student_guardian::Model) -> DomainStudentGuar
 
 #[async_trait]
 impl StudentGuardianRepository for StudentRepoImpl {
-    async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<DomainStudentGuardian>, DomainError> {
+    async fn find_by_student(
+        &self,
+        student_id: Uuid,
+    ) -> Result<Vec<DomainStudentGuardian>, DomainError> {
         let models = StudentGuardianEntity::find()
             .filter(student_guardian::Column::StudentId.eq(student_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_guardian_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_guardian_model_to_domain)
+            .collect())
     }
 
-    async fn find_by_guardian(&self, guardian_id: Uuid) -> Result<Vec<DomainStudentGuardian>, DomainError> {
+    async fn find_by_guardian(
+        &self,
+        guardian_id: Uuid,
+    ) -> Result<Vec<DomainStudentGuardian>, DomainError> {
         let models = StudentGuardianEntity::find()
             .filter(student_guardian::Column::GuardianId.eq(guardian_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_guardian_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_guardian_model_to_domain)
+            .collect())
     }
 
     async fn save(&self, g: &DomainStudentGuardian) -> Result<(), DomainError> {
@@ -521,10 +629,21 @@ impl StudentGuardianRepository for StudentRepoImpl {
             updated_at: Set(g.updated_at),
         };
 
-        if StudentGuardianEntity::find_by_id(g.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if StudentGuardianEntity::find_by_id(g.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }

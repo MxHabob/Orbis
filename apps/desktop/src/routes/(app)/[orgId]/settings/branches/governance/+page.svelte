@@ -3,11 +3,12 @@
 Dedicated page for institutional branch policies and data isolation governance.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { onMount } from "svelte";
 import { api, extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
-import { l } from "$lib/core/i18n";
+
 import BranchSettingsCard from "$lib/features/settings/components/branch-settings-card.svelte";
 
 let orgId = $derived((page.params.orgId as string) || "");
@@ -31,7 +32,7 @@ onMount(() => {
 </script>
 
 <svelte:head>
-  <title>{l("سياسات وحوكمة الفروع", "Branch Governance & Policies")} | Orbis</title>
+  <title>{m.ui_copy_branch_governance_policies_c0f3831a()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 scrollbar-hide text-start font-sans">

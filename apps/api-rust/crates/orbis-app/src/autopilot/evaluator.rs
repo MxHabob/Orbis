@@ -1,16 +1,16 @@
-use std::sync::Arc;
 use chrono::Utc;
+use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::context::RequestContext;
+use crate::ports::repositories::{
+    AcademicPeriodRepository, AcademicYearRepository, EnrollmentRepository, PolicyRepository,
+    StudentFeeRepository,
+};
 use orbis_domain::autopilot::task::{AutopilotTask, RiskLevel, TaskType};
 use orbis_domain::entities::settings::OrganizationSettings;
 use orbis_domain::errors::DomainError;
 use orbis_domain::queries::filters::StudentFeeFilter;
-use crate::context::RequestContext;
-use crate::ports::repositories::{
-    AcademicPeriodRepository, AcademicYearRepository, EnrollmentRepository,
-    PolicyRepository, StudentFeeRepository,
-};
 
 pub struct AutopilotEvaluator {
     pub policy_repo: Arc<dyn PolicyRepository>,
@@ -61,21 +61,31 @@ impl AutopilotEvaluator {
                     Some(year.id),
                     Some("academic_year".to_string()),
                     RiskLevel::Medium,
-                    Some(format!("Academic year '{}' start date has arrived", year.name)),
+                    Some(format!(
+                        "Academic year '{}' start date has arrived",
+                        year.name
+                    )),
                     now,
                 ));
             }
 
             if year.status == "active" {
                 let periods = self.period_repo.find_by_year(year.id).await?;
-                if !periods.is_empty() && periods.iter().all(|p| p.state.to_string() == "closed" || p.is_locked) {
+                if !periods.is_empty()
+                    && periods
+                        .iter()
+                        .all(|p| p.state.to_string() == "closed" || p.is_locked)
+                {
                     tasks.push(AutopilotTask::new(
                         org_id,
                         TaskType::YearClose,
                         Some(year.id),
                         Some("academic_year".to_string()),
                         RiskLevel::High,
-                        Some(format!("All periods in year '{}' are closed. Ready for year closing", year.name)),
+                        Some(format!(
+                            "All periods in year '{}' are closed. Ready for year closing",
+                            year.name
+                        )),
                         now,
                     ));
                 }
@@ -88,7 +98,10 @@ impl AutopilotEvaluator {
                     Some(year.id),
                     Some("academic_year".to_string()),
                     RiskLevel::Medium,
-                    Some(format!("Year '{}' is closing — progression dry-run recommended", year.name)),
+                    Some(format!(
+                        "Year '{}' is closing — progression dry-run recommended",
+                        year.name
+                    )),
                     now,
                 ));
             }
@@ -125,7 +138,10 @@ impl AutopilotEvaluator {
                         Some(period.id),
                         Some("academic_period".to_string()),
                         RiskLevel::Low,
-                        Some(format!("Enrollment start date reached for period '{}'", period.name)),
+                        Some(format!(
+                            "Enrollment start date reached for period '{}'",
+                            period.name
+                        )),
                         now,
                     ));
                 }
@@ -143,7 +159,10 @@ impl AutopilotEvaluator {
                         Some(period.id),
                         Some("academic_period".to_string()),
                         RiskLevel::Low,
-                        Some(format!("Enrollment deadline passed for period '{}'", period.name)),
+                        Some(format!(
+                            "Enrollment deadline passed for period '{}'",
+                            period.name
+                        )),
                         now,
                     ));
                 }
@@ -153,7 +172,8 @@ impl AutopilotEvaluator {
             if let Some(grade_start) = period.grade_entry_starts_at {
                 if !period.is_grade_entry_open
                     && grade_start <= now
-                    && (period_state_str == "active_teaching" || period_state_str == "grade_submission")
+                    && (period_state_str == "active_teaching"
+                        || period_state_str == "grade_submission")
                 {
                     tasks.push(AutopilotTask::new(
                         org_id,
@@ -161,7 +181,10 @@ impl AutopilotEvaluator {
                         Some(period.id),
                         Some("academic_period".to_string()),
                         RiskLevel::Low,
-                        Some(format!("Grade entry window started for period '{}'", period.name)),
+                        Some(format!(
+                            "Grade entry window started for period '{}'",
+                            period.name
+                        )),
                         now,
                     ));
                 }
@@ -176,7 +199,10 @@ impl AutopilotEvaluator {
                         Some(period.id),
                         Some("academic_period".to_string()),
                         RiskLevel::Medium,
-                        Some(format!("Grade entry deadline passed for period '{}'", period.name)),
+                        Some(format!(
+                            "Grade entry deadline passed for period '{}'",
+                            period.name
+                        )),
                         now,
                     ));
                 }
@@ -194,7 +220,10 @@ impl AutopilotEvaluator {
                     Some(period.id),
                     Some("academic_period".to_string()),
                     RiskLevel::High,
-                    Some(format!("Period '{}' ended and grace period expired — auto-locking", period.name)),
+                    Some(format!(
+                        "Period '{}' ended and grace period expired — auto-locking",
+                        period.name
+                    )),
                     now,
                 ));
             }
@@ -213,7 +242,10 @@ impl AutopilotEvaluator {
                     Some(fee.id),
                     Some("student_fee".to_string()),
                     RiskLevel::Low,
-                    Some(format!("Student fee {} is overdue since {:?}", fee.id, fee.due_date)),
+                    Some(format!(
+                        "Student fee {} is overdue since {:?}",
+                        fee.id, fee.due_date
+                    )),
                     now,
                 ));
             }

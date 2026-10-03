@@ -63,8 +63,8 @@ function getTypeLabel(typeStr: string): string {
 }
 
 const templateActions: ActionItem[] = [
-  { id: "edit", label: m.common_action_edit?.() || "Edit", icon: "Pencil" },
-  { id: "delete", label: m.common_action_delete?.() || "Delete", icon: "Trash2", variant: "destructive" },
+  { id: "edit", label: m.common_action_edit(), icon: "Pencil" },
+  { id: "delete", label: m.common_action_delete(), icon: "Trash2", variant: "destructive" },
 ];
 
 const gridSource = $derived(
@@ -80,14 +80,14 @@ const gridSource = $derived(
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "name", prop: "name", header: m.common_ft_col_name?.() || "Template", name: "Template", width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "discount_type", prop: "discount_type", header: m.common_word_type?.() || "Type", name: "Type", width: 130, size: 130, readonly: true },
-  { id: "value", prop: "value", header: m.common_dt_col_value?.() || "Value", name: "Value", width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono font-bold" },
-  { id: "status", prop: "status", header: m.common_word_status?.() || "Status", name: "Status", width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  { id: "name", prop: "name", header: m.common_ft_col_name(), name: "Template", width: 220, size: 220, readonly: true, cellClass: "font-medium" },
+  { id: "discount_type", prop: "discount_type", header: m.common_word_type(), name: "Type", width: 130, size: 130, readonly: true },
+  { id: "value", prop: "value", header: m.common_dt_col_value(), name: "Value", width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono font-bold" },
+  { id: "status", prop: "status", header: m.common_word_status(), name: "Status", width: 110, size: 110, type: "badge", align: "center", readonly: true },
   {
     id: "actions",
     prop: "actions",
-    header: m.common_je_col_actions?.() || "Actions",
+    header: m.common_je_col_actions(),
     name: "Actions",
     width: 90,
     size: 90,
@@ -111,15 +111,15 @@ async function handleGridAction(event: GridActionEvent) {
   } else if (event.actionId === "delete") {
     const templateName = row.name_ar || row.name || "";
     const confirmed = await confirmStore.prompt({
-      title: `${m.common_action_delete?.() || "Delete"}؟`,
-      description: `${m.common_action_delete?.() || "Delete"} "${templateName}"?`,
-      confirmText: m.common_action_delete?.() || "Delete",
+      title: `${m.common_action_delete()}؟`,
+      description: `${m.common_action_delete()} "${templateName}"?`,
+      confirmText: m.common_action_delete(),
       variant: "destructive",
     });
     if (confirmed) {
       try {
         await api.deleteDiscountTemplate(row.id);
-        toast.success(m.common_alert_deleted_successfully?.() || "Template deleted successfully");
+        toast.success(m.common_alert_deleted_successfully());
         await loadTemplates();
         await queryClient.invalidateQueries({
           queryKey: queryKeys.finance.discountTemplates(orgId),
@@ -137,10 +137,10 @@ async function handleGridAction(event: GridActionEvent) {
     <div class="flex flex-col gap-0.5 text-start">
       <h1 class="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
         <ReceiptPercent class="text-primary" size={18} />
-        <span>{m.common_dt_title?.() || "Discount Templates"}</span>
+        <span>{m.common_dt_title()}</span>
       </h1>
       <p class="text-xs text-muted-foreground">
-        {m.common_dt_desc?.() || "Manage discount and scholarship templates"}
+        {m.common_dt_desc()}
       </p>
     </div>
     <div class="flex items-center gap-2">
@@ -153,7 +153,7 @@ async function handleGridAction(event: GridActionEvent) {
       </Button>
       <Button size="sm" onclick={handleCreate} class="text-xs font-bold shrink-0">
         <Plus size={14} class="me-1" />
-        {m.common_dt_add?.() || "Add Template"}
+        {m.common_dt_add()}
       </Button>
     </div>
   </div>
@@ -165,8 +165,8 @@ async function handleGridAction(event: GridActionEvent) {
       loading={isLoading}
       clientQuery
       filter={activeFilter}
-      emptyTitle={m.common_dt_empty?.() || "No discount templates"}
-      emptyDescription={m.common_dt_empty_desc?.() || "Create standard discounts or scholarships"}
+      emptyTitle={m.common_dt_empty()}
+      emptyDescription={m.common_dt_empty_desc()}
       rtl={getLocale() === "ar"}
       readonly
       onaction={handleGridAction}

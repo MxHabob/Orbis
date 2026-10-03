@@ -122,15 +122,28 @@ function getIconColor(type: string): string {
             class="w-full flex items-center gap-1.5 py-1 px-1.5 rounded text-[10px] transition-all cursor-pointer group
               {isSelected ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:bg-accent/50'}"
             style="padding-inline-start: {depth * 12 + 6}px;"
-            onclick={() => store.select(node.id)}
+            aria-expanded={isContainer ? !isCollapsed : undefined}
+            onclick={(event) => {
+              if ((event.target as HTMLElement).closest(".collapse-toggle")) {
+                toggleCollapse(node.id);
+              } else {
+                store.select(node.id);
+              }
+            }}
+            onkeydown={(event) => {
+              if (
+                isContainer &&
+                ((event.key === "ArrowRight" && isCollapsed) ||
+                  (event.key === "ArrowLeft" && !isCollapsed))
+              ) {
+                event.preventDefault();
+                toggleCollapse(node.id);
+              }
+            }}
           >
             <!-- Collapse toggle -->
             {#if isContainer && (node as any).children?.length > 0}
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <span
-                class="shrink-0 cursor-pointer"
-                onclick={(e) => { e.stopPropagation(); toggleCollapse(node.id); }}
-              >
+              <span class="collapse-toggle shrink-0 cursor-pointer">
                 {#if isCollapsed}
                   <ChevronRight size={10} />
                 {:else}
@@ -142,7 +155,7 @@ function getIconColor(type: string): string {
             {/if}
 
             <!-- Icon -->
-            <svelte:component this={IconComp} size={11} class="shrink-0 {iconColor}" />
+            <IconComp size={11} class="shrink-0 {iconColor}" />
 
             <!-- Name -->
             <span class="truncate flex-grow">

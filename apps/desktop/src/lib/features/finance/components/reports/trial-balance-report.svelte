@@ -122,7 +122,7 @@ const trialColumns = $derived.by((): OrbisColumnDef[] => [
   {
     id: "account_name",
     prop: "account_name",
-    header: m.common_col_name ? m.common_col_name() : "اسم الحساب",
+    header: m.common_col_name(),
     name: "Account Name",
     width: 250,
     size: 250,
@@ -132,7 +132,7 @@ const trialColumns = $derived.by((): OrbisColumnDef[] => [
   {
     id: "account_type",
     prop: "account_type",
-    header: m.common_word_type ? m.common_word_type() : "النوع",
+    header: m.common_word_type(),
     name: "Type",
     width: 120,
     size: 120,
@@ -284,7 +284,7 @@ const filterOptions = [
       <FinanceSkeleton />
     {:else if queryError}
       <ErrorState
-        title={m.finance_report_load_error ? m.finance_report_load_error() : "خطأ في تحميل التقرير"}
+        title={m.finance_report_load_error()}
         message={extractErrorMessage(queryError)}
         onRetry={refetchAll}
       />

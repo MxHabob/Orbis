@@ -3,8 +3,8 @@
 // Tagged union (serde) matching the TypeScript TemplateNode type
 // ═══════════════════════════════════════════════════════════════
 
-use serde::{Deserialize, Serialize};
 use super::document::Position;
+use serde::{Deserialize, Serialize};
 
 /// Discriminated union of all node types.
 /// Deserialized from JSON using the "type" field as the tag.
@@ -325,8 +325,9 @@ pub struct ConditionalFormat {
     pub style: serde_json::Value,
 }
 
-fn default_true() -> bool { true }
-
+fn default_true() -> bool {
+    true
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BarcodeNode {

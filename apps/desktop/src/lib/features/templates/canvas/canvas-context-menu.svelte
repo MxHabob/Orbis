@@ -88,12 +88,13 @@ function handleSelectAll() {
 
 {#if visible}
   <!-- Backdrop -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    class="fixed inset-0 z-50"
+  <button
+    type="button"
+    class="fixed inset-0 z-50 cursor-default border-0 bg-transparent p-0"
+    aria-label={m.common_action_cancel()}
     onclick={onclose}
     oncontextmenu={(e) => { e.preventDefault(); onclose(); }}
-  ></div>
+  ></button>
 
   <!-- Menu -->
   <div

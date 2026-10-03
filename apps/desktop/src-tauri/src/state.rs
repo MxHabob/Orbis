@@ -1,31 +1,29 @@
-use std::sync::Arc;
-use sea_orm::DatabaseConnection;
-use orbis_app::ports::repositories::{
-    OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository,
-    SessionRepository, AcademicYearRepository, AcademicPeriodRepository,
-    PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository,
-    EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository,
-    ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository,
-    AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository,
-    ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository,
-    ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository,
-    StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository,
-    WorkflowRepository, CurrencyRepository, PolicyRepository,
-    SettingsRepository, DashboardRepository, OverrideRequestRepository, CoursePrerequisiteRepository,
-    GpaRecordRepository, PromotionRepository, DiscountTemplateRepository,
-    SystemRepository,
-};
-use orbis_app::ports::reporting::{
-    ReportDefinitionRepository, ReportTemplateRepository, ReportJobRepository,
-    ReportAuditRepository, DataProviderRegistry, RendererRegistry,
-};
 use orbis_app::ports::entitlement::EntitlementProvider;
-use orbis_app::services::OrgContextResolver;
 use orbis_app::ports::event_bus::EventBus;
-use orbis_app::ports::security::{TokenService, PasswordHasher};
 use orbis_app::ports::iam::PermissionCheckerPort;
-use uuid::Uuid;
+use orbis_app::ports::reporting::{
+    DataProviderRegistry, RendererRegistry, ReportAuditRepository, ReportDefinitionRepository,
+    ReportJobRepository, ReportTemplateRepository,
+};
+use orbis_app::ports::repositories::{
+    AcademicPeriodRepository, AcademicYearRepository, AccountRepository,
+    AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository, ClassRepository,
+    ClassSubjectRepository, CoursePrerequisiteRepository, CurrencyRepository, DashboardRepository,
+    DiscountTemplateRepository, DocumentRepository, EnrollmentRepository, ExamProctorRepository,
+    ExamScheduleRepository, ExamSessionRepository, FeeTemplateRepository, GpaRecordRepository,
+    GradeRepository, IntegrationRepository, JournalEntryRepository, OrgUnitRepository,
+    OrganizationRepository, OverrideRequestRepository, PaymentRepository, PeriodTemplateRepository,
+    PersonRepository, PolicyRepository, PromotionRepository, RoomRepository,
+    ScheduledLessonRepository, SeatingNumberRepository, SecretNumberRepository, SessionRepository,
+    SettingsRepository, StudentFeeRepository, StudentGuardianRepository, SubjectRepository,
+    SystemRepository, TimeSlotRepository, UserRepository, WorkflowRepository,
+};
+use orbis_app::ports::security::{PasswordHasher, TokenService};
+use orbis_app::services::OrgContextResolver;
+use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ActiveSession {
@@ -143,14 +141,15 @@ pub struct AppState {
     pub onboarding_service: Arc<orbis_app::services::OnboardingService>,
 }
 
-
 impl AppState {
     pub async fn init(app_data_dir: &std::path::Path) -> Result<Self, String> {
         let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
             let db_path = app_data_dir.join("orbis.db");
             format!("sqlite://{}?mode=rwc", db_path.display())
         });
-        let db = sea_orm::Database::connect(&db_url).await.map_err(|e| e.to_string())?;
+        let db = sea_orm::Database::connect(&db_url)
+            .await
+            .map_err(|e| e.to_string())?;
 
         // Run migrations
         use orbis_infra::migration::Migrator;
@@ -159,30 +158,67 @@ impl AppState {
 
         let active_session = Arc::new(std::sync::RwLock::new(None));
 
-        let org_repo = Arc::new(orbis_infra::repositories::org_repo::OrgRepoImpl { db: db.clone() });
-        let org_unit_repo = Arc::new(orbis_infra::repositories::org_unit_repo::OrgUnitRepoImpl { db: db.clone() });
-        let user_repo = Arc::new(orbis_infra::repositories::user_repo::UserRepoImpl { db: db.clone() });
-        let person_repo = Arc::new(orbis_infra::repositories::person_repo::PersonRepoImpl { db: db.clone() });
-        let session_repo = Arc::new(orbis_infra::repositories::session_repo::SessionRepoImpl { db: db.clone() });
-        let calendar_repo = Arc::new(orbis_infra::repositories::calendar_repos::CalendarRepoImpl { db: db.clone() });
-        let academic_repo = Arc::new(orbis_infra::repositories::academic_repos::AcademicRepoImpl { db: db.clone() });
-        let student_repo = Arc::new(orbis_infra::repositories::student_repos::StudentRepoImpl { db: db.clone() });
-        let scheduling_repo = Arc::new(orbis_infra::repositories::scheduling_repos::SchedulingRepoImpl { db: db.clone() });
-        let assessment_repo = Arc::new(orbis_infra::repositories::assessment_repos::AssessmentRepoImpl { db: db.clone() });
-        let exam_repo = Arc::new(orbis_infra::repositories::exam_repos::ExamRepoImpl { db: db.clone() });
-        let finance_repo = Arc::new(orbis_infra::repositories::finance_repos::FinanceRepoImpl { db: db.clone() });
-        let document_repo = Arc::new(orbis_infra::repositories::document_repos::DocumentRepoImpl { db: db.clone() });
-        let integration_repo = Arc::new(orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() });
-        let workflow_repo = Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
-        let override_repo = Arc::new(orbis_infra::repositories::override_repos::OverrideRepoImpl { db: db.clone() });
-        let progression_repo = Arc::new(orbis_infra::repositories::progression_repos::ProgressionRepoImpl { db: db.clone() });
-        let report_definition_repo = Arc::new(orbis_infra::repositories::report_repos::ReportDefinitionRepoImpl { db: db.clone() });
-        let report_template_repo = Arc::new(orbis_infra::repositories::report_repos::ReportTemplateRepoImpl { db: db.clone() });
-        let report_job_repo = Arc::new(orbis_infra::repositories::report_repos::ReportJobRepoImpl { db: db.clone() });
-        let report_audit_repo = Arc::new(orbis_infra::repositories::report_repos::ReportAuditRepoImpl { db: db.clone() });
-        let policy_repo = Arc::new(orbis_infra::repositories::policy_repo::PgPolicyRepo { db: db.clone() });
-        let settings_repo = Arc::new(orbis_infra::repositories::settings_repo::SettingsRepoImpl { db: db.clone() });
-        let dashboard_repo = Arc::new(orbis_infra::repositories::dashboard_repo::DashboardRepoImpl { db: db.clone() });
+        let org_repo =
+            Arc::new(orbis_infra::repositories::org_repo::OrgRepoImpl { db: db.clone() });
+        let org_unit_repo =
+            Arc::new(orbis_infra::repositories::org_unit_repo::OrgUnitRepoImpl { db: db.clone() });
+        let user_repo =
+            Arc::new(orbis_infra::repositories::user_repo::UserRepoImpl { db: db.clone() });
+        let person_repo =
+            Arc::new(orbis_infra::repositories::person_repo::PersonRepoImpl { db: db.clone() });
+        let session_repo =
+            Arc::new(orbis_infra::repositories::session_repo::SessionRepoImpl { db: db.clone() });
+        let calendar_repo = Arc::new(
+            orbis_infra::repositories::calendar_repos::CalendarRepoImpl { db: db.clone() },
+        );
+        let academic_repo = Arc::new(
+            orbis_infra::repositories::academic_repos::AcademicRepoImpl { db: db.clone() },
+        );
+        let student_repo =
+            Arc::new(orbis_infra::repositories::student_repos::StudentRepoImpl { db: db.clone() });
+        let scheduling_repo = Arc::new(
+            orbis_infra::repositories::scheduling_repos::SchedulingRepoImpl { db: db.clone() },
+        );
+        let assessment_repo = Arc::new(
+            orbis_infra::repositories::assessment_repos::AssessmentRepoImpl { db: db.clone() },
+        );
+        let exam_repo =
+            Arc::new(orbis_infra::repositories::exam_repos::ExamRepoImpl { db: db.clone() });
+        let finance_repo =
+            Arc::new(orbis_infra::repositories::finance_repos::FinanceRepoImpl { db: db.clone() });
+        let document_repo = Arc::new(
+            orbis_infra::repositories::document_repos::DocumentRepoImpl { db: db.clone() },
+        );
+        let integration_repo = Arc::new(
+            orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() },
+        );
+        let workflow_repo = Arc::new(
+            orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() },
+        );
+        let override_repo = Arc::new(
+            orbis_infra::repositories::override_repos::OverrideRepoImpl { db: db.clone() },
+        );
+        let progression_repo = Arc::new(
+            orbis_infra::repositories::progression_repos::ProgressionRepoImpl { db: db.clone() },
+        );
+        let report_definition_repo = Arc::new(
+            orbis_infra::repositories::report_repos::ReportDefinitionRepoImpl { db: db.clone() },
+        );
+        let report_template_repo = Arc::new(
+            orbis_infra::repositories::report_repos::ReportTemplateRepoImpl { db: db.clone() },
+        );
+        let report_job_repo =
+            Arc::new(orbis_infra::repositories::report_repos::ReportJobRepoImpl { db: db.clone() });
+        let report_audit_repo = Arc::new(
+            orbis_infra::repositories::report_repos::ReportAuditRepoImpl { db: db.clone() },
+        );
+        let policy_repo =
+            Arc::new(orbis_infra::repositories::policy_repo::PgPolicyRepo { db: db.clone() });
+        let settings_repo =
+            Arc::new(orbis_infra::repositories::settings_repo::SettingsRepoImpl { db: db.clone() });
+        let dashboard_repo = Arc::new(
+            orbis_infra::repositories::dashboard_repo::DashboardRepoImpl { db: db.clone() },
+        );
 
         use orbis_infra::adapters::report_adapter::*;
         let mut provider_registry = InMemoryDataProviderRegistry::new();
@@ -190,10 +226,14 @@ impl AppState {
         provider_registry.register_provider(Box::new(StudentListDataProvider { db: db.clone() }));
         provider_registry.register_provider(Box::new(TermResultDataProvider { db: db.clone() }));
         provider_registry.register_provider(Box::new(AnnualResultDataProvider { db: db.clone() }));
-        provider_registry.register_provider(Box::new(ExamSeatingPlanDataProvider { db: db.clone() }));
-        provider_registry.register_provider(Box::new(ExamAttendanceSheetDataProvider { db: db.clone() }));
-        provider_registry.register_provider(Box::new(PaymentReceiptDataProvider { db: db.clone() }));
-        provider_registry.register_provider(Box::new(StudentStatementDataProvider { db: db.clone() }));
+        provider_registry
+            .register_provider(Box::new(ExamSeatingPlanDataProvider { db: db.clone() }));
+        provider_registry
+            .register_provider(Box::new(ExamAttendanceSheetDataProvider { db: db.clone() }));
+        provider_registry
+            .register_provider(Box::new(PaymentReceiptDataProvider { db: db.clone() }));
+        provider_registry
+            .register_provider(Box::new(StudentStatementDataProvider { db: db.clone() }));
         let report_provider_registry = Arc::new(provider_registry);
 
         let mut renderer_registry = InMemoryRendererRegistry::new();
@@ -206,11 +246,15 @@ impl AppState {
 
         let report_org_context_resolver = Arc::new(DbOrgContextResolver { db: db.clone() });
 
-        let permission_checker = Arc::new(orbis_infra::adapters::iam::db_permission_checker::DbPermissionChecker {
-            db: db.clone(),
-        });
+        let permission_checker = Arc::new(
+            orbis_infra::adapters::iam::db_permission_checker::DbPermissionChecker {
+                db: db.clone(),
+            },
+        );
 
-        let autopilot_task_repo = Arc::new(orbis_infra::autopilot::task_repo::PgAutopilotTaskRepo::new(db.clone()));
+        let autopilot_task_repo = Arc::new(
+            orbis_infra::autopilot::task_repo::PgAutopilotTaskRepo::new(db.clone()),
+        );
 
         let event_bus = Arc::new(orbis_infra::event_bus::MemoryEventBus {
             workflow_engine: None,
@@ -221,17 +265,29 @@ impl AppState {
         let token_service = Arc::new(orbis_infra::security::jwt::JwtTokenService::new(jwt_secret));
         let password_hasher = Arc::new(orbis_infra::security::bcrypt::BcryptHasher);
 
-        let integration_resolver = Arc::new(orbis_infra::adapters::resolver::IntegrationResolver::new(integration_repo.clone()));
+        let integration_resolver = Arc::new(
+            orbis_infra::adapters::resolver::IntegrationResolver::new(integration_repo.clone()),
+        );
 
-        let identity_repo = Arc::new(orbis_infra::repositories::identity_repo::UserIdentityRepoImpl { db: db.clone() });
-        let mfa_factor_repo = Arc::new(orbis_infra::repositories::mfa_repo::MfaFactorRepoImpl { db: db.clone() });
-        let recovery_code_repo = Arc::new(orbis_infra::repositories::mfa_repo::MfaRecoveryCodeRepoImpl { db: db.clone() });
-        let device_repo = Arc::new(orbis_infra::repositories::device_repo::UserDeviceRepoImpl { db: db.clone() });
+        let identity_repo = Arc::new(
+            orbis_infra::repositories::identity_repo::UserIdentityRepoImpl { db: db.clone() },
+        );
+        let mfa_factor_repo =
+            Arc::new(orbis_infra::repositories::mfa_repo::MfaFactorRepoImpl { db: db.clone() });
+        let recovery_code_repo = Arc::new(
+            orbis_infra::repositories::mfa_repo::MfaRecoveryCodeRepoImpl { db: db.clone() },
+        );
+        let device_repo =
+            Arc::new(orbis_infra::repositories::device_repo::UserDeviceRepoImpl { db: db.clone() });
         let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl);
         let oidc_service = Arc::new(orbis_infra::adapters::identity::GoogleIdentityAdapter::new());
 
-        let sequence_repo = Arc::new(orbis_infra::repositories::sequence_repo::SequenceCounterRepoImpl::new(db.clone()));
-        let doc_req_repo = Arc::new(orbis_infra::repositories::document_repos::DocumentRequirementRepoImpl::new(db.clone()));
+        let sequence_repo = Arc::new(
+            orbis_infra::repositories::sequence_repo::SequenceCounterRepoImpl::new(db.clone()),
+        );
+        let doc_req_repo = Arc::new(
+            orbis_infra::repositories::document_repos::DocumentRequirementRepoImpl::new(db.clone()),
+        );
 
         // Build Domain Services
         let student_service = Arc::new(orbis_app::services::StudentService::new(
@@ -294,27 +350,30 @@ impl AppState {
             permission_checker.clone(),
         ));
 
-        let auth_service = Arc::new(orbis_app::services::AuthService::new(
-            user_repo.clone(),
-            person_repo.clone(),
-            session_repo.clone(),
-            mfa_factor_repo.clone(),
-            recovery_code_repo.clone(),
-            device_repo.clone(),
-            identity_repo.clone(),
-            token_service.clone(),
-            password_hasher.clone(),
-            totp_service.clone(),
-            oidc_service.clone(),
-            Some(integration_repo.clone()),
-            event_bus.clone(),
-            permission_checker.clone(),
-        ).with_context_repos(
-            Some(calendar_repo.clone()),
-            Some(student_repo.clone()),
-            Some(student_repo.clone()),
-            Some(student_repo.clone()),
-        ));
+        let auth_service = Arc::new(
+            orbis_app::services::AuthService::new(
+                user_repo.clone(),
+                person_repo.clone(),
+                session_repo.clone(),
+                mfa_factor_repo.clone(),
+                recovery_code_repo.clone(),
+                device_repo.clone(),
+                identity_repo.clone(),
+                token_service.clone(),
+                password_hasher.clone(),
+                totp_service.clone(),
+                oidc_service.clone(),
+                Some(integration_repo.clone()),
+                event_bus.clone(),
+                permission_checker.clone(),
+            )
+            .with_context_repos(
+                Some(calendar_repo.clone()),
+                Some(student_repo.clone()),
+                Some(student_repo.clone()),
+                Some(student_repo.clone()),
+            ),
+        );
 
         let organization_service = Arc::new(orbis_app::services::OrganizationService::new(
             org_repo.clone(),
@@ -353,7 +412,8 @@ impl AppState {
             permission_checker.clone(),
         ));
 
-        let folder_repo = Arc::new(orbis_infra::repositories::folder_repo::FolderRepoImpl { db: db.clone() });
+        let folder_repo =
+            Arc::new(orbis_infra::repositories::folder_repo::FolderRepoImpl { db: db.clone() });
         let folder_service = Arc::new(orbis_app::services::FolderService::new(
             folder_repo.clone(),
             document_repo.clone(),
@@ -405,13 +465,14 @@ impl AppState {
             workflow_service.clone(),
         ));
 
-        let autopilot_evaluator = Arc::new(orbis_app::autopilot::evaluator::AutopilotEvaluator::new(
-            policy_repo.clone(),
-            calendar_repo.clone(),
-            calendar_repo.clone(),
-            student_repo.clone(),
-            finance_repo.clone(),
-        ));
+        let autopilot_evaluator =
+            Arc::new(orbis_app::autopilot::evaluator::AutopilotEvaluator::new(
+                policy_repo.clone(),
+                calendar_repo.clone(),
+                calendar_repo.clone(),
+                student_repo.clone(),
+                finance_repo.clone(),
+            ));
 
         let autopilot_service = Arc::new(orbis_app::services::AutopilotService::new(
             autopilot_evaluator.clone(),
@@ -421,23 +482,26 @@ impl AppState {
             permission_checker.clone(),
         ));
 
-        let ai_service = Arc::new(orbis_app::services::AiOrchestrationService::new(
-            integration_resolver.clone(),
-            permission_checker.clone(),
-            student_service.clone(),
-            academic_service.clone(),
-            assessment_service.clone(),
-            finance_service.clone(),
-            scheduling_service.clone(),
-            report_service.clone(),
-            organization_service.clone(),
-        ).with_autopilot_service(autopilot_service.clone()));
+        let ai_service = Arc::new(
+            orbis_app::services::AiOrchestrationService::new(
+                integration_resolver.clone(),
+                permission_checker.clone(),
+                student_service.clone(),
+                academic_service.clone(),
+                assessment_service.clone(),
+                finance_service.clone(),
+                scheduling_service.clone(),
+                report_service.clone(),
+                organization_service.clone(),
+            )
+            .with_autopilot_service(autopilot_service.clone()),
+        );
 
         // ── Bootstrap & System Services ─────────────────────────────
-        let system_repo_impl = Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl { db: db.clone() });
-        let entitlement_provider: Arc<dyn EntitlementProvider> = Arc::new(
-            orbis_infra::adapters::entitlement_adapter::UnlicensedEntitlementProvider,
-        );
+        let system_repo_impl =
+            Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl { db: db.clone() });
+        let entitlement_provider: Arc<dyn EntitlementProvider> =
+            Arc::new(orbis_infra::adapters::entitlement_adapter::UnlicensedEntitlementProvider);
 
         let system_service = Arc::new(orbis_app::services::SystemService::new(
             system_repo_impl.clone(),
@@ -446,22 +510,25 @@ impl AppState {
         let solver_sidecar = Arc::new(crate::features::solver_sidecar::SolverSidecarManager::new());
 
         // ── Employee Affairs & User Groups Wiring ───────────────────
-        let employee_repo = Arc::new(orbis_infra::repositories::employee_repo::EmployeeRepoImpl { db: db.clone() });
-        let group_repo = Arc::new(orbis_infra::repositories::group_repo::GroupRepoImpl { db: db.clone() });
+        let employee_repo =
+            Arc::new(orbis_infra::repositories::employee_repo::EmployeeRepoImpl { db: db.clone() });
+        let group_repo =
+            Arc::new(orbis_infra::repositories::group_repo::GroupRepoImpl { db: db.clone() });
 
-        let identity_provisioning_service = Arc::new(orbis_app::services::IdentityProvisioningService::new(
-            user_repo.clone(),
-            person_repo.clone(),
-            identity_repo.clone(),
-            group_repo.clone(),
-            Some(integration_repo.clone()),
-            Some(session_repo.clone()),
-            Some(org_repo.clone()),
-            None,
-            password_hasher.clone(),
-            event_bus.clone(),
-            permission_checker.clone(),
-        ));
+        let identity_provisioning_service =
+            Arc::new(orbis_app::services::IdentityProvisioningService::new(
+                user_repo.clone(),
+                person_repo.clone(),
+                identity_repo.clone(),
+                group_repo.clone(),
+                Some(integration_repo.clone()),
+                Some(session_repo.clone()),
+                Some(org_repo.clone()),
+                None,
+                password_hasher.clone(),
+                event_bus.clone(),
+                permission_checker.clone(),
+            ));
 
         let employee_service = Arc::new(orbis_app::services::EmployeeService::new(
             employee_repo.clone(),
@@ -483,7 +550,9 @@ impl AppState {
             user_repo.clone(),
             person_repo.clone(),
             identity_repo.clone(),
-            Arc::new(orbis_infra::repositories::role_repo::RoleRepoImpl::new(db.clone())),
+            Arc::new(orbis_infra::repositories::role_repo::RoleRepoImpl::new(
+                db.clone(),
+            )),
             settings_repo.clone(),
             system_repo_impl.clone(),
             finance_repo.clone(),
@@ -615,17 +684,21 @@ impl AppState {
         };
 
         // Spawn Autopilot Background Scheduler (checks every 60 seconds)
-        let autopilot_scheduler = Arc::new(orbis_infra::autopilot::scheduler::AutopilotScheduler::new(
-            autopilot_service.clone(),
-            org_repo.clone(),
-        ));
+        let autopilot_scheduler =
+            Arc::new(orbis_infra::autopilot::scheduler::AutopilotScheduler::new(
+                autopilot_service.clone(),
+                org_repo.clone(),
+            ));
         let _scheduler_handle = autopilot_scheduler.spawn(60);
 
         Ok(state)
     }
 
     pub fn get_active_session(&self) -> Option<ActiveSession> {
-        self.active_session.read().ok().and_then(|guard| guard.clone())
+        self.active_session
+            .read()
+            .ok()
+            .and_then(|guard| guard.clone())
     }
 
     pub fn set_active_session(&self, session: ActiveSession) {

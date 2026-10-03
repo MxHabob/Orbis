@@ -26,7 +26,6 @@ impl MigrationTrait for Migration {
             schema.create_table_from_entity(mfa_factor::Entity),
             schema.create_table_from_entity(mfa_recovery_code::Entity),
             schema.create_table_from_entity(user_device::Entity),
-
             // ── 2. Academic Calendar & Structure ────────────────────────
             schema.create_table_from_entity(period_template::Entity),
             schema.create_table_from_entity(academic_year::Entity),
@@ -38,7 +37,6 @@ impl MigrationTrait for Migration {
             schema.create_table_from_entity(class::Entity),
             schema.create_table_from_entity(class_subject::Entity),
             schema.create_table_from_entity(scheduled_lesson::Entity),
-
             // ── 3. Student Lifecycle & Guardians ────────────────────────
             schema.create_table_from_entity(student::Entity),
             schema.create_table_from_entity(enrollment::Entity),
@@ -46,7 +44,6 @@ impl MigrationTrait for Migration {
             schema.create_table_from_entity(promotion_job::Entity),
             schema.create_table_from_entity(promotion_detail::Entity),
             schema.create_table_from_entity(override_request::Entity),
-
             // ── 4. Assessment, Grading & Exams ──────────────────────────
             schema.create_table_from_entity(assessment_scheme::Entity),
             schema.create_table_from_entity(grade::Entity),
@@ -58,7 +55,6 @@ impl MigrationTrait for Migration {
             schema.create_table_from_entity(seating_number::Entity),
             schema.create_table_from_entity(secret_number::Entity),
             schema.create_table_from_entity(exam_proctor::Entity),
-
             // ── 5. Finance & Accounting ─────────────────────────────────
             schema.create_table_from_entity(currency::Entity),
             schema.create_table_from_entity(exchange_rate::Entity),
@@ -69,7 +65,6 @@ impl MigrationTrait for Migration {
             schema.create_table_from_entity(discount_template::Entity),
             schema.create_table_from_entity(student_fee::Entity),
             schema.create_table_from_entity(payment::Entity),
-
             // ── 6. Documents, Integrations & Automation ─────────────────
             schema.create_table_from_entity(document::Entity),
             schema.create_table_from_entity(integration::integration_config::Entity),
@@ -78,7 +73,6 @@ impl MigrationTrait for Migration {
             schema.create_table_from_entity(workflow::workflow_action::Entity),
             schema.create_table_from_entity(workflow::workflow_execution::Entity),
             schema.create_table_from_entity(autopilot_task::Entity),
-
             // ── 7. Reporting & Analytics ────────────────────────────────
             schema.create_table_from_entity(report::report_definition::Entity),
             schema.create_table_from_entity(report::report_template::Entity),
@@ -90,7 +84,9 @@ impl MigrationTrait for Migration {
         ];
 
         for mut stmt in table_statements {
-            manager.create_table(stmt.if_not_exists().to_owned()).await?;
+            manager
+                .create_table(stmt.if_not_exists().to_owned())
+                .await?;
         }
 
         Ok(())
@@ -161,7 +157,10 @@ impl MigrationTrait for Migration {
         ];
 
         for table in tables {
-            let _ = manager.get_connection().execute_unprepared(&format!("DROP TABLE IF EXISTS {};", table)).await;
+            let _ = manager
+                .get_connection()
+                .execute_unprepared(&format!("DROP TABLE IF EXISTS {};", table))
+                .await;
         }
 
         Ok(())

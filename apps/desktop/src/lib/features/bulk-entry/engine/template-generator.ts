@@ -1,4 +1,3 @@
-import * as XLSX from "xlsx";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import type { BulkImportProfile, BulkReferenceData } from "../types";
@@ -10,7 +9,10 @@ export interface GenerateTemplateOptions {
   academicYear?: string;
 }
 
-export function buildTemplateWorkbook(options: GenerateTemplateOptions): XLSX.WorkBook {
+export async function buildTemplateWorkbook(
+  options: GenerateTemplateOptions,
+): Promise<import("xlsx").WorkBook> {
+  const XLSX = await import("xlsx");
   const { profile, refData, orgName, academicYear } = options;
   const wb = XLSX.utils.book_new();
 
@@ -96,7 +98,8 @@ export function buildTemplateWorkbook(options: GenerateTemplateOptions): XLSX.Wo
 }
 
 export async function downloadExcelTemplate(options: GenerateTemplateOptions): Promise<void> {
-  const wb = buildTemplateWorkbook(options);
+  const XLSX = await import("xlsx");
+  const wb = await buildTemplateWorkbook(options);
   const rawBytes = XLSX.write(wb, { bookType: "xlsx", type: "array" });
   const filename = `Orbis_Template_${options.profile.id}_${Date.now()}.xlsx`;
 

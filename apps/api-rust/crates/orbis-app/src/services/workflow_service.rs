@@ -1,17 +1,17 @@
-use std::sync::Arc;
-use uuid::Uuid;
 use chrono::Utc;
 use orbis_domain::entities::override_request::{
-    AcademicOverrideRequest, OverrideType, RiskLevel, OverrideStatus, ApprovalStep,
+    AcademicOverrideRequest, ApprovalStep, OverrideStatus, OverrideType, RiskLevel,
 };
-use orbis_domain::events::DomainEvent;
 use orbis_domain::errors::DomainError;
+use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
+use std::sync::Arc;
+use uuid::Uuid;
 
 use crate::context::RequestContext;
-use crate::ports::repositories::{OverrideRequestRepository, WorkflowRepository};
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::repositories::{OverrideRequestRepository, WorkflowRepository};
 
 #[derive(Debug, Clone)]
 pub struct SubmitOverrideInput {
@@ -58,12 +58,17 @@ impl WorkflowService {
         org_id: Uuid,
         input: SubmitOverrideInput,
     ) -> Result<AcademicOverrideRequest, DomainError> {
-        self.permission_checker.check(ctx, Permission::WorkflowWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::WorkflowWrite)
+            .await?;
 
         let now = Utc::now();
         let request_id = Uuid::new_v4();
 
-        let initial_approver_role = input.approval_chain.first().map(|s| s.approver_role.clone());
+        let initial_approver_role = input
+            .approval_chain
+            .first()
+            .map(|s| s.approver_role.clone());
 
         let req = AcademicOverrideRequest {
             id: request_id,
@@ -114,10 +119,17 @@ impl WorkflowService {
         approver_name: Option<String>,
         notes: Option<String>,
     ) -> Result<AcademicOverrideRequest, DomainError> {
-        self.permission_checker.check(ctx, Permission::WorkflowApprove).await?;
+        self.permission_checker
+            .check(ctx, Permission::WorkflowApprove)
+            .await?;
 
-        let mut req = self.override_repo.find_by_id(request_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Override Request {} not found", request_id)))?;
+        let mut req = self
+            .override_repo
+            .find_by_id(request_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Override Request {} not found", request_id))
+            })?;
 
         let now = Utc::now();
 
@@ -178,10 +190,17 @@ impl WorkflowService {
         rejecter_name: Option<String>,
         reason: String,
     ) -> Result<AcademicOverrideRequest, DomainError> {
-        self.permission_checker.check(ctx, Permission::WorkflowApprove).await?;
+        self.permission_checker
+            .check(ctx, Permission::WorkflowApprove)
+            .await?;
 
-        let mut req = self.override_repo.find_by_id(request_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Override Request {} not found", request_id)))?;
+        let mut req = self
+            .override_repo
+            .find_by_id(request_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Override Request {} not found", request_id))
+            })?;
 
         let now = Utc::now();
         req.status = OverrideStatus::Rejected;
@@ -207,12 +226,19 @@ impl WorkflowService {
     }
 
     /// List override requests for organization
-    pub async fn list_overrides(&self, org_id: Uuid, status: Option<&str>) -> Result<Vec<AcademicOverrideRequest>, DomainError> {
+    pub async fn list_overrides(
+        &self,
+        org_id: Uuid,
+        status: Option<&str>,
+    ) -> Result<Vec<AcademicOverrideRequest>, DomainError> {
         self.override_repo.find_by_org(org_id, status).await
     }
 
     /// Get override request by ID
-    pub async fn get_override(&self, id: Uuid) -> Result<Option<AcademicOverrideRequest>, DomainError> {
+    pub async fn get_override(
+        &self,
+        id: Uuid,
+    ) -> Result<Option<AcademicOverrideRequest>, DomainError> {
         self.override_repo.find_by_id(id).await
     }
 }

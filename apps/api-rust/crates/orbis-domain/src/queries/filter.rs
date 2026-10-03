@@ -11,8 +11,7 @@ pub struct UniversalFilter {
     pub sort_dir: Option<SortDirection>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct FilterCondition {
     pub field: String,
     pub operator: FilterOperator,

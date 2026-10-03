@@ -1,4 +1,5 @@
 <script lang="ts">
+import { untrack } from "svelte";
 import * as m from "$lib/paraglide/messages";
 /**
  * ContextToolbar — Contextual top toolbar that changes based on selection.
@@ -74,7 +75,7 @@ function updateProp(key: string, value: unknown) {
 }
 
 // Keep track of local name value to prevent cursor jump during typing
-let editingName = $state(templateName);
+let editingName = $state(untrack(() => templateName));
 $effect(() => {
   editingName = templateName;
 });
@@ -151,7 +152,7 @@ function handleAlign(
       </Tooltip>
     {/if}
     {#if onrename}
-      <div class="ctx-title-wrapper" title={m.common_action_edit?.() || "Edit"}>
+      <div class="ctx-title-wrapper" title={m.common_action_edit()}>
         <span class="ctx-title-hidden" aria-hidden="true">{editingName || "..."}</span>
         <input
           type="text"
@@ -267,7 +268,7 @@ function handleAlign(
               <AlignHorizontal size={13} />
             </button>
           </TooltipTrigger>
-          <TooltipContent>{m.template_auto_alignment ? m.template_auto_alignment() : "Alignment"}</TooltipContent>
+          <TooltipContent>{m.template_auto_alignment()}</TooltipContent>
         </Tooltip>
       </div>
 
@@ -381,7 +382,7 @@ function handleAlign(
               <Component size={13} />
             </button>
           </TooltipTrigger>
-          <TooltipContent>{m.template_auto_group ? m.template_auto_group() : "Group"}</TooltipContent>
+          <TooltipContent>{m.template_auto_group()}</TooltipContent>
         </Tooltip>
       </div>
       <div class="ctx-group">
@@ -389,7 +390,7 @@ function handleAlign(
           <PopoverTrigger>
             {#snippet child({ props })}
               <Button {...props} variant="ghost" size="xs" class="cursor-pointer text-[11px] h-6 px-2">
-                {m.template_auto_position ? m.template_auto_position() : "Position"}
+                {m.template_auto_position()}
               </Button>
             {/snippet}
           </PopoverTrigger>
@@ -403,8 +404,9 @@ function handleAlign(
                 { icon: AlignVertical, type: "middle" as const },
                 { icon: AlignVertical, type: "bottom" as const },
               ] as btn, i (i)}
+                {@const ButtonIcon = btn.icon}
                 <button type="button" class="ctx-format-btn" onclick={() => handleAlign(btn.type)}>
-                  <svelte:component this={btn.icon} size={13} />
+                  <ButtonIcon size={13} />
                 </button>
               {/each}
             </div>

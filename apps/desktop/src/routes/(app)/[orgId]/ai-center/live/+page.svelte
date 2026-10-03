@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-  <title>{m.ai_center_live_title ? m.ai_center_live_title() : "البث المباشر والمراقبة"} | Orbis</title>
+  <title>{m.ai_center_live_title()} | Orbis</title>
 </svelte:head>
 
 <AiLiveCockpit {orgId} />

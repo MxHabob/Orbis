@@ -80,27 +80,27 @@ function getTaskTypeLabel(type: string): string {
     case "grade_entry_close":
       return m.common_autopilot_task_grade_entry_close();
     case "period_lock":
-      return m.common_autopilot_task_period_lock?.() || m.autopilot_task_period_lock?.() || (isArabic ? "قفل الفترة الأكاديمية" : "Lock Academic Period");
+      return m.common_autopilot_task_period_lock?.() || m.autopilot_task_period_lock?.() || (m.common_autopilot_task_period_lock());
     case "report_generation":
       return m.common_autopilot_task_report_generation();
     case "backup":
-      return m.common_autopilot_task_backup?.() || (isArabic ? "نسخ احتياطي للنظام" : "System Backup");
+      return m.common_autopilot_task_backup?.() || (m.ui_autopilot_system_backup());
     case "promotion_dry_run":
       return m.common_autopilot_task_promotion_dry_run();
     case "promotion_execute":
-      return m.common_autopilot_task_promotion_execute?.() || (isArabic ? "تنفيذ ترحيل الطلاب" : "Execute Student Promotion");
+      return m.common_autopilot_task_promotion_execute?.() || (m.ui_autopilot_execute_student_promotion());
     case "attendance_warning":
-      return m.common_autopilot_task_attendance_warning?.() || (isArabic ? "إنذارات الغياب" : "Attendance Warning");
+      return m.common_autopilot_task_attendance_warning?.() || (m.ui_autopilot_attendance_warning());
     case "fee_due_notice":
-      return m.common_autopilot_task_fee_due_notice?.() || (isArabic ? "إشعارات استحقاق الرسوم" : "Fee Due Notice");
+      return m.common_autopilot_task_fee_due_notice?.() || (m.ui_autopilot_fee_due_notice());
     case "period_transition":
-      return m.common_autopilot_task_period_transition?.() || (isArabic ? "الانتقال للفترة التالية" : "Period Transition");
+      return m.common_autopilot_task_period_transition?.() || (m.ui_autopilot_period_transition());
     case "sync_calendar":
-      return m.common_autopilot_task_sync_calendar?.() || (isArabic ? "مزامنة التقويم" : "Sync Calendar");
+      return m.common_autopilot_task_sync_calendar?.() || (m.ui_autopilot_sync_calendar());
     case "stale_task_cleanup":
-      return m.common_autopilot_task_stale_task_cleanup?.() || (isArabic ? "تنظيف المهام المنتهية" : "Cleanup Stale Tasks");
+      return m.common_autopilot_task_stale_task_cleanup?.() || (m.ui_autopilot_cleanup_stale_tasks());
     case "health_check":
-      return m.common_autopilot_task_health_check?.() || (isArabic ? "فحص صحة النظام" : "Health Check");
+      return m.common_autopilot_task_health_check?.() || (m.ui_autopilot_health_check());
     default:
       return type;
   }
@@ -110,11 +110,11 @@ function getTaskTypeLabel(type: string): string {
 function getModeLabel(mode?: string): string {
   switch (mode) {
     case "automatic":
-      return m.common_autopilot_popover_mode_automatic?.() || (isArabic ? "تلقائي" : "Auto");
+      return m.common_autopilot_popover_mode_automatic?.() || (m.ui_autopilot_auto());
     case "suggested":
-      return m.common_autopilot_popover_mode_suggested?.() || (isArabic ? "مقترحات" : "Suggested");
+      return m.common_autopilot_popover_mode_suggested?.() || (m.ui_autopilot_suggested());
     case "manual":
-      return m.common_autopilot_popover_mode_manual?.() || (isArabic ? "يدوي" : "Manual");
+      return m.common_autopilot_popover_mode_manual?.() || (m.common_dt_type_manual());
     default:
       return m.common_phase_active();
   }
@@ -187,7 +187,7 @@ function handleGoToOnboarding() {
         
         {#if !isOperational}
           <Badge variant="outline" class="text-[8px] h-3.5 px-1 font-bold uppercase border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10">
-            {isArabic ? "بانتظار التهيئة" : "Setup Needed"}
+            {m.ui_autopilot_setup_needed()}
           </Badge>
         {:else if !config}
           <Skeleton class="h-3.5 w-10 rounded" />
@@ -207,7 +207,7 @@ function handleGoToOnboarding() {
         <a 
           href="/{orgId}/ai-center" 
           class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-primary hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          title={m.common_autopilot_popover_ai_center?.() || "AI Center"}
+          title={m.common_autopilot_popover_ai_center()}
         >
           <Sparkles size={14} />
         </a>
@@ -229,10 +229,10 @@ function handleGoToOnboarding() {
           <Sparkles size={14} class="text-amber-500 shrink-0 mt-0.5" />
           <div class="flex flex-col gap-0.5">
             <span class="text-[11px] font-bold text-amber-700 dark:text-amber-400">
-              {m.common_autopilot_popover_onboarding_title?.() || (isArabic ? "التهيئة الأولية غير مكتملة" : "Setup Incomplete")}
+              {m.common_autopilot_popover_onboarding_title?.() || (m.common_autopilot_popover_onboarding_title())}
             </span>
             <p class="text-[9.5px] leading-relaxed text-muted-foreground">
-              {m.common_autopilot_popover_onboarding_desc?.() || (isArabic ? "يتطلب الطيار الآلي تهيئة العام الدراسي والفصول والمواد قبل بدء تشغيل دورات الأتمتة التلقائية." : "AutoPilot requires initial setup (academic year, classes, and subjects) before background automation can run.")}
+              {m.common_autopilot_popover_onboarding_desc?.() || (m.common_autopilot_popover_onboarding_desc())}
             </p>
           </div>
         </div>
@@ -254,7 +254,7 @@ function handleGoToOnboarding() {
           onclick={handleGoToOnboarding}
           class="mt-1.5 h-7 w-full text-[10px] font-bold border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 flex items-center justify-center gap-1.5"
         >
-          <span>{m.common_autopilot_popover_onboarding_btn?.() || (isArabic ? "إكمال خطوات التهيئة" : "Complete Setup")}</span>
+          <span>{m.common_autopilot_popover_onboarding_btn?.() || (m.common_autopilot_popover_onboarding_btn())}</span>
           <ChevronRight size={11} class="rtl:rotate-180" />
         </Button>
       </div>

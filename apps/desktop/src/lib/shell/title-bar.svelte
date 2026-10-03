@@ -165,7 +165,7 @@
           variant="ghost"
           size="icon-sm"
           class="relative rounded-[8px] shrink-0"
-          title={m.common_titlebar_inbox ? m.common_titlebar_inbox() : "Inbox"}
+          title={m.common_titlebar_inbox()}
           onclick={() => {
             const orgId = authStore.orgId;
             if (orgId)
@@ -186,7 +186,7 @@
           variant="ghost"
           size="icon-sm"
           class="rounded-[8px] shrink-0"
-          title={m.common_titlebar_inbox ? m.common_titlebar_inbox() : "Inbox"}
+          title={m.common_titlebar_inbox()}
           onclick={() => {
             const orgId = authStore.orgId;
             if (orgId)

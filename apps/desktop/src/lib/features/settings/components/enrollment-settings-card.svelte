@@ -3,12 +3,13 @@
   Configures institutional enrollment rules and defaults.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@orbis/ui/card";
 import { Label } from "@orbis/ui/label";
 import { Switch } from "@orbis/ui/switch";
 import { Input } from "@orbis/ui/input";
 import { UserBadgeCheck } from "@orbis/icons";
-import { l } from "$lib/core/i18n";
+
 
 let {
   registrationEnabled = $bindable(true),
@@ -36,8 +37,8 @@ let {
         <UserBadgeCheck class="w-4 h-4" />
       </div>
       <div class="flex flex-col">
-        <CardTitle>{l("إعدادات التسجيل والقيد", "Enrollment & Admission Defaults")}</CardTitle>
-        <CardDescription>{l("التحكم في بوابات التسجيل وقواعد الموافقة والطاقة الاستيعابية", "Manage registration portals, approval workflows, and class capacity defaults")}</CardDescription>
+        <CardTitle>{m.ui_copy_enrollment_admission_defaults_b40fabb5()}</CardTitle>
+        <CardDescription>{m.ui_copy_manage_registration_portals_approval_workf_ac467977()}</CardDescription>
       </div>
     </div>
   </CardHeader>
@@ -45,46 +46,46 @@ let {
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
       <div class="flex items-center justify-between p-3.5 rounded-lg border border-border/50 bg-muted/20">
         <div class="flex flex-col text-start">
-          <Label class="text-xs font-semibold">{l("تفعيل بوابة التسجيل", "Enable Registration")}</Label>
-          <span class="text-[11px] text-muted-foreground">{l("السماح بقبول طلبات التسجيل للعام النشط", "Allow incoming student admission requests")}</span>
+          <Label class="text-xs font-semibold">{m.ui_copy_enable_registration_28657c4e()}</Label>
+          <span class="text-[11px] text-muted-foreground">{m.ui_copy_allow_incoming_student_admission_requests_964650f3()}</span>
         </div>
         <Switch bind:checked={registrationEnabled} disabled={isSaving} />
       </div>
 
       <div class="flex items-center justify-between p-3.5 rounded-lg border border-border/50 bg-muted/20">
         <div class="flex flex-col text-start">
-          <Label class="text-xs font-semibold">{l("اشتراط موافقة الإدارة", "Require Admin Approval")}</Label>
-          <span class="text-[11px] text-muted-foreground">{l("التحقق اليدوي قبل اعتماد القيد النهائي", "Require administrative review before final enrollment")}</span>
+          <Label class="text-xs font-semibold">{m.ui_copy_require_admin_approval_a0ef4ad5()}</Label>
+          <span class="text-[11px] text-muted-foreground">{m.ui_copy_require_administrative_review_before_final_681fd709()}</span>
         </div>
         <Switch bind:checked={requireAdminApproval} disabled={isSaving} />
       </div>
 
       <div class="flex items-center justify-between p-3.5 rounded-lg border border-border/50 bg-muted/20">
         <div class="flex flex-col text-start">
-          <Label class="text-xs font-semibold">{l("تفعيل قوائم الانتظار", "Allow Waitlist")}</Label>
-          <span class="text-[11px] text-muted-foreground">{l("وضع الطلاب في قائمة انتظار عند اكتمال الشعب", "Place students on waitlist when classes reach capacity")}</span>
+          <Label class="text-xs font-semibold">{m.ui_copy_allow_waitlist_843e0440()}</Label>
+          <span class="text-[11px] text-muted-foreground">{m.ui_copy_place_students_on_waitlist_when_classes_re_d51491e7()}</span>
         </div>
         <Switch bind:checked={allowWaitlist} disabled={isSaving} />
       </div>
 
       <div class="flex items-center justify-between p-3.5 rounded-lg border border-border/50 bg-muted/20">
         <div class="flex flex-col text-start">
-          <Label class="text-xs font-semibold">{l("أولوية الإخوة والأقارب", "Sibling Priority")}</Label>
-          <span class="text-[11px] text-muted-foreground">{l("منح أولوية القبول لإخوة الطلاب المسجلين", "Prioritize siblings of already enrolled students")}</span>
+          <Label class="text-xs font-semibold">{m.ui_copy_sibling_priority_05adfd05()}</Label>
+          <span class="text-[11px] text-muted-foreground">{m.ui_copy_prioritize_siblings_of_already_enrolled_st_a50cde19()}</span>
         </div>
         <Switch bind:checked={siblingPriorityEnabled} disabled={isSaving} />
       </div>
 
       <div class="flex items-center justify-between p-3.5 rounded-lg border border-border/50 bg-muted/20">
         <div class="flex flex-col text-start">
-          <Label class="text-xs font-semibold">{l("السماح بالتسجيل المتأخر", "Allow Late Enrollment")}</Label>
-          <span class="text-[11px] text-muted-foreground">{l("قبول طلبات القيد بعد بدء الفصل الدراسي", "Accept enrollment applications after period start")}</span>
+          <Label class="text-xs font-semibold">{m.common_policy_field_allow_late()}</Label>
+          <span class="text-[11px] text-muted-foreground">{m.ui_copy_accept_enrollment_applications_after_perio_388f004a()}</span>
         </div>
         <Switch bind:checked={allowLateEnrollment} disabled={isSaving} />
       </div>
 
       <div class="flex flex-col gap-2 p-3.5 rounded-lg border border-border/50 bg-muted/20 text-start">
-        <Label class="text-xs font-semibold">{l("الحد الافتراضي لسعة الفصل", "Default Class Capacity")}</Label>
+        <Label class="text-xs font-semibold">{m.ui_copy_default_class_capacity_7bb11790()}</Label>
         <Input
           type="number"
           min="1"

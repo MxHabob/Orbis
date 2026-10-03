@@ -40,10 +40,10 @@ const basePath = $derived(`/${orgId}/ai-center/integrations`);
   <header class="pt-4 pb-2 text-center space-y-4">
     <div class="max-w-2xl mx-auto space-y-2">
       <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-        {m.ai_center_integrations_title ? m.ai_center_integrations_title() : "Integrations"}
+        {m.ai_center_integrations_title()}
       </h1>
       <p class="text-xs sm:text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed">
-        {m.ai_center_integrations_subtitle ? m.ai_center_integrations_subtitle() : "Connect Orbis with the tools you already use. From messaging and cameras to accounting software, our integrations help you streamline your workflow."}
+        {m.ai_center_integrations_subtitle()}
       </p>
     </div>
 
@@ -51,7 +51,7 @@ const basePath = $derived(`/${orgId}/ai-center/integrations`);
     <div class="max-w-xl mx-auto pt-2">
       <SearchField
         bind:value={searchQuery}
-        placeholder={m.ai_center_integrations_search_placeholder ? m.ai_center_integrations_search_placeholder() : "Search devices, services, or AI providers..."}
+        placeholder={m.ai_center_integrations_search_placeholder()}
         class="max-w-xl mx-auto"
       />
     </div>

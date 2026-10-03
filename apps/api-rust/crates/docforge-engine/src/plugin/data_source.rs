@@ -3,9 +3,9 @@
 // Consumers implement this to provide data for template rendering
 // ═══════════════════════════════════════════════════════════════
 
+use crate::error::DocforgeError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use crate::error::DocforgeError;
 
 /// The data context is a nested JSON-like object that provides
 /// variable values for expression evaluation.

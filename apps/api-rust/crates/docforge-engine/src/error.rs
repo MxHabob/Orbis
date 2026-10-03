@@ -8,19 +8,13 @@ pub enum DocforgeError {
     Validation(String),
 
     #[error("Expression error in node '{node_id}': {message}")]
-    Expression {
-        node_id: String,
-        message: String,
-    },
+    Expression { node_id: String, message: String },
 
     #[error("Asset not found: {0}")]
     AssetNotFound(String),
 
     #[error("Font not found: {family} {weight}")]
-    FontNotFound {
-        family: String,
-        weight: String,
-    },
+    FontNotFound { family: String, weight: String },
 
     #[error("Typst compilation error: {0}")]
     Compilation(String),

@@ -40,7 +40,7 @@ import {
   DropdownMenuItem,
 } from "@orbis/ui/dropdown-menu";
 
-import { l, formatCurrency } from "$lib/core/i18n";
+import { formatCurrency } from "$lib/core/i18n";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { StudentFormState } from "./form-state.svelte";
 import { createClassesQuery } from "$lib/features/academics";
@@ -126,27 +126,27 @@ function handleReset() {
         <div class="flex flex-col text-start">
           <div class="flex items-center gap-2">
             <h1 class="text-base font-bold text-foreground truncate max-w-sm">
-              {state.personal.nameAr || state.personal.nameEn || (state.isEditMode ? l("تعديل بيانات الطالب", "Edit Student") : l("تسجيل طالب جديد", "New Student Admission"))}
+              {state.personal.nameAr || state.personal.nameEn || (state.isEditMode ? m.ui_copy_edit_student_8d69c746() : m.ui_copy_new_student_admission_37fb2c3c())}
             </h1>
             <Badge 
               variant={state.registrationStatus === "approved" ? "lime" : state.registrationStatus === "pending_review" ? "warning" : "secondary"}
               class="text-[10px] font-bold uppercase tracking-wider"
             >
               {#if state.registrationStatus === "approved"}
-                {l("معتمد / مسجل", "Approved")}
+                {m.ui_copy_approved_39578cc4()}
               {:else if state.registrationStatus === "pending_review"}
-                {l("قيد المراجعة", "Under Review")}
+                {m.ui_copy_under_review_46b36239()}
               {:else if state.registrationStatus === "withdrawn"}
-                {l("منسحب", "Withdrawn")}
+                {m.common_status_withdrawn()}
               {:else if state.registrationStatus === "graduated"}
-                {l("متخرج", "Graduated")}
+                {m.ui_copy_graduated_dc58b020()}
               {:else}
-                {l("مسودة تسجيل", "Draft")}
+                {m.ui_copy_draft_873425fa()}
               {/if}
             </Badge>
           </div>
           <span class="text-[11px] text-muted-foreground font-mono">
-            {state.personal.studentNumber || (state.isEditMode ? "STU" : l("الرقم الأكاديمي سيولد تلقائياً", "Auto-Generated Academic ID"))}
+            {state.personal.studentNumber || (state.isEditMode ? "STU" : m.ui_copy_auto_generated_academic_id_a05c74f0())}
           </span>
         </div>
       </div>
@@ -161,7 +161,7 @@ function handleReset() {
                 <span class="truncate max-w-36">
                   {state.availableTemplates.find(t => t.id === state.selectedTemplateId)?.name_ar || 
                    state.availableTemplates.find(t => t.id === state.selectedTemplateId)?.name || 
-                   l("طباعة الاستمارة", "Print Form")}
+                   m.ui_copy_print_form_ce69ef6c()}
                 </span>
                 <ChevronDown class="h-3 w-3 text-muted-foreground" />
               </Button>
@@ -218,7 +218,7 @@ function handleReset() {
             <div class="flex items-center gap-2">
               <User class="w-4 h-4 text-primary" />
               <CardTitle class="text-xs font-bold text-foreground uppercase tracking-wider text-start select-none">
-                {l("بطاقة قيد الطالب الأكاديمية", "Student ID Pass Preview")}
+                {m.ui_copy_student_id_pass_preview_f47f8d5e()}
               </CardTitle>
             </div>
             <Badge variant="outline" class="text-[9px] font-mono px-1.5 py-0">
@@ -233,7 +233,7 @@ function handleReset() {
               </div>
               <div class="flex flex-col min-w-0">
                 <span class="text-sm font-bold text-foreground truncate">
-                  {state.personal.nameAr || state.personal.nameEn || l("اسم الطالب الجديد", "New Student Name")}
+                  {state.personal.nameAr || state.personal.nameEn || m.ui_copy_new_student_name_63cbee62()}
                 </span>
                 <span class="text-xs font-mono text-muted-foreground">
                   {state.personal.nameEn || state.personal.nameAr || "Student Name (En)"}
@@ -244,21 +244,21 @@ function handleReset() {
                   </Badge>
                   <span class="text-[10px] text-muted-foreground capitalize">
                     {#if state.studyMode === "regular"}
-                      {l("انتظام كلي", "Regular")}
+                      {m.ui_copy_regular_82b527fb()}
                     {:else if state.studyMode === "distance_learning"}
-                      {l("تعليم عن بعد", "Distance Learning")}
+                      {m.ui_copy_distance_learning_390d02f6()}
                     {:else if state.studyMode === "part_time"}
-                      {l("انتظام جزئي", "Part-Time")}
+                      {m.ui_copy_part_time_81dd4b57()}
                     {:else if state.studyMode === "homeschooled"}
-                      {l("تعليم منزلي", "Homeschooled")}
+                      {m.ui_copy_homeschooled_38f511de()}
                     {:else if state.studyMode === "auditor"}
-                      {l("طالب مستمع", "Auditor")}
+                      {m.ui_copy_auditor_239dc3bb()}
                     {:else if state.studyMode === "visiting"}
-                      {l("طالب زائر", "Visiting")}
+                      {m.ui_copy_visiting_fa552251()}
                     {:else if state.studyMode === "exchange"}
-                      {l("تبادل طلابي", "Exchange")}
+                      {m.ui_copy_exchange_ddc83172()}
                     {:else if state.studyMode === "special_needs"}
-                      {l("تربية خاصة", "Special Needs")}
+                      {m.ui_copy_special_needs_5315c628()}
                     {:else}
                       {state.studyMode}
                     {/if}
@@ -273,15 +273,15 @@ function handleReset() {
                 <span class="font-semibold text-foreground truncate">{state.selectedClassName}</span>
               </div>
               <div class="flex flex-col gap-0.5">
-                <span class="text-[10px] text-muted-foreground">{l("الجنسية", "Nationality")}:</span>
+                <span class="text-[10px] text-muted-foreground">{m.employees_nationality()}:</span>
                 <span class="font-semibold text-foreground truncate">{state.personal.nationality || "—"}</span>
               </div>
               <div class="flex flex-col gap-0.5">
-                <span class="text-[10px] text-muted-foreground">{l("تاريخ الميلاد", "Date of Birth")}:</span>
+                <span class="text-[10px] text-muted-foreground">{m.common_bulk_col_dob()}:</span>
                 <span class="font-mono text-foreground">{state.personal.birthDate || "—"}</span>
               </div>
               <div class="flex flex-col gap-0.5">
-                <span class="text-[10px] text-muted-foreground">{l("الهوية الوطنية", "National ID")}:</span>
+                <span class="text-[10px] text-muted-foreground">{m.ui_copy_national_id_c94d5a1a()}:</span>
                 <span class="font-mono text-foreground truncate">{state.personal.nationalId || "—"}</span>
               </div>
             </div>
@@ -294,7 +294,7 @@ function handleReset() {
             <div class="flex items-center gap-2">
               <Tag class="w-4 h-4 text-primary" />
               <CardTitle class="text-xs font-bold text-foreground uppercase tracking-wider text-start select-none">
-                {l("الملخص المالي ومقاصة الرسوم", "Tuition & Fees Ledger")}
+                {m.ui_copy_tuition_fees_ledger_7721ec41()}
               </CardTitle>
             </div>
             <Badge variant="outline" class="font-mono text-[9px]">
@@ -331,7 +331,7 @@ function handleReset() {
             <div class="flex items-center gap-2">
               <DocumentCheck class="w-4 h-4 text-primary" />
               <CardTitle class="text-xs font-bold text-foreground uppercase tracking-wider text-start select-none">
-                {l("جاهزية ملف المستندات", "Document Readiness")}
+                {m.ui_copy_document_readiness_b62eb61d()}
               </CardTitle>
             </div>
             <Badge variant={documentStats.isComplete ? "lime" : "outline"} class="text-[9px] font-mono">
@@ -341,7 +341,7 @@ function handleReset() {
 
           <CardContent class="p-5 flex flex-col gap-2.5 text-start">
             <div class="flex items-center justify-between text-xs">
-              <span class="text-muted-foreground">{l("اكتمال الملفات المطلوبة:", "Fulfillment:")}</span>
+              <span class="text-muted-foreground">{m.ui_copy_fulfillment_9223e4fc()}</span>
               <span class="font-bold text-foreground">{Math.round((documentStats.fulfilled / Math.max(1, documentStats.total)) * 100)}%</span>
             </div>
             <div class="w-full h-2 rounded-full bg-muted/60 overflow-hidden">
@@ -352,12 +352,12 @@ function handleReset() {
             </div>
             {#if !documentStats.isComplete}
               <span class="text-[10px] text-amber-500 font-medium">
-                {l("توجد مستندات مطلوبة لم تستوف بعد", "Required admission documents pending upload")}
+                {m.ui_copy_required_admission_documents_pending_uploa_26770e47()}
               </span>
             {:else}
               <span class="text-[10px] text-emerald-500 font-medium flex items-center gap-1">
                 <CheckCircle class="w-3 h-3" />
-                {l("كافة متطلبات القبول مستوفاة", "All admission requirements fulfilled")}
+                {m.ui_copy_all_admission_requirements_fulfilled_ed59b6b2()}
               </span>
             {/if}
           </CardContent>
@@ -381,14 +381,14 @@ function handleReset() {
         <div class="flex flex-col min-w-0">
           <div class="flex items-center gap-1.5">
             <span class="text-xs font-bold text-foreground truncate">
-              {state.personal.nameAr || state.personal.nameEn || l("استمارة تسجيل طالب جديد", "Student Admission Application")}
+              {state.personal.nameAr || state.personal.nameEn || m.ui_copy_student_admission_application_a63eec05()}
             </span>
             <Badge variant="outline" class="text-[9px] font-mono uppercase px-1.5 py-0">
               {state.registrationStatus}
             </Badge>
           </div>
           <span class="text-[10px] text-muted-foreground truncate">
-            {state.selectedClassName} • {state.personal.studentNumber || (state.isEditMode ? "STU" : l("الرقم الأكاديمي سيولد تلقائياً", "Auto-Generated Academic ID"))}
+            {state.selectedClassName} • {state.personal.studentNumber || (state.isEditMode ? "STU" : m.ui_copy_auto_generated_academic_id_a05c74f0())}
           </span>
         </div>
       </div>
@@ -416,7 +416,7 @@ function handleReset() {
             onclick={handleReset}
             disabled={state.isSaving}
           >
-            {l("مسح الحقول", "Clear")}
+            {m.ui_copy_clear_0ae75388()}
           </Button>
         {/if}
 
@@ -430,7 +430,7 @@ function handleReset() {
           disabled={state.isSaving}
         >
           <span class="w-2 h-2 rounded-full bg-muted-foreground/60"></span>
-          <span>{l("حفظ كمسودة", "Save Draft")}</span>
+          <span>{m.ui_copy_save_draft_e397ad92()}</span>
         </Button>
 
         <!-- Submit for Academic Approval Button -->
@@ -443,7 +443,7 @@ function handleReset() {
           disabled={state.isSaving}
         >
           <Clock class="w-3.5 h-3.5" />
-          <span>{l("إرسال للمراجعة والاعتماد", "Submit for Approval")}</span>
+          <span>{m.ui_copy_submit_for_approval_4cea7b71()}</span>
         </Button>
 
         <!-- Direct Enrollment & Save Button -->
@@ -460,7 +460,7 @@ function handleReset() {
             <span>{m.common_state_saving()}</span>
           {:else}
             <CheckCircle class="w-3.5 h-3.5" />
-            <span>{state.isEditMode ? m.settings_action_save_changes() : l("اعتماد وقيد مباشر", "Save & Direct Enroll")}</span>
+            <span>{state.isEditMode ? m.settings_action_save_changes() : m.ui_copy_save_direct_enroll_ed9ff0dc()}</span>
           {/if}
         </Button>
       </div>

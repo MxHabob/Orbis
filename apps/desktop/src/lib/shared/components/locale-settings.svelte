@@ -16,8 +16,8 @@ interface LocaleOption {
 }
 
 let {
-  title = m.settings_general_locale?.() || "اللغة الافتراضية",
-  description = m.settings_general_locale_desc?.() || "لغة الواجهة الافتراضية لمنظمتك.",
+  title = m.settings_general_locale(),
+  description = m.settings_general_locale_desc(),
   currentLocale = $bindable("ar"),
   disabled = false,
   last = false,
@@ -70,7 +70,7 @@ function handleChange(val: string | null) {
     <SearchableSelect
       bind:value={currentLocale}
       items={supportedLocales}
-      placeholder={m.settings_general_locale?.() || "اختر لغة الواجهة..."}
+      placeholder={m.settings_general_locale()}
       searchPlaceholder="ابحث باسم اللغة أو الرمز (مثال: العربية, English, ar, en)..."
       emptyText="لا توجد لغة مطابقة"
       {disabled}

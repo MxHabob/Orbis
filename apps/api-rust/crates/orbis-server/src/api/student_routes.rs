@@ -1,17 +1,21 @@
 //! Student routes — Registrations, Enrollments, Study Mode changes, Status updates, Guardians, Bulk registration.
 
-use axum::{extract::{State, Path, Query}, routing::{get, post, patch, delete}, Json, Router};
+use axum::{
+    Json, Router,
+    extract::{Path, Query, State},
+    routing::{delete, get, patch, post},
+};
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use chrono::{DateTime, Utc, NaiveDate};
 use uuid::Uuid;
 
-use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
+use super::{ApiError, ApiResponse};
 use crate::state::AppState;
-use orbis_domain::entities::student::{StudentStatus, AcademicStanding, StudentDetail};
 use orbis_domain::entities::enrollment::{Enrollment, StudyMode};
-use orbis_domain::queries::filters::{StudentFilter, PaginationParams};
+use orbis_domain::entities::student::{AcademicStanding, StudentDetail, StudentStatus};
+use orbis_domain::queries::filters::{PaginationParams, StudentFilter};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct StudentDto {
@@ -375,7 +379,11 @@ pub async fn register_student(
 ) -> Result<Json<ApiResponse<StudentDto>>, ApiError> {
     let student_num = p.student_number.and_then(|sn| {
         let trimmed = sn.trim();
-        if trimmed.is_empty() { None } else { Some(trimmed.to_string()) }
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
     });
 
     let birth_date = p.birth_date.or(p.date_of_birth);
@@ -411,7 +419,10 @@ pub async fn register_student(
         bypass_capacity_check: p.bypass_capacity_check,
     };
 
-    let result = state.student_service.register_student(&ctx, ctx.tenant_id, input).await?;
+    let result = state
+        .student_service
+        .register_student(&ctx, ctx.tenant_id, input)
+        .await?;
     Ok(ApiResponse::ok(result.student.into()))
 }
 
@@ -455,7 +466,10 @@ pub async fn list_students(
             sort_dir: q.sort_dir,
         }),
     };
-    let paginated = state.student_service.list_students(ctx.tenant_id, domain_filter).await?;
+    let paginated = state
+        .student_service
+        .list_students(ctx.tenant_id, domain_filter)
+        .await?;
     let dtos = paginated.items.into_iter().map(Into::into).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -469,7 +483,10 @@ pub async fn get_student(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<StudentDto>>, ApiError> {
-    let detail = state.student_service.get_student(id).await?
+    let detail = state
+        .student_service
+        .get_student(id)
+        .await?
         .ok_or_else(|| ApiError::not_found(format!("Student {} not found", id)))?;
     Ok(ApiResponse::ok(detail.into()))
 }
@@ -494,8 +511,14 @@ pub async fn update_student_status(
         _ => StudentStatus::Active,
     };
 
-    let student = state.student_service.update_student_status(&ctx, id, new_status, p.reason).await?;
-    let person = state.person_repo.find_by_id(student.person_id).await?
+    let student = state
+        .student_service
+        .update_student_status(&ctx, id, new_status, p.reason)
+        .await?;
+    let person = state
+        .person_repo
+        .find_by_id(student.person_id)
+        .await?
         .ok_or_else(|| ApiError::not_found(format!("Person {} not found", student.person_id)))?;
     let detail = StudentDetail { student, person };
     Ok(ApiResponse::ok(detail.into()))
@@ -534,7 +557,10 @@ pub async fn update_student_profile(
         avatar_url: p.avatar_url,
     };
 
-    let detail = state.student_service.update_student_profile(&ctx, id, input).await?;
+    let detail = state
+        .student_service
+        .update_student_profile(&ctx, id, input)
+        .await?;
     Ok(ApiResponse::ok(detail.into()))
 }
 
@@ -561,7 +587,10 @@ pub async fn restore_student(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<StudentDto>>, ApiError> {
     let student = state.student_service.restore_student(&ctx, id).await?;
-    let person = state.person_repo.find_by_id(student.person_id).await?
+    let person = state
+        .person_repo
+        .find_by_id(student.person_id)
+        .await?
         .ok_or_else(|| ApiError::not_found(format!("Person {} not found", student.person_id)))?;
     let detail = StudentDetail { student, person };
     Ok(ApiResponse::ok(detail.into()))
@@ -580,12 +609,26 @@ pub async fn bulk_register_students(
     for item in p.items {
         let student_num = item.registration.student_number.and_then(|sn| {
             let trimmed = sn.trim();
-            if trimmed.is_empty() { None } else { Some(trimmed.to_string()) }
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_string())
+            }
         });
 
-        let birth_date = item.registration.birth_date.or(item.registration.date_of_birth);
-        let first_name_ar = item.registration.first_name_ar.or(item.registration.name_ar);
-        let study_mode = item.registration.study_mode.as_deref().map(|s| parse_study_mode(Some(s)));
+        let birth_date = item
+            .registration
+            .birth_date
+            .or(item.registration.date_of_birth);
+        let first_name_ar = item
+            .registration
+            .first_name_ar
+            .or(item.registration.name_ar);
+        let study_mode = item
+            .registration
+            .study_mode
+            .as_deref()
+            .map(|s| parse_study_mode(Some(s)));
 
         let input = orbis_app::services::student_service::RegisterStudentInput {
             person_id: item.registration.person_id,
@@ -616,28 +659,41 @@ pub async fn bulk_register_students(
             bypass_capacity_check: item.registration.bypass_capacity_check,
         };
 
-        domain_items.push(orbis_app::services::student_service::BulkRegisterItemInput {
-            row_index: item.row_index,
-            registration: input,
-            guardian_name: item.guardian_name,
-            guardian_phone: item.guardian_phone,
-            guardian_relationship: item.guardian_relationship,
-        });
+        domain_items.push(
+            orbis_app::services::student_service::BulkRegisterItemInput {
+                row_index: item.row_index,
+                registration: input,
+                guardian_name: item.guardian_name,
+                guardian_phone: item.guardian_phone,
+                guardian_relationship: item.guardian_relationship,
+            },
+        );
     }
 
-    let res = state.student_service.bulk_register_students(&ctx, ctx.tenant_id, orbis_app::services::student_service::BulkRegisterStudentsInput {
-        items: domain_items,
-        atomic: p.atomic,
-        dry_run: p.dry_run,
-    }).await?;
+    let res = state
+        .student_service
+        .bulk_register_students(
+            &ctx,
+            ctx.tenant_id,
+            orbis_app::services::student_service::BulkRegisterStudentsInput {
+                items: domain_items,
+                atomic: p.atomic,
+                dry_run: p.dry_run,
+            },
+        )
+        .await?;
 
-    let items_dto = res.items.into_iter().map(|it| BulkRegisterItemResultDto {
-        row_index: it.row_index,
-        success: it.success,
-        student_id: it.student_id,
-        student_number: it.student_number,
-        error: it.error,
-    }).collect();
+    let items_dto = res
+        .items
+        .into_iter()
+        .map(|it| BulkRegisterItemResultDto {
+            row_index: it.row_index,
+            success: it.success,
+            student_id: it.student_id,
+            student_number: it.student_number,
+            error: it.error,
+        })
+        .collect();
 
     Ok(ApiResponse::ok(BulkRegisterStudentsResponse {
         total: res.total,
@@ -659,15 +715,18 @@ pub async fn enroll_student(
 ) -> Result<Json<ApiResponse<EnrollmentDto>>, ApiError> {
     let study_mode = parse_study_mode(p.study_mode.as_deref());
 
-    let e = state.student_service.enroll_student(
-        &ctx,
-        ctx.tenant_id,
-        p.period_id,
-        p.student_id,
-        p.class_id,
-        p.student_number,
-        study_mode,
-    ).await?;
+    let e = state
+        .student_service
+        .enroll_student(
+            &ctx,
+            ctx.tenant_id,
+            p.period_id,
+            p.student_id,
+            p.class_id,
+            p.student_number,
+            study_mode,
+        )
+        .await?;
 
     Ok(ApiResponse::ok(e.into()))
 }
@@ -701,7 +760,10 @@ pub async fn get_enrollment(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<EnrollmentDto>>, ApiError> {
-    let e = state.enrollment_repo.find_by_id(id).await?
+    let e = state
+        .enrollment_repo
+        .find_by_id(id)
+        .await?
         .ok_or_else(|| ApiError::not_found(format!("Enrollment {} not found", id)))?;
     Ok(ApiResponse::ok(e.into()))
 }
@@ -717,7 +779,10 @@ pub async fn change_study_mode(
     Json(p): Json<ChangeStudyModeRequest>,
 ) -> Result<Json<ApiResponse<EnrollmentDto>>, ApiError> {
     let new_mode = parse_study_mode(Some(&p.new_mode));
-    let e = state.student_service.change_study_mode(&ctx, id, new_mode, p.reason).await?;
+    let e = state
+        .student_service
+        .change_study_mode(&ctx, id, new_mode, p.reason)
+        .await?;
     Ok(ApiResponse::ok(e.into()))
 }
 
@@ -731,7 +796,10 @@ pub async fn transfer_class(
     Path(id): Path<Uuid>,
     Json(p): Json<TransferClassRequest>,
 ) -> Result<Json<ApiResponse<EnrollmentDto>>, ApiError> {
-    let e = state.student_service.transfer_class(&ctx, id, p.target_class_id, p.reason).await?;
+    let e = state
+        .student_service
+        .transfer_class(&ctx, id, p.target_class_id, p.reason)
+        .await?;
     Ok(ApiResponse::ok(e.into()))
 }
 
@@ -743,22 +811,25 @@ pub async fn assign_guardian(
     State(state): State<AppState>,
     Json(p): Json<AssignGuardianRequest>,
 ) -> Result<Json<ApiResponse<GuardianDto>>, ApiError> {
-    let g = state.student_service.assign_guardian_full(
-        &ctx,
-        p.student_id,
-        p.guardian_id,
-        p.relationship,
-        p.relationship_ar,
-        p.is_primary.unwrap_or(false),
-        p.is_emergency_contact,
-        p.is_authorized_pickup,
-        p.is_payer,
-        p.payment_share_percent,
-        p.occupation,
-        p.employer,
-        p.work_phone,
-        p.notes,
-    ).await?;
+    let g = state
+        .student_service
+        .assign_guardian_full(
+            &ctx,
+            p.student_id,
+            p.guardian_id,
+            p.relationship,
+            p.relationship_ar,
+            p.is_primary.unwrap_or(false),
+            p.is_emergency_contact,
+            p.is_authorized_pickup,
+            p.is_payer,
+            p.payment_share_percent,
+            p.occupation,
+            p.employer,
+            p.work_phone,
+            p.notes,
+        )
+        .await?;
 
     Ok(ApiResponse::ok(GuardianDto {
         id: g.id,
@@ -789,25 +860,31 @@ pub async fn list_guardians(
     State(state): State<AppState>,
     Query(q): Query<GuardianQuery>,
 ) -> Result<Json<ApiResponse<Vec<GuardianDto>>>, ApiError> {
-    let guardians = state.student_service.get_student_guardians(&ctx, q.student_id).await?;
-    let dtos = guardians.into_iter().map(|g| GuardianDto {
-        id: g.id,
-        student_id: g.student_id,
-        guardian_id: g.guardian_id,
-        relationship: g.relationship,
-        relationship_ar: g.relationship_ar,
-        is_primary: g.is_primary,
-        is_emergency_contact: g.is_emergency_contact,
-        is_authorized_pickup: g.is_authorized_pickup,
-        is_payer: g.is_payer,
-        payment_share_percent: g.payment_share_percent,
-        occupation: g.occupation,
-        employer: g.employer,
-        work_phone: g.work_phone,
-        notes: g.notes,
-        created_at: g.created_at,
-        updated_at: g.updated_at,
-    }).collect();
+    let guardians = state
+        .student_service
+        .get_student_guardians(&ctx, q.student_id)
+        .await?;
+    let dtos = guardians
+        .into_iter()
+        .map(|g| GuardianDto {
+            id: g.id,
+            student_id: g.student_id,
+            guardian_id: g.guardian_id,
+            relationship: g.relationship,
+            relationship_ar: g.relationship_ar,
+            is_primary: g.is_primary,
+            is_emergency_contact: g.is_emergency_contact,
+            is_authorized_pickup: g.is_authorized_pickup,
+            is_payer: g.is_payer,
+            payment_share_percent: g.payment_share_percent,
+            occupation: g.occupation,
+            employer: g.employer,
+            work_phone: g.work_phone,
+            notes: g.notes,
+            created_at: g.created_at,
+            updated_at: g.updated_at,
+        })
+        .collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -823,7 +900,10 @@ pub async fn remove_guardian(
     State(state): State<AppState>,
     Path((student_id, guardian_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Json<ApiResponse<bool>>, ApiError> {
-    state.student_service.remove_guardian(&ctx, student_id, guardian_id).await?;
+    state
+        .student_service
+        .remove_guardian(&ctx, student_id, guardian_id)
+        .await?;
     Ok(ApiResponse::ok(true))
 }
 
@@ -842,15 +922,22 @@ pub async fn check_duplicate(
         exclude_student_id: p.exclude_student_id,
     };
 
-    let result = state.student_service.check_duplicate(&ctx, ctx.tenant_id, input).await?;
-    let matches = result.matches.into_iter().map(|m| DuplicateMatchDto {
-        field: m.field,
-        value: m.value,
-        matched_person_id: m.matched_person_id,
-        matched_person_name: m.matched_person_name,
-        student_id: m.student_id,
-        student_number: m.student_number,
-    }).collect();
+    let result = state
+        .student_service
+        .check_duplicate(&ctx, ctx.tenant_id, input)
+        .await?;
+    let matches = result
+        .matches
+        .into_iter()
+        .map(|m| DuplicateMatchDto {
+            field: m.field,
+            value: m.value,
+            matched_person_id: m.matched_person_id,
+            matched_person_name: m.matched_person_name,
+            student_id: m.student_id,
+            student_number: m.student_number,
+        })
+        .collect();
 
     Ok(ApiResponse::ok(DuplicateCheckResponse {
         has_duplicate: result.has_duplicate,
@@ -860,17 +947,44 @@ pub async fn check_duplicate(
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/api/v1/students", post(register_student).get(list_students))
-        .route("/api/v1/students/bulk-register", post(bulk_register_students))
+        .route(
+            "/api/v1/students",
+            post(register_student).get(list_students),
+        )
+        .route(
+            "/api/v1/students/bulk-register",
+            post(bulk_register_students),
+        )
         .route("/api/v1/students/check-duplicate", post(check_duplicate))
-        .route("/api/v1/students/:id", get(get_student).delete(delete_student))
+        .route(
+            "/api/v1/students/:id",
+            get(get_student).delete(delete_student),
+        )
         .route("/api/v1/students/:id/status", patch(update_student_status))
-        .route("/api/v1/students/:id/profile", patch(update_student_profile))
+        .route(
+            "/api/v1/students/:id/profile",
+            patch(update_student_profile),
+        )
         .route("/api/v1/students/:id/restore", post(restore_student))
-        .route("/api/v1/students/:student_id/guardians/:guardian_id", delete(remove_guardian))
-        .route("/api/v1/enrollments", post(enroll_student).get(list_enrollments))
+        .route(
+            "/api/v1/students/:student_id/guardians/:guardian_id",
+            delete(remove_guardian),
+        )
+        .route(
+            "/api/v1/enrollments",
+            post(enroll_student).get(list_enrollments),
+        )
         .route("/api/v1/enrollments/:id", get(get_enrollment))
-        .route("/api/v1/enrollments/:id/study-mode", patch(change_study_mode))
-        .route("/api/v1/enrollments/:id/transfer-class", post(transfer_class))
-        .route("/api/v1/student-guardians", post(assign_guardian).get(list_guardians))
+        .route(
+            "/api/v1/enrollments/:id/study-mode",
+            patch(change_study_mode),
+        )
+        .route(
+            "/api/v1/enrollments/:id/transfer-class",
+            post(transfer_class),
+        )
+        .route(
+            "/api/v1/student-guardians",
+            post(assign_guardian).get(list_guardians),
+        )
 }

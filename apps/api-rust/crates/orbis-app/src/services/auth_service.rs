@@ -1,27 +1,26 @@
-use std::sync::Arc;
-use uuid::Uuid;
 use chrono::Utc;
-use serde::{Deserialize, Serialize};
-use orbis_domain::entities::user::User;
+use orbis_domain::entities::device::{DeviceType, UserDevice};
+use orbis_domain::entities::identity::{IdentityProvider, UserIdentity};
+use orbis_domain::entities::mfa::{MfaEnrollmentResult, MfaFactor, MfaRecoveryCode, MfaType};
 use orbis_domain::entities::person::Person;
 use orbis_domain::entities::session::Session;
-use orbis_domain::entities::mfa::{MfaFactor, MfaType, MfaRecoveryCode, MfaEnrollmentResult};
-use orbis_domain::entities::device::{UserDevice, DeviceType};
-use orbis_domain::entities::identity::{UserIdentity, IdentityProvider};
-use orbis_domain::events::DomainEvent;
+use orbis_domain::entities::user::User;
 use orbis_domain::errors::DomainError;
+use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use uuid::Uuid;
 
 use crate::context::RequestContext;
-use crate::ports::repositories::{
-    UserRepository, PersonRepository, SessionRepository, MfaFactorRepository,
-    MfaRecoveryCodeRepository, UserDeviceRepository, UserIdentityRepository,
-    IntegrationRepository, AcademicPeriodRepository, StudentGuardianRepository,
-    StudentRepository, EnrollmentRepository,
-};
 use crate::ports::event_bus::EventBus;
-use crate::ports::security::{TokenService, PasswordHasher, TotpService, OidcService};
 use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::repositories::{
+    AcademicPeriodRepository, EnrollmentRepository, IntegrationRepository, MfaFactorRepository,
+    MfaRecoveryCodeRepository, PersonRepository, SessionRepository, StudentGuardianRepository,
+    StudentRepository, UserDeviceRepository, UserIdentityRepository, UserRepository,
+};
+use crate::ports::security::{OidcService, PasswordHasher, TokenService, TotpService};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LinkedDependentDto {
@@ -156,8 +155,16 @@ impl AuthService {
         user: &User,
         person: Option<&Person>,
     ) -> Result<EffectiveContextDto, DomainError> {
-        let permissions = self.permission_checker.get_user_permissions(user.id, user.org_id).await.unwrap_or_default();
-        let roles = self.permission_checker.get_user_roles(user.id, user.org_id).await.unwrap_or_default();
+        let permissions = self
+            .permission_checker
+            .get_user_permissions(user.id, user.org_id)
+            .await
+            .unwrap_or_default();
+        let roles = self
+            .permission_checker
+            .get_user_roles(user.id, user.org_id)
+            .await
+            .unwrap_or_default();
 
         let effective_role = if roles.contains(&"super_admin".to_string()) {
             "super_admin".to_string()
@@ -192,11 +199,17 @@ impl AuthService {
         };
 
         let mut dependents = Vec::new();
-        if let (Some(person), Some(gr), Some(sr)) = (person, self.student_guardian_repo.as_ref(), self.student_repo.as_ref()) {
+        if let (Some(person), Some(gr), Some(sr)) = (
+            person,
+            self.student_guardian_repo.as_ref(),
+            self.student_repo.as_ref(),
+        ) {
             if let Ok(guardianships) = gr.find_by_guardian(person.id).await {
                 for g in guardianships {
                     if let Ok(Some(student)) = sr.find_by_id(g.student_id).await {
-                        let (full_name, full_name_ar) = if let Ok(Some(st_person)) = self.person_repo.find_by_id(student.person_id).await {
+                        let (full_name, full_name_ar) = if let Ok(Some(st_person)) =
+                            self.person_repo.find_by_id(student.person_id).await
+                        {
                             (st_person.full_name(), st_person.full_name_ar())
                         } else {
                             (format!("Student {}", student.student_number), None)
@@ -234,15 +247,21 @@ impl AuthService {
         email: &str,
         password: &str,
     ) -> Result<LoginResponse, DomainError> {
-        let user = self.user_repo.find_by_email(email).await?
+        let user = self
+            .user_repo
+            .find_by_email(email)
+            .await?
             .ok_or_else(|| DomainError::Unauthorized("Invalid email or password".into()))?;
 
-        let hash = user.password_hash.as_ref()
-            .ok_or_else(|| DomainError::Unauthorized("Password authentication not supported for this user".into()))?;
+        let hash = user.password_hash.as_ref().ok_or_else(|| {
+            DomainError::Unauthorized("Password authentication not supported for this user".into())
+        })?;
 
         let is_valid = self.password_hasher.verify(password, hash).await?;
         if !is_valid {
-            return Err(DomainError::Unauthorized("Invalid email or password".into()));
+            return Err(DomainError::Unauthorized(
+                "Invalid email or password".into(),
+            ));
         }
 
         let person = self.person_repo.find_by_id(user.person_id).await?;
@@ -252,8 +271,14 @@ impl AuthService {
         let org_id_str = user.org_id.to_string();
         let role_str = effective_context.effective_role.clone();
 
-        let access_token = self.token_service.generate_access_token(&user_id_str, &org_id_str, &role_str).await?;
-        let refresh_token = self.token_service.generate_refresh_token(&user_id_str, &org_id_str, &role_str).await?;
+        let access_token = self
+            .token_service
+            .generate_access_token(&user_id_str, &org_id_str, &role_str)
+            .await?;
+        let refresh_token = self
+            .token_service
+            .generate_refresh_token(&user_id_str, &org_id_str, &role_str)
+            .await?;
 
         let now = Utc::now();
         let session_id = Uuid::new_v4();
@@ -308,7 +333,10 @@ impl AuthService {
 
         if let Some(ref e) = email {
             if self.user_repo.find_by_email(e).await?.is_some() {
-                return Err(DomainError::Conflict(format!("Email '{}' already registered", e)));
+                return Err(DomainError::Conflict(format!(
+                    "Email '{}' already registered",
+                    e
+                )));
             }
         }
 
@@ -408,9 +436,14 @@ impl AuthService {
         user_id: Uuid,
         full_name: Option<String>,
     ) -> Result<User, DomainError> {
-        self.permission_checker.check(ctx, Permission::UserWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::UserWrite)
+            .await?;
 
-        let mut user = self.user_repo.find_by_id(user_id).await?
+        let mut user = self
+            .user_repo
+            .find_by_id(user_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("User {} not found", user_id)))?;
 
         if let Some(name) = full_name {
@@ -441,13 +474,21 @@ impl AuthService {
         ctx: &RequestContext,
         factor_name: Option<String>,
     ) -> Result<MfaEnrollmentResult, DomainError> {
-        let user_id = ctx.actor.id().ok_or_else(|| DomainError::Unauthorized("Not authenticated".into()))?;
-        let user = self.user_repo.find_by_id(user_id).await?
+        let user_id = ctx
+            .actor
+            .id()
+            .ok_or_else(|| DomainError::Unauthorized("Not authenticated".into()))?;
+        let user = self
+            .user_repo
+            .find_by_id(user_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("User not found".into()))?;
 
         let secret = self.totp_service.generate_secret();
         let account_name = user.email.clone().unwrap_or_else(|| user.id.to_string());
-        let qr_code_uri = self.totp_service.generate_qr_uri("Orbis", &account_name, &secret);
+        let qr_code_uri = self
+            .totp_service
+            .generate_qr_uri("Orbis", &account_name, &secret);
 
         let raw_recovery_codes = self.totp_service.generate_recovery_codes(8);
 
@@ -479,7 +520,9 @@ impl AuthService {
                 used_at: None,
             });
         }
-        self.mfa_recovery_code_repo.save_all(&recovery_code_entities).await?;
+        self.mfa_recovery_code_repo
+            .save_all(&recovery_code_entities)
+            .await?;
 
         Ok(MfaEnrollmentResult {
             factor_id,
@@ -496,15 +539,23 @@ impl AuthService {
         factor_id: Uuid,
         code: &str,
     ) -> Result<bool, DomainError> {
-        let user_id = ctx.actor.id().ok_or_else(|| DomainError::Unauthorized("Not authenticated".into()))?;
-        let factor = self.mfa_factor_repo.find_by_id(factor_id).await?
+        let user_id = ctx
+            .actor
+            .id()
+            .ok_or_else(|| DomainError::Unauthorized("Not authenticated".into()))?;
+        let factor = self
+            .mfa_factor_repo
+            .find_by_id(factor_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("Factor not found".into()))?;
 
         if factor.user_id != user_id {
             return Err(DomainError::Forbidden("Invalid factor".into()));
         }
 
-        let is_valid = self.totp_service.verify_code(&factor.secret_encrypted, code);
+        let is_valid = self
+            .totp_service
+            .verify_code(&factor.secret_encrypted, code);
         if !is_valid {
             return Err(DomainError::Validation("Invalid verification code".into()));
         }
@@ -531,7 +582,10 @@ impl AuthService {
         device_id: Option<String>,
         remember_device: bool,
     ) -> Result<VerifiedSessionResponse, DomainError> {
-        let user = self.user_repo.find_by_id(user_id).await?
+        let user = self
+            .user_repo
+            .find_by_id(user_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("User not found".into()))?;
 
         let factors = self.mfa_factor_repo.find_by_user(user_id).await?;
@@ -540,7 +594,10 @@ impl AuthService {
         let mut authenticated = false;
 
         if let Some(mut factor) = verified_factor {
-            if self.totp_service.verify_code(&factor.secret_encrypted, code) {
+            if self
+                .totp_service
+                .verify_code(&factor.secret_encrypted, code)
+            {
                 factor.last_used_at = Some(Utc::now());
                 let _ = self.mfa_factor_repo.save(&factor).await;
                 authenticated = true;
@@ -548,9 +605,17 @@ impl AuthService {
         }
 
         if !authenticated {
-            let active_codes = self.mfa_recovery_code_repo.find_active_by_user(user_id).await?;
+            let active_codes = self
+                .mfa_recovery_code_repo
+                .find_active_by_user(user_id)
+                .await?;
             for rc in active_codes {
-                if self.password_hasher.verify(code, &rc.code_hash).await.unwrap_or(false) {
+                if self
+                    .password_hasher
+                    .verify(code, &rc.code_hash)
+                    .await
+                    .unwrap_or(false)
+                {
                     let _ = self.mfa_recovery_code_repo.mark_used(rc.id).await;
                     authenticated = true;
                     break;
@@ -559,12 +624,18 @@ impl AuthService {
         }
 
         if !authenticated {
-            return Err(DomainError::Unauthorized("Invalid authentication code or recovery code".into()));
+            return Err(DomainError::Unauthorized(
+                "Invalid authentication code or recovery code".into(),
+            ));
         }
 
         if let Some(dev_id) = device_id {
             if remember_device {
-                if let Ok(Some(mut dev)) = self.user_device_repo.find_by_device_id(user_id, &dev_id).await {
+                if let Ok(Some(mut dev)) = self
+                    .user_device_repo
+                    .find_by_device_id(user_id, &dev_id)
+                    .await
+                {
                     dev.is_trusted = true;
                     dev.trusted_until = Some(Utc::now() + chrono::Duration::days(30));
                     dev.last_active_at = Utc::now();
@@ -577,8 +648,14 @@ impl AuthService {
         let org_id_str = user.org_id.to_string();
         let role_str = "org_admin".to_string();
 
-        let access_token = self.token_service.generate_access_token(&user_id_str, &org_id_str, &role_str).await?;
-        let refresh_token = self.token_service.generate_refresh_token(&user_id_str, &org_id_str, &role_str).await?;
+        let access_token = self
+            .token_service
+            .generate_access_token(&user_id_str, &org_id_str, &role_str)
+            .await?;
+        let refresh_token = self
+            .token_service
+            .generate_refresh_token(&user_id_str, &org_id_str, &role_str)
+            .await?;
 
         let now = Utc::now();
         let session = Session {
@@ -611,22 +688,37 @@ impl AuthService {
         ctx: &RequestContext,
         id_token: &str,
     ) -> Result<UserIdentity, DomainError> {
-        let user_id = ctx.actor.id().ok_or_else(|| DomainError::Unauthorized("Not authenticated".into()))?;
-        let user = self.user_repo.find_by_id(user_id).await?
+        let user_id = ctx
+            .actor
+            .id()
+            .ok_or_else(|| DomainError::Unauthorized("Not authenticated".into()))?;
+        let user = self
+            .user_repo
+            .find_by_id(user_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("User not found".into()))?;
 
         let profile = self.oidc_service.verify_google_token(id_token).await?;
 
         let provider_user_id = profile.email.clone().unwrap_or_default();
         if provider_user_id.is_empty() {
-            return Err(DomainError::Validation("Invalid Google account profile".into()));
+            return Err(DomainError::Validation(
+                "Invalid Google account profile".into(),
+            ));
         }
 
-        self.verify_org_identity_config(user.org_id, "google", &provider_user_id).await?;
+        self.verify_org_identity_config(user.org_id, "google", &provider_user_id)
+            .await?;
 
-        if let Some(existing) = self.user_identity_repo.find_by_provider("google", &provider_user_id).await? {
+        if let Some(existing) = self
+            .user_identity_repo
+            .find_by_provider("google", &provider_user_id)
+            .await?
+        {
             if existing.user_id != user_id {
-                return Err(DomainError::Conflict("This Google account is already linked to another user".into()));
+                return Err(DomainError::Conflict(
+                    "This Google account is already linked to another user".into(),
+                ));
             }
             return Ok(existing);
         }
@@ -648,19 +740,24 @@ impl AuthService {
     }
 
     /// Login via Google identity
-    pub async fn login_google(
-        &self,
-        id_token: &str,
-    ) -> Result<GoogleLoginResult, DomainError> {
+    pub async fn login_google(&self, id_token: &str) -> Result<GoogleLoginResult, DomainError> {
         let profile = self.oidc_service.verify_google_token(id_token).await?;
         let provider_user_id = profile.email.clone().unwrap_or_default();
 
         if provider_user_id.is_empty() {
-            return Err(DomainError::Validation("Invalid Google account profile".into()));
+            return Err(DomainError::Validation(
+                "Invalid Google account profile".into(),
+            ));
         }
 
-        let user = if let Some(identity) = self.user_identity_repo.find_by_provider("google", &provider_user_id).await? {
-            self.user_repo.find_by_id(identity.user_id).await?
+        let user = if let Some(identity) = self
+            .user_identity_repo
+            .find_by_provider("google", &provider_user_id)
+            .await?
+        {
+            self.user_repo
+                .find_by_id(identity.user_id)
+                .await?
                 .ok_or_else(|| DomainError::NotFound("User not found".into()))?
         } else if let Some(existing_user) = self.user_repo.find_by_email(&provider_user_id).await? {
             let new_identity = UserIdentity {
@@ -677,17 +774,26 @@ impl AuthService {
             let _ = self.user_identity_repo.save(&new_identity).await;
             existing_user
         } else {
-            return Err(DomainError::NotFound("No account linked with this Google identity".into()));
+            return Err(DomainError::NotFound(
+                "No account linked with this Google identity".into(),
+            ));
         };
 
-        self.verify_org_identity_config(user.org_id, "google", &provider_user_id).await?;
+        self.verify_org_identity_config(user.org_id, "google", &provider_user_id)
+            .await?;
 
         let user_id_str = user.id.to_string();
         let org_id_str = user.org_id.to_string();
         let role_str = "org_admin".to_string();
 
-        let access_token = self.token_service.generate_access_token(&user_id_str, &org_id_str, &role_str).await?;
-        let refresh_token = self.token_service.generate_refresh_token(&user_id_str, &org_id_str, &role_str).await?;
+        let access_token = self
+            .token_service
+            .generate_access_token(&user_id_str, &org_id_str, &role_str)
+            .await?;
+        let refresh_token = self
+            .token_service
+            .generate_refresh_token(&user_id_str, &org_id_str, &role_str)
+            .await?;
 
         let now = Utc::now();
         let session = Session {
@@ -718,13 +824,23 @@ impl AuthService {
 
     /// List user devices
     pub async fn list_devices(&self, ctx: &RequestContext) -> Result<Vec<UserDevice>, DomainError> {
-        let user_id = ctx.actor.id().ok_or_else(|| DomainError::Unauthorized("Not authenticated".into()))?;
+        let user_id = ctx
+            .actor
+            .id()
+            .ok_or_else(|| DomainError::Unauthorized("Not authenticated".into()))?;
         self.user_device_repo.find_by_user(user_id).await
     }
 
     /// Revoke a device
-    pub async fn revoke_device(&self, ctx: &RequestContext, device_id: Uuid) -> Result<(), DomainError> {
-        let _user_id = ctx.actor.id().ok_or_else(|| DomainError::Unauthorized("Not authenticated".into()))?;
+    pub async fn revoke_device(
+        &self,
+        ctx: &RequestContext,
+        device_id: Uuid,
+    ) -> Result<(), DomainError> {
+        let _user_id = ctx
+            .actor
+            .id()
+            .ok_or_else(|| DomainError::Unauthorized("Not authenticated".into()))?;
         self.user_device_repo.delete(device_id).await
     }
 
@@ -740,7 +856,11 @@ impl AuthService {
     ) -> Result<UserDevice, DomainError> {
         let now = Utc::now();
         let dev_type = DeviceType::from(device_type.as_str());
-        let device = match self.user_device_repo.find_by_device_id(user_id, &device_id).await? {
+        let device = match self
+            .user_device_repo
+            .find_by_device_id(user_id, &device_id)
+            .await?
+        {
             Some(mut d) => {
                 d.device_name = device_name;
                 d.client_ip = ip_address;
@@ -779,7 +899,9 @@ impl AuthService {
         email: &str,
     ) -> Result<(), DomainError> {
         if let Some(ref repo) = self.integration_repo {
-            let org_config = repo.find_config_by_provider(org_id, &format!("{}-workspace", provider_name)).await?
+            let org_config = repo
+                .find_config_by_provider(org_id, &format!("{}-workspace", provider_name))
+                .await?
                 .or(repo.find_config_by_provider(org_id, provider_name).await?);
 
             if let Some(config) = org_config {

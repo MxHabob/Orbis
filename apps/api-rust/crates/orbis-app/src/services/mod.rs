@@ -1,55 +1,66 @@
-pub mod student_service;
-pub mod progression_service;
 pub mod academic_service;
-pub mod finance_service;
-pub mod assessment_service;
-pub mod calculation_engine;
-pub mod auth_service;
-pub mod organization_service;
-pub mod calendar_service;
-pub mod scheduling_service;
-pub mod document_service;
-pub mod integration_service;
-pub mod workflow_service;
-pub mod report_service;
-pub mod system_service;
 pub mod ai_service;
+pub mod assessment_service;
+pub mod auth_service;
 pub mod autopilot_service;
-pub mod identity_provisioning_service;
-pub mod employee_service;
-pub mod group_service;
 pub mod bootstrap_service;
-pub mod file_storage_service;
-pub mod folder_service;
-pub mod onboarding_service;
+pub mod calculation_engine;
+pub mod calendar_service;
 pub mod coa_loader;
+pub mod document_service;
+pub mod employee_service;
+pub mod file_storage_service;
+pub mod finance_service;
+pub mod folder_service;
+pub mod group_service;
+pub mod identity_provisioning_service;
+pub mod integration_service;
+pub mod onboarding_service;
+pub mod organization_service;
+pub mod progression_service;
+pub mod report_service;
+pub mod scheduling_service;
+pub mod student_service;
+pub mod system_service;
+pub mod workflow_service;
 
-pub use student_service::{StudentService, RegisterStudentInput};
-pub use progression_service::ProgressionService;
 pub use academic_service::AcademicService;
-pub use finance_service::FinanceService;
-pub use assessment_service::AssessmentService;
-pub use calculation_engine::{CalcEngine, AstNode, WeightedItem, apply_rounding};
-pub use auth_service::{AuthService, LoginResponse, VerifiedSessionResponse, GoogleLoginResult};
-pub use organization_service::{OrganizationService, UpdateOrgRequest, CreateOrgUnitInput, UpdateOrgUnitRequest};
-pub use calendar_service::CalendarService;
-pub use scheduling_service::SchedulingService;
-pub use document_service::{DocumentService, CreateDocumentInput, UpdateDocumentInput, CreateDocumentRequirementInput, UpdateDocumentRequirementInput, StudentDocumentFulfillment};
-pub use file_storage_service::{FileStorageService, UploadFileInput};
-pub use folder_service::{FolderService, CreateFolderInput, UpdateFolderInput, FolderContentsDto};
-pub use integration_service::IntegrationService;
-pub use workflow_service::{WorkflowService, SubmitOverrideInput};
-pub use report_service::{ReportService, GenerateReportInput, OrgContextResolver};
-pub use system_service::{SystemService, HealthResponse, OrganizationReadiness, OrgLifecycleState};
 pub use ai_service::AiOrchestrationService;
-pub use autopilot_service::{AutopilotService, AutopilotDiagnostics};
-pub use identity_provisioning_service::{IdentityProvisioningService, ProvisionAccountInput, ResetPasswordResult};
-pub use employee_service::{EmployeeService, RegisterEmployeeInput, UpdateEmployeeInput, RegisterEmployeeResult, AccountProvisioningConfig};
-pub use group_service::{GroupService, CreateGroupInput, UpdateGroupInput, BulkAssignGroupInput};
-pub use bootstrap_service::{BootstrapService, BootstrapRequest, BootstrapResult, BootstrapStatus, BootstrapStatusResponse};
-pub use onboarding_service::{
-    OnboardingService, OnboardingStateResponse, SetupTask, CategoryProgress,
-    OnboardingTaskCategory, OnboardingTaskStatus, ProvisionDefaultsRequest, ProvisionDefaultsResult,
+pub use assessment_service::AssessmentService;
+pub use auth_service::{AuthService, GoogleLoginResult, LoginResponse, VerifiedSessionResponse};
+pub use autopilot_service::{AutopilotDiagnostics, AutopilotService};
+pub use bootstrap_service::{
+    BootstrapRequest, BootstrapResult, BootstrapService, BootstrapStatus, BootstrapStatusResponse,
 };
-pub use coa_loader::{CoaBlueprintLoader, CoaMetadata, CoaFile, CoaNode};
-
+pub use calculation_engine::{AstNode, CalcEngine, WeightedItem, apply_rounding};
+pub use calendar_service::CalendarService;
+pub use coa_loader::{CoaBlueprintLoader, CoaFile, CoaMetadata, CoaNode};
+pub use document_service::{
+    CreateDocumentInput, CreateDocumentRequirementInput, DocumentService,
+    StudentDocumentFulfillment, UpdateDocumentInput, UpdateDocumentRequirementInput,
+};
+pub use employee_service::{
+    AccountProvisioningConfig, EmployeeService, RegisterEmployeeInput, RegisterEmployeeResult,
+    UpdateEmployeeInput,
+};
+pub use file_storage_service::{FileStorageService, UploadFileInput};
+pub use finance_service::FinanceService;
+pub use folder_service::{CreateFolderInput, FolderContentsDto, FolderService, UpdateFolderInput};
+pub use group_service::{BulkAssignGroupInput, CreateGroupInput, GroupService, UpdateGroupInput};
+pub use identity_provisioning_service::{
+    IdentityProvisioningService, ProvisionAccountInput, ResetPasswordResult,
+};
+pub use integration_service::IntegrationService;
+pub use onboarding_service::{
+    CategoryProgress, OnboardingService, OnboardingStateResponse, OnboardingTaskCategory,
+    OnboardingTaskStatus, ProvisionDefaultsRequest, ProvisionDefaultsResult, SetupTask,
+};
+pub use organization_service::{
+    CreateOrgUnitInput, OrganizationService, UpdateOrgRequest, UpdateOrgUnitRequest,
+};
+pub use progression_service::ProgressionService;
+pub use report_service::{GenerateReportInput, OrgContextResolver, ReportService};
+pub use scheduling_service::SchedulingService;
+pub use student_service::{RegisterStudentInput, StudentService};
+pub use system_service::{HealthResponse, OrgLifecycleState, OrganizationReadiness, SystemService};
+pub use workflow_service::{SubmitOverrideInput, WorkflowService};

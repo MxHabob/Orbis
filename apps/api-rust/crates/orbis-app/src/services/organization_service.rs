@@ -1,20 +1,20 @@
+use chrono::Utc;
+use orbis_domain::entities::org_unit::OrgUnit;
+use orbis_domain::entities::organization::Organization;
+use orbis_domain::entities::settings::OrganizationSettings;
+use orbis_domain::errors::DomainError;
+use orbis_domain::events::DomainEvent;
+use orbis_domain::iam::permission::Permission;
 use std::sync::Arc;
 use uuid::Uuid;
-use chrono::Utc;
-use orbis_domain::entities::organization::Organization;
-use orbis_domain::entities::org_unit::OrgUnit;
-use orbis_domain::entities::settings::OrganizationSettings;
-use orbis_domain::events::DomainEvent;
-use orbis_domain::errors::DomainError;
-use orbis_domain::iam::permission::Permission;
 
 use crate::context::RequestContext;
-use crate::ports::repositories::{
-    OrganizationRepository, OrgUnitRepository, SettingsRepository,
-    DashboardRepository, DashboardCounts,
-};
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::repositories::{
+    DashboardCounts, DashboardRepository, OrgUnitRepository, OrganizationRepository,
+    SettingsRepository,
+};
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct UpdateOrgRequest {
@@ -129,22 +129,48 @@ impl OrganizationService {
         org_id: Uuid,
         req: UpdateOrgRequest,
     ) -> Result<Organization, DomainError> {
-        self.permission_checker.check(ctx, Permission::OrganizationWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::OrganizationWrite)
+            .await?;
 
-        let mut org = self.org_repo.find_by_id(org_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Organization {} not found", org_id)))?;
+        let mut org =
+            self.org_repo.find_by_id(org_id).await?.ok_or_else(|| {
+                DomainError::NotFound(format!("Organization {} not found", org_id))
+            })?;
 
-        if let Some(n) = req.name { org.name = n; }
-        if let Some(na) = req.name_ar { org.name_ar = Some(na); }
-        if let Some(cd) = req.code { org.code = Some(cd); }
-        if let Some(t) = req.timezone { org.timezone = t; }
-        if let Some(l) = req.locale { org.locale = l; }
-        if let Some(df) = req.date_format { org.date_format = Some(df); }
-        if let Some(h) = req.is_hijri_enabled { org.is_hijri_enabled = h; }
-        if let Some(curr) = req.base_currency_code { org.base_currency_code = Some(curr); }
-        if let Some(c) = req.primary_color { org.primary_color = Some(c); }
-        if let Some(lg) = req.logo { org.logo = Some(lg); }
-        if let Some(fav) = req.favicon { org.favicon = Some(fav); }
+        if let Some(n) = req.name {
+            org.name = n;
+        }
+        if let Some(na) = req.name_ar {
+            org.name_ar = Some(na);
+        }
+        if let Some(cd) = req.code {
+            org.code = Some(cd);
+        }
+        if let Some(t) = req.timezone {
+            org.timezone = t;
+        }
+        if let Some(l) = req.locale {
+            org.locale = l;
+        }
+        if let Some(df) = req.date_format {
+            org.date_format = Some(df);
+        }
+        if let Some(h) = req.is_hijri_enabled {
+            org.is_hijri_enabled = h;
+        }
+        if let Some(curr) = req.base_currency_code {
+            org.base_currency_code = Some(curr);
+        }
+        if let Some(c) = req.primary_color {
+            org.primary_color = Some(c);
+        }
+        if let Some(lg) = req.logo {
+            org.logo = Some(lg);
+        }
+        if let Some(fav) = req.favicon {
+            org.favicon = Some(fav);
+        }
         org.updated_at = Utc::now();
         org.version += 1;
 
@@ -160,7 +186,10 @@ impl OrganizationService {
     }
 
     /// Get organization by ID
-    pub async fn get_organization(&self, org_id: Uuid) -> Result<Option<Organization>, DomainError> {
+    pub async fn get_organization(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Option<Organization>, DomainError> {
         self.org_repo.find_by_id(org_id).await
     }
 
@@ -171,14 +200,17 @@ impl OrganizationService {
         org_id: Uuid,
         req: CreateOrgUnitInput,
     ) -> Result<OrgUnit, DomainError> {
-        self.permission_checker.check(ctx, Permission::OrgUnitWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::OrgUnitWrite)
+            .await?;
 
         let now = Utc::now();
         let unit_id = Uuid::new_v4();
 
         let (path, depth) = if let Some(pid) = req.parent_id {
-            let parent = self.org_unit_repo.find_by_id(pid).await?
-                .ok_or_else(|| DomainError::NotFound(format!("Parent OrgUnit {} not found", pid)))?;
+            let parent = self.org_unit_repo.find_by_id(pid).await?.ok_or_else(|| {
+                DomainError::NotFound(format!("Parent OrgUnit {} not found", pid))
+            })?;
             (format!("{}.{}", parent.path, unit_id), parent.depth + 1)
         } else {
             (unit_id.to_string(), 0)
@@ -233,32 +265,70 @@ impl OrganizationService {
         id: Uuid,
         req: UpdateOrgUnitRequest,
     ) -> Result<OrgUnit, DomainError> {
-        self.permission_checker.check(ctx, Permission::OrgUnitWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::OrgUnitWrite)
+            .await?;
 
-        let mut unit = self.org_unit_repo.find_by_id(id).await?
+        let mut unit = self
+            .org_unit_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("OrgUnit {} not found", id)))?;
 
         let now = Utc::now();
 
-        if let Some(name) = req.name { unit.name = name; }
-        if let Some(name_ar) = req.name_ar { unit.name_ar = Some(name_ar); }
-        if let Some(code) = req.code { unit.code = Some(code); }
-        if let Some(unit_type) = req.unit_type { unit.unit_type = unit_type; }
-        if let Some(head_id) = req.head_id { unit.head_id = Some(head_id); }
-        if let Some(capacity) = req.capacity { unit.capacity = Some(capacity); }
-        if let Some(building) = req.building { unit.building = Some(building); }
-        if let Some(floor) = req.floor { unit.floor = Some(floor); }
-        if let Some(room_number) = req.room_number { unit.room_number = Some(room_number); }
-        if let Some(settings) = req.settings { unit.settings = Some(settings); }
-        if let Some(local_policies) = req.local_policies { unit.local_policies = Some(local_policies); }
-        if let Some(data_isolation) = req.data_isolation { unit.data_isolation = data_isolation; }
-        if let Some(sort_order) = req.sort_order { unit.sort_order = Some(sort_order); }
-        if let Some(is_active) = req.is_active { unit.is_active = is_active; }
+        if let Some(name) = req.name {
+            unit.name = name;
+        }
+        if let Some(name_ar) = req.name_ar {
+            unit.name_ar = Some(name_ar);
+        }
+        if let Some(code) = req.code {
+            unit.code = Some(code);
+        }
+        if let Some(unit_type) = req.unit_type {
+            unit.unit_type = unit_type;
+        }
+        if let Some(head_id) = req.head_id {
+            unit.head_id = Some(head_id);
+        }
+        if let Some(capacity) = req.capacity {
+            unit.capacity = Some(capacity);
+        }
+        if let Some(building) = req.building {
+            unit.building = Some(building);
+        }
+        if let Some(floor) = req.floor {
+            unit.floor = Some(floor);
+        }
+        if let Some(room_number) = req.room_number {
+            unit.room_number = Some(room_number);
+        }
+        if let Some(settings) = req.settings {
+            unit.settings = Some(settings);
+        }
+        if let Some(local_policies) = req.local_policies {
+            unit.local_policies = Some(local_policies);
+        }
+        if let Some(data_isolation) = req.data_isolation {
+            unit.data_isolation = data_isolation;
+        }
+        if let Some(sort_order) = req.sort_order {
+            unit.sort_order = Some(sort_order);
+        }
+        if let Some(is_active) = req.is_active {
+            unit.is_active = is_active;
+        }
 
         if let Some(new_parent_id) = req.parent_id {
             if Some(new_parent_id) != unit.parent_id {
-                let parent = self.org_unit_repo.find_by_id(new_parent_id).await?
-                    .ok_or_else(|| DomainError::NotFound(format!("Parent OrgUnit {} not found", new_parent_id)))?;
+                let parent = self
+                    .org_unit_repo
+                    .find_by_id(new_parent_id)
+                    .await?
+                    .ok_or_else(|| {
+                        DomainError::NotFound(format!("Parent OrgUnit {} not found", new_parent_id))
+                    })?;
                 unit.parent_id = Some(new_parent_id);
                 unit.path = format!("{}.{}", parent.path, unit.id);
                 unit.depth = parent.depth + 1;
@@ -292,8 +362,13 @@ impl OrganizationService {
 
     /// Delete org unit
     pub async fn delete_org_unit(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::OrgUnitDelete).await?;
-        let unit = self.org_unit_repo.find_by_id(id).await?
+        self.permission_checker
+            .check(ctx, Permission::OrgUnitDelete)
+            .await?;
+        let unit = self
+            .org_unit_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("OrgUnit {} not found", id)))?;
 
         self.org_unit_repo.delete(id).await?;
@@ -320,7 +395,9 @@ impl OrganizationService {
         org_id: Uuid,
         settings: OrganizationSettings,
     ) -> Result<OrganizationSettings, DomainError> {
-        self.permission_checker.check(ctx, Permission::OrganizationWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::OrganizationWrite)
+            .await?;
         self.settings_repo.save_settings(org_id, &settings).await?;
         Ok(settings)
     }

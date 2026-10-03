@@ -1,28 +1,36 @@
 use async_trait::async_trait;
-use orbis_app::ports::repositories::{AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository};
+use orbis_app::ports::repositories::{
+    AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository, GradeRepository,
+};
 use orbis_domain::entities::assessment_scheme::AssessmentScheme as DomainAssessmentScheme;
-use orbis_domain::entities::grade::Grade as DomainGrade;
 use orbis_domain::entities::attendance::Attendance as DomainAttendance;
 use orbis_domain::entities::behavior_record::BehaviorRecord as DomainBehaviorRecord;
+use orbis_domain::entities::grade::Grade as DomainGrade;
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter, PaginatorTrait};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+    Set,
+};
 use uuid::Uuid;
 
 use crate::models::{
     assessment_scheme::{self, Entity as AssessmentSchemeEntity},
-    grade::{self, Entity as GradeEntity},
     attendance::{self, Entity as AttendanceEntity},
     behavior_record::{self, Entity as BehaviorRecordEntity},
+    grade::{self, Entity as GradeEntity},
 };
 
-use orbis_domain::entities::assessment_scheme::{AssessmentLevel, InstitutionScope, AssessmentComponent};
+use orbis_domain::entities::assessment_scheme::{
+    AssessmentComponent, AssessmentLevel, InstitutionScope,
+};
 
 pub struct AssessmentRepoImpl {
     pub db: DatabaseConnection,
 }
 
 fn map_scheme_model_to_domain(m: assessment_scheme::Model) -> DomainAssessmentScheme {
-    let components: Vec<AssessmentComponent> = serde_json::from_str(&m.components_json).unwrap_or_default();
+    let components: Vec<AssessmentComponent> =
+        serde_json::from_str(&m.components_json).unwrap_or_default();
     DomainAssessmentScheme {
         id: m.id,
         org_id: m.org_id,
@@ -44,7 +52,10 @@ fn map_scheme_model_to_domain(m: assessment_scheme::Model) -> DomainAssessmentSc
 #[async_trait]
 impl AssessmentSchemeRepository for AssessmentRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainAssessmentScheme>, DomainError> {
-        let model = AssessmentSchemeEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let model = AssessmentSchemeEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(map_scheme_model_to_domain))
     }
 
@@ -69,17 +80,30 @@ impl AssessmentSchemeRepository for AssessmentRepoImpl {
             formula: Set(scheme.formula.clone()),
             level: Set(scheme.level.to_string()),
             institution_scope: Set(scheme.institution_scope.to_string()),
-            components_json: Set(serde_json::to_string(&scheme.components).unwrap_or_else(|_| "[]".into())),
+            components_json: Set(
+                serde_json::to_string(&scheme.components).unwrap_or_else(|_| "[]".into())
+            ),
             is_default: Set(scheme.is_default),
             is_system: Set(scheme.is_system),
             created_at: Set(scheme.created_at),
             updated_at: Set(scheme.updated_at),
         };
 
-        if AssessmentSchemeEntity::find_by_id(scheme.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if AssessmentSchemeEntity::find_by_id(scheme.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
@@ -96,7 +120,10 @@ impl AssessmentSchemeRepository for AssessmentRepoImpl {
 #[async_trait]
 impl GradeRepository for AssessmentRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainGrade>, DomainError> {
-        let model = GradeEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let model = GradeEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(|m| DomainGrade {
             id: m.id,
             org_id: m.org_id.unwrap_or_default(),
@@ -106,7 +133,9 @@ impl GradeRepository for AssessmentRepoImpl {
             class_subject_id: m.class_subject_id,
             component_id: m.component_id,
             score: m.score,
-            max_score: m.max_score.unwrap_or_else(|| rust_decimal::Decimal::from(100)),
+            max_score: m
+                .max_score
+                .unwrap_or_else(|| rust_decimal::Decimal::from(100)),
             weight: m.weight,
             letter_grade: m.letter_grade,
             is_final: m.is_final.unwrap_or(false),
@@ -122,32 +151,45 @@ impl GradeRepository for AssessmentRepoImpl {
     }
 
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<DomainGrade>, DomainError> {
-        let models = GradeEntity::find().filter(grade::Column::StudentId.eq(student_id)).all(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| DomainGrade {
-            id: m.id,
-            org_id: m.org_id.unwrap_or_default(),
-            period_id: m.period_id.unwrap_or_default(),
-            student_id: m.student_id,
-            enrollment_id: m.enrollment_id,
-            class_subject_id: m.class_subject_id,
-            component_id: m.component_id,
-            score: m.score,
-            max_score: m.max_score.unwrap_or_else(|| rust_decimal::Decimal::from(100)),
-            weight: m.weight,
-            letter_grade: m.letter_grade,
-            is_final: m.is_final.unwrap_or(false),
-            is_excused: m.is_excused,
-            is_exempt: m.is_exempt.unwrap_or(false),
-            change_reason: m.change_reason,
-            recorded_by: m.recorded_by,
-            updated_by: m.updated_by,
-            notes: m.notes,
-            created_at: m.created_at,
-            updated_at: m.updated_at,
-        }).collect())
+        let models = GradeEntity::find()
+            .filter(grade::Column::StudentId.eq(student_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models
+            .into_iter()
+            .map(|m| DomainGrade {
+                id: m.id,
+                org_id: m.org_id.unwrap_or_default(),
+                period_id: m.period_id.unwrap_or_default(),
+                student_id: m.student_id,
+                enrollment_id: m.enrollment_id,
+                class_subject_id: m.class_subject_id,
+                component_id: m.component_id,
+                score: m.score,
+                max_score: m
+                    .max_score
+                    .unwrap_or_else(|| rust_decimal::Decimal::from(100)),
+                weight: m.weight,
+                letter_grade: m.letter_grade,
+                is_final: m.is_final.unwrap_or(false),
+                is_excused: m.is_excused,
+                is_exempt: m.is_exempt.unwrap_or(false),
+                change_reason: m.change_reason,
+                recorded_by: m.recorded_by,
+                updated_by: m.updated_by,
+                notes: m.notes,
+                created_at: m.created_at,
+                updated_at: m.updated_at,
+            })
+            .collect())
     }
 
-    async fn find_by_student_and_subject(&self, student_id: Uuid, cs_id: Uuid) -> Result<Vec<DomainGrade>, DomainError> {
+    async fn find_by_student_and_subject(
+        &self,
+        student_id: Uuid,
+        cs_id: Uuid,
+    ) -> Result<Vec<DomainGrade>, DomainError> {
         let models = GradeEntity::find()
             .filter(grade::Column::StudentId.eq(student_id))
             .filter(grade::Column::ClassSubjectId.eq(cs_id))
@@ -155,31 +197,40 @@ impl GradeRepository for AssessmentRepoImpl {
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        Ok(models.into_iter().map(|m| DomainGrade {
-            id: m.id,
-            org_id: m.org_id.unwrap_or_default(),
-            period_id: m.period_id.unwrap_or_default(),
-            student_id: m.student_id,
-            enrollment_id: m.enrollment_id,
-            class_subject_id: m.class_subject_id,
-            component_id: m.component_id,
-            score: m.score,
-            max_score: m.max_score.unwrap_or_else(|| rust_decimal::Decimal::from(100)),
-            weight: m.weight,
-            letter_grade: m.letter_grade,
-            is_final: m.is_final.unwrap_or(false),
-            is_excused: m.is_excused,
-            is_exempt: m.is_exempt.unwrap_or(false),
-            change_reason: m.change_reason,
-            recorded_by: m.recorded_by,
-            updated_by: m.updated_by,
-            notes: m.notes,
-            created_at: m.created_at,
-            updated_at: m.updated_at,
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| DomainGrade {
+                id: m.id,
+                org_id: m.org_id.unwrap_or_default(),
+                period_id: m.period_id.unwrap_or_default(),
+                student_id: m.student_id,
+                enrollment_id: m.enrollment_id,
+                class_subject_id: m.class_subject_id,
+                component_id: m.component_id,
+                score: m.score,
+                max_score: m
+                    .max_score
+                    .unwrap_or_else(|| rust_decimal::Decimal::from(100)),
+                weight: m.weight,
+                letter_grade: m.letter_grade,
+                is_final: m.is_final.unwrap_or(false),
+                is_excused: m.is_excused,
+                is_exempt: m.is_exempt.unwrap_or(false),
+                change_reason: m.change_reason,
+                recorded_by: m.recorded_by,
+                updated_by: m.updated_by,
+                notes: m.notes,
+                created_at: m.created_at,
+                updated_at: m.updated_at,
+            })
+            .collect())
     }
 
-    async fn find_by_student_and_period(&self, student_id: Uuid, period_id: Uuid) -> Result<Vec<DomainGrade>, DomainError> {
+    async fn find_by_student_and_period(
+        &self,
+        student_id: Uuid,
+        period_id: Uuid,
+    ) -> Result<Vec<DomainGrade>, DomainError> {
         let models = GradeEntity::find()
             .filter(grade::Column::StudentId.eq(student_id))
             .filter(grade::Column::PeriodId.eq(period_id))
@@ -189,7 +240,10 @@ impl GradeRepository for AssessmentRepoImpl {
         Ok(models.into_iter().map(map_grade_model_to_domain).collect())
     }
 
-    async fn find_by_enrollment(&self, enrollment_id: Uuid) -> Result<Vec<DomainGrade>, DomainError> {
+    async fn find_by_enrollment(
+        &self,
+        enrollment_id: Uuid,
+    ) -> Result<Vec<DomainGrade>, DomainError> {
         let models = GradeEntity::find()
             .filter(grade::Column::EnrollmentId.eq(enrollment_id))
             .all(&self.db)
@@ -198,7 +252,10 @@ impl GradeRepository for AssessmentRepoImpl {
         Ok(models.into_iter().map(map_grade_model_to_domain).collect())
     }
 
-    async fn find_by_class_subject(&self, class_subject_id: Uuid) -> Result<Vec<DomainGrade>, DomainError> {
+    async fn find_by_class_subject(
+        &self,
+        class_subject_id: Uuid,
+    ) -> Result<Vec<DomainGrade>, DomainError> {
         let models = GradeEntity::find()
             .filter(grade::Column::ClassSubjectId.eq(class_subject_id))
             .all(&self.db)
@@ -207,7 +264,11 @@ impl GradeRepository for AssessmentRepoImpl {
         Ok(models.into_iter().map(map_grade_model_to_domain).collect())
     }
 
-    async fn list(&self, org_id: Uuid, filter: orbis_domain::queries::filters::GradeFilter) -> Result<orbis_domain::queries::filters::PaginatedList<DomainGrade>, DomainError> {
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: orbis_domain::queries::filters::GradeFilter,
+    ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainGrade>, DomainError> {
         let mut query = GradeEntity::find().filter(grade::Column::OrgId.eq(org_id));
         if let Some(student_id) = filter.student_id {
             query = query.filter(grade::Column::StudentId.eq(student_id));
@@ -222,10 +283,21 @@ impl GradeRepository for AssessmentRepoImpl {
         let page = pagination.page();
         let page_size = pagination.page_size();
         let paginator = query.paginate(&self.db, page_size);
-        let total_count = paginator.num_items().await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        let rows = paginator.fetch_page(page - 1).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let total_count = paginator
+            .num_items()
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        let rows = paginator
+            .fetch_page(page - 1)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         let items = rows.into_iter().map(map_grade_model_to_domain).collect();
-        Ok(orbis_domain::queries::filters::PaginatedList::new(items, total_count, page, page_size))
+        Ok(orbis_domain::queries::filters::PaginatedList::new(
+            items,
+            total_count,
+            page,
+            page_size,
+        ))
     }
 
     async fn save(&self, grade: &DomainGrade) -> Result<(), DomainError> {
@@ -252,10 +324,21 @@ impl GradeRepository for AssessmentRepoImpl {
             updated_at: Set(grade.updated_at),
         };
 
-        if GradeEntity::find_by_id(grade.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if GradeEntity::find_by_id(grade.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
@@ -295,30 +378,50 @@ fn map_attendance_model_to_domain(m: attendance::Model) -> DomainAttendance {
 #[async_trait]
 impl AttendanceRepository for AssessmentRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainAttendance>, DomainError> {
-        let model = AttendanceEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let model = AttendanceEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(map_attendance_model_to_domain))
     }
 
-    async fn find_by_class_and_date(&self, class_id: Uuid, date: chrono::NaiveDate) -> Result<Vec<DomainAttendance>, DomainError> {
+    async fn find_by_class_and_date(
+        &self,
+        class_id: Uuid,
+        date: chrono::NaiveDate,
+    ) -> Result<Vec<DomainAttendance>, DomainError> {
         let models = AttendanceEntity::find()
             .filter(attendance::Column::ClassId.eq(class_id))
             .filter(attendance::Column::AttendanceDate.eq(date))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_attendance_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_attendance_model_to_domain)
+            .collect())
     }
 
-    async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<DomainAttendance>, DomainError> {
+    async fn find_by_student(
+        &self,
+        student_id: Uuid,
+    ) -> Result<Vec<DomainAttendance>, DomainError> {
         let models = AttendanceEntity::find()
             .filter(attendance::Column::StudentId.eq(student_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_attendance_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_attendance_model_to_domain)
+            .collect())
     }
 
-    async fn list(&self, _org_id: Uuid, filter: orbis_domain::queries::filters::AttendanceFilter) -> Result<orbis_domain::queries::filters::PaginatedList<DomainAttendance>, DomainError> {
+    async fn list(
+        &self,
+        _org_id: Uuid,
+        filter: orbis_domain::queries::filters::AttendanceFilter,
+    ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainAttendance>, DomainError> {
         let mut query = AttendanceEntity::find();
         if let Some(student_id) = filter.student_id {
             query = query.filter(attendance::Column::StudentId.eq(student_id));
@@ -333,10 +436,24 @@ impl AttendanceRepository for AssessmentRepoImpl {
         let page = pagination.page();
         let page_size = pagination.page_size();
         let paginator = query.paginate(&self.db, page_size);
-        let total_count = paginator.num_items().await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        let rows = paginator.fetch_page(page - 1).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        let items = rows.into_iter().map(map_attendance_model_to_domain).collect();
-        Ok(orbis_domain::queries::filters::PaginatedList::new(items, total_count, page, page_size))
+        let total_count = paginator
+            .num_items()
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        let rows = paginator
+            .fetch_page(page - 1)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        let items = rows
+            .into_iter()
+            .map(map_attendance_model_to_domain)
+            .collect();
+        Ok(orbis_domain::queries::filters::PaginatedList::new(
+            items,
+            total_count,
+            page,
+            page_size,
+        ))
     }
 
     async fn save(&self, attendance: &DomainAttendance) -> Result<(), DomainError> {
@@ -354,10 +471,21 @@ impl AttendanceRepository for AssessmentRepoImpl {
             updated_at: Set(attendance.updated_at),
         };
 
-        if AttendanceEntity::find_by_id(attendance.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if AttendanceEntity::find_by_id(attendance.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
@@ -388,7 +516,9 @@ fn map_grade_model_to_domain(m: grade::Model) -> DomainGrade {
         class_subject_id: m.class_subject_id,
         component_id: m.component_id,
         score: m.score,
-        max_score: m.max_score.unwrap_or_else(|| rust_decimal::Decimal::from(100)),
+        max_score: m
+            .max_score
+            .unwrap_or_else(|| rust_decimal::Decimal::from(100)),
         weight: m.weight,
         letter_grade: m.letter_grade,
         is_final: m.is_final.unwrap_or(false),
@@ -406,27 +536,46 @@ fn map_grade_model_to_domain(m: grade::Model) -> DomainGrade {
 #[async_trait]
 impl BehaviorRecordRepository for AssessmentRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainBehaviorRecord>, DomainError> {
-        let model = BehaviorRecordEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let model = BehaviorRecordEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(|m| DomainBehaviorRecord {
-            id: m.id, student_id: m.student_id, org_id: m.org_id,
-            reporter_id: m.reporter_id, record_type: m.record_type,
-            description: m.description, points: m.points,
-            created_at: m.created_at, updated_at: m.updated_at
+            id: m.id,
+            student_id: m.student_id,
+            org_id: m.org_id,
+            reporter_id: m.reporter_id,
+            record_type: m.record_type,
+            description: m.description,
+            points: m.points,
+            created_at: m.created_at,
+            updated_at: m.updated_at,
         }))
     }
 
-    async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<DomainBehaviorRecord>, DomainError> {
+    async fn find_by_student(
+        &self,
+        student_id: Uuid,
+    ) -> Result<Vec<DomainBehaviorRecord>, DomainError> {
         let models = BehaviorRecordEntity::find()
             .filter(behavior_record::Column::StudentId.eq(student_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| DomainBehaviorRecord {
-            id: m.id, student_id: m.student_id, org_id: m.org_id,
-            reporter_id: m.reporter_id, record_type: m.record_type,
-            description: m.description, points: m.points,
-            created_at: m.created_at, updated_at: m.updated_at
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| DomainBehaviorRecord {
+                id: m.id,
+                student_id: m.student_id,
+                org_id: m.org_id,
+                reporter_id: m.reporter_id,
+                record_type: m.record_type,
+                description: m.description,
+                points: m.points,
+                created_at: m.created_at,
+                updated_at: m.updated_at,
+            })
+            .collect())
     }
 
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainBehaviorRecord>, DomainError> {
@@ -435,27 +584,50 @@ impl BehaviorRecordRepository for AssessmentRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(|m| DomainBehaviorRecord {
-            id: m.id, student_id: m.student_id, org_id: m.org_id,
-            reporter_id: m.reporter_id, record_type: m.record_type,
-            description: m.description, points: m.points,
-            created_at: m.created_at, updated_at: m.updated_at
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| DomainBehaviorRecord {
+                id: m.id,
+                student_id: m.student_id,
+                org_id: m.org_id,
+                reporter_id: m.reporter_id,
+                record_type: m.record_type,
+                description: m.description,
+                points: m.points,
+                created_at: m.created_at,
+                updated_at: m.updated_at,
+            })
+            .collect())
     }
 
     async fn save(&self, record: &DomainBehaviorRecord) -> Result<(), DomainError> {
         let active = behavior_record::ActiveModel {
-            id: Set(record.id), student_id: Set(record.student_id),
-            org_id: Set(record.org_id), reporter_id: Set(record.reporter_id),
-            record_type: Set(record.record_type.clone()), description: Set(record.description.clone()),
-            points: Set(record.points), created_at: Set(record.created_at),
+            id: Set(record.id),
+            student_id: Set(record.student_id),
+            org_id: Set(record.org_id),
+            reporter_id: Set(record.reporter_id),
+            record_type: Set(record.record_type.clone()),
+            description: Set(record.description.clone()),
+            points: Set(record.points),
+            created_at: Set(record.created_at),
             updated_at: Set(record.updated_at),
         };
 
-        if BehaviorRecordEntity::find_by_id(record.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if BehaviorRecordEntity::find_by_id(record.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
@@ -471,32 +643,45 @@ impl BehaviorRecordRepository for AssessmentRepoImpl {
 
 #[async_trait]
 impl orbis_app::ports::repositories::GpaRecordRepository for AssessmentRepoImpl {
-    async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<orbis_domain::entities::gpa_record::CumulativeGpaRecord>, DomainError> {
+    async fn find_by_student(
+        &self,
+        student_id: Uuid,
+    ) -> Result<Vec<orbis_domain::entities::gpa_record::CumulativeGpaRecord>, DomainError> {
         let models = crate::models::gpa_record::Entity::find()
             .filter(crate::models::gpa_record::Column::StudentId.eq(student_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        Ok(models.into_iter().map(|m| orbis_domain::entities::gpa_record::CumulativeGpaRecord {
-            id: m.id,
-            org_id: m.org_id,
-            student_id: m.student_id,
-            period_id: m.period_id,
-            term_attempted_credits: m.term_attempted_credits,
-            term_earned_credits: m.term_earned_credits,
-            term_points: m.term_points,
-            term_gpa: m.term_gpa,
-            cumulative_attempted_credits: m.cumulative_attempted_credits,
-            cumulative_earned_credits: m.cumulative_earned_credits,
-            cumulative_points: m.cumulative_points,
-            cumulative_gpa: m.cumulative_gpa,
-            standing: serde_json::from_str(&format!("\"{}\"", m.standing)).unwrap_or(orbis_domain::entities::student::AcademicStanding::GoodStanding),
-            calculated_at: m.calculated_at,
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(
+                |m| orbis_domain::entities::gpa_record::CumulativeGpaRecord {
+                    id: m.id,
+                    org_id: m.org_id,
+                    student_id: m.student_id,
+                    period_id: m.period_id,
+                    term_attempted_credits: m.term_attempted_credits,
+                    term_earned_credits: m.term_earned_credits,
+                    term_points: m.term_points,
+                    term_gpa: m.term_gpa,
+                    cumulative_attempted_credits: m.cumulative_attempted_credits,
+                    cumulative_earned_credits: m.cumulative_earned_credits,
+                    cumulative_points: m.cumulative_points,
+                    cumulative_gpa: m.cumulative_gpa,
+                    standing: serde_json::from_str(&format!("\"{}\"", m.standing))
+                        .unwrap_or(orbis_domain::entities::student::AcademicStanding::GoodStanding),
+                    calculated_at: m.calculated_at,
+                },
+            )
+            .collect())
     }
 
-    async fn find_by_student_and_period(&self, student_id: Uuid, period_id: Uuid) -> Result<Option<orbis_domain::entities::gpa_record::CumulativeGpaRecord>, DomainError> {
+    async fn find_by_student_and_period(
+        &self,
+        student_id: Uuid,
+        period_id: Uuid,
+    ) -> Result<Option<orbis_domain::entities::gpa_record::CumulativeGpaRecord>, DomainError> {
         let model = crate::models::gpa_record::Entity::find()
             .filter(crate::models::gpa_record::Column::StudentId.eq(student_id))
             .filter(crate::models::gpa_record::Column::PeriodId.eq(period_id))
@@ -504,25 +689,31 @@ impl orbis_app::ports::repositories::GpaRecordRepository for AssessmentRepoImpl 
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        Ok(model.map(|m| orbis_domain::entities::gpa_record::CumulativeGpaRecord {
-            id: m.id,
-            org_id: m.org_id,
-            student_id: m.student_id,
-            period_id: m.period_id,
-            term_attempted_credits: m.term_attempted_credits,
-            term_earned_credits: m.term_earned_credits,
-            term_points: m.term_points,
-            term_gpa: m.term_gpa,
-            cumulative_attempted_credits: m.cumulative_attempted_credits,
-            cumulative_earned_credits: m.cumulative_earned_credits,
-            cumulative_points: m.cumulative_points,
-            cumulative_gpa: m.cumulative_gpa,
-            standing: serde_json::from_str(&format!("\"{}\"", m.standing)).unwrap_or(orbis_domain::entities::student::AcademicStanding::GoodStanding),
-            calculated_at: m.calculated_at,
-        }))
+        Ok(model.map(
+            |m| orbis_domain::entities::gpa_record::CumulativeGpaRecord {
+                id: m.id,
+                org_id: m.org_id,
+                student_id: m.student_id,
+                period_id: m.period_id,
+                term_attempted_credits: m.term_attempted_credits,
+                term_earned_credits: m.term_earned_credits,
+                term_points: m.term_points,
+                term_gpa: m.term_gpa,
+                cumulative_attempted_credits: m.cumulative_attempted_credits,
+                cumulative_earned_credits: m.cumulative_earned_credits,
+                cumulative_points: m.cumulative_points,
+                cumulative_gpa: m.cumulative_gpa,
+                standing: serde_json::from_str(&format!("\"{}\"", m.standing))
+                    .unwrap_or(orbis_domain::entities::student::AcademicStanding::GoodStanding),
+                calculated_at: m.calculated_at,
+            },
+        ))
     }
 
-    async fn save(&self, record: &orbis_domain::entities::gpa_record::CumulativeGpaRecord) -> Result<(), DomainError> {
+    async fn save(
+        &self,
+        record: &orbis_domain::entities::gpa_record::CumulativeGpaRecord,
+    ) -> Result<(), DomainError> {
         let active = crate::models::gpa_record::ActiveModel {
             id: Set(record.id),
             org_id: Set(record.org_id),
@@ -540,13 +731,22 @@ impl orbis_app::ports::repositories::GpaRecordRepository for AssessmentRepoImpl 
             calculated_at: Set(record.calculated_at),
         };
 
-        if crate::models::gpa_record::Entity::find_by_id(record.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if crate::models::gpa_record::Entity::find_by_id(record.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
 }
-
-

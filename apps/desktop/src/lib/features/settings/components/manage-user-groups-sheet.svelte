@@ -63,11 +63,11 @@ async function handleSubmit(e: SubmitEvent) {
       ...toRemove.map((groupId) => api.removeGroupMember(groupId, userId)),
     ]);
 
-    toast.success(l("تم تحديث مجموعات المستخدم بنجاح", "User groups updated successfully"));
+    toast.success(m.ui_copy_user_groups_updated_successfully_93007746());
     open = false;
     await onsaved?.();
   } catch (err: any) {
-    toast.error(err?.message || l("فشل تحديث المجموعات", "Failed to update groups"));
+    toast.error(err?.message || m.ui_copy_failed_to_update_groups_0aac2876());
   } finally {
     isSaving = false;
   }
@@ -82,13 +82,13 @@ async function handleSubmit(e: SubmitEvent) {
         <div class="flex items-center gap-2">
           <UserGroup size={20} class="text-primary" />
           <SheetTitle class="text-base font-bold text-foreground">
-            {l("إسناد مجموعات المستخدم", "Manage User Groups")}
+            {m.ui_copy_manage_user_groups_7fb38ffc()}
           </SheetTitle>
         </div>
         <SheetDescription class="text-xs text-muted-foreground pt-1">
           {userName
-            ? l(`تحديث المجموعات والصلاحيات للمستخدم (${userName})`, `Update user groups for ${userName}`)
-            : l("حدد المجموعات لمنح الصلاحيات والأدوار المتقدمة لهذا المستخدم.", "Assign user groups to grant domain permissions.")}
+            ? m.ui_update_user_groups({ userName })
+            : m.ui_copy_assign_user_groups_to_grant_domain_permiss_a3400c8b()}
         </SheetDescription>
       </SheetHeader>
 
@@ -110,7 +110,7 @@ async function handleSubmit(e: SubmitEvent) {
           disabled={isSaving}
           class="text-xs h-8 cursor-pointer"
         >
-          {m.common_action_cancel?.() || "إلغاء"}
+          {m.common_action_cancel()}
         </Button>
         <Button
           type="submit"
@@ -121,7 +121,7 @@ async function handleSubmit(e: SubmitEvent) {
           {#if isSaving}
             <ArrowPath size={13} class="animate-spin me-1.5" />
           {/if}
-          {l("حفظ التعيينات", "Save Groups")}
+          {m.ui_copy_save_groups_f4b6f340()}
         </Button>
       </div>
     </form>

@@ -455,13 +455,14 @@ pub const STAFF_ID_CARD_HTML: &str = r##"
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tera::{Tera, Context};
+    use tera::{Context, Tera};
 
     #[test]
     fn test_master_template_compiles() {
         let mut tera = Tera::default();
-        tera.add_raw_template("master", MASTER_TEMPLATE_HTML).expect("Failed to parse master template");
-        
+        tera.add_raw_template("master", MASTER_TEMPLATE_HTML)
+            .expect("Failed to parse master template");
+
         let mut ctx = Context::new();
         ctx.insert("is_rtl", &true);
         ctx.insert("org_name", &"Test Org");
@@ -474,87 +475,109 @@ mod tests {
         ctx.insert("printed_by", &"System");
         ctx.insert("has_parameters", &false);
         ctx.insert("inner_content", &"<p>Inner</p>");
-        
-        let result = tera.render("master", &ctx).expect("Failed to render master template");
+
+        let result = tera
+            .render("master", &ctx)
+            .expect("Failed to render master template");
         assert!(result.contains("Test Org AR"));
     }
 
     #[test]
     fn test_tabular_report_compiles() {
         let mut tera = Tera::default();
-        tera.add_raw_template("tabular", TABULAR_REPORT_HTML).expect("Failed to parse tabular template");
-        
+        tera.add_raw_template("tabular", TABULAR_REPORT_HTML)
+            .expect("Failed to parse tabular template");
+
         let mut ctx = Context::new();
         ctx.insert("is_rtl", &true);
         ctx.insert("columns", &Vec::<String>::new()); // dummy
         ctx.insert("rows", &Vec::<String>::new());
-        
-        let result = tera.render("tabular", &ctx).expect("Failed to render tabular template");
+
+        let result = tera
+            .render("tabular", &ctx)
+            .expect("Failed to render tabular template");
         assert!(result.contains("<table>"));
     }
 
     #[test]
     fn test_payment_receipt_compiles() {
         let mut tera = Tera::default();
-        tera.add_raw_template("receipt", PAYMENT_RECEIPT_HTML).expect("Failed to parse payment receipt template");
-        
+        tera.add_raw_template("receipt", PAYMENT_RECEIPT_HTML)
+            .expect("Failed to parse payment receipt template");
+
         let mut ctx = Context::new();
         ctx.insert("is_rtl", &true);
         ctx.insert("rows", &Vec::<String>::new());
         ctx.insert("printed_by", &"System");
         ctx.insert("generated_at", &"2023-01-01 10:00");
-        
-        let result = tera.render("receipt", &ctx).expect("Failed to render payment receipt template");
+
+        let result = tera
+            .render("receipt", &ctx)
+            .expect("Failed to render payment receipt template");
         assert!(result.contains("Payment Receipt") || result.contains("سند قبض"));
     }
 
     #[test]
     fn test_student_id_card_compiles() {
         let mut tera = Tera::default();
-        tera.add_raw_template("id_card", STUDENT_ID_CARD_HTML).expect("Failed to parse id card template");
-        
+        tera.add_raw_template("id_card", STUDENT_ID_CARD_HTML)
+            .expect("Failed to parse id card template");
+
         let mut ctx = Context::new();
         ctx.insert("is_rtl", &true);
         ctx.insert("rows", &Vec::<String>::new());
-        
-        let result = tera.render("id_card", &ctx).expect("Failed to render id card template");
+
+        let result = tera
+            .render("id_card", &ctx)
+            .expect("Failed to render id card template");
         assert!(result.contains("batch-container"));
     }
 
     #[test]
     fn test_class_timetable_compiles() {
         let mut tera = Tera::default();
-        tera.add_raw_template("timetable", CLASS_TIMETABLE_HTML).expect("Failed to parse timetable template");
-        
+        tera.add_raw_template("timetable", CLASS_TIMETABLE_HTML)
+            .expect("Failed to parse timetable template");
+
         let mut ctx = Context::new();
         ctx.insert("is_rtl", &true);
         ctx.insert("rows", &Vec::<String>::new());
-        ctx.insert("parameters", &std::collections::HashMap::<String, String>::new());
-        
-        let result = tera.render("timetable", &ctx).expect("Failed to render timetable template");
+        ctx.insert(
+            "parameters",
+            &std::collections::HashMap::<String, String>::new(),
+        );
+
+        let result = tera
+            .render("timetable", &ctx)
+            .expect("Failed to render timetable template");
         assert!(result.contains("timetable"));
     }
 
     #[test]
     fn test_transcript_compiles() {
         let mut tera = Tera::default();
-        tera.add_raw_template("transcript", TRANSCRIPT_REPORT_HTML).expect("Failed to parse transcript template");
+        tera.add_raw_template("transcript", TRANSCRIPT_REPORT_HTML)
+            .expect("Failed to parse transcript template");
         let mut ctx = Context::new();
         ctx.insert("is_rtl", &true);
         ctx.insert("student_name", &"أحمد محمد");
-        let result = tera.render("transcript", &ctx).expect("Failed to render transcript template");
+        let result = tera
+            .render("transcript", &ctx)
+            .expect("Failed to render transcript template");
         assert!(result.contains("transcript-container"));
     }
 
     #[test]
     fn test_invoice_compiles() {
         let mut tera = Tera::default();
-        tera.add_raw_template("invoice", STUDENT_INVOICE_HTML).expect("Failed to parse invoice template");
+        tera.add_raw_template("invoice", STUDENT_INVOICE_HTML)
+            .expect("Failed to parse invoice template");
         let mut ctx = Context::new();
         ctx.insert("is_rtl", &true);
         ctx.insert("student_name", &"أحمد محمد");
-        let result = tera.render("invoice", &ctx).expect("Failed to render invoice template");
+        let result = tera
+            .render("invoice", &ctx)
+            .expect("Failed to render invoice template");
         assert!(result.contains("invoice-box"));
     }
 }
-

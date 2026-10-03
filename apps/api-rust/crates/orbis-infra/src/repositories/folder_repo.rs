@@ -3,7 +3,9 @@ use chrono::Utc;
 use orbis_app::ports::repositories::FolderRepository;
 use orbis_domain::entities::folder::Folder as DomainFolder;
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter, QueryOrder};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, Set,
+};
 use uuid::Uuid;
 
 use crate::models::folder::{self, Entity as FolderEntity};
@@ -42,7 +44,11 @@ fn map_folder_model_to_domain(m: folder::Model) -> DomainFolder {
 
 #[async_trait]
 impl FolderRepository for FolderRepoImpl {
-    async fn find_by_id(&self, org_id: Uuid, id: Uuid) -> Result<Option<DomainFolder>, DomainError> {
+    async fn find_by_id(
+        &self,
+        org_id: Uuid,
+        id: Uuid,
+    ) -> Result<Option<DomainFolder>, DomainError> {
         let model = FolderEntity::find()
             .filter(folder::Column::OrgId.eq(org_id))
             .filter(folder::Column::Id.eq(id))
@@ -53,7 +59,11 @@ impl FolderRepository for FolderRepoImpl {
         Ok(model.map(map_folder_model_to_domain))
     }
 
-    async fn find_by_path(&self, org_id: Uuid, path: &str) -> Result<Option<DomainFolder>, DomainError> {
+    async fn find_by_path(
+        &self,
+        org_id: Uuid,
+        path: &str,
+    ) -> Result<Option<DomainFolder>, DomainError> {
         let model = FolderEntity::find()
             .filter(folder::Column::OrgId.eq(org_id))
             .filter(folder::Column::Path.eq(path))
@@ -64,7 +74,12 @@ impl FolderRepository for FolderRepoImpl {
         Ok(model.map(map_folder_model_to_domain))
     }
 
-    async fn find_by_entity(&self, org_id: Uuid, entity_type: &str, entity_id: Uuid) -> Result<Option<DomainFolder>, DomainError> {
+    async fn find_by_entity(
+        &self,
+        org_id: Uuid,
+        entity_type: &str,
+        entity_id: Uuid,
+    ) -> Result<Option<DomainFolder>, DomainError> {
         let model = FolderEntity::find()
             .filter(folder::Column::OrgId.eq(org_id))
             .filter(folder::Column::EntityType.eq(entity_type))
@@ -76,7 +91,11 @@ impl FolderRepository for FolderRepoImpl {
         Ok(model.map(map_folder_model_to_domain))
     }
 
-    async fn list_children(&self, org_id: Uuid, parent_id: Option<Uuid>) -> Result<Vec<DomainFolder>, DomainError> {
+    async fn list_children(
+        &self,
+        org_id: Uuid,
+        parent_id: Option<Uuid>,
+    ) -> Result<Vec<DomainFolder>, DomainError> {
         let mut query = FolderEntity::find()
             .filter(folder::Column::OrgId.eq(org_id))
             .filter(folder::Column::DeletedAt.is_null());
@@ -95,7 +114,11 @@ impl FolderRepository for FolderRepoImpl {
         Ok(models.into_iter().map(map_folder_model_to_domain).collect())
     }
 
-    async fn list_by_type(&self, org_id: Uuid, folder_type: &str) -> Result<Vec<DomainFolder>, DomainError> {
+    async fn list_by_type(
+        &self,
+        org_id: Uuid,
+        folder_type: &str,
+    ) -> Result<Vec<DomainFolder>, DomainError> {
         let models = FolderEntity::find()
             .filter(folder::Column::OrgId.eq(org_id))
             .filter(folder::Column::FolderType.eq(folder_type))
@@ -145,9 +168,15 @@ impl FolderRepository for FolderRepoImpl {
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
         if exists.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
@@ -164,7 +193,10 @@ impl FolderRepository for FolderRepoImpl {
         let mut active: folder::ActiveModel = folder.into();
         active.deleted_at = Set(Some(Utc::now().into()));
         active.updated_at = Set(Utc::now().into());
-        active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        active
+            .update(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
     }
 }

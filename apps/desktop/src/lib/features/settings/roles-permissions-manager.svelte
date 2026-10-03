@@ -47,7 +47,7 @@ async function loadRoles() {
     roles = fetchedRoles;
   } catch (e) {
     console.error("Error loading roles:", e);
-    toast.error(l("فشل تحميل قائمة الأدوار والصلاحيات", "Failed to load roles"));
+    toast.error(m.ui_copy_failed_to_load_roles_445d4a19());
   } finally {
     isLoading = false;
   }
@@ -86,31 +86,31 @@ const gridSource = $derived(
     __idx: i + 1,
     permCount: countRolePermissions(r.permissions, r.id),
     roleType: r.is_system ? "system" : "custom",
-    typeBadge: r.is_system ? l("نظام قياسي", "System") : l("مخصص", "Custom"),
-    permBadge: `${countRolePermissions(r.permissions, r.id)} ${l("صلاحية", "perms")}`,
+    typeBadge: r.is_system ? m.ui_copy_system_e3980179() : m.common_onboarding_break_custom(),
+    permBadge: `${countRolePermissions(r.permissions, r.id)} ${m.ui_copy_perms_dd19d499()}`,
     name_display: l(r.name_ar, r.name) || r.name || r.id,
   }))
 );
 
 // Actions Configuration
 const roleActions: ActionItem[] = [
-  { id: "edit", label: l("تعديل الصلاحيات", "Edit Permissions"), icon: "Pencil" },
-  { id: "duplicate", label: l("نسخ الدور", "Duplicate Role"), icon: "Clipboard" },
-  { id: "delete", label: l("حذف الدور", "Delete Role"), icon: "Trash2", variant: "destructive" },
+  { id: "edit", label: m.ui_copy_edit_permissions_bc90fdaf(), icon: "Pencil" },
+  { id: "duplicate", label: m.ui_copy_duplicate_role_82f6bf4c(), icon: "Clipboard" },
+  { id: "delete", label: m.ui_copy_delete_role_981a0e24(), icon: "Trash2", variant: "destructive" },
 ];
 
 // Columns Definition
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 50, size: 50, readonly: true, pin: "left", align: "center" },
-  { id: "id", prop: "id", header: l("المعرف", "Role ID"), name: "Role ID", width: 160, size: 160, readonly: true, pin: "left", cellClass: "font-mono font-bold text-foreground text-xs" },
-  { id: "name_ar", prop: "name_ar", header: l("الاسم بالعربية", "Arabic Name"), name: "Arabic Name", width: 200, size: 200, readonly: true, cellClass: "font-semibold text-xs text-foreground" },
-  { id: "name", prop: "name", header: l("الاسم بالإنجليزية", "English Name"), name: "English Name", width: 200, size: 200, readonly: true, cellClass: "text-muted-foreground text-xs" },
-  { id: "typeBadge", prop: "typeBadge", header: l("نوع الدور", "Type"), name: "Type", width: 110, size: 110, type: "badge", align: "center", readonly: true },
-  { id: "permBadge", prop: "permBadge", header: l("الصلاحيات", "Permissions"), name: "Permissions", width: 120, size: 120, align: "center", readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "id", prop: "id", header: m.ui_copy_role_id_efa8c46a(), name: "Role ID", width: 160, size: 160, readonly: true, pin: "left", cellClass: "font-mono font-bold text-foreground text-xs" },
+  { id: "name_ar", prop: "name_ar", header: m.common_org_unit_name_ar(), name: "Arabic Name", width: 200, size: 200, readonly: true, cellClass: "font-semibold text-xs text-foreground" },
+  { id: "name", prop: "name", header: m.common_org_unit_name_en(), name: "English Name", width: 200, size: 200, readonly: true, cellClass: "text-muted-foreground text-xs" },
+  { id: "typeBadge", prop: "typeBadge", header: m.ui_copy_type_0d257656(), name: "Type", width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  { id: "permBadge", prop: "permBadge", header: m.settings_permissions_col_permissions(), name: "Permissions", width: 120, size: 120, align: "center", readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
   {
     id: "actions",
     prop: "actions",
-    header: m.common_je_col_actions ? m.common_je_col_actions() : "الإجراءات",
+    header: m.common_je_col_actions(),
     name: "Actions",
     width: 90,
     size: 90,
@@ -156,17 +156,17 @@ function openDuplicateRole(role: RoleDto) {
 
 async function handleDeleteRole(roleToDelete: RoleDto) {
   if (roleToDelete.is_system) {
-    toast.error(l("لا يمكن حذف أدوار النظام الأساسية", "System roles cannot be deleted"));
+    toast.error(m.ui_copy_system_roles_cannot_be_deleted_78a2db52());
     return;
   }
 
   const confirmed = await confirmStore.prompt({
-    title: (m.common_action_delete ? m.common_action_delete() : "حذف") + "؟",
+    title: (m.common_action_delete()) + "؟",
     description: l(
       `هل أنت متأكد من رغبتك في حذف الدور "${roleToDelete.name_ar || roleToDelete.name}"؟`,
       `Are you sure you want to delete role "${roleToDelete.name}"?`
     ),
-    confirmText: m.common_action_delete ? m.common_action_delete() : "حذف",
+    confirmText: m.common_action_delete(),
     variant: "destructive",
   });
 
@@ -176,9 +176,9 @@ async function handleDeleteRole(roleToDelete: RoleDto) {
     await api.deleteRole(roleToDelete.id);
     await queryClient.invalidateQueries({ queryKey: ["roles"] });
     roles = roles.filter((r) => r.id !== roleToDelete.id);
-    toast.success(l("تم حذف الدور بنجاح", "Role deleted successfully"));
+    toast.success(m.ui_copy_role_deleted_successfully_df286726());
   } catch (e: any) {
-    toast.error(e?.message || l("فشل حذف الدور", "Failed to delete role"));
+    toast.error(e?.message || m.ui_copy_failed_to_delete_role_50ad627e());
   }
 }
 
@@ -197,7 +197,7 @@ async function handleRoleSaved() {
         <Search size={14} class="absolute start-2.5 top-2.5 text-muted-foreground" />
         <Input
           type="search"
-          placeholder={l("بحث عن دور...", "Search roles...")}
+          placeholder={m.ui_copy_search_roles_9a3861a1()}
           class="ps-8 h-9 text-xs bg-card"
           bind:value={searchQuery}
         />
@@ -210,21 +210,21 @@ async function handleRoleSaved() {
           class="px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer {filterType === 'all' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
           onclick={() => (filterType = "all")}
         >
-          {l("الكل", "All")} ({totalCount})
+          {m.common_filter_all()} ({totalCount})
         </button>
         <button
           type="button"
           class="px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer {filterType === 'system' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
           onclick={() => (filterType = "system")}
         >
-          {l("نظام", "System")} ({systemCount})
+          {m.ui_copy_system_9f6abbe1()} ({systemCount})
         </button>
         <button
           type="button"
           class="px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer {filterType === 'custom' ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
           onclick={() => (filterType = "custom")}
         >
-          {l("مخصص", "Custom")} ({customCount})
+          {m.common_onboarding_break_custom()} ({customCount})
         </button>
       </div>
     </div>
@@ -236,7 +236,7 @@ async function handleRoleSaved() {
         size="icon"
         onclick={loadRoles}
         class="h-9 w-9 cursor-pointer"
-        title={m.common_control_refresh ? m.common_control_refresh() : "تحديث"}
+        title={m.common_control_refresh()}
       >
         <Refresh size={13} class={isLoading ? "animate-spin" : ""} />
       </Button>
@@ -248,7 +248,7 @@ async function handleRoleSaved() {
         class="h-9 text-xs flex items-center gap-1.5 font-bold cursor-pointer"
       >
         <Plus size={14} />
-        <span>{l("إضافة دور", "Add Role")}</span>
+        <span>{m.ui_copy_add_role_00aeff97()}</span>
       </Button>
     </div>
   </div>
@@ -267,10 +267,10 @@ async function handleRoleSaved() {
           <UserBadgeCheck size={28} />
         </div>
         <h3 class="text-sm font-bold text-foreground">
-          {l("لا توجد أدوار مطابقة للبحث", "No matching roles found")}
+          {m.ui_copy_no_matching_roles_found_f955bb5e()}
         </h3>
         <p class="text-xs text-muted-foreground max-w-xs">
-          {searchQuery ? l("جرب تعديل عبارة البحث أو الفلتر", "Try adjusting your search query or filter") : l("يمكنك البدء بإضافة دور مخصص جديد للنظام", "You can create a new custom role")}
+          {searchQuery ? m.ui_copy_try_adjusting_your_search_query_or_filter_07bb19e0() : m.ui_copy_you_can_create_a_new_custom_role_2bcf83d1()}
         </p>
       </div>
     {:else}

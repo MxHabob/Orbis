@@ -1,18 +1,18 @@
+use chrono::Utc;
 use std::sync::Arc;
 use uuid::Uuid;
-use chrono::Utc;
 
 use orbis_domain::entities::document::Document;
 use orbis_domain::entities::storage::{PresignMethod, PresignedUrlRequest};
-use orbis_domain::events::DomainEvent;
 use orbis_domain::errors::DomainError;
+use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
 
 use crate::context::RequestContext;
-use crate::ports::storage::{ObjectStream, StorageAdapter};
-use crate::ports::repositories::DocumentRepository;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::repositories::DocumentRepository;
+use crate::ports::storage::{ObjectStream, StorageAdapter};
 
 #[derive(Debug, Clone)]
 pub struct UploadFileInput {
@@ -61,11 +61,15 @@ impl FileStorageService {
         org_id: Uuid,
         input: UploadFileInput,
     ) -> Result<Document, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentWrite)
+            .await?;
 
         // 1. Basic validation
         if input.data.is_empty() {
-            return Err(DomainError::Validation("File payload cannot be empty".to_string()));
+            return Err(DomainError::Validation(
+                "File payload cannot be empty".to_string(),
+            ));
         }
 
         let doc_id = Uuid::new_v4();
@@ -73,9 +77,18 @@ impl FileStorageService {
         let extension = get_extension(&sanitized_name);
 
         // 2. Generate canonical storage key
-        let domain_folder = input.category.clone().unwrap_or_else(|| "general".to_string());
-        let entity_folder = input.entity_type.clone().unwrap_or_else(|| "unattached".to_string());
-        let entity_id_str = input.entity_id.map(|e| e.to_string()).unwrap_or_else(|| "root".to_string());
+        let domain_folder = input
+            .category
+            .clone()
+            .unwrap_or_else(|| "general".to_string());
+        let entity_folder = input
+            .entity_type
+            .clone()
+            .unwrap_or_else(|| "unattached".to_string());
+        let entity_id_str = input
+            .entity_id
+            .map(|e| e.to_string())
+            .unwrap_or_else(|| "root".to_string());
 
         let unit_part = if let Some(uid) = input.org_unit_id {
             format!("unit_{}/", uid)
@@ -85,17 +98,12 @@ impl FileStorageService {
 
         let storage_key = format!(
             "org_{}/{}{}/{}/{}/{}_{}",
-            org_id,
-            unit_part,
-            domain_folder,
-            entity_folder,
-            entity_id_str,
-            doc_id,
-            sanitized_name
+            org_id, unit_part, domain_folder, entity_folder, entity_id_str, doc_id, sanitized_name
         );
 
         // 3. Store physical binary via storage adapter
-        let metadata = self.storage_adapter
+        let metadata = self
+            .storage_adapter
             .put_bytes(&storage_key, &input.data, &input.mime_type)
             .await
             .map_err(|e| DomainError::Storage(format!("Physical storage failed: {e}")))?;
@@ -167,13 +175,21 @@ impl FileStorageService {
         ctx: &RequestContext,
         doc_id: Uuid,
     ) -> Result<(Document, Vec<u8>), DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentRead).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentRead)
+            .await?;
 
-        let doc = self.document_repo.find_by_id(doc_id).await?
+        let doc = self
+            .document_repo
+            .find_by_id(doc_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Document {doc_id} not found")))?;
 
         let key = doc.storage_key.as_deref().unwrap_or(&doc.file_path);
-        let bytes = self.storage_adapter.get_bytes(key).await
+        let bytes = self
+            .storage_adapter
+            .get_bytes(key)
+            .await
             .map_err(|e| DomainError::Storage(format!("Failed to retrieve file bytes: {e}")))?;
 
         Ok((doc, bytes))
@@ -185,14 +201,21 @@ impl FileStorageService {
         ctx: &RequestContext,
         doc_id: Uuid,
     ) -> Result<(Document, ObjectStream), DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentRead).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentRead)
+            .await?;
 
-        let doc = self.document_repo.find_by_id(doc_id).await?
+        let doc = self
+            .document_repo
+            .find_by_id(doc_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Document {doc_id} not found")))?;
 
         let key = doc.storage_key.as_deref().unwrap_or(&doc.file_path);
-        let stream = self.storage_adapter.get_object(key).await
-            .map_err(|e| DomainError::Storage(format!("Failed to retrieve file stream: {e}")))?;
+        let stream =
+            self.storage_adapter.get_object(key).await.map_err(|e| {
+                DomainError::Storage(format!("Failed to retrieve file stream: {e}"))
+            })?;
 
         Ok((doc, stream))
     }
@@ -204,20 +227,28 @@ impl FileStorageService {
         doc_id: Uuid,
         expires_in_seconds: u64,
     ) -> Result<String, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentRead).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentRead)
+            .await?;
 
-        let doc = self.document_repo.find_by_id(doc_id).await?
+        let doc = self
+            .document_repo
+            .find_by_id(doc_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Document {doc_id} not found")))?;
 
         let key = doc.storage_key.as_deref().unwrap_or(&doc.file_path);
 
         if self.storage_adapter.capabilities().supports_presigned_urls {
-            self.storage_adapter.generate_presigned_url(PresignedUrlRequest {
-                key: key.to_string(),
-                expires_in_seconds,
-                method: PresignMethod::Get,
-                content_type: doc.mime_type,
-            }).await.map_err(|e| DomainError::Storage(e.to_string()))
+            self.storage_adapter
+                .generate_presigned_url(PresignedUrlRequest {
+                    key: key.to_string(),
+                    expires_in_seconds,
+                    method: PresignMethod::Get,
+                    content_type: doc.mime_type,
+                })
+                .await
+                .map_err(|e| DomainError::Storage(e.to_string()))
         } else {
             // Local fallback path URL
             Ok(format!("/api/v1/storage/{}/file", doc_id))
@@ -231,9 +262,14 @@ impl FileStorageService {
         doc_id: Uuid,
         reason: Option<String>,
     ) -> Result<Document, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentWrite)
+            .await?;
 
-        let mut doc = self.document_repo.find_by_id(doc_id).await?
+        let mut doc = self
+            .document_repo
+            .find_by_id(doc_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Document {doc_id} not found")))?;
 
         let actor_id = match ctx.actor {
@@ -266,11 +302,16 @@ impl FileStorageService {
         ctx: &RequestContext,
         doc_id: Uuid,
     ) -> Result<Document, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentWrite)
+            .await?;
 
         self.document_repo.restore(doc_id).await?;
 
-        let doc = self.document_repo.find_by_id(doc_id).await?
+        let doc = self
+            .document_repo
+            .find_by_id(doc_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Document {doc_id} not found")))?;
 
         let event = DomainEvent::DocumentRestored {
@@ -289,7 +330,9 @@ impl FileStorageService {
         ctx: &RequestContext,
         doc_id: Uuid,
     ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentDelete).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentDelete)
+            .await?;
 
         let actor_id = match ctx.actor {
             orbis_domain::iam::actor::Actor::User(uid) => Some(uid),
@@ -313,9 +356,14 @@ impl FileStorageService {
         ctx: &RequestContext,
         doc_id: Uuid,
     ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentDelete).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentDelete)
+            .await?;
 
-        let doc = self.document_repo.find_by_id(doc_id).await?
+        let doc = self
+            .document_repo
+            .find_by_id(doc_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Document {doc_id} not found")))?;
 
         // 1. Delete physical object

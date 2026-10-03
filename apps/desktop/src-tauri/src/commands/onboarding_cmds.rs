@@ -3,12 +3,12 @@
 //! These commands provide 100% parity with the HTTP `/api/v1/onboarding/*` endpoints,
 //! running directly against the local SQLite/PostgreSQL engine via Tauri IPC.
 
-use tauri::State;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use crate::state::AppState;
 use super::make_ctx;
+use crate::state::AppState;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use tauri::State;
+use uuid::Uuid;
 
 // ── DTOs ────────────────────────────────────────────────────────
 
@@ -108,7 +108,9 @@ fn map_task_to_dto(t: orbis_app::services::SetupTask) -> SetupTaskDto {
             orbis_app::services::OnboardingTaskStatus::Completed => "completed".to_string(),
             orbis_app::services::OnboardingTaskStatus::Blocked => "blocked".to_string(),
             orbis_app::services::OnboardingTaskStatus::Optional => "optional".to_string(),
-            orbis_app::services::OnboardingTaskStatus::NotApplicable => "not_applicable".to_string(),
+            orbis_app::services::OnboardingTaskStatus::NotApplicable => {
+                "not_applicable".to_string()
+            }
         },
         dependencies: t.dependencies,
         progress: t.progress,
@@ -139,23 +141,37 @@ fn map_state_to_dto(s: orbis_app::services::OnboardingStateResponse) -> Onboardi
         required_progress_percentage: s.required_progress_percentage,
         is_institution_ready: s.is_institution_ready,
         tasks: s.tasks.into_iter().map(map_task_to_dto).collect(),
-        categories: s.categories.into_iter().map(|c| CategoryProgressDto {
-            category: match c.category {
-                orbis_app::services::OnboardingTaskCategory::Organization => "organization".to_string(),
-                orbis_app::services::OnboardingTaskCategory::Calendar => "calendar".to_string(),
-                orbis_app::services::OnboardingTaskCategory::Academics => "academics".to_string(),
-                orbis_app::services::OnboardingTaskCategory::Assessment => "assessment".to_string(),
-                orbis_app::services::OnboardingTaskCategory::Finance => "finance".to_string(),
-                orbis_app::services::OnboardingTaskCategory::Students => "students".to_string(),
-                orbis_app::services::OnboardingTaskCategory::Templates => "templates".to_string(),
-                orbis_app::services::OnboardingTaskCategory::Integrations => "integrations".to_string(),
-            },
-            label: c.label,
-            label_ar: c.label_ar,
-            total_tasks: c.total_tasks,
-            completed_tasks: c.completed_tasks,
-            progress_percentage: c.progress_percentage,
-        }).collect(),
+        categories: s
+            .categories
+            .into_iter()
+            .map(|c| CategoryProgressDto {
+                category: match c.category {
+                    orbis_app::services::OnboardingTaskCategory::Organization => {
+                        "organization".to_string()
+                    }
+                    orbis_app::services::OnboardingTaskCategory::Calendar => "calendar".to_string(),
+                    orbis_app::services::OnboardingTaskCategory::Academics => {
+                        "academics".to_string()
+                    }
+                    orbis_app::services::OnboardingTaskCategory::Assessment => {
+                        "assessment".to_string()
+                    }
+                    orbis_app::services::OnboardingTaskCategory::Finance => "finance".to_string(),
+                    orbis_app::services::OnboardingTaskCategory::Students => "students".to_string(),
+                    orbis_app::services::OnboardingTaskCategory::Templates => {
+                        "templates".to_string()
+                    }
+                    orbis_app::services::OnboardingTaskCategory::Integrations => {
+                        "integrations".to_string()
+                    }
+                },
+                label: c.label,
+                label_ar: c.label_ar,
+                total_tasks: c.total_tasks,
+                completed_tasks: c.completed_tasks,
+                progress_percentage: c.progress_percentage,
+            })
+            .collect(),
         recommended_next_task: s.recommended_next_task.map(map_task_to_dto),
         warnings: s.warnings,
     }
@@ -177,10 +193,15 @@ pub async fn onboarding_get_state(
     } else {
         // Fallback: fetch first org in the local database
         let orgs = state.org_repo.list_all().await.map_err(|e| e.to_string())?;
-        orgs.first().map(|o| o.id).ok_or_else(|| "No organization exists to onboard".to_string())?
+        orgs.first()
+            .map(|o| o.id)
+            .ok_or_else(|| "No organization exists to onboard".to_string())?
     };
 
-    let res = state.onboarding_service.get_state(target_org_id).await
+    let res = state
+        .onboarding_service
+        .get_state(target_org_id)
+        .await
         .map_err(|e| e.to_string())?;
 
     Ok(map_state_to_dto(res))
@@ -200,7 +221,9 @@ pub async fn onboarding_provision_defaults(
         ctx.tenant_id
     } else {
         let orgs = state.org_repo.list_all().await.map_err(|e| e.to_string())?;
-        orgs.first().map(|o| o.id).ok_or_else(|| "No organization exists to onboard".to_string())?
+        orgs.first()
+            .map(|o| o.id)
+            .ok_or_else(|| "No organization exists to onboard".to_string())?
     };
 
     let service_req = orbis_app::services::ProvisionDefaultsRequest {
@@ -214,7 +237,10 @@ pub async fn onboarding_provision_defaults(
         provision_tuition_fee_template: request.provision_tuition_fee_template,
     };
 
-    let result = state.onboarding_service.provision_blueprint_defaults(&ctx, target_org_id, service_req).await
+    let result = state
+        .onboarding_service
+        .provision_blueprint_defaults(&ctx, target_org_id, service_req)
+        .await
         .map_err(|e| e.to_string())?;
 
     Ok(ProvisionDefaultsResultDto {

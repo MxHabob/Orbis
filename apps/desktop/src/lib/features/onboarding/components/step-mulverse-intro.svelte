@@ -6,6 +6,7 @@
   Hero image at the top, concise highlights grid, and external license link.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { marked } from "marked";
 import { api } from "$lib/api/client";
@@ -115,14 +116,14 @@ async function openLicense() {
             title="Open official license agreement in browser"
           >
             <ShieldCheck size={13} class="text-primary" />
-            <span>{isRTL ? "اتفاقية الترخيص" : "License Agreement"}</span>
+            <span>{m.ui_onboarding_mulverse_intro_license_agreement()}</span>
           </Button>
         </div>
 
         <h1 class="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
           {activeRelease
             ? (isRTL ? activeRelease.title_ar : activeRelease.title_en)
-            : (isRTL ? "منظومة أوربيس للتشغيل والسيادة المؤسسية" : "Orbis Sovereign Enterprise Platform")}
+            : (m.ui_onboarding_mulverse_intro_orbis_sovereign_enterprise_platform())}
         </h1>
 
         <p class="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-3xl">
@@ -137,7 +138,7 @@ async function openLicense() {
         <div class="flex items-center justify-between border-b border-border/40 pb-2">
           <div class="flex items-center gap-2">
             <span class="text-xs font-bold text-foreground font-mono">
-              {isRTL ? "المزايا والقدرات التشغيلية المعتمدة" : "Operational Capabilities"}
+              {m.ui_onboarding_mulverse_intro_operational_capabilities()}
             </span>
             {#if activeRelease}
               <span class="text-[10px] font-mono text-muted-foreground flex items-center gap-1">
@@ -156,7 +157,7 @@ async function openLicense() {
               class="h-6 px-2 text-[10px] font-mono text-primary hover:bg-primary/5 rounded"
             >
               <Sparkles size={11} class="me-1" />
-              <span>{showFullNotes ? (isRTL ? "عرض القائمة" : "Show List") : (isRTL ? "سجل التغييرات الكامل" : "Full Changelog")}</span>
+              <span>{showFullNotes ? (m.ui_onboarding_mulverse_intro_show_list()) : (m.ui_onboarding_mulverse_intro_full_changelog())}</span>
             </Button>
           {/if}
         </div>

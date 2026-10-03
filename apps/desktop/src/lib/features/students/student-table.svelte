@@ -69,7 +69,7 @@ const baseColumns: OrbisColumnDef[] = [
   {
     id: "national_id",
     prop: "national_id",
-    header: l("الهوية / الجواز", "National ID / Passport"),
+    header: m.ui_copy_national_id_passport_f63e7620(),
     name: "National ID",
     width: 140,
     size: 140,
@@ -99,7 +99,7 @@ const baseColumns: OrbisColumnDef[] = [
   {
     id: "standing",
     prop: "standing",
-    header: l("الحالة الأكاديمية", "Academic Standing"),
+    header: m.ui_copy_academic_standing_04c8e5f1(),
     name: "Standing",
     width: 140,
     size: 140,
@@ -130,7 +130,7 @@ const baseColumns: OrbisColumnDef[] = [
   {
     id: "created_at_display",
     prop: "created_at_display",
-    header: l("تاريخ الإنشاء", "Created At"),
+    header: m.ui_copy_created_at_01f6ea5f(),
     name: "Created At",
     width: 140,
     size: 140,
@@ -140,7 +140,7 @@ const baseColumns: OrbisColumnDef[] = [
   {
     id: "updated_at_display",
     prop: "updated_at_display",
-    header: l("آخر تحديث", "Updated At"),
+    header: m.ui_copy_updated_at_ba0d0a9f(),
     name: "Updated At",
     width: 140,
     size: 140,
@@ -175,13 +175,13 @@ let activeFilter = $state<UniversalFilter>({
 
 function formatStanding(standing: string): string {
   switch (standing) {
-    case "good_standing": return l("وضع جيد", "Good Standing");
-    case "honor_list": return l("لوحة الشرف", "Honor List");
-    case "warning_1": return l("إنذار 1", "Warning 1");
-    case "warning_2": return l("إنذار 2", "Warning 2");
-    case "warning_3": return l("إنذار 3", "Warning 3");
-    case "probation": return l("تحت الملاحظة", "Probation");
-    case "dismissed": return l("مفصول أكاديمياً", "Dismissed");
+    case "good_standing": return m.ui_copy_good_standing_97d50066();
+    case "honor_list": return m.ui_copy_honor_list_2fbe9f9c();
+    case "warning_1": return m.ui_copy_warning_1_d56eb3db();
+    case "warning_2": return m.ui_copy_warning_2_7d80f6e1();
+    case "warning_3": return m.ui_copy_warning_3_9d03bb80();
+    case "probation": return m.ui_copy_probation_fe016d19();
+    case "dismissed": return m.ui_copy_dismissed_99b10f56();
     default: return standing || "—";
   }
 }

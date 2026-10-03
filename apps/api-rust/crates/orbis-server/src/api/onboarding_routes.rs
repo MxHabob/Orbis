@@ -1,17 +1,17 @@
 //! Onboarding Routes — HTTP endpoints for post-bootstrap institution configuration.
 
 use axum::{
+    Json, Router,
     extract::State,
     routing::{get, post},
-    Json, Router,
 };
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
-use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
+use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 
 // ── DTOs ────────────────────────────────────────────────────────
@@ -112,7 +112,9 @@ fn map_task_to_dto(t: orbis_app::services::SetupTask) -> SetupTaskDto {
             orbis_app::services::OnboardingTaskStatus::Completed => "completed".to_string(),
             orbis_app::services::OnboardingTaskStatus::Blocked => "blocked".to_string(),
             orbis_app::services::OnboardingTaskStatus::Optional => "optional".to_string(),
-            orbis_app::services::OnboardingTaskStatus::NotApplicable => "not_applicable".to_string(),
+            orbis_app::services::OnboardingTaskStatus::NotApplicable => {
+                "not_applicable".to_string()
+            }
         },
         dependencies: t.dependencies,
         progress: t.progress,
@@ -143,23 +145,37 @@ fn map_state_to_dto(s: orbis_app::services::OnboardingStateResponse) -> Onboardi
         required_progress_percentage: s.required_progress_percentage,
         is_institution_ready: s.is_institution_ready,
         tasks: s.tasks.into_iter().map(map_task_to_dto).collect(),
-        categories: s.categories.into_iter().map(|c| CategoryProgressDto {
-            category: match c.category {
-                orbis_app::services::OnboardingTaskCategory::Organization => "organization".to_string(),
-                orbis_app::services::OnboardingTaskCategory::Calendar => "calendar".to_string(),
-                orbis_app::services::OnboardingTaskCategory::Academics => "academics".to_string(),
-                orbis_app::services::OnboardingTaskCategory::Assessment => "assessment".to_string(),
-                orbis_app::services::OnboardingTaskCategory::Finance => "finance".to_string(),
-                orbis_app::services::OnboardingTaskCategory::Students => "students".to_string(),
-                orbis_app::services::OnboardingTaskCategory::Templates => "templates".to_string(),
-                orbis_app::services::OnboardingTaskCategory::Integrations => "integrations".to_string(),
-            },
-            label: c.label,
-            label_ar: c.label_ar,
-            total_tasks: c.total_tasks,
-            completed_tasks: c.completed_tasks,
-            progress_percentage: c.progress_percentage,
-        }).collect(),
+        categories: s
+            .categories
+            .into_iter()
+            .map(|c| CategoryProgressDto {
+                category: match c.category {
+                    orbis_app::services::OnboardingTaskCategory::Organization => {
+                        "organization".to_string()
+                    }
+                    orbis_app::services::OnboardingTaskCategory::Calendar => "calendar".to_string(),
+                    orbis_app::services::OnboardingTaskCategory::Academics => {
+                        "academics".to_string()
+                    }
+                    orbis_app::services::OnboardingTaskCategory::Assessment => {
+                        "assessment".to_string()
+                    }
+                    orbis_app::services::OnboardingTaskCategory::Finance => "finance".to_string(),
+                    orbis_app::services::OnboardingTaskCategory::Students => "students".to_string(),
+                    orbis_app::services::OnboardingTaskCategory::Templates => {
+                        "templates".to_string()
+                    }
+                    orbis_app::services::OnboardingTaskCategory::Integrations => {
+                        "integrations".to_string()
+                    }
+                },
+                label: c.label,
+                label_ar: c.label_ar,
+                total_tasks: c.total_tasks,
+                completed_tasks: c.completed_tasks,
+                progress_percentage: c.progress_percentage,
+            })
+            .collect(),
         recommended_next_task: s.recommended_next_task.map(map_task_to_dto),
         warnings: s.warnings,
     }
@@ -184,7 +200,10 @@ pub async fn get_onboarding_state(
     auth: AuthContext,
 ) -> Result<Json<ApiResponse<OnboardingStateDto>>, ApiError> {
     let org_id = auth.tenant_id;
-    let res = state.onboarding_service.get_state(org_id).await
+    let res = state
+        .onboarding_service
+        .get_state(org_id)
+        .await
         .map_err(ApiError::from)?;
 
     Ok(ApiResponse::ok(map_state_to_dto(res)))
@@ -220,7 +239,10 @@ pub async fn provision_blueprint_defaults(
         provision_tuition_fee_template: req.provision_tuition_fee_template,
     };
 
-    let result = state.onboarding_service.provision_blueprint_defaults(&auth.0, org_id, service_req).await
+    let result = state
+        .onboarding_service
+        .provision_blueprint_defaults(&auth.0, org_id, service_req)
+        .await
         .map_err(ApiError::from)?;
 
     Ok(ApiResponse::ok(ProvisionDefaultsResultDto {
@@ -235,5 +257,8 @@ pub async fn provision_blueprint_defaults(
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/onboarding/state", get(get_onboarding_state))
-        .route("/api/v1/onboarding/provision", post(provision_blueprint_defaults))
+        .route(
+            "/api/v1/onboarding/provision",
+            post(provision_blueprint_defaults),
+        )
 }

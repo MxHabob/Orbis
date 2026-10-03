@@ -89,7 +89,7 @@ function jumpToState(index: number) {
             {/if}
           </div>
           <span class="text-[10px] font-medium">
-            {isAr ? m.template_history_initial() : "Initial State"}
+            {m.template_history_initial()}
           </span>
         </button>
 
@@ -139,7 +139,7 @@ function jumpToState(index: number) {
   <!-- Footer stats -->
   <div class="px-3 py-1.5 border-t border-border/30 bg-muted/10 flex items-center justify-between">
     <span class="text-[8px] text-muted-foreground">
-      {history.length} {isAr ? m.template_history_command() : "commands"}
+      {history.length} {m.template_history_commands()}
     </span>
     <span class="text-[8px] text-muted-foreground">
       {currentIndex + 1}/{history.length}

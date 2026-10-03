@@ -1,32 +1,32 @@
 //! Tauri command registration — all IPC handlers.
 
-pub mod org_cmds;
-pub mod iam_cmds;
-pub mod calendar_cmds;
 pub mod academic_cmds;
-pub mod student_cmds;
-pub mod employee_cmds;
-pub mod group_cmds;
-pub mod scheduling_cmds;
-pub mod assessment_cmds;
-pub mod exam_cmds;
-pub mod finance_cmds;
-pub mod document_cmds;
-pub mod folder_cmds;
-pub mod storage_cmds;
-pub mod integration_cmds;
-pub mod workflow_cmds;
-pub mod progression_cmds;
-pub mod report_cmds;
-pub mod template_cmds;
-pub mod window_cmds;
-pub mod connection_cmds;
-pub mod database_cmds;
-pub mod system_cmds;
 pub mod ai_cmds;
+pub mod assessment_cmds;
 pub mod autopilot_cmds;
 pub mod bootstrap_cmds;
+pub mod calendar_cmds;
+pub mod connection_cmds;
+pub mod database_cmds;
+pub mod document_cmds;
+pub mod employee_cmds;
+pub mod exam_cmds;
+pub mod finance_cmds;
+pub mod folder_cmds;
+pub mod group_cmds;
+pub mod iam_cmds;
+pub mod integration_cmds;
 pub mod onboarding_cmds;
+pub mod org_cmds;
+pub mod progression_cmds;
+pub mod report_cmds;
+pub mod scheduling_cmds;
+pub mod storage_cmds;
+pub mod student_cmds;
+pub mod system_cmds;
+pub mod template_cmds;
+pub mod window_cmds;
+pub mod workflow_cmds;
 
 use tauri::generate_handler;
 
@@ -286,7 +286,6 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         storage_cmds::storage_purge_document,
         storage_cmds::storage_list_archived,
         storage_cmds::storage_list_trash,
-
         // ── Integration ─────────────────────────────────────────
         integration_cmds::integration_connect_app,
         integration_cmds::integration_list,

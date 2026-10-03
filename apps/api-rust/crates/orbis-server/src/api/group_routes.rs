@@ -1,18 +1,22 @@
 //! User Groups routes — CRUD, Member management, Bulk assignment, Permission matrix.
 
-use axum::{extract::{State, Path}, routing::{get, post, put, delete}, Json, Router};
+use axum::{
+    Json, Router,
+    extract::{Path, State},
+    routing::{delete, get, post, put},
+};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
+use super::{ApiError, ApiResponse};
 use crate::state::AppState;
-use orbis_domain::entities::group::{GroupDetail, GroupMemberInfo};
 use orbis_app::services::group_service::{
-    CreateGroupInput, UpdateGroupInput, BulkAssignGroupInput
+    BulkAssignGroupInput, CreateGroupInput, UpdateGroupInput,
 };
+use orbis_domain::entities::group::{GroupDetail, GroupMemberInfo};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct GroupDetailDto {
@@ -128,7 +132,10 @@ pub async fn create_group(
         description: p.description,
         permissions: p.permissions,
     };
-    let detail = state.group_service.create_group(&ctx, org_id, input).await?;
+    let detail = state
+        .group_service
+        .create_group(&ctx, org_id, input)
+        .await?;
     Ok(ApiResponse::ok(detail.into()))
 }
 
@@ -154,7 +161,10 @@ pub async fn get_group(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<GroupDetailDto>>, ApiError> {
-    let detail = state.group_service.get_group(&ctx, id).await?
+    let detail = state
+        .group_service
+        .get_group(&ctx, id)
+        .await?
         .ok_or_else(|| ApiError::not_found(format!("Group {} not found", id)))?;
     Ok(ApiResponse::ok(detail.into()))
 }
@@ -248,10 +258,16 @@ pub async fn bulk_assign_group(
     State(state): State<AppState>,
     Json(p): Json<BulkAssignGroupRequest>,
 ) -> Result<Json<ApiResponse<u64>>, ApiError> {
-    let count = state.group_service.bulk_assign_group(&ctx, BulkAssignGroupInput {
-        group_id: p.group_id,
-        user_ids: p.user_ids,
-    }).await?;
+    let count = state
+        .group_service
+        .bulk_assign_group(
+            &ctx,
+            BulkAssignGroupInput {
+                group_id: p.group_id,
+                user_ids: p.user_ids,
+            },
+        )
+        .await?;
     Ok(ApiResponse::ok(count))
 }
 
@@ -266,7 +282,10 @@ pub async fn set_group_permissions(
     Path(id): Path<Uuid>,
     Json(p): Json<SetGroupPermissionsRequest>,
 ) -> Result<Json<ApiResponse<bool>>, ApiError> {
-    state.group_service.set_permissions(&ctx, id, p.permissions).await?;
+    state
+        .group_service
+        .set_permissions(&ctx, id, p.permissions)
+        .await?;
     Ok(ApiResponse::ok(true))
 }
 
@@ -274,8 +293,17 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/groups", post(create_group).get(list_groups))
         .route("/api/v1/groups/bulk-assign", post(bulk_assign_group))
-        .route("/api/v1/groups/:id", get(get_group).patch(update_group).delete(delete_group))
-        .route("/api/v1/groups/:id/members", get(get_group_members).post(add_group_member))
-        .route("/api/v1/groups/:id/members/:user_id", delete(remove_group_member))
+        .route(
+            "/api/v1/groups/:id",
+            get(get_group).patch(update_group).delete(delete_group),
+        )
+        .route(
+            "/api/v1/groups/:id/members",
+            get(get_group_members).post(add_group_member),
+        )
+        .route(
+            "/api/v1/groups/:id/members/:user_id",
+            delete(remove_group_member),
+        )
         .route("/api/v1/groups/:id/permissions", put(set_group_permissions))
 }

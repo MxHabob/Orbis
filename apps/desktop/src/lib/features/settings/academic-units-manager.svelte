@@ -92,7 +92,7 @@ function getUnitLocation(unit: any): string {
     return l(parent.name_ar, parent.name) || parent.name || "—";
   }
   if (unit.unit_type === "campus" || !unit.parent_id) {
-    return isAr() ? "المقر الرئيسي / الفرع الأساسي" : "Main Campus / Primary Site";
+    return m.settings_units_primary_campus();
   }
   return "—";
 }
@@ -522,12 +522,12 @@ function escapeHtml(text: string): string {
         <Grid>
           <TableHeader>
             <TableRow class="hover:bg-transparent">
-              <TableHead class="text-start text-xs font-bold text-muted-foreground">{isAr() ? "الرمز" : "Code"}</TableHead>
-              <TableHead class="text-start text-xs font-bold text-muted-foreground">{isAr() ? "الوحدة التنظيمية" : "Name"}</TableHead>
-              <TableHead class="text-start text-xs font-bold text-muted-foreground">{isAr() ? "النوع" : "Type"}</TableHead>
-              <TableHead class="text-start text-xs font-bold text-muted-foreground">{isAr() ? "السعة" : "Capacity"}</TableHead>
-              <TableHead class="text-start text-xs font-bold text-muted-foreground">{isAr() ? "الموقع والمبنى" : "Location"}</TableHead>
-              <TableHead class="text-end text-xs font-bold text-muted-foreground px-6">{isAr() ? "الإجراءات" : "Actions"}</TableHead>
+              <TableHead class="text-start text-xs font-bold text-muted-foreground">{m.settings_units_column_code()}</TableHead>
+              <TableHead class="text-start text-xs font-bold text-muted-foreground">{m.settings_units_column_name()}</TableHead>
+              <TableHead class="text-start text-xs font-bold text-muted-foreground">{m.settings_units_column_type()}</TableHead>
+              <TableHead class="text-start text-xs font-bold text-muted-foreground">{m.settings_units_column_capacity()}</TableHead>
+              <TableHead class="text-start text-xs font-bold text-muted-foreground">{m.settings_units_column_location()}</TableHead>
+              <TableHead class="text-end text-xs font-bold text-muted-foreground px-6">{m.settings_units_column_actions()}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

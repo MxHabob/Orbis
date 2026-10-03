@@ -1,16 +1,18 @@
 //! Tauri IPC commands — Workflow & Academic Override Requests.
 
-use tauri::State;
-use serde::{Deserialize, Serialize};
-use crate::state::AppState;
-use uuid::Uuid;
-use orbis_domain::entities::override_request::{
-    AcademicOverrideRequest, OverrideType, RiskLevel, OverrideStatus, ApprovalStep,
-};
-use orbis_app::services::SubmitOverrideInput;
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
-fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
+use crate::state::AppState;
+use orbis_app::services::SubmitOverrideInput;
+use orbis_domain::entities::override_request::{
+    AcademicOverrideRequest, ApprovalStep, OverrideStatus, OverrideType, RiskLevel,
+};
+use serde::{Deserialize, Serialize};
+use tauri::State;
+use uuid::Uuid;
+fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
+    ApiResponse { data }
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ApprovalStepDto {
@@ -110,22 +112,26 @@ fn override_to_dto(req: AcademicOverrideRequest) -> OverrideRequestDto {
             OverrideStatus::Expired => "expired".into(),
         },
         current_approver_role: req.current_approver_role,
-        approval_chain: req.approval_chain.into_iter().map(|s| ApprovalStepDto {
-            step_order: s.step_order,
-            approver_role: s.approver_role,
-            status: match s.status {
-                OverrideStatus::Pending => "pending".into(),
-                OverrideStatus::Approved => "approved".into(),
-                OverrideStatus::Rejected => "rejected".into(),
-                OverrideStatus::Executed => "executed".into(),
-                OverrideStatus::Cancelled => "cancelled".into(),
-                OverrideStatus::Expired => "expired".into(),
-            },
-            approver_id: s.approver_id.map(|u| u.to_string()),
-            approver_name: s.approver_name,
-            decision_at: s.decision_at.map(|d| d.to_rfc3339()),
-            notes: s.notes,
-        }).collect(),
+        approval_chain: req
+            .approval_chain
+            .into_iter()
+            .map(|s| ApprovalStepDto {
+                step_order: s.step_order,
+                approver_role: s.approver_role,
+                status: match s.status {
+                    OverrideStatus::Pending => "pending".into(),
+                    OverrideStatus::Approved => "approved".into(),
+                    OverrideStatus::Rejected => "rejected".into(),
+                    OverrideStatus::Executed => "executed".into(),
+                    OverrideStatus::Cancelled => "cancelled".into(),
+                    OverrideStatus::Expired => "expired".into(),
+                },
+                approver_id: s.approver_id.map(|u| u.to_string()),
+                approver_name: s.approver_name,
+                decision_at: s.decision_at.map(|d| d.to_rfc3339()),
+                notes: s.notes,
+            })
+            .collect(),
         resolved_by: req.resolved_by.map(|u| u.to_string()),
         resolved_by_name: req.resolved_by_name,
         resolved_at: req.resolved_at.map(|d| d.to_rfc3339()),
@@ -182,15 +188,19 @@ pub async fn workflow_submit_override(
             notes: None,
         }]
     } else {
-        request.approval_chain.into_iter().map(|s| ApprovalStep {
-            step_order: s.step_order,
-            approver_role: s.approver_role,
-            status: OverrideStatus::Pending,
-            approver_id: s.approver_id.and_then(|u| Uuid::parse_str(&u).ok()),
-            approver_name: s.approver_name,
-            decision_at: None,
-            notes: s.notes,
-        }).collect()
+        request
+            .approval_chain
+            .into_iter()
+            .map(|s| ApprovalStep {
+                step_order: s.step_order,
+                approver_role: s.approver_role,
+                status: OverrideStatus::Pending,
+                approver_id: s.approver_id.and_then(|u| Uuid::parse_str(&u).ok()),
+                approver_name: s.approver_name,
+                decision_at: None,
+                notes: s.notes,
+            })
+            .collect()
     };
 
     let input = SubmitOverrideInput {
@@ -208,7 +218,8 @@ pub async fn workflow_submit_override(
         metadata: request.metadata,
     };
 
-    let result = state.workflow_service
+    let result = state
+        .workflow_service
         .submit_override(&ctx, ctx.tenant_id, input)
         .await
         .map_err(|e| e.to_string())?;
@@ -228,7 +239,8 @@ pub async fn workflow_approve_override(
         _ => ctx.tenant_id,
     };
 
-    let result = state.workflow_service
+    let result = state
+        .workflow_service
         .approve_override(&ctx, req_id, approver_id, None, request.notes)
         .await
         .map_err(|e| e.to_string())?;
@@ -248,7 +260,8 @@ pub async fn workflow_reject_override(
         _ => ctx.tenant_id,
     };
 
-    let result = state.workflow_service
+    let result = state
+        .workflow_service
         .reject_override(&ctx, req_id, rejecter_id, None, request.reason)
         .await
         .map_err(|e| e.to_string())?;
@@ -262,7 +275,8 @@ pub async fn workflow_list_overrides(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<OverrideRequestDto>>, String> {
     let ctx = make_ctx(&state);
-    let items = state.workflow_service
+    let items = state
+        .workflow_service
         .list_overrides(ctx.tenant_id, status.as_deref())
         .await
         .map_err(|e| e.to_string())?;
@@ -276,7 +290,8 @@ pub async fn workflow_get_override(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<OverrideRequestDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    let item = state.workflow_service
+    let item = state
+        .workflow_service
         .get_override(uid)
         .await
         .map_err(|e| e.to_string())?

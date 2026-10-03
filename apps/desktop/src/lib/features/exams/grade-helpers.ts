@@ -1,4 +1,5 @@
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
+import * as m from "$lib/paraglide/messages";
 
 export interface GradeCell {
   grade_id?: string | null;
@@ -113,8 +114,8 @@ export function buildGradeColumns(
     {
       id: locale === "ar" ? "student_name_ar" : "student_name",
       prop: locale === "ar" ? "student_name_ar" : "student_name",
-      header: labels.studentName || (locale === "ar" ? "الطالب" : "Student"),
-      name: labels.studentName || (locale === "ar" ? "الطالب" : "Student"),
+      header: labels.studentName || m.common_grade_column_student(),
+      name: labels.studentName || m.common_grade_column_student(),
       width: 200,
       size: 200,
       type: "avatar",
@@ -152,8 +153,8 @@ export function buildGradeColumns(
     {
       id: "total",
       prop: "total",
-      header: labels.total || (locale === "ar" ? "المجموع" : "Total"),
-      name: labels.total || (locale === "ar" ? "المجموع" : "Total"),
+      header: labels.total || m.common_grades_col_total(),
+      name: labels.total || m.common_grades_col_total(),
       width: 85,
       size: 85,
       type: "number",
@@ -176,8 +177,8 @@ export function buildGradeColumns(
     {
       id: "grade_letter",
       prop: "grade_letter",
-      header: labels.grade || (locale === "ar" ? "التقدير" : "Grade"),
-      name: labels.grade || (locale === "ar" ? "التقدير" : "Grade"),
+      header: labels.grade || m.common_grade(),
+      name: labels.grade || m.common_grade(),
       width: 85,
       size: 85,
       type: "badge",

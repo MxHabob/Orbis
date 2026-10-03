@@ -24,7 +24,7 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import { Plus, Trash, User } from "@orbis/icons";
-import { l } from "$lib/core/i18n";
+
 import type { StudentFormState } from "../form-state.svelte";
 
 let { state }: { state: StudentFormState } = $props();
@@ -195,15 +195,15 @@ let { state }: { state: StudentFormState } = $props();
             </div>
             <div class="w-full md:w-120 shrink-0 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Input bind:value={guardian.occupation} class="h-9 w-full bg-background" placeholder={m.common_form_guardian_job_placeholder()} />
-              <Input bind:value={guardian.employer} class="h-9 w-full bg-background" placeholder={l("جهة العمل / الشركة", "Employer / Company")} />
+              <Input bind:value={guardian.employer} class="h-9 w-full bg-background" placeholder={m.ui_copy_employer_company_e5ea9ad3()} />
             </div>
           </div>
 
           <!-- Work Phone -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <Label class="text-xs font-semibold text-foreground">{l("هاتف العمل", "Work Phone")}</Label>
-              <span class="text-[11px] text-muted-foreground leading-relaxed">{l("رقم هاتف مقر عمل ولي الأمر للضرورة", "Guardian workplace phone number")}</span>
+              <Label class="text-xs font-semibold text-foreground">{m.ui_copy_work_phone_993d8321()}</Label>
+              <span class="text-[11px] text-muted-foreground leading-relaxed">{m.ui_copy_guardian_workplace_phone_number_cc339fc4()}</span>
             </div>
             <div class="w-full md:w-120 shrink-0">
               <Input bind:value={guardian.work_phone} class="h-9 w-full bg-background font-mono text-left" placeholder="01-234567" />
@@ -235,7 +235,7 @@ let { state }: { state: StudentFormState } = $props();
 
                 <div class="flex items-center gap-2">
                   <Checkbox id={`pickup_${index}`} checked={guardian.is_authorized_pickup} onCheckedChange={(val) => guardian.is_authorized_pickup = !!val} />
-                  <Label for={`pickup_${index}`} class="text-xs cursor-pointer">{l("مصرح بالاستلام", "Authorized Pickup")}</Label>
+                  <Label for={`pickup_${index}`} class="text-xs cursor-pointer">{m.ui_copy_authorized_pickup_5063002f()}</Label>
                 </div>
               </div>
 

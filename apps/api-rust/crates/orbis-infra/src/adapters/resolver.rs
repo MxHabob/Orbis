@@ -30,8 +30,14 @@ impl IntegrationResolver {
         Self { integration_repo }
     }
 
-    async fn resolve_solver_adapter(&self, ctx: &RequestContext) -> Result<RemoteTimefoldSolver, DomainError> {
-        let configs = self.integration_repo.find_configs_by_org(ctx.tenant_id).await?;
+    async fn resolve_solver_adapter(
+        &self,
+        ctx: &RequestContext,
+    ) -> Result<RemoteTimefoldSolver, DomainError> {
+        let configs = self
+            .integration_repo
+            .find_configs_by_org(ctx.tenant_id)
+            .await?;
         let active_solver = configs.into_iter().find(|c| {
             (c.category == "automation" || c.category == "scheduling")
                 && (c.provider_name == "solver_service" || c.provider_name == "solver-service")
@@ -57,15 +63,29 @@ impl IntegrationResolver {
         }
     }
 
-    async fn resolve_llm_adapter(&self, ctx: &RequestContext) -> Result<Box<dyn LlmGatewayPort>, DomainError> {
-        let configs = self.integration_repo.find_configs_by_org(ctx.tenant_id).await?;
+    async fn resolve_llm_adapter(
+        &self,
+        ctx: &RequestContext,
+    ) -> Result<Box<dyn LlmGatewayPort>, DomainError> {
+        let configs = self
+            .integration_repo
+            .find_configs_by_org(ctx.tenant_id)
+            .await?;
         let active_ai = configs.into_iter().find(|c| {
-            (c.category == "ai" || c.category == "llm" || c.category == "ai-provider" || c.category == "ai_provider" || c.category == "ai-gateway") && c.is_enabled
+            (c.category == "ai"
+                || c.category == "llm"
+                || c.category == "ai-provider"
+                || c.category == "ai_provider"
+                || c.category == "ai-gateway")
+                && c.is_enabled
         });
 
         match active_ai {
             Some(config) => {
-                let secrets = self.integration_repo.get_secrets_by_config(config.id).await?;
+                let secrets = self
+                    .integration_repo
+                    .get_secrets_by_config(config.id)
+                    .await?;
                 let provider = config.provider_name.trim().to_lowercase();
                 let settings = config.settings.as_ref();
 
@@ -100,39 +120,86 @@ impl IntegrationResolver {
                 // Find API secret key
                 let api_key = secrets
                     .into_iter()
-                    .find(|s| s.key_name == "api_key" || s.key_name == "secret_key" || s.key_name == "token")
+                    .find(|s| {
+                        s.key_name == "api_key"
+                            || s.key_name == "secret_key"
+                            || s.key_name == "token"
+                    })
                     .map(|s| s.secret_key)
                     .filter(|k| !k.trim().is_empty());
 
                 // Resolve protocol and standard base endpoint
                 let (protocol, default_base_url) = match protocol_override.as_deref() {
-                    Some("gemini") => (LlmProviderProtocol::Gemini, "https://generativelanguage.googleapis.com"),
-                    Some("anthropic") | Some("claude") => (LlmProviderProtocol::AnthropicClaude, "https://api.anthropic.com"),
-                    Some("openai") | Some("openai_compatible") => (LlmProviderProtocol::OpenAiCompatible, "https://api.openai.com"),
+                    Some("gemini") => (
+                        LlmProviderProtocol::Gemini,
+                        "https://generativelanguage.googleapis.com",
+                    ),
+                    Some("anthropic") | Some("claude") => (
+                        LlmProviderProtocol::AnthropicClaude,
+                        "https://api.anthropic.com",
+                    ),
+                    Some("openai") | Some("openai_compatible") => (
+                        LlmProviderProtocol::OpenAiCompatible,
+                        "https://api.openai.com",
+                    ),
                     _ => {
                         // Infer from provider name
-                        if provider == "gemini" || provider == "gemini-ai" || provider == "google" || provider == "google-gemini" {
-                            (LlmProviderProtocol::Gemini, "https://generativelanguage.googleapis.com")
+                        if provider == "gemini"
+                            || provider == "gemini-ai"
+                            || provider == "google"
+                            || provider == "google-gemini"
+                        {
+                            (
+                                LlmProviderProtocol::Gemini,
+                                "https://generativelanguage.googleapis.com",
+                            )
                         } else if provider == "anthropic" || provider == "claude" {
-                            (LlmProviderProtocol::AnthropicClaude, "https://api.anthropic.com")
+                            (
+                                LlmProviderProtocol::AnthropicClaude,
+                                "https://api.anthropic.com",
+                            )
                         } else if provider == "deepseek" {
-                            (LlmProviderProtocol::OpenAiCompatible, "https://api.deepseek.com")
+                            (
+                                LlmProviderProtocol::OpenAiCompatible,
+                                "https://api.deepseek.com",
+                            )
                         } else if provider == "groq" {
-                            (LlmProviderProtocol::OpenAiCompatible, "https://api.groq.com/openai")
+                            (
+                                LlmProviderProtocol::OpenAiCompatible,
+                                "https://api.groq.com/openai",
+                            )
                         } else if provider == "mistral" {
-                            (LlmProviderProtocol::OpenAiCompatible, "https://api.mistral.ai")
+                            (
+                                LlmProviderProtocol::OpenAiCompatible,
+                                "https://api.mistral.ai",
+                            )
                         } else if provider == "openrouter" {
-                            (LlmProviderProtocol::OpenAiCompatible, "https://openrouter.ai/api/v1")
-                        } else if provider == "orbis" || provider == "ollama" || provider == "local" || provider == "vllm" || provider == "lmstudio" {
-                            (LlmProviderProtocol::OpenAiCompatible, "http://localhost:11434")
+                            (
+                                LlmProviderProtocol::OpenAiCompatible,
+                                "https://openrouter.ai/api/v1",
+                            )
+                        } else if provider == "orbis"
+                            || provider == "ollama"
+                            || provider == "local"
+                            || provider == "vllm"
+                            || provider == "lmstudio"
+                        {
+                            (
+                                LlmProviderProtocol::OpenAiCompatible,
+                                "http://localhost:11434",
+                            )
                         } else {
-                            (LlmProviderProtocol::OpenAiCompatible, "https://api.openai.com")
+                            (
+                                LlmProviderProtocol::OpenAiCompatible,
+                                "https://api.openai.com",
+                            )
                         }
                     }
                 };
 
                 let endpoint_url = custom_endpoint.unwrap_or_else(|| default_base_url.to_string());
-                let is_openrouter = provider == "openrouter" || endpoint_url.contains("openrouter.ai");
+                let is_openrouter =
+                    provider == "openrouter" || endpoint_url.contains("openrouter.ai");
 
                 let mut adapter_config = LlmAdapterConfig::new(protocol, endpoint_url)
                     .with_api_key(api_key)
@@ -146,9 +213,13 @@ impl IntegrationResolver {
                         .with_header("X-Title", "Orbis OS");
                 }
 
-                if let Some(org_id) = settings.and_then(|s| s.get("organization_id")).and_then(|v| v.as_str()) {
+                if let Some(org_id) = settings
+                    .and_then(|s| s.get("organization_id"))
+                    .and_then(|v| v.as_str())
+                {
                     if !org_id.trim().is_empty() {
-                        adapter_config = adapter_config.with_header("OpenAI-Organization", org_id.trim());
+                        adapter_config =
+                            adapter_config.with_header("OpenAI-Organization", org_id.trim());
                     }
                 }
 
@@ -173,11 +244,13 @@ impl IntegrationResolver {
 
                 if let Ok(openai_key) = std::env::var("OPENAI_API_KEY") {
                     if !openai_key.trim().is_empty() {
-                        let env_url = std::env::var("OPENAI_BASE_URL").unwrap_or_else(|_| "https://api.openai.com".to_string());
+                        let env_url = std::env::var("OPENAI_BASE_URL")
+                            .unwrap_or_else(|_| "https://api.openai.com".to_string());
                         let env_model = std::env::var("OPENAI_MODEL").ok();
-                        let config = LlmAdapterConfig::new(LlmProviderProtocol::OpenAiCompatible, env_url)
-                            .with_api_key(Some(openai_key))
-                            .with_default_model(env_model);
+                        let config =
+                            LlmAdapterConfig::new(LlmProviderProtocol::OpenAiCompatible, env_url)
+                                .with_api_key(Some(openai_key))
+                                .with_default_model(env_model);
                         let adapter = LlmAdapter::new(config)?;
                         return Ok(Box::new(adapter));
                     }
@@ -198,11 +271,16 @@ impl IntegrationResolver {
                 }
 
                 // If local Ollama is running / specified in env
-                if let Ok(ollama_url) = std::env::var("OLLAMA_HOST").or_else(|_| std::env::var("OLLAMA_URL")) {
+                if let Ok(ollama_url) =
+                    std::env::var("OLLAMA_HOST").or_else(|_| std::env::var("OLLAMA_URL"))
+                {
                     if !ollama_url.trim().is_empty() {
                         let env_model = std::env::var("OLLAMA_MODEL").ok();
-                        let config = LlmAdapterConfig::new(LlmProviderProtocol::OpenAiCompatible, ollama_url)
-                            .with_default_model(env_model);
+                        let config = LlmAdapterConfig::new(
+                            LlmProviderProtocol::OpenAiCompatible,
+                            ollama_url,
+                        )
+                        .with_default_model(env_model);
                         let adapter = LlmAdapter::new(config)?;
                         return Ok(Box::new(adapter));
                     }
@@ -227,7 +305,9 @@ impl LlmGatewayPort for IntegrationResolver {
         temperature: f64,
     ) -> Result<String, DomainError> {
         let adapter = self.resolve_llm_adapter(ctx).await?;
-        adapter.generate_text(ctx, model, system_prompt, user_prompt, temperature).await
+        adapter
+            .generate_text(ctx, model, system_prompt, user_prompt, temperature)
+            .await
     }
 
     async fn chat_with_tools(
@@ -240,7 +320,9 @@ impl LlmGatewayPort for IntegrationResolver {
         temperature: f64,
     ) -> Result<orbis_domain::entities::ai::LlmChatOutput, DomainError> {
         let adapter = self.resolve_llm_adapter(ctx).await?;
-        adapter.chat_with_tools(ctx, model, system_prompt, messages, tools, temperature).await
+        adapter
+            .chat_with_tools(ctx, model, system_prompt, messages, tools, temperature)
+            .await
     }
 }
 
@@ -253,12 +335,20 @@ impl PaymentGatewayPort for IntegrationResolver {
         currency: &str,
         source: &str,
     ) -> Result<String, DomainError> {
-        let configs = self.integration_repo.find_configs_by_org(ctx.tenant_id).await?;
-        let active_payment = configs.into_iter().find(|c| c.category == "payment-gateway" && c.is_enabled);
+        let configs = self
+            .integration_repo
+            .find_configs_by_org(ctx.tenant_id)
+            .await?;
+        let active_payment = configs
+            .into_iter()
+            .find(|c| c.category == "payment-gateway" && c.is_enabled);
 
         match active_payment {
             Some(config) => {
-                let secrets = self.integration_repo.get_secrets_by_config(config.id).await?;
+                let secrets = self
+                    .integration_repo
+                    .get_secrets_by_config(config.id)
+                    .await?;
                 let secret_key = secrets
                     .into_iter()
                     .find(|s| s.key_name == "secret_key")
@@ -287,13 +377,25 @@ impl PaymentGatewayPort for IntegrationResolver {
 
 #[async_trait]
 impl SurveillancePort for IntegrationResolver {
-    async fn detect_face(&self, ctx: &RequestContext, image_data: &[u8]) -> Result<Option<String>, DomainError> {
-        let configs = self.integration_repo.find_configs_by_org(ctx.tenant_id).await?;
-        let active_camera = configs.into_iter().find(|c| c.category == "surveillance" && c.is_enabled);
+    async fn detect_face(
+        &self,
+        ctx: &RequestContext,
+        image_data: &[u8],
+    ) -> Result<Option<String>, DomainError> {
+        let configs = self
+            .integration_repo
+            .find_configs_by_org(ctx.tenant_id)
+            .await?;
+        let active_camera = configs
+            .into_iter()
+            .find(|c| c.category == "surveillance" && c.is_enabled);
 
         match active_camera {
             Some(config) => {
-                let secrets = self.integration_repo.get_secrets_by_config(config.id).await?;
+                let secrets = self
+                    .integration_repo
+                    .get_secrets_by_config(config.id)
+                    .await?;
                 let api_key = secrets
                     .into_iter()
                     .find(|s| s.key_name == "api_key")
@@ -336,13 +438,27 @@ impl SurveillancePort for IntegrationResolver {
 
 #[async_trait]
 impl NotificationPort for IntegrationResolver {
-    async fn send_email(&self, ctx: &RequestContext, to: &str, subject: &str, body: &str) -> Result<(), DomainError> {
-        let configs = self.integration_repo.find_configs_by_org(ctx.tenant_id).await?;
-        let active_email = configs.into_iter().find(|c| c.category == "email" && c.is_enabled);
+    async fn send_email(
+        &self,
+        ctx: &RequestContext,
+        to: &str,
+        subject: &str,
+        body: &str,
+    ) -> Result<(), DomainError> {
+        let configs = self
+            .integration_repo
+            .find_configs_by_org(ctx.tenant_id)
+            .await?;
+        let active_email = configs
+            .into_iter()
+            .find(|c| c.category == "email" && c.is_enabled);
 
         match active_email {
             Some(config) => {
-                let secrets = self.integration_repo.get_secrets_by_config(config.id).await?;
+                let secrets = self
+                    .integration_repo
+                    .get_secrets_by_config(config.id)
+                    .await?;
                 let api_key = secrets
                     .into_iter()
                     .find(|s| s.key_name == "api_key")
@@ -365,13 +481,26 @@ impl NotificationPort for IntegrationResolver {
         }
     }
 
-    async fn send_whatsapp(&self, ctx: &RequestContext, to: &str, message: &str) -> Result<(), DomainError> {
-        let configs = self.integration_repo.find_configs_by_org(ctx.tenant_id).await?;
-        let active_wa = configs.into_iter().find(|c| c.category == "whatsapp" && c.is_enabled);
+    async fn send_whatsapp(
+        &self,
+        ctx: &RequestContext,
+        to: &str,
+        message: &str,
+    ) -> Result<(), DomainError> {
+        let configs = self
+            .integration_repo
+            .find_configs_by_org(ctx.tenant_id)
+            .await?;
+        let active_wa = configs
+            .into_iter()
+            .find(|c| c.category == "whatsapp" && c.is_enabled);
 
         match active_wa {
             Some(config) => {
-                let secrets = self.integration_repo.get_secrets_by_config(config.id).await?;
+                let secrets = self
+                    .integration_repo
+                    .get_secrets_by_config(config.id)
+                    .await?;
                 let sid = secrets
                     .iter()
                     .find(|s| s.key_name == "account_sid")
@@ -407,13 +536,26 @@ impl NotificationPort for IntegrationResolver {
         }
     }
 
-    async fn send_sms(&self, ctx: &RequestContext, to: &str, message: &str) -> Result<(), DomainError> {
-        let configs = self.integration_repo.find_configs_by_org(ctx.tenant_id).await?;
-        let active_sms = configs.into_iter().find(|c| c.category == "sms" && c.is_enabled);
+    async fn send_sms(
+        &self,
+        ctx: &RequestContext,
+        to: &str,
+        message: &str,
+    ) -> Result<(), DomainError> {
+        let configs = self
+            .integration_repo
+            .find_configs_by_org(ctx.tenant_id)
+            .await?;
+        let active_sms = configs
+            .into_iter()
+            .find(|c| c.category == "sms" && c.is_enabled);
 
         match active_sms {
             Some(config) => {
-                let secrets = self.integration_repo.get_secrets_by_config(config.id).await?;
+                let secrets = self
+                    .integration_repo
+                    .get_secrets_by_config(config.id)
+                    .await?;
                 let sid = secrets
                     .iter()
                     .find(|s| s.key_name == "account_sid")
@@ -452,22 +594,38 @@ impl NotificationPort for IntegrationResolver {
 
 #[async_trait]
 impl SchedulingSolverPort for IntegrationResolver {
-    async fn submit_timetable(&self, ctx: &RequestContext, problem: &TimetableProblem) -> Result<(), DomainError> {
+    async fn submit_timetable(
+        &self,
+        ctx: &RequestContext,
+        problem: &TimetableProblem,
+    ) -> Result<(), DomainError> {
         let solver = self.resolve_solver_adapter(ctx).await?;
         solver.submit(problem).await
     }
 
-    async fn get_timetable_status(&self, ctx: &RequestContext, job_id: &str) -> Result<SolveJobStatus, DomainError> {
+    async fn get_timetable_status(
+        &self,
+        ctx: &RequestContext,
+        job_id: &str,
+    ) -> Result<SolveJobStatus, DomainError> {
         let solver = self.resolve_solver_adapter(ctx).await?;
         solver.status(job_id).await
     }
 
-    async fn submit_exam(&self, ctx: &RequestContext, problem: &ExamProblem) -> Result<(), DomainError> {
+    async fn submit_exam(
+        &self,
+        ctx: &RequestContext,
+        problem: &ExamProblem,
+    ) -> Result<(), DomainError> {
         let solver = self.resolve_solver_adapter(ctx).await?;
         solver.submit_exam(problem).await
     }
 
-    async fn get_exam_status(&self, ctx: &RequestContext, job_id: &str) -> Result<ExamSolveJobStatus, DomainError> {
+    async fn get_exam_status(
+        &self,
+        ctx: &RequestContext,
+        job_id: &str,
+    ) -> Result<ExamSolveJobStatus, DomainError> {
         let solver = self.resolve_solver_adapter(ctx).await?;
         solver.status_exam(job_id).await
     }

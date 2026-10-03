@@ -1,4 +1,5 @@
 <script lang="ts">
+import { untrack } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
@@ -34,7 +35,7 @@ let {
   onCancel: () => void;
 } = $props();
 
-const form = new FormController({
+const form = untrack(() => new FormController({
   initialValues: {
     name: template?.name ?? "",
     code: template?.code ?? "",
@@ -48,7 +49,7 @@ const form = new FormController({
     is_active: template ? Number(template.is_active ?? 1) : 1,
   },
   schema: discountTemplateInputSchema,
-});
+}));
 
 const isSubmitting = $derived(form.isSubmitting);
 
@@ -220,7 +221,7 @@ async function handleSubmit(e: SubmitEvent) {
                 type="number" 
                 min="1"
                 bind:value={form.values.priority}
-                placeholder={m.common_dt_form_priority_placeholder ? m.common_dt_form_priority_placeholder() : "e.g., 1 (highest)"}
+                placeholder={m.common_dt_form_priority_placeholder()}
                 disabled={isSubmitting}
               />
             {/snippet}

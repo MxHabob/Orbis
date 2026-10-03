@@ -49,6 +49,9 @@ jobs:
         working-directory: apps/api-rust
         run: cargo fmt --all -- --check
 
+      - name: Run Desktop Rust formatting check
+        run: cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml -- --check
+
       - name: Run Rust workspace check
         working-directory: apps/api-rust
         run: cargo check --workspace

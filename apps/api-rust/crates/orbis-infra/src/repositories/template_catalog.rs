@@ -10,7 +10,10 @@ pub async fn provision_master_templates<C: ConnectionTrait>(
     admin_id: Uuid,
     now: &str,
 ) -> Result<(), DomainError> {
-    info!("Provisioning master visual AST document templates for org_id={}", org_id);
+    info!(
+        "Provisioning master visual AST document templates for org_id={}",
+        org_id
+    );
 
     let templates = get_master_template_definitions();
 
@@ -37,7 +40,16 @@ pub async fn provision_master_templates<C: ConnectionTrait>(
     Ok(())
 }
 
-fn get_master_template_definitions() -> Vec<(&'static str, &'static str, &'static str, &'static str, &'static str, &'static str, &'static str, serde_json::Value)> {
+fn get_master_template_definitions() -> Vec<(
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    serde_json::Value,
+)> {
     vec![
         // ── 1. Smart Student ID Card (CR80 / ID_CARD Landscape 85.6mm x 54mm) ─
         (
@@ -166,9 +178,8 @@ fn get_master_template_definitions() -> Vec<(&'static str, &'static str, &'stati
                         }
                     ]
                 }]
-            })
+            }),
         ),
-
         // ── 2. Staff & Faculty Work Badge (CR80 / ID_CARD Landscape) ─────────
         (
             "administration.staff-id-card",
@@ -279,9 +290,8 @@ fn get_master_template_definitions() -> Vec<(&'static str, &'static str, &'stati
                         }
                     ]
                 }]
-            })
+            }),
         ),
-
         // ── 3. Certificate of Regular Enrollment (A4 Portrait 210mm x 297mm) ─
         (
             "administration.enrollment-certificate",
@@ -408,9 +418,8 @@ fn get_master_template_definitions() -> Vec<(&'static str, &'static str, &'stati
                         }
                     ]
                 }]
-            })
+            }),
         ),
-
         // ── 4. Student Term Report Card (A4 Portrait 210mm x 297mm) ───────────
         (
             "academic.student-term-report-card",
@@ -563,9 +572,8 @@ fn get_master_template_definitions() -> Vec<(&'static str, &'static str, &'stati
                         }
                     ]
                 }]
-            })
+            }),
         ),
-
         // ── 5. Payment Receipt Voucher (A4 Portrait 210mm x 297mm) ────────────
         (
             "finance.payment-receipt",
@@ -681,9 +689,8 @@ fn get_master_template_definitions() -> Vec<(&'static str, &'static str, &'stati
                         }
                     ]
                 }]
-            })
+            }),
         ),
-
         // ── 6. Student Exam Admission Card (A5 Portrait 148mm x 210mm) ───────
         (
             "examinations.student-exam-card",
@@ -802,9 +809,8 @@ fn get_master_template_definitions() -> Vec<(&'static str, &'static str, &'stati
                         }
                     ]
                 }]
-            })
+            }),
         ),
-
         // ── 7. Official Multi-Year Academic Transcript (A4 Portrait) ──────────
         (
             "academic.official-transcript",
@@ -918,7 +924,7 @@ fn get_master_template_definitions() -> Vec<(&'static str, &'static str, &'stati
                         }
                     ]
                 }]
-            })
-        )
+            }),
+        ),
     ]
 }

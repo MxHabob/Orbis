@@ -2,7 +2,10 @@ use async_trait::async_trait;
 use orbis_app::ports::repositories::OrgUnitRepository;
 use orbis_domain::entities::org_unit::OrgUnit as DomainOrgUnit;
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter, PaginatorTrait};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+    Set,
+};
 use uuid::Uuid;
 
 use crate::models::org_unit::{self, Entity as OrgUnitEntity};
@@ -41,7 +44,6 @@ impl OrgUnitRepository for OrgUnitRepoImpl {
         Ok(())
     }
 
-
     async fn find_children(&self, parent_id: Uuid) -> Result<Vec<DomainOrgUnit>, DomainError> {
         let models = OrgUnitEntity::find()
             .filter(org_unit::Column::ParentId.eq(parent_id))
@@ -53,7 +55,11 @@ impl OrgUnitRepository for OrgUnitRepoImpl {
         Ok(models.into_iter().map(into_domain).collect())
     }
 
-    async fn find_descendants(&self, org_id: Uuid, path_prefix: &str) -> Result<Vec<DomainOrgUnit>, DomainError> {
+    async fn find_descendants(
+        &self,
+        org_id: Uuid,
+        path_prefix: &str,
+    ) -> Result<Vec<DomainOrgUnit>, DomainError> {
         let models = OrgUnitEntity::find()
             .filter(org_unit::Column::OrgId.eq(org_id))
             .filter(org_unit::Column::IsActive.eq(true))
@@ -105,10 +111,21 @@ impl OrgUnitRepository for OrgUnitRepoImpl {
             ..Default::default()
         };
 
-        if OrgUnitEntity::find_by_id(unit.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active_model.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if OrgUnitEntity::find_by_id(unit.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active_model
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active_model.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active_model
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
 
         Ok(())

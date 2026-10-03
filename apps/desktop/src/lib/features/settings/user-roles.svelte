@@ -77,10 +77,10 @@ async function saveRoles() {
     toast.success(
       m.settings_user_detail_saved
         ? m.settings_user_detail_saved()
-        : l("تم حفظ وتحديث أدوار المستخدم بنجاح", "User roles saved successfully")
+        : m.ui_copy_user_roles_saved_successfully_5c90a882()
     );
   } catch (e: any) {
-    toast.error(e?.message || l("فشل حفظ الأدوار", "Save failed"));
+    toast.error(e?.message || m.ui_copy_save_failed_c4740d2a());
   } finally {
     isSaving = false;
   }
@@ -124,7 +124,7 @@ async function saveRoles() {
                 </span>
                 {#if role.isSystem}
                   <Badge variant="secondary" class="text-[9px] px-1.5 py-0">
-                    {l("نظام قياسي", "System")}
+                    {m.ui_copy_system_e3980179()}
                   </Badge>
                 {/if}
               </div>
@@ -136,7 +136,7 @@ async function saveRoles() {
 
           <div class="shrink-0 text-end">
             <Badge variant="outline" class="text-[9px] font-mono text-muted-foreground">
-              {role.permCount} {l("صلاحية", "perms")}
+              {role.permCount} {m.ui_copy_perms_dd19d499()}
             </Badge>
           </div>
         </div>
@@ -154,7 +154,7 @@ async function saveRoles() {
       >
         {isSaving
           ? "..."
-          : (m.settings_action_save_changes ? m.settings_action_save_changes() : l("حفظ التغييرات", "Save Changes"))}
+          : (m.settings_action_save_changes ? m.settings_action_save_changes() : m.common_save_changes())}
       </Button>
     </div>
   </div>

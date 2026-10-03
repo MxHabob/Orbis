@@ -16,7 +16,7 @@ let {
 <div class="flex-1 overflow-y-auto p-2 scrollbar-hide bg-popover">
   {#if Object.keys(groupedItems).length === 0}
     <div class="py-6 text-center text-sm text-muted-foreground select-none">
-      {m.common_no_data ? m.common_no_data() : "لا توجد نتائج مطابقة"}
+      {m.common_no_data()}
     </div>
   {:else}
     {#each Object.entries(groupedItems) as [groupName, groupItems]}

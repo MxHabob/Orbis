@@ -256,11 +256,22 @@ function handleDrop(e: DragEvent) {
 }
 </script>
 
+<!-- The application canvas uses pointer events here; keyboard shortcuts are handled by TemplateStudio. -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
   bind:this={containerEl}
   class="relative grow overflow-hidden bg-muted/20 select-none"
   role="application"
-  aria-label="Template Canvas"
+  aria-label={m.docforge_canvas_label()}
+  tabindex="0"
+  onmousemove={handleMouseMove}
+  onmousedown={handleMouseDown}
+  onmouseup={handleMouseUp}
+  onmouseleave={handleMouseUp}
+  ondragover={handleDragOver}
+  ondragleave={handleDragLeave}
+  ondrop={handleDrop}
 >
   <!-- Rulers -->
   {#if store.rulersVisible}
@@ -291,13 +302,6 @@ function handleDrop(e: DragEvent) {
     height={containerHeight}
     class="absolute inset-0 {isPanning ? 'cursor-grabbing' : ''}"
     style="top: {store.rulersVisible ? '24px' : '0'}; left: {store.rulersVisible ? '24px' : '0'};"
-    onmousemove={handleMouseMove}
-    onmousedown={handleMouseDown}
-    onmouseup={handleMouseUp}
-    onmouseleave={handleMouseUp}
-    ondragover={handleDragOver}
-    ondragleave={handleDragLeave}
-    ondrop={handleDrop}
   >
     <!-- Background pattern -->
     <defs>
@@ -374,4 +378,3 @@ function handleDrop(e: DragEvent) {
   <!-- HTML Overlays -->
   <FloatingActionBar {store} {offsetX} {offsetY} />
 </div>
-

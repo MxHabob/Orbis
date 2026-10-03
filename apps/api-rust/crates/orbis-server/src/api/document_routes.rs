@@ -1,15 +1,21 @@
 //! Document routes — Upload, List, Get, Update, Delete, Requirements & Verification.
 
-use axum::{extract::{State, Path, Query}, routing::{get, post}, Json, Router};
-use serde::{Deserialize, Serialize};
-use utoipa::{ToSchema, IntoParams};
+use axum::{
+    Json, Router,
+    extract::{Path, Query, State},
+    routing::{get, post},
+};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
-use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
+use super::{ApiError, ApiResponse};
 use crate::state::AppState;
-use orbis_app::services::{CreateDocumentInput, UpdateDocumentInput, UpdateDocumentRequirementInput};
+use orbis_app::services::{
+    CreateDocumentInput, UpdateDocumentInput, UpdateDocumentRequirementInput,
+};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct DocumentDto {
@@ -143,7 +149,9 @@ pub struct ListDocumentsQuery {
 #[utoipa::path(post, path = "/api/v1/documents", request_body = UploadDocumentRequest,
     responses((status = 201, body = DocumentDto)), security(("bearer" = [])), tag = "Document")]
 async fn upload_document(
-    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<UploadDocumentRequest>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<UploadDocumentRequest>,
 ) -> Result<Json<ApiResponse<DocumentDto>>, ApiError> {
     let uploaded_by = match ctx.actor {
         orbis_domain::iam::actor::Actor::User(uid) => Some(uid),
@@ -174,7 +182,10 @@ async fn upload_document(
         thumbnail_path: p.thumbnail_path,
         preview_path: p.preview_path,
     };
-    let doc = state.document_service.create_document(&ctx, ctx.tenant_id, input).await?;
+    let doc = state
+        .document_service
+        .create_document(&ctx, ctx.tenant_id, input)
+        .await?;
     Ok(ApiResponse::ok(doc_to_dto(doc)))
 }
 
@@ -186,11 +197,21 @@ async fn list_documents(
     Query(query): Query<ListDocumentsQuery>,
 ) -> Result<Json<ApiResponse<Vec<DocumentDto>>>, ApiError> {
     let docs = if let Some(fid) = query.folder_id {
-        state.document_service.document_repo.find_by_folder(ctx.tenant_id, fid).await?
+        state
+            .document_service
+            .document_repo
+            .find_by_folder(ctx.tenant_id, fid)
+            .await?
     } else if let (Some(ref et), Some(eid)) = (query.entity_type, query.entity_id) {
-        state.document_service.list_documents_by_entity(et, eid).await?
+        state
+            .document_service
+            .list_documents_by_entity(et, eid)
+            .await?
     } else {
-        state.document_service.list_documents_by_org(ctx.tenant_id).await?
+        state
+            .document_service
+            .list_documents_by_org(ctx.tenant_id)
+            .await?
     };
     Ok(ApiResponse::ok(docs.into_iter().map(doc_to_dto).collect()))
 }
@@ -198,9 +219,15 @@ async fn list_documents(
 #[utoipa::path(get, path = "/api/v1/documents/{id}", params(("id" = Uuid, Path, description = "Document ID")),
     responses((status = 200, body = DocumentDto)), security(("bearer" = [])), tag = "Document")]
 async fn get_document(
-    _ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+    _ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<DocumentDto>>, ApiError> {
-    let doc = state.document_service.get_document(id).await?.ok_or_else(|| ApiError::not_found("Document not found"))?;
+    let doc = state
+        .document_service
+        .get_document(id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("Document not found"))?;
     Ok(ApiResponse::ok(doc_to_dto(doc)))
 }
 
@@ -224,14 +251,19 @@ async fn update_document(
         tags: p.tags,
         visibility: p.visibility,
     };
-    let doc = state.document_service.update_document(&ctx, id, input).await?;
+    let doc = state
+        .document_service
+        .update_document(&ctx, id, input)
+        .await?;
     Ok(ApiResponse::ok(doc_to_dto(doc)))
 }
 
 #[utoipa::path(delete, path = "/api/v1/documents/{id}", params(("id" = Uuid, Path, description = "Document deleted")),
     responses((status = 204, description = "Deleted")), security(("bearer" = [])), tag = "Document")]
 async fn delete_document(
-    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
 ) -> Result<axum::http::StatusCode, ApiError> {
     state.document_service.delete_document(&ctx, id).await?;
     Ok(axum::http::StatusCode::NO_CONTENT)
@@ -253,7 +285,9 @@ pub struct DocumentRequirementDto {
     pub updated_at: DateTime<Utc>,
 }
 
-fn doc_requirement_to_dto(r: orbis_domain::entities::document_requirement::DocumentRequirement) -> DocumentRequirementDto {
+fn doc_requirement_to_dto(
+    r: orbis_domain::entities::document_requirement::DocumentRequirement,
+) -> DocumentRequirementDto {
     DocumentRequirementDto {
         id: r.id,
         org_id: r.org_id,
@@ -317,10 +351,12 @@ pub struct EvaluateRequirementsQuery {
 #[utoipa::path(post, path = "/api/v1/document-requirements", request_body = CreateDocumentRequirementRequest,
     responses((status = 201, body = DocumentRequirementDto)), security(("bearer" = [])), tag = "Document")]
 async fn create_document_requirement(
-    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateDocumentRequirementRequest>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<CreateDocumentRequirementRequest>,
 ) -> Result<Json<ApiResponse<DocumentRequirementDto>>, ApiError> {
-    use orbis_domain::entities::document_requirement::{RequirementTargetType, DocumentCondition};
-    
+    use orbis_domain::entities::document_requirement::{DocumentCondition, RequirementTargetType};
+
     let target_type = match p.target_type.as_str() {
         "stage" => RequirementTargetType::Stage,
         "grade_level" => RequirementTargetType::GradeLevel,
@@ -346,25 +382,40 @@ async fn create_document_requirement(
         condition,
     };
 
-    let req = state.document_service.create_document_requirement(&ctx, ctx.tenant_id, input).await?;
+    let req = state
+        .document_service
+        .create_document_requirement(&ctx, ctx.tenant_id, input)
+        .await?;
     Ok(ApiResponse::ok(doc_requirement_to_dto(req)))
 }
 
 #[utoipa::path(get, path = "/api/v1/document-requirements",
     responses((status = 200, body = Vec<DocumentRequirementDto>)), security(("bearer" = [])), tag = "Document")]
 async fn list_document_requirements(
-    ctx: AuthContext, State(state): State<AppState>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<DocumentRequirementDto>>>, ApiError> {
-    let reqs = state.document_service.list_document_requirements_by_org(ctx.tenant_id).await?;
-    Ok(ApiResponse::ok(reqs.into_iter().map(doc_requirement_to_dto).collect()))
+    let reqs = state
+        .document_service
+        .list_document_requirements_by_org(ctx.tenant_id)
+        .await?;
+    Ok(ApiResponse::ok(
+        reqs.into_iter().map(doc_requirement_to_dto).collect(),
+    ))
 }
 
 #[utoipa::path(get, path = "/api/v1/document-requirements/{id}", params(("id" = Uuid, Path, description = "Requirement ID")),
     responses((status = 200, body = DocumentRequirementDto)), security(("bearer" = [])), tag = "Document")]
 async fn get_document_requirement(
-    _ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+    _ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<DocumentRequirementDto>>, ApiError> {
-    let req = state.document_service.get_document_requirement(id).await?.ok_or_else(|| ApiError::not_found("Document requirement not found"))?;
+    let req = state
+        .document_service
+        .get_document_requirement(id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("Document requirement not found"))?;
     Ok(ApiResponse::ok(doc_requirement_to_dto(req)))
 }
 
@@ -377,7 +428,7 @@ async fn update_document_requirement(
     Path(id): Path<Uuid>,
     Json(p): Json<UpdateDocumentRequirementRequest>,
 ) -> Result<Json<ApiResponse<DocumentRequirementDto>>, ApiError> {
-    use orbis_domain::entities::document_requirement::{RequirementTargetType, DocumentCondition};
+    use orbis_domain::entities::document_requirement::{DocumentCondition, RequirementTargetType};
 
     let target_type = p.target_type.map(|t| match t.as_str() {
         "stage" => RequirementTargetType::Stage,
@@ -404,16 +455,24 @@ async fn update_document_requirement(
         condition,
     };
 
-    let req = state.document_service.update_document_requirement(&ctx, id, input).await?;
+    let req = state
+        .document_service
+        .update_document_requirement(&ctx, id, input)
+        .await?;
     Ok(ApiResponse::ok(doc_requirement_to_dto(req)))
 }
 
 #[utoipa::path(delete, path = "/api/v1/document-requirements/{id}", params(("id" = Uuid, Path, description = "Requirement ID")),
     responses((status = 204, description = "Deleted")), security(("bearer" = [])), tag = "Document")]
 async fn delete_document_requirement(
-    ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
 ) -> Result<axum::http::StatusCode, ApiError> {
-    state.document_service.delete_document_requirement(&ctx, id).await?;
+    state
+        .document_service
+        .delete_document_requirement(&ctx, id)
+        .await?;
     Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
@@ -425,32 +484,57 @@ async fn evaluate_student_requirements(
     Path(student_id): Path<Uuid>,
     Query(q): Query<EvaluateRequirementsQuery>,
 ) -> Result<Json<ApiResponse<Vec<StudentDocumentFulfillmentDto>>>, ApiError> {
-    let fulfillments = state.document_service.evaluate_student_requirements(
-        ctx.tenant_id,
-        student_id,
-        q.grade_level_id,
-        q.is_national.unwrap_or(true),
-        q.is_transfer.unwrap_or(false),
-    ).await?;
+    let fulfillments = state
+        .document_service
+        .evaluate_student_requirements(
+            ctx.tenant_id,
+            student_id,
+            q.grade_level_id,
+            q.is_national.unwrap_or(true),
+            q.is_transfer.unwrap_or(false),
+        )
+        .await?;
 
-    let dtos = fulfillments.into_iter().map(|f| StudentDocumentFulfillmentDto {
-        requirement: doc_requirement_to_dto(f.requirement),
-        is_fulfilled: f.is_fulfilled,
-        is_applicable: f.is_applicable,
-        document_id: f.uploaded_document.as_ref().map(|d| d.id),
-        document_name: f.uploaded_document.as_ref().map(|d| d.name.clone()),
-        file_path: f.uploaded_document.as_ref().map(|d| d.file_path.clone()),
-        uploaded_at: f.uploaded_document.as_ref().map(|d| d.created_at),
-    }).collect();
+    let dtos = fulfillments
+        .into_iter()
+        .map(|f| StudentDocumentFulfillmentDto {
+            requirement: doc_requirement_to_dto(f.requirement),
+            is_fulfilled: f.is_fulfilled,
+            is_applicable: f.is_applicable,
+            document_id: f.uploaded_document.as_ref().map(|d| d.id),
+            document_name: f.uploaded_document.as_ref().map(|d| d.name.clone()),
+            file_path: f.uploaded_document.as_ref().map(|d| d.file_path.clone()),
+            uploaded_at: f.uploaded_document.as_ref().map(|d| d.created_at),
+        })
+        .collect();
 
     Ok(ApiResponse::ok(dtos))
 }
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/api/v1/documents", post(upload_document).get(list_documents))
-        .route("/api/v1/documents/:id", get(get_document).patch(update_document).delete(delete_document))
-        .route("/api/v1/document-requirements", post(create_document_requirement).get(list_document_requirements))
-        .route("/api/v1/document-requirements/:id", get(get_document_requirement).patch(update_document_requirement).delete(delete_document_requirement))
-        .route("/api/v1/students/:id/document-requirements", get(evaluate_student_requirements))
+        .route(
+            "/api/v1/documents",
+            post(upload_document).get(list_documents),
+        )
+        .route(
+            "/api/v1/documents/:id",
+            get(get_document)
+                .patch(update_document)
+                .delete(delete_document),
+        )
+        .route(
+            "/api/v1/document-requirements",
+            post(create_document_requirement).get(list_document_requirements),
+        )
+        .route(
+            "/api/v1/document-requirements/:id",
+            get(get_document_requirement)
+                .patch(update_document_requirement)
+                .delete(delete_document_requirement),
+        )
+        .route(
+            "/api/v1/students/:id/document-requirements",
+            get(evaluate_student_requirements),
+        )
 }

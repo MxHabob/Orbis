@@ -1,28 +1,28 @@
-use std::sync::Arc;
-use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use uuid::Uuid;
 
-use orbis_domain::entities::user::User;
-use orbis_domain::entities::person::Person;
-use orbis_domain::entities::identity::{UserIdentity, IdentityProvider};
 use orbis_domain::entities::group::UserGroupMembership;
+use orbis_domain::entities::identity::{IdentityProvider, UserIdentity};
 pub use orbis_domain::entities::identity_provisioning::{
-    ActorType, DeliveryChannel, CredentialDeliveryStatus, AccountProvisioningResult,
+    AccountProvisioningResult, ActorType, CredentialDeliveryStatus, DeliveryChannel,
 };
-use orbis_domain::events::DomainEvent;
+use orbis_domain::entities::person::Person;
+use orbis_domain::entities::user::User;
 use orbis_domain::errors::DomainError;
+use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
 
 use crate::context::RequestContext;
-use crate::ports::repositories::{
-    UserRepository, PersonRepository, UserIdentityRepository, GroupRepository,
-    IntegrationRepository, SessionRepository, OrganizationRepository,
-};
-use crate::ports::gateways::NotificationPort;
 use crate::ports::event_bus::EventBus;
-use crate::ports::security::PasswordHasher;
+use crate::ports::gateways::NotificationPort;
 use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::repositories::{
+    GroupRepository, IntegrationRepository, OrganizationRepository, PersonRepository,
+    SessionRepository, UserIdentityRepository, UserRepository,
+};
+use crate::ports::security::PasswordHasher;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProvisionAccountInput {
@@ -132,13 +132,25 @@ impl IdentityProvisioningService {
         let mut counter = 1;
 
         // Ensure uniqueness across existing identities
-        while self.user_identity_repo.find_by_provider("password", &candidate).await?.is_some()
+        while self
+            .user_identity_repo
+            .find_by_provider("password", &candidate)
+            .await?
+            .is_some()
             || self.user_repo.find_by_email(&candidate).await?.is_some()
         {
             candidate = format!("{}.{}", base_name, counter);
             counter += 1;
             if counter > 1000 {
-                candidate = format!("{}.{}", base_name, Uuid::new_v4().to_string().chars().take(6).collect::<String>());
+                candidate = format!(
+                    "{}.{}",
+                    base_name,
+                    Uuid::new_v4()
+                        .to_string()
+                        .chars()
+                        .take(6)
+                        .collect::<String>()
+                );
                 break;
             }
         }
@@ -148,14 +160,33 @@ impl IdentityProvisioningService {
     }
 
     fn fallback_username(person: &Person) -> String {
-        let first = person.first_name.trim().to_lowercase().chars().filter(|c| c.is_alphanumeric()).collect::<String>();
-        let last = person.last_name.trim().to_lowercase().chars().filter(|c| c.is_alphanumeric()).collect::<String>();
+        let first = person
+            .first_name
+            .trim()
+            .to_lowercase()
+            .chars()
+            .filter(|c| c.is_alphanumeric())
+            .collect::<String>();
+        let last = person
+            .last_name
+            .trim()
+            .to_lowercase()
+            .chars()
+            .filter(|c| c.is_alphanumeric())
+            .collect::<String>();
         if !first.is_empty() && !last.is_empty() {
             format!("{}.{}", first, last)
         } else if !first.is_empty() {
             first
         } else {
-            format!("user.{}", Uuid::new_v4().to_string().chars().take(8).collect::<String>())
+            format!(
+                "user.{}",
+                Uuid::new_v4()
+                    .to_string()
+                    .chars()
+                    .take(8)
+                    .collect::<String>()
+            )
         }
     }
 
@@ -166,16 +197,29 @@ impl IdentityProvisioningService {
         org_id: Uuid,
         input: ProvisionAccountInput,
     ) -> Result<AccountProvisioningResult, DomainError> {
-        self.permission_checker.check(ctx, Permission::UserWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::UserWrite)
+            .await?;
 
         // 1. Fetch Person
-        let person = self.person_repo.find_by_id(input.person_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Person {} not found", input.person_id)))?;
+        let person = self
+            .person_repo
+            .find_by_id(input.person_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Person {} not found", input.person_id))
+            })?;
 
         // 2. Check if user already exists for this person
         let existing_users = self.user_repo.find_by_org(org_id).await?;
-        if let Some(existing) = existing_users.into_iter().find(|u| u.person_id == person.id && !u.is_deleted) {
-            let primary_identity = self.user_identity_repo.find_by_user(existing.id).await?
+        if let Some(existing) = existing_users
+            .into_iter()
+            .find(|u| u.person_id == person.id && !u.is_deleted)
+        {
+            let primary_identity = self
+                .user_identity_repo
+                .find_by_user(existing.id)
+                .await?
                 .into_iter()
                 .find(|i| i.is_primary)
                 .map(|i| i.provider_user_id)
@@ -194,10 +238,14 @@ impl IdentityProvisioningService {
         }
 
         // 3. Resolve username
-        let username = self.generate_unique_username(org_id, input.preferred_username.as_deref(), &person).await?;
+        let username = self
+            .generate_unique_username(org_id, input.preferred_username.as_deref(), &person)
+            .await?;
 
         // 4. Resolve / Generate Temporary Password
-        let raw_password = input.custom_password.unwrap_or_else(Self::generate_temporary_password);
+        let raw_password = input
+            .custom_password
+            .unwrap_or_else(Self::generate_temporary_password);
         let password_hash = self.password_hasher.hash(&raw_password).await?;
 
         // 5. Create User Record
@@ -253,38 +301,49 @@ impl IdentityProvisioningService {
                 created_at: now,
             };
             let _ = self.group_repo.add_member(&membership).await;
-            let _ = self.event_bus.publish(ctx, &DomainEvent::UserGroupAssigned {
-                user_id,
-                group_id: *group_id,
-                org_id,
-                timestamp: now,
-            }).await;
+            let _ = self
+                .event_bus
+                .publish(
+                    ctx,
+                    &DomainEvent::UserGroupAssigned {
+                        user_id,
+                        group_id: *group_id,
+                        org_id,
+                        timestamp: now,
+                    },
+                )
+                .await;
         }
 
         // 8. Publish Domain Event
-        let _ = self.event_bus.publish(ctx, &DomainEvent::UserAccountProvisioned {
-            user_id,
-            person_id: person.id,
-            org_id,
-            actor_type: input.actor_type.to_string(),
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::UserAccountProvisioned {
+                    user_id,
+                    person_id: person.id,
+                    org_id,
+                    actor_type: input.actor_type.to_string(),
+                    timestamp: now,
+                },
+            )
+            .await;
 
         // 9. Deliver credentials via Notification integrations
         let channel = input.delivery_channel.unwrap_or(DeliveryChannel::Auto);
-        let (delivery_status, expose_password) = self.deliver_credentials(
-            ctx,
-            org_id,
-            &person,
-            &username,
-            &raw_password,
-            channel,
-        ).await;
+        let (delivery_status, expose_password) = self
+            .deliver_credentials(ctx, org_id, &person, &username, &raw_password, channel)
+            .await;
 
         Ok(AccountProvisioningResult {
             user_id,
             username,
-            temporary_password: if expose_password { Some(raw_password) } else { None },
+            temporary_password: if expose_password {
+                Some(raw_password)
+            } else {
+                None
+            },
             must_change_password: true,
             delivery_channel: channel,
             delivery_status,
@@ -299,12 +358,20 @@ impl IdentityProvisioningService {
         user_id: Uuid,
         channel_override: Option<DeliveryChannel>,
     ) -> Result<ResetPasswordResult, DomainError> {
-        self.permission_checker.check(ctx, Permission::UserPasswordWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::UserPasswordWrite)
+            .await?;
 
-        let mut user = self.user_repo.find_by_id(user_id).await?
+        let mut user = self
+            .user_repo
+            .find_by_id(user_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("User {} not found", user_id)))?;
 
-        let person = self.person_repo.find_by_id(user.person_id).await?
+        let person = self
+            .person_repo
+            .find_by_id(user.person_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("Person associated with user not found".into()))?;
 
         let identities = self.user_identity_repo.find_by_user(user.id).await?;
@@ -325,25 +392,30 @@ impl IdentityProvisioningService {
         self.user_repo.save(&user).await?;
 
         let channel = channel_override.unwrap_or(DeliveryChannel::Auto);
-        let (delivery_status, expose_password) = self.deliver_credentials(
-            ctx,
-            user.org_id,
-            &person,
-            &username,
-            &raw_password,
-            channel,
-        ).await;
+        let (delivery_status, expose_password) = self
+            .deliver_credentials(ctx, user.org_id, &person, &username, &raw_password, channel)
+            .await;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::UserPasswordReset {
-            user_id: user.id,
-            org_id: user.org_id,
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::UserPasswordReset {
+                    user_id: user.id,
+                    org_id: user.org_id,
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
         Ok(ResetPasswordResult {
             user_id: user.id,
             username,
-            temporary_password: if expose_password { Some(raw_password) } else { None },
+            temporary_password: if expose_password {
+                Some(raw_password)
+            } else {
+                None
+            },
             delivery_channel: channel,
             delivery_status,
         })
@@ -356,13 +428,22 @@ impl IdentityProvisioningService {
         user_id: Uuid,
         is_active: bool,
     ) -> Result<User, DomainError> {
-        self.permission_checker.check(ctx, Permission::UserWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::UserWrite)
+            .await?;
 
-        let mut user = self.user_repo.find_by_id(user_id).await?
+        let mut user = self
+            .user_repo
+            .find_by_id(user_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("User {} not found", user_id)))?;
 
         let old_status = user.status.clone();
-        let new_status = if is_active { "active".to_string() } else { "disabled".to_string() };
+        let new_status = if is_active {
+            "active".to_string()
+        } else {
+            "disabled".to_string()
+        };
         user.status = new_status.clone();
         user.updated_at = Utc::now();
         self.user_repo.save(&user).await?;
@@ -375,13 +456,19 @@ impl IdentityProvisioningService {
             }
         }
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::UserAccountStatusChanged {
-            user_id,
-            org_id: user.org_id,
-            old_status,
-            new_status,
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::UserAccountStatusChanged {
+                    user_id,
+                    org_id: user.org_id,
+                    old_status,
+                    new_status,
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
         Ok(user)
     }
@@ -401,19 +488,33 @@ impl IdentityProvisioningService {
         }
 
         // 1. Inspect organization active messaging integrations
-        let (has_active_email, has_active_whatsapp, _has_active_sms) = if let Some(ref int_repo) = self.integration_repo {
-            let configs = int_repo.find_configs_by_org(org_id).await.unwrap_or_default();
-            let email = configs.iter().any(|c| c.category == "email" && c.is_enabled);
-            let wa = configs.iter().any(|c| c.category == "whatsapp" && c.is_enabled);
-            let sms = configs.iter().any(|c| c.category == "sms" && c.is_enabled);
-            (email, wa, sms)
-        } else {
-            // Default to checking notification port directly if no integration repo
-            (true, true, false)
-        };
+        let (has_active_email, has_active_whatsapp, _has_active_sms) =
+            if let Some(ref int_repo) = self.integration_repo {
+                let configs = int_repo
+                    .find_configs_by_org(org_id)
+                    .await
+                    .unwrap_or_default();
+                let email = configs
+                    .iter()
+                    .any(|c| c.category == "email" && c.is_enabled);
+                let wa = configs
+                    .iter()
+                    .any(|c| c.category == "whatsapp" && c.is_enabled);
+                let sms = configs.iter().any(|c| c.category == "sms" && c.is_enabled);
+                (email, wa, sms)
+            } else {
+                // Default to checking notification port directly if no integration repo
+                (true, true, false)
+            };
 
         let org_name = if let Some(ref o_repo) = self.org_repo {
-            o_repo.find_by_id(org_id).await.ok().flatten().map(|o| o.name).unwrap_or_else(|| "Orbis School".into())
+            o_repo
+                .find_by_id(org_id)
+                .await
+                .ok()
+                .flatten()
+                .map(|o| o.name)
+                .unwrap_or_else(|| "Orbis School".into())
         } else {
             "Orbis School".into()
         };
@@ -449,34 +550,64 @@ impl IdentityProvisioningService {
         };
 
         // Determine effective channels based on requested channel and active integrations
-        let can_email = has_active_email && person.email.as_ref().map_or(false, |e| !e.trim().is_empty());
-        let can_whatsapp = has_active_whatsapp && person.phone.as_ref().map_or(false, |p| !p.trim().is_empty());
-        let can_sms = _has_active_sms && person.phone.as_ref().map_or(false, |p| !p.trim().is_empty());
+        let can_email = has_active_email
+            && person
+                .email
+                .as_ref()
+                .map_or(false, |e| !e.trim().is_empty());
+        let can_whatsapp = has_active_whatsapp
+            && person
+                .phone
+                .as_ref()
+                .map_or(false, |p| !p.trim().is_empty());
+        let can_sms = _has_active_sms
+            && person
+                .phone
+                .as_ref()
+                .map_or(false, |p| !p.trim().is_empty());
 
-        let target_email = matches!(channel, DeliveryChannel::Email) || (matches!(channel, DeliveryChannel::Auto) && can_email);
-        let target_whatsapp = matches!(channel, DeliveryChannel::WhatsApp) || (matches!(channel, DeliveryChannel::Auto) && !can_email && can_whatsapp);
-        let target_sms = matches!(channel, DeliveryChannel::Sms) || (matches!(channel, DeliveryChannel::Auto) && !can_email && !can_whatsapp && can_sms);
+        let target_email = matches!(channel, DeliveryChannel::Email)
+            || (matches!(channel, DeliveryChannel::Auto) && can_email);
+        let target_whatsapp = matches!(channel, DeliveryChannel::WhatsApp)
+            || (matches!(channel, DeliveryChannel::Auto) && !can_email && can_whatsapp);
+        let target_sms = matches!(channel, DeliveryChannel::Sms)
+            || (matches!(channel, DeliveryChannel::Auto) && !can_email && !can_whatsapp && can_sms);
 
         if target_email {
             if let Some(ref email) = person.email {
                 if !email.trim().is_empty() {
-                    match notification_port.send_email(ctx, email.trim(), &email_subject, &email_body).await {
+                    match notification_port
+                        .send_email(ctx, email.trim(), &email_subject, &email_body)
+                        .await
+                    {
                         Ok(_) => {
-                            let _ = self.event_bus.publish(ctx, &DomainEvent::CredentialDeliveryAttempted {
-                                user_id: person.id,
-                                channel: "email".into(),
-                                success: true,
-                                timestamp: Utc::now(),
-                            }).await;
+                            let _ = self
+                                .event_bus
+                                .publish(
+                                    ctx,
+                                    &DomainEvent::CredentialDeliveryAttempted {
+                                        user_id: person.id,
+                                        channel: "email".into(),
+                                        success: true,
+                                        timestamp: Utc::now(),
+                                    },
+                                )
+                                .await;
                             return (CredentialDeliveryStatus::Delivered, false);
                         }
                         Err(e) => {
-                            let _ = self.event_bus.publish(ctx, &DomainEvent::CredentialDeliveryAttempted {
-                                user_id: person.id,
-                                channel: "email".into(),
-                                success: false,
-                                timestamp: Utc::now(),
-                            }).await;
+                            let _ = self
+                                .event_bus
+                                .publish(
+                                    ctx,
+                                    &DomainEvent::CredentialDeliveryAttempted {
+                                        user_id: person.id,
+                                        channel: "email".into(),
+                                        success: false,
+                                        timestamp: Utc::now(),
+                                    },
+                                )
+                                .await;
                             // Sending failed: fallback to exposing temporary password so administrator can hand it over
                             return (CredentialDeliveryStatus::Failed(e.to_string()), true);
                         }
@@ -488,23 +619,38 @@ impl IdentityProvisioningService {
         if target_whatsapp {
             if let Some(ref phone) = person.phone {
                 if !phone.trim().is_empty() {
-                    match notification_port.send_whatsapp(ctx, phone.trim(), &whatsapp_message).await {
+                    match notification_port
+                        .send_whatsapp(ctx, phone.trim(), &whatsapp_message)
+                        .await
+                    {
                         Ok(_) => {
-                            let _ = self.event_bus.publish(ctx, &DomainEvent::CredentialDeliveryAttempted {
-                                user_id: person.id,
-                                channel: "whatsapp".into(),
-                                success: true,
-                                timestamp: Utc::now(),
-                            }).await;
+                            let _ = self
+                                .event_bus
+                                .publish(
+                                    ctx,
+                                    &DomainEvent::CredentialDeliveryAttempted {
+                                        user_id: person.id,
+                                        channel: "whatsapp".into(),
+                                        success: true,
+                                        timestamp: Utc::now(),
+                                    },
+                                )
+                                .await;
                             return (CredentialDeliveryStatus::Delivered, false);
                         }
                         Err(e) => {
-                            let _ = self.event_bus.publish(ctx, &DomainEvent::CredentialDeliveryAttempted {
-                                user_id: person.id,
-                                channel: "whatsapp".into(),
-                                success: false,
-                                timestamp: Utc::now(),
-                            }).await;
+                            let _ = self
+                                .event_bus
+                                .publish(
+                                    ctx,
+                                    &DomainEvent::CredentialDeliveryAttempted {
+                                        user_id: person.id,
+                                        channel: "whatsapp".into(),
+                                        success: false,
+                                        timestamp: Utc::now(),
+                                    },
+                                )
+                                .await;
                             return (CredentialDeliveryStatus::Failed(e.to_string()), true);
                         }
                     }
@@ -519,23 +665,38 @@ impl IdentityProvisioningService {
                         "Orbis: تم إنشاء حسابك في {}. اسم المستخدم: {} كلمة المرور: {} الرابط: {}",
                         org_name, username, temporary_password, login_url
                     );
-                    match notification_port.send_sms(ctx, phone.trim(), &sms_text).await {
+                    match notification_port
+                        .send_sms(ctx, phone.trim(), &sms_text)
+                        .await
+                    {
                         Ok(_) => {
-                            let _ = self.event_bus.publish(ctx, &DomainEvent::CredentialDeliveryAttempted {
-                                user_id: person.id,
-                                channel: "sms".into(),
-                                success: true,
-                                timestamp: Utc::now(),
-                            }).await;
+                            let _ = self
+                                .event_bus
+                                .publish(
+                                    ctx,
+                                    &DomainEvent::CredentialDeliveryAttempted {
+                                        user_id: person.id,
+                                        channel: "sms".into(),
+                                        success: true,
+                                        timestamp: Utc::now(),
+                                    },
+                                )
+                                .await;
                             return (CredentialDeliveryStatus::Delivered, false);
                         }
                         Err(e) => {
-                            let _ = self.event_bus.publish(ctx, &DomainEvent::CredentialDeliveryAttempted {
-                                user_id: person.id,
-                                channel: "sms".into(),
-                                success: false,
-                                timestamp: Utc::now(),
-                            }).await;
+                            let _ = self
+                                .event_bus
+                                .publish(
+                                    ctx,
+                                    &DomainEvent::CredentialDeliveryAttempted {
+                                        user_id: person.id,
+                                        channel: "sms".into(),
+                                        success: false,
+                                        timestamp: Utc::now(),
+                                    },
+                                )
+                                .await;
                             return (CredentialDeliveryStatus::Failed(e.to_string()), true);
                         }
                     }

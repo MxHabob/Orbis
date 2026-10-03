@@ -4,12 +4,15 @@ use async_trait::async_trait;
 use orbis_app::ports::reporting::*;
 use orbis_domain::entities::report::*;
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder,
+    QuerySelect, Set,
+};
 use uuid::Uuid;
 
 use crate::models::report::{
-    report_definition, report_template, report_template_version,
-    report_template_binding, report_job, report_audit_log,
+    report_audit_log, report_definition, report_job, report_template, report_template_binding,
+    report_template_version,
 };
 
 fn db_err(e: sea_orm::DbErr) -> DomainError {
@@ -48,27 +51,38 @@ fn model_to_definition(m: report_definition::Model) -> ReportDefinition {
     }
 }
 
-
-
 #[async_trait]
 impl ReportDefinitionRepository for ReportDefinitionRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ReportDefinition>, DomainError> {
         let model = report_definition::Entity::find_by_id(id)
-            .one(&self.db).await.map_err(db_err)?;
+            .one(&self.db)
+            .await
+            .map_err(db_err)?;
         Ok(model.map(model_to_definition))
     }
 
-    async fn find_by_code(&self, org_id: Uuid, code: &str) -> Result<Option<ReportDefinition>, DomainError> {
+    async fn find_by_code(
+        &self,
+        org_id: Uuid,
+        code: &str,
+    ) -> Result<Option<ReportDefinition>, DomainError> {
         let model = report_definition::Entity::find()
             .filter(report_definition::Column::OrgId.eq(org_id))
             .filter(report_definition::Column::Code.eq(code))
-            .one(&self.db).await.map_err(db_err)?;
+            .one(&self.db)
+            .await
+            .map_err(db_err)?;
         Ok(model.map(model_to_definition))
     }
 
-    async fn list_by_org(&self, org_id: Uuid, domain: Option<&str>, category: Option<&str>) -> Result<Vec<ReportDefinition>, DomainError> {
-        let mut query = report_definition::Entity::find()
-            .filter(report_definition::Column::OrgId.eq(org_id));
+    async fn list_by_org(
+        &self,
+        org_id: Uuid,
+        domain: Option<&str>,
+        category: Option<&str>,
+    ) -> Result<Vec<ReportDefinition>, DomainError> {
+        let mut query =
+            report_definition::Entity::find().filter(report_definition::Column::OrgId.eq(org_id));
 
         if let Some(d) = domain {
             query = query.filter(report_definition::Column::Domain.eq(d));
@@ -79,7 +93,9 @@ impl ReportDefinitionRepository for ReportDefinitionRepoImpl {
 
         let models = query
             .order_by_asc(report_definition::Column::SortOrder)
-            .all(&self.db).await.map_err(db_err)?;
+            .all(&self.db)
+            .await
+            .map_err(db_err)?;
         Ok(models.into_iter().map(model_to_definition).collect())
     }
 
@@ -94,9 +110,15 @@ impl ReportDefinitionRepository for ReportDefinitionRepoImpl {
             category: Set(def.category.clone()),
             description: Set(def.description.clone()),
             description_ar: Set(def.description_ar.clone()),
-            parameters_json: Set(serde_json::to_string(&def.parameters).unwrap_or_else(|_| "[]".into())),
-            required_permissions: Set(serde_json::to_string(&def.required_permissions).unwrap_or_else(|_| "[]".into())),
-            supported_formats: Set(serde_json::to_string(&def.supported_formats).unwrap_or_else(|_| "[]".into())),
+            parameters_json: Set(
+                serde_json::to_string(&def.parameters).unwrap_or_else(|_| "[]".into())
+            ),
+            required_permissions: Set(
+                serde_json::to_string(&def.required_permissions).unwrap_or_else(|_| "[]".into())
+            ),
+            supported_formats: Set(
+                serde_json::to_string(&def.supported_formats).unwrap_or_else(|_| "[]".into())
+            ),
             data_provider_key: Set(def.data_provider_key.clone()),
             is_system: Set(def.is_system),
             is_active: Set(def.is_active),
@@ -106,7 +128,12 @@ impl ReportDefinitionRepository for ReportDefinitionRepoImpl {
             updated_at: Set(def.updated_at.into()),
         };
 
-        if report_definition::Entity::find_by_id(def.id).one(&self.db).await.map_err(db_err)?.is_some() {
+        if report_definition::Entity::find_by_id(def.id)
+            .one(&self.db)
+            .await
+            .map_err(db_err)?
+            .is_some()
+        {
             active.update(&self.db).await.map_err(db_err)?;
         } else {
             active.insert(&self.db).await.map_err(db_err)?;
@@ -115,7 +142,10 @@ impl ReportDefinitionRepository for ReportDefinitionRepoImpl {
     }
 
     async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
-        report_definition::Entity::delete_by_id(id).exec(&self.db).await.map_err(db_err)?;
+        report_definition::Entity::delete_by_id(id)
+            .exec(&self.db)
+            .await
+            .map_err(db_err)?;
         Ok(())
     }
 }
@@ -167,11 +197,19 @@ impl ReportTemplateRepository for ReportTemplateRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ReportTemplate>, DomainError> {
         let model = report_template::Entity::find_by_id(id)
             .filter(report_template::Column::DeletedAt.is_null())
-            .one(&self.db).await.map_err(db_err)?;
+            .one(&self.db)
+            .await
+            .map_err(db_err)?;
         Ok(model.map(model_to_template))
     }
 
-    async fn list_by_org(&self, org_id: Uuid, status: Option<&str>, document_type: Option<&str>, entity_type: Option<&str>) -> Result<Vec<ReportTemplate>, DomainError> {
+    async fn list_by_org(
+        &self,
+        org_id: Uuid,
+        status: Option<&str>,
+        document_type: Option<&str>,
+        entity_type: Option<&str>,
+    ) -> Result<Vec<ReportTemplate>, DomainError> {
         let mut query = report_template::Entity::find()
             .filter(report_template::Column::OrgId.eq(org_id))
             .filter(report_template::Column::DeletedAt.is_null());
@@ -188,7 +226,9 @@ impl ReportTemplateRepository for ReportTemplateRepoImpl {
 
         let models = query
             .order_by_desc(report_template::Column::UpdatedAt)
-            .all(&self.db).await.map_err(db_err)?;
+            .all(&self.db)
+            .await
+            .map_err(db_err)?;
         Ok(models.into_iter().map(model_to_template).collect())
     }
 
@@ -225,7 +265,12 @@ impl ReportTemplateRepository for ReportTemplateRepoImpl {
             updated_at: Set(tmpl.updated_at.into()),
         };
 
-        if report_template::Entity::find_by_id(tmpl.id).one(&self.db).await.map_err(db_err)?.is_some() {
+        if report_template::Entity::find_by_id(tmpl.id)
+            .one(&self.db)
+            .await
+            .map_err(db_err)?
+            .is_some()
+        {
             active.update(&self.db).await.map_err(db_err)?;
         } else {
             active.insert(&self.db).await.map_err(db_err)?;
@@ -233,8 +278,17 @@ impl ReportTemplateRepository for ReportTemplateRepoImpl {
         Ok(())
     }
 
-    async fn update_status(&self, id: Uuid, status: &TemplateStatus, published_by: Option<Uuid>) -> Result<(), DomainError> {
-        if let Some(model) = report_template::Entity::find_by_id(id).one(&self.db).await.map_err(db_err)? {
+    async fn update_status(
+        &self,
+        id: Uuid,
+        status: &TemplateStatus,
+        published_by: Option<Uuid>,
+    ) -> Result<(), DomainError> {
+        if let Some(model) = report_template::Entity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(db_err)?
+        {
             let mut active: report_template::ActiveModel = model.into();
             active.status = Set(status.to_string());
             if *status == TemplateStatus::Published {
@@ -250,7 +304,11 @@ impl ReportTemplateRepository for ReportTemplateRepoImpl {
     }
 
     async fn soft_delete(&self, id: Uuid) -> Result<(), DomainError> {
-        if let Some(model) = report_template::Entity::find_by_id(id).one(&self.db).await.map_err(db_err)? {
+        if let Some(model) = report_template::Entity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(db_err)?
+        {
             let mut active: report_template::ActiveModel = model.into();
             active.deleted_at = Set(Some(chrono::Utc::now().into()));
             active.update(&self.db).await.map_err(db_err)?;
@@ -277,44 +335,77 @@ impl ReportTemplateRepository for ReportTemplateRepoImpl {
         Ok(())
     }
 
-    async fn find_versions(&self, template_id: Uuid) -> Result<Vec<ReportTemplateVersion>, DomainError> {
+    async fn find_versions(
+        &self,
+        template_id: Uuid,
+    ) -> Result<Vec<ReportTemplateVersion>, DomainError> {
         let models = report_template_version::Entity::find()
             .filter(report_template_version::Column::TemplateId.eq(template_id))
             .order_by_desc(report_template_version::Column::Version)
-            .all(&self.db).await.map_err(db_err)?;
+            .all(&self.db)
+            .await
+            .map_err(db_err)?;
 
-        Ok(models.into_iter().map(|m| ReportTemplateVersion {
-            id: m.id, template_id: m.template_id, version: m.version,
-            document_json: m.document_json,
-            page_size: m.page_size, page_width_mm: m.page_width_mm,
-            page_height_mm: m.page_height_mm, orientation: m.orientation,
-            margins_json: m.margins_json, change_summary: m.change_summary,
-            created_by: m.created_by, created_at: m.created_at.into(),
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| ReportTemplateVersion {
+                id: m.id,
+                template_id: m.template_id,
+                version: m.version,
+                document_json: m.document_json,
+                page_size: m.page_size,
+                page_width_mm: m.page_width_mm,
+                page_height_mm: m.page_height_mm,
+                orientation: m.orientation,
+                margins_json: m.margins_json,
+                change_summary: m.change_summary,
+                created_by: m.created_by,
+                created_at: m.created_at.into(),
+            })
+            .collect())
     }
 
-    async fn find_version(&self, template_id: Uuid, version: i32) -> Result<Option<ReportTemplateVersion>, DomainError> {
+    async fn find_version(
+        &self,
+        template_id: Uuid,
+        version: i32,
+    ) -> Result<Option<ReportTemplateVersion>, DomainError> {
         let model = report_template_version::Entity::find()
             .filter(report_template_version::Column::TemplateId.eq(template_id))
             .filter(report_template_version::Column::Version.eq(version))
-            .one(&self.db).await.map_err(db_err)?;
+            .one(&self.db)
+            .await
+            .map_err(db_err)?;
 
         Ok(model.map(|m| ReportTemplateVersion {
-            id: m.id, template_id: m.template_id, version: m.version,
+            id: m.id,
+            template_id: m.template_id,
+            version: m.version,
             document_json: m.document_json,
-            page_size: m.page_size, page_width_mm: m.page_width_mm,
-            page_height_mm: m.page_height_mm, orientation: m.orientation,
-            margins_json: m.margins_json, change_summary: m.change_summary,
-            created_by: m.created_by, created_at: m.created_at.into(),
+            page_size: m.page_size,
+            page_width_mm: m.page_width_mm,
+            page_height_mm: m.page_height_mm,
+            orientation: m.orientation,
+            margins_json: m.margins_json,
+            change_summary: m.change_summary,
+            created_by: m.created_by,
+            created_at: m.created_at.into(),
         }))
     }
 
-    async fn find_binding(&self, definition_id: Uuid, locale: &str, format: &OutputFormat) -> Result<Option<ReportTemplateBinding>, DomainError> {
+    async fn find_binding(
+        &self,
+        definition_id: Uuid,
+        locale: &str,
+        format: &OutputFormat,
+    ) -> Result<Option<ReportTemplateBinding>, DomainError> {
         let model = report_template_binding::Entity::find()
             .filter(report_template_binding::Column::ReportDefinitionId.eq(definition_id))
             .filter(report_template_binding::Column::Locale.eq(locale))
             .filter(report_template_binding::Column::Format.eq(format.to_string()))
-            .one(&self.db).await.map_err(db_err)?;
+            .one(&self.db)
+            .await
+            .map_err(db_err)?;
 
         Ok(model.map(|m| ReportTemplateBinding {
             id: m.id,
@@ -341,17 +432,28 @@ impl ReportTemplateRepository for ReportTemplateRepoImpl {
         Ok(())
     }
 
-    async fn find_bindings_by_definition(&self, definition_id: Uuid) -> Result<Vec<ReportTemplateBinding>, DomainError> {
+    async fn find_bindings_by_definition(
+        &self,
+        definition_id: Uuid,
+    ) -> Result<Vec<ReportTemplateBinding>, DomainError> {
         let models = report_template_binding::Entity::find()
             .filter(report_template_binding::Column::ReportDefinitionId.eq(definition_id))
-            .all(&self.db).await.map_err(db_err)?;
+            .all(&self.db)
+            .await
+            .map_err(db_err)?;
 
-        Ok(models.into_iter().map(|m| ReportTemplateBinding {
-            id: m.id, report_definition_id: m.report_definition_id,
-            template_id: m.template_id, locale: m.locale,
-            format: OutputFormat::from_str(&m.format),
-            is_default: m.is_default, created_at: m.created_at.into(),
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| ReportTemplateBinding {
+                id: m.id,
+                report_definition_id: m.report_definition_id,
+                template_id: m.template_id,
+                locale: m.locale,
+                format: OutputFormat::from_str(&m.format),
+                is_default: m.is_default,
+                created_at: m.created_at.into(),
+            })
+            .collect())
     }
 }
 
@@ -366,15 +468,23 @@ pub struct ReportJobRepoImpl {
 #[async_trait]
 impl ReportJobRepository for ReportJobRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ReportJob>, DomainError> {
-        let model = report_job::Entity::find_by_id(id).one(&self.db).await.map_err(db_err)?;
+        let model = report_job::Entity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(db_err)?;
         Ok(model.map(|m| ReportJob {
-            id: m.id, org_id: m.org_id, report_definition_id: m.report_definition_id,
-            template_id: m.template_id, requested_by: m.requested_by,
-            report_code: m.report_code, parameters: m.parameters,
+            id: m.id,
+            org_id: m.org_id,
+            report_definition_id: m.report_definition_id,
+            template_id: m.template_id,
+            requested_by: m.requested_by,
+            report_code: m.report_code,
+            parameters: m.parameters,
             output_format: OutputFormat::from_str(&m.output_format),
             locale: ReportLocale::from_str(&m.locale),
             status: JobStatus::from_str(&m.status),
-            output_path: m.output_path, output_size_bytes: m.output_size_bytes,
+            output_path: m.output_path,
+            output_size_bytes: m.output_size_bytes,
             error_message: m.error_message,
             created_at: m.created_at.into(),
             started_at: m.started_at.map(|d| d.into()),
@@ -384,7 +494,8 @@ impl ReportJobRepository for ReportJobRepoImpl {
 
     async fn save(&self, job: &ReportJob) -> Result<(), DomainError> {
         let active = report_job::ActiveModel {
-            id: Set(job.id), org_id: Set(job.org_id),
+            id: Set(job.id),
+            org_id: Set(job.org_id),
             report_definition_id: Set(job.report_definition_id),
             template_id: Set(job.template_id),
             requested_by: Set(job.requested_by),
@@ -401,7 +512,12 @@ impl ReportJobRepository for ReportJobRepoImpl {
             completed_at: Set(job.completed_at.map(|d| d.into())),
         };
 
-        if report_job::Entity::find_by_id(job.id).one(&self.db).await.map_err(db_err)?.is_some() {
+        if report_job::Entity::find_by_id(job.id)
+            .one(&self.db)
+            .await
+            .map_err(db_err)?
+            .is_some()
+        {
             active.update(&self.db).await.map_err(db_err)?;
         } else {
             active.insert(&self.db).await.map_err(db_err)?;
@@ -409,13 +525,30 @@ impl ReportJobRepository for ReportJobRepoImpl {
         Ok(())
     }
 
-    async fn update_status(&self, job_id: Uuid, status: &JobStatus, output_path: Option<String>, output_size: Option<i64>, error: Option<String>) -> Result<(), DomainError> {
-        if let Some(model) = report_job::Entity::find_by_id(job_id).one(&self.db).await.map_err(db_err)? {
+    async fn update_status(
+        &self,
+        job_id: Uuid,
+        status: &JobStatus,
+        output_path: Option<String>,
+        output_size: Option<i64>,
+        error: Option<String>,
+    ) -> Result<(), DomainError> {
+        if let Some(model) = report_job::Entity::find_by_id(job_id)
+            .one(&self.db)
+            .await
+            .map_err(db_err)?
+        {
             let mut active: report_job::ActiveModel = model.into();
             active.status = Set(status.to_string());
-            if let Some(p) = output_path { active.output_path = Set(Some(p)); }
-            if let Some(s) = output_size { active.output_size_bytes = Set(Some(s)); }
-            if let Some(e) = error { active.error_message = Set(Some(e)); }
+            if let Some(p) = output_path {
+                active.output_path = Set(Some(p));
+            }
+            if let Some(s) = output_size {
+                active.output_size_bytes = Set(Some(s));
+            }
+            if let Some(e) = error {
+                active.error_message = Set(Some(e));
+            }
             if *status == JobStatus::Processing {
                 active.started_at = Set(Some(chrono::Utc::now().into()));
             }
@@ -433,21 +566,31 @@ impl ReportJobRepository for ReportJobRepoImpl {
             .filter(report_job::Column::OrgId.eq(org_id))
             .order_by_desc(report_job::Column::CreatedAt)
             .limit(limit as u64)
-            .all(&self.db).await.map_err(db_err)?;
+            .all(&self.db)
+            .await
+            .map_err(db_err)?;
 
-        Ok(models.into_iter().map(|m| ReportJob {
-            id: m.id, org_id: m.org_id, report_definition_id: m.report_definition_id,
-            template_id: m.template_id, requested_by: m.requested_by,
-            report_code: m.report_code, parameters: m.parameters,
-            output_format: OutputFormat::from_str(&m.output_format),
-            locale: ReportLocale::from_str(&m.locale),
-            status: JobStatus::from_str(&m.status),
-            output_path: m.output_path, output_size_bytes: m.output_size_bytes,
-            error_message: m.error_message,
-            created_at: m.created_at.into(),
-            started_at: m.started_at.map(|d| d.into()),
-            completed_at: m.completed_at.map(|d| d.into()),
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| ReportJob {
+                id: m.id,
+                org_id: m.org_id,
+                report_definition_id: m.report_definition_id,
+                template_id: m.template_id,
+                requested_by: m.requested_by,
+                report_code: m.report_code,
+                parameters: m.parameters,
+                output_format: OutputFormat::from_str(&m.output_format),
+                locale: ReportLocale::from_str(&m.locale),
+                status: JobStatus::from_str(&m.status),
+                output_path: m.output_path,
+                output_size_bytes: m.output_size_bytes,
+                error_message: m.error_message,
+                created_at: m.created_at.into(),
+                started_at: m.started_at.map(|d| d.into()),
+                completed_at: m.completed_at.map(|d| d.into()),
+            })
+            .collect())
     }
 }
 
@@ -476,7 +619,12 @@ impl ReportAuditRepository for ReportAuditRepoImpl {
         Ok(())
     }
 
-    async fn list_by_org(&self, org_id: Uuid, limit: Option<u64>, offset: Option<u64>) -> Result<Vec<ReportAuditEntry>, DomainError> {
+    async fn list_by_org(
+        &self,
+        org_id: Uuid,
+        limit: Option<u64>,
+        offset: Option<u64>,
+    ) -> Result<Vec<ReportAuditEntry>, DomainError> {
         let mut query = report_audit_log::Entity::find()
             .filter(report_audit_log::Column::OrgId.eq(org_id))
             .order_by_desc(report_audit_log::Column::CreatedAt);
@@ -489,15 +637,18 @@ impl ReportAuditRepository for ReportAuditRepoImpl {
         }
 
         let models = query.all(&self.db).await.map_err(db_err)?;
-        Ok(models.into_iter().map(|m| ReportAuditEntry {
-            id: m.id,
-            org_id: m.org_id,
-            actor_id: m.actor_id,
-            action: m.action,
-            entity_type: m.entity_type,
-            entity_id: m.entity_id,
-            details: m.details,
-            created_at: m.created_at.into(),
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| ReportAuditEntry {
+                id: m.id,
+                org_id: m.org_id,
+                actor_id: m.actor_id,
+                action: m.action,
+                entity_type: m.entity_type,
+                entity_id: m.entity_id,
+                details: m.details,
+                created_at: m.created_at.into(),
+            })
+            .collect())
     }
 }

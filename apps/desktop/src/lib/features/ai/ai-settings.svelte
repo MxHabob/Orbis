@@ -198,8 +198,7 @@ async function saveAllSettings() {
     toast.success(m.ai_center_settings_save_success());
   } catch (err) {
     toast.error(
-      m.ai_center_settings_save_error?.() ||
-        "Failed to save AI Center settings",
+      m.ai_center_settings_save_error(),
     );
   } finally {
     isSaving = false;

@@ -1,16 +1,18 @@
-use orbis_domain::entities::progression::{PromotionJob, PromotionDetail, PromotionJobStatus, PromotionDecision};
-use orbis_domain::entities::enrollment::{Enrollment, EnrollmentStatus};
-use orbis_domain::entities::student::{StudentStatus, AcademicStanding};
-use orbis_domain::events::DomainEvent;
-use orbis_domain::errors::DomainError;
-use orbis_domain::iam::permission::Permission;
 use crate::context::RequestContext;
-use crate::ports::repositories::{PromotionRepository, EnrollmentRepository, StudentRepository};
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::repositories::{EnrollmentRepository, PromotionRepository, StudentRepository};
+use chrono::Utc;
+use orbis_domain::entities::enrollment::{Enrollment, EnrollmentStatus};
+use orbis_domain::entities::progression::{
+    PromotionDecision, PromotionDetail, PromotionJob, PromotionJobStatus,
+};
+use orbis_domain::entities::student::{AcademicStanding, StudentStatus};
+use orbis_domain::errors::DomainError;
+use orbis_domain::events::DomainEvent;
+use orbis_domain::iam::permission::Permission;
 use std::sync::Arc;
 use uuid::Uuid;
-use chrono::Utc;
 
 pub struct ProgressionService {
     pub progression_repo: Arc<dyn PromotionRepository>,
@@ -57,7 +59,9 @@ impl ProgressionService {
         job_name: String,
         items: Vec<StudentProgressionItem>,
     ) -> Result<PromotionJob, DomainError> {
-        self.permission_checker.check(ctx, Permission::StudentUpdate).await?;
+        self.permission_checker
+            .check(ctx, Permission::StudentUpdate)
+            .await?;
 
         let now = Utc::now();
         let job_id = Uuid::new_v4();
@@ -75,7 +79,9 @@ impl ProgressionService {
             match item.decision {
                 PromotionDecision::Promote => {
                     promoted_count += 1;
-                    if let Some(old_enrollment) = self.enrollment_repo.find_by_id(item.enrollment_id).await? {
+                    if let Some(old_enrollment) =
+                        self.enrollment_repo.find_by_id(item.enrollment_id).await?
+                    {
                         let new_enrollment = Enrollment::new(
                             org_id,
                             target_period_id,
@@ -90,7 +96,9 @@ impl ProgressionService {
                 }
                 PromotionDecision::Retain => {
                     retained_count += 1;
-                    if let Some(old_enrollment) = self.enrollment_repo.find_by_id(item.enrollment_id).await? {
+                    if let Some(old_enrollment) =
+                        self.enrollment_repo.find_by_id(item.enrollment_id).await?
+                    {
                         let new_enrollment = Enrollment::new(
                             org_id,
                             target_period_id,
@@ -105,7 +113,8 @@ impl ProgressionService {
                 }
                 PromotionDecision::Graduate => {
                     graduated_count += 1;
-                    if let Some(mut student) = self.student_repo.find_by_id(item.student_id).await? {
+                    if let Some(mut student) = self.student_repo.find_by_id(item.student_id).await?
+                    {
                         student.status = StudentStatus::Graduated;
                         student.graduated_at = Some(now);
                         student.updated_at = now;
@@ -144,7 +153,9 @@ impl ProgressionService {
 
         // 2. Bulk update old enrollments
         if !old_enrollment_ids_to_complete.is_empty() {
-            self.enrollment_repo.update_status_batch(&old_enrollment_ids_to_complete, EnrollmentStatus::Graduated).await?;
+            self.enrollment_repo
+                .update_status_batch(&old_enrollment_ids_to_complete, EnrollmentStatus::Graduated)
+                .await?;
         }
 
         // 3. Save promotion job and audit details
@@ -171,12 +182,18 @@ impl ProgressionService {
         self.progression_repo.save_details(&details).await?;
 
         // 4. Publish Event
-        let _ = self.event_bus.publish(ctx, &DomainEvent::CohortPromoted {
-            job_id,
-            org_id,
-            promoted_count,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::CohortPromoted {
+                    job_id,
+                    org_id,
+                    promoted_count,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(job)
     }
@@ -188,40 +205,53 @@ impl ProgressionService {
         _org_id: Uuid,
         source_period_id: Uuid,
     ) -> Result<Vec<StudentProgressionItem>, DomainError> {
-        self.permission_checker.check(ctx, Permission::StudentRead).await?;
+        self.permission_checker
+            .check(ctx, Permission::StudentRead)
+            .await?;
 
-        let enrollments = self.enrollment_repo.find_by_period(source_period_id).await?;
+        let enrollments = self
+            .enrollment_repo
+            .find_by_period(source_period_id)
+            .await?;
         let mut items = Vec::new();
 
         for enr in enrollments {
             let student_opt = self.student_repo.find_by_id(enr.student_id).await?;
             let (decision, reason) = if let Some(student) = student_opt {
                 match student.status {
-                    StudentStatus::Active => {
-                        match student.standing {
-                            AcademicStanding::GoodStanding | AcademicStanding::HonorList => (
+                    StudentStatus::Active => match student.standing {
+                        AcademicStanding::GoodStanding | AcademicStanding::HonorList => (
+                            PromotionDecision::Promote,
+                            "Eligible for advancement to next grade/level".to_string(),
+                        ),
+                        AcademicStanding::AcademicWarning1 | AcademicStanding::AcademicWarning2 => {
+                            (
                                 PromotionDecision::Promote,
-                                "Eligible for advancement to next grade/level".to_string(),
-                            ),
-                            AcademicStanding::AcademicWarning1 | AcademicStanding::AcademicWarning2 => (
-                                PromotionDecision::Promote,
-                                format!("Eligible for advancement under academic warning ({})", student.standing),
-                            ),
-                            AcademicStanding::AcademicWarning3 | AcademicStanding::Probation => (
-                                PromotionDecision::Retain,
-                                format!("Academic standing requires retention or review ({})", student.standing),
-                            ),
-                            AcademicStanding::Dismissed => (
-                                PromotionDecision::Exclude,
-                                "Student dismissed for academic reasons".to_string(),
-                            ),
+                                format!(
+                                    "Eligible for advancement under academic warning ({})",
+                                    student.standing
+                                ),
+                            )
                         }
+                        AcademicStanding::AcademicWarning3 | AcademicStanding::Probation => (
+                            PromotionDecision::Retain,
+                            format!(
+                                "Academic standing requires retention or review ({})",
+                                student.standing
+                            ),
+                        ),
+                        AcademicStanding::Dismissed => (
+                            PromotionDecision::Exclude,
+                            "Student dismissed for academic reasons".to_string(),
+                        ),
                     },
                     StudentStatus::Graduated => (
                         PromotionDecision::Exclude,
                         "Student has already graduated".to_string(),
                     ),
-                    StudentStatus::Withdrawn | StudentStatus::Expelled | StudentStatus::TransferredOut => (
+                    StudentStatus::Withdrawn
+                    | StudentStatus::Expelled
+                    | StudentStatus::TransferredOut => (
                         PromotionDecision::Exclude,
                         format!("Student is currently inactive ({})", student.status),
                     ),
@@ -231,11 +261,15 @@ impl ProgressionService {
                     ),
                     StudentStatus::OnLeave => (
                         PromotionDecision::Retain,
-                        "Student is currently on leave — requires review before progression".to_string(),
+                        "Student is currently on leave — requires review before progression"
+                            .to_string(),
                     ),
                 }
             } else {
-                (PromotionDecision::Promote, "Regular progression".to_string())
+                (
+                    PromotionDecision::Promote,
+                    "Regular progression".to_string(),
+                )
             };
 
             items.push(StudentProgressionItem {

@@ -148,11 +148,11 @@ async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const cleanId = roleId.toLowerCase().trim().replace(/[\s-]+/g, "_");
   if (!cleanId) {
-    toast.error(l("الرجاء إدخال معرّف الدور", "Role ID is required"));
+    toast.error(m.ui_copy_role_id_is_required_98e11b83());
     return;
   }
   if (!roleName.trim() && !roleNameAr.trim()) {
-    toast.error(l("الرجاء إدخال اسم الدور", "Role name is required"));
+    toast.error(m.ui_copy_role_name_is_required_27157b93());
     return;
   }
 
@@ -170,8 +170,8 @@ async function handleSubmit(e: SubmitEvent) {
 
     toast.success(
       isEditMode
-        ? l("تم تحديث الدور بنجاح", "Role updated successfully")
-        : l("تم إنشاء الدور بنجاح", "Role created successfully")
+        ? m.ui_copy_role_updated_successfully_39fa3ad8()
+        : m.ui_copy_role_created_successfully_e33128c9()
     );
 
     if (onsave) {
@@ -179,7 +179,7 @@ async function handleSubmit(e: SubmitEvent) {
     }
     open = false;
   } catch (e: any) {
-    toast.error(e?.message || l("فشل حفظ الدور", "Failed to save role"));
+    toast.error(e?.message || m.ui_copy_failed_to_save_role_c9f36e45());
   } finally {
     isSaving = false;
   }
@@ -193,8 +193,8 @@ async function handleSubmit(e: SubmitEvent) {
       <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
         <SheetTitle class="text-lg font-bold text-foreground">
           {isEditMode
-            ? l("تعديل صلاحيات الدور", "Edit Role")
-            : l("إضافة دور جديد", "Add Role")}
+            ? m.ui_copy_edit_role_c8f33d66()
+            : m.ui_copy_add_role_f3782222()}
         </SheetTitle>
       </SheetHeader>
 
@@ -203,7 +203,7 @@ async function handleSubmit(e: SubmitEvent) {
         <!-- Basic Info Fields -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <!-- Role ID / Code -->
-          <FormField id="role_id_field" label={l("معرّف الدور (Code)", "Role Code")} required>
+          <FormField id="role_id_field" label={m.ui_copy_role_code_ca56677e()} required>
             {#snippet children()}
             <Input
               id="role_id_field"
@@ -218,7 +218,7 @@ async function handleSubmit(e: SubmitEvent) {
           </FormField>
 
           <!-- Arabic Name -->
-          <FormField id="role_name_ar_field" label={l("الاسم بالعربية", "Arabic Name")}>
+          <FormField id="role_name_ar_field" label={m.common_org_unit_name_ar()}>
             {#snippet children()}
             <Input
               id="role_name_ar_field"
@@ -231,7 +231,7 @@ async function handleSubmit(e: SubmitEvent) {
           </FormField>
 
           <!-- English Name -->
-          <FormField id="role_name_en_field" label={l("الاسم بالإنجليزية", "English Name")}>
+          <FormField id="role_name_en_field" label={m.common_org_unit_name_en()}>
             {#snippet children()}
             <Input
               id="role_name_en_field"
@@ -247,7 +247,7 @@ async function handleSubmit(e: SubmitEvent) {
         <!-- Permissions Accordion by Domain -->
         <div class="flex flex-col gap-2 pt-2">
           <span class="text-xs font-bold text-foreground">
-            {l("صلاحيات ومجالات النظام", "Domain Permissions")}
+            {m.ui_copy_domain_permissions_faa86b6f()}
           </span>
 
           <Accordion type="multiple" class="w-full">
@@ -294,8 +294,8 @@ async function handleSubmit(e: SubmitEvent) {
                             class="text-[10px] text-muted-foreground hover:text-foreground hover:underline cursor-pointer"
                           >
                             {allSelected
-                              ? l("إلغاء التحديد", "Deselect")
-                              : l("تحديد الكل", "Select all")}
+                              ? m.ui_copy_deselect_ccd71b49()
+                              : m.ui_copy_select_all_99dda350()}
                           </button>
                         </div>
 
@@ -336,7 +336,7 @@ async function handleSubmit(e: SubmitEvent) {
           disabled={isSaving}
           class="text-xs h-8"
         >
-          {m.common_action_cancel ? m.common_action_cancel() : "إلغاء"}
+          {m.common_action_cancel()}
         </Button>
         <Button
           type="submit"
@@ -346,7 +346,7 @@ async function handleSubmit(e: SubmitEvent) {
         >
           {isSaving
             ? "..."
-            : (m.common_action_save ? m.common_action_save() : "حفظ")}
+            : (m.common_action_save())}
         </Button>
       </div>
     </form>

@@ -4,9 +4,9 @@
 //! multiple tables in a single pass per table.
 
 use async_trait::async_trait;
-use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
-use orbis_app::ports::repositories::{DashboardRepository, DashboardCounts};
+use orbis_app::ports::repositories::{DashboardCounts, DashboardRepository};
 use orbis_domain::errors::DomainError;
+use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
 use uuid::Uuid;
 
 pub struct DashboardRepoImpl {
@@ -29,22 +29,31 @@ impl DashboardRepository for DashboardRepoImpl {
         ).await.unwrap_or(0);
 
         // Count classes
-        let total_classes = self.count_query(
-            "SELECT COUNT(*) as cnt FROM classes WHERE org_id = $1",
-            org_id,
-        ).await.unwrap_or(0);
+        let total_classes = self
+            .count_query(
+                "SELECT COUNT(*) as cnt FROM classes WHERE org_id = $1",
+                org_id,
+            )
+            .await
+            .unwrap_or(0);
 
         // Count enrollments
-        let total_enrollments = self.count_query(
-            "SELECT COUNT(*) as cnt FROM enrollments WHERE org_id = $1",
-            org_id,
-        ).await.unwrap_or(0);
+        let total_enrollments = self
+            .count_query(
+                "SELECT COUNT(*) as cnt FROM enrollments WHERE org_id = $1",
+                org_id,
+            )
+            .await
+            .unwrap_or(0);
 
         // Count subjects
-        let total_subjects = self.count_query(
-            "SELECT COUNT(*) as cnt FROM subjects WHERE org_id = $1",
-            org_id,
-        ).await.unwrap_or(0);
+        let total_subjects = self
+            .count_query(
+                "SELECT COUNT(*) as cnt FROM subjects WHERE org_id = $1",
+                org_id,
+            )
+            .await
+            .unwrap_or(0);
 
         // Active academic year (status = 'active')
         let active_year = {
@@ -73,10 +82,13 @@ impl DashboardRepository for DashboardRepoImpl {
         };
 
         // Sum of payment amounts
-        let total_payments_amount = self.sum_query(
-            "SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE org_id = $1",
-            org_id,
-        ).await.unwrap_or(0.0);
+        let total_payments_amount = self
+            .sum_query(
+                "SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE org_id = $1",
+                org_id,
+            )
+            .await
+            .unwrap_or(0.0);
 
         // Sum of pending fees
         let pending_fees_amount = self.sum_query(
@@ -99,13 +111,15 @@ impl DashboardRepository for DashboardRepoImpl {
 
 impl DashboardRepoImpl {
     async fn count_query(&self, sql: &str, org_id: Uuid) -> Result<u64, DomainError> {
-        let result = self.db.query_one(
-            Statement::from_sql_and_values(
+        let result = self
+            .db
+            .query_one(Statement::from_sql_and_values(
                 self.db.get_database_backend(),
                 sql,
                 [org_id.into()],
-            ),
-        ).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            ))
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
 
         match result {
             Some(row) => {
@@ -117,13 +131,15 @@ impl DashboardRepoImpl {
     }
 
     async fn sum_query(&self, sql: &str, org_id: Uuid) -> Result<f64, DomainError> {
-        let result = self.db.query_one(
-            Statement::from_sql_and_values(
+        let result = self
+            .db
+            .query_one(Statement::from_sql_and_values(
                 self.db.get_database_backend(),
                 sql,
                 [org_id.into()],
-            ),
-        ).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            ))
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
 
         match result {
             Some(row) => {
@@ -134,4 +150,3 @@ impl DashboardRepoImpl {
         }
     }
 }
-

@@ -10,9 +10,5 @@ pub trait ExpressionFormatter: Send + Sync {
     fn name(&self) -> &str;
 
     /// Formats the JSON value with the provided arguments
-    fn format(
-        &self,
-        value: &serde_json::Value,
-        args: &[String],
-    ) -> Result<String, DocforgeError>;
+    fn format(&self, value: &serde_json::Value, args: &[String]) -> Result<String, DocforgeError>;
 }

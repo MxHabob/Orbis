@@ -5,7 +5,11 @@
 //! idempotency — once an organization + admin exist, the endpoint returns
 //! 409 Conflict (AlreadyInitialized).
 
-use axum::{extract::State, routing::{get, post}, Json, Router};
+use axum::{
+    Json, Router,
+    extract::State,
+    routing::{get, post},
+};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -117,7 +121,10 @@ pub struct BootstrapStatusDto {
 pub async fn get_bootstrap_status(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<BootstrapStatusDto>>, ApiError> {
-    let status = state.bootstrap_service.get_status().await
+    let status = state
+        .bootstrap_service
+        .get_status()
+        .await
         .map_err(ApiError::from)?;
 
     Ok(ApiResponse::ok(BootstrapStatusDto {
@@ -182,7 +189,10 @@ pub async fn execute_bootstrap(
         admin_phone: req.admin_phone,
     };
 
-    let result = state.bootstrap_service.execute(service_req).await
+    let result = state
+        .bootstrap_service
+        .execute(service_req)
+        .await
         .map_err(ApiError::from)?;
 
     Ok(ApiResponse::ok(BootstrapResultDto {

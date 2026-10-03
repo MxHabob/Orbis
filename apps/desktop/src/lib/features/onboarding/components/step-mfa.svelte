@@ -5,6 +5,7 @@
   6-digit code verification, emergency recovery codes, and skip support.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import QRCode from "qrcode";
 import { api } from "$lib/api/client";
@@ -150,14 +151,14 @@ async function handleVerify() {
   <div class="space-y-2 text-start">
     <div class="flex items-center gap-2">
       <span class="text-xs font-semibold text-primary uppercase font-mono tracking-wider">
-        {isRTL ? "المرحلة ٥ من ٦" : "Step 5 of 6"}
+        {m.ui_onboarding_mfa_step_5_of_6()}
       </span>
       <Badge variant="outline" class="text-[10px] font-mono border-primary/30 text-primary">
-        {isRTL ? "أمان إضافي اختياري" : "Optional Security"}
+        {m.ui_onboarding_mfa_optional_security()}
       </Badge>
     </div>
     <h2 class="text-2xl font-bold tracking-tight text-foreground">
-      {isRTL ? "تأمين حساب المشرف بالتحقق الثنائي (MFA)" : "Two-Factor Authentication Setup"}
+      {m.ui_onboarding_mfa_two_factor_authentication_setup()}
     </h2>
     <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
       {isRTL
@@ -172,7 +173,7 @@ async function handleVerify() {
       <div class="border-b border-border/40 pb-3 flex items-center justify-between">
         <h3 class="text-sm font-bold text-foreground uppercase tracking-wider font-mono flex items-center gap-2">
           <LockClosed size={16} class="text-primary" />
-          <span>{isRTL ? "مسح الرمز المربع والربط" : "Scan QR Code & Pairing"}</span>
+          <span>{m.ui_onboarding_mfa_scan_qr_code_pairing()}</span>
         </h3>
         <Badge variant="outline" class="text-[10px] font-mono border-border">
           TOTP / RFC 6238
@@ -187,7 +188,7 @@ async function handleVerify() {
             <div class="size-40 flex flex-col items-center justify-center gap-2 text-muted-foreground">
               <div class="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
               <span class="text-[10px] font-mono text-zinc-500">
-                {isRTL ? "جاري إنشاء الرمز..." : "Generating QR..."}
+                {m.ui_onboarding_mfa_generating_qr()}
               </span>
             </div>
           {:else if qrDataUrl}
@@ -198,7 +199,7 @@ async function handleVerify() {
             />
           {:else}
             <div class="size-40 flex items-center justify-center text-[11px] text-zinc-400 font-mono text-center p-2">
-              {isRTL ? "تعذر توليد الرمز المربع" : "QR Code unavailable"}
+              {m.ui_onboarding_mfa_qr_code_unavailable()}
             </div>
           {/if}
         </div>
@@ -206,12 +207,12 @@ async function handleVerify() {
         <!-- Guidance -->
         <div class="space-y-2 text-start flex-1 min-w-0">
           <h4 class="text-xs font-bold text-foreground">
-            {isRTL ? "خطوات الربط بتطبيق المصادقة:" : "How to pair your app:"}
+            {m.ui_onboarding_mfa_how_to_pair_your_app()}
           </h4>
           <ol class="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside leading-relaxed">
-            <li>{isRTL ? "افتح تطبيق المصادقة في هاتفك الذكي." : "Open your authenticator app on your mobile device."}</li>
-            <li>{isRTL ? "اختر إضافة حساب جديد ثم امسح الرمز المربع أعلاه." : "Choose Add Account and scan the QR Code above."}</li>
-            <li>{isRTL ? "أدخل الرمز المكون من 6 أرقام لتأكيد التفعيل بالأسفل." : "Enter the 6-digit code below to confirm setup."}</li>
+            <li>{m.ui_onboarding_mfa_open_your_authenticator_app_on_your_mobile_device()}</li>
+            <li>{m.ui_onboarding_mfa_choose_add_account_and_scan_the_qr_code_above()}</li>
+            <li>{m.ui_onboarding_mfa_enter_the_6_digit_code_below_to_confirm_setup()}</li>
           </ol>
           <div class="pt-2 flex flex-wrap gap-1 text-[10px] font-mono text-muted-foreground">
             <span class="px-1.5 py-0.5 rounded bg-muted/50 border border-border/40">Google Authenticator</span>
@@ -224,11 +225,11 @@ async function handleVerify() {
       <!-- Secret Key Box -->
       <div class="space-y-1.5">
         <Label class="text-xs font-medium text-foreground">
-          {isRTL ? "مفتاح الإعداد اليدوي (Manual Secret Key)" : "Manual Secret Key"}
+          {m.ui_onboarding_mfa_manual_secret_key()}
         </Label>
         <div class="p-2.5 rounded-xl bg-muted/30 border border-border/60 flex items-center justify-between font-mono text-xs text-foreground">
           <span class="tracking-wider select-all truncate px-1">
-            {isLoading ? (isRTL ? "جاري التوليد الآمن..." : "Generating cryptographic key...") : mfaData?.secret || "ORBIS-SEC-KEY"}
+            {isLoading ? (m.ui_onboarding_mfa_generating_cryptographic_key()) : mfaData?.secret || "ORBIS-SEC-KEY"}
           </span>
           <Button
             type="button"
@@ -239,10 +240,10 @@ async function handleVerify() {
           >
             {#if isCopiedSecret}
               <Check size={12} class="text-emerald-500" />
-              <span>{isRTL ? "تم النسخ" : "Copied"}</span>
+              <span>{m.common_mfa_enroll_copied()}</span>
             {:else}
               <Clipboard size={12} />
-              <span>{isRTL ? "نسخ" : "Copy"}</span>
+              <span>{m.common_mfa_enroll_copy()}</span>
             {/if}
           </Button>
         </div>
@@ -251,7 +252,7 @@ async function handleVerify() {
       <!-- 6-Digit Code Input & Confirmation -->
       <div class="space-y-2 pt-1">
         <Label for="totp-input" class="text-xs font-medium text-foreground">
-          {isRTL ? "رمز التحقق المكون من 6 أرقام" : "6-Digit Authenticator Passcode"}
+          {m.ui_onboarding_mfa_6_digit_authenticator_passcode()}
         </Label>
         <div class="flex items-center gap-3">
           <Input
@@ -268,7 +269,7 @@ async function handleVerify() {
           {#if isVerified}
             <div class="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-3 py-2 rounded-xl border border-emerald-500/20">
               <Check size={16} strokeWidth={3} />
-              <span>{isRTL ? "تم التحقق والتفعيل بنجاح" : "Verified & Enabled"}</span>
+              <span>{m.ui_onboarding_mfa_verified_enabled()}</span>
             </div>
           {:else}
             <Button
@@ -279,7 +280,7 @@ async function handleVerify() {
               disabled={isVerifying || verificationCode.trim().length < 6}
               class="h-10 px-4 text-xs font-medium"
             >
-              <span>{isVerifying ? (isRTL ? "جاري التحقق..." : "Verifying...") : (isRTL ? "تأكيد وتفعيل" : "Verify & Enable")}</span>
+              <span>{isVerifying ? (m.ui_onboarding_mfa_verifying()) : (m.ui_onboarding_mfa_verify_enable())}</span>
             </Button>
           {/if}
         </div>
@@ -291,7 +292,7 @@ async function handleVerify() {
 
       <!-- Optionality reminder -->
       <div class="pt-3 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground">
-        <span>{isRTL ? "يمكنك تخطي هذه الخطوة وتفعيلها لاحقاً في أي وقت من الإعدادات." : "You can safely skip this step and configure 2FA later in Settings."}</span>
+        <span>{m.ui_onboarding_mfa_you_can_safely_skip_this_step_and_configure_2fa_later_in_settings()}</span>
       </div>
     </div>
 
@@ -304,7 +305,7 @@ async function handleVerify() {
 
         <div class="space-y-1.5">
           <h3 class="text-base font-bold text-foreground">
-            {isRTL ? "حماية العمليات الإدارية الحساسة" : "Elevated Authority Guard"}
+            {m.ui_onboarding_mfa_elevated_authority_guard()}
           </h3>
           <p class="text-xs text-muted-foreground leading-relaxed">
             {isRTL
@@ -318,7 +319,7 @@ async function handleVerify() {
           <div class="space-y-2 pt-2">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-bold text-foreground block font-mono">
-                {isRTL ? "رموز الاسترداد الاحتياطية" : "Emergency Recovery Keys"}
+                {m.ui_onboarding_mfa_emergency_recovery_keys()}
               </span>
               <div class="flex items-center gap-1">
                 <Button
@@ -330,10 +331,10 @@ async function handleVerify() {
                 >
                   {#if isCopiedCodes}
                     <Check size={11} class="text-emerald-500" />
-                    <span>{isRTL ? "تم" : "Done"}</span>
+                    <span>{m.ui_onboarding_mfa_done()}</span>
                   {:else}
                     <Clipboard size={11} />
-                    <span>{isRTL ? "نسخ الكل" : "Copy"}</span>
+                    <span>{m.ui_onboarding_mfa_copy()}</span>
                   {/if}
                 </Button>
                 <Button
@@ -344,7 +345,7 @@ async function handleVerify() {
                   class="h-6 px-1.5 text-[10px] font-mono gap-1 text-muted-foreground hover:text-foreground"
                 >
                   <Download size={11} />
-                  <span>{isRTL ? "تحميل" : "Save"}</span>
+                  <span>{m.ui_onboarding_mfa_save()}</span>
                 </Button>
               </div>
             </div>
@@ -367,13 +368,13 @@ async function handleVerify() {
 
       <div class="pt-4 border-t border-border/40">
         <div class="flex items-center justify-between text-xs">
-          <span class="text-muted-foreground">{isRTL ? "حالة التحقق:" : "2FA Status:"}</span>
+          <span class="text-muted-foreground">{m.ui_onboarding_mfa_2fa_status()}</span>
           {#if isVerified}
             <Badge variant="secondary" class="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
-              {isRTL ? "مفعل وموثق بنجاح" : "Active & Verified"}
+              {m.ui_onboarding_mfa_active_verified()}
             </Badge>
           {:else}
-            <span class="font-mono text-muted-foreground text-xs">{isRTL ? "غير مفعل (اختياري)" : "Optional / Skippable"}</span>
+            <span class="font-mono text-muted-foreground text-xs">{m.ui_onboarding_mfa_optional_skippable()}</span>
           {/if}
         </div>
       </div>

@@ -1,11 +1,11 @@
-use async_trait::async_trait;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter};
-use uuid::Uuid;
-use orbis_app::ports::repositories::{MfaFactorRepository, MfaRecoveryCodeRepository};
-use orbis_domain::entities::mfa::{MfaFactor, MfaType, MfaRecoveryCode};
-use orbis_domain::errors::DomainError;
 use crate::models::mfa_factor::{self, Entity as MfaFactorEntity};
 use crate::models::mfa_recovery_code::{self, Entity as RecoveryCodeEntity};
+use async_trait::async_trait;
+use orbis_app::ports::repositories::{MfaFactorRepository, MfaRecoveryCodeRepository};
+use orbis_domain::entities::mfa::{MfaFactor, MfaRecoveryCode, MfaType};
+use orbis_domain::errors::DomainError;
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
+use uuid::Uuid;
 
 pub struct MfaFactorRepoImpl {
     pub db: DatabaseConnection,
@@ -20,17 +20,20 @@ impl MfaFactorRepository for MfaFactorRepoImpl {
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        Ok(models.into_iter().map(|m| MfaFactor {
-            id: m.id,
-            user_id: m.user_id,
-            factor_type: MfaType::from(m.factor_type.as_str()),
-            factor_name: m.factor_name,
-            secret_encrypted: m.secret_encrypted,
-            is_verified: m.is_verified,
-            is_default: m.is_default,
-            created_at: m.created_at,
-            last_used_at: m.last_used_at,
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| MfaFactor {
+                id: m.id,
+                user_id: m.user_id,
+                factor_type: MfaType::from(m.factor_type.as_str()),
+                factor_name: m.factor_name,
+                secret_encrypted: m.secret_encrypted,
+                is_verified: m.is_verified,
+                is_default: m.is_default,
+                created_at: m.created_at,
+                last_used_at: m.last_used_at,
+            })
+            .collect())
     }
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<MfaFactor>, DomainError> {
@@ -65,10 +68,21 @@ impl MfaFactorRepository for MfaFactorRepoImpl {
             last_used_at: Set(factor.last_used_at),
         };
 
-        if MfaFactorEntity::find_by_id(factor.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active_model.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if MfaFactorEntity::find_by_id(factor.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active_model
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active_model.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active_model
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
 
         Ok(())
@@ -89,7 +103,10 @@ pub struct MfaRecoveryCodeRepoImpl {
 
 #[async_trait]
 impl MfaRecoveryCodeRepository for MfaRecoveryCodeRepoImpl {
-    async fn find_active_by_user(&self, user_id: Uuid) -> Result<Vec<MfaRecoveryCode>, DomainError> {
+    async fn find_active_by_user(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<MfaRecoveryCode>, DomainError> {
         let models = RecoveryCodeEntity::find()
             .filter(mfa_recovery_code::Column::UserId.eq(user_id))
             .filter(mfa_recovery_code::Column::IsUsed.eq(false))
@@ -97,14 +114,17 @@ impl MfaRecoveryCodeRepository for MfaRecoveryCodeRepoImpl {
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        Ok(models.into_iter().map(|m| MfaRecoveryCode {
-            id: m.id,
-            user_id: m.user_id,
-            code_hash: m.code_hash,
-            is_used: m.is_used,
-            created_at: m.created_at,
-            used_at: m.used_at,
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| MfaRecoveryCode {
+                id: m.id,
+                user_id: m.user_id,
+                code_hash: m.code_hash,
+                is_used: m.is_used,
+                created_at: m.created_at,
+                used_at: m.used_at,
+            })
+            .collect())
     }
 
     async fn save_all(&self, codes: &[MfaRecoveryCode]) -> Result<(), DomainError> {
@@ -117,17 +137,27 @@ impl MfaRecoveryCodeRepository for MfaRecoveryCodeRepoImpl {
                 created_at: Set(code.created_at),
                 used_at: Set(code.used_at),
             };
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
 
     async fn mark_used(&self, id: Uuid) -> Result<(), DomainError> {
-        if let Some(existing) = RecoveryCodeEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))? {
+        if let Some(existing) = RecoveryCodeEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+        {
             let mut active: mfa_recovery_code::ActiveModel = existing.into();
             active.is_used = Set(true);
             active.used_at = Set(Some(chrono::Utc::now()));
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }

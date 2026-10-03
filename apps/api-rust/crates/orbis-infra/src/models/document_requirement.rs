@@ -1,12 +1,11 @@
-use sea_orm::entity::prelude::*;
-use sea_orm::Set;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use orbis_domain::entities::document_requirement::{
-    DocumentRequirement as DomainDocumentRequirement,
-    RequirementTargetType, DocumentCondition,
+    DocumentCondition, DocumentRequirement as DomainDocumentRequirement, RequirementTargetType,
 };
+use sea_orm::Set;
+use sea_orm::entity::prelude::*;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "document_requirements")]

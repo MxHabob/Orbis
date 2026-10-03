@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import { OrbisGrid } from "@orbis/svelte-grid";
   import { Button } from "@orbis/ui/button";
   import { Badge } from "@orbis/ui/badge";
@@ -44,7 +45,9 @@
     hideProfileSelector?: boolean;
   } = $props();
 
-  let selectedProfileId = $state<BulkProfileId>(initialProfileId);
+  let selectedProfileId = $state<BulkProfileId>(
+    untrack(() => initialProfileId),
+  );
   let currentProfile = $derived(getBulkProfile(selectedProfileId));
 
   // Declarative TanStack Query for Reference Data (Zero $effect data loading!)
@@ -128,7 +131,7 @@
   // Add blank rows for direct visual entry
   function handleAddBlankRows(count: number = 5) {
     if (!refData) {
-      toast.warning(m.common_loading?.() || "جاري تحميل البيانات المرجعية...");
+      toast.warning(m.common_loading());
       return;
     }
     const startIndex = rawRows.length + 1;
@@ -148,7 +151,7 @@
   // Paste tabular data from clipboard
   async function handlePasteFromClipboard() {
     if (!refData) {
-      toast.warning(m.common_loading?.() || "جاري تحميل البيانات المرجعية...");
+      toast.warning(m.common_loading());
       return;
     }
     try {
@@ -217,7 +220,7 @@
   // Handle template download
   async function handleDownloadTemplate() {
     if (!refData) {
-      toast.warning(m.common_loading?.() || "جاري تحميل البيانات المرجعية...");
+      toast.warning(m.common_loading());
       return;
     }
     try {
@@ -406,7 +409,7 @@
 
       {#if rawRows.length > 0}
         <Badge variant="outline" class="text-xs px-2 py-0.5">
-          {rawRows.length} {m.common_students_count_suffix?.() || "سجل"}
+          {rawRows.length} {m.common_students_count_suffix()}
         </Badge>
       {/if}
     </div>
@@ -583,7 +586,7 @@
         <div class="relative">
           <input
             type="text"
-            placeholder={m.common_search_placeholder?.() || "بحث سريع..."}
+            placeholder={m.common_search_placeholder()}
             bind:value={searchQuery}
             class="h-7 w-36 px-2.5 text-xs rounded bg-background border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           />
@@ -637,7 +640,7 @@
           onclick={handleReset}
           class="h-8 text-xs text-muted-foreground hover:text-foreground"
         >
-          {m.common_action_clear?.() || "إفراغ"}
+          {m.common_action_clear()}
         </Button>
 
         <Button

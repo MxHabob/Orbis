@@ -30,20 +30,42 @@ export default defineConfig(({ mode }) => {
       target: "esnext",
       minify: true,
       manifest: true,
-      rollupOptions: {
+      rolldownOptions: {
         output: {
-          // Split heavy vendor libs into separate chunks for better caching
-          manualChunks(id: string) {
-            if (id.includes("node_modules")) {
-              if (id.includes("@orbis/icons")) return "vendor-icons";
-              if (id.includes("@tauri-apps")) return "vendor-tauri";
-              if (id.includes("@tanstack")) return "vendor-query";
-              if (id.includes("zod")) return "vendor-utils";
-            }
+          codeSplitting: {
+            groups: [
+              {
+                name: "vendor-icons",
+                test: (id: string) => id.includes("node_modules") && id.includes("@orbis/icons"),
+                priority: 10,
+              },
+              {
+                name: "vendor-tauri",
+                test: (id: string) => id.includes("node_modules") && id.includes("@tauri-apps"),
+                priority: 10,
+              },
+              {
+                name: "vendor-query",
+                test: (id: string) => id.includes("node_modules") && id.includes("@tanstack"),
+                priority: 10,
+              },
+              {
+                name: "vendor-utils",
+                test: (id: string) => id.includes("node_modules") && id.includes("zod"),
+                priority: 10,
+              },
+              {
+                name: "settings",
+                test: (id: string) => /[\\/]features[\\/]settings[\\/]/.test(id),
+                entriesAware: true,
+                maxSize: 300 * 1024,
+              },
+            ],
           },
         },
       },
-      chunkSizeWarningLimit: 350,
+      // XLSX is lazy-loaded and compresses to ~142 kB; route chunks remain below 350 kB.
+      chunkSizeWarningLimit: 450,
     },
     // Tauri expects a fixed port; fail if that port is not available
     server: {

@@ -36,12 +36,14 @@ impl<'de> Deserialize<'de> for TemplateDocument {
         D: serde::Deserializer<'de>,
     {
         let wire = TemplateDocumentWire::deserialize(deserializer)?;
-        let root = wire.root.or_else(|| {
-            wire.pages
-                .into_iter()
-                .next()
-                .map(TemplateNode::Page)
-        }).ok_or_else(|| serde::de::Error::custom("template document requires root or a non-empty pages array"))?;
+        let root = wire
+            .root
+            .or_else(|| wire.pages.into_iter().next().map(TemplateNode::Page))
+            .ok_or_else(|| {
+                serde::de::Error::custom(
+                    "template document requires root or a non-empty pages array",
+                )
+            })?;
 
         Ok(Self {
             version: wire.version,

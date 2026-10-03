@@ -3,10 +3,10 @@
 // Exposes parsing, evaluation and formatting capabilities.
 // ═══════════════════════════════════════════════════════════════
 
-pub mod parser;
-pub mod formatters;
 pub mod evaluator;
+pub mod formatters;
+pub mod parser;
 
-pub use parser::{parse_expression, Token, FormatterCall};
+pub use evaluator::{evaluate_condition, evaluate_expression, resolve_path};
 pub use formatters::format_value;
-pub use evaluator::{evaluate_expression, evaluate_condition, resolve_path};
+pub use parser::{parse_expression, FormatterCall, Token};

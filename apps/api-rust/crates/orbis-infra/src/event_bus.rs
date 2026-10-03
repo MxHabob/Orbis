@@ -1,9 +1,9 @@
 use async_trait::async_trait;
+use orbis_app::autopilot::engine::AutopilotEngine;
 use orbis_app::context::RequestContext;
 use orbis_app::ports::event_bus::EventBus;
-use orbis_domain::events::DomainEvent;
 use orbis_domain::errors::DomainError;
-use orbis_app::autopilot::engine::AutopilotEngine;
+use orbis_domain::events::DomainEvent;
 use std::sync::Arc;
 
 pub struct MemoryEventBus {

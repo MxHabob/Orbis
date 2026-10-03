@@ -114,18 +114,18 @@ async function toggleAccountStatus() {
   const confirmMsg = nextState
     ? m.settings_user_detail_activate_confirm
       ? m.settings_user_detail_activate_confirm()
-      : l("هل أنت متأكد من تفعيل الحساب؟", "Activate account?")
+      : m.ui_copy_activate_account_89c1b85d()
     : m.settings_user_detail_deactivate_confirm
       ? m.settings_user_detail_deactivate_confirm()
-      : l("هل أنت متأكد من تعطيل الحساب؟", "Deactivate account?");
+      : m.ui_copy_deactivate_account_084a7a7b();
   const confirmed = await confirmStore.prompt({
     title:
-      (m.common_word_status ? m.common_word_status() : l("الحالة", "Status")) +
+      (m.common_word_status ? m.common_word_status() : m.common_status()) +
       "؟",
     description: confirmMsg,
     confirmText: m.common_word_status
       ? m.common_word_status()
-      : l("تأكيد", "Confirm"),
+      : m.ui_copy_confirm_0100f51c(),
     variant: nextState ? "default" : "destructive",
   });
   if (!confirmed) return;
@@ -138,13 +138,13 @@ async function toggleAccountStatus() {
       nextState
         ? m.settings_user_detail_activate_success
           ? m.settings_user_detail_activate_success()
-          : l("تم تفعيل الحساب بنجاح", "Account activated")
+          : m.ui_copy_account_activated_ecaf5563()
         : m.settings_user_detail_deactivate_success
           ? m.settings_user_detail_deactivate_success()
-          : l("تم تعطيل الحساب بنجاح", "Account deactivated"),
+          : m.ui_copy_account_deactivated_37ae84cf(),
     );
   } catch (e: unknown) {
-    toast.error((e as any)?.message || l("فشل التحديث", "Update failed"));
+    toast.error((e as any)?.message || m.ui_copy_update_failed_19a589b0());
   } finally {
     isSaving = false;
   }
@@ -171,11 +171,11 @@ async function saveProfile() {
     toast.success(
       m.settings_user_detail_saved
         ? m.settings_user_detail_saved()
-        : l("تم حفظ البيانات بنجاح", "Profile saved successfully"),
+        : m.ui_copy_profile_saved_successfully_42b4e478(),
     );
     await userQuery.refetch();
   } catch (e: unknown) {
-    toast.error((e as any)?.message || l("فشل الحفظ", "Save failed"));
+    toast.error((e as any)?.message || m.ui_copy_save_failed_38ef99fb());
   } finally {
     isSaving = false;
   }
@@ -211,7 +211,7 @@ async function saveProfile() {
         for="user_enabled"
         class="text-xs font-semibold text-foreground cursor-pointer select-none"
       >
-        {l("مفعّل (نشط)", "Enabled")}
+        {m.ui_copy_enabled_aceb3f59()}
       </Label>
     </div>
 
@@ -223,7 +223,7 @@ async function saveProfile() {
           for="fullName"
           class="text-xs font-medium text-muted-foreground"
         >
-          {m.common_word_fullname ? m.common_word_fullname() : l("الاسم الكامل", "Full Name")} *
+          {m.common_word_fullname ? m.common_word_fullname() : m.common_word_fullname()} *
         </Label>
         <Input id="fullName" type="text" bind:value={fullName} required />
       </div>
@@ -231,7 +231,7 @@ async function saveProfile() {
       <!-- Email -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="email" class="text-xs font-medium text-muted-foreground">
-          {m.common_word_email ? m.common_word_email() : l("البريد الإلكتروني", "Email")} *
+          {m.common_word_email ? m.common_word_email() : m.common_word_email()} *
         </Label>
         <Input id="email" type="email" bind:value={email} required />
       </div>
@@ -239,7 +239,7 @@ async function saveProfile() {
       <!-- Arabic Name -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="nameAr" class="text-xs font-medium text-muted-foreground">
-          {m.common_form_full_name_ar ? m.common_form_full_name_ar() : l("الاسم بالكامل (عربي)", "Full Name (Arabic)")}
+          {m.common_form_full_name_ar ? m.common_form_full_name_ar() : m.ui_copy_full_name_arabic_4871e6bf()}
         </Label>
         <Input id="nameAr" type="text" bind:value={nameAr} />
       </div>
@@ -247,7 +247,7 @@ async function saveProfile() {
       <!-- Dynamic Primary Role Select -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="role" class="text-xs font-medium text-muted-foreground">
-          {m.settings_user_detail_label_primary_role ? m.settings_user_detail_label_primary_role() : l("الدور الرئيسي", "Primary Role")}
+          {m.settings_user_detail_label_primary_role ? m.settings_user_detail_label_primary_role() : m.ui_copy_primary_role_b4890578()}
         </Label>
         <RoleSelect bind:value={role} />
       </div>
@@ -255,7 +255,7 @@ async function saveProfile() {
       <!-- Phone -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="phone" class="text-xs font-medium text-muted-foreground">
-          {m.settings_user_detail_label_phone ? m.settings_user_detail_label_phone() : l("رقم الهاتف", "Phone Number")}
+          {m.settings_user_detail_label_phone ? m.settings_user_detail_label_phone() : m.employees_phone()}
         </Label>
         <Input id="phone" type="text" bind:value={phone} />
       </div>
@@ -266,7 +266,7 @@ async function saveProfile() {
       <div class="flex items-center justify-between border-b border-border/50 pb-2.5">
         <div class="flex items-center gap-2">
           <UserGroup size={16} class="text-primary" />
-          <h3 class="text-xs font-bold text-foreground uppercase tracking-wider">{l("مجموعات المستخدمين المسندة", "Assigned User Groups")}</h3>
+          <h3 class="text-xs font-bold text-foreground uppercase tracking-wider">{m.employees_user_groups()}</h3>
         </div>
         <Button
           variant="outline"
@@ -275,7 +275,7 @@ async function saveProfile() {
           onclick={openManageGroups}
         >
           <Pencil size={12} />
-          <span>{l("إدارة المجموعات", "Manage Groups")}</span>
+          <span>{m.ui_copy_manage_groups_bb35a396()}</span>
         </Button>
       </div>
 
@@ -286,7 +286,7 @@ async function saveProfile() {
         </div>
       {:else if userAssignedGroups.length === 0}
         <span class="text-xs text-muted-foreground italic py-1">
-          {l("لا توجد مجموعات مسندة لهذا المستخدم حالياً.", "No groups currently assigned to this user.")}
+          {m.ui_copy_no_groups_currently_assigned_to_this_user_2a949232()}
         </span>
       {:else}
         <div class="flex flex-wrap gap-2 py-1">
@@ -303,7 +303,7 @@ async function saveProfile() {
     <!-- Actions Toolbar -->
     <div class="flex justify-end gap-3 border-t border-border/40 pt-6 mt-2">
       <Button variant="ghost" size="sm" onclick={resetForm}>
-        {m.common_switcher_reset ? m.common_switcher_reset() : l("إعادة تعيين", "Reset")}
+        {m.common_switcher_reset ? m.common_switcher_reset() : m.common_switcher_reset()}
       </Button>
       <Button
         variant="lime"
@@ -312,7 +312,7 @@ async function saveProfile() {
         onclick={saveProfile}
         disabled={isSaving}
       >
-        {isSaving ? "..." : (m.settings_user_detail_btn_save_details ? m.settings_user_detail_btn_save_details() : l("حفظ التعديلات", "Save Changes"))}
+        {isSaving ? "..." : (m.settings_user_detail_btn_save_details ? m.settings_user_detail_btn_save_details() : m.ui_copy_save_changes_c8af420b())}
       </Button>
     </div>
   </div>

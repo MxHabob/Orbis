@@ -7,12 +7,11 @@
 //!
 //! Used by Desktop startup orchestrator, CLI doctor, and server health endpoints.
 
-use std::sync::Arc;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
-
-use orbis_domain::errors::DomainError;
 use crate::ports::repositories::SystemRepository;
+use orbis_domain::errors::DomainError;
 
 /// System health response — returned by health checks.
 #[derive(Debug, Clone, Serialize, Deserialize)]

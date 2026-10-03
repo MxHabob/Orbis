@@ -6,7 +6,7 @@ let { data }: { data: { orgId: string } } = $props();
 </script>
 
 <svelte:head>
-  <title>{m.common_sidebar_fees ? m.common_sidebar_fees() : "الرسوم الدراسية"} | Orbis</title>
+  <title>{m.common_sidebar_fees()} | Orbis</title>
 </svelte:head>
 
 <FeesWorkspace orgId={data.orgId} />

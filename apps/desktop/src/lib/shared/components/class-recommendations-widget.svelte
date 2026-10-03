@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { createQuery } from "@tanstack/svelte-query";
 import { api } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
@@ -57,7 +58,7 @@ const recommendations = $derived.by(() => {
 });
 </script>
 
-<WorkspaceCard title={isArabic ? "توصيات الذكاء الاصطناعي" : "AI Recommendations"}>
+<WorkspaceCard title={m.ui_class_recommendations_ai_recommendations()}>
   {#snippet actions()}
     <Sparkles size={14} class="text-primary animate-pulse" />
   {/snippet}

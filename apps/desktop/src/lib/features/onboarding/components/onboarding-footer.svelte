@@ -4,6 +4,7 @@
   and Primary Continue/Launch button.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { QuestionMarkCircle } from "@orbis/icons";
 
@@ -41,7 +42,7 @@ let {
       class="h-8 px-3 text-xs font-normal gap-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50"
     >
       <QuestionMarkCircle size={14} />
-      <span>{isRTL ? "المساعدة" : "Help"}</span>
+      <span>{m.ui_onboarding_onboarding_footer_help()}</span>
     </Button>
   </div>
 
@@ -55,7 +56,7 @@ let {
         onclick={onPrev}
         class="h-8 px-4 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50"
       >
-        <span>{isRTL ? "السابق" : "Back"}</span>
+        <span>{m.ui_onboarding_onboarding_footer_back()}</span>
       </Button>
     {/if}
 
@@ -67,7 +68,7 @@ let {
         onclick={onSkip}
         class="h-8 px-3.5 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground"
       >
-        <span>{isRTL ? "تخطي الآن" : "Skip"}</span>
+        <span>{m.ui_onboarding_onboarding_footer_skip()}</span>
       </Button>
     {/if}
 
@@ -80,7 +81,7 @@ let {
         disabled={isSubmitting}
         class="h-8 px-5 text-xs font-semibold rounded-full shadow-sm shadow-primary/20"
       >
-        <span>{isRTL ? "المتابعة" : "Continue"}</span>
+        <span>{m.ui_onboarding_onboarding_footer_continue()}</span>
       </Button>
     {/if}
   </div>

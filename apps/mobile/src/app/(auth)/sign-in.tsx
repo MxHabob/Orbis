@@ -42,18 +42,18 @@ import { Button, Input } from "@/components/ui";
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const CAPABILITIES = [
-  { label: "Teach", labelAr: "التدريس", icon: AcademicCap, color: "#8B5CF6" },
-  { label: "Analyze", labelAr: "التحليل", icon: ChartBar, color: "#06B6D4" },
-  { label: "Automate", labelAr: "الأتمتة", icon: Bolt, color: "#84CC16" },
-  { label: "Govern", labelAr: "الإدارة", icon: BuildingLibrary, color: "#EC4899" },
-];
+  { labelKey: "auth_capability_teach", icon: AcademicCap, color: "#8B5CF6" },
+  { labelKey: "auth_capability_analyze", icon: ChartBar, color: "#06B6D4" },
+  { labelKey: "auth_capability_automate", icon: Bolt, color: "#84CC16" },
+  { labelKey: "auth_capability_govern", icon: BuildingLibrary, color: "#EC4899" },
+] as const;
 
 export default function SignInScreen() {
   const router = useRouter();
   const theme = useTheme();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const { t, isArabic, locale } = useI18n();
+  const { t, isArabic } = useI18n();
   const toast = useToast();
   const { login, loginWithGoogle, isLoading } = useAuth();
 
@@ -147,7 +147,7 @@ export default function SignInScreen() {
               const CapIcon = cap.icon;
               return (
                 <View
-                  key={cap.label}
+                  key={cap.labelKey}
                   style={[
                     styles.reelItem,
                     isActive && styles.reelItemActive,
@@ -174,7 +174,7 @@ export default function SignInScreen() {
                           { color: isDark ? "#FFFFFF" : "#0F172A" },
                         ]}
                       >
-                        {locale === "ar" ? cap.labelAr : cap.label}
+                        {t(cap.labelKey)}
                       </Text>
                     </View>
                   ) : (
@@ -188,7 +188,7 @@ export default function SignInScreen() {
                         },
                       ]}
                     >
-                      {locale === "ar" ? cap.labelAr : cap.label}
+                      {t(cap.labelKey)}
                     </Text>
                   )}
                 </View>

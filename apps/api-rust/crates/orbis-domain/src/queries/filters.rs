@@ -1,11 +1,10 @@
+use crate::entities::enrollment::{EnrollmentStatus, StudyMode};
+use crate::entities::payment::PaymentMethod;
+use crate::entities::student::{AcademicStanding, StudentStatus};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::entities::student::{StudentStatus, AcademicStanding};
-use crate::entities::enrollment::{StudyMode, EnrollmentStatus};
-use crate::entities::payment::PaymentMethod;
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct PaginationParams {
     pub page: Option<u64>,
     pub page_size: Option<u64>,
@@ -22,7 +21,10 @@ impl PaginationParams {
     }
 
     pub fn page_size(&self) -> u64 {
-        self.page_size.unwrap_or(Self::DEFAULT_PAGE_SIZE).min(Self::MAX_PAGE_SIZE).max(1)
+        self.page_size
+            .unwrap_or(Self::DEFAULT_PAGE_SIZE)
+            .min(Self::MAX_PAGE_SIZE)
+            .max(1)
     }
 
     pub fn offset(&self) -> u64 {
@@ -30,8 +32,7 @@ impl PaginationParams {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct PaginatedList<T: Serialize> {
     pub items: Vec<T>,
     pub total_count: u64,
@@ -69,8 +70,7 @@ impl<T: Serialize> PaginatedList<T> {
 
 // ── Domain Filter Structs ────────────────────────────────────────
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct StudentFilter {
     pub period_id: Option<Uuid>,
     pub class_id: Option<Uuid>,
@@ -80,8 +80,7 @@ pub struct StudentFilter {
     pub pagination: Option<PaginationParams>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct EnrollmentFilter {
     pub period_id: Option<Uuid>,
     pub class_id: Option<Uuid>,
@@ -91,8 +90,7 @@ pub struct EnrollmentFilter {
     pub pagination: Option<PaginationParams>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct SubjectFilter {
     pub unit_id: Option<Uuid>,
     pub is_core: Option<bool>,
@@ -101,8 +99,7 @@ pub struct SubjectFilter {
     pub pagination: Option<PaginationParams>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct ClassFilter {
     pub unit_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
@@ -111,8 +108,7 @@ pub struct ClassFilter {
     pub pagination: Option<PaginationParams>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct ClassSubjectFilter {
     pub class_id: Option<Uuid>,
     pub subject_id: Option<Uuid>,
@@ -121,8 +117,7 @@ pub struct ClassSubjectFilter {
     pub pagination: Option<PaginationParams>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct GradeFilter {
     pub student_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
@@ -132,8 +127,7 @@ pub struct GradeFilter {
     pub pagination: Option<PaginationParams>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct AttendanceFilter {
     pub class_id: Option<Uuid>,
     pub student_id: Option<Uuid>,
@@ -143,8 +137,7 @@ pub struct AttendanceFilter {
     pub pagination: Option<PaginationParams>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct PaymentFilter {
     pub student_id: Option<Uuid>,
     pub fee_id: Option<Uuid>,
@@ -155,8 +148,7 @@ pub struct PaymentFilter {
     pub pagination: Option<PaginationParams>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct StudentFeeFilter {
     pub student_id: Option<Uuid>,
     pub enrollment_id: Option<Uuid>,
@@ -166,8 +158,7 @@ pub struct StudentFeeFilter {
     pub pagination: Option<PaginationParams>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct AccountFilter {
     pub account_type: Option<String>,
     pub parent_id: Option<Uuid>,
@@ -176,8 +167,7 @@ pub struct AccountFilter {
     pub pagination: Option<PaginationParams>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct ExamScheduleFilter {
     pub session_id: Option<Uuid>,
     pub subject_id: Option<Uuid>,

@@ -136,15 +136,15 @@ async function processApproval(
         request_id: requestId,
         notes: notes || undefined,
       });
-      toast.success(l("تمت الموافقة واعتماد الطلب بنجاح", "Request approved successfully"));
+      toast.success(m.ui_copy_request_approved_successfully_0d97b0bc());
     } else if (action === "reject") {
       await api.rejectOverride({
         request_id: requestId,
         reason: notes || "Rejected by administrator",
       });
-      toast.error(l("تم رفض الطلب وتسجيل السبب في السجل", "Request rejected"));
+      toast.error(m.ui_copy_request_rejected_789c8c19());
     } else {
-      toast.info(l("تم تصعيد الطلب للمستوى الإداري الأعلى", "Request escalated"));
+      toast.info(m.ui_copy_request_escalated_4dc69ee1());
     }
 
     // Clear note for this request
@@ -166,7 +166,7 @@ async function cancelRequest(requestId: string) {
   processingId = requestId;
   try {
     await api.rejectOverride({ request_id: requestId, reason: "Cancelled by requester" });
-    toast.success(l("تم إلغاء الطلب بنجاح", "Request cancelled"));
+    toast.success(m.ui_copy_request_cancelled_75ffa047());
     queryClient.invalidateQueries({ queryKey: ["override-requests"] });
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -281,20 +281,20 @@ function parseApprovalChain(chain: any): any[] {
           </div>
           <div class="flex flex-col">
             <CardTitle class="text-base font-bold text-foreground">
-              {l("مركز إدارة الموافقات والاعتمادات الأكاديمية", "Academic Approvals & Override Center")}
+              {m.ui_copy_academic_approvals_override_center_1742df64()}
             </CardTitle>
             <CardDescription class="text-xs text-muted-foreground">
-              {l("صندوق الوارد الموحد لمراجعة واعتماد طلبات القبول والتسجيل واستثناءات السياسات الأكاديمية", "Unified governance inbox for admission authorizations, grade adjustments, and policy overrides")}
+              {m.ui_copy_unified_governance_inbox_for_admission_aut_2567f279()}
             </CardDescription>
           </div>
         </div>
 
         <div class="flex items-center gap-2 flex-wrap">
           <Badge variant={admissionCount > 0 ? "lime" : "outline"} class="px-2.5 py-1 text-xs font-mono font-bold">
-            {admissionCount} {l("طلبات قبول معلقة", "Pending Admissions")}
+            {admissionCount} {m.ui_copy_pending_admissions_7b6cea59()}
           </Badge>
           <Badge variant={overrideCount > 0 ? "warning" : "outline"} class="px-2.5 py-1 text-xs font-mono font-bold">
-            {overrideCount} {l("استثناءات أكاديمية", "Policy Overrides")}
+            {overrideCount} {m.ui_copy_policy_overrides_e552bc54()}
           </Badge>
         </div>
       </CardHeader>
@@ -306,7 +306,7 @@ function parseApprovalChain(chain: any): any[] {
         <TabsList class="h-9 p-1 bg-muted/40 rounded-lg border border-border/40">
           <TabsTrigger value="pending" class="text-xs font-semibold gap-1.5 px-3.5 h-7">
             <ClockRotateRight class="w-3.5 h-3.5" />
-            <span>{l("كافة المعاملات المعلقة", "All Pending")}</span>
+            <span>{m.ui_copy_all_pending_a89e9229()}</span>
             {#if pendingItems.length > 0}
               <Badge variant="destructive" class="ms-1 px-1.5 py-0 text-[10px] font-mono">
                 {pendingItems.length}
@@ -316,7 +316,7 @@ function parseApprovalChain(chain: any): any[] {
 
           <TabsTrigger value="admission" class="text-xs font-semibold gap-1.5 px-3.5 h-7">
             <UserBadgeCheck class="w-3.5 h-3.5" />
-            <span>{l("اعتماد القبول والتسجيل", "Admissions")}</span>
+            <span>{m.ui_copy_admissions_6dbbec27()}</span>
             {#if admissionCount > 0}
               <Badge variant="lime" class="ms-1 px-1.5 py-0 text-[10px] font-mono">
                 {admissionCount}
@@ -326,7 +326,7 @@ function parseApprovalChain(chain: any): any[] {
 
           <TabsTrigger value="overrides" class="text-xs font-semibold gap-1.5 px-3.5 h-7">
             <AdjustmentsHorizontal class="w-3.5 h-3.5" />
-            <span>{l("الاستثناءات والتجاوزات", "Policy Overrides")}</span>
+            <span>{m.ui_copy_policy_overrides_9ec38c4a()}</span>
             {#if overrideCount > 0}
               <Badge variant="secondary" class="ms-1 px-1.5 py-0 text-[10px] font-mono">
                 {overrideCount}
@@ -336,19 +336,19 @@ function parseApprovalChain(chain: any): any[] {
 
           <TabsTrigger value="mine" class="text-xs font-semibold gap-1.5 px-3.5 h-7">
             <User class="w-3.5 h-3.5" />
-            <span>{l("طلباتي المرسلة", "My Requests")}</span>
+            <span>{m.ui_copy_my_requests_4a1dba46()}</span>
           </TabsTrigger>
 
           <TabsTrigger value="log" class="text-xs font-semibold gap-1.5 px-3.5 h-7">
             <CheckCircle class="w-3.5 h-3.5" />
-            <span>{l("سجل القرارات المعتمدة", "Audit Log")}</span>
+            <span>{m.ui_copy_audit_log_97a36552()}</span>
           </TabsTrigger>
         </TabsList>
 
         <!-- Search Bar -->
         <div class="w-full sm:w-64">
           <Input
-            placeholder={l("بحث في الطلبات بالاسم أو السبب...", "Search requests...")}
+            placeholder={m.ui_copy_search_requests_a2e9521f()}
             bind:value={searchQuery}
             class="h-8 text-xs bg-background"
           />
@@ -372,10 +372,10 @@ function parseApprovalChain(chain: any): any[] {
                 </div>
                 <div class="flex flex-col gap-1 max-w-sm">
                   <span class="text-sm font-bold text-foreground">
-                    {l("صندوق الاعتمادات مكتمل ومحدّث", "No Pending Approvals")}
+                    {m.ui_copy_no_pending_approvals_eee02c96()}
                   </span>
                   <span class="text-xs text-muted-foreground leading-relaxed">
-                    {l("لا توجد طلبات اعتماد تسجيل أو استثناءات أكاديمية معلقة تتطلب إجراءً حالياً.", "All admission applications and override requests have been processed.")}
+                    {m.ui_copy_all_admission_applications_and_override_re_c6a99722()}
                   </span>
                 </div>
               </CardContent>
@@ -424,7 +424,7 @@ function parseApprovalChain(chain: any): any[] {
                       </p>
 
                       <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{l("مقدم الطلب:", "Requested by:")}</span>
+                        <span>{m.ui_copy_requested_by_a2679cef()}</span>
                         <strong class="text-foreground font-medium">{request.requested_by_name || request.requested_by || "مسؤول النظام"}</strong>
                       </div>
 
@@ -472,7 +472,7 @@ function parseApprovalChain(chain: any): any[] {
                     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
                       <div class="flex-1">
                         <Input
-                          placeholder={l("ملاحظات الاعتماد أو سبب القرار (اختياري)...", "Approval notes or decision reason (optional)...")}
+                          placeholder={m.ui_copy_approval_notes_or_decision_reason_optional_a41d972b()}
                           bind:value={actionNotes[request.id]}
                           class="h-8 text-xs bg-background"
                           disabled={isProcessing}
@@ -490,10 +490,10 @@ function parseApprovalChain(chain: any): any[] {
                         >
                           {#if isProcessing}
                             <ArrowPath class="w-3.5 h-3.5 animate-spin" />
-                            <span>{l("جارٍ التنفيذ...", "Processing...")}</span>
+                            <span>{m.ui_copy_processing_94974c77()}</span>
                           {:else}
                             <CheckCircle class="w-3.5 h-3.5" />
-                            <span>{l("اعتماد وتوثيق", "Approve")}</span>
+                            <span>{m.ui_copy_approve_7da54ae0()}</span>
                           {/if}
                         </Button>
 
@@ -506,7 +506,7 @@ function parseApprovalChain(chain: any): any[] {
                           disabled={isProcessing}
                         >
                           <XMark class="w-3.5 h-3.5" />
-                          <span>{l("رفض", "Reject")}</span>
+                          <span>{m.common_approval_reject()}</span>
                         </Button>
 
                         <!-- Escalate Button -->
@@ -518,7 +518,7 @@ function parseApprovalChain(chain: any): any[] {
                           disabled={isProcessing}
                         >
                           <ArrowUpCircle class="w-3.5 h-3.5 text-muted-foreground" />
-                          <span>{l("تصعيد", "Escalate")}</span>
+                          <span>{m.common_approval_escalate()}</span>
                         </Button>
                       </div>
                     </div>
@@ -543,7 +543,7 @@ function parseApprovalChain(chain: any): any[] {
           <Card class="border-border/60 py-16 text-center">
             <CardContent class="flex flex-col items-center justify-center gap-3">
               <User class="w-10 h-10 text-muted-foreground/40" />
-              <p class="text-xs text-muted-foreground">{l("لم تقم بإرسال أي طلبات اعتماد حتى الآن.", "You have not submitted any approval requests.")}</p>
+              <p class="text-xs text-muted-foreground">{m.ui_copy_you_have_not_submitted_any_approval_reques_005f0b0e()}</p>
             </CardContent>
           </Card>
         {:else}
@@ -566,7 +566,7 @@ function parseApprovalChain(chain: any): any[] {
                   <p class="text-xs font-medium text-foreground">{request.reason}</p>
                   {#if request.resolution_notes}
                     <div class="p-2 rounded bg-muted/30 border border-border/50 text-[11px] text-muted-foreground">
-                      <strong>{l("ملاحظات القرار:", "Resolution:")}</strong> {request.resolution_notes}
+                      <strong>{m.ui_copy_resolution_371c8da4()}</strong> {request.resolution_notes}
                     </div>
                   {/if}
                 </CardContent>
@@ -588,7 +588,7 @@ function parseApprovalChain(chain: any): any[] {
           <Card class="border-border/60 py-16 text-center">
             <CardContent class="flex flex-col items-center justify-center gap-3">
               <ClockRotateRight class="w-10 h-10 text-muted-foreground/40" />
-              <p class="text-xs text-muted-foreground">{l("لا توجد سجلات قرارات معتمدة سابقة.", "No approval history recorded.")}</p>
+              <p class="text-xs text-muted-foreground">{m.ui_copy_no_approval_history_recorded_cd3090ac()}</p>
             </CardContent>
           </Card>
         {:else}

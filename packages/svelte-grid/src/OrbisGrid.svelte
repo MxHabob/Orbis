@@ -603,8 +603,12 @@ function handleKeydown(e: KeyboardEvent) {
 
 function onHeaderClick(col: OrbisColumnDef, e: MouseEvent) {
   if ((e.target as HTMLElement | null)?.closest(".orbis-checkbox-btn")) return;
+  sortColumn(col, e.shiftKey);
+}
+
+function sortColumn(col: OrbisColumnDef, shiftKey = false) {
   if (!isColumnSortable(col)) return;
-  sorts = toggleSort(sorts, columnId(col), e.shiftKey);
+  sorts = toggleSort(sorts, columnId(col), shiftKey);
 }
 
 function onContext(row: number, col: number, e: MouseEvent) {
@@ -1054,10 +1058,20 @@ export function scrollToColumnProp(prop: string) {
               class="orbis-hcell"
               class:pinned={isColumnPinnedLeft(col)}
               role="columnheader"
+              tabindex="0"
               aria-colindex={c + 1}
               aria-sort={sorts.find((s) => s.id === id)?.dir === "desc" ? "descending" : sorts.find((s) => s.id === id) ? "ascending" : "none"}
               style:width="{widthOf(col)}px"
               onclick={(e) => onHeaderClick(col, e)}
+              onkeydown={(e) => {
+                if (
+                  (e.key === "Enter" || e.key === " ") &&
+                  !(e.target as HTMLElement | null)?.closest(".orbis-checkbox-btn")
+                ) {
+                  e.preventDefault();
+                  sortColumn(col, e.shiftKey);
+                }
+              }}
             >
               {#if Header}
                 <Header row={{}} column={{ ...col, id }} />

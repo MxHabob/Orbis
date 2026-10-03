@@ -64,23 +64,23 @@ Allows administrators to manage academic periods, terms, semesters, and locking 
   const relatedActionGroups = $derived<ActionGroup[]>([
     {
       id: "academic_promotion_policies",
-      title: l("السياسات والعمليات المرتبطة", "Academic Policies & Promotion"),
+      title: m.ui_copy_academic_policies_promotion_8c34613a(),
       icon: AcademicCap,
       defaultExpanded: true,
       subLinks: [
         {
           id: "promotion_wizard",
-          label: l("معالج ترحيل الطلاب وترفيع الفصول", "Student Promotion Wizard"),
+          label: m.ui_copy_student_promotion_wizard_e772861a(),
           href: `/${orgId}/academics/promotion`,
         },
         {
           id: "academic_policy",
-          label: l("السياسات واللوائح الأكاديمية", "Academic Policy & Grading"),
+          label: m.ui_copy_academic_policy_grading_73e34776(),
           href: `/${orgId}/settings/academic-policy`,
         },
         {
           id: "registration_rules",
-          label: l("قواعد وشروط التسجيل والقبول", "Registration & Enrollment Rules"),
+          label: m.ui_copy_registration_enrollment_rules_34f1e148(),
           href: `/${orgId}/settings/registration`,
         },
       ],
@@ -103,12 +103,12 @@ Allows administrators to manage academic periods, terms, semesters, and locking 
 
   async function requestActivate(periodId: string) {
     const confirmed = await confirmStore.prompt({
-      title: l("تنشيط الفترة الدراسية؟", "Activate Period?"),
+      title: m.ui_copy_activate_period_03ace2fa(),
       description: l(
         "سيتم فتح إدخال الدرجات والتسجيل للفترة المختارة.",
         "Grade entry and enrollment will be enabled for this period.",
       ),
-      confirmText: l("تنشيط", "Activate"),
+      confirmText: m.ui_copy_activate_c2b12d71(),
       variant: "default",
     });
 
@@ -117,7 +117,7 @@ Allows administrators to manage academic periods, terms, semesters, and locking 
     try {
       await api.unlockAcademicPeriod(periodId);
       toast.success(
-        l("تم تنشيط الفترة بنجاح", "Period activated successfully"),
+        m.ui_copy_period_activated_successfully_de714514(),
       );
       loadPeriods();
     } catch (e: unknown) {
@@ -127,12 +127,12 @@ Allows administrators to manage academic periods, terms, semesters, and locking 
 
   async function requestLock(periodId: string) {
     const confirmed = await confirmStore.prompt({
-      title: l("إغلاق وقفل الفترة الدراسية؟", "Lock / Close Period?"),
+      title: m.ui_copy_lock_close_period_57387762(),
       description: l(
         "سيتم قفل إدخال الدرجات وتجميد العمليات الأكاديمية لهذه الفترة.",
         "Grade entry, attendance, and enrollments will be locked for this period.",
       ),
-      confirmText: l("قفل الفترة", "Lock Period"),
+      confirmText: m.ui_copy_lock_period_54879736(),
       variant: "destructive",
     });
 
@@ -141,7 +141,7 @@ Allows administrators to manage academic periods, terms, semesters, and locking 
     try {
       await api.lockAcademicPeriod(periodId);
       toast.success(
-        l("تم قفل الفترة الدراسية بنجاح", "Period locked successfully"),
+        m.ui_copy_period_locked_successfully_c75e6ca2(),
       );
       loadPeriods();
     } catch (e: unknown) {
@@ -373,7 +373,7 @@ Allows administrators to manage academic periods, terms, semesters, and locking 
 
   <!-- Contextual Related Actions (Full Width Footer) -->
   <RelatedActions
-    title={l("العمليات والإجراءات المرتبطة", "Related support")}
+    title={m.ui_copy_related_support_bf36e16f()}
     groups={relatedActionGroups}
   />
 </div>

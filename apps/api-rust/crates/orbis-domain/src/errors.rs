@@ -53,4 +53,3 @@ impl From<StorageError> for DomainError {
         DomainError::Storage(err.to_string())
     }
 }
-

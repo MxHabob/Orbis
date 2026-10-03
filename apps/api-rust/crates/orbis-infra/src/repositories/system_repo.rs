@@ -3,13 +3,15 @@
 //! Provides health check and readiness data by querying core tables.
 
 use async_trait::async_trait;
-use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter, ColumnTrait, PaginatorTrait, Condition};
+use sea_orm::{
+    ColumnTrait, Condition, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+};
 use uuid::Uuid;
 
 use orbis_app::ports::repositories::SystemRepository;
 use orbis_domain::errors::DomainError;
 
-use crate::models::{organization, academic_year, class, subject, user_role_assignment};
+use crate::models::{academic_year, class, organization, subject, user_role_assignment};
 
 pub struct SystemRepoImpl {
     pub db: DatabaseConnection,
@@ -30,7 +32,7 @@ impl SystemRepository for SystemRepoImpl {
             .filter(
                 Condition::any()
                     .add(user_role_assignment::Column::RoleId.eq("super_admin"))
-                    .add(user_role_assignment::Column::RoleId.eq("admin"))
+                    .add(user_role_assignment::Column::RoleId.eq("admin")),
             )
             .count(&self.db)
             .await

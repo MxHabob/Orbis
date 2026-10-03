@@ -37,13 +37,20 @@ struct GoogleTokenInfo {
 #[async_trait]
 impl OidcService for GoogleIdentityAdapter {
     async fn verify_google_token(&self, id_token: &str) -> Result<IdentityProfile, DomainError> {
-        let url = format!("https://oauth2.googleapis.com/tokeninfo?id_token={}", id_token);
+        let url = format!(
+            "https://oauth2.googleapis.com/tokeninfo?id_token={}",
+            id_token
+        );
         let resp = self.client.get(&url).send().await;
 
         if let Ok(response) = resp {
             if response.status().is_success() {
                 if let Ok(info) = response.json::<GoogleTokenInfo>().await {
-                    let email_verified = info.email_verified.as_deref().map(|v| v == "true").unwrap_or(false);
+                    let email_verified = info
+                        .email_verified
+                        .as_deref()
+                        .map(|v| v == "true")
+                        .unwrap_or(false);
                     return Ok(IdentityProfile {
                         name: info.name,
                         given_name: info.given_name,
@@ -72,15 +79,35 @@ fn parse_fallback_jwt_claims(token: &str) -> Option<IdentityProfile> {
         return None;
     }
     use base64::Engine;
-    let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(parts[1]).ok()?;
+    let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(parts[1])
+        .ok()?;
     let json: serde_json::Value = serde_json::from_slice(&decoded).ok()?;
     Some(IdentityProfile {
-        name: json.get("name").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        given_name: json.get("given_name").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        family_name: json.get("family_name").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        email: json.get("email").and_then(|v| v.as_str()).map(|s| s.to_string()),
+        name: json
+            .get("name")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
+        given_name: json
+            .get("given_name")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
+        family_name: json
+            .get("family_name")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
+        email: json
+            .get("email")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
         email_verified: json.get("email_verified").and_then(|v| v.as_bool()),
-        picture: json.get("picture").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        locale: json.get("locale").and_then(|v| v.as_str()).map(|s| s.to_string()),
+        picture: json
+            .get("picture")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
+        locale: json
+            .get("locale")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
     })
 }

@@ -52,11 +52,11 @@ const studyModes = [
     <div class="flex items-center gap-2">
       <User class="w-4 h-4 text-primary" />
       <CardTitle class="text-xs font-bold text-foreground uppercase tracking-wider text-start select-none">
-        {l("الهوية الأكاديمية والبيانات الشخصية", "Academic Identity & Personal Profile")}
+        {m.ui_copy_academic_identity_personal_profile_5a3e9546()}
       </CardTitle>
     </div>
     <span class="text-[11px] text-muted-foreground">
-      {l("الحقول المميزة بـ (*) إلزامية", "Fields marked with (*) are required")}
+      {m.ui_copy_fields_marked_with_are_required_df81f006()}
     </span>
   </CardHeader>
 
@@ -75,14 +75,14 @@ const studyModes = [
             size={60}
           />
           <div class="flex flex-col gap-0.5">
-            <span class="text-xs font-bold text-foreground">{l("الصورة الشخصية للطالب", "Student Profile Photo")}</span>
-            <span class="text-[11px] text-muted-foreground">{l("تستخدم في البطاقة المدرسية وسجل القيد", "Used for student ID pass and official records")}</span>
+            <span class="text-xs font-bold text-foreground">{m.ui_copy_student_profile_photo_de522661()}</span>
+            <span class="text-[11px] text-muted-foreground">{m.ui_copy_used_for_student_id_pass_and_official_reco_8e5547ff()}</span>
           </div>
         </div>
 
         <!-- Study Mode Selector -->
         <div class="flex flex-col gap-1.5 text-start w-full md:w-72">
-          <Label class="text-xs font-semibold text-foreground">{l("نوع ونمط الدراسة الأكاديمي", "Study Mode & Enrollment Track")}</Label>
+          <Label class="text-xs font-semibold text-foreground">{m.ui_copy_study_mode_enrollment_track_2468575d()}</Label>
           <Select
             type="single"
             value={state.studyMode}
@@ -161,7 +161,7 @@ const studyModes = [
           />
           {#if state.selectedClass}
             <div class="flex items-center justify-between px-1">
-              <span class="text-[10px] text-muted-foreground">{l("سعة الشعبة:", "Capacity:")}</span>
+              <span class="text-[10px] text-muted-foreground">{m.ui_copy_capacity_ebf7f7c9()}</span>
               <CapacityIndicator 
                 current={state.selectedClass.student_count || 0} 
                 max={state.selectedClass.capacity || 30} 
@@ -377,10 +377,10 @@ const studyModes = [
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label for="bloodType" class="text-xs font-semibold text-foreground">
-              {l("فصيلة الدم", "Blood Type")}
+              {m.employees_blood_type()}
               {#if state.requiredFields.blood_type}<span class="text-destructive">*</span>{/if}
             </Label>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">{l("فصيلة دم الطالب للحالات الطبية والإسعافية", "Student blood type for medical records")}</span>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">{m.ui_copy_student_blood_type_for_medical_records_e7535748()}</span>
           </div>
           <div class="w-full md:w-120 shrink-0">
             <Input 
@@ -399,16 +399,16 @@ const studyModes = [
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label for="emergencyContact" class="text-xs font-semibold text-foreground">
-              {l("جهة اتصال للطوارئ (الاسم والهاتف)", "Emergency Contact")}
+              {m.ui_copy_emergency_contact_2ff8ef2f()}
               {#if state.requiredFields.emergency_contact}<span class="text-destructive">*</span>{/if}
             </Label>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">{l("اسم وتلفون الشخص المسؤول للتواصل في حالات الطوارئ", "Contact person name and phone in case of emergency")}</span>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">{m.ui_copy_contact_person_name_and_phone_in_case_of_e_319c6951()}</span>
           </div>
           <div class="w-full md:w-120 shrink-0">
             <Input 
               id="emergencyContact"
               type="text" 
-              placeholder={l("الاسم - رقم الهاتف", "Name - Phone")} 
+              placeholder={m.ui_copy_name_phone_14b9bb22()} 
               class="h-9 w-full bg-background" 
               bind:value={state.personal.emergencyContact}
             />
@@ -421,16 +421,16 @@ const studyModes = [
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label for="medicalNotes" class="text-xs font-semibold text-foreground">
-              {l("الملاحظات والبيانات الطبية", "Medical Notes")}
+              {m.ui_copy_medical_notes_889f381c()}
               {#if state.requiredFields.medical_notes}<span class="text-destructive">*</span>{/if}
             </Label>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">{l("أي حساسية، أمراض مزمنة أو تعليمات صحية خاصة للطالب", "Any allergies, chronic conditions or special medical advice")}</span>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">{m.ui_copy_any_allergies_chronic_conditions_or_specia_f9351b55()}</span>
           </div>
           <div class="w-full md:w-120 shrink-0">
             <Input 
               id="medicalNotes"
               type="text" 
-              placeholder={l("أدخل الملاحظات أو الحالة الطبية إن وجدت...", "Enter medical notes or conditions if any...")} 
+              placeholder={m.ui_copy_enter_medical_notes_or_conditions_if_any_626e8645()} 
               class="h-9 w-full bg-background" 
               bind:value={state.personal.medicalNotes}
             />
@@ -442,15 +442,15 @@ const studyModes = [
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
         <div class="flex flex-col gap-1 text-start">
           <Label for="specialNeedsNotes" class="text-xs font-semibold text-foreground">
-            {l("ملاحظات التربية الخاصة / الرعاية الإضافية", "Special Needs & Accommodations")}
+            {m.ui_copy_special_needs_accommodations_4763ae09()}
           </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">{l("تسهيلات الوصول أو الرعاية التعليمية الخاصة المطلوبة", "Special accommodations or accessibility assistance")}</span>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.ui_copy_special_accommodations_or_accessibility_as_701c987f()}</span>
         </div>
         <div class="w-full md:w-120 shrink-0">
           <Input 
             id="specialNeedsNotes"
             type="text" 
-            placeholder={l("أدخل ملاحظات التربية الخاصة إن وجدت...", "Enter special needs notes if any...")} 
+            placeholder={m.ui_copy_enter_special_needs_notes_if_any_0ef91688()} 
             class="h-9 w-full bg-background" 
             bind:value={state.personal.specialNeedsNotes}
           />

@@ -1,4 +1,5 @@
 <script lang="ts">
+import { untrack } from "svelte";
 import { FloppyDisk, XMark } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { api } from "$lib/api";
@@ -23,7 +24,7 @@ let {
   onSuccess: () => void;
 } = $props();
 
-let editingId = $state<string | null>(slot?.id ? String(slot.id) : null);
+let editingId = $state<string | null>(untrack(() => slot?.id ? String(slot.id) : null));
 let nameAr = $state("");
 let name = $state("");
 let startTime = $state("");

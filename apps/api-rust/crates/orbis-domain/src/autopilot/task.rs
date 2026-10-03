@@ -124,7 +124,9 @@ impl TaskType {
             "year_activate" | "year.activate" => TaskType::YearActivate,
             "year_close" | "year.close" | "year.start_closing" => TaskType::YearClose,
             "promotion_dry_run" | "promotion.dry_run" => TaskType::PromotionDryRun,
-            "late_fee_reminder" | "fee.overdue_notification" | "send_delay_notification" => TaskType::LateFeeReminder,
+            "late_fee_reminder" | "fee.overdue_notification" | "send_delay_notification" => {
+                TaskType::LateFeeReminder
+            }
             "generate_report" | "report_generation" => TaskType::GenerateReport,
             "backup_database" | "backup" => TaskType::BackupDatabase,
             "transition_period" => TaskType::TransitionPeriod,
@@ -195,10 +197,19 @@ mod tests {
 
     #[test]
     fn test_task_type_conversions() {
-        assert_eq!(TaskType::from_str("enrollment_open"), TaskType::EnrollmentOpen);
-        assert_eq!(TaskType::from_str("enrollment.open"), TaskType::EnrollmentOpen);
+        assert_eq!(
+            TaskType::from_str("enrollment_open"),
+            TaskType::EnrollmentOpen
+        );
+        assert_eq!(
+            TaskType::from_str("enrollment.open"),
+            TaskType::EnrollmentOpen
+        );
         assert_eq!(TaskType::from_str("period.lock"), TaskType::PeriodLock);
-        assert_eq!(TaskType::from_str("promotion_dry_run"), TaskType::PromotionDryRun);
+        assert_eq!(
+            TaskType::from_str("promotion_dry_run"),
+            TaskType::PromotionDryRun
+        );
         assert_eq!(TaskType::EnrollmentOpen.as_str(), "enrollment_open");
         assert_eq!(TaskType::PeriodLock.as_str(), "period_lock");
     }

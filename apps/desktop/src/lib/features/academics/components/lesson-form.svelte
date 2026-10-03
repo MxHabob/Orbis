@@ -1,5 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { untrack } from "svelte";
 import { api, extractErrorMessage, type ScheduleLessonRequest } from "$lib/api";
 import { l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -58,15 +59,15 @@ let {
   onCancel,
 }: Props = $props();
 
-let selectedClassId = $state(String(lesson?.class_id || classId || ""));
-let selectedSubjectId = $state(String(lesson?.subject_id || ""));
-let selectedTeacherId = $state(String(lesson?.teacher_id || ""));
-let selectedRoomId = $state(String(lesson?.room_id || ""));
-let selectedDay = $state(Number(lesson?.day_of_week || dayOfWeek || 1));
-let selectedSlotId = $state(String(lesson?.time_slot_id || timeSlotId || ""));
-let topic = $state(lesson?.topic || "");
-let homework = $state(lesson?.homework || "");
-let notes = $state(lesson?.notes || "");
+let selectedClassId = $state(untrack(() => String(lesson?.class_id || classId || "")));
+let selectedSubjectId = $state(untrack(() => String(lesson?.subject_id || "")));
+let selectedTeacherId = $state(untrack(() => String(lesson?.teacher_id || "")));
+let selectedRoomId = $state(untrack(() => String(lesson?.room_id || "")));
+let selectedDay = $state(untrack(() => Number(lesson?.day_of_week || dayOfWeek || 1)));
+let selectedSlotId = $state(untrack(() => String(lesson?.time_slot_id || timeSlotId || "")));
+let topic = $state(untrack(() => lesson?.topic || ""));
+let homework = $state(untrack(() => lesson?.homework || ""));
+let notes = $state(untrack(() => lesson?.notes || ""));
 let conflictMessage = $state<string | null>(null);
 let isCheckingConflict = $state(false);
 

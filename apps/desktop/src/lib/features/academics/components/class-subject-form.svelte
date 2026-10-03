@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { untrack } from "svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
@@ -50,14 +51,14 @@ const isEditMode = $derived(!!editData);
 
 // Form state
 let classId = $state(
-  fixedClassId || (editData ? String(editData.class_id ?? "") : ""),
+  untrack(() => fixedClassId || (editData ? String(editData.class_id ?? "") : "")),
 );
-let subjectId = $state(editData ? String(editData.subject_id ?? "") : "");
+let subjectId = $state(untrack(() => editData ? String(editData.subject_id ?? "") : ""));
 let teacherId = $state(
-  editData ? String(editData.primary_teacher_id ?? "") : "",
+  untrack(() => editData ? String(editData.primary_teacher_id ?? "") : ""),
 );
-let weeklyHours = $state(editData ? Number(editData.weekly_hours ?? 4) : 4);
-let periodId = $state(editData ? String(editData.period_id ?? "") : "");
+let weeklyHours = $state(untrack(() => editData ? Number(editData.weekly_hours ?? 4) : 4));
+let periodId = $state(untrack(() => editData ? String(editData.period_id ?? "") : ""));
 let schemeId = $state("");
 
 // Assessment Schemes Query

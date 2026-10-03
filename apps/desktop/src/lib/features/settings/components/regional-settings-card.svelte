@@ -74,7 +74,7 @@ const dateFormats = [
         <SearchableSelect
           bind:value={dateFormat}
           items={dateFormats}
-          placeholder={m.settings_general_date_format?.() || "اختر صيغة التاريخ..."}
+          placeholder={m.settings_general_date_format()}
           searchPlaceholder="ابحث عن صيغة التاريخ..."
           disabled={isSaving}
           getItemValue={(df) => df.value}

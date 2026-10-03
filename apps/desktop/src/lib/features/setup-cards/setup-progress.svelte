@@ -4,6 +4,7 @@
   Uses UI design tokens and clean typography.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { systemStore } from "$lib/stores/system.svelte";
@@ -49,7 +50,7 @@ const nextHref = $derived(
 const nextTitle = $derived(
   nextTask
     ? isArabic ? nextTask.title_ar : nextTask.title
-    : isArabic ? "مركز التهيئة" : "Onboarding Hub"
+    : m.ui_setup_progress_onboarding_hub()
 );
 
 const shouldShow = $derived(mounted && !dismissed && tasks.length > 0 && !isReady);
@@ -67,7 +68,7 @@ const shouldShow = $derived(mounted && !dismissed && tasks.length > 0 && !isRead
         type="button"
         onclick={handleDismiss}
         class="absolute top-2.5 {isArabic ? 'left-2.5' : 'right-2.5'} text-muted-foreground hover:text-foreground text-xs leading-none p-1 rounded transition-colors"
-        title={isArabic ? "إخفاء" : "Dismiss"}
+        title={m.ui_setup_progress_dismiss()}
       >
         ✕
       </button>
@@ -79,7 +80,7 @@ const shouldShow = $derived(mounted && !dismissed && tasks.length > 0 && !isRead
             href={localizeHref(`/${orgId}/onboarding`)}
             class="font-semibold text-foreground hover:text-primary transition-colors truncate"
           >
-            {isArabic ? "تهيئة المؤسسة" : "Setup Progress"}
+            {m.ui_setup_progress_setup_progress()}
           </a>
           <span class="font-mono text-[11px] text-muted-foreground font-medium">
             {percentage}%
@@ -87,9 +88,10 @@ const shouldShow = $derived(mounted && !dismissed && tasks.length > 0 && !isRead
         </div>
 
         <p class="text-[11px] text-muted-foreground">
-          {isArabic
-            ? `${completedTasks.length} من ${tasks.length} مهام مكتملة`
-            : `${completedTasks.length} of ${tasks.length} tasks completed`}
+          {m.ui_setup_progress_completed_tasks({
+            completed: completedTasks.length,
+            total: tasks.length,
+          })}
         </p>
       </div>
 
@@ -104,7 +106,7 @@ const shouldShow = $derived(mounted && !dismissed && tasks.length > 0 && !isRead
           onclick={() => goto(localizeHref(`/${orgId}${nextHref}`))}
           class="w-full h-7 text-xs font-normal"
         >
-          <span class="truncate">{isArabic ? `إعداد: ${nextTitle}` : `Configure: ${nextTitle}`}</span>
+          <span class="truncate">{m.ui_setup_progress_configure({ value1: nextTitle })}</span>
         </Button>
       {/if}
     </div>

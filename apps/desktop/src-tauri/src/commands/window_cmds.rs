@@ -2,7 +2,9 @@
 
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
-pub(crate) async fn do_open_agent_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<(), String> {
+pub(crate) async fn do_open_agent_window<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+) -> Result<(), String> {
     if let Some(existing) = app.get_webview_window("orbis-agent") {
         let _ = existing.unminimize();
         existing.show().map_err(|e| e.to_string())?;
@@ -10,18 +12,15 @@ pub(crate) async fn do_open_agent_window<R: tauri::Runtime>(app: &tauri::AppHand
         return Ok(());
     }
     let main_window = app.get_webview_window("main");
-    let mut builder = WebviewWindowBuilder::new(
-        app,
-        "orbis-agent",
-        WebviewUrl::App("agent".into()),
-    )
-    .title("Orbis AI Agent")
-    .inner_size(460.0, 720.0)
-    .min_inner_size(360.0, 500.0)
-    .resizable(true)
-    .shadow(true)
-    .decorations(true)
-    .visible(true);
+    let mut builder =
+        WebviewWindowBuilder::new(app, "orbis-agent", WebviewUrl::App("agent".into()))
+            .title("Orbis AI Agent")
+            .inner_size(460.0, 720.0)
+            .min_inner_size(360.0, 500.0)
+            .resizable(true)
+            .shadow(true)
+            .decorations(true)
+            .visible(true);
     if let Some(ref main) = main_window {
         builder = builder.parent(main).map_err(|e| e.to_string())?;
     }
@@ -31,7 +30,9 @@ pub(crate) async fn do_open_agent_window<R: tauri::Runtime>(app: &tauri::AppHand
     Ok(())
 }
 
-pub(crate) async fn do_open_changelog_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<(), String> {
+pub(crate) async fn do_open_changelog_window<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+) -> Result<(), String> {
     if let Some(existing) = app.get_webview_window("orbis-changelog") {
         let _ = existing.unminimize();
         existing.show().map_err(|e| e.to_string())?;
@@ -39,18 +40,15 @@ pub(crate) async fn do_open_changelog_window<R: tauri::Runtime>(app: &tauri::App
         return Ok(());
     }
     let main_window = app.get_webview_window("main");
-    let mut builder = WebviewWindowBuilder::new(
-        app,
-        "orbis-changelog",
-        WebviewUrl::App("changelog".into()),
-    )
-    .title("Orbis — What's New & Changelog")
-    .inner_size(860.0, 680.0)
-    .min_inner_size(580.0, 460.0)
-    .resizable(true)
-    .shadow(true)
-    .decorations(true)
-    .visible(true);
+    let mut builder =
+        WebviewWindowBuilder::new(app, "orbis-changelog", WebviewUrl::App("changelog".into()))
+            .title("Orbis — What's New & Changelog")
+            .inner_size(860.0, 680.0)
+            .min_inner_size(580.0, 460.0)
+            .resizable(true)
+            .shadow(true)
+            .decorations(true)
+            .visible(true);
     if let Some(ref main) = main_window {
         builder = builder.parent(main).map_err(|e| e.to_string())?;
     }
@@ -60,7 +58,9 @@ pub(crate) async fn do_open_changelog_window<R: tauri::Runtime>(app: &tauri::App
     Ok(())
 }
 
-pub(crate) async fn do_open_connection_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<(), String> {
+pub(crate) async fn do_open_connection_window<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+) -> Result<(), String> {
     if let Some(existing) = app.get_webview_window("orbis-connection") {
         existing.show().map_err(|e| e.to_string())?;
         existing.set_focus().map_err(|e| e.to_string())?;
@@ -115,37 +115,47 @@ pub async fn open_agent_window<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> R
 }
 
 #[tauri::command]
-pub async fn open_connection_window<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
+pub async fn open_connection_window<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+) -> Result<(), String> {
     do_open_connection_window(&app).await
 }
 
 #[tauri::command]
-pub async fn open_changelog_window<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
+pub async fn open_changelog_window<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+) -> Result<(), String> {
     do_open_changelog_window(&app).await
 }
 
 #[tauri::command]
 pub async fn check_for_updates<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
-    use tauri_plugin_dialog::{DialogExt, MessageDialogKind, MessageDialogButtons};
+    use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
     use tauri_plugin_updater::UpdaterExt;
     #[cfg(desktop)]
     {
         if let Ok(updater) = app.updater() {
             match updater.check().await {
                 Ok(Some(update)) => {
-                    let answer = app.dialog()
-                        .message(format!("A new version {} is available. Would you like to update now?", update.version))
+                    let answer = app
+                        .dialog()
+                        .message(format!(
+                            "A new version {} is available. Would you like to update now?",
+                            update.version
+                        ))
                         .title("Update Available")
                         .kind(MessageDialogKind::Info)
                         .buttons(MessageDialogButtons::OkCancel)
                         .blocking_show();
                     if answer {
-                        let _ = update.download_and_install(
-                            |_chunk_length, _content_length| {},
-                            || {
-                                println!("Update download finished");
-                            }
-                        ).await;
+                        let _ = update
+                            .download_and_install(
+                                |_chunk_length, _content_length| {},
+                                || {
+                                    println!("Update download finished");
+                                },
+                            )
+                            .await;
                     }
                 }
                 Ok(None) => {

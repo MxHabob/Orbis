@@ -23,7 +23,7 @@ import {
   Trash,
   ArrowPath,
 } from "@orbis/icons";
-import { l } from "$lib/core/i18n";
+
 import type { StudentFormState } from "../form-state.svelte";
 
 let { state }: { state: StudentFormState } = $props();
@@ -118,7 +118,7 @@ function formatBytes(bytes?: number) {
     {#if docItems.length > 0}
       {@const fulfilledCount = docItems.filter(f => f.isFulfilled).length}
       <Badge variant={fulfilledCount === docItems.length ? "lime" : "outline"} class="text-[10px] font-mono">
-        {fulfilledCount} / {docItems.length} {l("مستند مرفق", "attached")}
+        {fulfilledCount} / {docItems.length} {m.ui_copy_attached_02e9df63()}
       </Badge>
     {/if}
   </CardHeader>
@@ -131,10 +131,10 @@ function formatBytes(bytes?: number) {
         </div>
         <div class="flex flex-col gap-1 max-w-sm">
           <span class="text-xs font-bold text-foreground">
-            {l("لا توجد متطلبات وثائق مسجلة", "No Document Requirements Configured")}
+            {m.ui_copy_no_document_requirements_configured_07292a9d()}
           </span>
           <span class="text-[11px] text-muted-foreground leading-relaxed">
-            {l("لم يتم تحديد أي وثائق أو مستندات مطلوبة للقبول والتسجيل في إعدادات المؤسسة حالياً.", "No admission documents are configured in institutional settings.")}
+            {m.ui_copy_no_admission_documents_are_configured_in_i_adc394af()}
           </span>
         </div>
       </div>
@@ -163,18 +163,18 @@ function formatBytes(bytes?: number) {
                 <div class="flex items-center gap-1.5 flex-wrap">
                   {#if doc.isMandatory}
                     <Badge variant="destructive" class="text-[9px] px-1.5 py-0 h-4 font-bold">
-                      {l("إلزامي للقبول", "Mandatory")}
+                      {m.ui_copy_mandatory_087c635b()}
                     </Badge>
                   {:else}
                     <Badge variant="secondary" class="text-[9px] px-1.5 py-0 h-4 font-medium">
-                      {l("اختياري", "Optional")}
+                      {m.ui_onboarding_progress_optional()}
                     </Badge>
                   {/if}
 
                   {#if doc.blocksEnrollment}
                     <Badge variant="outline" class="text-[9px] px-1.5 py-0 h-4 text-amber-500 border-amber-500/30 flex items-center gap-0.5 font-semibold">
                       <Lock class="h-2.5 w-2.5" />
-                      {l("يحجب القيد", "Blocks Enrollment")}
+                      {m.ui_copy_blocks_enrollment_9386b834()}
                     </Badge>
                   {/if}
                 </div>
@@ -211,7 +211,7 @@ function formatBytes(bytes?: number) {
                   disabled={isUploading}
                 >
                   <ArrowUpTray class="w-3 h-3" />
-                  <span>{l("استبدال", "Replace")}</span>
+                  <span>{m.ui_copy_replace_c8b8c811()}</span>
                 </Button>
                 <Button
                   variant="ghost"
@@ -224,7 +224,7 @@ function formatBytes(bytes?: number) {
               </div>
             {:else}
               <span class="text-[11px] text-muted-foreground">
-                {l("لم يتم إرفاق ملف المستند بعد", "No document file attached")}
+                {m.ui_copy_no_document_file_attached_d12fa45c()}
               </span>
 
               <Button
@@ -236,10 +236,10 @@ function formatBytes(bytes?: number) {
               >
                 {#if isUploading}
                   <ArrowPath class="w-3 h-3 animate-spin text-primary" />
-                  <span>{l("جارٍ الرفع...", "Uploading...")}</span>
+                  <span>{m.ui_copy_uploading_da33f1fa()}</span>
                 {:else}
                   <ArrowUpTray class="w-3 h-3 text-primary" />
-                  <span>{l("إرفاق المستند", "Attach Document")}</span>
+                  <span>{m.ui_copy_attach_document_c27d0129()}</span>
                 {/if}
               </Button>
             {/if}

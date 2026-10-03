@@ -98,7 +98,7 @@ async function handleAssign() {
       group_id: groupId,
       user_ids: Array.from(selectedUserIds),
     });
-    toast.success(l(`تم إسناد ${selectedUserIds.size} مستخدم للمجموعة بنجاح`, `Assigned ${selectedUserIds.size} users successfully`));
+    toast.success(m.ui_group_assign_users_success({ count: selectedUserIds.size }));
     open = false;
     selectedUserIds = new Set();
     oncomplete?.();
@@ -117,7 +117,7 @@ async function handleAssign() {
         </div>
         <div class="flex flex-col">
           <DialogTitle class="text-base font-bold text-foreground">
-            {m.groups_bulk_assign?.() || "إسناد جماعي للمستخدمين"}
+            {m.groups_bulk_assign()}
           </DialogTitle>
           <span class="text-xs text-muted-foreground">
             {groupName}
@@ -132,7 +132,7 @@ async function handleAssign() {
         <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
-          placeholder={l("بحث بالاسم، اسم المستخدم، أو الرقم الوظيفي...", "Search staff...")}
+          placeholder={m.ui_copy_search_staff_e19aa622()}
           class="input-sunken ps-9 text-xs py-2"
           bind:value={searchQuery}
         />
@@ -140,14 +140,14 @@ async function handleAssign() {
 
       <!-- Quick Selection Bar -->
       <div class="flex items-center justify-between text-xs text-muted-foreground px-1 shrink-0">
-        <span>{formatNumber(selectedUserIds.size)} {l("محدد", "selected")}</span>
+        <span>{formatNumber(selectedUserIds.size)} {m.ui_copy_selected_d24fa4a6()}</span>
         <div class="flex items-center gap-2">
           <button
             type="button"
             class="text-primary hover:underline text-[11px] cursor-pointer"
             onclick={handleSelectAll}
           >
-            {l("تحديد الكل", "Select all")}
+            {m.ui_copy_select_all_99dda350()}
           </button>
           <span>•</span>
           <button
@@ -155,7 +155,7 @@ async function handleAssign() {
             class="text-muted-foreground hover:underline text-[11px] cursor-pointer"
             onclick={handleDeselectAll}
           >
-            {l("إلغاء التحديد", "Deselect all")}
+            {m.ui_copy_deselect_all_9afdefeb()}
           </button>
         </div>
       </div>
@@ -165,11 +165,11 @@ async function handleAssign() {
         {#if employeesQuery.isLoading}
           <div class="p-6 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
             <ArrowPath size={14} class="animate-spin text-primary" />
-            <span>{l("جاري تحميل المستخدمين...", "Loading users...")}</span>
+            <span>{m.ui_copy_loading_users_8a49770d()}</span>
           </div>
         {:else if candidates.length === 0}
           <div class="p-6 text-center text-xs text-muted-foreground">
-            {l("لم يتم العثور على موظفين بحسابات مستخدمين نشطة.", "No staff with active accounts found.")}
+            {m.ui_copy_no_staff_with_active_accounts_found_9fb1c918()}
           </div>
         {:else}
           {#each candidates as emp (emp.id)}
@@ -200,7 +200,7 @@ async function handleAssign() {
               <div class="shrink-0 flex items-center gap-2">
                 {#if isAlreadyMember}
                   <Badge variant="outline" class="text-[9px]">
-                    {l("عضو حالي", "Member")}
+                    {m.ui_copy_member_df6cf0b2()}
                   </Badge>
                 {:else}
                   <div class="flex size-5 items-center justify-center rounded-sm {isSelected ? 'bg-primary text-primary-foreground' : 'border border-border'}">
@@ -224,7 +224,7 @@ async function handleAssign() {
         class="text-xs cursor-pointer"
         onclick={() => (open = false)}
       >
-        {m.common_action_cancel?.() || "إلغاء"}
+        {m.common_action_cancel()}
       </Button>
 
       <Button
@@ -238,7 +238,7 @@ async function handleAssign() {
         {#if bulkAssignMutation.isPending}
           <ArrowPath size={13} class="animate-spin me-1" />
         {/if}
-        {m.groups_bulk_assign?.() || "إسناد المحدد"} ({selectedUserIds.size})
+        {m.groups_bulk_assign()} ({selectedUserIds.size})
       </Button>
     </DialogFooter>
   </DialogContent>

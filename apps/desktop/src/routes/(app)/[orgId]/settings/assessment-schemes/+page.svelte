@@ -1,13 +1,13 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { AssessmentSchemesManager } from "$lib/features/settings";
+import AssessmentSchemesManager from "$lib/features/settings/assessment-schemes-manager.svelte";
 
 const orgId = $derived(page.params.orgId || "");
 </script>
 
 <svelte:head>
-  <title>{m.settings_nav_assessment_schemes ? m.settings_nav_assessment_schemes() : "Assessment Schemes"} | Orbis</title>
+  <title>{m.settings_nav_assessment_schemes()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-hidden">

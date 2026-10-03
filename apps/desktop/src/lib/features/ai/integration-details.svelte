@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import {
   getAppById,
@@ -126,7 +127,7 @@ async function handleConnect(values: Record<string, unknown>) {
       queryKey: ["integration"],
     });
     toast.success(
-      l(`تم ربط ${app?.name ?? providerName} بنجاح`, `Connected ${app?.name ?? providerName} successfully`),
+      m.ui_integration_connected({ name: app?.name ?? providerName }),
     );
   } catch (err) {
     connectError = extractErrorMessage(err);
@@ -146,7 +147,7 @@ async function handleDisconnect() {
       queryKey: ["integration"],
     });
     toast.success(
-      l(`تم قطع الاتصال مع ${app?.name ?? providerName}`, `Disconnected ${app?.name ?? providerName}`),
+      m.ui_integration_disconnected({ name: app?.name ?? providerName }),
     );
   } catch (err) {
     toast.error(extractErrorMessage(err));
@@ -169,7 +170,7 @@ const activeFeatures = $derived(
               href={basePath}
               class="text-muted-foreground hover:text-foreground transition-colors"
             >
-              {l("التكاملات", "Integrations")}
+              {m.ai_center_nav_integrations()}
             </a>
           </li>
           <li class="text-muted-foreground/50">/</li>
@@ -197,12 +198,12 @@ const activeFeatures = $derived(
                 </h1>
                 {#if app.beta}
                   <span class="text-[10px] font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-md shrink-0">
-                    {l("تجريبي", "Beta")}
+                    {m.ai_center_integrations_status_beta()}
                   </span>
                 {/if}
                 {#if !app.active}
                   <span class="text-[10px] font-medium bg-muted text-muted-foreground px-2 py-0.5 rounded-md shrink-0">
-                    {l("قريباً", "Coming soon")}
+                    {m.ui_copy_coming_soon_3ac6c043()}
                   </span>
                 {/if}
               </div>
@@ -233,7 +234,7 @@ const activeFeatures = $derived(
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {l("المميزات الرئيسية", "Key Features")}
+                  {m.ui_copy_key_features_ce213b9d()}
                 </CardTitle>
               </CardHeader>
               <CardContent class="p-6">
@@ -260,23 +261,23 @@ const activeFeatures = $derived(
                   <div class="flex items-center gap-2 mb-3">
                     <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                     <h3 class="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                      {l("متصل", "Connected")}
+                      {m.common_account_identities_connected()}
                     </h3>
                   </div>
                   <p class="text-xs text-muted-foreground mb-4 leading-relaxed">
-                    {l(`${app.name} متصل ويعمل بشكل صحيح.`, `${app.name} is connected and operational.`)}
+                    {m.ui_integration_connected_operational({ name: app.name })}
                   </p>
                   <Button class="w-full" size="sm" variant="outline" onclick={handleDisconnect}>
-                    {l("قطع الاتصال", "Disconnect")}
+                    {m.ui_copy_disconnect_c584faa5()}
                   </Button>
                 {:else}
                   <h3 class="text-sm font-medium text-foreground mb-3">
-                    {app.active ? l("ابدأ الآن", "Get started") : l("قريباً", "Coming soon")}
+                    {app.active ? m.ui_copy_get_started_c431c86e() : m.ui_copy_coming_soon_3ac6c043()}
                   </h3>
                   <p class="text-xs text-muted-foreground mb-4 leading-relaxed">
                     {app.active
-                      ? l(`قم بربط ${app.name} بنظام Orbis لبدء الأتمتة.`, `Connect ${app.name} to your Orbis system and start automating.`)
-                      : l(`نعمل حالياً على تكامل ${app.name}. ترقبوا جديدنا.`, `We're working on the ${app.name} integration. Stay tuned.`)}
+                      ? m.ui_integration_connect_for_automation({ name: app.name })
+                      : m.ui_integration_work_in_progress({ name: app.name })}
                   </p>
                   {#if connectError}
                     <p class="text-[10px] text-red-500 mb-2">{connectError}</p>
@@ -292,7 +293,7 @@ const activeFeatures = $derived(
                       }
                     }}
                   >
-                    {isConnecting ? l("جاري الاتصال...", "Connecting...") : app.active ? l(`ربط ${app.name}`, `Connect ${app.name}`) : l("قريباً", "Coming Soon")}
+                    {isConnecting ? m.setup_connection_connecting() : app.active ? m.ui_integration_connect({ name: app.name }) : m.ai_center_integrations_status_coming_soon()}
                   </Button>
                 {/if}
               </CardContent>
@@ -303,7 +304,7 @@ const activeFeatures = $derived(
               <Card>
                 <CardHeader>
                   <CardTitle>
-                    {l("الإعدادات", "Configuration")}
+                    {m.ui_copy_configuration_9ecff7d2()}
                   </CardTitle>
                 </CardHeader>
                 <CardContent class="p-5">
@@ -317,7 +318,7 @@ const activeFeatures = $derived(
               <Card>
                 <CardHeader>
                   <CardTitle>
-                    {l("التكاملات ذات الصلة", "Related integrations")}
+                    {m.ui_copy_related_integrations_ab667842()}
                   </CardTitle>
                 </CardHeader>
                 <CardContent class="p-5 space-y-3">
@@ -352,13 +353,13 @@ const activeFeatures = $derived(
   <div class="h-full flex items-center justify-center">
     <div class="text-center">
       <h2 class="text-sm font-medium text-foreground mb-2">
-        {l("التكامل غير موجود", "Integration not found")}
+        {m.ui_copy_integration_not_found_a8511a65()}
       </h2>
       <p class="text-xs text-muted-foreground mb-4">
-        {l(`التكامل "${appId}" غير موجود.`, `The integration "${appId}" does not exist.`)}
+        {m.ui_integration_not_found({ integrationId: appId })}
       </p>
       <Button size="sm" variant="outline" href={basePath}>
-        {l("العودة للتكاملات", "Back to Integrations")}
+        {m.ui_copy_back_to_integrations_26602ac9()}
       </Button>
     </div>
   </div>

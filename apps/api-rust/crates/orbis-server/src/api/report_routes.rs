@@ -1,11 +1,11 @@
 //! Report & Template routes — Template CRUD, Preview, Validation, Report Generation, Batch Print.
 
 use axum::{
+    Json, Router,
     extract::{Path, Query, State},
     http::header,
     response::IntoResponse,
     routing::{get, post},
-    Json, Router,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -311,10 +311,16 @@ pub async fn create_template(
         published_by: None,
     };
 
-    state.report_service.save_template(&template).await
+    state
+        .report_service
+        .save_template(&template)
+        .await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
-    Ok(ApiResponse::ok_with_id(to_template_dto(template), ctx.request_id))
+    Ok(ApiResponse::ok_with_id(
+        to_template_dto(template),
+        ctx.request_id,
+    ))
 }
 
 #[utoipa::path(
@@ -363,23 +369,47 @@ pub async fn update_template(
         .ok_or_else(|| ApiError::not_found("Template not found"))?;
 
     if template.org_id != ctx.tenant_id {
-        return Err(ApiError::forbidden("Template belongs to another organization"));
+        return Err(ApiError::forbidden(
+            "Template belongs to another organization",
+        ));
     }
 
-    if let Some(name) = req.name { template.name = name; }
-    if let Some(name_ar) = req.name_ar { template.name_ar = Some(name_ar); }
-    if let Some(desc) = req.description { template.description = Some(desc); }
-    if let Some(desc_ar) = req.description_ar { template.description_ar = Some(desc_ar); }
-    if let Some(doc) = req.document_json { template.document_json = doc; }
-    if let Some(ps) = req.page_size { template.page_size = ps; }
-    if let Some(ori) = req.orientation { template.orientation = ori; }
-    if let Some(mar) = req.margins_json { template.margins_json = mar; }
+    if let Some(name) = req.name {
+        template.name = name;
+    }
+    if let Some(name_ar) = req.name_ar {
+        template.name_ar = Some(name_ar);
+    }
+    if let Some(desc) = req.description {
+        template.description = Some(desc);
+    }
+    if let Some(desc_ar) = req.description_ar {
+        template.description_ar = Some(desc_ar);
+    }
+    if let Some(doc) = req.document_json {
+        template.document_json = doc;
+    }
+    if let Some(ps) = req.page_size {
+        template.page_size = ps;
+    }
+    if let Some(ori) = req.orientation {
+        template.orientation = ori;
+    }
+    if let Some(mar) = req.margins_json {
+        template.margins_json = mar;
+    }
     template.updated_at = Utc::now();
 
-    state.report_service.save_template(&template).await
+    state
+        .report_service
+        .save_template(&template)
+        .await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
-    Ok(ApiResponse::ok_with_id(to_template_dto(template), ctx.request_id))
+    Ok(ApiResponse::ok_with_id(
+        to_template_dto(template),
+        ctx.request_id,
+    ))
 }
 
 #[utoipa::path(
@@ -423,7 +453,10 @@ pub async fn publish_template(
         .await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
-    Ok(ApiResponse::ok_with_id(to_template_dto(template), ctx.request_id))
+    Ok(ApiResponse::ok_with_id(
+        to_template_dto(template),
+        ctx.request_id,
+    ))
 }
 
 #[utoipa::path(
@@ -503,7 +536,10 @@ pub async fn revert_template_version(
         .await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
-    Ok(ApiResponse::ok_with_id(to_template_dto(template), ctx.request_id))
+    Ok(ApiResponse::ok_with_id(
+        to_template_dto(template),
+        ctx.request_id,
+    ))
 }
 
 #[utoipa::path(
@@ -522,7 +558,7 @@ pub async fn preview_template(
     use docforge_engine::layout::engine::LayoutEngine;
     use docforge_engine::model::document::TemplateDocument;
     use docforge_engine::render::font_cache::FontCache;
-    use docforge_engine::render::pdf_renderer::{render_to_pdf, PdfRenderConfig};
+    use docforge_engine::render::pdf_renderer::{PdfRenderConfig, render_to_pdf};
 
     let doc: TemplateDocument = serde_json::from_str(&req.document_json)
         .map_err(|e| ApiError::bad_request(format!("Invalid template JSON: {}", e)))?;
@@ -896,7 +932,9 @@ pub async fn download_report_file(
         .ok_or_else(|| ApiError::not_found("Report job not found"))?;
 
     if job.status.to_string() != "completed" {
-        return Err(ApiError::bad_request("Report generation is not completed yet"));
+        return Err(ApiError::bad_request(
+            "Report generation is not completed yet",
+        ));
     }
 
     let file_path = job
@@ -907,10 +945,7 @@ pub async fn download_report_file(
         .await
         .map_err(|e| ApiError::internal(format!("Failed to read report file: {}", e)))?;
 
-    Ok((
-        [(header::CONTENT_TYPE, "application/octet-stream")],
-        bytes,
-    ))
+    Ok(([(header::CONTENT_TYPE, "application/octet-stream")], bytes))
 }
 
 #[utoipa::path(
@@ -956,7 +991,12 @@ pub async fn batch_print(
     let provider = state
         .report_provider_registry
         .get_provider(&definition.data_provider_key)
-        .ok_or_else(|| ApiError::bad_request(format!("No data provider for key: {}", definition.data_provider_key)))?;
+        .ok_or_else(|| {
+            ApiError::bad_request(format!(
+                "No data provider for key: {}",
+                definition.data_provider_key
+            ))
+        })?;
 
     let dataset = provider
         .fetch_data(ctx.tenant_id, &org_context, &params, &locale)
@@ -998,7 +1038,11 @@ body {{ margin: 0; padding: 0; font-family: 'Noto Sans Arabic', 'Segoe UI', sans
 
     let pages = config.paginate(&dataset.rows);
     let visible_cols: Vec<&ColumnDef> = dataset.columns.iter().filter(|c| c.visible).collect();
-    let org_name = if is_rtl { &org_context.name_ar } else { &org_context.name };
+    let org_name = if is_rtl {
+        &org_context.name_ar
+    } else {
+        &org_context.name
+    };
 
     for page_items in &pages {
         html.push_str(r#"<div class="sheet">"#);
@@ -1043,13 +1087,19 @@ body {{ margin: 0; padding: 0; font-family: 'Noto Sans Arabic', 'Segoe UI', sans
                 let y = layout.slots.first().map(|s| s.y_mm).unwrap_or(0.0)
                     + r as f64 * (config.item_height_mm + config.gap_mm)
                     - config.gap_mm / 2.0;
-                html.push_str(&format!(r#"<div class="cut-line-h" style="top:{y}mm;"></div>"#, y = y));
+                html.push_str(&format!(
+                    r#"<div class="cut-line-h" style="top:{y}mm;"></div>"#,
+                    y = y
+                ));
             }
             for c in 1..layout.columns {
                 let x = layout.slots.first().map(|s| s.x_mm).unwrap_or(0.0)
                     + c as f64 * (config.item_width_mm + config.gap_mm)
                     - config.gap_mm / 2.0;
-                html.push_str(&format!(r#"<div class="cut-line-v" style="left:{x}mm;"></div>"#, x = x));
+                html.push_str(&format!(
+                    r#"<div class="cut-line-v" style="left:{x}mm;"></div>"#,
+                    x = x
+                ));
             }
         }
 
@@ -1093,42 +1143,132 @@ pub async fn get_provider_schema(
             "Term Student Certificate",
             "شهادة نتائج الفصل الدراسي",
             vec![
-                ProviderSchemaField { key: "student_name".into(), label: "Student Name".into(), label_ar: "اسم الطالب".into(), data_type: "text".into() },
-                ProviderSchemaField { key: "subject_name".into(), label: "Subject".into(), label_ar: "المادة".into(), data_type: "text".into() },
-                ProviderSchemaField { key: "score".into(), label: "Score".into(), label_ar: "الدرجة".into(), data_type: "decimal".into() },
-                ProviderSchemaField { key: "max_score".into(), label: "Max Score".into(), label_ar: "الدرجة العظمى".into(), data_type: "decimal".into() },
-                ProviderSchemaField { key: "percentage".into(), label: "Percentage".into(), label_ar: "النسبة المئوية".into(), data_type: "percentage".into() },
-                ProviderSchemaField { key: "status".into(), label: "Status".into(), label_ar: "الحالة".into(), data_type: "status".into() },
+                ProviderSchemaField {
+                    key: "student_name".into(),
+                    label: "Student Name".into(),
+                    label_ar: "اسم الطالب".into(),
+                    data_type: "text".into(),
+                },
+                ProviderSchemaField {
+                    key: "subject_name".into(),
+                    label: "Subject".into(),
+                    label_ar: "المادة".into(),
+                    data_type: "text".into(),
+                },
+                ProviderSchemaField {
+                    key: "score".into(),
+                    label: "Score".into(),
+                    label_ar: "الدرجة".into(),
+                    data_type: "decimal".into(),
+                },
+                ProviderSchemaField {
+                    key: "max_score".into(),
+                    label: "Max Score".into(),
+                    label_ar: "الدرجة العظمى".into(),
+                    data_type: "decimal".into(),
+                },
+                ProviderSchemaField {
+                    key: "percentage".into(),
+                    label: "Percentage".into(),
+                    label_ar: "النسبة المئوية".into(),
+                    data_type: "percentage".into(),
+                },
+                ProviderSchemaField {
+                    key: "status".into(),
+                    label: "Status".into(),
+                    label_ar: "الحالة".into(),
+                    data_type: "status".into(),
+                },
             ],
         ),
         "exam.seating_plan" => (
             "Exam Seating Plan",
             "مخطط جلوس الطلاب في الاختبارات",
             vec![
-                ProviderSchemaField { key: "seating_number".into(), label: "Seat #".into(), label_ar: "رقم الجلوس".into(), data_type: "text".into() },
-                ProviderSchemaField { key: "student_name".into(), label: "Student Name".into(), label_ar: "اسم الطالب".into(), data_type: "text".into() },
-                ProviderSchemaField { key: "room_name".into(), label: "Room".into(), label_ar: "القاعة".into(), data_type: "text".into() },
-                ProviderSchemaField { key: "session_name".into(), label: "Session".into(), label_ar: "جلسة الاختبار".into(), data_type: "text".into() },
+                ProviderSchemaField {
+                    key: "seating_number".into(),
+                    label: "Seat #".into(),
+                    label_ar: "رقم الجلوس".into(),
+                    data_type: "text".into(),
+                },
+                ProviderSchemaField {
+                    key: "student_name".into(),
+                    label: "Student Name".into(),
+                    label_ar: "اسم الطالب".into(),
+                    data_type: "text".into(),
+                },
+                ProviderSchemaField {
+                    key: "room_name".into(),
+                    label: "Room".into(),
+                    label_ar: "القاعة".into(),
+                    data_type: "text".into(),
+                },
+                ProviderSchemaField {
+                    key: "session_name".into(),
+                    label: "Session".into(),
+                    label_ar: "جلسة الاختبار".into(),
+                    data_type: "text".into(),
+                },
             ],
         ),
         "finance.payment_receipt" => (
             "Payment Receipt",
             "سند قبض مالي",
             vec![
-                ProviderSchemaField { key: "receipt_number".into(), label: "Receipt #".into(), label_ar: "رقم السند".into(), data_type: "text".into() },
-                ProviderSchemaField { key: "student_name".into(), label: "Student Name".into(), label_ar: "اسم الطالب".into(), data_type: "text".into() },
-                ProviderSchemaField { key: "fee_name".into(), label: "Fee".into(), label_ar: "نوع الرسم".into(), data_type: "text".into() },
-                ProviderSchemaField { key: "amount".into(), label: "Amount".into(), label_ar: "المبلغ".into(), data_type: "currency".into() },
-                ProviderSchemaField { key: "payment_method".into(), label: "Payment Method".into(), label_ar: "طريقة الدفع".into(), data_type: "text".into() },
+                ProviderSchemaField {
+                    key: "receipt_number".into(),
+                    label: "Receipt #".into(),
+                    label_ar: "رقم السند".into(),
+                    data_type: "text".into(),
+                },
+                ProviderSchemaField {
+                    key: "student_name".into(),
+                    label: "Student Name".into(),
+                    label_ar: "اسم الطالب".into(),
+                    data_type: "text".into(),
+                },
+                ProviderSchemaField {
+                    key: "fee_name".into(),
+                    label: "Fee".into(),
+                    label_ar: "نوع الرسم".into(),
+                    data_type: "text".into(),
+                },
+                ProviderSchemaField {
+                    key: "amount".into(),
+                    label: "Amount".into(),
+                    label_ar: "المبلغ".into(),
+                    data_type: "currency".into(),
+                },
+                ProviderSchemaField {
+                    key: "payment_method".into(),
+                    label: "Payment Method".into(),
+                    label_ar: "طريقة الدفع".into(),
+                    data_type: "text".into(),
+                },
             ],
         ),
         _ => (
             "Standard Document Data",
             "بيانات المستند",
             vec![
-                ProviderSchemaField { key: "student_name".into(), label: "Student Name".into(), label_ar: "اسم الطالب".into(), data_type: "text".into() },
-                ProviderSchemaField { key: "class_name".into(), label: "Class".into(), label_ar: "الصف".into(), data_type: "text".into() },
-                ProviderSchemaField { key: "status".into(), label: "Status".into(), label_ar: "الحالة".into(), data_type: "status".into() },
+                ProviderSchemaField {
+                    key: "student_name".into(),
+                    label: "Student Name".into(),
+                    label_ar: "اسم الطالب".into(),
+                    data_type: "text".into(),
+                },
+                ProviderSchemaField {
+                    key: "class_name".into(),
+                    label: "Class".into(),
+                    label_ar: "الصف".into(),
+                    data_type: "text".into(),
+                },
+                ProviderSchemaField {
+                    key: "status".into(),
+                    label: "Status".into(),
+                    label_ar: "الحالة".into(),
+                    data_type: "status".into(),
+                },
             ],
         ),
     };
@@ -1190,7 +1330,10 @@ pub async fn list_audit_logs(
             entity_type: e.entity_type,
             entity_id: Some(e.entity_id),
             ip_address: Some("127.0.0.1".into()),
-            metadata: e.details.as_ref().map(|d| serde_json::to_string_pretty(d).unwrap_or_default()),
+            metadata: e
+                .details
+                .as_ref()
+                .map(|d| serde_json::to_string_pretty(d).unwrap_or_default()),
             details: e.details,
             created_at: e.created_at,
         })
@@ -1205,20 +1348,43 @@ pub async fn list_audit_logs(
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/api/v1/templates", get(list_templates).post(create_template))
-        .route("/api/v1/templates/:id", get(get_template).put(update_template).delete(delete_template))
+        .route(
+            "/api/v1/templates",
+            get(list_templates).post(create_template),
+        )
+        .route(
+            "/api/v1/templates/:id",
+            get(get_template)
+                .put(update_template)
+                .delete(delete_template),
+        )
         .route("/api/v1/templates/:id/publish", post(publish_template))
         .route("/api/v1/templates/:id/archive", post(archive_template))
         .route("/api/v1/templates/:id/versions", get(get_template_versions))
-        .route("/api/v1/templates/:id/revert", post(revert_template_version))
+        .route(
+            "/api/v1/templates/:id/revert",
+            post(revert_template_version),
+        )
         .route("/api/v1/templates/preview", post(preview_template))
         .route("/api/v1/templates/validate", post(validate_template))
         .route("/api/v1/report-definitions", get(list_report_definitions))
-        .route("/api/v1/report-definitions/:code", get(get_report_definition))
-        .route("/api/v1/report-definitions/:definition_id/bindings", get(list_template_bindings).post(create_template_binding))
+        .route(
+            "/api/v1/report-definitions/:code",
+            get(get_report_definition),
+        )
+        .route(
+            "/api/v1/report-definitions/:definition_id/bindings",
+            get(list_template_bindings).post(create_template_binding),
+        )
         .route("/api/v1/reports/generate", post(generate_report))
-        .route("/api/v1/reports/jobs/:id/status", get(get_report_job_status))
-        .route("/api/v1/reports/jobs/:id/download", get(download_report_file))
+        .route(
+            "/api/v1/reports/jobs/:id/status",
+            get(get_report_job_status),
+        )
+        .route(
+            "/api/v1/reports/jobs/:id/download",
+            get(download_report_file),
+        )
         .route("/api/v1/reports/batch-print", post(batch_print))
         .route("/api/v1/reports/schema/:key", get(get_provider_schema))
         .route("/api/v1/reports/audit-logs", get(list_audit_logs))

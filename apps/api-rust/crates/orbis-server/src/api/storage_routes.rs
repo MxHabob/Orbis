@@ -1,18 +1,18 @@
 //! Storage routes — File upload (multipart), file download/streaming, presigned URLs, and document archiving.
 
 use axum::{
+    Json, Router,
     body::Body,
     extract::{Multipart, Path, State},
-    http::{header, HeaderMap, HeaderValue, StatusCode},
+    http::{HeaderMap, HeaderValue, StatusCode, header},
     response::{IntoResponse, Response},
     routing::{delete, get, post},
-    Json, Router,
 };
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
-use super::document_routes::{doc_to_dto, DocumentDto};
+use super::document_routes::{DocumentDto, doc_to_dto};
 use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
@@ -88,10 +88,9 @@ async fn upload_file(
                 if let Some(ctype) = field.content_type() {
                     mime_type = ctype.to_string();
                 }
-                let bytes = field
-                    .bytes()
-                    .await
-                    .map_err(|e| ApiError::bad_request(format!("Failed to read file bytes: {e}")))?;
+                let bytes = field.bytes().await.map_err(|e| {
+                    ApiError::bad_request(format!("Failed to read file bytes: {e}"))
+                })?;
                 file_data = bytes.to_vec();
             }
             "category" => {
@@ -171,7 +170,9 @@ async fn upload_file(
     }
 
     if file_data.is_empty() {
-        return Err(ApiError::bad_request("No file data provided in multipart payload"));
+        return Err(ApiError::bad_request(
+            "No file data provided in multipart payload",
+        ));
     }
     if file_name.is_empty() {
         file_name = "unnamed_upload.bin".to_string();
@@ -224,7 +225,9 @@ async fn download_file(
         .download_file_bytes(&ctx, id)
         .await?;
 
-    let mime = doc.mime_type.unwrap_or_else(|| "application/octet-stream".to_string());
+    let mime = doc
+        .mime_type
+        .unwrap_or_else(|| "application/octet-stream".to_string());
     let mut headers = HeaderMap::new();
 
     if let Ok(mime_val) = HeaderValue::from_str(&mime) {
@@ -382,7 +385,10 @@ async fn list_archived_documents(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<DocumentDto>>>, ApiError> {
-    let docs = state.document_repo.find_archived(ctx.tenant_id).await
+    let docs = state
+        .document_repo
+        .find_archived(ctx.tenant_id)
+        .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
     Ok(ApiResponse::ok(docs.into_iter().map(doc_to_dto).collect()))
 }
@@ -401,7 +407,10 @@ async fn list_trash_documents(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<DocumentDto>>>, ApiError> {
-    let docs = state.document_repo.find_trash(ctx.tenant_id).await
+    let docs = state
+        .document_repo
+        .find_trash(ctx.tenant_id)
+        .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
     Ok(ApiResponse::ok(docs.into_iter().map(doc_to_dto).collect()))
 }

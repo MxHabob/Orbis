@@ -33,8 +33,12 @@ impl BarcodeFormat {
 ///
 /// # Arguments
 fn prepare_code128_data(data: &str) -> String {
-    if data.starts_with('À') || data.starts_with('Ɓ') || data.starts_with('Ć')
-        || data.starts_with('\u{00C0}') || data.starts_with('\u{0181}') || data.starts_with('\u{0106}')
+    if data.starts_with('À')
+        || data.starts_with('Ɓ')
+        || data.starts_with('Ć')
+        || data.starts_with('\u{00C0}')
+        || data.starts_with('\u{0181}')
+        || data.starts_with('\u{0106}')
     {
         data.to_string()
     } else {
@@ -213,15 +217,24 @@ mod tests {
 
     #[test]
     fn test_qr_code() {
-        let svg = generate_qr_svg("https://orbis.edu", 100.0, QrErrorCorrection::Medium, "#000000", "#ffffff")
-            .expect("Should generate QR code");
+        let svg = generate_qr_svg(
+            "https://orbis.edu",
+            100.0,
+            QrErrorCorrection::Medium,
+            "#000000",
+            "#ffffff",
+        )
+        .expect("Should generate QR code");
         assert!(svg.starts_with("<svg"));
         assert!(svg.contains("rect"));
     }
 
     #[test]
     fn test_barcode_format_parsing() {
-        assert_eq!(BarcodeFormat::from_str("code128"), Some(BarcodeFormat::Code128));
+        assert_eq!(
+            BarcodeFormat::from_str("code128"),
+            Some(BarcodeFormat::Code128)
+        );
         assert_eq!(BarcodeFormat::from_str("EAN13"), Some(BarcodeFormat::Ean13));
         assert_eq!(BarcodeFormat::from_str("unknown"), None);
     }

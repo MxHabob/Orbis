@@ -8,7 +8,7 @@ const groupId = $derived(page.params.id || "");
 </script>
 
 <svelte:head>
-  <title>{m.groups_nav_title ? m.groups_nav_title() : "User Group Details"} | Orbis</title>
+  <title>{m.groups_nav_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-hidden">

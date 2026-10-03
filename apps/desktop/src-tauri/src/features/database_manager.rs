@@ -9,14 +9,14 @@
 //! - Migration execution & version tracking
 //! - Thread-safe concurrency locking for mutation operations
 
+use crate::connection::{ConnectionConfig, ConnectionMode};
+use orbis_infra::migration::Migrator;
+use sea_orm::{ConnectionTrait, Database, DatabaseBackend, DatabaseConnection, Statement};
+use sea_orm_migration::MigratorTrait;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tokio::sync::Mutex;
 use tracing::{info, warn};
-use serde::{Deserialize, Serialize};
-use sea_orm::{Database, DatabaseConnection, ConnectionTrait, Statement, DatabaseBackend};
-use sea_orm_migration::MigratorTrait;
-use orbis_infra::migration::Migrator;
-use crate::connection::{ConnectionConfig, ConnectionMode};
 
 /// Global concurrency lock to guarantee only one mutating database operation runs at a time.
 pub static OPERATION_LOCK: Mutex<()> = Mutex::const_new(());
@@ -152,10 +152,12 @@ pub async fn get_database_status(
 
     match config.mode {
         ConnectionMode::Local => {
-            let db_path = config.resolve_local_db_path(app_data_dir)
+            let db_path = config
+                .resolve_local_db_path(app_data_dir)
                 .ok_or_else(|| "Failed to resolve local database path".to_string())?;
             let target_str = db_path.to_string_lossy().to_string();
-            let db_name = db_path.file_name()
+            let db_name = db_path
+                .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_else(|| "orbis.db".to_string());
 
@@ -169,11 +171,15 @@ pub async fn get_database_status(
             // If we have an active DB connection, query diagnostics
             if let Some(db) = active_db {
                 // Applied migrations
-                let applied = Migrator::get_applied_migrations(db).await.unwrap_or_default();
+                let applied = Migrator::get_applied_migrations(db)
+                    .await
+                    .unwrap_or_default();
                 let applied_count = applied.len();
-                let applied_names: std::collections::HashSet<_> = applied.iter().map(|m| m.name().to_string()).collect();
-                
-                let pending: Vec<String> = all_migrations.iter()
+                let applied_names: std::collections::HashSet<_> =
+                    applied.iter().map(|m| m.name().to_string()).collect();
+
+                let pending: Vec<String> = all_migrations
+                    .iter()
                     .map(|m| m.name().to_string())
                     .filter(|name| !applied_names.contains(name))
                     .collect();
@@ -181,13 +187,25 @@ pub async fn get_database_status(
                 let is_compatible = pending.is_empty();
 
                 // SQLite journal mode
-                let journal_mode = match db.query_one(Statement::from_string(DatabaseBackend::Sqlite, "PRAGMA journal_mode")).await {
+                let journal_mode = match db
+                    .query_one(Statement::from_string(
+                        DatabaseBackend::Sqlite,
+                        "PRAGMA journal_mode",
+                    ))
+                    .await
+                {
                     Ok(Some(row)) => row.try_get_by_index::<String>(0).ok(),
                     _ => None,
                 };
 
                 // SQLite quick integrity check
-                let integrity = match db.query_one(Statement::from_string(DatabaseBackend::Sqlite, "PRAGMA quick_check")).await {
+                let integrity = match db
+                    .query_one(Statement::from_string(
+                        DatabaseBackend::Sqlite,
+                        "PRAGMA quick_check",
+                    ))
+                    .await
+                {
                     Ok(Some(row)) => row.try_get_by_index::<String>(0).ok(),
                     _ => Some("unknown".to_string()),
                 };
@@ -231,7 +249,11 @@ pub async fn get_database_status(
                 // Disconnected state
                 Ok(DatabaseStatusDto {
                     mode: "local".to_string(),
-                    state: if db_path.exists() { "disconnected".to_string() } else { "not_found".to_string() },
+                    state: if db_path.exists() {
+                        "disconnected".to_string()
+                    } else {
+                        "not_found".to_string()
+                    },
                     database_name: db_name,
                     connection_target: target_str,
                     file_size_bytes,
@@ -263,7 +285,11 @@ pub async fn get_database_status(
             Ok(DatabaseStatusDto {
                 mode: "remote".to_string(),
                 state: state.to_string(),
-                database_name: config.remote.as_ref().and_then(|r| r.database_name.clone()).unwrap_or_else(|| "orbis_remote".to_string()),
+                database_name: config
+                    .remote
+                    .as_ref()
+                    .and_then(|r| r.database_name.clone())
+                    .unwrap_or_else(|| "orbis_remote".to_string()),
                 connection_target: server_url,
                 file_size_bytes: None,
                 file_size_formatted: None,
@@ -273,10 +299,18 @@ pub async fn get_database_status(
                 pending_migrations: vec![],
                 is_compatible: true,
                 journal_mode: None,
-                integrity_status: if health.reachable { Some("ok".to_string()) } else { None },
+                integrity_status: if health.reachable {
+                    Some("ok".to_string())
+                } else {
+                    None
+                },
                 last_backup_timestamp: config.settings.last_backup_timestamp.clone(),
                 last_backup_path: config.settings.last_backup_path.clone(),
-                last_connected_at: if health.reachable { Some(chrono::Utc::now().to_rfc3339()) } else { None },
+                last_connected_at: if health.reachable {
+                    Some(chrono::Utc::now().to_rfc3339())
+                } else {
+                    None
+                },
                 error_message: health.error,
             })
         }
@@ -303,7 +337,8 @@ pub async fn create_local_database(
         "orbis.db".to_string()
     } else {
         let trimmed = filename.trim();
-        if trimmed.ends_with(".db") || trimmed.ends_with(".sqlite") || trimmed.ends_with(".sqlite3") {
+        if trimmed.ends_with(".db") || trimmed.ends_with(".sqlite") || trimmed.ends_with(".sqlite3")
+        {
             trimmed.to_string()
         } else {
             format!("{}.db", trimmed)
@@ -312,29 +347,52 @@ pub async fn create_local_database(
 
     let target_path = target_dir.join(&clean_filename);
     if target_path.exists() {
-        return Err(format!("A database file already exists at {:?}", target_path));
+        return Err(format!(
+            "A database file already exists at {:?}",
+            target_path
+        ));
     }
 
     let url_path = target_path.to_string_lossy().replace('\\', "/");
     let db_url = format!("sqlite://{}?mode=rwc", url_path);
 
     info!("Creating new SQLite database at {:?}", target_path);
-    let db = Database::connect(&db_url).await
+    let db = Database::connect(&db_url)
+        .await
         .map_err(|e| format!("Failed to connect to newly created database: {e}"))?;
 
     // Enable WAL mode & foreign keys
-    let _ = db.execute(Statement::from_string(DatabaseBackend::Sqlite, "PRAGMA journal_mode=WAL")).await;
-    let _ = db.execute(Statement::from_string(DatabaseBackend::Sqlite, "PRAGMA foreign_keys=ON")).await;
+    let _ = db
+        .execute(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "PRAGMA journal_mode=WAL",
+        ))
+        .await;
+    let _ = db
+        .execute(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "PRAGMA foreign_keys=ON",
+        ))
+        .await;
 
     // Run all migrations
-    Migrator::up(&db, None).await
+    Migrator::up(&db, None)
+        .await
         .map_err(|e| format!("Failed to execute database migrations: {e}"))?;
 
     // Verify integrity
-    let integrity = db.query_one(Statement::from_string(DatabaseBackend::Sqlite, "PRAGMA integrity_check")).await
+    let integrity = db
+        .query_one(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "PRAGMA integrity_check",
+        ))
+        .await
         .map_err(|e| format!("Failed integrity check on newly created database: {e}"))?;
-    
-    let is_ok = integrity.and_then(|row| row.try_get_by_index::<String>(0).ok()).unwrap_or_default() == "ok";
+
+    let is_ok = integrity
+        .and_then(|row| row.try_get_by_index::<String>(0).ok())
+        .unwrap_or_default()
+        == "ok";
     if !is_ok {
         return Err("Database integrity check failed after initialization".to_string());
     }
@@ -344,7 +402,11 @@ pub async fn create_local_database(
     config.mode = ConnectionMode::Local;
     config.local = Some(crate::connection::LocalConfig {
         db_filename: clean_filename,
-        custom_path: if target_dir != app_data_dir { Some(target_path.to_string_lossy().to_string()) } else { None },
+        custom_path: if target_dir != app_data_dir {
+            Some(target_path.to_string_lossy().to_string())
+        } else {
+            None
+        },
         wal_mode: true,
         busy_timeout_ms: 5000,
     });
@@ -387,7 +449,13 @@ pub async fn inspect_database_file(file_path: &str) -> Result<BackupInspectionDt
     };
 
     // Check integrity
-    let integrity_ok = match db.query_one(Statement::from_string(DatabaseBackend::Sqlite, "PRAGMA quick_check")).await {
+    let integrity_ok = match db
+        .query_one(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "PRAGMA quick_check",
+        ))
+        .await
+    {
         Ok(Some(row)) => row.try_get_by_index::<String>(0).unwrap_or_default() == "ok",
         _ => false,
     };
@@ -406,9 +474,14 @@ pub async fn inspect_database_file(file_path: &str) -> Result<BackupInspectionDt
     }
 
     // Inspect migrations
-    let applied = Migrator::get_applied_migrations(&db).await.unwrap_or_default();
+    let applied = Migrator::get_applied_migrations(&db)
+        .await
+        .unwrap_or_default();
     let applied_count = applied.len();
-    let schema_version = applied.last().map(|m| m.name().to_string()).unwrap_or_else(|| "v0".to_string());
+    let schema_version = applied
+        .last()
+        .map(|m| m.name().to_string())
+        .unwrap_or_else(|| "v0".to_string());
 
     Ok(BackupInspectionDto {
         is_valid: true,
@@ -441,7 +514,7 @@ pub async fn execute_backup(
             };
             std::fs::create_dir_all(&backup_dir)
                 .map_err(|e| format!("Failed to create backup directory {:?}: {e}", backup_dir))?;
-            
+
             let timestamp = chrono::Local::now().format("%Y-%m-%d_%H%M%S");
             backup_dir.join(format!("orbis_backup_{}.db", timestamp))
         }
@@ -455,18 +528,28 @@ pub async fn execute_backup(
         let _ = std::fs::remove_file(&backup_path);
     }
 
-    let escaped_path = backup_path.to_string_lossy().replace('\\', "/").replace('\'', "''");
+    let escaped_path = backup_path
+        .to_string_lossy()
+        .replace('\\', "/")
+        .replace('\'', "''");
     let vacuum_query = format!("VACUUM INTO '{}'", escaped_path);
 
     info!("Executing SQLite backup: {}", vacuum_query);
-    active_db.execute(Statement::from_string(DatabaseBackend::Sqlite, &vacuum_query)).await
+    active_db
+        .execute(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            &vacuum_query,
+        ))
+        .await
         .map_err(|e| format!("Backup execution failed: {e}"))?;
 
     if !backup_path.exists() {
         return Err("Backup file was not created by the SQLite engine".to_string());
     }
 
-    let file_size = std::fs::metadata(&backup_path).map(|m| m.len()).unwrap_or(0);
+    let file_size = std::fs::metadata(&backup_path)
+        .map(|m| m.len())
+        .unwrap_or(0);
     if file_size == 0 {
         let _ = std::fs::remove_file(&backup_path);
         return Err("Backup file is empty (0 bytes)".to_string());
@@ -476,7 +559,10 @@ pub async fn execute_backup(
     let inspection = inspect_database_file(&backup_path.to_string_lossy()).await?;
     if !inspection.is_valid {
         let _ = std::fs::remove_file(&backup_path);
-        return Err(format!("Backup integrity verification failed: {:?}", inspection.error));
+        return Err(format!(
+            "Backup integrity verification failed: {:?}",
+            inspection.error
+        ));
     }
 
     let duration_ms = start_time.elapsed().as_millis() as u64;
@@ -522,10 +608,14 @@ pub async fn execute_restore(
     // 1. Inspect & validate backup
     let inspection = inspect_database_file(backup_file_path).await?;
     if !inspection.is_valid {
-        return Err(format!("Cannot restore invalid backup: {:?}", inspection.error));
+        return Err(format!(
+            "Cannot restore invalid backup: {:?}",
+            inspection.error
+        ));
     }
 
-    let active_db_path = config.resolve_local_db_path(app_data_dir)
+    let active_db_path = config
+        .resolve_local_db_path(app_data_dir)
         .ok_or_else(|| "Cannot restore: remote connection mode active".to_string())?;
 
     // 2. Automatic safety snapshot of current active DB
@@ -533,8 +623,9 @@ pub async fn execute_restore(
         let snapshot_dir = app_data_dir.join("backups").join("pre_restore_snapshots");
         let _ = std::fs::create_dir_all(&snapshot_dir);
         let timestamp = chrono::Local::now().format("%Y-%m-%d_%H%M%S");
-        let snapshot_path = snapshot_dir.join(format!("orbis_pre_restore_snapshot_{}.db", timestamp));
-        
+        let snapshot_path =
+            snapshot_dir.join(format!("orbis_pre_restore_snapshot_{}.db", timestamp));
+
         match std::fs::copy(&active_db_path, &snapshot_path) {
             Ok(_) => Some(snapshot_path.to_string_lossy().to_string()),
             Err(e) => {
@@ -563,26 +654,54 @@ pub async fn execute_restore(
     let url_path = active_db_path.to_string_lossy().replace('\\', "/");
     let db_url = format!("sqlite://{}?mode=rwc", url_path);
 
-    let db = Database::connect(&db_url).await
+    let db = Database::connect(&db_url)
+        .await
         .map_err(|e| format!("Failed to connect to restored database: {e}"))?;
 
-    let _ = db.execute(Statement::from_string(DatabaseBackend::Sqlite, "PRAGMA journal_mode=WAL")).await;
-    let _ = db.execute(Statement::from_string(DatabaseBackend::Sqlite, "PRAGMA foreign_keys=ON")).await;
+    let _ = db
+        .execute(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "PRAGMA journal_mode=WAL",
+        ))
+        .await;
+    let _ = db
+        .execute(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "PRAGMA foreign_keys=ON",
+        ))
+        .await;
 
     // Run migrations if backup had an older schema
-    let pending_before = Migrator::get_pending_migrations(&db).await.unwrap_or_default();
-    let applied_migration_names: Vec<String> = pending_before.iter().map(|m| m.name().to_string()).collect();
+    let pending_before = Migrator::get_pending_migrations(&db)
+        .await
+        .unwrap_or_default();
+    let applied_migration_names: Vec<String> = pending_before
+        .iter()
+        .map(|m| m.name().to_string())
+        .collect();
 
     if !applied_migration_names.is_empty() {
-        info!("Applying {} pending migrations to restored database...", applied_migration_names.len());
-        Migrator::up(&db, None).await
+        info!(
+            "Applying {} pending migrations to restored database...",
+            applied_migration_names.len()
+        );
+        Migrator::up(&db, None)
+            .await
             .map_err(|e| format!("Failed to apply migrations to restored database: {e}"))?;
     }
 
     // Final integrity check
-    let integrity = db.query_one(Statement::from_string(DatabaseBackend::Sqlite, "PRAGMA integrity_check")).await
+    let integrity = db
+        .query_one(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "PRAGMA integrity_check",
+        ))
+        .await
         .map_err(|e| format!("Integrity check error after restore: {e}"))?;
-    let is_ok = integrity.and_then(|row| row.try_get_by_index::<String>(0).ok()).unwrap_or_default() == "ok";
+    let is_ok = integrity
+        .and_then(|row| row.try_get_by_index::<String>(0).ok())
+        .unwrap_or_default()
+        == "ok";
 
     if !is_ok {
         return Err("Integrity check failed on active database following restore".to_string());
@@ -600,12 +719,15 @@ pub async fn execute_restore(
 }
 
 /// Run pending migrations on active database.
-pub async fn run_pending_migrations(active_db: &DatabaseConnection) -> Result<MigrationResultDto, String> {
+pub async fn run_pending_migrations(
+    active_db: &DatabaseConnection,
+) -> Result<MigrationResultDto, String> {
     let _lock = OPERATION_LOCK.lock().await;
 
-    let pending = Migrator::get_pending_migrations(active_db).await
+    let pending = Migrator::get_pending_migrations(active_db)
+        .await
         .map_err(|e| format!("Failed to check pending migrations: {e}"))?;
-    
+
     let pending_names: Vec<String> = pending.iter().map(|m| m.name().to_string()).collect();
     if pending_names.is_empty() {
         return Ok(MigrationResultDto {
@@ -616,7 +738,8 @@ pub async fn run_pending_migrations(active_db: &DatabaseConnection) -> Result<Mi
         });
     }
 
-    Migrator::up(active_db, None).await
+    Migrator::up(active_db, None)
+        .await
         .map_err(|e| format!("Failed to apply migrations: {e}"))?;
 
     let applied_count = pending_names.len();
@@ -625,13 +748,23 @@ pub async fn run_pending_migrations(active_db: &DatabaseConnection) -> Result<Mi
         success: true,
         applied_migrations: pending_names,
         total_applied: applied_count,
-        message: format!("Successfully applied {} database migration(s)", applied_count),
+        message: format!(
+            "Successfully applied {} database migration(s)",
+            applied_count
+        ),
     })
 }
 
 /// Run PRAGMA integrity_check on active database.
-pub async fn check_active_integrity(active_db: &DatabaseConnection) -> Result<IntegrityResultDto, String> {
-    let rows = active_db.query_all(Statement::from_string(DatabaseBackend::Sqlite, "PRAGMA integrity_check(100)")).await
+pub async fn check_active_integrity(
+    active_db: &DatabaseConnection,
+) -> Result<IntegrityResultDto, String> {
+    let rows = active_db
+        .query_all(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "PRAGMA integrity_check(100)",
+        ))
+        .await
         .map_err(|e| format!("Failed to execute integrity check: {e}"))?;
 
     let mut details = Vec::new();
@@ -642,7 +775,11 @@ pub async fn check_active_integrity(active_db: &DatabaseConnection) -> Result<In
     }
 
     let is_healthy = details.len() == 1 && details[0] == "ok";
-    let status = if is_healthy { "ok".to_string() } else { "corruption_detected".to_string() };
+    let status = if is_healthy {
+        "ok".to_string()
+    } else {
+        "corruption_detected".to_string()
+    };
 
     Ok(IntegrityResultDto {
         is_healthy,
@@ -661,21 +798,35 @@ pub async fn optimize_database(
     let _lock = OPERATION_LOCK.lock().await;
 
     let db_path = config.resolve_local_db_path(app_data_dir);
-    let size_before = db_path.as_ref()
+    let size_before = db_path
+        .as_ref()
         .and_then(|p| std::fs::metadata(p).ok())
         .map(|m| m.len())
         .unwrap_or(0);
 
     // 1. Checkpoint WAL
-    let _ = active_db.execute(Statement::from_string(DatabaseBackend::Sqlite, "PRAGMA wal_checkpoint(TRUNCATE)")).await;
+    let _ = active_db
+        .execute(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "PRAGMA wal_checkpoint(TRUNCATE)",
+        ))
+        .await;
 
     // 2. PRAGMA optimize
-    let _ = active_db.execute(Statement::from_string(DatabaseBackend::Sqlite, "PRAGMA optimize")).await;
+    let _ = active_db
+        .execute(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "PRAGMA optimize",
+        ))
+        .await;
 
     // 3. VACUUM
-    let _ = active_db.execute(Statement::from_string(DatabaseBackend::Sqlite, "VACUUM")).await;
+    let _ = active_db
+        .execute(Statement::from_string(DatabaseBackend::Sqlite, "VACUUM"))
+        .await;
 
-    let size_after = db_path.as_ref()
+    let size_after = db_path
+        .as_ref()
         .and_then(|p| std::fs::metadata(p).ok())
         .map(|m| m.len())
         .unwrap_or(0);
@@ -715,7 +866,11 @@ mod tests {
 
         // 1. Create local database
         let status = create_local_database(&temp_dir, None, "test_orbis.db".to_string()).await;
-        assert!(status.is_ok(), "Failed to create local database: {:?}", status.err());
+        assert!(
+            status.is_ok(),
+            "Failed to create local database: {:?}",
+            status.err()
+        );
         let status_res = status.unwrap();
         assert_eq!(status_res.database_name, "test_orbis.db");
         assert!(status_res.applied_migrations_count > 0);
@@ -726,7 +881,10 @@ mod tests {
         let db = Database::connect(&db_url).await.unwrap();
 
         // 3. Backup
-        let backup_dest = temp_dir.join("test_backup.db").to_string_lossy().to_string();
+        let backup_dest = temp_dir
+            .join("test_backup.db")
+            .to_string_lossy()
+            .to_string();
         let backup_res = execute_backup(&temp_dir, &config, &db, Some(backup_dest.clone())).await;
         assert!(backup_res.is_ok(), "Backup failed: {:?}", backup_res.err());
         assert!(backup_res.unwrap().integrity_verified);
@@ -749,4 +907,3 @@ mod tests {
         let _ = std::fs::remove_dir_all(&temp_dir);
     }
 }
-

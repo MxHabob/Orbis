@@ -11,7 +11,7 @@ import { confirmStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { DocumentPage, Plus, Refresh } from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatCurrency, formatDate, l } from "$lib/core/i18n";
+import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { toast } from "@orbis/ui";
 import FeeTemplateSheet from "$lib/features/finance/components/fee-template-sheet.svelte";
 import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
@@ -38,26 +38,26 @@ let activeFilter = $state<UniversalFilter>({
 
 function getCategoryLabel(catStr: string) {
   const c = String(catStr).toLowerCase();
-  if (c === "tuition") return m.common_ft_category_tuition?.() || "Tuition";
+  if (c === "tuition") return m.common_ft_category_tuition();
   if (c === "transport")
-    return m.common_ft_category_transport?.() || "Transport";
-  if (c === "books") return m.common_ft_category_books?.() || "Books";
-  if (c === "uniform") return m.common_ft_category_uniform?.() || "Uniform";
-  if (c === "exam") return m.common_ft_category_exam?.() || "Exam";
-  return m.common_guardians_relationship_other?.() || "Other";
+    return m.common_ft_category_transport();
+  if (c === "books") return m.common_ft_category_books();
+  if (c === "uniform") return m.common_ft_category_uniform();
+  if (c === "exam") return m.common_ft_category_exam();
+  return m.common_guardians_relationship_other();
 }
 
 function getFrequencyLabel(freqStr: string) {
   const f = String(freqStr).toLowerCase();
-  if (f === "once") return m.common_ft_frequency_once?.() || "Once";
-  if (f === "monthly") return m.common_ft_frequency_monthly?.() || "Monthly";
-  if (f === "termly" || f === "per_term") return m.common_ft_frequency_termly?.() || "Termly";
-  if (f === "yearly" || f === "annual") return m.common_ft_frequency_yearly?.() || "Yearly";
+  if (f === "once") return m.common_ft_frequency_once();
+  if (f === "monthly") return m.common_ft_frequency_monthly();
+  if (f === "termly" || f === "per_term") return m.common_ft_frequency_termly();
+  if (f === "yearly" || f === "annual") return m.common_ft_frequency_yearly();
   return freqStr;
 }
 
 function formatLevels(raw: any) {
-  if (!raw) return l("كافة المراحل والصفوف", "All Levels");
+  if (!raw) return m.ui_copy_all_levels_aa3ff22a();
   try {
     let levels: string[] = [];
     if (typeof raw === "string") {
@@ -68,16 +68,16 @@ function formatLevels(raw: any) {
     } else if (typeof raw === "object") {
       levels = Array.isArray(raw.levels) ? raw.levels : (raw.level ? [raw.level] : []);
     }
-    if (levels.length === 0) return l("كافة المراحل والصفوف", "All Levels");
+    if (levels.length === 0) return m.ui_copy_all_levels_aa3ff22a();
     return levels.join(", ");
   } catch {
-    return l("كافة المراحل والصفوف", "All Levels");
+    return m.ui_copy_all_levels_aa3ff22a();
   }
 }
 
 const templateActions: ActionItem[] = [
-  { id: "edit", label: m.common_action_edit?.() || "Edit", icon: "Pencil" },
-  { id: "delete", label: m.common_action_delete?.() || "Delete", icon: "Trash2", variant: "destructive" },
+  { id: "edit", label: m.common_action_edit(), icon: "Pencil" },
+  { id: "delete", label: m.common_action_delete(), icon: "Trash2", variant: "destructive" },
 ];
 
 const gridSource = $derived(
@@ -97,18 +97,18 @@ const gridSource = $derived(
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "name", prop: "name", header: m.common_ft_col_name?.() || "Template", name: "Template", width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "class_count", prop: "class_count", header: m.common_ft_col_category?.() || "Category", name: "Category", width: 120, size: 120, readonly: true },
-  { id: "amount", prop: "amount", header: m.common_ft_col_amount?.() || "Amount", name: "Amount", width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono font-bold" },
-  { id: "frequency", prop: "frequency", header: m.common_ft_col_frequency?.() || "Frequency", name: "Frequency", width: 100, size: 100, readonly: true, align: "center" },
-  { id: "applicable_levels_display", prop: "applicable_levels_display", header: l("المراحل المستهدفة", "Target Levels"), name: "Target Levels", width: 150, size: 150, readonly: true },
-  { id: "status", prop: "status", header: m.common_word_status?.() || "Status", name: "Status", width: 90, size: 90, type: "badge", align: "center", readonly: true },
-  { id: "created_at_display", prop: "created_at_display", header: l("تاريخ الإنشاء", "Created At"), name: "Created At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "updated_at_display", prop: "updated_at_display", header: l("آخر تحديث", "Updated At"), name: "Updated At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "name", prop: "name", header: m.common_ft_col_name(), name: "Template", width: 220, size: 220, readonly: true, cellClass: "font-medium" },
+  { id: "class_count", prop: "class_count", header: m.common_ft_col_category(), name: "Category", width: 120, size: 120, readonly: true },
+  { id: "amount", prop: "amount", header: m.common_ft_col_amount(), name: "Amount", width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono font-bold" },
+  { id: "frequency", prop: "frequency", header: m.common_ft_col_frequency(), name: "Frequency", width: 100, size: 100, readonly: true, align: "center" },
+  { id: "applicable_levels_display", prop: "applicable_levels_display", header: m.ui_copy_target_levels_71287d45(), name: "Target Levels", width: 150, size: 150, readonly: true },
+  { id: "status", prop: "status", header: m.common_word_status(), name: "Status", width: 90, size: 90, type: "badge", align: "center", readonly: true },
+  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: "Created At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "updated_at_display", prop: "updated_at_display", header: m.ui_copy_updated_at_ba0d0a9f(), name: "Updated At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
   {
     id: "actions",
     prop: "actions",
-    header: m.common_je_col_actions?.() || "Actions",
+    header: m.common_je_col_actions(),
     name: "Actions",
     width: 90,
     size: 90,
@@ -132,15 +132,15 @@ async function handleGridAction(event: GridActionEvent) {
   } else if (event.actionId === "delete") {
     const templateName = row.name_ar || row.name || "";
     const confirmed = await confirmStore.prompt({
-      title: `${m.common_action_delete?.() || "Delete"}؟`,
-      description: `${m.common_action_delete?.() || "Delete"} "${templateName}"?`,
-      confirmText: m.common_action_delete?.() || "Delete",
+      title: `${m.common_action_delete()}؟`,
+      description: `${m.common_action_delete()} "${templateName}"?`,
+      confirmText: m.common_action_delete(),
       variant: "destructive",
     });
     if (confirmed) {
       try {
         await api.deleteFeeTemplate(row.id);
-        toast.success(m.common_alert_deleted_successfully?.() || "Template deleted successfully");
+        toast.success(m.common_alert_deleted_successfully());
         await queryClient.invalidateQueries({
           queryKey: queryKeys.finance.feeTemplates(orgId),
         });
@@ -157,10 +157,10 @@ async function handleGridAction(event: GridActionEvent) {
     <div class="flex flex-col gap-0.5 text-start">
       <h1 class="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
         <DocumentPage class="text-primary" size={18} />
-        <span>{m.settings_nav_fee_templates ? m.settings_nav_fee_templates() : "Fee Templates"}</span>
+        <span>{m.settings_nav_fee_templates()}</span>
       </h1>
       <p class="text-xs text-muted-foreground">
-        {m.settings_nav_fee_templates_desc ? m.settings_nav_fee_templates_desc() : "Manage fee templates for student enrollment"}
+        {m.settings_nav_fee_templates_desc()}
       </p>
     </div>
     <div class="flex items-center gap-2">
@@ -178,7 +178,7 @@ async function handleGridAction(event: GridActionEvent) {
       </Button>
       <Button size="sm" onclick={handleCreate} class="text-xs font-bold shrink-0">
         <Plus size={14} class="me-1" />
-        {m.settings_fee_templates_add ? m.settings_fee_templates_add() : "Add Template"}
+        {m.settings_fee_templates_add()}
       </Button>
     </div>
   </div>
@@ -190,8 +190,8 @@ async function handleGridAction(event: GridActionEvent) {
       loading={isLoading}
       clientQuery
       filter={activeFilter}
-      emptyTitle={m.common_ft_empty?.() || "No fee templates"}
-      emptyDescription={m.common_ft_empty_desc?.() || "Create fee templates to auto-apply on enrollment"}
+      emptyTitle={m.common_ft_empty()}
+      emptyDescription={m.common_ft_empty_desc()}
       rtl={getLocale() === "ar"}
       readonly
       onaction={handleGridAction}

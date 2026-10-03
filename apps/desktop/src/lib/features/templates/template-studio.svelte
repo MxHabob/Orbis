@@ -174,7 +174,7 @@ async function saveTemplate() {
 
     store.markSaved();
     toast.success(
-      l("تم حفظ القالب بنجاح", "Template saved successfully"),
+      m.ui_copy_template_saved_successfully_299be978(),
     );
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Failed to save template";

@@ -10,22 +10,45 @@ impl MigrationTrait for Migration {
         let create_folders = Table::create()
             .table(Alias::new("folders"))
             .if_not_exists()
-            .col(ColumnDef::new(Alias::new("id")).uuid().not_null().primary_key())
+            .col(
+                ColumnDef::new(Alias::new("id"))
+                    .uuid()
+                    .not_null()
+                    .primary_key(),
+            )
             .col(ColumnDef::new(Alias::new("org_id")).uuid().not_null())
             .col(ColumnDef::new(Alias::new("parent_id")).uuid().null())
             .col(ColumnDef::new(Alias::new("name")).string().not_null())
             .col(ColumnDef::new(Alias::new("path")).string().not_null())
-            .col(ColumnDef::new(Alias::new("folder_type")).string().not_null().default("general"))
+            .col(
+                ColumnDef::new(Alias::new("folder_type"))
+                    .string()
+                    .not_null()
+                    .default("general"),
+            )
             .col(ColumnDef::new(Alias::new("entity_type")).string().null())
             .col(ColumnDef::new(Alias::new("entity_id")).uuid().null())
             .col(ColumnDef::new(Alias::new("org_unit_id")).uuid().null())
             .col(ColumnDef::new(Alias::new("academic_year_id")).uuid().null())
             .col(ColumnDef::new(Alias::new("term_id")).uuid().null())
-            .col(ColumnDef::new(Alias::new("is_system")).boolean().not_null().default(false))
+            .col(
+                ColumnDef::new(Alias::new("is_system"))
+                    .boolean()
+                    .not_null()
+                    .default(false),
+            )
             .col(ColumnDef::new(Alias::new("metadata")).json().null())
             .col(ColumnDef::new(Alias::new("created_by")).uuid().null())
-            .col(ColumnDef::new(Alias::new("created_at")).date_time().not_null())
-            .col(ColumnDef::new(Alias::new("updated_at")).date_time().not_null())
+            .col(
+                ColumnDef::new(Alias::new("created_at"))
+                    .date_time()
+                    .not_null(),
+            )
+            .col(
+                ColumnDef::new(Alias::new("updated_at"))
+                    .date_time()
+                    .not_null(),
+            )
             .col(ColumnDef::new(Alias::new("deleted_at")).date_time().null())
             .to_owned();
         let _ = manager.create_table(create_folders).await;
@@ -72,35 +95,21 @@ impl MigrationTrait for Migration {
         let columns = vec![
             Table::alter()
                 .table(Alias::new("documents"))
-                .add_column_if_not_exists(
-                    ColumnDef::new(Alias::new("org_unit_id"))
-                        .uuid()
-                        .null(),
-                )
+                .add_column_if_not_exists(ColumnDef::new(Alias::new("org_unit_id")).uuid().null())
+                .to_owned(),
+            Table::alter()
+                .table(Alias::new("documents"))
+                .add_column_if_not_exists(ColumnDef::new(Alias::new("folder_id")).uuid().null())
                 .to_owned(),
             Table::alter()
                 .table(Alias::new("documents"))
                 .add_column_if_not_exists(
-                    ColumnDef::new(Alias::new("folder_id"))
-                        .uuid()
-                        .null(),
+                    ColumnDef::new(Alias::new("academic_year_id")).uuid().null(),
                 )
                 .to_owned(),
             Table::alter()
                 .table(Alias::new("documents"))
-                .add_column_if_not_exists(
-                    ColumnDef::new(Alias::new("academic_year_id"))
-                        .uuid()
-                        .null(),
-                )
-                .to_owned(),
-            Table::alter()
-                .table(Alias::new("documents"))
-                .add_column_if_not_exists(
-                    ColumnDef::new(Alias::new("term_id"))
-                        .uuid()
-                        .null(),
-                )
+                .add_column_if_not_exists(ColumnDef::new(Alias::new("term_id")).uuid().null())
                 .to_owned(),
             Table::alter()
                 .table(Alias::new("documents"))
@@ -112,11 +121,7 @@ impl MigrationTrait for Migration {
                 .to_owned(),
             Table::alter()
                 .table(Alias::new("documents"))
-                .add_column_if_not_exists(
-                    ColumnDef::new(Alias::new("storage_key"))
-                        .string()
-                        .null(),
-                )
+                .add_column_if_not_exists(ColumnDef::new(Alias::new("storage_key")).string().null())
                 .to_owned(),
             Table::alter()
                 .table(Alias::new("documents"))
@@ -130,25 +135,17 @@ impl MigrationTrait for Migration {
             Table::alter()
                 .table(Alias::new("documents"))
                 .add_column_if_not_exists(
-                    ColumnDef::new(Alias::new("archived_at"))
-                        .date_time()
-                        .null(),
+                    ColumnDef::new(Alias::new("archived_at")).date_time().null(),
                 )
                 .to_owned(),
             Table::alter()
                 .table(Alias::new("documents"))
-                .add_column_if_not_exists(
-                    ColumnDef::new(Alias::new("archived_by"))
-                        .uuid()
-                        .null(),
-                )
+                .add_column_if_not_exists(ColumnDef::new(Alias::new("archived_by")).uuid().null())
                 .to_owned(),
             Table::alter()
                 .table(Alias::new("documents"))
                 .add_column_if_not_exists(
-                    ColumnDef::new(Alias::new("archive_reason"))
-                        .text()
-                        .null(),
+                    ColumnDef::new(Alias::new("archive_reason")).text().null(),
                 )
                 .to_owned(),
             Table::alter()
@@ -162,11 +159,7 @@ impl MigrationTrait for Migration {
                 .to_owned(),
             Table::alter()
                 .table(Alias::new("documents"))
-                .add_column_if_not_exists(
-                    ColumnDef::new(Alias::new("deleted_by"))
-                        .uuid()
-                        .null(),
-                )
+                .add_column_if_not_exists(ColumnDef::new(Alias::new("deleted_by")).uuid().null())
                 .to_owned(),
         ];
 

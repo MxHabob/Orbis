@@ -84,8 +84,8 @@ async function insertAssetAsImage(doc: any) {
 
 async function removeAsset(doc: any) {
   const confirmed = await confirmStore.prompt({
-    title: m.template_confirm_delete_asset?.() || "Delete asset?",
-    description: m.template_confirm_delete_asset?.() || "Are you sure?",
+    title: m.template_confirm_delete_asset(),
+    description: m.template_confirm_delete_asset(),
     confirmText: m.common_action_delete(),
     variant: "destructive",
   });
@@ -238,9 +238,9 @@ function triggerUpload() {
           onclick={() => documentsQuery.fetchNextPage()}
         >
           {#if documentsQuery.isFetchingNextPage}
-            <ArrowPath class="me-1 h-3 w-3 animate-spin" /> {m.template_loading?.() || "Loading..."}
+            <ArrowPath class="me-1 h-3 w-3 animate-spin" /> {m.template_loading()}
           {:else}
-            {m.template_load_more?.() || "Load More"}
+            {m.template_load_more()}
           {/if}
         </Button>
       {/if}

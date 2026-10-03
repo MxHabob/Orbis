@@ -1,18 +1,22 @@
 //! Academic and Financial Approval Override Workflow routes.
 
-use axum::{extract::{State, Path, Query}, routing::{get, post}, Json, Router};
+use axum::{
+    Json, Router,
+    extract::{Path, Query, State},
+    routing::{get, post},
+};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
+use super::{ApiError, ApiResponse};
 use crate::state::AppState;
-use orbis_domain::entities::override_request::{
-    AcademicOverrideRequest, OverrideType, RiskLevel, ApprovalStep, OverrideStatus,
-};
 use orbis_app::services::SubmitOverrideInput;
+use orbis_domain::entities::override_request::{
+    AcademicOverrideRequest, ApprovalStep, OverrideStatus, OverrideType, RiskLevel,
+};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ApprovalStepDto {
@@ -68,15 +72,19 @@ impl From<AcademicOverrideRequest> for OverrideRequestDto {
             requested_by_name: r.requested_by_name,
             status: r.status.to_string(),
             current_approver_role: r.current_approver_role,
-            approval_chain: r.approval_chain.into_iter().map(|s: ApprovalStep| ApprovalStepDto {
-                step_order: s.step_order,
-                approver_role: s.approver_role,
-                approver_id: s.approver_id,
-                approver_name: s.approver_name,
-                status: s.status.to_string(),
-                decision_at: s.decision_at,
-                notes: s.notes,
-            }).collect(),
+            approval_chain: r
+                .approval_chain
+                .into_iter()
+                .map(|s: ApprovalStep| ApprovalStepDto {
+                    step_order: s.step_order,
+                    approver_role: s.approver_role,
+                    approver_id: s.approver_id,
+                    approver_name: s.approver_name,
+                    status: s.status.to_string(),
+                    decision_at: s.decision_at,
+                    notes: s.notes,
+                })
+                .collect(),
             resolved_by: r.resolved_by,
             resolved_by_name: r.resolved_by_name,
             resolved_at: r.resolved_at,
@@ -131,7 +139,9 @@ pub async fn submit_override(
         "age_bypass" => OverrideType::AgeBypass,
         "credit_overload" => OverrideType::CreditOverload,
         "discount_override" => OverrideType::DiscountOverride,
-        "standing_override" | "academic_standing_override" => OverrideType::AcademicStandingOverride,
+        "standing_override" | "academic_standing_override" => {
+            OverrideType::AcademicStandingOverride
+        }
         _ => OverrideType::Custom(1),
     };
 
@@ -143,17 +153,15 @@ pub async fn submit_override(
     };
 
     let requested_by = ctx.actor.id().unwrap_or_default();
-    let chain = vec![
-        ApprovalStep {
-            step_order: 1,
-            approver_role: p.approver_role.clone(),
-            approver_id: None,
-            approver_name: None,
-            status: OverrideStatus::Pending,
-            decision_at: None,
-            notes: None,
-        }
-    ];
+    let chain = vec![ApprovalStep {
+        step_order: 1,
+        approver_role: p.approver_role.clone(),
+        approver_id: None,
+        approver_name: None,
+        status: OverrideStatus::Pending,
+        decision_at: None,
+        notes: None,
+    }];
 
     let input = SubmitOverrideInput {
         override_type,
@@ -170,7 +178,10 @@ pub async fn submit_override(
         metadata: None,
     };
 
-    let req = state.workflow_service.submit_override(&ctx, ctx.tenant_id, input).await?;
+    let req = state
+        .workflow_service
+        .submit_override(&ctx, ctx.tenant_id, input)
+        .await?;
 
     Ok(ApiResponse::ok(req.into()))
 }
@@ -184,9 +195,15 @@ pub async fn list_overrides(
     Query(q): Query<OverrideQuery>,
 ) -> Result<Json<ApiResponse<Vec<OverrideRequestDto>>>, ApiError> {
     let reqs = if let Some(role) = q.role {
-        state.override_repo.find_pending_for_role(ctx.tenant_id, &role).await?
+        state
+            .override_repo
+            .find_pending_for_role(ctx.tenant_id, &role)
+            .await?
     } else {
-        state.workflow_service.list_overrides(ctx.tenant_id, q.status.as_deref()).await?
+        state
+            .workflow_service
+            .list_overrides(ctx.tenant_id, q.status.as_deref())
+            .await?
     };
 
     let dtos = reqs.into_iter().map(Into::into).collect();
@@ -202,7 +219,10 @@ pub async fn get_override(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<OverrideRequestDto>>, ApiError> {
-    let req = state.workflow_service.get_override(id).await?
+    let req = state
+        .workflow_service
+        .get_override(id)
+        .await?
         .ok_or_else(|| ApiError::not_found(format!("Override request {} not found", id)))?;
     Ok(ApiResponse::ok(req.into()))
 }
@@ -217,7 +237,10 @@ pub async fn approve_override(
     Json(p): Json<ResolveOverrideRequest>,
 ) -> Result<Json<ApiResponse<OverrideRequestDto>>, ApiError> {
     let approver_id = ctx.actor.id().unwrap_or_default();
-    let req = state.workflow_service.approve_override(&ctx, id, approver_id, None, p.notes).await?;
+    let req = state
+        .workflow_service
+        .approve_override(&ctx, id, approver_id, None, p.notes)
+        .await?;
     Ok(ApiResponse::ok(req.into()))
 }
 
@@ -231,13 +254,25 @@ pub async fn reject_override(
     Json(p): Json<ResolveOverrideRequest>,
 ) -> Result<Json<ApiResponse<OverrideRequestDto>>, ApiError> {
     let rejecter_id = ctx.actor.id().unwrap_or_default();
-    let req = state.workflow_service.reject_override(&ctx, id, rejecter_id, None, p.notes.unwrap_or_else(|| "Rejected".into())).await?;
+    let req = state
+        .workflow_service
+        .reject_override(
+            &ctx,
+            id,
+            rejecter_id,
+            None,
+            p.notes.unwrap_or_else(|| "Rejected".into()),
+        )
+        .await?;
     Ok(ApiResponse::ok(req.into()))
 }
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/api/v1/overrides", post(submit_override).get(list_overrides))
+        .route(
+            "/api/v1/overrides",
+            post(submit_override).get(list_overrides),
+        )
         .route("/api/v1/overrides/:id", get(get_override))
         .route("/api/v1/overrides/:id/approve", post(approve_override))
         .route("/api/v1/overrides/:id/reject", post(reject_override))

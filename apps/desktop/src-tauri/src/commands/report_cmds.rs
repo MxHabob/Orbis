@@ -1,8 +1,10 @@
-use tauri::State;
 use crate::state::AppState;
-use uuid::Uuid;
+use orbis_domain::entities::report::{
+    BatchPrintConfig, ColumnDef, OutputFormat, ParamValue, ReportLocale,
+};
 use std::collections::HashMap;
-use orbis_domain::entities::report::{ParamValue, OutputFormat, ReportLocale, BatchPrintConfig, ColumnDef};
+use tauri::State;
+use uuid::Uuid;
 
 use super::make_ctx;
 
@@ -22,15 +24,15 @@ pub async fn generate_report(
     template_id: String, // Actually report_code in the new system, we keep the param name for frontend compat
     format: String,
     parameters: serde_json::Value,
-    _query: Option<serde_json::Value>, 
+    _query: Option<serde_json::Value>,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
     let ctx = make_ctx(&state);
     let report_code = template_id; // Mapping frontend's 'template_id' to 'report_code'
 
     // Parse parameters
-    let params: HashMap<String, ParamValue> = serde_json::from_value(parameters)
-        .unwrap_or_default();
+    let params: HashMap<String, ParamValue> =
+        serde_json::from_value(parameters).unwrap_or_default();
 
     let output_format = if format.is_empty() {
         OutputFormat::DataOnly
@@ -39,7 +41,12 @@ pub async fn generate_report(
     };
 
     // Resolve locale from organization
-    let org = state.org_repo.find_by_id(ctx.tenant_id).await.ok().flatten();
+    let org = state
+        .org_repo
+        .find_by_id(ctx.tenant_id)
+        .await
+        .ok()
+        .flatten();
     let report_locale = match org.as_ref().map(|o| o.locale.as_str()) {
         Some("en") | Some("en-US") | Some("en_US") => ReportLocale::En,
         Some("ar-en") | Some("ar_en") => ReportLocale::ArEn,
@@ -54,21 +61,32 @@ pub async fn generate_report(
         locale: report_locale,
     };
 
-    let (mut job, export) = state.report_service.generate_report(&ctx, input).await
+    let (mut job, export) = state
+        .report_service
+        .generate_report(&ctx, input)
+        .await
         .map_err(|e| e.to_string())?;
 
     // Since the frontend expects to download a file later, we write it to a temp dir
     let temp_dir = std::env::temp_dir().join("orbis_reports");
-    tokio::fs::create_dir_all(&temp_dir).await.map_err(|e| e.to_string())?;
-    
+    tokio::fs::create_dir_all(&temp_dir)
+        .await
+        .map_err(|e| e.to_string())?;
+
     let file_path = temp_dir.join(format!("{}.{}", job.id, export.filename));
-    tokio::fs::write(&file_path, &export.data).await.map_err(|e| e.to_string())?;
+    tokio::fs::write(&file_path, &export.data)
+        .await
+        .map_err(|e| e.to_string())?;
 
     // Update job with file path
     job.output_path = Some(file_path.to_string_lossy().to_string());
     job.output_size_bytes = Some(export.data.len() as i64);
-    
-    state.report_job_repo.save(&job).await.map_err(|e| e.to_string())?;
+
+    state
+        .report_job_repo
+        .save(&job)
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(job.id.to_string())
 }
@@ -85,8 +103,11 @@ pub async fn get_report_job_status(
     state: State<'_, AppState>,
 ) -> Result<ReportJobStatus, String> {
     let parsed_job_id = Uuid::parse_str(&job_id).map_err(|_| "Invalid job ID")?;
-    
-    let job = state.report_job_repo.find_by_id(parsed_job_id).await
+
+    let job = state
+        .report_job_repo
+        .find_by_id(parsed_job_id)
+        .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "Job not found".to_string())?;
 
@@ -102,8 +123,11 @@ pub async fn download_report_file(
     state: State<'_, AppState>,
 ) -> Result<Vec<u8>, String> {
     let parsed_job_id = Uuid::parse_str(&job_id).map_err(|_| "Invalid job ID")?;
-    
-    let job = state.report_job_repo.find_by_id(parsed_job_id).await
+
+    let job = state
+        .report_job_repo
+        .find_by_id(parsed_job_id)
+        .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "Job not found".to_string())?;
 
@@ -111,8 +135,12 @@ pub async fn download_report_file(
         return Err("Report generation is not completed yet".to_string());
     }
 
-    let file_path = job.output_path.ok_or_else(|| "File path missing".to_string())?;
-    tokio::fs::read(&file_path).await.map_err(|e| format!("Failed to read file: {}", e))
+    let file_path = job
+        .output_path
+        .ok_or_else(|| "File path missing".to_string())?;
+    tokio::fs::read(&file_path)
+        .await
+        .map_err(|e| format!("Failed to read file: {}", e))
 }
 
 #[tauri::command]
@@ -123,28 +151,35 @@ pub async fn batch_print(
     state: State<'_, AppState>,
 ) -> Result<String, String> {
     let ctx = make_ctx(&state);
-    
-    let config: BatchPrintConfig = serde_json::from_value(batch_config)
-        .map_err(|e| format!("Invalid batch config: {}", e))?;
-        
-    let params: HashMap<String, ParamValue> = serde_json::from_value(parameters)
-        .unwrap_or_default();
+
+    let config: BatchPrintConfig =
+        serde_json::from_value(batch_config).map_err(|e| format!("Invalid batch config: {}", e))?;
+
+    let params: HashMap<String, ParamValue> =
+        serde_json::from_value(parameters).unwrap_or_default();
 
     // 1. Resolve definition
-    let definition = state.report_definition_repo
+    let definition = state
+        .report_definition_repo
         .find_by_code(ctx.tenant_id, &report_code)
         .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| format!("Report definition not found: {}", report_code))?;
 
     // 2. Resolve org context
-    let org_context = state.report_org_context_resolver
+    let org_context = state
+        .report_org_context_resolver
         .resolve(ctx.tenant_id)
         .await
         .map_err(|e| e.to_string())?;
 
     // 3. Fetch data with org locale
-    let org = state.org_repo.find_by_id(ctx.tenant_id).await.ok().flatten();
+    let org = state
+        .org_repo
+        .find_by_id(ctx.tenant_id)
+        .await
+        .ok()
+        .flatten();
     let locale = match org.as_ref().map(|o| o.locale.as_str()) {
         Some("en") | Some("en-US") | Some("en_US") => ReportLocale::En,
         Some("ar-en") | Some("ar_en") => ReportLocale::ArEn,
@@ -152,7 +187,8 @@ pub async fn batch_print(
         _ => ReportLocale::Ar,
     };
 
-    let provider = state.report_provider_registry
+    let provider = state
+        .report_provider_registry
         .get_provider(&definition.data_provider_key)
         .ok_or_else(|| format!("No data provider for key: {}", definition.data_provider_key))?;
 
@@ -168,7 +204,8 @@ pub async fn batch_print(
 
     // 5. Render HTML
     let primary_color = org_context.primary_color.as_deref().unwrap_or("#6366f1");
-    let mut html = format!(r#"<!DOCTYPE html>
+    let mut html = format!(
+        r#"<!DOCTYPE html>
 <html dir="{dir}">
 <head>
 <meta charset="UTF-8">
@@ -197,7 +234,11 @@ body {{ margin: 0; padding: 0; font-family: 'Noto Sans Arabic', 'Segoe UI', sans
 
     let pages = config.paginate(&dataset.rows);
     let visible_cols: Vec<&ColumnDef> = dataset.columns.iter().filter(|c| c.visible).collect();
-    let org_name = if is_rtl { &org_context.name_ar } else { &org_context.name };
+    let org_name = if is_rtl {
+        &org_context.name_ar
+    } else {
+        &org_context.name
+    };
 
     for page_items in &pages {
         html.push_str(&format!(r#"<div class="sheet">"#));
@@ -214,7 +255,8 @@ body {{ margin: 0; padding: 0; font-family: 'Noto Sans Arabic', 'Segoe UI', sans
 
                 for col in &visible_cols {
                     let label = if is_rtl { &col.header_ar } else { &col.header };
-                    let val = row.get(&col.key)
+                    let val = row
+                        .get(&col.key)
                         .map(|v| match v {
                             serde_json::Value::String(s) => s.clone(),
                             serde_json::Value::Number(n) => n.to_string(),
@@ -239,13 +281,19 @@ body {{ margin: 0; padding: 0; font-family: 'Noto Sans Arabic', 'Segoe UI', sans
                 let y = layout.slots.first().map(|s| s.y_mm).unwrap_or(0.0)
                     + r as f64 * (config.item_height_mm + config.gap_mm)
                     - config.gap_mm / 2.0;
-                html.push_str(&format!(r#"<div class="cut-line-h" style="top:{y}mm;"></div>"#, y = y));
+                html.push_str(&format!(
+                    r#"<div class="cut-line-h" style="top:{y}mm;"></div>"#,
+                    y = y
+                ));
             }
             for c in 1..layout.columns {
                 let x = layout.slots.first().map(|s| s.x_mm).unwrap_or(0.0)
                     + c as f64 * (config.item_width_mm + config.gap_mm)
                     - config.gap_mm / 2.0;
-                html.push_str(&format!(r#"<div class="cut-line-v" style="left:{x}mm;"></div>"#, x = x));
+                html.push_str(&format!(
+                    r#"<div class="cut-line-v" style="left:{x}mm;"></div>"#,
+                    x = x
+                ));
             }
         }
 
@@ -277,23 +325,30 @@ pub async fn audit_list_logs(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<AuditLogDto>>, String> {
     let ctx = make_ctx(&state);
-    let entries = state.report_audit_repo
+    let entries = state
+        .report_audit_repo
         .list_by_org(ctx.tenant_id, limit, offset)
         .await
         .map_err(|e| e.to_string())?;
 
-    let dtos = entries.into_iter().map(|e| AuditLogDto {
-        id: e.id.to_string(),
-        org_id: e.org_id.to_string(),
-        user_id: Some(e.actor_id.to_string()),
-        action: e.action,
-        entity_type: e.entity_type,
-        entity_id: Some(e.entity_id.to_string()),
-        ip_address: Some("127.0.0.1".to_string()),
-        metadata: e.details.as_ref().map(|d| serde_json::to_string_pretty(d).unwrap_or_default()),
-        details: e.details,
-        created_at: e.created_at.to_rfc3339(),
-    }).collect();
+    let dtos = entries
+        .into_iter()
+        .map(|e| AuditLogDto {
+            id: e.id.to_string(),
+            org_id: e.org_id.to_string(),
+            user_id: Some(e.actor_id.to_string()),
+            action: e.action,
+            entity_type: e.entity_type,
+            entity_id: Some(e.entity_id.to_string()),
+            ip_address: Some("127.0.0.1".to_string()),
+            metadata: e
+                .details
+                .as_ref()
+                .map(|d| serde_json::to_string_pretty(d).unwrap_or_default()),
+            details: e.details,
+            created_at: e.created_at.to_rfc3339(),
+        })
+        .collect();
 
     Ok(ok(dtos))
 }

@@ -77,16 +77,16 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
       <span class="text-xs text-muted-foreground font-semibold">
         {cameras.length > 0
           ? `${cameras.filter(c => c.status === "online").length} من أصل ${cameras.length} كاميرات متصلة`
-          : (m.ai_center_live_no_cameras ? m.ai_center_live_no_cameras() : "لا توجد كاميرات متصلة حالياً")}
+          : (m.ai_center_live_no_cameras())}
       </span>
     </div>
 
     <!-- Grid Selector -->
     <div class="flex items-center gap-1 border border-border/60 bg-muted/40 p-1 rounded-lg">
       {#each [
-        { l: "1x1" as GridLayout, icon: CheckBox, label: m.ai_center_live_grid_1x1 ? m.ai_center_live_grid_1x1() : "شاشة كاملة" },
-        { l: "2x2" as GridLayout, icon: Grid, label: m.ai_center_live_grid_2x2 ? m.ai_center_live_grid_2x2() : "شبكة 2x2" },
-        { l: "3x3" as GridLayout, icon: Grid, label: m.ai_center_live_grid_3x3 ? m.ai_center_live_grid_3x3() : "شبكة 3x3" },
+        { l: "1x1" as GridLayout, icon: CheckBox, label: m.ai_center_live_grid_1x1() },
+        { l: "2x2" as GridLayout, icon: Grid, label: m.ai_center_live_grid_2x2() },
+        { l: "3x3" as GridLayout, icon: Grid, label: m.ai_center_live_grid_3x3() },
       ] as opt}
         <Button
           type="button"
@@ -167,7 +167,7 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
         <div class="px-4 py-3 border-b border-border/40 bg-background flex items-center justify-between">
           <h3 class="text-xs font-semibold text-foreground flex items-center gap-2">
             <AppNotification size={14} class="text-primary" />
-            <span>{m.ai_center_live_events ? m.ai_center_live_events() : "الأحداث المباشرة"}</span>
+            <span>{m.ai_center_live_events()}</span>
           </h3>
           <span class="text-[10px] font-mono text-muted-foreground">{events.length} تنبيه</span>
         </div>
@@ -176,9 +176,10 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
           {#if events.length > 0}
             {#each events as event (event.id)}
               {@const s = eventStyles[event.type]}
+              {@const EventIcon = s.icon}
               <div class="px-4 py-3 hover:bg-muted/30 transition-colors">
                 <div class="flex items-start gap-2.5">
-                  <svelte:component this={s.icon} size={14} class="{s.color} mt-0.5 shrink-0" />
+                  <EventIcon size={14} class="{s.color} mt-0.5 shrink-0" />
                   <div>
                     <p class="text-xs font-semibold text-foreground">{event.camera_name}</p>
                     <p class="text-[10px] text-muted-foreground font-mono mt-0.5">{event.timestamp}</p>

@@ -5,8 +5,7 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { l } from "$lib/core/i18n";
-import { getLocale } from "$lib/paraglide/runtime";
+
 import { countries } from "@orbis/location/countries-intl";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 
@@ -22,7 +21,7 @@ interface Props {
 
 let {
   value = $bindable(""),
-  placeholder = m.common_select_nationality?.() || "اختر الجنسية...",
+  placeholder = m.common_select_nationality(),
   disabled = false,
   size = "default",
   class: className = "",
@@ -31,52 +30,52 @@ let {
 }: Props = $props();
 
 // Common Arabic nationalities dictionary mapping ISO alpha2 to Arabic nationality / demonym
-const ARABIC_NATIONALITIES: Record<string, { ar: string; en: string }> = {
-  SA: { ar: "سعودي", en: "Saudi" },
-  YE: { ar: "يمني", en: "Yemeni" },
-  EG: { ar: "مصري", en: "Egyptian" },
-  AE: { ar: "إماراتي", en: "Emirati" },
-  JO: { ar: "أردني", en: "Jordanian" },
-  SY: { ar: "سوري", en: "Syrian" },
-  LB: { ar: "لبناني", en: "Lebanese" },
-  PS: { ar: "فلسطيني", en: "Palestinian" },
-  KW: { ar: "كويتي", en: "Kuwaiti" },
-  QA: { ar: "قطري", en: "Qatari" },
-  BH: { ar: "بحريني", en: "Bahraini" },
-  OM: { ar: "عماني", en: "Omani" },
-  IQ: { ar: "عراقي", en: "Iraqi" },
-  SD: { ar: "سوداني", en: "Sudanese" },
-  MA: { ar: "مغربي", en: "Moroccan" },
-  DZ: { ar: "جزائري", en: "Algerian" },
-  TN: { ar: "تونسي", en: "Tunisian" },
-  LY: { ar: "ليبي", en: "Libyan" },
-  SO: { ar: "صومالي", en: "Somali" },
-  DJ: { ar: "جيبوتي", en: "Djiboutian" },
-  MR: { ar: "موريتاني", en: "Mauritanian" },
-  IN: { ar: "هندي", en: "Indian" },
-  PK: { ar: "باكستاني", en: "Pakistani" },
-  BD: { ar: "بنغلاديشي", en: "Bangladeshi" },
-  PH: { ar: "فلبيني", en: "Filipino" },
-  ID: { ar: "إندونيسي", en: "Indonesian" },
-  MY: { ar: "ماليزي", en: "Malaysian" },
-  TR: { ar: "تركي", en: "Turkish" },
-  US: { ar: "أمريكي", en: "American" },
-  GB: { ar: "بريطاني", en: "British" },
-  CA: { ar: "كندي", en: "Canadian" },
-  AU: { ar: "أسترالي", en: "Australian" },
-  FR: { ar: "فرنسي", en: "French" },
-  DE: { ar: "ألماني", en: "German" },
-  IT: { ar: "إيطالي", en: "Italian" },
-  ES: { ar: "إسباني", en: "Spanish" },
-  RU: { ar: "روسي", en: "Russian" },
-  CN: { ar: "صيني", en: "Chinese" },
-  JP: { ar: "ياباني", en: "Japanese" },
-  KR: { ar: "كوري جنوبي", en: "South Korean" },
-  BR: { ar: "برازيلي", en: "Brazilian" },
-  MX: { ar: "مكسيكي", en: "Mexican" },
-  NG: { ar: "نيجيري", en: "Nigerian" },
-  ET: { ar: "إثيوبي", en: "Ethiopian" },
-  ZA: { ar: "جنوب أفريقي", en: "South African" },
+const NATIONALITY_MESSAGES: Record<string, () => string> = {
+  SA: m.nationality_sa,
+  YE: m.nationality_ye,
+  EG: m.nationality_eg,
+  AE: m.nationality_ae,
+  JO: m.nationality_jo,
+  SY: m.nationality_sy,
+  LB: m.nationality_lb,
+  PS: m.nationality_ps,
+  KW: m.nationality_kw,
+  QA: m.nationality_qa,
+  BH: m.nationality_bh,
+  OM: m.nationality_om,
+  IQ: m.nationality_iq,
+  SD: m.nationality_sd,
+  MA: m.nationality_ma,
+  DZ: m.nationality_dz,
+  TN: m.nationality_tn,
+  LY: m.nationality_ly,
+  SO: m.nationality_so,
+  DJ: m.nationality_dj,
+  MR: m.nationality_mr,
+  IN: m.nationality_in,
+  PK: m.nationality_pk,
+  BD: m.nationality_bd,
+  PH: m.nationality_ph,
+  ID: m.nationality_id,
+  MY: m.nationality_my,
+  TR: m.nationality_tr,
+  US: m.nationality_us,
+  GB: m.nationality_gb,
+  CA: m.nationality_ca,
+  AU: m.nationality_au,
+  FR: m.nationality_fr,
+  DE: m.nationality_de,
+  IT: m.nationality_it,
+  ES: m.nationality_es,
+  RU: m.nationality_ru,
+  CN: m.nationality_cn,
+  JP: m.nationality_jp,
+  KR: m.nationality_kr,
+  BR: m.nationality_br,
+  MX: m.nationality_mx,
+  NG: m.nationality_ng,
+  ET: m.nationality_et,
+  ZA: m.nationality_za,
 };
 
 // Priority countries displayed at top of list
@@ -86,22 +85,21 @@ interface CountryItem {
   alpha2: string;
   alpha3: string;
   name: string;
-  nameAr: string;
+  localDemonym: string;
   emoji: string;
   demonym: string;
 }
 
 const countryList = $derived.by<CountryItem[]>(() => {
-  const isAr = getLocale() === "ar";
   const mapped: CountryItem[] = countries.map((c) => {
-    const known = ARABIC_NATIONALITIES[c.alpha2];
-    const demonym = known ? (isAr ? known.ar : known.en) : c.name;
-    const nameAr = known ? known.ar : c.name;
+    const known = NATIONALITY_MESSAGES[c.alpha2];
+    const demonym = known ? known() : c.name;
+    const localDemonym = demonym;
     return {
       alpha2: c.alpha2,
       alpha3: c.alpha3,
       name: c.name,
-      nameAr,
+      localDemonym,
       emoji: c.emoji || "🌐",
       demonym,
     };
@@ -126,7 +124,7 @@ function getCountryLabel(c: CountryItem): string {
 }
 
 function getCountrySubtitle(c: CountryItem): string | undefined {
-  return `${c.name} — ${c.nameAr !== c.name ? c.nameAr : ""}`;
+  return `${c.name} — ${c.localDemonym !== c.name ? c.localDemonym : ""}`;
 }
 
 function getCountryBadge(c: CountryItem): string | undefined {
@@ -144,8 +142,8 @@ function handleChange(val: string | null) {
   bind:value
   items={countryList}
   {placeholder}
-  searchPlaceholder={l("ابحث عن الجنسية أو الدولة...", "Search nationality...")}
-  emptyText={l("لا توجد جنسيات مطابقة للبحث", "No matching nationalities found")}
+  searchPlaceholder={m.ui_copy_search_nationality_9c3a6b9d()}
+  emptyText={m.ui_copy_no_matching_nationalities_found_65a71c81()}
   {disabled}
   {size}
   {id}

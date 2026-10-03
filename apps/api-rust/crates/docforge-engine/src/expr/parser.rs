@@ -105,7 +105,11 @@ fn parse_variable_expression(expr: &str) -> Token {
                         || (trimmed.starts_with('"') && trimmed.ends_with('"'))
                 })
                 .collect();
-            formatters.push(FormatterCall { name, args, quoted_args });
+            formatters.push(FormatterCall {
+                name,
+                args,
+                quoted_args,
+            });
         } else {
             formatters.push(FormatterCall {
                 name: fmt_str.to_string(),
@@ -233,13 +237,13 @@ mod tests {
                 formatters: vec![
                     FormatterCall {
                         name: "number".to_string(),
-                        args: vec!["0.00".to_string()]
-                        , quoted_args: vec![true]
+                        args: vec!["0.00".to_string()],
+                        quoted_args: vec![true]
                     },
                     FormatterCall {
                         name: "default".to_string(),
-                        args: vec!["—".to_string()]
-                        , quoted_args: vec![true]
+                        args: vec!["—".to_string()],
+                        quoted_args: vec![true]
                     }
                 ]
             }]

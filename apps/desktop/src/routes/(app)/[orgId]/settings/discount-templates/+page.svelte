@@ -1,13 +1,13 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { DiscountTemplatesManager } from "$lib/features/settings";
+import DiscountTemplatesManager from "$lib/features/settings/discount-templates-manager.svelte";
 
 const orgId = $derived(page.params.orgId || "");
 </script>
 
 <svelte:head>
-  <title>{m.settings_nav_discount_templates ? m.settings_nav_discount_templates() : "Discount Templates"} | Orbis</title>
+  <title>{m.settings_nav_discount_templates()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-hidden">

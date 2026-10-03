@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
 import { onMount } from "svelte";
+import { untrack } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -57,7 +58,7 @@ let {
 const isEditMode = $derived(!!editData);
 
 // Single Source of Truth Form Controller
-const form = new FormController<GuardianFormInput>({
+const form = untrack(() => new FormController<GuardianFormInput>({
   initialValues: {
     guardianId: editData?.guardian_id ?? "",
     fullName: "",
@@ -74,7 +75,7 @@ const form = new FormController<GuardianFormInput>({
     paymentSharePercent: editData?.payment_share_percent ?? 0,
   },
   schema: guardianFormInputSchema,
-});
+}));
 
 function fieldError(field: string): string | undefined {
   return form.errors[field]?.[0];

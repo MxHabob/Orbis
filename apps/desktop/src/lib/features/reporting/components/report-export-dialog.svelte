@@ -11,7 +11,7 @@ import { Button } from "@orbis/ui/button";
 import { ArrowPath, DocumentChartBar, Download } from "@orbis/icons";
 import { api } from "$lib/api";
 import { toast } from "@orbis/ui";
-import { l } from "$lib/core/i18n";
+
 import * as m from "$lib/paraglide/messages";
 
 interface Props {
@@ -53,7 +53,7 @@ async function handleExport() {
     a.click();
     window.URL.revokeObjectURL(url);
 
-    toast.success(l("تم التصدير بنجاح", "Report exported successfully"));
+    toast.success(m.ui_copy_report_exported_successfully_566e1620());
     onOpenChange(false);
   } catch (e: any) {
     toast.error(e.message || "Export failed");
@@ -66,9 +66,9 @@ async function handleExport() {
 <Dialog bind:open {onOpenChange}>
   <DialogContent class="sm:max-w-106.25">
     <DialogHeader>
-      <DialogTitle>{m.common_action_export ? m.common_action_export() : "Export"}</DialogTitle>
+      <DialogTitle>{m.common_action_export()}</DialogTitle>
       <DialogDescription>
-        {l("اختر صيغة تصدير التقرير", "Choose the format to export your report.")}
+        {m.ui_copy_choose_the_format_to_export_your_report_112df733()}
       </DialogDescription>
     </DialogHeader>
 
@@ -84,7 +84,7 @@ async function handleExport() {
 
     <DialogFooter>
       <Button variant="outline" onclick={() => onOpenChange(false)} disabled={isExporting}>
-        {m.common_action_cancel ? m.common_action_cancel() : "Cancel"}
+        {m.common_action_cancel()}
       </Button>
       <Button onclick={handleExport} disabled={isExporting}>
         {#if isExporting}
@@ -92,7 +92,7 @@ async function handleExport() {
         {:else}
           <Download class="mr-2 h-4 w-4" />
         {/if}
-        {m.common_action_export ? m.common_action_export() : "Export"}
+        {m.common_action_export()}
       </Button>
     </DialogFooter>
   </DialogContent>

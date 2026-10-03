@@ -1,22 +1,27 @@
-use orbis_domain::entities::assessment_scheme::{AssessmentScheme, AssessmentComponent, AssessmentLevel, InstitutionScope};
-use orbis_domain::entities::behavior_record::BehaviorRecord;
-use orbis_domain::entities::grade::Grade;
-use orbis_domain::entities::attendance::Attendance;
-use orbis_domain::entities::gpa_record::CumulativeGpaRecord;
-use orbis_domain::entities::student::AcademicStanding;
-use orbis_domain::events::DomainEvent;
-use orbis_domain::errors::DomainError;
-use orbis_domain::queries::filters::{GradeFilter, AttendanceFilter, PaginatedList};
-use orbis_domain::iam::permission::Permission;
 use crate::context::RequestContext;
-use crate::ports::repositories::{AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, GpaRecordRepository, ClassSubjectRepository, SubjectRepository};
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
-use crate::services::calculation_engine::{CalcEngine, AstNode};
+use crate::ports::repositories::{
+    AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository,
+    ClassSubjectRepository, GpaRecordRepository, GradeRepository, SubjectRepository,
+};
+use crate::services::calculation_engine::{AstNode, CalcEngine};
+use chrono::{NaiveDate, Utc};
+use orbis_domain::entities::assessment_scheme::{
+    AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
+};
+use orbis_domain::entities::attendance::Attendance;
+use orbis_domain::entities::behavior_record::BehaviorRecord;
+use orbis_domain::entities::gpa_record::CumulativeGpaRecord;
+use orbis_domain::entities::grade::Grade;
+use orbis_domain::entities::student::AcademicStanding;
+use orbis_domain::errors::DomainError;
+use orbis_domain::events::DomainEvent;
+use orbis_domain::iam::permission::Permission;
+use orbis_domain::queries::filters::{AttendanceFilter, GradeFilter, PaginatedList};
+use rust_decimal::Decimal;
 use std::sync::Arc;
 use uuid::Uuid;
-use chrono::{Utc, NaiveDate};
-use rust_decimal::Decimal;
 
 pub struct BatchGradeItem {
     pub period_id: Uuid,
@@ -89,7 +94,9 @@ impl AssessmentService {
         max_score: Decimal,
         is_final: bool,
     ) -> Result<Grade, DomainError> {
-        self.permission_checker.check(ctx, Permission::GradeWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::GradeWrite)
+            .await?;
 
         if score < Decimal::ZERO || score > max_score {
             return Err(DomainError::Validation(format!(
@@ -126,13 +133,19 @@ impl AssessmentService {
 
         self.grade_repo.save(&grade).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::GradeRecorded {
-            grade_id,
-            student_id,
-            class_subject_id,
-            score,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::GradeRecorded {
+                    grade_id,
+                    student_id,
+                    class_subject_id,
+                    score,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(grade)
     }
@@ -144,7 +157,9 @@ impl AssessmentService {
         org_id: Uuid,
         items: Vec<BatchGradeItem>,
     ) -> Result<Vec<Grade>, DomainError> {
-        self.permission_checker.check(ctx, Permission::GradeWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::GradeWrite)
+            .await?;
 
         let now = Utc::now();
         let mut grades = Vec::with_capacity(items.len());
@@ -186,13 +201,19 @@ impl AssessmentService {
         self.grade_repo.save_batch(&grades).await?;
 
         for g in &grades {
-            let _ = self.event_bus.publish(ctx, &DomainEvent::GradeRecorded {
-                grade_id: g.id,
-                student_id: g.student_id,
-                class_subject_id: g.class_subject_id,
-                score: g.score,
-                timestamp: now,
-            }).await;
+            let _ = self
+                .event_bus
+                .publish(
+                    ctx,
+                    &DomainEvent::GradeRecorded {
+                        grade_id: g.id,
+                        student_id: g.student_id,
+                        class_subject_id: g.class_subject_id,
+                        score: g.score,
+                        timestamp: now,
+                    },
+                )
+                .await;
         }
 
         Ok(grades)
@@ -205,9 +226,14 @@ impl AssessmentService {
         org_id: Uuid,
         grade_id: Uuid,
     ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::GradeWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::GradeWrite)
+            .await?;
 
-        let grade = self.grade_repo.find_by_id(grade_id).await?
+        let grade = self
+            .grade_repo
+            .find_by_id(grade_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Grade {} not found", grade_id)))?;
 
         if grade.org_id != org_id {
@@ -216,10 +242,16 @@ impl AssessmentService {
 
         self.grade_repo.delete(grade_id).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::GradeDeleted {
-            grade_id,
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::GradeDeleted {
+                    grade_id,
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
         Ok(())
     }
@@ -232,20 +264,30 @@ impl AssessmentService {
         student_id: Uuid,
         class_subject_id: Uuid,
     ) -> Result<Decimal, DomainError> {
-        let scheme = self.scheme_repo.find_by_id(scheme_id).await?
+        let scheme = self
+            .scheme_repo
+            .find_by_id(scheme_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("Assessment Scheme not found".into()))?;
 
-        let formula_val = scheme.formula
+        let formula_val = scheme
+            .formula
             .ok_or_else(|| DomainError::Validation("Scheme has no calculation formula".into()))?;
 
         let formula: AstNode = serde_json::from_value(formula_val)
             .map_err(|e| DomainError::Validation(format!("Invalid formula format: {}", e)))?;
 
-        let grades = self.grade_repo.find_by_student_and_subject(student_id, class_subject_id).await?;
+        let grades = self
+            .grade_repo
+            .find_by_student_and_subject(student_id, class_subject_id)
+            .await?;
 
         let mut engine = CalcEngine::new();
         for grade in grades {
-            let var_name = grade.component_id.map(|cid| cid.to_string()).unwrap_or_else(|| grade.class_subject_id.to_string());
+            let var_name = grade
+                .component_id
+                .map(|cid| cid.to_string())
+                .unwrap_or_else(|| grade.class_subject_id.to_string());
             engine.set_variable(&var_name, grade.score);
         }
 
@@ -268,9 +310,14 @@ impl AssessmentService {
         period_id: Uuid,
         student_id: Uuid,
     ) -> Result<CumulativeGpaRecord, DomainError> {
-        self.permission_checker.check(ctx, Permission::GradeAnalytics).await?;
+        self.permission_checker
+            .check(ctx, Permission::GradeAnalytics)
+            .await?;
 
-        let term_grades = self.grade_repo.find_by_student_and_period(student_id, period_id).await?;
+        let term_grades = self
+            .grade_repo
+            .find_by_student_and_period(student_id, period_id)
+            .await?;
         let past_records = self.gpa_repo.find_by_student(student_id).await?;
 
         let mut term_attempted = Decimal::ZERO;
@@ -279,7 +326,11 @@ impl AssessmentService {
 
         for g in &term_grades {
             // Resolve actual subject credit hours
-            let credit = if let Some(cs) = self.class_subject_repo.find_by_id(g.class_subject_id).await? {
+            let credit = if let Some(cs) = self
+                .class_subject_repo
+                .find_by_id(g.class_subject_id)
+                .await?
+            {
                 if let Some(subj) = self.subject_repo.find_by_id(cs.subject_id).await? {
                     subj.credit_hours.unwrap_or(Decimal::from(3))
                 } else {
@@ -321,7 +372,9 @@ impl AssessmentService {
             Decimal::ZERO
         };
 
-        let standing = if cumulative_gpa >= Decimal::from_str_exact("3.5").unwrap_or(Decimal::from(3)) {
+        let standing = if cumulative_gpa
+            >= Decimal::from_str_exact("3.5").unwrap_or(Decimal::from(3))
+        {
             AcademicStanding::HonorList
         } else if cumulative_gpa >= Decimal::from(2) {
             AcademicStanding::GoodStanding
@@ -351,13 +404,19 @@ impl AssessmentService {
 
         self.gpa_repo.save(&record).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::GpaCalculated {
-            student_id,
-            period_id,
-            gpa: term_gpa,
-            cgpa: cumulative_gpa,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::GpaCalculated {
+                    student_id,
+                    period_id,
+                    gpa: term_gpa,
+                    cgpa: cumulative_gpa,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(record)
     }
@@ -375,7 +434,9 @@ impl AssessmentService {
         status: String,
         notes: Option<String>,
     ) -> Result<Attendance, DomainError> {
-        self.permission_checker.check(ctx, Permission::AttendanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::AttendanceWrite)
+            .await?;
 
         let now = Utc::now();
         let att_id = Uuid::new_v4();
@@ -396,15 +457,21 @@ impl AssessmentService {
 
         self.attendance_repo.save(&attendance).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::AttendanceMarked {
-            attendance_id: att_id,
-            student_id,
-            class_id,
-            class_subject_id,
-            scheduled_lesson_id: None,
-            status,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::AttendanceMarked {
+                    attendance_id: att_id,
+                    student_id,
+                    class_id,
+                    class_subject_id,
+                    scheduled_lesson_id: None,
+                    status,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(attendance)
     }
@@ -418,7 +485,9 @@ impl AssessmentService {
         date: NaiveDate,
         items: Vec<BatchAttendanceItem>,
     ) -> Result<Vec<Attendance>, DomainError> {
-        self.permission_checker.check(ctx, Permission::AttendanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::AttendanceWrite)
+            .await?;
 
         let now = Utc::now();
         let mut attendances = Vec::with_capacity(items.len());
@@ -443,15 +512,21 @@ impl AssessmentService {
         self.attendance_repo.save_batch(&attendances).await?;
 
         for a in &attendances {
-            let _ = self.event_bus.publish(ctx, &DomainEvent::AttendanceMarked {
-                attendance_id: a.id,
-                student_id: a.student_id,
-                class_id: a.class_id,
-                class_subject_id: a.class_subject_id,
-                scheduled_lesson_id: a.scheduled_lesson_id,
-                status: a.status.clone(),
-                timestamp: now,
-            }).await;
+            let _ = self
+                .event_bus
+                .publish(
+                    ctx,
+                    &DomainEvent::AttendanceMarked {
+                        attendance_id: a.id,
+                        student_id: a.student_id,
+                        class_id: a.class_id,
+                        class_subject_id: a.class_subject_id,
+                        scheduled_lesson_id: a.scheduled_lesson_id,
+                        status: a.status.clone(),
+                        timestamp: now,
+                    },
+                )
+                .await;
         }
 
         Ok(attendances)
@@ -464,14 +539,22 @@ impl AssessmentService {
         _org_id: Uuid,
         attendance_id: Uuid,
     ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::AttendanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::AttendanceWrite)
+            .await?;
 
         self.attendance_repo.delete(attendance_id).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::AttendanceDeleted {
-            attendance_id,
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::AttendanceDeleted {
+                    attendance_id,
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
         Ok(())
     }
@@ -482,7 +565,9 @@ impl AssessmentService {
         ctx: &RequestContext,
         student_id: Uuid,
     ) -> Result<Vec<Attendance>, DomainError> {
-        self.permission_checker.check(ctx, Permission::AttendanceRead).await?;
+        self.permission_checker
+            .check(ctx, Permission::AttendanceRead)
+            .await?;
         self.attendance_repo.find_by_student(student_id).await
     }
 
@@ -501,7 +586,9 @@ impl AssessmentService {
         components: Option<Vec<AssessmentComponent>>,
         is_default: bool,
     ) -> Result<AssessmentScheme, DomainError> {
-        self.permission_checker.check(ctx, Permission::AssessmentWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::AssessmentWrite)
+            .await?;
 
         let now = Utc::now();
         let scheme_id = Uuid::new_v4();
@@ -524,12 +611,18 @@ impl AssessmentService {
 
         self.scheme_repo.save(&scheme).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::AssessmentSchemeCreated {
-            scheme_id,
-            org_id,
-            name,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::AssessmentSchemeCreated {
+                    scheme_id,
+                    org_id,
+                    name,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(scheme)
     }
@@ -550,10 +643,17 @@ impl AssessmentService {
         components: Option<Vec<AssessmentComponent>>,
         is_default: Option<bool>,
     ) -> Result<AssessmentScheme, DomainError> {
-        self.permission_checker.check(ctx, Permission::AssessmentWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::AssessmentWrite)
+            .await?;
 
-        let mut scheme = self.scheme_repo.find_by_id(scheme_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Assessment Scheme {} not found", scheme_id)))?;
+        let mut scheme = self
+            .scheme_repo
+            .find_by_id(scheme_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Assessment Scheme {} not found", scheme_id))
+            })?;
 
         if scheme.org_id != org_id {
             return Err(DomainError::Unauthorized("Organization mismatch".into()));
@@ -590,11 +690,17 @@ impl AssessmentService {
 
         self.scheme_repo.save(&scheme).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::AssessmentSchemeUpdated {
-            scheme_id,
-            org_id,
-            timestamp: scheme.updated_at,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::AssessmentSchemeUpdated {
+                    scheme_id,
+                    org_id,
+                    timestamp: scheme.updated_at,
+                },
+            )
+            .await;
 
         Ok(scheme)
     }
@@ -606,10 +712,17 @@ impl AssessmentService {
         org_id: Uuid,
         scheme_id: Uuid,
     ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::AssessmentDelete).await?;
+        self.permission_checker
+            .check(ctx, Permission::AssessmentDelete)
+            .await?;
 
-        let scheme = self.scheme_repo.find_by_id(scheme_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Assessment Scheme {} not found", scheme_id)))?;
+        let scheme = self
+            .scheme_repo
+            .find_by_id(scheme_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Assessment Scheme {} not found", scheme_id))
+            })?;
 
         if scheme.org_id != org_id {
             return Err(DomainError::Unauthorized("Organization mismatch".into()));
@@ -617,27 +730,44 @@ impl AssessmentService {
 
         self.scheme_repo.delete(scheme_id).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::AssessmentSchemeDeleted {
-            scheme_id,
-            org_id,
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::AssessmentSchemeDeleted {
+                    scheme_id,
+                    org_id,
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
         Ok(())
     }
 
     /// List assessment schemes
-    pub async fn list_assessment_schemes(&self, org_id: Uuid) -> Result<Vec<AssessmentScheme>, DomainError> {
+    pub async fn list_assessment_schemes(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<AssessmentScheme>, DomainError> {
         self.scheme_repo.find_by_org(org_id).await
     }
 
     /// List grades
-    pub async fn list_grades(&self, org_id: Uuid, filter: GradeFilter) -> Result<PaginatedList<Grade>, DomainError> {
+    pub async fn list_grades(
+        &self,
+        org_id: Uuid,
+        filter: GradeFilter,
+    ) -> Result<PaginatedList<Grade>, DomainError> {
         self.grade_repo.list(org_id, filter).await
     }
 
     /// List attendance
-    pub async fn list_attendance(&self, org_id: Uuid, filter: AttendanceFilter) -> Result<PaginatedList<Attendance>, DomainError> {
+    pub async fn list_attendance(
+        &self,
+        org_id: Uuid,
+        filter: AttendanceFilter,
+    ) -> Result<PaginatedList<Attendance>, DomainError> {
         self.attendance_repo.list(org_id, filter).await
     }
 
@@ -651,7 +781,9 @@ impl AssessmentService {
         description: String,
         points: i32,
     ) -> Result<BehaviorRecord, DomainError> {
-        self.permission_checker.check(ctx, Permission::BehaviorWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::BehaviorWrite)
+            .await?;
         let now = Utc::now();
         let record_id = Uuid::new_v4();
         let record = BehaviorRecord {
@@ -667,13 +799,19 @@ impl AssessmentService {
         };
         self.behavior_repo.save(&record).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::BehaviorLogged {
-            record_id,
-            student_id,
-            record_type,
-            points,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::BehaviorLogged {
+                    record_id,
+                    student_id,
+                    record_type,
+                    points,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(record)
     }
@@ -685,10 +823,17 @@ impl AssessmentService {
         org_id: Uuid,
         behavior_id: Uuid,
     ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::BehaviorDelete).await?;
+        self.permission_checker
+            .check(ctx, Permission::BehaviorDelete)
+            .await?;
 
-        let rec = self.behavior_repo.find_by_id(behavior_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Behavior record {} not found", behavior_id)))?;
+        let rec = self
+            .behavior_repo
+            .find_by_id(behavior_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Behavior record {} not found", behavior_id))
+            })?;
 
         if rec.org_id != org_id {
             return Err(DomainError::Unauthorized("Organization mismatch".into()));
@@ -696,10 +841,16 @@ impl AssessmentService {
 
         self.behavior_repo.delete(behavior_id).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::BehaviorDeleted {
-            record_id: behavior_id,
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::BehaviorDeleted {
+                    record_id: behavior_id,
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
         Ok(())
     }
@@ -710,7 +861,9 @@ impl AssessmentService {
         ctx: &RequestContext,
         student_id: Uuid,
     ) -> Result<Vec<BehaviorRecord>, DomainError> {
-        self.permission_checker.check(ctx, Permission::BehaviorRead).await?;
+        self.permission_checker
+            .check(ctx, Permission::BehaviorRead)
+            .await?;
         self.behavior_repo.find_by_student(student_id).await
     }
 
@@ -720,7 +873,9 @@ impl AssessmentService {
         ctx: &RequestContext,
         org_id: Uuid,
     ) -> Result<Vec<BehaviorRecord>, DomainError> {
-        self.permission_checker.check(ctx, Permission::BehaviorRead).await?;
+        self.permission_checker
+            .check(ctx, Permission::BehaviorRead)
+            .await?;
         self.behavior_repo.find_by_org(org_id).await
     }
 }

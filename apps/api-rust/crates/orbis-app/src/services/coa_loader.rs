@@ -4,10 +4,10 @@
 //! Embedded directly into the binary via `include_str!` to guarantee self-contained
 //! runtime execution across Local (Tauri) and Remote (Cloud) deployments.
 
-use serde::Deserialize;
-use uuid::Uuid;
 use chrono::Utc;
 use orbis_domain::entities::account::{Account, AccountType};
+use serde::Deserialize;
+use uuid::Uuid;
 
 const COA_SCHOOL: &str = include_str!("../defaults/coa/orbis_coa_school_v2.json");
 const COA_UNIVERSITY: &str = include_str!("../defaults/coa/orbis_coa_university_v2.json");
@@ -131,13 +131,29 @@ impl CoaBlueprintLoader {
 
             if let Some(children) = &node.children {
                 for child in children {
-                    traverse(child, org_id, currency_code, Some(account_id), &current_path, now, list);
+                    traverse(
+                        child,
+                        org_id,
+                        currency_code,
+                        Some(account_id),
+                        &current_path,
+                        now,
+                        list,
+                    );
                 }
             }
         }
 
         for root_node in &coa_file.accounts {
-            traverse(root_node, org_id, currency_code, None, "/", now, &mut flat_accounts);
+            traverse(
+                root_node,
+                org_id,
+                currency_code,
+                None,
+                "/",
+                now,
+                &mut flat_accounts,
+            );
         }
 
         Ok(flat_accounts)
@@ -155,10 +171,18 @@ mod tests {
             .expect("School COA JSON should parse cleanly");
 
         assert!(!accounts.is_empty());
-        assert!(accounts.len() > 400, "School COA should contain over 400 accounts, got {}", accounts.len());
+        assert!(
+            accounts.len() > 400,
+            "School COA should contain over 400 accounts, got {}",
+            accounts.len()
+        );
 
         let roots: Vec<_> = accounts.iter().filter(|a| a.parent_id.is_none()).collect();
-        assert_eq!(roots.len(), 5, "Expected 5 standard root accounts (Assets, Liabilities, Equity, Revenue, Expense)");
+        assert_eq!(
+            roots.len(),
+            5,
+            "Expected 5 standard root accounts (Assets, Liabilities, Equity, Revenue, Expense)"
+        );
         for r in &roots {
             assert_eq!(r.depth, 1);
             assert_eq!(r.org_id, org_id);

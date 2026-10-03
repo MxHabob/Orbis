@@ -1,5 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { untrack } from "svelte";
 import { api, queryKeys } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -65,7 +66,7 @@ const periodsList = $derived(
   ),
 );
 
-const form = new FormController({
+const form = untrack(() => new FormController({
   initialValues: {
     year_id: period?.year_id || "",
     name: period?.name || "",
@@ -80,7 +81,7 @@ const form = new FormController({
     max_grade: period?.max_grade ?? 100,
   },
   schema: createPeriodInputSchema,
-});
+}));
 
 function fieldError(field: string): string | undefined {
   return form.errors[field]?.[0];

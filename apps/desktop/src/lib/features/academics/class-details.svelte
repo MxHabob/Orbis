@@ -28,7 +28,7 @@ import { fade } from "svelte/transition";
 import { academicContext } from "$lib/stores";
 import { toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
-import { l } from "$lib/core/i18n";
+
 
 import {
   createClassQuery,
@@ -127,26 +127,26 @@ function handleNotifications() {
 const relatedActionGroups = $derived<ActionGroup[]>(classData ? [
   {
     id: "academic_operations",
-    title: l("العمليات الأكاديمية", "Academic Operations"),
+    title: m.ui_copy_academic_operations_d82a1c76(),
     icon: AcademicCap,
     defaultExpanded: true,
     subLinks: [
       {
         id: "class_roster",
-        label: l("قائمة وسجل طلاب الفصل", "Class Roster & Students"),
+        label: m.ui_copy_class_roster_students_7c634c5e(),
         icon: Users,
         href: `/${orgId}/academics/classes/${classId}/students`,
         badge: students.length,
       },
       {
         id: "class_curriculum",
-        label: l("الخطة والمنهج الدراسي", "Curriculum & Subjects"),
+        label: m.ui_copy_curriculum_subjects_70041ea1(),
         icon: BookOpen,
         href: `/${orgId}/academics/classes/${classId}/curriculum`,
       },
       {
         id: "class_schedule",
-        label: l("جدول الحصص الأسبوعي", "Weekly Schedule"),
+        label: m.ui_copy_weekly_schedule_e30b8a34(),
         icon: Calendar,
         href: `/${orgId}/academics/schedule?classId=${classId}`,
       },
@@ -154,19 +154,19 @@ const relatedActionGroups = $derived<ActionGroup[]>(classData ? [
   },
   {
     id: "classroom_records",
-    title: l("السجلات الميدانية والتقييم", "Classroom Records & Grading"),
+    title: m.ui_copy_classroom_records_grading_8d9c9224(),
     icon: CheckSquare,
     defaultExpanded: true,
     subLinks: [
       {
         id: "daily_attendance",
-        label: l("تحضير حضور وغياب الفصل", "Daily Attendance"),
+        label: m.ui_copy_daily_attendance_cc39a674(),
         icon: CheckSquare,
         href: `/${orgId}/academics/attendance?classId=${classId}`,
       },
       {
         id: "grades_exams",
-        label: l("إدخال ورصد الدرجات والتقييم", "Grades & Assessment Entry"),
+        label: m.ui_copy_grades_assessment_entry_53bbff49(),
         icon: DocumentPage,
         href: `/${orgId}/academics/exams?classId=${classId}`,
       },
@@ -270,7 +270,7 @@ const relatedActionGroups = $derived<ActionGroup[]>(classData ? [
 
       <!-- Contextual Related Actions (Full Width Footer) -->
       <RelatedActions
-        title={l("العمليات والإجراءات المرتبطة", "Related support")}
+        title={m.ui_copy_related_support_bf36e16f()}
         groups={relatedActionGroups}
       />
     </div>

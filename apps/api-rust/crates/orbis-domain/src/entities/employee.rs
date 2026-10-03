@@ -2,9 +2,9 @@ use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use super::group::Group;
 use super::person::Person;
 use super::user::User;
-use super::group::Group;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -168,6 +168,11 @@ impl Employee {
 
     pub fn is_teacher(&self) -> bool {
         EmployeeType::from(self.employee_type.as_str()).is_teacher()
-            || self.job_title.as_deref().unwrap_or("").to_lowercase().contains("teacher")
+            || self
+                .job_title
+                .as_deref()
+                .unwrap_or("")
+                .to_lowercase()
+                .contains("teacher")
     }
 }

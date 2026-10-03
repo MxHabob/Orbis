@@ -123,9 +123,7 @@ async function handleSaveAvatar(e: Event) {
     }
 
     toast.success(
-      m.settings_general_avatar_save
-        ? m.settings_general_avatar_save()
-        : "Avatar saved successfully",
+      m.settings_general_avatar_save(),
     );
   } catch (e) {
     console.error("Failed to update avatar:", e);
@@ -170,7 +168,7 @@ async function handleSaveAvatar(e: Event) {
           class="px-6 font-semibold h-9 text-xs"
           disabled={isSavingDetails}
         >
-          {isSavingDetails ? (m.common_state_saving ? m.common_state_saving() : "Saving...") : m.settings_action_save_changes()}
+          {isSavingDetails ? (m.common_state_saving()) : m.settings_action_save_changes()}
         </Button>
       </div>
     </form>

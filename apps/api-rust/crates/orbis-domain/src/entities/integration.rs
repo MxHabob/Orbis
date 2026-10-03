@@ -1,6 +1,6 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IntegrationConfig {
@@ -9,7 +9,7 @@ pub struct IntegrationConfig {
     pub provider_name: String, // e.g. "stripe", "mada", "gemini", "twilio"
     pub category: String,      // e.g. "payment", "sms", "ai"
     pub is_enabled: bool,
-    pub env: String,           // e.g. "sandbox", "production"
+    pub env: String, // e.g. "sandbox", "production"
     pub settings: Option<serde_json::Value>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

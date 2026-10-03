@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { createQuery } from "@tanstack/svelte-query";
 import { api } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
@@ -39,7 +40,7 @@ function subjectName(subject: any): string {
 }
 </script>
 
-<WorkspaceCard title={isArabic ? "المواد الدراسية" : "Class Subjects"}>
+<WorkspaceCard title={m.ui_class_subjects_class_subjects()}>
   {#snippet actions()}
     <div class="flex items-center gap-2">
       <Badge variant="secondary" class="text-[10px] py-0 px-1.5 h-5 font-bold font-sans">
@@ -54,7 +55,7 @@ function subjectName(subject: any): string {
         }}
       >
         <Plus size={12} />
-        {isArabic ? "ربط مادة" : "Link Subject"}
+        {m.ui_class_subjects_link_subject()}
       </Button>
     </div>
   {/snippet}
@@ -68,9 +69,9 @@ function subjectName(subject: any): string {
   {:else if subjects.length === 0}
     <div class="flex flex-col items-center justify-center h-full py-8 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
       <BookOpen size={24} class="text-muted-foreground opacity-40 mb-2" />
-      <p class="text-xs font-bold text-foreground">{isArabic ? "لم يتم ربط أي مواد" : "No Subjects Linked"}</p>
+      <p class="text-xs font-bold text-foreground">{m.ui_class_subjects_no_subjects_linked()}</p>
       <p class="text-[10px] text-muted-foreground mt-1 max-w-50">
-        {isArabic ? "قم بربط مواد المنهاج الدراسي بهذا الفصل لتمكين دفتر الدرجات والجدول." : "Link curriculum subjects to enable gradebook and timetables."}
+        {m.ui_class_subjects_link_curriculum_subjects_to_enable_gradebook_and_timetables()}
       </p>
       <Button
         variant="outline"
@@ -81,7 +82,7 @@ function subjectName(subject: any): string {
         }}
       >
         <Plus size={12} class="me-1" />
-        {isArabic ? "ربط مادة جديدة" : "Link New Subject"}
+        {m.ui_class_subjects_link_new_subject()}
       </Button>
     </div>
   {:else}
@@ -102,13 +103,13 @@ function subjectName(subject: any): string {
               <div class="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                 <span class="flex items-center gap-1 truncate">
                   <User size={10} class="opacity-70" />
-                  {subject.teacher_name || (isArabic ? "غير معين" : "Unassigned")}
+                  {subject.teacher_name || (m.academics_studio_unassigned())}
                 </span>
                 {#if subject.weekly_hours}
                   <span class="opacity-40">•</span>
                   <span class="flex items-center gap-1 shrink-0">
                     <ClockRotateRight size={10} class="opacity-70" />
-                    {subject.weekly_hours} {isArabic ? "س" : "h"}
+                    {subject.weekly_hours} {m.ui_class_subjects_h()}
                   </span>
                 {/if}
               </div>

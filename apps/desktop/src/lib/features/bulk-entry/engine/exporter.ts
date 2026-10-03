@@ -1,4 +1,3 @@
-import * as XLSX from "xlsx";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { openPath } from "@tauri-apps/plugin-opener";
@@ -12,6 +11,7 @@ export interface ExportDatasetOptions {
 }
 
 export async function exportCorrectedDataset(options: ExportDatasetOptions): Promise<string | null> {
+  const XLSX = await import("xlsx");
   const { profile, rows, filenamePrefix = "Orbis_Corrected_Data", format = "xlsx" } = options;
 
   const headers = profile.columnMetadata.map((col) => col.headerAr);

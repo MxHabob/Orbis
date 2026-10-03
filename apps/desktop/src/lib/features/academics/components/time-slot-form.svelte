@@ -1,4 +1,5 @@
 <script lang="ts">
+import { untrack } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { api, extractErrorMessage, type CreateTimeSlotRequest } from "$lib/api";
 import { createTimeSlotInputSchema } from "@orbis/schemas";
@@ -35,10 +36,10 @@ let {
 } = $props();
 
 let nameAr = $state(
-  m.academics_schedule_placeholder_period({ number: nextSlotNumber }),
+  untrack(() => m.academics_schedule_placeholder_period({ number: nextSlotNumber })),
 );
 let name = $state(
-  m.academics_schedule_placeholder_period_en({ number: nextSlotNumber }),
+  untrack(() => m.academics_schedule_placeholder_period_en({ number: nextSlotNumber })),
 );
 let startTime = $state("08:00");
 let endTime = $state("08:45");

@@ -1,14 +1,14 @@
-use std::sync::Arc;
-use std::collections::HashMap;
-use uuid::Uuid;
 use chrono::Utc;
 use orbis_domain::entities::integration::{IntegrationConfig, IntegrationSecret};
 use orbis_domain::errors::DomainError;
 use orbis_domain::iam::permission::Permission;
+use std::collections::HashMap;
+use std::sync::Arc;
+use uuid::Uuid;
 
 use crate::context::RequestContext;
-use crate::ports::repositories::IntegrationRepository;
 use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::repositories::IntegrationRepository;
 
 pub struct IntegrationService {
     pub integration_repo: Arc<dyn IntegrationRepository>,
@@ -37,10 +37,15 @@ impl IntegrationService {
         settings: serde_json::Value,
         secrets: HashMap<String, String>,
     ) -> Result<IntegrationConfig, DomainError> {
-        self.permission_checker.check(ctx, Permission::OrganizationWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::OrganizationWrite)
+            .await?;
 
         let now = Utc::now();
-        let existing = self.integration_repo.find_config_by_provider(org_id, &provider_name).await?;
+        let existing = self
+            .integration_repo
+            .find_config_by_provider(org_id, &provider_name)
+            .await?;
         let config_id = existing.as_ref().map(|c| c.id).unwrap_or_else(Uuid::new_v4);
 
         let config = IntegrationConfig {
@@ -73,25 +78,55 @@ impl IntegrationService {
     }
 
     /// List connected integrations for an organization
-    pub async fn list_integrations(&self, org_id: Uuid) -> Result<Vec<IntegrationConfig>, DomainError> {
+    pub async fn list_integrations(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<IntegrationConfig>, DomainError> {
         self.integration_repo.find_configs_by_org(org_id).await
     }
 
     /// Get integration configuration by provider name
-    pub async fn get_integration_by_provider(&self, org_id: Uuid, provider_name: &str) -> Result<Option<IntegrationConfig>, DomainError> {
-        self.integration_repo.find_config_by_provider(org_id, provider_name).await
+    pub async fn get_integration_by_provider(
+        &self,
+        org_id: Uuid,
+        provider_name: &str,
+    ) -> Result<Option<IntegrationConfig>, DomainError> {
+        self.integration_repo
+            .find_config_by_provider(org_id, provider_name)
+            .await
     }
 
     /// Delete integration by provider
-    pub async fn delete_integration(&self, ctx: &RequestContext, org_id: Uuid, provider_name: &str) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::OrganizationWrite).await?;
-        self.integration_repo.delete_by_provider(org_id, provider_name).await
+    pub async fn delete_integration(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        provider_name: &str,
+    ) -> Result<(), DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::OrganizationWrite)
+            .await?;
+        self.integration_repo
+            .delete_by_provider(org_id, provider_name)
+            .await
     }
 
     /// Toggle integration enabled status
-    pub async fn toggle_integration(&self, ctx: &RequestContext, org_id: Uuid, provider_name: &str, is_enabled: bool) -> Result<bool, DomainError> {
-        self.permission_checker.check(ctx, Permission::OrganizationWrite).await?;
-        if let Some(mut cfg) = self.integration_repo.find_config_by_provider(org_id, provider_name).await? {
+    pub async fn toggle_integration(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        provider_name: &str,
+        is_enabled: bool,
+    ) -> Result<bool, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::OrganizationWrite)
+            .await?;
+        if let Some(mut cfg) = self
+            .integration_repo
+            .find_config_by_provider(org_id, provider_name)
+            .await?
+        {
             cfg.is_enabled = is_enabled;
             cfg.updated_at = Utc::now();
             self.integration_repo.save_config(&cfg).await?;

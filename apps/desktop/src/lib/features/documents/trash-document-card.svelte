@@ -157,16 +157,14 @@ function formatDate(value?: string | null) {
   <div class="mt-2.5 flex flex-col gap-1.5">
     <!-- File Title -->
     <div class="flex items-start justify-between gap-1">
-      <h4
+      <button
+        type="button"
         class="text-xs font-semibold text-foreground/90 truncate hover:text-foreground cursor-pointer"
         title={document.name}
         onclick={() => onpreview(document)}
-        onkeydown={(e) => e.key === "Enter" && onpreview(document)}
-        role="button"
-        tabindex="0"
       >
         {document.name}
-      </h4>
+      </button>
     </div>
 
     <!-- Metadata Details -->

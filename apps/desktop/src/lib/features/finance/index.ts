@@ -6,7 +6,6 @@ export { default as DiscountTemplateForm } from "./components/discount-template-
 export { default as FeeAssignSheet } from "./components/fee-assign-sheet.svelte";
 export { default as FeeTemplateForm } from "./components/fee-template-form.svelte";
 export { default as LedgerCreateSheet } from "./components/ledger-create-sheet.svelte";
-export { default as LedgerForm } from "./components/ledger-form.svelte";
 export { default as DisbursementsManager } from "./disbursements-manager.svelte";
 export { default as FeesWorkspace } from "./fees-workspace.svelte";
 export { default as FinanceOverview } from "./finance-overview.svelte";
@@ -14,4 +13,3 @@ export { default as JournalEntries } from "./journal-entries.svelte";
 export { default as PaymentsManager } from "./payments-manager.svelte";
 export { default as PosTerminal } from "./pos-terminal.svelte";
 export * from "./queries";
-

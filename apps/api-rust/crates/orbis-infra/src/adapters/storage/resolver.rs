@@ -1,11 +1,11 @@
-use std::sync::Arc;
-use std::path::PathBuf;
-use uuid::Uuid;
-use tokio::sync::RwLock;
 use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::Arc;
+use tokio::sync::RwLock;
+use uuid::Uuid;
 
-use orbis_app::ports::storage::StorageAdapter;
 use orbis_app::ports::repositories::IntegrationRepository;
+use orbis_app::ports::storage::StorageAdapter;
 use orbis_domain::errors::StorageError;
 
 use super::filesystem::FilesystemStorageAdapter;
@@ -47,28 +47,62 @@ impl StorageResolver {
         }
 
         // Query integration config
-        let config_opt = self.integration_repo.find_config_by_provider(org_id, "cloud-storage").await
+        let config_opt = self
+            .integration_repo
+            .find_config_by_provider(org_id, "cloud-storage")
+            .await
             .map_err(|e| StorageError::Connection(e.to_string()))?;
 
         if let Some(config) = config_opt {
             if config.is_enabled {
                 if let Some(settings) = config.settings {
-                    let provider = settings.get("provider").and_then(|v| v.as_str()).unwrap_or("local");
-                    
+                    let provider = settings
+                        .get("provider")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("local");
+
                     if provider == "s3" || provider == "minio" || provider == "rustfs" {
-                        let secrets = self.integration_repo.get_secrets_by_config(config.id).await
+                        let secrets = self
+                            .integration_repo
+                            .get_secrets_by_config(config.id)
+                            .await
                             .map_err(|e| StorageError::Connection(e.to_string()))?;
 
-                        let access_key = secrets.iter().find(|s| s.key_name == "access_key").map(|s| s.secret_key.clone())
+                        let access_key = secrets
+                            .iter()
+                            .find(|s| s.key_name == "access_key")
+                            .map(|s| s.secret_key.clone())
                             .unwrap_or_default();
-                        let secret_key = secrets.iter().find(|s| s.key_name == "secret_key").map(|s| s.secret_key.clone())
+                        let secret_key = secrets
+                            .iter()
+                            .find(|s| s.key_name == "secret_key")
+                            .map(|s| s.secret_key.clone())
                             .unwrap_or_default();
-                        let bucket = settings.get("bucket").and_then(|v| v.as_str()).unwrap_or("orbis-storage").to_string();
-                        let endpoint = settings.get("endpoint").and_then(|v| v.as_str())
-                            .unwrap_or(if provider == "minio" { "http://127.0.0.1:9000" } else { "https://s3.amazonaws.com" })
+                        let bucket = settings
+                            .get("bucket")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("orbis-storage")
                             .to_string();
-                        let region = settings.get("region").and_then(|v| v.as_str()).unwrap_or("us-east-1").to_string();
-                        let force_path_style = provider == "minio" || provider == "rustfs" || settings.get("force_path_style").and_then(|v| v.as_bool()).unwrap_or(false);
+                        let endpoint = settings
+                            .get("endpoint")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or(if provider == "minio" {
+                                "http://127.0.0.1:9000"
+                            } else {
+                                "https://s3.amazonaws.com"
+                            })
+                            .to_string();
+                        let region = settings
+                            .get("region")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("us-east-1")
+                            .to_string();
+                        let force_path_style = provider == "minio"
+                            || provider == "rustfs"
+                            || settings
+                                .get("force_path_style")
+                                .and_then(|v| v.as_bool())
+                                .unwrap_or(false);
 
                         let s3_cfg = S3Config {
                             endpoint,
@@ -79,7 +113,8 @@ impl StorageResolver {
                             force_path_style,
                         };
 
-                        let adapter: Arc<dyn StorageAdapter> = Arc::new(S3StorageAdapter::new(s3_cfg));
+                        let adapter: Arc<dyn StorageAdapter> =
+                            Arc::new(S3StorageAdapter::new(s3_cfg));
                         let mut cache = self.cached_adapters.write().await;
                         cache.insert(org_id, adapter.clone());
                         return Ok(adapter);

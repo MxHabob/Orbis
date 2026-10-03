@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use orbis_app::ports::repositories::OrganizationRepository;
 use orbis_domain::entities::organization::Organization as DomainOrganization;
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use uuid::Uuid;
 
 use crate::models::organization::{self, Entity as OrganizationEntity};
@@ -116,10 +116,21 @@ impl OrganizationRepository for OrgRepoImpl {
             ..Default::default()
         };
 
-        if OrganizationEntity::find_by_id(org.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active_model.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if OrganizationEntity::find_by_id(org.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active_model
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active_model.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active_model
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
 
         Ok(())

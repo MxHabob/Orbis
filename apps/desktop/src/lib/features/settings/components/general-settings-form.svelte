@@ -1,18 +1,16 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import {
-  InfoSettingsCard,
-  BrandingSettingsCard,
-  RegionalSettingsCard,
-  AvatarSettingsCard,
-  DangerZoneSettingsCard,
-  BranchSettingsCard,
-  AuthenticationSettingsCard,
-} from "$lib/features/settings";
+import InfoSettingsCard from "./info-settings-card.svelte";
+import BrandingSettingsCard from "./branding-settings-card.svelte";
+import RegionalSettingsCard from "./regional-settings-card.svelte";
+import AvatarSettingsCard from "./avatar-settings-card.svelte";
+import DangerZoneSettingsCard from "./danger-zone-settings-card.svelte";
+import BranchSettingsCard from "./branch-settings-card.svelte";
+import AuthenticationSettingsCard from "./authentication-settings-card.svelte";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { toast } from "@orbis/ui";
-import { l } from "$lib/core/i18n";
+
 import { api, type OrganizationSettingsDto } from "$lib/api";
 import { generalSettingsInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
@@ -146,7 +144,7 @@ async function handleSubmit(e?: Event) {
         });
         rawSettings = updated;
       } catch (err) {
-        toast.error(l("فشل حفظ إعدادات السياسات", "Failed to save institutional policy settings"));
+        toast.error(m.ui_copy_failed_to_save_institutional_policy_settin_6ea63580());
       }
     }
   });
@@ -164,7 +162,7 @@ async function handleSubmit(e?: Event) {
     };
   } else {
     toast.error(
-      l("بيانات الإعدادات غير صالحة", "Settings contain invalid values"),
+      m.ui_copy_settings_contain_invalid_values_fae2c24c(),
     );
   }
 }

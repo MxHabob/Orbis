@@ -155,8 +155,8 @@ function insertPreset(preset: TextPreset) {
 <div class="text-presets-panel">
   <div class="presets-list">
     {#each presets as preset (preset.id)}
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
+      <button
+        type="button"
         class="preset-card"
         draggable="true"
         ondragstart={(e) => handleDragStart(e, preset)}
@@ -174,7 +174,7 @@ function insertPreset(preset: TextPreset) {
           {preset.sampleAr}
         </div>
         <span class="preset-label">{preset.label}</span>
-      </div>
+      </button>
     {/each}
   </div>
 

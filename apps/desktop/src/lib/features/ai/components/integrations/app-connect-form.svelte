@@ -4,6 +4,7 @@ Auto-generated settings form from OrbisApp.settings[].
 Renders appropriate input types: text, password, number, url, select, switch.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import type { AppSetting } from "@orbis/app-store";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -42,7 +43,7 @@ function handleSubmit(e: SubmitEvent) {
   const result = createAppSettingsSchema(settings).safeParse(values);
   if (!result.success) {
     toast.error(
-      l("يرجى مراجعة بيانات الاتصال", "Please review the connection settings"),
+      m.ui_copy_please_review_the_connection_settings_e94d1183(),
     );
     return;
   }
@@ -77,7 +78,7 @@ function handleSubmit(e: SubmitEvent) {
           }}
         >
           <SelectTrigger class="w-full text-xs h-9 flex justify-between items-center px-3">
-            {setting.options?.find(o => o.value === values[setting.id])?.label || values[setting.id] || l("اختر خياراً...", "Select an option...")}
+            {setting.options?.find(o => o.value === values[setting.id])?.label || values[setting.id] || m.ui_copy_select_an_option_0c7b180c()}
           </SelectTrigger>
           <SelectContent>
             {#each setting.options ?? [] as opt}
@@ -110,7 +111,7 @@ function handleSubmit(e: SubmitEvent) {
   {/each}
 
   <Button type="submit" class="w-full" size="sm">
-    {l("حفظ واتصال", "Save & Connect")}
+    {m.ui_copy_save_connect_3d45edcd()}
   </Button>
 </form>
 

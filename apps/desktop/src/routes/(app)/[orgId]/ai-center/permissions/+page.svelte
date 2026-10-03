@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-  <title>{m.ai_center_permissions_title ? m.ai_center_permissions_title() : "مصفوفة الصلاحيات والحوكمة"} | Orbis</title>
+  <title>{m.ai_center_permissions_title()} | Orbis</title>
 </svelte:head>
 
 <AiPermissions {orgId} />

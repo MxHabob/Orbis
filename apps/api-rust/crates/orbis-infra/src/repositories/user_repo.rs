@@ -1,11 +1,11 @@
 use async_trait::async_trait;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use uuid::Uuid;
 
+use crate::models::user::{self, Entity as UserEntity};
 use orbis_app::ports::repositories::UserRepository;
 use orbis_domain::entities::user::User;
 use orbis_domain::errors::DomainError;
-use crate::models::user::{self, Entity as UserEntity};
 
 pub struct UserRepoImpl {
     pub db: DatabaseConnection,
@@ -78,26 +78,29 @@ impl UserRepository for UserRepoImpl {
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        Ok(models.into_iter().map(|m| User {
-            id: m.id,
-            person_id: m.person_id,
-            org_id: m.org_id,
-            email: m.email,
-            is_email_verified: m.is_email_verified,
-            phone: m.phone,
-            is_phone_verified: m.is_phone_verified,
-            password_hash: m.password_hash,
-            is_mfa_enabled: m.is_mfa_enabled,
-            status: m.status,
-            login_count: m.login_count,
-            failed_login_attempts: m.failed_login_attempts,
-            locked_until: m.locked_until,
-            is_deleted: m.is_deleted,
-            created_by: m.created_by,
-            updated_by: m.updated_by,
-            created_at: m.created_at,
-            updated_at: m.updated_at,
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| User {
+                id: m.id,
+                person_id: m.person_id,
+                org_id: m.org_id,
+                email: m.email,
+                is_email_verified: m.is_email_verified,
+                phone: m.phone,
+                is_phone_verified: m.is_phone_verified,
+                password_hash: m.password_hash,
+                is_mfa_enabled: m.is_mfa_enabled,
+                status: m.status,
+                login_count: m.login_count,
+                failed_login_attempts: m.failed_login_attempts,
+                locked_until: m.locked_until,
+                is_deleted: m.is_deleted,
+                created_by: m.created_by,
+                updated_by: m.updated_by,
+                created_at: m.created_at,
+                updated_at: m.updated_at,
+            })
+            .collect())
     }
 
     async fn save(&self, user: &User) -> Result<(), DomainError> {
@@ -122,10 +125,21 @@ impl UserRepository for UserRepoImpl {
             updated_at: Set(user.updated_at),
         };
 
-        if UserEntity::find_by_id(user.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active_model.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if UserEntity::find_by_id(user.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active_model
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active_model.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active_model
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
 
         Ok(())

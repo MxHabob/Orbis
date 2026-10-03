@@ -85,19 +85,13 @@ const riskBadgeVariant = $derived.by(() => {
 const riskLabel = $derived.by(() => {
   switch (riskLevel) {
     case "low":
-      return m.common_override_risk_low ? m.common_override_risk_low() : "Low";
+      return m.common_override_risk_low();
     case "medium":
-      return m.common_override_risk_medium
-        ? m.common_override_risk_medium()
-        : "Medium";
+      return m.common_override_risk_medium();
     case "high":
-      return m.common_override_risk_high
-        ? m.common_override_risk_high()
-        : "High";
+      return m.common_override_risk_high();
     case "critical":
-      return m.common_override_risk_critical
-        ? m.common_override_risk_critical()
-        : "Critical";
+      return m.common_override_risk_critical();
     default:
       return riskLevel;
   }
@@ -106,33 +100,19 @@ const riskLabel = $derived.by(() => {
 const typeLabel = $derived.by(() => {
   switch (overrideType) {
     case "grade_modification":
-      return m.common_override_type_grade
-        ? m.common_override_type_grade()
-        : "Grade Modification";
+      return m.common_override_type_grade();
     case "late_enrollment":
-      return m.common_override_type_enrollment
-        ? m.common_override_type_enrollment()
-        : "Late Enrollment";
+      return m.common_override_type_enrollment();
     case "attendance_correction":
-      return m.common_override_type_attendance
-        ? m.common_override_type_attendance()
-        : "Attendance Correction";
+      return m.common_override_type_attendance();
     case "fee_waiver":
-      return m.common_override_type_fee
-        ? m.common_override_type_fee()
-        : "Fee Waiver";
+      return m.common_override_type_fee();
     case "period_unlock":
-      return m.common_override_type_unlock
-        ? m.common_override_type_unlock()
-        : "Period Unlock";
+      return m.common_override_type_unlock();
     case "deadline_extension":
-      return m.common_override_type_deadline
-        ? m.common_override_type_deadline()
-        : "Deadline Extension";
+      return m.common_override_type_deadline();
     case "promotion_override":
-      return m.common_override_type_promotion
-        ? m.common_override_type_promotion()
-        : "Promotion Override";
+      return m.common_override_type_promotion();
     default:
       return overrideType;
   }
@@ -141,21 +121,13 @@ const typeLabel = $derived.by(() => {
 const approvalChainPreview = $derived.by(() => {
   switch (riskLevel) {
     case "low":
-      return m.common_override_chain_auto
-        ? m.common_override_chain_auto()
-        : "Auto-approved";
+      return m.common_override_chain_auto();
     case "medium":
-      return m.common_override_chain_manager
-        ? m.common_override_chain_manager()
-        : "Manager approval required";
+      return m.common_override_chain_manager();
     case "high":
-      return m.common_override_chain_admin
-        ? m.common_override_chain_admin()
-        : "Manager + Admin approval required";
+      return m.common_override_chain_admin();
     case "critical":
-      return m.common_override_chain_full
-        ? m.common_override_chain_full()
-        : "Full approval chain required";
+      return m.common_override_chain_full();
     default:
       return "";
   }
@@ -164,9 +136,7 @@ const approvalChainPreview = $derived.by(() => {
 async function submit() {
   if (!reason.trim()) {
     toast.error(
-      m.common_override_reason_required
-        ? m.common_override_reason_required()
-        : "Please provide a reason",
+      m.common_override_reason_required(),
     );
     return;
   }
@@ -184,9 +154,7 @@ async function submit() {
       },
     });
     toast.success(
-      m.common_override_submitted
-        ? m.common_override_submitted()
-        : "Override request submitted",
+      m.common_override_submitted(),
     );
     reason = "";
     open = false;
@@ -204,7 +172,7 @@ async function submit() {
     <DialogHeader>
       <DialogTitle class="flex items-center gap-2">
         <UserBadgeCheck class="size-5 text-primary" />
-        {m.common_override_request_title ? m.common_override_request_title() : "Override Request"}
+        {m.common_override_request_title()}
       </DialogTitle>
     </DialogHeader>
 
@@ -213,7 +181,7 @@ async function submit() {
       <div class="flex items-center justify-between bg-muted/50 rounded-lg p-3">
         <div class="flex flex-col gap-1">
           <span class="text-xs text-muted-foreground">
-            {m.common_word_type ? m.common_word_type() : "Type"}
+            {m.common_word_type()}
           </span>
           <span class="text-sm font-medium">{typeLabel}</span>
         </div>
@@ -244,12 +212,12 @@ async function submit() {
       <!-- Reason -->
       <div class="flex flex-col gap-2">
         <Label for="override-reason">
-          {m.common_promo_reason ? m.common_promo_reason() : "Reason"} *
+          {m.common_promo_reason()} *
         </Label>
         <Textarea
           id="override-reason"
           bind:value={reason}
-          placeholder={m.common_override_reason_placeholder ? m.common_override_reason_placeholder() : "Explain why this override is needed..."}
+          placeholder={m.common_override_reason_placeholder()}
           rows={3}
         />
       </div>
@@ -263,13 +231,13 @@ async function submit() {
 
     <DialogFooter class="flex-nowrap shrink-0">
       <Button variant="outline" onclick={() => { open = false; }} disabled={isSubmitting}>
-        {m.common_action_cancel ? m.common_action_cancel() : "Cancel"}
+        {m.common_action_cancel()}
       </Button>
       <Button onclick={submit} disabled={isSubmitting || !reason.trim()}>
         {#if isSubmitting}
           <ArrowPath class="size-4 animate-spin me-2" />
         {/if}
-        {m.common_override_submit ? m.common_override_submit() : "Submit Request"}
+        {m.common_override_submit()}
       </Button>
     </DialogFooter>
   </DialogContent>

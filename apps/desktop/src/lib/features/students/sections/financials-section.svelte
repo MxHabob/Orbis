@@ -24,7 +24,7 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import { Tag, Sparkles, BookOpen } from "@orbis/icons";
-import { l, formatCurrency } from "$lib/core/i18n";
+import { formatCurrency } from "$lib/core/i18n";
 import type { StudentFormState } from "../form-state.svelte";
 
 let { state }: { state: StudentFormState } = $props();
@@ -38,7 +38,7 @@ let { state }: { state: StudentFormState } = $props();
       <div class="flex items-center gap-2">
         <Tag class="w-4 h-4 text-primary" />
         <CardTitle class="text-xs font-bold text-foreground uppercase tracking-wider text-start select-none">
-          {l("جدول الرسوم الدراسية الأساسية المعتمدة", "Approved Base Tuition Schedule")}
+          {m.ui_copy_approved_base_tuition_schedule_106c2f8b()}
         </CardTitle>
       </div>
       <span class="text-xs font-mono font-bold text-primary">
@@ -50,10 +50,10 @@ let { state }: { state: StudentFormState } = $props();
       <div class="flex flex-col gap-3 text-start">
         <div class="flex justify-between items-center text-xs">
           <span class="text-muted-foreground">
-            {l("الصف الدراسي المختار:", "Selected Class:")} <strong class="text-foreground">{state.selectedClassName}</strong>
+            {m.ui_copy_selected_class_f9c503a7()} <strong class="text-foreground">{state.selectedClassName}</strong>
           </span>
           <span class="text-[11px] text-muted-foreground">
-            ({state.mandatoryFeesList.length} {l("بنود رسوم", "fee items")})
+            ({state.mandatoryFeesList.length} {m.ui_copy_fee_items_5a58e60b()})
           </span>
         </div>
 
@@ -63,7 +63,7 @@ let { state }: { state: StudentFormState } = $props();
               <div class="p-3.5 rounded-lg bg-muted/20 border border-border flex items-center justify-between text-xs text-start">
                 <div class="flex flex-col gap-0.5">
                   <span class="font-bold text-foreground">{feeTpl.name_ar || feeTpl.name}</span>
-                  <span class="text-[10px] text-muted-foreground capitalize">{feeTpl.category || l("رسوم دراسية", "Tuition")}</span>
+                  <span class="text-[10px] text-muted-foreground capitalize">{feeTpl.category || m.common_ft_category_tuition()}</span>
                 </div>
                 <span class="font-mono font-bold text-foreground">
                   {formatCurrency(Number(feeTpl.default_amount) || 0, state.currency)}
@@ -73,7 +73,7 @@ let { state }: { state: StudentFormState } = $props();
           </div>
         {:else}
           <div class="p-4 rounded-lg bg-muted/20 border border-border text-center text-xs text-muted-foreground">
-            {l("لم يتم تحديد رسوم إجبارية لهذا الصف في لائحة الرسوم حتى الآن.", "No mandatory fee templates mapped for this class level.")}
+            {m.ui_copy_no_mandatory_fee_templates_mapped_for_this_e7b59267()}
           </div>
         {/if}
       </div>
@@ -106,10 +106,10 @@ let { state }: { state: StudentFormState } = $props();
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-xs font-semibold text-foreground">
-                {l("نوع المنحة أو الخصم", "Discount Policy Type")}
+                {m.ui_copy_discount_policy_type_1b319712()}
               </Label>
               <span class="text-[11px] text-muted-foreground leading-relaxed">
-                {l("تطبيق خصم من لائحة وقوالب الخصم المعتمدة أو إدخال مبلغ مالي مخصص", "Apply discount from approved templates or enter a custom amount")}
+                {m.ui_copy_apply_discount_from_approved_templates_or__043a0d02()}
               </span>
             </div>
             <div class="w-full md:w-120 shrink-0 flex gap-2">
@@ -137,10 +137,10 @@ let { state }: { state: StudentFormState } = $props();
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
               <div class="flex flex-col gap-1 text-start">
                 <Label class="text-xs font-semibold text-foreground">
-                  {l("قالب المنحة / الخصم", "Discount Template")}
+                  {m.ui_copy_discount_template_9e6c5879()}
                 </Label>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">
-                  {l("اختر إحدى لوائح وقوالب الخصومات المعتمدة في النظام", "Select one of the approved discount templates")}
+                  {m.ui_copy_select_one_of_the_approved_discount_templa_44351fda()}
                 </span>
               </div>
               <div class="w-full md:w-120 shrink-0">
@@ -151,7 +151,7 @@ let { state }: { state: StudentFormState } = $props();
                 >
                   <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background">
                     <span class="truncate">
-                      {state.financial.discountTemplates.find(d => d.id === state.financial.selectedDiscountTemplateId)?.name || l("اختر قالب الخصم...", "Select template...")}
+                      {state.financial.discountTemplates.find(d => d.id === state.financial.selectedDiscountTemplateId)?.name || m.ui_copy_select_template_2e406eb0()}
                     </span>
                   </SelectTrigger>
                   <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
@@ -169,7 +169,7 @@ let { state }: { state: StudentFormState } = $props();
               <div class="flex flex-col gap-1 text-start">
                 <Label for="customDiscount" class="text-xs font-semibold text-foreground">{m.common_form_discount_custom_amount()}</Label>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">
-                  {l("إدخال مبلغ الخصم المالي المباشر", "Enter direct discount amount")}
+                  {m.ui_copy_enter_direct_discount_amount_ada748b6()}
                 </span>
               </div>
               <div class="w-full md:w-120 shrink-0">
@@ -200,7 +200,7 @@ let { state }: { state: StudentFormState } = $props();
     <CardContent class="p-6">
       {#if state.optionalFeesList.length === 0}
         <p class="text-xs text-muted-foreground text-center py-4">
-          {l("لا توجد خدمات أو رسوم اختيارية إضافية حالياً.", "No auxiliary services or optional fees configured.")}
+          {m.ui_copy_no_auxiliary_services_or_optional_fees_con_fbfc0561()}
         </p>
       {:else}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -222,7 +222,7 @@ let { state }: { state: StudentFormState } = $props();
                     {fTpl.name_ar || fTpl.name}
                   </Label>
                   <span class="text-[10px] text-muted-foreground capitalize">
-                    {fTpl.category || l("خدمات مساندة", "Auxiliary Service")}
+                    {fTpl.category || m.ui_copy_auxiliary_service_9cec34df()}
                   </span>
                 </div>
               </div>

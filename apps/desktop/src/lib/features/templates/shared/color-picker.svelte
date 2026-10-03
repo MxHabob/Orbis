@@ -1,4 +1,5 @@
 <script lang="ts">
+import { untrack } from "svelte";
 import * as m from "$lib/paraglide/messages";
 /**
  * ColorPicker — Advanced color picker with spectrum, HEX/RGB inputs,
@@ -29,7 +30,7 @@ let {
 } = $props();
 
 // ── State ────────────────────────────────────────────────────
-let hexInput = $state(value);
+let hexInput = $state(untrack(() => value));
 let isOpen = $state(false);
 
 // Recent colors (persisted in memory)
@@ -131,6 +132,7 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
       type="button"
       class="color-trigger"
       style="width: {swatchSize}px; height: {swatchSize}px;"
+      aria-label={m.template_color_picker_open()}
     >
       <span
         class="color-preview"
@@ -186,6 +188,7 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
               class="swatch"
               class:active={value.toLowerCase() === color.toLowerCase()}
               style="background: {color};"
+              aria-label={m.template_color_select_color({ color })}
               onclick={() => selectPreset(color)}
             ></button>
           {/each}
@@ -203,6 +206,7 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
                 class="swatch"
                 class:active={value.toLowerCase() === color}
                 style="background: {color};"
+                aria-label={m.template_color_select_color({ color })}
                 onclick={() => selectPreset(color)}
               ></button>
             {/each}

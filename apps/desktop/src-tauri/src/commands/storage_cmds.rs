@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
 
-use crate::state::AppState;
-use super::document_cmds::{doc_dto, ok, DocumentDto};
+use super::document_cmds::{DocumentDto, doc_dto, ok};
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
+use crate::state::AppState;
 use orbis_app::services::UploadFileInput;
 
 #[derive(Deserialize)]
@@ -43,7 +43,9 @@ pub async fn storage_upload_file(
     let entity_id = request.entity_id.and_then(|e| Uuid::parse_str(&e).ok());
     let org_unit_id = request.org_unit_id.and_then(|e| Uuid::parse_str(&e).ok());
     let folder_id = request.folder_id.and_then(|f| Uuid::parse_str(&f).ok());
-    let academic_year_id = request.academic_year_id.and_then(|y| Uuid::parse_str(&y).ok());
+    let academic_year_id = request
+        .academic_year_id
+        .and_then(|y| Uuid::parse_str(&y).ok());
     let term_id = request.term_id.and_then(|t| Uuid::parse_str(&t).ok());
 
     let input = UploadFileInput {

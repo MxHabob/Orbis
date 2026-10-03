@@ -9,7 +9,8 @@
   - SettingsBottomBar with zero-latency dirty detection.
 -->
 <script lang="ts">
-import { onMount } from "svelte";
+import * as m from "$lib/paraglide/messages";
+import { onMount, untrack } from "svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -74,8 +75,9 @@ interface DocItem {
 // Application Form Fields Configuration Interface & Defaults
 interface FieldConfig {
   key: string;
-  nameAr: string;
-  nameEn: string;
+  nameAr?: string;
+  nameEn?: string;
+  label?: () => string;
   isActive: boolean;
   isRequired: boolean;
   preventDuplicate: boolean;
@@ -83,18 +85,18 @@ interface FieldConfig {
 }
 
 const defaultFormFields: FieldConfig[] = [
-  { key: "national_id", nameAr: "الرقم الوطني / رقم الهوية", nameEn: "National ID Number", isActive: true, isRequired: true, preventDuplicate: true, supportsDuplicate: true },
-  { key: "phone", nameAr: "رقم هاتف الطالب / التواصل", nameEn: "Student Phone Number", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: true },
-  { key: "email", nameAr: "البريد الإلكتروني", nameEn: "Email Address", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: true },
-  { key: "birth_date", nameAr: "تاريخ الميلاد", nameEn: "Date of Birth", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
-  { key: "sex", nameAr: "الجنس", nameEn: "Gender", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
-  { key: "nationality", nameAr: "الجنسية الرسمية", nameEn: "Nationality", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
-  { key: "address", nameAr: "عنوان السكن والحي", nameEn: "Residential Address", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
-  { key: "place_of_birth", nameAr: "مكان الميلاد", nameEn: "Place of Birth", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
-  { key: "blood_type", nameAr: "فصيلة الدم", nameEn: "Blood Type", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
-  { key: "emergency_contact", nameAr: "جهة الاتصال للطوارئ", nameEn: "Emergency Contact", isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
-  { key: "medical_notes", nameAr: "الملاحظات الطبية والحساسية", nameEn: "Medical Notes & Allergies", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
-  { key: "previous_school", nameAr: "المدرسة / المؤسسة السابقة", nameEn: "Previous Institution", isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
+  { key: "national_id", label: m.common_form_doc_national_id, isActive: true, isRequired: true, preventDuplicate: true, supportsDuplicate: true },
+  { key: "phone", label: m.common_form_student_phone, isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: true },
+  { key: "email", label: m.common_form_student_email, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: true },
+  { key: "birth_date", label: m.registration_field_birth_date, isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
+  { key: "sex", label: m.common_form_sex, isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
+  { key: "nationality", label: m.common_form_nationality, isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
+  { key: "address", label: m.common_form_address, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
+  { key: "place_of_birth", label: m.common_form_place_of_birth, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
+  { key: "blood_type", label: m.registration_field_blood_type, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
+  { key: "emergency_contact", label: m.common_form_guardian_role_emergency, isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
+  { key: "medical_notes", label: m.registration_field_medical_notes, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
+  { key: "previous_school", label: m.common_form_previous_school, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
 ];
 
 function parseOrgRegistration(rawOrg: any) {
@@ -140,7 +142,7 @@ function parseOrgRegistration(rawOrg: any) {
   };
 }
 
-const parsed = parseOrgRegistration(org);
+const parsed = untrack(() => parseOrgRegistration(org));
 
 // Editable Form State
 let institutionType = $state<string>(parsed.institutionType);
@@ -157,7 +159,7 @@ let allowDuplicateNationalId = $state<boolean>(parsed.allowDuplicateNationalId);
 let autoAssignFees = $state<boolean>(parsed.autoAssignFees);
 let maxClassCapacity = $state<number>(parsed.maxClassCapacity);
 let requiredDocuments = $state<DocItem[]>(JSON.parse(JSON.stringify(parsed.requiredDocuments)));
-let formFields = $state<FieldConfig[]>(JSON.parse(JSON.stringify(parsed.formFields)));
+let formFields = $state<FieldConfig[]>(parsed.formFields.map((field) => ({ ...field })));
 
 // Database Classes & Sheet State
 let dbClasses = $state<ClassDto[]>([]);
@@ -183,7 +185,7 @@ const initialState = {
   autoAssignFees: parsed.autoAssignFees,
   maxClassCapacity: parsed.maxClassCapacity,
   requiredDocuments: JSON.parse(JSON.stringify(parsed.requiredDocuments)),
-  formFields: JSON.parse(JSON.stringify(parsed.formFields)),
+  formFields: parsed.formFields.map((field) => ({ ...field })),
 };
 
 const isDirty = $derived.by(() => {
@@ -297,7 +299,7 @@ function resetToInitial() {
   autoAssignFees = initialState.autoAssignFees;
   maxClassCapacity = initialState.maxClassCapacity;
   requiredDocuments = JSON.parse(JSON.stringify(initialState.requiredDocuments));
-  formFields = JSON.parse(JSON.stringify(initialState.formFields));
+  formFields = initialState.formFields.map((field) => ({ ...field }));
 }
 
 // Generated ID Preview
@@ -342,9 +344,9 @@ async function removeDocument(doc: DocItem) {
 
 // ── OrbisGrid Source & Columns for Document Requirements Studio ──
 const documentActions: ActionItem[] = [
-  { id: "toggle-mandatory", label: l("تبديل الإلزامية", "Toggle Mandatory"), icon: "CheckCircle" },
-  { id: "toggle-blocks", label: l("تبديل الحجب", "Toggle Blocks"), icon: "Lock" },
-  { id: "delete", label: l("حذف", "Delete"), icon: "Trash2", variant: "destructive" },
+  { id: "toggle-mandatory", label: m.ui_copy_toggle_mandatory_5b28c7c2(), icon: "CheckCircle" },
+  { id: "toggle-blocks", label: m.ui_copy_toggle_blocks_9f3655f1(), icon: "Lock" },
+  { id: "delete", label: m.common_action_delete(), icon: "Trash2", variant: "destructive" },
 ];
 
 const docGridSource = $derived(
@@ -354,35 +356,35 @@ const docGridSource = $derived(
       ...doc,
       __idx: idx + 1,
       doc_name: l(doc.nameAr, doc.nameEn),
-      class_name: mappedClass ? (mappedClass.name || mappedClass.level) : l("كافة الصفوف", "All Classes"),
+      class_name: mappedClass ? (mappedClass.name || mappedClass.level) : m.ui_copy_all_classes_c890049c(),
       condition_label: doc.condition === "all_students"
-        ? l("كافة الطلاب", "All Students")
+        ? m.ui_copy_all_students_be94120b()
         : doc.condition === "national_only"
-        ? l("وطنيون فقط", "Nationals Only")
+        ? m.ui_copy_nationals_only_f7853fd7()
         : doc.condition === "foreign_only"
-        ? l("وافدون فقط", "Expats Only")
+        ? m.ui_copy_expats_only_714a26ad()
         : doc.condition === "transfer_students"
-        ? l("طلاب محولون", "Transfers")
+        ? m.ui_copy_transfers_452455ee()
         : doc.condition,
-      is_required_display: doc.isRequired ? l("إلزامي", "Mandatory") : l("اختياري", "Optional"),
-      blocks_display: doc.blocksEnrollment ? l("يحجب القيد", "Blocks") : l("لا يحجب", "No Block"),
+      is_required_display: doc.isRequired ? m.ui_copy_mandatory_5ceed842() : m.ui_onboarding_progress_optional(),
+      blocks_display: doc.blocksEnrollment ? m.ui_copy_blocks_1362af09() : m.ui_copy_no_block_8cdb8971(),
     };
   })
 );
 
 const docGridColumns = $derived<OrbisColumnDef[]>([
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center" },
-  { id: "doc_name", prop: "doc_name", header: l("اسم الوثيقة والمستند", "Document Title"), name: l("اسم الوثيقة والمستند", "Document Title"), width: 220, size: 220, readonly: true, cellClass: "font-semibold" },
-  { id: "code", prop: "code", header: l("الرمز", "Code"), name: l("الرمز", "Code"), width: 110, size: 110, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "class_name", prop: "class_name", header: l("الصف / المرحلة", "Class / Grade"), name: l("الصف / المرحلة", "Class / Grade"), width: 150, size: 150, readonly: true },
-  { id: "condition_label", prop: "condition_label", header: l("شرط القبول", "Condition"), name: l("شرط القبول", "Condition"), width: 130, size: 130, readonly: true },
-  { id: "is_required_display", prop: "is_required_display", header: l("الإلزامية", "Mandatory"), name: l("الإلزامية", "Mandatory"), width: 110, size: 110, type: "badge", align: "center", readonly: true },
-  { id: "blocks_display", prop: "blocks_display", header: l("أثر الحجب", "Blocks"), name: l("أثر الحجب", "Blocks"), width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  { id: "doc_name", prop: "doc_name", header: m.ui_copy_document_title_12e6b59a(), name: m.ui_copy_document_title_12e6b59a(), width: 220, size: 220, readonly: true, cellClass: "font-semibold" },
+  { id: "code", prop: "code", header: m.settings_units_column_code(), name: m.settings_units_column_code(), width: 110, size: 110, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "class_name", prop: "class_name", header: m.ui_copy_class_grade_fe0bb7cd(), name: m.ui_copy_class_grade_fe0bb7cd(), width: 150, size: 150, readonly: true },
+  { id: "condition_label", prop: "condition_label", header: m.ui_copy_condition_401a3f12(), name: m.ui_copy_condition_401a3f12(), width: 130, size: 130, readonly: true },
+  { id: "is_required_display", prop: "is_required_display", header: m.ui_copy_mandatory_d1edb458(), name: m.ui_copy_mandatory_d1edb458(), width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  { id: "blocks_display", prop: "blocks_display", header: m.ui_copy_blocks_d807c44d(), name: m.ui_copy_blocks_d807c44d(), width: 110, size: 110, type: "badge", align: "center", readonly: true },
   {
     id: "actions",
     prop: "actions",
-    header: l("إجراءات", "Actions"),
-    name: l("إجراءات", "Actions"),
+    header: m.ui_copy_actions_c48127a5(),
+    name: m.ui_copy_actions_c48127a5(),
     width: 140,
     size: 140,
     type: "action",
@@ -407,34 +409,34 @@ function handleDocGridAction(event: GridActionEvent) {
 
 // ── OrbisGrid Source & Columns for Form Fields Matrix ──
 const fieldActions: ActionItem[] = [
-  { id: "toggle-active", label: l("تفعيل / تعطيل", "Toggle Active") },
-  { id: "toggle-required", label: l("إلزامي / اختياري", "Toggle Required") },
-  { id: "toggle-duplicate", label: l("تبديل منع التكرار", "Toggle Unique") },
+  { id: "toggle-active", label: m.ui_copy_toggle_active_af75a006() },
+  { id: "toggle-required", label: m.ui_copy_toggle_required_a6afbcac() },
+  { id: "toggle-duplicate", label: m.ui_copy_toggle_unique_aa5c4014() },
 ];
 
 const fieldGridSource = $derived(
   formFields.map((field, idx) => ({
     ...field,
     __idx: idx + 1,
-    field_name: l(field.nameAr, field.nameEn),
-    active_display: field.isActive ? l("مفعل بالاستمارة", "Active") : l("معطل", "Disabled"),
-    required_display: field.isActive ? (field.isRequired ? l("إلزامي التعبئة", "Required") : l("اختياري", "Optional")) : "—",
-    duplicate_display: field.supportsDuplicate ? (field.preventDuplicate ? l("صارم (فريد)", "Strict Unique") : l("يسمح بالتكرار", "Allow Duplicate")) : "—",
+    field_name: field.label?.() ?? l(field.nameAr ?? "", field.nameEn ?? ""),
+    active_display: field.isActive ? m.ui_copy_active_60ced915() : m.academics_exams_center_disabled(),
+    required_display: field.isActive ? (field.isRequired ? m.ui_copy_required_1c464044() : m.ui_onboarding_progress_optional()) : "—",
+    duplicate_display: field.supportsDuplicate ? (field.preventDuplicate ? m.ui_copy_strict_unique_be0bf346() : m.ui_copy_allow_duplicate_9bdc69d7()) : "—",
   }))
 );
 
 const fieldGridColumns = $derived<OrbisColumnDef[]>([
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center" },
-  { id: "field_name", prop: "field_name", header: l("حقل الاستمارة", "Field Name"), name: l("حقل الاستمارة", "Field Name"), width: 220, size: 220, readonly: true, cellClass: "font-semibold" },
-  { id: "key", prop: "key", header: l("المعرف البرمجي", "Key"), name: l("المعرف البرمجي", "Key"), width: 160, size: 160, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "active_display", prop: "active_display", header: l("الحالة", "Status"), name: l("الحالة", "Status"), width: 130, size: 130, type: "badge", align: "center", readonly: true },
-  { id: "required_display", prop: "required_display", header: l("الإلزامية", "Required"), name: l("الإلزامية", "Required"), width: 130, size: 130, type: "badge", align: "center", readonly: true },
-  { id: "duplicate_display", prop: "duplicate_display", header: l("منع التكرار", "Unique"), name: l("منع التكرار", "Unique"), width: 140, size: 140, type: "badge", align: "center", readonly: true },
+  { id: "field_name", prop: "field_name", header: m.ui_copy_field_name_b04bb75b(), name: m.ui_copy_field_name_b04bb75b(), width: 220, size: 220, readonly: true, cellClass: "font-semibold" },
+  { id: "key", prop: "key", header: m.ui_copy_key_813ba219(), name: m.ui_copy_key_813ba219(), width: 160, size: 160, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "active_display", prop: "active_display", header: m.common_status(), name: m.common_status(), width: 130, size: 130, type: "badge", align: "center", readonly: true },
+  { id: "required_display", prop: "required_display", header: m.ui_onboarding_progress_required_2(), name: m.ui_onboarding_progress_required_2(), width: 130, size: 130, type: "badge", align: "center", readonly: true },
+  { id: "duplicate_display", prop: "duplicate_display", header: m.ui_copy_unique_c4f61bab(), name: m.ui_copy_unique_c4f61bab(), width: 140, size: 140, type: "badge", align: "center", readonly: true },
   {
     id: "actions",
     prop: "actions",
-    header: l("إجراءات الضبط", "Settings Actions"),
-    name: l("إجراءات الضبط", "Settings Actions"),
+    header: m.ui_copy_settings_actions_fc61aaf9(),
+    name: m.ui_copy_settings_actions_fc61aaf9(),
     width: 150,
     size: 150,
     type: "action",
@@ -514,10 +516,10 @@ function handleFormSave() {
         </div>
         <div class="flex flex-col">
           <CardTitle>
-            {l("نوع المؤسسة التعليمية والنمط الافتراضي", "Educational Institution Type")}
+            {m.ui_copy_educational_institution_type_044c6d34()}
           </CardTitle>
           <CardDescription>
-            {l("تخصيص قواعد القبول والترقيم والمستندات وفق طبيعة المؤسسة", "Customize admission and numbering schemas by institution profile")}
+            {m.ui_copy_customize_admission_and_numbering_schemas__6e581efd()}
           </CardDescription>
         </div>
       </div>
@@ -526,13 +528,13 @@ function handleFormSave() {
           <Lock class="w-3 h-3 text-muted-foreground" />
           <span>
             {#if institutionType === "school"}
-              {l("مدرسة تعليم عام (K-12)", "K-12 School")}
+              {m.ui_copy_k_12_school_cd02a44e()}
             {:else if institutionType === "university"}
-              {l("جامعة / كلية أكاديمية", "University / College")}
+              {m.ui_copy_university_college_5c444bdf()}
             {:else if institutionType === "institute"}
-              {l("معهد تدريبي / مهني", "Training Institute")}
+              {m.ui_copy_training_institute_b9a51493()}
             {:else if institutionType === "quran_center"}
-              {l("مركز تحفيظ قرآن كريم", "Quranic Center")}
+              {m.ui_copy_quranic_center_4c9e12cc()}
             {:else}
               {institutionType}
             {/if}
@@ -547,18 +549,18 @@ function handleFormSave() {
     <TabsList class="h-9 p-1 bg-muted/50 rounded-lg border border-border/40">
       <TabsTrigger value="policies" class="text-xs font-semibold gap-1.5 px-4 h-7">
         <UserBadgeCheck class="w-3.5 h-3.5" />
-        <span>{l("سياسات القبول والترقيم", "Admission & Numbering")}</span>
+        <span>{m.ui_copy_admission_numbering_eca11847()}</span>
       </TabsTrigger>
       <TabsTrigger value="documents" class="text-xs font-semibold gap-1.5 px-4 h-7">
         <DocumentCheck class="w-3.5 h-3.5" />
-        <span>{l("استوديو وثائق المراحل والصفوف", "Class Requirements Studio")}</span>
+        <span>{m.ui_copy_class_requirements_studio_f2d57d31()}</span>
         <Badge variant="secondary" class="ms-1 px-1.5 py-0 text-[10px] font-mono">
           {requiredDocuments.length}
         </Badge>
       </TabsTrigger>
       <TabsTrigger value="fields" class="text-xs font-semibold gap-1.5 px-4 h-7">
         <AdjustmentsHorizontal class="w-3.5 h-3.5" />
-        <span>{l("حقول استمارة التسجيل", "Form Fields Matrix")}</span>
+        <span>{m.ui_copy_form_fields_matrix_960721da()}</span>
       </TabsTrigger>
     </TabsList>
 
@@ -569,15 +571,15 @@ function handleFormSave() {
         <CardHeader>
           <div class="flex flex-col text-start">
             <CardTitle>
-              {l("نمط توليد الرقم الأكاديمي للطالب", "Student ID Numbering Format")}
+              {m.ui_copy_student_id_numbering_format_347fd4b4()}
             </CardTitle>
             <CardDescription>
-              {l("التركيبة التلقائية المعتمدة لتوليد الرقم الجامعي أو المدرسي للطلاب الجدد", "Automated sequence schema for new admissions")}
+              {m.ui_copy_automated_sequence_schema_for_new_admissio_62932f38()}
             </CardDescription>
           </div>
           <CardAction>
             <div class="flex items-center gap-2">
-              <span class="text-xs text-muted-foreground">{l("معاينة الرقم:", "Preview:")}</span>
+              <span class="text-xs text-muted-foreground">{m.ui_copy_preview_e0036935()}</span>
               <Badge variant="lime" class="font-mono text-xs px-2.5 py-0.5 font-bold">
                 {studentNumberPreview}
               </Badge>
@@ -589,7 +591,7 @@ function handleFormSave() {
           <!-- Prefix -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-xs font-semibold text-foreground">
-              {l("البادئة (Prefix)", "Prefix")}
+              {m.ui_copy_prefix_9af3f0d2()}
             </Label>
             <Input
               bind:value={studentNumberPrefix}
@@ -601,7 +603,7 @@ function handleFormSave() {
           <!-- Year Token Format -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-xs font-semibold text-foreground">
-              {l("تضمين العام الدراسي", "Include Year")}
+              {m.ui_copy_include_year_fa9e283c()}
             </Label>
             <Select
               type="single"
@@ -610,15 +612,15 @@ function handleFormSave() {
             >
               <SelectTrigger class="h-9 text-xs">
                 {studentNumberYearFormat === "YEAR"
-                  ? l("العام كاملاً (مثال: 2026)", "Full 4-digit Year (2026)")
+                  ? m.ui_copy_full_4_digit_year_2026_3a1eaa6a()
                   : studentNumberYearFormat === "YEAR2"
-                  ? l("آخر خانتين (مثال: 26)", "Short 2-digit Year (26)")
-                  : l("بدون العام", "No Year")}
+                  ? m.ui_copy_short_2_digit_year_26_5f63ba6d()
+                  : m.ui_copy_no_year_92c0ace0()}
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="YEAR" class="text-xs">{l("العام كاملاً (مثال: 2026)", "Full 4-digit Year (2026)")}</SelectItem>
-                <SelectItem value="YEAR2" class="text-xs">{l("آخر خانتين (مثال: 26)", "Short 2-digit Year (26)")}</SelectItem>
-                <SelectItem value="NONE" class="text-xs">{l("بدون العام", "No Year")}</SelectItem>
+                <SelectItem value="YEAR" class="text-xs">{m.ui_copy_full_4_digit_year_2026_3a1eaa6a()}</SelectItem>
+                <SelectItem value="YEAR2" class="text-xs">{m.ui_copy_short_2_digit_year_26_5f63ba6d()}</SelectItem>
+                <SelectItem value="NONE" class="text-xs">{m.ui_copy_no_year_92c0ace0()}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -626,7 +628,7 @@ function handleFormSave() {
           <!-- Digits Sequence -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-xs font-semibold text-foreground">
-              {l("خانة التسلسل الرقمي", "Sequence Digits")}
+              {m.ui_copy_sequence_digits_8d44beda()}
             </Label>
             <Select
               type="single"
@@ -634,13 +636,13 @@ function handleFormSave() {
               onValueChange={(v) => (studentNumberDigits = Number(v || 4))}
             >
               <SelectTrigger class="h-9 text-xs font-mono">
-                {studentNumberDigits} {l("خانات", "digits")} (مثال: {"1".padStart(studentNumberDigits, "0")})
+                {studentNumberDigits} {m.ui_copy_digits_2a437f20()} (مثال: {"1".padStart(studentNumberDigits, "0")})
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="3" class="text-xs font-mono">3 {l("خانات", "digits")} (001)</SelectItem>
-                <SelectItem value="4" class="text-xs font-mono">4 {l("خانات", "digits")} (0001)</SelectItem>
-                <SelectItem value="5" class="text-xs font-mono">5 {l("خانات", "digits")} (00001)</SelectItem>
-                <SelectItem value="6" class="text-xs font-mono">6 {l("خانات", "digits")} (000001)</SelectItem>
+                <SelectItem value="3" class="text-xs font-mono">3 {m.ui_copy_digits_2a437f20()} (001)</SelectItem>
+                <SelectItem value="4" class="text-xs font-mono">4 {m.ui_copy_digits_2a437f20()} (0001)</SelectItem>
+                <SelectItem value="5" class="text-xs font-mono">5 {m.ui_copy_digits_2a437f20()} (00001)</SelectItem>
+                <SelectItem value="6" class="text-xs font-mono">6 {m.ui_copy_digits_2a437f20()} (000001)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -652,10 +654,10 @@ function handleFormSave() {
         <CardHeader>
           <div class="flex flex-col text-start">
             <CardTitle>
-              {l("ضوابط وإجراءات القبول والتسجيل", "Admission & Enrollment Governance Rules")}
+              {m.ui_copy_admission_enrollment_governance_rules_71d20dd7()}
             </CardTitle>
             <CardDescription>
-              {l("التحكم في بوابات التسجيل، اعتمادات القيد، قوائم الانتظار، وسياسات الاستيعاب", "Manage registration portals, approval workflows, waitlists, and capacity limits")}
+              {m.ui_copy_manage_registration_portals_approval_workf_a333aae0()}
             </CardDescription>
           </div>
         </CardHeader>
@@ -665,10 +667,10 @@ function handleFormSave() {
           <div class="py-3 flex items-center justify-between gap-4 first:pt-0">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
-                {l("تفعيل بوابة واستمارة التسجيل", "Enable Registration Portal")}
+                {m.ui_copy_enable_registration_portal_dbaf8a8e()}
               </span>
               <span class="text-[11px] text-muted-foreground">
-                {l("السماح بقبول طلبات التسجيل والقيد للعام الدراسي النشط", "Allow incoming student admission requests for active terms")}
+                {m.ui_copy_allow_incoming_student_admission_requests__216e66ac()}
               </span>
             </div>
             <Switch bind:checked={registrationEnabled} />
@@ -678,10 +680,10 @@ function handleFormSave() {
           <div class="py-3 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
-                {l("اشتراط موافقة المسجل الأكاديمي / الإدارة", "Require Academic Registrar / Admin Approval")}
+                {m.ui_copy_require_academic_registrar_admin_approval_b147c1b8()}
               </span>
               <span class="text-[11px] text-muted-foreground">
-                {l("إخضاع طلبات التسجيل الجديدة لمرحلة المراجعة والاعتماد قبل التسكين في الشعب", "New applicants remain pending approval before enrollment")}
+                {m.ui_copy_new_applicants_remain_pending_approval_bef_beccd042()}
               </span>
             </div>
             <Switch bind:checked={requiresApproval} />
@@ -691,10 +693,10 @@ function handleFormSave() {
           <div class="py-3 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
-                {l("تفعيل قوائم الانتظار عند اكتمال الشعب", "Enable Waitlist on Capacity")}
+                {m.ui_copy_enable_waitlist_on_capacity_189ed812()}
               </span>
               <span class="text-[11px] text-muted-foreground">
-                {l("وضع الطلاب تلقائياً في قائمة الانتظار عند اكتمال الطاقة الاستيعابية للشعبة", "Place students on waitlist when classes reach capacity")}
+                {m.ui_copy_place_students_on_waitlist_when_classes_re_fb2f377c()}
               </span>
             </div>
             <Switch bind:checked={allowWaitlist} />
@@ -704,10 +706,10 @@ function handleFormSave() {
           <div class="py-3 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
-                {l("أولوية القبول للإخوة والأقارب", "Sibling Priority Enrollment")}
+                {m.ui_copy_sibling_priority_enrollment_b6d49ba5()}
               </span>
               <span class="text-[11px] text-muted-foreground">
-                {l("منح أولوية القبول والتسكين لإخوة الطلاب المسجلين مسبقاً بالمؤسسة", "Prioritize siblings of already enrolled students")}
+                {m.ui_copy_prioritize_siblings_of_already_enrolled_st_29bdbb54()}
               </span>
             </div>
             <Switch bind:checked={siblingPriorityEnabled} />
@@ -717,10 +719,10 @@ function handleFormSave() {
           <div class="py-3 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
-                {l("السماح بالتسجيل المتأخر بعد بدء الفصل", "Allow Late Enrollment")}
+                {m.ui_copy_allow_late_enrollment_06114ddb()}
               </span>
               <span class="text-[11px] text-muted-foreground">
-                {l("قبول طلبات القيد والتسجيل بعد بدء الفصل الدراسي أو انقضاء الموعد النهائي", "Accept enrollment applications after period start or deadline")}
+                {m.ui_copy_accept_enrollment_applications_after_perio_59f54c88()}
               </span>
             </div>
             <Switch bind:checked={allowLateEnrollment} />
@@ -730,10 +732,10 @@ function handleFormSave() {
           <div class="py-3 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
-                {l("السماح بالتسجيل بدون ولي أمر (تسجيل مستقل)", "Allow Independent Enrollment (No Guardian)")}
+                {m.ui_copy_allow_independent_enrollment_no_guardian_7ce5a41b()}
               </span>
               <span class="text-[11px] text-muted-foreground">
-                {l("مناسب لطلاب الجامعات والمعاهد والدراسات العليا", "Applicable for adult university and vocational students")}
+                {m.ui_copy_applicable_for_adult_university_and_vocati_310c0145()}
               </span>
             </div>
             <Switch bind:checked={allowNoGuardian} />
@@ -743,10 +745,10 @@ function handleFormSave() {
           <div class="py-3 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
-                {l("التحقق الصارم من عدم تكرار الرقم الوطني / الهوية", "Strict Unique National ID Enforcement")}
+                {m.ui_copy_strict_unique_national_id_enforcement_7efa5e55()}
               </span>
               <span class="text-[11px] text-muted-foreground">
-                {l("منع تسجيل أي طالب برقم هوية مسجل مسبقاً في النظام", "Rejects duplicate national ID entries across the institution")}
+                {m.ui_copy_rejects_duplicate_national_id_entries_acro_410471c5()}
               </span>
             </div>
             <Switch
@@ -759,10 +761,10 @@ function handleFormSave() {
           <div class="py-3 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
-                {l("إسناد الرسوم الدراسية تلقائياً فور اعتماد القيد", "Auto-Assign Tuition Fee Template on Enrollment")}
+                {m.ui_copy_auto_assign_tuition_fee_template_on_enroll_5ed6c3b1()}
               </span>
               <span class="text-[11px] text-muted-foreground">
-                {l("إنشاء قيود وفواتير الرسوم تلقائياً للطالب بناءً على الصف والشعبة المسكن بها", "Automatically maps default fee templates based on grade level")}
+                {m.ui_copy_automatically_maps_default_fee_templates_b_4e4adc5f()}
               </span>
             </div>
             <Switch bind:checked={autoAssignFees} />
@@ -772,10 +774,10 @@ function handleFormSave() {
           <div class="py-3 flex items-center justify-between gap-4 last:pb-0">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
-                {l("السعة القصوى الافتراضية للفصل / الشعبة", "Default Class Capacity Limit")}
+                {m.ui_copy_default_class_capacity_limit_700d9cac()}
               </span>
               <span class="text-[11px] text-muted-foreground">
-                {l("الحد الأقصى لعدد الطلاب المسموح بتسكينهم في الشعبة الدراسية الواحدة", "Maximum enrollment limit per classroom section")}
+                {m.ui_copy_maximum_enrollment_limit_per_classroom_sec_a7d094ee()}
               </span>
             </div>
             <Input
@@ -796,13 +798,13 @@ function handleFormSave() {
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-2">
           <Funnel class="w-4 h-4 text-muted-foreground" />
-          <span class="text-xs font-semibold text-muted-foreground">{l("تصفية حسب الصف / المرحلة:", "Filter Class / Grade:")}</span>
+          <span class="text-xs font-semibold text-muted-foreground">{m.ui_copy_filter_class_grade_a161d4ac()}</span>
           <div class="w-56">
             <ClassSelect
               bind:value={selectedClassFilter}
               showAllOption={true}
-              allOptionLabel={l("كافة الصفوف والمراحل", "All Classes & Grades")}
-              placeholder={l("كافة الصفوف والمراحل", "All Classes & Grades")}
+              allOptionLabel={m.ui_copy_all_classes_grades_b92c9849()}
+              placeholder={m.ui_copy_all_classes_grades_b92c9849()}
             />
           </div>
         </div>
@@ -814,7 +816,7 @@ function handleFormSave() {
           onclick={() => (isAddDocSheetOpen = true)}
         >
           <Plus class="w-3.5 h-3.5" />
-          <span>{l("إضافة متطلب وثيقة جديد", "Add Document Requirement")}</span>
+          <span>{m.ui_copy_add_document_requirement_d6a40d4d()}</span>
         </Button>
       </div>
 
@@ -827,7 +829,7 @@ function handleFormSave() {
           rowSize={44}
           rtl={true}
           onaction={handleDocGridAction}
-          emptyTitle={l("لا توجد متطلبات وثائق مسجلة", "No Document Requirements Configured")}
+          emptyTitle={m.ui_copy_no_document_requirements_configured_07292a9d()}
         />
       </div>
     </TabsContent>
@@ -842,7 +844,7 @@ function handleFormSave() {
           rowSize={44}
           rtl={true}
           onaction={handleFieldGridAction}
-          emptyTitle={l("لا توجد حقول معرفة", "No Form Fields")}
+          emptyTitle={m.ui_copy_no_form_fields_79d7bef7()}
         />
       </div>
     </TabsContent>
@@ -862,4 +864,3 @@ function handleFormSave() {
     onreset={resetToInitial}
   />
 </div>
-

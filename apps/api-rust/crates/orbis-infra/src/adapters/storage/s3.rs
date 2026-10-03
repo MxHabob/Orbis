@@ -94,10 +94,7 @@ impl S3StorageAdapter {
         );
 
         let canonical_request_hash = hex::encode(Sha256::digest(canonical_request.as_bytes()));
-        let credential_scope = format!(
-            "{}/{}/s3/aws4_request",
-            date_stamp, self.config.region
-        );
+        let credential_scope = format!("{}/{}/s3/aws4_request", date_stamp, self.config.region);
         let string_to_sign = format!(
             "AWS4-HMAC-SHA256\n{}\n{}\n{}",
             amz_date, credential_scope, canonical_request_hash
@@ -160,9 +157,15 @@ impl StorageAdapter for S3StorageAdapter {
     }
 
     async fn check_health(&self) -> Result<(), StorageError> {
-        let url = format!("{}/{}", self.config.endpoint.trim_end_matches('/'), self.config.bucket);
-        let resp = self.http_client.head(&url).send().await
-            .map_err(|e| StorageError::Connection(format!("S3 connection check failed: {e}")))?;
+        let url = format!(
+            "{}/{}",
+            self.config.endpoint.trim_end_matches('/'),
+            self.config.bucket
+        );
+        let resp =
+            self.http_client.head(&url).send().await.map_err(|e| {
+                StorageError::Connection(format!("S3 connection check failed: {e}"))
+            })?;
 
         if resp.status().is_success() || resp.status().as_u16() == 403 {
             Ok(())
@@ -200,7 +203,9 @@ impl StorageAdapter for S3StorageAdapter {
         let payload_hash = hex::encode(Sha256::digest(bytes));
         let signed_headers = self.sign_headers("PUT", &url, &payload_hash)?;
 
-        let mut req = self.http_client.put(&url)
+        let mut req = self
+            .http_client
+            .put(&url)
             .header("Content-Type", mime_type)
             .body(bytes.to_vec());
 
@@ -208,16 +213,24 @@ impl StorageAdapter for S3StorageAdapter {
             req = req.header(k, v);
         }
 
-        let resp = req.send().await
+        let resp = req
+            .send()
+            .await
             .map_err(|e| StorageError::Connection(format!("S3 PUT request failed: {e}")))?;
 
         if !resp.status().is_success() {
             let status = resp.status();
             let err_body = resp.text().await.unwrap_or_default();
-            return Err(StorageError::Io(format!("S3 PUT failed with status {status}: {err_body}")));
+            return Err(StorageError::Io(format!(
+                "S3 PUT failed with status {status}: {err_body}"
+            )));
         }
 
-        let etag = resp.headers().get("etag").and_then(|h| h.to_str().ok()).map(|s| s.trim_matches('"').to_string());
+        let etag = resp
+            .headers()
+            .get("etag")
+            .and_then(|h| h.to_str().ok())
+            .map(|s| s.trim_matches('"').to_string());
 
         Ok(StoredObjectMetadata {
             key: key.to_string(),
@@ -246,18 +259,27 @@ impl StorageAdapter for S3StorageAdapter {
             req = req.header(k, v);
         }
 
-        let resp = req.send().await
+        let resp = req
+            .send()
+            .await
             .map_err(|e| StorageError::Connection(format!("S3 GET request failed: {e}")))?;
 
         if resp.status().as_u16() == 404 {
-            return Err(StorageError::NotFound(format!("S3 object not found: {key}")));
+            return Err(StorageError::NotFound(format!(
+                "S3 object not found: {key}"
+            )));
         }
 
         if !resp.status().is_success() {
-            return Err(StorageError::Io(format!("S3 GET failed with status: {}", resp.status())));
+            return Err(StorageError::Io(format!(
+                "S3 GET failed with status: {}",
+                resp.status()
+            )));
         }
 
-        let bytes = resp.bytes().await
+        let bytes = resp
+            .bytes()
+            .await
             .map_err(|e| StorageError::Io(format!("Failed to read S3 response body: {e}")))?;
 
         Ok(bytes.to_vec())
@@ -273,28 +295,41 @@ impl StorageAdapter for S3StorageAdapter {
             req = req.header(k, v);
         }
 
-        let resp = req.send().await
+        let resp = req
+            .send()
+            .await
             .map_err(|e| StorageError::Connection(format!("S3 HEAD request failed: {e}")))?;
 
         if resp.status().as_u16() == 404 {
-            return Err(StorageError::NotFound(format!("S3 object not found: {key}")));
+            return Err(StorageError::NotFound(format!(
+                "S3 object not found: {key}"
+            )));
         }
 
         if !resp.status().is_success() {
-            return Err(StorageError::Io(format!("S3 HEAD failed: {}", resp.status())));
+            return Err(StorageError::Io(format!(
+                "S3 HEAD failed: {}",
+                resp.status()
+            )));
         }
 
-        let size = resp.headers().get("content-length")
+        let size = resp
+            .headers()
+            .get("content-length")
             .and_then(|h| h.to_str().ok())
             .and_then(|s| s.parse::<u64>().ok())
             .unwrap_or(0);
 
-        let mime = resp.headers().get("content-type")
+        let mime = resp
+            .headers()
+            .get("content-type")
             .and_then(|h| h.to_str().ok())
             .unwrap_or("application/octet-stream")
             .to_string();
 
-        let etag = resp.headers().get("etag")
+        let etag = resp
+            .headers()
+            .get("etag")
             .and_then(|h| h.to_str().ok())
             .map(|s| s.trim_matches('"').to_string());
 
@@ -327,40 +362,65 @@ impl StorageAdapter for S3StorageAdapter {
             req = req.header(k, v);
         }
 
-        let resp = req.send().await
+        let resp = req
+            .send()
+            .await
             .map_err(|e| StorageError::Connection(format!("S3 DELETE request failed: {e}")))?;
 
         if !resp.status().is_success() && resp.status().as_u16() != 404 {
-            return Err(StorageError::Io(format!("S3 DELETE failed: {}", resp.status())));
+            return Err(StorageError::Io(format!(
+                "S3 DELETE failed: {}",
+                resp.status()
+            )));
         }
 
         Ok(())
     }
 
-    async fn copy_object(&self, source_key: &str, target_key: &str) -> Result<StoredObjectMetadata, StorageError> {
+    async fn copy_object(
+        &self,
+        source_key: &str,
+        target_key: &str,
+    ) -> Result<StoredObjectMetadata, StorageError> {
         let url = self.object_url(target_key);
-        let copy_source = format!("{}/{}", self.config.bucket, source_key.trim_start_matches('/'));
+        let copy_source = format!(
+            "{}/{}",
+            self.config.bucket,
+            source_key.trim_start_matches('/')
+        );
         let payload_hash = hex::encode(Sha256::digest(b""));
 
         let mut signed_headers = self.sign_headers("PUT", &url, &payload_hash)?;
         signed_headers.insert("x-amz-copy-source".to_string(), copy_source.clone());
 
-        let mut req = self.http_client.put(&url).header("x-amz-copy-source", copy_source);
+        let mut req = self
+            .http_client
+            .put(&url)
+            .header("x-amz-copy-source", copy_source);
         for (k, v) in signed_headers {
             req = req.header(k, v);
         }
 
-        let resp = req.send().await
+        let resp = req
+            .send()
+            .await
             .map_err(|e| StorageError::Connection(format!("S3 COPY request failed: {e}")))?;
 
         if !resp.status().is_success() {
-            return Err(StorageError::Io(format!("S3 COPY failed: {}", resp.status())));
+            return Err(StorageError::Io(format!(
+                "S3 COPY failed: {}",
+                resp.status()
+            )));
         }
 
         self.head_object(target_key).await
     }
 
-    async fn move_object(&self, source_key: &str, target_key: &str) -> Result<StoredObjectMetadata, StorageError> {
+    async fn move_object(
+        &self,
+        source_key: &str,
+        target_key: &str,
+    ) -> Result<StoredObjectMetadata, StorageError> {
         let meta = self.copy_object(source_key, target_key).await?;
         self.delete_object(source_key).await?;
         Ok(meta)
@@ -417,7 +477,10 @@ impl StorageAdapter for S3StorageAdapter {
         let k_signing = hmac_sha256(&k_service, b"aws4_request");
         let signature = hex::encode(hmac_sha256(&k_signing, string_to_sign.as_bytes()));
 
-        let final_url = format!("{}?{}&X-Amz-Signature={}", base_url, query_params, signature);
+        let final_url = format!(
+            "{}?{}&X-Amz-Signature={}",
+            base_url, query_params, signature
+        );
         Ok(final_url)
     }
 }

@@ -67,7 +67,7 @@ pub struct FinanceSettings {
     pub late_fee_value: f64,
     pub allow_partial_payments: bool,
     /// Integration UUID for the primary payment gateway (e.g. Mada, Stripe, Moyasar)
-    pub primary_payment_gateway_id: Option<Uuid>, 
+    pub primary_payment_gateway_id: Option<Uuid>,
     /// Integration UUID for B2B/B2C invoicing (e.g. Orbis Finance, Xero)
     pub invoicing_integration_id: Option<Uuid>,
 }
@@ -96,7 +96,7 @@ pub struct NotificationSettings {
     pub sms_integration_id: Option<Uuid>,
     /// Default Integration UUID for WhatsApp delivery (e.g. WhatsApp Business API, Infobip)
     pub whatsapp_integration_id: Option<Uuid>,
-    
+
     pub notify_parents_on_absence: bool,
     pub notify_parents_on_grade_publish: bool,
     pub finance_reminder_days: Vec<i32>,

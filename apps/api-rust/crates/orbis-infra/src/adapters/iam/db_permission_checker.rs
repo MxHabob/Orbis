@@ -1,10 +1,12 @@
+use crate::models::{
+    group_permission, role_permission, user_group_membership, user_role_assignment,
+};
 use async_trait::async_trait;
-use orbis_app::ports::iam::PermissionCheckerPort;
-use orbis_domain::iam::permission::Permission;
-use orbis_domain::errors::DomainError;
 use orbis_app::context::RequestContext;
-use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter, ColumnTrait};
-use crate::models::{user_role_assignment, role_permission, user_group_membership, group_permission};
+use orbis_app::ports::iam::PermissionCheckerPort;
+use orbis_domain::errors::DomainError;
+use orbis_domain::iam::permission::Permission;
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 
 pub struct DbPermissionChecker {
     pub db: DatabaseConnection,
@@ -24,18 +26,31 @@ impl PermissionCheckerPort for DbPermissionChecker {
             return Ok(());
         }
 
-        let actor_id = ctx.actor.id().ok_or_else(|| DomainError::Validation("Missing actor ID".into()))?;
+        let actor_id = ctx
+            .actor
+            .id()
+            .ok_or_else(|| DomainError::Validation("Missing actor ID".into()))?;
         let perm_str = permission.as_str();
 
-        let has_perm = self.has_permission(actor_id, ctx.tenant_id, perm_str).await?;
+        let has_perm = self
+            .has_permission(actor_id, ctx.tenant_id, perm_str)
+            .await?;
         if !has_perm {
-            return Err(DomainError::Unauthorized(format!("Missing permission: {}", perm_str)));
+            return Err(DomainError::Unauthorized(format!(
+                "Missing permission: {}",
+                perm_str
+            )));
         }
 
         Ok(())
     }
 
-    async fn has_permission(&self, user_id: uuid::Uuid, _org_id: uuid::Uuid, permission: &str) -> Result<bool, DomainError> {
+    async fn has_permission(
+        &self,
+        user_id: uuid::Uuid,
+        _org_id: uuid::Uuid,
+        permission: &str,
+    ) -> Result<bool, DomainError> {
         // 1. Check direct role permissions
         let user_roles = user_role_assignment::Entity::find()
             .filter(user_role_assignment::Column::UserId.eq(user_id))
@@ -67,7 +82,10 @@ impl PermissionCheckerPort for DbPermissionChecker {
                     return true;
                 }
                 let res_ok = r_res == target_resource || r_res == "*";
-                let act_ok = r_act == target_action || r_act == "*" || r_act == "admin" || (r_act == "write" && target_action == "read");
+                let act_ok = r_act == target_action
+                    || r_act == "*"
+                    || r_act == "admin"
+                    || (r_act == "write" && target_action == "read");
                 res_ok && act_ok
             });
 
@@ -101,7 +119,10 @@ impl PermissionCheckerPort for DbPermissionChecker {
                 let g_act = gp_parts.next().unwrap_or("");
 
                 let res_ok = g_res == target_resource || g_res == "*";
-                let act_ok = g_act == target_action || g_act == "*" || g_act == "admin" || (g_act == "write" && target_action == "read");
+                let act_ok = g_act == target_action
+                    || g_act == "*"
+                    || g_act == "admin"
+                    || (g_act == "write" && target_action == "read");
                 res_ok && act_ok
             });
 
@@ -113,7 +134,11 @@ impl PermissionCheckerPort for DbPermissionChecker {
         Ok(false)
     }
 
-    async fn get_user_permissions(&self, user_id: uuid::Uuid, _org_id: uuid::Uuid) -> Result<Vec<String>, DomainError> {
+    async fn get_user_permissions(
+        &self,
+        user_id: uuid::Uuid,
+        _org_id: uuid::Uuid,
+    ) -> Result<Vec<String>, DomainError> {
         let mut perms: Vec<String> = Vec::new();
 
         // 1. Direct role permissions
@@ -139,7 +164,11 @@ impl PermissionCheckerPort for DbPermissionChecker {
                 } else if rp.action.is_empty() || rp.action == "*" {
                     perms.push(rp.resource.to_lowercase());
                 } else {
-                    perms.push(format!("{}:{}", rp.resource.to_lowercase(), rp.action.to_lowercase()));
+                    perms.push(format!(
+                        "{}:{}",
+                        rp.resource.to_lowercase(),
+                        rp.action.to_lowercase()
+                    ));
                 }
             }
         }
@@ -169,7 +198,11 @@ impl PermissionCheckerPort for DbPermissionChecker {
         Ok(perms)
     }
 
-    async fn get_user_roles(&self, user_id: uuid::Uuid, _org_id: uuid::Uuid) -> Result<Vec<String>, DomainError> {
+    async fn get_user_roles(
+        &self,
+        user_id: uuid::Uuid,
+        _org_id: uuid::Uuid,
+    ) -> Result<Vec<String>, DomainError> {
         let user_roles = user_role_assignment::Entity::find()
             .filter(user_role_assignment::Column::UserId.eq(user_id))
             .all(&self.db)
@@ -182,4 +215,3 @@ impl PermissionCheckerPort for DbPermissionChecker {
         Ok(roles)
     }
 }
-

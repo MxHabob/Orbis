@@ -8,10 +8,10 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use api::{
-    iam_routes, org_routes, calendar_routes, academic_routes,
-    student_routes, employee_routes, group_routes, override_routes, progression_routes, scheduling_routes, assessment_routes, exam_routes,
-    finance_routes, document_routes, storage_routes, folder_routes, integration_routes, report_routes, ai_routes,
-    autopilot_routes, bootstrap_routes, onboarding_routes,
+    academic_routes, ai_routes, assessment_routes, autopilot_routes, bootstrap_routes,
+    calendar_routes, document_routes, employee_routes, exam_routes, finance_routes, folder_routes,
+    group_routes, iam_routes, integration_routes, onboarding_routes, org_routes, override_routes,
+    progression_routes, report_routes, scheduling_routes, storage_routes, student_routes,
 };
 
 // ── OpenAPI Spec ────────────────────────────────────────────────

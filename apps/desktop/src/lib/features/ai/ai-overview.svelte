@@ -111,7 +111,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
             <div class="flex items-center gap-2">
               <Sparkles size={14} class="text-primary" />
               <CardTitle>
-                {m.ai_center_overview_agents_title ? m.ai_center_overview_agents_title() : "وكلاء الذكاء الاصطناعي النشطين"}
+                {m.ai_center_overview_agents_title()}
               </CardTitle>
             </div>
             <CardAction>
@@ -165,7 +165,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
             <div class="flex items-center gap-2">
               <Bolt size={14} class="text-primary" />
               <CardTitle>
-                {m.ai_center_overview_health ? m.ai_center_overview_health() : "حالة محرك الذكاء الاصطناعي"}
+                {m.ai_center_overview_health()}
               </CardTitle>
             </div>
             <CardAction>
@@ -179,7 +179,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
             <div class="flex items-center justify-between p-2.5 rounded-md border border-border bg-muted/20">
               <div class="flex items-center gap-2">
                 <ChartBar size={14} class="text-muted-foreground" />
-                <span class="text-xs text-foreground font-medium">{m.ai_center_overview_sessions ? m.ai_center_overview_sessions() : "الجلسات النشطة"}</span>
+                <span class="text-xs text-foreground font-medium">{m.ai_center_overview_sessions()}</span>
               </div>
               <span class="text-sm font-mono font-bold text-foreground">{sessionCount}</span>
             </div>
@@ -187,7 +187,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
             <div class="flex items-center justify-between p-2.5 rounded-md border border-border bg-muted/20">
               <div class="flex items-center gap-2">
                 <Bolt size={14} class="text-muted-foreground" />
-                <span class="text-xs text-foreground font-medium">{m.ai_center_overview_autopilot ? m.ai_center_overview_autopilot() : "وضع الطيار الآلي"}</span>
+                <span class="text-xs text-foreground font-medium">{m.ai_center_overview_autopilot()}</span>
               </div>
               <span class="text-xs font-bold text-foreground bg-muted px-2 py-0.5 rounded border border-border">{autopilotMode}</span>
             </div>
@@ -195,7 +195,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
             <div class="flex items-center justify-between p-2.5 rounded-md border border-border bg-muted/20">
               <div class="flex items-center gap-2">
                 <Cube size={14} class="text-muted-foreground" />
-                <span class="text-xs text-foreground font-medium">{m.ai_center_overview_integrations ? m.ai_center_overview_integrations() : "التكاملات المتصلة"}</span>
+                <span class="text-xs text-foreground font-medium">{m.ai_center_overview_integrations()}</span>
               </div>
               <span class="text-sm font-mono font-bold text-foreground">{connectedAppsCount}</span>
             </div>
@@ -222,7 +222,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
             <div class="flex items-center gap-2">
               <ClockRotateRight size={14} class="text-primary" />
               <CardTitle>
-                {m.ai_center_overview_recent_activity ? m.ai_center_overview_recent_activity() : "أحدث الأنشطة والأوامر المنفذة"}
+                {m.ai_center_overview_recent_activity()}
               </CardTitle>
             </div>
             <CardAction>
@@ -265,7 +265,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
             <div class="flex items-center gap-2">
               <Cube size={14} class="text-primary" />
               <CardTitle>
-                {m.ai_center_overview_connected_providers ? m.ai_center_overview_connected_providers() : "المزودات المربوطة"}
+                {m.ai_center_overview_connected_providers()}
               </CardTitle>
             </div>
             <CardAction>
