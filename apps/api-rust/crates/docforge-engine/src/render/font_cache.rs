@@ -104,17 +104,17 @@ impl FontCache {
         })?;
 
         self.load_font_bytes(family, weight, style, data, path.to_path_buf());
-        tracing::info!("Loaded font: {} (weight: {}, path: {})", family, weight, path.display());
+        tracing::info!(
+            "Loaded font: {} (weight: {}, path: {})",
+            family,
+            weight,
+            path.display()
+        );
         Ok(())
     }
 
     /// Get font bytes for a given family/weight/style
-    pub fn get_font(
-        &self,
-        family: &str,
-        weight: u16,
-        style: FontStyleKind,
-    ) -> Option<&CachedFont> {
+    pub fn get_font(&self, family: &str, weight: u16, style: FontStyleKind) -> Option<&CachedFont> {
         // Exact match first
         let key = FontKey {
             family: family.to_string(),
@@ -171,7 +171,12 @@ impl FontCache {
     }
 
     /// Get the raw font bytes for embedding in PDF
-    pub fn get_raw_bytes(&self, family: &str, weight: u16, style: FontStyleKind) -> Option<Arc<Vec<u8>>> {
+    pub fn get_raw_bytes(
+        &self,
+        family: &str,
+        weight: u16,
+        style: FontStyleKind,
+    ) -> Option<Arc<Vec<u8>>> {
         self.get_font(family, weight, style)
             .map(|f| Arc::clone(&f.data))
     }

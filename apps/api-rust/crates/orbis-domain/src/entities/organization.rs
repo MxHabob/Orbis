@@ -1,7 +1,7 @@
+use crate::errors::DomainError;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::errors::DomainError;
 
 /// Institution type — determines blueprints for grading, periods, COA, and defaults.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -75,10 +75,14 @@ impl Organization {
         locale: String,
     ) -> Result<Self, DomainError> {
         if name.trim().is_empty() {
-            return Err(DomainError::Validation("Organization name cannot be empty".into()));
+            return Err(DomainError::Validation(
+                "Organization name cannot be empty".into(),
+            ));
         }
         if slug.trim().is_empty() {
-            return Err(DomainError::Validation("Organization slug cannot be empty".into()));
+            return Err(DomainError::Validation(
+                "Organization slug cannot be empty".into(),
+            ));
         }
 
         let now = Utc::now();

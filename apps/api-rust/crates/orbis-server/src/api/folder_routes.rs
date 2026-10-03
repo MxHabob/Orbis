@@ -1,16 +1,16 @@
 //! Folder routes — Folders hierarchy, Student folders, and AI-curriculum knowledge base folders.
 
 use axum::{
+    Json, Router,
     extract::{Path, Query, State},
     routing::{get, post},
-    Json, Router,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
-use super::document_routes::{doc_to_dto, DocumentDto};
+use super::document_routes::{DocumentDto, doc_to_dto};
 use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
@@ -147,8 +147,13 @@ async fn list_folders(
     State(state): State<AppState>,
     Query(query): Query<ListFoldersQuery>,
 ) -> Result<Json<ApiResponse<Vec<FolderDto>>>, ApiError> {
-    let folders = state.folder_service.list_folders(&ctx, query.parent_id).await?;
-    Ok(ApiResponse::ok(folders.into_iter().map(folder_to_dto).collect()))
+    let folders = state
+        .folder_service
+        .list_folders(&ctx, query.parent_id)
+        .await?;
+    Ok(ApiResponse::ok(
+        folders.into_iter().map(folder_to_dto).collect(),
+    ))
 }
 
 #[utoipa::path(
@@ -226,7 +231,9 @@ async fn list_curriculum_folders(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<FolderDto>>>, ApiError> {
     let folders = state.folder_service.list_curriculum_folders(&ctx).await?;
-    Ok(ApiResponse::ok(folders.into_iter().map(folder_to_dto).collect()))
+    Ok(ApiResponse::ok(
+        folders.into_iter().map(folder_to_dto).collect(),
+    ))
 }
 
 #[utoipa::path(
@@ -244,13 +251,7 @@ async fn get_or_create_curriculum_folder(
 ) -> Result<Json<ApiResponse<FolderDto>>, ApiError> {
     let folder = state
         .folder_service
-        .get_or_create_curriculum_folder(
-            &ctx,
-            &p.name,
-            p.academic_year_id,
-            p.term_id,
-            p.metadata,
-        )
+        .get_or_create_curriculum_folder(&ctx, &p.name, p.academic_year_id, p.term_id, p.metadata)
         .await?;
     Ok(ApiResponse::ok(folder_to_dto(folder)))
 }
@@ -301,8 +302,17 @@ async fn delete_folder(
 pub fn folder_routes() -> Router<AppState> {
     Router::new()
         .route("/folders", post(create_folder).get(list_folders))
-        .route("/folders/curriculum", get(list_curriculum_folders).post(get_or_create_curriculum_folder))
-        .route("/folders/student/{student_id}", get(get_or_create_student_folder))
-        .route("/folders/{id}", get(get_folder).patch(update_folder).delete(delete_folder))
+        .route(
+            "/folders/curriculum",
+            get(list_curriculum_folders).post(get_or_create_curriculum_folder),
+        )
+        .route(
+            "/folders/student/{student_id}",
+            get(get_or_create_student_folder),
+        )
+        .route(
+            "/folders/{id}",
+            get(get_folder).patch(update_folder).delete(delete_folder),
+        )
         .route("/folders/{id}/contents", get(get_folder_contents))
 }

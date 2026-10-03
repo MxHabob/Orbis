@@ -1,7 +1,7 @@
 use async_trait::async_trait;
+use orbis_app::context::RequestContext;
 use orbis_app::ports::gateways::SurveillancePort;
 use orbis_domain::errors::DomainError;
-use orbis_app::context::RequestContext;
 use reqwest::Client;
 
 pub struct HikvisionAdapter {
@@ -12,16 +12,26 @@ pub struct HikvisionAdapter {
 
 impl HikvisionAdapter {
     pub fn new(api_url: String, api_key: String) -> Self {
-        Self { api_url, api_key, client: Client::new() }
+        Self {
+            api_url,
+            api_key,
+            client: Client::new(),
+        }
     }
 }
 
 #[async_trait]
 impl SurveillancePort for HikvisionAdapter {
-    async fn detect_face(&self, _ctx: &RequestContext, image_data: &[u8]) -> Result<Option<String>, DomainError> {
+    async fn detect_face(
+        &self,
+        _ctx: &RequestContext,
+        image_data: &[u8],
+    ) -> Result<Option<String>, DomainError> {
         let endpoint = format!("{}/ISAPI/Intelligent/face/detect", self.api_url);
-        
-        let res = self.client.post(&endpoint)
+
+        let res = self
+            .client
+            .post(&endpoint)
             .bearer_auth(&self.api_key)
             .header("Content-Type", "image/jpeg")
             .body(image_data.to_vec())
@@ -31,17 +41,28 @@ impl SurveillancePort for HikvisionAdapter {
 
         if !res.status().is_success() {
             let error_text = res.text().await.unwrap_or_default();
-            return Err(DomainError::Validation(format!("Hikvision API Error: {}", error_text)));
+            return Err(DomainError::Validation(format!(
+                "Hikvision API Error: {}",
+                error_text
+            )));
         }
 
-        let body: serde_json::Value = res.json().await.map_err(|e| DomainError::Validation(format!("Invalid JSON from Hikvision: {}", e)))?;
-        
+        let body: serde_json::Value = res
+            .json()
+            .await
+            .map_err(|e| DomainError::Validation(format!("Invalid JSON from Hikvision: {}", e)))?;
+
         if let Some(matches) = body.get("matches").and_then(|m| m.as_array()) {
             if !matches.is_empty() {
-                return Ok(Some(matches[0]["subject_id"].as_str().unwrap_or_default().to_string()));
+                return Ok(Some(
+                    matches[0]["subject_id"]
+                        .as_str()
+                        .unwrap_or_default()
+                        .to_string(),
+                ));
             }
         }
-        
+
         Ok(None)
     }
 }

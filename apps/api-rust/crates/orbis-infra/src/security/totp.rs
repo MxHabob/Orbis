@@ -98,7 +98,12 @@ fn sha1(data: &[u8]) -> [u8; 20] {
                 _ => (b ^ c ^ d, 0xCA62C1D6),
             };
 
-            let temp = a.rotate_left(5).wrapping_add(f).wrapping_add(e).wrapping_add(k).wrapping_add(w[i]);
+            let temp = a
+                .rotate_left(5)
+                .wrapping_add(f)
+                .wrapping_add(e)
+                .wrapping_add(k)
+                .wrapping_add(w[i]);
             e = d;
             d = c;
             c = b.rotate_left(30);
@@ -154,9 +159,9 @@ fn generate_totp_code(secret_bytes: &[u8], time_step: u64) -> String {
 
     let offset = (hash[19] & 0x0f) as usize;
     let binary_code = (((hash[offset] & 0x7f) as u32) << 24)
-        | (((hash[offset + 1] as u32)) << 16)
-        | (((hash[offset + 2] as u32)) << 8)
-        | ((hash[offset + 3] as u32));
+        | ((hash[offset + 1] as u32) << 16)
+        | ((hash[offset + 2] as u32) << 8)
+        | (hash[offset + 3] as u32);
 
     let otp = binary_code % 1_000_000;
     format!("{:06}", otp)

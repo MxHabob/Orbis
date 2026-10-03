@@ -118,7 +118,12 @@ impl LlmAdapter {
             .pool_idle_timeout(Duration::from_secs(90))
             .pool_max_idle_per_host(10)
             .build()
-            .map_err(|e| DomainError::Internal(format!("Failed to initialize HTTP client for LLM adapter: {}", e)))?;
+            .map_err(|e| {
+                DomainError::Internal(format!(
+                    "Failed to initialize HTTP client for LLM adapter: {}",
+                    e
+                ))
+            })?;
 
         Ok(Self { config, client })
     }
@@ -190,10 +195,9 @@ impl LlmAdapter {
             req = req.header(k, v);
         }
 
-        let res = req
-            .send()
-            .await
-            .map_err(|e| DomainError::Validation(format!("LLM Network Error (OpenAI-compatible): {}", e)))?;
+        let res = req.send().await.map_err(|e| {
+            DomainError::Validation(format!("LLM Network Error (OpenAI-compatible): {}", e))
+        })?;
 
         if !res.status().is_success() {
             let status = res.status();
@@ -204,10 +208,9 @@ impl LlmAdapter {
             )));
         }
 
-        let body: serde_json::Value = res
-            .json()
-            .await
-            .map_err(|e| DomainError::Validation(format!("Invalid JSON response from LLM provider: {}", e)))?;
+        let body: serde_json::Value = res.json().await.map_err(|e| {
+            DomainError::Validation(format!("Invalid JSON response from LLM provider: {}", e))
+        })?;
 
         let generated_text = body["choices"][0]["message"]["content"]
             .as_str()
@@ -216,7 +219,9 @@ impl LlmAdapter {
             .to_string();
 
         if generated_text.is_empty() {
-            return Err(DomainError::Validation("LLM returned empty completion content.".into()));
+            return Err(DomainError::Validation(
+                "LLM returned empty completion content.".into(),
+            ));
         }
 
         Ok(generated_text)
@@ -315,10 +320,9 @@ impl LlmAdapter {
             req = req.header(k, v);
         }
 
-        let res = req
-            .send()
-            .await
-            .map_err(|e| DomainError::Validation(format!("LLM Network Error (OpenAI-compatible): {}", e)))?;
+        let res = req.send().await.map_err(|e| {
+            DomainError::Validation(format!("LLM Network Error (OpenAI-compatible): {}", e))
+        })?;
 
         if !res.status().is_success() {
             let status = res.status();
@@ -329,21 +333,27 @@ impl LlmAdapter {
             )));
         }
 
-        let body: serde_json::Value = res
-            .json()
-            .await
-            .map_err(|e| DomainError::Validation(format!("Invalid JSON response from LLM: {}", e)))?;
+        let body: serde_json::Value = res.json().await.map_err(|e| {
+            DomainError::Validation(format!("Invalid JSON response from LLM: {}", e))
+        })?;
 
         let choice = &body["choices"][0]["message"];
-        let content = choice["content"].as_str().map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+        let content = choice["content"]
+            .as_str()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
 
         let mut parsed_tool_calls = Vec::new();
         if let Some(tool_calls_arr) = choice["tool_calls"].as_array() {
             for tc in tool_calls_arr {
                 let id = tc["id"].as_str().unwrap_or_default().to_string();
-                let tool_name = tc["function"]["name"].as_str().unwrap_or_default().to_string();
+                let tool_name = tc["function"]["name"]
+                    .as_str()
+                    .unwrap_or_default()
+                    .to_string();
                 let args_str = tc["function"]["arguments"].as_str().unwrap_or("{}");
-                let arguments: serde_json::Value = serde_json::from_str(args_str).unwrap_or(json!({}));
+                let arguments: serde_json::Value =
+                    serde_json::from_str(args_str).unwrap_or(json!({}));
 
                 parsed_tool_calls.push(AiToolCall {
                     id,
@@ -436,7 +446,9 @@ impl LlmAdapter {
             .to_string();
 
         if generated_text.is_empty() {
-            return Err(DomainError::Validation("Gemini returned empty candidate content.".into()));
+            return Err(DomainError::Validation(
+                "Gemini returned empty candidate content.".into(),
+            ));
         }
 
         Ok(generated_text)
@@ -675,7 +687,9 @@ impl LlmAdapter {
         }
 
         if output_text.is_empty() {
-            return Err(DomainError::Validation("Anthropic returned empty content.".into()));
+            return Err(DomainError::Validation(
+                "Anthropic returned empty content.".into(),
+            ));
         }
 
         Ok(output_text)
@@ -869,8 +883,13 @@ impl LlmGatewayPort for LlmAdapter {
                     .await
             }
             LlmProviderProtocol::AnthropicClaude => {
-                self.anthropic_generate_text(selected_model, system_prompt, user_prompt, temperature)
-                    .await
+                self.anthropic_generate_text(
+                    selected_model,
+                    system_prompt,
+                    user_prompt,
+                    temperature,
+                )
+                .await
             }
         }
     }
@@ -888,16 +907,34 @@ impl LlmGatewayPort for LlmAdapter {
 
         match self.config.protocol {
             LlmProviderProtocol::OpenAiCompatible => {
-                self.openai_chat_with_tools(selected_model, system_prompt, messages, tools, temperature)
-                    .await
+                self.openai_chat_with_tools(
+                    selected_model,
+                    system_prompt,
+                    messages,
+                    tools,
+                    temperature,
+                )
+                .await
             }
             LlmProviderProtocol::Gemini => {
-                self.gemini_chat_with_tools(selected_model, system_prompt, messages, tools, temperature)
-                    .await
+                self.gemini_chat_with_tools(
+                    selected_model,
+                    system_prompt,
+                    messages,
+                    tools,
+                    temperature,
+                )
+                .await
             }
             LlmProviderProtocol::AnthropicClaude => {
-                self.anthropic_chat_with_tools(selected_model, system_prompt, messages, tools, temperature)
-                    .await
+                self.anthropic_chat_with_tools(
+                    selected_model,
+                    system_prompt,
+                    messages,
+                    tools,
+                    temperature,
+                )
+                .await
             }
         }
     }
@@ -910,7 +947,10 @@ mod tests {
     #[test]
     fn test_model_resolution_strict() {
         // 1. Config with no default model
-        let config = LlmAdapterConfig::new(LlmProviderProtocol::OpenAiCompatible, "https://api.openai.com");
+        let config = LlmAdapterConfig::new(
+            LlmProviderProtocol::OpenAiCompatible,
+            "https://api.openai.com",
+        );
         let adapter = LlmAdapter::new(config).unwrap();
 
         // Error if requested model is empty
@@ -921,14 +961,23 @@ mod tests {
         assert_eq!(adapter.resolve_model("gpt-4o").unwrap(), "gpt-4o");
 
         // 2. Config with explicit default model
-        let config_with_def = LlmAdapterConfig::new(LlmProviderProtocol::Gemini, "https://generativelanguage.googleapis.com")
-            .with_default_model(Some("gemini-2.5-pro".into()));
+        let config_with_def = LlmAdapterConfig::new(
+            LlmProviderProtocol::Gemini,
+            "https://generativelanguage.googleapis.com",
+        )
+        .with_default_model(Some("gemini-2.5-pro".into()));
         let adapter_with_def = LlmAdapter::new(config_with_def).unwrap();
 
         // Returns configured default when empty
-        assert_eq!(adapter_with_def.resolve_model("").unwrap(), "gemini-2.5-pro");
+        assert_eq!(
+            adapter_with_def.resolve_model("").unwrap(),
+            "gemini-2.5-pro"
+        );
         // Overrides configured default when caller explicitly passes a model
-        assert_eq!(adapter_with_def.resolve_model("gemini-2.5-flash").unwrap(), "gemini-2.5-flash");
+        assert_eq!(
+            adapter_with_def.resolve_model("gemini-2.5-flash").unwrap(),
+            "gemini-2.5-flash"
+        );
     }
 
     #[test]
@@ -938,7 +987,10 @@ mod tests {
             "https://api.deepseek.com",
         ))
         .unwrap();
-        assert_eq!(open_ai.build_openai_chat_url(), "https://api.deepseek.com/v1/chat/completions");
+        assert_eq!(
+            open_ai.build_openai_chat_url(),
+            "https://api.deepseek.com/v1/chat/completions"
+        );
 
         let gemini = LlmAdapter::new(LlmAdapterConfig::new(
             LlmProviderProtocol::Gemini,
@@ -955,6 +1007,9 @@ mod tests {
             "https://api.anthropic.com",
         ))
         .unwrap();
-        assert_eq!(anthropic.build_anthropic_url(), "https://api.anthropic.com/v1/messages");
+        assert_eq!(
+            anthropic.build_anthropic_url(),
+            "https://api.anthropic.com/v1/messages"
+        );
     }
 }

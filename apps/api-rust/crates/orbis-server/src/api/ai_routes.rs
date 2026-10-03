@@ -1,9 +1,9 @@
 //! AI Platform API Routes — Stateless Multi-turn Chat & Tool Discovery.
 
 use axum::{
+    Json, Router,
     extract::State,
     routing::{get, post},
-    Json, Router,
 };
 
 use super::extractors::AuthContext;

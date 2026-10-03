@@ -1,11 +1,25 @@
-use std::sync::Arc;
-use sea_orm::DatabaseConnection;
-use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, WorkflowRepository, CurrencyRepository, PolicyRepository, SettingsRepository, DashboardRepository};
-use orbis_app::ports::reporting::{ReportDefinitionRepository, ReportTemplateRepository, ReportJobRepository, ReportAuditRepository, DataProviderRegistry, RendererRegistry};
-use orbis_app::services::OrgContextResolver;
 use orbis_app::ports::event_bus::EventBus;
-use orbis_app::ports::security::{TokenService, PasswordHasher};
 use orbis_app::ports::iam::PermissionCheckerPort;
+use orbis_app::ports::reporting::{
+    DataProviderRegistry, RendererRegistry, ReportAuditRepository, ReportDefinitionRepository,
+    ReportJobRepository, ReportTemplateRepository,
+};
+use orbis_app::ports::repositories::{
+    AcademicPeriodRepository, AcademicYearRepository, AccountRepository,
+    AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository, ClassRepository,
+    ClassSubjectRepository, CurrencyRepository, DashboardRepository, DocumentRepository,
+    EnrollmentRepository, ExamProctorRepository, ExamScheduleRepository, ExamSessionRepository,
+    FeeTemplateRepository, GradeRepository, IntegrationRepository, JournalEntryRepository,
+    OrgUnitRepository, OrganizationRepository, PaymentRepository, PeriodTemplateRepository,
+    PersonRepository, PolicyRepository, RoomRepository, ScheduledLessonRepository,
+    SeatingNumberRepository, SecretNumberRepository, SessionRepository, SettingsRepository,
+    StudentFeeRepository, StudentGuardianRepository, SubjectRepository, TimeSlotRepository,
+    UserRepository, WorkflowRepository,
+};
+use orbis_app::ports::security::{PasswordHasher, TokenService};
+use orbis_app::services::OrgContextResolver;
+use sea_orm::DatabaseConnection;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -48,7 +62,8 @@ pub struct AppState {
     pub payment_repo: Arc<dyn PaymentRepository>,
     pub document_repo: Arc<dyn DocumentRepository>,
     pub folder_repo: Arc<dyn orbis_app::ports::repositories::FolderRepository>,
-    pub doc_requirement_repo: Arc<dyn orbis_app::ports::repositories::DocumentRequirementRepository>,
+    pub doc_requirement_repo:
+        Arc<dyn orbis_app::ports::repositories::DocumentRequirementRepository>,
     pub sequence_repo: Arc<dyn orbis_app::ports::repositories::SequenceCounterRepository>,
     pub integration_repo: Arc<dyn IntegrationRepository>,
     pub workflow_repo: Arc<dyn WorkflowRepository>,
@@ -107,5 +122,3 @@ pub struct AppState {
     pub bootstrap_service: Arc<orbis_app::services::BootstrapService>,
     pub onboarding_service: Arc<orbis_app::services::OnboardingService>,
 }
-
-

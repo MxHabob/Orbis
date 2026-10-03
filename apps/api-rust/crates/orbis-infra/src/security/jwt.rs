@@ -1,9 +1,9 @@
 use async_trait::async_trait;
-use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use orbis_app::ports::security::{TokenService, TokenClaims};
+use orbis_app::ports::security::{TokenClaims, TokenService};
 use orbis_domain::errors::DomainError;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -43,8 +43,16 @@ impl JwtTokenService {
 
 #[async_trait]
 impl TokenService for JwtTokenService {
-    async fn generate_access_token(&self, user_id: &str, org_id: &str, role: &str) -> Result<String, DomainError> {
-        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as usize;
+    async fn generate_access_token(
+        &self,
+        user_id: &str,
+        org_id: &str,
+        role: &str,
+    ) -> Result<String, DomainError> {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as usize;
         let exp = now + (self.access_token_expiry_hours * 3600);
 
         let claims = JwtClaims {
@@ -59,11 +67,20 @@ impl TokenService for JwtTokenService {
             &Header::default(),
             &claims,
             &EncodingKey::from_secret(self.secret.as_bytes()),
-        ).map_err(|e| DomainError::Internal(format!("Failed to generate token: {}", e)))
+        )
+        .map_err(|e| DomainError::Internal(format!("Failed to generate token: {}", e)))
     }
 
-    async fn generate_refresh_token(&self, user_id: &str, org_id: &str, role: &str) -> Result<String, DomainError> {
-        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as usize;
+    async fn generate_refresh_token(
+        &self,
+        user_id: &str,
+        org_id: &str,
+        role: &str,
+    ) -> Result<String, DomainError> {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as usize;
         let exp = now + (self.refresh_token_expiry_days * 24 * 3600);
 
         let claims = JwtClaims {
@@ -78,7 +95,8 @@ impl TokenService for JwtTokenService {
             &Header::default(),
             &claims,
             &EncodingKey::from_secret(self.secret.as_bytes()),
-        ).map_err(|e| DomainError::Internal(format!("Failed to generate token: {}", e)))
+        )
+        .map_err(|e| DomainError::Internal(format!("Failed to generate token: {}", e)))
     }
 
     async fn validate_token(&self, token: &str) -> Result<TokenClaims, DomainError> {
@@ -86,7 +104,8 @@ impl TokenService for JwtTokenService {
             token,
             &DecodingKey::from_secret(self.secret.as_bytes()),
             &Validation::default(),
-        ).map_err(|_| DomainError::Unauthorized("Invalid or expired token".to_string()))?;
+        )
+        .map_err(|_| DomainError::Unauthorized("Invalid or expired token".to_string()))?;
 
         Ok(TokenClaims {
             sub: token_data.claims.sub,

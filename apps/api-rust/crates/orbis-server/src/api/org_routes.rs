@@ -1,12 +1,16 @@
 //! Organization routes — Org CRUD, OrgUnits, Settings, Dashboard, Bootstrap.
 
-use axum::{extract::{State, Path}, routing::{get, post}, Json, Router};
+use axum::{
+    Json, Router,
+    extract::{Path, State},
+    routing::{get, post},
+};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
+use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_domain::entities::settings::OrganizationSettings;
 
@@ -213,9 +217,16 @@ async fn create_org(
         org_unit_path: None,
     };
 
-    let org = state.organization_service.create_organization(
-        &ctx, payload.name, payload.slug, payload.timezone, payload.locale
-    ).await?;
+    let org = state
+        .organization_service
+        .create_organization(
+            &ctx,
+            payload.name,
+            payload.slug,
+            payload.timezone,
+            payload.locale,
+        )
+        .await?;
 
     Ok(ApiResponse::ok(org_to_dto(org)))
 }
@@ -227,7 +238,10 @@ async fn get_current_org(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<OrgDto>>, ApiError> {
-    let org = state.organization_service.get_organization(ctx.tenant_id).await?
+    let org = state
+        .organization_service
+        .get_organization(ctx.tenant_id)
+        .await?
         .ok_or_else(|| ApiError::not_found("Organization not found"))?;
 
     Ok(ApiResponse::ok(org_to_dto(org)))
@@ -241,23 +255,26 @@ async fn update_current_org(
     State(state): State<AppState>,
     Json(payload): Json<UpdateOrgRequest>,
 ) -> Result<Json<ApiResponse<OrgDto>>, ApiError> {
-    let org = state.organization_service.update_organization(
-        &ctx,
-        ctx.tenant_id,
-        orbis_app::services::UpdateOrgRequest {
-            name: payload.name,
-            name_ar: payload.name_ar,
-            code: payload.code,
-            timezone: payload.timezone,
-            locale: payload.locale,
-            date_format: payload.date_format,
-            is_hijri_enabled: payload.is_hijri_enabled,
-            base_currency_code: payload.base_currency_code,
-            primary_color: payload.primary_color,
-            logo: payload.logo,
-            favicon: payload.favicon,
-        },
-    ).await?;
+    let org = state
+        .organization_service
+        .update_organization(
+            &ctx,
+            ctx.tenant_id,
+            orbis_app::services::UpdateOrgRequest {
+                name: payload.name,
+                name_ar: payload.name_ar,
+                code: payload.code,
+                timezone: payload.timezone,
+                locale: payload.locale,
+                date_format: payload.date_format,
+                is_hijri_enabled: payload.is_hijri_enabled,
+                base_currency_code: payload.base_currency_code,
+                primary_color: payload.primary_color,
+                logo: payload.logo,
+                favicon: payload.favicon,
+            },
+        )
+        .await?;
 
     Ok(ApiResponse::ok(org_to_dto(org)))
 }
@@ -268,7 +285,10 @@ async fn update_current_org(
 pub async fn get_system_readiness_endpoint(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<orbis_app::services::OrganizationReadiness>>, ApiError> {
-    let res = state.system_service.get_readiness().await
+    let res = state
+        .system_service
+        .get_readiness()
+        .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
     Ok(ApiResponse::ok(res))
 }
@@ -279,9 +299,14 @@ pub async fn get_system_readiness_endpoint(
 pub async fn get_system_has_org_endpoint(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, ApiError> {
-    let has_org = state.system_service.has_organization().await
+    let has_org = state
+        .system_service
+        .has_organization()
+        .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
-    Ok(ApiResponse::ok(serde_json::json!({ "has_organization": has_org })))
+    Ok(ApiResponse::ok(
+        serde_json::json!({ "has_organization": has_org }),
+    ))
 }
 
 // ── Settings DTOs ───────────────────────────────────────────────
@@ -366,7 +391,7 @@ pub struct FinanceSettingsDto {
     pub late_fee_type: String,
     pub late_fee_value: f64,
     pub allow_partial_payments: bool,
-    pub primary_payment_gateway_id: Option<Uuid>, 
+    pub primary_payment_gateway_id: Option<Uuid>,
     pub invoicing_integration_id: Option<Uuid>,
 }
 
@@ -417,7 +442,9 @@ pub struct DashboardCountsDto {
 impl From<OrganizationSettings> for OrganizationSettingsDto {
     fn from(s: OrganizationSettings) -> Self {
         Self {
-            academic: AcademicSettingsDto { default_grading_system: s.academic.default_grading_system },
+            academic: AcademicSettingsDto {
+                default_grading_system: s.academic.default_grading_system,
+            },
             enrollment: EnrollmentSettingsDto {
                 registration_enabled: s.enrollment.registration_enabled,
                 require_admin_approval: s.enrollment.require_admin_approval,
@@ -447,15 +474,20 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                     allow_waitlist: s.admission.policy.allow_waitlist,
                     sibling_priority_enabled: s.admission.policy.sibling_priority_enabled,
                 },
-                fields: s.admission.fields.into_iter().map(|f| FormFieldConfigDto {
-                    key: f.key,
-                    name_ar: f.name_ar,
-                    name_en: f.name_en,
-                    is_active: f.is_active,
-                    is_required: f.is_required,
-                    prevent_duplicate: f.prevent_duplicate,
-                    supports_duplicate: f.supports_duplicate,
-                }).collect(),
+                fields: s
+                    .admission
+                    .fields
+                    .into_iter()
+                    .map(|f| FormFieldConfigDto {
+                        key: f.key,
+                        name_ar: f.name_ar,
+                        name_en: f.name_en,
+                        is_active: f.is_active,
+                        is_required: f.is_required,
+                        prevent_duplicate: f.prevent_duplicate,
+                        supports_duplicate: f.supports_duplicate,
+                    })
+                    .collect(),
             },
             finance: FinanceSettingsDto {
                 currency: s.finance.currency,
@@ -502,7 +534,9 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
 impl From<OrganizationSettingsDto> for OrganizationSettings {
     fn from(s: OrganizationSettingsDto) -> Self {
         Self {
-            academic: orbis_domain::entities::settings::AcademicSettings { default_grading_system: s.academic.default_grading_system },
+            academic: orbis_domain::entities::settings::AcademicSettings {
+                default_grading_system: s.academic.default_grading_system,
+            },
             enrollment: orbis_domain::entities::settings::EnrollmentSettings {
                 registration_enabled: s.enrollment.registration_enabled,
                 require_admin_approval: s.enrollment.require_admin_approval,
@@ -532,15 +566,20 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                     allow_waitlist: s.admission.policy.allow_waitlist,
                     sibling_priority_enabled: s.admission.policy.sibling_priority_enabled,
                 },
-                fields: s.admission.fields.into_iter().map(|f| orbis_domain::entities::admission::FormFieldConfig {
-                    key: f.key,
-                    name_ar: f.name_ar,
-                    name_en: f.name_en,
-                    is_active: f.is_active,
-                    is_required: f.is_required,
-                    prevent_duplicate: f.prevent_duplicate,
-                    supports_duplicate: f.supports_duplicate,
-                }).collect(),
+                fields: s
+                    .admission
+                    .fields
+                    .into_iter()
+                    .map(|f| orbis_domain::entities::admission::FormFieldConfig {
+                        key: f.key,
+                        name_ar: f.name_ar,
+                        name_en: f.name_en,
+                        is_active: f.is_active,
+                        is_required: f.is_required,
+                        prevent_duplicate: f.prevent_duplicate,
+                        supports_duplicate: f.supports_duplicate,
+                    })
+                    .collect(),
             },
             finance: orbis_domain::entities::settings::FinanceSettings {
                 currency: s.finance.currency,
@@ -593,7 +632,10 @@ async fn get_settings(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<OrganizationSettingsDto>>, ApiError> {
-    let settings = state.organization_service.get_settings(ctx.tenant_id).await?;
+    let settings = state
+        .organization_service
+        .get_settings(ctx.tenant_id)
+        .await?;
     Ok(ApiResponse::ok(settings.into()))
 }
 
@@ -606,7 +648,10 @@ async fn update_settings(
     State(state): State<AppState>,
     Json(payload): Json<OrganizationSettingsDto>,
 ) -> Result<Json<ApiResponse<OrganizationSettingsDto>>, ApiError> {
-    let settings = state.organization_service.update_settings(&ctx, ctx.tenant_id, payload.into()).await?;
+    let settings = state
+        .organization_service
+        .update_settings(&ctx, ctx.tenant_id, payload.into())
+        .await?;
     Ok(ApiResponse::ok(settings.into()))
 }
 
@@ -619,7 +664,10 @@ async fn get_dashboard(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<DashboardCountsDto>>, ApiError> {
-    let counts = state.organization_service.get_dashboard_counts(ctx.tenant_id).await?;
+    let counts = state
+        .organization_service
+        .get_dashboard_counts(ctx.tenant_id)
+        .await?;
     Ok(ApiResponse::ok(DashboardCountsDto {
         total_students: counts.total_students,
         total_teachers: counts.total_teachers,
@@ -642,27 +690,30 @@ async fn create_org_unit(
     State(state): State<AppState>,
     Json(payload): Json<CreateOrgUnitRequest>,
 ) -> Result<Json<ApiResponse<OrgUnitDto>>, ApiError> {
-    let unit = state.organization_service.create_org_unit(
-        &ctx,
-        ctx.tenant_id,
-        orbis_app::services::CreateOrgUnitInput {
-            name: payload.name,
-            name_ar: payload.name_ar,
-            code: payload.code,
-            unit_type: payload.unit_type,
-            parent_id: payload.parent_id,
-            head_id: payload.head_id,
-            capacity: payload.capacity,
-            building: payload.building,
-            floor: payload.floor,
-            room_number: payload.room_number,
-            settings: payload.settings,
-            local_policies: payload.local_policies,
-            data_isolation: payload.data_isolation,
-            sort_order: payload.sort_order,
-            is_active: payload.is_active,
-        },
-    ).await?;
+    let unit = state
+        .organization_service
+        .create_org_unit(
+            &ctx,
+            ctx.tenant_id,
+            orbis_app::services::CreateOrgUnitInput {
+                name: payload.name,
+                name_ar: payload.name_ar,
+                code: payload.code,
+                unit_type: payload.unit_type,
+                parent_id: payload.parent_id,
+                head_id: payload.head_id,
+                capacity: payload.capacity,
+                building: payload.building,
+                floor: payload.floor,
+                room_number: payload.room_number,
+                settings: payload.settings,
+                local_policies: payload.local_policies,
+                data_isolation: payload.data_isolation,
+                sort_order: payload.sort_order,
+                is_active: payload.is_active,
+            },
+        )
+        .await?;
 
     Ok(ApiResponse::ok(unit_to_dto(unit)))
 }
@@ -674,7 +725,10 @@ async fn list_org_units(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<OrgUnitDto>>>, ApiError> {
-    let units = state.organization_service.list_org_units(ctx.tenant_id).await?;
+    let units = state
+        .organization_service
+        .list_org_units(ctx.tenant_id)
+        .await?;
     let dtos: Vec<OrgUnitDto> = units.into_iter().map(unit_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -688,7 +742,10 @@ async fn get_org_unit(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<OrgUnitDto>>, ApiError> {
-    let u = state.organization_service.get_org_unit(id).await?
+    let u = state
+        .organization_service
+        .get_org_unit(id)
+        .await?
         .ok_or_else(|| ApiError::not_found(format!("OrgUnit {} not found", id)))?;
 
     Ok(ApiResponse::ok(unit_to_dto(u)))
@@ -704,27 +761,30 @@ async fn update_org_unit(
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateOrgUnitRequest>,
 ) -> Result<Json<ApiResponse<OrgUnitDto>>, ApiError> {
-    let unit = state.organization_service.update_org_unit(
-        &ctx,
-        id,
-        orbis_app::services::UpdateOrgUnitRequest {
-            name: payload.name,
-            name_ar: payload.name_ar,
-            code: payload.code,
-            unit_type: payload.unit_type,
-            parent_id: payload.parent_id,
-            head_id: payload.head_id,
-            capacity: payload.capacity,
-            building: payload.building,
-            floor: payload.floor,
-            room_number: payload.room_number,
-            settings: payload.settings,
-            local_policies: payload.local_policies,
-            data_isolation: payload.data_isolation,
-            sort_order: payload.sort_order,
-            is_active: payload.is_active,
-        },
-    ).await?;
+    let unit = state
+        .organization_service
+        .update_org_unit(
+            &ctx,
+            id,
+            orbis_app::services::UpdateOrgUnitRequest {
+                name: payload.name,
+                name_ar: payload.name_ar,
+                code: payload.code,
+                unit_type: payload.unit_type,
+                parent_id: payload.parent_id,
+                head_id: payload.head_id,
+                capacity: payload.capacity,
+                building: payload.building,
+                floor: payload.floor,
+                room_number: payload.room_number,
+                settings: payload.settings,
+                local_policies: payload.local_policies,
+                data_isolation: payload.data_isolation,
+                sort_order: payload.sort_order,
+                is_active: payload.is_active,
+            },
+        )
+        .await?;
 
     Ok(ApiResponse::ok(unit_to_dto(unit)))
 }
@@ -746,12 +806,35 @@ async fn delete_org_unit(
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/api/v1/system/readiness", get(get_system_readiness_endpoint))
-        .route("/api/v1/system/has-organization", get(get_system_has_org_endpoint))
+        .route(
+            "/api/v1/system/readiness",
+            get(get_system_readiness_endpoint),
+        )
+        .route(
+            "/api/v1/system/has-organization",
+            get(get_system_has_org_endpoint),
+        )
         .route("/api/v1/organizations", post(create_org))
-        .route("/api/v1/organizations/current", get(get_current_org).put(update_current_org))
-        .route("/api/v1/organizations/current/settings", get(get_settings).put(update_settings))
-        .route("/api/v1/organizations/current/dashboard", get(get_dashboard))
-        .route("/api/v1/org-units", post(create_org_unit).get(list_org_units))
-        .route("/api/v1/org-units/:id", get(get_org_unit).patch(update_org_unit).delete(delete_org_unit))
+        .route(
+            "/api/v1/organizations/current",
+            get(get_current_org).put(update_current_org),
+        )
+        .route(
+            "/api/v1/organizations/current/settings",
+            get(get_settings).put(update_settings),
+        )
+        .route(
+            "/api/v1/organizations/current/dashboard",
+            get(get_dashboard),
+        )
+        .route(
+            "/api/v1/org-units",
+            post(create_org_unit).get(list_org_units),
+        )
+        .route(
+            "/api/v1/org-units/:id",
+            get(get_org_unit)
+                .patch(update_org_unit)
+                .delete(delete_org_unit),
+        )
 }

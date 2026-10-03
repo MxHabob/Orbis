@@ -12,8 +12,8 @@ use orbis_app::context::RequestContext;
 use orbis_domain::iam::actor::Actor;
 use uuid::Uuid;
 
-use crate::state::AppState;
 use super::ApiError;
+use crate::state::AppState;
 
 /// Extractor that produces a validated `RequestContext` from the incoming request.
 ///
@@ -34,7 +34,10 @@ impl std::ops::Deref for AuthContext {
 impl FromRequestParts<AppState> for AuthContext {
     type Rejection = ApiError;
 
-    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
         let request_id = Uuid::new_v4();
 
         // Extract bearer token from Authorization header
@@ -88,10 +91,8 @@ impl FromRequestParts<AppState> for AuthContext {
                     }));
                 }
 
-                Err(
-                    ApiError::unauthorized("Missing Authorization header")
-                        .with_request_id(request_id.to_string()),
-                )
+                Err(ApiError::unauthorized("Missing Authorization header")
+                    .with_request_id(request_id.to_string()))
             }
         }
     }
@@ -104,7 +105,10 @@ pub struct OptionalAuth(pub Option<RequestContext>);
 impl FromRequestParts<AppState> for OptionalAuth {
     type Rejection = std::convert::Infallible;
 
-    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
         match AuthContext::from_request_parts(parts, state).await {
             Ok(ctx) => Ok(OptionalAuth(Some(ctx.0))),
             Err(_) => Ok(OptionalAuth(None)),

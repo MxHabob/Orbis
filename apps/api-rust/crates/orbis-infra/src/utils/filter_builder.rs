@@ -1,5 +1,8 @@
-use sea_orm::{Condition, sea_query::{Expr, Value as SeaValue, SimpleExpr}};
-use orbis_domain::queries::filter::{UniversalFilter, FilterOperator, FilterLogic};
+use orbis_domain::queries::filter::{FilterLogic, FilterOperator, UniversalFilter};
+use sea_orm::{
+    Condition,
+    sea_query::{Expr, SimpleExpr, Value as SeaValue},
+};
 
 pub trait FilterApplier {
     /// Convert the UniversalFilter into a SeaORM Condition
@@ -25,10 +28,18 @@ where
                 FilterOperator::Gte => Expr::expr(expr).gte(val),
                 FilterOperator::Lt => Expr::expr(expr).lt(val),
                 FilterOperator::Lte => Expr::expr(expr).lte(val),
-                FilterOperator::Contains => Expr::expr(expr).like(format!("%{}%", cond.value.as_str().unwrap_or(""))),
-                FilterOperator::NotContains => Expr::expr(expr).not_like(format!("%{}%", cond.value.as_str().unwrap_or(""))),
-                FilterOperator::StartsWith => Expr::expr(expr).like(format!("{}%", cond.value.as_str().unwrap_or(""))),
-                FilterOperator::EndsWith => Expr::expr(expr).like(format!("%{}", cond.value.as_str().unwrap_or(""))),
+                FilterOperator::Contains => {
+                    Expr::expr(expr).like(format!("%{}%", cond.value.as_str().unwrap_or("")))
+                }
+                FilterOperator::NotContains => {
+                    Expr::expr(expr).not_like(format!("%{}%", cond.value.as_str().unwrap_or("")))
+                }
+                FilterOperator::StartsWith => {
+                    Expr::expr(expr).like(format!("{}%", cond.value.as_str().unwrap_or("")))
+                }
+                FilterOperator::EndsWith => {
+                    Expr::expr(expr).like(format!("%{}", cond.value.as_str().unwrap_or("")))
+                }
                 FilterOperator::IsNull => Expr::expr(expr).is_null(),
                 FilterOperator::IsNotNull => Expr::expr(expr).is_not_null(),
                 FilterOperator::BoolTrue => Expr::expr(expr).eq(true),
@@ -36,20 +47,22 @@ where
                 // For IN and NOT IN, we need to extract the array
                 FilterOperator::In => {
                     if let serde_json::Value::Array(arr) = &cond.value {
-                        let vals: Vec<SeaValue> = arr.iter().filter_map(json_to_sea_value).collect();
+                        let vals: Vec<SeaValue> =
+                            arr.iter().filter_map(json_to_sea_value).collect();
                         Expr::expr(expr).is_in(vals)
                     } else {
                         Expr::expr(expr).eq(val)
                     }
-                },
+                }
                 FilterOperator::NotIn => {
                     if let serde_json::Value::Array(arr) = &cond.value {
-                        let vals: Vec<SeaValue> = arr.iter().filter_map(json_to_sea_value).collect();
+                        let vals: Vec<SeaValue> =
+                            arr.iter().filter_map(json_to_sea_value).collect();
                         Expr::expr(expr).is_not_in(vals)
                     } else {
                         Expr::expr(expr).ne(val)
                     }
-                },
+                }
                 _ => Expr::expr(expr).eq(val), // Fallback for unsupported yet
             };
             root = root.add(filter_cond);
@@ -70,7 +83,7 @@ pub fn json_to_sea_value(val: &serde_json::Value) -> Option<SeaValue> {
             } else {
                 Some(SeaValue::String(Some(Box::new(n.to_string()))))
             }
-        },
+        }
         serde_json::Value::String(s) => Some(SeaValue::String(Some(Box::new(s.clone())))),
         _ => None,
     }
@@ -89,7 +102,7 @@ pub fn json_to_sea_expr(val: &serde_json::Value) -> SimpleExpr {
             } else {
                 Expr::val(n.to_string()).into()
             }
-        },
+        }
         serde_json::Value::String(s) => Expr::val(s.clone()).into(),
         serde_json::Value::Array(_) | serde_json::Value::Object(_) => {
             Expr::val(val.to_string()).into()

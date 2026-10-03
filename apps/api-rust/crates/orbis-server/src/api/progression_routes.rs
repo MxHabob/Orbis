@@ -1,16 +1,20 @@
 //! Progression routes — Student Cohort Progression & Promotion.
 
-use axum::{extract::{State, Path}, routing::{get, post}, Json, Router};
+use axum::{
+    Json, Router,
+    extract::{Path, State},
+    routing::{get, post},
+};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
+use super::{ApiError, ApiResponse};
 use crate::state::AppState;
-use orbis_domain::entities::progression::{PromotionJob, PromotionJobStatus, PromotionDecision};
 use orbis_app::services::progression_service::StudentProgressionItem;
+use orbis_domain::entities::progression::{PromotionDecision, PromotionJob, PromotionJobStatus};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct PromotionJobDto {
@@ -96,46 +100,73 @@ fn parse_decision(s: &str) -> PromotionDecision {
 #[utoipa::path(post, path = "/api/v1/progression/evaluate", request_body = EvaluateCohortRequest,
     responses((status = 200, body = Vec<StudentProgressionItemInput>)), security(("bearer" = [])), tag = "Progression")]
 pub async fn evaluate_cohort(
-    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<EvaluateCohortRequest>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<EvaluateCohortRequest>,
 ) -> Result<Json<ApiResponse<Vec<StudentProgressionItemInput>>>, ApiError> {
-    let items = state.progression_service.evaluate_cohort_progression(&ctx, ctx.tenant_id, p.source_period_id).await?;
-    let dtos = items.into_iter().map(|i| StudentProgressionItemInput {
-        student_id: i.student_id,
-        enrollment_id: i.enrollment_id,
-        source_class_id: i.source_class_id,
-        target_class_id: i.target_class_id,
-        decision: i.decision.to_string(),
-        reason: i.reason,
-    }).collect();
+    let items = state
+        .progression_service
+        .evaluate_cohort_progression(&ctx, ctx.tenant_id, p.source_period_id)
+        .await?;
+    let dtos = items
+        .into_iter()
+        .map(|i| StudentProgressionItemInput {
+            student_id: i.student_id,
+            enrollment_id: i.enrollment_id,
+            source_class_id: i.source_class_id,
+            target_class_id: i.target_class_id,
+            decision: i.decision.to_string(),
+            reason: i.reason,
+        })
+        .collect();
     Ok(ApiResponse::ok(dtos))
 }
 
 #[utoipa::path(post, path = "/api/v1/progression/promote", request_body = PromoteCohortRequest,
     responses((status = 201, body = PromotionJobDto)), security(("bearer" = [])), tag = "Progression")]
 pub async fn promote_cohort(
-    ctx: AuthContext, State(state): State<AppState>, Json(p): Json<PromoteCohortRequest>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<PromoteCohortRequest>,
 ) -> Result<Json<ApiResponse<PromotionJobDto>>, ApiError> {
-    let items = p.items.into_iter().map(|i| StudentProgressionItem {
-        student_id: i.student_id,
-        enrollment_id: i.enrollment_id,
-        source_class_id: i.source_class_id,
-        target_class_id: i.target_class_id,
-        decision: parse_decision(&i.decision),
-        reason: i.reason,
-    }).collect();
+    let items = p
+        .items
+        .into_iter()
+        .map(|i| StudentProgressionItem {
+            student_id: i.student_id,
+            enrollment_id: i.enrollment_id,
+            source_class_id: i.source_class_id,
+            target_class_id: i.target_class_id,
+            decision: parse_decision(&i.decision),
+            reason: i.reason,
+        })
+        .collect();
 
-    let job = state.progression_service.promote_cohort(
-        &ctx, ctx.tenant_id, p.source_period_id, p.target_period_id, p.job_name, items,
-    ).await?;
+    let job = state
+        .progression_service
+        .promote_cohort(
+            &ctx,
+            ctx.tenant_id,
+            p.source_period_id,
+            p.target_period_id,
+            p.job_name,
+            items,
+        )
+        .await?;
     Ok(ApiResponse::ok(job_to_dto(job)))
 }
 
 #[utoipa::path(get, path = "/api/v1/progression/jobs",
     responses((status = 200, body = Vec<PromotionJobDto>)), security(("bearer" = [])), tag = "Progression")]
 pub async fn list_jobs(
-    ctx: AuthContext, State(state): State<AppState>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<PromotionJobDto>>>, ApiError> {
-    let jobs = state.progression_service.progression_repo.find_jobs_by_org(ctx.tenant_id).await?;
+    let jobs = state
+        .progression_service
+        .progression_repo
+        .find_jobs_by_org(ctx.tenant_id)
+        .await?;
     let dtos = jobs.into_iter().map(job_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -143,9 +174,16 @@ pub async fn list_jobs(
 #[utoipa::path(get, path = "/api/v1/progression/jobs/{id}", params(("id" = Uuid, Path, description = "Promotion Job ID")),
     responses((status = 200, body = PromotionJobDto)), security(("bearer" = [])), tag = "Progression")]
 pub async fn get_job(
-    _ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
+    _ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<PromotionJobDto>>, ApiError> {
-    let job = state.progression_service.progression_repo.find_job_by_id(id).await?.ok_or_else(|| ApiError::not_found("Job not found"))?;
+    let job = state
+        .progression_service
+        .progression_repo
+        .find_job_by_id(id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("Job not found"))?;
     Ok(ApiResponse::ok(job_to_dto(job)))
 }
 

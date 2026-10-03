@@ -9,8 +9,8 @@
 // 5. types:          PositionedElement, LayoutResult
 // ═══════════════════════════════════════════════════════════════
 
-pub mod types;
-pub mod font_cache;
 pub mod barcode_gen;
+pub mod font_cache;
 pub mod image_loader;
 pub mod pdf_renderer;
+pub mod types;

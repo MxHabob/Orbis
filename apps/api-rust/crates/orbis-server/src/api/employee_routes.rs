@@ -1,20 +1,24 @@
 //! Employee routes — Registrations, Profiles, Status updates, Account provisioning, Group assignments.
 
-use axum::{extract::{State, Path, Query}, routing::{get, post, patch}, Json, Router};
+use axum::{
+    Json, Router,
+    extract::{Path, Query, State},
+    routing::{get, patch, post},
+};
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use chrono::{DateTime, Utc, NaiveDate};
 use uuid::Uuid;
 
-use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
+use super::{ApiError, ApiResponse};
 use crate::state::AppState;
-use orbis_domain::entities::employee::{EmployeeDetail, EmployeeStatus, EmploymentType};
-use orbis_domain::entities::identity_provisioning::{DeliveryChannel, AccountProvisioningResult};
 use orbis_app::ports::repositories::EmployeeFilter;
 use orbis_app::services::employee_service::{
-    RegisterEmployeeInput, UpdateEmployeeInput, AccountProvisioningConfig
+    AccountProvisioningConfig, RegisterEmployeeInput, UpdateEmployeeInput,
 };
+use orbis_domain::entities::employee::{EmployeeDetail, EmployeeStatus, EmploymentType};
+use orbis_domain::entities::identity_provisioning::{AccountProvisioningResult, DeliveryChannel};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct EmployeeDetailDto {
@@ -158,7 +162,9 @@ impl From<AccountProvisioningResult> for AccountProvisioningResultDto {
     }
 }
 
-impl From<orbis_app::services::identity_provisioning_service::ResetPasswordResult> for AccountProvisioningResultDto {
+impl From<orbis_app::services::identity_provisioning_service::ResetPasswordResult>
+    for AccountProvisioningResultDto
+{
     fn from(r: orbis_app::services::identity_provisioning_service::ResetPasswordResult) -> Self {
         Self {
             user_id: r.user_id,
@@ -416,7 +422,10 @@ pub async fn register_employee(
         account: account_cfg,
     };
 
-    let result = state.employee_service.register_employee(&ctx, org_id, input).await?;
+    let result = state
+        .employee_service
+        .register_employee(&ctx, org_id, input)
+        .await?;
     let res_dto = RegisterEmployeeResponseDto {
         employee: result.detail.into(),
         provisioning: result.provisioning.map(Into::into),
@@ -447,7 +456,10 @@ pub async fn list_employees(
         offset: Some(offset),
     };
 
-    let list = state.employee_service.list_employees(&ctx, org_id, filter).await?;
+    let list = state
+        .employee_service
+        .list_employees(&ctx, org_id, filter)
+        .await?;
     let dto = PaginatedEmployeesDto {
         items: list.items.into_iter().map(Into::into).collect(),
         total_count: list.total_count,
@@ -466,7 +478,10 @@ pub async fn get_employee_stats(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<std::collections::HashMap<String, i64>>>, ApiError> {
     let org_id = ctx.tenant_id;
-    let stats = state.employee_service.count_employees_by_status(&ctx, org_id).await?;
+    let stats = state
+        .employee_service
+        .count_employees_by_status(&ctx, org_id)
+        .await?;
     Ok(ApiResponse::ok(stats))
 }
 
@@ -479,7 +494,10 @@ pub async fn get_employee(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<EmployeeDetailDto>>, ApiError> {
-    let detail = state.employee_service.get_employee(&ctx, id).await?
+    let detail = state
+        .employee_service
+        .get_employee(&ctx, id)
+        .await?
         .ok_or_else(|| ApiError::not_found(format!("Employee {} not found", id)))?;
     Ok(ApiResponse::ok(detail.into()))
 }
@@ -544,7 +562,10 @@ pub async fn update_employee(
         avatar_url: p.avatar_url,
     };
 
-    let updated = state.employee_service.update_employee(&ctx, id, input).await?;
+    let updated = state
+        .employee_service
+        .update_employee(&ctx, id, input)
+        .await?;
     Ok(ApiResponse::ok(updated.into()))
 }
 
@@ -565,10 +586,18 @@ pub async fn update_employee_status(
         "suspended" => EmployeeStatus::Suspended,
         "terminated" => EmployeeStatus::Terminated,
         "resigned" => EmployeeStatus::Resigned,
-        other => return Err(ApiError::bad_request(format!("Invalid employee status: {}", other))),
+        other => {
+            return Err(ApiError::bad_request(format!(
+                "Invalid employee status: {}",
+                other
+            )));
+        }
     };
 
-    let updated = state.employee_service.update_employee_status(&ctx, id, new_status).await?;
+    let updated = state
+        .employee_service
+        .update_employee_status(&ctx, id, new_status)
+        .await?;
     Ok(ApiResponse::ok(updated.into()))
 }
 
@@ -584,14 +613,17 @@ pub async fn provision_account(
     Json(p): Json<ProvisionEmployeeAccountRequest>,
 ) -> Result<Json<ApiResponse<AccountProvisioningResultDto>>, ApiError> {
     let delivery_channel = parse_delivery_channel(p.delivery_channel.as_deref());
-    let res = state.employee_service.provision_employee_account(
-        &ctx,
-        id,
-        p.preferred_username,
-        p.role,
-        p.group_ids,
-        delivery_channel,
-    ).await?;
+    let res = state
+        .employee_service
+        .provision_employee_account(
+            &ctx,
+            id,
+            p.preferred_username,
+            p.role,
+            p.group_ids,
+            delivery_channel,
+        )
+        .await?;
     Ok(ApiResponse::ok(res.into()))
 }
 
@@ -606,7 +638,10 @@ pub async fn assign_groups(
     Path(id): Path<Uuid>,
     Json(p): Json<AssignEmployeeGroupsRequest>,
 ) -> Result<Json<ApiResponse<bool>>, ApiError> {
-    state.employee_service.assign_employee_groups(&ctx, id, p.group_ids).await?;
+    state
+        .employee_service
+        .assign_employee_groups(&ctx, id, p.group_ids)
+        .await?;
     Ok(ApiResponse::ok(true))
 }
 
@@ -685,30 +720,39 @@ pub async fn bulk_register_employees(
             account: account_cfg,
         };
 
-        domain_items.push(orbis_app::services::employee_service::BulkRegisterEmployeeItemInput {
-            row_index: item.row_index,
-            registration: input,
-        });
+        domain_items.push(
+            orbis_app::services::employee_service::BulkRegisterEmployeeItemInput {
+                row_index: item.row_index,
+                registration: input,
+            },
+        );
     }
 
-    let res = state.employee_service.bulk_register_employees(
-        &ctx,
-        org_id,
-        orbis_app::services::employee_service::BulkRegisterEmployeesInput {
-            items: domain_items,
-            atomic: p.atomic,
-            dry_run: p.dry_run,
-        },
-    ).await?;
+    let res = state
+        .employee_service
+        .bulk_register_employees(
+            &ctx,
+            org_id,
+            orbis_app::services::employee_service::BulkRegisterEmployeesInput {
+                items: domain_items,
+                atomic: p.atomic,
+                dry_run: p.dry_run,
+            },
+        )
+        .await?;
 
-    let items_dto = res.items.into_iter().map(|it| BulkRegisterEmployeeItemResultDto {
-        row_index: it.row_index,
-        success: it.success,
-        employee_id: it.employee_id,
-        employee_number: it.employee_number,
-        user_id: it.user_id,
-        error: it.error,
-    }).collect();
+    let items_dto = res
+        .items
+        .into_iter()
+        .map(|it| BulkRegisterEmployeeItemResultDto {
+            row_index: it.row_index,
+            success: it.success,
+            employee_id: it.employee_id,
+            employee_number: it.employee_number,
+            user_id: it.user_id,
+            error: it.error,
+        })
+        .collect();
 
     Ok(ApiResponse::ok(BulkRegisterEmployeesResponseDto {
         total: res.total,
@@ -748,13 +792,26 @@ pub async fn restore_employee(
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/api/v1/employees", post(register_employee).get(list_employees))
+        .route(
+            "/api/v1/employees",
+            post(register_employee).get(list_employees),
+        )
         .route("/api/v1/employees/stats", get(get_employee_stats))
-        .route("/api/v1/employees/bulk-register", post(bulk_register_employees))
-        .route("/api/v1/employees/:id", get(get_employee).patch(update_employee).delete(delete_employee))
+        .route(
+            "/api/v1/employees/bulk-register",
+            post(bulk_register_employees),
+        )
+        .route(
+            "/api/v1/employees/:id",
+            get(get_employee)
+                .patch(update_employee)
+                .delete(delete_employee),
+        )
         .route("/api/v1/employees/:id/restore", post(restore_employee))
-        .route("/api/v1/employees/:id/status", patch(update_employee_status))
+        .route(
+            "/api/v1/employees/:id/status",
+            patch(update_employee_status),
+        )
         .route("/api/v1/employees/:id/account", post(provision_account))
         .route("/api/v1/employees/:id/groups", post(assign_groups))
 }
-

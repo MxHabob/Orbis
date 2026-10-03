@@ -64,7 +64,11 @@ impl GroupRepository for GroupRepoImpl {
     }
 
     async fn find_detail_by_id(&self, id: Uuid) -> Result<Option<GroupDetail>, DomainError> {
-        let group_model = match GroupEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))? {
+        let group_model = match GroupEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+        {
             Some(m) => m,
             None => return Ok(None),
         };
@@ -198,7 +202,9 @@ impl GroupRepository for GroupRepoImpl {
                 let (full_name, full_name_ar, avatar_url, phone) = match person {
                     Some(p) => (
                         p.first_name.clone() + " " + &p.last_name,
-                        p.first_name_ar.clone().map(|f| f + " " + &p.last_name_ar.clone().unwrap_or_default()),
+                        p.first_name_ar
+                            .clone()
+                            .map(|f| f + " " + &p.last_name_ar.clone().unwrap_or_default()),
                         p.avatar_url,
                         p.phone,
                     ),
@@ -259,7 +265,10 @@ impl GroupRepository for GroupRepoImpl {
                 group_id: Set(membership.group_id),
                 created_at: Set(membership.created_at),
             };
-            active_model.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active_model
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
 
         Ok(())
@@ -276,7 +285,10 @@ impl GroupRepository for GroupRepoImpl {
         Ok(())
     }
 
-    async fn bulk_add_members(&self, memberships: &[UserGroupMembership]) -> Result<u64, DomainError> {
+    async fn bulk_add_members(
+        &self,
+        memberships: &[UserGroupMembership],
+    ) -> Result<u64, DomainError> {
         let mut count = 0u64;
         for m in memberships {
             let existing = UserGroupMembershipEntity::find()
@@ -325,7 +337,12 @@ impl GroupRepository for GroupRepoImpl {
         Ok(perms.into_iter().map(|p| p.permission).collect())
     }
 
-    async fn set_group_permissions(&self, org_id: Uuid, group_id: Uuid, permissions: &[String]) -> Result<(), DomainError> {
+    async fn set_group_permissions(
+        &self,
+        org_id: Uuid,
+        group_id: Uuid,
+        permissions: &[String],
+    ) -> Result<(), DomainError> {
         let _ = GroupPermissionEntity::delete_many()
             .filter(group_permission::Column::GroupId.eq(group_id))
             .exec(&self.db)

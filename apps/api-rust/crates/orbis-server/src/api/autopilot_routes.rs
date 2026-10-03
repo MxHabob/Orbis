@@ -1,9 +1,9 @@
 //! Autopilot routes — Task Orchestration & Policy Automation.
 
 use axum::{
+    Json, Router,
     extract::{Path, Query, State},
     routing::{get, post},
-    Json, Router,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -304,8 +304,16 @@ pub async fn get_diagnostics(
         is_healthy: diag.is_healthy,
         status: diag.status,
         mode: diag.mode,
-        stuck_tasks: diag.stuck_tasks.into_iter().map(AutopilotTaskDto::from).collect(),
-        overdue_tasks: diag.overdue_tasks.into_iter().map(AutopilotTaskDto::from).collect(),
+        stuck_tasks: diag
+            .stuck_tasks
+            .into_iter()
+            .map(AutopilotTaskDto::from)
+            .collect(),
+        overdue_tasks: diag
+            .overdue_tasks
+            .into_iter()
+            .map(AutopilotTaskDto::from)
+            .collect(),
         total_tasks_count: diag.total_tasks_count,
         pending_tasks_count: diag.pending_tasks_count,
         completed_tasks_count: diag.completed_tasks_count,

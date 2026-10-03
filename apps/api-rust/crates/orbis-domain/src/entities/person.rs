@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc, NaiveDate};
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -38,7 +38,9 @@ impl Person {
             }
         }
         match (&self.middle_name, &self.last_name) {
-            (Some(mid), last) if !mid.trim().is_empty() => format!("{} {} {}", self.first_name, mid, last),
+            (Some(mid), last) if !mid.trim().is_empty() => {
+                format!("{} {} {}", self.first_name, mid, last)
+            }
             _ => format!("{} {}", self.first_name, self.last_name),
         }
     }
@@ -59,5 +61,3 @@ impl Person {
         }
     }
 }
-
-

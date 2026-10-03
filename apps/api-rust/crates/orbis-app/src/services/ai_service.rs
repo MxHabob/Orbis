@@ -373,10 +373,9 @@ impl AiOrchestrationService {
                 } else if roles.iter().any(|r| r.eq_ignore_ascii_case("teacher")) {
                     uctx.effective_role = Some("teacher".to_string());
                     uctx.is_teacher = true;
-                } else if roles
-                    .iter()
-                    .any(|r| r.eq_ignore_ascii_case("principal") || r.eq_ignore_ascii_case("headmaster"))
-                {
+                } else if roles.iter().any(|r| {
+                    r.eq_ignore_ascii_case("principal") || r.eq_ignore_ascii_case("headmaster")
+                }) {
                     uctx.effective_role = Some("principal".to_string());
                 } else if roles.iter().any(|r| r.eq_ignore_ascii_case("counselor")) {
                     uctx.effective_role = Some("counselor".to_string());
@@ -384,7 +383,8 @@ impl AiOrchestrationService {
                     uctx.effective_role = Some("parent".to_string());
                     uctx.is_parent = true;
                 } else {
-                    uctx.effective_role = roles.first().cloned().or_else(|| Some("user".to_string()));
+                    uctx.effective_role =
+                        roles.first().cloned().or_else(|| Some("user".to_string()));
                 }
             }
             orbis_domain::iam::actor::Actor::Agent(aid) => {
@@ -453,13 +453,15 @@ impl AiOrchestrationService {
         let user_ctx = self.resolve_user_ai_context(ctx).await;
         let academic_ctx = self.resolve_academic_ai_context(ctx, &request).await;
 
-        let system_prompt = self.build_system_prompt(
-            ctx,
-            &user_ctx,
-            &academic_ctx,
-            request.ui_context.as_ref(),
-            request.screen_context.as_ref(),
-        ).await;
+        let system_prompt = self
+            .build_system_prompt(
+                ctx,
+                &user_ctx,
+                &academic_ctx,
+                request.ui_context.as_ref(),
+                request.screen_context.as_ref(),
+            )
+            .await;
 
         let mut conversation_history = request.messages;
         let mut executed_tools_all = Vec::new();
@@ -574,7 +576,10 @@ impl AiOrchestrationService {
 
                     let (content, is_error) = match execution_result {
                         Ok(data) => (data.to_string(), false),
-                        Err(e) => (format!("Error executing {}: {}", tool_call.tool_name, e), true),
+                        Err(e) => (
+                            format!("Error executing {}: {}", tool_call.tool_name, e),
+                            true,
+                        ),
                     };
 
                     conversation_history.push(AiMessage {
@@ -656,7 +661,10 @@ impl AiOrchestrationService {
                 filter.class_id = class_id;
                 filter.period_id = period_id;
 
-                let result = self.student_service.list_students(ctx.tenant_id, filter).await?;
+                let result = self
+                    .student_service
+                    .list_students(ctx.tenant_id, filter)
+                    .await?;
                 Ok(json!({
                     "total_count": result.total_count,
                     "students": result.items.into_iter().map(|s| json!({
@@ -700,7 +708,10 @@ impl AiOrchestrationService {
                 filter.student_id = Some(sid);
                 filter.period_id = period_id;
 
-                let grades = self.assessment_service.list_grades(ctx.tenant_id, filter).await?;
+                let grades = self
+                    .assessment_service
+                    .list_grades(ctx.tenant_id, filter)
+                    .await?;
                 Ok(json!({
                     "total_count": grades.total_count,
                     "grades": grades.items.into_iter().map(|g| json!({
@@ -733,7 +744,10 @@ impl AiOrchestrationService {
                 filter.class_id = class_id;
                 filter.status = status;
 
-                let attendance = self.assessment_service.list_attendance(ctx.tenant_id, filter).await?;
+                let attendance = self
+                    .assessment_service
+                    .list_attendance(ctx.tenant_id, filter)
+                    .await?;
                 Ok(json!({
                     "total_count": attendance.total_count,
                     "records": attendance.items.into_iter().map(|a| json!({
@@ -745,7 +759,10 @@ impl AiOrchestrationService {
             }
             "get_financial_summary" => {
                 let accounts = self.finance_service.list_accounts(ctx.tenant_id).await?;
-                let templates = self.finance_service.list_fee_templates(ctx.tenant_id).await?;
+                let templates = self
+                    .finance_service
+                    .list_fee_templates(ctx.tenant_id)
+                    .await?;
                 Ok(json!({
                     "accounts_count": accounts.len(),
                     "fee_templates_count": templates.len(),
@@ -766,7 +783,10 @@ impl AiOrchestrationService {
                     .map_err(|_| DomainError::Validation("Invalid student UUID".into()))?;
                 let mut filter = StudentFeeFilter::default();
                 filter.student_id = Some(sid);
-                let fees = self.finance_service.list_student_fees(ctx.tenant_id, filter).await?;
+                let fees = self
+                    .finance_service
+                    .list_student_fees(ctx.tenant_id, filter)
+                    .await?;
                 Ok(json!({
                     "total_count": fees.total_count,
                     "fees": fees.items.into_iter().map(|f| json!({
@@ -831,7 +851,11 @@ impl AiOrchestrationService {
             "get_org_overview" => {
                 let org = self.org_service.get_organization(ctx.tenant_id).await?;
                 let units = self.org_service.list_org_units(ctx.tenant_id).await?;
-                let counts = self.org_service.get_dashboard_counts(ctx.tenant_id).await.ok();
+                let counts = self
+                    .org_service
+                    .get_dashboard_counts(ctx.tenant_id)
+                    .await
+                    .ok();
 
                 Ok(json!({
                     "organization": org.map(|o| json!({"name": o.name, "slug": o.slug, "timezone": o.timezone})),
@@ -844,8 +868,9 @@ impl AiOrchestrationService {
                 }))
             }
             "get_autopilot_status" => {
-                let ap = self.autopilot_service.as_ref()
-                    .ok_or_else(|| DomainError::Internal("Autopilot service not available".into()))?;
+                let ap = self.autopilot_service.as_ref().ok_or_else(|| {
+                    DomainError::Internal("Autopilot service not available".into())
+                })?;
                 let diag = ap.get_diagnostics(ctx, ctx.tenant_id).await?;
                 Ok(json!({
                     "status": diag.status,
@@ -860,10 +885,13 @@ impl AiOrchestrationService {
                 }))
             }
             "list_autopilot_tasks" => {
-                let ap = self.autopilot_service.as_ref()
-                    .ok_or_else(|| DomainError::Internal("Autopilot service not available".into()))?;
+                let ap = self.autopilot_service.as_ref().ok_or_else(|| {
+                    DomainError::Internal("Autopilot service not available".into())
+                })?;
                 let status_filter = arguments.get("status").and_then(|v| v.as_str());
-                let (tasks, total) = ap.list_tasks(ctx, ctx.tenant_id, status_filter, None, 20, 0).await?;
+                let (tasks, total) = ap
+                    .list_tasks(ctx, ctx.tenant_id, status_filter, None, 20, 0)
+                    .await?;
                 Ok(json!({
                     "total": total,
                     "tasks": tasks.into_iter().map(|t| json!({
@@ -879,9 +907,13 @@ impl AiOrchestrationService {
                 }))
             }
             "trigger_autopilot_tick" => {
-                let ap = self.autopilot_service.as_ref()
-                    .ok_or_else(|| DomainError::Internal("Autopilot service not available".into()))?;
-                let dry_run = arguments.get("dry_run").and_then(|v| v.as_bool()).unwrap_or(false);
+                let ap = self.autopilot_service.as_ref().ok_or_else(|| {
+                    DomainError::Internal("Autopilot service not available".into())
+                })?;
+                let dry_run = arguments
+                    .get("dry_run")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
                 let tasks = ap.run_tick(ctx, ctx.tenant_id, dry_run).await?;
                 Ok(json!({
                     "dry_run": dry_run,
@@ -910,7 +942,10 @@ impl AiOrchestrationService {
                 filter.class_id = class_id;
                 filter.period_id = period_id;
 
-                let students_list = self.student_service.list_students(ctx.tenant_id, filter).await?;
+                let students_list = self
+                    .student_service
+                    .list_students(ctx.tenant_id, filter)
+                    .await?;
                 let mut at_risk_items = Vec::new();
 
                 for s in students_list.items.iter().take(30) {
@@ -923,7 +958,9 @@ impl AiOrchestrationService {
                         .assessment_service
                         .list_attendance(ctx.tenant_id, att_filter)
                         .await
-                        .unwrap_or_else(|_| orbis_domain::queries::filters::PaginatedList::empty(20));
+                        .unwrap_or_else(|_| {
+                            orbis_domain::queries::filters::PaginatedList::empty(20)
+                        });
                     let total_days = att_records.total_count;
                     let absent_count = att_records
                         .items
@@ -946,7 +983,9 @@ impl AiOrchestrationService {
                         .assessment_service
                         .list_grades(ctx.tenant_id, gr_filter)
                         .await
-                        .unwrap_or_else(|_| orbis_domain::queries::filters::PaginatedList::empty(20));
+                        .unwrap_or_else(|_| {
+                            orbis_domain::queries::filters::PaginatedList::empty(20)
+                        });
                     let mut total_score = rust_decimal::Decimal::ZERO;
                     let mut total_max = rust_decimal::Decimal::ZERO;
                     let mut failing_count = 0;
@@ -957,8 +996,7 @@ impl AiOrchestrationService {
                         if g.max_score > rust_decimal::Decimal::ZERO {
                             let ratio = g.score / g.max_score;
                             if ratio
-                                < rust_decimal::Decimal::from_str_exact("0.50")
-                                    .unwrap_or_default()
+                                < rust_decimal::Decimal::from_str_exact("0.50").unwrap_or_default()
                             {
                                 failing_count += 1;
                             }
@@ -977,7 +1015,9 @@ impl AiOrchestrationService {
                         .finance_service
                         .list_student_fees(ctx.tenant_id, fee_filter)
                         .await
-                        .unwrap_or_else(|_| orbis_domain::queries::filters::PaginatedList::empty(20));
+                        .unwrap_or_else(|_| {
+                            orbis_domain::queries::filters::PaginatedList::empty(20)
+                        });
                     let mut overdue_balance = rust_decimal::Decimal::ZERO;
                     for f in &fee_records.items {
                         if f.status == orbis_domain::entities::student_fee::FeeStatus::Overdue
@@ -993,15 +1033,24 @@ impl AiOrchestrationService {
 
                     if absence_rate >= 15.0 {
                         risk_score += 35;
-                        risk_factors.push(format!("High absence rate ({:.1}%, {} days)", absence_rate, absent_count));
+                        risk_factors.push(format!(
+                            "High absence rate ({:.1}%, {} days)",
+                            absence_rate, absent_count
+                        ));
                     } else if absence_rate >= 10.0 {
                         risk_score += 20;
-                        risk_factors.push(format!("Moderate absence rate ({:.1}%, {} days)", absence_rate, absent_count));
+                        risk_factors.push(format!(
+                            "Moderate absence rate ({:.1}%, {} days)",
+                            absence_rate, absent_count
+                        ));
                     }
 
                     if failing_count > 0 {
                         risk_score += (failing_count as u32 * 15).min(40);
-                        risk_factors.push(format!("Failing in {} subjects (Avg: {}%)", failing_count, avg_grade_pct));
+                        risk_factors.push(format!(
+                            "Failing in {} subjects (Avg: {}%)",
+                            failing_count, avg_grade_pct
+                        ));
                     }
 
                     if overdue_balance > rust_decimal::Decimal::ZERO {
@@ -1020,13 +1069,19 @@ impl AiOrchestrationService {
                     if risk_level == "high" || risk_level == "medium" {
                         let mut interventions = Vec::new();
                         if absence_rate >= 10.0 {
-                            interventions.push("Issue attendance warning and schedule parent counseling".to_string());
+                            interventions.push(
+                                "Issue attendance warning and schedule parent counseling"
+                                    .to_string(),
+                            );
                         }
                         if failing_count > 0 {
-                            interventions.push("Enroll in remedial academic support sessions".to_string());
+                            interventions
+                                .push("Enroll in remedial academic support sessions".to_string());
                         }
                         if overdue_balance > rust_decimal::Decimal::ZERO {
-                            interventions.push("Review financial assistance or installment schedule".to_string());
+                            interventions.push(
+                                "Review financial assistance or installment schedule".to_string(),
+                            );
                         }
 
                         at_risk_items.push(json!({
@@ -1054,14 +1109,38 @@ impl AiOrchestrationService {
             }
 
             "generate_exam_paper" => {
-                let subject_name = arguments.get("subject_name").and_then(|v| v.as_str()).unwrap_or("Mathematics");
-                let grade_level = arguments.get("grade_level").and_then(|v| v.as_str()).unwrap_or("Grade 8");
-                let topics = arguments.get("topics").and_then(|v| v.as_str()).unwrap_or("General Curriculum Review");
-                let language = arguments.get("language").and_then(|v| v.as_str()).unwrap_or("ar");
-                let difficulty = arguments.get("difficulty").and_then(|v| v.as_str()).unwrap_or("balanced");
-                let total_marks = arguments.get("total_marks").and_then(|v| v.as_i64()).unwrap_or(100);
-                let duration_minutes = arguments.get("duration_minutes").and_then(|v| v.as_i64()).unwrap_or(60);
-                let question_count = arguments.get("question_count").and_then(|v| v.as_i64()).unwrap_or(8);
+                let subject_name = arguments
+                    .get("subject_name")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Mathematics");
+                let grade_level = arguments
+                    .get("grade_level")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Grade 8");
+                let topics = arguments
+                    .get("topics")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("General Curriculum Review");
+                let language = arguments
+                    .get("language")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("ar");
+                let difficulty = arguments
+                    .get("difficulty")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("balanced");
+                let total_marks = arguments
+                    .get("total_marks")
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(100);
+                let duration_minutes = arguments
+                    .get("duration_minutes")
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(60);
+                let question_count = arguments
+                    .get("question_count")
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(8);
 
                 let system_instructions = format!(
                     "You are an expert curriculum and assessment designer for the Orbis Educational Operating System.\n\
@@ -1098,7 +1177,16 @@ impl AiOrchestrationService {
                          }}\n\
                        ]\n\
                      }}",
-                    subject_name, grade_level, topics, language, difficulty, total_marks, duration_minutes, question_count, total_marks, duration_minutes
+                    subject_name,
+                    grade_level,
+                    topics,
+                    language,
+                    difficulty,
+                    total_marks,
+                    duration_minutes,
+                    question_count,
+                    total_marks,
+                    duration_minutes
                 );
 
                 let user_prompt = format!(
@@ -1106,14 +1194,25 @@ impl AiOrchestrationService {
                     subject_name, grade_level, topics, total_marks, duration_minutes
                 );
 
-                let generated_json_str = self.llm_gateway.generate_text(ctx, "", &system_instructions, &user_prompt, 0.2).await?;
-                let clean_str = generated_json_str.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
-                let exam_json: serde_json::Value = serde_json::from_str(clean_str).unwrap_or_else(|_| json!({
-                    "raw_generated_exam": generated_json_str,
-                    "subject": subject_name,
-                    "grade_level": grade_level,
-                    "topics": topics
-                }));
+                let generated_json_str = self
+                    .llm_gateway
+                    .generate_text(ctx, "", &system_instructions, &user_prompt, 0.2)
+                    .await?;
+                let clean_str = generated_json_str
+                    .trim()
+                    .trim_start_matches("```json")
+                    .trim_start_matches("```")
+                    .trim_end_matches("```")
+                    .trim();
+                let exam_json: serde_json::Value =
+                    serde_json::from_str(clean_str).unwrap_or_else(|_| {
+                        json!({
+                            "raw_generated_exam": generated_json_str,
+                            "subject": subject_name,
+                            "grade_level": grade_level,
+                            "topics": topics
+                        })
+                    });
 
                 Ok(json!({
                     "status": "success",
@@ -1139,7 +1238,10 @@ impl AiOrchestrationService {
                 gr_filter.class_subject_id = class_subject_id;
                 gr_filter.period_id = period_id;
 
-                let grades_list = self.assessment_service.list_grades(ctx.tenant_id, gr_filter).await?;
+                let grades_list = self
+                    .assessment_service
+                    .list_grades(ctx.tenant_id, gr_filter)
+                    .await?;
                 let mut total_score = rust_decimal::Decimal::ZERO;
                 let mut total_max = rust_decimal::Decimal::ZERO;
                 let mut count = 0;
@@ -1154,12 +1256,21 @@ impl AiOrchestrationService {
                         total_score += g.score;
                         total_max += g.max_score;
                         count += 1;
-                        let pct = (g.score / g.max_score * rust_decimal::Decimal::from(100)).to_string().parse::<f64>().unwrap_or(0.0);
-                        if pct >= 90.0 { a_count += 1; }
-                        else if pct >= 80.0 { b_count += 1; }
-                        else if pct >= 70.0 { c_count += 1; }
-                        else if pct >= 60.0 { d_count += 1; }
-                        else { f_count += 1; }
+                        let pct = (g.score / g.max_score * rust_decimal::Decimal::from(100))
+                            .to_string()
+                            .parse::<f64>()
+                            .unwrap_or(0.0);
+                        if pct >= 90.0 {
+                            a_count += 1;
+                        } else if pct >= 80.0 {
+                            b_count += 1;
+                        } else if pct >= 70.0 {
+                            c_count += 1;
+                        } else if pct >= 60.0 {
+                            d_count += 1;
+                        } else {
+                            f_count += 1;
+                        }
                     }
                 }
 
@@ -1198,7 +1309,10 @@ impl AiOrchestrationService {
                     .and_then(|s| Uuid::parse_str(s).ok());
 
                 let fee_filter = StudentFeeFilter::default();
-                let fees_list = self.finance_service.list_student_fees(ctx.tenant_id, fee_filter).await?;
+                let fees_list = self
+                    .finance_service
+                    .list_student_fees(ctx.tenant_id, fee_filter)
+                    .await?;
                 let mut total_billed = rust_decimal::Decimal::ZERO;
                 let mut total_collected = rust_decimal::Decimal::ZERO;
                 let mut total_outstanding = rust_decimal::Decimal::ZERO;
@@ -1214,14 +1328,24 @@ impl AiOrchestrationService {
 
                     match f.status {
                         orbis_domain::entities::student_fee::FeeStatus::Paid => paid_count += 1,
-                        orbis_domain::entities::student_fee::FeeStatus::PartiallyPaid => partial_count += 1,
-                        orbis_domain::entities::student_fee::FeeStatus::Overdue => overdue_count += 1,
+                        orbis_domain::entities::student_fee::FeeStatus::PartiallyPaid => {
+                            partial_count += 1
+                        }
+                        orbis_domain::entities::student_fee::FeeStatus::Overdue => {
+                            overdue_count += 1
+                        }
                         _ => pending_count += 1,
                     }
                 }
 
                 let collection_efficiency = if total_billed > rust_decimal::Decimal::ZERO {
-                    format!("{:.1}%", (total_collected / total_billed * rust_decimal::Decimal::from(100)).to_string().parse::<f64>().unwrap_or(0.0))
+                    format!(
+                        "{:.1}%",
+                        (total_collected / total_billed * rust_decimal::Decimal::from(100))
+                            .to_string()
+                            .parse::<f64>()
+                            .unwrap_or(0.0)
+                    )
                 } else {
                     "100%".to_string()
                 };
@@ -1249,15 +1373,25 @@ impl AiOrchestrationService {
                     .ok_or_else(|| DomainError::Validation("student_id is required".into()))?;
                 let sid = Uuid::parse_str(sid_str)
                     .map_err(|_| DomainError::Validation("Invalid student UUID".into()))?;
-                let notice_type = arguments.get("notice_type").and_then(|v| v.as_str()).unwrap_or("academic_warning");
-                let language = arguments.get("language").and_then(|v| v.as_str()).unwrap_or("ar");
-                let custom_notes = arguments.get("custom_notes").and_then(|v| v.as_str()).unwrap_or("");
+                let notice_type = arguments
+                    .get("notice_type")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("academic_warning");
+                let language = arguments
+                    .get("language")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("ar");
+                let custom_notes = arguments
+                    .get("custom_notes")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
 
                 let student_opt = self.student_service.get_student(sid).await?;
                 let student = student_opt
                     .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", sid)))?;
 
-                let student_name = format!("{} {}", student.person.first_name, student.person.last_name);
+                let student_name =
+                    format!("{} {}", student.person.first_name, student.person.last_name);
 
                 let system_instructions = format!(
                     "You are an official school administrative assistant drafting a formal parent communication letter for the Orbis Education Platform.\n\
@@ -1268,7 +1402,11 @@ impl AiOrchestrationService {
                      Student Number: {}\n\
                      Additional Notes: {}\n\n\
                      Return a JSON object with fields: 'title', 'greeting', 'body', 'action_required', 'closing', 'contact_signoff'.",
-                    language, notice_type, student_name, student.student.student_number, custom_notes
+                    language,
+                    notice_type,
+                    student_name,
+                    student.student.student_number,
+                    custom_notes
                 );
 
                 let user_prompt = format!(
@@ -1276,13 +1414,24 @@ impl AiOrchestrationService {
                     student_name, notice_type
                 );
 
-                let generated_text = self.llm_gateway.generate_text(ctx, "", &system_instructions, &user_prompt, 0.3).await?;
-                let clean_str = generated_text.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
-                let notice_json: serde_json::Value = serde_json::from_str(clean_str).unwrap_or_else(|_| json!({
-                    "raw_notice": generated_text,
-                    "student_name": student_name,
-                    "notice_type": notice_type
-                }));
+                let generated_text = self
+                    .llm_gateway
+                    .generate_text(ctx, "", &system_instructions, &user_prompt, 0.3)
+                    .await?;
+                let clean_str = generated_text
+                    .trim()
+                    .trim_start_matches("```json")
+                    .trim_start_matches("```")
+                    .trim_end_matches("```")
+                    .trim();
+                let notice_json: serde_json::Value = serde_json::from_str(clean_str)
+                    .unwrap_or_else(|_| {
+                        json!({
+                            "raw_notice": generated_text,
+                            "student_name": student_name,
+                            "notice_type": notice_type
+                        })
+                    });
 
                 Ok(json!({
                     "status": "success",
@@ -1290,7 +1439,10 @@ impl AiOrchestrationService {
                 }))
             }
 
-            _ => Err(DomainError::Validation(format!("Tool '{}' not supported", tool_name))),
+            _ => Err(DomainError::Validation(format!(
+                "Tool '{}' not supported",
+                tool_name
+            ))),
         }
     }
 
@@ -1313,10 +1465,16 @@ impl AiOrchestrationService {
              - Branch / Scope Path: {}\n",
             user_context.org_name.as_deref().unwrap_or("Orbis School"),
             user_context.org_id,
-            user_context.effective_role.as_deref().unwrap_or("Authorized User"),
+            user_context
+                .effective_role
+                .as_deref()
+                .unwrap_or("Authorized User"),
             user_context.roles.join(", "),
             user_context.permissions.len(),
-            user_context.org_unit_path.as_deref().unwrap_or("Root / Organization-wide")
+            user_context
+                .org_unit_path
+                .as_deref()
+                .unwrap_or("Root / Organization-wide")
         );
 
         if academic_context.academic_year_name.is_some()
@@ -1357,7 +1515,10 @@ impl AiOrchestrationService {
                 prompt.push_str(&format!("- Primary Entity ID: {}\n", eid));
             }
             if !ui.selected_entity_ids.is_empty() {
-                prompt.push_str(&format!("- Selected Entity IDs: {:?}\n", ui.selected_entity_ids));
+                prompt.push_str(&format!(
+                    "- Selected Entity IDs: {:?}\n",
+                    ui.selected_entity_ids
+                ));
             }
             if let Some(ref filters) = ui.active_filters {
                 prompt.push_str(&format!("- Active Filters: {}\n", filters));

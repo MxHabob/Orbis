@@ -3,8 +3,8 @@
 // Implements 15 formatters for template expressions.
 // ═══════════════════════════════════════════════════════════════
 
-use serde_json::Value;
 use chrono::Datelike;
+use serde_json::Value;
 
 /// Format a value using a specified formatter name and arguments.
 pub fn format_value(name: &str, value: &Value, args: &[String]) -> Value {
@@ -20,8 +20,16 @@ pub fn format_value(name: &str, value: &Value, args: &[String]) -> Value {
         "grade_letter" => format_grade_letter(value),
         "truncate" => format_truncate(value, args.first().map(|s| s.as_str())),
         "default" => format_default(value, args.first().map(|s| s.as_str())),
-        "pad_start" => format_pad_start(value, args.get(0).map(|s| s.as_str()), args.get(1).map(|s| s.as_str())),
-        "pad_end" => format_pad_end(value, args.get(0).map(|s| s.as_str()), args.get(1).map(|s| s.as_str())),
+        "pad_start" => format_pad_start(
+            value,
+            args.get(0).map(|s| s.as_str()),
+            args.get(1).map(|s| s.as_str()),
+        ),
+        "pad_end" => format_pad_end(
+            value,
+            args.get(0).map(|s| s.as_str()),
+            args.get(1).map(|s| s.as_str()),
+        ),
         "join" => format_join(value, args.first().map(|s| s.as_str())),
         "count" => format_count(value),
         _ => value.clone(), // Unknown formatters return the value unchanged
@@ -71,7 +79,10 @@ fn format_date(value: &Value, format_str: Option<&str>) -> Value {
     use chrono::NaiveDateTime;
     let parsed_date = NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%dT%H:%M:%S")
         .or_else(|_| NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%d %H:%M:%S"))
-        .or_else(|_| chrono::NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").map(|d| d.and_hms_opt(0, 0, 0).unwrap()));
+        .or_else(|_| {
+            chrono::NaiveDate::parse_from_str(&date_str, "%Y-%m-%d")
+                .map(|d| d.and_hms_opt(0, 0, 0).unwrap())
+        });
 
     match parsed_date {
         Ok(dt) => {
@@ -183,11 +194,11 @@ fn format_number(value: &Value, format_str: Option<&str>) -> Value {
     };
 
     let formatted = format!("{:.*}", decimals, num_val);
-    
+
     // Group parts (integer part grouped with commas)
     let parts: Vec<&str> = formatted.split('.').collect();
     let int_part = parts[0];
-    
+
     let mut grouped_int = String::new();
     let chars: Vec<char> = int_part.chars().collect();
     let len = chars.len();
@@ -214,12 +225,12 @@ fn format_arabic_number(value: &Value) -> Value {
         Value::String(s) => s,
         _ => to_string_or_empty(value),
     };
-    
+
     // Replace commas with Arabic grouping character (٬) and dots with decimal (٫)
     let ar_num = to_arabic_digits(&num_str)
         .replace(',', "٬")
         .replace('.', "٫");
-        
+
     Value::String(ar_num)
 }
 
@@ -273,19 +284,33 @@ fn format_grade_letter(value: &Value) -> Value {
         _ => return Value::String(to_string_or_empty(value)),
     };
 
-    let grade = if num_val >= 97.0 { "أ+" }
-    else if num_val >= 93.0 { "أ" }
-    else if num_val >= 90.0 { "أ-" }
-    else if num_val >= 87.0 { "ب+" }
-    else if num_val >= 83.0 { "ب" }
-    else if num_val >= 80.0 { "ب-" }
-    else if num_val >= 77.0 { "ج+" }
-    else if num_val >= 73.0 { "ج" }
-    else if num_val >= 70.0 { "ج-" }
-    else if num_val >= 67.0 { "د+" }
-    else if num_val >= 63.0 { "د" }
-    else if num_val >= 60.0 { "د-" }
-    else { "هـ" };
+    let grade = if num_val >= 97.0 {
+        "أ+"
+    } else if num_val >= 93.0 {
+        "أ"
+    } else if num_val >= 90.0 {
+        "أ-"
+    } else if num_val >= 87.0 {
+        "ب+"
+    } else if num_val >= 83.0 {
+        "ب"
+    } else if num_val >= 80.0 {
+        "ب-"
+    } else if num_val >= 77.0 {
+        "ج+"
+    } else if num_val >= 73.0 {
+        "ج"
+    } else if num_val >= 70.0 {
+        "ج-"
+    } else if num_val >= 67.0 {
+        "د+"
+    } else if num_val >= 63.0 {
+        "د"
+    } else if num_val >= 60.0 {
+        "د-"
+    } else {
+        "هـ"
+    };
 
     Value::String(grade.to_string())
 }
@@ -293,7 +318,9 @@ fn format_grade_letter(value: &Value) -> Value {
 /// Truncate string: {{val | truncate:50}}
 fn format_truncate(value: &Value, length_str: Option<&str>) -> Value {
     let str_val = to_string_or_empty(value);
-    let max_len = length_str.and_then(|s| s.parse::<usize>().ok()).unwrap_or(100);
+    let max_len = length_str
+        .and_then(|s| s.parse::<usize>().ok())
+        .unwrap_or(100);
 
     if str_val.chars().count() <= max_len {
         Value::String(str_val)

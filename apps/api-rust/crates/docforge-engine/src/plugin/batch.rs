@@ -3,9 +3,9 @@
 // ProgressReporter + BatchStatusStore for 50K+ record processing
 // ═══════════════════════════════════════════════════════════════
 
+use crate::error::DocforgeError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use crate::error::DocforgeError;
 
 // ── Progress Reporting ───────────────────────────────────────
 

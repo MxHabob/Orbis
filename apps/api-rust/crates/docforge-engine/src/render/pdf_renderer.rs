@@ -80,12 +80,12 @@ fn build_pdf_document(
     config: &PdfRenderConfig,
 ) -> Result<Vec<u8>, DocforgeError> {
     use krilla::{
-        Document,
-        page::PageSettings,
-        geom::{Rect, PathBuilder, Size, Transform},
-        paint::{Fill, Stroke, FillRule},
-        num::NormalizedF32,
         color::rgb,
+        geom::{PathBuilder, Rect, Size, Transform},
+        num::NormalizedF32,
+        page::PageSettings,
+        paint::{Fill, FillRule, Stroke},
+        Document,
     };
 
     let mut doc = Document::new();
@@ -109,13 +109,15 @@ fn build_pdf_document(
         for element in &page_layout.elements {
             match element {
                 PositionedElement::Rect(rect) => {
-                    let r = Rect::from_xywh(rect.x, rect.y, rect.width, rect.height)
-                        .ok_or_else(|| DocforgeError::Render("Invalid rect dimensions".to_string()))?;
-                        
+                    let r = Rect::from_xywh(rect.x, rect.y, rect.width, rect.height).ok_or_else(
+                        || DocforgeError::Render("Invalid rect dimensions".to_string()),
+                    )?;
+
                     let mut pb = PathBuilder::new();
                     pb.push_rect(r);
-                    let path = pb.finish()
-                        .ok_or_else(|| DocforgeError::Render("Failed to build rect path".to_string()))?;
+                    let path = pb.finish().ok_or_else(|| {
+                        DocforgeError::Render("Failed to build rect path".to_string())
+                    })?;
 
                     if let Some(ref fill) = rect.fill {
                         surface.set_fill(Some(Fill {
@@ -144,8 +146,9 @@ fn build_pdf_document(
                     let mut pb = PathBuilder::new();
                     pb.move_to(line.x1, line.y1);
                     pb.line_to(line.x2, line.y2);
-                    let path = pb.finish()
-                        .ok_or_else(|| DocforgeError::Render("Failed to build line path".to_string()))?;
+                    let path = pb.finish().ok_or_else(|| {
+                        DocforgeError::Render("Failed to build line path".to_string())
+                    })?;
 
                     surface.set_fill(None);
                     surface.set_stroke(Some(Stroke {
@@ -163,7 +166,7 @@ fn build_pdf_document(
                 PositionedElement::Image(img) => {
                     let interpolate = false;
                     let mime_type = detect_mime_type(&img.data);
-                    
+
                     let krilla_img = if mime_type == "image/png" {
                         krilla::image::Image::from_png(img.data.clone().into(), interpolate)
                     } else if mime_type == "image/jpeg" {
@@ -173,9 +176,10 @@ fn build_pdf_document(
                     };
 
                     if let Some(k_img) = krilla_img {
-                        let size = Size::from_wh(img.width, img.height)
-                            .ok_or_else(|| DocforgeError::Render("Invalid image size".to_string()))?;
-                            
+                        let size = Size::from_wh(img.width, img.height).ok_or_else(|| {
+                            DocforgeError::Render("Invalid image size".to_string())
+                        })?;
+
                         surface.push_transform(&Transform::from_translate(img.x, img.y));
                         surface.draw_image(k_img, size);
                         surface.pop();
@@ -214,69 +218,80 @@ fn render_text_to_surface(
     fonts: &FontCache,
 ) -> Result<(), DocforgeError> {
     use krilla::{
-        geom::Point,
-        paint::{Fill, FillRule},
-        num::NormalizedF32,
         color::rgb,
+        geom::Point,
+        num::NormalizedF32,
+        paint::{Fill, FillRule},
     };
 
     let style_kind = match text_elem.font_style {
         FontStyle::Italic => FontStyleKind::Italic,
         FontStyle::Normal => FontStyleKind::Normal,
     };
-    
-    let cached_font = fonts.get_font(&text_elem.font_family, text_elem.font_weight.to_css_weight(), style_kind)
+
+    let cached_font = fonts
+        .get_font(
+            &text_elem.font_family,
+            text_elem.font_weight.to_css_weight(),
+            style_kind,
+        )
         .ok_or_else(|| DocforgeError::FontNotFound {
             family: text_elem.font_family.clone(),
             weight: format!("{:?}", text_elem.font_weight),
         })?;
-        
+
     let krilla_font = krilla::text::Font::new(cached_font.data.as_ref().clone().into(), 0)
         .ok_or_else(|| DocforgeError::Render("Failed to load font in krilla".to_string()))?;
-        
+
     let mut font_system = cosmic_text::FontSystem::new();
-    font_system.db_mut().load_font_data(cached_font.data.as_ref().clone());
-    
+    font_system
+        .db_mut()
+        .load_font_data(cached_font.data.as_ref().clone());
+
     let mut attrs = cosmic_text::Attrs::new()
         .family(cosmic_text::Family::Name(&text_elem.font_family))
         .weight(cosmic_text::Weight(text_elem.font_weight.to_css_weight()));
-        
+
     if text_elem.font_style == FontStyle::Italic {
         attrs = attrs.style(cosmic_text::Style::Italic);
     }
-    
+
     let font_size = text_elem.font_size;
     let line_height = if text_elem.line_height > 0.0 {
         text_elem.line_height
     } else {
         font_size * 1.2
     };
-    
+
     let metrics = cosmic_text::Metrics::new(font_size, line_height);
     let mut buffer = cosmic_text::Buffer::new(&mut font_system, metrics);
-    
-    buffer.set_size(&mut font_system, Some(text_elem.width), Some(text_elem.height));
-    
+
+    buffer.set_size(
+        &mut font_system,
+        Some(text_elem.width),
+        Some(text_elem.height),
+    );
+
     let align = match text_elem.text_align {
         TextAlign::Center => cosmic_text::Align::Center,
         TextAlign::End => cosmic_text::Align::Right,
         TextAlign::Justify => cosmic_text::Align::Justified,
         TextAlign::Start => cosmic_text::Align::Left,
     };
-    
+
     buffer.set_text(
         &mut font_system,
         &text_elem.content,
         attrs,
         cosmic_text::Shaping::Advanced,
     );
-    
+
     for line in buffer.lines.iter_mut() {
         line.set_align(Some(align));
     }
-    
+
     buffer.shape_until_scroll(&mut font_system, false);
-    
+
     let fill_color = &text_elem.color;
     surface.set_fill(Some(Fill {
         paint: rgb::Color::new(fill_color.r, fill_color.g, fill_color.b).into(),
@@ -284,18 +299,18 @@ fn render_text_to_surface(
         rule: FillRule::NonZero,
     }));
     surface.set_stroke(None);
-    
+
     for run in buffer.layout_runs() {
         let mut krilla_glyphs = Vec::new();
         let run_y = run.line_y;
-        
+
         for (i, glyph) in run.glyphs.iter().enumerate() {
             let x_advance = if i + 1 < run.glyphs.len() {
                 run.glyphs[i + 1].x - glyph.x
             } else {
                 glyph.w
             };
-            
+
             krilla_glyphs.push(krilla::text::KrillaGlyph {
                 glyph_id: krilla::text::GlyphId::new(glyph.glyph_id as u32),
                 text_range: glyph.start..glyph.end,
@@ -306,10 +321,10 @@ fn render_text_to_surface(
                 location: None,
             });
         }
-        
+
         let run_x = run.glyphs.first().map(|g| g.x).unwrap_or(0.0);
         let start_point = Point::from_xy(text_elem.x + run_x, text_elem.y + run_y);
-        
+
         surface.draw_glyphs(
             start_point,
             &krilla_glyphs,
@@ -319,7 +334,7 @@ fn render_text_to_surface(
             false,
         );
     }
-    
+
     Ok(())
 }
 
@@ -331,10 +346,10 @@ fn draw_svg_rects(
     offset_y: f32,
 ) {
     use krilla::{
-        geom::{Rect, PathBuilder},
-        paint::{Fill, FillRule},
-        num::NormalizedF32,
         color::rgb,
+        geom::{PathBuilder, Rect},
+        num::NormalizedF32,
+        paint::{Fill, FillRule},
     };
 
     for line in svg_content.lines() {
@@ -344,7 +359,7 @@ fn draw_svg_rects(
             let w = extract_xml_attr(line, "width").unwrap_or(0.0);
             let h = extract_xml_attr(line, "height").unwrap_or(0.0);
             let fill_color = extract_xml_attr_str(line, "fill").unwrap_or("#000000".to_string());
-            
+
             if w > 0.0 && h > 0.0 {
                 if let Some(rect) = Rect::from_xywh(offset_x + x, offset_y + y, w, h) {
                     let mut pb = PathBuilder::new();
@@ -403,13 +418,15 @@ pub fn render_single_page(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::render::barcode_gen::{generate_barcode_svg, generate_qr_svg, BarcodeFormat, QrErrorCorrection};
+    use crate::render::barcode_gen::{
+        generate_barcode_svg, generate_qr_svg, BarcodeFormat, QrErrorCorrection,
+    };
 
     #[test]
     fn test_render_empty_page() {
         let fonts = FontCache::new("Rubik");
-        let result = render_single_page(210.0, 297.0, vec![], &fonts)
-            .expect("Should render empty page");
+        let result =
+            render_single_page(210.0, 297.0, vec![], &fonts).expect("Should render empty page");
 
         assert!(!result.bytes.is_empty());
         assert_eq!(result.page_count, 1);
@@ -463,18 +480,28 @@ mod tests {
                     width_pt: mm_to_pt(210.0),
                     height_pt: mm_to_pt(297.0),
                     elements: vec![PositionedElement::Rect(RectElement {
-                        x: 10.0, y: 10.0, width: 100.0, height: 50.0,
+                        x: 10.0,
+                        y: 10.0,
+                        width: 100.0,
+                        height: 50.0,
                         fill: Some(Color::new(255, 0, 0)),
-                        stroke: None, stroke_width: 0.0, border_radius: 0.0,
+                        stroke: None,
+                        stroke_width: 0.0,
+                        border_radius: 0.0,
                     })],
                 },
                 PageLayout {
                     width_pt: mm_to_pt(210.0),
                     height_pt: mm_to_pt(297.0),
                     elements: vec![PositionedElement::Rect(RectElement {
-                        x: 10.0, y: 10.0, width: 100.0, height: 50.0,
+                        x: 10.0,
+                        y: 10.0,
+                        width: 100.0,
+                        height: 50.0,
                         fill: Some(Color::new(0, 255, 0)),
-                        stroke: None, stroke_width: 0.0, border_radius: 0.0,
+                        stroke: None,
+                        stroke_width: 0.0,
+                        border_radius: 0.0,
                     })],
                 },
             ],
@@ -495,14 +522,22 @@ mod tests {
         }
 
         let mut fonts = FontCache::new("Tahoma");
-        fonts.load_font_file("Tahoma", 400, FontStyleKind::Normal, font_path)
+        fonts
+            .load_font_file("Tahoma", 400, FontStyleKind::Normal, font_path)
             .expect("Should load Tahoma font successfully");
 
         // Generate Barcode SVG & QR SVG using barcode_gen
-        let barcode_svg = generate_barcode_svg(BarcodeFormat::Code128, "Orbis-Student-99", 200.0, 50.0)
-            .expect("Should generate barcode SVG");
-        let qr_svg = generate_qr_svg("https://orbis.edu", 80.0, QrErrorCorrection::High, "#000000", "#ffffff")
-            .expect("Should generate QR SVG");
+        let barcode_svg =
+            generate_barcode_svg(BarcodeFormat::Code128, "Orbis-Student-99", 200.0, 50.0)
+                .expect("Should generate barcode SVG");
+        let qr_svg = generate_qr_svg(
+            "https://orbis.edu",
+            80.0,
+            QrErrorCorrection::High,
+            "#000000",
+            "#ffffff",
+        )
+        .expect("Should generate QR SVG");
 
         let elements = vec![
             // Background rect
@@ -585,7 +620,8 @@ mod tests {
         assert!(!result.bytes.is_empty());
         assert_eq!(result.page_count, 1);
 
-        let artifact_dir = tempfile::tempdir().expect("Should create a temporary artifact directory");
+        let artifact_dir =
+            tempfile::tempdir().expect("Should create a temporary artifact directory");
         let pdf_path = artifact_dir.path().join("arabic_poc_proof.pdf");
         std::fs::write(&pdf_path, &result.bytes)
             .expect("Should successfully write Arabic PDF PoC to artifact folder");

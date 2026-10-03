@@ -1,18 +1,18 @@
-use std::sync::Arc;
-use uuid::Uuid;
 use chrono::Utc;
 use orbis_domain::entities::document::Document;
 use orbis_domain::entities::document_requirement::{
-    DocumentRequirement, RequirementTargetType, DocumentCondition,
+    DocumentCondition, DocumentRequirement, RequirementTargetType,
 };
-use orbis_domain::events::DomainEvent;
 use orbis_domain::errors::DomainError;
+use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
+use std::sync::Arc;
+use uuid::Uuid;
 
 use crate::context::RequestContext;
-use crate::ports::repositories::{DocumentRepository, DocumentRequirementRepository};
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::repositories::{DocumentRepository, DocumentRequirementRepository};
 
 #[derive(Debug, Clone)]
 pub struct CreateDocumentInput {
@@ -115,7 +115,9 @@ impl DocumentService {
         org_id: Uuid,
         input: CreateDocumentInput,
     ) -> Result<Document, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentWrite)
+            .await?;
 
         let now = Utc::now();
         let doc_id = Uuid::new_v4();
@@ -177,9 +179,14 @@ impl DocumentService {
         id: Uuid,
         input: UpdateDocumentInput,
     ) -> Result<Document, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentWrite)
+            .await?;
 
-        let mut doc = self.document_repo.find_by_id(id).await?
+        let mut doc = self
+            .document_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Document {id} not found")))?;
 
         if let Some(name) = input.name {
@@ -234,12 +241,21 @@ impl DocumentService {
     }
 
     /// List documents attached to an entity (e.g., Student, Employee)
-    pub async fn list_documents_by_entity(&self, entity_type: &str, entity_id: Uuid) -> Result<Vec<Document>, DomainError> {
-        self.document_repo.find_by_entity(entity_type, entity_id).await
+    pub async fn list_documents_by_entity(
+        &self,
+        entity_type: &str,
+        entity_id: Uuid,
+    ) -> Result<Vec<Document>, DomainError> {
+        self.document_repo
+            .find_by_entity(entity_type, entity_id)
+            .await
     }
 
     /// List archived documents for an organization
-    pub async fn list_archived_documents(&self, org_id: Uuid) -> Result<Vec<Document>, DomainError> {
+    pub async fn list_archived_documents(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<Document>, DomainError> {
         self.document_repo.find_archived(org_id).await
     }
 
@@ -249,10 +265,20 @@ impl DocumentService {
     }
 
     /// Archive a document
-    pub async fn archive_document(&self, ctx: &RequestContext, id: Uuid, reason: Option<String>) -> Result<Document, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+    pub async fn archive_document(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+        reason: Option<String>,
+    ) -> Result<Document, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::DocumentWrite)
+            .await?;
 
-        let mut doc = self.document_repo.find_by_id(id).await?
+        let mut doc = self
+            .document_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Document {id} not found")))?;
 
         let actor_id = match ctx.actor {
@@ -280,12 +306,21 @@ impl DocumentService {
     }
 
     /// Restore an archived or soft-deleted document
-    pub async fn restore_document(&self, ctx: &RequestContext, id: Uuid) -> Result<Document, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+    pub async fn restore_document(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<Document, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::DocumentWrite)
+            .await?;
 
         self.document_repo.restore(id).await?;
 
-        let doc = self.document_repo.find_by_id(id).await?
+        let doc = self
+            .document_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Document {id} not found")))?;
 
         let event = DomainEvent::DocumentRestored {
@@ -300,7 +335,9 @@ impl DocumentService {
 
     /// Soft delete document (move to trash)
     pub async fn delete_document(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentDelete).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentDelete)
+            .await?;
 
         let actor_id = match ctx.actor {
             orbis_domain::iam::actor::Actor::User(uid) => Some(uid),
@@ -320,7 +357,9 @@ impl DocumentService {
 
     /// Permanently purge document from database
     pub async fn purge_document(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentDelete).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentDelete)
+            .await?;
 
         self.document_repo.purge(id).await?;
 
@@ -343,7 +382,9 @@ impl DocumentService {
         org_id: Uuid,
         input: CreateDocumentRequirementInput,
     ) -> Result<DocumentRequirement, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentWrite)
+            .await?;
 
         let req = DocumentRequirement::new(
             org_id,
@@ -371,7 +412,10 @@ impl DocumentService {
     }
 
     /// Get document requirement by ID
-    pub async fn get_document_requirement(&self, id: Uuid) -> Result<Option<DocumentRequirement>, DomainError> {
+    pub async fn get_document_requirement(
+        &self,
+        id: Uuid,
+    ) -> Result<Option<DocumentRequirement>, DomainError> {
         self.doc_requirement_repo.find_by_id(id).await
     }
 
@@ -382,9 +426,14 @@ impl DocumentService {
         id: Uuid,
         input: UpdateDocumentRequirementInput,
     ) -> Result<DocumentRequirement, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentWrite)
+            .await?;
 
-        let mut req = self.doc_requirement_repo.find_by_id(id).await?
+        let mut req = self
+            .doc_requirement_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Document requirement {id} not found")))?;
 
         if let Some(target_type) = input.target_type {
@@ -426,7 +475,10 @@ impl DocumentService {
     }
 
     /// List document requirements for an organization
-    pub async fn list_document_requirements_by_org(&self, org_id: Uuid) -> Result<Vec<DocumentRequirement>, DomainError> {
+    pub async fn list_document_requirements_by_org(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<DocumentRequirement>, DomainError> {
         self.doc_requirement_repo.find_by_org(org_id).await
     }
 
@@ -437,12 +489,20 @@ impl DocumentService {
         target_type: &str,
         target_id: Option<Uuid>,
     ) -> Result<Vec<DocumentRequirement>, DomainError> {
-        self.doc_requirement_repo.find_by_target(org_id, target_type, target_id).await
+        self.doc_requirement_repo
+            .find_by_target(org_id, target_type, target_id)
+            .await
     }
 
     /// Delete document requirement
-    pub async fn delete_document_requirement(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentDelete).await?;
+    pub async fn delete_document_requirement(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::DocumentDelete)
+            .await?;
         let req = self.doc_requirement_repo.find_by_id(id).await?;
         self.doc_requirement_repo.delete(id).await?;
 
@@ -467,7 +527,10 @@ impl DocumentService {
         is_transfer: bool,
     ) -> Result<Vec<StudentDocumentFulfillment>, DomainError> {
         let all_org_reqs = self.doc_requirement_repo.find_by_org(org_id).await?;
-        let student_docs = self.document_repo.find_by_entity("student", student_id).await?;
+        let student_docs = self
+            .document_repo
+            .find_by_entity("student", student_id)
+            .await?;
 
         let mut results = Vec::new();
 
@@ -492,13 +555,16 @@ impl DocumentService {
             };
 
             // Check if student uploaded matching document
-            let uploaded = student_docs.iter().find(|d| {
-                let d_name = d.name.to_lowercase();
-                let r_code = req.code.to_lowercase();
-                let r_name_ar = req.name_ar.to_lowercase();
-                let r_name_en = req.name_en.to_lowercase();
-                d_name == r_code || d_name.contains(&r_name_ar) || d_name.contains(&r_name_en)
-            }).cloned();
+            let uploaded = student_docs
+                .iter()
+                .find(|d| {
+                    let d_name = d.name.to_lowercase();
+                    let r_code = req.code.to_lowercase();
+                    let r_name_ar = req.name_ar.to_lowercase();
+                    let r_name_en = req.name_en.to_lowercase();
+                    d_name == r_code || d_name.contains(&r_name_ar) || d_name.contains(&r_name_en)
+                })
+                .cloned();
 
             let is_fulfilled = uploaded.is_some();
 

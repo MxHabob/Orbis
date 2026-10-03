@@ -13,7 +13,12 @@ pub trait AssetStore: Send + Sync {
     fn get_asset_bytes(&self, id: &str) -> Result<Vec<u8>, DocforgeError>;
 
     /// Get font file bytes by family, weight, and style
-    fn get_font_bytes(&self, family: &str, weight: &str, style: &str) -> Result<Vec<u8>, DocforgeError>;
+    fn get_font_bytes(
+        &self,
+        family: &str,
+        weight: &str,
+        style: &str,
+    ) -> Result<Vec<u8>, DocforgeError>;
 
     /// List all available font families
     fn list_fonts(&self) -> Vec<FontMeta>;

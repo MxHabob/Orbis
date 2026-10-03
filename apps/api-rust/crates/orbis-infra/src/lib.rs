@@ -1,12 +1,12 @@
+pub mod adapters;
+pub mod autopilot;
+pub mod config;
+pub mod event_bus;
 pub mod migration;
 pub mod models;
 pub mod repositories;
-pub mod event_bus;
 pub mod security;
-pub mod adapters;
-pub mod autopilot;
 pub mod utils;
-pub mod config;
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right

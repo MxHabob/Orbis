@@ -1,7 +1,7 @@
 use async_trait::async_trait;
+use orbis_app::context::RequestContext;
 use orbis_app::ports::gateways::NotificationPort;
 use orbis_domain::errors::DomainError;
-use orbis_app::context::RequestContext;
 use reqwest::Client;
 use serde_json::json;
 
@@ -12,7 +12,10 @@ pub struct EmailAdapter {
 
 impl EmailAdapter {
     pub fn new(api_key: String) -> Self {
-        Self { api_key, client: Client::new() }
+        Self {
+            api_key,
+            client: Client::new(),
+        }
     }
 }
 
@@ -22,7 +25,13 @@ impl EmailAdapter {
 // For now, EmailAdapter just errors on whatsapp.
 #[async_trait]
 impl NotificationPort for EmailAdapter {
-    async fn send_email(&self, _ctx: &RequestContext, to: &str, subject: &str, body: &str) -> Result<(), DomainError> {
+    async fn send_email(
+        &self,
+        _ctx: &RequestContext,
+        to: &str,
+        subject: &str,
+        body: &str,
+    ) -> Result<(), DomainError> {
         let payload = json!({
             "personalizations": [{
                 "to": [{"email": to}]
@@ -35,7 +44,9 @@ impl NotificationPort for EmailAdapter {
             }]
         });
 
-        let res = self.client.post("https://api.sendgrid.com/v3/mail/send")
+        let res = self
+            .client
+            .post("https://api.sendgrid.com/v3/mail/send")
             .bearer_auth(&self.api_key)
             .json(&payload)
             .send()
@@ -44,13 +55,23 @@ impl NotificationPort for EmailAdapter {
 
         if !res.status().is_success() {
             let error_text = res.text().await.unwrap_or_default();
-            return Err(DomainError::Validation(format!("SendGrid API Error: {}", error_text)));
+            return Err(DomainError::Validation(format!(
+                "SendGrid API Error: {}",
+                error_text
+            )));
         }
 
         Ok(())
     }
 
-    async fn send_whatsapp(&self, _ctx: &RequestContext, _to: &str, _message: &str) -> Result<(), DomainError> {
-        Err(DomainError::Validation("EmailAdapter cannot send WhatsApp messages".into()))
+    async fn send_whatsapp(
+        &self,
+        _ctx: &RequestContext,
+        _to: &str,
+        _message: &str,
+    ) -> Result<(), DomainError> {
+        Err(DomainError::Validation(
+            "EmailAdapter cannot send WhatsApp messages".into(),
+        ))
     }
 }

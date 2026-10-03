@@ -1,6 +1,6 @@
-use uuid::Uuid;
-use chrono::{DateTime, Utc, NaiveDate, NaiveTime};
+use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExamSchedule {

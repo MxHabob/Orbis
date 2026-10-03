@@ -21,11 +21,15 @@ pub fn resolve_database_url() -> String {
 
     // 1. Windows standard AppData Roaming paths
     if let Ok(appdata) = std::env::var("APPDATA") {
-        let dev_db = PathBuf::from(&appdata).join("com.mulverse.orbis.dev").join("orbis.db");
+        let dev_db = PathBuf::from(&appdata)
+            .join("com.mulverse.orbis.dev")
+            .join("orbis.db");
         if is_non_empty_file(&dev_db) {
             return format!("sqlite://{}?mode=rwc", dev_db.display());
         }
-        let prod_db = PathBuf::from(&appdata).join("com.mulverse.orbis").join("orbis.db");
+        let prod_db = PathBuf::from(&appdata)
+            .join("com.mulverse.orbis")
+            .join("orbis.db");
         if is_non_empty_file(&prod_db) {
             return format!("sqlite://{}?mode=rwc", prod_db.display());
         }
@@ -33,7 +37,8 @@ pub fn resolve_database_url() -> String {
 
     // 2. macOS & Linux Application Support / Local Share paths
     if let Ok(home) = std::env::var("HOME") {
-        let mac_db = PathBuf::from(&home).join("Library/Application Support/com.mulverse.orbis.dev/orbis.db");
+        let mac_db = PathBuf::from(&home)
+            .join("Library/Application Support/com.mulverse.orbis.dev/orbis.db");
         if is_non_empty_file(&mac_db) {
             return format!("sqlite://{}?mode=rwc", mac_db.display());
         }

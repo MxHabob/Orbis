@@ -1,5 +1,5 @@
+use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
 use sea_orm::entity::prelude::*;
-use chrono::{DateTime, Utc, NaiveDate, NaiveTime};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "exam_schedules")]

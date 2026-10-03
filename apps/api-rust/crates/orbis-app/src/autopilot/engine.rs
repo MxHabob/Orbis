@@ -1,12 +1,7 @@
-use std::sync::Arc;
 use chrono::Utc;
-use tracing::{info, error};
+use std::sync::Arc;
+use tracing::{error, info};
 
-use orbis_domain::autopilot::task::{AutopilotTask, TaskStatus, TaskType};
-use orbis_domain::entities::academic_period::AcademicPeriodState;
-use orbis_domain::entities::report::{OutputFormat, ReportLocale};
-use orbis_domain::events::DomainEvent;
-use orbis_domain::errors::DomainError;
 use crate::context::RequestContext;
 use crate::ports::repositories::{AutopilotTaskRepository, PolicyRepository};
 use crate::services::{
@@ -16,6 +11,11 @@ use crate::services::{
     report_service::{GenerateReportInput, ReportService},
     workflow_service::WorkflowService,
 };
+use orbis_domain::autopilot::task::{AutopilotTask, TaskStatus, TaskType};
+use orbis_domain::entities::academic_period::AcademicPeriodState;
+use orbis_domain::entities::report::{OutputFormat, ReportLocale};
+use orbis_domain::errors::DomainError;
+use orbis_domain::events::DomainEvent;
 
 pub struct AutopilotEngine {
     pub policy_repo: Arc<dyn PolicyRepository>,
@@ -49,7 +49,11 @@ impl AutopilotEngine {
     }
 
     /// Entry point for processing an individual Autopilot task.
-    pub async fn process_task(&self, ctx: &RequestContext, mut task: AutopilotTask) -> Result<AutopilotTask, DomainError> {
+    pub async fn process_task(
+        &self,
+        ctx: &RequestContext,
+        mut task: AutopilotTask,
+    ) -> Result<AutopilotTask, DomainError> {
         let settings = self.policy_repo.get_settings(task.org_id).await?;
 
         if !settings.autopilot.enabled {
@@ -61,7 +65,10 @@ impl AutopilotEngine {
         }
 
         if settings.autopilot.mode == "manual" && task.status != TaskStatus::Executing {
-            info!("Autopilot is in manual mode for org {}, marking task {} as Suggested", task.org_id, task.id);
+            info!(
+                "Autopilot is in manual mode for org {}, marking task {} as Suggested",
+                task.org_id, task.id
+            );
             task.status = TaskStatus::Suggested;
             self.task_repo.save_task(&task).await?;
             return Ok(task);
@@ -78,7 +85,10 @@ impl AutopilotEngine {
         let now = Utc::now();
         match execution_result {
             Ok(_) => {
-                info!("Autopilot task {} ({:?}) completed successfully", task.id, task.task_type);
+                info!(
+                    "Autopilot task {} ({:?}) completed successfully",
+                    task.id, task.task_type
+                );
                 task.status = TaskStatus::Completed;
                 task.executed_at = Some(now);
                 task.error_log = None;
@@ -87,7 +97,10 @@ impl AutopilotEngine {
                 Ok(task)
             }
             Err(e) => {
-                error!("Autopilot task {} ({:?}) failed: {:?}", task.id, task.task_type, e);
+                error!(
+                    "Autopilot task {} ({:?}) failed: {:?}",
+                    task.id, task.task_type, e
+                );
                 task.executed_at = Some(now);
                 task.error_log = Some(format!("{:?}", e));
                 task.updated_at = now;
@@ -105,7 +118,11 @@ impl AutopilotEngine {
     }
 
     /// Dispatches task execution to the appropriate domain service
-    async fn dispatch_task(&self, ctx: &RequestContext, task: &AutopilotTask) -> Result<(), DomainError> {
+    async fn dispatch_task(
+        &self,
+        ctx: &RequestContext,
+        task: &AutopilotTask,
+    ) -> Result<(), DomainError> {
         match task.task_type {
             TaskType::YearActivate => {
                 if let Some(year_id) = task.target_id {
@@ -114,32 +131,48 @@ impl AutopilotEngine {
             }
             TaskType::YearClose => {
                 if let Some(year_id) = task.target_id {
-                    self.calendar_service.start_year_closing(ctx, year_id).await?;
+                    self.calendar_service
+                        .start_year_closing(ctx, year_id)
+                        .await?;
                 }
             }
             TaskType::PeriodActivate => {
                 if let Some(period_id) = task.target_id {
-                    self.calendar_service.transition_period_state(ctx, period_id, AcademicPeriodState::ActiveTeaching).await?;
+                    self.calendar_service
+                        .transition_period_state(
+                            ctx,
+                            period_id,
+                            AcademicPeriodState::ActiveTeaching,
+                        )
+                        .await?;
                 }
             }
             TaskType::EnrollmentOpen => {
                 if let Some(period_id) = task.target_id {
-                    self.calendar_service.open_enrollment_window(ctx, period_id).await?;
+                    self.calendar_service
+                        .open_enrollment_window(ctx, period_id)
+                        .await?;
                 }
             }
             TaskType::EnrollmentClose => {
                 if let Some(period_id) = task.target_id {
-                    self.calendar_service.close_enrollment_window(ctx, period_id).await?;
+                    self.calendar_service
+                        .close_enrollment_window(ctx, period_id)
+                        .await?;
                 }
             }
             TaskType::GradeEntryOpen => {
                 if let Some(period_id) = task.target_id {
-                    self.calendar_service.open_grade_entry_window(ctx, period_id).await?;
+                    self.calendar_service
+                        .open_grade_entry_window(ctx, period_id)
+                        .await?;
                 }
             }
             TaskType::GradeEntryClose => {
                 if let Some(period_id) = task.target_id {
-                    self.calendar_service.close_grade_entry_window(ctx, period_id).await?;
+                    self.calendar_service
+                        .close_grade_entry_window(ctx, period_id)
+                        .await?;
                 }
             }
             TaskType::PeriodLock => {
@@ -149,17 +182,29 @@ impl AutopilotEngine {
             }
             TaskType::PromotionDryRun => {
                 if let Some(source_period_id) = task.target_id {
-                    let preview = self.progression_service.evaluate_cohort_progression(ctx, task.org_id, source_period_id).await?;
-                    info!("Autopilot generated progression dry-run with {} candidates", preview.len());
+                    let preview = self
+                        .progression_service
+                        .evaluate_cohort_progression(ctx, task.org_id, source_period_id)
+                        .await?;
+                    info!(
+                        "Autopilot generated progression dry-run with {} candidates",
+                        preview.len()
+                    );
                 }
             }
             TaskType::LateFeeReminder | TaskType::SendDelayNotification => {
                 // In production, dispatch notification via notification_gateway or mark fee reminder sent
-                info!("Autopilot processed late fee reminder for target {:?}", task.target_id);
+                info!(
+                    "Autopilot processed late fee reminder for target {:?}",
+                    task.target_id
+                );
             }
             TaskType::GenerateReport => {
                 if let Some(params) = &task.parameters {
-                    let report_code = params.get("report_code").and_then(|v| v.as_str()).unwrap_or("DEFAULT");
+                    let report_code = params
+                        .get("report_code")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("DEFAULT");
                     let input = GenerateReportInput {
                         report_code: report_code.to_string(),
                         parameters: std::collections::HashMap::new(),
@@ -170,7 +215,10 @@ impl AutopilotEngine {
                 }
             }
             TaskType::BackupDatabase => {
-                info!("Autopilot scheduled database backup check for org {}", task.org_id);
+                info!(
+                    "Autopilot scheduled database backup check for org {}",
+                    task.org_id
+                );
             }
             TaskType::GenericWorkflow | TaskType::TransitionPeriod => {
                 info!("Autopilot generic workflow executed for task {}", task.id);
@@ -181,7 +229,11 @@ impl AutopilotEngine {
     }
 
     /// Evaluates domain events in real-time to trigger immediate automated responses or scheduled tasks.
-    pub async fn handle_event(&self, _ctx: &RequestContext, event: &DomainEvent) -> Result<(), DomainError> {
+    pub async fn handle_event(
+        &self,
+        _ctx: &RequestContext,
+        event: &DomainEvent,
+    ) -> Result<(), DomainError> {
         info!("Autopilot Engine analyzed domain event: {:?}", event);
         Ok(())
     }

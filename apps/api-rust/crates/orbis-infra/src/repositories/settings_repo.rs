@@ -1,10 +1,10 @@
 //! Infrastructure implementation of SettingsRepository.
 
 use async_trait::async_trait;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use orbis_app::ports::repositories::SettingsRepository;
 use orbis_domain::entities::settings::OrganizationSettings;
 use orbis_domain::errors::DomainError;
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use uuid::Uuid;
 
 use crate::models::organization;
@@ -31,7 +31,11 @@ impl SettingsRepository for SettingsRepoImpl {
         }
     }
 
-    async fn save_settings(&self, org_id: Uuid, settings: &OrganizationSettings) -> Result<(), DomainError> {
+    async fn save_settings(
+        &self,
+        org_id: Uuid,
+        settings: &OrganizationSettings,
+    ) -> Result<(), DomainError> {
         let org = organization::Entity::find_by_id(org_id)
             .one(&self.db)
             .await
@@ -44,10 +48,11 @@ impl SettingsRepository for SettingsRepoImpl {
         let mut active: organization::ActiveModel = org.into();
         active.settings = Set(Some(json_val));
         active.updated_at = Set(chrono::Utc::now());
-        active.update(&self.db).await
+        active
+            .update(&self.db)
+            .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
         Ok(())
     }
 }
-

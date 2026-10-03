@@ -3,7 +3,7 @@ use chrono::Utc;
 use orbis_app::ports::repositories::DocumentRepository;
 use orbis_domain::entities::document::Document as DomainDocument;
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use uuid::Uuid;
 
 use crate::models::document::{self, Entity as DocumentEntity};
@@ -54,7 +54,10 @@ fn map_document_model_to_domain(m: document::Model) -> DomainDocument {
 #[async_trait]
 impl DocumentRepository for DocumentRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainDocument>, DomainError> {
-        let model = DocumentEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let model = DocumentEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(map_document_model_to_domain))
     }
 
@@ -66,10 +69,17 @@ impl DocumentRepository for DocumentRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_document_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_document_model_to_domain)
+            .collect())
     }
 
-    async fn find_by_entity(&self, entity_type: &str, entity_id: Uuid) -> Result<Vec<DomainDocument>, DomainError> {
+    async fn find_by_entity(
+        &self,
+        entity_type: &str,
+        entity_id: Uuid,
+    ) -> Result<Vec<DomainDocument>, DomainError> {
         let models = DocumentEntity::find()
             .filter(document::Column::EntityType.eq(entity_type))
             .filter(document::Column::EntityId.eq(entity_id))
@@ -78,10 +88,17 @@ impl DocumentRepository for DocumentRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_document_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_document_model_to_domain)
+            .collect())
     }
 
-    async fn find_by_folder(&self, org_id: Uuid, folder_id: Uuid) -> Result<Vec<DomainDocument>, DomainError> {
+    async fn find_by_folder(
+        &self,
+        org_id: Uuid,
+        folder_id: Uuid,
+    ) -> Result<Vec<DomainDocument>, DomainError> {
         let models = DocumentEntity::find()
             .filter(document::Column::OrgId.eq(org_id))
             .filter(document::Column::FolderId.eq(Some(folder_id)))
@@ -90,10 +107,18 @@ impl DocumentRepository for DocumentRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_document_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_document_model_to_domain)
+            .collect())
     }
 
-    async fn find_by_curriculum(&self, org_id: Uuid, academic_year_id: Option<Uuid>, term_id: Option<Uuid>) -> Result<Vec<DomainDocument>, DomainError> {
+    async fn find_by_curriculum(
+        &self,
+        org_id: Uuid,
+        academic_year_id: Option<Uuid>,
+        term_id: Option<Uuid>,
+    ) -> Result<Vec<DomainDocument>, DomainError> {
         let mut query = DocumentEntity::find()
             .filter(document::Column::OrgId.eq(org_id))
             .filter(document::Column::Category.eq("curriculum"))
@@ -107,8 +132,14 @@ impl DocumentRepository for DocumentRepoImpl {
             query = query.filter(document::Column::TermId.eq(Some(t)));
         }
 
-        let models = query.all(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_document_model_to_domain).collect())
+        let models = query
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models
+            .into_iter()
+            .map(map_document_model_to_domain)
+            .collect())
     }
 
     async fn find_archived(&self, org_id: Uuid) -> Result<Vec<DomainDocument>, DomainError> {
@@ -119,7 +150,10 @@ impl DocumentRepository for DocumentRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_document_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_document_model_to_domain)
+            .collect())
     }
 
     async fn find_trash(&self, org_id: Uuid) -> Result<Vec<DomainDocument>, DomainError> {
@@ -129,7 +163,10 @@ impl DocumentRepository for DocumentRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_document_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_document_model_to_domain)
+            .collect())
     }
 
     async fn save(&self, document: &DomainDocument) -> Result<(), DomainError> {
@@ -170,33 +207,53 @@ impl DocumentRepository for DocumentRepoImpl {
             updated_at: Set(document.updated_at.into()),
         };
 
-        if DocumentEntity::find_by_id(document.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if DocumentEntity::find_by_id(document.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }
 
     async fn soft_delete(&self, id: Uuid, deleted_by: Option<Uuid>) -> Result<(), DomainError> {
-        let doc = DocumentEntity::find_by_id(id).one(&self.db).await
+        let doc = DocumentEntity::find_by_id(id)
+            .one(&self.db)
+            .await
             .map_err(|e| DomainError::Internal(e.to_string()))?
             .ok_or_else(|| DomainError::NotFound(format!("Document {id} not found")))?;
 
         if doc.is_legal_hold {
-            return Err(DomainError::BusinessRule("Cannot delete a document with active legal hold".to_string()));
+            return Err(DomainError::BusinessRule(
+                "Cannot delete a document with active legal hold".to_string(),
+            ));
         }
 
         let mut active: document::ActiveModel = doc.into();
         active.deleted_at = Set(Some(Utc::now().into()));
         active.deleted_by = Set(deleted_by);
         active.updated_at = Set(Utc::now().into());
-        active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        active
+            .update(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
     }
 
     async fn restore(&self, id: Uuid) -> Result<(), DomainError> {
-        let doc = DocumentEntity::find_by_id(id).one(&self.db).await
+        let doc = DocumentEntity::find_by_id(id)
+            .one(&self.db)
+            .await
             .map_err(|e| DomainError::Internal(e.to_string()))?
             .ok_or_else(|| DomainError::NotFound(format!("Document {id} not found")))?;
 
@@ -208,28 +265,42 @@ impl DocumentRepository for DocumentRepoImpl {
         active.archived_by = Set(None);
         active.archive_reason = Set(None);
         active.updated_at = Set(Utc::now().into());
-        active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        active
+            .update(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
     }
 
     async fn purge(&self, id: Uuid) -> Result<(), DomainError> {
-        let doc = DocumentEntity::find_by_id(id).one(&self.db).await
+        let doc = DocumentEntity::find_by_id(id)
+            .one(&self.db)
+            .await
             .map_err(|e| DomainError::Internal(e.to_string()))?
             .ok_or_else(|| DomainError::NotFound(format!("Document {id} not found")))?;
 
         if doc.is_legal_hold {
-            return Err(DomainError::BusinessRule("Cannot purge a document with active legal hold".to_string()));
+            return Err(DomainError::BusinessRule(
+                "Cannot purge a document with active legal hold".to_string(),
+            ));
         }
 
-        DocumentEntity::delete_by_id(id).exec(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        DocumentEntity::delete_by_id(id)
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
     }
-    
+
     async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
         self.soft_delete(id, None).await
     }
 
-    async fn delete_by_entity(&self, entity_type: &str, entity_id: Uuid) -> Result<(), DomainError> {
+    async fn delete_by_entity(
+        &self,
+        entity_type: &str,
+        entity_id: Uuid,
+    ) -> Result<(), DomainError> {
         let docs = DocumentEntity::find()
             .filter(document::Column::EntityType.eq(entity_type))
             .filter(document::Column::EntityId.eq(entity_id))
@@ -250,9 +321,9 @@ impl DocumentRepository for DocumentRepoImpl {
     }
 }
 
+use crate::models::document_requirement::{self as doc_req_model, Entity as DocRequirementEntity};
 use orbis_app::ports::repositories::DocumentRequirementRepository;
 use orbis_domain::entities::document_requirement::DocumentRequirement as DomainDocRequirement;
-use crate::models::document_requirement::{self as doc_req_model, Entity as DocRequirementEntity};
 
 pub struct DocumentRequirementRepoImpl {
     pub db: DatabaseConnection,
@@ -283,7 +354,12 @@ impl DocumentRequirementRepository for DocumentRequirementRepoImpl {
         Ok(models.into_iter().map(|m| m.into()).collect())
     }
 
-    async fn find_by_target(&self, org_id: Uuid, target_type: &str, target_id: Option<Uuid>) -> Result<Vec<DomainDocRequirement>, DomainError> {
+    async fn find_by_target(
+        &self,
+        org_id: Uuid,
+        target_type: &str,
+        target_id: Option<Uuid>,
+    ) -> Result<Vec<DomainDocRequirement>, DomainError> {
         let mut query = DocRequirementEntity::find()
             .filter(doc_req_model::Column::OrgId.eq(org_id))
             .filter(doc_req_model::Column::TargetType.eq(target_type));
@@ -292,7 +368,10 @@ impl DocumentRequirementRepository for DocumentRequirementRepoImpl {
             query = query.filter(doc_req_model::Column::TargetId.eq(tid));
         }
 
-        let models = query.all(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let models = query
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(models.into_iter().map(|m| m.into()).collect())
     }
 
@@ -304,9 +383,15 @@ impl DocumentRequirementRepository for DocumentRequirementRepoImpl {
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
         if exists.is_some() {
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
     }

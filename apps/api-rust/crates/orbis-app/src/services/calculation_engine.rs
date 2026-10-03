@@ -1,12 +1,12 @@
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use rust_decimal::Decimal;
-use rust_decimal::prelude::*;
 use orbis_domain::entities::academic_policy::{
-    AcademicPolicy, AcademicStatus, MonthlyAssessmentBreakdown,
-    RoundingMode, SubjectAnnualResult, SubjectTermResult, TiePolicy,
+    AcademicPolicy, AcademicStatus, MonthlyAssessmentBreakdown, RoundingMode, SubjectAnnualResult,
+    SubjectTermResult, TiePolicy,
 };
 use orbis_domain::errors::DomainError;
+use rust_decimal::Decimal;
+use rust_decimal::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Defines the Abstract Syntax Tree (AST) for custom calculation formulas using exact Decimal precision.
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -26,7 +26,10 @@ pub enum AstNode {
         right: Option<Box<AstNode>>,
     },
     /// Subtraction of two nodes
-    Subtract { left: Box<AstNode>, right: Box<AstNode> },
+    Subtract {
+        left: Box<AstNode>,
+        right: Box<AstNode>,
+    },
     /// Multiplication of multiple nodes
     Multiply {
         #[serde(default)]
@@ -37,7 +40,10 @@ pub enum AstNode {
         right: Option<Box<AstNode>>,
     },
     /// Division of two nodes
-    Divide { left: Box<AstNode>, right: Box<AstNode> },
+    Divide {
+        left: Box<AstNode>,
+        right: Box<AstNode>,
+    },
     /// Maximum value among operands
     Max { operands: Vec<AstNode> },
     /// Minimum value among operands
@@ -78,17 +84,23 @@ impl CalcEngine {
     fn evaluate_inner(&self, node: &AstNode, depth: usize) -> Result<Decimal, DomainError> {
         if depth > MAX_DEPTH {
             return Err(DomainError::Validation(format!(
-                "Calculation formula exceeded maximum recursion depth ({})", MAX_DEPTH
+                "Calculation formula exceeded maximum recursion depth ({})",
+                MAX_DEPTH
             )));
         }
         match node {
             AstNode::Literal { value } => Ok(*value),
-            AstNode::Variable { name } => {
-                self.context.get(name).copied().ok_or_else(|| {
-                    DomainError::Validation(format!("Variable '{}' not found in evaluation context", name))
-                })
-            }
-            AstNode::Add { operands, left, right } => {
+            AstNode::Variable { name } => self.context.get(name).copied().ok_or_else(|| {
+                DomainError::Validation(format!(
+                    "Variable '{}' not found in evaluation context",
+                    name
+                ))
+            }),
+            AstNode::Add {
+                operands,
+                left,
+                right,
+            } => {
                 let mut ops = operands.clone();
                 if let Some(l) = left {
                     ops.insert(0, *l.clone());
@@ -107,7 +119,11 @@ impl CalcEngine {
                 let r = self.evaluate_inner(right, depth + 1)?;
                 Ok(l - r)
             }
-            AstNode::Multiply { operands, left, right } => {
+            AstNode::Multiply {
+                operands,
+                left,
+                right,
+            } => {
                 let mut ops = operands.clone();
                 if let Some(l) = left {
                     ops.insert(0, *l.clone());
@@ -125,7 +141,9 @@ impl CalcEngine {
                 let l = self.evaluate_inner(left, depth + 1)?;
                 let r = self.evaluate_inner(right, depth + 1)?;
                 if r == Decimal::ZERO {
-                    return Err(DomainError::Validation("Division by zero in calculation formula".to_string()));
+                    return Err(DomainError::Validation(
+                        "Division by zero in calculation formula".to_string(),
+                    ));
                 }
                 Ok(l / r)
             }
@@ -177,7 +195,9 @@ impl CalcEngine {
 /// Applies rounding according to the specified policy and decimal precision.
 pub fn apply_rounding(value: Decimal, mode: RoundingMode, dp: u32) -> Decimal {
     match mode {
-        RoundingMode::RoundHalfUp => value.round_dp_with_strategy(dp, RoundingStrategy::MidpointAwayFromZero),
+        RoundingMode::RoundHalfUp => {
+            value.round_dp_with_strategy(dp, RoundingStrategy::MidpointAwayFromZero)
+        }
         RoundingMode::RoundUp => value.round_dp_with_strategy(dp, RoundingStrategy::AwayFromZero),
         RoundingMode::RoundDown => value.round_dp_with_strategy(dp, RoundingStrategy::ToZero),
         RoundingMode::Truncate => value.trunc_with_scale(dp),
@@ -240,14 +260,18 @@ impl AcademicCalculationEngine {
 
         // Normalize month avg (0..100) to 20 points
         let monthly_contribution = (monthly_avg / Decimal::from(100)) * Decimal::from(20);
-        let final_exam_score = term_final_exam.unwrap_or(Decimal::ZERO).min(Decimal::from(30));
+        let final_exam_score = term_final_exam
+            .unwrap_or(Decimal::ZERO)
+            .min(Decimal::from(30));
 
         let raw_term_total = monthly_contribution + final_exam_score;
-        let term_total = apply_rounding(raw_term_total, policy.rounding_mode, policy.decimal_places);
+        let term_total =
+            apply_rounding(raw_term_total, policy.rounding_mode, policy.decimal_places);
 
         // Percentage out of 50 computed from unrounded raw value
         let raw_percentage = (raw_term_total / Decimal::from(50)) * Decimal::from(100);
-        let percentage = apply_rounding(raw_percentage, policy.rounding_mode, policy.decimal_places);
+        let percentage =
+            apply_rounding(raw_percentage, policy.rounding_mode, policy.decimal_places);
 
         let status = if percentage >= policy.honors_threshold_percentage {
             AcademicStatus::PassedWithHonors
@@ -268,8 +292,16 @@ impl AcademicCalculationEngine {
             month_1,
             month_2,
             month_3,
-            monthly_average: apply_rounding(monthly_avg, policy.rounding_mode, policy.decimal_places),
-            monthly_contribution: apply_rounding(monthly_contribution, policy.rounding_mode, policy.decimal_places),
+            monthly_average: apply_rounding(
+                monthly_avg,
+                policy.rounding_mode,
+                policy.decimal_places,
+            ),
+            monthly_contribution: apply_rounding(
+                monthly_contribution,
+                policy.rounding_mode,
+                policy.decimal_places,
+            ),
             monthly_contribution_max: Decimal::from(20),
             term_final_exam,
             term_final_exam_max: Decimal::from(30),
@@ -293,11 +325,21 @@ impl AcademicCalculationEngine {
         term_2_result: Option<SubjectTermResult>,
         policy: &AcademicPolicy,
     ) -> SubjectAnnualResult {
-        let t1_score = term_1_result.as_ref().map(|r| r.term_total).unwrap_or(Decimal::ZERO);
-        let t2_score = term_2_result.as_ref().map(|r| r.term_total).unwrap_or(Decimal::ZERO);
+        let t1_score = term_1_result
+            .as_ref()
+            .map(|r| r.term_total)
+            .unwrap_or(Decimal::ZERO);
+        let t2_score = term_2_result
+            .as_ref()
+            .map(|r| r.term_total)
+            .unwrap_or(Decimal::ZERO);
 
         let raw_annual_total = t1_score + t2_score;
-        let annual_total = apply_rounding(raw_annual_total, policy.rounding_mode, policy.decimal_places);
+        let annual_total = apply_rounding(
+            raw_annual_total,
+            policy.rounding_mode,
+            policy.decimal_places,
+        );
 
         let percentage = annual_total; // Since max is 100
         let status = if percentage >= policy.honors_threshold_percentage {
@@ -501,7 +543,9 @@ mod tests {
             "Mathematics".into(),
             None,
             d("3"),
-            None, None, None,
+            None,
+            None,
+            None,
             None,
             &policy,
         );
@@ -536,20 +580,27 @@ mod tests {
             ("StudentD", d("85")),
         ];
 
-        let std_rank = AcademicCalculationEngine::compute_rankings(&scores, TiePolicy::StandardCompetition);
-        assert_eq!(std_rank, vec![
-            ("StudentA", 1),
-            ("StudentB", 2),
-            ("StudentC", 2),
-            ("StudentD", 4), // skips 3
-        ]);
+        let std_rank =
+            AcademicCalculationEngine::compute_rankings(&scores, TiePolicy::StandardCompetition);
+        assert_eq!(
+            std_rank,
+            vec![
+                ("StudentA", 1),
+                ("StudentB", 2),
+                ("StudentC", 2),
+                ("StudentD", 4), // skips 3
+            ]
+        );
 
         let dense_rank = AcademicCalculationEngine::compute_rankings(&scores, TiePolicy::Dense);
-        assert_eq!(dense_rank, vec![
-            ("StudentA", 1),
-            ("StudentB", 2),
-            ("StudentC", 2),
-            ("StudentD", 3), // dense next is 3
-        ]);
+        assert_eq!(
+            dense_rank,
+            vec![
+                ("StudentA", 1),
+                ("StudentB", 2),
+                ("StudentC", 2),
+                ("StudentD", 3), // dense next is 3
+            ]
+        );
     }
 }

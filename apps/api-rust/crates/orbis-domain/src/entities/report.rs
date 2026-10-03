@@ -188,7 +188,11 @@ impl ParamValue {
     }
 
     pub fn as_i64(&self) -> Option<i64> {
-        if let Self::Integer(v) = self { Some(*v) } else { None }
+        if let Self::Integer(v) = self {
+            Some(*v)
+        } else {
+            None
+        }
     }
 
     pub fn as_f64(&self) -> Option<f64> {
@@ -200,7 +204,11 @@ impl ParamValue {
     }
 
     pub fn as_bool(&self) -> Option<bool> {
-        if let Self::Boolean(v) = self { Some(*v) } else { None }
+        if let Self::Boolean(v) = self {
+            Some(*v)
+        } else {
+            None
+        }
     }
 
     pub fn as_date_range(&self) -> Option<(&str, &str)> {
@@ -212,7 +220,11 @@ impl ParamValue {
     }
 
     pub fn as_id_list(&self) -> Option<&[String]> {
-        if let Self::IdList(ids) = self { Some(ids.as_slice()) } else { None }
+        if let Self::IdList(ids) = self {
+            Some(ids.as_slice())
+        } else {
+            None
+        }
     }
 }
 
@@ -718,8 +730,14 @@ mod tests {
     #[test]
     fn test_template_status_transitions() {
         assert_eq!(TemplateStatus::from_str("draft"), TemplateStatus::Draft);
-        assert_eq!(TemplateStatus::from_str("published"), TemplateStatus::Published);
-        assert_eq!(TemplateStatus::from_str("archived"), TemplateStatus::Archived);
+        assert_eq!(
+            TemplateStatus::from_str("published"),
+            TemplateStatus::Published
+        );
+        assert_eq!(
+            TemplateStatus::from_str("archived"),
+            TemplateStatus::Archived
+        );
         assert_eq!(TemplateStatus::from_str("invalid"), TemplateStatus::Draft);
     }
 
@@ -852,13 +870,18 @@ impl SheetSize {
             SheetSize::A5 => (148.0, 210.0),
             SheetSize::Letter => (216.0, 279.0),
             SheetSize::Legal => (216.0, 356.0),
-            SheetSize::Custom { width_mm, height_mm } => (*width_mm, *height_mm),
+            SheetSize::Custom {
+                width_mm,
+                height_mm,
+            } => (*width_mm, *height_mm),
         }
     }
 }
 
 impl Default for SheetSize {
-    fn default() -> Self { SheetSize::A4 }
+    fn default() -> Self {
+        SheetSize::A4
+    }
 }
 
 /// Margins for printing (mm).
@@ -872,7 +895,12 @@ pub struct PrintMargins {
 
 impl Default for PrintMargins {
     fn default() -> Self {
-        Self { top: 10.0, bottom: 10.0, left: 10.0, right: 10.0 }
+        Self {
+            top: 10.0,
+            bottom: 10.0,
+            left: 10.0,
+            right: 10.0,
+        }
     }
 }
 
@@ -887,7 +915,9 @@ pub enum FillOrder {
 }
 
 impl Default for FillOrder {
-    fn default() -> Self { FillOrder::Rtl }
+    fn default() -> Self {
+        FillOrder::Rtl
+    }
 }
 
 /// Output mode for batch printing.
@@ -903,11 +933,17 @@ pub enum BatchOutputMode {
 }
 
 impl Default for BatchOutputMode {
-    fn default() -> Self { BatchOutputMode::Merged }
+    fn default() -> Self {
+        BatchOutputMode::Merged
+    }
 }
 
-fn default_gap() -> f64 { 3.0 }
-fn default_fill_order() -> FillOrder { FillOrder::Rtl }
+fn default_gap() -> f64 {
+    3.0
+}
+fn default_fill_order() -> FillOrder {
+    FillOrder::Rtl
+}
 
 /// Computed multi-up layout slot position (in mm).
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -943,18 +979,25 @@ impl BatchPrintConfig {
         let printable_h = sheet_h - self.margins.top - self.margins.bottom;
 
         // Compute grid
-        let columns = self.forced_columns.unwrap_or_else(|| {
-            ((printable_w + self.gap_mm) / (self.item_width_mm + self.gap_mm)).floor() as u32
-        }).max(1);
+        let columns = self
+            .forced_columns
+            .unwrap_or_else(|| {
+                ((printable_w + self.gap_mm) / (self.item_width_mm + self.gap_mm)).floor() as u32
+            })
+            .max(1);
 
-        let rows = self.forced_rows.unwrap_or_else(|| {
-            ((printable_h + self.gap_mm) / (self.item_height_mm + self.gap_mm)).floor() as u32
-        }).max(1);
+        let rows = self
+            .forced_rows
+            .unwrap_or_else(|| {
+                ((printable_h + self.gap_mm) / (self.item_height_mm + self.gap_mm)).floor() as u32
+            })
+            .max(1);
 
         let items_per_sheet = columns * rows;
 
         // Center items on sheet
-        let total_items_w = columns as f64 * self.item_width_mm + (columns as f64 - 1.0) * self.gap_mm;
+        let total_items_w =
+            columns as f64 * self.item_width_mm + (columns as f64 - 1.0) * self.gap_mm;
         let total_items_h = rows as f64 * self.item_height_mm + (rows as f64 - 1.0) * self.gap_mm;
         let offset_x = self.margins.left + (printable_w - total_items_w) / 2.0;
         let offset_y = self.margins.top + (printable_h - total_items_h) / 2.0;
@@ -993,14 +1036,18 @@ impl BatchPrintConfig {
     /// Compute how many physical sheets are needed for a given number of records.
     pub fn total_sheets(&self, total_records: usize) -> u32 {
         let layout = self.compute_layout();
-        if layout.items_per_sheet == 0 { return 0; }
+        if layout.items_per_sheet == 0 {
+            return 0;
+        }
         ((total_records as f64) / (layout.items_per_sheet as f64)).ceil() as u32
     }
 
     /// Paginate a list of items into sheets.
     pub fn paginate<T: Clone>(&self, items: &[T]) -> Vec<Vec<T>> {
         let layout = self.compute_layout();
-        if layout.items_per_sheet == 0 { return vec![]; }
+        if layout.items_per_sheet == 0 {
+            return vec![];
+        }
         items
             .chunks(layout.items_per_sheet as usize)
             .map(|chunk| chunk.to_vec())

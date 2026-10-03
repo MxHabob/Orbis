@@ -1,13 +1,17 @@
 //! IAM routes — Authentication, users, roles, permissions.
 
-use axum::{extract::State, routing::{get, post}, Json, Router};
+use axum::{
+    Json, Router,
+    extract::State,
+    routing::{get, post},
+};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use super::{ApiError, ApiResponse};
-use super::extractors::AuthContext;
 use super::employee_routes::AccountProvisioningResultDto;
+use super::extractors::AuthContext;
+use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 
 #[derive(Serialize, Deserialize, ToSchema, Clone, Debug)]
@@ -136,19 +140,20 @@ pub fn user_to_dto(
     p: Option<&orbis_domain::entities::person::Person>,
     roles: Vec<String>,
 ) -> UserDto {
-    let (full_name, full_name_ar, avatar_url, phone, national_id, gender, birth_date, address) = match p {
-        Some(person) => (
-            person.full_name(),
-            person.full_name_ar(),
-            person.avatar_url.clone(),
-            person.phone.clone(),
-            person.national_id.clone(),
-            person.gender.clone(),
-            person.birth_date.map(|d| d.to_string()),
-            person.address.clone(),
-        ),
-        None => (String::new(), None, None, None, None, None, None, None),
-    };
+    let (full_name, full_name_ar, avatar_url, phone, national_id, gender, birth_date, address) =
+        match p {
+            Some(person) => (
+                person.full_name(),
+                person.full_name_ar(),
+                person.avatar_url.clone(),
+                person.phone.clone(),
+                person.national_id.clone(),
+                person.gender.clone(),
+                person.birth_date.map(|d| d.to_string()),
+                person.address.clone(),
+            ),
+            None => (String::new(), None, None, None, None, None, None, None),
+        };
     let is_active = u.status == "active";
     UserDto {
         id: u.id,
@@ -251,7 +256,10 @@ async fn login(
         org_unit_path: None,
     };
 
-    let res = state.auth_service.login(&ctx, &payload.email, &payload.password).await?;
+    let res = state
+        .auth_service
+        .login(&ctx, &payload.email, &payload.password)
+        .await?;
     let roles = res.effective_context.roles.clone();
     let user_dto = user_to_dto(res.user, res.person.as_ref(), roles);
 
@@ -277,14 +285,22 @@ async fn get_session(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<SessionResponse>>, ApiError> {
-    let user_id = ctx.actor.id()
+    let user_id = ctx
+        .actor
+        .id()
         .ok_or_else(|| ApiError::unauthorized("No user identity in token"))?;
 
-    let user = state.auth_service.get_user(user_id).await?
+    let user = state
+        .auth_service
+        .get_user(user_id)
+        .await?
         .ok_or_else(|| ApiError::not_found("User not found"))?;
 
     let person = state.person_repo.find_by_id(user.person_id).await?;
-    let effective_context = state.auth_service.build_effective_context(&user, person.as_ref()).await?;
+    let effective_context = state
+        .auth_service
+        .build_effective_context(&user, person.as_ref())
+        .await?;
     let roles = effective_context.roles.clone();
     let user_dto = user_to_dto(user, person.as_ref(), roles);
 
@@ -311,14 +327,17 @@ async fn register_user(
     State(state): State<AppState>,
     Json(payload): Json<RegisterUserRequest>,
 ) -> Result<Json<ApiResponse<UserDto>>, ApiError> {
-    let user = state.auth_service.register_user(
-        &ctx,
-        payload.full_name,
-        Some(payload.email),
-        payload.password,
-        payload.role.clone(),
-        Some(ctx.tenant_id),
-    ).await?;
+    let user = state
+        .auth_service
+        .register_user(
+            &ctx,
+            payload.full_name,
+            Some(payload.email),
+            payload.password,
+            payload.role.clone(),
+            Some(ctx.tenant_id),
+        )
+        .await?;
 
     if let Some(role) = payload.role {
         use orbis_infra::models::user_role_assignment;
@@ -337,7 +356,11 @@ async fn register_user(
     }
 
     let person = state.person_repo.find_by_id(user.person_id).await?;
-    let roles = state.permission_checker.get_user_roles(user.id, user.org_id).await.unwrap_or_default();
+    let roles = state
+        .permission_checker
+        .get_user_roles(user.id, user.org_id)
+        .await
+        .unwrap_or_default();
 
     Ok(ApiResponse::ok(user_to_dto(user, person.as_ref(), roles)))
 }
@@ -359,23 +382,30 @@ async fn provision_user(
     State(state): State<AppState>,
     Json(payload): Json<ProvisionUserRequest>,
 ) -> Result<Json<ApiResponse<AccountProvisioningResultDto>>, ApiError> {
-    use orbis_domain::entities::identity_provisioning::{ActorType, DeliveryChannel};
     use orbis_app::services::identity_provisioning_service::ProvisionAccountInput;
+    use orbis_domain::entities::identity_provisioning::{ActorType, DeliveryChannel};
 
     // 1. Resolve Person ID & Actor Type
     let mut resolved_person_id = payload.person_id;
-    let mut actor_type = payload.actor_type
+    let mut actor_type = payload
+        .actor_type
         .as_deref()
         .map(ActorType::from)
         .unwrap_or(ActorType::Custom);
 
     if let Some(emp_id) = payload.employee_id {
-        let emp = state.employee_repo.find_by_id(emp_id).await?
+        let emp = state
+            .employee_repo
+            .find_by_id(emp_id)
+            .await?
             .ok_or_else(|| ApiError::not_found(format!("Employee {} not found", emp_id)))?;
         resolved_person_id = Some(emp.person_id);
         actor_type = ActorType::Employee;
     } else if let Some(std_id) = payload.student_id {
-        let std = state.student_repo.find_by_id(std_id).await?
+        let std = state
+            .student_repo
+            .find_by_id(std_id)
+            .await?
             .ok_or_else(|| ApiError::not_found(format!("Student {} not found", std_id)))?;
         resolved_person_id = Some(std.person_id);
         actor_type = ActorType::Student;
@@ -388,7 +418,10 @@ async fn provision_user(
         pid
     } else {
         // Create new person
-        let full_name = payload.full_name.clone().unwrap_or_else(|| "User".to_string());
+        let full_name = payload
+            .full_name
+            .clone()
+            .unwrap_or_else(|| "User".to_string());
         let parts: Vec<&str> = full_name.split_whitespace().collect();
         let first_name = parts.first().copied().unwrap_or("User").to_string();
         let last_name = if parts.len() > 1 {
@@ -446,11 +479,10 @@ async fn provision_user(
         custom_password: payload.custom_password,
     };
 
-    let result = state.identity_provisioning_service.provision_account(
-        &ctx,
-        ctx.tenant_id,
-        input,
-    ).await?;
+    let result = state
+        .identity_provisioning_service
+        .provision_account(&ctx, ctx.tenant_id, input)
+        .await?;
 
     // If employee_id was provided, update employee.user_id
     if let Some(emp_id) = payload.employee_id {
@@ -489,8 +521,16 @@ async fn list_users(
     let users = state.user_repo.find_by_org(ctx.tenant_id).await?;
     let mut dtos = Vec::new();
     for u in users {
-        let p = state.person_repo.find_by_id(u.person_id).await.unwrap_or(None);
-        let roles = state.permission_checker.get_user_roles(u.id, u.org_id).await.unwrap_or_default();
+        let p = state
+            .person_repo
+            .find_by_id(u.person_id)
+            .await
+            .unwrap_or(None);
+        let roles = state
+            .permission_checker
+            .get_user_roles(u.id, u.org_id)
+            .await
+            .unwrap_or_default();
         dtos.push(user_to_dto(u, p.as_ref(), roles));
     }
     Ok(ApiResponse::ok(dtos))
@@ -512,7 +552,10 @@ async fn get_user(
     State(state): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<Uuid>,
 ) -> Result<Json<ApiResponse<UserDto>>, ApiError> {
-    let user = state.user_repo.find_by_id(id).await?
+    let user = state
+        .user_repo
+        .find_by_id(id)
+        .await?
         .ok_or_else(|| ApiError::not_found(format!("User {} not found", id)))?;
 
     // Tenant isolation
@@ -521,7 +564,11 @@ async fn get_user(
     }
 
     let person = state.person_repo.find_by_id(user.person_id).await?;
-    let roles = state.permission_checker.get_user_roles(user.id, user.org_id).await.unwrap_or_default();
+    let roles = state
+        .permission_checker
+        .get_user_roles(user.id, user.org_id)
+        .await
+        .unwrap_or_default();
     Ok(ApiResponse::ok(user_to_dto(user, person.as_ref(), roles)))
 }
 
@@ -557,7 +604,10 @@ pub async fn update_user(
     axum::extract::Path(id): axum::extract::Path<Uuid>,
     Json(p): Json<UpdateUserRequest>,
 ) -> Result<Json<ApiResponse<UserDto>>, ApiError> {
-    let mut user = state.user_repo.find_by_id(id).await?
+    let mut user = state
+        .user_repo
+        .find_by_id(id)
+        .await?
         .ok_or_else(|| ApiError::not_found(format!("User {} not found", id)))?;
 
     if user.org_id != ctx.tenant_id && !ctx.actor.is_system() {
@@ -565,11 +615,18 @@ pub async fn update_user(
     }
 
     if let Some(ref name) = p.full_name {
-        let _ = state.auth_service.update_user(&ctx, id, Some(name.clone())).await;
+        let _ = state
+            .auth_service
+            .update_user(&ctx, id, Some(name.clone()))
+            .await;
     }
 
     if let Some(is_active) = p.is_active {
-        user.status = if is_active { "active".to_string() } else { "inactive".to_string() };
+        user.status = if is_active {
+            "active".to_string()
+        } else {
+            "inactive".to_string()
+        };
         user.updated_at = chrono::Utc::now();
         state.user_repo.save(&user).await?;
     } else if let Some(status) = p.status {
@@ -586,7 +643,11 @@ pub async fn update_user(
             changed = true;
         }
         if let Some(name_ar) = p.full_name_ar {
-            person.first_name_ar = if name_ar.is_empty() { None } else { Some(name_ar) };
+            person.first_name_ar = if name_ar.is_empty() {
+                None
+            } else {
+                Some(name_ar)
+            };
             changed = true;
         }
         if let Some(nid) = p.national_id {
@@ -616,7 +677,7 @@ pub async fn update_user(
     // Roles updates
     if let Some(new_roles) = p.roles {
         use orbis_infra::models::user_role_assignment;
-        use sea_orm::{ActiveModelTrait, EntityTrait, QueryFilter, ColumnTrait, Set};
+        use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
         let _ = user_role_assignment::Entity::delete_many()
             .filter(user_role_assignment::Column::UserId.eq(user.id))
@@ -639,7 +700,11 @@ pub async fn update_user(
     }
 
     let person = state.person_repo.find_by_id(user.person_id).await?;
-    let roles = state.permission_checker.get_user_roles(user.id, user.org_id).await.unwrap_or_default();
+    let roles = state
+        .permission_checker
+        .get_user_roles(user.id, user.org_id)
+        .await
+        .unwrap_or_default();
     Ok(ApiResponse::ok(user_to_dto(user, person.as_ref(), roles)))
 }
 
@@ -661,11 +726,10 @@ pub async fn reset_user_password(
 ) -> Result<Json<ApiResponse<AccountProvisioningResultDto>>, ApiError> {
     use orbis_domain::entities::identity_provisioning::DeliveryChannel;
 
-    let res = state.identity_provisioning_service.reset_password(
-        &ctx,
-        id,
-        Some(DeliveryChannel::Manual),
-    ).await?;
+    let res = state
+        .identity_provisioning_service
+        .reset_password(&ctx, id, Some(DeliveryChannel::Manual))
+        .await?;
 
     Ok(ApiResponse::ok(AccountProvisioningResultDto::from(res)))
 }
@@ -682,7 +746,7 @@ pub async fn list_roles(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<RoleDto>>>, ApiError> {
     use orbis_infra::models::{role, role_permission};
-    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
     let permissions = role_permission::Entity::find()
         .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
@@ -690,7 +754,10 @@ pub async fn list_roles(
         .await
         .unwrap_or_default();
 
-    let mut perm_map: std::collections::HashMap<String, std::collections::HashMap<String, Vec<String>>> = std::collections::HashMap::new();
+    let mut perm_map: std::collections::HashMap<
+        String,
+        std::collections::HashMap<String, Vec<String>>,
+    > = std::collections::HashMap::new();
     for p in permissions {
         let role_perms = perm_map.entry(p.role_id.clone()).or_default();
         let res_key = canonicalize_resource(&p.resource);
@@ -735,7 +802,7 @@ pub async fn save_role(
     Json(request): Json<SaveRoleRequest>,
 ) -> Result<Json<ApiResponse<RoleDto>>, ApiError> {
     use orbis_infra::models::{role, role_permission};
-    use sea_orm::{ActiveModelTrait, EntityTrait, QueryFilter, ColumnTrait, Set};
+    use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
     let role_id = request.id.clone();
     let now = chrono::Utc::now();
@@ -754,7 +821,10 @@ pub async fn save_role(
         active.name = Set(request.name.clone());
         active.name_ar = Set(request.name_ar.clone());
         active.updated_at = Set(now);
-        let _ = active.update(&state.db).await.map_err(|e| ApiError::internal(e.to_string()))?;
+        let _ = active
+            .update(&state.db)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     } else {
         let active_role = role::ActiveModel {
             id: Set(role_id.clone()),
@@ -765,7 +835,10 @@ pub async fn save_role(
             created_at: Set(now),
             updated_at: Set(now),
         };
-        let _ = active_role.insert(&state.db).await.map_err(|e| ApiError::internal(e.to_string()))?;
+        let _ = active_role
+            .insert(&state.db)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     }
 
     if let Some(perms) = request.permissions.clone() {
@@ -814,7 +887,7 @@ pub async fn delete_role(
     axum::extract::Path(id): axum::extract::Path<String>,
 ) -> Result<Json<ApiResponse<bool>>, ApiError> {
     use orbis_infra::models::{role, role_permission, user_role_assignment};
-    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
     // Prevent deletion of system roles
     if let Ok(Some(r)) = role::Entity::find()
@@ -861,7 +934,7 @@ pub async fn list_permissions(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<PermissionRuleDto>>>, ApiError> {
     use orbis_infra::models::role_permission;
-    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
     let permissions = role_permission::Entity::find()
         .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
@@ -869,19 +942,26 @@ pub async fn list_permissions(
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
 
-    let mut grouped: std::collections::HashMap<(String, String), Vec<String>> = std::collections::HashMap::new();
+    let mut grouped: std::collections::HashMap<(String, String), Vec<String>> =
+        std::collections::HashMap::new();
     for p in permissions {
-        grouped.entry((p.role_id, p.resource)).or_default().push(p.action);
+        grouped
+            .entry((p.role_id, p.resource))
+            .or_default()
+            .push(p.action);
     }
 
-    let result = grouped.into_iter().map(|((role, document_type), actions)| PermissionRuleDto {
-        id: None,
-        role,
-        document_type,
-        level: Some(10),
-        only_if_creator: Some(false),
-        actions,
-    }).collect();
+    let result = grouped
+        .into_iter()
+        .map(|((role, document_type), actions)| PermissionRuleDto {
+            id: None,
+            role,
+            document_type,
+            level: Some(10),
+            only_if_creator: Some(false),
+            actions,
+        })
+        .collect();
 
     Ok(ApiResponse::ok(result))
 }
@@ -900,7 +980,7 @@ pub async fn save_permissions(
     Json(request): Json<Vec<PermissionRuleDto>>,
 ) -> Result<Json<ApiResponse<bool>>, ApiError> {
     use orbis_infra::models::role_permission;
-    use sea_orm::{ActiveModelTrait, EntityTrait, QueryFilter, ColumnTrait, Set};
+    use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
     let now = chrono::Utc::now();
     for rule in request {
@@ -998,7 +1078,10 @@ async fn mfa_enroll(
     State(state): State<AppState>,
     Json(payload): Json<MfaEnrollRequest>,
 ) -> Result<Json<ApiResponse<MfaEnrollResponse>>, ApiError> {
-    let res = state.auth_service.enroll_totp(&ctx, payload.factor_name).await?;
+    let res = state
+        .auth_service
+        .enroll_totp(&ctx, payload.factor_name)
+        .await?;
     Ok(ApiResponse::ok(MfaEnrollResponse {
         factor_id: res.factor_id,
         secret: res.secret,
@@ -1020,7 +1103,10 @@ async fn mfa_verify_enrollment(
     State(state): State<AppState>,
     Json(payload): Json<MfaVerifyEnrollmentRequest>,
 ) -> Result<Json<ApiResponse<bool>>, ApiError> {
-    let verified = state.auth_service.verify_totp_enrollment(&ctx, payload.factor_id, &payload.code).await?;
+    let verified = state
+        .auth_service
+        .verify_totp_enrollment(&ctx, payload.factor_id, &payload.code)
+        .await?;
     Ok(ApiResponse::ok(verified))
 }
 
@@ -1035,17 +1121,26 @@ async fn mfa_challenge(
     State(state): State<AppState>,
     Json(payload): Json<MfaChallengeRequest>,
 ) -> Result<Json<ApiResponse<LoginResponse>>, ApiError> {
-    let res = state.auth_service.verify_mfa_challenge(
-        payload.user_id,
-        &payload.code,
-        payload.device_id,
-        payload.remember_device.unwrap_or(false),
-    ).await?;
+    let res = state
+        .auth_service
+        .verify_mfa_challenge(
+            payload.user_id,
+            &payload.code,
+            payload.device_id,
+            payload.remember_device.unwrap_or(false),
+        )
+        .await?;
 
-    let user = state.user_repo.find_by_id(payload.user_id).await?
+    let user = state
+        .user_repo
+        .find_by_id(payload.user_id)
+        .await?
         .ok_or_else(|| ApiError::not_found("User not found"))?;
     let person = state.person_repo.find_by_id(user.person_id).await?;
-    let effective_context = state.auth_service.build_effective_context(&user, person.as_ref()).await?;
+    let effective_context = state
+        .auth_service
+        .build_effective_context(&user, person.as_ref())
+        .await?;
     let roles = effective_context.roles.clone();
 
     Ok(ApiResponse::ok(LoginResponse {
@@ -1069,7 +1164,10 @@ async fn google_link(
     State(state): State<AppState>,
     Json(payload): Json<GoogleAuthRequest>,
 ) -> Result<Json<ApiResponse<UserIdentityDto>>, ApiError> {
-    let identity = state.auth_service.link_google(&ctx, &payload.id_token).await?;
+    let identity = state
+        .auth_service
+        .link_google(&ctx, &payload.id_token)
+        .await?;
     Ok(ApiResponse::ok(UserIdentityDto {
         id: identity.id,
         provider: identity.provider.to_string(),
@@ -1091,10 +1189,16 @@ async fn google_login(
     Json(payload): Json<GoogleAuthRequest>,
 ) -> Result<Json<ApiResponse<LoginResponse>>, ApiError> {
     let res = state.auth_service.login_google(&payload.id_token).await?;
-    let user = state.user_repo.find_by_id(res.user_id).await?
+    let user = state
+        .user_repo
+        .find_by_id(res.user_id)
+        .await?
         .ok_or_else(|| ApiError::not_found("User not found"))?;
     let person = state.person_repo.find_by_id(user.person_id).await?;
-    let effective_context = state.auth_service.build_effective_context(&user, person.as_ref()).await?;
+    let effective_context = state
+        .auth_service
+        .build_effective_context(&user, person.as_ref())
+        .await?;
     let roles = effective_context.roles.clone();
 
     Ok(ApiResponse::ok(LoginResponse {
@@ -1117,16 +1221,19 @@ async fn list_devices(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<UserDeviceDto>>>, ApiError> {
     let devices = state.auth_service.list_devices(&ctx).await?;
-    let dtos: Vec<UserDeviceDto> = devices.into_iter().map(|d| UserDeviceDto {
-        id: d.id,
-        device_id: d.device_id,
-        device_name: d.device_name,
-        device_type: d.device_type.to_string(),
-        os: d.os,
-        browser: d.browser,
-        is_trusted: d.is_trusted,
-        last_active_at: d.last_active_at,
-    }).collect();
+    let dtos: Vec<UserDeviceDto> = devices
+        .into_iter()
+        .map(|d| UserDeviceDto {
+            id: d.id,
+            device_id: d.device_id,
+            device_name: d.device_name,
+            device_type: d.device_type.to_string(),
+            os: d.os,
+            browser: d.browser,
+            is_trusted: d.is_trusted,
+            last_active_at: d.last_active_at,
+        })
+        .collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -1154,17 +1261,29 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/auth/login", post(login))
         .route("/api/v1/auth/session", get(get_session))
         .route("/api/v1/auth/mfa/enroll", post(mfa_enroll))
-        .route("/api/v1/auth/mfa/verify-enrollment", post(mfa_verify_enrollment))
+        .route(
+            "/api/v1/auth/mfa/verify-enrollment",
+            post(mfa_verify_enrollment),
+        )
         .route("/api/v1/auth/mfa/challenge", post(mfa_challenge))
         .route("/api/v1/auth/identities/google/link", post(google_link))
         .route("/api/v1/auth/identities/google/login", post(google_login))
         .route("/api/v1/auth/devices", get(list_devices))
-        .route("/api/v1/auth/devices/:id", axum::routing::delete(revoke_device))
+        .route(
+            "/api/v1/auth/devices/:id",
+            axum::routing::delete(revoke_device),
+        )
         .route("/api/v1/iam/users", post(register_user).get(list_users))
         .route("/api/v1/iam/users/provision", post(provision_user))
         .route("/api/v1/iam/users/:id", get(get_user).put(update_user))
-        .route("/api/v1/iam/users/:id/reset-password", post(reset_user_password))
+        .route(
+            "/api/v1/iam/users/:id/reset-password",
+            post(reset_user_password),
+        )
         .route("/api/v1/iam/roles", get(list_roles).post(save_role))
         .route("/api/v1/iam/roles/:id", axum::routing::delete(delete_role))
-        .route("/api/v1/iam/permissions", get(list_permissions).post(save_permissions))
+        .route(
+            "/api/v1/iam/permissions",
+            get(list_permissions).post(save_permissions),
+        )
 }

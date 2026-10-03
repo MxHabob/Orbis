@@ -62,4 +62,3 @@ impl Related<super::enrollment::Entity> for Entity {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
-

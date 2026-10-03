@@ -4,14 +4,14 @@
 // Outputs a fully positioned LayoutResult.
 // ═══════════════════════════════════════════════════════════════
 
+use crate::error::DocforgeError;
+use crate::layout::expr_eval::{evaluate_node_tree, EvaluatedNode};
+use crate::model::document::{Orientation, PageSetup, PageSize, TemplateDocument};
+use crate::model::nodes::TextProps;
+use crate::render::font_cache::FontCache;
+use crate::render::types::*;
 use serde_json::Value;
 use std::collections::HashMap;
-use crate::error::DocforgeError;
-use crate::render::types::*;
-use crate::render::font_cache::FontCache;
-use crate::layout::expr_eval::{evaluate_node_tree, EvaluatedNode};
-use crate::model::document::{TemplateDocument, PageSetup, PageSize, Orientation};
-use crate::model::nodes::TextProps;
 
 /// Main Layout Engine structure.
 pub struct LayoutEngine<'a> {
@@ -25,7 +25,11 @@ impl<'a> LayoutEngine<'a> {
     }
 
     /// Layout a TemplateDocument using the provided data context.
-    pub fn layout(&self, doc: &TemplateDocument, context: &Value) -> Result<LayoutResult, DocforgeError> {
+    pub fn layout(
+        &self,
+        doc: &TemplateDocument,
+        context: &Value,
+    ) -> Result<LayoutResult, DocforgeError> {
         let (page_width, page_height) = get_page_dimensions(&doc.meta.page_setup);
         let margins = &doc.meta.page_setup.margins;
 
@@ -82,7 +86,7 @@ impl<'a> LayoutEngine<'a> {
         for page_idx in 0..pages_nodes.len() {
             let nodes = &pages_nodes[page_idx];
             let mut taffy = taffy::TaffyTree::<()>::new();
-            
+
             // Build the Taffy parent node for the page content area
             let mut page_root_style = taffy::style::Style::default();
             page_root_style.display = taffy::style::Display::Flex;
@@ -99,67 +103,87 @@ impl<'a> LayoutEngine<'a> {
             for node in nodes {
                 // Check if the node has an absolute position. If so, layout absolute.
                 if let Some(abs_pos) = get_absolute_position(node) {
-                    let elem = layout_absolute_node(node, &abs_pos, 0.0, 0.0, page_width, page_height)?;
+                    let elem =
+                        layout_absolute_node(node, &abs_pos, 0.0, 0.0, page_width, page_height)?;
                     positioned_elements.push(elem);
                 } else {
                     // Regular in-flow node: add to Taffy tree
-                    let taffy_node_id = build_taffy_node(&mut taffy, node, &mut text_measure_registry)?;
+                    let taffy_node_id =
+                        build_taffy_node(&mut taffy, node, &mut text_measure_registry)?;
                     taffy_children.push((taffy_node_id, node));
                 }
             }
 
-            let root_node = taffy.new_with_children(page_root_style, &taffy_children.iter().map(|(id, _)| *id).collect::<Vec<_>>())
-                .map_err(|e| DocforgeError::Render(format!("Failed to create page root taffy node: {:?}", e)))?;
+            let root_node = taffy
+                .new_with_children(
+                    page_root_style,
+                    &taffy_children.iter().map(|(id, _)| *id).collect::<Vec<_>>(),
+                )
+                .map_err(|e| {
+                    DocforgeError::Render(format!("Failed to create page root taffy node: {:?}", e))
+                })?;
 
             // Compute Taffy layout with measure closure (5 arguments for taffy 0.7.7)
-            taffy.compute_layout_with_measure(
-                root_node,
-                taffy::geometry::Size {
-                    width: taffy::style::AvailableSpace::Definite(content_width),
-                    height: taffy::style::AvailableSpace::Definite(content_height),
-                },
-                |known_dimensions, available_space, node_id, _context, _style| {
-                    if let Some(text_props) = text_measure_registry.get(&node_id) {
-                        let max_w = match known_dimensions.width {
-                            Some(w) => w,
-                            None => match available_space.width {
-                                taffy::style::AvailableSpace::Definite(w) => w,
-                                _ => content_width, // Default fallback width
-                            }
-                        };
-                        let font_size = text_props.font_size as f32;
-                        let line_height = text_props.line_height.unwrap_or(text_props.font_size * 1.2) as f32;
-                        
-                        let (measured_w, height) = measure_text_size(
-                            &text_props.content,
-                            &text_props.font_family,
-                            font_size,
-                            line_height,
-                            max_w,
-                            self.fonts
-                        );
-                        
-                        let final_width = match known_dimensions.width {
-                            Some(w) => w,
-                            None => measured_w,
-                        };
+            taffy
+                .compute_layout_with_measure(
+                    root_node,
+                    taffy::geometry::Size {
+                        width: taffy::style::AvailableSpace::Definite(content_width),
+                        height: taffy::style::AvailableSpace::Definite(content_height),
+                    },
+                    |known_dimensions, available_space, node_id, _context, _style| {
+                        if let Some(text_props) = text_measure_registry.get(&node_id) {
+                            let max_w = match known_dimensions.width {
+                                Some(w) => w,
+                                None => match available_space.width {
+                                    taffy::style::AvailableSpace::Definite(w) => w,
+                                    _ => content_width, // Default fallback width
+                                },
+                            };
+                            let font_size = text_props.font_size as f32;
+                            let line_height =
+                                text_props.line_height.unwrap_or(text_props.font_size * 1.2) as f32;
 
-                        taffy::geometry::Size {
-                            width: final_width,
-                            height,
+                            let (measured_w, height) = measure_text_size(
+                                &text_props.content,
+                                &text_props.font_family,
+                                font_size,
+                                line_height,
+                                max_w,
+                                self.fonts,
+                            );
+
+                            let final_width = match known_dimensions.width {
+                                Some(w) => w,
+                                None => measured_w,
+                            };
+
+                            taffy::geometry::Size {
+                                width: final_width,
+                                height,
+                            }
+                        } else {
+                            taffy::geometry::Size {
+                                width: known_dimensions.width.unwrap_or(0.0),
+                                height: known_dimensions.height.unwrap_or(0.0),
+                            }
                         }
-                    } else {
-                        taffy::geometry::Size {
-                            width: known_dimensions.width.unwrap_or(0.0),
-                            height: known_dimensions.height.unwrap_or(0.0),
-                        }
-                    }
-                }
-            ).map_err(|e| DocforgeError::Render(format!("Taffy layout computation failed: {:?}", e)))?;
+                    },
+                )
+                .map_err(|e| {
+                    DocforgeError::Render(format!("Taffy layout computation failed: {:?}", e))
+                })?;
 
             // Extract elements from Taffy tree
             for (node_id, evaluated_node) in taffy_children {
-                extract_positioned_elements(&taffy, node_id, evaluated_node, left_margin, top_margin, &mut positioned_elements)?;
+                extract_positioned_elements(
+                    &taffy,
+                    node_id,
+                    evaluated_node,
+                    left_margin,
+                    top_margin,
+                    &mut positioned_elements,
+                )?;
             }
 
             pages.push(PageLayout {
@@ -192,9 +216,7 @@ impl<'a> LayoutEngine<'a> {
         contexts: &[Value],
         multi_up_config: &crate::layout::multi_up::MultiUpConfig,
     ) -> Result<LayoutResult, DocforgeError> {
-        use crate::layout::multi_up::{
-            offset_element, generate_cut_lines, paginate_contexts,
-        };
+        use crate::layout::multi_up::{generate_cut_lines, offset_element, paginate_contexts};
 
         let multi_up = multi_up_config.compute_layout();
         let chunks = paginate_contexts(contexts, multi_up.items_per_sheet);
@@ -303,15 +325,20 @@ fn layout_absolute_node(
     let x = mm_to_pt(pos.x) + margin_left;
     let y = mm_to_pt(pos.y) + margin_top;
     let w = parse_json_dimension(&pos.width, parent_w);
-    let h = pos.height.as_ref().map(|val| parse_json_dimension(val, parent_h)).unwrap_or(0.0);
+    let h = pos
+        .height
+        .as_ref()
+        .map(|val| parse_json_dimension(val, parent_h))
+        .unwrap_or(0.0);
 
     match node {
         EvaluatedNode::Text(n) => {
             let weight = FontWeight::from_str_opt(n.props.font_weight.as_deref());
             let align = TextAlign::from_str_opt(n.props.text_align.as_deref());
             let dir = TextDirection::from_str_opt(n.props.direction.as_deref());
-            let col = Color::from_hex(n.props.color.as_deref().unwrap_or("#000000")).unwrap_or(Color::BLACK);
-            
+            let col = Color::from_hex(n.props.color.as_deref().unwrap_or("#000000"))
+                .unwrap_or(Color::BLACK);
+
             Ok(PositionedElement::Text(TextElement {
                 x,
                 y,
@@ -356,7 +383,8 @@ fn layout_absolute_node(
         EvaluatedNode::Barcode(n) => {
             let format = crate::render::barcode_gen::BarcodeFormat::from_str(&n.props.format)
                 .unwrap_or(crate::render::barcode_gen::BarcodeFormat::Code128);
-            let svg_content = crate::render::barcode_gen::generate_barcode_svg(format, &n.props.data, w, h)?;
+            let svg_content =
+                crate::render::barcode_gen::generate_barcode_svg(format, &n.props.data, w, h)?;
             Ok(PositionedElement::BarcodeSvg(SvgElement {
                 x,
                 y,
@@ -366,8 +394,15 @@ fn layout_absolute_node(
             }))
         }
         EvaluatedNode::QRCode(n) => {
-            let correction = crate::render::barcode_gen::QrErrorCorrection::from_str(&n.props.error_correction);
-            let svg_content = crate::render::barcode_gen::generate_qr_svg(&n.props.data, w, correction, "#000000", "#ffffff")?;
+            let correction =
+                crate::render::barcode_gen::QrErrorCorrection::from_str(&n.props.error_correction);
+            let svg_content = crate::render::barcode_gen::generate_qr_svg(
+                &n.props.data,
+                w,
+                correction,
+                "#000000",
+                "#ffffff",
+            )?;
             Ok(PositionedElement::QrCodeSvg(SvgElement {
                 x,
                 y,
@@ -377,9 +412,18 @@ fn layout_absolute_node(
             }))
         }
         EvaluatedNode::Separator(n) => {
-            let col = Color::from_hex(n.props.color.as_deref().unwrap_or("#cccccc")).unwrap_or(Color::new(204, 204, 204));
-            let x2 = if n.props.direction == "horizontal" { x + w } else { x };
-            let y2 = if n.props.direction == "horizontal" { y } else { y + h };
+            let col = Color::from_hex(n.props.color.as_deref().unwrap_or("#cccccc"))
+                .unwrap_or(Color::new(204, 204, 204));
+            let x2 = if n.props.direction == "horizontal" {
+                x + w
+            } else {
+                x
+            };
+            let y2 = if n.props.direction == "horizontal" {
+                y
+            } else {
+                y + h
+            };
 
             Ok(PositionedElement::Line(LineElement {
                 x1: x,
@@ -390,7 +434,9 @@ fn layout_absolute_node(
                 width: n.props.thickness.unwrap_or(1.0) as f32,
             }))
         }
-        _ => Err(DocforgeError::Render("Unsupported node type for absolute layout".to_string())),
+        _ => Err(DocforgeError::Render(
+            "Unsupported node type for absolute layout".to_string(),
+        )),
     }
 }
 
@@ -409,9 +455,10 @@ fn build_taffy_node(
             style.size.width = taffy::style::Dimension::Auto;
             style.size.height = taffy::style::Dimension::Auto;
 
-            let taffy_node_id = taffy.new_leaf(style)
-                .map_err(|e| DocforgeError::Render(format!("Failed to create taffy text node: {:?}", e)))?;
-                
+            let taffy_node_id = taffy.new_leaf(style).map_err(|e| {
+                DocforgeError::Render(format!("Failed to create taffy text node: {:?}", e))
+            })?;
+
             text_measure_registry.insert(taffy_node_id, n.props.clone());
             Ok(taffy_node_id)
         }
@@ -438,14 +485,24 @@ fn build_taffy_node(
                 }
             }
 
-            taffy.new_with_children(style, &children_ids)
-                .map_err(|e| DocforgeError::Render(format!("Failed to create taffy frame node: {:?}", e)))
+            taffy.new_with_children(style, &children_ids).map_err(|e| {
+                DocforgeError::Render(format!("Failed to create taffy frame node: {:?}", e))
+            })
         }
         EvaluatedNode::Spacer(n) => {
-            style.size.width = n.props.width.map(|w| taffy::style::Dimension::Length(mm_to_pt(w))).unwrap_or(taffy::style::Dimension::Auto);
-            style.size.height = n.props.height.map(|h| taffy::style::Dimension::Length(mm_to_pt(h))).unwrap_or(taffy::style::Dimension::Auto);
-            taffy.new_leaf(style)
-                .map_err(|e| DocforgeError::Render(format!("Failed to create taffy spacer node: {:?}", e)))
+            style.size.width = n
+                .props
+                .width
+                .map(|w| taffy::style::Dimension::Length(mm_to_pt(w)))
+                .unwrap_or(taffy::style::Dimension::Auto);
+            style.size.height = n
+                .props
+                .height
+                .map(|h| taffy::style::Dimension::Length(mm_to_pt(h)))
+                .unwrap_or(taffy::style::Dimension::Auto);
+            taffy.new_leaf(style).map_err(|e| {
+                DocforgeError::Render(format!("Failed to create taffy spacer node: {:?}", e))
+            })
         }
         EvaluatedNode::Separator(n) => {
             let thickness = n.props.thickness.unwrap_or(1.0);
@@ -456,13 +513,15 @@ fn build_taffy_node(
                 style.size.width = taffy::style::Dimension::Length(thickness as f32);
                 style.size.height = taffy::style::Dimension::Percent(1.0);
             }
-            taffy.new_leaf(style)
-                .map_err(|e| DocforgeError::Render(format!("Failed to create taffy separator node: {:?}", e)))
+            taffy.new_leaf(style).map_err(|e| {
+                DocforgeError::Render(format!("Failed to create taffy separator node: {:?}", e))
+            })
         }
         _ => {
             // Fallback default leaf node
-            taffy.new_leaf(style)
-                .map_err(|e| DocforgeError::Render(format!("Failed to create taffy leaf node: {:?}", e)))
+            taffy.new_leaf(style).map_err(|e| {
+                DocforgeError::Render(format!("Failed to create taffy leaf node: {:?}", e))
+            })
         }
     }
 }
@@ -478,8 +537,14 @@ fn measure_text_height(
 ) -> f32 {
     let mut font_system = cosmic_text::FontSystem::new();
     // Load font data if cached
-    if let Some(cached_font) = fonts.get_font(family, 400, crate::render::font_cache::FontStyleKind::Normal) {
-        font_system.db_mut().load_font_data(cached_font.data.as_ref().clone());
+    if let Some(cached_font) = fonts.get_font(
+        family,
+        400,
+        crate::render::font_cache::FontStyleKind::Normal,
+    ) {
+        font_system
+            .db_mut()
+            .load_font_data(cached_font.data.as_ref().clone());
     }
 
     let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Name(family));
@@ -487,7 +552,12 @@ fn measure_text_height(
     let mut buffer = cosmic_text::Buffer::new(&mut font_system, metrics);
 
     buffer.set_size(&mut font_system, Some(max_width), None);
-    buffer.set_text(&mut font_system, content, attrs, cosmic_text::Shaping::Advanced);
+    buffer.set_text(
+        &mut font_system,
+        content,
+        attrs,
+        cosmic_text::Shaping::Advanced,
+    );
     buffer.shape_until_scroll(&mut font_system, false);
 
     // Sum layout runs
@@ -511,8 +581,14 @@ fn measure_text_size(
     fonts: &FontCache,
 ) -> (f32, f32) {
     let mut font_system = cosmic_text::FontSystem::new();
-    if let Some(cached_font) = fonts.get_font(family, 400, crate::render::font_cache::FontStyleKind::Normal) {
-        font_system.db_mut().load_font_data(cached_font.data.as_ref().clone());
+    if let Some(cached_font) = fonts.get_font(
+        family,
+        400,
+        crate::render::font_cache::FontStyleKind::Normal,
+    ) {
+        font_system
+            .db_mut()
+            .load_font_data(cached_font.data.as_ref().clone());
     }
 
     let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Name(family));
@@ -520,7 +596,12 @@ fn measure_text_size(
     let mut buffer = cosmic_text::Buffer::new(&mut font_system, metrics);
 
     buffer.set_size(&mut font_system, Some(max_width), None);
-    buffer.set_text(&mut font_system, content, attrs, cosmic_text::Shaping::Advanced);
+    buffer.set_text(
+        &mut font_system,
+        content,
+        attrs,
+        cosmic_text::Shaping::Advanced,
+    );
     buffer.shape_until_scroll(&mut font_system, false);
 
     let mut max_run_width: f32 = 0.0;
@@ -554,7 +635,8 @@ fn extract_positioned_elements(
     accum_y: f32,
     elements: &mut Vec<PositionedElement>,
 ) -> Result<(), DocforgeError> {
-    let layout = taffy.layout(node_id)
+    let layout = taffy
+        .layout(node_id)
         .map_err(|e| DocforgeError::Render(format!("Failed to get layout for node: {:?}", e)))?;
 
     let abs_x = accum_x + layout.location.x;
@@ -567,8 +649,9 @@ fn extract_positioned_elements(
             let weight = FontWeight::from_str_opt(n.props.font_weight.as_deref());
             let align = TextAlign::from_str_opt(n.props.text_align.as_deref());
             let dir = TextDirection::from_str_opt(n.props.direction.as_deref());
-            let col = Color::from_hex(n.props.color.as_deref().unwrap_or("#000000")).unwrap_or(Color::BLACK);
-            
+            let col = Color::from_hex(n.props.color.as_deref().unwrap_or("#000000"))
+                .unwrap_or(Color::BLACK);
+
             elements.push(PositionedElement::Text(TextElement {
                 x: abs_x,
                 y: abs_y,
@@ -586,9 +669,18 @@ fn extract_positioned_elements(
             }));
         }
         EvaluatedNode::Separator(n) => {
-            let col = Color::from_hex(n.props.color.as_deref().unwrap_or("#cccccc")).unwrap_or(Color::new(204, 204, 204));
-            let x2 = if n.props.direction == "horizontal" { abs_x + w } else { abs_x };
-            let y2 = if n.props.direction == "horizontal" { abs_y } else { abs_y + h };
+            let col = Color::from_hex(n.props.color.as_deref().unwrap_or("#cccccc"))
+                .unwrap_or(Color::new(204, 204, 204));
+            let x2 = if n.props.direction == "horizontal" {
+                abs_x + w
+            } else {
+                abs_x
+            };
+            let y2 = if n.props.direction == "horizontal" {
+                abs_y
+            } else {
+                abs_y + h
+            };
 
             elements.push(PositionedElement::Line(LineElement {
                 x1: abs_x,
@@ -601,17 +693,27 @@ fn extract_positioned_elements(
         }
         EvaluatedNode::Frame(n) => {
             // Recursively extract in-flow children
-            let child_nodes = taffy.children(node_id)
-                .map_err(|e| DocforgeError::Render(format!("Failed to query Taffy children: {:?}", e)))?;
+            let child_nodes = taffy.children(node_id).map_err(|e| {
+                DocforgeError::Render(format!("Failed to query Taffy children: {:?}", e))
+            })?;
 
             // Only extract in-flow children (which correspond to non-absolute child nodes)
-            let in_flow_child_evals: Vec<&EvaluatedNode> = n.children.iter()
+            let in_flow_child_evals: Vec<&EvaluatedNode> = n
+                .children
+                .iter()
                 .filter(|child| get_absolute_position(child).is_none())
                 .collect();
 
             for (i, &child_node_id) in child_nodes.iter().enumerate() {
                 if let Some(eval_child) = in_flow_child_evals.get(i) {
-                    extract_positioned_elements(taffy, child_node_id, eval_child, abs_x, abs_y, elements)?;
+                    extract_positioned_elements(
+                        taffy,
+                        child_node_id,
+                        eval_child,
+                        abs_x,
+                        abs_y,
+                        elements,
+                    )?;
                 }
             }
         }
@@ -631,7 +733,7 @@ fn get_page_dimensions(setup: &PageSetup) -> (f32, f32) {
             (h, w)
         }
     };
-    
+
     // Check custom size dimensions if preset is Custom
     let w_mm_final = if let PageSize::Custom = setup.size {
         setup.width.unwrap_or(w_mm)
@@ -650,8 +752,8 @@ fn get_page_dimensions(setup: &PageSetup) -> (f32, f32) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::nodes::*;
     use crate::model::document::*;
+    use crate::model::nodes::*;
     use serde_json::json;
 
     #[test]
@@ -738,17 +840,27 @@ mod tests {
         let engine = LayoutEngine::new(&fonts);
         let context = json!({ "name": "Antigravity" });
 
-        let result = engine.layout(&doc, &context).expect("Should successfully layout document");
+        let result = engine
+            .layout(&doc, &context)
+            .expect("Should successfully layout document");
         assert_eq!(result.pages.len(), 1);
         let page = &result.pages[0];
 
         // A4 standard width is 210mm (~595pt), height is 297mm (~841pt)
         assert!(page.width_pt > 590.0 && page.width_pt < 600.0);
-        
+
         // We should have 2 text elements positioned
-        let text_elems: Vec<&TextElement> = page.elements.iter().filter_map(|e| {
-            if let PositionedElement::Text(t) = e { Some(t) } else { None }
-        }).collect();
+        let text_elems: Vec<&TextElement> = page
+            .elements
+            .iter()
+            .filter_map(|e| {
+                if let PositionedElement::Text(t) = e {
+                    Some(t)
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         assert_eq!(text_elems.len(), 2);
         assert_eq!(text_elems[0].content, "Hello Antigravity");
@@ -775,7 +887,14 @@ mod tests {
         let mut fonts = FontCache::new("Tahoma");
         let font_path = "C:\\Windows\\Fonts\\tahoma.ttf";
         if std::path::Path::new(font_path).exists() {
-            fonts.load_font_file("Tahoma", 400, crate::render::font_cache::FontStyleKind::Normal, font_path).ok();
+            fonts
+                .load_font_file(
+                    "Tahoma",
+                    400,
+                    crate::render::font_cache::FontStyleKind::Normal,
+                    font_path,
+                )
+                .ok();
         }
 
         // Layout containing flex container with text, shape, spacer, barcode and qr code
@@ -879,7 +998,9 @@ mod tests {
         });
 
         let engine = LayoutEngine::new(&fonts);
-        let layout_result = engine.layout(&doc, &context).expect("Should compute full layout");
+        let layout_result = engine
+            .layout(&doc, &context)
+            .expect("Should compute full layout");
 
         // Assert output PageLayout structure
         assert_eq!(layout_result.pages.len(), 1);
@@ -899,16 +1020,21 @@ mod tests {
         let pdf_output = crate::render::pdf_renderer::render_to_pdf(
             &layout_result,
             &fonts,
-            &crate::render::pdf_renderer::PdfRenderConfig::default()
-        ).expect("Should render layout result to PDF");
+            &crate::render::pdf_renderer::PdfRenderConfig::default(),
+        )
+        .expect("Should render layout result to PDF");
 
         assert!(!pdf_output.bytes.is_empty());
 
-        let artifact_dir = tempfile::tempdir().expect("Should create a temporary artifact directory");
+        let artifact_dir =
+            tempfile::tempdir().expect("Should create a temporary artifact directory");
         let pdf_path = artifact_dir.path().join("arabic_layout_poc_proof.pdf");
         std::fs::write(&pdf_path, &pdf_output.bytes)
             .expect("Should successfully write integrated layout PDF to artifact folder");
 
-        println!("PoC layout PDF successfully written to: {}", pdf_path.display());
+        println!(
+            "PoC layout PDF successfully written to: {}",
+            pdf_path.display()
+        );
     }
 }

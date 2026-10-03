@@ -1,10 +1,10 @@
 use async_trait::async_trait;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 
+use crate::models::user_session::{self, Entity as SessionEntity};
 use orbis_app::ports::repositories::SessionRepository;
 use orbis_domain::entities::session::Session;
 use orbis_domain::errors::DomainError;
-use crate::models::user_session::{self, Entity as SessionEntity};
 
 pub struct SessionRepoImpl {
     pub db: DatabaseConnection,
@@ -55,10 +55,21 @@ impl SessionRepository for SessionRepoImpl {
             created_at: Set(session.created_at),
         };
 
-        if SessionEntity::find_by_id(session.id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?.is_some() {
-            active_model.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        if SessionEntity::find_by_id(session.id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .is_some()
+        {
+            active_model
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
-            active_model.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active_model
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
 
         Ok(())

@@ -1,7 +1,7 @@
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 // ═══════════════════════════════════════════════════════════════
 // Period Type — structural role in the academic hierarchy
@@ -222,7 +222,12 @@ impl AcademicPeriod {
         if !self.period_kind.has_grade_entry() {
             return false;
         }
-        if matches!(self.state, AcademicPeriodState::GradeSubmission | AcademicPeriodState::ActiveTeaching | AcademicPeriodState::FinalExams) {
+        if matches!(
+            self.state,
+            AcademicPeriodState::GradeSubmission
+                | AcademicPeriodState::ActiveTeaching
+                | AcademicPeriodState::FinalExams
+        ) {
             let now = Utc::now();
             let after_start = self.grade_entry_starts_at.map(|s| now >= s).unwrap_or(true);
             let before_end = self.grade_entry_ends_at.map(|e| now <= e).unwrap_or(true);
@@ -233,7 +238,12 @@ impl AcademicPeriod {
     }
 
     pub fn can_enroll_students(&self) -> bool {
-        if self.is_locked || matches!(self.state, AcademicPeriodState::Closed | AcademicPeriodState::Archived) {
+        if self.is_locked
+            || matches!(
+                self.state,
+                AcademicPeriodState::Closed | AcademicPeriodState::Archived
+            )
+        {
             return false;
         }
         let now = Utc::now();

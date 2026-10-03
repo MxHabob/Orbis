@@ -1,6 +1,6 @@
 use std::sync::Arc;
-use tokio::time::{sleep, Duration};
-use tracing::{info, warn, error};
+use tokio::time::{Duration, sleep};
+use tracing::{error, info, warn};
 use uuid::Uuid;
 
 use orbis_app::context::RequestContext;
@@ -20,7 +20,10 @@ impl AutopilotScheduler {
 
     /// Spawns the background scheduler tokio task loop.
     pub fn spawn(self: Arc<Self>, interval_secs: u64) -> tokio::task::JoinHandle<()> {
-        info!("Spawning Orbis Autopilot background scheduler (interval: {}s)...", interval_secs);
+        info!(
+            "Spawning Orbis Autopilot background scheduler (interval: {}s)...",
+            interval_secs
+        );
         tokio::spawn(async move {
             self.run_loop(interval_secs).await;
         })
@@ -41,7 +44,10 @@ impl AutopilotScheduler {
                         };
 
                         if let Err(e) = self.service.run_tick(&ctx, org.id, false).await {
-                            warn!("Autopilot evaluation tick failed for org {} ({}): {:?}", org.name, org.id, e);
+                            warn!(
+                                "Autopilot evaluation tick failed for org {} ({}): {:?}",
+                                org.name, org.id, e
+                            );
                         }
                     }
                 }

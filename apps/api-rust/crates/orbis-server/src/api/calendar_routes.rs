@@ -1,13 +1,17 @@
 //! Calendar routes — Academic Years & Periods.
 
-use axum::{extract::{State, Path}, routing::{get, post}, Json, Router};
+use axum::{
+    Json, Router,
+    extract::{Path, State},
+    routing::{get, post},
+};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
+use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 
 // ── DTOs ────────────────────────────────────────────────────────
@@ -118,15 +122,29 @@ async fn create_year(
     State(state): State<AppState>,
     Json(payload): Json<CreateYearRequest>,
 ) -> Result<Json<ApiResponse<AcademicYearDto>>, ApiError> {
-    let year = state.calendar_service.create_year(
-        &ctx, ctx.tenant_id, payload.name, payload.start_date, payload.end_date
-    ).await?;
+    let year = state
+        .calendar_service
+        .create_year(
+            &ctx,
+            ctx.tenant_id,
+            payload.name,
+            payload.start_date,
+            payload.end_date,
+        )
+        .await?;
     Ok(ApiResponse::ok(AcademicYearDto {
-        id: year.id, org_id: year.org_id, name: year.name,
-        name_ar: year.name_ar, start_date: year.start_date, end_date: year.end_date,
-        is_active: year.status == "active", status: year.status,
-        current_period_id: year.current_period_id, notes: year.notes,
-        created_at: year.created_at, updated_at: year.updated_at,
+        id: year.id,
+        org_id: year.org_id,
+        name: year.name,
+        name_ar: year.name_ar,
+        start_date: year.start_date,
+        end_date: year.end_date,
+        is_active: year.status == "active",
+        status: year.status,
+        current_period_id: year.current_period_id,
+        notes: year.notes,
+        created_at: year.created_at,
+        updated_at: year.updated_at,
     }))
 }
 
@@ -138,13 +156,23 @@ async fn list_years(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<AcademicYearDto>>>, ApiError> {
     let years = state.calendar_service.list_years(ctx.tenant_id).await?;
-    let dtos = years.into_iter().map(|y| AcademicYearDto {
-        id: y.id, org_id: y.org_id, name: y.name,
-        name_ar: y.name_ar, start_date: y.start_date, end_date: y.end_date,
-        is_active: y.status == "active", status: y.status,
-        current_period_id: y.current_period_id, notes: y.notes,
-        created_at: y.created_at, updated_at: y.updated_at,
-    }).collect();
+    let dtos = years
+        .into_iter()
+        .map(|y| AcademicYearDto {
+            id: y.id,
+            org_id: y.org_id,
+            name: y.name,
+            name_ar: y.name_ar,
+            start_date: y.start_date,
+            end_date: y.end_date,
+            is_active: y.status == "active",
+            status: y.status,
+            current_period_id: y.current_period_id,
+            notes: y.notes,
+            created_at: y.created_at,
+            updated_at: y.updated_at,
+        })
+        .collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -156,25 +184,48 @@ async fn get_current_context(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<AcademicContextResponse>>, ApiError> {
     let all_years = state.calendar_service.list_years(ctx.tenant_id).await?;
-    let current = state.calendar_service.get_current_year(ctx.tenant_id).await?;
-    let periods = state.calendar_service.list_periods_by_org(ctx.tenant_id).await?;
+    let current = state
+        .calendar_service
+        .get_current_year(ctx.tenant_id)
+        .await?;
+    let periods = state
+        .calendar_service
+        .list_periods_by_org(ctx.tenant_id)
+        .await?;
 
-    let year_dtos: Vec<AcademicYearDto> = all_years.into_iter().map(|y| AcademicYearDto {
-        id: y.id, org_id: y.org_id, name: y.name,
-        name_ar: y.name_ar, start_date: y.start_date, end_date: y.end_date,
-        is_active: y.status == "active", status: y.status,
-        current_period_id: y.current_period_id, notes: y.notes,
-        created_at: y.created_at, updated_at: y.updated_at,
-    }).collect();
+    let year_dtos: Vec<AcademicYearDto> = all_years
+        .into_iter()
+        .map(|y| AcademicYearDto {
+            id: y.id,
+            org_id: y.org_id,
+            name: y.name,
+            name_ar: y.name_ar,
+            start_date: y.start_date,
+            end_date: y.end_date,
+            is_active: y.status == "active",
+            status: y.status,
+            current_period_id: y.current_period_id,
+            notes: y.notes,
+            created_at: y.created_at,
+            updated_at: y.updated_at,
+        })
+        .collect();
 
     let period_dtos: Vec<AcademicPeriodDto> = periods.into_iter().map(period_to_dto).collect();
 
     let current_dto = current.map(|y| AcademicYearDto {
-        id: y.id, org_id: y.org_id, name: y.name,
-        name_ar: y.name_ar, start_date: y.start_date, end_date: y.end_date,
-        is_active: y.status == "active", status: y.status,
-        current_period_id: y.current_period_id, notes: y.notes,
-        created_at: y.created_at, updated_at: y.updated_at,
+        id: y.id,
+        org_id: y.org_id,
+        name: y.name,
+        name_ar: y.name_ar,
+        start_date: y.start_date,
+        end_date: y.end_date,
+        is_active: y.status == "active",
+        status: y.status,
+        current_period_id: y.current_period_id,
+        notes: y.notes,
+        created_at: y.created_at,
+        updated_at: y.updated_at,
     });
 
     Ok(ApiResponse::ok(AcademicContextResponse {
@@ -193,14 +244,24 @@ async fn get_year(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<AcademicYearDto>>, ApiError> {
-    let y = state.calendar_service.get_year(id).await?
+    let y = state
+        .calendar_service
+        .get_year(id)
+        .await?
         .ok_or_else(|| ApiError::not_found(format!("Academic year {} not found", id)))?;
     Ok(ApiResponse::ok(AcademicYearDto {
-        id: y.id, org_id: y.org_id, name: y.name,
-        name_ar: y.name_ar, start_date: y.start_date, end_date: y.end_date,
-        is_active: y.status == "active", status: y.status,
-        current_period_id: y.current_period_id, notes: y.notes,
-        created_at: y.created_at, updated_at: y.updated_at,
+        id: y.id,
+        org_id: y.org_id,
+        name: y.name,
+        name_ar: y.name_ar,
+        start_date: y.start_date,
+        end_date: y.end_date,
+        is_active: y.status == "active",
+        status: y.status,
+        current_period_id: y.current_period_id,
+        notes: y.notes,
+        created_at: y.created_at,
+        updated_at: y.updated_at,
     }))
 }
 
@@ -212,10 +273,19 @@ async fn create_period(
     State(state): State<AppState>,
     Json(payload): Json<CreatePeriodRequest>,
 ) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
-    let p = state.calendar_service.create_period(
-        &ctx, ctx.tenant_id, payload.year_id, payload.parent_id,
-        payload.name, payload.period_type, payload.start_date, payload.end_date
-    ).await?;
+    let p = state
+        .calendar_service
+        .create_period(
+            &ctx,
+            ctx.tenant_id,
+            payload.year_id,
+            payload.parent_id,
+            payload.name,
+            payload.period_type,
+            payload.start_date,
+            payload.end_date,
+        )
+        .await?;
     Ok(ApiResponse::ok(period_to_dto(p)))
 }
 
@@ -226,7 +296,10 @@ async fn list_periods(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<AcademicPeriodDto>>>, ApiError> {
-    let periods = state.calendar_service.list_periods_by_org(ctx.tenant_id).await?;
+    let periods = state
+        .calendar_service
+        .list_periods_by_org(ctx.tenant_id)
+        .await?;
     let dtos = periods.into_iter().map(period_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -240,7 +313,10 @@ async fn get_period(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
-    let p = state.period_repo.find_by_id(id).await?
+    let p = state
+        .period_repo
+        .find_by_id(id)
+        .await?
         .ok_or_else(|| ApiError::not_found(format!("Academic period {} not found", id)))?;
     Ok(ApiResponse::ok(period_to_dto(p)))
 }
@@ -291,15 +367,21 @@ async fn list_period_templates(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<PeriodTemplateDto>>>, ApiError> {
-    let templates = state.period_template_repo.find_by_org(ctx.tenant_id).await?;
-    let dtos = templates.into_iter().map(|t| PeriodTemplateDto {
-        id: t.id,
-        name: t.name,
-        name_ar: t.name_ar,
-        institution_type: t.institution_type,
-        structure: t.structure,
-        is_default: t.is_default,
-    }).collect();
+    let templates = state
+        .period_template_repo
+        .find_by_org(ctx.tenant_id)
+        .await?;
+    let dtos = templates
+        .into_iter()
+        .map(|t| PeriodTemplateDto {
+            id: t.id,
+            name: t.name,
+            name_ar: t.name_ar,
+            institution_type: t.institution_type,
+            structure: t.structure,
+            is_default: t.is_default,
+        })
+        .collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -310,7 +392,10 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/academic-years", post(create_year).get(list_years))
         .route("/api/v1/academic-years/current", get(get_current_context))
         .route("/api/v1/academic-years/:id", get(get_year))
-        .route("/api/v1/academic-periods", post(create_period).get(list_periods))
+        .route(
+            "/api/v1/academic-periods",
+            post(create_period).get(list_periods),
+        )
         .route("/api/v1/academic-periods/:id", get(get_period))
         .route("/api/v1/academic-periods/:id/lock", post(lock_period))
         .route("/api/v1/academic-periods/:id/unlock", post(unlock_period))

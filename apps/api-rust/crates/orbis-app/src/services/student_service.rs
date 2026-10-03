@@ -1,25 +1,27 @@
-use orbis_domain::entities::student::{Student, StudentStatus, AcademicStanding, StudentDetail};
-use orbis_domain::entities::person::Person;
-use orbis_domain::entities::enrollment::{Enrollment, EnrollmentStatus, StudyMode};
-use orbis_domain::entities::student_guardian::StudentGuardian;
-use orbis_domain::entities::override_request::{AcademicOverrideRequest, OverrideType, RiskLevel, OverrideStatus};
-use orbis_domain::entities::student_fee::{StudentFee, FeeStatus};
-use orbis_domain::events::DomainEvent;
-use orbis_domain::errors::DomainError;
-use orbis_domain::queries::filters::{StudentFilter, EnrollmentFilter, PaginatedList};
-use orbis_domain::iam::permission::Permission;
 use crate::context::RequestContext;
-use crate::ports::repositories::{
-    StudentRepository, PersonRepository, EnrollmentRepository, StudentGuardianRepository,
-    SettingsRepository, SequenceCounterRepository, ClassRepository,
-    FeeTemplateRepository, StudentFeeRepository, OverrideRequestRepository,
-};
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
-use std::sync::Arc;
+use crate::ports::repositories::{
+    ClassRepository, EnrollmentRepository, FeeTemplateRepository, OverrideRequestRepository,
+    PersonRepository, SequenceCounterRepository, SettingsRepository, StudentFeeRepository,
+    StudentGuardianRepository, StudentRepository,
+};
+use chrono::{Datelike, NaiveDate, Utc};
+use orbis_domain::entities::enrollment::{Enrollment, EnrollmentStatus, StudyMode};
+use orbis_domain::entities::override_request::{
+    AcademicOverrideRequest, OverrideStatus, OverrideType, RiskLevel,
+};
+use orbis_domain::entities::person::Person;
+use orbis_domain::entities::student::{AcademicStanding, Student, StudentDetail, StudentStatus};
+use orbis_domain::entities::student_fee::{FeeStatus, StudentFee};
+use orbis_domain::entities::student_guardian::StudentGuardian;
+use orbis_domain::errors::DomainError;
+use orbis_domain::events::DomainEvent;
+use orbis_domain::iam::permission::Permission;
+use orbis_domain::queries::filters::{EnrollmentFilter, PaginatedList, StudentFilter};
 use std::collections::HashMap;
+use std::sync::Arc;
 use uuid::Uuid;
-use chrono::{Utc, NaiveDate, Datelike};
 
 pub struct StudentService {
     pub student_repo: Arc<dyn StudentRepository>,
@@ -200,7 +202,11 @@ impl StudentService {
         if let Some(nid) = input.national_id.as_deref() {
             let clean_nid = nid.trim();
             if !clean_nid.is_empty() {
-                if let Some(person) = self.person_repo.find_by_national_id(Some(org_id), clean_nid).await? {
+                if let Some(person) = self
+                    .person_repo
+                    .find_by_national_id(Some(org_id), clean_nid)
+                    .await?
+                {
                     if input.exclude_student_id.is_none() {
                         let student = self.student_repo.find_by_person_id(person.id).await?;
                         matches.push(DuplicateMatchItem {
@@ -219,7 +225,11 @@ impl StudentService {
         if let Some(phone) = input.phone.as_deref() {
             let clean_phone = phone.trim();
             if !clean_phone.is_empty() {
-                if let Some(person) = self.person_repo.find_by_phone(Some(org_id), clean_phone).await? {
+                if let Some(person) = self
+                    .person_repo
+                    .find_by_phone(Some(org_id), clean_phone)
+                    .await?
+                {
                     let student = self.student_repo.find_by_person_id(person.id).await?;
                     if student.as_ref().map(|s| s.id) != input.exclude_student_id {
                         matches.push(DuplicateMatchItem {
@@ -238,7 +248,11 @@ impl StudentService {
         if let Some(email) = input.email.as_deref() {
             let clean_email = email.trim();
             if !clean_email.is_empty() {
-                if let Some(person) = self.person_repo.find_by_email(Some(org_id), clean_email).await? {
+                if let Some(person) = self
+                    .person_repo
+                    .find_by_email(Some(org_id), clean_email)
+                    .await?
+                {
                     let student = self.student_repo.find_by_person_id(person.id).await?;
                     if student.as_ref().map(|s| s.id) != input.exclude_student_id {
                         matches.push(DuplicateMatchItem {
@@ -268,10 +282,16 @@ impl StudentService {
         org_id: Uuid,
         input: RegisterStudentInput,
     ) -> Result<RegisterStudentResult, DomainError> {
-        self.permission_checker.check(ctx, Permission::StudentCreate).await?;
+        self.permission_checker
+            .check(ctx, Permission::StudentCreate)
+            .await?;
 
         let now = Utc::now();
-        let org_settings = self.settings_repo.get_settings(org_id).await.unwrap_or_default();
+        let org_settings = self
+            .settings_repo
+            .get_settings(org_id)
+            .await
+            .unwrap_or_default();
         let admission_cfg = org_settings.admission;
         let numbering_schema = admission_cfg.numbering;
         let admission_policy = admission_cfg.policy;
@@ -281,7 +301,11 @@ impl StudentService {
             if let Some(nid) = input.national_id.as_deref() {
                 let clean_nid = nid.trim();
                 if !clean_nid.is_empty() {
-                    if let Some(existing_person) = self.person_repo.find_by_national_id(Some(org_id), clean_nid).await? {
+                    if let Some(existing_person) = self
+                        .person_repo
+                        .find_by_national_id(Some(org_id), clean_nid)
+                        .await?
+                    {
                         return Err(DomainError::Conflict(format!(
                             "A person with national ID '{}' already exists (Name: '{}')",
                             clean_nid,
@@ -293,15 +317,28 @@ impl StudentService {
         }
 
         // 2. Resolve or generate Student Number via Numbering Schema + Sequence Generator
-        let student_number = if let Some(sn) = input.student_number.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+        let student_number = if let Some(sn) = input
+            .student_number
+            .as_deref()
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+        {
             sn.to_string()
         } else {
             let current_year = now.year();
-            let seq = self.sequence_repo.next_sequence(org_id, "student", current_year).await?;
+            let seq = self
+                .sequence_repo
+                .next_sequence(org_id, "student", current_year)
+                .await?;
             numbering_schema.format_number(current_year, seq)
         };
 
-        if self.student_repo.find_by_student_number(org_id, &student_number).await?.is_some() {
+        if self
+            .student_repo
+            .find_by_student_number(org_id, &student_number)
+            .await?
+            .is_some()
+        {
             return Err(DomainError::Conflict(format!(
                 "Student number '{}' is already assigned in this organization",
                 student_number
@@ -343,7 +380,10 @@ impl StudentService {
             pid
         };
 
-        let person = self.person_repo.find_by_id(person_id).await?
+        let person = self
+            .person_repo
+            .find_by_id(person_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Person {} not found", person_id)))?;
 
         // 4. Create Student profile
@@ -382,7 +422,10 @@ impl StudentService {
             // Check capacity invariant
             if let Some(class_id) = input.initial_class_id {
                 let current_enrollments = self.enrollment_repo.find_by_class(class_id).await?;
-                let active_count = current_enrollments.iter().filter(|e| e.status == EnrollmentStatus::Active).count() as i32;
+                let active_count = current_enrollments
+                    .iter()
+                    .filter(|e| e.status == EnrollmentStatus::Active)
+                    .count() as i32;
 
                 let max_cap = if let Ok(Some(cls)) = self.class_repo.find_by_id(class_id).await {
                     cls.capacity.unwrap_or(admission_policy.max_class_capacity)
@@ -403,7 +446,10 @@ impl StudentService {
                         field_name: Some("class_id".to_string()),
                         old_value: None,
                         new_value: Some(class_id.to_string()),
-                        reason: format!("Class capacity reached ({}/{}). Override required to add student.", active_count, max_cap),
+                        reason: format!(
+                            "Class capacity reached ({}/{}). Override required to add student.",
+                            active_count, max_cap
+                        ),
                         requested_by: ctx.user_id().unwrap_or(student_id),
                         requested_by_name: None,
                         status: OverrideStatus::Pending,
@@ -478,7 +524,10 @@ impl StudentService {
             // 6. Auto-assign tuition fee templates if enabled and enrollment is active
             if admission_policy.auto_assign_fees && enrollment_status == EnrollmentStatus::Active {
                 if let Ok(templates) = self.fee_template_repo.find_by_org(org_id).await {
-                    for tpl in templates.into_iter().filter(|t| t.is_mandatory && t.is_active) {
+                    for tpl in templates
+                        .into_iter()
+                        .filter(|t| t.is_mandatory && t.is_active)
+                    {
                         let student_fee = StudentFee {
                             id: Uuid::new_v4(),
                             org_id,
@@ -506,25 +555,37 @@ impl StudentService {
                 }
             }
 
-            let _ = self.event_bus.publish(ctx, &DomainEvent::StudentEnrolled {
-                enrollment_id: enrollment.id,
-                student_id,
-                class_id: input.initial_class_id,
-                org_id,
-                study_mode: mode.to_string(),
-                timestamp: now,
-            }).await;
+            let _ = self
+                .event_bus
+                .publish(
+                    ctx,
+                    &DomainEvent::StudentEnrolled {
+                        enrollment_id: enrollment.id,
+                        student_id,
+                        class_id: input.initial_class_id,
+                        org_id,
+                        study_mode: mode.to_string(),
+                        timestamp: now,
+                    },
+                )
+                .await;
 
             created_enrollment = Some(enrollment);
         }
 
         // 7. Publish Domain Event
-        let _ = self.event_bus.publish(ctx, &DomainEvent::StudentRegistered {
-            student_id,
-            org_id,
-            student_number,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::StudentRegistered {
+                    student_id,
+                    org_id,
+                    student_number,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(RegisterStudentResult {
             student: StudentDetail { student, person },
@@ -545,9 +606,14 @@ impl StudentService {
         student_number: String,
         study_mode: StudyMode,
     ) -> Result<Enrollment, DomainError> {
-        self.permission_checker.check(ctx, Permission::StudentUpdate).await?;
+        self.permission_checker
+            .check(ctx, Permission::StudentUpdate)
+            .await?;
 
-        let student = self.student_repo.find_by_id(student_id).await?
+        let student = self
+            .student_repo
+            .find_by_id(student_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
 
         if !student.can_enroll() {
@@ -558,8 +624,13 @@ impl StudentService {
         }
 
         let existing_student_enrollments = self.enrollment_repo.find_by_student(student_id).await?;
-        if existing_student_enrollments.iter().any(|e| e.period_id == period_id && e.status == EnrollmentStatus::Active) {
-            return Err(DomainError::Conflict("Student is already actively enrolled in this period".into()));
+        if existing_student_enrollments
+            .iter()
+            .any(|e| e.period_id == period_id && e.status == EnrollmentStatus::Active)
+        {
+            return Err(DomainError::Conflict(
+                "Student is already actively enrolled in this period".into(),
+            ));
         }
 
         let now = Utc::now();
@@ -574,14 +645,20 @@ impl StudentService {
 
         self.enrollment_repo.save(&enrollment).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::StudentEnrolled {
-            enrollment_id: enrollment.id,
-            student_id,
-            class_id,
-            org_id,
-            study_mode: study_mode.to_string(),
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::StudentEnrolled {
+                    enrollment_id: enrollment.id,
+                    student_id,
+                    class_id,
+                    org_id,
+                    study_mode: study_mode.to_string(),
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(enrollment)
     }
@@ -594,9 +671,14 @@ impl StudentService {
         new_status: StudentStatus,
         _reason: Option<String>,
     ) -> Result<Student, DomainError> {
-        self.permission_checker.check(ctx, Permission::StudentUpdate).await?;
+        self.permission_checker
+            .check(ctx, Permission::StudentUpdate)
+            .await?;
 
-        let mut student = self.student_repo.find_by_id(student_id).await?
+        let mut student = self
+            .student_repo
+            .find_by_id(student_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
 
         let old_status = student.status;
@@ -609,12 +691,18 @@ impl StudentService {
 
         self.student_repo.save(&student).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::StudentStatusChanged {
-            student_id,
-            old_status: old_status.to_string(),
-            new_status: new_status.to_string(),
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::StudentStatusChanged {
+                    student_id,
+                    old_status: old_status.to_string(),
+                    new_status: new_status.to_string(),
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
         Ok(student)
     }
@@ -629,8 +717,16 @@ impl StudentService {
             None => return Ok(None),
         };
 
-        let person = self.person_repo.find_by_id(student.person_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Person {} not found for student {}", student.person_id, student_id)))?;
+        let person = self
+            .person_repo
+            .find_by_id(student.person_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!(
+                    "Person {} not found for student {}",
+                    student.person_id, student_id
+                ))
+            })?;
 
         Ok(Some(StudentDetail { student, person }))
     }
@@ -670,10 +766,17 @@ impl StudentService {
         target_class_id: Uuid,
         _reason: Option<String>,
     ) -> Result<Enrollment, DomainError> {
-        self.permission_checker.check(ctx, Permission::StudentUpdate).await?;
+        self.permission_checker
+            .check(ctx, Permission::StudentUpdate)
+            .await?;
 
-        let mut enrollment = self.enrollment_repo.find_by_id(enrollment_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Enrollment {} not found", enrollment_id)))?;
+        let mut enrollment = self
+            .enrollment_repo
+            .find_by_id(enrollment_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Enrollment {} not found", enrollment_id))
+            })?;
 
         enrollment.class_id = Some(target_class_id);
         enrollment.updated_at = Utc::now();
@@ -690,10 +793,17 @@ impl StudentService {
         new_mode: StudyMode,
         _reason: Option<String>,
     ) -> Result<Enrollment, DomainError> {
-        self.permission_checker.check(ctx, Permission::StudentUpdate).await?;
+        self.permission_checker
+            .check(ctx, Permission::StudentUpdate)
+            .await?;
 
-        let mut enrollment = self.enrollment_repo.find_by_id(enrollment_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Enrollment {} not found", enrollment_id)))?;
+        let mut enrollment = self
+            .enrollment_repo
+            .find_by_id(enrollment_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Enrollment {} not found", enrollment_id))
+            })?;
 
         enrollment.study_mode = new_mode;
         enrollment.updated_at = Utc::now();
@@ -726,7 +836,8 @@ impl StudentService {
             None,
             None,
             None,
-        ).await
+        )
+        .await
     }
 
     /// Assign guardian with full options
@@ -747,7 +858,9 @@ impl StudentService {
         work_phone: Option<String>,
         notes: Option<String>,
     ) -> Result<StudentGuardian, DomainError> {
-        self.permission_checker.check(ctx, Permission::StudentUpdate).await?;
+        self.permission_checker
+            .check(ctx, Permission::StudentUpdate)
+            .await?;
 
         let now = Utc::now();
         let sg = StudentGuardian {
@@ -798,7 +911,9 @@ impl StudentService {
         student_id: Uuid,
         guardian_id: Uuid,
     ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::StudentUpdate).await?;
+        self.permission_checker
+            .check(ctx, Permission::StudentUpdate)
+            .await?;
         self.guardian_repo.delete(student_id, guardian_id).await
     }
 
@@ -809,34 +924,84 @@ impl StudentService {
         student_id: Uuid,
         input: UpdateStudentProfileInput,
     ) -> Result<StudentDetail, DomainError> {
-        self.permission_checker.check(ctx, Permission::StudentUpdate).await?;
+        self.permission_checker
+            .check(ctx, Permission::StudentUpdate)
+            .await?;
 
-        let student = self.student_repo.find_by_id(student_id).await?
+        let student = self
+            .student_repo
+            .find_by_id(student_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
 
-        let mut person = self.person_repo.find_by_id(student.person_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Person {} not found", student.person_id)))?;
+        let mut person = self
+            .person_repo
+            .find_by_id(student.person_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Person {} not found", student.person_id))
+            })?;
 
-        if let Some(v) = input.first_name { person.first_name = v; }
-        if let Some(v) = input.middle_name { person.middle_name = Some(v); }
-        if let Some(v) = input.last_name { person.last_name = v; }
-        if let Some(v) = input.first_name_ar { person.first_name_ar = Some(v); }
-        if let Some(v) = input.middle_name_ar { person.middle_name_ar = Some(v); }
-        if let Some(v) = input.last_name_ar { person.last_name_ar = Some(v); }
-        if let Some(v) = input.display_name { person.display_name = Some(v); }
-        if let Some(v) = input.national_id { person.national_id = Some(v); }
-        if let Some(v) = input.passport_number { person.passport_number = Some(v); }
-        if let Some(v) = input.gender { person.gender = Some(v); }
-        if let Some(v) = input.birth_date { person.birth_date = Some(v); }
-        if let Some(v) = input.place_of_birth { person.place_of_birth = Some(v); }
-        if let Some(v) = input.nationality { person.nationality = Some(v); }
-        if let Some(v) = input.blood_type { person.blood_type = Some(v); }
-        if let Some(v) = input.medical_notes { person.medical_notes = Some(v); }
-        if let Some(v) = input.special_needs_notes { person.special_needs_notes = Some(v); }
-        if let Some(v) = input.phone { person.phone = Some(v); }
-        if let Some(v) = input.email { person.email = Some(v); }
-        if let Some(v) = input.address { person.address = Some(v); }
-        if let Some(v) = input.avatar_url { person.avatar_url = Some(v); }
+        if let Some(v) = input.first_name {
+            person.first_name = v;
+        }
+        if let Some(v) = input.middle_name {
+            person.middle_name = Some(v);
+        }
+        if let Some(v) = input.last_name {
+            person.last_name = v;
+        }
+        if let Some(v) = input.first_name_ar {
+            person.first_name_ar = Some(v);
+        }
+        if let Some(v) = input.middle_name_ar {
+            person.middle_name_ar = Some(v);
+        }
+        if let Some(v) = input.last_name_ar {
+            person.last_name_ar = Some(v);
+        }
+        if let Some(v) = input.display_name {
+            person.display_name = Some(v);
+        }
+        if let Some(v) = input.national_id {
+            person.national_id = Some(v);
+        }
+        if let Some(v) = input.passport_number {
+            person.passport_number = Some(v);
+        }
+        if let Some(v) = input.gender {
+            person.gender = Some(v);
+        }
+        if let Some(v) = input.birth_date {
+            person.birth_date = Some(v);
+        }
+        if let Some(v) = input.place_of_birth {
+            person.place_of_birth = Some(v);
+        }
+        if let Some(v) = input.nationality {
+            person.nationality = Some(v);
+        }
+        if let Some(v) = input.blood_type {
+            person.blood_type = Some(v);
+        }
+        if let Some(v) = input.medical_notes {
+            person.medical_notes = Some(v);
+        }
+        if let Some(v) = input.special_needs_notes {
+            person.special_needs_notes = Some(v);
+        }
+        if let Some(v) = input.phone {
+            person.phone = Some(v);
+        }
+        if let Some(v) = input.email {
+            person.email = Some(v);
+        }
+        if let Some(v) = input.address {
+            person.address = Some(v);
+        }
+        if let Some(v) = input.avatar_url {
+            person.avatar_url = Some(v);
+        }
         person.updated_at = Utc::now();
 
         self.person_repo.save(&person).await?;
@@ -849,9 +1014,14 @@ impl StudentService {
         ctx: &RequestContext,
         student_id: Uuid,
     ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::StudentDelete).await?;
+        self.permission_checker
+            .check(ctx, Permission::StudentDelete)
+            .await?;
 
-        let mut student = self.student_repo.find_by_id(student_id).await?
+        let mut student = self
+            .student_repo
+            .find_by_id(student_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
 
         student.is_deleted = true;
@@ -867,9 +1037,14 @@ impl StudentService {
         ctx: &RequestContext,
         student_id: Uuid,
     ) -> Result<Student, DomainError> {
-        self.permission_checker.check(ctx, Permission::StudentDelete).await?;
+        self.permission_checker
+            .check(ctx, Permission::StudentDelete)
+            .await?;
 
-        let mut student = self.student_repo.find_by_id(student_id).await?
+        let mut student = self
+            .student_repo
+            .find_by_id(student_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
 
         student.is_deleted = false;
@@ -888,14 +1063,20 @@ impl StudentService {
         org_id: Uuid,
         input: BulkRegisterStudentsInput,
     ) -> Result<BulkRegisterStudentResult, DomainError> {
-        self.permission_checker.check(ctx, Permission::StudentCreate).await?;
+        self.permission_checker
+            .check(ctx, Permission::StudentCreate)
+            .await?;
 
         let is_atomic = input.atomic.unwrap_or(true);
         let is_dry_run = input.dry_run.unwrap_or(false);
         let items = input.items;
         let total = items.len();
 
-        let org_settings = self.settings_repo.get_settings(org_id).await.unwrap_or_default();
+        let org_settings = self
+            .settings_repo
+            .get_settings(org_id)
+            .await
+            .unwrap_or_default();
         let admission_policy = org_settings.admission.policy;
 
         // ─────────────────────────────────────────────────────────────────
@@ -922,16 +1103,32 @@ impl StudentService {
             }
 
             // 2. Intra-Batch Duplicate National ID Check
-            if let Some(nid) = item.registration.national_id.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+            if let Some(nid) = item
+                .registration
+                .national_id
+                .as_deref()
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+            {
                 if let Some(prev_row) = seen_nids.get(nid) {
-                    pre_errors.insert(row, format!("Duplicate National ID '{}' within batch (conflicts with row {})", nid, prev_row));
+                    pre_errors.insert(
+                        row,
+                        format!(
+                            "Duplicate National ID '{}' within batch (conflicts with row {})",
+                            nid, prev_row
+                        ),
+                    );
                     continue;
                 }
                 seen_nids.insert(nid.to_string(), row);
 
                 // DB Conflict Check if duplicates not allowed
                 if !admission_policy.allow_duplicate_national_id {
-                    if let Ok(Some(existing_person)) = self.person_repo.find_by_national_id(Some(org_id), nid).await {
+                    if let Ok(Some(existing_person)) = self
+                        .person_repo
+                        .find_by_national_id(Some(org_id), nid)
+                        .await
+                    {
                         pre_errors.insert(row, format!("A person with National ID '{}' already exists in organization (Name: '{}')", nid, existing_person.full_name()));
                         continue;
                     }
@@ -939,44 +1136,87 @@ impl StudentService {
             }
 
             // 3. Intra-Batch Duplicate Passport Check
-            if let Some(pp) = item.registration.passport_number.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+            if let Some(pp) = item
+                .registration
+                .passport_number
+                .as_deref()
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+            {
                 if let Some(prev_row) = seen_passports.get(pp) {
-                    pre_errors.insert(row, format!("Duplicate Passport Number '{}' within batch (conflicts with row {})", pp, prev_row));
+                    pre_errors.insert(
+                        row,
+                        format!(
+                            "Duplicate Passport Number '{}' within batch (conflicts with row {})",
+                            pp, prev_row
+                        ),
+                    );
                     continue;
                 }
                 seen_passports.insert(pp.to_string(), row);
             }
 
             // 4. Intra-Batch Explicit Student Number Check
-            if let Some(sn) = item.registration.student_number.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+            if let Some(sn) = item
+                .registration
+                .student_number
+                .as_deref()
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+            {
                 if let Some(prev_row) = seen_student_nums.get(sn) {
-                    pre_errors.insert(row, format!("Duplicate Student Number '{}' within batch (conflicts with row {})", sn, prev_row));
+                    pre_errors.insert(
+                        row,
+                        format!(
+                            "Duplicate Student Number '{}' within batch (conflicts with row {})",
+                            sn, prev_row
+                        ),
+                    );
                     continue;
                 }
                 seen_student_nums.insert(sn.to_string(), row);
 
                 if let Ok(Some(_)) = self.student_repo.find_by_student_number(org_id, sn).await {
-                    pre_errors.insert(row, format!("Student number '{}' already exists in organization", sn));
+                    pre_errors.insert(
+                        row,
+                        format!("Student number '{}' already exists in organization", sn),
+                    );
                     continue;
                 }
             }
 
             // 5. Guardian Policy Check
             if !admission_policy.allow_no_guardian {
-                let has_guardian = item.guardian_name.as_deref().map(|s| !s.trim().is_empty()).unwrap_or(false);
+                let has_guardian = item
+                    .guardian_name
+                    .as_deref()
+                    .map(|s| !s.trim().is_empty())
+                    .unwrap_or(false);
                 if !has_guardian {
-                    pre_errors.insert(row, "Guardian name is required by organization admission policy".to_string());
+                    pre_errors.insert(
+                        row,
+                        "Guardian name is required by organization admission policy".to_string(),
+                    );
                     continue;
                 }
             }
 
             // 6. Cumulative Class Capacity & Multi-Enrollment Simulation
             if let Some(class_id) = item.registration.initial_class_id {
-                let (current_active, max_cap) = if let Some(cached) = class_capacity_cache.get(&class_id) {
+                let (current_active, max_cap) = if let Some(cached) =
+                    class_capacity_cache.get(&class_id)
+                {
                     *cached
                 } else {
-                    let active = self.enrollment_repo.find_by_class(class_id).await
-                        .map(|list| list.into_iter().filter(|e| e.status == EnrollmentStatus::Active).count() as i32)
+                    let active = self
+                        .enrollment_repo
+                        .find_by_class(class_id)
+                        .await
+                        .map(|list| {
+                            list.into_iter()
+                                .filter(|e| e.status == EnrollmentStatus::Active)
+                                .count() as i32
+                        })
                         .unwrap_or(0);
                     let max_c = if let Ok(Some(cls)) = self.class_repo.find_by_id(class_id).await {
                         cls.capacity.unwrap_or(admission_policy.max_class_capacity)
@@ -990,7 +1230,9 @@ impl StudentService {
                 let allocated = class_allocated_count.entry(class_id).or_insert(0);
                 *allocated += 1;
 
-                if (current_active + *allocated) > max_cap && item.registration.bypass_capacity_check != Some(true) {
+                if (current_active + *allocated) > max_cap
+                    && item.registration.bypass_capacity_check != Some(true)
+                {
                     if is_atomic && !admission_policy.allow_waitlist {
                         pre_errors.insert(row, format!(
                             "Class capacity exceeded ({}/{} max). Total active: {}, requested in batch: {}",
@@ -1058,7 +1300,11 @@ impl StudentService {
                         row_index: row,
                         success: true,
                         student_id: None,
-                        student_number: item.registration.student_number.clone().or_else(|| Some("[Auto-Generated Preview]".to_string())),
+                        student_number: item
+                            .registration
+                            .student_number
+                            .clone()
+                            .or_else(|| Some("[Auto-Generated Preview]".to_string())),
                         error: None,
                     });
                 }
@@ -1107,7 +1353,9 @@ impl StudentService {
                             let g_phone = item.guardian_phone.as_deref().unwrap_or("").trim();
                             let mut guardian_person_id = None;
                             if !g_phone.is_empty() {
-                                if let Ok(Some(existing_p)) = self.person_repo.find_by_phone(Some(org_id), g_phone).await {
+                                if let Ok(Some(existing_p)) =
+                                    self.person_repo.find_by_phone(Some(org_id), g_phone).await
+                                {
                                     guardian_person_id = Some(existing_p.id);
                                 }
                             }
@@ -1135,7 +1383,11 @@ impl StudentService {
                                     blood_type: None,
                                     medical_notes: None,
                                     special_needs_notes: None,
-                                    phone: if g_phone.is_empty() { None } else { Some(g_phone.to_string()) },
+                                    phone: if g_phone.is_empty() {
+                                        None
+                                    } else {
+                                        Some(g_phone.to_string())
+                                    },
                                     email: None,
                                     address: None,
                                     avatar_url: None,
@@ -1150,7 +1402,9 @@ impl StudentService {
                                 id: Uuid::new_v4(),
                                 student_id: stu_id,
                                 guardian_id: g_pid,
-                                relationship: item.guardian_relationship.unwrap_or_else(|| "guardian".to_string()),
+                                relationship: item
+                                    .guardian_relationship
+                                    .unwrap_or_else(|| "guardian".to_string()),
                                 relationship_ar: None,
                                 is_primary: true,
                                 is_emergency_contact: true,

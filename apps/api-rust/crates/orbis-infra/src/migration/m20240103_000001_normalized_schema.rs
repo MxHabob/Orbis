@@ -13,8 +13,11 @@ impl MigrationTrait for Migration {
         let schema = Schema::new(builder);
 
         // 1. Create custom_field_definitions table
-        let mut custom_field_table = schema.create_table_from_entity(custom_field_definition::Entity);
-        manager.create_table(custom_field_table.if_not_exists().to_owned()).await?;
+        let mut custom_field_table =
+            schema.create_table_from_entity(custom_field_definition::Entity);
+        manager
+            .create_table(custom_field_table.if_not_exists().to_owned())
+            .await?;
 
         // 2. Create composite index on enrollments (student_id, period_id) if not exists
         let enroll_index = Index::create()

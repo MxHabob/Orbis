@@ -1,57 +1,60 @@
-use serde::{Deserialize, Serialize};
-use crate::ports::repositories::{PaymentRepository, JournalEntryRepository, StudentFeeRepository, FeeTemplateRepository, DiscountTemplateRepository, CurrencyRepository, PolicyRepository, AccountRepository};
-use crate::ports::event_bus::EventBus;
-use crate::ports::gateways::{PaymentGatewayPort, NotificationPort};
-use crate::ports::iam::PermissionCheckerPort;
-use orbis_domain::iam::permission::Permission;
 use crate::context::RequestContext;
-use orbis_domain::entities::payment::{Payment, PaymentMethod};
-use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};
-use orbis_domain::entities::account::Account;
-use orbis_domain::entities::fee_template::FeeTemplate;
-use orbis_domain::entities::discount_template::DiscountTemplate;
-use orbis_domain::entities::student_fee::{StudentFee, FeeStatus};
-use orbis_domain::queries::filters::{PaymentFilter, StudentFeeFilter, PaginatedList};
-use orbis_domain::events::DomainEvent;
-use orbis_domain::errors::DomainError;
-use uuid::Uuid;
+use crate::ports::event_bus::EventBus;
+use crate::ports::gateways::{NotificationPort, PaymentGatewayPort};
+use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::repositories::{
+    AccountRepository, CurrencyRepository, DiscountTemplateRepository, FeeTemplateRepository,
+    JournalEntryRepository, PaymentRepository, PolicyRepository, StudentFeeRepository,
+};
 use chrono::Utc;
+use orbis_domain::entities::account::Account;
+use orbis_domain::entities::discount_template::DiscountTemplate;
+use orbis_domain::entities::fee_template::FeeTemplate;
+use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};
+use orbis_domain::entities::payment::{Payment, PaymentMethod};
+use orbis_domain::entities::student_fee::{FeeStatus, StudentFee};
+use orbis_domain::errors::DomainError;
+use orbis_domain::events::DomainEvent;
+use orbis_domain::iam::permission::Permission;
+use orbis_domain::queries::filters::{PaginatedList, PaymentFilter, StudentFeeFilter};
 use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AccountPurpose {
-    MainCashbox,               // 110101
-    MainBank,                  // 110102
-    PettyCash,                 // 110103
-    ElectronicGatewayClearing, // 110106
-    StudentReceivableTuition,  // 110301
-    StudentReceivableTransport,// 110302
-    StudentReceivableActivities,// 110304
-    CorporateReceivable,       // 110305
-    EmployeeAdvance,           // 110306
-    VatInputRecoverable,       // 110401
-    VendorPayable,             // 210101
-    ServiceContractorPayable,  // 210102
-    GeneralSupplierPayable,    // 210103
-    SalariesPayable,           // 210201
-    AllowancesPayable,         // 210202
-    SocialInsuranceGosiPayable,// 210203
-    EndOfServiceProvision,     // 210204
-    UnearnedTuition,           // 210301
-    VatOutputPayable,          // 210401
-    TuitionRevenue,            // 410101
-    TransportRevenue,          // 410201
-    BooksRevenue,              // 410202
-    RegistrationRevenue,       // 410203
-    SiblingDiscount,           // 410301
-    MeritScholarship,          // 410302
-    StaffChildDiscount,        // 410303
-    EarlyPaymentDiscount,      // 410304
-    AcademicSalariesExpense,   // 510101
-    AdminSalariesExpense,      // 520101
-    BankGatewayFeesExpense,    // 520301
+    MainCashbox,                 // 110101
+    MainBank,                    // 110102
+    PettyCash,                   // 110103
+    ElectronicGatewayClearing,   // 110106
+    StudentReceivableTuition,    // 110301
+    StudentReceivableTransport,  // 110302
+    StudentReceivableActivities, // 110304
+    CorporateReceivable,         // 110305
+    EmployeeAdvance,             // 110306
+    VatInputRecoverable,         // 110401
+    VendorPayable,               // 210101
+    ServiceContractorPayable,    // 210102
+    GeneralSupplierPayable,      // 210103
+    SalariesPayable,             // 210201
+    AllowancesPayable,           // 210202
+    SocialInsuranceGosiPayable,  // 210203
+    EndOfServiceProvision,       // 210204
+    UnearnedTuition,             // 210301
+    VatOutputPayable,            // 210401
+    TuitionRevenue,              // 410101
+    TransportRevenue,            // 410201
+    BooksRevenue,                // 410202
+    RegistrationRevenue,         // 410203
+    SiblingDiscount,             // 410301
+    MeritScholarship,            // 410302
+    StaffChildDiscount,          // 410303
+    EarlyPaymentDiscount,        // 410304
+    AcademicSalariesExpense,     // 510101
+    AdminSalariesExpense,        // 520101
+    BankGatewayFeesExpense,      // 520301
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -214,10 +217,14 @@ impl FinanceService {
         reference: Option<String>,
         source: Option<String>,
     ) -> Result<Payment, DomainError> {
-        self.permission_checker.check(ctx, Permission::ProcessPayment).await?;
+        self.permission_checker
+            .check(ctx, Permission::ProcessPayment)
+            .await?;
 
         if amount <= Decimal::ZERO {
-            return Err(DomainError::Validation("Payment amount must be greater than zero".into()));
+            return Err(DomainError::Validation(
+                "Payment amount must be greater than zero".into(),
+            ));
         }
 
         let now = Utc::now();
@@ -230,13 +237,19 @@ impl FinanceService {
         let base_currency = org_settings.finance.currency;
 
         // 2. Fetch target account to determine transaction currency
-        let account = self.account_repo.find_by_id(account_id).await?
+        let account = self
+            .account_repo
+            .find_by_id(account_id)
+            .await?
             .ok_or_else(|| DomainError::Validation(format!("Account {} not found", account_id)))?;
         let transaction_currency = account.currency_code;
 
         let mut exchange_rate_value = Decimal::from(1);
         if transaction_currency != base_currency {
-            let rate_opt = self.currency_repo.get_exchange_rate(org_id, &base_currency, &transaction_currency).await?;
+            let rate_opt = self
+                .currency_repo
+                .get_exchange_rate(org_id, &base_currency, &transaction_currency)
+                .await?;
             if let Some(rate) = rate_opt {
                 exchange_rate_value = rate.rate;
             } else {
@@ -249,13 +262,22 @@ impl FinanceService {
 
         // 3. Electronic Gateway Processing if applicable
         let mut final_reference = reference.clone();
-        if matches!(method, PaymentMethod::CreditCard | PaymentMethod::Mada | PaymentMethod::ApplePay) {
+        if matches!(
+            method,
+            PaymentMethod::CreditCard | PaymentMethod::Mada | PaymentMethod::ApplePay
+        ) {
             if let Some(src) = source {
                 let amount_f64 = rust_decimal::prelude::ToPrimitive::to_f64(&amount).unwrap_or(0.0);
-                let gateway_ref = self.payment_gateway.process_payment(ctx, amount_f64, &transaction_currency, &src).await?;
+                let gateway_ref = self
+                    .payment_gateway
+                    .process_payment(ctx, amount_f64, &transaction_currency, &src)
+                    .await?;
                 final_reference = Some(gateway_ref);
             } else {
-                return Err(DomainError::Validation(format!("Payment method '{}' requires a source token", method)));
+                return Err(DomainError::Validation(format!(
+                    "Payment method '{}' requires a source token",
+                    method
+                )));
             }
         }
 
@@ -268,12 +290,14 @@ impl FinanceService {
             if let Some(mut fee) = self.student_fee_repo.find_by_id(f_id).await? {
                 if amount > fee.balance_due {
                     return Err(DomainError::Validation(format!(
-                        "Payment amount ({}) exceeds fee balance due ({})", amount, fee.balance_due
+                        "Payment amount ({}) exceeds fee balance due ({})",
+                        amount, fee.balance_due
                     )));
                 }
                 if !org_settings.finance.allow_partial_payments && amount < fee.balance_due {
                     return Err(DomainError::Validation(format!(
-                        "Partial payments are not permitted by organization policy. Full balance of {} is required.", fee.balance_due
+                        "Partial payments are not permitted by organization policy. Full balance of {} is required.",
+                        fee.balance_due
                     )));
                 }
                 student_resolved_id = Some(fee.student_id);
@@ -281,7 +305,11 @@ impl FinanceService {
                 fee.apply_payment(amount);
                 self.student_fee_repo.save(&fee).await?;
 
-                if let Some(template) = self.fee_template_repo.find_by_id(fee.fee_template_id).await? {
+                if let Some(template) = self
+                    .fee_template_repo
+                    .find_by_id(fee.fee_template_id)
+                    .await?
+                {
                     receivable_acct = template.receivable_account_id;
                 }
             }
@@ -314,7 +342,10 @@ impl FinanceService {
         let entry = JournalEntry {
             id: journal_entry_id,
             org_id,
-            reference_number: format!("PAY-{}", payment_id.to_string().chars().take(8).collect::<String>()),
+            reference_number: format!(
+                "PAY-{}",
+                payment_id.to_string().chars().take(8).collect::<String>()
+            ),
             accounting_date,
             amount,
             currency_code: transaction_currency.clone(),
@@ -359,7 +390,10 @@ impl FinanceService {
             base_amount,
             method,
             reference: final_reference.clone(),
-            receipt_number: Some(format!("REC-{}", payment_id.to_string().chars().take(8).collect::<String>())),
+            receipt_number: Some(format!(
+                "REC-{}",
+                payment_id.to_string().chars().take(8).collect::<String>()
+            )),
             journal_entry_id: Some(journal_entry_id),
             payer_name,
             payer_phone,
@@ -373,18 +407,30 @@ impl FinanceService {
         self.payment_repo.save(&payment).await?;
 
         // 7. Publish Events
-        let _ = self.event_bus.publish(ctx, &DomainEvent::JournalEntryPosted {
-            entry_id: journal_entry_id,
-            amount,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::JournalEntryPosted {
+                    entry_id: journal_entry_id,
+                    amount,
+                    timestamp: now,
+                },
+            )
+            .await;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::PaymentReceived {
-            payment_id,
-            fee_id,
-            amount,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::PaymentReceived {
+                    payment_id,
+                    fee_id,
+                    amount,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         // 8. Notification — receipt dispatch is handled by the PaymentReceived event subscriber,
         // which has access to guardian/person repos for email lookup.
@@ -405,10 +451,17 @@ impl FinanceService {
         discount_amount: Option<Decimal>,
         due_date: Option<chrono::NaiveDate>,
     ) -> Result<StudentFee, DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
-        let template = self.fee_template_repo.find_by_id(template_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Fee Template {} not found", template_id)))?;
+        let template = self
+            .fee_template_repo
+            .find_by_id(template_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Fee Template {} not found", template_id))
+            })?;
 
         let discount = discount_amount.unwrap_or(Decimal::ZERO);
         let net_amount = (template.default_amount - discount).max(Decimal::ZERO);
@@ -436,7 +489,8 @@ impl FinanceService {
             paid_amount: Decimal::ZERO,
             balance_due: net_amount,
             status: FeeStatus::Pending,
-            due_date: due_date.unwrap_or_else(|| (now + chrono::Duration::days(due_days)).date_naive()),
+            due_date: due_date
+                .unwrap_or_else(|| (now + chrono::Duration::days(due_days)).date_naive()),
             discount_details: None,
             installment_number: None,
             notes: None,
@@ -449,20 +503,20 @@ impl FinanceService {
 
         // Double-entry ledger accrual for student fee invoice (قيد استحقاق الرسوم)
         let journal_entry_id = Uuid::new_v4();
-        let mut lines = vec![
-            JournalEntryLine {
-                id: Uuid::new_v4(),
-                account_id: template.receivable_account_id,
-                debit_amount: net_amount,
-                credit_amount: Decimal::ZERO,
-                description: Some(format!("Student fee invoice: {}", template.name)),
-                entity_type: Some("student".into()),
-                entity_id: Some(student_id),
-            },
-        ];
+        let mut lines = vec![JournalEntryLine {
+            id: Uuid::new_v4(),
+            account_id: template.receivable_account_id,
+            debit_amount: net_amount,
+            credit_amount: Decimal::ZERO,
+            description: Some(format!("Student fee invoice: {}", template.name)),
+            entity_type: Some("student".into()),
+            entity_id: Some(student_id),
+        }];
 
         if discount > Decimal::ZERO {
-            let discount_acct = self.resolve_default_account(org_id, AccountPurpose::SiblingDiscount).await
+            let discount_acct = self
+                .resolve_default_account(org_id, AccountPurpose::SiblingDiscount)
+                .await
                 .map(|a| a.id)
                 .unwrap_or(template.revenue_account_id);
 
@@ -490,7 +544,10 @@ impl FinanceService {
         let invoice_entry = JournalEntry {
             id: journal_entry_id,
             org_id,
-            reference_number: format!("INV-{}", fee_id.to_string().chars().take(8).collect::<String>()),
+            reference_number: format!(
+                "INV-{}",
+                fee_id.to_string().chars().take(8).collect::<String>()
+            ),
             accounting_date: now.date_naive(),
             amount: template.default_amount,
             currency_code: template.currency_code.clone(),
@@ -499,7 +556,13 @@ impl FinanceService {
             debit_account_id: template.receivable_account_id,
             credit_account_id: template.revenue_account_id,
             description: format!("Tuition fee invoice for student: {}", template.name),
-            description_ar: Some(format!("فاتورة رسوم دراسية: {}", template.name_ar.clone().unwrap_or_else(|| template.name.clone()))),
+            description_ar: Some(format!(
+                "فاتورة رسوم دراسية: {}",
+                template
+                    .name_ar
+                    .clone()
+                    .unwrap_or_else(|| template.name.clone())
+            )),
             source_type: "student_fee_invoice".into(),
             source_id: Some(fee_id),
             status: JournalPostingStatus::Posted,
@@ -517,20 +580,32 @@ impl FinanceService {
 
         if invoice_entry.validate_balance().is_ok() {
             let _ = self.journal_repo.save(&invoice_entry).await;
-            let _ = self.event_bus.publish(ctx, &DomainEvent::JournalEntryPosted {
-                entry_id: journal_entry_id,
-                amount: template.default_amount,
-                timestamp: now,
-            }).await;
+            let _ = self
+                .event_bus
+                .publish(
+                    ctx,
+                    &DomainEvent::JournalEntryPosted {
+                        entry_id: journal_entry_id,
+                        amount: template.default_amount,
+                        timestamp: now,
+                    },
+                )
+                .await;
         }
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::StudentFeeGenerated {
-            fee_id,
-            student_id,
-            enrollment_id,
-            net_amount,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::StudentFeeGenerated {
+                    fee_id,
+                    student_id,
+                    enrollment_id,
+                    net_amount,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(fee)
     }
@@ -545,7 +620,9 @@ impl FinanceService {
         receivable_account_id: Uuid,
         revenue_account_id: Uuid,
     ) -> Result<FeeTemplate, DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
         let now = Utc::now();
         let tmpl_id = Uuid::new_v4();
@@ -553,7 +630,10 @@ impl FinanceService {
         let tmpl = FeeTemplate {
             id: tmpl_id,
             org_id,
-            code: format!("FEE-{}", tmpl_id.to_string().chars().take(6).collect::<String>()),
+            code: format!(
+                "FEE-{}",
+                tmpl_id.to_string().chars().take(6).collect::<String>()
+            ),
             name,
             name_ar: None,
             category: "tuition".into(),
@@ -580,7 +660,11 @@ impl FinanceService {
     }
 
     /// Get fee template
-    pub async fn get_fee_template(&self, org_id: Uuid, id: Uuid) -> Result<Option<FeeTemplate>, DomainError> {
+    pub async fn get_fee_template(
+        &self,
+        org_id: Uuid,
+        id: Uuid,
+    ) -> Result<Option<FeeTemplate>, DomainError> {
         let tmpl = self.fee_template_repo.find_by_id(id).await?;
         if let Some(ref t) = tmpl {
             if t.org_id != org_id {
@@ -609,9 +693,14 @@ impl FinanceService {
         is_mandatory: Option<bool>,
         is_active: Option<bool>,
     ) -> Result<FeeTemplate, DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
-        let mut tmpl = self.fee_template_repo.find_by_id(id).await?
+        let mut tmpl = self
+            .fee_template_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Fee template {} not found", id)))?;
 
         if tmpl.org_id != org_id {
@@ -657,11 +746,17 @@ impl FinanceService {
 
         self.fee_template_repo.save(&tmpl).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::FeeTemplateUpdated {
-            template_id: id,
-            org_id,
-            timestamp: tmpl.updated_at,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::FeeTemplateUpdated {
+                    template_id: id,
+                    org_id,
+                    timestamp: tmpl.updated_at,
+                },
+            )
+            .await;
 
         Ok(tmpl)
     }
@@ -673,9 +768,14 @@ impl FinanceService {
         org_id: Uuid,
         id: Uuid,
     ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
-        let tmpl = self.fee_template_repo.find_by_id(id).await?
+        let tmpl = self
+            .fee_template_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Fee template {} not found", id)))?;
 
         if tmpl.org_id != org_id {
@@ -684,11 +784,17 @@ impl FinanceService {
 
         self.fee_template_repo.delete(id).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::FeeTemplateDeleted {
-            template_id: id,
-            org_id,
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::FeeTemplateDeleted {
+                    template_id: id,
+                    org_id,
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
         Ok(())
     }
@@ -704,7 +810,9 @@ impl FinanceService {
         currency_code: String,
         parent_id: Option<Uuid>,
     ) -> Result<Account, DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
         let now = Utc::now();
         let path = format!("/{}", code);
@@ -738,7 +846,11 @@ impl FinanceService {
     }
 
     /// Get general ledger account
-    pub async fn get_account(&self, org_id: Uuid, id: Uuid) -> Result<Option<Account>, DomainError> {
+    pub async fn get_account(
+        &self,
+        org_id: Uuid,
+        id: Uuid,
+    ) -> Result<Option<Account>, DomainError> {
         let acct = self.account_repo.find_by_id(id).await?;
         if let Some(ref a) = acct {
             if a.org_id != org_id {
@@ -763,9 +875,14 @@ impl FinanceService {
         currency_code: String,
         is_active: bool,
     ) -> Result<Account, DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
-        let mut account = self.account_repo.find_by_id(id).await?
+        let mut account = self
+            .account_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Account {} not found", id)))?;
 
         if account.org_id != org_id {
@@ -787,11 +904,17 @@ impl FinanceService {
 
         self.account_repo.save(&account).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::AccountUpdated {
-            account_id: id,
-            org_id,
-            timestamp: account.updated_at,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::AccountUpdated {
+                    account_id: id,
+                    org_id,
+                    timestamp: account.updated_at,
+                },
+            )
+            .await;
 
         Ok(account)
     }
@@ -803,9 +926,14 @@ impl FinanceService {
         org_id: Uuid,
         id: Uuid,
     ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
-        let account = self.account_repo.find_by_id(id).await?
+        let account = self
+            .account_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Account {} not found", id)))?;
 
         if account.org_id != org_id {
@@ -813,16 +941,24 @@ impl FinanceService {
         }
 
         if account.is_system_account {
-            return Err(DomainError::Validation("Cannot delete system protected account".into()));
+            return Err(DomainError::Validation(
+                "Cannot delete system protected account".into(),
+            ));
         }
 
         self.account_repo.delete(id).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::AccountDeleted {
-            account_id: id,
-            org_id,
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::AccountDeleted {
+                    account_id: id,
+                    org_id,
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
         Ok(())
     }
@@ -833,12 +969,20 @@ impl FinanceService {
     }
 
     /// List student fees
-    pub async fn list_student_fees(&self, org_id: Uuid, filter: StudentFeeFilter) -> Result<PaginatedList<StudentFee>, DomainError> {
+    pub async fn list_student_fees(
+        &self,
+        org_id: Uuid,
+        filter: StudentFeeFilter,
+    ) -> Result<PaginatedList<StudentFee>, DomainError> {
         self.student_fee_repo.list(org_id, filter).await
     }
 
     /// List payments
-    pub async fn list_payments(&self, org_id: Uuid, filter: PaymentFilter) -> Result<PaginatedList<Payment>, DomainError> {
+    pub async fn list_payments(
+        &self,
+        org_id: Uuid,
+        filter: PaymentFilter,
+    ) -> Result<PaginatedList<Payment>, DomainError> {
         self.payment_repo.list(org_id, filter).await
     }
 
@@ -850,17 +994,26 @@ impl FinanceService {
         entry_id: Uuid,
         reason: String,
     ) -> Result<JournalEntry, DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
-        let mut original_entry = self.journal_repo.find_by_id(entry_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Journal entry {} not found", entry_id)))?;
+        let mut original_entry =
+            self.journal_repo
+                .find_by_id(entry_id)
+                .await?
+                .ok_or_else(|| {
+                    DomainError::NotFound(format!("Journal entry {} not found", entry_id))
+                })?;
 
         if original_entry.org_id != org_id {
             return Err(DomainError::Unauthorized("Organization mismatch".into()));
         }
 
         if original_entry.is_reversed {
-            return Err(DomainError::Validation("Journal entry is already reversed".into()));
+            return Err(DomainError::Validation(
+                "Journal entry is already reversed".into(),
+            ));
         }
 
         let now = Utc::now();
@@ -874,8 +1027,10 @@ impl FinanceService {
 
         // Create opposing reversing entry
         let reversal_id = Uuid::new_v4();
-        let reversal_lines: Vec<JournalEntryLine> = original_entry.lines.into_iter().map(|l| {
-            JournalEntryLine {
+        let reversal_lines: Vec<JournalEntryLine> = original_entry
+            .lines
+            .into_iter()
+            .map(|l| JournalEntryLine {
                 id: Uuid::new_v4(),
                 account_id: l.account_id,
                 debit_amount: l.credit_amount,
@@ -883,8 +1038,8 @@ impl FinanceService {
                 description: Some(format!("Reversal: {}", l.description.unwrap_or_default())),
                 entity_type: l.entity_type,
                 entity_id: l.entity_id,
-            }
-        }).collect();
+            })
+            .collect();
 
         let reversing_entry = JournalEntry {
             id: reversal_id,
@@ -897,7 +1052,10 @@ impl FinanceService {
             base_amount: original_entry.base_amount,
             debit_account_id: original_entry.credit_account_id,
             credit_account_id: original_entry.debit_account_id,
-            description: format!("Reversal of {}: {}", original_entry.reference_number, reason),
+            description: format!(
+                "Reversal of {}: {}",
+                original_entry.reference_number, reason
+            ),
             description_ar: None,
             source_type: "reversal".into(),
             source_id: Some(original_entry.id),
@@ -927,9 +1085,14 @@ impl FinanceService {
         refund_amount: Decimal,
         notes: Option<String>,
     ) -> Result<StudentFee, DomainError> {
-        self.permission_checker.check(ctx, Permission::ProcessPayment).await?;
+        self.permission_checker
+            .check(ctx, Permission::ProcessPayment)
+            .await?;
 
-        let mut fee = self.student_fee_repo.find_by_id(fee_id).await?
+        let mut fee = self
+            .student_fee_repo
+            .find_by_id(fee_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Student fee {} not found", fee_id)))?;
 
         if fee.org_id != org_id {
@@ -938,7 +1101,8 @@ impl FinanceService {
 
         if refund_amount <= Decimal::ZERO || refund_amount > fee.paid_amount {
             return Err(DomainError::Validation(format!(
-                "Invalid refund amount: {} (Paid: {})", refund_amount, fee.paid_amount
+                "Invalid refund amount: {} (Paid: {})",
+                refund_amount, fee.paid_amount
             )));
         }
 
@@ -970,13 +1134,20 @@ impl FinanceService {
         num_installments: u32,
         due_dates: Vec<chrono::NaiveDate>,
     ) -> Result<Vec<StudentFee>, DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
         if num_installments < 2 || due_dates.len() != num_installments as usize {
-            return Err(DomainError::Validation("Installment count must match number of due dates".into()));
+            return Err(DomainError::Validation(
+                "Installment count must match number of due dates".into(),
+            ));
         }
 
-        let base_fee = self.student_fee_repo.find_by_id(fee_id).await?
+        let base_fee = self
+            .student_fee_repo
+            .find_by_id(fee_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Student fee {} not found", fee_id)))?;
 
         if base_fee.org_id != org_id {
@@ -984,10 +1155,13 @@ impl FinanceService {
         }
 
         if base_fee.paid_amount > Decimal::ZERO {
-            return Err(DomainError::Validation("Cannot split fee that already has payments applied".into()));
+            return Err(DomainError::Validation(
+                "Cannot split fee that already has payments applied".into(),
+            ));
         }
 
-        let installment_amount = (base_fee.net_amount / Decimal::from(num_installments)).round_dp(2);
+        let installment_amount =
+            (base_fee.net_amount / Decimal::from(num_installments)).round_dp(2);
         let mut created_fees = Vec::new();
         let now = Utc::now();
 
@@ -1036,7 +1210,9 @@ impl FinanceService {
         is_stackable: bool,
         priority: u32,
     ) -> Result<DiscountTemplate, DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
         let now = Utc::now();
         let tmpl_id = Uuid::new_v4();
@@ -1044,7 +1220,12 @@ impl FinanceService {
         let tmpl = DiscountTemplate {
             id: tmpl_id,
             org_id,
-            code: code.unwrap_or_else(|| format!("DISC-{}", tmpl_id.to_string().chars().take(6).collect::<String>())),
+            code: code.unwrap_or_else(|| {
+                format!(
+                    "DISC-{}",
+                    tmpl_id.to_string().chars().take(6).collect::<String>()
+                )
+            }),
             name,
             name_ar,
             discount_type,
@@ -1061,18 +1242,27 @@ impl FinanceService {
 
         self.discount_template_repo.save(&tmpl).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::DiscountTemplateCreated {
-            template_id: tmpl_id,
-            org_id,
-            code: tmpl.code.clone(),
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::DiscountTemplateCreated {
+                    template_id: tmpl_id,
+                    org_id,
+                    code: tmpl.code.clone(),
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(tmpl)
     }
 
     /// List discount templates
-    pub async fn list_discount_templates(&self, org_id: Uuid) -> Result<Vec<DiscountTemplate>, DomainError> {
+    pub async fn list_discount_templates(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<DiscountTemplate>, DomainError> {
         self.discount_template_repo.find_by_org(org_id).await
     }
 
@@ -1083,9 +1273,14 @@ impl FinanceService {
         org_id: Uuid,
         id: Uuid,
     ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
-        let tmpl = self.discount_template_repo.find_by_id(id).await?
+        let tmpl = self
+            .discount_template_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Discount template {} not found", id)))?;
 
         if tmpl.org_id != org_id {
@@ -1094,11 +1289,17 @@ impl FinanceService {
 
         self.discount_template_repo.delete(id).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::DiscountTemplateDeleted {
-            template_id: id,
-            org_id,
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::DiscountTemplateDeleted {
+                    template_id: id,
+                    org_id,
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
         Ok(())
     }
@@ -1110,9 +1311,14 @@ impl FinanceService {
         org_id: Uuid,
         id: Uuid,
     ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
-        let fee = self.student_fee_repo.find_by_id(id).await?
+        let fee = self
+            .student_fee_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Student fee {} not found", id)))?;
 
         if fee.org_id != org_id {
@@ -1120,16 +1326,24 @@ impl FinanceService {
         }
 
         if fee.paid_amount > Decimal::ZERO {
-            return Err(DomainError::Validation("Cannot delete fee with applied payments. Refund or reverse payments first.".into()));
+            return Err(DomainError::Validation(
+                "Cannot delete fee with applied payments. Refund or reverse payments first.".into(),
+            ));
         }
 
         self.student_fee_repo.delete(id).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::StudentFeeDeleted {
-            fee_id: id,
-            org_id,
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::StudentFeeDeleted {
+                    fee_id: id,
+                    org_id,
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
         Ok(())
     }
@@ -1141,9 +1355,14 @@ impl FinanceService {
         org_id: Uuid,
         id: Uuid,
     ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::ProcessPayment).await?;
+        self.permission_checker
+            .check(ctx, Permission::ProcessPayment)
+            .await?;
 
-        let payment = self.payment_repo.find_by_id(id).await?
+        let payment = self
+            .payment_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Payment {} not found", id)))?;
 
         if payment.org_id != org_id {
@@ -1167,11 +1386,17 @@ impl FinanceService {
 
         self.payment_repo.delete(id).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::PaymentDeleted {
-            payment_id: id,
-            org_id,
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::PaymentDeleted {
+                    payment_id: id,
+                    org_id,
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
         Ok(())
     }
@@ -1183,9 +1408,14 @@ impl FinanceService {
         org_id: Uuid,
         id: Uuid,
     ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
-        let entry = self.journal_repo.find_by_id(id).await?
+        let entry = self
+            .journal_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Journal entry {} not found", id)))?;
 
         if entry.org_id != org_id {
@@ -1194,11 +1424,17 @@ impl FinanceService {
 
         self.journal_repo.delete(id).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::JournalEntryDeleted {
-            entry_id: id,
-            org_id,
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::JournalEntryDeleted {
+                    entry_id: id,
+                    org_id,
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
         Ok(())
     }
@@ -1212,40 +1448,114 @@ impl FinanceService {
         let accounts = self.account_repo.find_by_org(org_id).await?;
 
         let matching = match purpose {
-            AccountPurpose::MainCashbox => accounts.iter().find(|a| a.code == "110101" || a.code.starts_with("1101") || a.sub_type.as_deref() == Some("cash")),
-            AccountPurpose::MainBank => accounts.iter().find(|a| a.code == "110102" || a.sub_type.as_deref() == Some("bank")),
+            AccountPurpose::MainCashbox => accounts.iter().find(|a| {
+                a.code == "110101"
+                    || a.code.starts_with("1101")
+                    || a.sub_type.as_deref() == Some("cash")
+            }),
+            AccountPurpose::MainBank => accounts
+                .iter()
+                .find(|a| a.code == "110102" || a.sub_type.as_deref() == Some("bank")),
             AccountPurpose::PettyCash => accounts.iter().find(|a| a.code == "110103"),
-            AccountPurpose::ElectronicGatewayClearing => accounts.iter().find(|a| a.code == "110106" || a.code == "110102"),
-            AccountPurpose::StudentReceivableTuition => accounts.iter().find(|a| a.code == "110301" || a.code == "1103" || (a.account_type == orbis_domain::entities::account::AccountType::Asset && a.code.starts_with("1103"))),
-            AccountPurpose::StudentReceivableTransport => accounts.iter().find(|a| a.code == "110302" || a.code == "110301"),
-            AccountPurpose::StudentReceivableActivities => accounts.iter().find(|a| a.code == "110304" || a.code == "110301"),
-            AccountPurpose::CorporateReceivable => accounts.iter().find(|a| a.code == "110305" || a.code == "110301"),
-            AccountPurpose::EmployeeAdvance => accounts.iter().find(|a| a.code == "110306" || a.code == "110301"),
+            AccountPurpose::ElectronicGatewayClearing => accounts
+                .iter()
+                .find(|a| a.code == "110106" || a.code == "110102"),
+            AccountPurpose::StudentReceivableTuition => accounts.iter().find(|a| {
+                a.code == "110301"
+                    || a.code == "1103"
+                    || (a.account_type == orbis_domain::entities::account::AccountType::Asset
+                        && a.code.starts_with("1103"))
+            }),
+            AccountPurpose::StudentReceivableTransport => accounts
+                .iter()
+                .find(|a| a.code == "110302" || a.code == "110301"),
+            AccountPurpose::StudentReceivableActivities => accounts
+                .iter()
+                .find(|a| a.code == "110304" || a.code == "110301"),
+            AccountPurpose::CorporateReceivable => accounts
+                .iter()
+                .find(|a| a.code == "110305" || a.code == "110301"),
+            AccountPurpose::EmployeeAdvance => accounts
+                .iter()
+                .find(|a| a.code == "110306" || a.code == "110301"),
             AccountPurpose::VatInputRecoverable => accounts.iter().find(|a| a.code == "110401"),
-            AccountPurpose::VendorPayable => accounts.iter().find(|a| a.code == "210101" || a.code == "2101" || (a.account_type == orbis_domain::entities::account::AccountType::Liability && a.code.starts_with("2101"))),
-            AccountPurpose::ServiceContractorPayable => accounts.iter().find(|a| a.code == "210102" || a.code == "210101"),
-            AccountPurpose::GeneralSupplierPayable => accounts.iter().find(|a| a.code == "210103" || a.code == "210101"),
-            AccountPurpose::SalariesPayable => accounts.iter().find(|a| a.code == "210201" || a.code.starts_with("2102")),
-            AccountPurpose::AllowancesPayable => accounts.iter().find(|a| a.code == "210202" || a.code == "210201"),
-            AccountPurpose::SocialInsuranceGosiPayable => accounts.iter().find(|a| a.code == "210203" || a.code == "210201"),
-            AccountPurpose::EndOfServiceProvision => accounts.iter().find(|a| a.code == "210204" || a.code == "210201"),
-            AccountPurpose::UnearnedTuition => accounts.iter().find(|a| a.code == "210301" || a.code.starts_with("2103")),
+            AccountPurpose::VendorPayable => accounts.iter().find(|a| {
+                a.code == "210101"
+                    || a.code == "2101"
+                    || (a.account_type == orbis_domain::entities::account::AccountType::Liability
+                        && a.code.starts_with("2101"))
+            }),
+            AccountPurpose::ServiceContractorPayable => accounts
+                .iter()
+                .find(|a| a.code == "210102" || a.code == "210101"),
+            AccountPurpose::GeneralSupplierPayable => accounts
+                .iter()
+                .find(|a| a.code == "210103" || a.code == "210101"),
+            AccountPurpose::SalariesPayable => accounts
+                .iter()
+                .find(|a| a.code == "210201" || a.code.starts_with("2102")),
+            AccountPurpose::AllowancesPayable => accounts
+                .iter()
+                .find(|a| a.code == "210202" || a.code == "210201"),
+            AccountPurpose::SocialInsuranceGosiPayable => accounts
+                .iter()
+                .find(|a| a.code == "210203" || a.code == "210201"),
+            AccountPurpose::EndOfServiceProvision => accounts
+                .iter()
+                .find(|a| a.code == "210204" || a.code == "210201"),
+            AccountPurpose::UnearnedTuition => accounts
+                .iter()
+                .find(|a| a.code == "210301" || a.code.starts_with("2103")),
             AccountPurpose::VatOutputPayable => accounts.iter().find(|a| a.code == "210401"),
-            AccountPurpose::TuitionRevenue => accounts.iter().find(|a| a.code == "410101" || a.code == "4101" || (a.account_type == orbis_domain::entities::account::AccountType::Revenue && a.code.starts_with("4101"))),
-            AccountPurpose::TransportRevenue => accounts.iter().find(|a| a.code == "410201" || a.code == "410101"),
-            AccountPurpose::BooksRevenue => accounts.iter().find(|a| a.code == "410202" || a.code == "410101"),
-            AccountPurpose::RegistrationRevenue => accounts.iter().find(|a| a.code == "410203" || a.code == "410101"),
-            AccountPurpose::SiblingDiscount => accounts.iter().find(|a| a.code == "410301" || a.code.starts_with("4103")),
-            AccountPurpose::MeritScholarship => accounts.iter().find(|a| a.code == "410302" || a.code == "410301"),
-            AccountPurpose::StaffChildDiscount => accounts.iter().find(|a| a.code == "410303" || a.code == "410301"),
-            AccountPurpose::EarlyPaymentDiscount => accounts.iter().find(|a| a.code == "410304" || a.code == "410301"),
-            AccountPurpose::AcademicSalariesExpense => accounts.iter().find(|a| a.code == "510101" || a.code == "5101" || (a.account_type == orbis_domain::entities::account::AccountType::Expense && a.code.starts_with("51"))),
-            AccountPurpose::AdminSalariesExpense => accounts.iter().find(|a| a.code == "520101" || a.code == "5201" || (a.account_type == orbis_domain::entities::account::AccountType::Expense && a.code.starts_with("52"))),
-            AccountPurpose::BankGatewayFeesExpense => accounts.iter().find(|a| a.code == "520301" || a.code.starts_with("52")),
+            AccountPurpose::TuitionRevenue => accounts.iter().find(|a| {
+                a.code == "410101"
+                    || a.code == "4101"
+                    || (a.account_type == orbis_domain::entities::account::AccountType::Revenue
+                        && a.code.starts_with("4101"))
+            }),
+            AccountPurpose::TransportRevenue => accounts
+                .iter()
+                .find(|a| a.code == "410201" || a.code == "410101"),
+            AccountPurpose::BooksRevenue => accounts
+                .iter()
+                .find(|a| a.code == "410202" || a.code == "410101"),
+            AccountPurpose::RegistrationRevenue => accounts
+                .iter()
+                .find(|a| a.code == "410203" || a.code == "410101"),
+            AccountPurpose::SiblingDiscount => accounts
+                .iter()
+                .find(|a| a.code == "410301" || a.code.starts_with("4103")),
+            AccountPurpose::MeritScholarship => accounts
+                .iter()
+                .find(|a| a.code == "410302" || a.code == "410301"),
+            AccountPurpose::StaffChildDiscount => accounts
+                .iter()
+                .find(|a| a.code == "410303" || a.code == "410301"),
+            AccountPurpose::EarlyPaymentDiscount => accounts
+                .iter()
+                .find(|a| a.code == "410304" || a.code == "410301"),
+            AccountPurpose::AcademicSalariesExpense => accounts.iter().find(|a| {
+                a.code == "510101"
+                    || a.code == "5101"
+                    || (a.account_type == orbis_domain::entities::account::AccountType::Expense
+                        && a.code.starts_with("51"))
+            }),
+            AccountPurpose::AdminSalariesExpense => accounts.iter().find(|a| {
+                a.code == "520101"
+                    || a.code == "5201"
+                    || (a.account_type == orbis_domain::entities::account::AccountType::Expense
+                        && a.code.starts_with("52"))
+            }),
+            AccountPurpose::BankGatewayFeesExpense => accounts
+                .iter()
+                .find(|a| a.code == "520301" || a.code.starts_with("52")),
         };
 
         matching.cloned().ok_or_else(|| {
-            DomainError::NotFound(format!("No matching account found in Chart of Accounts for purpose '{:?}'", purpose))
+            DomainError::NotFound(format!(
+                "No matching account found in Chart of Accounts for purpose '{:?}'",
+                purpose
+            ))
         })
     }
 
@@ -1256,10 +1566,14 @@ impl FinanceService {
         org_id: Uuid,
         input: DisbursementInput,
     ) -> Result<JournalEntry, DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
         if input.amount <= Decimal::ZERO {
-            return Err(DomainError::Validation("Disbursement amount must be greater than zero".into()));
+            return Err(DomainError::Validation(
+                "Disbursement amount must be greater than zero".into(),
+            ));
         }
 
         let now = Utc::now();
@@ -1267,16 +1581,36 @@ impl FinanceService {
         let journal_entry_id = Uuid::new_v4();
 
         // 1. Fetch treasury (credit) and beneficiary (debit) accounts
-        let treasury = self.account_repo.find_by_id(input.treasury_account_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Treasury account {} not found", input.treasury_account_id)))?;
-        let beneficiary = self.account_repo.find_by_id(input.beneficiary_account_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Beneficiary account {} not found", input.beneficiary_account_id)))?;
+        let treasury = self
+            .account_repo
+            .find_by_id(input.treasury_account_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!(
+                    "Treasury account {} not found",
+                    input.treasury_account_id
+                ))
+            })?;
+        let beneficiary = self
+            .account_repo
+            .find_by_id(input.beneficiary_account_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!(
+                    "Beneficiary account {} not found",
+                    input.beneficiary_account_id
+                ))
+            })?;
 
         if treasury.org_id != org_id || beneficiary.org_id != org_id {
-            return Err(DomainError::Unauthorized("Organization mismatch for accounts".into()));
+            return Err(DomainError::Unauthorized(
+                "Organization mismatch for accounts".into(),
+            ));
         }
 
-        let currency = input.currency_code.unwrap_or_else(|| treasury.currency_code.clone());
+        let currency = input
+            .currency_code
+            .unwrap_or_else(|| treasury.currency_code.clone());
 
         // 2. Multi-line balanced entry
         let lines = vec![
@@ -1285,7 +1619,10 @@ impl FinanceService {
                 account_id: input.beneficiary_account_id,
                 debit_amount: input.amount,
                 credit_amount: Decimal::ZERO,
-                description: input.notes.clone().or_else(|| Some("Disbursement - Beneficiary / Expense".into())),
+                description: input
+                    .notes
+                    .clone()
+                    .or_else(|| Some("Disbursement - Beneficiary / Expense".into())),
                 entity_type: input.beneficiary_type.clone(),
                 entity_id: input.beneficiary_id,
             },
@@ -1294,14 +1631,24 @@ impl FinanceService {
                 account_id: input.treasury_account_id,
                 debit_amount: Decimal::ZERO,
                 credit_amount: input.amount,
-                description: input.notes.clone().or_else(|| Some("Disbursement - Treasury / Cashbox".into())),
+                description: input
+                    .notes
+                    .clone()
+                    .or_else(|| Some("Disbursement - Treasury / Cashbox".into())),
                 entity_type: Some("treasury".into()),
                 entity_id: Some(input.treasury_account_id),
             },
         ];
 
         let ref_num = input.reference.unwrap_or_else(|| {
-            format!("DISB-{}", journal_entry_id.to_string().chars().take(8).collect::<String>())
+            format!(
+                "DISB-{}",
+                journal_entry_id
+                    .to_string()
+                    .chars()
+                    .take(8)
+                    .collect::<String>()
+            )
         });
 
         let entry = JournalEntry {
@@ -1315,8 +1662,16 @@ impl FinanceService {
             base_amount: input.amount,
             debit_account_id: input.beneficiary_account_id,
             credit_account_id: input.treasury_account_id,
-            description: input.notes.clone().unwrap_or_else(|| format!("Disbursement to {}", beneficiary.name)),
-            description_ar: Some(input.notes.unwrap_or_else(|| format!("سند صرف إلى {}", beneficiary.name_ar.unwrap_or(beneficiary.name)))),
+            description: input
+                .notes
+                .clone()
+                .unwrap_or_else(|| format!("Disbursement to {}", beneficiary.name)),
+            description_ar: Some(input.notes.unwrap_or_else(|| {
+                format!(
+                    "سند صرف إلى {}",
+                    beneficiary.name_ar.unwrap_or(beneficiary.name)
+                )
+            })),
             source_type: "disbursement_voucher".into(),
             source_id: Some(journal_entry_id),
             status: JournalPostingStatus::Posted,
@@ -1338,11 +1693,17 @@ impl FinanceService {
 
         self.journal_repo.save(&entry).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::JournalEntryPosted {
-            entry_id: journal_entry_id,
-            amount: input.amount,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::JournalEntryPosted {
+                    entry_id: journal_entry_id,
+                    amount: input.amount,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(entry)
     }
@@ -1354,10 +1715,14 @@ impl FinanceService {
         org_id: Uuid,
         input: SettleGatewayPayoutInput,
     ) -> Result<JournalEntry, DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
         if input.gross_amount <= Decimal::ZERO {
-            return Err(DomainError::Validation("Gross settlement amount must be greater than zero".into()));
+            return Err(DomainError::Validation(
+                "Gross settlement amount must be greater than zero".into(),
+            ));
         }
 
         if input.net_amount + input.fee_amount != input.gross_amount {
@@ -1374,13 +1739,24 @@ impl FinanceService {
         // 1. Resolve accounts
         let clearing_acct_id = match input.clearing_account_id {
             Some(id) => id,
-            None => self.resolve_default_account(org_id, AccountPurpose::ElectronicGatewayClearing).await?.id,
+            None => {
+                self.resolve_default_account(org_id, AccountPurpose::ElectronicGatewayClearing)
+                    .await?
+                    .id
+            }
         };
 
-        let bank = self.account_repo.find_by_id(input.bank_account_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Bank account {} not found", input.bank_account_id)))?;
+        let bank = self
+            .account_repo
+            .find_by_id(input.bank_account_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Bank account {} not found", input.bank_account_id))
+            })?;
 
-        let fee_acct = self.resolve_default_account(org_id, AccountPurpose::BankGatewayFeesExpense).await
+        let fee_acct = self
+            .resolve_default_account(org_id, AccountPurpose::BankGatewayFeesExpense)
+            .await
             .unwrap_or_else(|_| bank.clone());
 
         let mut lines = vec![
@@ -1390,7 +1766,10 @@ impl FinanceService {
                 account_id: bank.id,
                 debit_amount: input.net_amount,
                 credit_amount: Decimal::ZERO,
-                description: Some(format!("Gateway settlement deposit: {}", input.payout_reference)),
+                description: Some(format!(
+                    "Gateway settlement deposit: {}",
+                    input.payout_reference
+                )),
                 entity_type: Some("bank".into()),
                 entity_id: Some(bank.id),
             },
@@ -1403,7 +1782,10 @@ impl FinanceService {
                 account_id: fee_acct.id,
                 debit_amount: input.fee_amount,
                 credit_amount: Decimal::ZERO,
-                description: Some(format!("Gateway processing commission: {}", input.payout_reference)),
+                description: Some(format!(
+                    "Gateway processing commission: {}",
+                    input.payout_reference
+                )),
                 entity_type: Some("gateway".into()),
                 entity_id: None,
             });
@@ -1415,7 +1797,10 @@ impl FinanceService {
             account_id: clearing_acct_id,
             debit_amount: Decimal::ZERO,
             credit_amount: input.gross_amount,
-            description: Some(format!("Electronic clearing settlement: {}", input.payout_reference)),
+            description: Some(format!(
+                "Electronic clearing settlement: {}",
+                input.payout_reference
+            )),
             entity_type: Some("gateway_clearing".into()),
             entity_id: Some(clearing_acct_id),
         });
@@ -1431,8 +1816,14 @@ impl FinanceService {
             base_amount: input.gross_amount,
             debit_account_id: bank.id,
             credit_account_id: clearing_acct_id,
-            description: format!("Payment Gateway Payout Settlement: {}", input.payout_reference),
-            description_ar: Some(format!("تسوية وإيداع مبالغ بوابة الدفع: {}", input.payout_reference)),
+            description: format!(
+                "Payment Gateway Payout Settlement: {}",
+                input.payout_reference
+            ),
+            description_ar: Some(format!(
+                "تسوية وإيداع مبالغ بوابة الدفع: {}",
+                input.payout_reference
+            )),
             source_type: "gateway_settlement".into(),
             source_id: Some(journal_entry_id),
             status: JournalPostingStatus::Posted,
@@ -1454,11 +1845,17 @@ impl FinanceService {
 
         self.journal_repo.save(&entry).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::JournalEntryPosted {
-            entry_id: journal_entry_id,
-            amount: input.gross_amount,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::JournalEntryPosted {
+                    entry_id: journal_entry_id,
+                    amount: input.gross_amount,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(entry)
     }
@@ -1470,21 +1867,35 @@ impl FinanceService {
         org_id: Uuid,
         input: PostPayrollInput,
     ) -> Result<JournalEntry, DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
         if input.items.is_empty() {
-            return Err(DomainError::Validation("Payroll must contain at least one employee item".into()));
+            return Err(DomainError::Validation(
+                "Payroll must contain at least one employee item".into(),
+            ));
         }
 
         let now = Utc::now();
         let journal_entry_id = Uuid::new_v4();
 
-        let academic_expense = self.resolve_default_account(org_id, AccountPurpose::AcademicSalariesExpense).await?;
-        let admin_expense = self.resolve_default_account(org_id, AccountPurpose::AdminSalariesExpense).await?;
-        let salaries_payable = self.resolve_default_account(org_id, AccountPurpose::SalariesPayable).await?;
-        let gosi_payable = self.resolve_default_account(org_id, AccountPurpose::SocialInsuranceGosiPayable).await
+        let academic_expense = self
+            .resolve_default_account(org_id, AccountPurpose::AcademicSalariesExpense)
+            .await?;
+        let admin_expense = self
+            .resolve_default_account(org_id, AccountPurpose::AdminSalariesExpense)
+            .await?;
+        let salaries_payable = self
+            .resolve_default_account(org_id, AccountPurpose::SalariesPayable)
+            .await?;
+        let gosi_payable = self
+            .resolve_default_account(org_id, AccountPurpose::SocialInsuranceGosiPayable)
+            .await
             .unwrap_or_else(|_| salaries_payable.clone());
-        let advance_receivable = self.resolve_default_account(org_id, AccountPurpose::EmployeeAdvance).await
+        let advance_receivable = self
+            .resolve_default_account(org_id, AccountPurpose::EmployeeAdvance)
+            .await
             .unwrap_or_else(|_| salaries_payable.clone());
 
         let mut lines = Vec::new();
@@ -1495,13 +1906,20 @@ impl FinanceService {
             total_gross += gross;
 
             // Dr Salaries Expense
-            let expense_acct = if item.is_academic { &academic_expense } else { &admin_expense };
+            let expense_acct = if item.is_academic {
+                &academic_expense
+            } else {
+                &admin_expense
+            };
             lines.push(JournalEntryLine {
                 id: Uuid::new_v4(),
                 account_id: expense_acct.id,
                 debit_amount: gross,
                 credit_amount: Decimal::ZERO,
-                description: Some(format!("Salary: {} ({})", item.employee_name, input.payroll_period)),
+                description: Some(format!(
+                    "Salary: {} ({})",
+                    item.employee_name, input.payroll_period
+                )),
                 entity_type: Some("employee".into()),
                 entity_id: Some(item.employee_id),
             });
@@ -1513,7 +1931,10 @@ impl FinanceService {
                     account_id: gosi_payable.id,
                     debit_amount: Decimal::ZERO,
                     credit_amount: item.gosi_deduction,
-                    description: Some(format!("GOSI Social Security deduction: {}", item.employee_name)),
+                    description: Some(format!(
+                        "GOSI Social Security deduction: {}",
+                        item.employee_name
+                    )),
                     entity_type: Some("employee".into()),
                     entity_id: Some(item.employee_id),
                 });
@@ -1526,7 +1947,10 @@ impl FinanceService {
                     account_id: advance_receivable.id,
                     debit_amount: Decimal::ZERO,
                     credit_amount: item.deductions,
-                    description: Some(format!("Salary loan / advance deduction: {}", item.employee_name)),
+                    description: Some(format!(
+                        "Salary loan / advance deduction: {}",
+                        item.employee_name
+                    )),
                     entity_type: Some("employee".into()),
                     entity_id: Some(item.employee_id),
                 });
@@ -1556,7 +1980,10 @@ impl FinanceService {
             debit_account_id: academic_expense.id,
             credit_account_id: salaries_payable.id,
             description: format!("Monthly Payroll Accrual: {}", input.payroll_period),
-            description_ar: Some(format!("مسير استحقاق الرواتب والأجور لشهر: {}", input.payroll_period)),
+            description_ar: Some(format!(
+                "مسير استحقاق الرواتب والأجور لشهر: {}",
+                input.payroll_period
+            )),
             source_type: "payroll_accrual".into(),
             source_id: Some(journal_entry_id),
             status: JournalPostingStatus::Posted,
@@ -1578,11 +2005,17 @@ impl FinanceService {
 
         self.journal_repo.save(&entry).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::JournalEntryPosted {
-            entry_id: journal_entry_id,
-            amount: total_gross,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::JournalEntryPosted {
+                    entry_id: journal_entry_id,
+                    amount: total_gross,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(entry)
     }
@@ -1597,15 +2030,26 @@ impl FinanceService {
         amount: Decimal,
         notes: Option<String>,
     ) -> Result<JournalEntry, DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
         if amount <= Decimal::ZERO {
-            return Err(DomainError::Validation("Payroll disbursement amount must be greater than zero".into()));
+            return Err(DomainError::Validation(
+                "Payroll disbursement amount must be greater than zero".into(),
+            ));
         }
 
-        let salaries_payable = self.resolve_default_account(org_id, AccountPurpose::SalariesPayable).await?;
-        let bank = self.account_repo.find_by_id(bank_account_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Bank account {} not found", bank_account_id)))?;
+        let salaries_payable = self
+            .resolve_default_account(org_id, AccountPurpose::SalariesPayable)
+            .await?;
+        let bank = self
+            .account_repo
+            .find_by_id(bank_account_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Bank account {} not found", bank_account_id))
+            })?;
 
         let input = DisbursementInput {
             treasury_account_id: bank.id,
@@ -1617,7 +2061,12 @@ impl FinanceService {
             beneficiary_name: Some("All Employees (Net Salaries)".into()),
             beneficiary_type: Some("employee_payroll".into()),
             beneficiary_id: None,
-            notes: notes.or_else(|| Some(format!("Disbursement of payroll for period: {}", payroll_period))),
+            notes: notes.or_else(|| {
+                Some(format!(
+                    "Disbursement of payroll for period: {}",
+                    payroll_period
+                ))
+            }),
             voucher_date: None,
         };
 
@@ -1631,7 +2080,9 @@ impl FinanceService {
         org_id: Uuid,
         filter: StatementFilter,
     ) -> Result<StatementResponse, DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceRead).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceRead)
+            .await?;
 
         let mut target_account = None;
         if let Some(acct_id) = filter.account_id {
@@ -1643,16 +2094,31 @@ impl FinanceService {
             if let Some(ref etype) = filter.entity_type {
                 match etype.as_str() {
                     "student" => {
-                        target_account = self.resolve_default_account(org_id, AccountPurpose::StudentReceivableTuition).await.ok();
+                        target_account = self
+                            .resolve_default_account(
+                                org_id,
+                                AccountPurpose::StudentReceivableTuition,
+                            )
+                            .await
+                            .ok();
                     }
                     "vendor" => {
-                        target_account = self.resolve_default_account(org_id, AccountPurpose::VendorPayable).await.ok();
+                        target_account = self
+                            .resolve_default_account(org_id, AccountPurpose::VendorPayable)
+                            .await
+                            .ok();
                     }
                     "employee" => {
-                        target_account = self.resolve_default_account(org_id, AccountPurpose::SalariesPayable).await.ok();
+                        target_account = self
+                            .resolve_default_account(org_id, AccountPurpose::SalariesPayable)
+                            .await
+                            .ok();
                     }
                     "sponsor" | "corporate" => {
-                        target_account = self.resolve_default_account(org_id, AccountPurpose::CorporateReceivable).await.ok();
+                        target_account = self
+                            .resolve_default_account(org_id, AccountPurpose::CorporateReceivable)
+                            .await
+                            .ok();
                     }
                     _ => {}
                 }
@@ -1661,7 +2127,9 @@ impl FinanceService {
 
         let all_entries = self.journal_repo.find_by_org(org_id).await?;
         let org_settings = self.policy_repo.get_settings(org_id).await?;
-        let currency = filter.currency_code.unwrap_or(org_settings.finance.currency);
+        let currency = filter
+            .currency_code
+            .unwrap_or(org_settings.finance.currency);
 
         let mut opening_balance = Decimal::ZERO;
         let mut total_debit = Decimal::ZERO;
@@ -1676,7 +2144,11 @@ impl FinanceService {
 
         // Sort chronological
         let mut sorted_entries = all_entries;
-        sorted_entries.sort_by(|a, b| a.accounting_date.cmp(&b.accounting_date).then(a.created_at.cmp(&b.created_at)));
+        sorted_entries.sort_by(|a, b| {
+            a.accounting_date
+                .cmp(&b.accounting_date)
+                .then(a.created_at.cmp(&b.created_at))
+        });
 
         let mut running_balance = Decimal::ZERO;
 
@@ -1737,7 +2209,10 @@ impl FinanceService {
                     reference_number: entry.reference_number.clone(),
                     source_type: entry.source_type.clone(),
                     source_id: entry.source_id,
-                    description: line.description.clone().unwrap_or(entry.description.clone()),
+                    description: line
+                        .description
+                        .clone()
+                        .unwrap_or(entry.description.clone()),
                     description_ar: entry.description_ar.clone(),
                     debit: line.debit_amount,
                     credit: line.credit_amount,
@@ -1772,17 +2247,27 @@ impl FinanceService {
         org_id: Uuid,
         input: CreateSubAccountInput,
     ) -> Result<Account, DomainError> {
-        self.permission_checker.check(ctx, Permission::FinanceWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
 
         // 1. Find parent account
         let parent = if let Some(pid) = input.parent_id {
-            self.account_repo.find_by_id(pid).await?
+            self.account_repo
+                .find_by_id(pid)
+                .await?
                 .ok_or_else(|| DomainError::NotFound(format!("Parent account {} not found", pid)))?
         } else if let Some(ref pcode) = input.parent_code {
-            self.account_repo.find_by_code(org_id, pcode).await?
-                .ok_or_else(|| DomainError::NotFound(format!("Parent account with code '{}' not found", pcode)))?
+            self.account_repo
+                .find_by_code(org_id, pcode)
+                .await?
+                .ok_or_else(|| {
+                    DomainError::NotFound(format!("Parent account with code '{}' not found", pcode))
+                })?
         } else {
-            return Err(DomainError::Validation("Must provide parent_id or parent_code to create sub-account".into()));
+            return Err(DomainError::Validation(
+                "Must provide parent_id or parent_code to create sub-account".into(),
+            ));
         };
 
         if parent.org_id != org_id {
@@ -1794,7 +2279,11 @@ impl FinanceService {
 
         // Compute code if not supplied
         let code = input.code.unwrap_or_else(|| {
-            format!("{}-{}", parent.code, sub_id.to_string().chars().take(4).collect::<String>())
+            format!(
+                "{}-{}",
+                parent.code,
+                sub_id.to_string().chars().take(4).collect::<String>()
+            )
         });
 
         let path = format!("{}{}/", parent.path, code);
@@ -1828,12 +2317,18 @@ impl FinanceService {
 
         self.account_repo.save(&sub_account).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::AccountCreated {
-            account_id: sub_id,
-            org_id,
-            code,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::AccountCreated {
+                    account_id: sub_id,
+                    org_id,
+                    code,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(sub_account)
     }

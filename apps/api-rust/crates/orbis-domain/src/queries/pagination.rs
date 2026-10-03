@@ -1,9 +1,8 @@
-use serde::{Deserialize, Serialize};
 use super::filter::UniversalFilter;
+use serde::{Deserialize, Serialize};
 
 /// Client request for a cursor-paginated list.
-#[derive(Debug, Clone, Deserialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Deserialize, utoipa::ToSchema)]
 pub struct CursorRequest {
     /// The cursor value (typically the last item's ID from the previous page).
     /// `None` means "start from the beginning".
@@ -42,8 +41,7 @@ fn default_limit() -> u64 {
 }
 
 /// A page of results with cursor-based pagination metadata.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(utoipa::ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CursorPage<T: Serialize> {
     /// The items in this page.
     pub items: Vec<T>,

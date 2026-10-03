@@ -14,11 +14,15 @@ impl MigrationTrait for Migration {
 
         // 1. Create document_requirements table
         let mut dr_stmt = schema.create_table_from_entity(document_requirement::Entity);
-        manager.create_table(dr_stmt.if_not_exists().to_owned()).await?;
+        manager
+            .create_table(dr_stmt.if_not_exists().to_owned())
+            .await?;
 
         // 2. Create sequence_counters table
         let mut sc_stmt = schema.create_table_from_entity(sequence_counter::Entity);
-        manager.create_table(sc_stmt.if_not_exists().to_owned()).await?;
+        manager
+            .create_table(sc_stmt.if_not_exists().to_owned())
+            .await?;
 
         // 3. Indexes
         let idx_dr_org_target = Index::create()
@@ -46,10 +50,20 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(sequence_counter::Entity).if_exists().to_owned())
+            .drop_table(
+                Table::drop()
+                    .table(sequence_counter::Entity)
+                    .if_exists()
+                    .to_owned(),
+            )
             .await?;
         manager
-            .drop_table(Table::drop().table(document_requirement::Entity).if_exists().to_owned())
+            .drop_table(
+                Table::drop()
+                    .table(document_requirement::Entity)
+                    .if_exists()
+                    .to_owned(),
+            )
             .await?;
         Ok(())
     }

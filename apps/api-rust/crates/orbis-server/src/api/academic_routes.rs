@@ -1,14 +1,18 @@
 //! Academic routes — Subjects, Classes, ClassSubjects.
 
-use axum::{extract::{State, Path}, routing::{get, post}, Json, Router};
+use axum::{
+    Json, Router,
+    extract::{Path, State},
+    routing::{get, post},
+};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
+use super::{ApiError, ApiResponse};
 use crate::state::AppState;
-use orbis_domain::queries::filters::{SubjectFilter, ClassFilter, ClassSubjectFilter};
+use orbis_domain::queries::filters::{ClassFilter, ClassSubjectFilter, SubjectFilter};
 
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
@@ -143,15 +147,18 @@ async fn create_subject(
     State(state): State<AppState>,
     Json(p): Json<CreateSubjectRequest>,
 ) -> Result<Json<ApiResponse<SubjectDto>>, ApiError> {
-    let s = state.academic_service.create_subject(
-        &ctx,
-        ctx.tenant_id,
-        p.unit_id,
-        p.code,
-        p.name,
-        p.credit_hours,
-        p.is_core.unwrap_or(true),
-    ).await?;
+    let s = state
+        .academic_service
+        .create_subject(
+            &ctx,
+            ctx.tenant_id,
+            p.unit_id,
+            p.code,
+            p.name,
+            p.credit_hours,
+            p.is_core.unwrap_or(true),
+        )
+        .await?;
     Ok(ApiResponse::ok(subject_to_dto(s)))
 }
 
@@ -162,7 +169,10 @@ async fn list_subjects(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<SubjectDto>>>, ApiError> {
-    let subjects = state.academic_service.list_subjects(ctx.tenant_id, SubjectFilter::default()).await?;
+    let subjects = state
+        .academic_service
+        .list_subjects(ctx.tenant_id, SubjectFilter::default())
+        .await?;
     let dtos = subjects.items.into_iter().map(subject_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -176,7 +186,10 @@ async fn get_subject(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<SubjectDto>>, ApiError> {
-    let s = state.academic_service.get_subject(id).await?
+    let s = state
+        .academic_service
+        .get_subject(id)
+        .await?
         .ok_or_else(|| ApiError::not_found(format!("Subject {} not found", id)))?;
     Ok(ApiResponse::ok(subject_to_dto(s)))
 }
@@ -189,7 +202,10 @@ async fn create_class(
     State(state): State<AppState>,
     Json(p): Json<CreateClassRequest>,
 ) -> Result<Json<ApiResponse<ClassDto>>, ApiError> {
-    let c = state.academic_service.create_class(&ctx, ctx.tenant_id, p.unit_id, p.period_id, p.name, p.level).await?;
+    let c = state
+        .academic_service
+        .create_class(&ctx, ctx.tenant_id, p.unit_id, p.period_id, p.name, p.level)
+        .await?;
     Ok(ApiResponse::ok(class_to_dto(c)))
 }
 
@@ -200,7 +216,10 @@ async fn list_classes(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<ClassDto>>>, ApiError> {
-    let classes = state.academic_service.list_classes(ctx.tenant_id, ClassFilter::default()).await?;
+    let classes = state
+        .academic_service
+        .list_classes(ctx.tenant_id, ClassFilter::default())
+        .await?;
     let dtos = classes.items.into_iter().map(class_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -214,7 +233,10 @@ async fn get_class(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<ClassDto>>, ApiError> {
-    let c = state.academic_service.get_class(id).await?
+    let c = state
+        .academic_service
+        .get_class(id)
+        .await?
         .ok_or_else(|| ApiError::not_found(format!("Class {} not found", id)))?;
     Ok(ApiResponse::ok(class_to_dto(c)))
 }
@@ -227,12 +249,27 @@ async fn assign_class_subject(
     State(state): State<AppState>,
     Json(p): Json<AssignClassSubjectRequest>,
 ) -> Result<Json<ApiResponse<ClassSubjectDto>>, ApiError> {
-    let cs = state.academic_service.assign_class_subject(&ctx, p.class_id, p.subject_id, p.period_id, p.primary_teacher_id, p.weekly_hours).await?;
+    let cs = state
+        .academic_service
+        .assign_class_subject(
+            &ctx,
+            p.class_id,
+            p.subject_id,
+            p.period_id,
+            p.primary_teacher_id,
+            p.weekly_hours,
+        )
+        .await?;
     Ok(ApiResponse::ok(ClassSubjectDto {
-        id: cs.id, class_id: cs.class_id, subject_id: cs.subject_id,
-        period_id: cs.period_id, primary_teacher_id: cs.primary_teacher_id,
-        weekly_hours: cs.weekly_hours, is_active: cs.is_active,
-        created_at: cs.created_at, updated_at: cs.updated_at,
+        id: cs.id,
+        class_id: cs.class_id,
+        subject_id: cs.subject_id,
+        period_id: cs.period_id,
+        primary_teacher_id: cs.primary_teacher_id,
+        weekly_hours: cs.weekly_hours,
+        is_active: cs.is_active,
+        created_at: cs.created_at,
+        updated_at: cs.updated_at,
     }))
 }
 
@@ -250,13 +287,25 @@ async fn list_class_subjects(
         period_id: Some(params.period_id),
         ..Default::default()
     };
-    let items = state.academic_service.list_class_subjects(ctx.tenant_id, filter).await?;
-    let dtos = items.items.into_iter().map(|cs| ClassSubjectDto {
-        id: cs.id, class_id: cs.class_id, subject_id: cs.subject_id,
-        period_id: cs.period_id, primary_teacher_id: cs.primary_teacher_id,
-        weekly_hours: cs.weekly_hours, is_active: cs.is_active,
-        created_at: cs.created_at, updated_at: cs.updated_at,
-    }).collect();
+    let items = state
+        .academic_service
+        .list_class_subjects(ctx.tenant_id, filter)
+        .await?;
+    let dtos = items
+        .items
+        .into_iter()
+        .map(|cs| ClassSubjectDto {
+            id: cs.id,
+            class_id: cs.class_id,
+            subject_id: cs.subject_id,
+            period_id: cs.period_id,
+            primary_teacher_id: cs.primary_teacher_id,
+            weekly_hours: cs.weekly_hours,
+            is_active: cs.is_active,
+            created_at: cs.created_at,
+            updated_at: cs.updated_at,
+        })
+        .collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -274,5 +323,8 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/subjects/:id", get(get_subject))
         .route("/api/v1/classes", post(create_class).get(list_classes))
         .route("/api/v1/classes/:id", get(get_class))
-        .route("/api/v1/class-subjects", post(assign_class_subject).get(list_class_subjects))
+        .route(
+            "/api/v1/class-subjects",
+            post(assign_class_subject).get(list_class_subjects),
+        )
 }

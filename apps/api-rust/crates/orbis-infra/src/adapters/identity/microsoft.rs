@@ -18,7 +18,9 @@ impl MicrosoftIdentityAdapter {
             return Ok(claims);
         }
 
-        Err(DomainError::Unauthorized("Invalid Microsoft ID token".into()))
+        Err(DomainError::Unauthorized(
+            "Invalid Microsoft ID token".into(),
+        ))
     }
 }
 
@@ -34,24 +36,39 @@ fn parse_microsoft_jwt_claims(token: &str) -> Option<IdentityProfile> {
         return None;
     }
     use base64::Engine;
-    let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(parts[1]).ok()?;
+    let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(parts[1])
+        .ok()?;
     let json: serde_json::Value = serde_json::from_slice(&decoded).ok()?;
-    
-    let email = json.get("email")
+
+    let email = json
+        .get("email")
         .or_else(|| json.get("preferred_username"))
         .or_else(|| json.get("upn"))
         .and_then(|v| v.as_str())
         .map(|s| s.to_string());
 
-    let name = json.get("name").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let name = json
+        .get("name")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
 
     Some(IdentityProfile {
         name,
-        given_name: json.get("given_name").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        family_name: json.get("family_name").and_then(|v| v.as_str()).map(|s| s.to_string()),
+        given_name: json
+            .get("given_name")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
+        family_name: json
+            .get("family_name")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
         email,
         email_verified: Some(true),
         picture: None,
-        locale: json.get("locale").and_then(|v| v.as_str()).map(|s| s.to_string()),
+        locale: json
+            .get("locale")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
     })
 }

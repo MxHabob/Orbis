@@ -1,26 +1,25 @@
-use std::sync::Arc;
-use uuid::Uuid;
-use chrono::{Utc, NaiveDate, NaiveTime};
-use orbis_domain::entities::room::Room;
-use orbis_domain::entities::time_slot::TimeSlot;
-use orbis_domain::entities::scheduled_lesson::ScheduledLesson;
-use orbis_domain::entities::exam_session::ExamSession;
+use chrono::{NaiveDate, NaiveTime, Utc};
+use orbis_domain::entities::exam_proctor::ExamProctor;
 use orbis_domain::entities::exam_schedule::ExamSchedule;
+use orbis_domain::entities::exam_session::ExamSession;
+use orbis_domain::entities::room::Room;
+use orbis_domain::entities::scheduled_lesson::ScheduledLesson;
 use orbis_domain::entities::seating_number::SeatingNumber;
 use orbis_domain::entities::secret_number::SecretNumber;
-use orbis_domain::entities::exam_proctor::ExamProctor;
-use orbis_domain::events::DomainEvent;
+use orbis_domain::entities::time_slot::TimeSlot;
 use orbis_domain::errors::DomainError;
+use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
+use std::sync::Arc;
+use uuid::Uuid;
 
 use crate::context::RequestContext;
-use crate::ports::repositories::{
-    RoomRepository, TimeSlotRepository, ScheduledLessonRepository,
-    ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository,
-    SecretNumberRepository, ExamProctorRepository,
-};
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::repositories::{
+    ExamProctorRepository, ExamScheduleRepository, ExamSessionRepository, RoomRepository,
+    ScheduledLessonRepository, SeatingNumberRepository, SecretNumberRepository, TimeSlotRepository,
+};
 
 pub struct SchedulingService {
     pub room_repo: Arc<dyn RoomRepository>,
@@ -75,7 +74,9 @@ impl SchedulingService {
         floor: Option<i32>,
         org_unit_id: Option<Uuid>,
     ) -> Result<Room, DomainError> {
-        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::ScheduleWrite)
+            .await?;
 
         let now = Utc::now();
         let room_id = Uuid::new_v4();
@@ -116,18 +117,35 @@ impl SchedulingService {
         floor: Option<i32>,
         org_unit_id: Option<Option<Uuid>>,
     ) -> Result<Room, DomainError> {
-        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::ScheduleWrite)
+            .await?;
 
-        let mut room = self.room_repo.find_by_id(id).await?
+        let mut room = self
+            .room_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("Room not found".into()))?;
 
         let now = Utc::now();
-        if let Some(n) = name { room.name = n; }
-        if let Some(n) = name_ar { room.name_ar = Some(n); }
-        if let Some(c) = capacity { room.capacity = c; }
-        if let Some(rt) = room_type { room.room_type = rt; }
-        if let Some(f) = floor { room.floor = Some(f); }
-        if let Some(ou_id) = org_unit_id { room.org_unit_id = ou_id; }
+        if let Some(n) = name {
+            room.name = n;
+        }
+        if let Some(n) = name_ar {
+            room.name_ar = Some(n);
+        }
+        if let Some(c) = capacity {
+            room.capacity = c;
+        }
+        if let Some(rt) = room_type {
+            room.room_type = rt;
+        }
+        if let Some(f) = floor {
+            room.floor = Some(f);
+        }
+        if let Some(ou_id) = org_unit_id {
+            room.org_unit_id = ou_id;
+        }
         room.updated_at = now;
 
         self.room_repo.save(&room).await?;
@@ -143,9 +161,14 @@ impl SchedulingService {
     }
 
     pub async fn delete_room(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::ScheduleWrite)
+            .await?;
 
-        let room = self.room_repo.find_by_id(id).await?
+        let room = self
+            .room_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("Room not found".into()))?;
 
         self.room_repo.delete(id).await?;
@@ -183,7 +206,9 @@ impl SchedulingService {
         is_break: bool,
         break_type: Option<String>,
     ) -> Result<TimeSlot, DomainError> {
-        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::ScheduleWrite)
+            .await?;
 
         let now = Utc::now();
         let slot_id = Uuid::new_v4();
@@ -228,20 +253,41 @@ impl SchedulingService {
         is_break: Option<bool>,
         break_type: Option<Option<String>>,
     ) -> Result<TimeSlot, DomainError> {
-        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::ScheduleWrite)
+            .await?;
 
-        let mut slot = self.time_slot_repo.find_by_id(id).await?
+        let mut slot = self
+            .time_slot_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("Time slot not found".into()))?;
 
         let now = Utc::now();
-        if let Some(dow) = day_of_week { slot.day_of_week = dow; }
-        if let Some(si) = slot_index { slot.slot_index = si; }
-        if let Some(n) = name { slot.name = n; }
-        if let Some(na) = name_ar { slot.name_ar = na; }
-        if let Some(st) = start_time { slot.start_time = st; }
-        if let Some(et) = end_time { slot.end_time = et; }
-        if let Some(ib) = is_break { slot.is_break = ib; }
-        if let Some(bt) = break_type { slot.break_type = bt; }
+        if let Some(dow) = day_of_week {
+            slot.day_of_week = dow;
+        }
+        if let Some(si) = slot_index {
+            slot.slot_index = si;
+        }
+        if let Some(n) = name {
+            slot.name = n;
+        }
+        if let Some(na) = name_ar {
+            slot.name_ar = na;
+        }
+        if let Some(st) = start_time {
+            slot.start_time = st;
+        }
+        if let Some(et) = end_time {
+            slot.end_time = et;
+        }
+        if let Some(ib) = is_break {
+            slot.is_break = ib;
+        }
+        if let Some(bt) = break_type {
+            slot.break_type = bt;
+        }
         slot.updated_at = now;
 
         self.time_slot_repo.save(&slot).await?;
@@ -256,10 +302,19 @@ impl SchedulingService {
         Ok(slot)
     }
 
-    pub async fn delete_time_slot(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+    pub async fn delete_time_slot(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::ScheduleWrite)
+            .await?;
 
-        let slot = self.time_slot_repo.find_by_id(id).await?
+        let slot = self
+            .time_slot_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("Time slot not found".into()))?;
 
         self.time_slot_repo.delete(id).await?;
@@ -278,13 +333,26 @@ impl SchedulingService {
         &self,
         ctx: &RequestContext,
         period_id: Uuid,
-        items: Vec<(i16, i32, Option<String>, Option<String>, NaiveTime, NaiveTime, bool, Option<String>)>,
+        items: Vec<(
+            i16,
+            i32,
+            Option<String>,
+            Option<String>,
+            NaiveTime,
+            NaiveTime,
+            bool,
+            Option<String>,
+        )>,
     ) -> Result<Vec<TimeSlot>, DomainError> {
-        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::ScheduleWrite)
+            .await?;
 
         let now = Utc::now();
         let mut slots = Vec::with_capacity(items.len());
-        for (day_of_week, slot_index, name, name_ar, start_time, end_time, is_break, break_type) in items {
+        for (day_of_week, slot_index, name, name_ar, start_time, end_time, is_break, break_type) in
+            items
+        {
             let slot = TimeSlot {
                 id: Uuid::new_v4(),
                 period_id,
@@ -334,11 +402,16 @@ impl SchedulingService {
         room_id: Option<Uuid>,
         teacher_id: Option<Uuid>,
     ) -> Result<ScheduledLesson, DomainError> {
-        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::ScheduleWrite)
+            .await?;
 
         if let Some(tid) = teacher_id {
             let teacher_lessons = self.lesson_repo.find_by_teacher(tid).await?;
-            if teacher_lessons.iter().any(|l| l.time_slot_id == time_slot_id) {
+            if teacher_lessons
+                .iter()
+                .any(|l| l.time_slot_id == time_slot_id)
+            {
                 return Err(DomainError::Conflict(
                     "Teacher is already scheduled for another lesson in this time slot".into(),
                 ));
@@ -371,10 +444,18 @@ impl SchedulingService {
         Ok(lesson)
     }
 
-    pub async fn delete_scheduled_lesson(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+    pub async fn delete_scheduled_lesson(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::ScheduleWrite)
+            .await?;
 
-        self.lesson_repo.find_by_id(id).await?
+        self.lesson_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("Scheduled lesson not found".into()))?;
 
         self.lesson_repo.delete(id).await?;
@@ -393,7 +474,9 @@ impl SchedulingService {
         ctx: &RequestContext,
         items: Vec<(Uuid, Uuid, Option<Uuid>, Option<Uuid>)>,
     ) -> Result<Vec<ScheduledLesson>, DomainError> {
-        self.permission_checker.check(ctx, Permission::ScheduleWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::ScheduleWrite)
+            .await?;
 
         let now = Utc::now();
         let mut lessons = Vec::with_capacity(items.len());
@@ -425,19 +508,33 @@ impl SchedulingService {
         Ok(lessons)
     }
 
-    pub async fn list_lessons_by_class(&self, class_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError> {
+    pub async fn list_lessons_by_class(
+        &self,
+        class_id: Uuid,
+    ) -> Result<Vec<ScheduledLesson>, DomainError> {
         self.lesson_repo.find_by_class(class_id).await
     }
 
-    pub async fn list_lessons_by_teacher(&self, teacher_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError> {
+    pub async fn list_lessons_by_teacher(
+        &self,
+        teacher_id: Uuid,
+    ) -> Result<Vec<ScheduledLesson>, DomainError> {
         self.lesson_repo.find_by_teacher(teacher_id).await
     }
 
-    pub async fn list_lessons_by_class_subject(&self, class_subject_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError> {
-        self.lesson_repo.find_by_class_subject(class_subject_id).await
+    pub async fn list_lessons_by_class_subject(
+        &self,
+        class_subject_id: Uuid,
+    ) -> Result<Vec<ScheduledLesson>, DomainError> {
+        self.lesson_repo
+            .find_by_class_subject(class_subject_id)
+            .await
     }
 
-    pub async fn list_lessons_by_period(&self, period_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError> {
+    pub async fn list_lessons_by_period(
+        &self,
+        period_id: Uuid,
+    ) -> Result<Vec<ScheduledLesson>, DomainError> {
         self.lesson_repo.find_by_period(period_id).await
     }
 
@@ -452,7 +549,9 @@ impl SchedulingService {
         start_date: NaiveDate,
         end_date: NaiveDate,
     ) -> Result<ExamSession, DomainError> {
-        self.permission_checker.check(ctx, Permission::ExamSessionWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::ExamSessionWrite)
+            .await?;
 
         let now = Utc::now();
         let session_id = Uuid::new_v4();
@@ -481,7 +580,10 @@ impl SchedulingService {
         Ok(session)
     }
 
-    pub async fn list_exam_sessions(&self, period_id: Uuid) -> Result<Vec<ExamSession>, DomainError> {
+    pub async fn list_exam_sessions(
+        &self,
+        period_id: Uuid,
+    ) -> Result<Vec<ExamSession>, DomainError> {
         self.exam_session_repo.find_by_period(period_id).await
     }
 
@@ -500,7 +602,9 @@ impl SchedulingService {
         start_time: NaiveTime,
         end_time: NaiveTime,
     ) -> Result<ExamSchedule, DomainError> {
-        self.permission_checker.check(ctx, Permission::ExamScheduleWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::ExamScheduleWrite)
+            .await?;
 
         let now = Utc::now();
         let schedule_id = Uuid::new_v4();
@@ -528,7 +632,10 @@ impl SchedulingService {
         Ok(schedule)
     }
 
-    pub async fn list_exam_schedules(&self, session_id: Uuid) -> Result<Vec<ExamSchedule>, DomainError> {
+    pub async fn list_exam_schedules(
+        &self,
+        session_id: Uuid,
+    ) -> Result<Vec<ExamSchedule>, DomainError> {
         self.exam_schedule_repo.find_by_session(session_id).await
     }
 
@@ -546,7 +653,9 @@ impl SchedulingService {
         seating_number: String,
         room_id: Option<Uuid>,
     ) -> Result<SeatingNumber, DomainError> {
-        self.permission_checker.check(ctx, Permission::SeatingNumberGenerate).await?;
+        self.permission_checker
+            .check(ctx, Permission::SeatingNumberGenerate)
+            .await?;
 
         let now = Utc::now();
         let seating_id = Uuid::new_v4();
@@ -574,12 +683,21 @@ impl SchedulingService {
         Ok(seating)
     }
 
-    pub async fn list_seating_numbers(&self, session_id: Uuid) -> Result<Vec<SeatingNumber>, DomainError> {
+    pub async fn list_seating_numbers(
+        &self,
+        session_id: Uuid,
+    ) -> Result<Vec<SeatingNumber>, DomainError> {
         self.seating_number_repo.find_by_session(session_id).await
     }
 
-    pub async fn get_student_seating(&self, session_id: Uuid, student_id: Uuid) -> Result<Option<SeatingNumber>, DomainError> {
-        self.seating_number_repo.find_by_session_and_student(session_id, student_id).await
+    pub async fn get_student_seating(
+        &self,
+        session_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Option<SeatingNumber>, DomainError> {
+        self.seating_number_repo
+            .find_by_session_and_student(session_id, student_id)
+            .await
     }
 
     pub async fn generate_seating_numbers(
@@ -591,7 +709,9 @@ impl SchedulingService {
         prefix: Option<String>,
         start_number: Option<u32>,
     ) -> Result<Vec<SeatingNumber>, DomainError> {
-        self.permission_checker.check(ctx, Permission::SeatingNumberGenerate).await?;
+        self.permission_checker
+            .check(ctx, Permission::SeatingNumberGenerate)
+            .await?;
 
         let now = Utc::now();
         let prefix = prefix.unwrap_or_else(|| "SEAT-".to_string());
@@ -642,7 +762,9 @@ impl SchedulingService {
         student_id: Uuid,
         secret_number: String,
     ) -> Result<SecretNumber, DomainError> {
-        self.permission_checker.check(ctx, Permission::SecretNumberGenerate).await?;
+        self.permission_checker
+            .check(ctx, Permission::SecretNumberGenerate)
+            .await?;
 
         let now = Utc::now();
         let id = Uuid::new_v4();
@@ -660,7 +782,10 @@ impl SchedulingService {
         Ok(secret)
     }
 
-    pub async fn list_secret_numbers(&self, schedule_id: Uuid) -> Result<Vec<SecretNumber>, DomainError> {
+    pub async fn list_secret_numbers(
+        &self,
+        schedule_id: Uuid,
+    ) -> Result<Vec<SecretNumber>, DomainError> {
         self.secret_number_repo.find_by_schedule(schedule_id).await
     }
 
@@ -670,7 +795,9 @@ impl SchedulingService {
         schedule_id: Uuid,
         student_ids: Vec<Uuid>,
     ) -> Result<Vec<SecretNumber>, DomainError> {
-        self.permission_checker.check(ctx, Permission::SecretNumberGenerate).await?;
+        self.permission_checker
+            .check(ctx, Permission::SecretNumberGenerate)
+            .await?;
 
         let now = Utc::now();
         let mut used_secrets = std::collections::HashSet::new();
@@ -711,7 +838,9 @@ impl SchedulingService {
         teacher_id: Uuid,
         is_chief: bool,
     ) -> Result<ExamProctor, DomainError> {
-        self.permission_checker.check(ctx, Permission::ProctorAssign).await?;
+        self.permission_checker
+            .check(ctx, Permission::ProctorAssign)
+            .await?;
 
         let now = Utc::now();
         let id = Uuid::new_v4();
@@ -739,14 +868,27 @@ impl SchedulingService {
         end_date: Option<NaiveDate>,
         status: Option<String>,
     ) -> Result<ExamSession, DomainError> {
-        self.permission_checker.check(ctx, Permission::ExamSessionWrite).await?;
-        let mut session = self.exam_session_repo.find_by_id(id).await?
+        self.permission_checker
+            .check(ctx, Permission::ExamSessionWrite)
+            .await?;
+        let mut session = self
+            .exam_session_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("Exam session not found".to_string()))?;
 
-        if let Some(n) = name { session.name = n; }
-        if let Some(s) = start_date { session.start_date = s; }
-        if let Some(e) = end_date { session.end_date = e; }
-        if let Some(st) = status { session.status = st; }
+        if let Some(n) = name {
+            session.name = n;
+        }
+        if let Some(s) = start_date {
+            session.start_date = s;
+        }
+        if let Some(e) = end_date {
+            session.end_date = e;
+        }
+        if let Some(st) = status {
+            session.status = st;
+        }
         session.updated_at = Utc::now();
 
         self.exam_session_repo.save(&session).await?;
@@ -760,9 +902,18 @@ impl SchedulingService {
         Ok(session)
     }
 
-    pub async fn delete_exam_session(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::ExamSessionDelete).await?;
-        let session = self.exam_session_repo.find_by_id(id).await?
+    pub async fn delete_exam_session(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::ExamSessionDelete)
+            .await?;
+        let session = self
+            .exam_session_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("Exam session not found".to_string()))?;
 
         self.exam_session_repo.delete(id).await?;
@@ -776,9 +927,18 @@ impl SchedulingService {
         Ok(())
     }
 
-    pub async fn delete_exam_schedule(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::ExamScheduleWrite).await?;
-        let schedule = self.exam_schedule_repo.find_by_id(id).await?
+    pub async fn delete_exam_schedule(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::ExamScheduleWrite)
+            .await?;
+        let schedule = self
+            .exam_schedule_repo
+            .find_by_id(id)
+            .await?
             .ok_or_else(|| DomainError::NotFound("Exam schedule not found".to_string()))?;
 
         self.exam_schedule_repo.delete(id).await?;
@@ -792,8 +952,14 @@ impl SchedulingService {
         Ok(())
     }
 
-    pub async fn delete_seating_number(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::SeatingNumberGenerate).await?;
+    pub async fn delete_seating_number(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::SeatingNumberGenerate)
+            .await?;
         self.seating_number_repo.delete(id).await?;
         let event = DomainEvent::SeatingNumberDeleted {
             seating_id: id,
@@ -803,8 +969,14 @@ impl SchedulingService {
         Ok(())
     }
 
-    pub async fn delete_secret_number(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::SecretNumberGenerate).await?;
+    pub async fn delete_secret_number(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::SecretNumberGenerate)
+            .await?;
         self.secret_number_repo.delete(id).await?;
         let event = DomainEvent::SecretNumberDeleted {
             secret_id: id,
@@ -815,7 +987,9 @@ impl SchedulingService {
     }
 
     pub async fn delete_proctor(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::ProctorAssign).await?;
+        self.permission_checker
+            .check(ctx, Permission::ProctorAssign)
+            .await?;
         self.exam_proctor_repo.delete(id).await?;
         let event = DomainEvent::ProctorDeleted {
             proctor_id: id,

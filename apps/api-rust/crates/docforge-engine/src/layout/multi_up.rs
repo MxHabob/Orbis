@@ -12,9 +12,9 @@
 // ZERO Orbis dependencies. Pure geometry + unit conversion.
 // ═══════════════════════════════════════════════════════════════
 
-use serde::{Deserialize, Serialize};
-use crate::render::types::{mm_to_pt, PositionedElement, LineElement, Color};
 use crate::model::document::Orientation;
+use crate::render::types::{mm_to_pt, Color, LineElement, PositionedElement};
+use serde::{Deserialize, Serialize};
 
 // ── Sheet Size ───────────────────────────────────────────────
 
@@ -39,7 +39,10 @@ impl SheetSize {
             SheetSize::A5 => (148.0, 210.0),
             SheetSize::Letter => (216.0, 279.0),
             SheetSize::Legal => (216.0, 356.0),
-            SheetSize::Custom { width_mm, height_mm } => (*width_mm, *height_mm),
+            SheetSize::Custom {
+                width_mm,
+                height_mm,
+            } => (*width_mm, *height_mm),
         }
     }
 }
@@ -129,11 +132,21 @@ pub struct ForcedGrid {
     pub rows: u32,
 }
 
-fn default_portrait() -> Orientation { Orientation::Portrait }
-fn default_gap() -> f64 { 3.0 }
-fn default_cut_line_width() -> f64 { 0.5 }
-fn default_cut_line_color() -> String { "#cccccc".to_string() }
-fn default_true() -> bool { true }
+fn default_portrait() -> Orientation {
+    Orientation::Portrait
+}
+fn default_gap() -> f64 {
+    3.0
+}
+fn default_cut_line_width() -> f64 {
+    0.5
+}
+fn default_cut_line_color() -> String {
+    "#cccccc".to_string()
+}
+fn default_true() -> bool {
+    true
+}
 
 // ── Computed Layout ─────────────────────────────────────────
 
@@ -211,8 +224,10 @@ impl MultiUpConfig {
         let (columns, rows) = if let Some(ref forced) = self.forced_grid {
             (forced.columns, forced.rows)
         } else {
-            let cols = compute_max_items(printable_w, self.template_width_mm, self.gap_horizontal_mm);
-            let rows = compute_max_items(printable_h, self.template_height_mm, self.gap_vertical_mm);
+            let cols =
+                compute_max_items(printable_w, self.template_width_mm, self.gap_horizontal_mm);
+            let rows =
+                compute_max_items(printable_h, self.template_height_mm, self.gap_vertical_mm);
             (cols.max(1), rows.max(1))
         };
 
@@ -229,8 +244,10 @@ impl MultiUpConfig {
         let margin_top_pt = mm_to_pt(self.sheet_margins.top);
 
         // Total content block dimensions
-        let content_block_w = template_w_pt * columns as f32 + gap_h_pt * (columns.saturating_sub(1)) as f32;
-        let content_block_h = template_h_pt * rows as f32 + gap_v_pt * (rows.saturating_sub(1)) as f32;
+        let content_block_w =
+            template_w_pt * columns as f32 + gap_h_pt * (columns.saturating_sub(1)) as f32;
+        let content_block_h =
+            template_h_pt * rows as f32 + gap_v_pt * (rows.saturating_sub(1)) as f32;
 
         let printable_w_pt = mm_to_pt(printable_w);
         let printable_h_pt = mm_to_pt(printable_h);
@@ -351,7 +368,10 @@ pub fn offset_element(element: &PositionedElement, dx: f32, dy: f32) -> Position
 ///
 /// Produces horizontal and vertical dashed lines at the midpoints
 /// between adjacent slots, extending across the full printable area.
-pub fn generate_cut_lines(layout: &MultiUpLayout, config: &MultiUpConfig) -> Vec<PositionedElement> {
+pub fn generate_cut_lines(
+    layout: &MultiUpLayout,
+    config: &MultiUpConfig,
+) -> Vec<PositionedElement> {
     if config.cut_line_width_mm <= 0.0 {
         return Vec::new();
     }
@@ -373,16 +393,18 @@ pub fn generate_cut_lines(layout: &MultiUpLayout, config: &MultiUpConfig) -> Vec
         for col in 1..layout.columns {
             // Find the x-coordinate at the midpoint of the gap between col-1 and col
             // Use LTR physical coordinates for line placement
-            let left_col_right_edge = if let Some(slot) = layout.slots.iter().find(|s| s.col == col - 1 && s.row == 0) {
-                slot.x_pt + slot.width_pt
-            } else {
-                continue;
-            };
-            let right_col_left_edge = if let Some(slot) = layout.slots.iter().find(|s| s.col == col && s.row == 0) {
-                slot.x_pt
-            } else {
-                continue;
-            };
+            let left_col_right_edge =
+                if let Some(slot) = layout.slots.iter().find(|s| s.col == col - 1 && s.row == 0) {
+                    slot.x_pt + slot.width_pt
+                } else {
+                    continue;
+                };
+            let right_col_left_edge =
+                if let Some(slot) = layout.slots.iter().find(|s| s.col == col && s.row == 0) {
+                    slot.x_pt
+                } else {
+                    continue;
+                };
 
             let x = (left_col_right_edge + right_col_left_edge) / 2.0;
             let y1 = margin_top_pt * 0.5; // Extend slightly into margin
@@ -403,16 +425,17 @@ pub fn generate_cut_lines(layout: &MultiUpLayout, config: &MultiUpConfig) -> Vec
     if layout.rows > 1 {
         for row in 1..layout.rows {
             // Find the y-coordinate at the midpoint of the gap between row-1 and row
-            let top_row_bottom = if let Some(slot) = layout.slots.iter().find(|s| s.row == row - 1 && s.col == 0) {
-                slot.y_pt + slot.height_pt
-            } else {
-                // Try any slot in the row
-                if let Some(slot) = layout.slots.iter().find(|s| s.row == row - 1) {
+            let top_row_bottom =
+                if let Some(slot) = layout.slots.iter().find(|s| s.row == row - 1 && s.col == 0) {
                     slot.y_pt + slot.height_pt
                 } else {
-                    continue;
-                }
-            };
+                    // Try any slot in the row
+                    if let Some(slot) = layout.slots.iter().find(|s| s.row == row - 1) {
+                        slot.y_pt + slot.height_pt
+                    } else {
+                        continue;
+                    }
+                };
             let bottom_row_top = if let Some(slot) = layout.slots.iter().find(|s| s.row == row) {
                 slot.y_pt
             } else {
@@ -545,7 +568,10 @@ mod tests {
 
         assert_eq!(layout.columns, 2, "Should fit 2 columns of 85.6mm cards");
         assert_eq!(layout.rows, 4, "Should fit 4-5 rows of 54mm cards");
-        assert!(layout.items_per_sheet >= 8, "Should fit at least 8 ID cards on A4");
+        assert!(
+            layout.items_per_sheet >= 8,
+            "Should fit at least 8 ID cards on A4"
+        );
         assert_eq!(layout.slots.len(), layout.items_per_sheet as usize);
 
         // Verify all slots are within sheet bounds
@@ -585,7 +611,10 @@ mod tests {
 
         // A4 Landscape printable width = 277mm → (277+3)/(90+3) = 3.01 → 3 columns
         assert_eq!(layout.columns, 3, "Should fit 3 cols of 90mm in 277mm wide");
-        assert!(layout.rows >= 3, "Should fit at least 3 rows of 50mm in 190mm");
+        assert!(
+            layout.rows >= 3,
+            "Should fit at least 3 rows of 50mm in 190mm"
+        );
         // landscape might actually fit 3 cols: (277+3)/(90+3) = 3.01 → 3
         assert!(layout.items_per_sheet >= 6);
     }
@@ -612,14 +641,20 @@ mod tests {
 
         assert!(layout.columns >= 3, "A3 should fit >= 3 cols of 86mm");
         assert!(layout.rows >= 7, "A3 should fit >= 7 rows of 54mm");
-        assert!(layout.items_per_sheet >= 21, "Should fit >= 21 badges on A3");
+        assert!(
+            layout.items_per_sheet >= 21,
+            "Should fit >= 21 badges on A3"
+        );
     }
 
     #[test]
     fn test_forced_grid() {
         // Force 3×2 layout regardless of available space
         let mut config = make_config(SheetSize::A4, Orientation::Portrait, 50.0, 50.0);
-        config.forced_grid = Some(ForcedGrid { columns: 3, rows: 2 });
+        config.forced_grid = Some(ForcedGrid {
+            columns: 3,
+            rows: 2,
+        });
         let layout = config.compute_layout();
 
         assert_eq!(layout.columns, 3);
@@ -665,8 +700,20 @@ mod tests {
         let layout = config.compute_layout();
 
         // Content should be centered: check symmetry
-        let first_slot = layout.slots.iter().min_by(|a, b| a.x_pt.partial_cmp(&b.x_pt).unwrap()).unwrap();
-        let last_slot = layout.slots.iter().max_by(|a, b| (a.x_pt + a.width_pt).partial_cmp(&(b.x_pt + b.width_pt)).unwrap()).unwrap();
+        let first_slot = layout
+            .slots
+            .iter()
+            .min_by(|a, b| a.x_pt.partial_cmp(&b.x_pt).unwrap())
+            .unwrap();
+        let last_slot = layout
+            .slots
+            .iter()
+            .max_by(|a, b| {
+                (a.x_pt + a.width_pt)
+                    .partial_cmp(&(b.x_pt + b.width_pt))
+                    .unwrap()
+            })
+            .unwrap();
 
         let left_margin = first_slot.x_pt;
         let right_margin = layout.sheet_width_pt - (last_slot.x_pt + last_slot.width_pt);
@@ -675,7 +722,8 @@ mod tests {
         assert!(
             (left_margin - right_margin).abs() < 1.0,
             "Content should be horizontally centered: left={:.1}, right={:.1}",
-            left_margin, right_margin
+            left_margin,
+            right_margin
         );
     }
 
@@ -695,8 +743,16 @@ mod tests {
                 assert!(
                     !(overlap_x && overlap_y),
                     "Slots {} and {} overlap! a=({:.1},{:.1})+({}×{}), b=({:.1},{:.1})+({}×{})",
-                    i, j, a.x_pt, a.y_pt, a.width_pt, a.height_pt,
-                    b.x_pt, b.y_pt, b.width_pt, b.height_pt
+                    i,
+                    j,
+                    a.x_pt,
+                    a.y_pt,
+                    a.width_pt,
+                    a.height_pt,
+                    b.x_pt,
+                    b.y_pt,
+                    b.width_pt,
+                    b.height_pt
                 );
             }
         }
@@ -715,7 +771,8 @@ mod tests {
             cut_lines.len(),
             expected_vertical + expected_horizontal,
             "Expected {} vertical + {} horizontal cut lines",
-            expected_vertical, expected_horizontal
+            expected_vertical,
+            expected_horizontal
         );
     }
 
@@ -750,7 +807,10 @@ mod tests {
     #[test]
     fn test_suggest_layouts() {
         let suggestions = suggest_layouts(&SheetSize::A4, 85.6, 53.98);
-        assert!(!suggestions.is_empty(), "Should have at least one suggestion");
+        assert!(
+            !suggestions.is_empty(),
+            "Should have at least one suggestion"
+        );
         // Should be sorted by items_per_sheet descending
         for i in 1..suggestions.len() {
             assert!(
@@ -775,7 +835,10 @@ mod tests {
     #[test]
     fn test_custom_sheet_size() {
         let config = make_config(
-            SheetSize::Custom { width_mm: 300.0, height_mm: 400.0 },
+            SheetSize::Custom {
+                width_mm: 300.0,
+                height_mm: 400.0,
+            },
             Orientation::Portrait,
             90.0,
             50.0,
@@ -794,8 +857,10 @@ mod tests {
     fn test_offset_element_text() {
         use crate::render::types::*;
         let elem = PositionedElement::Text(TextElement {
-            x: 10.0, y: 20.0,
-            width: 100.0, height: 50.0,
+            x: 10.0,
+            y: 20.0,
+            width: 100.0,
+            height: 50.0,
             content: "Test".to_string(),
             font_family: "Rubik".to_string(),
             font_size: 12.0,
@@ -821,8 +886,10 @@ mod tests {
     fn test_offset_element_rect() {
         use crate::render::types::*;
         let elem = PositionedElement::Rect(RectElement {
-            x: 0.0, y: 0.0,
-            width: 200.0, height: 100.0,
+            x: 0.0,
+            y: 0.0,
+            width: 200.0,
+            height: 100.0,
             fill: Some(Color::WHITE),
             stroke: None,
             stroke_width: 0.0,
@@ -843,8 +910,10 @@ mod tests {
     fn test_offset_element_line() {
         use crate::render::types::*;
         let elem = PositionedElement::Line(LineElement {
-            x1: 5.0, y1: 10.0,
-            x2: 100.0, y2: 10.0,
+            x1: 5.0,
+            y1: 10.0,
+            x2: 100.0,
+            y2: 10.0,
             color: Color::BLACK,
             width: 1.0,
         });

@@ -1,15 +1,12 @@
-use std::sync::Arc;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use uuid::Uuid;
 
 use orbis_domain::{
-    iam::permission::Permission,
-    entities::{
-        document::Document,
-        folder::Folder,
-    },
+    entities::{document::Document, folder::Folder},
     errors::DomainError,
+    iam::permission::Permission,
 };
 
 use crate::context::RequestContext;
@@ -71,11 +68,16 @@ impl FolderService {
         ctx: &RequestContext,
         input: CreateFolderInput,
     ) -> Result<Folder, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentWrite)
+            .await?;
         let org_id = ctx.tenant_id;
 
         let parent_path = if let Some(pid) = input.parent_id {
-            let parent = self.folder_repo.find_by_id(org_id, pid).await?
+            let parent = self
+                .folder_repo
+                .find_by_id(org_id, pid)
+                .await?
                 .ok_or_else(|| DomainError::NotFound(format!("Parent folder {pid} not found")))?;
             parent.path
         } else {
@@ -121,10 +123,16 @@ impl FolderService {
         student_id: Uuid,
         student_name: &str,
     ) -> Result<Folder, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentRead).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentRead)
+            .await?;
         let org_id = ctx.tenant_id;
 
-        if let Some(folder) = self.folder_repo.find_by_entity(org_id, "student", student_id).await? {
+        if let Some(folder) = self
+            .folder_repo
+            .find_by_entity(org_id, "student", student_id)
+            .await?
+        {
             return Ok(folder);
         }
 
@@ -202,7 +210,9 @@ impl FolderService {
         term_id: Option<Uuid>,
         metadata: Option<serde_json::Value>,
     ) -> Result<Folder, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentWrite)
+            .await?;
         let org_id = ctx.tenant_id;
 
         let user_id = match ctx.actor {
@@ -211,7 +221,11 @@ impl FolderService {
         };
 
         // 1. Ensure root "/Curriculum" folder exists
-        let root_curriculum_folder = match self.folder_repo.find_by_path(org_id, "/Curriculum").await? {
+        let root_curriculum_folder = match self
+            .folder_repo
+            .find_by_path(org_id, "/Curriculum")
+            .await?
+        {
             Some(f) => f,
             None => {
                 let root = Folder {
@@ -250,7 +264,10 @@ impl FolderService {
 
         let mut meta = metadata.unwrap_or_else(|| serde_json::json!({}));
         if let Some(obj) = meta.as_object_mut() {
-            obj.insert("ai_agent_accessible".to_string(), serde_json::Value::Bool(true));
+            obj.insert(
+                "ai_agent_accessible".to_string(),
+                serde_json::Value::Bool(true),
+            );
             obj.insert("knowledge_base".to_string(), serde_json::Value::Bool(true));
         }
 
@@ -283,7 +300,9 @@ impl FolderService {
         &self,
         ctx: &RequestContext,
     ) -> Result<Vec<Folder>, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentRead).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentRead)
+            .await?;
         let org_id = ctx.tenant_id;
         self.folder_repo.list_by_type(org_id, "curriculum").await
     }
@@ -294,13 +313,21 @@ impl FolderService {
         ctx: &RequestContext,
         folder_id: Uuid,
     ) -> Result<FolderContentsDto, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentRead).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentRead)
+            .await?;
         let org_id = ctx.tenant_id;
 
-        let folder = self.folder_repo.find_by_id(org_id, folder_id).await?
+        let folder = self
+            .folder_repo
+            .find_by_id(org_id, folder_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Folder {folder_id} not found")))?;
 
-        let subfolders = self.folder_repo.list_children(org_id, Some(folder_id)).await?;
+        let subfolders = self
+            .folder_repo
+            .list_children(org_id, Some(folder_id))
+            .await?;
         let documents = self.document_repo.find_by_folder(org_id, folder_id).await?;
 
         Ok(FolderContentsDto {
@@ -316,20 +343,22 @@ impl FolderService {
         ctx: &RequestContext,
         parent_id: Option<Uuid>,
     ) -> Result<Vec<Folder>, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentRead).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentRead)
+            .await?;
         let org_id = ctx.tenant_id;
         self.folder_repo.list_children(org_id, parent_id).await
     }
 
     /// Get folder by ID.
-    pub async fn get_folder(
-        &self,
-        ctx: &RequestContext,
-        id: Uuid,
-    ) -> Result<Folder, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentRead).await?;
+    pub async fn get_folder(&self, ctx: &RequestContext, id: Uuid) -> Result<Folder, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::DocumentRead)
+            .await?;
         let org_id = ctx.tenant_id;
-        self.folder_repo.find_by_id(org_id, id).await?
+        self.folder_repo
+            .find_by_id(org_id, id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Folder {id} not found")))
     }
 
@@ -340,10 +369,15 @@ impl FolderService {
         id: Uuid,
         input: UpdateFolderInput,
     ) -> Result<Folder, DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::DocumentWrite)
+            .await?;
         let org_id = ctx.tenant_id;
 
-        let mut folder = self.folder_repo.find_by_id(org_id, id).await?
+        let mut folder = self
+            .folder_repo
+            .find_by_id(org_id, id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Folder {id} not found")))?;
 
         if let Some(name) = input.name {
@@ -368,19 +402,22 @@ impl FolderService {
     }
 
     /// Delete folder.
-    pub async fn delete_folder(
-        &self,
-        ctx: &RequestContext,
-        id: Uuid,
-    ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::DocumentDelete).await?;
+    pub async fn delete_folder(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::DocumentDelete)
+            .await?;
         let org_id = ctx.tenant_id;
 
-        let folder = self.folder_repo.find_by_id(org_id, id).await?
+        let folder = self
+            .folder_repo
+            .find_by_id(org_id, id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Folder {id} not found")))?;
 
         if folder.is_system {
-            return Err(DomainError::Validation("System folders cannot be deleted".into()));
+            return Err(DomainError::Validation(
+                "System folders cannot be deleted".into(),
+            ));
         }
 
         self.folder_repo.delete(org_id, id).await

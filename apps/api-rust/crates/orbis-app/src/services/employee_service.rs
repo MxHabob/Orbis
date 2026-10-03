@@ -1,26 +1,28 @@
-use std::sync::Arc;
-use uuid::Uuid;
 use chrono::{NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use uuid::Uuid;
 
-use orbis_domain::entities::employee::{Employee, EmployeeDetail, EmployeeStatus, EmployeeType, EmploymentType};
-use orbis_domain::entities::person::Person;
-use orbis_domain::entities::identity_provisioning::{
-    ActorType, DeliveryChannel, AccountProvisioningResult,
+use orbis_domain::entities::employee::{
+    Employee, EmployeeDetail, EmployeeStatus, EmployeeType, EmploymentType,
 };
 use orbis_domain::entities::group::UserGroupMembership;
-use orbis_domain::events::DomainEvent;
-use orbis_domain::errors::DomainError;
-use orbis_domain::queries::filters::PaginatedList;
-use orbis_domain::iam::permission::Permission;
-
-use crate::context::RequestContext;
-use crate::ports::repositories::{
-    EmployeeRepository, PersonRepository, GroupRepository, EmployeeFilter,
+use orbis_domain::entities::identity_provisioning::{
+    AccountProvisioningResult, ActorType, DeliveryChannel,
 };
+use orbis_domain::entities::person::Person;
+use orbis_domain::errors::DomainError;
+use orbis_domain::events::DomainEvent;
+use orbis_domain::iam::permission::Permission;
+use orbis_domain::queries::filters::PaginatedList;
+
+use super::identity_provisioning_service::{IdentityProvisioningService, ProvisionAccountInput};
+use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
-use super::identity_provisioning_service::{IdentityProvisioningService, ProvisionAccountInput};
+use crate::ports::repositories::{
+    EmployeeFilter, EmployeeRepository, GroupRepository, PersonRepository,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccountProvisioningConfig {
@@ -181,7 +183,9 @@ impl EmployeeService {
         org_id: Uuid,
         input: RegisterEmployeeInput,
     ) -> Result<RegisterEmployeeResult, DomainError> {
-        self.permission_checker.check(ctx, Permission::EmployeeCreate).await?;
+        self.permission_checker
+            .check(ctx, Permission::EmployeeCreate)
+            .await?;
 
         let now = Utc::now();
 
@@ -189,15 +193,38 @@ impl EmployeeService {
         let employee_number = if let Some(ref num) = input.employee_number {
             let trimmed = num.trim().to_string();
             if trimmed.is_empty() {
-                format!("EMP-{}-{}", now.format("%Y"), Uuid::new_v4().to_string().chars().take(6).collect::<String>().to_uppercase())
+                format!(
+                    "EMP-{}-{}",
+                    now.format("%Y"),
+                    Uuid::new_v4()
+                        .to_string()
+                        .chars()
+                        .take(6)
+                        .collect::<String>()
+                        .to_uppercase()
+                )
             } else {
                 trimmed
             }
         } else {
-            format!("EMP-{}-{}", now.format("%Y"), Uuid::new_v4().to_string().chars().take(6).collect::<String>().to_uppercase())
+            format!(
+                "EMP-{}-{}",
+                now.format("%Y"),
+                Uuid::new_v4()
+                    .to_string()
+                    .chars()
+                    .take(6)
+                    .collect::<String>()
+                    .to_uppercase()
+            )
         };
 
-        if self.employee_repo.find_by_employee_number(org_id, &employee_number).await?.is_some() {
+        if self
+            .employee_repo
+            .find_by_employee_number(org_id, &employee_number)
+            .await?
+            .is_some()
+        {
             return Err(DomainError::Conflict(format!(
                 "Employee number '{}' is already assigned in this organization",
                 employee_number
@@ -211,19 +238,25 @@ impl EmployeeService {
             // Check if existing Person exists with same National ID or email or phone
             let existing_person = if let Some(ref nid) = input.national_id {
                 if !nid.trim().is_empty() {
-                    self.person_repo.find_by_national_id(Some(org_id), nid.trim()).await?
+                    self.person_repo
+                        .find_by_national_id(Some(org_id), nid.trim())
+                        .await?
                 } else {
                     None
                 }
             } else if let Some(ref email) = input.email {
                 if !email.trim().is_empty() {
-                    self.person_repo.find_by_email(Some(org_id), email.trim()).await?
+                    self.person_repo
+                        .find_by_email(Some(org_id), email.trim())
+                        .await?
                 } else {
                     None
                 }
             } else if let Some(ref phone) = input.phone {
                 if !phone.trim().is_empty() {
-                    self.person_repo.find_by_phone(Some(org_id), phone.trim()).await?
+                    self.person_repo
+                        .find_by_phone(Some(org_id), phone.trim())
+                        .await?
                 } else {
                     None
                 }
@@ -314,21 +347,24 @@ impl EmployeeService {
 
                 let assigned_role = acc_config.role.clone().unwrap_or(default_role);
 
-                let prov_res = self.identity_provisioning_service.provision_account(
-                    ctx,
-                    org_id,
-                    ProvisionAccountInput {
-                        person_id,
-                        actor_type: ActorType::Employee,
-                        preferred_username: acc_config.preferred_username.clone(),
-                        email: None,
-                        phone: None,
-                        roles: vec![assigned_role],
-                        group_ids: acc_config.group_ids.clone(),
-                        delivery_channel: acc_config.delivery_channel,
-                        custom_password: acc_config.custom_password.clone(),
-                    },
-                ).await?;
+                let prov_res = self
+                    .identity_provisioning_service
+                    .provision_account(
+                        ctx,
+                        org_id,
+                        ProvisionAccountInput {
+                            person_id,
+                            actor_type: ActorType::Employee,
+                            preferred_username: acc_config.preferred_username.clone(),
+                            email: None,
+                            phone: None,
+                            roles: vec![assigned_role],
+                            group_ids: acc_config.group_ids.clone(),
+                            delivery_channel: acc_config.delivery_channel,
+                            custom_password: acc_config.custom_password.clone(),
+                        },
+                    )
+                    .await?;
 
                 employee.user_id = Some(prov_res.user_id);
                 provisioning_result = Some(prov_res);
@@ -338,16 +374,27 @@ impl EmployeeService {
         self.employee_repo.save(&employee).await?;
 
         // 5. Publish Domain Event
-        let _ = self.event_bus.publish(ctx, &DomainEvent::EmployeeCreated {
-            employee_id,
-            person_id,
-            org_id,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::EmployeeCreated {
+                    employee_id,
+                    person_id,
+                    org_id,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         // 6. Fetch full detail
-        let detail = self.employee_repo.find_detail_by_id(employee_id).await?
-            .ok_or_else(|| DomainError::Internal("Failed to load created employee detail".into()))?;
+        let detail = self
+            .employee_repo
+            .find_detail_by_id(employee_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::Internal("Failed to load created employee detail".into())
+            })?;
 
         Ok(RegisterEmployeeResult {
             detail,
@@ -362,13 +409,23 @@ impl EmployeeService {
         employee_id: Uuid,
         input: UpdateEmployeeInput,
     ) -> Result<EmployeeDetail, DomainError> {
-        self.permission_checker.check(ctx, Permission::EmployeeUpdate).await?;
+        self.permission_checker
+            .check(ctx, Permission::EmployeeUpdate)
+            .await?;
 
-        let mut employee = self.employee_repo.find_by_id(employee_id).await?
+        let mut employee = self
+            .employee_repo
+            .find_by_id(employee_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Employee {} not found", employee_id)))?;
 
-        let mut person = self.person_repo.find_by_id(employee.person_id).await?
-            .ok_or_else(|| DomainError::NotFound(format!("Person {} not found", employee.person_id)))?;
+        let mut person = self
+            .person_repo
+            .find_by_id(employee.person_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Person {} not found", employee.person_id))
+            })?;
 
         let now = Utc::now();
 
@@ -377,50 +434,117 @@ impl EmployeeService {
             let emp_type = EmployeeType::from(v.as_str());
             employee.employee_type = emp_type.to_string();
         }
-        if let Some(v) = input.job_title { employee.job_title = Some(v); }
-        if let Some(v) = input.department { employee.department = Some(v); }
-        if let Some(v) = input.org_unit_id { employee.org_unit_id = Some(v); }
-        if let Some(v) = input.hire_date { employee.hire_date = v; }
-        if let Some(v) = input.status { employee.status = v; }
-        if let Some(v) = input.employment_type { employee.employment_type = v; }
-        if let Some(v) = input.work_shift { employee.work_shift = Some(v); }
-        if let Some(v) = input.notes { employee.notes = Some(v); }
+        if let Some(v) = input.job_title {
+            employee.job_title = Some(v);
+        }
+        if let Some(v) = input.department {
+            employee.department = Some(v);
+        }
+        if let Some(v) = input.org_unit_id {
+            employee.org_unit_id = Some(v);
+        }
+        if let Some(v) = input.hire_date {
+            employee.hire_date = v;
+        }
+        if let Some(v) = input.status {
+            employee.status = v;
+        }
+        if let Some(v) = input.employment_type {
+            employee.employment_type = v;
+        }
+        if let Some(v) = input.work_shift {
+            employee.work_shift = Some(v);
+        }
+        if let Some(v) = input.notes {
+            employee.notes = Some(v);
+        }
         employee.updated_at = now;
 
         // Update person fields
-        if let Some(v) = input.first_name { person.first_name = v; }
-        if let Some(v) = input.middle_name { person.middle_name = Some(v); }
-        if let Some(v) = input.last_name { person.last_name = v; }
-        if let Some(v) = input.first_name_ar { person.first_name_ar = Some(v); }
-        if let Some(v) = input.middle_name_ar { person.middle_name_ar = Some(v); }
-        if let Some(v) = input.last_name_ar { person.last_name_ar = Some(v); }
-        if let Some(v) = input.display_name { person.display_name = Some(v); }
-        if let Some(v) = input.national_id { person.national_id = Some(v); }
-        if let Some(v) = input.passport_number { person.passport_number = Some(v); }
-        if let Some(v) = input.gender { person.gender = Some(v); }
-        if let Some(v) = input.birth_date { person.birth_date = Some(v); }
-        if let Some(v) = input.place_of_birth { person.place_of_birth = Some(v); }
-        if let Some(v) = input.nationality { person.nationality = Some(v); }
-        if let Some(v) = input.blood_type { person.blood_type = Some(v); }
-        if let Some(v) = input.medical_notes { person.medical_notes = Some(v); }
-        if let Some(v) = input.special_needs_notes { person.special_needs_notes = Some(v); }
-        if let Some(v) = input.phone { person.phone = Some(v); }
-        if let Some(v) = input.email { person.email = Some(v); }
-        if let Some(v) = input.address { person.address = Some(v); }
-        if let Some(v) = input.avatar_url { person.avatar_url = Some(v); }
+        if let Some(v) = input.first_name {
+            person.first_name = v;
+        }
+        if let Some(v) = input.middle_name {
+            person.middle_name = Some(v);
+        }
+        if let Some(v) = input.last_name {
+            person.last_name = v;
+        }
+        if let Some(v) = input.first_name_ar {
+            person.first_name_ar = Some(v);
+        }
+        if let Some(v) = input.middle_name_ar {
+            person.middle_name_ar = Some(v);
+        }
+        if let Some(v) = input.last_name_ar {
+            person.last_name_ar = Some(v);
+        }
+        if let Some(v) = input.display_name {
+            person.display_name = Some(v);
+        }
+        if let Some(v) = input.national_id {
+            person.national_id = Some(v);
+        }
+        if let Some(v) = input.passport_number {
+            person.passport_number = Some(v);
+        }
+        if let Some(v) = input.gender {
+            person.gender = Some(v);
+        }
+        if let Some(v) = input.birth_date {
+            person.birth_date = Some(v);
+        }
+        if let Some(v) = input.place_of_birth {
+            person.place_of_birth = Some(v);
+        }
+        if let Some(v) = input.nationality {
+            person.nationality = Some(v);
+        }
+        if let Some(v) = input.blood_type {
+            person.blood_type = Some(v);
+        }
+        if let Some(v) = input.medical_notes {
+            person.medical_notes = Some(v);
+        }
+        if let Some(v) = input.special_needs_notes {
+            person.special_needs_notes = Some(v);
+        }
+        if let Some(v) = input.phone {
+            person.phone = Some(v);
+        }
+        if let Some(v) = input.email {
+            person.email = Some(v);
+        }
+        if let Some(v) = input.address {
+            person.address = Some(v);
+        }
+        if let Some(v) = input.avatar_url {
+            person.avatar_url = Some(v);
+        }
         person.updated_at = now;
 
         self.person_repo.save(&person).await?;
         self.employee_repo.save(&employee).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::EmployeeUpdated {
-            employee_id,
-            org_id: employee.org_id,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::EmployeeUpdated {
+                    employee_id,
+                    org_id: employee.org_id,
+                    timestamp: now,
+                },
+            )
+            .await;
 
-        let detail = self.employee_repo.find_detail_by_id(employee_id).await?
-            .ok_or_else(|| DomainError::Internal("Failed to load updated employee detail".into()))?;
+        let detail = self
+            .employee_repo
+            .find_detail_by_id(employee_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::Internal("Failed to load updated employee detail".into())
+            })?;
 
         Ok(detail)
     }
@@ -432,9 +556,14 @@ impl EmployeeService {
         employee_id: Uuid,
         new_status: EmployeeStatus,
     ) -> Result<EmployeeDetail, DomainError> {
-        self.permission_checker.check(ctx, Permission::EmployeeUpdate).await?;
+        self.permission_checker
+            .check(ctx, Permission::EmployeeUpdate)
+            .await?;
 
-        let mut employee = self.employee_repo.find_by_id(employee_id).await?
+        let mut employee = self
+            .employee_repo
+            .find_by_id(employee_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Employee {} not found", employee_id)))?;
 
         let old_status = employee.status;
@@ -443,24 +572,42 @@ impl EmployeeService {
         self.employee_repo.save(&employee).await?;
 
         // If status changed to Terminated or Suspended, optionally toggle linked user account
-        if matches!(new_status, EmployeeStatus::Terminated | EmployeeStatus::Suspended) {
+        if matches!(
+            new_status,
+            EmployeeStatus::Terminated | EmployeeStatus::Suspended
+        ) {
             if let Some(uid) = employee.user_id {
-                let _ = self.identity_provisioning_service.toggle_user_status(ctx, uid, false).await;
+                let _ = self
+                    .identity_provisioning_service
+                    .toggle_user_status(ctx, uid, false)
+                    .await;
             }
         } else if matches!(new_status, EmployeeStatus::Active) {
             if let Some(uid) = employee.user_id {
-                let _ = self.identity_provisioning_service.toggle_user_status(ctx, uid, true).await;
+                let _ = self
+                    .identity_provisioning_service
+                    .toggle_user_status(ctx, uid, true)
+                    .await;
             }
         }
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::EmployeeStatusChanged {
-            employee_id,
-            old_status: old_status.to_string(),
-            new_status: new_status.to_string(),
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::EmployeeStatusChanged {
+                    employee_id,
+                    old_status: old_status.to_string(),
+                    new_status: new_status.to_string(),
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
-        let detail = self.employee_repo.find_detail_by_id(employee_id).await?
+        let detail = self
+            .employee_repo
+            .find_detail_by_id(employee_id)
+            .await?
             .ok_or_else(|| DomainError::Internal("Failed to load employee detail".into()))?;
 
         Ok(detail)
@@ -476,9 +623,14 @@ impl EmployeeService {
         group_ids: Vec<Uuid>,
         delivery_channel: Option<DeliveryChannel>,
     ) -> Result<AccountProvisioningResult, DomainError> {
-        self.permission_checker.check(ctx, Permission::UserWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::UserWrite)
+            .await?;
 
-        let mut employee = self.employee_repo.find_by_id(employee_id).await?
+        let mut employee = self
+            .employee_repo
+            .find_by_id(employee_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Employee {} not found", employee_id)))?;
 
         let default_role = if employee.is_teacher() {
@@ -487,21 +639,24 @@ impl EmployeeService {
             "staff".to_string()
         };
 
-        let res = self.identity_provisioning_service.provision_account(
-            ctx,
-            employee.org_id,
-            ProvisionAccountInput {
-                person_id: employee.person_id,
-                actor_type: ActorType::Employee,
-                preferred_username,
-                email: None,
-                phone: None,
-                roles: vec![role.unwrap_or(default_role)],
-                group_ids,
-                delivery_channel,
-                custom_password: None,
-            },
-        ).await?;
+        let res = self
+            .identity_provisioning_service
+            .provision_account(
+                ctx,
+                employee.org_id,
+                ProvisionAccountInput {
+                    person_id: employee.person_id,
+                    actor_type: ActorType::Employee,
+                    preferred_username,
+                    email: None,
+                    phone: None,
+                    roles: vec![role.unwrap_or(default_role)],
+                    group_ids,
+                    delivery_channel,
+                    custom_password: None,
+                },
+            )
+            .await?;
 
         employee.user_id = Some(res.user_id);
         employee.updated_at = Utc::now();
@@ -517,12 +672,18 @@ impl EmployeeService {
         employee_id: Uuid,
         group_ids: Vec<Uuid>,
     ) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::GroupAssign).await?;
+        self.permission_checker
+            .check(ctx, Permission::GroupAssign)
+            .await?;
 
-        let employee = self.employee_repo.find_by_id(employee_id).await?
+        let employee = self
+            .employee_repo
+            .find_by_id(employee_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Employee {} not found", employee_id)))?;
 
-        let user_id = employee.user_id
+        let user_id = employee
+            .user_id
             .ok_or_else(|| DomainError::Validation("Employee has no linked user account".into()))?;
 
         for group_id in group_ids {
@@ -540,8 +701,14 @@ impl EmployeeService {
     }
 
     /// Get full employee detail by ID
-    pub async fn get_employee(&self, ctx: &RequestContext, id: Uuid) -> Result<Option<EmployeeDetail>, DomainError> {
-        self.permission_checker.check(ctx, Permission::EmployeeRead).await?;
+    pub async fn get_employee(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<Option<EmployeeDetail>, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::EmployeeRead)
+            .await?;
         self.employee_repo.find_detail_by_id(id).await
     }
 
@@ -552,13 +719,21 @@ impl EmployeeService {
         org_id: Uuid,
         filter: EmployeeFilter,
     ) -> Result<PaginatedList<EmployeeDetail>, DomainError> {
-        self.permission_checker.check(ctx, Permission::EmployeeRead).await?;
+        self.permission_checker
+            .check(ctx, Permission::EmployeeRead)
+            .await?;
         self.employee_repo.list(org_id, filter).await
     }
 
     /// Count employees by status (active, on_leave, terminated, all)
-    pub async fn count_employees_by_status(&self, ctx: &RequestContext, org_id: Uuid) -> Result<std::collections::HashMap<String, i64>, DomainError> {
-        self.permission_checker.check(ctx, Permission::EmployeeRead).await?;
+    pub async fn count_employees_by_status(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+    ) -> Result<std::collections::HashMap<String, i64>, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::EmployeeRead)
+            .await?;
         self.employee_repo.count_by_status(org_id).await
     }
 
@@ -570,7 +745,9 @@ impl EmployeeService {
         org_id: Uuid,
         input: BulkRegisterEmployeesInput,
     ) -> Result<BulkRegisterEmployeeResult, DomainError> {
-        self.permission_checker.check(ctx, Permission::EmployeeCreate).await?;
+        self.permission_checker
+            .check(ctx, Permission::EmployeeCreate)
+            .await?;
 
         let is_atomic = input.atomic.unwrap_or(true);
         let is_dry_run = input.dry_run.unwrap_or(false);
@@ -580,10 +757,14 @@ impl EmployeeService {
         // ─────────────────────────────────────────────────────────────────
         // STAGE 1: INTRA-BATCH INTEGRITY & CONFLICT PRE-VALIDATION
         // ─────────────────────────────────────────────────────────────────
-        let mut pre_errors: std::collections::HashMap<usize, String> = std::collections::HashMap::new();
-        let mut seen_nids: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
-        let mut seen_passports: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
-        let mut seen_emp_nums: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        let mut pre_errors: std::collections::HashMap<usize, String> =
+            std::collections::HashMap::new();
+        let mut seen_nids: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
+        let mut seen_passports: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
+        let mut seen_emp_nums: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
 
         for item in &items {
             let row = item.row_index;
@@ -603,18 +784,42 @@ impl EmployeeService {
             }
 
             // 2. Intra-Batch Duplicate National ID Check
-            if let Some(nid) = item.registration.national_id.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+            if let Some(nid) = item
+                .registration
+                .national_id
+                .as_deref()
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+            {
                 if let Some(prev_row) = seen_nids.get(nid) {
-                    pre_errors.insert(row, format!("Duplicate National ID '{}' within batch (conflicts with row {})", nid, prev_row));
+                    pre_errors.insert(
+                        row,
+                        format!(
+                            "Duplicate National ID '{}' within batch (conflicts with row {})",
+                            nid, prev_row
+                        ),
+                    );
                     continue;
                 }
                 seen_nids.insert(nid.to_string(), row);
             }
 
             // 3. Intra-Batch Duplicate Passport Check
-            if let Some(pp) = item.registration.passport_number.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+            if let Some(pp) = item
+                .registration
+                .passport_number
+                .as_deref()
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+            {
                 if let Some(prev_row) = seen_passports.get(pp) {
-                    pre_errors.insert(row, format!("Duplicate Passport Number '{}' within batch (conflicts with row {})", pp, prev_row));
+                    pre_errors.insert(
+                        row,
+                        format!(
+                            "Duplicate Passport Number '{}' within batch (conflicts with row {})",
+                            pp, prev_row
+                        ),
+                    );
                     continue;
                 }
                 seen_passports.insert(pp.to_string(), row);
@@ -630,8 +835,18 @@ impl EmployeeService {
                     }
                     seen_emp_nums.insert(trimmed.to_string(), row);
 
-                    if let Ok(Some(_)) = self.employee_repo.find_by_employee_number(org_id, trimmed).await {
-                        pre_errors.insert(row, format!("Employee number '{}' already exists in organization", trimmed));
+                    if let Ok(Some(_)) = self
+                        .employee_repo
+                        .find_by_employee_number(org_id, trimmed)
+                        .await
+                    {
+                        pre_errors.insert(
+                            row,
+                            format!(
+                                "Employee number '{}' already exists in organization",
+                                trimmed
+                            ),
+                        );
                         continue;
                     }
                 }
@@ -698,7 +913,11 @@ impl EmployeeService {
                         row_index: row,
                         success: true,
                         employee_id: None,
-                        employee_number: item.registration.employee_number.clone().or_else(|| Some("[Auto-Generated EMP]".to_string())),
+                        employee_number: item
+                            .registration
+                            .employee_number
+                            .clone()
+                            .or_else(|| Some("[Auto-Generated EMP]".to_string())),
                         user_id: None,
                         error: None,
                     });
@@ -775,10 +994,19 @@ impl EmployeeService {
     }
 
     /// Soft delete an employee
-    pub async fn delete_employee(&self, ctx: &RequestContext, employee_id: Uuid) -> Result<(), DomainError> {
-        self.permission_checker.check(ctx, Permission::EmployeeDelete).await?;
+    pub async fn delete_employee(
+        &self,
+        ctx: &RequestContext,
+        employee_id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::EmployeeDelete)
+            .await?;
 
-        let mut employee = self.employee_repo.find_by_id(employee_id).await?
+        let mut employee = self
+            .employee_repo
+            .find_by_id(employee_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Employee {} not found", employee_id)))?;
 
         employee.is_deleted = true;
@@ -789,23 +1017,41 @@ impl EmployeeService {
 
         // Also deactivate user account if linked
         if let Some(uid) = employee.user_id {
-            let _ = self.identity_provisioning_service.toggle_user_status(ctx, uid, false).await;
+            let _ = self
+                .identity_provisioning_service
+                .toggle_user_status(ctx, uid, false)
+                .await;
         }
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::EmployeeDeleted {
-            employee_id,
-            org_id: employee.org_id,
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::EmployeeDeleted {
+                    employee_id,
+                    org_id: employee.org_id,
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
         Ok(())
     }
 
     /// Restore a soft-deleted employee
-    pub async fn restore_employee(&self, ctx: &RequestContext, employee_id: Uuid) -> Result<EmployeeDetail, DomainError> {
-        self.permission_checker.check(ctx, Permission::EmployeeDelete).await?;
+    pub async fn restore_employee(
+        &self,
+        ctx: &RequestContext,
+        employee_id: Uuid,
+    ) -> Result<EmployeeDetail, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::EmployeeDelete)
+            .await?;
 
-        let mut employee = self.employee_repo.find_by_id(employee_id).await?
+        let mut employee = self
+            .employee_repo
+            .find_by_id(employee_id)
+            .await?
             .ok_or_else(|| DomainError::NotFound(format!("Employee {} not found", employee_id)))?;
 
         employee.is_deleted = false;
@@ -815,19 +1061,32 @@ impl EmployeeService {
         self.employee_repo.save(&employee).await?;
 
         if let Some(uid) = employee.user_id {
-            let _ = self.identity_provisioning_service.toggle_user_status(ctx, uid, true).await;
+            let _ = self
+                .identity_provisioning_service
+                .toggle_user_status(ctx, uid, true)
+                .await;
         }
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::EmployeeRestored {
-            employee_id,
-            org_id: employee.org_id,
-            timestamp: Utc::now(),
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::EmployeeRestored {
+                    employee_id,
+                    org_id: employee.org_id,
+                    timestamp: Utc::now(),
+                },
+            )
+            .await;
 
-        let detail = self.employee_repo.find_detail_by_id(employee_id).await?
-            .ok_or_else(|| DomainError::Internal("Failed to load restored employee detail".into()))?;
+        let detail = self
+            .employee_repo
+            .find_detail_by_id(employee_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::Internal("Failed to load restored employee detail".into())
+            })?;
 
         Ok(detail)
     }
 }
-

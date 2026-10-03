@@ -15,10 +15,10 @@ use orbis_app::ports::reporting::*;
 use orbis_app::services::OrgContextResolver;
 use orbis_domain::entities::report::*;
 use orbis_domain::errors::DomainError;
-use std::collections::HashMap;
-use uuid::Uuid;
 use sea_orm::DatabaseConnection;
-use tera::{Tera, Context};
+use std::collections::HashMap;
+use tera::{Context, Tera};
+use uuid::Uuid;
 
 // ═══════════════════════════════════════════════════════════════
 // DATA PROVIDER REGISTRY
@@ -32,7 +32,9 @@ pub struct InMemoryDataProviderRegistry {
 
 impl InMemoryDataProviderRegistry {
     pub fn new() -> Self {
-        Self { providers: HashMap::new() }
+        Self {
+            providers: HashMap::new(),
+        }
     }
 }
 
@@ -61,13 +63,18 @@ pub struct InMemoryRendererRegistry {
 
 impl InMemoryRendererRegistry {
     pub fn new() -> Self {
-        Self { renderers: Vec::new() }
+        Self {
+            renderers: Vec::new(),
+        }
     }
 }
 
 impl RendererRegistry for InMemoryRendererRegistry {
     fn get_renderer(&self, format: &OutputFormat) -> Option<&dyn DocumentRenderer> {
-        self.renderers.iter().find(|r| r.supported_format() == *format).map(|r| r.as_ref())
+        self.renderers
+            .iter()
+            .find(|r| r.supported_format() == *format)
+            .map(|r| r.as_ref())
     }
 
     fn register_renderer(&mut self, renderer: Box<dyn DocumentRenderer>) {
@@ -83,7 +90,9 @@ pub struct JsonRenderer;
 
 #[async_trait]
 impl DocumentRenderer for JsonRenderer {
-    fn supported_format(&self) -> OutputFormat { OutputFormat::Json }
+    fn supported_format(&self) -> OutputFormat {
+        OutputFormat::Json
+    }
 
     async fn render(
         &self,
@@ -110,7 +119,9 @@ pub struct DataOnlyRenderer;
 
 #[async_trait]
 impl DocumentRenderer for DataOnlyRenderer {
-    fn supported_format(&self) -> OutputFormat { OutputFormat::DataOnly }
+    fn supported_format(&self) -> OutputFormat {
+        OutputFormat::DataOnly
+    }
 
     async fn render(
         &self,
@@ -139,7 +150,9 @@ pub struct CsvRenderer;
 
 #[async_trait]
 impl DocumentRenderer for CsvRenderer {
-    fn supported_format(&self) -> OutputFormat { OutputFormat::Csv }
+    fn supported_format(&self) -> OutputFormat {
+        OutputFormat::Csv
+    }
 
     async fn render(
         &self,
@@ -150,7 +163,9 @@ impl DocumentRenderer for CsvRenderer {
         let mut csv_data = String::new();
 
         // Header row
-        let headers: Vec<&str> = dataset.columns.iter()
+        let headers: Vec<&str> = dataset
+            .columns
+            .iter()
             .filter(|c| c.visible)
             .map(|c| c.header.as_str())
             .collect();
@@ -158,13 +173,16 @@ impl DocumentRenderer for CsvRenderer {
         csv_data.push('\n');
 
         // Data rows
-        let visible_keys: Vec<&str> = dataset.columns.iter()
+        let visible_keys: Vec<&str> = dataset
+            .columns
+            .iter()
             .filter(|c| c.visible)
             .map(|c| c.key.as_str())
             .collect();
 
         for row in &dataset.rows {
-            let values: Vec<String> = visible_keys.iter()
+            let values: Vec<String> = visible_keys
+                .iter()
                 .map(|key| {
                     let val = row.get(*key).cloned().unwrap_or(serde_json::Value::Null);
                     match val {
@@ -211,7 +229,9 @@ pub struct HtmlRenderer;
 
 #[async_trait]
 impl DocumentRenderer for HtmlRenderer {
-    fn supported_format(&self) -> OutputFormat { OutputFormat::Html }
+    fn supported_format(&self) -> OutputFormat {
+        OutputFormat::Html
+    }
 
     async fn render(
         &self,
@@ -220,7 +240,7 @@ impl DocumentRenderer for HtmlRenderer {
         master: Option<&ReportTemplate>,
     ) -> Result<ExportResult, DomainError> {
         let is_rtl = dataset.org.name_ar.len() > dataset.org.name.len();
-        
+
         let mut context = Context::new();
         context.insert("is_rtl", &is_rtl);
         context.insert("org_name", &dataset.org.name);
@@ -229,27 +249,41 @@ impl DocumentRenderer for HtmlRenderer {
         context.insert("org_website", &dataset.org.website);
         context.insert("report_name", &dataset.report_name);
         context.insert("report_name_ar", &dataset.report_name_ar);
-        context.insert("generated_at", &dataset.generated_at.format("%Y-%m-%d %H:%M").to_string());
-        
+        context.insert(
+            "generated_at",
+            &dataset.generated_at.format("%Y-%m-%d %H:%M").to_string(),
+        );
+
         // generated_by is Option<Uuid>, use System if None
-        let printed_by = dataset.generated_by.map(|u| u.to_string()).unwrap_or_else(|| "System".to_string());
+        let printed_by = dataset
+            .generated_by
+            .map(|u| u.to_string())
+            .unwrap_or_else(|| "System".to_string());
         context.insert("printed_by", &printed_by);
-        
+
         context.insert("total_pages", &1);
         context.insert("current_page", &1);
 
         let mut param_map = HashMap::new();
         for p in &dataset.parameter_summary {
             param_map.insert(
-                if is_rtl { p.label_ar.clone() } else { p.label.clone() },
-                if is_rtl { p.value_ar.clone() } else { p.value.clone() }
+                if is_rtl {
+                    p.label_ar.clone()
+                } else {
+                    p.label.clone()
+                },
+                if is_rtl {
+                    p.value_ar.clone()
+                } else {
+                    p.value.clone()
+                },
             );
         }
         context.insert("parameters", &param_map);
         context.insert("has_parameters", &!param_map.is_empty());
         context.insert("columns", &dataset.columns);
         context.insert("rows", &dataset.rows);
-        
+
         if let Some(aggs) = &dataset.aggregations {
             context.insert("totals", &aggs.totals);
         }
@@ -259,11 +293,12 @@ impl DocumentRenderer for HtmlRenderer {
         let inner_template_str = template
             .and_then(|t| t.document_json.clone().into())
             .unwrap_or_else(|| crate::adapters::report_defaults::TABULAR_REPORT_HTML.to_string());
-        
+
         tera.add_raw_template("inner", &inner_template_str)
             .map_err(|e| DomainError::Internal(format!("Tera inner parse error: {}", e)))?;
 
-        let inner_html = tera.render("inner", &context)
+        let inner_html = tera
+            .render("inner", &context)
             .map_err(|e| DomainError::Internal(format!("Tera inner render error: {}", e)))?;
 
         let final_html = if let Some(m) = master {
@@ -298,7 +333,9 @@ pub struct PdfRenderer;
 
 #[async_trait]
 impl DocumentRenderer for PdfRenderer {
-    fn supported_format(&self) -> OutputFormat { OutputFormat::Pdf }
+    fn supported_format(&self) -> OutputFormat {
+        OutputFormat::Pdf
+    }
 
     async fn render(
         &self,
@@ -428,13 +465,83 @@ impl ReportDataProvider for FeeCollectionDataProvider {
             org: org_context.clone(),
             parameter_summary: vec![],
             columns: vec![
-                ColumnDef { key: "seq".into(), header: "#".into(), header_ar: "#".into(), data_type: ColumnDataType::Sequence, width: Some("5%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
-                ColumnDef { key: "student_name".into(), header: "Student".into(), header_ar: "الطالب".into(), data_type: ColumnDataType::Text, width: Some("25%".into()), align: None, format: None, visible: true, total_type: None },
-                ColumnDef { key: "fee_name".into(), header: "Fee".into(), header_ar: "الرسم".into(), data_type: ColumnDataType::Text, width: Some("20%".into()), align: None, format: None, visible: true, total_type: None },
-                ColumnDef { key: "amount".into(), header: "Amount".into(), header_ar: "المبلغ".into(), data_type: ColumnDataType::Currency, width: Some("15%".into()), align: Some(ColumnAlign::End), format: Some("number:2".into()), visible: true, total_type: Some(AggregationType::Sum) },
-                ColumnDef { key: "paid_amount".into(), header: "Paid".into(), header_ar: "المدفوع".into(), data_type: ColumnDataType::Currency, width: Some("15%".into()), align: Some(ColumnAlign::End), format: Some("number:2".into()), visible: true, total_type: Some(AggregationType::Sum) },
-                ColumnDef { key: "balance".into(), header: "Balance".into(), header_ar: "الرصيد".into(), data_type: ColumnDataType::Currency, width: Some("15%".into()), align: Some(ColumnAlign::End), format: Some("number:2".into()), visible: true, total_type: Some(AggregationType::Sum) },
-                ColumnDef { key: "status".into(), header: "Status".into(), header_ar: "الحالة".into(), data_type: ColumnDataType::Status, width: Some("10%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
+                ColumnDef {
+                    key: "seq".into(),
+                    header: "#".into(),
+                    header_ar: "#".into(),
+                    data_type: ColumnDataType::Sequence,
+                    width: Some("5%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "student_name".into(),
+                    header: "Student".into(),
+                    header_ar: "الطالب".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("25%".into()),
+                    align: None,
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "fee_name".into(),
+                    header: "Fee".into(),
+                    header_ar: "الرسم".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("20%".into()),
+                    align: None,
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "amount".into(),
+                    header: "Amount".into(),
+                    header_ar: "المبلغ".into(),
+                    data_type: ColumnDataType::Currency,
+                    width: Some("15%".into()),
+                    align: Some(ColumnAlign::End),
+                    format: Some("number:2".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "paid_amount".into(),
+                    header: "Paid".into(),
+                    header_ar: "المدفوع".into(),
+                    data_type: ColumnDataType::Currency,
+                    width: Some("15%".into()),
+                    align: Some(ColumnAlign::End),
+                    format: Some("number:2".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "balance".into(),
+                    header: "Balance".into(),
+                    header_ar: "الرصيد".into(),
+                    data_type: ColumnDataType::Currency,
+                    width: Some("15%".into()),
+                    align: Some(ColumnAlign::End),
+                    format: Some("number:2".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "status".into(),
+                    header: "Status".into(),
+                    header_ar: "الحالة".into(),
+                    data_type: ColumnDataType::Status,
+                    width: Some("10%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
             ],
             rows: data_rows,
             groups: None,
@@ -484,8 +591,9 @@ impl ReportDataProvider for StudentListDataProvider {
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
-        let rows_result = self.db.query_all(
-            Statement::from_sql_and_values(
+        let rows_result = self
+            .db
+            .query_all(Statement::from_sql_and_values(
                 self.db.get_database_backend(),
                 r#"SELECT
                     e.id, e.status,
@@ -497,8 +605,8 @@ impl ReportDataProvider for StudentListDataProvider {
                 WHERE e.org_id = $1
                 ORDER BY c.name, p.full_name"#,
                 vec![org_id.to_string().into()],
-            )
-        ).await;
+            ))
+            .await;
 
         let mut data_rows = Vec::new();
         let mut seq = 0u64;
@@ -524,10 +632,50 @@ impl ReportDataProvider for StudentListDataProvider {
             org: org_context.clone(),
             parameter_summary: vec![],
             columns: vec![
-                ColumnDef { key: "seq".into(), header: "#".into(), header_ar: "#".into(), data_type: ColumnDataType::Sequence, width: Some("8%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
-                ColumnDef { key: "student_name".into(), header: "Student Name".into(), header_ar: "اسم الطالب".into(), data_type: ColumnDataType::Text, width: Some("40%".into()), align: None, format: None, visible: true, total_type: None },
-                ColumnDef { key: "class_name".into(), header: "Class".into(), header_ar: "الصف".into(), data_type: ColumnDataType::Text, width: Some("30%".into()), align: None, format: None, visible: true, total_type: None },
-                ColumnDef { key: "status".into(), header: "Status".into(), header_ar: "الحالة".into(), data_type: ColumnDataType::Status, width: Some("22%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
+                ColumnDef {
+                    key: "seq".into(),
+                    header: "#".into(),
+                    header_ar: "#".into(),
+                    data_type: ColumnDataType::Sequence,
+                    width: Some("8%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "student_name".into(),
+                    header: "Student Name".into(),
+                    header_ar: "اسم الطالب".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("40%".into()),
+                    align: None,
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "class_name".into(),
+                    header: "Class".into(),
+                    header_ar: "الصف".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("30%".into()),
+                    align: None,
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "status".into(),
+                    header: "Status".into(),
+                    header_ar: "الحالة".into(),
+                    data_type: ColumnDataType::Status,
+                    width: Some("22%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
             ],
             rows: data_rows,
             groups: None,
@@ -578,7 +726,8 @@ impl ReportDataProvider for TermResultDataProvider {
         LEFT JOIN subjects s ON cs.subject_id = s.id
         LEFT JOIN classes c ON cs.class_id = c.id
         LEFT JOIN academic_periods ap ON g.period_id = ap.id
-        WHERE g.org_id = $1"#.to_string();
+        WHERE g.org_id = $1"#
+            .to_string();
 
         let mut values = vec![org_id.to_string().into()];
 
@@ -594,9 +743,14 @@ impl ReportDataProvider for TermResultDataProvider {
 
         sql.push_str(" ORDER BY s.name");
 
-        let rows_result = self.db.query_all(
-            Statement::from_sql_and_values(self.db.get_database_backend(), &sql, values)
-        ).await;
+        let rows_result = self
+            .db
+            .query_all(Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                &sql,
+                values,
+            ))
+            .await;
 
         let mut data_rows = Vec::new();
         let mut seq = 0u64;
@@ -635,11 +789,61 @@ impl ReportDataProvider for TermResultDataProvider {
             org: org_context.clone(),
             parameter_summary: vec![],
             columns: vec![
-                ColumnDef { key: "seq".into(), header: "#".into(), header_ar: "#".into(), data_type: ColumnDataType::Sequence, width: Some("5%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
-                ColumnDef { key: "subject_name".into(), header: "Subject".into(), header_ar: "المادة".into(), data_type: ColumnDataType::Text, width: Some("35%".into()), align: None, format: None, visible: true, total_type: None },
-                ColumnDef { key: "score".into(), header: "Score".into(), header_ar: "الدرجة".into(), data_type: ColumnDataType::Decimal, width: Some("20%".into()), align: Some(ColumnAlign::End), format: Some("number:2".into()), visible: true, total_type: Some(AggregationType::Sum) },
-                ColumnDef { key: "max_score".into(), header: "Max".into(), header_ar: "العظمى".into(), data_type: ColumnDataType::Decimal, width: Some("20%".into()), align: Some(ColumnAlign::End), format: Some("number:2".into()), visible: true, total_type: Some(AggregationType::Sum) },
-                ColumnDef { key: "status".into(), header: "Result".into(), header_ar: "النتيجة".into(), data_type: ColumnDataType::Status, width: Some("20%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
+                ColumnDef {
+                    key: "seq".into(),
+                    header: "#".into(),
+                    header_ar: "#".into(),
+                    data_type: ColumnDataType::Sequence,
+                    width: Some("5%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "subject_name".into(),
+                    header: "Subject".into(),
+                    header_ar: "المادة".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("35%".into()),
+                    align: None,
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "score".into(),
+                    header: "Score".into(),
+                    header_ar: "الدرجة".into(),
+                    data_type: ColumnDataType::Decimal,
+                    width: Some("20%".into()),
+                    align: Some(ColumnAlign::End),
+                    format: Some("number:2".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "max_score".into(),
+                    header: "Max".into(),
+                    header_ar: "العظمى".into(),
+                    data_type: ColumnDataType::Decimal,
+                    width: Some("20%".into()),
+                    align: Some(ColumnAlign::End),
+                    format: Some("number:2".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "status".into(),
+                    header: "Result".into(),
+                    header_ar: "النتيجة".into(),
+                    data_type: ColumnDataType::Status,
+                    width: Some("20%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
             ],
             rows: data_rows,
             groups: None,
@@ -687,8 +891,9 @@ impl ReportDataProvider for ExamSeatingPlanDataProvider {
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
-        let rows_result = self.db.query_all(
-            Statement::from_sql_and_values(
+        let rows_result = self
+            .db
+            .query_all(Statement::from_sql_and_values(
                 self.db.get_database_backend(),
                 r#"SELECT
                     sn.id, sn.seating_number,
@@ -702,8 +907,8 @@ impl ReportDataProvider for ExamSeatingPlanDataProvider {
                 WHERE es.org_id = $1
                 ORDER BY r.name, sn.seating_number"#,
                 vec![org_id.to_string().into()],
-            )
-        ).await;
+            ))
+            .await;
 
         let mut data_rows = Vec::new();
         let mut seq = 0u64;
@@ -730,10 +935,50 @@ impl ReportDataProvider for ExamSeatingPlanDataProvider {
             org: org_context.clone(),
             parameter_summary: vec![],
             columns: vec![
-                ColumnDef { key: "seq".into(), header: "#".into(), header_ar: "#".into(), data_type: ColumnDataType::Sequence, width: Some("8%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
-                ColumnDef { key: "seating_number".into(), header: "Seat #".into(), header_ar: "رقم الجلوس".into(), data_type: ColumnDataType::Text, width: Some("20%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
-                ColumnDef { key: "student_name".into(), header: "Student Name".into(), header_ar: "اسم الطالب".into(), data_type: ColumnDataType::Text, width: Some("42%".into()), align: None, format: None, visible: true, total_type: None },
-                ColumnDef { key: "room_name".into(), header: "Exam Room".into(), header_ar: "القاعة".into(), data_type: ColumnDataType::Text, width: Some("30%".into()), align: None, format: None, visible: true, total_type: None },
+                ColumnDef {
+                    key: "seq".into(),
+                    header: "#".into(),
+                    header_ar: "#".into(),
+                    data_type: ColumnDataType::Sequence,
+                    width: Some("8%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "seating_number".into(),
+                    header: "Seat #".into(),
+                    header_ar: "رقم الجلوس".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("20%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "student_name".into(),
+                    header: "Student Name".into(),
+                    header_ar: "اسم الطالب".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("42%".into()),
+                    align: None,
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "room_name".into(),
+                    header: "Exam Room".into(),
+                    header_ar: "القاعة".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("30%".into()),
+                    align: None,
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
             ],
             rows: data_rows,
             groups: None,
@@ -778,7 +1023,8 @@ impl ReportDataProvider for PaymentReceiptDataProvider {
         LEFT JOIN student_fees sf ON py.fee_id = sf.id
         LEFT JOIN fee_templates ft ON sf.fee_template_id = ft.id
         LEFT JOIN persons p ON sf.student_id = p.id
-        WHERE sf.org_id = $1"#.to_string();
+        WHERE sf.org_id = $1"#
+            .to_string();
 
         let mut values = vec![org_id.to_string().into()];
 
@@ -789,9 +1035,14 @@ impl ReportDataProvider for PaymentReceiptDataProvider {
 
         sql.push_str(" ORDER BY py.payment_date DESC");
 
-        let rows_result = self.db.query_all(
-            Statement::from_sql_and_values(self.db.get_database_backend(), &sql, values)
-        ).await;
+        let rows_result = self
+            .db
+            .query_all(Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                &sql,
+                values,
+            ))
+            .await;
 
         let mut data_rows = Vec::new();
         let mut seq = 0u64;
@@ -821,11 +1072,61 @@ impl ReportDataProvider for PaymentReceiptDataProvider {
             org: org_context.clone(),
             parameter_summary: vec![],
             columns: vec![
-                ColumnDef { key: "receipt_number".into(), header: "Receipt #".into(), header_ar: "رقم السند".into(), data_type: ColumnDataType::Text, width: Some("15%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
-                ColumnDef { key: "student_name".into(), header: "Student".into(), header_ar: "الطالب".into(), data_type: ColumnDataType::Text, width: Some("30%".into()), align: None, format: None, visible: true, total_type: None },
-                ColumnDef { key: "fee_name".into(), header: "Fee Type".into(), header_ar: "نوع الرسم".into(), data_type: ColumnDataType::Text, width: Some("25%".into()), align: None, format: None, visible: true, total_type: None },
-                ColumnDef { key: "amount".into(), header: "Amount".into(), header_ar: "المبلغ".into(), data_type: ColumnDataType::Currency, width: Some("15%".into()), align: Some(ColumnAlign::End), format: Some("number:2".into()), visible: true, total_type: Some(AggregationType::Sum) },
-                ColumnDef { key: "payment_method".into(), header: "Method".into(), header_ar: "طريقة الدفع".into(), data_type: ColumnDataType::Text, width: Some("15%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
+                ColumnDef {
+                    key: "receipt_number".into(),
+                    header: "Receipt #".into(),
+                    header_ar: "رقم السند".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("15%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "student_name".into(),
+                    header: "Student".into(),
+                    header_ar: "الطالب".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("30%".into()),
+                    align: None,
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "fee_name".into(),
+                    header: "Fee Type".into(),
+                    header_ar: "نوع الرسم".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("25%".into()),
+                    align: None,
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "amount".into(),
+                    header: "Amount".into(),
+                    header_ar: "المبلغ".into(),
+                    data_type: ColumnDataType::Currency,
+                    width: Some("15%".into()),
+                    align: Some(ColumnAlign::End),
+                    format: Some("number:2".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "payment_method".into(),
+                    header: "Method".into(),
+                    header_ar: "طريقة الدفع".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("15%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
             ],
             rows: data_rows,
             groups: None,
@@ -876,7 +1177,8 @@ impl ReportDataProvider for AnnualResultDataProvider {
         LEFT JOIN classes c ON cs.class_id = c.id
         LEFT JOIN academic_periods ap ON g.period_id = ap.id
         LEFT JOIN academic_years ay ON ap.year_id = ay.id
-        WHERE g.org_id = $1"#.to_string();
+        WHERE g.org_id = $1"#
+            .to_string();
 
         let mut values = vec![org_id.to_string().into()];
 
@@ -887,9 +1189,14 @@ impl ReportDataProvider for AnnualResultDataProvider {
 
         sql.push_str(" ORDER BY s.name");
 
-        let rows_result = self.db.query_all(
-            Statement::from_sql_and_values(self.db.get_database_backend(), &sql, values)
-        ).await;
+        let rows_result = self
+            .db
+            .query_all(Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                &sql,
+                values,
+            ))
+            .await;
 
         let mut data_rows = Vec::new();
         let mut seq = 0u64;
@@ -928,11 +1235,61 @@ impl ReportDataProvider for AnnualResultDataProvider {
             org: org_context.clone(),
             parameter_summary: vec![],
             columns: vec![
-                ColumnDef { key: "seq".into(), header: "#".into(), header_ar: "#".into(), data_type: ColumnDataType::Sequence, width: Some("5%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
-                ColumnDef { key: "subject_name".into(), header: "Subject".into(), header_ar: "المادة الدراسية".into(), data_type: ColumnDataType::Text, width: Some("35%".into()), align: None, format: None, visible: true, total_type: None },
-                ColumnDef { key: "score".into(), header: "Annual Total".into(), header_ar: "المجموع السنوي".into(), data_type: ColumnDataType::Decimal, width: Some("20%".into()), align: Some(ColumnAlign::End), format: Some("number:2".into()), visible: true, total_type: Some(AggregationType::Sum) },
-                ColumnDef { key: "max_score".into(), header: "Max".into(), header_ar: "العظمى".into(), data_type: ColumnDataType::Decimal, width: Some("20%".into()), align: Some(ColumnAlign::End), format: Some("number:2".into()), visible: true, total_type: Some(AggregationType::Sum) },
-                ColumnDef { key: "status".into(), header: "Result".into(), header_ar: "النتيجة".into(), data_type: ColumnDataType::Status, width: Some("20%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
+                ColumnDef {
+                    key: "seq".into(),
+                    header: "#".into(),
+                    header_ar: "#".into(),
+                    data_type: ColumnDataType::Sequence,
+                    width: Some("5%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "subject_name".into(),
+                    header: "Subject".into(),
+                    header_ar: "المادة الدراسية".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("35%".into()),
+                    align: None,
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "score".into(),
+                    header: "Annual Total".into(),
+                    header_ar: "المجموع السنوي".into(),
+                    data_type: ColumnDataType::Decimal,
+                    width: Some("20%".into()),
+                    align: Some(ColumnAlign::End),
+                    format: Some("number:2".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "max_score".into(),
+                    header: "Max".into(),
+                    header_ar: "العظمى".into(),
+                    data_type: ColumnDataType::Decimal,
+                    width: Some("20%".into()),
+                    align: Some(ColumnAlign::End),
+                    format: Some("number:2".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "status".into(),
+                    header: "Result".into(),
+                    header_ar: "النتيجة".into(),
+                    data_type: ColumnDataType::Status,
+                    width: Some("20%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
             ],
             rows: data_rows,
             groups: None,
@@ -980,8 +1337,9 @@ impl ReportDataProvider for ExamAttendanceSheetDataProvider {
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
-        let rows_result = self.db.query_all(
-            Statement::from_sql_and_values(
+        let rows_result = self
+            .db
+            .query_all(Statement::from_sql_and_values(
                 self.db.get_database_backend(),
                 r#"SELECT
                     sn.id, sn.seating_number,
@@ -997,8 +1355,8 @@ impl ReportDataProvider for ExamAttendanceSheetDataProvider {
                 WHERE es.org_id = $1
                 ORDER BY r.name, sn.seating_number"#,
                 vec![org_id.to_string().into()],
-            )
-        ).await;
+            ))
+            .await;
 
         let mut data_rows = Vec::new();
         let mut seq = 0u64;
@@ -1027,11 +1385,61 @@ impl ReportDataProvider for ExamAttendanceSheetDataProvider {
             org: org_context.clone(),
             parameter_summary: vec![],
             columns: vec![
-                ColumnDef { key: "seq".into(), header: "#".into(), header_ar: "#".into(), data_type: ColumnDataType::Sequence, width: Some("6%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
-                ColumnDef { key: "seating_number".into(), header: "Seat #".into(), header_ar: "رقم الجلوس".into(), data_type: ColumnDataType::Text, width: Some("14%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
-                ColumnDef { key: "secret_number".into(), header: "Secret #".into(), header_ar: "الرقم السري".into(), data_type: ColumnDataType::Text, width: Some("14%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
-                ColumnDef { key: "student_name".into(), header: "Student Name".into(), header_ar: "اسم الطالب".into(), data_type: ColumnDataType::Text, width: Some("36%".into()), align: None, format: None, visible: true, total_type: None },
-                ColumnDef { key: "signature".into(), header: "Signature".into(), header_ar: "التوقيع".into(), data_type: ColumnDataType::Text, width: Some("30%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
+                ColumnDef {
+                    key: "seq".into(),
+                    header: "#".into(),
+                    header_ar: "#".into(),
+                    data_type: ColumnDataType::Sequence,
+                    width: Some("6%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "seating_number".into(),
+                    header: "Seat #".into(),
+                    header_ar: "رقم الجلوس".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("14%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "secret_number".into(),
+                    header: "Secret #".into(),
+                    header_ar: "الرقم السري".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("14%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "student_name".into(),
+                    header: "Student Name".into(),
+                    header_ar: "اسم الطالب".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("36%".into()),
+                    align: None,
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "signature".into(),
+                    header: "Signature".into(),
+                    header_ar: "التوقيع".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("30%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
             ],
             rows: data_rows,
             groups: None,
@@ -1087,9 +1495,14 @@ impl ReportDataProvider for StudentStatementDataProvider {
 
         sql.push_str(" ORDER BY sf.due_date");
 
-        let rows_result = self.db.query_all(
-            Statement::from_sql_and_values(self.db.get_database_backend(), &sql, values)
-        ).await;
+        let rows_result = self
+            .db
+            .query_all(Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                &sql,
+                values,
+            ))
+            .await;
 
         let mut data_rows = Vec::new();
         let mut seq = 0u64;
@@ -1126,12 +1539,72 @@ impl ReportDataProvider for StudentStatementDataProvider {
             org: org_context.clone(),
             parameter_summary: vec![],
             columns: vec![
-                ColumnDef { key: "seq".into(), header: "#".into(), header_ar: "#".into(), data_type: ColumnDataType::Sequence, width: Some("5%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
-                ColumnDef { key: "fee_name".into(), header: "Fee / Description".into(), header_ar: "البيان / الرسم".into(), data_type: ColumnDataType::Text, width: Some("35%".into()), align: None, format: None, visible: true, total_type: None },
-                ColumnDef { key: "fee_amount".into(), header: "Due Amount".into(), header_ar: "المطلوب".into(), data_type: ColumnDataType::Currency, width: Some("15%".into()), align: Some(ColumnAlign::End), format: Some("number:2".into()), visible: true, total_type: Some(AggregationType::Sum) },
-                ColumnDef { key: "paid_amount".into(), header: "Paid Amount".into(), header_ar: "المدفوع".into(), data_type: ColumnDataType::Currency, width: Some("15%".into()), align: Some(ColumnAlign::End), format: Some("number:2".into()), visible: true, total_type: Some(AggregationType::Sum) },
-                ColumnDef { key: "balance".into(), header: "Remaining Balance".into(), header_ar: "المتبقي".into(), data_type: ColumnDataType::Currency, width: Some("15%".into()), align: Some(ColumnAlign::End), format: Some("number:2".into()), visible: true, total_type: Some(AggregationType::Sum) },
-                ColumnDef { key: "status".into(), header: "Status".into(), header_ar: "الحالة".into(), data_type: ColumnDataType::Status, width: Some("15%".into()), align: Some(ColumnAlign::Center), format: None, visible: true, total_type: None },
+                ColumnDef {
+                    key: "seq".into(),
+                    header: "#".into(),
+                    header_ar: "#".into(),
+                    data_type: ColumnDataType::Sequence,
+                    width: Some("5%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "fee_name".into(),
+                    header: "Fee / Description".into(),
+                    header_ar: "البيان / الرسم".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("35%".into()),
+                    align: None,
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "fee_amount".into(),
+                    header: "Due Amount".into(),
+                    header_ar: "المطلوب".into(),
+                    data_type: ColumnDataType::Currency,
+                    width: Some("15%".into()),
+                    align: Some(ColumnAlign::End),
+                    format: Some("number:2".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "paid_amount".into(),
+                    header: "Paid Amount".into(),
+                    header_ar: "المدفوع".into(),
+                    data_type: ColumnDataType::Currency,
+                    width: Some("15%".into()),
+                    align: Some(ColumnAlign::End),
+                    format: Some("number:2".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "balance".into(),
+                    header: "Remaining Balance".into(),
+                    header_ar: "المتبقي".into(),
+                    data_type: ColumnDataType::Currency,
+                    width: Some("15%".into()),
+                    align: Some(ColumnAlign::End),
+                    format: Some("number:2".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "status".into(),
+                    header: "Status".into(),
+                    header_ar: "الحالة".into(),
+                    data_type: ColumnDataType::Status,
+                    width: Some("15%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
             ],
             rows: data_rows,
             groups: None,

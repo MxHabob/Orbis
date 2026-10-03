@@ -3,10 +3,10 @@
 // Allows registering custom output exporters (e.g., DOCX, HTML, SVG)
 // ═══════════════════════════════════════════════════════════════
 
-use async_trait::async_trait;
 use crate::error::DocforgeError;
 use crate::model::TemplateDocument;
 use crate::plugin::data_source::DataContext;
+use async_trait::async_trait;
 
 #[async_trait]
 pub trait OutputFormat: Send + Sync {

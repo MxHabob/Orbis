@@ -1,8 +1,8 @@
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 // ═══════════════════════════════════════════════════════════════
 // Assessment Component — a single gradable element within a scheme
@@ -255,22 +255,23 @@ impl AssessmentScheme {
             org_id,
             name: "Term Examination".to_string(),
             name_ar: Some("اختبار الفصل".to_string()),
-            description: Some("Term final examination worth 30 points (combined with 20 monthly = 50 per term)".to_string()),
+            description: Some(
+                "Term final examination worth 30 points (combined with 20 monthly = 50 per term)"
+                    .to_string(),
+            ),
             max_score: Decimal::from(30),
             formula: None,
             level: AssessmentLevel::Term,
             institution_scope: InstitutionScope::School,
-            components: vec![
-                AssessmentComponent {
-                    code: "term_exam".to_string(),
-                    name: "Term Examination".to_string(),
-                    name_ar: Some("اختبار نهاية الفصل".to_string()),
-                    max_score: Decimal::from(30),
-                    weight: Decimal::ONE,
-                    sort_order: 1,
-                    is_required: true,
-                },
-            ],
+            components: vec![AssessmentComponent {
+                code: "term_exam".to_string(),
+                name: "Term Examination".to_string(),
+                name_ar: Some("اختبار نهاية الفصل".to_string()),
+                max_score: Decimal::from(30),
+                weight: Decimal::ONE,
+                sort_order: 1,
+                is_required: true,
+            }],
             is_default: true,
             is_system: true,
             created_at: now,
@@ -286,7 +287,10 @@ impl AssessmentScheme {
             org_id,
             name: "University Course Assessment".to_string(),
             name_ar: Some("تقييم المقرر الجامعي".to_string()),
-            description: Some("Standard university assessment: Coursework(40) + Midterm(20) + Final(40) = 100".to_string()),
+            description: Some(
+                "Standard university assessment: Coursework(40) + Midterm(20) + Final(40) = 100"
+                    .to_string(),
+            ),
             max_score: Decimal::from(100),
             formula: None,
             level: AssessmentLevel::Coursework,
@@ -353,7 +357,10 @@ impl AssessmentScheme {
             org_id,
             name: "Module Assessment".to_string(),
             name_ar: Some("تقييم الوحدة التدريبية".to_string()),
-            description: Some("Institute module assessment: Theory(40) + Practical(40) + Attendance(20) = 100".to_string()),
+            description: Some(
+                "Institute module assessment: Theory(40) + Practical(40) + Attendance(20) = 100"
+                    .to_string(),
+            ),
             max_score: Decimal::from(100),
             formula: None,
             level: AssessmentLevel::ModuleAssessment,

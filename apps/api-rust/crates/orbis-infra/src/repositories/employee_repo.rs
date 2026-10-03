@@ -1,13 +1,15 @@
-use sea_orm::sea_query::{Expr, Func};
 use async_trait::async_trait;
+use sea_orm::sea_query::{Expr, Func};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, IntoActiveModel, PaginatorTrait, QueryFilter,
-    QueryOrder, QuerySelect, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, IntoActiveModel,
+    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, Set,
 };
 use uuid::Uuid;
 
 use orbis_app::ports::repositories::{EmployeeFilter, EmployeeRepository};
-use orbis_domain::entities::employee::{Employee, EmployeeDetail, EmployeeStatus, EmployeeType, EmploymentType};
+use orbis_domain::entities::employee::{
+    Employee, EmployeeDetail, EmployeeStatus, EmployeeType, EmploymentType,
+};
 use orbis_domain::entities::group::Group;
 use orbis_domain::entities::person::Person;
 use orbis_domain::entities::user::User;
@@ -73,7 +75,9 @@ impl EmployeeRepoImpl {
             national_id: m.national_id,
             passport_number: m.passport_number,
             gender: m.gender,
-            birth_date: m.birth_date.and_then(|d| chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
+            birth_date: m
+                .birth_date
+                .and_then(|d| chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
             place_of_birth: m.place_of_birth,
             nationality: m.nationality,
             blood_type: m.blood_type,
@@ -123,7 +127,11 @@ impl EmployeeRepository for EmployeeRepoImpl {
         Ok(model.map(Self::model_to_employee))
     }
 
-    async fn find_by_person_id(&self, org_id: Uuid, person_id: Uuid) -> Result<Option<Employee>, DomainError> {
+    async fn find_by_person_id(
+        &self,
+        org_id: Uuid,
+        person_id: Uuid,
+    ) -> Result<Option<Employee>, DomainError> {
         let model = EmployeeEntity::find()
             .filter(employee::Column::OrgId.eq(org_id))
             .filter(employee::Column::PersonId.eq(person_id))
@@ -135,7 +143,11 @@ impl EmployeeRepository for EmployeeRepoImpl {
         Ok(model.map(Self::model_to_employee))
     }
 
-    async fn find_by_user_id(&self, org_id: Uuid, user_id: Uuid) -> Result<Option<Employee>, DomainError> {
+    async fn find_by_user_id(
+        &self,
+        org_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<Option<Employee>, DomainError> {
         let model = EmployeeEntity::find()
             .filter(employee::Column::OrgId.eq(org_id))
             .filter(employee::Column::UserId.eq(user_id))
@@ -147,7 +159,11 @@ impl EmployeeRepository for EmployeeRepoImpl {
         Ok(model.map(Self::model_to_employee))
     }
 
-    async fn find_by_employee_number(&self, org_id: Uuid, employee_number: &str) -> Result<Option<Employee>, DomainError> {
+    async fn find_by_employee_number(
+        &self,
+        org_id: Uuid,
+        employee_number: &str,
+    ) -> Result<Option<Employee>, DomainError> {
         let model = EmployeeEntity::find()
             .filter(employee::Column::OrgId.eq(org_id))
             .filter(employee::Column::EmployeeNumber.eq(employee_number))
@@ -160,7 +176,11 @@ impl EmployeeRepository for EmployeeRepoImpl {
     }
 
     async fn find_detail_by_id(&self, id: Uuid) -> Result<Option<EmployeeDetail>, DomainError> {
-        let emp_model = match EmployeeEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))? {
+        let emp_model = match EmployeeEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+        {
             Some(m) => m,
             None => return Ok(None),
         };
@@ -172,7 +192,10 @@ impl EmployeeRepository for EmployeeRepoImpl {
             .ok_or_else(|| DomainError::NotFound("Person not found for employee".into()))?;
 
         let user_model = if let Some(uid) = emp_model.user_id {
-            UserEntity::find_by_id(uid).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?
+            UserEntity::find_by_id(uid)
+                .one(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?
         } else {
             None
         };
@@ -218,7 +241,11 @@ impl EmployeeRepository for EmployeeRepoImpl {
                     } else if rp.action.is_empty() || rp.action == "*" {
                         rp.resource.to_lowercase()
                     } else {
-                        format!("{}:{}", rp.resource.to_lowercase(), rp.action.to_lowercase())
+                        format!(
+                            "{}:{}",
+                            rp.resource.to_lowercase(),
+                            rp.action.to_lowercase()
+                        )
                     };
                     if !effective_permissions.contains(&perm) {
                         effective_permissions.push(perm);
@@ -283,7 +310,11 @@ impl EmployeeRepository for EmployeeRepoImpl {
         }))
     }
 
-    async fn list(&self, org_id: Uuid, filter: EmployeeFilter) -> Result<PaginatedList<EmployeeDetail>, DomainError> {
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: EmployeeFilter,
+    ) -> Result<PaginatedList<EmployeeDetail>, DomainError> {
         let mut query = EmployeeEntity::find()
             .filter(employee::Column::OrgId.eq(org_id))
             .filter(employee::Column::IsDeleted.eq(false));
@@ -294,7 +325,8 @@ impl EmployeeRepository for EmployeeRepoImpl {
                 let status = EmployeeStatus::from(s_clean);
                 let canonical_status = status.to_string();
                 query = query.filter(
-                    Expr::expr(Func::lower(Expr::col(employee::Column::Status))).eq(&canonical_status)
+                    Expr::expr(Func::lower(Expr::col(employee::Column::Status)))
+                        .eq(&canonical_status),
                 );
             }
         }
@@ -305,7 +337,8 @@ impl EmployeeRepository for EmployeeRepoImpl {
                 let emp_type = EmployeeType::from(t_clean);
                 let canonical_type = emp_type.to_string();
                 query = query.filter(
-                    Expr::expr(Func::lower(Expr::col(employee::Column::EmployeeType))).eq(&canonical_type)
+                    Expr::expr(Func::lower(Expr::col(employee::Column::EmployeeType)))
+                        .eq(&canonical_type),
                 );
             }
         }
@@ -325,7 +358,11 @@ impl EmployeeRepository for EmployeeRepoImpl {
         let limit = filter.limit.unwrap_or(50);
         let offset = filter.offset.unwrap_or(0);
 
-        let total = query.clone().count(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        let total = query
+            .clone()
+            .count(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
 
         let emp_models = query
             .offset(offset)
@@ -375,11 +412,25 @@ impl EmployeeRepository for EmployeeRepoImpl {
                 if !term.is_empty() {
                     let matches_num = emp.employee_number.to_lowercase().contains(&term);
                     let matches_name = person.full_name().to_lowercase().contains(&term)
-                        || person.full_name_ar().unwrap_or_default().to_lowercase().contains(&term)
-                        || person.email.as_deref().unwrap_or("").to_lowercase().contains(&term)
+                        || person
+                            .full_name_ar()
+                            .unwrap_or_default()
+                            .to_lowercase()
+                            .contains(&term)
+                        || person
+                            .email
+                            .as_deref()
+                            .unwrap_or("")
+                            .to_lowercase()
+                            .contains(&term)
                         || person.phone.as_deref().unwrap_or("").contains(&term)
                         || person.national_id.as_deref().unwrap_or("").contains(&term)
-                        || emp.job_title.as_deref().unwrap_or("").to_lowercase().contains(&term);
+                        || emp
+                            .job_title
+                            .as_deref()
+                            .unwrap_or("")
+                            .to_lowercase()
+                            .contains(&term);
                     if !matches_num && !matches_name {
                         continue;
                     }
@@ -431,12 +482,19 @@ impl EmployeeRepository for EmployeeRepoImpl {
         })
     }
 
-    async fn list_by_type(&self, org_id: Uuid, employee_type: &str) -> Result<Vec<Employee>, DomainError> {
+    async fn list_by_type(
+        &self,
+        org_id: Uuid,
+        employee_type: &str,
+    ) -> Result<Vec<Employee>, DomainError> {
         let emp_type = EmployeeType::from(employee_type);
         let canonical_type = emp_type.to_string();
         let models = EmployeeEntity::find()
             .filter(employee::Column::OrgId.eq(org_id))
-            .filter(Expr::expr(Func::lower(Expr::col(employee::Column::EmployeeType))).eq(&canonical_type))
+            .filter(
+                Expr::expr(Func::lower(Expr::col(employee::Column::EmployeeType)))
+                    .eq(&canonical_type),
+            )
             .filter(employee::Column::IsDeleted.eq(false))
             .all(&self.db)
             .await
@@ -445,7 +503,10 @@ impl EmployeeRepository for EmployeeRepoImpl {
         Ok(models.into_iter().map(Self::model_to_employee).collect())
     }
 
-    async fn count_by_status(&self, org_id: Uuid) -> Result<std::collections::HashMap<String, i64>, DomainError> {
+    async fn count_by_status(
+        &self,
+        org_id: Uuid,
+    ) -> Result<std::collections::HashMap<String, i64>, DomainError> {
         let models = EmployeeEntity::find()
             .filter(employee::Column::OrgId.eq(org_id))
             .filter(employee::Column::IsDeleted.eq(false))
@@ -509,14 +570,21 @@ impl EmployeeRepository for EmployeeRepoImpl {
     }
 
     async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
-        let mut model = match EmployeeEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))? {
+        let mut model = match EmployeeEntity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+        {
             Some(m) => m.into_active_model(),
             None => return Ok(()),
         };
 
         model.is_deleted = Set(true);
         model.updated_at = Set(chrono::Utc::now());
-        model.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        model
+            .update(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
     }
 }

@@ -2,10 +2,10 @@
 //! Contains 200+ production-grade educational report definitions
 //! covering all academic, financial, administrative, examination, and HR domains.
 
-use sea_orm::{ConnectionTrait, Statement};
-use uuid::Uuid;
 use orbis_domain::errors::DomainError;
+use sea_orm::{ConnectionTrait, Statement};
 use tracing::info;
+use uuid::Uuid;
 
 pub struct ReportDefEntry {
     pub code: &'static str,
@@ -223,7 +223,6 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             description_ar: "قوائم الطلاب المستحقين لدخول امتحانات الدور الثاني والمواد المقررة",
             provider_key: "academic.annual_result",
         },
-
         // ═══════════════════════════════════════════════════════════════════════
         // 2. ATTENDANCE & CONDUCT REPORTS (28 Reports)
         // ═══════════════════════════════════════════════════════════════════════
@@ -327,7 +326,6 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             description_ar: "بيان بالأعذار الطبية والرسمية المقدمة والمعتمدة للغياب",
             provider_key: "attendance.daily_absence",
         },
-
         // ═══════════════════════════════════════════════════════════════════════
         // 3. EXAMINATION & CONTROL OPERATIONS (32 Reports)
         // ═══════════════════════════════════════════════════════════════════════
@@ -431,7 +429,6 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             description_ar: "تقرير الفروقات بين درجات المصحح الأول والمصحح الثاني للتحكيم",
             provider_key: "academic.term_result",
         },
-
         // ═══════════════════════════════════════════════════════════════════════
         // 4. FINANCIAL & ACCOUNTING REPORTS (46 Reports)
         // ═══════════════════════════════════════════════════════════════════════
@@ -595,7 +592,6 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             description_ar: "توزيع الاعتراف بالإيراد للرسوم الدراسية عبر أشهر الفصل الدراسي",
             provider_key: "finance.fee_collection",
         },
-
         // ═══════════════════════════════════════════════════════════════════════
         // 5. ADMISSIONS, STUDENTS & CAPACITY (36 Reports)
         // ═══════════════════════════════════════════════════════════════════════
@@ -699,7 +695,6 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             description_ar: "متابعة طلبات التسجيل الجديدة ونتائج المقابلات واختبارات القبول",
             provider_key: "students.student_list",
         },
-
         // ═══════════════════════════════════════════════════════════════════════
         // 6. HR & FACULTY AFFAIRS (24 Reports)
         // ═══════════════════════════════════════════════════════════════════════
@@ -763,7 +758,6 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             description_ar: "بيان بحصص الاحتياط والانتظار المسندة للمعلمين لتعويض غياب الزملاء",
             provider_key: "academic.term_result",
         },
-
         // ═══════════════════════════════════════════════════════════════════════
         // 7. ORGANIZATION, ADMINISTRATION & AUDIT (18 Reports)
         // ═══════════════════════════════════════════════════════════════════════
@@ -817,7 +811,11 @@ pub async fn provision_master_report_definitions<C: ConnectionTrait>(
     now: &str,
 ) -> Result<(), DomainError> {
     let catalog = get_master_report_catalog();
-    info!("Provisioning master business report catalog ({} reports) for org_id={}", catalog.len(), org_id);
+    info!(
+        "Provisioning master business report catalog ({} reports) for org_id={}",
+        catalog.len(),
+        org_id
+    );
 
     for (idx, entry) in catalog.into_iter().enumerate() {
         let rid = Uuid::new_v4();

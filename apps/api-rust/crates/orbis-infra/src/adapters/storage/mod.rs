@@ -1,7 +1,7 @@
 pub mod filesystem;
-pub mod s3;
 pub mod resolver;
+pub mod s3;
 
 pub use filesystem::FilesystemStorageAdapter;
-pub use s3::{S3StorageAdapter, S3Config};
 pub use resolver::StorageResolver;
+pub use s3::{S3Config, S3StorageAdapter};

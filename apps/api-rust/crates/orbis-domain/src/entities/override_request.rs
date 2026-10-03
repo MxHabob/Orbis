@@ -1,6 +1,6 @@
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -118,8 +118,8 @@ pub struct AcademicOverrideRequest {
 
 impl AcademicOverrideRequest {
     pub fn is_active(&self) -> bool {
-        matches!(self.status, OverrideStatus::Approved) && 
-        self.expires_at.map(|exp| exp > Utc::now()).unwrap_or(true)
+        matches!(self.status, OverrideStatus::Approved)
+            && self.expires_at.map(|exp| exp > Utc::now()).unwrap_or(true)
     }
 
     pub fn is_pending(&self) -> bool {

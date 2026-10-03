@@ -1,19 +1,24 @@
-use orbis_domain::entities::subject::Subject;
+use crate::context::RequestContext;
+use crate::ports::event_bus::EventBus;
+use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::repositories::{
+    ClassRepository, ClassSubjectRepository, CoursePrerequisiteRepository, GradeRepository,
+    SubjectRepository,
+};
+use chrono::Utc;
 use orbis_domain::entities::class::Class;
 use orbis_domain::entities::class_subject::ClassSubject;
 use orbis_domain::entities::course_prerequisite::PrerequisiteType;
-use orbis_domain::events::DomainEvent;
+use orbis_domain::entities::subject::Subject;
 use orbis_domain::errors::DomainError;
-use orbis_domain::queries::filters::{SubjectFilter, ClassFilter, ClassSubjectFilter, PaginatedList};
+use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
-use crate::context::RequestContext;
-use crate::ports::repositories::{SubjectRepository, ClassRepository, ClassSubjectRepository, CoursePrerequisiteRepository, GradeRepository};
-use crate::ports::event_bus::EventBus;
-use crate::ports::iam::PermissionCheckerPort;
+use orbis_domain::queries::filters::{
+    ClassFilter, ClassSubjectFilter, PaginatedList, SubjectFilter,
+};
+use rust_decimal::Decimal;
 use std::sync::Arc;
 use uuid::Uuid;
-use chrono::Utc;
-use rust_decimal::Decimal;
 
 pub struct AcademicService {
     pub subject_repo: Arc<dyn SubjectRepository>,
@@ -68,7 +73,9 @@ impl AcademicService {
         credit_hours: Option<Decimal>,
         is_core: bool,
     ) -> Result<Subject, DomainError> {
-        self.permission_checker.check(ctx, Permission::SubjectWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::SubjectWrite)
+            .await?;
 
         let now = Utc::now();
         let subject_id = Uuid::new_v4();
@@ -98,17 +105,27 @@ impl AcademicService {
 
         self.subject_repo.save(&subject).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::SubjectCreated {
-            subject_id,
-            org_id,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::SubjectCreated {
+                    subject_id,
+                    org_id,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(subject)
     }
 
     /// List subjects
-    pub async fn list_subjects(&self, org_id: Uuid, filter: SubjectFilter) -> Result<PaginatedList<Subject>, DomainError> {
+    pub async fn list_subjects(
+        &self,
+        org_id: Uuid,
+        filter: SubjectFilter,
+    ) -> Result<PaginatedList<Subject>, DomainError> {
         self.subject_repo.list(org_id, filter).await
     }
 
@@ -127,7 +144,9 @@ impl AcademicService {
         name: String,
         level: String,
     ) -> Result<Class, DomainError> {
-        self.permission_checker.check(ctx, Permission::ClassWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::ClassWrite)
+            .await?;
 
         let now = Utc::now();
         let class_id = Uuid::new_v4();
@@ -155,18 +174,28 @@ impl AcademicService {
 
         self.class_repo.save(&class).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::ClassCreated {
-            class_id,
-            org_id,
-            period_id,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::ClassCreated {
+                    class_id,
+                    org_id,
+                    period_id,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(class)
     }
 
     /// List classes
-    pub async fn list_classes(&self, org_id: Uuid, filter: ClassFilter) -> Result<PaginatedList<Class>, DomainError> {
+    pub async fn list_classes(
+        &self,
+        org_id: Uuid,
+        filter: ClassFilter,
+    ) -> Result<PaginatedList<Class>, DomainError> {
         self.class_repo.list(org_id, filter).await
     }
 
@@ -185,7 +214,9 @@ impl AcademicService {
         primary_teacher_id: Uuid,
         weekly_hours: Option<i32>,
     ) -> Result<ClassSubject, DomainError> {
-        self.permission_checker.check(ctx, Permission::ClassWrite).await?;
+        self.permission_checker
+            .check(ctx, Permission::ClassWrite)
+            .await?;
 
         let now = Utc::now();
         let cs_id = Uuid::new_v4();
@@ -211,18 +242,28 @@ impl AcademicService {
 
         self.class_subject_repo.save(&cs).await?;
 
-        let _ = self.event_bus.publish(ctx, &DomainEvent::ClassSubjectAssigned {
-            class_subject_id: cs_id,
-            class_id,
-            subject_id,
-            timestamp: now,
-        }).await;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::ClassSubjectAssigned {
+                    class_subject_id: cs_id,
+                    class_id,
+                    subject_id,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         Ok(cs)
     }
 
     /// List class subjects
-    pub async fn list_class_subjects(&self, org_id: Uuid, filter: ClassSubjectFilter) -> Result<PaginatedList<ClassSubject>, DomainError> {
+    pub async fn list_class_subjects(
+        &self,
+        org_id: Uuid,
+        filter: ClassSubjectFilter,
+    ) -> Result<PaginatedList<ClassSubject>, DomainError> {
         self.class_subject_repo.list(org_id, filter).await
     }
 
@@ -241,7 +282,11 @@ impl AcademicService {
             // Find grade for the prerequisite subject by resolving ClassSubject -> Subject
             let mut matching_grade = None;
             for g in &student_grades {
-                if let Some(cs) = self.class_subject_repo.find_by_id(g.class_subject_id).await? {
+                if let Some(cs) = self
+                    .class_subject_repo
+                    .find_by_id(g.class_subject_id)
+                    .await?
+                {
                     if cs.subject_id == prereq.prerequisite_subject_id {
                         matching_grade = Some(g);
                         break;
@@ -255,19 +300,30 @@ impl AcademicService {
                         if g.score >= min_s {
                             (true, Some(g.score), None)
                         } else {
-                            (false, Some(g.score), Some(format!("Score {} is below required minimum {}", g.score, min_s)))
+                            (
+                                false,
+                                Some(g.score),
+                                Some(format!(
+                                    "Score {} is below required minimum {}",
+                                    g.score, min_s
+                                )),
+                            )
                         }
                     } else {
                         (true, Some(g.score), None)
                     }
                 }
-                None => {
-                    match prereq.requirement_type {
-                        PrerequisiteType::Enforce => (false, None, Some("Prerequisite course has not been taken".into())),
-                        PrerequisiteType::Recommended => (true, None, Some("Recommended course not completed".into())),
-                        PrerequisiteType::Corequisite => (true, None, None),
+                None => match prereq.requirement_type {
+                    PrerequisiteType::Enforce => (
+                        false,
+                        None,
+                        Some("Prerequisite course has not been taken".into()),
+                    ),
+                    PrerequisiteType::Recommended => {
+                        (true, None, Some("Recommended course not completed".into()))
                     }
-                }
+                    PrerequisiteType::Corequisite => (true, None, None),
+                },
             };
 
             results.push(PrerequisiteCheckResult {

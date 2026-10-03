@@ -1,7 +1,7 @@
 use sea_orm::Schema;
 use sea_orm_migration::prelude::*;
 
-use crate::models::{employee, group, user_group_membership, group_permission};
+use crate::models::{employee, group, group_permission, user_group_membership};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -14,19 +14,27 @@ impl MigrationTrait for Migration {
 
         // 1. Create employees table
         let mut emp_stmt = schema.create_table_from_entity(employee::Entity);
-        manager.create_table(emp_stmt.if_not_exists().to_owned()).await?;
+        manager
+            .create_table(emp_stmt.if_not_exists().to_owned())
+            .await?;
 
         // 2. Create groups table
         let mut grp_stmt = schema.create_table_from_entity(group::Entity);
-        manager.create_table(grp_stmt.if_not_exists().to_owned()).await?;
+        manager
+            .create_table(grp_stmt.if_not_exists().to_owned())
+            .await?;
 
         // 3. Create user_group_memberships table
         let mut ugm_stmt = schema.create_table_from_entity(user_group_membership::Entity);
-        manager.create_table(ugm_stmt.if_not_exists().to_owned()).await?;
+        manager
+            .create_table(ugm_stmt.if_not_exists().to_owned())
+            .await?;
 
         // 4. Create group_permissions table
         let mut gp_stmt = schema.create_table_from_entity(group_permission::Entity);
-        manager.create_table(gp_stmt.if_not_exists().to_owned()).await?;
+        manager
+            .create_table(gp_stmt.if_not_exists().to_owned())
+            .await?;
 
         // 5. Indexes
         let idx_emp_num = Index::create()
@@ -68,10 +76,20 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(group_permission::Entity).if_exists().to_owned())
+            .drop_table(
+                Table::drop()
+                    .table(group_permission::Entity)
+                    .if_exists()
+                    .to_owned(),
+            )
             .await?;
         manager
-            .drop_table(Table::drop().table(user_group_membership::Entity).if_exists().to_owned())
+            .drop_table(
+                Table::drop()
+                    .table(user_group_membership::Entity)
+                    .if_exists()
+                    .to_owned(),
+            )
             .await?;
         manager
             .drop_table(Table::drop().table(group::Entity).if_exists().to_owned())

@@ -1,8 +1,10 @@
 use async_trait::async_trait;
+use orbis_domain::entities::storage::{
+    PresignedUrlRequest, StorageCapabilities, StoredObjectMetadata,
+};
+use orbis_domain::errors::StorageError;
 use std::pin::Pin;
 use tokio::io::AsyncRead;
-use orbis_domain::entities::storage::{PresignedUrlRequest, StorageCapabilities, StoredObjectMetadata};
-use orbis_domain::errors::StorageError;
 
 /// Type alias for an async read stream.
 pub type ObjectStream = Pin<Box<dyn AsyncRead + Send + Sync>>;
@@ -37,7 +39,8 @@ pub trait StorageAdapter: Send + Sync {
     ) -> Result<StoredObjectMetadata, StorageError> {
         let size = bytes.len() as u64;
         let cursor = std::io::Cursor::new(bytes.to_vec());
-        self.put_object(key, Box::pin(cursor), size, mime_type).await
+        self.put_object(key, Box::pin(cursor), size, mime_type)
+            .await
     }
 
     /// Retrieve an object stream for reading.
@@ -56,10 +59,18 @@ pub trait StorageAdapter: Send + Sync {
     async fn delete_object(&self, key: &str) -> Result<(), StorageError>;
 
     /// Copy an object within storage.
-    async fn copy_object(&self, source_key: &str, target_key: &str) -> Result<StoredObjectMetadata, StorageError>;
+    async fn copy_object(
+        &self,
+        source_key: &str,
+        target_key: &str,
+    ) -> Result<StoredObjectMetadata, StorageError>;
 
     /// Move/Rename an object within storage.
-    async fn move_object(&self, source_key: &str, target_key: &str) -> Result<StoredObjectMetadata, StorageError>;
+    async fn move_object(
+        &self,
+        source_key: &str,
+        target_key: &str,
+    ) -> Result<StoredObjectMetadata, StorageError>;
 
     /// Generate a time-limited presigned URL for direct client access.
     async fn generate_presigned_url(

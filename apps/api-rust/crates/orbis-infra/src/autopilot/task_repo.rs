@@ -1,15 +1,15 @@
 use async_trait::async_trait;
 use chrono::Utc;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait,
-    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect,
+    ActiveModelTrait, ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait,
+    QueryFilter, QueryOrder, QuerySelect,
 };
 use uuid::Uuid;
 
+use crate::models::autopilot_task;
 use orbis_app::ports::repositories::AutopilotTaskRepository;
 use orbis_domain::autopilot::task::{AutopilotTask, RiskLevel, TaskStatus, TaskType};
 use orbis_domain::errors::DomainError;
-use crate::models::autopilot_task;
 
 pub struct PgAutopilotTaskRepo {
     pub db: DatabaseConnection,
@@ -46,7 +46,10 @@ impl PgAutopilotTaskRepo {
 
 #[async_trait]
 impl AutopilotTaskRepository for PgAutopilotTaskRepo {
-    async fn find_pending_tasks(&self, org_id: Option<Uuid>) -> Result<Vec<AutopilotTask>, DomainError> {
+    async fn find_pending_tasks(
+        &self,
+        org_id: Option<Uuid>,
+    ) -> Result<Vec<AutopilotTask>, DomainError> {
         let now = Utc::now();
         let mut query = autopilot_task::Entity::find()
             .filter(autopilot_task::Column::Status.eq("pending"))
@@ -82,8 +85,8 @@ impl AutopilotTaskRepository for PgAutopilotTaskRepo {
         limit: u64,
         offset: u64,
     ) -> Result<(Vec<AutopilotTask>, u64), DomainError> {
-        let mut query = autopilot_task::Entity::find()
-            .filter(autopilot_task::Column::OrgId.eq(org_id));
+        let mut query =
+            autopilot_task::Entity::find().filter(autopilot_task::Column::OrgId.eq(org_id));
 
         if let Some(s) = status {
             query = query.filter(autopilot_task::Column::Status.eq(s.to_lowercase()));
@@ -140,7 +143,10 @@ impl AutopilotTaskRepository for PgAutopilotTaskRepo {
             active.triggered_by = ActiveValue::Set(task.triggered_by.clone());
             active.updated_at = ActiveValue::Set(Utc::now());
 
-            active.update(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .update(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         } else {
             let active = autopilot_task::ActiveModel {
                 id: ActiveValue::Set(task.id),
@@ -163,7 +169,10 @@ impl AutopilotTaskRepository for PgAutopilotTaskRepo {
                 updated_at: ActiveValue::Set(task.updated_at),
             };
 
-            active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            active
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
 
         Ok(())
@@ -177,7 +186,11 @@ impl AutopilotTaskRepository for PgAutopilotTaskRepo {
         Ok(())
     }
 
-    async fn find_stuck_tasks(&self, org_id: Uuid, threshold_seconds: i64) -> Result<Vec<AutopilotTask>, DomainError> {
+    async fn find_stuck_tasks(
+        &self,
+        org_id: Uuid,
+        threshold_seconds: i64,
+    ) -> Result<Vec<AutopilotTask>, DomainError> {
         let cutoff = Utc::now() - chrono::Duration::seconds(threshold_seconds);
         let models = autopilot_task::Entity::find()
             .filter(autopilot_task::Column::OrgId.eq(org_id))
