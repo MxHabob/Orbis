@@ -27,9 +27,9 @@ let {
 }: Props = $props();
 
 const themes = [
-  { value: "light", label: "فاتح (Light)" },
-  { value: "dark", label: "داكن (Dark)" },
-  { value: "system", label: "تلقائي حسب النظام (System)" },
+  { value: "light", label: m.auth_ui_theme_light() },
+  { value: "dark", label: m.auth_ui_theme_dark() },
+  { value: "system", label: m.auth_ui_theme_system() },
 ];
 </script>
 

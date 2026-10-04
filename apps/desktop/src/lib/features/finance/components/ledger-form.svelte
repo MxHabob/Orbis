@@ -100,6 +100,13 @@ let glCode = $state("");
 let glNameAr = $state("");
 let glNameEn = $state("");
 let glAccountType = $state("asset");
+const glAccountTypeLabel = $derived(({
+  asset: m.finance_ui_account_type_asset(),
+  liability: m.finance_ui_account_type_liability(),
+  equity: m.finance_ui_account_type_equity(),
+  revenue: m.finance_ui_account_type_revenue(),
+  expense: m.finance_ui_account_type_expense(),
+} as Record<string, string>)[glAccountType.toLowerCase()] ?? glAccountType);
 
 // Cash and bank account state
 let trNameAr = $state("");
@@ -416,7 +423,7 @@ async function handleSubmit(e: SubmitEvent) {
                 {m.common_ledger_label_type()}
               </span>
               <span class="text-xs font-semibold text-foreground capitalize">
-                {glAccountType}
+                {glAccountTypeLabel}
               </span>
             </div>
             <div class="flex flex-col gap-1 text-start">
@@ -482,7 +489,7 @@ async function handleSubmit(e: SubmitEvent) {
 
         <div class="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5 text-[11px] text-muted-foreground">
           <Info size={14} class="shrink-0 text-primary" />
-          <span>{m.common_ledger_label_type()}: <strong class="text-foreground">asset</strong> · {m.common_ledger_col_code()}: <strong class="font-mono text-foreground">{baseCurrency}</strong></span>
+          <span>{m.common_ledger_label_type()}: <strong class="text-foreground">{m.finance_ui_account_type_asset()}</strong> · {m.common_ledger_col_code()}: <strong class="font-mono text-foreground">{baseCurrency}</strong></span>
         </div>
 
       </div>

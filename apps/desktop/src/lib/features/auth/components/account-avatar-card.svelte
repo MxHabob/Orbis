@@ -39,7 +39,7 @@ let {
         entityId={userId}
       />
       {#if useGravatar}
-        <span class="text-xs font-semibold text-muted-foreground">{m.common_account_avatar_use_gravatar()} (Active)</span>
+        <span class="text-xs font-semibold text-muted-foreground">{m.common_account_avatar_use_gravatar()} ({m.auth_ui_active()})</span>
       {/if}
     </div>
 

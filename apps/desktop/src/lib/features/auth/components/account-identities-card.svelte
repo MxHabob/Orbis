@@ -86,7 +86,7 @@ async function handleLinkProvider(provider: "google" | "microsoft") {
     const authUrl = `/auth/${provider}?mode=link`;
     await goto(localizeHref(authUrl));
   } catch (err: any) {
-    toast.error(err.message || `Failed to connect ${provider} account`);
+    toast.error(err.message || m.auth_ui_identity_connect_failed({ provider }));
   } finally {
     if (provider === "google") isLinkingGoogle = false;
     if (provider === "microsoft") isLinkingMicrosoft = false;

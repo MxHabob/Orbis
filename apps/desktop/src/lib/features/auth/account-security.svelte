@@ -38,7 +38,7 @@ async function handleUpdatePassword(e: Event) {
   }
 
   if (!authStore.userId) {
-    toast.error("User ID not found");
+    toast.error(m.auth_ui_user_id_not_found());
     return;
   }
 
@@ -49,7 +49,7 @@ async function handleUpdatePassword(e: Event) {
     newPassword = "";
     confirmPassword = "";
   } catch (e: any) {
-    const errorMsg = e?.message || "Unknown error";
+    const errorMsg = e?.message || m.auth_ui_unknown_error();
     toast.error(errorMsg);
   } finally {
     isUpdating = false;
@@ -97,9 +97,12 @@ async function loadSecurityData() {
         return {
           id: d.id,
           device:
-            d.device_name || `${d.os || "Device"} (${d.browser || "Desktop"})`,
-          location: d.os ? `${d.os} • ${d.browser || "App"}` : "Local Device",
-          ip: "Current Device",
+            d.device_name ||
+            `${d.os || m.auth_ui_session_device_fallback()} (${d.browser || m.auth_ui_session_desktop_fallback()})`,
+          location: d.os
+            ? `${d.os} • ${d.browser || m.auth_ui_session_app_fallback()}`
+            : m.auth_ui_session_local_device(),
+          ip: m.auth_ui_session_current_device(),
           isCurrent: true,
           isTrusted: d.is_trusted,
           lastActive: formatDate(d.last_active_at),
@@ -110,12 +113,12 @@ async function loadSecurityData() {
       activeSessions = [
         {
           id: "current-desktop-session",
-          device: "Orbis Desktop Client (Windows)",
-          location: "Windows • Desktop App",
-          ip: "Localhost",
+          device: m.auth_ui_session_default_device(),
+          location: m.auth_ui_session_default_location(),
+          ip: m.auth_ui_session_localhost(),
           isCurrent: true,
           isTrusted: true,
-          lastActive: "Just now",
+          lastActive: m.auth_ui_session_just_now(),
           icon: Computer,
         },
       ];
@@ -148,7 +151,7 @@ async function handleRevokeDevice(id: string) {
     toast.success(m.common_account_sessions_revoke_success());
     activeSessions = activeSessions.filter((s) => s.id !== id);
   } catch (err: any) {
-    toast.error(err.message || "Failed to revoke device");
+    toast.error(err.message || m.auth_ui_session_revoke_failed());
   }
 }
 

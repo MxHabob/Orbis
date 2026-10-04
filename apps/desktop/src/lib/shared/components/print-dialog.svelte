@@ -445,7 +445,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
               {#if pdfUrl}
                 <iframe
                   src={pdfUrl}
-                  title="Multi-Up Print Preview"
+                  title={m.shared_ui_multi_up_print_preview()}
                   class="w-full h-full border-none"
                 ></iframe>
               {:else}

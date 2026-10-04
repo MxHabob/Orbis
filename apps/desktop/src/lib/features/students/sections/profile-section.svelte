@@ -36,14 +36,14 @@ import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
 let { state }: { state: StudentFormState } = $props();
 
 const studyModes = [
-  { value: "regular", labelAr: "انتظام كلي (دراسة اعتيادية)", labelEn: "Regular Full-Time" },
-  { value: "part_time", labelAr: "انتظام جزئي", labelEn: "Part-Time" },
-  { value: "distance_learning", labelAr: "تعليم عن بعد / إلكتروني", labelEn: "Distance Learning" },
-  { value: "homeschooled", labelAr: "تعليم منزلي", labelEn: "Homeschooled" },
-  { value: "auditor", labelAr: "طالب مستمع", labelEn: "Auditor" },
-  { value: "visiting", labelAr: "طالب زائر", labelEn: "Visiting Student" },
-  { value: "exchange", labelAr: "تبادل طلابي", labelEn: "Student Exchange" },
-  { value: "special_needs", labelAr: "تربية خاصة ورعاية تخصصية", labelEn: "Special Needs Education" },
+  { value: "regular", label: m.operations_ui_study_mode_regular() },
+  { value: "part_time", label: m.operations_ui_study_mode_part_time() },
+  { value: "distance_learning", label: m.operations_ui_study_mode_distance() },
+  { value: "homeschooled", label: m.operations_ui_study_mode_homeschooled() },
+  { value: "auditor", label: m.operations_ui_study_mode_auditor() },
+  { value: "visiting", label: m.operations_ui_study_mode_visiting() },
+  { value: "exchange", label: m.operations_ui_study_mode_exchange() },
+  { value: "special_needs", label: m.operations_ui_study_mode_special_needs() },
 ];
 </script>
 
@@ -90,13 +90,13 @@ const studyModes = [
           >
             <SelectTrigger class="h-9 text-xs bg-background">
               {studyModes.find(m => m.value === state.studyMode) 
-                ? l(studyModes.find(m => m.value === state.studyMode)!.labelAr, studyModes.find(m => m.value === state.studyMode)!.labelEn)
+                ? studyModes.find(m => m.value === state.studyMode)!.label
                 : state.studyMode}
             </SelectTrigger>
             <SelectContent class="text-start max-h-64 overflow-y-auto" align="end">
               {#each studyModes as mode (mode.value)}
                 <SelectItem value={mode.value} class="text-xs">
-                  {l(mode.labelAr, mode.labelEn)}
+                  {mode.label}
                 </SelectItem>
               {/each}
             </SelectContent>
@@ -386,7 +386,7 @@ const studyModes = [
             <Input 
               id="bloodType"
               type="text" 
-              placeholder="مثال: O+, A+, B-..." 
+              placeholder={m.operations_ui_blood_type_example()}
               class="h-9 w-full bg-background font-mono" 
               bind:value={state.personal.bloodType}
             />

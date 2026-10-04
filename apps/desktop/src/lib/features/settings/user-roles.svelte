@@ -40,7 +40,7 @@ async function loadRoles() {
       nameEn: r.name,
       nameAr: r.name_ar || r.name,
       descEn: r.is_system ? "Institutional system role" : "Custom organizational role",
-      descAr: r.is_system ? "دور نظام قياسي في المؤسسة" : "دور مخصص في المؤسسة",
+      descAr: r.is_system ? m.settings_ui_role_system_description() : m.settings_ui_role_custom_description(),
       isSystem: Boolean(r.is_system),
       permCount: countRolePermissions(r.permissions, r.id),
     }));

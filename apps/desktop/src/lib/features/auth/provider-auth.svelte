@@ -193,7 +193,7 @@ async function processAuth() {
             }
           }, 1000);
         } else {
-          throw new Error("Invalid login response from server");
+          throw new Error(m.auth_ui_invalid_login_response());
         }
       }
     } catch (err: any) {

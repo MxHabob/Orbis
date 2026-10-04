@@ -147,7 +147,7 @@ function handleClose() {
                   type="button"
                   class="flex items-center text-muted-foreground hover:text-foreground cursor-pointer p-0.5"
                   onclick={() => (showPassword = !showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? m.shared_ui_hide_password() : m.shared_ui_show_password()}
                 >
                   {#if showPassword}
                     <EyeSlash size={13} />

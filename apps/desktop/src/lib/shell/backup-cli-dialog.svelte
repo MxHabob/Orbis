@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Dialog, DialogContent } from "@orbis/ui/dialog";
 import { Input } from "@orbis/ui/input";
 
@@ -25,10 +26,10 @@ function createInitialOutput() {
     "/ /_/ / _, _/ /_/ // / ___/ / / /___/ /____/ /",
     "\\____/_/ |_/_____/___//____/  \\____/_____/___/",
     "",
-    "  Enterprise Management Console",
+    `  ${m.shared_ui_enterprise_management_console()}`,
     "  ========================================",
-    "  Status:      Locked",
-    "  Environment: Desktop",
+    `  ${m.shared_ui_status_label()}:      ${m.shared_ui_locked()}`,
+    `  ${m.shared_ui_environment_label()}: ${m.shared_ui_desktop()}`,
     "  ========================================",
     `  Organization: ${orgName}`,
     "",
@@ -47,24 +48,24 @@ async function unlock() {
   if (!password.trim() || sessionState === "connecting") return;
 
   sessionState = "connecting";
-  output = [...output, "super@MxHabob:~$ ********", "Authenticating..."];
+  output = [...output, "super@MxHabob:~$ ********", m.shared_ui_authenticating()];
 
   try {
     if (!onunlock) {
-      throw new Error("CLI session is not connected yet.");
+      throw new Error(m.shared_ui_cli_session_not_connected());
     }
 
     const response = await onunlock(password);
     password = "";
     sessionState = "ready";
-    output = [...output, response || "Authenticated.", "", "orbis> _"];
+    output = [...output, response || m.shared_ui_authenticated(), "", "orbis> _"];
   } catch (error) {
     password = "";
     sessionState = "error";
     output = [
       ...output,
-      error instanceof Error ? error.message : "Authentication failed.",
-      "Enter password to retry.",
+      error instanceof Error ? error.message : m.shared_ui_authentication_failed(),
+      m.shared_ui_enter_password_to_retry(),
     ];
   }
 }
@@ -99,19 +100,19 @@ function handleKeydown(event: KeyboardEvent) {
             bind:value={password}
             onkeydown={handleKeydown}
             autocomplete="current-password"
-            aria-label="Super Admin password"
-            placeholder="password"
+            aria-label={m.shared_ui_super_admin_password()}
+            placeholder={m.shared_ui_password()}
             class="h-5 min-h-0 flex-1 rounded-none border-0 bg-transparent p-0 font-mono text-xs leading-5 text-green-300 shadow-none outline-none placeholder:text-green-900 focus-visible:ring-0"
           />
         </form>
       {:else if sessionState === "connecting"}
-        <div class="mt-4 text-amber-300">Authenticating...</div>
+        <div class="mt-4 text-amber-300">{m.shared_ui_authenticating()}</div>
       {:else}
         <div class="mt-4 flex items-center gap-2">
           <span class="shrink-0"><span class="font-semibold text-green-500">super@MxHabob</span><span class="text-white">:~$</span></span>
           <Input
             type="text"
-            aria-label="CLI command"
+            aria-label={m.shared_ui_cli_command()}
             placeholder="_"
             class="h-5 min-h-0 flex-1 rounded-none border-0 bg-transparent p-0 font-mono text-xs leading-5 text-green-300 shadow-none outline-none placeholder:text-green-400 focus-visible:ring-0"
           />

@@ -99,12 +99,12 @@ function getFallbackLabel(
   side: "left" | "right",
 ): string {
   if (side === "left") {
-    if (viewportName.includes("exams")) return "Examinations";
-    if (viewportName.includes("academics")) return "Academics";
-    if (viewportName.includes("finance")) return "Finance";
-    return "Filters";
+    if (viewportName.includes("exams")) return m.shared_ui_examinations();
+    if (viewportName.includes("academics")) return m.shared_ui_academics();
+    if (viewportName.includes("finance")) return m.shared_ui_finance();
+    return m.shared_ui_filters();
   } else {
-    return "Details";
+    return m.shared_ui_details();
   }
 }
 </script>
@@ -129,7 +129,7 @@ function getFallbackLabel(
 								leftPreferredWidth = pxToRem(leftWidth.default);
 								localStorage.setItem(`resizer:viewport-${name}-left`, String(leftPreferredWidth));
 							}}
-							title="Expand Sidebar"
+							title={m.shared_ui_expand_sidebar()}
 						>
                           <svg
                             width="18"
@@ -208,7 +208,7 @@ function getFallbackLabel(
 								rightPreferredWidth = pxToRem(rightWidth.default);
 								localStorage.setItem(`resizer:viewport-${name}-right`, String(rightPreferredWidth));
 							}}
-							title="Expand Sidebar"
+							title={m.shared_ui_expand_sidebar()}
 						>
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 								<rect width="18" height="18" x="3" y="3" rx="2" />

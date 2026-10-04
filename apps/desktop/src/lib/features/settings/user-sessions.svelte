@@ -33,7 +33,7 @@ async function handleRevoke(deviceId: string, deviceName: string) {
   const confirmed = await confirmStore.prompt({
     title: m.ui_copy_revoke_device_session_359e4435(),
     description: l(
-      `هل أنت متأكد من إنهاء جلسة الجهاز (${deviceName}) وفصل تسجيل الدخول؟`,
+      m.settings_ui_session_terminate_confirm({ device: deviceName }),
       `Are you sure you want to revoke the session for ${deviceName}?`
     ),
     confirmText: m.ui_copy_revoke_session_3a121f98(),

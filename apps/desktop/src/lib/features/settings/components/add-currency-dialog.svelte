@@ -274,8 +274,8 @@ async function handleSubmit(e: Event) {
         <SearchableSelect
           value={code}
           items={presetItems}
-          placeholder="اختر عملة للتعبئة السريعة..."
-          searchPlaceholder="ابحث باسم العملة أو الرمز (مثال: USD, EUR, YER)..."
+          placeholder={m.settings_ui_currency_select_placeholder()}
+          searchPlaceholder={m.settings_ui_currency_search_by_name_or_code()}
           getItemValue={(item) => item.value}
           getItemLabel={(item) => item.label}
           getItemSubtitle={(item) => item.value}
@@ -321,18 +321,18 @@ async function handleSubmit(e: Event) {
           {#snippet children()}
           <Input
             bind:value={nameAr}
-            placeholder="دولار أمريكي"
+            placeholder={m.settings_ui_currency_arabic_name_example()}
             class="text-xs h-8"
             disabled={isSubmitting}
           />
           {/snippet}
         </FormField>
 
-        <FormField label="الاسم بالإنجليزية" error={form.errors.name?.[0]} required>
+        <FormField label={m.settings_ui_currency_english_name()} error={form.errors.name?.[0]} required>
           {#snippet children()}
           <Input
             bind:value={name}
-            placeholder="US Dollar"
+            placeholder={m.settings_ui_currency_english_name_example()}
             class="text-xs h-8"
             disabled={isSubmitting}
           />
@@ -349,7 +349,7 @@ async function handleSubmit(e: Event) {
 
       <!-- Position, Decimals & Rate -->
       <div class="grid grid-cols-3 gap-3">
-        <FormField label="موقع الرمز" error={form.errors.symbol_position?.[0]} required>
+        <FormField label={m.settings_ui_currency_symbol_position()} error={form.errors.symbol_position?.[0]} required>
           {#snippet children()}
           <Select type="single" bind:value={symbolPosition} disabled={isSubmitting}>
             <SelectTrigger class="h-8 w-full text-xs">
@@ -363,7 +363,7 @@ async function handleSubmit(e: Event) {
           {/snippet}
         </FormField>
 
-        <FormField label="الخانات العشرية" error={form.errors.decimal_places?.[0]} required>
+        <FormField label={m.settings_ui_currency_decimal_places()} error={form.errors.decimal_places?.[0]} required>
           {#snippet children()}
           <Input
             type="number"

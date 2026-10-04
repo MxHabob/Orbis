@@ -116,7 +116,7 @@
         onclick={() => uiStore.setSearch(true)}
         class="font-semibold text-xs text-foreground rounded-[8px] px-3 gap-2 shrink-0"
         title={m.common_header_search_title()}
-        aria-label="Search"
+        aria-label={m.shared_ui_search()}
       >
         <Search size={14} class="text-muted-foreground stroke-[2px]" />
         <span class="whitespace-nowrap">{m.common_header_search()}</span>
@@ -133,8 +133,8 @@
         class="font-semibold text-xs text-foreground px-3 gap-2 shrink-0 {uiStore.showAskOrbis
           ? 'bg-zinc-150 dark:bg-zinc-850/80 border-zinc-300 dark:border-zinc-700/80 text-foreground font-bold'
           : ''}"
-        title="Ask Orbis"
-        aria-label="Ask Orbis"
+        title={m.shared_ui_ask_orbis()}
+        aria-label={m.shared_ui_ask_orbis()}
         onclick={() => uiStore.toggleAskOrbis()}
       >
         <svg
@@ -152,7 +152,7 @@
           />
           <path d="M12 15a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
         </svg>
-        <span class="whitespace-nowrap">Ask Orbis</span>
+        <span class="whitespace-nowrap">{m.shared_ui_ask_orbis()}</span>
         <kbd
           class="ml-1 rounded px-1 py-0.5 font-mono text-[9px] font-medium text-zinc-400"
           >Ctrl /</kbd
@@ -210,7 +210,7 @@
       onclick={() => themeStore.toggle()}
       class="rounded-[8px] shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
       title={m.common_titlebar_theme_toggle()}
-      aria-label="Toggle Theme"
+      aria-label={m.shared_ui_toggle_theme()}
     >
       {#if themeStore.resolved === "dark"}
         <Sun size={14} class="stroke-[2px] text-amber-400" />
@@ -245,7 +245,7 @@
           onclick={() => appWindow.minimize()}
           class="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
           title={m.common_titlebar_minimize()}
-          aria-label="Minimize"
+          aria-label={m.shared_ui_minimize()}
         >
           <Minus size={13} class="stroke-[2px]" />
         </button>
@@ -258,7 +258,7 @@
           title={isMaximized
             ? m.common_titlebar_restore()
             : m.common_titlebar_maximize()}
-          aria-label="Maximize / Restore"
+          aria-label={m.shared_ui_maximize_restore()}
         >
           {#if isMaximized}
             <Restore size={12} class="stroke-[1.6]" />
@@ -273,7 +273,7 @@
           onclick={() => appWindow.close()}
           class="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors cursor-pointer"
           title={m.common_titlebar_close()}
-          aria-label="Close"
+          aria-label={m.shared_ui_close_window()}
         >
           <XMark size={13} class="stroke-[2px]" />
         </button>

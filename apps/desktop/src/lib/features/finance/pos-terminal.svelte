@@ -602,7 +602,7 @@ const rtl = $derived(getLocale() === "ar");
           <div class="flex flex-col gap-1.5" transition:slide={{ duration: 120 }}>
             <label for="pos_token" class="text-[11px] font-semibold text-foreground flex items-center justify-between">
               <span>{m.finance_ui_payment_gateway_token_label()}</span>
-              <span class="text-[9px] text-muted-foreground font-mono">Gateway Source Token</span>
+              <span class="text-[9px] text-muted-foreground font-mono">{m.finance_ui_gateway_source_token()}</span>
             </label>
             <input
               id="pos_token"

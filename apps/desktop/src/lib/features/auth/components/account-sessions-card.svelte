@@ -32,7 +32,7 @@ let { activeSessions, onRevoke }: Props = $props();
   <CardContent>
     {#each activeSessions as session, i (session.id)}
       <SettingsRow
-        description={`${session.location || m.common_account_sessions_active_session()} • ${session.ip || "Localhost"}${session.lastActive ? ` • ${m.common_account_sessions_last_active({ time: session.lastActive })}` : ""}`}
+        description={`${session.location || m.common_account_sessions_active_session()} • ${session.ip || m.auth_ui_session_localhost()}${session.lastActive ? ` • ${m.common_account_sessions_last_active({ time: session.lastActive })}` : ""}`}
         last={i === activeSessions.length - 1}
       >
         {#snippet headerSlot()}

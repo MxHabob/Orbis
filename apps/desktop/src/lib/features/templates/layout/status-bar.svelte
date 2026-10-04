@@ -73,7 +73,10 @@ let {
   <!-- Center: Page info -->
   <div class="status-group">
     <span class="status-text">
-      الصفحة {store.activePageIndex + 1} / {store.pageCount}
+      {m.shared_ui_page_x_of_y({
+        current: store.activePageIndex + 1,
+        total: store.pageCount,
+      })}
     </span>
   </div>
 

@@ -53,7 +53,7 @@ async function generateReport() {
   pdfUrl = null;
   errorMessage = null;
   progress = 10;
-  statusText = "Initializing report generation...";
+  statusText = m.shared_ui_initializing_report_generation();
 
   try {
     // 1. Trigger Generation
@@ -65,23 +65,23 @@ async function generateReport() {
 
     currentJobId = jobId;
     progress = 30;
-    statusText = "Generating document...";
+    statusText = m.shared_ui_generating_document();
 
     // 2. Poll Status
     const pollingDeadline = Date.now() + 15 * 60 * 1000; // 15 mins max
     while (currentJobId === jobId) {
       if (Date.now() >= pollingDeadline) {
-        throw new Error("Report generation timed out.");
+        throw new Error(m.shared_ui_report_generation_timed_out());
       }
 
       const jobStatus = await api.getReportJobStatus(jobId);
 
       if (jobStatus.status === "completed" || jobStatus.status === "Completed") {
         progress = 80;
-        statusText = "Fetching document...";
+        statusText = m.shared_ui_fetching_document();
         break;
       } else if (jobStatus.status === "failed" || jobStatus.status === "Failed") {
-        throw new Error("Report generation failed on the server.");
+        throw new Error(m.shared_ui_report_generation_server_failed());
       }
 
       await new Promise((r) => setTimeout(r, 1000));
@@ -96,13 +96,13 @@ async function generateReport() {
       const base64 = uint8ArrayToBase64(pdfBytes);
       pdfUrl = `data:application/pdf;base64,${base64}`;
       progress = 100;
-      statusText = "Ready to print";
+      statusText = m.shared_ui_ready_to_print();
     } else {
-      throw new Error("Received empty document.");
+      throw new Error(m.shared_ui_empty_document_received());
     }
   } catch (e: any) {
     errorMessage =
-      e.message || "An error occurred while generating the report.";
+      e.message || m.shared_ui_report_generation_failed();
     toast.error(errorMessage);
   } finally {
     isGenerating = false;
@@ -131,7 +131,7 @@ function handleNativePrint() {
     // Calling print() on the iframe contentWindow triggers the OS Native Print Dialog
     iframe.contentWindow.print();
   } else {
-    toast.error("Unable to access print frame.");
+    toast.error(m.shared_ui_print_frame_unavailable());
   }
 }
 
@@ -170,11 +170,11 @@ function handleDownload() {
       {:else if errorMessage}
         <div class="flex flex-col items-center justify-center gap-4 text-destructive p-8 text-center">
           <XMark size={48} />
-          <h3 class="text-lg font-bold">Generation Failed</h3>
+          <h3 class="text-lg font-bold">{m.shared_ui_generation_failed()}</h3>
           <p class="text-sm opacity-80 max-w-sm">{errorMessage}</p>
           <Button variant="outline" onclick={generateReport} class="mt-4">
             <Refresh size={14} class="me-2" />
-            Retry
+            {m.common_retry()}
           </Button>
         </div>
       {:else if pdfUrl}
@@ -187,7 +187,7 @@ function handleDownload() {
       {:else}
         <div class="text-muted-foreground flex flex-col items-center gap-3">
           <DocumentPage size={48} class="opacity-20" />
-          <p class="text-sm">No report generated</p>
+          <p class="text-sm">{m.shared_ui_no_report_generated()}</p>
         </div>
       {/if}
     </div>
@@ -198,7 +198,7 @@ function handleDownload() {
         {#if pdfUrl}
             <div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs font-semibold px-2 py-1 bg-emerald-500/10 rounded-md">
                 <CheckCircle size={14} />
-                <span>Ready</span>
+                <span>{m.shared_ui_ready()}</span>
             </div>
         {/if}
       </div>
@@ -215,7 +215,7 @@ function handleDownload() {
             class="flex-1 sm:flex-none"
         >
           <Download size={16} class="me-2" />
-          Download PDF
+          {m.shared_ui_download_pdf()}
         </Button>
 
         <Button 
@@ -225,7 +225,7 @@ function handleDownload() {
             class="flex-1 sm:flex-none font-bold"
         >
           <Printer size={16} class="me-2" />
-          Print Natively
+          {m.shared_ui_print_natively()}
         </Button>
       </div>
     </DialogFooter>
