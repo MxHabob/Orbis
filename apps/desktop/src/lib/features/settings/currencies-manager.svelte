@@ -34,8 +34,8 @@ let activeFilter = $state<UniversalFilter>({
 });
 
 const currencyActions: ActionItem[] = [
-  { id: "edit", label: "Edit", icon: "Pencil" },
-  { id: "delete", label: "Delete", icon: "Trash2", variant: "destructive" },
+  { id: "edit", label: m.common_action_edit(), icon: "Pencil" },
+  { id: "delete", label: m.common_action_delete(), icon: "Trash2", variant: "destructive" },
 ];
 
 async function loadCurrencies() {
@@ -76,13 +76,13 @@ const columns: OrbisColumnDef[] = [
   { id: "symbol", prop: "symbol", header: m.settings_currencies_col_symbol(), name: m.settings_currencies_col_symbol(), width: 90, size: 90, readonly: true, align: "center", cellClass: "font-mono font-semibold" },
   { id: "is_base_display", prop: "is_base_display", header: m.common_word_type(), name: m.common_word_type(), width: 110, size: 110, readonly: true, align: "center", type: "badge" },
   { id: "exchange_rate", prop: "exchange_rate", header: m.settings_currencies_col_rate(), name: m.settings_currencies_col_rate(), width: 130, size: 130, readonly: true, align: "end", type: "number" },
-  { id: "decimal_places", prop: "decimal_places", header: "Decimals", name: "Decimals", width: 90, size: 90, readonly: true, align: "center", type: "number" },
+  { id: "decimal_places", prop: "decimal_places", header: m.settings_ui_currency_decimal_places(), name: m.settings_ui_currency_decimal_places(), width: 90, size: 90, readonly: true, align: "center", type: "number" },
   { id: "status", prop: "status", header: m.common_word_status(), name: m.common_word_status(), width: 100, size: 100, type: "badge", align: "center", readonly: true },
   {
     id: "actions",
     prop: "actions",
     header: m.common_je_col_actions(),
-    name: "Actions",
+    name: m.ui_copy_actions_c48127a5(),
     width: 90,
     size: 90,
     type: "action",
@@ -119,7 +119,7 @@ async function handleGridAction(event: GridActionEvent) {
       toast.info(m.settings_currencies_deleted_success({ code: c.code }));
       await loadCurrencies();
     } catch (e: any) {
-      toast.error(e?.message || "Failed to delete currency");
+      toast.error(e?.message || m.settings_ui_currency_delete_error());
     }
   }
 }

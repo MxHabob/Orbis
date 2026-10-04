@@ -19,7 +19,7 @@ import * as m from "$lib/paraglide/messages";
 let {
   store,
   onsave,
-  on  {m.shared_ui_preview()},
+  onpreview,
 }: {
   store: EditorStore;
   onsave: () => void;

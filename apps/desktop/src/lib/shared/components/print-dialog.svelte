@@ -292,7 +292,7 @@ async function handlePrintAction() {
         }),
       );
     } catch (e: unknown) {
-      const msg = (e as any)?.message || "Print generation failed";
+      const msg = (e as any)?.message || m.shared_ui_print_generation_failed();
       toast.error(msg);
     } finally {
       isBatchProcessing = false;
