@@ -97,7 +97,7 @@ onMount(() => {
         {:else if isLoading}
           <ArrowPath class="h-4 w-4 animate-spin text-muted-foreground" />
         {:else}
-          Unknown Report
+          {m.operations_ui_unknown_report()}
         {/if}
       </h2>
       {#if definition?.description}

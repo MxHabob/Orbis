@@ -127,9 +127,7 @@ async function openLicense() {
         </h1>
 
         <p class="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-3xl">
-          {isRTL
-            ? "نواة تشغيلية مستقلة مبنية محلياً (Local-First)، تمنح مؤسستك السيادة الرقمية الكاملة على السجلات الأكاديمية والمالية مع استقرار فائق وسرعة معالجة فورية."
-            : "An autonomous local-first operating system engineered for educational institutions, ensuring uncompromised data ownership and instantaneous native execution."}
+          {m.operations_ui_mulverse_intro_description()}
         </p>
       </div>
 

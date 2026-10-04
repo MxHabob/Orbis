@@ -110,14 +110,10 @@ function validateCurrentStep(): boolean {
     if (!form.adminPassword) {
       newErrors.adminPassword = m.ui_onboarding_bootstrap_password_is_required();
     } else if (form.adminPassword.length < 8) {
-      newErrors.adminPassword = isRTL
-        ? "يجب ألا تقل كلمة المرور عن 8 خانات"
-        : "Password must be at least 8 characters";
+      newErrors.adminPassword = m.operations_ui_password_min_length_error();
     }
     if (form.adminPassword !== form.adminConfirmPassword) {
-      newErrors.adminConfirmPassword = isRTL
-        ? "كلمتا المرور غير متطابقتين"
-        : "Passwords do not match";
+      newErrors.adminConfirmPassword = m.operations_ui_password_mismatch_error();
     }
   } else if (currentStep === "mfa") {
     return true;

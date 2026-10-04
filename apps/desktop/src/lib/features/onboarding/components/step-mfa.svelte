@@ -100,11 +100,11 @@ async function copyRecoveryCodes() {
 function downloadRecoveryCodes() {
   if (!mfaData?.recovery_codes) return;
   const content =
-    `ORBIS SECURITY RECOVERY CODES\n` +
-    `Generated: ${new Date().toISOString()}\n` +
-    `Organization: ${orgName || "Orbis Organization"}\n` +
-    `Admin Account: ${adminEmail || "admin"}\n\n` +
-    `Keep these codes in a secure location. Each code can be used once if you lose access to your authenticator app.\n\n` +
+    `${m.operations_ui_recovery_codes_title()}\n` +
+    `${m.operations_ui_recovery_codes_generated()}: ${new Date().toISOString()}\n` +
+    `${m.operations_ui_recovery_codes_organization()}: ${orgName || m.operations_ui_default_organization_name()}\n` +
+    `${m.operations_ui_recovery_codes_admin_account()}: ${adminEmail || m.operations_ui_admin_fallback()}\n\n` +
+    `${m.operations_ui_recovery_codes_keep_safe_notice()}\n\n` +
     mfaData.recovery_codes.map((c, i) => `${i + 1}. ${c}`).join("\n");
 
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
@@ -119,9 +119,7 @@ function downloadRecoveryCodes() {
 async function handleVerify() {
   const code = verificationCode.trim();
   if (code.length < 6) {
-    verifyError = isRTL
-      ? "يرجى إدخال رمز التحقق المكون من 6 أرقام"
-      : "Please enter the 6-digit verification code";
+    verifyError = m.operations_ui_verification_code_six_digits_error();
     return;
   }
 
@@ -139,9 +137,7 @@ async function handleVerify() {
     }, 400);
   } catch (err) {
     isVerifying = false;
-    verifyError = isRTL
-      ? "رمز التحقق غير صحيح، يرجى المحاولة ثانية"
-      : "Invalid verification code";
+    verifyError = m.operations_ui_verification_code_invalid_error();
   }
 }
 </script>
@@ -161,9 +157,7 @@ async function handleVerify() {
       {m.ui_onboarding_mfa_two_factor_authentication_setup()}
     </h2>
     <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-      {isRTL
-        ? "عزز أمان حساب المشرف العام بربط تطبيق المصادقة لمسح الرمز المربع (QR Code) أو إدخال المفتاح يدوياً."
-        : "Fortify administrator access by linking an authenticator app using the QR Code or manual secret key."}
+      {m.operations_ui_mfa_setup_description()}
     </p>
   </div>
 
@@ -308,9 +302,7 @@ async function handleVerify() {
             {m.ui_onboarding_mfa_elevated_authority_guard()}
           </h3>
           <p class="text-xs text-muted-foreground leading-relaxed">
-            {isRTL
-              ? "يتطلب التحقق بخطوتين رمزاً مؤقتاً عند تسجيل الدخول وعند إجراء التعديلات الهيكلية والمالية الحساسة."
-              : "2FA enforces a time-based dynamic passcode upon sign-in and when modifying institutional ledgers."}
+            {m.operations_ui_mfa_enabled_security_notice()}
           </p>
         </div>
 
@@ -358,9 +350,7 @@ async function handleVerify() {
               {/each}
             </div>
             <p class="text-[10px] text-muted-foreground">
-              {isRTL
-                ? "احفظ هذه الرموز في مكان آمن للوصول في حال تعذر استخدام تطبيق المصادقة."
-                : "Store these keys safely in case you lose access to your primary device."}
+              {m.operations_ui_recovery_codes_security_notice()}
             </p>
           </div>
         {/if}

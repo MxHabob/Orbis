@@ -71,8 +71,8 @@ export async function cutNodes(
 
   return new BatchCommand(
     nodeIds.map((id) => new RemoveNodeCommand(id)),
-    "Cut elements",
-    m.template_cmd_cut_elements(),
+    m.shared_ui_cut_elements(),
+    m.shared_ui_cut_elements(),
   );
 }
 
@@ -113,8 +113,8 @@ export async function pasteNodes(
 
   return new BatchCommand(
     clonedNodes.map((node) => new AddNodeCommand(parentId, node)),
-    "Paste elements",
-    m.template_cmd_paste_elements(),
+    m.shared_ui_paste_elements(),
+    m.shared_ui_paste_elements(),
   );
 }
 

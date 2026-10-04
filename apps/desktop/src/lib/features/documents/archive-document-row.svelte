@@ -49,7 +49,7 @@ function formatSize(bytes?: number | null) {
 <div class="grid grid-cols-[auto_minmax(0,2.5fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(100px,1fr)_auto] items-center gap-3 border-b border-border/40 px-3 py-2.5 text-xs transition-colors hover:bg-muted/40">
   <!-- Checkbox -->
   {#if ontoggle}
-    <Checkbox checked={selected} onCheckedChange={(value) => ontoggle?.(document.id, value === true)} aria-label={`تحديد ${document.name}`} />
+    <Checkbox checked={selected} onCheckedChange={(value) => ontoggle?.(document.id, value === true)} aria-label={m.operations_ui_document_select({ name: document.name })} />
   {/if}
 
   <!-- Name & Icon -->
@@ -72,7 +72,7 @@ function formatSize(bytes?: number | null) {
   </button>
 
   <!-- Category -->
-  <span class="truncate text-muted-foreground">{document.category || "عام"}</span>
+  <span class="truncate text-muted-foreground">{document.category || m.operations_ui_general_category()}</span>
 
   <!-- File Size -->
   <span class="text-muted-foreground font-mono text-[11px]">{formatSize(document.file_size_bytes)}</span>
@@ -82,24 +82,24 @@ function formatSize(bytes?: number | null) {
 
   <!-- Actions -->
   <div class="flex items-center justify-end gap-1">
-    <Button variant="ghost" size="icon-xs" onclick={() => onpreview(document)} title="معاينة">
+    <Button variant="ghost" size="icon-xs" onclick={() => onpreview(document)} title={m.operations_ui_preview()}>
       <Eye class="h-3.5 w-3.5" />
     </Button>
 
     {#await resolveDocumentUrl(source) then sourceUrl}
-      <a href={sourceUrl} download={document.name} class="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" title="تحميل">
+      <a href={sourceUrl} download={document.name} class="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" title={m.operations_ui_download()}>
         <Download class="h-3.5 w-3.5" />
       </a>
     {/await}
 
     {#if onarchive && !document.is_archived}
-      <Button variant="ghost" size="icon-xs" onclick={() => onarchive?.(document.id)} title="أرشفة">
+      <Button variant="ghost" size="icon-xs" onclick={() => onarchive?.(document.id)} title={m.operations_ui_archive()}>
         <ArchiveBox class="h-3.5 w-3.5" />
       </Button>
     {/if}
 
     {#if ondelete}
-      <Button variant="ghost" size="icon-xs" onclick={() => ondelete?.(document.id)} title="حذف" class="text-destructive hover:bg-destructive/10">
+      <Button variant="ghost" size="icon-xs" onclick={() => ondelete?.(document.id)} title={m.common_action_delete()} class="text-destructive hover:bg-destructive/10">
         <Trash class="h-3.5 w-3.5" />
       </Button>
     {/if}
