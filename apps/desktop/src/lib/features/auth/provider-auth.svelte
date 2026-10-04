@@ -135,7 +135,8 @@ async function processAuth() {
         status = "success";
         if (typeof window !== "undefined") {
           localStorage.setItem(`orbis_${providerParam}_linked`, "true");
-          const userEmail = authStore.user?.email || "Google Account";
+          const userEmail =
+            authStore.user?.email || m.auth_ui_provider_account_fallback();
           localStorage.setItem(`orbis_${providerParam}_email`, userEmail);
         }
         toast.success(
@@ -193,7 +194,7 @@ async function processAuth() {
             }
           }, 1000);
         } else {
-          throw new Error("Invalid login response from server");
+          throw new Error(m.auth_ui_invalid_login_response());
         }
       }
     } catch (err: any) {

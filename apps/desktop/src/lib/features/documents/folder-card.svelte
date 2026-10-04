@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import {
   Folder,
   FolderOpen,
@@ -100,15 +101,15 @@ function handleDrop(e: DragEvent) {
       {#if isCurriculum}
         <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
           <Sparkles class="w-2.5 h-2.5" />
-          <span>منهج دراسي AI</span>
+          <span>{m.operations_ui_ai_curriculum_folder()}</span>
         </span>
       {:else if isStudent}
         <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
-          <span>ملف طالب</span>
+          <span>{m.operations_ui_student_folder()}</span>
         </span>
       {:else if isSystem}
         <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
-          نظام
+          {m.operations_ui_system()}
         </span>
       {/if}
 
@@ -123,7 +124,7 @@ function handleDrop(e: DragEvent) {
                 e.stopPropagation();
                 ondelete?.(folder);
               }}
-              title="حذف المجلد"
+              title={m.operations_ui_delete_folder()}
             >
               <Trash class="w-3.5 h-3.5" />
             </Button>
@@ -144,7 +145,7 @@ function handleDrop(e: DragEvent) {
       </span>
       {#if itemCount > 0}
         <span class="shrink-0 font-medium px-1.5 py-0.2 rounded bg-muted/60">
-          {itemCount} عنصر
+          {m.operations_ui_folder_item_count({ count: itemCount })}
         </span>
       {/if}
     </div>

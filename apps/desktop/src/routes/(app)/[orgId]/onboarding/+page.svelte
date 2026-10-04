@@ -460,8 +460,7 @@ async function handleProvisionDefaults() {
         {m.ui_onboarding_progress_auto_scaffold_blueprint_defaults()}
       </DialogTitle>
       <DialogDescription class="text-xs">
-        {isArabic
-          {m.shared_ui_provision_defaults_description()}
+        {m.shared_ui_provision_defaults_description()}
       </DialogDescription>
     </DialogHeader>
 

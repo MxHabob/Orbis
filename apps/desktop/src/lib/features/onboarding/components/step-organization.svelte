@@ -85,9 +85,7 @@ function selectCountry(countryCode: string) {
       {m.ui_onboarding_organization_organization_profile_identity()}
     </h2>
     <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-      {isRTL
-        ? "حدد الاسم الرسمي، المسار الأكاديمي، العملة، والمنطقة الجغرافية للمؤسسة."
-        : "Configure your official name, educational track, base currency, and regional operating parameters."}
+      {m.operations_ui_organization_setup_description()}
     </p>
   </div>
 
@@ -109,7 +107,7 @@ function selectCountry(countryCode: string) {
           id="org-name-ar"
           type="text"
           dir="rtl"
-          placeholder="مثال: مدارس النور الأهلية"
+          placeholder={m.operations_ui_organization_name_arabic_example()}
           bind:value={form.organizationNameAr}
           class="h-9 text-xs"
         />

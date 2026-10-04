@@ -63,7 +63,7 @@ function formatDate(value?: string | null) {
       <Checkbox
         checked={selected}
         onCheckedChange={(value) => ontoggle?.(document.id, value === true)}
-        aria-label={`تحديد ${document.name}`}
+        aria-label={m.operations_ui_document_select({ name: document.name })}
       />
     {/if}
   </td>
@@ -95,7 +95,7 @@ function formatDate(value?: string | null) {
   <!-- Category -->
   <td class="px-4 py-3 text-xs text-muted-foreground">
     <span class="rounded bg-muted/60 px-2 py-0.5 text-[11px] capitalize">
-      {document.category || "عام"}
+      {document.category || m.operations_ui_general_category()}
     </span>
   </td>
 
@@ -120,7 +120,7 @@ function formatDate(value?: string | null) {
         size="icon"
         class="h-7 w-7 text-muted-foreground hover:text-foreground"
         onclick={() => onpreview(document)}
-        title="معاينة"
+        title={m.operations_ui_preview()}
       >
         <Eye class="h-3.5 w-3.5" />
       </Button>
@@ -130,7 +130,7 @@ function formatDate(value?: string | null) {
         size="icon"
         class="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
         onclick={() => onrestore(document.id)}
-        title="استعادة الملف"
+        title={m.operations_ui_restore_file()}
       >
         <Refresh class="h-3.5 w-3.5" />
       </Button>
@@ -140,7 +140,7 @@ function formatDate(value?: string | null) {
         size="icon"
         class="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
         onclick={() => onpurge(document.id)}
-        title="حذف نهائي"
+        title={m.operations_ui_trash_permanently_delete()}
       >
         <Trash class="h-3.5 w-3.5" />
       </Button>

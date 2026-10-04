@@ -82,7 +82,7 @@ const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
   { id: "date", prop: "date", header: m.common_overview_date(), name: m.common_overview_date(), width: 130, size: 130, readonly: true, cellClass: "font-mono" },
   { id: "status", prop: "status", header: m.common_word_status(), name: m.common_word_status(), width: 110, size: 110, type: "badge", align: "center", readonly: true },
-  { id: "subject_name", prop: "subject_name", header: m.common_search_group_subjects(), name: "Subject", width: 140, size: 140, readonly: true },
+  { id: "subject_name", prop: "subject_name", header: m.common_search_group_subjects(), name: m.common_search_group_subjects(), width: 140, size: 140, readonly: true },
   { id: "notes", prop: "notes", header: m.academics_attendance_col_notes(), name: m.academics_attendance_col_notes(), width: 220, size: 220, readonly: true },
 ];
 

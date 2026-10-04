@@ -38,7 +38,7 @@ const topItems: RailItem[] = [
 </script>
 
 <TooltipProvider delayDuration={200}>
-<nav class="side-rail" aria-label="Editor panels">
+<nav class="side-rail" aria-label={m.shared_ui_editor_panels()}>
   <div class="rail-items">
     {#each topItems as item (item.id)}
       {@const isActive = store.activeRailPanel === item.id}

@@ -4,12 +4,9 @@ import { createQuery } from "@tanstack/svelte-query";
 import { api } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { CheckCircle, Info, InfoCircle, Sparkles } from "@orbis/icons";
-import { getLocale } from "$lib/paraglide/runtime";
 import WorkspaceCard from "./workspace-card.svelte";
 
 let { classId, periodId }: { classId: string; periodId: string } = $props();
-
-const isArabic = $derived(getLocale() === "ar");
 
 // Fetch metrics to generate contextual recommendations
 const classMetricsQuery = createQuery(() => ({
@@ -39,16 +36,16 @@ const recommendations = $derived.by(() => {
   if (attendanceRate < 90) {
     recs.push({
       id: "attendance-low",
-      title: "Review Attendance Records",
-      desc: `Overall attendance is ${attendanceRate}%. Action required.`,
+      title: m.shared_ui_review_attendance_records(),
+      desc: m.shared_ui_attendance_action_required({ percent: attendanceRate }),
       icon: InfoCircle,
       colorClass: "bg-rose-100 text-rose-600",
     });
   } else {
     recs.push({
       id: "attendance-good",
-      title: "Attendance on Track",
-      desc: `Overall attendance is healthy at ${attendanceRate}%.`,
+      title: m.shared_ui_attendance_on_track(),
+      desc: m.shared_ui_attendance_healthy({ percent: attendanceRate }),
       icon: CheckCircle,
       colorClass: "bg-green-100 text-green-600",
     });

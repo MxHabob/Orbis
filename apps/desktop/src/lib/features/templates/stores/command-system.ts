@@ -51,8 +51,8 @@ export class UpdatePropsCommand implements EditorCommand {
     private props: Record<string, unknown>,
     nodeName?: string,
   ) {
-    this.description = `Update ${nodeName || nodeId}`;
-    this.descriptionAr = `تحديث ${nodeName || nodeId}`;
+    this.description = m.shared_ui_update_element({ element: nodeName || nodeId });
+    this.descriptionAr = m.shared_ui_update_element({ element: nodeName || nodeId });
   }
 
   execute(doc: TemplateDocument): TemplateDocument {
@@ -101,8 +101,8 @@ export class MoveNodeCommand implements EditorCommand {
     private newX: number,
     private newY: number,
   ) {
-    this.description = `Move element`;
-    this.descriptionAr = m.template_cmd_move_element();
+    this.description = m.shared_ui_move_element();
+    this.descriptionAr = m.shared_ui_move_element();
   }
 
   execute(doc: TemplateDocument): TemplateDocument {
@@ -139,8 +139,8 @@ export class MoveNodeCommand implements EditorCommand {
 /** Resize a node (width, height in mm) */
 export class ResizeNodeCommand implements EditorCommand {
   readonly type = "resize-node";
-  readonly description = "Resize element";
-  readonly descriptionAr = m.template_cmd_resize_element();
+  readonly description = m.shared_ui_resize_element();
+  readonly descriptionAr = m.shared_ui_resize_element();
   private prevWidth: number | string = 0;
   private prevHeight: number | string | undefined = 0;
 
@@ -188,8 +188,8 @@ export class AddNodeCommand implements EditorCommand {
     private node: TemplateNode,
     private index?: number,
   ) {
-    this.description = `Add ${node.type}`;
-    this.descriptionAr = `إضافة ${node.type}`;
+    this.description = m.shared_ui_add_element({ element: node.type });
+    this.descriptionAr = m.shared_ui_add_element({ element: node.type });
   }
 
   execute(doc: TemplateDocument): TemplateDocument {
@@ -211,8 +211,8 @@ export class RemoveNodeCommand implements EditorCommand {
   private index = 0;
 
   constructor(private nodeId: string) {
-    this.description = `Remove element`;
-    this.descriptionAr = m.template_cmd_delete_element();
+    this.description = m.shared_ui_remove_element();
+    this.descriptionAr = m.shared_ui_remove_element();
   }
 
   execute(doc: TemplateDocument): TemplateDocument {
@@ -236,8 +236,8 @@ export class RemoveNodeCommand implements EditorCommand {
 /** Duplicate a node */
 export class DuplicateNodeCommand implements EditorCommand {
   readonly type = "duplicate-node";
-  readonly description = "Duplicate element";
-  readonly descriptionAr = m.template_cmd_duplicate_element();
+  readonly description = m.shared_ui_duplicate_element();
+  readonly descriptionAr = m.shared_ui_duplicate_element();
   private clonedNode: TemplateNode | null = null;
 
   constructor(private nodeId: string) {}
@@ -270,8 +270,8 @@ export class DuplicateNodeCommand implements EditorCommand {
 /** Add a new page */
 export class AddPageCommand implements EditorCommand {
   readonly type = "add-page";
-  readonly description = "Add page";
-  readonly descriptionAr = m.template_cmd_add_page();
+  readonly description = m.shared_ui_add_page();
+  readonly descriptionAr = m.shared_ui_add_page();
   private pageId: string;
 
   constructor(
@@ -299,8 +299,8 @@ export class AddPageCommand implements EditorCommand {
 /** Remove a page */
 export class RemovePageCommand implements EditorCommand {
   readonly type = "remove-page";
-  readonly description = "Remove page";
-  readonly descriptionAr = m.template_cmd_remove_page();
+  readonly description = m.shared_ui_remove_page();
+  readonly descriptionAr = m.shared_ui_remove_page();
   private removedPage: PageNode | null = null;
   private removedIndex = 0;
 
@@ -333,8 +333,8 @@ export class BatchCommand implements EditorCommand {
 
   constructor(
     public commands: EditorCommand[],
-    description: string = "Multiple changes",
-    descriptionAr: string = String(m.template_cmd_multiple_changes()),
+    description: string = String(m.shared_ui_multiple_changes()),
+    descriptionAr: string = String(m.shared_ui_multiple_changes()),
   ) {
     this.description = description;
     this.descriptionAr = descriptionAr;

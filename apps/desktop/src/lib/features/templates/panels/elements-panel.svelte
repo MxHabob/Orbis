@@ -103,7 +103,7 @@ const elements: ElementItem[] = [
     type: "Grid",
     icon: Grid,
     label: "Grid",
-    labelAr: "شبكة",
+    labelAr: m.shared_ui_element_grid(),
     category: "layout",
   },
   {
@@ -111,7 +111,7 @@ const elements: ElementItem[] = [
     type: "Repeater",
     icon: ArrowPath,
     label: "Repeater",
-    labelAr: "مكرر",
+    labelAr: m.shared_ui_element_repeater(),
     category: "logic",
   },
   {
@@ -119,7 +119,7 @@ const elements: ElementItem[] = [
     type: "Conditional",
     icon: Merge,
     label: "Conditional",
-    labelAr: "شرط",
+    labelAr: m.shared_ui_element_conditional(),
     category: "logic",
   },
   {
@@ -127,7 +127,7 @@ const elements: ElementItem[] = [
     type: "ComponentRef",
     icon: Component,
     label: "Component",
-    labelAr: "مكوّن",
+    labelAr: m.shared_ui_element_component(),
     category: "layout",
   },
   {
@@ -135,7 +135,7 @@ const elements: ElementItem[] = [
     type: "PageBreak",
     icon: ArrowDownTray,
     label: "Page Break",
-    labelAr: "فاصل صفحة",
+    labelAr: m.shared_ui_element_page_break(),
     category: "flow",
   },
   {
@@ -143,7 +143,7 @@ const elements: ElementItem[] = [
     type: "Header",
     icon: Sidebar,
     label: "Header",
-    labelAr: "رأس الصفحة",
+    labelAr: m.shared_ui_element_header(),
     category: "flow",
   },
   {
@@ -151,7 +151,7 @@ const elements: ElementItem[] = [
     type: "Footer",
     icon: Sidebar,
     label: "Footer",
-    labelAr: "تذييل الصفحة",
+    labelAr: m.shared_ui_element_footer(),
     category: "flow",
   },
   {
@@ -159,7 +159,7 @@ const elements: ElementItem[] = [
     type: "Watermark",
     icon: CheckCircle,
     label: "Watermark",
-    labelAr: "علامة مائية",
+    labelAr: m.shared_ui_element_watermark(),
     category: "basic",
   },
   {
@@ -167,7 +167,7 @@ const elements: ElementItem[] = [
     type: "Spacer",
     icon: AlignVertical,
     label: "Spacer",
-    labelAr: "مسافة",
+    labelAr: m.shared_ui_element_spacer(),
     category: "layout",
   },
 ];

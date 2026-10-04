@@ -152,9 +152,9 @@ function buildInitialDocument() {
         props: {
           dataSource: "subjects",
           columns: [
-            { header: "المادة", field: "nameAr", width: "40%" },
-            { header: "الدرجة", field: "score", width: "30%" },
-            { header: "التقدير", field: "grade", width: "30%" },
+            { header: m.shared_ui_subject(), field: "nameAr", width: "40%" },
+            { header: m.shared_ui_score(), field: "score", width: "30%" },
+            { header: m.shared_ui_grade(), field: "grade", width: "30%" },
           ],
           showHeader: true,
           showGrid: true,
@@ -184,7 +184,7 @@ function buildInitialDocument() {
 
 async function handleCreateTemplate() {
   if (!newTemplateName.trim()) {
-    toast.error("Template name in English is required");
+    toast.error(m.shared_ui_template_name_required());
     return;
   }
 
@@ -205,14 +205,14 @@ async function handleCreateTemplate() {
 
     const response = await createMutation.mutateAsync(createRequest);
 
-    toast.success("Template created successfully");
+    toast.success(m.shared_ui_template_created());
     isCreateDialogOpen = false;
 
     // Redirect to editor page
     goto(`/${orgId}/templates/${response.id}`);
   } catch (e: unknown) {
     console.error("Failed to create template:", e);
-    const msg = extractErrorMessage(e) || "Failed to create template";
+    const msg = extractErrorMessage(e) || m.shared_ui_template_create_failed();
     toast.error(msg);
   }
 }
@@ -220,7 +220,7 @@ async function handleCreateTemplate() {
 // Trigger Delete
 async function confirmDelete(id: string) {
   const confirmed = await confirmStore.prompt({
-    title: m.common_action_delete() + "؟",
+    title: m.shared_ui_delete_template_confirmation_title(),
     description: m.common_docs_delete_confirm(),
     confirmText: m.common_action_delete(),
     variant: "destructive",
@@ -229,10 +229,10 @@ async function confirmDelete(id: string) {
 
   try {
     await deleteMutation.mutateAsync(id);
-    toast.success("Template deleted successfully");
+    toast.success(m.shared_ui_template_deleted());
   } catch (e: unknown) {
     console.error("Failed to delete template:", e);
-    const msg = extractErrorMessage(e) || "Failed to delete template";
+    const msg = extractErrorMessage(e) || m.shared_ui_template_delete_failed();
     toast.error(msg);
   }
 }
@@ -244,7 +244,7 @@ async function publishTemplate(id: string) {
     toast.success(m.settings_templates_publish_success());
   } catch (e: unknown) {
     console.error("Failed to publish template:", e);
-    const msg = extractErrorMessage(e) || "Failed to publish template";
+    const msg = extractErrorMessage(e) || m.shared_ui_template_publish_failed();
     toast.error(msg);
   }
 }
@@ -256,7 +256,7 @@ async function archiveTemplate(id: string) {
     toast.success(m.settings_templates_archive_success());
   } catch (e: unknown) {
     console.error("Failed to archive template:", e);
-    const msg = extractErrorMessage(e) || "Failed to archive template";
+    const msg = extractErrorMessage(e) || m.shared_ui_template_archive_failed();
     toast.error(msg);
   }
 }
@@ -268,7 +268,7 @@ async function restoreTemplate(id: string) {
     toast.success(m.settings_templates_restore_success());
   } catch (e: unknown) {
     console.error("Failed to restore template:", e);
-    const msg = extractErrorMessage(e) || "Failed to restore template";
+    const msg = extractErrorMessage(e) || m.shared_ui_template_restore_failed();
     toast.error(msg);
   }
 }

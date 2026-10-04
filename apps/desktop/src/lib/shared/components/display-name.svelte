@@ -3,6 +3,7 @@
 A reusable card component for editing and saving a user's or organization's display name.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import {
   Card,
   CardHeader,
@@ -17,8 +18,8 @@ import { FormField } from "@orbis/ui";
 import { AdjustmentsHorizontal, ArrowPath, FloppyDisk } from "@orbis/icons";
 
 let {
-  title = "Display Name",
-  description = "Please enter your full name, or a display name you are comfortable with.",
+  title = m.shared_ui_display_name(),
+  description = m.shared_ui_display_name_help(),
   name = $bindable(""),
   maxLength = 32,
   isSubmitting = false,
@@ -64,7 +65,7 @@ function handleSave(event: Event) {
     </CardHeader>
 
     <CardContent class="px-6 pb-4">
-      <FormField label={title} error={isInvalid ? "Invalid name" : undefined} required>
+      <FormField label={title} error={isInvalid ? m.shared_ui_invalid_name() : undefined} required>
         {#snippet children()}
           <Input
             bind:value={tempName}
@@ -82,7 +83,10 @@ function handleSave(event: Event) {
 
     <CardFooter class="px-6 py-4 bg-muted/20 border-t border-border flex items-center justify-between gap-4">
       <span class="text-[11px] text-muted-foreground">
-        Limit {maxLength} characters ({charCount}/{maxLength})
+        {m.shared_ui_character_limit({
+          limit: maxLength,
+          count: charCount,
+        })}
       </span>
       <Button
         type="submit"
@@ -92,9 +96,9 @@ function handleSave(event: Event) {
       >
         {#if isSubmitting}
           <ArrowPath class="animate-spin mr-1.5 shrink-0" size={13} />
-          Saving...
+          {m.shared_ui_saving()}
         {:else}
-          FloppyDisk
+          {m.common_action_save()}
         {/if}
       </Button>
     </CardFooter>

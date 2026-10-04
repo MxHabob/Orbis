@@ -45,8 +45,8 @@ let {
 
     <!-- Arabic Display Name -->
     <SettingsRow
-      title="الاسم العربي"
-      description="الاسم المستخدم في المستندات والقوالب العربية"
+      title={m.settings_ui_organization_arabic_name()}
+      description={m.settings_ui_organization_arabic_name_description()}
       labelFor="org_name_ar"
     >
       {#snippet children()}

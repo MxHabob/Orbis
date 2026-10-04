@@ -54,9 +54,7 @@ const strengthLabel = $derived.by(() => {
       {m.ui_onboarding_admin_primary_administrator_account()}
     </h2>
     <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-      {isRTL
-        ? "سيتم منح هذا الحساب صلاحيات الإشراف والتحكم الكاملة بجميع وحدات وقواعد بيانات المنظومة."
-        : "This master account will possess unrestricted authority across security policies and core operations."}
+      {m.operations_ui_admin_account_description()}
     </p>
   </div>
 
@@ -83,9 +81,7 @@ const strengthLabel = $derived.by(() => {
       </div>
 
       <div class="w-full mt-6 pt-4 border-t border-border/40 text-xs text-muted-foreground leading-relaxed">
-        {isRTL
-          ? "يتم تشفير وتأمين كلمات المرور محلياً عبر خوارزمية Bcrypt مع توثيق كامل للعمليات الإدارية."
-          : "Credentials are cryptographically hashed on-device using Bcrypt with full audit logging."}
+        {m.operations_ui_admin_password_security_notice()}
       </div>
     </div>
 
@@ -107,7 +103,7 @@ const strengthLabel = $derived.by(() => {
             id="admin-fn-ar"
             type="text"
             dir="rtl"
-            placeholder="مثال: طارق"
+            placeholder={m.operations_ui_admin_first_name_arabic_example()}
             bind:value={form.adminFirstNameAr}
             class="h-9 text-xs"
           />
@@ -121,7 +117,7 @@ const strengthLabel = $derived.by(() => {
             id="admin-ln-ar"
             type="text"
             dir="rtl"
-            placeholder="مثال: المنصور"
+            placeholder={m.operations_ui_admin_last_name_arabic_example()}
             bind:value={form.adminLastNameAr}
             class="h-9 text-xs"
           />

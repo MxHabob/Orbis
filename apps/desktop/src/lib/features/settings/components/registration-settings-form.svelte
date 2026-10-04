@@ -595,7 +595,7 @@ function handleFormSave() {
             </Label>
             <Input
               bind:value={studentNumberPrefix}
-              placeholder="e.g. STU"
+              placeholder={m.settings_ui_student_number_prefix_example()}
               class="h-9 text-xs font-mono uppercase"
             />
           </div>
@@ -636,7 +636,7 @@ function handleFormSave() {
               onValueChange={(v) => (studentNumberDigits = Number(v || 4))}
             >
               <SelectTrigger class="h-9 text-xs font-mono">
-                {studentNumberDigits} {m.ui_copy_digits_2a437f20()} (مثال: {"1".padStart(studentNumberDigits, "0")})
+                {m.ui_copy_digits_2a437f20()} {m.settings_ui_student_number_digits_example({ count: studentNumberDigits, example: "1".padStart(studentNumberDigits, "0") })}
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="3" class="text-xs font-mono">3 {m.ui_copy_digits_2a437f20()} (001)</SelectItem>

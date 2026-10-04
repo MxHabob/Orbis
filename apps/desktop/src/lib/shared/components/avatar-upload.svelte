@@ -3,6 +3,7 @@
 A circular avatar image uploader with hover edit states and customizable fallbacks.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui/avatar";
 import { cn } from "@orbis/ui/utils";
 import { AdjustmentsHorizontal, ArrowPath, User } from "@orbis/icons";
@@ -125,7 +126,7 @@ function handleFileChange(event: Event) {
     <Avatar class="w-full h-full rounded-md">
       <AvatarImage
         src={displayUrl ?? undefined}
-        alt="Avatar"
+        alt={m.shared_ui_avatar()}
         class="w-full h-full object-cover"
       />
       <AvatarFallback class="flex items-center justify-center select-none">
@@ -139,7 +140,7 @@ function handleFileChange(event: Event) {
 
     <!-- Overlay on Hover -->
     <div class="absolute inset-0 bg-black/15 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-medium select-none text-xs">
-      <span>Change ▾</span>
+      <span>{m.shared_ui_change()}</span>
     </div>
   {/if}
 

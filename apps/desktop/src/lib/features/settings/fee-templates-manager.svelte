@@ -132,7 +132,7 @@ async function handleGridAction(event: GridActionEvent) {
   } else if (event.actionId === "delete") {
     const templateName = row.name_ar || row.name || "";
     const confirmed = await confirmStore.prompt({
-      title: `${m.common_action_delete()}؟`,
+      title: m.common_action_delete(),
       description: `${m.common_action_delete()} "${templateName}"?`,
       confirmText: m.common_action_delete(),
       variant: "destructive",

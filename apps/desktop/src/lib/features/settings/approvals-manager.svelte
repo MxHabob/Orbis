@@ -179,50 +179,43 @@ function getOverrideTypeInfo(typeStr?: string) {
   switch (typeStr) {
     case "admission_approval":
       return {
-        labelAr: "اعتماد قبول وتسجيل طالب",
-        labelEn: "Student Admission Approval",
+        label: m.settings_ui_approval_admission(),
         icon: UserBadgeCheck,
         variant: "lime" as const,
       };
     case "capacity_override":
       return {
-        labelAr: "تجاوز السعة الاستيعابية للشعبة",
-        labelEn: "Classroom Capacity Override",
+        label: m.settings_ui_approval_capacity_override(),
         icon: User,
         variant: "warning" as const,
       };
     case "grade_change":
       return {
-        labelAr: "تعديل درجة أكاديمية مقفلة",
-        labelEn: "Locked Grade Adjustment",
+        label: m.settings_ui_approval_locked_grade_change(),
         icon: AdjustmentsHorizontal,
         variant: "default" as const,
       };
     case "prerequisite_bypass":
       return {
-        labelAr: "تجاوز المتطلب السابق للمادة",
-        labelEn: "Prerequisite Course Bypass",
+        label: m.settings_ui_approval_prerequisite_bypass(),
         icon: Lock,
         variant: "destructive" as const,
       };
     case "late_enrollment":
       return {
-        labelAr: "قيد وتسجيل متأخر",
-        labelEn: "Late Enrollment",
+        label: m.settings_ui_approval_late_enrollment(),
         icon: ClockRotateRight,
         variant: "outline" as const,
       };
     case "discount_override":
       return {
-        labelAr: "اعتماد منحة / خصم استثنائي",
-        labelEn: "Scholarship & Fee Discount",
+        label: m.settings_ui_approval_discount_override(),
         icon: Tag,
         variant: "secondary" as const,
       };
     default:
       return {
-        labelAr: (typeStr || "طلب استثناء").replace(/_/g, " "),
-        labelEn: (typeStr || "Override Request").replace(/_/g, " "),
+        label: m.settings_ui_approval_unknown_type({ type: (typeStr || "override request").replace(/_/g, " ") }),
         icon: CheckSquare,
         variant: "outline" as const,
       };
@@ -398,7 +391,7 @@ function parseApprovalChain(chain: any): any[] {
                             {@const Icon = typeInfo.icon}
                             <Icon class="w-3.5 h-3.5" />
                           {/if}
-                          <span>{l(typeInfo.labelAr, typeInfo.labelEn)}</span>
+                          <span>{typeInfo.label}</span>
                         </Badge>
 
                         {#if request.risk_level}
@@ -425,7 +418,7 @@ function parseApprovalChain(chain: any): any[] {
 
                       <div class="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>{m.ui_copy_requested_by_a2679cef()}</span>
-                        <strong class="text-foreground font-medium">{request.requested_by_name || request.requested_by || "مسؤول النظام"}</strong>
+                        <strong class="text-foreground font-medium">{request.requested_by_name || request.requested_by || m.settings_ui_system_administrator()}</strong>
                       </div>
 
                       <!-- Changed Field Values Diff Matrix -->
@@ -555,7 +548,7 @@ function parseApprovalChain(chain: any): any[] {
                   <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
                       <Badge variant={typeInfo.variant} class="text-xs font-bold">
-                        {l(typeInfo.labelAr, typeInfo.labelEn)}
+                        {typeInfo.label}
                       </Badge>
                       <Badge variant={statusBadgeVariant(request.status)} class="text-[10px] font-bold uppercase">
                         {request.status}
@@ -601,12 +594,12 @@ function parseApprovalChain(chain: any): any[] {
                     {request.status}
                   </Badge>
                   <Badge variant="outline" class="text-[10px] shrink-0">
-                    {l(typeInfo.labelAr, typeInfo.labelEn)}
+                    {typeInfo.label}
                   </Badge>
                   <span class="truncate font-medium text-foreground">{request.reason}</span>
                 </div>
                 <div class="flex items-center gap-3 shrink-0 text-[10px] text-muted-foreground font-mono">
-                  <span>{request.requested_by_name || "System"}</span>
+                  <span>{request.requested_by_name || m.settings_ui_system()}</span>
                   <span>{formatDate(request.created_at)}</span>
                 </div>
               </div>

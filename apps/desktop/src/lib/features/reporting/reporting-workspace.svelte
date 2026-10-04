@@ -89,15 +89,26 @@ let isPreviewOpen = $state(false);
 let previewBlobUrl = $state<string>("");
 
 const categoryOptions = [
-  { id: "all", label: "جميع المجالات الأكاديمية والمؤسسية" },
-  { id: "academic", label: "الشؤون الأكاديمية والدرجات" },
-  { id: "student", label: "شؤون الطلاب والقبول والتسجيل" },
-  { id: "attendance", label: "الحضور والمواظبة والانضباط" },
-  { id: "exam", label: "الاختبارات والكنترول المدرسي" },
-  { id: "finance", label: "المالية والمحاسبة والرسوم" },
-  { id: "hr", label: "الموارد البشرية وشؤون الكادر" },
-  { id: "administration", label: "الإدارة والتشغيل والسياسات" },
+  { id: "all", label: m.operations_ui_report_category_all() },
+  { id: "academic", label: m.operations_ui_report_category_academic() },
+  { id: "student", label: m.operations_ui_report_category_student() },
+  { id: "attendance", label: m.operations_ui_report_category_attendance() },
+  { id: "exam", label: m.operations_ui_report_category_exams() },
+  { id: "finance", label: m.operations_ui_report_category_finance() },
+  { id: "hr", label: m.operations_ui_report_category_hr() },
+  { id: "administration", label: m.operations_ui_report_category_administration() },
 ];
+
+function getFormatFilterLabel(format: string): string {
+  switch (format) {
+    case "all": return m.operations_ui_all_export_formats();
+    case "PDF": return m.operations_ui_pdf_documents();
+    case "XLSX": return m.operations_ui_xlsx_spreadsheets();
+    case "CSV": return m.operations_ui_csv_files();
+    case "HTML": return m.operations_ui_interactive_html();
+    default: return m.operations_ui_export_format();
+  }
+}
 
 function getDomainIcon(domain?: string, category?: string) {
   const d = (domain || "").toLowerCase();
@@ -162,7 +173,7 @@ async function handleExecuteReport() {
   if (!selectedDefinition) return;
 
   isGenerating = true;
-  jobStatus = "جاري معالجة البيانات وتوليد المستند...";
+  jobStatus = m.operations_ui_report_processing();
 
   try {
     const params: Record<string, unknown> = {
@@ -189,27 +200,27 @@ async function handleExecuteReport() {
         if (status.status === "completed" || status.status === "ready") {
           clearInterval(pollInterval);
           isGenerating = false;
-          jobStatus = "تم إكمال التقرير بنجاح";
-          toast.success("تم توليد التقرير بنجاح");
+          jobStatus = m.operations_ui_report_completed();
+          toast.success(m.operations_ui_report_generated_success());
           await handlePreviewReport(jobId);
         } else if (status.status === "failed") {
           clearInterval(pollInterval);
           isGenerating = false;
-          jobStatus = "فشل توليد التقرير";
-          toast.error(status.error_message || "فشلت عملية إنشاء التقرير");
+          jobStatus = m.operations_ui_report_failed();
+          toast.error(status.error_message || m.operations_ui_report_create_error());
         }
       } catch {
         if (attempts > 15) {
           clearInterval(pollInterval);
           isGenerating = false;
-          toast.error("انتهت مهلة انتظار إنشاء التقرير");
+          toast.error(m.operations_ui_report_create_timeout());
         }
       }
     }, 1000);
   } catch (e) {
     isGenerating = false;
     console.error("Failed to execute report:", e);
-    toast.error(extractErrorMessage(e) || "حدث خطأ أثناء تنفيذ التقرير");
+    toast.error(extractErrorMessage(e) || m.operations_ui_report_execution_error());
   }
 }
 
@@ -227,7 +238,7 @@ async function handlePreviewReport(jobId: string) {
     isSheetOpen = false;
   } catch (e) {
     console.error("Failed to load report preview:", e);
-    toast.error("فشل فتح معاينة التقرير");
+    toast.error(m.operations_ui_report_preview_error());
   }
 }
 
@@ -254,14 +265,14 @@ function handleDownloadCurrent() {
         <div class="w-full sm:w-72">
           <SearchField
             bind:value={searchQuery}
-            placeholder="بحث في التقارير والكشوفات..."
+            placeholder={m.operations_ui_reports_search_placeholder()}
           />
         </div>
 
         <!-- Category / Domain Filter -->
         <Select type="single" bind:value={selectedCategory}>
           <SelectTrigger class="h-9 text-xs bg-background/40 border-border/40 hover:bg-muted/40 transition-colors w-auto min-w-[200px]">
-            {categoryOptions.find((c) => c.id === selectedCategory)?.label || "جميع المجالات"}
+            {categoryOptions.find((c) => c.id === selectedCategory)?.label || m.operations_ui_report_category_all()}
           </SelectTrigger>
           <SelectContent>
             {#each categoryOptions as cat}
@@ -273,14 +284,14 @@ function handleDownloadCurrent() {
         <!-- Format Filter -->
         <Select type="single" bind:value={selectedFormatFilter}>
           <SelectTrigger class="h-9 text-xs bg-background/40 border-border/40 hover:bg-muted/40 transition-colors">
-            {({ all: "كافة الصيغ (PDF, XLSX)", PDF: "مستندات PDF", XLSX: "جداول XLSX", CSV: "ملفات CSV", HTML: "تفاعلي HTML" } as Record<string, string>)[selectedFormatFilter] || "صيغة التصدير"}
+            {getFormatFilterLabel(selectedFormatFilter)}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">كافة الصيغ (PDF, XLSX)</SelectItem>
-            <SelectItem value="PDF">مستندات PDF</SelectItem>
-            <SelectItem value="XLSX">جداول XLSX</SelectItem>
-            <SelectItem value="CSV">ملفات CSV</SelectItem>
-            <SelectItem value="HTML">تفاعلي HTML</SelectItem>
+            <SelectItem value="all">{m.operations_ui_all_export_formats()}</SelectItem>
+            <SelectItem value="PDF">{m.operations_ui_pdf_documents()}</SelectItem>
+            <SelectItem value="XLSX">{m.operations_ui_xlsx_spreadsheets()}</SelectItem>
+            <SelectItem value="CSV">{m.operations_ui_csv_files()}</SelectItem>
+            <SelectItem value="HTML">{m.operations_ui_interactive_html()}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -291,7 +302,7 @@ function handleDownloadCurrent() {
           <TabsList class="h-9 bg-muted/40 p-0.5 rounded-lg border border-border/40">
             <TabsTrigger value="reports" class="text-xs font-semibold gap-1.5 px-3 py-1 rounded-md">
               <DocumentChartBar class="w-3.5 h-3.5" />
-              دليل التقارير
+              {m.operations_ui_reports_directory()}
               {#if reportDefinitions.length > 0}
                 <span class="ms-1 px-1.5 py-0.2 rounded-full text-[10px] bg-primary/15 text-primary font-mono font-bold">
                   {filteredDefinitions.length}
@@ -300,7 +311,7 @@ function handleDownloadCurrent() {
             </TabsTrigger>
             <TabsTrigger value="analytics" class="text-xs font-semibold gap-1.5 px-3 py-1 rounded-md">
               <ChartBar class="w-3.5 h-3.5" />
-              المؤشرات والتحليلات
+              {m.operations_ui_metrics_analytics()}
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -323,8 +334,8 @@ function handleDownloadCurrent() {
         {:else if filteredDefinitions.length === 0}
           <Card class="border border-dashed border-border/60 bg-transparent p-12 text-center flex flex-col items-center justify-center gap-2 text-muted-foreground rounded-xl">
             <DocumentPage class="w-8 h-8 opacity-40" />
-            <div class="text-sm font-bold text-foreground">لا توجد تقارير مطابقة</div>
-            <div class="text-xs">جرب اختيار مجال آخر أو تغيير كلمة البحث</div>
+            <div class="text-sm font-bold text-foreground">{m.operations_ui_no_matching_reports()}</div>
+            <div class="text-xs">{m.operations_ui_try_another_report_filter()}</div>
           </Card>
         {:else}
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -355,7 +366,7 @@ function handleDownloadCurrent() {
 
                   <!-- Description -->
                   <p class="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                    {def.description_ar || def.description || "تقرير جاهز للتوليد والطباعة بصيغة PDF وجداول بيانات."}
+                    {def.description_ar || def.description || m.operations_ui_report_default_description()}
                   </p>
                 </div>
 
@@ -376,7 +387,7 @@ function handleDownloadCurrent() {
                     class="h-8 px-3 text-xs font-semibold gap-1.5 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all cursor-pointer"
                   >
                     <Play class="w-3 h-3" />
-                    توليد التقرير
+                    {m.operations_ui_generate_report()}
                   </Button>
                 </div>
               </div>
@@ -400,10 +411,10 @@ function handleDownloadCurrent() {
             </div>
             <div>
               <SheetTitle class="text-base font-bold text-foreground">
-                توليد {selectedDefinition.name_ar || selectedDefinition.name}
+                {m.operations_ui_generate_report_named({ name: selectedDefinition.name_ar || selectedDefinition.name })}
               </SheetTitle>
               <SheetDescription class="text-xs text-muted-foreground">
-                حدد معايير الفلترة وصيغة التصدير المطلوبة
+                {m.operations_ui_report_filter_format_hint()}
               </SheetDescription>
             </div>
           </div>
@@ -413,13 +424,13 @@ function handleDownloadCurrent() {
         <div class="space-y-4">
           <!-- Academic Period -->
           <div class="space-y-1.5">
-            <Label class="text-xs font-semibold">الفصل الدراسي</Label>
+            <Label class="text-xs font-semibold">{m.operations_ui_academic_term()}</Label>
             <Select value={selectedPeriodId} onValueChange={(v) => (selectedPeriodId = v)}>
               <SelectTrigger class="h-9 text-xs">
                 <span>
                   {periods.find((p) => p.id === selectedPeriodId)
                     ? l(periods.find((p) => p.id === selectedPeriodId)?.name_ar, periods.find((p) => p.id === selectedPeriodId)?.name)
-                    : "اختر الفصل الأكاديمي..."}
+                    : m.operations_ui_select_academic_term()}
                 </span>
               </SelectTrigger>
               <SelectContent>
@@ -434,17 +445,17 @@ function handleDownloadCurrent() {
 
           <!-- Class Selection (Optional) -->
           <div class="space-y-1.5">
-            <Label class="text-xs font-semibold">تصفية حسب الفصل (اختياري)</Label>
+            <Label class="text-xs font-semibold">{m.operations_ui_filter_by_class_optional()}</Label>
             <Select value={selectedClassId} onValueChange={(v) => (selectedClassId = v)}>
               <SelectTrigger class="h-9 text-xs">
                 <span>
                   {classes.find((c) => String(c.id) === selectedClassId)
                     ? l(classes.find((c) => String(c.id) === selectedClassId)?.name_ar, classes.find((c) => String(c.id) === selectedClassId)?.name)
-                    : "جميع الفصول والشعب"}
+                    : m.operations_ui_all_classes_sections()}
                 </span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع الفصول والشعب</SelectItem>
+                <SelectItem value="">{m.operations_ui_all_classes_sections()}</SelectItem>
                 {#each classes as c}
                   <SelectItem value={String(c.id)}>
                     {l(c.name_ar, c.name) || c.name}
@@ -457,18 +468,18 @@ function handleDownloadCurrent() {
           <!-- Date Range (Optional) -->
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1.5">
-              <Label class="text-xs font-semibold">من تاريخ</Label>
+              <Label class="text-xs font-semibold">{m.operations_ui_date_from()}</Label>
               <Input type="date" bind:value={dateFrom} class="h-9 text-xs" />
             </div>
             <div class="space-y-1.5">
-              <Label class="text-xs font-semibold">إلى تاريخ</Label>
+              <Label class="text-xs font-semibold">{m.operations_ui_date_to()}</Label>
               <Input type="date" bind:value={dateTo} class="h-9 text-xs" />
             </div>
           </div>
 
           <!-- Output Format -->
           <div class="space-y-1.5">
-            <Label class="text-xs font-semibold">صيغة الملف</Label>
+            <Label class="text-xs font-semibold">{m.operations_ui_file_format()}</Label>
             <div class="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -476,7 +487,7 @@ function handleDownloadCurrent() {
                 class="p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer {selectedFormat === 'PDF' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-muted-foreground hover:text-foreground'}"
               >
                 <DocumentPage class="w-4 h-4" />
-                مستند PDF جاهز للطباعة
+                {m.operations_ui_print_ready_pdf()}
               </button>
               <button
                 type="button"
@@ -484,7 +495,7 @@ function handleDownloadCurrent() {
                 class="p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer {selectedFormat === 'HTML' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-muted-foreground hover:text-foreground'}"
               >
                 <Eye class="w-4 h-4" />
-                عرض تفاعلي HTML
+                {m.operations_ui_interactive_html()}
               </button>
             </div>
           </div>
@@ -506,7 +517,7 @@ function handleDownloadCurrent() {
           disabled={isGenerating}
           class="h-9 text-xs font-semibold"
         >
-          إلغاء
+          {m.common_action_cancel()}
         </Button>
         <Button
           variant="default"
@@ -516,7 +527,7 @@ function handleDownloadCurrent() {
           class="h-9 text-xs font-bold gap-1.5 shadow-sm cursor-pointer"
         >
           <Play class="w-3.5 h-3.5" />
-          {isGenerating ? "جاري الإنشاء..." : "بدء التوليد والمعاينة"}
+          {isGenerating ? m.operations_ui_report_generating() : m.operations_ui_start_generate_preview()}
         </Button>
       </SheetFooter>
     </SheetContent>
@@ -529,10 +540,10 @@ function handleDownloadCurrent() {
     <DialogHeader class="flex flex-row items-center justify-between border-b pb-3">
       <div>
         <DialogTitle class="text-base font-bold">
-          معاينة التقرير: {selectedDefinition?.name_ar || selectedDefinition?.name}
+          {m.operations_ui_report_preview_named({ name: selectedDefinition?.name_ar || selectedDefinition?.name || "" })}
         </DialogTitle>
         <DialogDescription class="text-xs text-muted-foreground">
-          المستند جاهز للطباعة والتنزيل
+          {m.operations_ui_document_ready_print_download()}
         </DialogDescription>
       </div>
 
@@ -544,7 +555,7 @@ function handleDownloadCurrent() {
           class="h-8 text-xs font-semibold gap-1.5"
         >
           <Download class="w-3.5 h-3.5" />
-          تنزيل الملف
+          {m.operations_ui_download_file()}
         </Button>
       </div>
     </DialogHeader>
@@ -553,7 +564,7 @@ function handleDownloadCurrent() {
       {#if previewBlobUrl}
         <iframe
           src={previewBlobUrl}
-          title="معاينة التقرير"
+          title={m.operations_ui_report_preview()}
           class="w-full h-full border-0"
         ></iframe>
       {/if}
@@ -566,7 +577,7 @@ function handleDownloadCurrent() {
         onclick={() => (isPreviewOpen = false)}
         class="h-8 text-xs font-medium"
       >
-        إغلاق
+        {m.common_action_close()}
       </Button>
     </DialogFooter>
   </DialogContent>

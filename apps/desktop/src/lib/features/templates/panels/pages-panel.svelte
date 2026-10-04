@@ -55,8 +55,14 @@ function handlePageDrop(e: DragEvent, toIndex: number) {
   if (dragSourceIndex !== null && dragSourceIndex !== toIndex) {
     store.executeCommand({
       type: "reorder-page",
-      description: `Move page ${dragSourceIndex + 1} to position ${toIndex + 1}`,
-      descriptionAr: `نقل صفحة ${dragSourceIndex + 1} إلى الموضع ${toIndex + 1}`,
+      description: m.shared_ui_move_page_to_position({
+        page: dragSourceIndex + 1,
+        position: toIndex + 1,
+      }),
+      descriptionAr: m.shared_ui_move_page_to_position({
+        page: dragSourceIndex + 1,
+        position: toIndex + 1,
+      }),
       execute: (doc) => {
         const pages = [...doc.pages];
         const [moved] = pages.splice(dragSourceIndex!, 1);
@@ -93,8 +99,8 @@ function duplicatePage(index: number) {
 
   store.executeCommand({
     type: "duplicate-page",
-    description: `Duplicate page ${index + 1}`,
-    descriptionAr: `تكرار صفحة ${index + 1}`,
+    description: m.shared_ui_duplicate_page({ page: index + 1 }),
+    descriptionAr: m.shared_ui_duplicate_page({ page: index + 1 }),
     execute: (doc) => {
       const pages = [...doc.pages];
       pages.splice(index + 1, 0, clonedPage);
@@ -114,8 +120,12 @@ function movePage(fromIndex: number, direction: "up" | "down") {
 
   store.executeCommand({
     type: "reorder-page",
-    description: `Move page ${direction}`,
-    descriptionAr: `نقل صفحة ${direction === "up" ? "للأعلى" : "للأسفل"}`,
+    description: direction === "up"
+      ? m.shared_ui_move_page_up()
+      : m.shared_ui_move_page_down(),
+    descriptionAr: direction === "up"
+      ? m.shared_ui_move_page_up()
+      : m.shared_ui_move_page_down(),
     execute: (doc) => {
       const pages = [...doc.pages];
       const [moved] = pages.splice(fromIndex, 1);
@@ -211,7 +221,7 @@ function reassignIds(node: any) {
           <div class="flex flex-col flex-grow min-w-0 py-0.5">
             <div class="flex items-center gap-1">
               <span class="text-[10px] font-semibold {isActive ? 'text-primary' : 'text-foreground'}">
-                صفحة {i + 1}
+                {m.shared_ui_page_number({ number: i + 1 })}
               </span>
               {#if isActive}
                 <Badge variant="success" class="text-[7px] h-3 px-1">{m.template_label_active_page()}</Badge>

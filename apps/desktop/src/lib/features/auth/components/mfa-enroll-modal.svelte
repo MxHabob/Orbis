@@ -54,7 +54,7 @@ async function startEnrollment() {
       });
     }
   } catch (err: any) {
-    errorMessage = err.message || "Failed to initiate MFA enrollment";
+    errorMessage = err.message || m.auth_ui_mfa_enrollment_failed();
     toast.error(errorMessage);
   } finally {
     isLoading = false;
@@ -84,14 +84,14 @@ async function copyToClipboard(text: string, type: "secret" | "codes") {
     }
     toast.success(m.common_mfa_enroll_copied());
   } catch {
-    toast.error("Failed to copy");
+    toast.error(m.auth_ui_copy_failed());
   }
 }
 
 function downloadRecoveryCodes() {
   if (!enrollData) return;
   const content =
-    `ORBIS SECURITY RECOVERY CODES\nGenerated on: ${new Date().toISOString()}\n\nKeep these codes in a safe place. Each code can only be used once.\n\n` +
+    `${m.auth_ui_recovery_codes_title()}\n${m.auth_ui_recovery_codes_generated_on({ date: new Date().toISOString() })}\n\n${m.auth_ui_recovery_codes_keep_safe()}\n${m.auth_ui_recovery_codes_single_use()}\n\n` +
     enrollData.recovery_codes.map((c, i) => `${i + 1}. ${c}`).join("\n");
 
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
@@ -130,7 +130,7 @@ async function handleVerifyAndActivate() {
       toast.error(errorMessage);
     }
   } catch (err: any) {
-    errorMessage = err.message || "Verification failed";
+    errorMessage = err.message || m.auth_ui_mfa_verification_failed();
     toast.error(errorMessage);
   } finally {
     isSubmitting = false;
@@ -161,7 +161,7 @@ async function handleVerifyAndActivate() {
       {#if isLoading}
         <div class="py-12 flex flex-col items-center justify-center gap-3 text-muted-foreground">
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-          <span class="text-xs">Generating keys...</span>
+          <span class="text-xs">{m.auth_ui_mfa_generating_keys()}</span>
         </div>
       {:else if enrollData}
         <!-- Step 1: QR Code & Secret Key -->
@@ -173,7 +173,7 @@ async function handleVerifyAndActivate() {
 
             <div class="p-2 bg-white rounded-lg border border-border shadow-xs">
               {#if qrDataUrl}
-                <img src={qrDataUrl} alt="TOTP QR Code" class="w-36 h-36 rounded object-contain" />
+                <img src={qrDataUrl} alt={m.auth_ui_mfa_qr_alt()} class="w-36 h-36 rounded object-contain" />
               {/if}
             </div>
 

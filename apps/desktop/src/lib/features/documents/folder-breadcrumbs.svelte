@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { ChevronLeft, ChevronRight, Folder, FolderOpen, Home, Sparkles, User, AcademicCap } from "@orbis/icons";
 import type { FolderDto } from "$lib/api";
 
@@ -24,7 +25,7 @@ const isStudent = $derived(
 );
 </script>
 
-<nav aria-label="مسار المجلدات" class="flex items-center flex-wrap gap-1.5 text-xs text-muted-foreground">
+<nav aria-label={m.operations_ui_folder_breadcrumbs()} class="flex items-center flex-wrap gap-1.5 text-xs text-muted-foreground">
   <!-- Root / Home Button -->
   <button
     type="button"
@@ -32,7 +33,7 @@ const isStudent = $derived(
     class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors hover:text-foreground hover:bg-muted/60 {currentFolder ? 'font-normal' : 'font-semibold text-foreground bg-muted/40'}"
   >
     <Home class="w-3.5 h-3.5" />
-    <span>المستندات والأرشيف</span>
+    <span>{m.operations_ui_documents_archive()}</span>
   </button>
 
   {#if breadcrumbs && breadcrumbs.length > 0}

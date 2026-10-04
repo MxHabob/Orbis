@@ -142,8 +142,8 @@ function addVariable() {
   };
   store.executeCommand({
     type: "update-variables",
-    description: `Add variable ${newVarName}`,
-    descriptionAr: `إضافة متغير ${newVarName}`,
+    description: m.shared_ui_add_variable({ name: newVarName }),
+    descriptionAr: m.shared_ui_add_variable({ name: newVarName }),
     execute: (doc) => ({ ...doc, variables: updatedVars }),
     undo: (doc) => ({ ...doc, variables: previousVariables }),
   });
@@ -158,8 +158,8 @@ function removeVariable(varName: string) {
   const { [varName]: _, ...remaining } = prevVars;
   store.executeCommand({
     type: "remove-variable",
-    description: `Remove variable ${varName}`,
-    descriptionAr: `حذف متغير ${varName}`,
+    description: m.shared_ui_remove_variable({ name: varName }),
+    descriptionAr: m.shared_ui_remove_variable({ name: varName }),
     execute: (doc) => ({ ...doc, variables: remaining }),
     undo: (doc) => ({ ...doc, variables: prevVars }),
   });
@@ -207,6 +207,18 @@ function getTypeBadgeVariant(type: string): any {
       return "destructive";
     default:
       return "secondary";
+  }
+
+  function getTypeLabel(type: string): string {
+    switch (type) {
+      case "string": return m.shared_ui_type_string();
+      case "number": return m.shared_ui_type_number();
+      case "date": return m.shared_ui_type_date();
+      case "boolean": return m.shared_ui_type_boolean();
+      case "image": return m.shared_ui_type_image();
+      case "array": return m.shared_ui_type_array();
+      default: return type;
+    }
   }
 }
 
@@ -274,12 +286,12 @@ function handleDragStart(e: DragEvent, varName: string) {
           bind:value={newVarType}
           class="h-6 text-[10px] rounded border border-border bg-background px-1.5 grow"
         >
-          <option value="string">String</option>
-          <option value="number">Number</option>
-          <option value="date">Date</option>
-          <option value="boolean">Boolean</option>
-          <option value="image">Image</option>
-          <option value="array">Array</option>
+          <option value="string">{m.shared_ui_type_string()}</option>
+          <option value="number">{m.shared_ui_type_number()}</option>
+          <option value="date">{m.shared_ui_type_date()}</option>
+          <option value="boolean">{m.shared_ui_type_boolean()}</option>
+          <option value="image">{m.shared_ui_type_image()}</option>
+          <option value="array">{m.shared_ui_type_array()}</option>
         </select>
         <Button variant="lime" size="xs" class="cursor-pointer h-6 text-[10px]" onclick={addVariable}>
           {m.template_btn_add()}
@@ -317,7 +329,7 @@ function handleDragStart(e: DragEvent, varName: string) {
             <div class="flex flex-col grow min-w-0">
               <div class="flex items-center gap-1">
                 <span class="text-[10px] font-medium text-foreground truncate">{varDef.labelAr || varDef.label || varName}</span>
-                <Badge variant={getTypeBadgeVariant(varDef.type)} class="text-[7px] h-3 px-1">{varDef.type}</Badge>
+                <Badge variant={getTypeBadgeVariant(varDef.type)} class="text-[7px] h-3 px-1">{getTypeLabel(varDef.type)}</Badge>
               </div>
               <span class="text-[8px] text-muted-foreground font-mono truncate">
                 {`{{${varName}}}`}
@@ -354,7 +366,7 @@ function handleDragStart(e: DragEvent, varName: string) {
                   <TooltipContent>{m.template_tooltip_delete()}</TooltipContent>
                 </Tooltip>
               {:else}
-                <Badge variant="outline" class="text-[8px] px-1 h-3.5 font-normal text-muted-foreground bg-muted/30">نظام</Badge>
+                <Badge variant="outline" class="text-[8px] px-1 h-3.5 font-normal text-muted-foreground bg-muted/30">{m.shared_ui_system()}</Badge>
               {/if}
             </div>
           </div>

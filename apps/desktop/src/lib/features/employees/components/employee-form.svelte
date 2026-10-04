@@ -303,7 +303,7 @@ function handleCancelClick() {
               {#snippet children()}
               <Input
                 type="text"
-                placeholder="محمد"
+                placeholder={m.operations_ui_employee_first_name_example()}
                 class="text-xs h-9"
                 bind:value={firstNameAr}
                 disabled={isSaving}
@@ -315,7 +315,7 @@ function handleCancelClick() {
               {#snippet children()}
               <Input
                 type="text"
-                placeholder="عبدالله"
+                placeholder={m.operations_ui_employee_father_name_example()}
                 class="text-xs h-9"
                 bind:value={middleNameAr}
                 disabled={isSaving}
@@ -326,7 +326,7 @@ function handleCancelClick() {
               {#snippet children()}
               <Input
                 type="text"
-                placeholder="الغامدي"
+                placeholder={m.operations_ui_employee_last_name_example()}
                 class="text-xs h-9"
                 bind:value={lastNameAr}
                 disabled={isSaving}
@@ -482,7 +482,7 @@ function handleCancelClick() {
             {#snippet children()}
             <Input
               type="text"
-              placeholder="الرياض، حي النخيل، شارع الملك فهد"
+              placeholder={m.operations_ui_employee_address_example()}
               class="text-xs h-9"
               bind:value={address}
               disabled={isSaving}
@@ -520,7 +520,7 @@ function handleCancelClick() {
               {#snippet children()}
               <Input
                 type="text"
-                placeholder="معلم رياضيات أول"
+                placeholder={m.operations_ui_employee_job_title_example()}
                 class="text-xs h-9"
                 bind:value={jobTitle}
                 disabled={isSaving}
@@ -534,7 +534,7 @@ function handleCancelClick() {
               {#snippet children()}
               <Input
                 type="text"
-                placeholder="قسم العلوم والرياضيات"
+                placeholder={m.operations_ui_employee_department_example()}
                 class="text-xs h-9"
                 bind:value={department}
                 disabled={isSaving}

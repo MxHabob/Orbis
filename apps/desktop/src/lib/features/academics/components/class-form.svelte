@@ -66,13 +66,13 @@ async function handleSubmit(e: SubmitEvent) {
       academicContext.effectivePeriodId ||
       (periods[0]?.id ? String(periods[0].id) : "");
     if (!periodId) {
-      throw new Error("Academic period is required.");
+      throw new Error(m.shared_ui_academic_period_required());
     }
     const unitId =
       values.unit_id ||
       (units[0]?.id ? String(units[0].id) : "");
     if (!unitId) {
-      throw new Error("Organizational unit is required.");
+      throw new Error(m.shared_ui_organizational_unit_required());
     }
 
     const request: CreateClassRequest = {

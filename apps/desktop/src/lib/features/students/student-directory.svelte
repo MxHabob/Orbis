@@ -92,9 +92,9 @@ function handleExportStudents() {
     `Students_Roster_${orgId}`,
     filteredStudents,
     [
-      { header: "رقم الطالب", accessor: (s) => s.student?.student_number || "—" },
+      { header: m.operations_ui_student_number(), accessor: (s) => s.student?.student_number || "—" },
       {
-        header: "اسم الطالب",
+        header: m.operations_ui_student_name(),
         accessor: (s) =>
           (s.person?.first_name && s.person?.last_name
             ? `${s.person.first_name} ${s.person.last_name}`
@@ -102,24 +102,24 @@ function handleExportStudents() {
           s.person?.name_ar ||
           s.person?.name_en ||
           s.person?.full_name ||
-          "طالب",
+          m.operations_ui_student_fallback(),
       },
       {
-        header: "الفصل",
+        header: m.operations_ui_class(),
         accessor: (s) =>
           classes.find((c) => c.id === s.enrollment?.class_id)?.name ||
           s.enrollment?.class_id ||
           "—",
       },
-      { header: "الحالة", accessor: (s) => s.student?.status || "active" },
+      { header: m.operations_ui_status(), accessor: (s) => s.student?.status || "active" },
       {
-        header: "تاريخ القبول",
+        header: m.operations_ui_admission_date(),
         accessor: (s) =>
           s.student?.admitted_at ? formatDate(s.student.admitted_at, "date") : "—",
       },
     ],
   );
-  toast.success("تم تصدير قائمة الطلاب بنجاح (CSV)");
+  toast.success(m.operations_ui_student_export_success());
 }
 </script>
 
@@ -278,7 +278,7 @@ function handleExportStudents() {
           </span>
           <div class="flex flex-col min-w-0">
             <span class="truncate text-xs font-bold text-foreground">
-              {formatNumber(selectedStudentIds.size)} {selectedStudentIds.size === 1 ? m.common_word_student() : 'طلاب'} محدد
+              {m.operations_ui_students_selected({ count: formatNumber(selectedStudentIds.size) })}
             </span>
             {#if selectedStudentIds.size === 1}
               {@const singleStudent = students.find(s => selectedStudentIds.has(s.student?.id || s.person?.id))}
@@ -304,7 +304,7 @@ function handleExportStudents() {
                 onclick={() => goto(localizeHref(`/${orgId}/students/${singleStudent.student?.id}`))}
               >
                 <ArrowForward size={13} />
-                <span>الملف الشخصي</span>
+                <span>{m.operations_ui_student_profile()}</span>
               </Button>
             {/if}
           {/if}

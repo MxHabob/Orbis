@@ -162,9 +162,7 @@ const hasWhatsAppIntegration = $derived(
 interface DeliveryOption {
   id: string;
   name: string;
-  nameEn: string;
   desc: string;
-  descEn: string;
   icon: string;
   isAvailable: boolean;
   requiresIntegration?: string;
@@ -174,46 +172,38 @@ interface DeliveryOption {
 const availableChannels = $derived<DeliveryOption[]>([
   {
     id: "manual",
-    name: "بطاقة دخول مطبوعة / نسخ يدوي",
-    nameEn: "Manual Slip / Instant Copy",
-    desc: "عرض بيانات الدخول لمرة واحدة في نافذة منبثقة للطباعة أو النسخ",
-    descEn: "One-time popup modal for printing or copying credentials",
+    name: m.settings_ui_delivery_manual_name(),
+    desc: m.settings_ui_delivery_manual_description(),
     icon: "📋",
     isAvailable: true,
-    badge: "متاح دائماً",
+    badge: m.settings_ui_always_available(),
   },
   {
     id: "email",
-    name: "البريد الإلكتروني",
-    nameEn: "Email Notification",
-    desc: email ? `إرسال إلى ${email}` : "إرسال بيانات الدخول إلى البريد الإلكتروني",
-    descEn: email ? `Send to ${email}` : "Send credentials to email address",
+    name: m.settings_ui_delivery_email_name(),
+    desc: email ? m.settings_ui_delivery_send_to({ destination: email }) : m.settings_ui_delivery_email_description(),
     icon: "✉️",
     isAvailable: hasEmailIntegration,
     requiresIntegration: "SMTP / Email Gateway",
-    badge: hasEmailIntegration ? "تكامل متصل" : "يتطلب تكامل البريد",
+    badge: hasEmailIntegration ? m.settings_ui_integration_connected() : m.settings_ui_email_integration_required(),
   },
   {
     id: "sms",
-    name: "رسالة نصية SMS",
-    nameEn: "SMS Notification",
-    desc: phone ? `إرسال إلى ${phone}` : "إرسال كلمة المرور عبر رسالة SMS قصيرة",
-    descEn: phone ? `Send to ${phone}` : "Send password via short SMS text",
+    name: m.settings_ui_delivery_sms_name(),
+    desc: phone ? m.settings_ui_delivery_send_to({ destination: phone }) : m.settings_ui_delivery_sms_description(),
     icon: "💬",
     isAvailable: hasSmsIntegration,
     requiresIntegration: "SMS Gateway (Twilio / Unifonic)",
-    badge: hasSmsIntegration ? "تكامل متصل" : "يتطلب بوابة SMS",
+    badge: hasSmsIntegration ? m.settings_ui_integration_connected() : m.settings_ui_sms_gateway_required(),
   },
   {
     id: "whatsapp",
-    name: "واتساب WhatsApp",
-    nameEn: "WhatsApp Message",
-    desc: phone ? `إرسال إلى ${phone}` : "إرسال بطاقة الترحيب عبر واتساب الرسمي",
-    descEn: phone ? `Send to ${phone}` : "Send welcome credentials via WhatsApp",
+    name: m.settings_ui_delivery_whatsapp_name(),
+    desc: phone ? m.settings_ui_delivery_send_to({ destination: phone }) : m.settings_ui_delivery_whatsapp_description(),
     icon: "📱",
     isAvailable: hasWhatsAppIntegration,
     requiresIntegration: "Meta / WhatsApp Business API",
-    badge: hasWhatsAppIntegration ? "تكامل متصل" : "يتطلب تكامل واتساب",
+    badge: hasWhatsAppIntegration ? m.settings_ui_integration_connected() : m.settings_ui_whatsapp_integration_required(),
   },
 ]);
 
@@ -385,12 +375,7 @@ async function handleSubmit() {
   }
 
   if (finalUsername.length < 3) {
-    toast.error(
-      l(
-        "اسم المستخدم يجب أن يتكون من 3 أحرف على الأقل",
-        "Username must be at least 3 characters",
-      ),
-    );
+    toast.error(m.settings_ui_username_min_length_error());
     return;
   }
 
@@ -415,12 +400,7 @@ async function handleSubmit() {
   // Validate channel availability
   const selectedChannelObj = availableChannels.find((c) => c.id === deliveryChannel);
   if (selectedChannelObj && !selectedChannelObj.isAvailable && deliveryChannel !== "manual") {
-    toast.error(
-      l(
-        `قناة الإرسال المحددة (${selectedChannelObj.name}) غير مفعلة في قسم التكاملات`,
-        `The selected channel (${selectedChannelObj.nameEn}) is not enabled in Integrations`,
-      ),
-    );
+    toast.error(m.settings_ui_delivery_channel_not_enabled({ channel: selectedChannelObj.name }));
     return;
   }
 
@@ -469,12 +449,7 @@ async function handleSubmit() {
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all }),
     ]);
 
-    toast.success(
-      l(
-        `تم إنشاء وتعيين حساب المستخدم (${finalUsername}) بنجاح`,
-        `User account (${finalUsername}) provisioned successfully`,
-      ),
-    );
+    toast.success(m.settings_ui_user_account_provisioned({ username: finalUsername }));
 
     const displayName = l(fullNameAr, fullName) || fullName || finalUsername;
     open = false;
@@ -504,10 +479,7 @@ async function handleSubmit() {
           <span>{m.ui_copy_provision_user_account_796336f2()}</span>
         </Sheet.Title>
         <p class="text-xs text-muted-foreground mt-0.5">
-          {l(
-            "ربط هوية الوصول بالموظفين، الطلاب أو أولياء الأمور دون تكرار سجلات الأشخاص",
-            "Link digital access identity to employees, students or guardians without duplicating Person records",
-          )}
+          {m.settings_ui_user_provisioning_description()}
         </p>
       </Sheet.Header>
 
@@ -621,11 +593,11 @@ async function handleSubmit() {
                     <span>
                       {currentEmployee.user_id
                         ? l(
-                            "هذا الموظف مرتبط بحساب مسبقاً. سيتم ربط بيانات الدخول بهويته الشخصية الأصلية.",
+                            m.settings_ui_employee_already_has_account(),
                             "Employee already has an account. Credentials will update their original Person identity.",
                           )
                         : l(
-                            "سيتم ربط الحساب بسجل الموظف مباشرة دون تكرار أي بيانات شخصية.",
+                            m.settings_ui_employee_account_link_description(),
                             "Account will link directly to employee record without duplicating person details.",
                           )}
                     </span>
@@ -645,7 +617,7 @@ async function handleSubmit() {
                       l(
                         `${std.person?.first_name_ar || ""} ${std.person?.last_name_ar || ""}`.trim(),
                         `${std.person?.first_name || ""} ${std.person?.last_name || ""}`.trim(),
-                      ) || "طالب"}
+                      ) || m.common_ledger_entity_student()}
                     getItemSubtitle={(std: StudentDetailDto) =>
                       `${std.student?.student_number || "—"} • ${std.enrollment?.class_name || m.ui_copy_unassigned_df62ef28()}`}
                     getItemBadge={(std: StudentDetailDto) =>
@@ -661,11 +633,11 @@ async function handleSubmit() {
                     <span>
                       {currentStudent.student?.user_id
                         ? l(
-                            "هذا الطالب يمتلك حساب مستخدم نشط مسبقاً.",
+                            m.settings_ui_student_already_has_account(),
                             "This student already has an active user account.",
                           )
                         : l(
-                            "سيتم ربط الحساب بسجل الطالب الأصلي دون تكرار سجل الشخص.",
+                            m.settings_ui_student_account_link_description(),
                             "Account will link directly to the student record without duplicate Person row.",
                           )}
                     </span>
@@ -686,7 +658,7 @@ async function handleSubmit() {
                         l(
                           `${std.person?.first_name_ar || ""} ${std.person?.last_name_ar || ""}`.trim(),
                           `${std.person?.first_name || ""} ${std.person?.last_name || ""}`.trim(),
-                        ) || "طالب"}
+                        ) || m.common_ledger_entity_student()}
                       getItemSubtitle={(std: StudentDetailDto) =>
                         `${std.student?.student_number || "—"} • ${std.enrollment?.class_name || ""}`}
                       onchange={handleSelectGuardianStudent}
@@ -752,7 +724,7 @@ async function handleSubmit() {
                   <Input
                     id="dt_user_name_en"
                     type="text"
-                    placeholder="e.g. Ahmed Ali"
+                    placeholder={m.settings_ui_user_name_english_example()}
                     bind:value={fullName}
                     oninput={generateSuggestedUsername}
                     disabled={isSubmitting}
@@ -766,7 +738,7 @@ async function handleSubmit() {
                   <Input
                     id="dt_user_name_ar"
                     type="text"
-                    placeholder="مثال: أحمد علي"
+                    placeholder={m.settings_ui_user_name_arabic_example()}
                     bind:value={fullNameAr}
                     disabled={isSubmitting}
                     class="h-9 text-xs"
@@ -784,7 +756,7 @@ async function handleSubmit() {
                     <Input
                       id="dt_username"
                       type="text"
-                      placeholder="e.g. ahmed.ali"
+                      placeholder={m.settings_ui_username_example()}
                       bind:value={username}
                       disabled={isSubmitting}
                       class="h-9 text-xs font-mono lowercase pe-16"
@@ -821,7 +793,7 @@ async function handleSubmit() {
                   <Input
                     id="dt_email"
                     type="email"
-                    placeholder="user@school.edu"
+                    placeholder={m.settings_ui_email_example()}
                     bind:value={email}
                     disabled={isSubmitting}
                     class="h-9 text-xs"
@@ -953,7 +925,7 @@ async function handleSubmit() {
             <AccordionContent class="px-4 pb-4 pt-1 space-y-3">
               <p class="text-[11px] text-muted-foreground">
                 {l(
-                  "تعتمد قنوات تسليم بيانات الدخول على بوابات التكامل النشطة (SMS, WhatsApp, SMTP) في إعدادات المؤسسة:",
+                  m.settings_ui_delivery_channel_integrations_hint(),
                   "Delivery channels depend on active integration gateways (SMS, WhatsApp, SMTP) in workspace settings:",
                 )}
               </p>
@@ -975,7 +947,7 @@ async function handleSubmit() {
                     <span class="text-base mt-0.5">{channel.icon}</span>
                     <div class="flex flex-col gap-0.5 flex-1 min-w-0">
                       <div class="flex items-center justify-between gap-1">
-                        <span class="text-xs font-bold text-foreground truncate">{l(channel.name, channel.nameEn)}</span>
+                        <span class="text-xs font-bold text-foreground truncate">{channel.name}</span>
                         {#if channel.badge}
                           <Badge
                             variant={channel.isAvailable ? "default" : "outline"}
@@ -986,7 +958,7 @@ async function handleSubmit() {
                         {/if}
                       </div>
                       <span class="text-[10px] text-muted-foreground line-clamp-1 leading-normal">
-                        {l(channel.desc, channel.descEn)}
+                        {channel.desc}
                       </span>
                     </div>
                   </button>

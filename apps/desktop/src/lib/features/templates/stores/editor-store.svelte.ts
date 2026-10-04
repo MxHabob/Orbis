@@ -296,8 +296,8 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       executeCommand(
         new BatchCommand(
           cmds,
-          "Update multiple",
-          m.template_cmd_batch_update(),
+          m.shared_ui_update_multiple_elements(),
+          m.shared_ui_update_multiple_elements(),
         ),
       );
     }
@@ -320,8 +320,8 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     const previousAssets = { ...document.assets };
     executeCommand({
       type: "add-asset",
-      description: "Add asset",
-      descriptionAr: "إضافة أصل",
+      description: m.shared_ui_add_asset(),
+      descriptionAr: m.shared_ui_add_asset(),
       execute: (doc) => ({
         ...doc,
         assets: { ...previousAssets, [assetId]: { assetId, type } },
@@ -339,7 +339,11 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     } else {
       const cmds = updates.map((u) => new MoveNodeCommand(u.id, u.x, u.y));
       executeCommand(
-        new BatchCommand(cmds, "Move elements", m.template_cmd_move_element()),
+        new BatchCommand(
+          cmds,
+          m.shared_ui_move_elements(),
+          m.shared_ui_move_elements(),
+        ),
       );
     }
   }
@@ -353,8 +357,8 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       executeCommand(
         new BatchCommand(
           cmds,
-          "Resize elements",
-          m.template_cmd_resize_element(),
+          m.shared_ui_resize_elements(),
+          m.shared_ui_resize_elements(),
         ),
       );
     }
@@ -374,8 +378,8 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       executeCommand(
         new BatchCommand(
           cmds,
-          "Delete multiple",
-          m.template_cmd_batch_delete(),
+          m.shared_ui_delete_multiple_elements(),
+          m.shared_ui_delete_multiple_elements(),
         ),
       );
     }
@@ -391,8 +395,8 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       executeCommand(
         new BatchCommand(
           cmds,
-          "Duplicate elements",
-          m.template_cmd_duplicate_element(),
+          m.shared_ui_duplicate_elements(),
+          m.shared_ui_duplicate_elements(),
         ),
       );
     }
@@ -430,8 +434,8 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     const next = { ...previous, ...updates };
     executeCommand({
       type: "update-page-setup",
-      description: "Update page setup",
-      descriptionAr: "تحديث إعدادات الصفحة",
+      description: m.shared_ui_update_page_setup(),
+      descriptionAr: m.shared_ui_update_page_setup(),
       execute: (doc) => ({
         ...doc,
         meta: { ...doc.meta, pageSetup: next },
@@ -668,8 +672,8 @@ export function createEditorStore(initialDoc: TemplateDocument) {
 
       executeCommand({
         type: "reorder",
-        description: `Bring elements to front`,
-        descriptionAr: `إحضار العناصر إلى المقدمة`,
+        description: m.shared_ui_bring_elements_to_front(),
+        descriptionAr: m.shared_ui_bring_elements_to_front(),
         execute: (doc) => {
           const p = getPages(doc).find((pg) => pg.id === page.id);
           if (p) (p as any).children = newChildren;
@@ -703,8 +707,8 @@ export function createEditorStore(initialDoc: TemplateDocument) {
 
       executeCommand({
         type: "reorder",
-        description: `Send elements to back`,
-        descriptionAr: `إرسال العناصر إلى الخلف`,
+        description: m.shared_ui_send_elements_to_back(),
+        descriptionAr: m.shared_ui_send_elements_to_back(),
         execute: (doc) => {
           const p = getPages(doc).find((pg) => pg.id === page.id);
           if (p) (p as any).children = newChildren;

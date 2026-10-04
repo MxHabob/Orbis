@@ -125,7 +125,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
       <div class="flex items-center gap-2">
         <Badge variant="outline" class="text-[10px] px-2.5 py-0.5 gap-1.5 text-muted-foreground font-mono bg-background/50">
           <ChartBar size={10} class="text-emerald-500 animate-pulse" />
-          <span>V2.4 ENGINE</span>
+          <span>{m.auth_ui_connection_engine_label()}</span>
         </Badge>
       </div>
     </div>

@@ -73,7 +73,7 @@ function formatSize(bytes?: number | null) {
     {#if ontoggle}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <div class="absolute inset-s-2 top-2 z-10 rounded-md bg-background/85 p-1 shadow-sm opacity-80 group-hover:opacity-100 transition-opacity" onclick={stopPropagation}>
-        <Checkbox checked={selected} onCheckedChange={(value) => ontoggle?.(document.id, value === true)} aria-label={`تحديد ${document.name}`} />
+        <Checkbox checked={selected} onCheckedChange={(value) => ontoggle?.(document.id, value === true)} aria-label={m.operations_ui_document_select({ name: document.name })} />
       </div>
     {/if}
 
@@ -101,12 +101,12 @@ function formatSize(bytes?: number | null) {
     {:else if isAudio}
       <div class="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground/70">
         <SoundHigh class="h-10 w-10 text-primary/70" strokeWidth={1.5} />
-        <span class="text-[10px] font-medium">ملف صوتي</span>
+        <span class="text-[10px] font-medium">{m.operations_ui_audio_file()}</span>
       </div>
     {:else if isPdf}
       <div class="flex h-full flex-col items-center justify-center gap-1.5 text-muted-foreground/70">
         <DocumentPage class="h-10 w-10 text-rose-500/80" strokeWidth={1.5} />
-        <span class="text-[10px] font-semibold text-rose-600 dark:text-rose-400">مستند PDF</span>
+        <span class="text-[10px] font-semibold text-rose-600 dark:text-rose-400">{m.operations_ui_pdf_document()}</span>
       </div>
     {:else}
       <div class="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground/70">
@@ -121,7 +121,7 @@ function formatSize(bytes?: number | null) {
         variant="secondary"
         size="icon-xs"
         onclick={(event) => { stopPropagation(event); onpreview(document); }}
-        title="معاينة"
+        title={m.operations_ui_preview()}
       >
         <Eye class="h-3.5 w-3.5" />
       </Button>
@@ -145,7 +145,7 @@ function formatSize(bytes?: number | null) {
           variant="outline"
           size="icon-xs"
           onclick={(event) => { stopPropagation(event); onarchive?.(document.id); }}
-          title="أرشفة"
+          title={m.operations_ui_archive()}
         >
           <ArchiveBox class="h-3.5 w-3.5" />
         </Button>
@@ -170,7 +170,7 @@ function formatSize(bytes?: number | null) {
       {document.name}
     </p>
     <div class="mt-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
-      <span class="truncate font-medium">{document.category || "عام"}</span>
+      <span class="truncate font-medium">{document.category || m.operations_ui_general_category()}</span>
       <span class="shrink-0 font-mono">{formatSize(document.file_size_bytes)}</span>
     </div>
   </div>

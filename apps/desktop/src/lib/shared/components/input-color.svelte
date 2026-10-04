@@ -4,6 +4,7 @@ A styled input box with an integrated color indicator, native color picker trigg
 and automatic color hashing from the input text.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui/input";
 
 let {
@@ -150,7 +151,7 @@ $effect(() => {
     onclick={triggerColorPicker}
     class="absolute left-2.5 w-4 h-4 rounded-full border border-border/80 shadow-sm transition-transform active:scale-95 cursor-pointer shrink-0 z-10"
     style="background-color: {color};"
-    title="Choose color"
+    title={m.shared_ui_choose_color()}
   ></button>
 
   <!-- Hidden color input -->

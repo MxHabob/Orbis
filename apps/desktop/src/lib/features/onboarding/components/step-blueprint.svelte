@@ -20,34 +20,49 @@ let {
 interface BlueprintOption {
   type: InstitutionType;
   blueprint: InstitutionBlueprint;
-  highlightsEn: string[];
-  highlightsAr: string[];
+  highlights: string[];
 }
 
 const blueprintsList: BlueprintOption[] = [
   {
     type: "k12_school",
     blueprint: BLUEPRINTS.k12_school,
-    highlightsEn: ["Grade Levels & Homerooms", "Guardian Portals", "Student Bus Routing", "Attendance & Conduct"],
-    highlightsAr: ["المراحل والفصول الدراسية", "بوابة أولياء الأمور", "حافلات النقل المدرسي", "المواظبة والسلوك"],
+    highlights: [
+      m.operations_ui_blueprint_k12_highlight_grades(),
+      m.operations_ui_blueprint_k12_highlight_guardian_portal(),
+      m.operations_ui_blueprint_k12_highlight_bus_routing(),
+      m.operations_ui_blueprint_k12_highlight_attendance_conduct(),
+    ],
   },
   {
     type: "university",
     blueprint: BLUEPRINTS.university,
-    highlightsEn: ["Credit Hours & GPA", "Faculties & Departments", "Academic Advising", "Semester Registrations"],
-    highlightsAr: ["الساعات المعتمدة والمعدل", "الكليات والأقسام", "الإرشاد الأكاديمي", "التسجيل الفصلي"],
+    highlights: [
+      m.operations_ui_blueprint_university_highlight_credits(),
+      m.operations_ui_blueprint_university_highlight_faculties(),
+      m.operations_ui_blueprint_university_highlight_advising(),
+      m.operations_ui_blueprint_university_highlight_registration(),
+    ],
   },
   {
     type: "vocational_institute",
     blueprint: BLUEPRINTS.vocational_institute,
-    highlightsEn: ["Certificate Tracks", "Cohort Batches", "Training Hours", "Modular Invoicing"],
-    highlightsAr: ["المسارات المهنية", "الدفعات التدريبية", "ساعات التدريب العملي", "الفواتير المرنة"],
+    highlights: [
+      m.operations_ui_blueprint_vocational_highlight_tracks(),
+      m.operations_ui_blueprint_vocational_highlight_cohorts(),
+      m.operations_ui_blueprint_vocational_highlight_training_hours(),
+      m.operations_ui_blueprint_vocational_highlight_invoicing(),
+    ],
   },
   {
     type: "language_center",
     blueprint: BLUEPRINTS.language_center,
-    highlightsEn: ["Placement Tests", "Intensive Courses", "Flexible Schedules", "Attendance Certifications"],
-    highlightsAr: ["تحديد المستوى", "الدورات المكثفة", "جداول مرنة", "شهادات الحضور"],
+    highlights: [
+      m.operations_ui_blueprint_language_highlight_placement(),
+      m.operations_ui_blueprint_language_highlight_intensive_courses(),
+      m.operations_ui_blueprint_language_highlight_flexible_schedules(),
+      m.operations_ui_blueprint_language_highlight_attendance_certificates(),
+    ],
   },
 ];
 </script>
@@ -63,9 +78,7 @@ const blueprintsList: BlueprintOption[] = [
       {m.ui_onboarding_blueprint_select_institutional_blueprint()}
     </h2>
     <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-      {isRTL
-        ? "يتم تكييف الهيكل الأكاديمي، نظام التقييم، وتوزيع الفصول تلقائياً وفقاً للنموذج المختار."
-        : "Evaluation policies, academic structures, and core operational rules will be calibrated to this model."}
+      {m.operations_ui_blueprint_selection_description()}
     </p>
   </div>
 
@@ -105,7 +118,7 @@ const blueprintsList: BlueprintOption[] = [
           </div>
 
           <div class="flex flex-wrap gap-1.5 mt-5 pt-3 border-t border-border/40">
-            {#each (isRTL ? item.highlightsAr : item.highlightsEn) as highlight}
+            {#each item.highlights as highlight}
               <Badge
                 variant="outline"
                 class="text-[11px] px-2 py-0.5 font-normal text-muted-foreground border-border/60 bg-muted/20"

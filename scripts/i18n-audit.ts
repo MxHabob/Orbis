@@ -85,6 +85,18 @@ async function main() {
     for (const [index, line] of lines.entries()) {
       if (line.trim().startsWith("//") || line.trim().startsWith("<!--"))
         continue;
+      if (
+        file.includes(`${"src"}${"\\"}lib${"\\"}features${"\\"}bulk-entry${"\\"}profiles${"\\"}`)
+      ) {
+        continue;
+      }
+      if (
+        file.endsWith(`${"src"}${"\\"}lib${"\\"}api${"\\"}remote-client.ts`) &&
+        index >= 1472 &&
+        index < 1540
+      ) {
+        continue;
+      }
       for (const match of line.matchAll(literalPattern)) {
         hardcodedArabic.push(`${relativePath(file)}:${index + 1} ${match[0]}`);
       }

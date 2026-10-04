@@ -84,12 +84,12 @@ const columns: OrbisColumnDef[] = [
   { id: "name", prop: "name", header: m.common_rooms_col_name(), name: m.common_rooms_col_name(), width: 200, size: 200, readonly: true, pin: "left", cellClass: "font-medium" },
   { id: "room_type", prop: "room_type", header: m.common_word_type(), name: m.common_word_type(), width: 130, size: 130, readonly: true },
   { id: "building", prop: "building", header: m.common_rooms_col_location(), name: m.common_rooms_col_location(), width: 150, size: 150, readonly: true },
-  { id: "floor", prop: "floor", header: "Floor", name: "Floor", width: 90, size: 90, readonly: true, align: "center" },
+  { id: "floor", prop: "floor", header: m.settings_ui_room_floor(), name: m.settings_ui_room_floor(), width: 90, size: 90, readonly: true, align: "center" },
   { id: "capacity", prop: "capacity", header: m.common_rooms_col_capacity(), name: m.common_rooms_col_capacity(), width: 100, size: 100, readonly: true, align: "center", type: "number" },
-  { id: "status", prop: "status", header: "Status", name: "Status", width: 100, size: 100, type: "badge", align: "center", readonly: true },
-  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: "Created At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "updated_at_display", prop: "updated_at_display", header: m.ui_copy_updated_at_ba0d0a9f(), name: "Updated At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "actions", prop: "actions", header: m.ui_copy_actions_c48127a5(), name: "Actions", width: 120, size: 120, type: "action", align: "center", readonly: true, meta: { items: roomActions } },
+  { id: "status", prop: "status", header: m.common_word_status(), name: m.common_word_status(), width: 100, size: 100, type: "badge", align: "center", readonly: true },
+  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: m.ui_copy_created_at_01f6ea5f(), width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "updated_at_display", prop: "updated_at_display", header: m.ui_copy_updated_at_ba0d0a9f(), name: m.ui_copy_updated_at_ba0d0a9f(), width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "actions", prop: "actions", header: m.ui_copy_actions_c48127a5(), name: m.ui_copy_actions_c48127a5(), width: 120, size: 120, type: "action", align: "center", readonly: true, meta: { items: roomActions } },
 ];
 
 function openCreateSheet() {

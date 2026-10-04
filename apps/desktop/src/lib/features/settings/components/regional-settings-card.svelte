@@ -75,7 +75,7 @@ const dateFormats = [
           bind:value={dateFormat}
           items={dateFormats}
           placeholder={m.settings_general_date_format()}
-          searchPlaceholder="ابحث عن صيغة التاريخ..."
+          searchPlaceholder={m.settings_ui_date_format_search_placeholder()}
           disabled={isSaving}
           getItemValue={(df) => df.value}
           getItemLabel={(df) => df.label}

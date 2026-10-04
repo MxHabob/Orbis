@@ -148,7 +148,7 @@ function openDuplicateRole(role: RoleDto) {
     ...role,
     id: `${role.id}_copy`,
     name: `${role.name} (Clipboard)`,
-    name_ar: role.name_ar ? `${role.name_ar} (نسخة)` : undefined,
+    name_ar: role.name_ar ? `${role.name_ar} (${m.settings_ui_copy_suffix()})` : undefined,
     is_system: false,
   };
   isSheetOpen = true;
@@ -161,9 +161,9 @@ async function handleDeleteRole(roleToDelete: RoleDto) {
   }
 
   const confirmed = await confirmStore.prompt({
-    title: (m.common_action_delete()) + "؟",
+    title: m.common_action_delete(),
     description: l(
-      `هل أنت متأكد من رغبتك في حذف الدور "${roleToDelete.name_ar || roleToDelete.name}"؟`,
+      m.settings_ui_role_delete_confirm({ role: roleToDelete.name_ar || roleToDelete.name }),
       `Are you sure you want to delete role "${roleToDelete.name}"?`
     ),
     confirmText: m.common_action_delete(),

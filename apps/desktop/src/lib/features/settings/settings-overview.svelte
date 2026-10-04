@@ -71,7 +71,7 @@ async function handleSaveAvatar(fileOrUrl: File | string | null) {
 
 async function handleRemoveOrganization() {
   if (!orgId) return;
-  toast.error("Organization deletion is not available in the desktop client");
+  toast.error(m.settings_ui_organization_delete_unavailable());
 }
 </script>
 

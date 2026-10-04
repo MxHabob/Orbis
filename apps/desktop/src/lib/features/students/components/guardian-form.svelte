@@ -300,7 +300,7 @@ async function handleSubmit(e: SubmitEvent) {
             </div>
           {:else}
             <div class="p-4 rounded-lg border border-dashed border-border/60 text-center text-xs text-muted-foreground">
-              يرجى البحث عن ولي الأمر واختياره لربطه بالطالب
+              {m.operations_ui_guardian_search_to_link_hint()}
             </div>
           {/if}
 
@@ -356,7 +356,7 @@ async function handleSubmit(e: SubmitEvent) {
                 checked={form.values.isAuthorizedPickup}
                 onCheckedChange={(val: boolean | "indeterminate") => form.setField("isAuthorizedPickup", val === true)}
               />
-              <Label for="pickup_chk" class="text-xs cursor-pointer">مخول بالاستلام</Label>
+              <Label for="pickup_chk" class="text-xs cursor-pointer">{m.operations_ui_authorized_for_pickup()}</Label>
             </div>
 
             <div class="flex items-center gap-2">

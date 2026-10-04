@@ -107,7 +107,7 @@ async function initEditor() {
     store.loadDocument(doc);
     isLoading = false;
   } catch (e: unknown) {
-    const msg = (e as any)?.message || "Failed to initialize editor";
+    const msg = (e as any)?.message || m.shared_ui_template_editor_initialize_failed();
     toast.error(msg);
     error = msg;
     isLoading = false;
@@ -143,7 +143,7 @@ async function renameTemplate(newName: string) {
       store.markSaved();
     }
   } catch (e: unknown) {
-    const msg = (e as any)?.message || "Failed to rename template";
+    const msg = (e as any)?.message || m.shared_ui_template_rename_failed();
     toast.error(msg);
     // revert
     templateRecord.name = currentName;
@@ -177,7 +177,7 @@ async function saveTemplate() {
       m.ui_copy_template_saved_successfully_299be978(),
     );
   } catch (e: unknown) {
-    const msg = (e as any)?.message || "Failed to save template";
+    const msg = (e as any)?.message || m.shared_ui_template_save_failed();
     toast.error(msg);
   } finally {
     isSaving = false;
@@ -199,9 +199,9 @@ async function generatePreview() {
     });
     if (previewPdfUrl) URL.revokeObjectURL(previewPdfUrl);
     previewPdfUrl = URL.createObjectURL(blob);
-    toast.success("Preview generated successfully");
+    toast.success(m.shared_ui_template_preview_generated());
   } catch (e: unknown) {
-    const msg = (e as any)?.message || "Failed to generate preview";
+    const msg = (e as any)?.message || m.shared_ui_template_preview_failed();
     toast.error(msg);
   } finally {
     isPreviewLoading = false;
@@ -349,7 +349,7 @@ onMount(() => {
 
         {#if store.editorMode === "preview" && previewPdfUrl}
           <div class="grow relative">
-            <iframe src={previewPdfUrl} title="PDF Preview" class="w-full h-full border-none"></iframe>
+            <iframe src={previewPdfUrl} title={m.shared_ui_pdf_preview()} class="w-full h-full border-none"></iframe>
             <div class="absolute top-2 inset-e-2">
               <Button variant="outline" size="xs" onclick={() => { store.editorMode = "design"; }} class="cursor-pointer">
                 {m.common_td_back_to_editor()}

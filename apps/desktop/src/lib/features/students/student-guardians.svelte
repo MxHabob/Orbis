@@ -78,7 +78,7 @@ function openEdit(link: GuardianDto) {
 
 async function handleDelete(link: GuardianDto) {
   const confirmed = await confirmStore.prompt({
-    title: m.common_action_delete() + "؟",
+    title: m.operations_ui_delete_question_title(),
     description: m.common_guardians_delete_confirm(),
     confirmText: m.common_action_delete(),
     variant: "destructive",
@@ -231,7 +231,7 @@ async function handleDelete(link: GuardianDto) {
                       <Badge variant="outline" class="text-[10px]">{m.common_form_guardian_role_emergency()}</Badge>
                     {/if}
                     {#if link.is_authorized_pickup}
-                      <Badge variant="outline" class="text-[10px]">مخول بالاستلام</Badge>
+                      <Badge variant="outline" class="text-[10px]">{m.operations_ui_authorized_for_pickup()}</Badge>
                     {/if}
                     {#if link.is_payer}
                       <Badge variant="secondary" class="text-[10px]">{m.common_form_guardian_role_payer()}</Badge>

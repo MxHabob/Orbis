@@ -3,6 +3,7 @@
 A styled logo uploader with loading indicator, image preview, and hover states.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui/avatar";
 import { AdjustmentsHorizontal, ArrowPath, ArrowUpTray } from "@orbis/icons";
 import {
@@ -99,7 +100,7 @@ function handleFileChange(event: Event) {
       {#if displayUrl}
         <AvatarImage
           src={displayUrl}
-          alt="Logo"
+          alt={m.shared_ui_logo()}
           class="w-full h-full object-contain p-1"
         />
       {:else}

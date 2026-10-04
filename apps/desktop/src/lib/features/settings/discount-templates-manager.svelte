@@ -35,7 +35,7 @@ async function loadTemplates() {
   try {
     templates = await api.listDiscountTemplates();
   } catch (e) {
-    toast.error((e as any)?.message || "Failed to load discount templates");
+    toast.error((e as any)?.message || m.settings_ui_discount_templates_load_error());
   } finally {
     isLoading = false;
   }
@@ -54,11 +54,11 @@ function getFormattedValue(tpl: any): string {
 
 function getTypeLabel(typeStr: string): string {
   const t = String(typeStr).toLowerCase();
-  if (t === "percentage") return "نسبة مئوية (%)";
-  if (t === "fixed_amount") return "مبلغ ثابت";
-  if (t === "manual") return "Manual";
-  if (t === "scholarship") return "Scholarship";
-  if (t === "system") return "System";
+  if (t === "percentage") return m.settings_ui_discount_type_percentage();
+  if (t === "fixed_amount") return m.settings_ui_discount_type_fixed();
+  if (t === "manual") return m.settings_ui_discount_source_manual();
+  if (t === "scholarship") return m.settings_ui_discount_source_scholarship();
+  if (t === "system") return m.settings_ui_system();
   return typeStr;
 }
 
@@ -80,15 +80,15 @@ const gridSource = $derived(
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "name", prop: "name", header: m.common_ft_col_name(), name: "Template", width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "discount_type", prop: "discount_type", header: m.common_word_type(), name: "Type", width: 130, size: 130, readonly: true },
-  { id: "value", prop: "value", header: m.common_dt_col_value(), name: "Value", width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono font-bold" },
-  { id: "status", prop: "status", header: m.common_word_status(), name: "Status", width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  { id: "name", prop: "name", header: m.common_ft_col_name(), name: m.common_ft_col_name(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
+  { id: "discount_type", prop: "discount_type", header: m.common_word_type(), name: m.common_word_type(), width: 130, size: 130, readonly: true },
+  { id: "value", prop: "value", header: m.common_dt_col_value(), name: m.common_dt_col_value(), width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono font-bold" },
+  { id: "status", prop: "status", header: m.common_word_status(), name: m.common_word_status(), width: 110, size: 110, type: "badge", align: "center", readonly: true },
   {
     id: "actions",
     prop: "actions",
     header: m.common_je_col_actions(),
-    name: "Actions",
+    name: m.ui_copy_actions_c48127a5(),
     width: 90,
     size: 90,
     type: "action",
@@ -111,7 +111,7 @@ async function handleGridAction(event: GridActionEvent) {
   } else if (event.actionId === "delete") {
     const templateName = row.name_ar || row.name || "";
     const confirmed = await confirmStore.prompt({
-      title: `${m.common_action_delete()}؟`,
+      title: m.common_action_delete(),
       description: `${m.common_action_delete()} "${templateName}"?`,
       confirmText: m.common_action_delete(),
       variant: "destructive",
@@ -125,7 +125,7 @@ async function handleGridAction(event: GridActionEvent) {
           queryKey: queryKeys.finance.discountTemplates(orgId),
         });
       } catch (err: any) {
-        toast.error(err?.message || "Failed to delete discount template");
+        toast.error(err?.message || m.settings_ui_discount_template_delete_error());
       }
     }
   }
