@@ -72,14 +72,14 @@ function handleGridAction(event: GridActionEvent) {
 }
 
 function getUserName(userId: string | null | undefined): string {
-  if (!userId) return "النظام (System)";
+  if (!userId) return m.settings_ui_system();
   const user = usersById.get(String(userId));
   if (!user) return userId;
   return l(user.full_name_ar, user.full_name) || userId;
 }
 
 function getUserEmail(userId: string | null | undefined): string {
-  if (!userId) return "system@orbis.internal";
+  if (!userId) return m.settings_ui_system_account_email();
   const user = usersById.get(String(userId));
   return user?.email || "system@orbis.internal";
 }

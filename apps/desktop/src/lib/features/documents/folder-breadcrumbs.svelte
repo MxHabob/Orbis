@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { ChevronLeft, ChevronRight, Folder, FolderOpen, Home, Sparkles, User, AcademicCap } from "@orbis/icons";
 import type { FolderDto } from "$lib/api";
 

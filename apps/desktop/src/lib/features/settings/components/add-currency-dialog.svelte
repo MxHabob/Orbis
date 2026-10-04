@@ -399,7 +399,7 @@ async function handleSubmit(e: Event) {
               {m.settings_currencies_type_base()}
             </Label>
             <span class="text-[10px] text-muted-foreground">
-              تعيين كعملة رئيسية للمنظمة والتقارير
+              {m.settings_ui_currency_set_as_base_description()}
             </span>
           </div>
         </div>

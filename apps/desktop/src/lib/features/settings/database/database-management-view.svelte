@@ -229,7 +229,7 @@ async function handleOpenExistingDatabase() {
 const kpiStats = $derived([
   {
     label: m.ui_copy_engine_mode_7a8fe27f(),
-    value: controller.isLocal ? "SQLite (Embedded)" : "PostgreSQL",
+    value: controller.isLocal ? m.settings_ui_database_sqlite_embedded() : m.settings_ui_database_postgresql(),
     sub: controller.isLocal ? m.ui_copy_local_embedded_36bd9bbd() : m.ui_copy_remote_cloud_51770fc6(),
   },
   {
@@ -380,10 +380,10 @@ const advisorInsights = $derived.by(() => {
       <Badge variant="outline" class="text-[9px] px-2 py-0.5 font-bold flex items-center gap-1.5 border-border/60 bg-card/60">
         {#if controller.isLocal}
           <Computer size={10} class="text-primary" />
-          <span>SQLite (Embedded)</span>
+          <span>{m.settings_ui_database_sqlite_embedded()}</span>
         {:else}
           <GlobeAlt size={10} class="text-primary" />
-          <span>PostgreSQL (Remote)</span>
+          <span>{m.settings_ui_database_postgresql_remote()}</span>
         {/if}
       </Badge>
 

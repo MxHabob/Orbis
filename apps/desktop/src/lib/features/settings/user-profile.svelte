@@ -119,9 +119,7 @@ async function toggleAccountStatus() {
       ? m.settings_user_detail_deactivate_confirm()
       : m.ui_copy_deactivate_account_084a7a7b();
   const confirmed = await confirmStore.prompt({
-    title:
-      (m.common_word_status ? m.common_word_status() : m.common_status()) +
-      "؟",
+    title: m.common_word_status ? m.common_word_status() : m.common_status(),
     description: confirmMsg,
     confirmText: m.common_word_status
       ? m.common_word_status()

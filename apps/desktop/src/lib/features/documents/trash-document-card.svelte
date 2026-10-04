@@ -104,7 +104,7 @@ function formatDate(value?: string | null) {
         <Checkbox
           checked={selected}
           onCheckedChange={(value) => ontoggle?.(document.id, value === true)}
-          aria-label={`تحديد ${document.name}`}
+          aria-label={m.operations_ui_document_select({ name: document.name })}
         />
       </div>
     {/if}
@@ -171,7 +171,7 @@ function formatDate(value?: string | null) {
     <div class="flex items-center justify-between text-[11px] text-muted-foreground">
       <span class="font-mono">{formatSize(document.file_size_bytes)}</span>
       <span class="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground capitalize">
-        {document.category || "عام"}
+        {document.category || m.operations_ui_general_category()}
       </span>
     </div>
 
@@ -182,10 +182,10 @@ function formatDate(value?: string | null) {
         size="sm"
         class="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
         onclick={() => onpreview(document)}
-        title="معاينة"
+        title={m.operations_ui_preview()}
       >
         <Eye class="w-3.5 h-3.5 me-1" />
-        <span>معاينة</span>
+        <span>{m.operations_ui_preview()}</span>
       </Button>
 
       <div class="flex items-center gap-1">
@@ -194,10 +194,10 @@ function formatDate(value?: string | null) {
           size="sm"
           class="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 border-emerald-500/30"
           onclick={() => onrestore(document.id)}
-          title="استعادة الملف"
+          title={m.operations_ui_restore_file()}
         >
           <Refresh class="w-3.5 h-3.5 me-1" />
-          <span>استعادة</span>
+          <span>{m.operations_ui_restore()}</span>
         </Button>
 
         <Button
@@ -205,7 +205,7 @@ function formatDate(value?: string | null) {
           size="icon"
           class="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           onclick={() => onpurge(document.id)}
-          title="حذف نهائي"
+          title={m.operations_ui_trash_permanently_delete()}
         >
           <Trash class="w-3.5 h-3.5" />
         </Button>

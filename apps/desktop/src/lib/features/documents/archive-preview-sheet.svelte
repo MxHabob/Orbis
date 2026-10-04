@@ -150,7 +150,7 @@ function endPan() {
               <span>{formatSize(document.file_size_bytes)}</span>
               {#if isTrash}
                 <span>•</span>
-                <span class="text-rose-500 font-medium">في سلة المحذوفات</span>
+                <span class="text-rose-500 font-medium">{m.operations_ui_in_trash()}</span>
               {/if}
             </p>
           </div>
@@ -163,7 +163,7 @@ function endPan() {
               size="icon"
               class="h-7 w-7 text-muted-foreground hover:text-foreground"
               onclick={() => setImageZoom(imageZoom - 0.25)}
-              title="تصغير"
+              title={m.operations_ui_minimize()}
             >
               <Collapse class="h-3.5 w-3.5" />
             </Button>
@@ -173,7 +173,7 @@ function endPan() {
               size="icon"
               class="h-7 w-7 text-muted-foreground hover:text-foreground"
               onclick={() => setImageZoom(imageZoom + 0.25)}
-              title="تكبير"
+              title={m.operations_ui_maximize()}
             >
               <Expand class="h-3.5 w-3.5" />
             </Button>
@@ -205,7 +205,7 @@ function endPan() {
             {:else}
               <div class="text-center p-6 text-muted-foreground">
                 <DocumentPage class="w-12 h-12 mx-auto mb-2 opacity-40" />
-                <p class="text-xs">جاري تحميل المعاينة...</p>
+                <p class="text-xs">{m.operations_ui_preview_loading()}</p>
               </div>
             {/if}
           </div>
@@ -244,61 +244,61 @@ function endPan() {
               <DocumentPage class="w-8 h-8" />
             </div>
             <h4 class="font-medium text-sm text-foreground mb-1">{document.name}</h4>
-            <p class="text-xs text-muted-foreground">لا تتوفر معاينة مباشرة لهذا التنسيق، يمكنك تنزيل الملف للاطلاع عليه.</p>
+            <p class="text-xs text-muted-foreground">{m.operations_ui_preview_not_available_download_hint()}</p>
           </div>
         {/if}
       </div>
 
       <!-- Metadata Attributes -->
       <div class="border-t border-border/40 bg-card/40 px-6 py-4 space-y-3">
-        <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">تفاصيل الملف</h4>
+        <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{m.operations_ui_file_details()}</h4>
         
         <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
           <div>
-            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">نوع الملف</span>
-            <span class="font-mono text-foreground mt-0.5 block truncate">{document.mime_type || "غير محدد"}</span>
+            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">{m.operations_ui_file_type()}</span>
+            <span class="font-mono text-foreground mt-0.5 block truncate">{document.mime_type || m.operations_ui_unspecified()}</span>
           </div>
           
           <div>
-            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">الحجم</span>
+            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">{m.operations_ui_size()}</span>
             <span class="text-foreground mt-0.5 block">{formatSize(document.file_size_bytes)}</span>
           </div>
 
           <div>
-            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">التصنيف</span>
-            <span class="text-foreground mt-0.5 block truncate">{document.category || "عام"}</span>
+            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">{m.operations_ui_category()}</span>
+            <span class="text-foreground mt-0.5 block truncate">{document.category || m.operations_ui_general_category()}</span>
           </div>
 
           <div>
-            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">تاريخ الإضافة</span>
+            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">{m.operations_ui_date_added()}</span>
             <span class="text-foreground mt-0.5 block truncate">{formatDate(document.created_at)}</span>
           </div>
 
           {#if isTrash && document.deleted_at}
             <div class="col-span-2">
-              <span class="text-[10px] font-semibold uppercase text-rose-500 block">تاريخ الحذف</span>
+              <span class="text-[10px] font-semibold uppercase text-rose-500 block">{m.operations_ui_deleted_date()}</span>
               <span class="text-rose-600 dark:text-rose-400 font-medium mt-0.5 block truncate">{formatDate(document.deleted_at)}</span>
             </div>
           {/if}
 
           {#if document.checksum_sha256}
             <div class="col-span-2">
-              <span class="text-[10px] font-semibold uppercase text-muted-foreground block">بصمة التشفير (SHA-256)</span>
+              <span class="text-[10px] font-semibold uppercase text-muted-foreground block">{m.operations_ui_checksum_sha256()}</span>
               <span class="font-mono text-[10px] text-muted-foreground block truncate" title={document.checksum_sha256}>{document.checksum_sha256}</span>
             </div>
           {/if}
 
           {#if document.storage_provider}
             <div>
-              <span class="text-[10px] font-semibold uppercase text-muted-foreground block">مزود التخزين</span>
+              <span class="text-[10px] font-semibold uppercase text-muted-foreground block">{m.operations_ui_storage_provider()}</span>
               <span class="text-foreground mt-0.5 block font-mono capitalize">{document.storage_provider}</span>
             </div>
           {/if}
 
           {#if isImage && imageWidth > 0}
             <div>
-              <span class="text-[10px] font-semibold uppercase text-muted-foreground block">أبعاد الصورة</span>
-              <span class="font-mono text-foreground mt-0.5 block">{imageWidth} × {imageHeight} بكسل</span>
+              <span class="text-[10px] font-semibold uppercase text-muted-foreground block">{m.operations_ui_image_dimensions()}</span>
+              <span class="font-mono text-foreground mt-0.5 block">{m.operations_ui_pixel_dimensions({ width: imageWidth, height: imageHeight })}</span>
             </div>
           {/if}
         </div>
@@ -310,12 +310,12 @@ function endPan() {
           {#if isTrash}
             <Button variant="default" size="sm" class="bg-emerald-600 hover:bg-emerald-700 text-white" onclick={restoreDocument}>
               <Refresh class="w-3.5 h-3.5 me-1.5" />
-              <span>استعادة الملف</span>
+              <span>{m.operations_ui_restore_file()}</span>
             </Button>
           {:else if onarchive && !document.is_archived}
             <Button variant="outline" size="sm" onclick={archiveDoc}>
               <ArchiveBox class="w-3.5 h-3.5 me-1.5" />
-              <span>أرشفة الملف</span>
+              <span>{m.operations_ui_archive_file()}</span>
             </Button>
           {/if}
         </div>
@@ -333,18 +333,18 @@ function endPan() {
             disabled={!url}
           >
             <Download class="w-3.5 h-3.5 me-1.5" />
-            <span>تحميل الملف</span>
+            <span>{m.operations_ui_download_file()}</span>
           </Button>
 
           {#if isTrash}
             <Button variant="destructive" size="sm" onclick={removeDocument}>
               <Trash class="w-3.5 h-3.5 me-1.5" />
-              <span>حذف نهائي</span>
+              <span>{m.operations_ui_trash_permanently_delete()}</span>
             </Button>
           {:else}
             <Button variant="destructive" size="sm" onclick={removeDocument}>
               <Trash class="w-3.5 h-3.5 me-1.5" />
-              <span>حذف</span>
+              <span>{m.common_action_delete()}</span>
             </Button>
           {/if}
         </div>
