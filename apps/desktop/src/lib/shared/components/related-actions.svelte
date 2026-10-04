@@ -4,6 +4,7 @@ Windows 11 Fluent-style Related Actions / Support component using Accordion.
 Renders clean collapsible cards with primary hyperlink sub-links and bottom footer actions.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import {
   Accordion,
   AccordionItem,
@@ -40,7 +41,7 @@ export interface FooterAction {
 }
 
 let {
-  title = "العمليات والإجراءات المرتبطة",
+  title = m.shared_ui_related_actions(),
   groups = [],
   footerActions = [],
   class: className = "",

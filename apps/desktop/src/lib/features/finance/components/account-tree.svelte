@@ -9,6 +9,7 @@
   - Expand/Collapse All and fast search filtering
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { Input } from "@orbis/ui/input";
@@ -127,11 +128,11 @@ function getBalance(node: AccountNode): number {
 function getSubtype(node: AccountNode): string | null {
   const type = String(node.sub_type || node.item_type || "").toLowerCase();
   const map: Record<string, string> = {
-    cash: "صندوق",
-    bank: "بنك",
-    supplier: "مورد",
-    customer: "عميل",
-    employee: "موظف",
+    cash: m.finance_ui_account_type_cash(),
+    bank: m.finance_ui_account_type_bank(),
+    supplier: m.finance_ui_account_type_supplier(),
+    customer: m.finance_ui_account_type_customer(),
+    employee: m.finance_ui_account_type_employee(),
   };
   return map[type] || null;
 }
@@ -145,7 +146,7 @@ function getSubtype(node: AccountNode): string | null {
       <Search size={12} class="absolute inset-s-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
       <Input
         type="text"
-        placeholder="بحث سريع في الشجرة بالاسم أو الرقم..."
+        placeholder={m.finance_ui_account_tree_search_placeholder()}
         bind:value={searchQuery}
         class="h-6 ps-7 text-[11px] bg-background border-border/60 py-0"
       />
@@ -159,7 +160,7 @@ function getSubtype(node: AccountNode): string | null {
         onclick={expandAll}
       >
         <Expand size={12} />
-        <span>توسيع</span>
+        <span>{m.finance_ui_expand_all()}</span>
       </Button>
 
       <Button
@@ -169,7 +170,7 @@ function getSubtype(node: AccountNode): string | null {
         onclick={collapseAll}
       >
         <Collapse size={12} />
-        <span>طي</span>
+        <span>{m.finance_ui_collapse_all()}</span>
       </Button>
     </div>
   </div>
@@ -178,7 +179,7 @@ function getSubtype(node: AccountNode): string | null {
   <div class="flex-1 min-h-0 overflow-auto p-2 font-sans text-xs">
     {#if filteredTree.length === 0}
       <div class="py-6 text-center text-[11px] text-muted-foreground">
-        لا توجد حسابات مطابقة
+        {m.finance_ui_account_tree_empty()}
       </div>
     {:else}
       {#snippet renderNodes(nodes: AccountNode[], depth: number)}
@@ -188,7 +189,7 @@ function getSubtype(node: AccountNode): string | null {
           {@const isSelected = selectedAccountId === node.id}
           {@const bal = getBalance(node)}
           {@const subtype = getSubtype(node)}
-          {@const name = node.name_ar || node.name || "حساب"}
+          {@const name = node.name_ar || node.name || m.finance_ui_account_fallback_name()}
 
           <div class="flex flex-col">
             <!-- Tree Item Row (Classic 22px Compact) -->

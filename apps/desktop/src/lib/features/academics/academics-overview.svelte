@@ -261,7 +261,7 @@ const advisorInsights = $derived.by(() => {
         {m.common_nav_academics()}
       </h2>
       <p class="text-xs text-muted-foreground">
-        {m.academics_overview_sections_title()} والمؤشرات الأكاديمية
+        {m.shared_ui_academic_overview_subtitle()}
       </p>
     </div>
 
@@ -354,7 +354,7 @@ const advisorInsights = $derived.by(() => {
             {m.academics_overview_sections_title()}
           </CardTitle>
           <CardDescription class="text-[10px]">
-            لوحة الإدارة والعمليات الأكاديمية المركزية
+            {m.shared_ui_academic_operations_description()}
           </CardDescription>
         </CardHeader>
 
@@ -409,7 +409,7 @@ const advisorInsights = $derived.by(() => {
             {m.academics_overview_sidebar_title()}
           </CardTitle>
           <CardDescription class="text-[10px]">
-            إحصاءات وتشخيص الذكاء الاصطناعي الأكاديمي
+            {m.shared_ui_academic_ai_insights_description()}
           </CardDescription>
         </CardHeader>
 

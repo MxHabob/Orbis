@@ -247,7 +247,7 @@ async function handleSave(e?: Event) {
         class="mt-4 cursor-pointer"
         onclick={() => policyQuery.refetch()}
       >
-        إعادة المحاولة
+        {m.common_retry()}
       </Button>
     </div>
   {:else}
@@ -255,8 +255,8 @@ async function handleSave(e?: Event) {
       <!-- Top Action Bar -->
       <div class="flex items-center justify-between gap-3 w-full select-none pb-2 border-b border-border">
         <div class="flex flex-col text-start">
-          <h1 class="text-sm font-semibold text-foreground">السياسات الأكاديمية والمالية للمؤسسة</h1>
-          <p class="text-xs text-muted-foreground mt-0.5">إعدادات النظم الدراسية، درجات النجاح، رصد وقفل الدرجات، الترفيع الأكاديمي، وسياسات الفواتير والتحصيل المالي.</p>
+          <h1 class="text-sm font-semibold text-foreground">{m.settings_ui_policy_page_title()}</h1>
+          <p class="text-xs text-muted-foreground mt-0.5">{m.settings_ui_policy_page_description()}</p>
         </div>
       </div>
 
@@ -267,26 +267,26 @@ async function handleSave(e?: Event) {
           <CardHeader>
             <div class="flex items-center gap-2">
               <Scale size={14} class="text-primary" />
-              <CardTitle>نظام الدرجات والتقييم الأساسي</CardTitle>
+              <CardTitle>{m.settings_ui_policy_grading_title()}</CardTitle>
             </div>
           </CardHeader>
 
           <CardContent class="p-6 flex flex-col gap-5 text-start">
             <!-- Grading System -->
             <div class="flex flex-col gap-1.5 text-start">
-              <Label class="text-xs font-semibold">نظام الدرجات الافتراضي للمؤسسة</Label>
+              <Label class="text-xs font-semibold">{m.settings_ui_policy_default_grading_system()}</Label>
               <Select
                 type="single"
                 value={form.default_grading_system}
                 onValueChange={(v) => { if (v) form.default_grading_system = v; }}
               >
                 <SelectTrigger class="text-xs h-9 w-full">
-                  {form.default_grading_system === "percentage" ? "نسبة مئوية (100%)" : form.default_grading_system === "gpa_4_0" ? "معدل تراكمي (GPA 4.0)" : "ناجح / راسب (Pass/Fail)"}
+                  {form.default_grading_system === "percentage" ? m.settings_ui_policy_scale_percentage() : form.default_grading_system === "gpa_4_0" ? m.settings_ui_policy_scale_gpa() : m.settings_ui_policy_scale_pass_fail()}
                 </SelectTrigger>
                 <SelectContent class="text-xs">
-                  <SelectItem value="percentage">نسبة مئوية (100%)</SelectItem>
-                  <SelectItem value="gpa_4_0">معدل تراكمي (GPA 4.0)</SelectItem>
-                  <SelectItem value="pass_fail">ناجح / راسب (Pass/Fail)</SelectItem>
+                  <SelectItem value="percentage">{m.settings_ui_policy_scale_percentage()}</SelectItem>
+                  <SelectItem value="gpa_4_0">{m.settings_ui_policy_scale_gpa()}</SelectItem>
+                  <SelectItem value="pass_fail">{m.settings_ui_policy_scale_pass_fail()}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -294,7 +294,7 @@ async function handleSave(e?: Event) {
             <!-- Scores Grid -->
             <div class="grid grid-cols-2 gap-4">
               <div class="flex flex-col gap-1.5 text-start">
-                <Label class="text-xs font-semibold">درجة النجاح الافتراضية</Label>
+                <Label class="text-xs font-semibold">{m.settings_ui_policy_default_passing_grade()}</Label>
                 <Input
                   type="number"
                   step="0.5"
@@ -305,7 +305,7 @@ async function handleSave(e?: Event) {
               </div>
 
               <div class="flex flex-col gap-1.5 text-start">
-                <Label class="text-xs font-semibold">الدرجة القصوى الافتراضية</Label>
+                <Label class="text-xs font-semibold">{m.settings_ui_policy_default_max_grade()}</Label>
                 <Input
                   type="number"
                   step="1"
@@ -318,7 +318,7 @@ async function handleSave(e?: Event) {
 
             <!-- Min Attendance Rate -->
             <div class="flex flex-col gap-1.5 text-start pt-1">
-              <Label class="text-xs font-semibold">الحد الأدنى لنسبة الحضور للترفيع (%)</Label>
+              <Label class="text-xs font-semibold">{m.settings_ui_policy_min_attendance()}</Label>
               <Input
                 type="number"
                 min="0"
@@ -327,7 +327,7 @@ async function handleSave(e?: Event) {
                 class="text-xs font-mono h-9"
                 disabled={isSaving}
               />
-              <span class="text-[10px] text-muted-foreground">نسبة حضور الطالب الإلزامية لاجتياز العام الدراسي والتأهل للترفيع.</span>
+              <span class="text-[10px] text-muted-foreground">{m.settings_ui_policy_min_attendance_description()}</span>
             </div>
           </CardContent>
         </Card>
@@ -337,14 +337,14 @@ async function handleSave(e?: Event) {
           <CardHeader>
             <div class="flex items-center gap-2">
               <ReceiptPercent size={14} class="text-primary" />
-              <CardTitle>سياسات الفواتير والتحصيل المالي</CardTitle>
+              <CardTitle>{m.settings_ui_policy_finance_title()}</CardTitle>
             </div>
           </CardHeader>
 
           <CardContent class="p-6 flex flex-col gap-4 text-start">
             <div class="grid grid-cols-2 gap-4">
               <div class="flex flex-col gap-1.5 text-start">
-                <Label class="text-xs font-semibold">نسبة الضريبة الافتراضية (%)</Label>
+                <Label class="text-xs font-semibold">{m.settings_ui_policy_default_tax_rate()}</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -355,11 +355,11 @@ async function handleSave(e?: Event) {
                   disabled={isSaving}
                   class="text-xs font-mono h-9"
                 />
-                <span class="text-[10px] text-muted-foreground">مثال: 0.15 تمثل ضريبة 15%</span>
+                <span class="text-[10px] text-muted-foreground">{m.settings_ui_policy_tax_rate_example()}</span>
               </div>
 
               <div class="flex flex-col gap-1.5 text-start">
-                <Label class="text-xs font-semibold">فترة الاستحقاق (أيام)</Label>
+                <Label class="text-xs font-semibold">{m.settings_ui_policy_invoice_due_days()}</Label>
                 <Input
                   type="number"
                   min="1"
@@ -368,13 +368,13 @@ async function handleSave(e?: Event) {
                   disabled={isSaving}
                   class="text-xs font-mono h-9"
                 />
-                <span class="text-[10px] text-muted-foreground">المهلة المحددة للسداد</span>
+                <span class="text-[10px] text-muted-foreground">{m.settings_ui_policy_payment_deadline_hint()}</span>
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4 pt-1">
               <div class="flex flex-col gap-1.5 text-start">
-                <Label class="text-xs font-semibold">نوع غرامة التأخير</Label>
+                <Label class="text-xs font-semibold">{m.settings_ui_policy_late_fee_type()}</Label>
                 <Select
                   type="single"
                   value={lateFeeType}
@@ -382,17 +382,17 @@ async function handleSave(e?: Event) {
                   disabled={isSaving}
                 >
                   <SelectTrigger class="text-xs h-9 w-full">
-                    {lateFeeType === "percentage" ? "نسبة مئوية (%)" : "مبلغ ثابت"}
+                    {lateFeeType === "percentage" ? m.settings_ui_policy_fee_percentage() : m.settings_ui_policy_fee_fixed()}
                   </SelectTrigger>
                   <SelectContent class="text-xs">
-                    <SelectItem value="fixed">مبلغ ثابت</SelectItem>
-                    <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
+                    <SelectItem value="fixed">{m.settings_ui_policy_fee_fixed()}</SelectItem>
+                    <SelectItem value="percentage">{m.settings_ui_policy_fee_percentage()}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div class="flex flex-col gap-1.5 text-start">
-                <Label class="text-xs font-semibold">قيمة غرامة التأخير</Label>
+                <Label class="text-xs font-semibold">{m.settings_ui_policy_late_fee_value()}</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -407,9 +407,9 @@ async function handleSave(e?: Event) {
 
             <div class="flex items-center justify-between py-2 border-t border-border mt-1">
               <div class="flex flex-col text-start gap-0.5 pe-4">
-                <span class="text-xs font-semibold text-foreground">السماح بالدفع الجزئي للفواتير</span>
+                <span class="text-xs font-semibold text-foreground">{m.settings_ui_policy_partial_payments()}</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
-                  تمكين أولياء الأمور والطلاب من سداد رسوم الفاتورة الواحدة على دفعات متعددة.
+                  {m.settings_ui_policy_partial_payments_description()}
                 </span>
               </div>
               <Switch
@@ -426,7 +426,7 @@ async function handleSave(e?: Event) {
           <CardHeader>
             <div class="flex items-center gap-2">
               <Lock size={14} class="text-primary" />
-              <CardTitle>ضوابط رصد وقفل الدرجات</CardTitle>
+              <CardTitle>{m.settings_ui_policy_grade_entry_title()}</CardTitle>
             </div>
           </CardHeader>
 
@@ -434,9 +434,9 @@ async function handleSave(e?: Event) {
             <!-- Grade Entry Auto Close -->
             <div class="flex items-center justify-between py-2 border-b border-border">
               <div class="flex flex-col text-start gap-0.5 pe-4">
-                <span class="text-xs font-semibold text-foreground">الإغلاق التلقائي لرصد الدرجات</span>
+                <span class="text-xs font-semibold text-foreground">{m.settings_ui_policy_grade_entry_auto_close()}</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
-                  قفل إمكانية إدخال درجات الاختبارات والأنشطة تلقائياً بمجرد انتهاء الموعد المحدد للفترة.
+                  {m.settings_ui_policy_grade_entry_auto_close_description()}
                 </span>
               </div>
               <Switch
@@ -449,9 +449,9 @@ async function handleSave(e?: Event) {
             <!-- Allow Grade Edit After Close -->
             <div class="flex items-center justify-between py-2 border-b border-border">
               <div class="flex flex-col text-start gap-0.5 pe-4">
-                <span class="text-xs font-semibold text-foreground">السماح بتعديل الدرجات بعد الإغلاق</span>
+                <span class="text-xs font-semibold text-foreground">{m.settings_ui_policy_allow_grade_edit()}</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
-                  إمكانية فتح طلب تعديل لدرجة طالب بعد اعتماد الفترة وإغلاق الرصد.
+                  {m.settings_ui_policy_allow_grade_edit_description()}
                 </span>
               </div>
               <Switch
@@ -464,9 +464,9 @@ async function handleSave(e?: Event) {
             <!-- Grade Edit Requires Approval -->
             <div class="flex items-center justify-between py-2">
               <div class="flex flex-col text-start gap-0.5 pe-4">
-                <span class="text-xs font-semibold text-foreground">تعديل الدرجة يتطلب موافقة واعتماد</span>
+                <span class="text-xs font-semibold text-foreground">{m.settings_ui_policy_grade_edit_approval()}</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
-                  إحالة أي طلب تعديل درجات إلى الشؤون الأكاديمية/الإدارة للمراجعة والتوثيق في سجل التدقيق.
+                  {m.settings_ui_policy_grade_edit_approval_description()}
                 </span>
               </div>
               <Switch
@@ -483,7 +483,7 @@ async function handleSave(e?: Event) {
           <CardHeader>
             <div class="flex items-center gap-2">
               <BookOpen size={14} class="text-primary" />
-              <CardTitle>ضوابط الترفيع الأكاديمي والتخرج</CardTitle>
+              <CardTitle>{m.settings_ui_policy_promotion_title()}</CardTitle>
             </div>
           </CardHeader>
 
@@ -491,9 +491,9 @@ async function handleSave(e?: Event) {
             <!-- Auto Graduate Final Level -->
             <div class="flex items-center justify-between py-2 border-b border-border">
               <div class="flex flex-col text-start gap-0.5 pe-4">
-                <span class="text-xs font-semibold text-foreground">تخريج طلاب الصف النهائي تلقائياً</span>
+                <span class="text-xs font-semibold text-foreground">{m.settings_ui_policy_auto_graduate()}</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
-                  تحويل حالة الطلاب الناجحين في أعلى مستوى دراسي بالمؤسسة إلى "خريج" (Graduated) تلقائياً عند تنفيذ الترفيع.
+                  {m.settings_ui_policy_auto_graduate_description()}
                 </span>
               </div>
               <Switch
@@ -506,9 +506,9 @@ async function handleSave(e?: Event) {
             <!-- Exclude Withdrawn -->
             <div class="flex items-center justify-between py-2">
               <div class="flex flex-col text-start gap-0.5 pe-4">
-                <span class="text-xs font-semibold text-foreground">استبعاد الطلاب المنسحبين والمعلقين</span>
+                <span class="text-xs font-semibold text-foreground">{m.settings_ui_policy_exclude_withdrawn()}</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
-                  عدم إدراج الطلاب ذوي حالة "منسحب" أو "موقوف" في مسارات الترفيع للعام الدراسي الجديد.
+                  {m.settings_ui_policy_exclude_withdrawn_description()}
                 </span>
               </div>
               <Switch

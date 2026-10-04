@@ -1,6 +1,7 @@
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import { api, type BulkRegisterStudentCommandItem } from "$lib/api";
 import { orgContext } from "$lib/stores/org-context.svelte";
+import * as m from "$lib/paraglide/messages";
 import type {
   BulkImportProfile,
   BulkReferenceData,
@@ -98,8 +99,8 @@ export const studentColumnMetadata: ColumnDefinitionMetadata[] = [
     type: "enum",
     allowedValues: ["male", "female", "ذكر", "أنثى"],
     options: [
-      { value: "male", label: "ذكر (Male)" },
-      { value: "female", label: "أنثى (Female)" },
+      { value: "male", label: m.bulk_entry_enum_gender_male() },
+      { value: "female", label: m.bulk_entry_enum_gender_female() },
     ],
     example: "male",
   },
@@ -174,9 +175,9 @@ export const studentColumnMetadata: ColumnDefinitionMetadata[] = [
     type: "enum",
     allowedValues: ["father", "mother", "guardian", "أب", "أم", "ولي أمر"],
     options: [
-      { value: "father", label: "أب (Father)" },
-      { value: "mother", label: "أم (Mother)" },
-      { value: "guardian", label: "ولي أمر (Guardian)" },
+      { value: "father", label: m.bulk_entry_enum_relationship_father() },
+      { value: "mother", label: m.bulk_entry_enum_relationship_mother() },
+      { value: "guardian", label: m.bulk_entry_enum_relationship_guardian() },
     ],
     example: "father",
   },
@@ -193,22 +194,22 @@ export const studentColumnMetadata: ColumnDefinitionMetadata[] = [
 ];
 
 export const studentGridColumns: OrbisColumnDef[] = [
-  { id: "__idx", header: "#", width: 50, pin: "left", readonly: true },
-  { id: "status", header: "الحالة / Status", width: 110, pin: "left", type: "badge", readonly: true },
-  { id: "first_name_ar", header: "الاسم الأول (عربي)*", width: 140 },
-  { id: "middle_name_ar", header: "اسم الأب", width: 130 },
-  { id: "last_name_ar", header: "اسم العائلة*", width: 140 },
-  { id: "national_id", header: "الرقم الوطني*", width: 130 },
-  { id: "gender", header: "الجنس*", width: 90, type: "enum", options: [{ value: "male", label: "ذكر" }, { value: "female", label: "أنثى" }] },
-  { id: "birth_date", header: "تاريخ الميلاد*", width: 120, type: "date" },
-  { id: "class_name", header: "الصف / الشعبة*", width: 150 },
-  { id: "student_number", header: "رقم الطالب", width: 120 },
-  { id: "guardian_name", header: "ولي الأمر", width: 150 },
-  { id: "guardian_phone", header: "هاتف ولي الأمر", width: 130 },
-  { id: "guardian_relationship", header: "الصلة", width: 100 },
-  { id: "phone", header: "هاتف الطالب", width: 120 },
-  { id: "email", header: "البريد الإلكتروني", width: 160 },
-  { id: "fee_template_name", header: "قالب الرسوم", width: 160 },
+  { id: "__idx", header: m.bulk_entry_grid_row_number(), width: 50, pin: "left", readonly: true },
+  { id: "status", header: m.bulk_entry_grid_status(), width: 110, pin: "left", type: "badge", readonly: true },
+  { id: "first_name_ar", header: m.bulk_entry_student_header_first_name_ar(), width: 140 },
+  { id: "middle_name_ar", header: m.bulk_entry_student_header_middle_name_ar(), width: 130 },
+  { id: "last_name_ar", header: m.bulk_entry_student_header_last_name_ar(), width: 140 },
+  { id: "national_id", header: m.bulk_entry_student_header_national_id(), width: 130 },
+  { id: "gender", header: m.bulk_entry_header_gender(), width: 90, type: "enum", options: [{ value: "male", label: m.bulk_entry_enum_gender_male() }, { value: "female", label: m.bulk_entry_enum_gender_female() }] },
+  { id: "birth_date", header: m.bulk_entry_student_header_birth_date(), width: 120, type: "date" },
+  { id: "class_name", header: m.bulk_entry_student_header_class_name(), width: 150 },
+  { id: "student_number", header: m.bulk_entry_student_header_student_number(), width: 120 },
+  { id: "guardian_name", header: m.bulk_entry_student_header_guardian_name(), width: 150 },
+  { id: "guardian_phone", header: m.bulk_entry_student_header_guardian_phone(), width: 130 },
+  { id: "guardian_relationship", header: m.bulk_entry_student_header_guardian_relationship(), width: 100 },
+  { id: "phone", header: m.bulk_entry_header_phone(), width: 120 },
+  { id: "email", header: m.bulk_entry_header_email(), width: 160 },
+  { id: "fee_template_name", header: m.bulk_entry_student_header_fee_template(), width: 160 },
 ];
 
 export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPreviewDetails> = {
@@ -292,7 +293,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: "هذا الحقل إلزامي ولا يمكن تركه فارغاً",
+          message: m.bulk_entry_validation_required(),
         };
       }
     }
@@ -302,7 +303,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: "رقم الهوية غير صالح (يجب ألا يقل عن 5 خانات)",
+          message: m.bulk_entry_student_validation_national_id_length(),
         };
       }
     }
@@ -313,7 +314,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: "صيغة التاريخ غير صالحة، استخدم YYYY-MM-DD",
+          message: m.bulk_entry_validation_date_format(),
         };
       }
       const birth = new Date(strVal);
@@ -322,7 +323,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: "تاريخ الميلاد يجب أن يكون في الماضي",
+          message: m.bulk_entry_student_validation_birth_date_past(),
         };
       }
     }
@@ -339,7 +340,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: `الصف "${strVal}" غير مسجل في النظام. تحقق من قائمة الصفوف المعتمدة`,
+          message: m.bulk_entry_student_validation_class_not_found({ name: strVal }),
         };
       }
     }
@@ -349,7 +350,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
         return {
           severity: "WARNING",
           columnId: colId,
-          message: "يُفضل كتابة اسم ولي الأمر عند إدخال رقم هاتفه",
+          message: m.bulk_entry_student_validation_guardian_name(),
         };
       }
     }
@@ -368,7 +369,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
         issues.push({
           severity: "BLOCKING_ERROR",
           columnId: "national_id",
-          message: `الرقم الوطني مكرر في الملف (يتطابق مع الصف رقم ${duplicateIndex + 1})`,
+          message: m.bulk_entry_validation_duplicate_national_id({ row: duplicateIndex + 1 }),
         });
       }
     }
@@ -381,7 +382,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
         issues.push({
           severity: "BLOCKING_ERROR",
           columnId: "student_number",
-          message: `رقم الطالب مكرر في الملف (يتطابق مع الصف رقم ${duplicateIndex + 1})`,
+          message: m.bulk_entry_student_validation_duplicate_student_number({ row: duplicateIndex + 1 }),
         });
       }
     }
@@ -497,7 +498,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
 
       for (const it of bulkRes.items) {
         if (!it.success && it.error) {
-          errors.push(`صف ${it.row_index}: ${it.error}`);
+          errors.push(m.bulk_entry_row_error({ row: it.row_index, reason: it.error }));
         }
       }
 

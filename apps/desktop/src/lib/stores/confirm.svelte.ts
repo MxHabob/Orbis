@@ -10,6 +10,8 @@
 //   is unavailable, the GlobalConfirmDialog component renders the custom overlay.
 // - Feature code does NOT know which path is taken. The abstraction owns that.
 
+import * as m from "$lib/paraglide/messages";
+
 export type ConfirmOptions = {
   title: string;
   description: string;
@@ -102,12 +104,12 @@ class ConfirmStore {
    */
   async promptVersionConflict(message?: string): Promise<boolean> {
     return this.prompt({
-      title: "تعارض في تحديث البيانات",
+      title: m.shared_ui_version_conflict_title(),
       description:
         message ||
-        "تم تعديل هذا السجل بواسطة مستخدم آخر بالتزامن. للحفاظ على سلامة البيانات، يرجى تأكيد إعادة تحميل أحدث نسخة من الخادم.",
-      confirmText: "إعادة تحميل البيانات",
-      cancelText: "إلغاء",
+        m.shared_ui_version_conflict_description(),
+      confirmText: m.shared_ui_reload_latest_data(),
+      cancelText: m.common_action_cancel(),
       variant: "default",
       forceCustomDialog: true,
     });

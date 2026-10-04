@@ -298,7 +298,7 @@ async function handleGenerateSeating() {
     const studentsRes = await api.listStudents({ pageSize: 500 });
     const studentIds = studentsRes.items.map((s: any) => s.student?.id || s.id);
     if (!studentIds.length) {
-      toast.error("لا يوجد طلاب مسجلين لتوليد أرقام جلوس لهم");
+      toast.error(m.operations_ui_seating_no_students());
       return;
     }
     const roomIds = rooms.map((r: any) => r.id);
@@ -312,9 +312,9 @@ async function handleGenerateSeating() {
     });
 
     toast.promise(promise, {
-      loading: "جاري توليد أرقام الجلوس...",
-      success: "تم توليد أرقام الجلوس بنجاح!",
-      error: (err) => (err as any)?.message || "فشل توليد أرقام الجلوس",
+      loading: m.operations_ui_seating_generating(),
+      success: m.operations_ui_seating_generate_success(),
+      error: (err) => (err as any)?.message || m.operations_ui_seating_generate_error(),
     });
 
     await promise;
@@ -327,13 +327,13 @@ async function handleGenerateSeating() {
 async function handleGenerateSecrets() {
   try {
     if (!schedules.length) {
-      toast.error("لا يوجد جداول امتحانات مسجلة لتوليد الأرقام السرية");
+      toast.error(m.operations_ui_secrets_no_schedules());
       return;
     }
     const studentsRes = await api.listStudents({ pageSize: 500 });
     const studentIds = studentsRes.items.map((s: any) => s.student?.id || s.id);
     if (!studentIds.length) {
-      toast.error("لا يوجد طلاب مسجلين لتوليد أرقام سرية لهم");
+      toast.error(m.operations_ui_secrets_no_students());
       return;
     }
 
@@ -346,9 +346,9 @@ async function handleGenerateSecrets() {
 
     const promise = Promise.all(promises);
     toast.promise(promise, {
-      loading: "جاري توليد الأرقام السرية للامتحانات...",
-      success: "تم توليد وتشفير الأرقام السرية لجميع الجداول بنجاح!",
-      error: (err) => (err as any)?.message || "فشل توليد الأرقام السرية",
+      loading: m.operations_ui_secrets_generating(),
+      success: m.operations_ui_secrets_generate_success(),
+      error: (err) => (err as any)?.message || m.operations_ui_secrets_generate_error(),
     });
 
     await promise;
@@ -379,7 +379,7 @@ async function loadSolveJobs() {
 }
 
 async function handleAutoSchedule() {
-  toast.error("الجدولة التلقائية غير متاحة في نسخة سطح المكتب حاليًا");
+  toast.error(m.operations_ui_auto_scheduling_desktop_unavailable());
 }
 
 function stopPolling() {
@@ -394,11 +394,11 @@ function stopPolling() {
 }
 
 async function handleCancelSolve() {
-  toast.error("إلغاء الجدولة التلقائية غير متاح في نسخة سطح المكتب حاليًا");
+  toast.error(m.operations_ui_cancel_scheduling_desktop_unavailable());
 }
 
 async function handleApplySolve() {
-  toast.error("تطبيق الجدولة التلقائية غير متاح في نسخة سطح المكتب حاليًا");
+  toast.error(m.operations_ui_apply_scheduling_desktop_unavailable());
 }
 
 async function handleDeleteSchedule(scheduleId: string) {
@@ -413,7 +413,7 @@ async function handleDeleteSchedule(scheduleId: string) {
   toast.promise(promise, {
     loading: m.academics_exams_sessions_sessionId_deleting_scheduled_exam(),
     success: m.academics_exams_sessions_sessionId_deleted_exam_successfully(),
-    error: (err: any) => (err as any)?.message || "Failed to delete",
+    error: (err: any) => (err as any)?.message || m.operations_ui_exam_delete_error(),
   });
   try {
     await promise;
@@ -438,7 +438,7 @@ async function handleToggleScheduleStatus(sched: any) {
   toast.promise(promise, {
     loading: label,
     success: labelSuccess,
-    error: (err: any) => (err as any)?.message || "Failed to update status",
+    error: (err: any) => (err as any)?.message || m.operations_ui_exam_status_update_error(),
   });
   try {
     await promise;
@@ -449,7 +449,7 @@ async function handleToggleScheduleStatus(sched: any) {
 }
 
 async function handleAllocateHalls() {
-  toast.error("توزيع الطلاب على القاعات غير متاح في نسخة سطح المكتب حاليًا");
+  toast.error(m.operations_ui_hall_assignment_desktop_unavailable());
 }
 
 async function handleActivate() {
@@ -458,9 +458,9 @@ async function handleActivate() {
   const promise = api.updateExamSession(sessionId, { status: targetStatus });
 
   toast.promise(promise, {
-    loading: "جاري تحديث حالة دورة الامتحانات...",
-    success: "تم تحديث حالة دورة الامتحانات بنجاح!",
-    error: (err) => (err as any)?.message || "فشل تحديث حالة دورة الامتحانات",
+    loading: m.operations_ui_exam_session_status_updating(),
+    success: m.operations_ui_exam_session_status_updated(),
+    error: (err) => (err as any)?.message || m.operations_ui_exam_session_status_update_error(),
   });
 
   try {
@@ -473,17 +473,17 @@ async function handleActivate() {
 
 async function handleDeleteSeating(seatingId: string) {
   const confirmed = await confirmStore.prompt({
-    title: "حذف رقم الجلوس؟",
-    description: "هل أنت متأكد من رغبتك في حذف رقم الجلوس المحدد؟",
-    confirmText: "حذف",
+    title: m.operations_ui_seating_delete_title(),
+    description: m.operations_ui_seating_delete_confirm(),
+    confirmText: m.common_action_delete(),
     variant: "destructive",
   });
   if (!confirmed) return;
   const promise = api.deleteSeating(seatingId);
   toast.promise(promise, {
-    loading: "جاري حذف رقم الجلوس...",
-    success: "تم حذف رقم الجلوس بنجاح!",
-    error: (err: any) => (err as any)?.message || "فشل حذف رقم الجلوس",
+    loading: m.operations_ui_seating_deleting(),
+    success: m.operations_ui_seating_delete_success(),
+    error: (err: any) => (err as any)?.message || m.operations_ui_seating_delete_error(),
   });
   try {
     await promise;
@@ -495,17 +495,17 @@ async function handleDeleteSeating(seatingId: string) {
 
 async function handleDeleteProctor(proctorId: string) {
   const confirmed = await confirmStore.prompt({
-    title: "إلغاء تكليف المراقب؟",
-    description: "هل أنت متأكد من رغبتك في إلغاء تكليف المراقب من هذه اللجنة؟",
-    confirmText: "إلغاء التكليف",
+    title: m.operations_ui_proctor_assignment_cancel_title(),
+    description: m.operations_ui_proctor_assignment_cancel_confirm(),
+    confirmText: m.operations_ui_proctor_assignment_cancel(),
     variant: "destructive",
   });
   if (!confirmed) return;
   const promise = api.deleteProctor(proctorId);
   toast.promise(promise, {
-    loading: "جاري إلغاء تكليف المراقب...",
-    success: "تم إلغاء التكليف بنجاح!",
-    error: (err: any) => (err as any)?.message || "فشل إلغاء التكليف",
+    loading: m.operations_ui_proctor_assignment_cancelling(),
+    success: m.operations_ui_proctor_assignment_cancel_success(),
+    error: (err: any) => (err as any)?.message || m.operations_ui_proctor_assignment_cancel_error(),
   });
   try {
     await promise;
@@ -519,9 +519,9 @@ async function handleToggleHall(room: any) {
   const promise = Promise.resolve();
 
   toast.promise(promise, {
-    loading: `جاري تفعيل القاعة ${room.room_number || room.name}...`,
-    success: "تم تفعيل القاعة كـ لجنة اختبار بنجاح!",
-    error: (err) => (err as any)?.message || "فشل تفعيل القاعة",
+    loading: m.operations_ui_exam_room_activating({ room: room.room_number || room.name }),
+    success: m.operations_ui_exam_room_activate_success(),
+    error: (err) => (err as any)?.message || m.operations_ui_exam_room_activate_error(),
   });
 
   try {
@@ -533,7 +533,7 @@ async function handleToggleHall(room: any) {
 }
 
 async function handleAssignProctors() {
-  toast.error("تعيين المراقبين غير متاح في نسخة سطح المكتب حاليًا");
+  toast.error(m.operations_ui_proctor_assignment_desktop_unavailable());
 }
 </script>
 

@@ -269,15 +269,15 @@ const workflowCategories = $derived([
       },
       {
         id: "auto_lock_grades" as const,
-        label: "قفل دفتر الدرجات تلقائياً",
-        desc: "قفل التعديل على سجلات الدرجات تلقائياً بعد انقضاء مهلة الرصد المحددة",
+        label: m.ai_ui_auto_lock_gradebook(),
+        desc: m.ai_ui_auto_lock_gradebook_description(),
         icon: Lock,
         risk: "medium",
       },
       {
         id: "allow_grade_edit_after_close" as const,
-        label: "السماح بتعديل الدرجات بعد القفل",
-        desc: "إمكانية فتح الدرجات للتعديل بتفويض خاص بعد انتهاء مهلة الرصد الرسمية",
+        label: m.ai_ui_allow_grade_edits_after_lock(),
+        desc: m.ai_ui_allow_grade_edits_after_lock_description(),
         icon: DocumentPage,
         risk: "high",
       },
@@ -309,8 +309,8 @@ const workflowCategories = $derived([
       },
       {
         id: "auto_advance_periods" as const,
-        label: "الانتقال الآلي للفترات الأكاديمية",
-        desc: "تفعيل الفترة الأكاديمية التالية تلقائياً عند حلول موعد بدء الفصل الدراسي",
+        label: m.ai_ui_auto_advance_academic_periods(),
+        desc: m.ai_ui_auto_advance_academic_periods_description(),
         icon: Calendar,
         risk: "medium",
       },
@@ -443,10 +443,10 @@ const workflowCategories = $derived([
 
             <div class="flex flex-col gap-1.5 text-start">
               <Label class="text-xs font-semibold text-foreground">
-                مهلة رصد الدرجات (أيام)
+                {m.ai_ui_grade_entry_grace_period_days()}
               </Label>
               <span class="text-[11px] text-muted-foreground leading-relaxed">
-                المهلة الزمنية المتاحة للمعلمين لإدخال الدرجات قبل الإغلاق
+                {m.ai_ui_grade_entry_grace_period_description()}
               </span>
               <Input
                 type="number"
@@ -460,10 +460,10 @@ const workflowCategories = $derived([
 
             <div class="flex flex-col gap-1.5 text-start">
               <Label class="text-xs font-semibold text-foreground">
-                الحد الأقصى للمحاولات
+                {m.ai_ui_maximum_attempts()}
               </Label>
               <span class="text-[11px] text-muted-foreground leading-relaxed">
-                عدد محاولات إعادة تنفيذ المهام الفاشلة قبل إرسال تنبيه للمسؤول
+                {m.ai_ui_maximum_attempts_description()}
               </span>
               <Input
                 type="number"

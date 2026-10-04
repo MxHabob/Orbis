@@ -10,6 +10,7 @@ import SearchField from "$lib/shared/components/search-field.svelte";
 import { formatDate } from "$lib/core/i18n";
 import { Badge } from "@orbis/ui/badge";
 import type { AiChatSession } from "$lib/features/ai/session-store";
+import * as m from "$lib/paraglide/messages";
 
 let {
   sessions = [],
@@ -64,7 +65,7 @@ function handleDelete(e: MouseEvent, sessionId: string) {
         variant="ghost"
         size="icon-xs"
         class="w-6 h-6 flex items-center justify-center rounded-md cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted"
-        title="سجل المحادثات"
+        title={m.ai_ui_chat_history()}
       >
         <ClockRotateRight size={13} />
       </Button>
@@ -78,7 +79,7 @@ function handleDelete(e: MouseEvent, sessionId: string) {
     <div class="flex items-center gap-4 justify-between">
     <SearchField
       bind:value={searchQuery}
-      placeholder="بحث في المحادثات..."
+      placeholder={m.ai_ui_search_chats()}
       class="w-full max-w-full text-xs"
     />
       <Button
@@ -94,7 +95,7 @@ function handleDelete(e: MouseEvent, sessionId: string) {
       {#if filteredSessions.length === 0}
         <div class="text-center text-[11px] text-muted-foreground py-6 flex flex-col items-center gap-1.5">
           <ClockRotateRight size={20} class="text-muted-foreground/40" />
-          <span>لا توجد محادثات سابقة</span>
+          <span>{m.ai_ui_no_previous_chats()}</span>
         </div>
       {:else}
         {#each filteredSessions as session (session.id)}
@@ -107,18 +108,18 @@ function handleDelete(e: MouseEvent, sessionId: string) {
           >
             <div class="flex justify-between items-center w-full">
               <span class="text-[12px] font-semibold truncate flex-1 pe-1">
-                {session.title || "محادثة بدون عنوان"}
+                {session.title || m.ai_ui_untitled_chat()}
               </span>
               <div class="flex items-center gap-1 shrink-0">
                 <Badge variant="secondary" class="text-[8px] h-3.5 px-1 font-mono">
-                  {session.messages.length} رسالة
+                  {m.ai_ui_message_count({ count: session.messages.length })}
                 </Badge>
                 {#if onDeleteSession}
                   <button
                     type="button"
                     onclick={(e) => handleDelete(e, session.id)}
                     class="opacity-0 group-hover:opacity-100 hover:text-destructive p-0.5 rounded transition-opacity cursor-pointer"
-                    title="حذف المحادثة"
+                    title={m.ai_ui_delete_chat()}
                   >
                     <Trash size={11} />
                   </button>
@@ -128,7 +129,7 @@ function handleDelete(e: MouseEvent, sessionId: string) {
             <div class="text-[9px] text-muted-foreground leading-normal flex justify-between items-center w-full">
               <span>{formatDate(session.updatedAt || session.createdAt)}</span>
               {#if session.id === currentSessionId}
-                <span class="text-[8px] font-bold text-primary">المحادثة الحالية</span>
+                <span class="text-[8px] font-bold text-primary">{m.ai_ui_current_chat()}</span>
               {/if}
             </div>
           </div>

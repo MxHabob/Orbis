@@ -59,7 +59,7 @@ let filterDate = $state("");
 // Print
 let printReportOpen = $state(false);
 let printParameters = $state<Record<string, any>>({});
-let printTitle = $state("طباعة سند القيد");
+let printTitle = $state(m.finance_ui_print_journal_entry());
 
 onMount(async () => {
   await loadData();
@@ -84,7 +84,7 @@ async function loadData() {
     }
   } catch (e) {
     console.error("Failed to load journal entries master data:", e);
-    toast.error("فشل تحميل بيانات قيود اليومية");
+    toast.error(m.finance_ui_journal_entries_load_failed());
   } finally {
     isLoading = false;
   }
@@ -108,19 +108,19 @@ function getAccountName(id?: string | null): string {
 
 async function handleSaveNew() {
   if (!amount || amount <= 0) {
-    toast.error("يرجى إدخال مبلغ صحيح للقيد");
+    toast.error(m.finance_ui_journal_amount_invalid());
     return;
   }
   if (!debitAccountId) {
-    toast.error("يرجى تحديد حساب المدين (من حساب)");
+    toast.error(m.finance_ui_debit_account_required());
     return;
   }
   if (!creditAccountId) {
-    toast.error("يرجى تحديد حساب الدائن (إلى حساب)");
+    toast.error(m.finance_ui_credit_account_required());
     return;
   }
   if (debitAccountId === creditAccountId) {
-    toast.error("لا يمكن أن يكون حساب المدين وحساب الدائن متطابقين");
+    toast.error(m.finance_ui_journal_accounts_must_differ());
     return;
   }
 
@@ -153,13 +153,13 @@ async function handleSaveNew() {
     };
 
     await api.createJournalEntry(payload as any);
-    toast.success("تم حفظ وترحيل سند القيد بنجاح");
+    toast.success(m.finance_ui_journal_entry_posted_success());
     clearForm();
     showAddForm = false;
     await loadData();
   } catch (err: any) {
     console.error("Failed to post journal entry:", err);
-    toast.error(err?.message || "فشل ترحيل سند القيد");
+    toast.error(err?.message || m.finance_ui_journal_entry_post_failed());
   } finally {
     isSubmitting = false;
   }
@@ -167,10 +167,10 @@ async function handleSaveNew() {
 
 async function handleReverse(entry: JournalEntryDto) {
   const confirmed = await confirmStore.prompt({
-    title: "عكس سند القيد",
-    description: `هل أنت متأكد من إنشاء قيد عكسي للسند رقم "${entry.reference_number || entry.id.slice(0, 8)}"؟`,
-    confirmText: "عكس القيد",
-    cancelText: "إلغاء",
+    title: m.finance_ui_reverse_journal_entry(),
+    description: m.finance_ui_reverse_journal_entry_confirm({ number: entry.reference_number || entry.id.slice(0, 8) }),
+    confirmText: m.finance_ui_reverse_entry(),
+    cancelText: m.finance_ui_cancel(),
     variant: "destructive",
   });
 
@@ -178,11 +178,11 @@ async function handleReverse(entry: JournalEntryDto) {
 
   try {
     await api.reverseJournalEntry(entry.id, { reason: "عكس يدوي من واجهة القيود" });
-    toast.success("تم إنشاء القيد العكسي بنجاح");
+    toast.success(m.finance_ui_journal_entry_reversed_success());
     await loadData();
   } catch (err: any) {
     console.error("Failed to reverse journal entry:", err);
-    toast.error(err?.message || "فشل عكس سند القيد");
+    toast.error(err?.message || m.finance_ui_journal_entry_reverse_failed());
   }
 }
 
@@ -192,7 +192,7 @@ function handlePrint(entry: JournalEntryDto) {
     reference_number: entry.reference_number,
     org_id: orgId,
   };
-  printTitle = `سند قيد - ${entry.reference_number || entry.id.slice(0, 8)}`;
+  printTitle = m.finance_ui_journal_entry_print_title({ number: entry.reference_number || entry.id.slice(0, 8) });
   printReportOpen = true;
 }
 
@@ -220,7 +220,7 @@ const gridSource = $derived(
       debit_account_display: debitAcc,
       credit_account_display: creditAcc,
       notes_display: e.description_ar || e.description || "—",
-      status_display: e.is_posted ? "مرحل" : "مسودة",
+      status_display: e.is_posted ? m.finance_ui_posted_status() : m.finance_ui_draft_status(),
     };
   })
 );
@@ -236,14 +236,14 @@ const filteredSource = $derived(
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "ref_display", prop: "ref_display", header: "رقم السند", name: "رقم السند", width: 110, size: 110, readonly: true, cellClass: "font-mono font-bold" },
-  { id: "date_display", prop: "date_display", header: "التاريخ", name: "التاريخ", width: 110, size: 110, readonly: true, align: "center" },
-  { id: "debit_account_display", prop: "debit_account_display", header: "من حساب (مدين)", name: "من حساب (مدين)", width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "credit_account_display", prop: "credit_account_display", header: "إلى حساب (دائن)", name: "إلى حساب (دائن)", width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "amount_formatted", prop: "amount_formatted", header: "المبلغ", name: "المبلغ", width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-primary" },
-  { id: "currency_display", prop: "currency_display", header: "العملة", name: "العملة", width: 80, size: 80, readonly: true, align: "center" },
-  { id: "notes_display", prop: "notes_display", header: "البيان / ملاحظات", name: "البيان / ملاحظات", width: 240, size: 240, readonly: true },
-  { id: "status_display", prop: "status_display", header: "الحالة", name: "الحالة", width: 90, size: 90, type: "badge", align: "center", readonly: true },
+  { id: "ref_display", prop: "ref_display", header: m.finance_ui_voucher_number(), name: m.finance_ui_voucher_number(), width: 110, size: 110, readonly: true, cellClass: "font-mono font-bold" },
+  { id: "date_display", prop: "date_display", header: m.finance_ui_date(), name: m.finance_ui_date(), width: 110, size: 110, readonly: true, align: "center" },
+  { id: "debit_account_display", prop: "debit_account_display", header: m.finance_ui_debit_account(), name: m.finance_ui_debit_account(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
+  { id: "credit_account_display", prop: "credit_account_display", header: m.finance_ui_credit_account(), name: m.finance_ui_credit_account(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
+  { id: "amount_formatted", prop: "amount_formatted", header: m.finance_ui_amount(), name: m.finance_ui_amount(), width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-primary" },
+  { id: "currency_display", prop: "currency_display", header: m.finance_ui_currency(), name: m.finance_ui_currency(), width: 80, size: 80, readonly: true, align: "center" },
+  { id: "notes_display", prop: "notes_display", header: m.finance_ui_description_notes(), name: m.finance_ui_description_notes(), width: 240, size: 240, readonly: true },
+  { id: "status_display", prop: "status_display", header: m.finance_ui_status(), name: m.finance_ui_status(), width: 90, size: 90, type: "badge", align: "center", readonly: true },
 ];
 
 function exportCsv() {
@@ -258,7 +258,7 @@ function exportCsv() {
     e.status_display,
   ]);
   const csv = [
-    ["Reference", "Date", "Debit Account", "Credit Account", "Amount", "Currency", "Notes", "Status"],
+    [m.finance_ui_voucher_number(), m.finance_ui_date(), m.finance_ui_debit_account(), m.finance_ui_credit_account(), m.finance_ui_amount(), m.finance_ui_currency(), m.finance_ui_notes(), m.finance_ui_status()],
     ...rows,
   ]
     .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))
@@ -286,10 +286,10 @@ function exportCsv() {
         >
           {#if showAddForm}
             <XMark size={14} />
-            <span>إلغاء</span>
+            <span>{m.finance_ui_cancel()}</span>
           {:else}
             <Plus size={14} />
-            <span>سند قيد جديد</span>
+            <span>{m.finance_ui_new_journal_entry()}</span>
           {/if}
         </Button>
       </div>
@@ -299,7 +299,7 @@ function exportCsv() {
           <Search size={14} class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <Input
             type="text"
-            placeholder="بحث بالرقم أو الحساب أو البيان..."
+            placeholder={m.finance_ui_journal_search_placeholder()}
             bind:value={searchQuery}
             class="h-8 ps-8 text-xs bg-card border-border/60"
           />
@@ -330,7 +330,7 @@ function exportCsv() {
               <div class="flex items-center gap-2">
                 <span class="h-2 w-2 rounded-full bg-primary"></span>
                 <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  إنشاء سند قيد محاسبي
+                  {m.finance_ui_journal_entry_create_heading()}
                 </CardTitle>
               </div>
               <Button variant="ghost" size="icon-xs" onclick={() => showAddForm = false} class="text-muted-foreground">
@@ -342,17 +342,17 @@ function exportCsv() {
           <CardContent class="p-4 flex flex-col gap-4">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">رقم السند (اختياري)</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_voucher_number_optional()}</Label>
                 <Input
                   type="text"
                   bind:value={referenceNumber}
-                  placeholder="تلقائي"
+                  placeholder={m.finance_ui_automatic()}
                   class="h-8 text-xs font-mono bg-background border-border/60"
                 />
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">التاريخ</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_date()}</Label>
                 <Input
                   type="date"
                   bind:value={accountingDate}
@@ -361,7 +361,7 @@ function exportCsv() {
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">المبلغ</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_amount()}</Label>
                 <Input
                   type="number"
                   bind:value={amount}
@@ -371,10 +371,10 @@ function exportCsv() {
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">العملة</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_currency()}</Label>
                 <SearchableSelect
                   value={selectedCurrency}
-                  placeholder="اختر العملة..."
+                  placeholder={m.finance_ui_currency_select_placeholder()}
                   items={currencies}
                   getItemValue={(c) => c.code}
                   getItemLabel={(c) => `${c.name || c.code} (${c.code})`}
@@ -386,37 +386,37 @@ function exportCsv() {
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">من حساب (مدين)</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_debit_account()}</Label>
                 <AccountSearchInput
                   bind:value={debitAccountId}
                   {accounts}
-                  placeholder="اختر حساب المدين..."
+                  placeholder={m.finance_ui_debit_account_select_placeholder()}
                 />
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">إلى حساب (دائن)</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_credit_account()}</Label>
                 <AccountSearchInput
                   bind:value={creditAccountId}
                   {accounts}
-                  placeholder="اختر حساب الدائن..."
+                  placeholder={m.finance_ui_credit_account_select_placeholder()}
                 />
               </div>
             </div>
 
             <div>
-              <Label class="text-xs font-semibold text-foreground mb-1 block">البيان / ملاحظات</Label>
+              <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_description_notes()}</Label>
               <Input
                 type="text"
                 bind:value={notes}
-                placeholder="أدخل تفاصيل وبيان السند..."
+                placeholder={m.finance_ui_journal_notes_placeholder()}
                 class="h-8 text-xs bg-background border-border/60"
               />
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
               <Button variant="ghost" size="sm" class="h-8 text-xs" onclick={clearForm}>
-                مسح الحقول
+                {m.finance_ui_clear_fields()}
               </Button>
               <Button
                 variant="default"
@@ -425,7 +425,7 @@ function exportCsv() {
                 disabled={isSubmitting}
                 onclick={handleSaveNew}
               >
-                {isSubmitting ? "جاري الحفظ..." : "حفظ وترحيل القيد"}
+                {isSubmitting ? m.finance_ui_saving() : m.finance_ui_journal_entry_save()}
               </Button>
             </div>
           </CardContent>
@@ -443,7 +443,7 @@ function exportCsv() {
         search={searchQuery}
         rtl={isAr()}
         readonly
-        emptyTitle="لا توجد قيود يومية مسجلة"
+        emptyTitle={m.finance_ui_no_journal_entries()}
       />
     </div>
   </div>

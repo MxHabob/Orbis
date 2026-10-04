@@ -1,5 +1,6 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
+import * as m from "$lib/paraglide/messages";
 import type { BulkImportProfile, BulkRowState } from "../types";
 
 export interface ParsedFileResult {
@@ -13,7 +14,7 @@ export async function pickAndParseFile(profile: BulkImportProfile<any, any>): Pr
   try {
     const selected = await open({
       multiple: false,
-      filters: [{ name: "Spreadsheet Files", extensions: ["xlsx", "xls", "csv"] }],
+      filters: [{ name: m.bulk_entry_file_filter_spreadsheets(), extensions: ["xlsx", "xls", "csv"] }],
     });
 
     if (!selected || typeof selected !== "string") {
@@ -47,11 +48,11 @@ export async function parseSpreadsheetBytes(
   const targetSheetName =
     workbook.SheetNames.find((name) => !name.startsWith("_") && !name.toLowerCase().includes("instruction")) ||
     workbook.SheetNames[0] ||
-    "Sheet1";
+    m.bulk_entry_parser_default_sheet();
 
   const worksheet = workbook.Sheets[targetSheetName];
   if (!worksheet) {
-    throw new Error("لم يتم العثور على ورقة بيانات صالحة في الملف");
+    throw new Error(m.bulk_entry_parser_no_data_sheet());
   }
 
   // Convert worksheet to raw array of rows
@@ -63,7 +64,7 @@ export async function parseSpreadsheetBytes(
   });
 
   if (rawData.length < 2) {
-    throw new Error("الملف فارغ أو لا يحتوي على صف ترويسة وبيانات صالحة");
+    throw new Error(m.bulk_entry_parser_empty_file());
   }
 
   const rawHeaders = (rawData[0] as string[]).map((h) => String(h || "").trim());

@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 import type { AiToolResult, AiProposedAction, AiStoredSession, AiStoredMessage } from "$lib/api/types";
 import { api } from "$lib/api";
 
@@ -104,7 +105,7 @@ export async function loadFileContext(orgId: string): Promise<Record<string, unk
   }
 }
 
-export function createNewLocalSession(orgId: string, title: string = "محادثة جديدة"): AiChatSession {
+export function createNewLocalSession(orgId: string, title: string = m.ai_ui_new_chat()): AiChatSession {
   return {
     id: `session_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     title,

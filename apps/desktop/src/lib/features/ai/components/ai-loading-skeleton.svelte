@@ -2,6 +2,7 @@
 import { onMount, onDestroy } from "svelte";
 import UserAvatar from "$lib/shared/components/user-avatar.svelte";
 import { Skeleton } from "@orbis/ui/skeleton";
+import * as m from "$lib/paraglide/messages";
 
 let {
   statusText = "",
@@ -12,9 +13,9 @@ let {
 } = $props();
 
 const defaultPhases = [
-  "جاري التفكير وتحليل البيانات...",
-  "جاري استرجاع وفحص السجلات...",
-  "جاري صياغة الاستجابة...",
+  m.ai_ui_loading_analyzing(),
+  m.ai_ui_loading_retrieving(),
+  m.ai_ui_loading_drafting(),
 ];
 
 let currentPhaseIndex = $state(0);

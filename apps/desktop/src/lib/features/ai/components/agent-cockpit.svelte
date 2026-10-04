@@ -36,6 +36,7 @@ import {
 import { toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
 import type { ActionWithStatus } from "$lib/features/ai/session-store";
+import * as m from "$lib/paraglide/messages";
 
 let {
   orgId = "",
@@ -92,7 +93,7 @@ const filteredTools = $derived(
 async function handleExecuteTask(taskId: string) {
   try {
     await executeTask.mutateAsync(taskId);
-    toast.success("تم تنفيذ المهمة بنجاح");
+    toast.success(m.ai_ui_task_executed());
   } catch (e) {
     toast.error(extractErrorMessage(e));
   }
@@ -101,7 +102,7 @@ async function handleExecuteTask(taskId: string) {
 async function handleDismissTask(taskId: string) {
   try {
     await dismissTask.mutateAsync(taskId);
-    toast.info("تم تجاهل المهمة");
+    toast.info(m.ai_ui_task_dismissed());
   } catch (e) {
     toast.error(extractErrorMessage(e));
   }
@@ -110,7 +111,7 @@ async function handleDismissTask(taskId: string) {
 async function handleRetryTask(taskId: string) {
   try {
     await retryTask.mutateAsync(taskId);
-    toast.success("تمت إعادة جدولة المهمة");
+    toast.success(m.ai_ui_task_rescheduled());
   } catch (e) {
     toast.error(extractErrorMessage(e));
   }
@@ -119,7 +120,7 @@ async function handleRetryTask(taskId: string) {
 async function handleTriggerTick(dryRun: boolean = false) {
   try {
     await runTick.mutateAsync({ orgId, dryRun });
-    toast.success(dryRun ? "تم تشغيل الفحص التجريبي" : "تم تشغيل تقييم السياسات بنجاح");
+    toast.success(dryRun ? m.ai_ui_dry_run_started() : m.ai_ui_policy_evaluation_started());
   } catch (e) {
     toast.error(extractErrorMessage(e));
   }
@@ -134,7 +135,7 @@ async function toggleAutopilotMode() {
       paused: false,
       mode: newMode,
     });
-    toast.success(`تم تغيير وضع الطيار الآلي إلى ${newMode === "autonomous" ? "المستقل" : "الاستشاري"}`);
+    toast.success(m.ai_ui_autopilot_mode_changed({ mode: newMode === "autonomous" ? m.ai_ui_mode_autonomous() : m.ai_ui_mode_advisory() }));
   } catch (e) {
     toast.error(extractErrorMessage(e));
   }
@@ -149,11 +150,11 @@ async function toggleAutopilotMode() {
     onclick={onBack}
   >
     <ArrowRight size={13} class="rtl:rotate-0 rotate-180" />
-    العودة للمحادثة
+    {m.ai_ui_return_to_chat()}
   </Button>
   <span class="text-xs font-bold text-foreground flex items-center gap-1.5">
     <ChartBar size={13} class="text-primary" />
-    مركز العمليات والمهام
+    {m.ai_ui_operations_center()}
   </span>
 </div>
 
@@ -165,7 +166,7 @@ async function toggleAutopilotMode() {
       <div class="flex items-center gap-2">
         <Bolt size={15} class="text-primary" />
         <CardTitle class="text-xs font-bold text-foreground">
-          محرك الطيار الآلي (Autopilot Engine)
+          {m.ai_ui_autopilot_engine()}
         </CardTitle>
       </div>
       <CardAction>
@@ -173,7 +174,7 @@ async function toggleAutopilotMode() {
           variant={diagnostics.status === 'active' ? 'lime' : 'secondary'}
           class="text-[9px] px-1.5 font-mono"
         >
-          {diagnostics.status === 'active' ? 'نشط (Active)' : 'في وضع الاستعداد'}
+          {diagnostics.status === 'active' ? m.ai_ui_status_active() : m.ai_ui_status_standby()}
         </Badge>
       </CardAction>
     </CardHeader>
@@ -181,12 +182,12 @@ async function toggleAutopilotMode() {
     <CardContent class="p-4 space-y-3">
       <div class="grid grid-cols-2 gap-2 text-[11px]">
         <div class="bg-muted/40 p-2.5 rounded-xl border border-border/50 space-y-0.5">
-          <span class="text-muted-foreground block text-[9.5px]">وضع التشغيل الحالي:</span>
-          <strong class="text-foreground capitalize">{diagnostics.mode === 'autonomous' ? 'مستقل (Autonomous)' : 'استشاري (Advisory)'}</strong>
+          <span class="text-muted-foreground block text-[9.5px]">{m.ai_ui_current_operating_mode()}</span>
+          <strong class="text-foreground capitalize">{diagnostics.mode === 'autonomous' ? m.ai_ui_mode_autonomous() : m.ai_ui_mode_advisory()}</strong>
         </div>
         <div class="bg-muted/40 p-2.5 rounded-xl border border-border/50 space-y-0.5">
-          <span class="text-muted-foreground block text-[9.5px]">المهام المعلقة في النظام:</span>
-          <strong class="text-foreground font-mono">{diagnostics.pending_tasks_count} مهمة</strong>
+          <span class="text-muted-foreground block text-[9.5px]">{m.ai_ui_pending_system_tasks()}</span>
+          <strong class="text-foreground font-mono">{m.ai_ui_task_count({ count: diagnostics.pending_tasks_count })}</strong>
         </div>
       </div>
 
@@ -199,7 +200,7 @@ async function toggleAutopilotMode() {
           disabled={configureAutopilot.isPending}
         >
           <SettingsAlt size={12} class="me-1.5" />
-          تبديل إلى {diagnostics.mode === 'advisory' ? 'المستقل' : 'الاستشاري'}
+          {m.ai_ui_switch_to_mode({ mode: diagnostics.mode === 'advisory' ? m.ai_ui_mode_autonomous() : m.ai_ui_mode_advisory() })}
         </Button>
         <Button
           variant="default"
@@ -209,7 +210,7 @@ async function toggleAutopilotMode() {
           disabled={runTick.isPending}
         >
           <Play size={11} class="me-1" />
-          تشغيل دورة فحص
+          {m.ai_ui_run_check_cycle()}
         </Button>
       </div>
     </CardContent>
@@ -221,7 +222,7 @@ async function toggleAutopilotMode() {
       <div class="flex items-center gap-1.5">
         <Clock size={13} class="text-primary" />
         <CardTitle class="text-xs font-bold text-foreground">
-          مهام النظام الذكية ({tasks.length})
+          {m.ai_ui_smart_system_tasks({ count: tasks.length })}
         </CardTitle>
       </div>
       <Button
@@ -229,7 +230,7 @@ async function toggleAutopilotMode() {
         size="icon-xs"
         class="h-6 w-6 rounded-md text-muted-foreground hover:text-foreground cursor-pointer"
         onclick={() => tasksQuery.refetch()}
-        title="تحديث قائمة المهام"
+        title={m.ai_ui_refresh_task_list()}
       >
         <Refresh size={11} />
       </Button>
@@ -243,7 +244,7 @@ async function toggleAutopilotMode() {
         </div>
       {:else if tasks.length === 0}
         <div class="text-center py-5 text-xs text-muted-foreground bg-muted/20 rounded-xl border border-dashed border-border">
-          لا توجد مهام معلقة في الوقت الحالي
+          {m.ai_ui_no_pending_tasks()}
         </div>
       {:else}
         {#each tasks as task (task.id)}
@@ -265,7 +266,7 @@ async function toggleAutopilotMode() {
             {/if}
 
             <div class="flex items-center justify-between pt-1 border-t border-border/30 text-[10px] text-muted-foreground">
-              <span>المخاطرة: <strong class="text-foreground capitalize">{task.risk_level}</strong></span>
+              <span>{m.ai_ui_risk_label()}: <strong class="text-foreground capitalize">{task.risk_level}</strong></span>
               <div class="flex items-center gap-1.5">
                 {#if task.status === 'pending' || task.status === 'suggested'}
                   <Button
@@ -276,7 +277,7 @@ async function toggleAutopilotMode() {
                     disabled={executeTask.isPending}
                   >
                     <CheckCircle size={10} class="me-1" />
-                    تنفيذ
+                    {m.ai_ui_execute()}
                   </Button>
                   <Button
                     size="xs"
@@ -285,7 +286,7 @@ async function toggleAutopilotMode() {
                     onclick={() => handleDismissTask(task.id)}
                     disabled={dismissTask.isPending}
                   >
-                    إلغاء
+                    {m.ai_ui_cancel()}
                   </Button>
                 {:else if task.status === 'failed'}
                   <Button
@@ -296,7 +297,7 @@ async function toggleAutopilotMode() {
                     disabled={retryTask.isPending}
                   >
                     <Refresh size={10} class="me-1" />
-                    إعادة المحاولة
+                    {m.ai_ui_retry()}
                   </Button>
                 {/if}
               </div>
@@ -313,7 +314,7 @@ async function toggleAutopilotMode() {
       <div class="flex items-center gap-2">
         <Wrench size={14} class="text-primary" />
         <CardTitle class="text-xs font-bold text-foreground">
-          أدوات النظام المتاحة للوكيل ({tools.length})
+          {m.ai_ui_agent_available_tools({ count: tools.length })}
         </CardTitle>
       </div>
     </CardHeader>
@@ -326,11 +327,11 @@ async function toggleAutopilotMode() {
         </div>
       {:else if toolsQuery.isError}
         <div class="border border-destructive/20 bg-destructive/5 rounded-lg p-3 text-center text-xs text-destructive">
-          تعذر تحميل قائمة أدوات النظام
+          {m.ai_ui_failed_load_system_tools()}
         </div>
       {:else if filteredTools.length === 0}
         <div class="text-center py-6 text-xs text-muted-foreground">
-          لا توجد أدوات مطابقة
+          {m.ai_ui_no_matching_tools()}
         </div>
       {:else}
         <div class="space-y-2">
@@ -344,11 +345,11 @@ async function toggleAutopilotMode() {
                 <div class="flex items-center gap-1">
                   {#if tool.is_consequential}
                     <Badge variant="secondary" class="text-[8px] bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20">
-                      تعديل بيانات
+                      {m.ai_ui_modify_data()}
                     </Badge>
                   {:else}
                     <Badge variant="outline" class="text-[8px] text-muted-foreground">
-                      قراءة فقط
+                      {m.ai_ui_read_only()}
                     </Badge>
                   {/if}
                 </div>
@@ -361,7 +362,7 @@ async function toggleAutopilotMode() {
               {#if tool.required_permission}
                 <div class="text-[9.5px] text-muted-foreground/80 flex items-center gap-1 pt-0.5">
                   <Lock size={10} />
-                  الصلاحية المطلوبة: <code class="font-mono text-foreground/80">{tool.required_permission}</code>
+                  {m.ai_ui_required_permission()}: <code class="font-mono text-foreground/80">{tool.required_permission}</code>
                 </div>
               {/if}
             </div>

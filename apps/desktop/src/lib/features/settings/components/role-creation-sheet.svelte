@@ -25,12 +25,12 @@ import {
 } from "@orbis/ui/accordion";
 import { useQueryClient } from "@tanstack/svelte-query";
 import { toast } from "@orbis/ui";
-import { l } from "$lib/core/i18n";
 import type { RoleDto } from "$lib/api/types";
 import {
   IAM_DOMAINS,
   type IamResourceDef,
   countRolePermissions,
+  translateIamMessage,
 } from "$lib/core/iam";
 
 let {
@@ -260,7 +260,7 @@ async function handleSubmit(e: SubmitEvent) {
               >
                 <AccordionTrigger class="text-xs font-semibold hover:no-underline py-2.5">
                   <div class="flex items-center justify-between gap-3 w-full pe-2">
-                    <span>{l(domain.nameAr, domain.nameEn)}</span>
+                    <span>{translateIamMessage(domain.nameKey)}</span>
                     <Badge
                       variant={stat.selected > 0 ? "secondary" : "outline"}
                       class="text-[9px] font-mono px-1.5 py-0"
@@ -281,7 +281,7 @@ async function handleSubmit(e: SubmitEvent) {
                         <div class="flex items-center justify-between gap-2 border-b border-border/30 pb-2">
                           <div class="flex items-center gap-2">
                             <span class="text-xs font-bold text-foreground">
-                              {l(res.labelAr, res.labelEn)}
+                              {translateIamMessage(res.labelKey)}
                             </span>
                             <span class="text-[10px] font-mono text-muted-foreground">
                               ({res.key})
@@ -312,7 +312,7 @@ async function handleSubmit(e: SubmitEvent) {
                                 onCheckedChange={() => toggleAction(res.key, act.key)}
                               />
                               <span class="text-xs text-foreground truncate">
-                                {l(act.labelAr, act.labelEn)}
+                                {translateIamMessage(act.labelKey)}
                               </span>
                             </label>
                           {/each}

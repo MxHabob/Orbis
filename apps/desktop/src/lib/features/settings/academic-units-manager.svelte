@@ -303,8 +303,8 @@ function openEditSheet(unit: any) {
 
 async function handleDeleteUnit(unit: any) {
   const confirmed = await confirmStore.prompt({
-    title: m.common_action_delete() + "؟",
-    description: `Are you sure you want to delete org unit "${unit.name_ar || unit.name}"?`,
+    title: m.common_action_delete(),
+    description: m.settings_ui_delete_org_unit_confirm({ name: unit.name_ar || unit.name }),
     confirmText: m.common_action_delete(),
     variant: "destructive",
   });
@@ -312,7 +312,7 @@ async function handleDeleteUnit(unit: any) {
 
   try {
     await api.deleteOrgUnit(unit.id);
-    toast.success("Organizational unit deleted successfully");
+    toast.success(m.settings_ui_org_unit_delete_success());
     loadUnits();
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
@@ -375,26 +375,26 @@ function getUnitTypeIcon(typeStr: string) {
 function getUnitTypeLabel(typeStr: string): string {
   switch (String(typeStr).toLowerCase()) {
     case "branch":
-      return "فرع / مجمع";
+      return m.settings_ui_unit_type_campus();
     case "stage":
-      return "مرحلة دراسية";
+      return m.settings_ui_unit_type_stage();
     case "section":
-      return "قسم / مسار";
+      return m.settings_ui_unit_type_division();
     case "college":
-      return "كلية / معهد";
+      return m.settings_ui_unit_type_faculty();
     case "department":
-      return "قسم إداري / أكاديمي";
+      return m.settings_ui_unit_type_department();
     case "program":
-      return "مسار تدريبي";
+      return m.settings_ui_unit_type_program();
     case "building":
-      return "مبنى";
+      return m.settings_ui_unit_type_building();
     case "facility":
     case "classroom":
-      return "قاعة / معمل";
+      return m.settings_ui_unit_type_room();
     case "office":
-      return "مكتب";
+      return m.settings_ui_unit_type_office();
     default:
-      return typeStr || "وحدة";
+      return typeStr || m.settings_ui_unit_type_unit();
   }
 }
 
@@ -496,7 +496,7 @@ function escapeHtml(text: string): string {
     </div>
   {:else if error}
     <div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-center gap-3">
-      <p class="text-xs text-destructive font-semibold">Failed to load organizational units</p>
+      <p class="text-xs text-destructive font-semibold">{m.settings_ui_units_load_error()}</p>
       <p class="text-xs text-muted-foreground">{error}</p>
       <Button variant="outline" class="text-xs" onclick={loadUnits}>{m.common_retry()}</Button>
     </div>
@@ -504,16 +504,16 @@ function escapeHtml(text: string): string {
     <div class="flex flex-col items-center justify-center py-16 text-muted-foreground border border-border border-dashed rounded-xl gap-4 bg-card/10">
       <BuildingOffice size={48} class="text-muted-foreground/30 animate-pulse" />
       <div class="flex flex-col gap-1 text-center">
-        <p class="text-xs font-semibold">No units found</p>
-        <p class="text-[10px] text-muted-foreground/80">Add your first site, building, department, or classroom location.</p>
+        <p class="text-xs font-semibold">{m.settings_ui_units_empty_title()}</p>
+        <p class="text-[10px] text-muted-foreground/80">{m.settings_ui_units_empty_description()}</p>
       </div>
     </div>
   {:else if (viewMode === 'tree' ? visibleTreeNodes : flatFilteredUnits).length === 0}
     <div class="flex flex-col items-center justify-center py-16 text-muted-foreground border border-border border-dashed rounded-xl gap-4 bg-card/10">
       <Search size={48} class="text-muted-foreground/30" />
       <div class="flex flex-col gap-1 text-center">
-        <p class="text-xs font-semibold">No units match your search</p>
-        <p class="text-[10px] text-muted-foreground/80">Try adjusting your keywords or filters.</p>
+        <p class="text-xs font-semibold">{m.settings_ui_units_no_search_results()}</p>
+        <p class="text-[10px] text-muted-foreground/80">{m.settings_ui_adjust_search_filters()}</p>
       </div>
     </div>
   {:else}
@@ -608,7 +608,7 @@ function escapeHtml(text: string): string {
                       <Button
                         variant="ghost"
                         size="icon-xs"
-                        title="Add Sub-unit"
+                        title={m.settings_ui_add_subunit()}
                         onclick={() => openCreateSubSheet(node.unit)}
                       >
                         <Plus size={12} class="text-muted-foreground hover:text-foreground" />
@@ -616,7 +616,7 @@ function escapeHtml(text: string): string {
                       <Button
                         variant="ghost"
                         size="icon-xs"
-                        title="Edit"
+                        title={m.common_action_edit()}
                         onclick={() => openEditSheet(node.unit)}
                       >
                         <Pencil size={12} class="text-muted-foreground hover:text-foreground" />
@@ -624,7 +624,7 @@ function escapeHtml(text: string): string {
                       <Button
                         variant="ghost"
                         size="icon-xs"
-                        title="Delete"
+                        title={m.common_action_delete()}
                         onclick={() => handleDeleteUnit(node.unit)}
                       >
                         <Trash size={12} class="text-muted-foreground hover:text-destructive" />
@@ -690,7 +690,7 @@ function escapeHtml(text: string): string {
                       <Button
                         variant="ghost"
                         size="icon-xs"
-                        title="Add Sub-unit"
+                        title={m.settings_ui_add_subunit()}
                         onclick={() => openCreateSubSheet(unit)}
                       >
                         <Plus size={12} class="text-muted-foreground hover:text-foreground" />
@@ -698,7 +698,7 @@ function escapeHtml(text: string): string {
                       <Button
                         variant="ghost"
                         size="icon-xs"
-                        title="Edit"
+                        title={m.common_action_edit()}
                         onclick={() => openEditSheet(unit)}
                       >
                         <Pencil size={12} class="text-muted-foreground hover:text-foreground" />
@@ -706,7 +706,7 @@ function escapeHtml(text: string): string {
                       <Button
                         variant="ghost"
                         size="icon-xs"
-                        title="Delete"
+                        title={m.common_action_delete()}
                         onclick={() => handleDeleteUnit(unit)}
                       >
                         <Trash size={12} class="text-muted-foreground hover:text-destructive" />

@@ -15,7 +15,6 @@ import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
 import { Lock, ShieldCheck, Trash } from "@orbis/icons";
-import { l } from "$lib/core/i18n";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
@@ -67,10 +66,9 @@ async function handleGenerateTempPassword() {
   if (!userId) return;
   const confirmed = await confirmStore.prompt({
     title: (m.settings_user_detail_btn_reset_pass()) + "؟",
-    description: l(
-      `هل أنت متأكد من إعادة توليد كلمة مرور مؤقتة للمستخدم (${fullName || email})؟`,
-      `Are you sure you want to generate a new temporary password for ${fullName || email}?`
-    ),
+    description: m.shared_ui_generate_temp_password_confirmation({
+      user: fullName || email,
+    }),
     confirmText: m.settings_user_detail_btn_reset_pass(),
   });
   if (confirmed) {
@@ -80,7 +78,7 @@ async function handleGenerateTempPassword() {
       credentialModalOpen = true;
       toast.success(m.employees_password_reset_success());
     } catch (e: unknown) {
-      toast.error((e as any)?.message || "Failed to reset password");
+      toast.error((e as any)?.message || m.shared_ui_reset_password_failed());
     }
   }
 }
@@ -108,7 +106,7 @@ async function handleResetPassword(e: Event) {
     newPassword = "";
     confirmPassword = "";
   } catch (e: unknown) {
-    toast.error((e as any)?.message || "Failed");
+    toast.error((e as any)?.message || m.shared_ui_action_failed());
   } finally {
     isResettingPassword = false;
   }
@@ -128,7 +126,7 @@ async function handleDeleteUser() {
     toast.success(m.settings_user_detail_deleted());
     await goto(localizeHref(`/${orgId}/settings/users`));
   } catch (e: unknown) {
-    toast.error((e as any)?.message || "Failed");
+    toast.error((e as any)?.message || m.shared_ui_action_failed());
   }
 }
 

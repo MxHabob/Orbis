@@ -131,7 +131,7 @@ async function handleSaveAll() {
         <div class="flex flex-col text-start">
           <div class="flex items-center gap-2">
             <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-              دفتر رصد الدرجات والأعمال الشهرية
+              {m.shared_ui_coursework_gradebook_title()}
             </CardTitle>
             {#if isDirty}
               <Badge variant="outline" class="bg-amber-500/10 text-[9px] text-amber-600 border-amber-500/30 font-bold animate-pulse">

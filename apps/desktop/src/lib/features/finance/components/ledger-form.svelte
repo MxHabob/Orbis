@@ -373,7 +373,7 @@ async function handleSubmit(e: SubmitEvent) {
             />
             {#if suggestedCode}
               <span class="text-[10px] text-muted-foreground">
-                {glCode.trim() ? "مخصص يدويًا" : `رمز مقترح تلقائيًا: ${suggestedCode}`}
+                {glCode.trim() ? m.finance_ui_account_code_manual() : m.finance_ui_account_code_suggested({ code: suggestedCode })}
               </span>
             {/if}
           </div>
@@ -421,10 +421,10 @@ async function handleSubmit(e: SubmitEvent) {
             </div>
             <div class="flex flex-col gap-1 text-start">
               <span class="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-                طبيعة الحساب (Nature)
+                {m.finance_ui_account_nature()}
               </span>
               <span class="text-xs font-semibold capitalize {['asset', 'expense'].includes(glAccountType.toLowerCase()) ? 'text-blue-500' : 'text-emerald-500'}">
-                {['asset', 'expense'].includes(glAccountType.toLowerCase()) ? 'مدين (Debit)' : 'دائن (Credit)'}
+                {['asset', 'expense'].includes(glAccountType.toLowerCase()) ? m.finance_ui_debit() : m.finance_ui_credit()}
               </span>
             </div>
           </div>

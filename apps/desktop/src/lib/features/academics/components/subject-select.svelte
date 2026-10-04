@@ -30,12 +30,12 @@ let {
   value = $bindable<string | null>(null),
   orgId,
   placeholder = m.common_cs_form_select_subject(),
-  searchPlaceholder = "ابحث عن اسم أو رمز المادة...",
+  searchPlaceholder = m.shared_ui_search_subjects_placeholder(),
   disabled = false,
   id = undefined,
   showAllOption = false,
-  allOptionLabel = "جميع المواد",
-  createLabel = "إضافة مادة جديدة...",
+  allOptionLabel = m.shared_ui_all_subjects(),
+  createLabel = m.shared_ui_add_subject(),
   onCreate = undefined,
   class: className = "",
   onchange = undefined,
@@ -63,7 +63,7 @@ function getSubjectLabel(subj: any): string {
 
 function getSubjectSubtitle(subj: any): string | undefined {
   if (subj?.code) return subj.code;
-  if (subj?.credits) return `${subj.credits} ساعة`;
+  if (subj?.credits) return m.shared_ui_credit_hours({ count: subj.credits });
   return undefined;
 }
 </script>
@@ -73,7 +73,7 @@ function getSubjectSubtitle(subj: any): string | undefined {
   items={subjects}
   {placeholder}
   {searchPlaceholder}
-  emptyText="لا توجد مواد مطابقة للبحث"
+  emptyText={m.shared_ui_no_matching_subjects()}
   {disabled}
   {id}
   {showAllOption}

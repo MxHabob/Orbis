@@ -58,8 +58,8 @@ function handleChange(val: string | null) {
       bind:value={currentTimezone}
       items={timezones}
       placeholder={m.common_general_timezone()}
-      searchPlaceholder="ابحث باسم المدينة أو المنطقة (مثال: Riyadh, Aden, Cairo, London)..."
-      emptyText="لا توجد منطقة زمنية مطابقة"
+      searchPlaceholder={m.shared_ui_search_timezones_placeholder()}
+      emptyText={m.shared_ui_no_matching_timezones()}
       {disabled}
       getItemValue={getTimezoneValue}
       getItemLabel={getTimezoneLabel}

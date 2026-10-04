@@ -39,9 +39,9 @@ let disbursements = $state<any[]>([]);
 let accounts = $state<any[]>([]);
 let treasuries = $state<any[]>([]);
 let currencies = $state<{ code: string; name: string }[]>([
-  { code: "YER", name: "ريال يمني (YER)" },
-  { code: "USD", name: "دولار أمريكي (USD)" },
-  { code: "SAR", name: "ريال سعودي (SAR)" },
+  { code: "YER", name: m.finance_ui_currency_yer() },
+  { code: "USD", name: m.finance_ui_currency_usd() },
+  { code: "SAR", name: m.finance_ui_currency_sar() },
 ]);
 let isLoading = $state(true);
 let isSubmitting = $state(false);
@@ -66,7 +66,7 @@ let filterDate = $state("");
 // Print
 let printDialogOpen = $state(false);
 let printParameters = $state<Record<string, any>>({});
-let printTitle = $state("طباعة سند الصرف");
+let printTitle = $state(m.finance_ui_print_disbursement());
 
 onMount(async () => {
   await loadData();
@@ -101,7 +101,7 @@ async function loadData() {
     });
   } catch (e) {
     console.error("Failed to load disbursements data:", e);
-    toast.error("فشل تحميل بيانات سندات الصرف");
+    toast.error(m.finance_ui_disbursements_load_failed());
   } finally {
     isLoading = false;
   }
@@ -127,19 +127,19 @@ function getAccountName(id?: string | null): string {
 
 async function handleSaveDisbursement() {
   if (!amount || amount <= 0) {
-    toast.error("يرجى إدخال مبلغ صحيح للصرف");
+    toast.error(m.finance_ui_disbursement_amount_invalid());
     return;
   }
   if (!treasuryAccountId) {
-    toast.error("يرجى تحديد حساب الصندوق أو البنك المصروف منه");
+    toast.error(m.finance_ui_disbursement_treasury_required());
     return;
   }
   if (!beneficiaryAccountId) {
-    toast.error("يرجى تحديد حساب المصروف أو المستفيد");
+    toast.error(m.finance_ui_disbursement_beneficiary_required());
     return;
   }
   if (treasuryAccountId === beneficiaryAccountId) {
-    toast.error("لا يمكن أن يكون حساب المصروف هو نفسه حساب الصندوق");
+    toast.error(m.finance_ui_disbursement_accounts_must_differ());
     return;
   }
 
@@ -155,13 +155,13 @@ async function handleSaveDisbursement() {
       notes: notes.trim() || undefined,
       voucher_date: voucherDate,
     });
-    toast.success("تم حفظ وترحيل سند الصرف بنجاح");
+    toast.success(m.finance_ui_disbursement_posted_success());
     clearForm();
     showAddForm = false;
     await loadData();
   } catch (err: any) {
     console.error("Failed to record disbursement:", err);
-    toast.error(err?.message || "فشل تسجيل سند الصرف");
+    toast.error(err?.message || m.finance_ui_disbursement_save_failed());
   } finally {
     isSubmitting = false;
   }
@@ -173,7 +173,7 @@ function handlePrint(d: any) {
     reference_number: d.reference_number || d.id.slice(0, 8),
     org_id: orgId,
   };
-  printTitle = `سند صرف - ${d.reference_number || d.id.slice(0, 8)}`;
+  printTitle = m.finance_ui_disbursement_print_title({ number: d.reference_number || d.id.slice(0, 8) });
   printDialogOpen = true;
 }
 
@@ -195,7 +195,7 @@ const gridSource = $derived(
       amount_formatted: formatCurrency(amt, curr),
       currency_display: curr,
       notes_display: d.description_ar || d.description || "—",
-      status_display: "مصروف",
+      status_display: m.finance_ui_disbursed_status(),
     };
   })
 );
@@ -211,14 +211,14 @@ const filteredSource = $derived(
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "receipt_display", prop: "receipt_display", header: "رقم السند", name: "رقم السند", width: 110, size: 110, readonly: true, cellClass: "font-mono font-bold" },
-  { id: "date_display", prop: "date_display", header: "التاريخ", name: "التاريخ", width: 110, size: 110, readonly: true, align: "center" },
-  { id: "beneficiary_display", prop: "beneficiary_display", header: "المصروف / المستفيد", name: "المصروف / المستفيد", width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "treasury_display", prop: "treasury_display", header: "حساب الصندوق / البنك", name: "حساب الصندوق / البنك", width: 180, size: 180, readonly: true },
-  { id: "amount_formatted", prop: "amount_formatted", header: "المبلغ المصروف", name: "المبلغ المصروف", width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-rose-600 dark:text-rose-400" },
-  { id: "currency_display", prop: "currency_display", header: "العملة", name: "العملة", width: 80, size: 80, readonly: true, align: "center" },
-  { id: "notes_display", prop: "notes_display", header: "البيان / ملاحظات", name: "البيان / ملاحظات", width: 220, size: 220, readonly: true },
-  { id: "status_display", prop: "status_display", header: "الحالة", name: "الحالة", width: 90, size: 90, type: "badge", align: "center", readonly: true },
+  { id: "receipt_display", prop: "receipt_display", header: m.finance_ui_voucher_number(), name: m.finance_ui_voucher_number(), width: 110, size: 110, readonly: true, cellClass: "font-mono font-bold" },
+  { id: "date_display", prop: "date_display", header: m.finance_ui_date(), name: m.finance_ui_date(), width: 110, size: 110, readonly: true, align: "center" },
+  { id: "beneficiary_display", prop: "beneficiary_display", header: m.finance_ui_disbursement_beneficiary(), name: m.finance_ui_disbursement_beneficiary(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
+  { id: "treasury_display", prop: "treasury_display", header: m.finance_ui_treasury_account(), name: m.finance_ui_treasury_account(), width: 180, size: 180, readonly: true },
+  { id: "amount_formatted", prop: "amount_formatted", header: m.finance_ui_disbursed_amount(), name: m.finance_ui_disbursed_amount(), width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-rose-600 dark:text-rose-400" },
+  { id: "currency_display", prop: "currency_display", header: m.finance_ui_currency(), name: m.finance_ui_currency(), width: 80, size: 80, readonly: true, align: "center" },
+  { id: "notes_display", prop: "notes_display", header: m.finance_ui_description_notes(), name: m.finance_ui_description_notes(), width: 220, size: 220, readonly: true },
+  { id: "status_display", prop: "status_display", header: m.finance_ui_status(), name: m.finance_ui_status(), width: 90, size: 90, type: "badge", align: "center", readonly: true },
 ];
 
 function exportCsv() {
@@ -233,7 +233,7 @@ function exportCsv() {
     d.status_display,
   ]);
   const csv = [
-    ["Voucher", "Date", "Beneficiary", "Treasury", "Amount", "Currency", "Notes", "Status"],
+    [m.finance_ui_voucher_number(), m.finance_ui_date(), m.finance_ui_beneficiary(), m.finance_ui_treasury(), m.finance_ui_amount(), m.finance_ui_currency(), m.finance_ui_notes(), m.finance_ui_status()],
     ...rows,
   ]
     .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))
@@ -261,10 +261,10 @@ function exportCsv() {
         >
           {#if showAddForm}
             <XMark size={14} />
-            <span>إلغاء</span>
+            <span>{m.finance_ui_cancel()}</span>
           {:else}
             <Plus size={14} />
-            <span>سند صرف جديد</span>
+            <span>{m.finance_ui_new_disbursement()}</span>
           {/if}
         </Button>
       </div>
@@ -274,7 +274,7 @@ function exportCsv() {
           <Search size={14} class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <Input
             type="text"
-            placeholder="بحث برقم السند أو المستفيد..."
+            placeholder={m.finance_ui_disbursement_search_placeholder()}
             bind:value={searchQuery}
             class="h-8 ps-8 text-xs bg-card border-border/60"
           />
@@ -305,7 +305,7 @@ function exportCsv() {
               <div class="flex items-center gap-2">
                 <span class="h-2 w-2 rounded-full bg-rose-500"></span>
                 <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  تسجيل سند صرف جديد
+                  {m.finance_ui_disbursement_create_heading()}
                 </CardTitle>
               </div>
               <Button variant="ghost" size="icon-xs" onclick={() => showAddForm = false} class="text-muted-foreground">
@@ -317,10 +317,10 @@ function exportCsv() {
           <CardContent class="p-4 flex flex-col gap-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">من حساب (الصندوق / البنك)</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_disbursement_from_account()}</Label>
                 <SearchableSelect
                   value={treasuryAccountId}
-                  placeholder="اختر حساب الخزينة أو البنك..."
+                  placeholder={m.finance_ui_treasury_select_placeholder()}
                   items={treasuries}
                   getItemValue={(t) => t.id}
                   getItemLabel={(t) => `${t.name_ar || t.name} (${t.currency || "YER"})`}
@@ -330,28 +330,28 @@ function exportCsv() {
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">إلى حساب (المصروف / المستفيد)</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_disbursement_to_account()}</Label>
                 <AccountSearchInput
                   bind:value={beneficiaryAccountId}
                   {accounts}
-                  placeholder="اختر حساب المصروف أو المورد..."
+                  placeholder={m.finance_ui_expense_account_select_placeholder()}
                 />
               </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">رقم السند (اختياري)</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_voucher_number_optional()}</Label>
                 <Input
                   type="text"
                   bind:value={referenceNumber}
-                  placeholder="تلقائي"
+                  placeholder={m.finance_ui_automatic()}
                   class="h-8 text-xs font-mono bg-background border-border/60"
                 />
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">التاريخ</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_date()}</Label>
                 <Input
                   type="date"
                   bind:value={voucherDate}
@@ -360,7 +360,7 @@ function exportCsv() {
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">المبلغ المصروف</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_disbursed_amount()}</Label>
                 <Input
                   type="number"
                   bind:value={amount}
@@ -370,10 +370,10 @@ function exportCsv() {
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">العملة</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_currency()}</Label>
                 <SearchableSelect
                   value={selectedCurrency}
-                  placeholder="العملة..."
+                  placeholder={m.finance_ui_currency_placeholder()}
                   items={currencies}
                   getItemValue={(c) => c.code}
                   getItemLabel={(c) => c.name}
@@ -384,18 +384,18 @@ function exportCsv() {
             </div>
 
             <div>
-              <Label class="text-xs font-semibold text-foreground mb-1 block">البيان / ملاحظات الصرف</Label>
+              <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_disbursement_notes()}</Label>
               <Input
                 type="text"
                 bind:value={notes}
-                placeholder="أدخل بيان أو غرض الصرف..."
+                placeholder={m.finance_ui_disbursement_notes_placeholder()}
                 class="h-8 text-xs bg-background border-border/60"
               />
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
               <Button variant="ghost" size="sm" class="h-8 text-xs" onclick={clearForm}>
-                مسح الحقول
+                {m.finance_ui_clear_fields()}
               </Button>
               <Button
                 variant="default"
@@ -404,7 +404,7 @@ function exportCsv() {
                 disabled={isSubmitting}
                 onclick={handleSaveDisbursement}
               >
-                {isSubmitting ? "جاري الحفظ..." : "حفظ سند الصرف"}
+                {isSubmitting ? m.finance_ui_saving() : m.finance_ui_disbursement_save()}
               </Button>
             </div>
           </CardContent>
@@ -422,7 +422,7 @@ function exportCsv() {
         search={searchQuery}
         rtl={isAr()}
         readonly
-        emptyTitle="لا توجد سندات صرف مسجلة"
+        emptyTitle={m.finance_ui_no_disbursements()}
       />
     </div>
   </div>

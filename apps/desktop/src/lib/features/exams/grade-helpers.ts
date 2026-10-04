@@ -51,12 +51,12 @@ export function scoreToGradeLetter(
     }
     return sorted[sorted.length - 1]?.grade_label ?? "—";
   }
-  if (percentage >= 90) return "ممتاز";
-  if (percentage >= 80) return "جيد جداً";
-  if (percentage >= 70) return "جيد";
-  if (percentage >= 60) return "مقبول";
-  if (percentage >= 50) return "ضعيف";
-  return "راسب";
+  if (percentage >= 90) return m.operations_ui_grade_excellent();
+  if (percentage >= 80) return m.operations_ui_grade_very_good();
+  if (percentage >= 70) return m.operations_ui_grade_good();
+  if (percentage >= 60) return m.operations_ui_grade_acceptable();
+  if (percentage >= 50) return m.operations_ui_grade_weak();
+  return m.operations_ui_grade_failing();
 }
 
 export function scoreToGradeClass(

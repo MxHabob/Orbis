@@ -45,7 +45,7 @@ let {
             <div class="flex flex-col min-w-0">
               <span class="font-bold text-foreground truncate max-w-[130px] text-[10px]">{t.name_ar || t.name}</span>
               <span class="text-[8px] text-muted-foreground font-mono select-none">
-                {t.sub_type === "bank" ? "حساب بنكي" : "خزينة نقدية"}
+                {t.sub_type === "bank" ? m.finance_ui_account_type_bank() : m.finance_ui_cash_treasury()}
               </span>
             </div>
           </div>

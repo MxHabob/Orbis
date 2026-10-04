@@ -22,6 +22,7 @@ Usage:
 -->
 <script lang="ts">
 import { api } from "$lib/api";
+import * as m from "$lib/paraglide/messages";
 import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
@@ -70,7 +71,7 @@ let {
   onAction,
   onDraft,
   onOverride,
-  label = "إضافة",
+  label = m.shared_ui_add(),
   size = "default",
   allowed,
   late,
@@ -103,7 +104,7 @@ const decisionColors: Record<GateDecision, string> = {
 {#if gateQuery.isLoading}
   <Button {size} disabled>
     <ArrowPath class="mr-2 h-4 w-4 animate-spin" />
-    جارِ التحقق...
+    {m.shared_ui_checking()}
   </Button>
 {:else if verdict}
   {#if decision === "allowed"}
@@ -122,11 +123,11 @@ const decisionColors: Record<GateDecision, string> = {
       <div class="flex items-center gap-2">
         <Button {size} variant="outline" class="border-amber-500/30 text-amber-600" onclick={onAction}>
           <ClockRotateRight class="mr-2 h-4 w-4" />
-          {label} (متأخر)
+          {m.shared_ui_late_action({ action: label })}
         </Button>
         {#if verdict.allowed_actions.includes("save_draft")}
           <Button {size} variant="ghost" onclick={onDraft}>
-            حفظ كمسودة
+            {m.shared_ui_save_as_draft()}
           </Button>
         {/if}
       </div>
@@ -139,12 +140,12 @@ const decisionColors: Record<GateDecision, string> = {
       <div class="flex items-center gap-2">
         {#if verdict.allowed_actions.includes("save_draft")}
           <Button {size} variant="outline" onclick={onDraft}>
-            📋 حفظ كمسودة
+            📋 {m.shared_ui_save_as_draft()}
           </Button>
         {/if}
         <Button {size} variant="secondary" onclick={() => onOverride?.(verdict!)}>
           <BarsArrowUp class="mr-2 h-4 w-4" />
-          طلب تجاوز
+          {m.shared_ui_request_override()}
         </Button>
         <Badge variant="outline" class={decisionColors.requires_override}>
           {reason}

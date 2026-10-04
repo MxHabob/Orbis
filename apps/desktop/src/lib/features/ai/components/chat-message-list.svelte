@@ -111,7 +111,7 @@ function handleContentClick(e: MouseEvent) {
                 bind:value={editingText}
                 rows={3}
                 class="w-full p-2.5 text-[13px] bg-background border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary resize-none text-foreground font-sans leading-relaxed"
-                placeholder="تعديل الرسالة..."
+                placeholder={m.ai_ui_edit_message()}
                 onkeydown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -130,7 +130,7 @@ function handleContentClick(e: MouseEvent) {
                   onclick={cancelEditing}
                 >
                   <XMark size={12} class="me-1" />
-                  إلغاء
+                  {m.ai_ui_cancel()}
                 </Button>
                 <Button
                   size="xs"
@@ -139,7 +139,7 @@ function handleContentClick(e: MouseEvent) {
                   onclick={() => submitEdit(msg.id)}
                   disabled={!editingText.trim()}
                 >
-                  حفظ وإرسال
+                  {m.ai_ui_save_and_send()}
                 </Button>
               </div>
             </div>
@@ -156,7 +156,7 @@ function handleContentClick(e: MouseEvent) {
                 type="button"
                 onclick={() => startEditing(msg)}
                 class="p-1 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-muted/70 transition-colors cursor-pointer"
-                title="تعديل الرسالة"
+                title={m.ai_ui_edit_message()}
               >
                 <Pencil size={12} />
               </button>
@@ -166,7 +166,7 @@ function handleContentClick(e: MouseEvent) {
                 type="button"
                 onclick={() => copyText(msg.content, msg.id)}
                 class="p-1 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-muted/70 transition-colors cursor-pointer"
-                title="نسخ النص"
+                title={m.ai_ui_copy_text()}
               >
                 {#if copiedMessageId === msg.id}
                   <Check size={12} class="text-emerald-500" />
@@ -197,7 +197,7 @@ function handleContentClick(e: MouseEvent) {
                       <div class="w-2 h-2 rounded-full {tool.is_error ? 'bg-destructive ring-2 ring-destructive/20' : 'bg-emerald-500 ring-2 ring-emerald-500/20'} shrink-0"></div>
                       <span class="font-mono font-medium text-[11px] text-foreground/80 truncate">{tool.tool_name}</span>
                       <span class="text-[9px] px-1.5 py-0.2 rounded-full font-medium {tool.is_error ? 'bg-destructive/15 text-destructive' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'}">
-                        {tool.is_error ? 'خطأ' : 'مكتمل'}
+                        {tool.is_error ? m.ai_ui_error_status() : m.ai_ui_completed_status()}
                       </span>
                     </div>
                     <div class="text-muted-foreground/70 shrink-0">
@@ -236,7 +236,7 @@ function handleContentClick(e: MouseEvent) {
             <!-- Assistant Actions on Hover -->
             <div class="flex items-center gap-1.5 ps-1 select-none opacity-0 group-hover:opacity-100 transition-opacity">
               {#if msg.isError}
-                <Badge variant="destructive" class="text-[8.5px] h-4 px-1.5 font-semibold">خطأ في الطلب</Badge>
+                <Badge variant="destructive" class="text-[8.5px] h-4 px-1.5 font-semibold">{m.ai_ui_request_error()}</Badge>
               {/if}
 
               {#if onRetry && !isThinking}
@@ -244,7 +244,7 @@ function handleContentClick(e: MouseEvent) {
                   type="button"
                   onclick={() => onRetry(msg.id)}
                   class="p-1 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-muted/70 transition-colors cursor-pointer"
-                  title="إعادة التوليد"
+                  title={m.ai_ui_regenerate()}
                 >
                   <Refresh size={12} />
                 </button>
@@ -254,7 +254,7 @@ function handleContentClick(e: MouseEvent) {
                 type="button"
                 onclick={() => copyText(msg.content, msg.id)}
                 class="p-1 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-muted/70 transition-colors cursor-pointer"
-                title="نسخ الرد"
+                title={m.ai_ui_copy_response()}
               >
                 {#if copiedMessageId === msg.id}
                   <Check size={12} class="text-emerald-500" />
@@ -278,16 +278,16 @@ function handleContentClick(e: MouseEvent) {
                     {#if action.status === 'executed'}
                       <Badge variant="lime" class="text-[9px] px-1.5 py-0.5 flex items-center gap-1">
                         <CheckCircle size={10} />
-                        تم التنفيذ
+                        {m.ai_ui_action_executed()}
                       </Badge>
                     {:else if action.status === 'rejected'}
                       <Badge variant="outline" class="text-[9px] px-1.5 py-0.5 text-destructive border-destructive/30 flex items-center gap-1">
                         <XMark size={10} />
-                        تم الإلغاء
+                        {m.ai_ui_action_cancelled()}
                       </Badge>
                     {:else}
                       <Badge variant="secondary" class="text-[9px] px-1.5 py-0.5 bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold border-amber-500/20">
-                        يتطلب الموافقة
+                        {m.ai_ui_approval_required()}
                       </Badge>
                     {/if}
                   </div>
@@ -312,11 +312,11 @@ function handleContentClick(e: MouseEvent) {
                   {#if action.status === 'executed'}
                     <div class="text-[10.5px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 pt-1">
                       <CheckCircle size={12} />
-                      {action.resultMessage || "تم تنفيذ الإجراء بنجاح في النظام"}
+                      {action.resultMessage || m.ai_ui_action_executed_successfully()}
                     </div>
                   {:else if action.status === 'rejected'}
                     <div class="text-[10px] text-muted-foreground italic pt-1">
-                      تم تجاهل هذا الإجراء بناءً على طلبك.
+                      {m.ai_ui_action_dismissed_by_request()}
                     </div>
                   {:else}
                     <div class="flex items-center gap-2 pt-1">
@@ -327,7 +327,7 @@ function handleContentClick(e: MouseEvent) {
                         onclick={() => onActionResponse?.(action, "executed")}
                       >
                         <CheckCircle size={12} class="me-1" />
-                        الموافقة والتنفيذ
+                        {m.ai_ui_approve_and_execute()}
                       </Button>
                       <Button
                         size="xs"
@@ -335,7 +335,7 @@ function handleContentClick(e: MouseEvent) {
                         class="text-[11px] h-7.5 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 cursor-pointer rounded-lg"
                         onclick={() => onActionResponse?.(action, "rejected")}
                       >
-                        إلغاء
+                        {m.ai_ui_cancel()}
                       </Button>
                     </div>
                   {/if}

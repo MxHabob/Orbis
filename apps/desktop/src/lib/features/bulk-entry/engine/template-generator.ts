@@ -1,5 +1,7 @@
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
+import * as m from "$lib/paraglide/messages";
+import { getBulkEntryColumnHeader, getBulkEntryProfileName } from "../localization";
 import type { BulkImportProfile, BulkReferenceData } from "../types";
 
 export interface GenerateTemplateOptions {
@@ -17,7 +19,7 @@ export async function buildTemplateWorkbook(
   const wb = XLSX.utils.book_new();
 
   // ── Sheet 1: Data Entry Sheet ──────────────────────────────────
-  const headers = profile.columnMetadata.map((col) => col.headerAr);
+  const headers = profile.columnMetadata.map((col) => getBulkEntryColumnHeader(profile.id, col.id, col.headerAr));
   const sampleRow = profile.columnMetadata.map((col) => col.example || "");
 
   const dataAoa = [headers, sampleRow];
@@ -28,71 +30,79 @@ export async function buildTemplateWorkbook(
     wch: Math.max(col.headerAr.length * 2, 16),
   }));
 
-  XLSX.utils.book_append_sheet(wb, wsData, "البيانات (Data)");
+  XLSX.utils.book_append_sheet(wb, wsData, m.bulk_entry_workbook_data_sheet());
 
   // ── Sheet 2: Reference Data Sheet ──────────────────────────────
   const refAoa: string[][] = [];
-  refAoa.push(["النوع (Type)", "الرمز (Code)", "الاسم (Name)", "معلومات إضافية (Meta)"]);
+  refAoa.push([
+    m.bulk_entry_workbook_reference_type(),
+    m.bulk_entry_workbook_reference_code(),
+    m.bulk_entry_workbook_reference_name(),
+    m.bulk_entry_workbook_reference_meta(),
+  ]);
 
   if (refData.classes.length > 0) {
     for (const c of refData.classes) {
-      refAoa.push(["صف (Class)", c.code || "", c.name || c.nameAr || "", `السعة: ${c.meta?.capacity || 30}`]);
+      refAoa.push([m.bulk_entry_workbook_class(), c.code || "", c.name || c.nameAr || "", m.bulk_entry_workbook_capacity({ capacity: c.meta?.capacity || 30 })]);
     }
   }
 
   if (refData.subjects.length > 0) {
     for (const s of refData.subjects) {
-      refAoa.push(["مادة (Subject)", s.code || "", s.name || s.nameAr || "", ""]);
+      refAoa.push([m.bulk_entry_workbook_subject(), s.code || "", s.name || s.nameAr || "", ""]);
     }
   }
 
   if (refData.feeTemplates.length > 0) {
     for (const f of refData.feeTemplates) {
       refAoa.push([
-        "قالب رسوم (Fee Template)",
+        m.bulk_entry_workbook_fee_template(),
         "",
         f.name,
-        `المبلغ: ${(f.meta as any)?.default_amount || 0} (${(f.meta as any)?.is_mandatory ? "إلزامي" : "اختياري"})`,
+        m.bulk_entry_workbook_fee_details({
+          amount: (f.meta as any)?.default_amount || 0,
+          requirement: (f.meta as any)?.is_mandatory ? m.bulk_entry_workbook_mandatory() : m.bulk_entry_workbook_optional(),
+        }),
       ]);
     }
   }
 
   if (refData.userGroups.length > 0) {
     for (const g of refData.userGroups) {
-      refAoa.push(["مجموعة صلاحيات (User Group)", "", g.name, ""]);
+      refAoa.push([m.bulk_entry_workbook_user_group(), "", g.name, ""]);
     }
   }
 
   if (refData.assessmentSchemes.length > 0) {
     for (const a of refData.assessmentSchemes) {
-      refAoa.push(["لائحة تقييم (Assessment)", "", a.name, `الدرجة العظمى: ${(a.meta as any)?.max_score || 100}`]);
+      refAoa.push([m.bulk_entry_workbook_assessment(), "", a.name, m.bulk_entry_workbook_max_score({ score: (a.meta as any)?.max_score || 100 })]);
     }
   }
 
   const wsRef = XLSX.utils.aoa_to_sheet(refAoa);
   wsRef["!cols"] = [{ wch: 25 }, { wch: 15 }, { wch: 30 }, { wch: 25 }];
-  XLSX.utils.book_append_sheet(wb, wsRef, "_البيانات_المرجعية");
+  XLSX.utils.book_append_sheet(wb, wsRef, `_${m.bulk_entry_workbook_reference_sheet()}`);
 
   // ── Sheet 3: Instructions ──────────────────────────────────────
   const instructionsAoa = [
-    ["نظام Orbis لإدارة التعليم — إرشادات تعبئة ملف الاستيراد"],
+    [m.bulk_entry_workbook_instructions_title()],
     [""],
-    ["المؤسسة التعليمية:", orgName || "المؤسسة الحالية"],
-    ["العام الأكاديمي:", academicYear || "العام الحالي"],
-    ["نوع القالب:", profile.displayName.ar],
-    ["إصدار القالب:", profile.templateVersion],
+    [m.bulk_entry_workbook_organization(), orgName || m.bulk_entry_workbook_current_organization()],
+    [m.bulk_entry_workbook_academic_year(), academicYear || m.bulk_entry_workbook_current_year()],
+    [m.bulk_entry_workbook_template_type(), getBulkEntryProfileName(profile.id)],
+    [m.bulk_entry_workbook_template_version(), profile.templateVersion],
     [""],
-    ["قواعد عامة هامة:"],
-    ["1. الحقول التي تنتهي بعلامة (*) هي حقول إلزامية لا يمكن تركها فارغة."],
-    ["2. صيغة التواريخ المعتمدة في النظام هي: YYYY-MM-DD (مثال: 2015-04-12)."],
-    ["3. الأرقام الوطنية وأرقام الهواتف يجب أن تكون فريدة وغير مكررة داخل الملف."],
-    ["4. يمكنك مراجعة ورقة '_البيانات_المرجعية' لمعرفة أسماء الصفوف والمواد والقوالب المعتمدة."],
-    ["5. بعد تعبئة البيانات، احفظ الملف ثم ارفعه عبر شاشة 'الاستيراد الجماعي' في Orbis لمراجعته في OrbisGrid."],
+    [m.bulk_entry_workbook_general_rules()],
+    [m.bulk_entry_workbook_rule_required_fields()],
+    [m.bulk_entry_workbook_rule_date_format()],
+    [m.bulk_entry_workbook_rule_unique_ids()],
+    [m.bulk_entry_workbook_rule_reference_sheet()],
+    [m.bulk_entry_workbook_rule_upload()],
   ];
 
   const wsInstructions = XLSX.utils.aoa_to_sheet(instructionsAoa);
   wsInstructions["!cols"] = [{ wch: 80 }];
-  XLSX.utils.book_append_sheet(wb, wsInstructions, "التعليمات (Instructions)");
+  XLSX.utils.book_append_sheet(wb, wsInstructions, m.bulk_entry_workbook_instructions_sheet());
 
   return wb;
 }
@@ -107,7 +117,7 @@ export async function downloadExcelTemplate(options: GenerateTemplateOptions): P
     // Try native Tauri save dialog
     const savePath = await save({
       defaultPath: filename,
-      filters: [{ name: "Excel Spreadsheet", extensions: ["xlsx"] }],
+      filters: [{ name: m.bulk_entry_file_filter_excel(), extensions: ["xlsx"] }],
     });
 
     if (savePath) {

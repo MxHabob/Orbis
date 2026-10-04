@@ -73,9 +73,9 @@ const basePath = $derived(`/${orgId}/ai-center/integrations`);
     {:else}
       <AiEmptyState
         text={searchQuery
-          ? `أهلاً بك! لم أستطع العثور على أي خدمة أو جهاز يطابق "${searchQuery}". حاول تغيير كلمات البحث أو اختيار تصنيف مختلف.`
-          : `أهلاً بك! لا توجد تكاملات مسجلة في هذا التصنيف حالياً. يمكنك استكشاف بقية التصنيفات أو إضافة جهاز جديد.`}
-        actionLabel={searchQuery ? "إعادة ضبط الفلاتر والبحث" : "عرض كافة التكاملات"}
+          ? m.ai_ui_integrations_search_empty({ query: searchQuery })
+          : m.ai_ui_integrations_category_empty()}
+        actionLabel={searchQuery ? m.ai_ui_reset_filters_search() : m.ai_ui_view_all_integrations()}
         onaction={() => { searchQuery = ""; activeCategory = "all"; }}
         hat="random"
       />

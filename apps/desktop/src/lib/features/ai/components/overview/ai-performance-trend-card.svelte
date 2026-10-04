@@ -101,11 +101,11 @@ function handleMouseLeave() {
         <div class="flex items-center gap-4 text-[10px] text-muted-foreground font-semibold">
           <div class="flex items-center gap-1.5">
             <span class="h-2.5 w-2.5 rounded-sm bg-primary inline-block shadow-sm"></span>
-            <span>الطلبات (Requests)</span>
+            <span>{m.ai_ui_requests()}</span>
           </div>
           <div class="flex items-center gap-1.5">
             <span class="h-2.5 w-2.5 rounded-sm bg-muted-foreground/40 inline-block shadow-sm"></span>
-            <span>زمن الاستجابة (Latency)</span>
+            <span>{m.ai_ui_latency()}</span>
           </div>
         </div>
       </CardAction>
@@ -117,7 +117,7 @@ function handleMouseLeave() {
         class="relative w-full h-44 select-none flex flex-col justify-between"
         onmouseleave={handleMouseLeave}
         role="region"
-        aria-label="مخطط أداء الذكاء الاصطناعي"
+        aria-label={m.ai_ui_ai_performance_chart()}
       >
         <!-- Grid lines -->
         <div class="absolute inset-0 flex flex-col justify-between pb-8 pt-4 pointer-events-none">
@@ -171,12 +171,12 @@ function handleMouseLeave() {
           >
             <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{activeBar.label}</span>
             <div class="flex items-center justify-between gap-3">
-              <span class="text-muted-foreground">عدد الطلبات:</span>
-              <span class="font-bold font-mono text-primary">{activeBar.requests} req</span>
+              <span class="text-muted-foreground">{m.ai_ui_request_count_label()}</span>
+              <span class="font-bold font-mono text-primary">{m.ai_ui_request_count({ count: activeBar.requests })}</span>
             </div>
             <div class="flex items-center justify-between gap-3">
-              <span class="text-muted-foreground">زمن الاستجابة:</span>
-              <span class="font-bold font-mono text-foreground">{activeBar.latencyMs} ms</span>
+              <span class="text-muted-foreground">{m.ai_ui_response_time_label()}</span>
+              <span class="font-bold font-mono text-foreground">{m.ai_ui_milliseconds({ count: activeBar.latencyMs })}</span>
             </div>
           </div>
         {/if}
@@ -186,7 +186,7 @@ function handleMouseLeave() {
           <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
             <div class="px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur-xs border border-border/60 text-[10px] text-muted-foreground font-medium flex items-center gap-1.5 shadow-xs">
               <ChartBar size={12} class="text-primary" />
-              <span>جاهز للاستخدام — يبدأ المخطط بالرسم فور تنفيذ الوكلاء للعمليات والاستفسارات</span>
+              <span>{m.ai_ui_chart_ready()}</span>
             </div>
           </div>
         {/if}
@@ -197,10 +197,10 @@ function handleMouseLeave() {
     <CardFooter class="justify-between text-[10px] font-medium">
       <div class="flex items-center gap-2 text-muted-foreground">
         <ChartBar size={12} class="text-primary" />
-        <span>مراقبة الأداء والاستجابة الفعلية للنظام.</span>
+        <span>{m.ai_ui_monitor_system_performance()}</span>
       </div>
       <a href={localizeHref(`/${orgId}/ai-center/ai-logs`)} class="text-primary hover:underline flex items-center gap-1 group font-semibold">
-        <span>عرض سجل الأنشطة الكامل</span>
+        <span>{m.ai_ui_view_full_activity_log()}</span>
         <ArrowRight size={11} class="transition-transform group-hover:translate-x-0.5 rtl:rotate-180" />
       </a>
     </CardFooter>

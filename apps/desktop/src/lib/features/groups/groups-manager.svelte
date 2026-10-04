@@ -123,10 +123,9 @@ async function handleSaveGroup() {
 async function promptDeleteGroup(group: GroupDetailDto) {
   const confirmed = await confirmStore.prompt({
     title: m.ui_copy_delete_user_group_2da27c25(),
-    description: l(
-      `هل أنت متأكد من رغبتك في حذف المجموعة "${group.name_ar || group.name}"؟ سيفقد الأعضاء الصلاحيات الممنوحة من خلالها.`,
-      `Are you sure you want to delete group "${group.name}"? Members will lose permissions granted via this group.`
-    ),
+    description: m.groups_delete_confirm_description({
+      group: l(group.name_ar || "", group.name),
+    }),
     confirmText: m.ui_copy_delete_group_d873cd2b(),
     variant: "destructive",
   });
@@ -215,7 +214,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
               <div class="flex items-start justify-between gap-2">
                 <div class="flex flex-col min-w-0">
                   <h3 class="text-sm font-bold text-foreground truncate">
-                    {group.name_ar || group.name}
+                    {l(group.name_ar || "", group.name)}
                   </h3>
                   {#if group.name_ar && group.name}
                     <span class="text-[11px] font-mono text-muted-foreground truncate">{group.name}</span>

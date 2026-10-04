@@ -66,13 +66,13 @@ function getCurrencyLabel(c: any): string {
 
 function getCurrencySubtitle(c: any): string | undefined {
   if (c?.exchange_rate && Number(c.exchange_rate) !== 1) {
-    return `سعر الصرف: ${c.exchange_rate}`;
+    return m.shared_ui_exchange_rate({ rate: c.exchange_rate });
   }
   return undefined;
 }
 
 function getCurrencyBadge(c: any): string | undefined {
-  if (c?.is_base) return "العملة الأساسية";
+  if (c?.is_base) return m.shared_ui_base_currency();
   return undefined;
 }
 
@@ -95,9 +95,9 @@ function handleChange(val: string | null) {
       <SearchableSelect
         bind:value={currentCurrency}
         items={dbCurrencies}
-        placeholder={isLoading ? "جارٍ تحميل العملات..." : (m.finance_ledger_currency())}
-        searchPlaceholder="ابحث باسم العملة أو الرمز (مثال: USD, SAR, YER)..."
-        emptyText="لا توجد عملات مطابقة"
+        placeholder={isLoading ? m.shared_ui_loading_currencies() : (m.finance_ledger_currency())}
+        searchPlaceholder={m.shared_ui_search_currencies_placeholder()}
+        emptyText={m.shared_ui_no_matching_currencies()}
         showAllOption={includeAll}
         {allLabel}
         disabled={disabled || isLoading}
@@ -116,9 +116,9 @@ function handleChange(val: string | null) {
       <SearchableSelect
         bind:value={currentCurrency}
         items={dbCurrencies}
-        placeholder={isLoading ? "جارٍ تحميل العملات..." : (m.finance_ledger_currency())}
-        searchPlaceholder="ابحث باسم العملة أو الرمز (مثال: USD, SAR, YER)..."
-        emptyText="لا توجد عملات مطابقة"
+        placeholder={isLoading ? m.shared_ui_loading_currencies() : (m.finance_ledger_currency())}
+        searchPlaceholder={m.shared_ui_search_currencies_placeholder()}
+        emptyText={m.shared_ui_no_matching_currencies()}
         showAllOption={includeAll}
         {allLabel}
         disabled={disabled || isLoading}

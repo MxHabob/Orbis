@@ -76,7 +76,7 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
       <Sparkles size={15} class="text-primary animate-pulse" />
       <span class="text-xs text-muted-foreground font-semibold">
         {cameras.length > 0
-          ? `${cameras.filter(c => c.status === "online").length} من أصل ${cameras.length} كاميرات متصلة`
+          ? m.ai_ui_connected_camera_count({ online: cameras.filter(c => c.status === "online").length, total: cameras.length })
           : (m.ai_center_live_no_cameras())}
       </span>
     </div>
@@ -135,7 +135,7 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
                       </div>
                       <div class="flex items-center gap-1.5 bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">
                         <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                        <span class="text-[9px] text-primary font-semibold tracking-wider">مباشر</span>
+                        <span class="text-[9px] text-primary font-semibold tracking-wider">{m.ai_ui_live()}</span>
                       </div>
                     </div>
                   </div>
@@ -146,7 +146,7 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
                   <div class="text-center p-4">
                     <Camera size={28} class="text-muted-foreground mx-auto mb-2" />
                     <p class="text-xs font-semibold text-muted-foreground">{cam.name}</p>
-                    <p class="text-[10px] text-muted-foreground font-semibold mt-1">{cam.status === "error" ? "خطأ في الاتصال" : "غير متصل"}</p>
+                    <p class="text-[10px] text-muted-foreground font-semibold mt-1">{cam.status === "error" ? m.ai_ui_connection_error() : m.ai_ui_not_connected()}</p>
                   </div>
                 {/if}
               {:else}
@@ -154,7 +154,7 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
                   <div class="w-10 h-10 rounded-full border border-dashed border-border flex items-center justify-center mx-auto mb-1.5">
                     <Camera size={16} class="text-muted-foreground" />
                   </div>
-                  <p class="text-[10px] text-muted-foreground">خانة شاغرة</p>
+                  <p class="text-[10px] text-muted-foreground">{m.ai_ui_empty_slot()}</p>
                 </div>
               {/if}
             </div>
@@ -169,7 +169,7 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
             <AppNotification size={14} class="text-primary" />
             <span>{m.ai_center_live_events()}</span>
           </h3>
-          <span class="text-[10px] font-mono text-muted-foreground">{events.length} تنبيه</span>
+          <span class="text-[10px] font-mono text-muted-foreground">{m.ai_ui_alert_count({ count: events.length })}</span>
         </div>
 
         <div class="flex-1 overflow-y-auto divide-y divide-border/20">
@@ -190,8 +190,8 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
           {:else}
             <div class="flex flex-col items-center justify-center py-16 text-center px-4">
               <ClockRotateRight size={18} class="text-muted-foreground mb-2" />
-              <p class="text-xs font-semibold text-foreground">لا توجد أحداث حية</p>
-              <p class="text-[10px] text-muted-foreground mt-0.5">سيتم إدراج التنبيهات ورصد الحركة التلقائي فور رصدها.</p>
+              <p class="text-xs font-semibold text-foreground">{m.ai_ui_no_live_events()}</p>
+              <p class="text-[10px] text-muted-foreground mt-0.5">{m.ai_ui_live_events_empty_description()}</p>
             </div>
           {/if}
         </div>
@@ -200,8 +200,8 @@ const eventStyles: Record<string, { color: string; icon: typeof AppNotification 
       <!-- Interactive AI Empty State: No Cameras Connected -->
       <div class="flex-1 flex items-center justify-center p-8">
         <AiEmptyState
-          text="مرحباً! لم أكتشف أي كاميرات شبكية متصلة بالنظام حتى الآن. يمكنك توصيل كاميرات المراقبة المباشرة لمتابعة البث والأحداث فورياً."
-          actionLabel="توصيل أول كاميرا مراقبة"
+          text={m.ai_ui_no_cameras_empty_state()}
+          actionLabel={m.ai_ui_connect_first_camera()}
           onaction={() => goto(`/${orgId}/ai-center/integrations`)}
           hat="random"
         />

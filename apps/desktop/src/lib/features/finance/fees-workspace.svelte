@@ -92,7 +92,7 @@ async function loadData() {
     discountTemplates = discountsList || [];
     students = (enrollmentsList || []).map((e: any) => ({
       id: String(e.id),
-      full_name: e.full_name || e.name_ar || e.name_en || e.student_number || `طالب #${e.id}`,
+      full_name: e.full_name || e.name_ar || e.name_en || e.student_number || m.finance_ui_student_number_fallback({ id: e.id }),
     }));
     periods = periodsList || [];
 
@@ -101,7 +101,7 @@ async function loadData() {
     }
   } catch (e) {
     console.error("Failed to load fees master data:", e);
-    toast.error("فشل تحميل بيانات الرسوم الدراسية");
+    toast.error(m.finance_ui_fees_load_failed());
   } finally {
     isLoading = false;
   }
@@ -127,11 +127,11 @@ const collectionRate = $derived(
 // ── Form Actions ───────────────────────────────────────────────────────
 async function handleCreateFee() {
   if (!formStudentId) {
-    toast.error("يرجى اختيار الطالب");
+    toast.error(m.finance_ui_student_required());
     return;
   }
   if (!formTemplateId) {
-    toast.error("يرجى اختيار قالب الرسوم");
+    toast.error(m.finance_ui_fee_template_required());
     return;
   }
 
@@ -156,7 +156,7 @@ async function handleCreateFee() {
     };
 
     await api.createStudentFee(payload as any);
-    toast.success("تم تقييد الرسم الدراسي للطالب بنجاح");
+    toast.success(m.finance_ui_fee_assigned_success());
     activeForm = "none";
     formStudentId = "";
     formTemplateId = "";
@@ -164,7 +164,7 @@ async function handleCreateFee() {
     await loadData();
   } catch (err: any) {
     console.error("Failed to assign fee:", err);
-    toast.error(err?.message || "فشل تقييد الرسم");
+    toast.error(err?.message || m.finance_ui_fee_assignment_failed());
   } finally {
     isSubmitting = false;
   }
@@ -172,7 +172,7 @@ async function handleCreateFee() {
 
 async function handleSplitInstallments() {
   if (!selectedFeeForSplit) {
-    toast.error("يرجى اختيار الرسم المراد تقسيطه");
+    toast.error(m.finance_ui_fee_installment_required());
     return;
   }
 
@@ -182,13 +182,13 @@ async function handleSplitInstallments() {
       num_installments: splitCount,
       due_dates: splitDueDates.slice(0, splitCount),
     });
-    toast.success("تم تقسيط الرسوم بنجاح");
+    toast.success(m.finance_ui_fee_installment_success());
     activeForm = "none";
     selectedFeeForSplit = null;
     await loadData();
   } catch (err: any) {
     console.error("Failed to split fee:", err);
-    toast.error(err?.message || "فشل تقسيط الرسوم");
+    toast.error(err?.message || m.finance_ui_fee_installment_failed());
   } finally {
     isSubmitting = false;
   }
@@ -196,11 +196,11 @@ async function handleSplitInstallments() {
 
 async function handleRefundFee() {
   if (!selectedFeeForRefund) {
-    toast.error("يرجى اختيار السجل المراد استرداده");
+    toast.error(m.finance_ui_fee_refund_record_required());
     return;
   }
   if (!refundAmount || refundAmount <= 0) {
-    toast.error("يرجى إدخال مبلغ استرداد صحيح");
+    toast.error(m.finance_ui_refund_amount_invalid());
     return;
   }
 
@@ -210,7 +210,7 @@ async function handleRefundFee() {
       refund_amount: Number(refundAmount),
       notes: refundNotes.trim() || undefined,
     });
-    toast.success("تم تسجيل عملية الاسترداد بنجاح");
+    toast.success(m.finance_ui_fee_refund_success());
     activeForm = "none";
     selectedFeeForRefund = null;
     refundAmount = null;
@@ -218,7 +218,7 @@ async function handleRefundFee() {
     await loadData();
   } catch (err: any) {
     console.error("Failed to refund fee:", err);
-    toast.error(err?.message || "فشل استرداد الرسوم");
+    toast.error(err?.message || m.finance_ui_fee_refund_failed());
   } finally {
     isSubmitting = false;
   }
@@ -229,26 +229,27 @@ const gridSource = $derived(
   fees.map((f, idx) => {
     const student = students.find((s) => String(s.id) === String(f.enrollment_id));
     const template = feeTemplates.find((t) => t.id === f.fee_template_id);
-    const templateName = template?.name_ar || template?.name || f.fee_type_name || "رسوم دراسية";
+    const templateName = template?.name_ar || template?.name || f.fee_type_name || m.finance_ui_tuition_fees();
 
     const net = Number(f.net_amount ?? f.original_amount ?? 0);
     const paid = Number(f.paid_amount ?? 0);
     const balance = Number(f.balance_due ?? Math.max(0, net - paid));
     const curr = f.currency || "YER";
 
-    let statusLabel = "غير مسدد";
+    let statusLabel = m.finance_ui_fee_status_unpaid();
     if (f.status === "paid" || balance <= 0) {
-      statusLabel = "مسدد";
+      statusLabel = m.finance_ui_fee_status_paid();
     } else if (paid > 0) {
-      statusLabel = "مسدد جزئياً";
+      statusLabel = m.finance_ui_fee_status_partially_paid();
     } else if (f.due_date && new Date(f.due_date) < new Date()) {
-      statusLabel = "متأخر";
+      statusLabel = m.finance_ui_fee_status_overdue();
     }
 
     return {
       ...f,
       __idx: idx + 1,
-      student_display: student?.full_name || f.student_name || `طالب #${f.enrollment_id}`,
+      student_display: student?.full_name || f.student_name || m.finance_ui_student_number_fallback({ id: f.enrollment_id }),
+      status_key: f.status === "paid" || balance <= 0 ? "paid" : paid > 0 ? "partially_paid" : f.due_date && new Date(f.due_date) < new Date() ? "overdue" : "pending",
       template_display: templateName,
       net_formatted: formatCurrency(net, curr),
       paid_formatted: formatCurrency(paid, curr),
@@ -262,24 +263,21 @@ const gridSource = $derived(
 
 const filteredSource = $derived(
   gridSource.filter((row) => {
-    if (statusFilter === "pending" && row.status_display !== "غير مسدد") return false;
-    if (statusFilter === "partially_paid" && row.status_display !== "مسدد جزئياً") return false;
-    if (statusFilter === "paid" && row.status_display !== "مسدد") return false;
-    if (statusFilter === "overdue" && row.status_display !== "متأخر") return false;
+    if (statusFilter !== "all" && row.status_key !== statusFilter) return false;
     return true;
   })
 );
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "student_display", prop: "student_display", header: "اسم الطالب", name: "اسم الطالب", width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "template_display", prop: "template_display", header: "بند الرسوم", name: "بند الرسوم", width: 180, size: 180, readonly: true },
-  { id: "net_formatted", prop: "net_formatted", header: "المبلغ الصافي", name: "المبلغ الصافي", width: 130, size: 130, readonly: true, align: "end", cellClass: "font-mono font-bold" },
-  { id: "paid_formatted", prop: "paid_formatted", header: "المسدد", name: "المسدد", width: 130, size: 130, readonly: true, align: "end", cellClass: "font-mono text-emerald-600 dark:text-emerald-400 font-semibold" },
-  { id: "balance_formatted", prop: "balance_formatted", header: "المتبقي", name: "المتبقي", width: 130, size: 130, readonly: true, align: "end", cellClass: "font-mono text-rose-600 dark:text-rose-400 font-bold" },
-  { id: "currency_display", prop: "currency_display", header: "العملة", name: "العملة", width: 80, size: 80, readonly: true, align: "center" },
-  { id: "due_date_display", prop: "due_date_display", header: "تاريخ الاستحقاق", name: "تاريخ الاستحقاق", width: 120, size: 120, readonly: true, align: "center" },
-  { id: "status_display", prop: "status_display", header: "الحالة", name: "الحالة", width: 100, size: 100, type: "badge", align: "center", readonly: true },
+  { id: "student_display", prop: "student_display", header: m.finance_ui_student_name(), name: m.finance_ui_student_name(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
+  { id: "template_display", prop: "template_display", header: m.finance_ui_fee_item(), name: m.finance_ui_fee_item(), width: 180, size: 180, readonly: true },
+  { id: "net_formatted", prop: "net_formatted", header: m.finance_ui_net_amount(), name: m.finance_ui_net_amount(), width: 130, size: 130, readonly: true, align: "end", cellClass: "font-mono font-bold" },
+  { id: "paid_formatted", prop: "paid_formatted", header: m.finance_ui_paid_amount(), name: m.finance_ui_paid_amount(), width: 130, size: 130, readonly: true, align: "end", cellClass: "font-mono text-emerald-600 dark:text-emerald-400 font-semibold" },
+  { id: "balance_formatted", prop: "balance_formatted", header: m.finance_ui_remaining_amount(), name: m.finance_ui_remaining_amount(), width: 130, size: 130, readonly: true, align: "end", cellClass: "font-mono text-rose-600 dark:text-rose-400 font-bold" },
+  { id: "currency_display", prop: "currency_display", header: m.finance_ui_currency(), name: m.finance_ui_currency(), width: 80, size: 80, readonly: true, align: "center" },
+  { id: "due_date_display", prop: "due_date_display", header: m.finance_ui_due_date(), name: m.finance_ui_due_date(), width: 120, size: 120, readonly: true, align: "center" },
+  { id: "status_display", prop: "status_display", header: m.finance_ui_status(), name: m.finance_ui_status(), width: 100, size: 100, type: "badge", align: "center", readonly: true },
 ];
 
 function exportCsv() {
@@ -315,7 +313,7 @@ function exportCsv() {
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
       <Card class="p-4 shadow-sm border-border/40 bg-card flex flex-col justify-between">
         <div class="flex items-center justify-between text-muted-foreground text-xs font-semibold">
-          <span>إجمالي الرسوم المستحقة</span>
+          <span>{m.finance_ui_total_fees_due()}</span>
           <span class="h-2 w-2 rounded-full bg-primary"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-foreground">
@@ -325,7 +323,7 @@ function exportCsv() {
 
       <Card class="p-4 shadow-sm border-border/40 bg-card flex flex-col justify-between">
         <div class="flex items-center justify-between text-muted-foreground text-xs font-semibold">
-          <span>إجمالي المحصل</span>
+          <span>{m.finance_ui_total_collected()}</span>
           <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-emerald-600 dark:text-emerald-400">
@@ -335,7 +333,7 @@ function exportCsv() {
 
       <Card class="p-4 shadow-sm border-border/40 bg-card flex flex-col justify-between">
         <div class="flex items-center justify-between text-muted-foreground text-xs font-semibold">
-          <span>المتبقي للتحصيل</span>
+          <span>{m.finance_ui_remaining_to_collect()}</span>
           <span class="h-2 w-2 rounded-full bg-rose-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-rose-600 dark:text-rose-400">
@@ -345,7 +343,7 @@ function exportCsv() {
 
       <Card class="p-4 shadow-sm border-border/40 bg-card flex flex-col justify-between">
         <div class="flex items-center justify-between text-muted-foreground text-xs font-semibold">
-          <span>نسبة التحصيل</span>
+          <span>{m.finance_ui_collection_rate()}</span>
           <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-indigo-600 dark:text-indigo-400">
@@ -365,10 +363,10 @@ function exportCsv() {
         >
           {#if activeForm === "create"}
             <XMark size={14} />
-            <span>إلغاء</span>
+            <span>{m.finance_ui_cancel()}</span>
           {:else}
             <Plus size={14} />
-            <span>تقييد رسم جديد</span>
+            <span>{m.finance_ui_assign_new_fee()}</span>
           {/if}
         </Button>
 
@@ -379,7 +377,7 @@ function exportCsv() {
           onclick={() => { activeForm = activeForm === "split" ? "none" : "split"; }}
         >
           <Calendar size={14} />
-          <span>تقسيط الرسوم</span>
+          <span>{m.finance_ui_installment_plan()}</span>
         </Button>
 
         <Button
@@ -389,7 +387,7 @@ function exportCsv() {
           onclick={() => { activeForm = activeForm === "refund" ? "none" : "refund"; }}
         >
           <ArrowPath size={14} />
-          <span>استرداد رسوم</span>
+          <span>{m.finance_ui_refund_fees()}</span>
         </Button>
       </div>
 
@@ -398,7 +396,7 @@ function exportCsv() {
           <Search size={14} class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <Input
             type="text"
-            placeholder="بحث باسم الطالب أو بند الرسوم..."
+            placeholder={m.finance_ui_fee_search_placeholder()}
             bind:value={searchQuery}
             class="h-8 ps-8 text-xs bg-card border-border/60"
           />
@@ -408,11 +406,11 @@ function exportCsv() {
           bind:value={statusFilter}
           class="h-8 text-xs rounded-md bg-card border border-border/60 px-2 text-foreground focus:outline-none"
         >
-          <option value="all">جميع الحالات</option>
-          <option value="pending">غير مسدد</option>
-          <option value="partially_paid">مسدد جزئياً</option>
-          <option value="paid">مسدد بالكامل</option>
-          <option value="overdue">متأخر</option>
+          <option value="all">{m.finance_ui_all_statuses()}</option>
+          <option value="pending">{m.finance_ui_fee_status_unpaid()}</option>
+          <option value="partially_paid">{m.finance_ui_fee_status_partially_paid()}</option>
+          <option value="paid">{m.finance_ui_fee_status_paid_full()}</option>
+          <option value="overdue">{m.finance_ui_fee_status_overdue()}</option>
         </select>
 
         <Button variant="ghost" size="icon-sm" onclick={loadData} class="text-muted-foreground">
@@ -434,7 +432,7 @@ function exportCsv() {
               <div class="flex items-center gap-2">
                 <span class="h-2 w-2 rounded-full bg-primary"></span>
                 <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  تقييد رسم دراسي جديد على طالب
+                  {m.finance_ui_assign_fee_heading()}
                 </CardTitle>
               </div>
               <Button variant="ghost" size="icon-xs" onclick={() => activeForm = "none"} class="text-muted-foreground">
@@ -446,10 +444,10 @@ function exportCsv() {
           <CardContent class="p-4 flex flex-col gap-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">الطالب</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_student()}</Label>
                 <SearchableSelect
                   value={formStudentId}
-                  placeholder="اختر الطالب..."
+                  placeholder={m.finance_ui_student_select_placeholder()}
                   items={students}
                   getItemValue={(s) => s.id}
                   getItemLabel={(s) => s.full_name}
@@ -459,10 +457,10 @@ function exportCsv() {
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">قالب الرسوم</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_fee_template()}</Label>
                 <SearchableSelect
                   value={formTemplateId}
-                  placeholder="اختر بند الرسوم..."
+                  placeholder={m.finance_ui_fee_item_select_placeholder()}
                   items={feeTemplates}
                   getItemValue={(t) => t.id}
                   getItemLabel={(t) => `${t.name_ar || t.name} (${formatCurrency(Number(t.amount || 0), "YER")})`}
@@ -472,10 +470,10 @@ function exportCsv() {
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">الفترة الأكاديمية</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_academic_period()}</Label>
                 <SearchableSelect
                   value={formPeriodId}
-                  placeholder="الفترة..."
+                  placeholder={m.finance_ui_period_placeholder()}
                   items={periods}
                   getItemValue={(p) => p.id}
                   getItemLabel={(p) => p.name_ar || p.name}
@@ -487,7 +485,7 @@ function exportCsv() {
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">مبلغ الخصم (اختياري)</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_discount_amount_optional()}</Label>
                 <Input
                   type="number"
                   bind:value={formDiscountAmount}
@@ -497,7 +495,7 @@ function exportCsv() {
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">تاريخ الاستحقاق</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_due_date()}</Label>
                 <Input
                   type="date"
                   bind:value={formDueDate}
@@ -508,7 +506,7 @@ function exportCsv() {
 
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
               <Button variant="ghost" size="sm" class="h-8 text-xs" onclick={() => activeForm = "none"}>
-                إلغاء
+                {m.finance_ui_cancel()}
               </Button>
               <Button
                 variant="default"
@@ -517,7 +515,7 @@ function exportCsv() {
                 disabled={isSubmitting}
                 onclick={handleCreateFee}
               >
-                {isSubmitting ? "جاري الحفظ..." : "حفظ وتقييد الرسم"}
+                {isSubmitting ? m.finance_ui_saving() : m.finance_ui_assign_fee_save()}
               </Button>
             </div>
           </CardContent>
@@ -534,7 +532,7 @@ function exportCsv() {
               <div class="flex items-center gap-2">
                 <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
                 <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  تقسيط الرسوم الدراسية إلى دفعات
+                  {m.finance_ui_installment_heading()}
                 </CardTitle>
               </div>
               <Button variant="ghost" size="icon-xs" onclick={() => activeForm = "none"} class="text-muted-foreground">
@@ -546,15 +544,19 @@ function exportCsv() {
           <CardContent class="p-4 flex flex-col gap-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">اختر الرسم غير المسدد</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_select_unpaid_fee()}</Label>
                 <SearchableSelect
                   value={selectedFeeForSplit?.id || ""}
-                  placeholder="اختر الرسم المراد تقسيطه..."
+                  placeholder={m.finance_ui_installment_fee_placeholder()}
                   items={fees.filter((f) => f.status === "unpaid" && Number(f.paid_amount || 0) === 0)}
                   getItemValue={(f) => f.id}
                   getItemLabel={(f) => {
                     const st = students.find((s) => String(s.id) === String(f.enrollment_id));
-                    return `${st?.full_name || 'طالب'} - ${f.fee_type_name || 'رسوم'} (${formatCurrency(Number(f.net_amount || 0), 'YER')})`;
+                    return m.finance_ui_installment_fee_option({
+                      student: st?.full_name || m.finance_ui_student(),
+                      fee: f.fee_type_name || m.finance_ui_fees(),
+                      amount: formatCurrency(Number(f.net_amount || 0), 'YER'),
+                    });
                   }}
                   onchange={(val) => {
                     selectedFeeForSplit = fees.find((f) => f.id === val) || null;
@@ -564,23 +566,23 @@ function exportCsv() {
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">عدد الأقساط</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_installment_count()}</Label>
                 <select
                   bind:value={splitCount}
                   class="w-full h-8 text-xs rounded-md bg-background border border-border/60 px-2 text-foreground focus:outline-none"
                 >
-                  <option value={2}>قسطين (2)</option>
-                  <option value={3}>3 أقساط</option>
-                  <option value={4}>4 أقساط</option>
-                  <option value={5}>5 أقساط</option>
-                  <option value={6}>6 أقساط</option>
+                  <option value={2}>{m.finance_ui_installment_count_value({ count: 2 })}</option>
+                  <option value={3}>{m.finance_ui_installment_count_value({ count: 3 })}</option>
+                  <option value={4}>{m.finance_ui_installment_count_value({ count: 4 })}</option>
+                  <option value={5}>{m.finance_ui_installment_count_value({ count: 5 })}</option>
+                  <option value={6}>{m.finance_ui_installment_count_value({ count: 6 })}</option>
                 </select>
               </div>
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
               <Button variant="ghost" size="sm" class="h-8 text-xs" onclick={() => activeForm = "none"}>
-                إلغاء
+                {m.finance_ui_cancel()}
               </Button>
               <Button
                 variant="default"
@@ -589,7 +591,7 @@ function exportCsv() {
                 disabled={isSubmitting || !selectedFeeForSplit}
                 onclick={handleSplitInstallments}
               >
-                {isSubmitting ? "جاري المعالجة..." : "تطبيق التقسيط"}
+                {isSubmitting ? m.finance_ui_processing() : m.finance_ui_apply_installment_plan()}
               </Button>
             </div>
           </CardContent>
@@ -606,7 +608,7 @@ function exportCsv() {
               <div class="flex items-center gap-2">
                 <span class="h-2 w-2 rounded-full bg-rose-500"></span>
                 <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  استرداد رسوم دراسية مسددة
+                  {m.finance_ui_refund_heading()}
                 </CardTitle>
               </div>
               <Button variant="ghost" size="icon-xs" onclick={() => activeForm = "none"} class="text-muted-foreground">
@@ -618,15 +620,19 @@ function exportCsv() {
           <CardContent class="p-4 flex flex-col gap-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">اختر الرسم المسدد</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_select_paid_fee()}</Label>
                 <SearchableSelect
                   value={selectedFeeForRefund?.id || ""}
-                  placeholder="اختر الرسم المراد استرداده..."
+                  placeholder={m.finance_ui_refund_fee_placeholder()}
                   items={fees.filter((f) => Number(f.paid_amount || 0) > 0)}
                   getItemValue={(f) => f.id}
                   getItemLabel={(f) => {
                     const st = students.find((s) => String(s.id) === String(f.enrollment_id));
-                    return `${st?.full_name || 'طالب'} - ${f.fee_type_name || 'رسوم'} (مسدد: ${formatCurrency(Number(f.paid_amount || 0), 'YER')})`;
+                    return m.finance_ui_refund_fee_option({
+                      student: st?.full_name || m.finance_ui_student(),
+                      fee: f.fee_type_name || m.finance_ui_fees(),
+                      amount: formatCurrency(Number(f.paid_amount || 0), 'YER'),
+                    });
                   }}
                   onchange={(val) => {
                     selectedFeeForRefund = fees.find((f) => f.id === val) || null;
@@ -639,7 +645,7 @@ function exportCsv() {
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">مبلغ الاسترداد</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_refund_amount()}</Label>
                 <Input
                   type="number"
                   bind:value={refundAmount}
@@ -650,18 +656,18 @@ function exportCsv() {
             </div>
 
             <div>
-              <Label class="text-xs font-semibold text-foreground mb-1 block">سبب الاسترداد / ملاحظات</Label>
+              <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_refund_reason_notes()}</Label>
               <Input
                 type="text"
                 bind:value={refundNotes}
-                placeholder="أدخل سبب الاسترداد..."
+                placeholder={m.finance_ui_refund_reason_placeholder()}
                 class="h-8 text-xs bg-background border-border/60"
               />
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
               <Button variant="ghost" size="sm" class="h-8 text-xs" onclick={() => activeForm = "none"}>
-                إلغاء
+                {m.finance_ui_cancel()}
               </Button>
               <Button
                 variant="default"
@@ -670,7 +676,7 @@ function exportCsv() {
                 disabled={isSubmitting || !selectedFeeForRefund}
                 onclick={handleRefundFee}
               >
-                {isSubmitting ? "جاري التنفيذ..." : "تأكيد الاسترداد"}
+                {isSubmitting ? m.finance_ui_processing() : m.finance_ui_confirm_refund()}
               </Button>
             </div>
           </CardContent>
@@ -688,7 +694,7 @@ function exportCsv() {
         search={searchQuery}
         rtl={isAr()}
         readonly
-        emptyTitle="لا توجد رسوم دراسية مسجلة"
+        emptyTitle={m.finance_ui_no_student_fees()}
       />
     </div>
   </div>

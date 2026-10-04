@@ -5,6 +5,7 @@
   Follows Orbis Design System and logical RTL/LTR CSS.
 -->
 <script lang="ts" generics="T = any">
+import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 import { Plus, Search, XMark } from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
@@ -43,9 +44,9 @@ interface Props {
 let {
   value = $bindable<string | null>(null),
   items = [],
-  placeholder = "اختر...",
-  searchPlaceholder = "بحث...",
-  emptyText = "لا توجد نتائج مطابقة",
+  placeholder = m.shared_ui_select_placeholder(),
+  searchPlaceholder = m.shared_ui_search_placeholder(),
+  emptyText = m.shared_ui_select_no_results(),
   createLabel,
   onCreate,
   getItemValue = (item: any) => String(item?.id ?? item?.value ?? item ?? ""),
@@ -64,7 +65,7 @@ let {
   getItemSubtitle = (item: any) => item?.employee_number ? `#${item.employee_number}` : item?.code || item?.subtitle || undefined,
   getItemBadge = (item: any) => item?.badge || item?.status || undefined,
   showAllOption = false,
-  allOptionLabel = "الكل",
+  allOptionLabel = m.shared_ui_all(),
   disabled = false,
   size = "default",
   class: className = "",

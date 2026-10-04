@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "$lib/paraglide/messages";
   import type { ChunkProgress } from "../types";
 
   interface Props {
@@ -28,16 +29,16 @@
 
       <!-- Title & Subtitle -->
       <div>
-        <h3 class="text-lg font-bold text-foreground">جاري اعتماد السجلات وتنفيذ العمليات...</h3>
+        <h3 class="text-lg font-bold text-foreground">{m.bulk_entry_progress_title()}</h3>
         <p class="text-xs text-muted-foreground mt-1">
-          تنفيذ المعاملات المقطعة والمزامنة مع الحسابات وسجلات التدقيق
+          {m.bulk_entry_progress_description()}
         </p>
       </div>
 
       <!-- Progress Bar -->
       <div class="w-full space-y-2">
         <div class="flex justify-between text-xs font-semibold text-muted-foreground px-0.5">
-          <span>المقطع {progress.currentChunk} من {progress.totalChunks}</span>
+          <span>{m.bulk_entry_progress_chunk({ current: progress.currentChunk, total: progress.totalChunks })}</span>
           <span class="text-primary font-bold">{percentage}%</span>
         </div>
 
@@ -52,12 +53,12 @@
       <!-- Live Stats -->
       <div class="w-full grid grid-cols-2 gap-2 pt-2 border-t border-border text-xs">
         <div class="p-2.5 rounded-lg bg-muted/40 flex flex-col items-center">
-          <span class="text-muted-foreground">تمت معالجته بنجاح</span>
+          <span class="text-muted-foreground">{m.bulk_entry_progress_processed()}</span>
           <span class="text-base font-bold text-primary mt-0.5">{progress.committedRows}</span>
         </div>
 
         <div class="p-2.5 rounded-lg bg-muted/40 flex flex-col items-center">
-          <span class="text-muted-foreground">تعثر أثناء المعالجة</span>
+          <span class="text-muted-foreground">{m.bulk_entry_progress_failed()}</span>
           <span class="text-base font-bold text-destructive mt-0.5">{progress.failedRows}</span>
         </div>
       </div>

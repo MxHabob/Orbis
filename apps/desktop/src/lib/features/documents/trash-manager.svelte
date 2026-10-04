@@ -114,32 +114,32 @@ async function handlePreview(doc: DocumentDto) {
 async function handleRestoreDoc(id: string) {
   try {
     await restoreMutation.mutateAsync(id);
-    toast.success("تم استعادة الملف بنجاح");
+    toast.success(m.operations_ui_trash_restore_success());
     selectedIds.delete(id);
     selectedIds = new Set(selectedIds);
     trashQuery.refetch();
   } catch (e: any) {
-    toast.error(e?.message || "فشل في استعادة الملف");
+    toast.error(e?.message || m.operations_ui_trash_restore_error());
   }
 }
 
 // Purge single document
 async function handlePurgeDoc(id: string) {
   const confirmed = await confirmStore.prompt({
-    title: "حذف نهائي",
-    description: "هل أنت متأكد من حذف هذا الملف نهائياً من القرص وقاعدة البيانات؟ لا يمكن التراجع عن هذا الإجراء.",
-    confirmText: "حذف نهائي",
+    title: m.operations_ui_trash_permanently_delete(),
+    description: m.operations_ui_trash_permanently_delete_confirm(),
+    confirmText: m.operations_ui_trash_permanently_delete(),
     variant: "destructive",
   });
   if (confirmed) {
     try {
       await purgeMutation.mutateAsync(id);
-      toast.success("تم حذف الملف نهائياً");
+      toast.success(m.operations_ui_trash_delete_success());
       selectedIds.delete(id);
       selectedIds = new Set(selectedIds);
       trashQuery.refetch();
     } catch (e: any) {
-      toast.error(e?.message || "فشل في حذف الملف");
+      toast.error(e?.message || m.operations_ui_trash_delete_error());
     }
   }
 }
@@ -149,9 +149,9 @@ async function handleEmptyTrash() {
   if (trashedDocs.length === 0) return;
 
   const confirmed = await confirmStore.prompt({
-    title: "تفريغ سلة المحذوفات بالكامل",
-    description: `سيتم حذف جميع الملفات المحذوفة (${trashedDocs.length} ملف) نهائياً من النظام. هذا الإجراء لا رجعة فيه.`,
-    confirmText: "تفريغ السلة نهائياً",
+    title: m.operations_ui_trash_empty_title(),
+    description: m.operations_ui_trash_empty_confirm({ count: trashedDocs.length }),
+    confirmText: m.operations_ui_trash_empty_action(),
     variant: "destructive",
   });
 
@@ -159,11 +159,11 @@ async function handleEmptyTrash() {
     try {
       const promises = trashedDocs.map((doc) => purgeMutation.mutateAsync(doc.id));
       await Promise.all(promises);
-      toast.success("تم تفريغ سلة المحذوفات بالكامل");
+      toast.success(m.operations_ui_trash_empty_success());
       selectedIds = new Set();
       trashQuery.refetch();
     } catch (e: any) {
-      toast.error(e?.message || "حدث خطأ أثناء تفريغ سلة المحذوفات");
+      toast.error(e?.message || m.operations_ui_trash_empty_error());
     }
   }
 }
@@ -193,11 +193,11 @@ async function handleBatchRestore() {
   try {
     const promises = Array.from(selectedIds).map((id) => restoreMutation.mutateAsync(id));
     await Promise.all(promises);
-    toast.success(`تم استعادة ${count} ملفات بنجاح`);
+    toast.success(m.operations_ui_trash_restore_many_success({ count }));
     selectedIds = new Set();
     trashQuery.refetch();
   } catch (e: any) {
-    toast.error(e?.message || "فشل في استعادة الملفات المحددة");
+    toast.error(e?.message || m.operations_ui_trash_restore_many_error());
   }
 }
 
@@ -206,9 +206,9 @@ async function handleBatchPurge() {
   if (selectedIds.size === 0) return;
   const count = selectedIds.size;
   const confirmed = await confirmStore.prompt({
-    title: `حذف نهائي لـ ${count} ملفات`,
-    description: "هل أنت متأكد من حذف الملفات المحددة نهائياً؟ لا يمكن التراجع عن هذه العملية.",
-    confirmText: "حذف نهائي",
+    title: m.operations_ui_trash_delete_many_title({ count }),
+    description: m.operations_ui_trash_delete_many_confirm(),
+    confirmText: m.operations_ui_trash_permanently_delete(),
     variant: "destructive",
   });
 
@@ -216,11 +216,11 @@ async function handleBatchPurge() {
     try {
       const promises = Array.from(selectedIds).map((id) => purgeMutation.mutateAsync(id));
       await Promise.all(promises);
-      toast.success(`تم حذف ${count} ملفات نهائياً`);
+      toast.success(m.operations_ui_trash_delete_many_success({ count }));
       selectedIds = new Set();
       trashQuery.refetch();
     } catch (e: any) {
-      toast.error(e?.message || "فشل في حذف الملفات المحددة");
+      toast.error(e?.message || m.operations_ui_trash_delete_many_error());
     }
   }
 }
@@ -239,19 +239,19 @@ async function handleBatchPurge() {
             onclick={() => goto(`/${orgId}/settings/archive`)}
           >
             <ArchiveBox class="w-3.5 h-3.5" />
-            <span>الأرشيف الرقمي</span>
+            <span>{m.operations_ui_documents_archive()}</span>
           </button>
           <span>/</span>
           <span class="text-foreground font-medium flex items-center gap-1 text-rose-500">
             <Trash class="w-3.5 h-3.5" />
-            <span>سلة المحذوفات</span>
+            <span>{m.operations_ui_trash_title()}</span>
           </span>
         </nav>
 
         <div class="flex items-center gap-2">
-          <h1 class="text-xl font-bold text-foreground">سلة المحذوفات</h1>
+          <h1 class="text-xl font-bold text-foreground">{m.operations_ui_trash_title()}</h1>
           <span class="rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 px-2.5 py-0.5 text-xs font-semibold">
-            {trashedDocs.length} ملف
+            {m.operations_ui_trash_file_count({ count: trashedDocs.length })}
           </span>
         </div>
       </div>
@@ -262,11 +262,11 @@ async function handleBatchPurge() {
           variant="outline"
           size="sm"
           onclick={() => trashQuery.refetch()}
-          title="تحديث البيانات"
+          title={m.operations_ui_refresh_data()}
           class="h-9"
         >
           <Refresh class="w-4 h-4 {trashQuery.isFetching ? 'animate-spin' : ''}" />
-          <span class="hidden sm:inline ms-1.5">تحديث</span>
+          <span class="hidden sm:inline ms-1.5">{m.operations_ui_refresh()}</span>
         </Button>
 
         {#if trashedDocs.length > 0}
@@ -277,7 +277,7 @@ async function handleBatchPurge() {
             class="h-9"
           >
             <Trash class="w-4 h-4 me-1.5" />
-            <span>تفريغ السلة بالكامل</span>
+            <span>{m.operations_ui_trash_empty_action()}</span>
           </Button>
         {/if}
 
@@ -288,7 +288,7 @@ async function handleBatchPurge() {
           class="h-9"
         >
           <FolderOpen class="w-4 h-4 me-1.5 text-primary" />
-          <span>العودة للأرشيف</span>
+          <span>{m.operations_ui_return_to_archive()}</span>
         </Button>
       </div>
     </div>
@@ -300,7 +300,7 @@ async function handleBatchPurge() {
         <Search class="absolute inset-s-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
           type="search"
-          placeholder="بحث في سلة المحذوفات..."
+          placeholder={m.operations_ui_trash_search_placeholder()}
           bind:value={searchQuery}
           class="ps-9 pe-8 h-8 text-xs bg-background/80"
         />
@@ -322,11 +322,11 @@ async function handleBatchPurge() {
           bind:value={selectedAssetType}
           class="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
         >
-          <option value="all">جميع الأنواع</option>
-          <option value="image">صور</option>
-          <option value="pdf">مستندات PDF</option>
-          <option value="video">فيديو</option>
-          <option value="audio">صوت</option>
+          <option value="all">{m.operations_ui_all_types()}</option>
+          <option value="image">{m.operations_ui_image()}</option>
+          <option value="pdf">{m.operations_ui_pdf_documents()}</option>
+          <option value="video">{m.operations_ui_video()}</option>
+          <option value="audio">{m.operations_ui_audio()}</option>
         </select>
 
         <!-- Category Filter -->
@@ -335,7 +335,7 @@ async function handleBatchPurge() {
             bind:value={selectedCategory}
             class="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary capitalize"
           >
-            <option value="all">جميع التصنيفات</option>
+            <option value="all">{m.operations_ui_all_categories()}</option>
             {#each availableCategories as cat}
               <option value={cat}>{cat}</option>
             {/each}
@@ -349,7 +349,7 @@ async function handleBatchPurge() {
             size="icon"
             class="h-7 w-7 rounded-md {viewMode === 'grid' ? 'bg-background shadow-xs text-foreground' : 'text-muted-foreground'}"
             onclick={() => (viewMode = "grid")}
-            title="عرض شبكي"
+            title={m.operations_ui_grid_view()}
           >
             <Grid class="w-3.5 h-3.5" />
           </Button>
@@ -359,7 +359,7 @@ async function handleBatchPurge() {
             size="icon"
             class="h-7 w-7 rounded-md {viewMode === 'table' ? 'bg-background shadow-xs text-foreground' : 'text-muted-foreground'}"
             onclick={() => (viewMode = "table")}
-            title="عرض جدولي"
+            title={m.operations_ui_table_view()}
           >
             <Bars3BottomLeft class="w-3.5 h-3.5" />
           </Button>
@@ -373,14 +373,14 @@ async function handleBatchPurge() {
     <div class="shrink-0 bg-primary/10 border-b border-primary/20 px-6 py-2.5 flex items-center justify-between text-xs transition-all">
       <div class="flex items-center gap-3">
         <span class="font-medium text-foreground">
-          تم تحديد <strong class="text-primary">{selectedIds.size}</strong> من أصل {filteredDocs.length} ملف
+          {m.operations_ui_trash_selection_count({ selected: selectedIds.size, total: filteredDocs.length })}
         </span>
         <button
           type="button"
           class="text-xs text-muted-foreground hover:text-foreground underline"
           onclick={() => (selectedIds = new Set())}
         >
-          إلغاء التحديد
+          {m.operations_ui_clear_selection()}
         </button>
       </div>
 
@@ -392,7 +392,7 @@ async function handleBatchPurge() {
           onclick={handleBatchRestore}
         >
           <Refresh class="w-3.5 h-3.5 me-1.5" />
-          <span>استعادة المحدد</span>
+          <span>{m.operations_ui_trash_restore_selected()}</span>
         </Button>
 
         <Button
@@ -402,7 +402,7 @@ async function handleBatchPurge() {
           onclick={handleBatchPurge}
         >
           <Trash class="w-3.5 h-3.5 me-1.5" />
-          <span>حذف نهائي للمحدد</span>
+          <span>{m.operations_ui_trash_delete_selected()}</span>
         </Button>
       </div>
     </div>
@@ -424,11 +424,11 @@ async function handleBatchPurge() {
           </div>
         </div>
 
-        <h3 class="text-base font-semibold text-foreground mb-1">سلة المحذوفات فارغة</h3>
+        <h3 class="text-base font-semibold text-foreground mb-1">{m.operations_ui_trash_empty_heading()}</h3>
         <p class="text-xs text-muted-foreground mb-6 leading-relaxed">
           {searchQuery
-            ? "لا توجد ملفات محذوفة تطابق معايير البحث المحددة."
-            : "لا توجد ملفات محذوفة حالياً. الملفات التي تقوم بحذفها من الأرشيف ستظهر هنا مع إمكانية استعادتها."}
+            ? m.operations_ui_trash_no_search_results()
+            : m.operations_ui_trash_empty_description()}
         </p>
 
         <Button
@@ -437,7 +437,7 @@ async function handleBatchPurge() {
           onclick={() => goto(`/${orgId}/settings/archive`)}
         >
           <FolderOpen class="w-4 h-4 me-1.5 text-primary" />
-          <span>تصفح الأرشيف</span>
+          <span>{m.operations_ui_browse_archive()}</span>
         </Button>
       </div>
     {:else}
@@ -468,14 +468,14 @@ async function handleBatchPurge() {
                     checked={selectedIds.size === filteredDocs.length && filteredDocs.length > 0}
                     onchange={selectAll}
                     class="rounded border-border"
-                    aria-label="تحديد الكل"
+                    aria-label={m.operations_ui_select_all()}
                   />
                 </th>
-                <th class="px-4 py-3 text-start">الملف</th>
-                <th class="px-4 py-3 text-start">التصنيف</th>
-                <th class="px-4 py-3 text-start">الحجم</th>
-                <th class="px-4 py-3 text-start">تاريخ الحذف</th>
-                <th class="px-4 py-3 text-end">إجراءات</th>
+                <th class="px-4 py-3 text-start">{m.operations_ui_file()}</th>
+                <th class="px-4 py-3 text-start">{m.operations_ui_category()}</th>
+                <th class="px-4 py-3 text-start">{m.operations_ui_size()}</th>
+                <th class="px-4 py-3 text-start">{m.operations_ui_deleted_date()}</th>
+                <th class="px-4 py-3 text-end">{m.operations_ui_actions()}</th>
               </tr>
             </thead>
             <tbody>

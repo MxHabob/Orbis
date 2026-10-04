@@ -71,8 +71,8 @@ function handleChange(val: string | null) {
       bind:value={currentLocale}
       items={supportedLocales}
       placeholder={m.settings_general_locale()}
-      searchPlaceholder="ابحث باسم اللغة أو الرمز (مثال: العربية, English, ar, en)..."
-      emptyText="لا توجد لغة مطابقة"
+          searchPlaceholder={m.shared_ui_search_locales_placeholder()}
+          emptyText={m.shared_ui_no_matching_locales()}
       {disabled}
       getItemValue={getLocaleValue}
       getItemLabel={getLocaleLabel}

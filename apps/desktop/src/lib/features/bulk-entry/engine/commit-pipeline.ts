@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 import type {
   BulkCommitResult,
   BulkImportProfile,
@@ -56,17 +57,17 @@ export async function executeCommitPipeline<T = Record<string, unknown>>(
       if (res.success) {
         for (const row of chunkRows) {
           row.status = "committed";
-          row.data.status = "🟢 تم الحفظ بنجاح";
+          row.data.status = m.bulk_entry_status_committed();
           committedCount++;
         }
       } else {
         // Quarantine failed rows
         for (let idx = 0; idx < chunkRows.length; idx++) {
           const row = chunkRows[idx]!;
-          const errReason = res.errors?.[idx] || res.errors?.[0] || "فشل تنفيذ المعاملة";
+          const errReason = res.errors?.[idx] || res.errors?.[0] || m.bulk_entry_commit_transaction_failed();
           row.status = "failed";
           row.commitError = errReason;
-          row.data.status = `🔴 فشل: ${errReason}`;
+          row.data.status = m.bulk_entry_status_failed({ reason: errReason });
           failedCount++;
           failedRowNumbers.push(row.rowNumber);
           errors.push({ rowNumber: row.rowNumber, reason: errReason });
@@ -77,7 +78,7 @@ export async function executeCommitPipeline<T = Record<string, unknown>>(
         const errReason = err.message || String(err);
         row.status = "failed";
         row.commitError = errReason;
-        row.data.status = `🔴 خطأ فادح: ${errReason}`;
+        row.data.status = m.bulk_entry_status_fatal_error({ reason: errReason });
         failedCount++;
         failedRowNumbers.push(row.rowNumber);
         errors.push({ rowNumber: row.rowNumber, reason: errReason });

@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Folder, Sparkles, AcademicCap, Plus, XMark, Search, Check } from "@orbis/icons";
@@ -68,7 +69,7 @@ async function handleCreate() {
 
     if (activeTab === "standard") {
       if (!folderName.trim()) {
-        toast.error("يرجى إدخال اسم المجلد");
+        toast.error(m.operations_ui_folder_name_required());
         return;
       }
       const req: CreateFolderRequest = {
@@ -79,12 +80,12 @@ async function handleCreate() {
         term_id: termId ?? undefined,
       };
       const created = await api.createFolder(req);
-      toast.success(`تم إنشاء المجلد "${created.name}" بنجاح`);
+      toast.success(m.operations_ui_folder_create_success({ name: created.name }));
       oncreated(created);
       handleClose();
     } else if (activeTab === "curriculum") {
       if (!curriculumName.trim()) {
-        toast.error("يرجى إدخال اسم المنهج الدراسي");
+        toast.error(m.operations_ui_curriculum_name_required());
         return;
       }
       const req: CreateCurriculumFolderRequest = {
@@ -99,24 +100,24 @@ async function handleCreate() {
         },
       };
       const created = await api.getOrCreateCurriculumFolder(req);
-      toast.success(`تم إنشاء مجلد المنهج "${created.name}" وتهيئته للذكاء الاصطناعي`);
+      toast.success(m.operations_ui_curriculum_folder_create_success({ name: created.name }));
       oncreated(created);
       handleClose();
     } else if (activeTab === "student") {
       if (!selectedStudent) {
-        toast.error("يرجى اختيار الطالب");
+        toast.error(m.operations_ui_student_required());
         return;
       }
       const sId = selectedStudent.student.id;
-      const sName = selectedStudent.person.full_name || selectedStudent.person.full_name_ar || selectedStudent.student.student_number || "طالب";
+      const sName = selectedStudent.person.full_name || selectedStudent.person.full_name_ar || selectedStudent.student.student_number || m.operations_ui_student_fallback();
       const created = await api.getOrCreateStudentFolder(sId, sName);
-      toast.success(`تم فتح مجلد الطالب "${created.name}"`);
+      toast.success(m.operations_ui_student_folder_open_success({ name: created.name }));
       oncreated(created);
       handleClose();
     }
   } catch (err: any) {
     console.error("Failed to create folder:", err);
-    toast.error(err?.message || "فشل في إنشاء المجلد");
+    toast.error(err?.message || m.operations_ui_folder_create_error());
   } finally {
     isSubmitting = false;
   }
@@ -144,17 +145,17 @@ async function handleCreate() {
         <h3 class="text-lg font-bold text-foreground flex items-center gap-2">
           {#if activeTab === "curriculum"}
             <Sparkles class="w-5 h-5 text-emerald-500" />
-            <span>إنشاء مجلد منهج دراسي (قاعدة معرفية للذكاء الاصطناعي)</span>
+            <span>{m.operations_ui_curriculum_folder_create_title()}</span>
           {:else if activeTab === "student"}
             <AcademicCap class="w-5 h-5 text-indigo-500" />
-            <span>فتح / إنشاء مجلد مخصص لطالب</span>
+            <span>{m.operations_ui_student_folder_create_title()}</span>
           {:else}
             <Folder class="w-5 h-5 text-amber-500" />
-            <span>إنشاء مجلد جديد</span>
+            <span>{m.operations_ui_folder_create_title()}</span>
           {/if}
         </h3>
         <p class="text-xs text-muted-foreground mt-1">
-          قم بتنظيم الملفات والمناهج لتسهيل البحث وتمكين المساعد الذكي من قراءتها.
+          {m.operations_ui_folder_create_description()}
         </p>
       </div>
 
@@ -166,7 +167,7 @@ async function handleCreate() {
           class="flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 {activeTab === 'standard' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
         >
           <Folder class="w-3.5 h-3.5 text-amber-500" />
-          <span>مجلد عام</span>
+          <span>{m.operations_ui_general_folder()}</span>
         </button>
 
         <button
@@ -175,7 +176,7 @@ async function handleCreate() {
           class="flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 {activeTab === 'curriculum' ? 'bg-background text-emerald-600 dark:text-emerald-400 font-semibold shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
         >
           <Sparkles class="w-3.5 h-3.5 text-emerald-500" />
-          <span>منهج دراسي AI</span>
+          <span>{m.operations_ui_ai_curriculum_folder()}</span>
         </button>
 
         <button
@@ -184,7 +185,7 @@ async function handleCreate() {
           class="flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 {activeTab === 'student' ? 'bg-background text-indigo-600 dark:text-indigo-400 font-semibold shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
         >
           <AcademicCap class="w-3.5 h-3.5 text-indigo-500" />
-          <span>مجلد طالب</span>
+          <span>{m.operations_ui_student_folder()}</span>
         </button>
       </div>
 
@@ -192,11 +193,11 @@ async function handleCreate() {
       <div class="space-y-4">
         {#if activeTab === "standard"}
           <div class="space-y-1.5">
-            <label for="standard-folder-name" class="text-xs font-medium text-foreground">اسم المجلد</label>
+            <label for="standard-folder-name" class="text-xs font-medium text-foreground">{m.operations_ui_folder_name()}</label>
             <Input
               id="standard-folder-name"
               bind:value={folderName}
-              placeholder="مثال: التقارير الإدارية، الشهادات، الفعاليات..."
+              placeholder={m.operations_ui_folder_name_example()}
               class="w-full text-xs"
               autofocus
               onkeydown={(e) => e.key === "Enter" && handleCreate()}
@@ -207,19 +208,19 @@ async function handleCreate() {
             <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
               <Sparkles class="w-4 h-4 shrink-0 mt-0.5" />
               <div>
-                <p class="font-semibold">تكامل الذكاء الاصطناعي:</p>
+                <p class="font-semibold">{m.operations_ui_ai_integration()}</p>
                 <p class="text-[11px] opacity-90 mt-0.5">
-                  الملفات المرفوعة داخل هذا المجلد سيتم فهرستها تلقائياً كمعرفة أساسية لوكيل الذكاء الاصطناعي للإجابة وتلخيص المناهج بدقة تامة.
+                  {m.operations_ui_ai_folder_indexing_description()}
                 </p>
               </div>
             </div>
 
             <div class="space-y-1.5">
-              <label for="curriculum-name" class="text-xs font-medium text-foreground">اسم المنهج أو المقرر</label>
+              <label for="curriculum-name" class="text-xs font-medium text-foreground">{m.operations_ui_curriculum_or_course_name()}</label>
               <Input
                 id="curriculum-name"
                 bind:value={curriculumName}
-                placeholder="مثال: الرياضيات - الصف العاشر - الفصل الأول"
+                placeholder={m.operations_ui_curriculum_name_example()}
                 class="w-full text-xs"
                 autofocus
               />
@@ -227,21 +228,21 @@ async function handleCreate() {
 
             <div class="grid grid-cols-2 gap-3">
               <div class="space-y-1.5">
-                <label for="curriculum-subject" class="text-xs font-medium text-foreground">المادة (اختياري)</label>
+                <label for="curriculum-subject" class="text-xs font-medium text-foreground">{m.operations_ui_subject_optional()}</label>
                 <Input
                   id="curriculum-subject"
                   bind:value={curriculumSubject}
-                  placeholder="مثال: الرياضيات"
+                  placeholder={m.operations_ui_subject_example()}
                   class="w-full text-xs"
                 />
               </div>
 
               <div class="space-y-1.5">
-                <label for="curriculum-grade" class="text-xs font-medium text-foreground">الصف الدراسي (اختياري)</label>
+                <label for="curriculum-grade" class="text-xs font-medium text-foreground">{m.operations_ui_grade_optional()}</label>
                 <Input
                   id="curriculum-grade"
                   bind:value={curriculumGrade}
-                  placeholder="مثال: الصف العاشر"
+                  placeholder={m.operations_ui_grade_example()}
                   class="w-full text-xs"
                 />
               </div>
@@ -250,13 +251,13 @@ async function handleCreate() {
         {:else if activeTab === "student"}
           <div class="space-y-3">
             <div class="space-y-1.5">
-              <label for="student-search-input" class="text-xs font-medium text-foreground">ابحث عن الطالب</label>
+              <label for="student-search-input" class="text-xs font-medium text-foreground">{m.operations_ui_search_student()}</label>
               <div class="relative">
                 <Search class="w-4 h-4 absolute right-3 top-2.5 text-muted-foreground pointer-events-none" />
                 <Input
                   id="student-search-input"
                   bind:value={studentSearch}
-                  placeholder="اكتب اسم الطالب أو الرقم الأكاديمي..."
+                  placeholder={m.operations_ui_student_search_placeholder()}
                   class="w-full pr-9 text-xs"
                   autofocus
                 />
@@ -283,7 +284,7 @@ async function handleCreate() {
                 {/each}
               </div>
             {:else if studentSearch.trim().length >= 2 && !studentSearchResults.isLoading}
-              <p class="text-center text-xs text-muted-foreground py-3">لا توجد نتائج مطابقة</p>
+              <p class="text-center text-xs text-muted-foreground py-3">{m.operations_ui_no_matching_results()}</p>
             {/if}
           </div>
         {/if}
@@ -292,7 +293,7 @@ async function handleCreate() {
       <!-- Footer Buttons -->
       <div class="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-border/40">
         <Button variant="ghost" size="sm" onclick={handleClose} disabled={isSubmitting}>
-          إلغاء
+          {m.common_action_cancel()}
         </Button>
         <Button
           size="sm"
@@ -302,10 +303,10 @@ async function handleCreate() {
         >
           {#if isSubmitting}
             <span class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-            <span>جاري المعالجة...</span>
+            <span>{m.operations_ui_processing()}</span>
           {:else}
             <Plus class="w-4 h-4" />
-            <span>{activeTab === "student" ? "فتح مجلد الطالب" : "إنشاء المجلد"}</span>
+            <span>{activeTab === "student" ? m.operations_ui_open_student_folder() : m.operations_ui_folder_create_title()}</span>
           {/if}
         </Button>
       </div>

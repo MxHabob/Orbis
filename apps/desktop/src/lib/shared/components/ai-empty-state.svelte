@@ -10,13 +10,14 @@ Features:
 - Midday/Notion minimal design system
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onDestroy } from "svelte";
 import { Avatar, AvatarController, type AvatarHat } from "@orbis/avatar-engine";
 import { Button } from "@orbis/ui/button";
 import { ArrowRight, Sparkles } from "@orbis/icons";
 
 let {
-  text = "أهلاً بك! لا توجد بيانات مسجلة هنا حالياً. يمكنك بدء العمل عبر إضافة أول عنصر أو تشغيل الأتمتة التلقائية.",
+  text = m.shared_ui_ai_empty_state(),
   actionLabel = "",
   onaction = undefined,
   hat = "random" as AvatarHat, // automatically picks a random hat per view for delight!

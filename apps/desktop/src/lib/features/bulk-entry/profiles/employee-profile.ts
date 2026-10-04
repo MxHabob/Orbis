@@ -1,5 +1,6 @@
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import { api, type BulkRegisterEmployeeCommandItem } from "$lib/api";
+import * as m from "$lib/paraglide/messages";
 import type {
   BulkImportProfile,
   BulkReferenceData,
@@ -75,8 +76,8 @@ export const employeeColumnMetadata: ColumnDefinitionMetadata[] = [
     type: "enum",
     allowedValues: ["male", "female", "ذكر", "أنثى"],
     options: [
-      { value: "male", label: "ذكر (Male)" },
-      { value: "female", label: "أنثى (Female)" },
+      { value: "male", label: m.bulk_entry_enum_gender_male() },
+      { value: "female", label: m.bulk_entry_enum_gender_female() },
     ],
     example: "male",
   },
@@ -101,12 +102,12 @@ export const employeeColumnMetadata: ColumnDefinitionMetadata[] = [
       "مشرف",
     ],
     options: [
-      { value: "teacher", label: "معلم (Teacher)" },
-      { value: "admin", label: "إداري (Admin)" },
-      { value: "principal", label: "مدير (Principal)" },
-      { value: "accountant", label: "محاسب (Accountant)" },
-      { value: "supervisor", label: "مشرف (Supervisor)" },
-      { value: "worker", label: "خدمات مساندة (Worker)" },
+      { value: "teacher", label: m.bulk_entry_enum_employee_teacher() },
+      { value: "admin", label: m.bulk_entry_enum_employee_admin() },
+      { value: "principal", label: m.bulk_entry_enum_employee_principal() },
+      { value: "accountant", label: m.bulk_entry_enum_employee_accountant() },
+      { value: "supervisor", label: m.bulk_entry_enum_employee_supervisor() },
+      { value: "worker", label: m.bulk_entry_enum_employee_worker() },
     ],
     example: "teacher",
   },
@@ -143,9 +144,9 @@ export const employeeColumnMetadata: ColumnDefinitionMetadata[] = [
     type: "enum",
     allowedValues: ["full_time", "part_time", "contractor", "دوام كامل", "دوام جزئي", "عقد محدد"],
     options: [
-      { value: "full_time", label: "دوام كامل (Full-time)" },
-      { value: "part_time", label: "دوام جزئي (Part-time)" },
-      { value: "contractor", label: "عقد (Contractor)" },
+      { value: "full_time", label: m.bulk_entry_enum_employment_full_time() },
+      { value: "part_time", label: m.bulk_entry_enum_employment_part_time() },
+      { value: "contractor", label: m.bulk_entry_enum_employment_contractor() },
     ],
     example: "full_time",
   },
@@ -185,21 +186,21 @@ export const employeeColumnMetadata: ColumnDefinitionMetadata[] = [
 ];
 
 export const employeeGridColumns: OrbisColumnDef[] = [
-  { id: "__idx", header: "#", width: 50, pin: "left", readonly: true },
-  { id: "status", header: "الحالة / Status", width: 110, pin: "left", type: "badge", readonly: true },
-  { id: "first_name_ar", header: "الاسم الأول*", width: 130 },
-  { id: "middle_name_ar", header: "اسم الأب", width: 120 },
-  { id: "last_name_ar", header: "اسم العائلة*", width: 130 },
-  { id: "national_id", header: "الرقم الوطني*", width: 130 },
-  { id: "gender", header: "الجنس*", width: 90, type: "enum", options: [{ value: "male", label: "ذكر" }, { value: "female", label: "أنثى" }] },
-  { id: "employee_type", header: "النوع الوظيفي*", width: 140 },
-  { id: "job_title", header: "المسمى الوظيفي", width: 150 },
-  { id: "department", header: "القسم", width: 140 },
-  { id: "hire_date", header: "تاريخ التعيين*", width: 120, type: "date" },
-  { id: "phone", header: "الهاتف", width: 120 },
-  { id: "email", header: "البريد الإلكتروني", width: 160 },
-  { id: "provision_user", header: "إنشاء حساب", width: 100, type: "boolean" },
-  { id: "user_group_name", header: "المجموعة", width: 140 },
+  { id: "__idx", header: m.bulk_entry_grid_row_number(), width: 50, pin: "left", readonly: true },
+  { id: "status", header: m.bulk_entry_grid_status(), width: 110, pin: "left", type: "badge", readonly: true },
+  { id: "first_name_ar", header: m.bulk_entry_employee_header_first_name_ar(), width: 130 },
+  { id: "middle_name_ar", header: m.bulk_entry_employee_header_middle_name_ar(), width: 120 },
+  { id: "last_name_ar", header: m.bulk_entry_employee_header_last_name_ar(), width: 130 },
+  { id: "national_id", header: m.bulk_entry_employee_header_national_id(), width: 130 },
+  { id: "gender", header: m.bulk_entry_header_gender(), width: 90, type: "enum", options: [{ value: "male", label: m.bulk_entry_enum_gender_male() }, { value: "female", label: m.bulk_entry_enum_gender_female() }] },
+  { id: "employee_type", header: m.bulk_entry_employee_header_employee_type(), width: 140 },
+  { id: "job_title", header: m.bulk_entry_employee_header_job_title(), width: 150 },
+  { id: "department", header: m.bulk_entry_employee_header_department(), width: 140 },
+  { id: "hire_date", header: m.bulk_entry_employee_header_hire_date(), width: 120, type: "date" },
+  { id: "phone", header: m.bulk_entry_header_phone(), width: 120 },
+  { id: "email", header: m.bulk_entry_header_email(), width: 160 },
+  { id: "provision_user", header: m.bulk_entry_employee_header_provision_user(), width: 100, type: "boolean" },
+  { id: "user_group_name", header: m.bulk_entry_employee_header_user_group(), width: 140 },
 ];
 
 export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeePreviewDetails> = {
@@ -266,7 +267,7 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: "هذا الحقل إلزامي لبيانات الموظف",
+          message: m.bulk_entry_employee_validation_required(),
         };
       }
     }
@@ -277,7 +278,7 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: "صيغة تاريخ التعيين غير صالحة، استخدم YYYY-MM-DD",
+          message: m.bulk_entry_employee_validation_hire_date_format(),
         };
       }
     }
@@ -295,7 +296,7 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
         issues.push({
           severity: "BLOCKING_ERROR",
           columnId: "national_id",
-          message: `الرقم الوطني مكرر في الملف (يتطابق مع الموظف في الصف رقم ${duplicateIndex + 1})`,
+          message: m.bulk_entry_employee_validation_duplicate_national_id({ row: duplicateIndex + 1 }),
         });
       }
     }
@@ -408,7 +409,7 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
 
       for (const it of bulkRes.items) {
         if (!it.success && it.error) {
-          errors.push(`صف ${it.row_index}: ${it.error}`);
+          errors.push(m.bulk_entry_row_error({ row: it.row_index, reason: it.error }));
         }
       }
 

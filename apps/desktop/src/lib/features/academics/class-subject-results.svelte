@@ -128,7 +128,7 @@ const gridSource = $derived(
         </div>
         <div class="flex flex-col text-start">
           <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-            النتائج النهائية للمادة
+            {m.shared_ui_subject_final_results()}
           </CardTitle>
           <CardDescription class="text-[10px]">
             {termResults.length} {m.common_term_results_recorded()}
