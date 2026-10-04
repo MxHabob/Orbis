@@ -121,10 +121,10 @@ function toggleSelect(id: string) {
 async function promptStatusChange(emp: EmployeeDetailDto, targetStatus: string) {
   const confirmed = await confirmStore.prompt({
     title: m.ui_copy_confirm_status_change_7af3a189(),
-    description: l(
-      `هل أنت متأكد من تغيير حالة الموظف (${emp.full_name || emp.first_name}) إلى "${getStatusLabel(targetStatus)}"?`,
-      `Are you sure you want to change this employee status to ${getStatusLabel(targetStatus)}?`
-    ),
+    description: m.operations_ui_employee_status_change_confirm({
+      employee: emp.full_name || emp.first_name,
+      status: getStatusLabel(targetStatus),
+    }),
     confirmText: m.ui_copy_confirm_change_6cd511d4(),
     variant: targetStatus === "suspended" || targetStatus === "terminated" ? "destructive" : "default",
   });
@@ -146,10 +146,9 @@ async function promptStatusChange(emp: EmployeeDetailDto, targetStatus: string) 
 async function promptDelete(emp: EmployeeDetailDto) {
   const confirmed = await confirmStore.prompt({
     title: m.ui_copy_delete_employee_record_0b2d4552(),
-    description: l(
-      `هل أنت متأكد من حذف ملف الموظف (${emp.full_name || emp.first_name})؟ يمكن استعادة الملف لاحقاً.`,
-      `Are you sure you want to delete this employee record? It can be restored later.`
-    ),
+    description: m.operations_ui_employee_delete_confirm({
+      employee: emp.full_name || emp.first_name,
+    }),
     confirmText: m.ui_copy_delete_681d59c5(),
     variant: "destructive",
   });
@@ -180,20 +179,20 @@ function handleExport() {
     `Employees_Roster_${orgId}`,
     dataset,
     [
-      { header: "الرقم الوظيفي", accessor: (e) => e.employee_number || "—" },
-      { header: "الاسم الكامل", accessor: (e) => e.full_name || e.full_name_ar || `${e.first_name} ${e.last_name}` },
-      { header: "الهوية الوطنية", accessor: (e) => e.national_id || "—" },
-      { header: "المسمى الوظيفي", accessor: (e) => e.job_title || "—" },
-      { header: "القسم", accessor: (e) => e.department || "—" },
-      { header: "فئة الموظف", accessor: (e) => e.employee_type || "—" },
+      { header: m.operations_ui_employee_number(), accessor: (e) => e.employee_number || "—" },
+      { header: m.operations_ui_full_name(), accessor: (e) => e.full_name || e.full_name_ar || `${e.first_name} ${e.last_name}` },
+      { header: m.operations_ui_national_id(), accessor: (e) => e.national_id || "—" },
+      { header: m.operations_ui_job_title(), accessor: (e) => e.job_title || "—" },
+      { header: m.operations_ui_department(), accessor: (e) => e.department || "—" },
+      { header: m.operations_ui_employee_category(), accessor: (e) => e.employee_type || "—" },
       { header: "الحالة", accessor: (e) => e.status || "active" },
-      { header: "حساب المستخدم", accessor: (e) => e.username || "غير مربوط" },
-      { header: "تاريخ التعيين", accessor: (e) => e.hire_date ? formatDate(e.hire_date, "date") : "—" },
-      { header: "رقم الهاتف", accessor: (e) => e.phone || "—" },
-      { header: "البريد الإلكتروني", accessor: (e) => e.email || "—" },
+      { header: m.operations_ui_user_account(), accessor: (e) => e.username || m.operations_ui_not_linked() },
+      { header: m.operations_ui_hire_date(), accessor: (e) => e.hire_date ? formatDate(e.hire_date, "date") : "—" },
+      { header: m.operations_ui_phone_number(), accessor: (e) => e.phone || "—" },
+      { header: m.operations_ui_email(), accessor: (e) => e.email || "—" },
     ]
   );
-  toast.success("تم تصدير قائمة الموظفين بنجاح (CSV)");
+  toast.success(m.operations_ui_employee_export_success());
 }
 
 function getStatusLabel(s: string): string {

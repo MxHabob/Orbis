@@ -134,7 +134,7 @@ async function handleGridAction(event: GridActionEvent) {
       />
       <Input
         type="text"
-        placeholder="Search currencies..."
+        placeholder={m.settings_ui_currency_search_placeholder()}
         bind:value={searchQuery}
         class="h-8 ps-8 text-xs bg-card border-border/60"
       />

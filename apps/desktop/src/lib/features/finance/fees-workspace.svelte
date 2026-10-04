@@ -292,7 +292,7 @@ function exportCsv() {
     f.status_display,
   ]);
   const csv = [
-    ["Student", "Fee Item", "Net Amount", "Paid Amount", "Balance Due", "Currency", "Due Date", "Status"],
+    [m.finance_ui_student_name(), m.finance_ui_fee_item(), m.finance_ui_net_amount(), m.finance_ui_paid_amount(), m.finance_ui_balance_due(), m.finance_ui_currency(), m.finance_ui_due_date(), m.finance_ui_status()],
     ...rows,
   ]
     .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))

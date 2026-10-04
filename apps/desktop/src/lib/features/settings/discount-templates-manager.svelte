@@ -54,11 +54,11 @@ function getFormattedValue(tpl: any): string {
 
 function getTypeLabel(typeStr: string): string {
   const t = String(typeStr).toLowerCase();
-  if (t === "percentage") return "نسبة مئوية (%)";
-  if (t === "fixed_amount") return "مبلغ ثابت";
-  if (t === "manual") return "Manual";
-  if (t === "scholarship") return "Scholarship";
-  if (t === "system") return "System";
+  if (t === "percentage") return m.settings_ui_discount_type_percentage();
+  if (t === "fixed_amount") return m.settings_ui_discount_type_fixed();
+  if (t === "manual") return m.settings_ui_discount_source_manual();
+  if (t === "scholarship") return m.settings_ui_discount_source_scholarship();
+  if (t === "system") return m.settings_ui_system();
   return typeStr;
 }
 
@@ -111,7 +111,7 @@ async function handleGridAction(event: GridActionEvent) {
   } else if (event.actionId === "delete") {
     const templateName = row.name_ar || row.name || "";
     const confirmed = await confirmStore.prompt({
-      title: `${m.common_action_delete()}؟`,
+      title: m.common_action_delete(),
       description: `${m.common_action_delete()} "${templateName}"?`,
       confirmText: m.common_action_delete(),
       variant: "destructive",

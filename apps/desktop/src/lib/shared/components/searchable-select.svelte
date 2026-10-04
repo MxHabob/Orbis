@@ -232,7 +232,7 @@ function handleCreateClick(e: MouseEvent) {
           onclick={handleCreateClick}
         >
           <Plus size={12} />
-          <span>{createLabel || "إضافة جديد..."}</span>
+          <span>{createLabel || m.shared_ui_add_new()}</span>
         </Button>
       </div>
     {/if}

@@ -105,7 +105,7 @@ Allows administrators to manage academic periods, terms, semesters, and locking 
     const confirmed = await confirmStore.prompt({
       title: m.ui_copy_activate_period_03ace2fa(),
       description: l(
-        "سيتم فتح إدخال الدرجات والتسجيل للفترة المختارة.",
+        m.settings_ui_period_open_confirm(),
         "Grade entry and enrollment will be enabled for this period.",
       ),
       confirmText: m.ui_copy_activate_c2b12d71(),
@@ -129,7 +129,7 @@ Allows administrators to manage academic periods, terms, semesters, and locking 
     const confirmed = await confirmStore.prompt({
       title: m.ui_copy_lock_close_period_57387762(),
       description: l(
-        "سيتم قفل إدخال الدرجات وتجميد العمليات الأكاديمية لهذه الفترة.",
+        m.settings_ui_period_close_confirm(),
         "Grade entry, attendance, and enrollments will be locked for this period.",
       ),
       confirmText: m.ui_copy_lock_period_54879736(),
@@ -151,7 +151,7 @@ Allows administrators to manage academic periods, terms, semesters, and locking 
 
   async function requestDelete(periodId: string) {
     const confirmed = await confirmStore.prompt({
-      title: m.common_action_delete() + "؟",
+      title: m.common_action_delete(),
       description: m.common_onboarding_delete_building_confirm(),
       confirmText: m.common_action_delete(),
       variant: "destructive",

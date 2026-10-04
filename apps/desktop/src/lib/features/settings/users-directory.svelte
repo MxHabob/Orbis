@@ -128,9 +128,9 @@ async function handleAction(event: GridActionEvent) {
     goto(localizeHref(`/${orgId}/settings/users/${user.id}`));
   } else if (event.actionId === "reset_password") {
     const confirmed = await confirmStore.prompt({
-      title: (m.settings_user_detail_btn_reset_pass()) + "؟",
+      title: m.settings_user_detail_btn_reset_pass(),
       description: l(
-        `هل أنت متأكد من إعادة توليد كلمة مرور مؤقتة للمستخدم (${user.full_name || user.email})؟`,
+        m.settings_ui_user_reset_password_confirm({ user: user.full_name || user.email }),
         `Are you sure you want to generate a new temporary password for ${user.full_name || user.email}?`
       ),
       confirmText: m.settings_user_detail_btn_reset_pass(),
@@ -148,8 +148,8 @@ async function handleAction(event: GridActionEvent) {
     }
   } else if (event.actionId === "delete") {
     const confirmed = await confirmStore.prompt({
-      title: m.common_action_delete() + "؟",
-      description: `Are you sure you want to delete ${user.full_name}?`,
+      title: m.common_action_delete(),
+      description: m.settings_ui_user_delete_confirm({ user: user.full_name }),
       confirmText: m.common_action_delete(),
       variant: "destructive",
     });
@@ -163,7 +163,7 @@ async function handleAction(event: GridActionEvent) {
           queryKey: ["users_paginated", orgId],
         });
         queryClient.removeQueries({ queryKey: ["user", orgId, user.id] });
-        toast.success("User deleted successfully");
+        toast.success(m.settings_ui_user_deleted());
         loadUsers();
       } catch (e) {
         toast.error((e as any)?.message || "Failed to delete user");
