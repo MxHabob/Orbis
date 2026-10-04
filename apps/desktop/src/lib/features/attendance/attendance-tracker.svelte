@@ -157,10 +157,10 @@ function handleExport() {
   const selectedClass = classes.find((c) => String(c.id) === selectedClassId);
   const className = selectedClass
     ? l(selectedClass.name_ar, selectedClass.name) || selectedClass.name
-    : "Class";
+    : m.operations_ui_class_fallback();
 
   exportToCsv(
-    `Attendance_${className}_${selectedDate}`,
+    m.operations_ui_attendance_export_filename({ className, date: selectedDate }),
     attendanceRows,
     [
       { header: m.operations_ui_student_number(), accessor: (r) => r.studentNumber },

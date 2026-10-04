@@ -6,7 +6,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { toast } from "@orbis/ui";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
-import { l } from "$lib/core/i18n";
+import { formatDate, l } from "$lib/core/i18n";
 import { Search, Refresh, ShieldCheck, UserPlus } from "@orbis/icons";
 
 import type { User, AccountProvisioningResultDto } from "$lib/api";
@@ -103,14 +103,14 @@ const columns: OrbisColumnDef[] = [
   { id: "email", prop: "email", header: m.common_word_email(), name: m.common_word_email(), width: 200, minWidth: 160, readonly: true, flex: 1.5 },
   { id: "phone", prop: "phone", header: m.common_bulk_col_phone(), name: m.common_bulk_col_phone(), width: 140, minWidth: 120, readonly: true, cellClass: "font-mono", flex: 1 },
   { id: "role", prop: "role", header: m.common_user_form_role(), name: m.common_user_form_role(), width: 110, minWidth: 100, readonly: true, align: "center", flex: 1 },
-  { id: "status", prop: "status", header: m.common_word_status(), name: "Status", width: 100, minWidth: 90, type: "badge", align: "center", readonly: true, flex: 0 },
-  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: "Created At", width: 130, minWidth: 120, readonly: true, cellClass: "font-mono text-xs text-muted-foreground", flex: 1 },
-  { id: "updated_at_display", prop: "updated_at_display", header: m.ui_copy_updated_at_ba0d0a9f(), name: "Updated At", width: 130, minWidth: 120, readonly: true, cellClass: "font-mono text-xs text-muted-foreground", flex: 1 },
+  { id: "status", prop: "status", header: m.common_word_status(), name: m.common_word_status(), width: 100, minWidth: 90, type: "badge", align: "center", readonly: true, flex: 0 },
+  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: m.ui_copy_created_at_01f6ea5f(), width: 130, minWidth: 120, readonly: true, cellClass: "font-mono text-xs text-muted-foreground", flex: 1 },
+  { id: "updated_at_display", prop: "updated_at_display", header: m.ui_copy_updated_at_ba0d0a9f(), name: m.ui_copy_updated_at_ba0d0a9f(), width: 130, minWidth: 120, readonly: true, cellClass: "font-mono text-xs text-muted-foreground", flex: 1 },
   {
     id: "actions",
     prop: "actions",
     header: m.common_je_col_actions(),
-    name: "Actions",
+    name: m.ui_copy_actions_c48127a5(),
     width: 120,
     minWidth: 110,
     type: "action",
@@ -143,7 +143,7 @@ async function handleAction(event: GridActionEvent) {
         credentialModalOpen = true;
         toast.success(m.employees_password_reset_success());
       } catch (e) {
-        toast.error((e as any)?.message || "Failed to reset password");
+        toast.error((e as any)?.message || m.settings_ui_user_reset_password_error());
       }
     }
   } else if (event.actionId === "delete") {
@@ -166,7 +166,7 @@ async function handleAction(event: GridActionEvent) {
         toast.success(m.settings_ui_user_deleted());
         loadUsers();
       } catch (e) {
-        toast.error((e as any)?.message || "Failed to delete user");
+        toast.error((e as any)?.message || m.settings_ui_user_delete_error());
       }
     }
   }
