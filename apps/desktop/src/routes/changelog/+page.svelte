@@ -142,16 +142,16 @@ onMount(() => {
       <div class="flex items-center gap-2">
         {#if updateResult.has_update}
           <span class="font-medium">
-            {isRTL
-              ? `يتوفر تحديث جديد (${updateResult.latest_version}) متاح للتحميل والترقية!`
-              : `New version ${updateResult.latest_version} is available!`}
+            {m.shared_ui_update_available({
+              version: updateResult.latest_version,
+            })}
           </span>
         {:else}
           <Check size={14} />
           <span>
-            {isRTL
-              ? `أنت تستخدم أحدث إصدار معتمد من النظام (${updateResult.current_version}).`
-              : `You are running the latest official release (v${updateResult.current_version}).`}
+            {m.shared_ui_latest_version_installed({
+              version: updateResult.current_version,
+            })}
           </span>
         {/if}
       </div>
@@ -223,9 +223,7 @@ onMount(() => {
           <span>Mulverse Autonomous Core</span>
         </div>
         <p class="leading-relaxed">
-          {isRTL
-            ? "نظام مبني على نواة Rust وSQLite المحلية لضمان السيادة الرقمية والسرعة الفائقة."
-            : "Engineered on Rust & SQLite for native speed and complete institutional sovereignty."}
+          {m.shared_ui_product_technology_description()}
         </p>
       </div>
     </aside>
@@ -262,11 +260,11 @@ onMount(() => {
           <div class="flex items-center gap-4 text-xs text-muted-foreground font-mono">
             <span class="flex items-center gap-1">
               <Calendar size={12} />
-              <span>Released: {activeRelease.release_date}</span>
+              <span>{m.shared_ui_release_date({ date: activeRelease.release_date })}</span>
             </span>
             <span class="flex items-center gap-1">
               <Tag size={12} />
-              <span>Target: Autonomous Node</span>
+              <span>{m.shared_ui_target_autonomous_node()}</span>
             </span>
           </div>
         </div>

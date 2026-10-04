@@ -194,9 +194,7 @@ async function handleProvisionDefaults() {
         {m.ui_onboarding_progress_institution_setup_readiness()}
       </h1>
       <p class="text-xs text-muted-foreground mt-1">
-        {isArabic
-          ? "إكمال متطلبات التهيئة والتكوين الأساسي للمؤسسة قبل انطلاق العمليات التشغيلية."
-          : "Complete initial configuration requirements to prepare your institution for daily operations."}
+        {m.shared_ui_onboarding_intro()}
       </p>
     </div>
 
@@ -236,9 +234,10 @@ async function handleProvisionDefaults() {
             </span>
           </div>
           <p class="text-xs text-muted-foreground">
-            {isArabic
-              ? `تم إنجاز ${state?.completed_tasks ?? 0} من أصل ${state?.total_tasks ?? 0} مهمة إعداد.`
-              : `${state?.completed_tasks ?? 0} of ${state?.total_tasks ?? 0} setup tasks completed.`}
+            {m.shared_ui_onboarding_tasks_completed({
+              completed: state?.completed_tasks ?? 0,
+              total: state?.total_tasks ?? 0,
+            })}
           </p>
         </div>
 
@@ -462,8 +461,7 @@ async function handleProvisionDefaults() {
       </DialogTitle>
       <DialogDescription class="text-xs">
         {isArabic
-          ? "إنشاء العام الدراسي، الفصول، المواد، واللائحة التقييمية الافتراضية بنقرة واحدة."
-          : "Generate starter academic year, periods, subjects, and assessment schemes."}
+          {m.shared_ui_provision_defaults_description()}
       </DialogDescription>
     </DialogHeader>
 
@@ -482,7 +480,7 @@ async function handleProvisionDefaults() {
           <Input
             id="prov-year-name"
             type="text"
-            placeholder="e.g. 2026-2027"
+            placeholder={m.shared_ui_example_academic_year()}
             bind:value={provYearName}
             class="h-9 text-xs"
           />
@@ -494,7 +492,7 @@ async function handleProvisionDefaults() {
           <Input
             id="prov-year-name-ar"
             type="text"
-            placeholder="مثال: 2026-2027"
+            placeholder={m.shared_ui_example_academic_year()}
             bind:value={provYearNameAr}
             class="h-9 text-xs"
           />

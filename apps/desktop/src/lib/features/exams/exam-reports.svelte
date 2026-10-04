@@ -65,51 +65,51 @@ const reportItems = $derived([
   {
     id: "timetable",
     title: m.common_exams_reports_timetable(),
-    desc: "كشف تفصيلي بمواعيد الاختبارات اليومية حسب الصفوف والمواد والفترات.",
+    desc: m.operations_ui_report_timetable_description(),
     icon: Calendar,
-    badge: "جدول الاختبارات",
+    badge: m.operations_ui_report_timetable_badge(),
   },
   {
     id: "seating_list",
     title: m.common_exams_reports_seating_list(),
-    desc: "قوائم أسماء الطلاب الموزعين على اللجان مع أرقام الجلوس والأرقام السرية.",
+    desc: m.operations_ui_report_seating_list_description(),
     icon: Hashtag,
-    badge: "أرقام الجلوس",
+    badge: m.operations_ui_report_seating_list_badge(),
   },
   {
     id: "hall_map",
     title: m.common_exams_reports_hall_map(),
-    desc: "توزيع القاعات والسعة الاستيعابية ومواقع الجلوس لكل لجنة امتحانية.",
+    desc: m.operations_ui_report_hall_map_description(),
     icon: Home,
-    badge: "توزيع القاعات",
+    badge: m.operations_ui_report_hall_map_badge(),
   },
   {
     id: "proctor_sheet",
     title: m.common_exams_reports_proctor_sheet(),
-    desc: "جدول توزيع المعلمين والملاحظين على اللجان والفترات الامتحانية اليومية.",
+    desc: m.operations_ui_report_proctor_sheet_description(),
     icon: UserBadgeCheck,
-    badge: "الملاحظين",
+    badge: m.operations_ui_report_proctor_sheet_badge(),
   },
   {
     id: "student_cards",
     title: m.common_exams_reports_student_cards(),
-    desc: "بطاقات تعريفية رسمية تحتوي على رقم الجلوس واللجنة والقاعة الامتحانية.",
+    desc: m.operations_ui_report_student_cards_description(),
     icon: Document,
-    badge: "بطاقات الجلوس",
+    badge: m.operations_ui_report_student_cards_badge(),
   },
   {
     id: "attendance",
     title: m.common_exams_reports_attendance(),
-    desc: "محاضر التحضير والتوقيع اليومي للطلاب داخل اللجان أثناء سير الامتحان.",
+    desc: m.operations_ui_report_attendance_description(),
     icon: ClipboardCheck,
-    badge: "كشوف الحضور",
+    badge: m.operations_ui_report_attendance_badge(),
   },
   {
     id: "summary",
     title: m.common_exams_reports_summary(),
-    desc: "الشيت المعتمد لرصد درجات الاختبارات الشفهية والتحريرية ونتيجة الكنترول.",
+    desc: m.operations_ui_report_summary_description(),
     icon: ChartBar,
-    badge: "شيت الدرجات",
+    badge: m.operations_ui_report_summary_badge(),
   },
 ]);
 
@@ -120,19 +120,19 @@ const selectedReport = $derived(
 // Dynamic Real KPI Stats
 const kpiStats = $derived([
   {
-    label: "قوالب النظام المسجلة",
+    label: m.operations_ui_registered_system_templates(),
     value: documentTemplates.length,
   },
   {
-    label: "الدورات المتاحة",
+    label: m.operations_ui_available_exam_sessions(),
     value: examSessions.length,
   },
   {
-    label: "حالة المطبعة",
-    value: documentTemplates.length > 0 ? "متصل" : "بانتظار قالب",
+    label: m.operations_ui_print_center_status(),
+    value: documentTemplates.length > 0 ? m.operations_ui_connected() : m.operations_ui_waiting_for_template(),
   },
   {
-    label: "صيغة التصدير",
+    label: m.operations_ui_export_format(),
     value: "PDF / Excel",
   },
 ]);
@@ -144,13 +144,13 @@ const advisorInsights = $derived.by(() => {
   if (documentTemplates.length > 0) {
     insights.push({
       id: "templates-ok",
-      text: `تم العثور على (${documentTemplates.length}) قالب مصمم ومحفوظ في مصمم قوالب النظام.`,
+      text: m.operations_ui_templates_found({ count: documentTemplates.length }),
       variant: "success" as const,
     });
   } else {
     insights.push({
       id: "templates-none",
-      text: "يمكنك إنشاء وتخصيص قوالب الطباعة والشيتات عبر مصمم القوالب في النظام.",
+      text: m.operations_ui_templates_not_found_tip(),
       variant: "neutral" as const,
     });
   }
@@ -158,8 +158,8 @@ const advisorInsights = $derived.by(() => {
   insights.push({
     id: "lock-state",
     text: isGradeEntryOpen
-      ? "باب الدرجات مفتوح للمعلمين. يفضل إغلاقه قبل طباعة الشيتات النهائية."
-      : "باب الدرجات مغلق ومحمي بواسطة الكنترول للطباعة الرسمية.",
+      ? m.operations_ui_grade_entry_open_warning()
+      : m.operations_ui_grade_entry_closed_notice(),
     variant: isGradeEntryOpen ? ("warning" as const) : ("success" as const),
   });
 
@@ -168,7 +168,7 @@ const advisorInsights = $derived.by(() => {
 
 function handleSelectReport(id: string) {
   selectedReportId = id;
-  toast.info(`تم اختيار تقرير: ${reportItems.find((r) => r.id === id)?.title}`);
+  toast.info(m.operations_ui_report_selected({ title: reportItems.find((r) => r.id === id)?.title ?? "" }));
 }
 
 function handlePrint() {
@@ -186,10 +186,10 @@ function handlePrint() {
       </div>
       <div class="flex flex-col">
         <h2 class="text-xs font-bold text-foreground tracking-wide uppercase">
-          مركز التقارير والمطبعة الامتحانية
+          {m.operations_ui_exam_reports_center_title()}
         </h2>
         <span class="text-[9.5px] text-muted-foreground/90 mt-0.5">
-          معاينة وتصدير وطباعة كشوفات أرقام الجلوس، المناداة، والبطاقات الرسمية
+          {m.operations_ui_exam_reports_center_description()}
         </span>
       </div>
     </div>
@@ -217,7 +217,7 @@ function handlePrint() {
         class="text-[10px] font-bold px-3 h-7.5 rounded-md gap-1.5 cursor-pointer ms-2 border-border/60"
       >
         <DocumentPage size={13} class="text-primary" />
-        <span>مصمم القوالب في النظام</span>
+        <span>{m.operations_ui_system_template_designer()}</span>
       </Button>
 
       <Button 
@@ -227,7 +227,7 @@ function handlePrint() {
         onclick={handlePrint}
       >
         <Printer size={13} />
-        <span>طباعة التقرير</span>
+        <span>{m.operations_ui_print_report()}</span>
       </Button>
     </div>
   </div>
@@ -249,7 +249,7 @@ function handlePrint() {
   {:else if error}
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
       <InfoCircle size={24} />
-      <h3 class="font-semibold text-xs">تعذر تحميل بيانات التقارير</h3>
+      <h3 class="font-semibold text-xs">{m.operations_ui_report_data_load_error()}</h3>
       <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
     </div>
   {:else}
@@ -259,7 +259,7 @@ function handlePrint() {
       <!-- 1. LEFT COLUMN: Directory Index List (Notion Database style) -->
       <div class="lg:col-span-7 xl:col-span-8 flex flex-col">
         <h3 class="text-[10px] font-bold text-muted-foreground/80 tracking-wider uppercase mb-3 text-start">
-          دليل تقارير وكشوفات الامتحانات الرسمية
+          {m.operations_ui_exam_reports_guide_title()}
         </h3>
         
         <div class="flex flex-col">
@@ -310,7 +310,7 @@ function handlePrint() {
         <!-- Sidebar Section: Selected Report Details & Action -->
         <div>
           <h4 class="text-[9.5px] font-bold text-muted-foreground/80 tracking-wider uppercase border-b border-border/30 pb-2 mb-3">
-            المعاينة الحالية والطباعة
+            {m.operations_ui_current_preview_and_print()}
           </h4>
           
           <div class="flex flex-col gap-3 bg-card/40 border border-border/40 p-4 rounded-xl text-start">
@@ -336,7 +336,7 @@ function handlePrint() {
                 onclick={handlePrint}
               >
                 <Printer size={14} />
-                <span>طباعة التقرير الآن</span>
+                <span>{m.operations_ui_print_report_now()}</span>
               </Button>
             </div>
           </div>
@@ -345,7 +345,7 @@ function handlePrint() {
         <!-- Sidebar Section: KPI Summary -->
         <div>
           <h4 class="text-[9.5px] font-bold text-muted-foreground/80 tracking-wider uppercase border-b border-border/30 pb-2 mb-3">
-            مؤشرات المطبعة وقوالب النظام
+            {m.operations_ui_print_center_indicators()}
           </h4>
           
           <div class="grid grid-cols-2 gap-4 pb-4 border-b border-border/30">
@@ -362,7 +362,7 @@ function handlePrint() {
         <div class="flex flex-col gap-3">
           <div class="flex items-center gap-2 text-foreground font-semibold text-[11px] pb-1">
             <Sparkles size={13} class="text-primary animate-pulse" />
-            <span>تشخيص المساعد (Orbis Advisor)</span>
+            <span>{m.operations_ui_advisor_diagnostics()}</span>
           </div>
           
           <div class="flex flex-col gap-2.5">
@@ -393,7 +393,7 @@ function handlePrint() {
             href={localizeHref(`/${orgId}/templates`)}
             class="text-primary font-bold hover:underline flex items-center gap-1"
           >
-            <span>مصمم قوالب النظام</span>
+            <span>{m.operations_ui_system_template_designer()}</span>
             <ArrowRight size={10} class="rtl:rotate-180" />
           </a>
           <span class="font-mono">System Templates Connected</span>

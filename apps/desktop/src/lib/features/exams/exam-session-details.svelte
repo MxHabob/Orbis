@@ -403,7 +403,7 @@ async function handleApplySolve() {
 
 async function handleDeleteSchedule(scheduleId: string) {
   const confirmed = await confirmStore.prompt({
-    title: m.common_action_delete() + "؟",
+    title: m.operations_ui_delete_question_title(),
     description: m.academics_exams_sessions_sessionId_are_you_sure_you_want(),
     confirmText: m.common_action_delete(),
     variant: "destructive",
@@ -737,7 +737,7 @@ async function handleAssignProctors() {
 															type="button" 
 															class="text-muted-foreground hover:text-foreground p-1 rounded transition-colors duration-150 cursor-pointer"
 															onclick={() => handleToggleScheduleStatus(sched)}
-															title={sched.status === "cancelled" ? "إعادة تفعيل الامتحان" : "إلغاء تفعيل الامتحان"}
+															title={sched.status === "cancelled" ? m.operations_ui_reactivate_exam() : m.operations_ui_deactivate_exam()}
 														>
 															{#if sched.status === "cancelled"}
 																<CheckCircle size={12} class="text-emerald-500 hover:text-emerald-600" />
@@ -749,7 +749,7 @@ async function handleAssignProctors() {
 															type="button" 
 															class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors duration-150 cursor-pointer"
 															onclick={() => handleDeleteSchedule(sched.id)}
-															title="حذف الامتحان نهائياً"
+															title={m.operations_ui_delete_exam_permanently()}
 														>
 															<Trash size={12} />
 														</button>
@@ -792,7 +792,7 @@ async function handleAssignProctors() {
 															type="button" 
 															class="text-muted-foreground hover:text-foreground p-1 rounded transition-colors duration-150 cursor-pointer"
 															onclick={() => handleToggleScheduleStatus(sched)}
-															title={sched.status === "cancelled" ? "إعادة تفعيل الامتحان" : "إلغاء تفعيل الامتحان"}
+															title={sched.status === "cancelled" ? m.operations_ui_reactivate_exam() : m.operations_ui_deactivate_exam()}
 														>
 															{#if sched.status === "cancelled"}
 																<CheckCircle size={12} class="text-emerald-500 hover:text-emerald-600" />
@@ -804,7 +804,7 @@ async function handleAssignProctors() {
 															type="button" 
 															class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors duration-150 cursor-pointer"
 															onclick={() => handleDeleteSchedule(sched.id)}
-															title="حذف الامتحان نهائياً"
+															title={m.operations_ui_delete_exam_permanently()}
 														>
 															<Trash size={12} />
 														</button>
@@ -886,7 +886,7 @@ async function handleAssignProctors() {
 													type="button"
 													class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer"
 													onclick={() => handleDeleteSeating(sn.id)}
-													title="حذف رقم الجلوس"
+													title={m.operations_ui_delete_seating_number()}
 												>
 													<Trash size={12} />
 												</button>
@@ -906,7 +906,7 @@ async function handleAssignProctors() {
 						<span>{m.academics_exams_activated()}{halls.length}{m.academics_exams_committees_out_of()}{rooms.length}{m.academics_exams_available_classrooms_suffix()}</span>
 						<Button variant="outline" class="h-6 px-2 text-[9px] cursor-pointer" onclick={() => { activeConfigTab = "halls"; isConfigModalOpen = true; }}>
 							<ArrowsRightLeft size={10} class="me-1" />
-							توزيع الطلاب تلقائياً
+							{m.operations_ui_distribute_students_automatically()}
 						</Button>
 					</div>
 
@@ -929,7 +929,7 @@ async function handleAssignProctors() {
 											{/if}
 										</div>
 										<span class="text-[9px] font-mono px-1.5 py-0.5 rounded {isAct ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-muted text-muted-foreground border border-border/40'}">
-											{isAct ? "لجنة نشطة" : "غير مفعلة"}
+											{isAct ? m.operations_ui_active_committee() : m.operations_ui_inactive()}
 										</span>
 									</div>
 
@@ -956,7 +956,7 @@ async function handleAssignProctors() {
 												onclick={() => handleToggleHall(room)}
 											>
 												<Plus size={10} class="me-1" />
-												تفعيل كلجنة
+												{m.operations_ui_activate_as_committee()}
 											</Button>
 										</div>
 									{/if}
@@ -1008,7 +1008,7 @@ async function handleAssignProctors() {
 													type="button"
 													class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer"
 													onclick={() => handleDeleteProctor(p.id)}
-													title="إلغاء تكليف المراقب"
+													title={m.operations_ui_cancel_proctor_assignment()}
 												>
 													<Trash size={12} />
 												</button>
@@ -1041,20 +1041,20 @@ async function handleAssignProctors() {
 					<div>
 						<h4 class="text-xs font-bold flex items-center gap-1.5">
 							{#if activeJob.status === 'running'}
-								جاري تحسين وجدولة الامتحانات تلقائياً...
+								{m.operations_ui_auto_schedule_optimizing()}
 							{:else if activeJob.status === 'completed'}
-								اكتمل التحسين والجدولة التلقائية بنجاح!
+								{m.operations_ui_auto_schedule_success()}
 							{:else if activeJob.status === 'failed'}
-								فشلت عملية التحسين والجدولة.
+								{m.operations_ui_auto_schedule_failure()}
 							{:else}
-								تم إلغاء الجدولة التلقائية.
+								{m.operations_ui_auto_schedule_cancelled()}
 							{/if}
 						</h4>
 						<p class="text-[10px] text-muted-foreground mt-0.5 font-mono">
 							{#if activeJob.status === 'running'}
-								الوقت المنقضي: {timeElapsed} ثانية | النتيجة الحالية: {activeJob.score || '—'}
+								{m.operations_ui_scheduling_elapsed_score({ elapsed: timeElapsed, score: activeJob.score || "—" })}
 							{:else if activeJob.status === 'completed'}
-								النتيجة النهائية: {activeJob.score || '—'}
+								{m.operations_ui_scheduling_final_score({ score: activeJob.score || "—" })}
 							{/if}
 						</p>
 					</div>
@@ -1062,14 +1062,14 @@ async function handleAssignProctors() {
 				<div class="flex items-center gap-2">
 					{#if activeJob.status === 'running'}
 						<Button size="sm" variant="destructive" class="h-8 text-[10px] px-3 font-bold cursor-pointer" onclick={handleCancelSolve}>
-							إلغاء العملية
+							{m.operations_ui_cancel_operation()}
 						</Button>
 					{:else if activeJob.status === 'completed'}
 						<Button size="sm" variant={previewDraft ? "secondary" : "outline"} class="h-8 text-[10px] px-3 font-bold cursor-pointer" onclick={() => previewDraft = !previewDraft}>
-							{previewDraft ? "إلغاء المعاينة" : "معاينة الجدول المقترح"}
+							{previewDraft ? m.operations_ui_cancel_preview() : m.operations_ui_preview_proposed_schedule()}
 						</Button>
 						<Button size="sm" variant="default" class="h-8 text-[10px] px-3 font-bold cursor-pointer" onclick={handleApplySolve}>
-							تطبيق الجدول المقترح
+							{m.operations_ui_apply_proposed_schedule()}
 						</Button>
 					{/if}
 				</div>
@@ -1080,16 +1080,16 @@ async function handleAssignProctors() {
 		<div class="border-t border-border pt-4 flex flex-wrap items-center gap-2" in:fade={{ delay: 150, duration: 200 }}>
 			<span class="text-[9px] text-muted-foreground font-bold uppercase tracking-wider me-2">{m.academics_exams_quick_actions()}</span>
 			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={handleGenerateSeating}>
-				<Hashtag size={10} /> أرقام الجلوس
+				<Hashtag size={10} /> {m.operations_ui_seating_numbers()}
 			</Button>
 			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={handleGenerateSecrets}>
-				<Lock size={10} /> الأرقام السرية
+				<Lock size={10} /> {m.operations_ui_secret_numbers()}
 			</Button>
 			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={() => { activeConfigTab = "schedule"; isConfigModalOpen = true; }}>
-				<Bolt size={10} /> جدولة تلقائية
+				<Bolt size={10} /> {m.operations_ui_automatic_scheduling()}
 			</Button>
 			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={() => { activeConfigTab = "halls"; isConfigModalOpen = true; }}>
-				<ArrowsRightLeft size={10} /> توزيع اللجان
+				<ArrowsRightLeft size={10} /> {m.operations_ui_committee_distribution()}
 			</Button>
 		</div>
 	{/if}
@@ -1127,7 +1127,7 @@ async function handleAssignProctors() {
 						{activeConfigTab === 'schedule' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
 					onclick={() => activeConfigTab = "schedule"}
 				>
-					🗓️ جدولة الفترات
+					🗓️ {m.operations_ui_schedule_periods()}
 				</button>
 				<button 
 					type="button" 
@@ -1135,7 +1135,7 @@ async function handleAssignProctors() {
 						{activeConfigTab === 'halls' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
 					onclick={() => activeConfigTab = "halls"}
 				>
-					🏫 توزيع اللجان والطلاب
+					🏫 {m.operations_ui_distribute_committees_students()}
 				</button>
 				<button 
 					type="button" 
@@ -1143,7 +1143,7 @@ async function handleAssignProctors() {
 						{activeConfigTab === 'proctors' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
 					onclick={() => activeConfigTab = "proctors"}
 				>
-					👮 تعيين المراقبين
+					👮 {m.operations_ui_assign_proctors()}
 				</button>
 			</div>
 
@@ -1190,7 +1190,7 @@ async function handleAssignProctors() {
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
 						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAutoSchedule(); }}>
-							<Bolt size={12} class="me-1" /> بدء الجدولة الذكية
+							<Bolt size={12} class="me-1" /> {m.operations_ui_start_smart_scheduling()}
 						</Button>
 					</div>
 
@@ -1225,7 +1225,7 @@ async function handleAssignProctors() {
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
 						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAllocateHalls(); }}>
-							<ArrowsRightLeft size={12} class="me-1" /> بدء التوزيع التلقائي
+							<ArrowsRightLeft size={12} class="me-1" /> {m.operations_ui_start_automatic_distribution()}
 						</Button>
 					</div>
 
@@ -1267,7 +1267,7 @@ async function handleAssignProctors() {
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
 						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAssignProctors(); }}>
-							<UserBadgeCheck size={12} class="me-1" /> تعيين المراقبين تلقائياً
+							<UserBadgeCheck size={12} class="me-1" /> {m.operations_ui_assign_proctors_automatically()}
 						</Button>
 					</div>
 				{/if}

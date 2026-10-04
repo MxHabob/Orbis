@@ -32,12 +32,12 @@ let {
 } = $props();
 
 const supportedLocales: LocaleOption[] = [
-  { code: "ar", name: "Arabic", nativeName: "العربية", flag: "🌐", region: "اللغة الرسمية للنظام" },
+  { code: "ar", name: "Arabic", nativeName: "العربية", flag: "🌐", region: m.shared_ui_official_system_language() },
   { code: "en", name: "English", nativeName: "English", flag: "🌐", region: "International" },
-  { code: "ar-YE", name: "Arabic (Yemen)", nativeName: "العربية (اليمن)", flag: "🇾🇪", region: "الجمهورية اليمنية" },
-  { code: "ar-SA", name: "Arabic (Saudi Arabia)", nativeName: "العربية (السعودية)", flag: "🇸🇦", region: "المملكة العربية السعودية" },
-  { code: "ar-EG", name: "Arabic (Egypt)", nativeName: "العربية (مصر)", flag: "🇪🇬", region: "جمهورية مصر العربية" },
-  { code: "ar-AE", name: "Arabic (UAE)", nativeName: "العربية (الإمارات)", flag: "🇦🇪", region: "دولة الإمارات العربية المتحدة" },
+  { code: "ar-YE", name: "Arabic (Yemen)", nativeName: "العربية (اليمن)", flag: "🇾🇪", region: m.shared_ui_country_yemen() },
+  { code: "ar-SA", name: "Arabic (Saudi Arabia)", nativeName: "العربية (السعودية)", flag: "🇸🇦", region: m.shared_ui_country_saudi_arabia() },
+  { code: "ar-EG", name: "Arabic (Egypt)", nativeName: "العربية (مصر)", flag: "🇪🇬", region: m.shared_ui_country_egypt() },
+  { code: "ar-AE", name: "Arabic (UAE)", nativeName: "العربية (الإمارات)", flag: "🇦🇪", region: m.shared_ui_country_united_arab_emirates() },
   { code: "en-US", name: "English (United States)", nativeName: "English (US)", flag: "🇺🇸", region: "United States" },
   { code: "en-GB", name: "English (United Kingdom)", nativeName: "English (UK)", flag: "🇬🇧", region: "United Kingdom" },
 ];
