@@ -595,7 +595,7 @@ function handleFormSave() {
             </Label>
             <Input
               bind:value={studentNumberPrefix}
-              placeholder="e.g. STU"
+              placeholder={m.settings_ui_student_number_prefix_example()}
               class="h-9 text-xs font-mono uppercase"
             />
           </div>

@@ -32,16 +32,16 @@ const tools: {
   label: string;
   draggable: boolean;
 }[] = [
-  { id: "select", icon: CursorArrowRays, label: "Select", draggable: false },
-  { id: "text", icon: H1, label: "Text", draggable: true },
-  { id: "image", icon: Photo, label: "Image", draggable: true },
-  { id: "shape", icon: CheckBox, label: "Shape", draggable: true },
-  { id: "frame", icon: Grid, label: "Frame", draggable: true },
-  { id: "table", icon: Grid, label: "Table", draggable: true },
-  { id: "barcode", icon: Hashtag, label: "Barcode", draggable: true },
-  { id: "qrcode", icon: CheckSquare, label: "QR Code", draggable: true },
-  { id: "separator", icon: Minus, label: "Separator", draggable: true },
-  { id: "pan", icon: Wrench, label: "Pan", draggable: false },
+  { id: "select", icon: CursorArrowRays, label: m.shared_ui_tool_select(), draggable: false },
+  { id: "text", icon: H1, label: m.shared_ui_tool_text(), draggable: true },
+  { id: "image", icon: Photo, label: m.shared_ui_tool_image(), draggable: true },
+  { id: "shape", icon: CheckBox, label: m.shared_ui_tool_shape(), draggable: true },
+  { id: "frame", icon: Grid, label: m.shared_ui_tool_frame(), draggable: true },
+  { id: "table", icon: Grid, label: m.shared_ui_tool_table(), draggable: true },
+  { id: "barcode", icon: Hashtag, label: m.shared_ui_tool_barcode(), draggable: true },
+  { id: "qrcode", icon: CheckSquare, label: m.shared_ui_tool_qr_code(), draggable: true },
+  { id: "separator", icon: Minus, label: m.shared_ui_tool_separator(), draggable: true },
+  { id: "pan", icon: Wrench, label: m.shared_ui_tool_pan(), draggable: false },
 ];
 
 function selectTool(id: EditorTool) {
@@ -96,12 +96,12 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
     <!-- Alignment Tools -->
     <div class="flex items-center gap-0.5">
       {#each [
-        { icon: AlignHorizontal, action: "left", label: "Align Left" },
-        { icon: AlignHorizontal, action: "center", label: "Align Center" },
-        { icon: AlignHorizontal, action: "right", label: "Align Right" },
-        { icon: AlignVertical, action: "top", label: "Align Top" },
-        { icon: AlignVertical, action: "middle", label: "Align Middle" },
-        { icon: AlignVertical, action: "bottom", label: "Align Bottom" },
+        { icon: AlignHorizontal, action: "left", label: m.shared_ui_align_left() },
+        { icon: AlignHorizontal, action: "center", label: m.shared_ui_align_center() },
+        { icon: AlignHorizontal, action: "right", label: m.shared_ui_align_right() },
+        { icon: AlignVertical, action: "top", label: m.shared_ui_align_top() },
+        { icon: AlignVertical, action: "middle", label: m.shared_ui_align_middle() },
+        { icon: AlignVertical, action: "bottom", label: m.shared_ui_align_bottom() },
       ] as item (item.action)}
         {@const ItemIcon = item.icon}
         <Tooltip>
@@ -130,7 +130,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
             <Clipboard size={13} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Duplicate (Ctrl+D)</TooltipContent>
+        <TooltipContent>{m.shared_ui_duplicate_shortcut()}</TooltipContent>
       </Tooltip>
 
       <Tooltip>
@@ -139,7 +139,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
             <Trash size={13} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Delete (Del)</TooltipContent>
+        <TooltipContent>{m.shared_ui_delete_shortcut()}</TooltipContent>
       </Tooltip>
     </div>
 
@@ -153,7 +153,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
             <UndoAction size={14} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
+        <TooltipContent>{m.shared_ui_undo_shortcut()}</TooltipContent>
       </Tooltip>
 
       <Tooltip>
@@ -162,7 +162,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
             <ArrowForward size={14} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Redo (Ctrl+Y)</TooltipContent>
+        <TooltipContent>{m.shared_ui_redo_shortcut()}</TooltipContent>
       </Tooltip>
     </div>
 
@@ -177,7 +177,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
             <Grid size={13} class={store.gridVisible ? "text-primary" : ""} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Grid</TooltipContent>
+        <TooltipContent>{m.shared_ui_grid()}</TooltipContent>
       </Tooltip>
 
       <Tooltip>
@@ -186,7 +186,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
             <AdjustmentsHorizontal size={13} class={store.rulersVisible ? "text-primary" : ""} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Rulers</TooltipContent>
+        <TooltipContent>{m.shared_ui_rulers()}</TooltipContent>
       </Tooltip>
 
       <Separator orientation="vertical" class="h-6 mx-1" />
@@ -212,11 +212,11 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
     <div class="flex items-center gap-1 shrink-0">
       <Button variant="outline" size="xs" class="cursor-pointer" onclick={onpreview}>
         <Eye size={13} class="me-1" />
-        Preview
+        {m.shared_ui_preview()}
       </Button>
       <Button variant="lime" size="xs" class="cursor-pointer" onclick={onsave} disabled={!store.isDirty}>
         <FloppyDisk size={13} class="me-1" />
-        FloppyDisk
+        {m.common_action_save()}
       </Button>
     </div>
   </TooltipProvider>

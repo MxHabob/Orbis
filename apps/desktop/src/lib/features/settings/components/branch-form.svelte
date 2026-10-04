@@ -149,7 +149,7 @@ async function handleSubmit(e: SubmitEvent) {
         id="branch_name_en"
         type="text"
         bind:value={nameEn}
-        placeholder="e.g. Riyadh Main Campus"
+        placeholder={m.settings_ui_branch_name_example()}
         disabled={isSubmitting}
         class="h-9 text-sm"
       />

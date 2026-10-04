@@ -155,7 +155,7 @@ async function handleSubmit(e?: Event) {
           </Label>
           <Input
             id="docNameEn"
-            placeholder="e.g. Certified Birth Certificate"
+            placeholder={m.settings_ui_document_requirement_example()}
             bind:value={nameEn}
             class="h-9 text-xs font-mono"
             onblur={autoGenerateCode}

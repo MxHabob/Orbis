@@ -123,7 +123,7 @@ onMount(() => {
       <div class="w-72 border-r bg-card/30 flex flex-col shrink-0 overflow-y-auto">
         <div class="p-4 border-b bg-muted/20 flex items-center gap-2">
           <Printer class="h-4 w-4 text-muted-foreground" />
-          <h3 class="font-medium text-sm">المعاملات</h3>
+          <h3 class="font-medium text-sm">{m.operations_ui_report_parameters()}</h3>
         </div>
         
         <div class="p-4 flex flex-col gap-4">
@@ -148,7 +148,7 @@ onMount(() => {
           {/each}
           
           <Button class="w-full mt-2" size="sm" onclick={queryData}>
-            تنفيذ
+            {m.operations_ui_execute()}
           </Button>
         </div>
       </div>
@@ -159,9 +159,9 @@ onMount(() => {
       {#if error}
         <div class="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-background/50 backdrop-blur-sm z-10">
           <InfoCircle class="h-10 w-10 text-destructive mb-3" />
-          <h3 class="text-lg font-semibold">Error</h3>
+          <h3 class="text-lg font-semibold">{m.operations_ui_error()}</h3>
           <p class="text-sm text-muted-foreground max-w-md">{error}</p>
-          <Button variant="outline" class="mt-4" onclick={loadDefinition}>Retry</Button>
+          <Button variant="outline" class="mt-4" onclick={loadDefinition}>{m.operations_ui_retry()}</Button>
         </div>
       {/if}
 
@@ -177,7 +177,7 @@ onMount(() => {
       {:else if !isLoading && !error && definition}
         <div class="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
           <DocumentChartBar class="h-12 w-12 opacity-20 mb-3" />
-          <p class="text-sm">أدخل المعاملات ثم اضغط "تحديث" لعرض البيانات.</p>
+          <p class="text-sm">{m.operations_ui_report_enter_parameters_refresh()}</p>
         </div>
       {:else if isLoading && !dataset}
         <div class="absolute inset-0 flex items-center justify-center">

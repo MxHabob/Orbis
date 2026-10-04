@@ -56,7 +56,7 @@ async function handleExport() {
     toast.success(m.ui_copy_report_exported_successfully_566e1620());
     onOpenChange(false);
   } catch (e: any) {
-    toast.error(e.message || "Export failed");
+    toast.error(e.message || m.operations_ui_report_export_error());
   } finally {
     isExporting = false;
   }
