@@ -409,7 +409,7 @@ const error = $derived(
       {:else if error}
         <ErrorState
           title={m.academics_schedule_load_error()}
-          message={error instanceof Error ? error.message : "Error"}
+          message={error instanceof Error ? error.message : m.shared_ui_error()}
           onRetry={refetchSchedule}
         />
       {:else if timeSlots.length === 0}

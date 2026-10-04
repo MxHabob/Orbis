@@ -14,7 +14,7 @@ Usage:
     entityType="grade"
     entityId={gradeId}
     riskLevel="medium"
-    onSuccess={() => toast.success('Override submitted')}
+    onSuccess={() => toast.success(m.shared_ui_override_submitted())}
   />
 -->
 <script lang="ts">

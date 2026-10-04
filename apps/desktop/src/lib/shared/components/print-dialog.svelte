@@ -113,7 +113,7 @@ async function loadTemplates() {
       updateConfigFromTemplate(templates[0]);
     }
   } catch (e: unknown) {
-    const msg = (e as any)?.message || "Failed to load templates";
+    const msg = (e as any)?.message || m.shared_ui_print_templates_load_failed();
     console.error(msg);
   } finally {
     loadingTemplates = false;
@@ -233,7 +233,7 @@ async function generatePreview() {
       }
     }
   } catch (e: unknown) {
-    const msg = (e as any)?.message || "Failed to generate preview";
+    const msg = (e as any)?.message || m.shared_ui_print_preview_failed();
     toast.error(msg);
   } finally {
     generatingPdf = false;

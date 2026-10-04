@@ -115,7 +115,7 @@ async function handleSubmit(e: SubmitEvent) {
         payload.year_id ||
         (yearsList[0]?.id ? String(yearsList[0].id) : "");
       if (!selectedYearId) {
-        throw new Error("Academic Year is required for periods/terms.");
+        throw new Error(m.shared_ui_academic_year_required_for_period());
       }
       const periodReq = {
         year_id: selectedYearId,
