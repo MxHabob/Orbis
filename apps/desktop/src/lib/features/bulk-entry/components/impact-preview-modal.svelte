@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "$lib/paraglide/messages";
   import type { BulkPreviewSummary, StudentPreviewDetails, EmployeePreviewDetails, GradePreviewDetails } from "../types";
 
   interface Props {
@@ -22,8 +23,8 @@
       <!-- Header -->
       <div class="px-6 py-4 border-b border-border bg-muted/40 flex items-center justify-between">
         <div>
-          <h2 class="text-lg font-bold text-foreground">مراجعة أثر عملية الاستيراد قبل الاعتماد</h2>
-          <p class="text-xs text-muted-foreground mt-0.5">معاينة العمليات الحقيقية التي سيقوم النظام بإنشائها عبر مسارات Orbis الرسمية</p>
+          <h2 class="text-lg font-bold text-foreground">{m.bulk_entry_preview_title()}</h2>
+          <p class="text-xs text-muted-foreground mt-0.5">{m.bulk_entry_preview_description()}</p>
         </div>
         <button
           onclick={onclose}
@@ -38,21 +39,21 @@
         <!-- High-level Metric Cards -->
         <div class="grid grid-cols-3 gap-3">
           <div class="p-3.5 rounded-xl bg-primary/10 border border-primary/20 flex flex-col">
-            <span class="text-xs font-medium text-primary">إجمالي السجلات الصالحة</span>
+            <span class="text-xs font-medium text-primary">{m.bulk_entry_preview_valid_records()}</span>
             <span class="text-2xl font-black text-primary mt-1">{summary.validRowsCount}</span>
-            <span class="text-[11px] text-primary/80 mt-0.5">جاهزة للاعتماد والحفظ</span>
+            <span class="text-[11px] text-primary/80 mt-0.5">{m.bulk_entry_preview_ready()}</span>
           </div>
 
           <div class="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 flex flex-col">
-            <span class="text-xs font-medium text-destructive">السجلات غير الصالحة</span>
+            <span class="text-xs font-medium text-destructive">{m.bulk_entry_preview_invalid_records()}</span>
             <span class="text-2xl font-black text-destructive mt-1">{summary.errorRowsCount}</span>
-            <span class="text-[11px] text-destructive/80 mt-0.5">سيتم استثناؤها من الحفظ</span>
+            <span class="text-[11px] text-destructive/80 mt-0.5">{m.bulk_entry_preview_excluded()}</span>
           </div>
 
           <div class="p-3.5 rounded-xl bg-muted/60 border border-border flex flex-col">
-            <span class="text-xs font-medium text-muted-foreground">التنبيهات غير المانعة</span>
+            <span class="text-xs font-medium text-muted-foreground">{m.bulk_entry_preview_warnings()}</span>
             <span class="text-2xl font-black text-foreground mt-1">{summary.warningRowsCount}</span>
-            <span class="text-[11px] text-muted-foreground mt-0.5">تتطلب المراجعة فقط</span>
+            <span class="text-[11px] text-muted-foreground mt-0.5">{m.bulk_entry_preview_review_only()}</span>
           </div>
         </div>
 
@@ -61,27 +62,27 @@
           <div class="space-y-4">
             <h3 class="font-bold text-foreground flex items-center gap-2">
               <span class="h-2 w-2 rounded-full bg-primary"></span>
-              تفاصيل إنشاء وقيد الطلاب والالتزامات المالية
+              {m.bulk_entry_preview_students_section()}
             </h3>
             
             <div class="grid grid-cols-2 gap-3">
               <div class="p-3 rounded-lg bg-muted/40 border border-border/80">
-                <span class="text-xs text-muted-foreground block">سجلات الأشخاص والطلاب الجديدة</span>
-                <span class="text-base font-bold text-foreground mt-1 block">{studentDetails.studentsToCreate} طالب وطالبة</span>
+                <span class="text-xs text-muted-foreground block">{m.bulk_entry_preview_new_student_records()}</span>
+                <span class="text-base font-bold text-foreground mt-1 block">{m.bulk_entry_preview_student_count({ count: studentDetails.studentsToCreate })}</span>
               </div>
 
               <div class="p-3 rounded-lg bg-muted/40 border border-border/80">
-                <span class="text-xs text-muted-foreground block">أولياء الأمور المرتبطين</span>
-                <span class="text-base font-bold text-foreground mt-1 block">{studentDetails.guardiansToLink} ولي أمر</span>
+                <span class="text-xs text-muted-foreground block">{m.bulk_entry_preview_linked_guardians()}</span>
+                <span class="text-base font-bold text-foreground mt-1 block">{m.bulk_entry_preview_guardian_count({ count: studentDetails.guardiansToLink })}</span>
               </div>
 
               <div class="p-3 rounded-lg bg-muted/40 border border-border/80">
-                <span class="text-xs text-muted-foreground block">رسوم دراسية إلزامية مسندة آلياً</span>
-                <span class="text-base font-bold text-foreground mt-1 block">{studentDetails.mandatoryFeesAssignedCount} قسط ورسم</span>
+                <span class="text-xs text-muted-foreground block">{m.bulk_entry_preview_mandatory_fees()}</span>
+                <span class="text-base font-bold text-foreground mt-1 block">{m.bulk_entry_preview_fee_count({ count: studentDetails.mandatoryFeesAssignedCount })}</span>
               </div>
 
               <div class="p-3 rounded-lg bg-muted/40 border border-border/80">
-                <span class="text-xs text-muted-foreground block">إجمالي الذمم المدينة المتوقعة</span>
+                <span class="text-xs text-muted-foreground block">{m.bulk_entry_preview_estimated_receivables()}</span>
                 <span class="text-base font-bold text-primary mt-1 block">{studentDetails.totalEstimatedMandatoryFees.toLocaleString()} {studentDetails.currency}</span>
               </div>
             </div>
@@ -89,7 +90,7 @@
             <!-- Class Placement Distribution -->
             {#if Object.keys(studentDetails.classPlacementsSummary).length > 0}
               <div class="p-3.5 rounded-xl bg-muted/30 border border-border">
-                <span class="text-xs font-bold text-foreground block mb-2">توزيع الطلاب على الصفوف والشعب:</span>
+                <span class="text-xs font-bold text-foreground block mb-2">{m.bulk_entry_preview_class_distribution()}</span>
                 <div class="flex flex-wrap gap-2">
                   {#each Object.entries(studentDetails.classPlacementsSummary) as [className, count]}
                     <span class="px-2.5 py-1 rounded-md bg-card border border-border text-xs font-medium text-foreground flex items-center gap-1.5 shadow-xs">
@@ -108,18 +109,18 @@
           <div class="space-y-4">
             <h3 class="font-bold text-foreground flex items-center gap-2">
               <span class="h-2 w-2 rounded-full bg-primary"></span>
-              تفاصيل الكادر الوظيفي وحسابات الدخول
+              {m.bulk_entry_preview_employees_section()}
             </h3>
             
             <div class="grid grid-cols-2 gap-3">
               <div class="p-3 rounded-lg bg-muted/40 border border-border/80">
-                <span class="text-xs text-muted-foreground block">الموظفين الجدد</span>
-                <span class="text-base font-bold text-foreground mt-1 block">{employeeDetails.employeesToCreate} موظف</span>
+                <span class="text-xs text-muted-foreground block">{m.bulk_entry_preview_new_employees()}</span>
+                <span class="text-base font-bold text-foreground mt-1 block">{m.bulk_entry_preview_employee_count({ count: employeeDetails.employeesToCreate })}</span>
               </div>
 
               <div class="p-3 rounded-lg bg-muted/40 border border-border/80">
-                <span class="text-xs text-muted-foreground block">حسابات الدخول للنظام (CSPRNG)</span>
-                <span class="text-base font-bold text-primary mt-1 block">{employeeDetails.userAccountsToProvision} حساب دخول</span>
+                <span class="text-xs text-muted-foreground block">{m.bulk_entry_preview_user_accounts()}</span>
+                <span class="text-base font-bold text-primary mt-1 block">{m.bulk_entry_preview_account_count({ count: employeeDetails.userAccountsToProvision })}</span>
               </div>
             </div>
           </div>
@@ -130,17 +131,17 @@
           <div class="space-y-4">
             <h3 class="font-bold text-foreground flex items-center gap-2">
               <span class="h-2 w-2 rounded-full bg-primary"></span>
-              تفاصيل رصد الدرجات وحساب المعدلات
+              {m.bulk_entry_preview_grades_section()}
             </h3>
             
             <div class="grid grid-cols-2 gap-3">
               <div class="p-3 rounded-lg bg-muted/40 border border-border/80">
-                <span class="text-xs text-muted-foreground block">إجمالي الدرجات المرصودة</span>
-                <span class="text-base font-bold text-foreground mt-1 block">{gradeDetails.gradesToRecord} درجة</span>
+                <span class="text-xs text-muted-foreground block">{m.bulk_entry_preview_recorded_grades()}</span>
+                <span class="text-base font-bold text-foreground mt-1 block">{m.bulk_entry_preview_grade_count({ count: gradeDetails.gradesToRecord })}</span>
               </div>
 
               <div class="p-3 rounded-lg bg-muted/40 border border-border/80">
-                <span class="text-xs text-muted-foreground block">نوع التقييم الأكاديمي</span>
+                <span class="text-xs text-muted-foreground block">{m.bulk_entry_preview_assessment_type()}</span>
                 <span class="text-base font-bold text-primary mt-1 block">{gradeDetails.assessmentType}</span>
               </div>
             </div>
@@ -151,7 +152,7 @@
         <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs flex items-start gap-2.5">
           <span class="text-base leading-none mt-0.5">ℹ️</span>
           <span>
-            سيتم تنفيذ الحفظ كمعاملات ذرية مقطعة (Chunked Transactions). يتم تسجيل كل عملية استيراد مع تفاصيل التغييرات في سجل التدقيق غير القابل للتعديل (<code class="font-mono">audit_events</code>).
+            {m.bulk_entry_preview_audit_notice()}
           </span>
         </div>
       </div>
@@ -162,7 +163,7 @@
           onclick={onclose}
           class="px-4 py-2 rounded-xl border border-border text-foreground hover:bg-muted font-medium transition-colors"
         >
-          رجوع لتعديل البيانات
+          {m.bulk_entry_preview_back_to_edit()}
         </button>
 
         <button
@@ -170,7 +171,7 @@
           disabled={summary.validRowsCount === 0}
           class="px-6 py-2 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-md flex items-center gap-2"
         >
-          <span>تأكيد واعتماد الاستيراد ({summary.validRowsCount} سجل)</span>
+          <span>{m.bulk_entry_preview_confirm({ count: summary.validRowsCount })}</span>
           <span>◄</span>
         </button>
       </div>

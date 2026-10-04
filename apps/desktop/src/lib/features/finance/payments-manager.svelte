@@ -82,7 +82,7 @@ let filterDate = $state("");
 // Print
 let printDialogOpen = $state(false);
 let printParameters = $state<Record<string, any>>({});
-let printTitle = $state("طباعة سند القبض");
+let printTitle = $state(m.finance_ui_print_receipt());
 
 onMount(async () => {
   await loadData();
@@ -108,7 +108,7 @@ async function loadData() {
 
     students = (enrollmentsList || []).map((e: any) => ({
       id: String(e.id),
-      full_name: e.full_name || e.name_ar || e.name_en || e.student_number || `طالب #${e.id}`,
+      full_name: e.full_name || e.name_ar || e.name_en || e.student_number || m.finance_ui_student_number_fallback({ id: e.id }),
       student_number: e.student_number || "",
     }));
 
@@ -117,7 +117,7 @@ async function loadData() {
     }
   } catch (e) {
     console.error("Failed to load payments data:", e);
-    toast.error("فشل تحميل بيانات المقبوضات");
+    toast.error(m.finance_ui_payments_load_failed());
   } finally {
     isLoading = false;
   }
@@ -189,17 +189,17 @@ function clearForm() {
 
 async function handleSavePayment() {
   if (!selectedStudentId) {
-    toast.error("يرجى اختيار الطالب");
+    toast.error(m.finance_ui_student_required());
     return;
   }
   if (!selectedTreasuryId) {
-    toast.error("يرجى تحديد حساب الخزينة أو البنك");
+    toast.error(m.finance_ui_treasury_required());
     return;
   }
 
   const total = calculatedTotal;
   if (!total || total <= 0) {
-    toast.error("يرجى تحديد مبلغ صحيح للسند");
+    toast.error(m.finance_ui_payment_amount_invalid());
     return;
   }
 
@@ -236,13 +236,13 @@ async function handleSavePayment() {
       });
     }
 
-    toast.success("تم حفظ وترحيل سند القبض بنجاح");
+    toast.success(m.finance_ui_receipt_posted_success());
     clearForm();
     showAddForm = false;
     await loadData();
   } catch (err: any) {
     console.error("Failed to record payment:", err);
-    toast.error(extractErrorMessage(err) || "فشل تسجيل سند القبض");
+    toast.error(extractErrorMessage(err) || m.finance_ui_receipt_save_failed());
   } finally {
     isSubmitting = false;
   }
@@ -254,7 +254,7 @@ function handlePrint(p: any) {
     receipt_number: p.receipt_number || p.id.slice(0, 8),
     org_id: orgId,
   };
-  printTitle = `سند قبض - ${p.receipt_number || p.id.slice(0, 8)}`;
+  printTitle = m.finance_ui_receipt_print_title({ number: p.receipt_number || p.id.slice(0, 8) });
   printDialogOpen = true;
 }
 
@@ -264,7 +264,7 @@ const gridSource = $derived(
     const student = students.find((s) => String(s.id) === String(p.enrollment_id));
     const studentName = p.student_name || student?.full_name || "—";
     const treasury = treasuries.find((t) => String(t.id) === String(p.cash_account_id));
-    const treasuryName = treasury ? (treasury.name_ar || treasury.name || "خزينة") : "خزينة رئيسية";
+    const treasuryName = treasury ? (treasury.name_ar || treasury.name || m.finance_ui_treasury()) : m.finance_ui_main_treasury();
     const amt = Number(p.amount || 0);
     const curr = p.currency || "YER";
 
@@ -277,9 +277,9 @@ const gridSource = $derived(
       treasury_display: treasuryName,
       amount_formatted: formatCurrency(amt, curr),
       currency_display: curr,
-      method_display: p.payment_method === "Bank" ? "تحويل بنكي" : (p.payment_method === "Check" ? "شيك" : "نقداً"),
+      method_display: p.payment_method === "Bank" ? m.finance_ui_payment_method_bank_transfer() : (p.payment_method === "Check" ? m.finance_ui_payment_method_check() : m.finance_ui_payment_method_cash()),
       notes_display: p.notes || "—",
-      status_display: "مقبوض",
+      status_display: m.finance_ui_receipt_status(),
     };
   })
 );
@@ -298,15 +298,15 @@ const filteredSource = $derived(
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "receipt_display", prop: "receipt_display", header: "رقم السند", name: "رقم السند", width: 110, size: 110, readonly: true, cellClass: "font-mono font-bold" },
-  { id: "date_display", prop: "date_display", header: "التاريخ", name: "التاريخ", width: 110, size: 110, readonly: true, align: "center" },
-  { id: "student_display", prop: "student_display", header: "اسم الطالب", name: "اسم الطالب", width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "treasury_display", prop: "treasury_display", header: "الحساب المستلم", name: "الحساب المستلم", width: 180, size: 180, readonly: true },
-  { id: "amount_formatted", prop: "amount_formatted", header: "المبلغ المقبوض", name: "المبلغ المقبوض", width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-emerald-600 dark:text-emerald-400" },
-  { id: "currency_display", prop: "currency_display", header: "العملة", name: "العملة", width: 80, size: 80, readonly: true, align: "center" },
-  { id: "method_display", prop: "method_display", header: "طريقة الدفع", name: "طريقة الدفع", width: 110, size: 110, readonly: true, align: "center" },
-  { id: "notes_display", prop: "notes_display", header: "البيان / ملاحظات", name: "البيان / ملاحظات", width: 220, size: 220, readonly: true },
-  { id: "status_display", prop: "status_display", header: "الحالة", name: "الحالة", width: 90, size: 90, type: "badge", align: "center", readonly: true },
+  { id: "receipt_display", prop: "receipt_display", header: m.finance_ui_voucher_number(), name: m.finance_ui_voucher_number(), width: 110, size: 110, readonly: true, cellClass: "font-mono font-bold" },
+  { id: "date_display", prop: "date_display", header: m.finance_ui_date(), name: m.finance_ui_date(), width: 110, size: 110, readonly: true, align: "center" },
+  { id: "student_display", prop: "student_display", header: m.finance_ui_student_name(), name: m.finance_ui_student_name(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
+  { id: "treasury_display", prop: "treasury_display", header: m.finance_ui_receiving_account(), name: m.finance_ui_receiving_account(), width: 180, size: 180, readonly: true },
+  { id: "amount_formatted", prop: "amount_formatted", header: m.finance_ui_received_amount(), name: m.finance_ui_received_amount(), width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-emerald-600 dark:text-emerald-400" },
+  { id: "currency_display", prop: "currency_display", header: m.finance_ui_currency(), name: m.finance_ui_currency(), width: 80, size: 80, readonly: true, align: "center" },
+  { id: "method_display", prop: "method_display", header: m.finance_ui_payment_method(), name: m.finance_ui_payment_method(), width: 110, size: 110, readonly: true, align: "center" },
+  { id: "notes_display", prop: "notes_display", header: m.finance_ui_description_notes(), name: m.finance_ui_description_notes(), width: 220, size: 220, readonly: true },
+  { id: "status_display", prop: "status_display", header: m.finance_ui_status(), name: m.finance_ui_status(), width: 90, size: 90, type: "badge", align: "center", readonly: true },
 ];
 
 function exportCsv() {
@@ -322,7 +322,7 @@ function exportCsv() {
     p.status_display,
   ]);
   const csv = [
-    ["Receipt", "Date", "Student", "Treasury", "Amount", "Currency", "Method", "Notes", "Status"],
+    [m.finance_ui_receipt(), m.finance_ui_date(), m.finance_ui_student_name(), m.finance_ui_treasury(), m.finance_ui_amount(), m.finance_ui_currency(), m.finance_ui_payment_method(), m.finance_ui_notes(), m.finance_ui_status()],
     ...rows,
   ]
     .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))
@@ -350,10 +350,10 @@ function exportCsv() {
         >
           {#if showAddForm}
             <XMark size={14} />
-            <span>إلغاء</span>
+            <span>{m.finance_ui_cancel()}</span>
           {:else}
             <Plus size={14} />
-            <span>سند قبض جديد</span>
+            <span>{m.finance_ui_new_receipt()}</span>
           {/if}
         </Button>
       </div>
@@ -363,7 +363,7 @@ function exportCsv() {
           <Search size={14} class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <Input
             type="text"
-            placeholder="بحث برقم السند أو الطالب..."
+            placeholder={m.finance_ui_receipt_search_placeholder()}
             bind:value={searchQuery}
             class="h-8 ps-8 text-xs bg-card border-border/60"
           />
@@ -373,7 +373,7 @@ function exportCsv() {
           bind:value={methodFilter}
           class="h-8 text-xs rounded-md bg-card border border-border/60 px-2 text-foreground focus:outline-none"
         >
-          <option value="all">جميع الطرق</option>
+          <option value="all">{m.finance_ui_all_payment_methods()}</option>
           {#each availablePaymentMethods as m (m.id)}
             <option value={m.id}>{m.name}</option>
           {/each}
@@ -404,7 +404,7 @@ function exportCsv() {
               <div class="flex items-center gap-2">
                 <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
                 <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  تسجيل سند قبض جديد
+                  {m.finance_ui_receipt_create_heading()}
                 </CardTitle>
               </div>
               <Button variant="ghost" size="icon-xs" onclick={() => showAddForm = false} class="text-muted-foreground">
@@ -416,11 +416,11 @@ function exportCsv() {
           <CardContent class="p-4 flex flex-col gap-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">الطالب</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_student()}</Label>
                 <SearchableSelect
                   value={selectedStudentId}
-                  placeholder="اختر الطالب..."
-                  searchPlaceholder="ابحث بالاسم أو الرقم الأكاديمي..."
+                  placeholder={m.finance_ui_student_select_placeholder()}
+                  searchPlaceholder={m.finance_ui_student_search_placeholder()}
                   items={students}
                   getItemValue={(s) => s.id}
                   getItemLabel={(s) => s.full_name}
@@ -430,10 +430,10 @@ function exportCsv() {
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">الحساب المستلم (خزينة / بنك)</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_receiving_account()}</Label>
                 <SearchableSelect
                   value={selectedTreasuryId}
-                  placeholder="اختر حساب الخزينة أو البنك..."
+                  placeholder={m.finance_ui_treasury_select_placeholder()}
                   items={treasuries}
                   getItemValue={(t) => t.id}
                   getItemLabel={(t) => `${t.name_ar || t.name} (${t.currency || "YER"})`}
@@ -444,10 +444,10 @@ function exportCsv() {
 
               <div>
                 <div class="flex items-center justify-between mb-1">
-                  <Label class="text-xs font-semibold text-foreground">طريقة القبض</Label>
+                  <Label class="text-xs font-semibold text-foreground">{m.finance_ui_payment_method()}</Label>
                   {#if selectedPaymentMethodObj?.is_digital_gateway}
                     <span class="text-[9px] text-primary font-medium bg-primary/10 px-1.5 py-0.5 rounded">
-                      بوابة {selectedPaymentMethodObj.provider_name}
+                      {m.finance_ui_gateway_provider({ provider: selectedPaymentMethodObj.provider_name ?? "" })}
                     </span>
                   {/if}
                 </div>
@@ -455,9 +455,9 @@ function exportCsv() {
                   bind:value={paymentMethod}
                   class="w-full h-8 text-xs rounded-md bg-background border border-border/60 px-2 text-foreground focus:outline-none"
                 >
-                  {#each availablePaymentMethods as m (m.id)}
-                    <option value={m.id}>
-                      {m.name} {m.is_digital_gateway ? `(عبر ${m.provider_name})` : ""}
+                  {#each availablePaymentMethods as method (method.id)}
+                    <option value={method.id}>
+                      {method.name} {method.is_digital_gateway ? m.finance_ui_gateway_provider({ provider: method.provider_name ?? "" }) : ""}
                     </option>
                   {/each}
                 </select>
@@ -466,11 +466,11 @@ function exportCsv() {
 
             {#if selectedPaymentMethodObj?.requires_source_token}
               <div transition:slide={{ duration: 120 }}>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">رمز تفويض / بطاقة بوابة الدفع (Gateway Token)</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_payment_gateway_token_label()}</Label>
                 <Input
                   type="text"
                   bind:value={sourceToken}
-                  placeholder="tok_... أو رمز العملية من جهاز الشبكة"
+                  placeholder={m.finance_ui_payment_gateway_token_placeholder()}
                   class="h-8 text-xs font-mono bg-background border-border/60"
                 />
               </div>
@@ -478,17 +478,17 @@ function exportCsv() {
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">رقم السند (اختياري)</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_voucher_number_optional()}</Label>
                 <Input
                   type="text"
                   bind:value={receiptNumber}
-                  placeholder="تلقائي"
+                  placeholder={m.finance_ui_automatic()}
                   class="h-8 text-xs font-mono bg-background border-border/60"
                 />
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">التاريخ</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_date()}</Label>
                 <Input
                   type="date"
                   bind:value={paymentDate}
@@ -497,12 +497,12 @@ function exportCsv() {
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">العملة</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_currency()}</Label>
                 <CurrencySelector/>
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">إجمالي المبلغ المقبوض</Label>
+                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_total_received_amount()}</Label>
                 <Input
                   type="number"
                   value={calculatedTotal}
@@ -517,7 +517,7 @@ function exportCsv() {
             <!-- Unpaid Fees Allocation Table (if student selected) -->
             {#if selectedStudentId && studentFees.length > 0}
               <div class="rounded-lg border border-border/50 bg-background/50 p-3 flex flex-col gap-2">
-                <span class="text-[11px] font-bold text-foreground">تخصيص الرسوم المستحقة على الطالب:</span>
+                <span class="text-[11px] font-bold text-foreground">{m.finance_ui_allocate_student_fees()}</span>
                 <div class="space-y-1.5 max-h-40 overflow-y-auto">
                   {#each studentFees as fee (fee.id)}
                     {@const fid = String(fee.id)}
@@ -530,12 +530,12 @@ function exportCsv() {
                           onchange={() => toggleFee(fee)}
                           class="rounded border-border text-primary focus:ring-0"
                         />
-                        <span class="font-medium text-foreground">{fee.fee_type_name || fee.notes || "رسوم دراسية"}</span>
+                        <span class="font-medium text-foreground">{fee.fee_type_name || fee.notes || m.finance_ui_tuition_fees()}</span>
                       </label>
 
                       <div class="flex items-center gap-3">
                         <span class="text-muted-foreground font-mono text-[11px]">
-                          المستحق: {formatCurrency(Number(fee.balance_due ?? fee.balance ?? fee.net_amount ?? 0), selectedCurrency)}
+                          {m.finance_ui_due_amount()} {formatCurrency(Number(fee.balance_due ?? fee.balance ?? fee.net_amount ?? 0), selectedCurrency)}
                         </span>
                         {#if isChecked}
                           <Input
@@ -552,18 +552,18 @@ function exportCsv() {
             {/if}
 
             <div>
-              <Label class="text-xs font-semibold text-foreground mb-1 block">البيان / ملاحظات</Label>
+              <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_description_notes()}</Label>
               <Input
                 type="text"
                 bind:value={notes}
-                placeholder="أدخل بيان أو ملاحظات سند القبض..."
+                placeholder={m.finance_ui_receipt_notes_placeholder()}
                 class="h-8 text-xs bg-background border-border/60"
               />
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
               <Button variant="ghost" size="sm" class="h-8 text-xs" onclick={clearForm}>
-                مسح الحقول
+                {m.finance_ui_clear_fields()}
               </Button>
               <Button
                 variant="default"
@@ -572,7 +572,7 @@ function exportCsv() {
                 disabled={isSubmitting}
                 onclick={handleSavePayment}
               >
-                {isSubmitting ? "جاري الحفظ..." : "حفظ سند القبض"}
+                {isSubmitting ? m.finance_ui_saving() : m.finance_ui_receipt_save()}
               </Button>
             </div>
           </CardContent>
@@ -590,7 +590,7 @@ function exportCsv() {
         search={searchQuery}
         rtl={isAr()}
         readonly
-        emptyTitle="لا توجد سندات قبض مسجلة"
+        emptyTitle={m.finance_ui_no_receipts()}
       />
     </div>
   </div>

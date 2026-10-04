@@ -189,7 +189,7 @@ interactive tool inspections, and consequential action approvals.
   async function handleNewChat(title?: string) {
     const newSession = createNewLocalSession(
       currentOrgId,
-      title || "محادثة جديدة",
+      title || m.ai_ui_new_chat(),
     );
     sessions = [newSession, ...sessions];
     activeSessionId = newSession.id;
@@ -438,10 +438,10 @@ interactive tool inspections, and consequential action approvals.
     action.status = status;
     action.executedAt = Date.now();
     if (status === "executed") {
-      action.resultMessage = `تم اعتماد: ${action.title}`;
-      toast.success(`تم اعتماد ${action.title}`);
+      action.resultMessage = m.ai_ui_action_approved({ title: action.title });
+      toast.success(m.ai_ui_action_approved({ title: action.title }));
     } else {
-      toast.info(`تم إلغاء ${action.title}`);
+      toast.info(m.ai_ui_action_cancelled_title({ title: action.title }));
     }
 
     if (activeSession) {

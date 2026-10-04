@@ -23,7 +23,7 @@ let { orgId }: { orgId: string } = $props();
 let healthStatus = $state<"healthy" | "degraded" | "offline">("healthy");
 let sessionCount = $state(0);
 let actionCount = $state(0);
-let autopilotMode = $state("تلقائي");
+let autopilotMode = $state(m.ai_ui_mode_automatic());
 let connectedAppsCount = $state(0);
 let connectedIntegrations = $state<any[]>([]);
 let activeSessions = $state<any[]>([]);
@@ -55,7 +55,7 @@ onMount(async () => {
     if (settings?.autopilot) {
       const mode = settings.autopilot.mode;
       autopilotMode =
-        mode === "automatic" ? "تلقائي" : mode === "manual" ? "يدوي" : "مقترح";
+        mode === "automatic" ? m.ai_ui_mode_automatic() : mode === "manual" ? m.ai_ui_mode_manual() : m.ai_ui_mode_suggested();
     }
   } catch (e) {
     console.warn("[AI Center] Overview load:", e);
@@ -68,19 +68,19 @@ const healthConfig = {
   healthy: {
     color: "text-foreground font-semibold",
     bg: "bg-muted border border-border",
-    label: "متصل ويعمل بكفاءة",
+    label: m.ai_ui_health_healthy(),
     icon: CheckCircle,
   },
   degraded: {
     color: "text-foreground font-semibold",
     bg: "bg-muted border border-border",
-    label: "استجابة بطيئة",
+    label: m.ai_ui_health_degraded(),
     icon: InfoCircle,
   },
   offline: {
     color: "text-muted-foreground",
     bg: "bg-muted border border-border",
-    label: "غير متصل",
+    label: m.ai_ui_health_offline(),
     icon: ClockRotateRight,
   },
 };
@@ -93,7 +93,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
     <div class="h-64 flex items-center justify-center">
       <div class="flex items-center gap-3 text-muted-foreground text-sm font-medium">
         <Sparkles size={18} class="animate-spin text-primary" />
-        <span>جاري تحميل بيانات مركز الذكاء الاصطناعي...</span>
+        <span>{m.ai_ui_loading_ai_center()}</span>
       </div>
     </div>
   {:else}
@@ -116,7 +116,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
             </div>
             <CardAction>
               <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-muted text-muted-foreground font-semibold">
-                {activeSessions.length} جلسة مفعّلة
+                {m.ai_ui_active_session_count({ count: activeSessions.length })}
               </span>
             </CardAction>
           </CardHeader>
@@ -132,11 +132,11 @@ const healthInfo = $derived(healthConfig[healthStatus]);
                       </div>
                       <div class="text-start">
                         <h3 class="text-xs font-bold text-foreground mb-0.5">{session.title || session.id}</h3>
-                        <p class="text-[10px] text-muted-foreground">{session.agent_id || "وكيل ذكي"}</p>
+                        <p class="text-[10px] text-muted-foreground">{session.agent_id || m.ai_ui_smart_agent()}</p>
                       </div>
                     </div>
                     <span class="px-2 py-0.5 text-[9px] font-bold rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0">
-                      نشط
+                      {m.ai_ui_active()}
                     </span>
                   </div>
                 {/each}
@@ -144,16 +144,16 @@ const healthInfo = $derived(healthConfig[healthStatus]);
             {:else}
               <div class="border border-border rounded-lg p-6 flex flex-col items-center text-center bg-muted/10 space-y-1.5">
                 <Sparkles size={24} class="text-muted-foreground" />
-                <p class="text-xs font-bold text-foreground">لا توجد جلسات وكلاء نشطة حالياً</p>
-                <p class="text-[11px] text-muted-foreground">يتم إنشاء وتفعيل جلسات الوكلاء تلقائياً عند تنفيذ المهام والاستفسارات.</p>
+                <p class="text-xs font-bold text-foreground">{m.ai_ui_no_active_agent_sessions()}</p>
+                <p class="text-[11px] text-muted-foreground">{m.ai_ui_agent_sessions_empty_description()}</p>
               </div>
             {/if}
           </CardContent>
 
           <CardFooter class="justify-between text-[10px] text-muted-foreground font-medium">
-            <span>محركات المعالجة المحلية والسحابية تعمل وفقاً للسياسات المعتمدة.</span>
+            <span>{m.ai_ui_processing_engines_policy_description()}</span>
             <a href={localizeHref(`/${orgId}/ai-center/settings`)} class="text-primary hover:underline flex items-center gap-1 font-semibold">
-              <span>تكوين النماذج</span>
+              <span>{m.ai_ui_configure_models()}</span>
               <ArrowRight size={10} class="rtl:rotate-180" />
             </a>
           </CardFooter>
@@ -204,7 +204,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
           <CardFooter>
             <a href={localizeHref(`/${orgId}/ai-center/permissions`)} class="w-full">
               <Button size="sm" variant="outline" class="w-full text-xs font-semibold justify-between">
-                <span>إدارة مصفوفة الصلاحيات</span>
+                <span>{m.ai_ui_manage_permission_matrix()}</span>
                 <UserBadgeCheck size={12} />
               </Button>
             </a>
@@ -227,7 +227,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
             </div>
             <CardAction>
               <a href={localizeHref(`/${orgId}/ai-center/logs`)} class="text-xs text-primary hover:underline flex items-center gap-1 font-semibold">
-                <span>عرض الكل</span>
+                <span>{m.ai_ui_view_all()}</span>
                 <ArrowRight size={10} class="rtl:rotate-180" />
               </a>
             </CardAction>
@@ -241,8 +241,8 @@ const healthInfo = $derived(healthConfig[healthStatus]);
                     <div class="flex items-center gap-3">
                       <span class="w-2 h-2 rounded-full {log.status === 'completed' ? 'bg-primary' : log.status === 'failed' ? 'bg-destructive' : 'bg-muted-foreground/60'} shrink-0"></span>
                       <div class="text-start">
-                        <code class="text-[11px] font-mono font-semibold text-foreground bg-muted px-1.5 py-0.5 rounded">{log.task_type || log.action_code || log.action || "مهمة أتمتة"}</code>
-                        <p class="text-[11px] text-muted-foreground mt-1 truncate max-w-sm">{log.last_error || log.reason || log.reasoning || (log.status === 'completed' ? 'تم تنفيذ المهمة بنجاح.' : 'مجدولة للتنفيذ القادم.')}</p>
+                        <code class="text-[11px] font-mono font-semibold text-foreground bg-muted px-1.5 py-0.5 rounded">{log.task_type || log.action_code || log.action || m.ai_ui_automation_task()}</code>
+                        <p class="text-[11px] text-muted-foreground mt-1 truncate max-w-sm">{log.last_error || log.reason || log.reasoning || (log.status === 'completed' ? m.ai_ui_task_executed_period() : m.ai_ui_scheduled_for_next_run())}</p>
                       </div>
                     </div>
                     <span class="text-[10px] text-muted-foreground font-mono shrink-0">{log.scheduled_at || log.executed_at || "—"}</span>
@@ -252,8 +252,8 @@ const healthInfo = $derived(healthConfig[healthStatus]);
             {:else}
               <div class="border border-border rounded-md p-6 flex flex-col items-center text-center bg-muted/10">
                 <ClockRotateRight size={20} class="text-muted-foreground mb-2" />
-                <p class="text-xs font-semibold text-foreground">لا توجد سجلات تنفيذية جديدة</p>
-                <p class="text-[11px] text-muted-foreground mt-0.5">ستظهر السجلات هنا فور قيام الوكلاء بتنفيذ مهام أو توصيات تلقائية.</p>
+                <p class="text-xs font-semibold text-foreground">{m.ai_ui_no_recent_execution_logs()}</p>
+                <p class="text-[11px] text-muted-foreground mt-0.5">{m.ai_ui_execution_logs_empty_description()}</p>
               </div>
             {/if}
           </CardContent>
@@ -270,7 +270,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
             </div>
             <CardAction>
               <a href={localizeHref(`/${orgId}/ai-center/integrations`)} class="text-xs text-primary hover:underline font-semibold">
-                المتجر
+                {m.ai_ui_store()}
               </a>
             </CardAction>
           </CardHeader>
@@ -284,18 +284,18 @@ const healthInfo = $derived(healthConfig[healthStatus]);
                       <Cube size={15} class="text-primary" />
                       <div>
                         <h4 class="text-xs font-bold text-foreground">{item.provider_name || item.name || item.id}</h4>
-                        <p class="text-[10px] text-muted-foreground">{item.category || item.provider || "خدمة متصلة"}</p>
+                        <p class="text-[10px] text-muted-foreground">{item.category || item.provider || m.ai_ui_connected_service()}</p>
                       </div>
                     </div>
-                    <span class="w-2 h-2 rounded-full bg-primary" title="متصل"></span>
+                    <span class="w-2 h-2 rounded-full bg-primary" title={m.ai_ui_connected()}></span>
                   </div>
                 {/each}
               </div>
             {:else}
               <div class="border border-border rounded-md p-6 flex flex-col items-center text-center bg-muted/10 space-y-1.5">
                 <Cube size={20} class="text-muted-foreground" />
-                <p class="text-xs font-bold text-foreground">لا توجد خدمات مربوطة حالياً</p>
-                <p class="text-[11px] text-muted-foreground">يمكنك ربط المزودين من خلال متجر التكاملات.</p>
+                <p class="text-xs font-bold text-foreground">{m.ai_ui_no_linked_services()}</p>
+                <p class="text-[11px] text-muted-foreground">{m.ai_ui_link_providers_from_store()}</p>
               </div>
             {/if}
           </CardContent>
@@ -303,7 +303,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
           <CardFooter>
             <a href={localizeHref(`/${orgId}/ai-center/settings`)} class="w-full">
               <Button size="sm" variant="ghost" class="w-full text-xs font-semibold justify-center">
-                <span>إدارة تكوين المزودات والنماذج</span>
+                <span>{m.ai_ui_manage_provider_model_configuration()}</span>
               </Button>
             </a>
           </CardFooter>

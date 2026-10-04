@@ -46,7 +46,7 @@ function refetchAll() {
 const activeCurrencies = $derived(
   currencies.length > 0
     ? currencies.filter((c) => c.is_active !== false)
-    : [{ code: "YER", name: "ريال يمني", is_base: true, is_active: true }]
+    : [{ code: "YER", name: m.finance_ui_currency_yer(), is_base: true, is_active: true }]
 );
 
 const leafAccounts = $derived(
@@ -112,8 +112,8 @@ const trialColumns = $derived.by((): OrbisColumnDef[] => [
   {
     id: "account_code",
     prop: "account_code",
-    header: "الرمز",
-    name: "Code",
+    header: m.finance_ui_account_code(),
+    name: m.finance_ui_account_code(),
     width: 110,
     size: 110,
     readonly: true,
@@ -123,7 +123,7 @@ const trialColumns = $derived.by((): OrbisColumnDef[] => [
     id: "account_name",
     prop: "account_name",
     header: m.common_col_name(),
-    name: "Account Name",
+    name: m.finance_ui_account_name(),
     width: 250,
     size: 250,
     readonly: true,
@@ -133,7 +133,7 @@ const trialColumns = $derived.by((): OrbisColumnDef[] => [
     id: "account_type",
     prop: "account_type",
     header: m.common_word_type(),
-    name: "Type",
+    name: m.finance_ui_account_category(),
     width: 120,
     size: 120,
     readonly: true,
@@ -143,8 +143,8 @@ const trialColumns = $derived.by((): OrbisColumnDef[] => [
     {
       id: `${curr.code}_debit`,
       prop: `${curr.code}_debit`,
-      header: `${curr.name || curr.code} (${curr.code}) - مدين`,
-      name: `${curr.code} Debit`,
+      header: m.finance_ui_trial_debit_column({ currency: curr.name || curr.code, code: curr.code }),
+      name: m.finance_ui_trial_debit_column({ currency: curr.name || curr.code, code: curr.code }),
       width: 140,
       size: 140,
       readonly: true,
@@ -154,8 +154,8 @@ const trialColumns = $derived.by((): OrbisColumnDef[] => [
     {
       id: `${curr.code}_credit`,
       prop: `${curr.code}_credit`,
-      header: `${curr.name || curr.code} (${curr.code}) - دائن`,
-      name: `${curr.code} Credit`,
+      header: m.finance_ui_trial_credit_column({ currency: curr.name || curr.code, code: curr.code }),
+      name: m.finance_ui_trial_credit_column({ currency: curr.name || curr.code, code: curr.code }),
       width: 140,
       size: 140,
       readonly: true,
@@ -166,11 +166,11 @@ const trialColumns = $derived.by((): OrbisColumnDef[] => [
 ]);
 
 const accountTypeLabels: Record<string, string> = {
-  asset: "أصول",
-  liability: "التزامات",
-  equity: "حقوق ملكية",
-  revenue: "إيرادات",
-  expense: "مصروفات",
+  asset: m.finance_ui_account_type_asset(),
+  liability: m.finance_ui_account_type_liability(),
+  equity: m.finance_ui_account_type_equity(),
+  revenue: m.finance_ui_account_type_revenue(),
+  expense: m.finance_ui_account_type_expense(),
 };
 
 const trialSource = $derived(
@@ -213,12 +213,12 @@ function exportCurrentReport() {
 const rtl = $derived(getLocale() === "ar");
 
 const filterOptions = [
-  { id: "all", label: "الكل" },
-  { id: "asset", label: "الأصول" },
-  { id: "liability", label: "الالتزامات" },
-  { id: "equity", label: "حقوق الملكية" },
-  { id: "revenue", label: "الإيرادات" },
-  { id: "expense", label: "المصروفات" },
+  { id: "all", label: m.finance_ui_all() },
+  { id: "asset", label: m.finance_ui_account_type_asset() },
+  { id: "liability", label: m.finance_ui_account_type_liability() },
+  { id: "equity", label: m.finance_ui_account_type_equity() },
+  { id: "revenue", label: m.finance_ui_account_type_revenue() },
+  { id: "expense", label: m.finance_ui_account_type_expense() },
 ];
 </script>
 
@@ -244,12 +244,12 @@ const filterOptions = [
         {#if isBalanced}
           <span class="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
             <CheckCircle size={12} />
-            <span>متوازن</span>
+            <span>{m.finance_ui_balanced()}</span>
           </span>
         {:else}
           <span class="inline-flex items-center gap-1 text-[11px] font-medium text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
             <InfoCircle size={12} />
-            <span>فارق تسوية</span>
+            <span>{m.finance_ui_adjustment_difference()}</span>
           </span>
         {/if}
       </div>
@@ -261,7 +261,7 @@ const filterOptions = [
         <Search size={14} class="absolute start-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
         <Input
           type="search"
-          placeholder="بحث في الحسابات..."
+          placeholder={m.finance_ui_search_accounts_placeholder()}
           bind:value={searchQuery}
           class="h-8 ps-8 text-xs bg-card border-border/60"
         />
@@ -269,10 +269,10 @@ const filterOptions = [
 
       <Button variant="outline" size="sm" onclick={exportCurrentReport} class="h-8 text-xs font-bold gap-1.5">
         <Download size={14} />
-        <span>تصدير CSV</span>
+        <span>{m.finance_ui_export_csv()}</span>
       </Button>
 
-      <Button variant="ghost" size="icon-sm" onclick={refetchAll} class="text-muted-foreground h-8 w-8" title="تحديث">
+      <Button variant="ghost" size="icon-sm" onclick={refetchAll} class="text-muted-foreground h-8 w-8" title={m.finance_ui_refresh()}>
         <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
       </Button>
     </div>
@@ -297,8 +297,8 @@ const filterOptions = [
           clientQuery
           {rtl}
           readonly
-          emptyTitle="لا توجد حسابات مسجلة"
-          emptyDescription="لم يتم العثور على حسابات تطابق معايير البحث المحددة"
+          emptyTitle={m.finance_ui_no_accounts_registered()}
+          emptyDescription={m.finance_ui_no_accounts_match_search()}
         />
       </div>
     {/if}

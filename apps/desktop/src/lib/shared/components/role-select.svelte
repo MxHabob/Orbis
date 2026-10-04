@@ -71,9 +71,9 @@ function handleChange(val: string | null) {
 <SearchableSelect
   bind:value
   items={roles}
-  placeholder={rolesQuery.isLoading ? "جارٍ تحميل الأدوار..." : placeholder}
-  searchPlaceholder="ابحث عن اسم الدور الوظيفي أو الرمز..."
-  emptyText="لا توجد أدوار مطابقة للبحث"
+  placeholder={rolesQuery.isLoading ? m.shared_ui_loading_roles() : placeholder}
+  searchPlaceholder={m.shared_ui_search_roles_placeholder()}
+  emptyText={m.shared_ui_no_matching_roles()}
   showAllOption={allowAll}
   {allLabel}
   disabled={disabled || rolesQuery.isLoading}

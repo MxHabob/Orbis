@@ -1,9 +1,11 @@
+import * as m from "$lib/paraglide/messages";
+
 /**
  * Formats AI and LLM provider errors into clear, informative, and actionable messages in Arabic.
  */
 export function formatAiErrorMessage(error: unknown): string {
   if (!error) {
-    return "⚠️ **حدث خطأ غير معروف أثناء معالجة الطلب.** يرجى المحاولة مرة أخرى.";
+    return m.ai_ui_error_unknown();
   }
 
   let raw = "";
@@ -43,13 +45,13 @@ export function formatAiErrorMessage(error: unknown): string {
     raw.toLowerCase().includes("rate limit")
   ) {
     return [
-      "⚠️ **تم تجاوز حد الاستخدام المسموح (Quota Exceeded - 429)**",
+      m.ai_ui_error_quota_title(),
       "",
-      "لقد تم استنفاد الحصة المخصصة لمفتاح الذكاء الاصطناعي (معدل الطلبات في الدقيقة أو الحصة المجانية/الشهرية).",
+      m.ai_ui_error_quota_description(),
       "",
-      "> **تفاصيل المزود:** " + (innerMsg || "You exceeded your current quota / Rate limit reached."),
+      m.ai_ui_error_provider_detail({ details: innerMsg || m.ai_ui_error_quota_provider_fallback() }),
       "",
-      "💡 **الحل المقترح:** يرجى الانتظار بضع دقائق وإعادة المحاولة، أو ترقية الحساب/تحديث مفتاح API من إعدادات الذكاء الاصطناعي.",
+      m.ai_ui_error_quota_solution(),
     ].join("\n");
   }
 
@@ -63,13 +65,13 @@ export function formatAiErrorMessage(error: unknown): string {
     raw.toLowerCase().includes("overloaded")
   ) {
     return [
-      "⚠️ **خادم الذكاء الاصطناعي يواجه ضغطاً مؤقتاً (503 Service Unavailable)**",
+      m.ai_ui_error_overloaded_title(),
       "",
-      "يعاني نموذج الذكاء الاصطناعي حالياً من ضغط عالي في الطلبات لدى المزود.",
+      m.ai_ui_error_overloaded_description(),
       "",
-      "> **تفاصيل المزود:** " + (innerMsg || "This model is currently experiencing high demand. Please try again later."),
+      m.ai_ui_error_provider_detail({ details: innerMsg || m.ai_ui_error_overloaded_provider_fallback() }),
       "",
-      "💡 **الحل المقترح:** هذه الحالة مؤقتة وعابرة من المزود، يرجى إعادة إرسال طلبك بعد بضع ثوانٍ.",
+      m.ai_ui_error_overloaded_solution(),
     ].join("\n");
   }
 
@@ -83,13 +85,13 @@ export function formatAiErrorMessage(error: unknown): string {
     raw.toLowerCase().includes("unauthorized")
   ) {
     return [
-      "⚠️ **خطأ في مصادقة مفتاح API (Authentication Error)**",
+      m.ai_ui_error_auth_title(),
       "",
-      "مفتاح الذكاء الاصطناعي غير صالح أو تنقصه الصلاحيات المطلوبة للوصول إلى النموذج.",
+      m.ai_ui_error_auth_description(),
       "",
-      "> **تفاصيل الخطأ:** " + (innerMsg || "Invalid API key or unauthorized request."),
+      m.ai_ui_error_detail({ details: innerMsg || m.ai_ui_error_auth_provider_fallback() }),
       "",
-      "💡 **الحل المقترح:** يرجى التحقق من إدخال مفتاح API صحيح ونشط في إعدادات الذكاء الاصطناعي للنظام.",
+      m.ai_ui_error_auth_solution(),
     ].join("\n");
   }
 
@@ -102,13 +104,13 @@ export function formatAiErrorMessage(error: unknown): string {
     raw.toLowerCase().includes("is not supported")
   ) {
     return [
-      "⚠️ **النموذج المحدد غير متاح (Model Not Found - 404)**",
+      m.ai_ui_error_model_not_found_title(),
       "",
-      "النموذج المطلوب غير مدعوم أو تم إيقافه من قبل المزود.",
+      m.ai_ui_error_model_not_found_description(),
       "",
-      "> **تفاصيل الخطأ:** " + (innerMsg || raw),
+      m.ai_ui_error_detail({ details: innerMsg || raw }),
       "",
-      "💡 **الحل المقترح:** يرجى مراجعة إعدادات الذكاء الاصطناعي واختيار نموذج مدعوم.",
+      m.ai_ui_error_model_not_found_solution(),
     ].join("\n");
   }
 
@@ -120,23 +122,23 @@ export function formatAiErrorMessage(error: unknown): string {
     raw.toLowerCase().includes("timeout")
   ) {
     return [
-      "⚠️ **تعذر الاتصال بخادم الذكاء الاصطناعي (Network Error)**",
+      m.ai_ui_error_network_title(),
       "",
-      "فشل الاتصال بالخادم المزود لخدمة الذكاء الاصطناعي. قد يكون هناك انقطاع في الشبكة أو أن الخادم المحلي غير مشغل.",
+      m.ai_ui_error_network_description(),
       "",
-      "> **تفاصيل الخطأ:** " + (innerMsg || raw),
+      m.ai_ui_error_detail({ details: innerMsg || raw }),
       "",
-      "💡 **الحل المقترح:** تأكد من اتصال الإنترنت أو تأكد من تشغيل الخادم/النموذج المحلي ثم أعد المحاولة.",
+      m.ai_ui_error_network_solution(),
     ].join("\n");
   }
 
   // 6. Generic Formatted Error with Exact Details
   const cleanDetails = innerMsg || raw.replace(/^Validation failed:\s*/i, "").replace(/^Gemini API Error:\s*/i, "");
   return [
-    "⚠️ **تعذر إكمال الطلب مع خادم الذكاء الاصطناعي**",
+    m.ai_ui_error_generic_title(),
     "",
-    "> **تفاصيل الخطأ:** " + cleanDetails,
+    m.ai_ui_error_detail({ details: cleanDetails }),
     "",
-    "💡 يرجى مراجعة التفاصيل أعلاه أو إعادة المحاولة لاحقاً.",
+    m.ai_ui_error_generic_solution(),
   ].join("\n");
 }

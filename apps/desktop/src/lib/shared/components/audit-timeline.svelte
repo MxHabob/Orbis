@@ -33,7 +33,7 @@ async function loadAuditHistory() {
   try {
     logs = await api.getEntityAudit(entityType, entityId, 50, 0);
   } catch (err: any) {
-    error = err?.message || "فشل تحميل سجل التدقيق / Failed to load audit logs";
+    error = err?.message || m.shared_ui_audit_load_failed();
   } finally {
     loading = false;
   }
@@ -51,19 +51,19 @@ $effect(() => {
 
 function formatActionLabel(action: string): string {
   const map: Record<string, string> = {
-    "student.created": "إنشاء طالب / Student Created",
-    "student.updated": "تعديل طالب / Student Updated",
-    "student.status_changed": "تغيير حالة الطالب / Status Changed",
-    "employee.created": "إنشاء موظف / Employee Created",
-    "employee.updated": "تعديل موظف / Employee Updated",
-    "employee.status_changed": "تغيير حالة الموظف / Status Changed",
-    "journal_entry.posted": "ترحيل قيد يومية / Journal Posted",
-    "payment.received": "استلام دفعة مالية / Payment Received",
-    "grade.recorded": "رصد درجة / Grade Recorded",
-    "attendance.marked": "تسجيل حضور / Attendance Marked",
-    "group.created": "إنشاء مجموعة / Group Created",
-    "group.updated": "تعديل مجموعة / Group Updated",
-    "user_group.assigned": "إسناد لمجموعة / Group Assigned",
+    "student.created": m.shared_ui_audit_student_created(),
+    "student.updated": m.shared_ui_audit_student_updated(),
+    "student.status_changed": m.shared_ui_audit_student_status_changed(),
+    "employee.created": m.shared_ui_audit_employee_created(),
+    "employee.updated": m.shared_ui_audit_employee_updated(),
+    "employee.status_changed": m.shared_ui_audit_employee_status_changed(),
+    "journal_entry.posted": m.shared_ui_audit_journal_posted(),
+    "payment.received": m.shared_ui_audit_payment_received(),
+    "grade.recorded": m.shared_ui_audit_grade_recorded(),
+    "attendance.marked": m.shared_ui_audit_attendance_marked(),
+    "group.created": m.shared_ui_audit_group_created(),
+    "group.updated": m.shared_ui_audit_group_updated(),
+    "user_group.assigned": m.shared_ui_audit_group_assigned(),
   };
   return map[action] || action;
 }
@@ -87,7 +87,7 @@ function getActionColor(action: string): string {
     <div class="flex items-center gap-2">
       <span class="text-sm font-semibold flex items-center gap-1.5">
         <span class="text-primary">📋</span>
-        <span>سجل التدقيق والتعديلات (Audit Trail)</span>
+        <span>{m.shared_ui_audit_trail_title()}</span>
       </span>
       <span class="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-mono">
         {logs.length}
@@ -100,7 +100,7 @@ function getActionColor(action: string): string {
       onclick={loadAuditHistory}
       disabled={loading}
     >
-      {loading ? "جاري التحديث..." : "تحديث"}
+      {loading ? m.shared_ui_refreshing() : m.common_control_refresh()}
     </Button>
   </div>
 
@@ -115,13 +115,13 @@ function getActionColor(action: string): string {
       <div class="p-3 rounded-md bg-destructive/10 text-destructive text-xs flex items-center justify-between">
         <span>{error}</span>
         <Button variant="outline" size="sm" class="h-6 text-[10px]" onclick={loadAuditHistory}>
-          إعادة المحاولة
+          {m.common_retry()}
         </Button>
       </div>
     {:else if logs.length === 0}
       <div class="py-8 text-center text-xs text-muted-foreground flex flex-col items-center gap-1.5">
         <span class="text-xl opacity-60">📑</span>
-        <span>لا يوجد سجل عمليات مسجل لهذا العنصر حتى الآن</span>
+        <span>{m.shared_ui_no_audit_history()}</span>
       </div>
     {:else}
       <div class="relative border-s-2 border-border/80 ms-2.5 flex flex-col gap-4 py-1">
@@ -140,9 +140,9 @@ function getActionColor(action: string): string {
             </div>
 
             <div class="flex items-center gap-2 text-[11px] text-muted-foreground">
-              <span>بواسطة:</span>
+              <span>{m.shared_ui_by()}</span>
               <span class="font-medium text-foreground">
-                {log.user_id ? log.user_id : "النظام (System / Autopilot)"}
+                {log.user_id ? log.user_id : m.shared_ui_system_actor()}
               </span>
               {#if log.ip_address}
                 <span class="text-[10px] opacity-70">({log.ip_address})</span>

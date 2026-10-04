@@ -61,7 +61,7 @@ onMount(async () => {
     }
   } catch (e) {
     console.error("Failed to load classes:", e);
-    toast.error("فشل تحميل قائمة الفصول الدراسية");
+    toast.error(m.operations_ui_attendance_class_list_load_error());
   } finally {
     isLoadingClasses = false;
   }
@@ -103,7 +103,7 @@ async function loadRosterAndAttendance() {
           e.name_ar ||
           e.name_en ||
           e.student?.full_name ||
-          "طالب",
+          m.operations_ui_student_fallback(),
         avatar: e.avatar || null,
         status,
         remarks: existing?.remarks || "",
@@ -112,7 +112,7 @@ async function loadRosterAndAttendance() {
     });
   } catch (e) {
     console.error("Failed to load attendance roster:", e);
-    toast.error("فشل تحميل سجل حضور الطلاب للفصل المحدد");
+    toast.error(m.operations_ui_attendance_roster_load_error());
   } finally {
     isLoadingRoster = false;
   }
@@ -122,10 +122,10 @@ function markAll(status: "present" | "absent" | "late" | "excused") {
   attendanceRows = attendanceRows.map((r) => ({ ...r, status }));
   toast.success(
     status === "present"
-      ? "تم تحديد الكل كـ حاضر"
+      ? m.operations_ui_attendance_marked_all_present()
       : status === "absent"
-        ? "تم تحديد الكل كـ غائب"
-        : "تم تحديث الحالة للجميع",
+        ? m.operations_ui_attendance_marked_all_absent()
+        : m.operations_ui_attendance_status_updated_all(),
   );
 }
 
@@ -143,11 +143,11 @@ async function handleSaveAttendance() {
         notes: row.remarks || undefined,
       })),
     });
-    toast.success("تم حفظ سجل الحضور والغياب بنجاح");
+    toast.success(m.operations_ui_attendance_save_success());
     await loadRosterAndAttendance();
   } catch (e) {
     console.error("Failed to save attendance:", e);
-    toast.error(extractErrorMessage(e) || "حدث خطأ أثناء حفظ الحضور");
+    toast.error(extractErrorMessage(e) || m.operations_ui_attendance_save_error());
   } finally {
     isSaving = false;
   }
@@ -163,20 +163,20 @@ function handleExport() {
     `Attendance_${className}_${selectedDate}`,
     attendanceRows,
     [
-      { header: "رقم الطالب", accessor: (r) => r.studentNumber },
-      { header: "اسم الطالب", accessor: (r) => r.fullName },
+      { header: m.operations_ui_student_number(), accessor: (r) => r.studentNumber },
+      { header: m.operations_ui_student_name(), accessor: (r) => r.fullName },
       {
-        header: "الحالة",
+        header: m.operations_ui_status(),
         accessor: (r) =>
           r.status === "present"
-            ? "حاضر"
+            ? m.operations_ui_attendance_present()
             : r.status === "absent"
-              ? "غائب"
+              ? m.operations_ui_attendance_absent()
               : r.status === "late"
-                ? "متأخر"
-                : "مبرر",
+                ? m.operations_ui_attendance_late()
+                : m.operations_ui_attendance_excused(),
       },
-      { header: "ملاحظات", accessor: (r) => r.remarks },
+      { header: m.operations_ui_notes(), accessor: (r) => r.remarks },
     ],
   );
 }
@@ -221,10 +221,10 @@ const filteredRows = $derived(
         </div>
         <div>
           <h1 class="text-xl font-bold text-foreground tracking-tight">
-            تحضير الطلاب والغياب اليومي
+            {m.operations_ui_attendance_daily_title()}
           </h1>
           <p class="text-xs text-muted-foreground mt-0.5">
-            تسجيل ومتابعة حضور وغياب الشعب الدراسية وحفظ السجلات في النظام الأكاديمي
+            {m.operations_ui_attendance_daily_description()}
           </p>
         </div>
       </div>
@@ -246,7 +246,7 @@ const filteredRows = $derived(
                       classes.find((c) => String(c.id) === selectedClassId)?.name_ar,
                       classes.find((c) => String(c.id) === selectedClassId)?.name,
                     )
-                  : "اختر الفصل..."}
+                  : m.operations_ui_attendance_select_class()}
               </span>
             </SelectTrigger>
             <SelectContent>
@@ -274,7 +274,7 @@ const filteredRows = $derived(
           class="h-9 text-xs font-bold gap-1.5 shadow-sm"
         >
           <FloppyDisk class="w-4 h-4" />
-          {isSaving ? "جاري الحفظ..." : "حفظ السجل"}
+          {isSaving ? m.operations_ui_saving() : m.operations_ui_attendance_save_record()}
         </Button>
       </div>
     </div>
@@ -287,7 +287,7 @@ const filteredRows = $derived(
         </div>
         <div>
           <div class="text-lg font-bold text-foreground font-mono leading-none">{formatNumber(totalCount)}</div>
-          <div class="text-[11px] text-muted-foreground mt-0.5">إجمالي الطلاب</div>
+          <div class="text-[11px] text-muted-foreground mt-0.5">{m.operations_ui_total_students()}</div>
         </div>
       </div>
 
@@ -297,7 +297,7 @@ const filteredRows = $derived(
         </div>
         <div>
           <div class="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono leading-none">{formatNumber(presentCount)}</div>
-          <div class="text-[11px] text-muted-foreground mt-0.5">حاضر ({formatPercent(attendanceRate)})</div>
+          <div class="text-[11px] text-muted-foreground mt-0.5">{m.operations_ui_attendance_present()} ({formatPercent(attendanceRate)})</div>
         </div>
       </div>
 
@@ -307,7 +307,7 @@ const filteredRows = $derived(
         </div>
         <div>
           <div class="text-lg font-bold text-red-600 dark:text-red-400 font-mono leading-none">{formatNumber(absentCount)}</div>
-          <div class="text-[11px] text-muted-foreground mt-0.5">غائب</div>
+          <div class="text-[11px] text-muted-foreground mt-0.5">{m.operations_ui_attendance_absent()}</div>
         </div>
       </div>
 
@@ -317,7 +317,7 @@ const filteredRows = $derived(
         </div>
         <div>
           <div class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono leading-none">{formatNumber(lateCount)}</div>
-          <div class="text-[11px] text-muted-foreground mt-0.5">متأخر</div>
+          <div class="text-[11px] text-muted-foreground mt-0.5">{m.operations_ui_attendance_late()}</div>
         </div>
       </div>
 
@@ -327,7 +327,7 @@ const filteredRows = $derived(
         </div>
         <div>
           <div class="text-lg font-bold text-blue-600 dark:text-blue-400 font-mono leading-none">{formatNumber(excusedCount)}</div>
-          <div class="text-[11px] text-muted-foreground mt-0.5">غياب مبرر</div>
+          <div class="text-[11px] text-muted-foreground mt-0.5">{m.operations_ui_attendance_excused_absence()}</div>
         </div>
       </div>
     </div>
@@ -342,7 +342,7 @@ const filteredRows = $derived(
           <Search class="absolute start-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="بحث بالاسم أو الرقم..."
+            placeholder={m.operations_ui_attendance_search_placeholder()}
             bind:value={searchQuery}
             class="h-8 ps-8 text-xs w-full"
           />
@@ -352,22 +352,22 @@ const filteredRows = $derived(
           <SelectTrigger class="h-8 text-xs w-32">
             <span>
               {statusFilter === "all"
-                ? "جميع الحالات"
+                ? m.operations_ui_all_statuses()
                 : statusFilter === "present"
-                  ? "حاضر"
+                  ? m.operations_ui_attendance_present()
                   : statusFilter === "absent"
-                    ? "غائب"
+                    ? m.operations_ui_attendance_absent()
                     : statusFilter === "late"
-                      ? "متأخر"
-                      : "مبرر"}
+                      ? m.operations_ui_attendance_late()
+                      : m.operations_ui_attendance_excused()}
             </span>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">جميع الحالات</SelectItem>
-            <SelectItem value="present">حاضر</SelectItem>
-            <SelectItem value="absent">غائب</SelectItem>
-            <SelectItem value="late">متأخر</SelectItem>
-            <SelectItem value="excused">مبرر</SelectItem>
+            <SelectItem value="all">{m.operations_ui_all_statuses()}</SelectItem>
+            <SelectItem value="present">{m.operations_ui_attendance_present()}</SelectItem>
+            <SelectItem value="absent">{m.operations_ui_attendance_absent()}</SelectItem>
+            <SelectItem value="late">{m.operations_ui_attendance_late()}</SelectItem>
+            <SelectItem value="excused">{m.operations_ui_attendance_excused()}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -381,7 +381,7 @@ const filteredRows = $derived(
           class="h-8 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 font-semibold"
         >
           <CheckCircle class="w-3.5 h-3.5 me-1" />
-          الكل حاضر
+          {m.operations_ui_attendance_all_present()}
         </Button>
 
         <Button
@@ -391,7 +391,7 @@ const filteredRows = $derived(
           class="h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-500/10 font-semibold"
         >
           <XMark class="w-3.5 h-3.5 me-1" />
-          الكل غائب
+          {m.operations_ui_attendance_all_absent()}
         </Button>
 
         <Button
@@ -401,7 +401,7 @@ const filteredRows = $derived(
           disabled={attendanceRows.length === 0}
           class="h-8 text-xs font-semibold"
         >
-          تصدير CSV
+          {m.operations_ui_export_csv()}
         </Button>
       </div>
     </div>
@@ -412,23 +412,23 @@ const filteredRows = $derived(
         <TableHeader class="bg-muted/40">
           <TableRow>
             <TableHead class="text-xs font-bold w-12 text-center">#</TableHead>
-            <TableHead class="text-xs font-bold w-32">رقم الطالب</TableHead>
-            <TableHead class="text-xs font-bold">اسم الطالب</TableHead>
-            <TableHead class="text-xs font-bold w-80 text-center">حالة الحضور</TableHead>
-            <TableHead class="text-xs font-bold w-64">ملاحظات</TableHead>
+            <TableHead class="text-xs font-bold w-32">{m.operations_ui_student_number()}</TableHead>
+            <TableHead class="text-xs font-bold">{m.operations_ui_student_name()}</TableHead>
+            <TableHead class="text-xs font-bold w-80 text-center">{m.operations_ui_attendance_status()}</TableHead>
+            <TableHead class="text-xs font-bold w-64">{m.operations_ui_notes()}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {#if isLoadingRoster}
             <TableRow>
               <TableCell colspan={5} class="text-center py-12 text-xs text-muted-foreground">
-                جاري تحميل قائمة الطلاب...
+                {m.operations_ui_attendance_loading_students()}
               </TableCell>
             </TableRow>
           {:else if filteredRows.length === 0}
             <TableRow>
               <TableCell colspan={5} class="text-center py-12 text-xs text-muted-foreground">
-                لا يوجد طلاب مسجلين في هذا الفصل أو لا توجد نتائج للبحث
+                {m.operations_ui_attendance_no_students()}
               </TableCell>
             </TableRow>
           {:else}
@@ -457,35 +457,35 @@ const filteredRows = $derived(
                       onclick={() => (row.status = "present")}
                       class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer {row.status === 'present' ? 'bg-emerald-600 text-white shadow-xs scale-105' : 'bg-muted/60 text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-600'}"
                     >
-                      حاضر
+                      {m.operations_ui_attendance_present()}
                     </button>
                     <button
                       type="button"
                       onclick={() => (row.status = "absent")}
                       class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer {row.status === 'absent' ? 'bg-red-600 text-white shadow-xs scale-105' : 'bg-muted/60 text-muted-foreground hover:bg-red-500/10 hover:text-red-600'}"
                     >
-                      غائب
+                      {m.operations_ui_attendance_absent()}
                     </button>
                     <button
                       type="button"
                       onclick={() => (row.status = "late")}
                       class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer {row.status === 'late' ? 'bg-amber-600 text-white shadow-xs scale-105' : 'bg-muted/60 text-muted-foreground hover:bg-amber-500/10 hover:text-amber-600'}"
                     >
-                      متأخر
+                      {m.operations_ui_attendance_late()}
                     </button>
                     <button
                       type="button"
                       onclick={() => (row.status = "excused")}
                       class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer {row.status === 'excused' ? 'bg-blue-600 text-white shadow-xs scale-105' : 'bg-muted/60 text-muted-foreground hover:bg-blue-500/10 hover:text-blue-600'}"
                     >
-                      مبرر
+                      {m.operations_ui_attendance_excused()}
                     </button>
                   </div>
                 </TableCell>
                 <TableCell>
                   <Input
                     type="text"
-                    placeholder="ملاحظات الحضور..."
+                    placeholder={m.operations_ui_attendance_notes_placeholder()}
                     bind:value={row.remarks}
                     class="h-7 text-xs"
                   />

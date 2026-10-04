@@ -1,5 +1,6 @@
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import { api } from "$lib/api";
+import * as m from "$lib/paraglide/messages";
 import type {
   BulkImportProfile,
   BulkReferenceData,
@@ -98,16 +99,16 @@ export const gradeColumnMetadata: ColumnDefinitionMetadata[] = [
 ];
 
 export const gradeGridColumns: OrbisColumnDef[] = [
-  { id: "__idx", header: "#", width: 50, pin: "left", readonly: true },
-  { id: "status", header: "الحالة / Status", width: 110, pin: "left", type: "badge", readonly: true },
-  { id: "student_number", header: "رقم الطالب*", width: 130 },
-  { id: "student_name", header: "اسم الطالب (مرجعي)", width: 160, readonly: true },
-  { id: "subject_name", header: "المادة الدراسية*", width: 150 },
-  { id: "assessment_type", header: "نوع التقييم*", width: 160 },
-  { id: "score", header: "الدرجة*", width: 100, type: "decimal" },
-  { id: "max_score", header: "الدرجة العظمى", width: 110, type: "decimal" },
-  { id: "is_excused", header: "معذور", width: 90, type: "boolean" },
-  { id: "notes", header: "ملاحظات", width: 180 },
+  { id: "__idx", header: m.bulk_entry_grid_row_number(), width: 50, pin: "left", readonly: true },
+  { id: "status", header: m.bulk_entry_grid_status(), width: 110, pin: "left", type: "badge", readonly: true },
+  { id: "student_number", header: m.bulk_entry_grade_header_student_number(), width: 130 },
+  { id: "student_name", header: m.bulk_entry_grade_header_student_name(), width: 160, readonly: true },
+  { id: "subject_name", header: m.bulk_entry_grade_header_subject_name(), width: 150 },
+  { id: "assessment_type", header: m.bulk_entry_grade_header_assessment_type(), width: 160 },
+  { id: "score", header: m.bulk_entry_grade_header_score(), width: 100, type: "decimal" },
+  { id: "max_score", header: m.bulk_entry_grade_header_max_score(), width: 110, type: "decimal" },
+  { id: "is_excused", header: m.bulk_entry_grade_header_is_excused(), width: 90, type: "boolean" },
+  { id: "notes", header: m.bulk_entry_grade_header_notes(), width: 180 },
 ];
 
 export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDetails> = {
@@ -172,7 +173,7 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: "هذا الحقل إلزامي لرصد الدرجة",
+          message: m.bulk_entry_grade_validation_required(),
         };
       }
     }
@@ -183,14 +184,14 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: "يجب أن تكون الدرجة قيمة رقمية صحيحة",
+          message: m.bulk_entry_grade_validation_numeric(),
         };
       }
       if (num < 0) {
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: "لا يمكن أن تكون الدرجة سالبة",
+          message: m.bulk_entry_grade_validation_nonnegative(),
         };
       }
 
@@ -209,7 +210,7 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: `الدرجة (${num}) تتجاوز الحد الأقصى المسموح به (${limit})`,
+          message: m.bulk_entry_grade_validation_exceeds_max({ score: num, maximum: limit }),
         };
       }
     }
@@ -226,7 +227,7 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: `المادة "${strVal}" غير مسجلة في النظام`,
+          message: m.bulk_entry_grade_validation_subject_not_found({ subject: strVal }),
         };
       }
     }
@@ -250,7 +251,7 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
         issues.push({
           severity: "BLOCKING_ERROR",
           columnId: "score",
-          message: `تم رصد درجة مكررة لنفس الطالب في نفس المادة والتقييم (يتطابق مع الصف ${duplicateIndex + 1})`,
+          message: m.bulk_entry_grade_validation_duplicate({ row: duplicateIndex + 1 }),
         });
       }
     }
@@ -270,7 +271,7 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
         errorCount++;
       } else {
         validCount++;
-        const s = row.subject_name || "عام";
+        const s = row.subject_name || m.bulk_entry_general();
         subjectsMap[s] = (subjectsMap[s] || 0) + 1;
       }
     }
@@ -284,8 +285,8 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
         gradesToRecord: validCount,
         gradesToUpdate: 0,
         subjectsSummary: subjectsMap,
-        assessmentType: rows[0]?.assessment_type || "تقييم عام",
-        academicPeriodName: "الفترة الحالية",
+        assessmentType: rows[0]?.assessment_type || m.bulk_entry_general_assessment(),
+        academicPeriodName: m.bulk_entry_current_period(),
         maxScore: 100,
       },
     };
@@ -326,7 +327,7 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
       if (result.count === 0 && items.length > 0) {
         return {
           success: false,
-          errors: ["فشل رصد درجات الطلاب"],
+          errors: [m.bulk_entry_grade_commit_failed()],
         };
       }
       return { success: true };

@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 import type { BulkImportProfile, BulkReferenceData, BulkRowState } from "../types";
 
 export interface RevalidationEvent {
@@ -50,13 +51,13 @@ export function revalidateCellChange<T = Record<string, unknown>>(
 
   if (rowErrors.size > 0) {
     targetRow.status = "error";
-    targetRow.data.status = `🔴 خطأ (${rowErrors.size})`;
+    targetRow.data.status = m.bulk_entry_status_error({ count: rowErrors.size });
   } else if (rowWarnings.size > 0) {
     targetRow.status = "warning";
-    targetRow.data.status = `🟡 تنبيه (${rowWarnings.size})`;
+    targetRow.data.status = m.bulk_entry_status_warning({ count: rowWarnings.size });
   } else {
     targetRow.status = "valid";
-    targetRow.data.status = "🟢 صالح";
+    targetRow.data.status = m.bulk_entry_status_valid();
   }
 
   // 3. If unique field changed (e.g. national_id), also recheck other rows that might have had duplicate errors
@@ -72,7 +73,9 @@ export function revalidateCellChange<T = Record<string, unknown>>(
           otherRow.data.__errors = otherRow.errors;
           if (otherRow.errors.size === 0) {
             otherRow.status = otherRow.warnings.size > 0 ? "warning" : "valid";
-            otherRow.data.status = otherRow.status === "warning" ? `🟡 تنبيه (${otherRow.warnings.size})` : "🟢 صالح";
+            otherRow.data.status = otherRow.status === "warning"
+              ? m.bulk_entry_status_warning({ count: otherRow.warnings.size })
+              : m.bulk_entry_status_valid();
           }
         }
       }

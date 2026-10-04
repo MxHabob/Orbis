@@ -72,7 +72,7 @@ async function loadData() {
     }
   } catch (e) {
     console.error("Failed to load account statement data:", e);
-    toast.error("فشل تحميل بيانات كشف الحساب");
+    toast.error(m.finance_ui_account_statement_load_failed());
   } finally {
     isLoading = false;
   }
@@ -100,7 +100,7 @@ const statementRows = $derived.by(() => {
     if (selectedCurrency !== "all" && curr !== selectedCurrency) continue;
 
     const ref = entry.reference_number || entry.id.slice(0, 8);
-    const desc = entry.description_ar || entry.description || "قيد يومية";
+    const desc = entry.description_ar || entry.description || m.finance_ui_journal_entry_fallback();
 
     // Direct 2-legged entry
     if (entry.debit_account_id === selectedAccountId) {
@@ -166,7 +166,7 @@ const statementRows = $derived.by(() => {
           date: pDate,
           date_raw: p.payment_date || p.created_at,
           ref: p.receipt_number || p.id.slice(0, 8),
-          desc: p.notes || `سند قبض - ${p.student_name || 'طالب'}`,
+          desc: p.notes || m.finance_ui_receipt_student_description({ student: p.student_name || m.finance_ui_student() }),
           debit: Number(p.amount || 0), // Cash in = Debit Asset
           credit: 0,
           currency: curr,
@@ -209,13 +209,13 @@ const netBalance = $derived(
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "date_display", prop: "date_display", header: "التاريخ", name: "التاريخ", width: 110, size: 110, readonly: true, align: "center" },
-  { id: "ref", prop: "ref", header: "رقم المرجع / السند", name: "رقم المرجع / السند", width: 130, size: 130, readonly: true, cellClass: "font-mono font-bold" },
-  { id: "desc", prop: "desc", header: "البيان / تفاصيل الحركة", name: "البيان / تفاصيل الحركة", width: 280, size: 280, readonly: true },
-  { id: "debit_formatted", prop: "debit_formatted", header: "مدين (+)", name: "مدين (+)", width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-emerald-600 dark:text-emerald-400" },
-  { id: "credit_formatted", prop: "credit_formatted", header: "دائن (-)", name: "دائن (-)", width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-rose-600 dark:text-rose-400" },
-  { id: "balance_formatted", prop: "balance_formatted", header: "الرصيد التراكمي", name: "الرصيد التراكمي", width: 150, size: 150, readonly: true, align: "end", cellClass: "font-mono font-extrabold text-foreground" },
-  { id: "currency", prop: "currency", header: "العملة", name: "العملة", width: 80, size: 80, readonly: true, align: "center" },
+  { id: "date_display", prop: "date_display", header: m.finance_ui_date(), name: m.finance_ui_date(), width: 110, size: 110, readonly: true, align: "center" },
+  { id: "ref", prop: "ref", header: m.finance_ui_reference_voucher_number(), name: m.finance_ui_reference_voucher_number(), width: 130, size: 130, readonly: true, cellClass: "font-mono font-bold" },
+  { id: "desc", prop: "desc", header: m.finance_ui_movement_description(), name: m.finance_ui_movement_description(), width: 280, size: 280, readonly: true },
+  { id: "debit_formatted", prop: "debit_formatted", header: m.finance_ui_debit_positive(), name: m.finance_ui_debit_positive(), width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-emerald-600 dark:text-emerald-400" },
+  { id: "credit_formatted", prop: "credit_formatted", header: m.finance_ui_credit_negative(), name: m.finance_ui_credit_negative(), width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-rose-600 dark:text-rose-400" },
+  { id: "balance_formatted", prop: "balance_formatted", header: m.finance_ui_running_balance(), name: m.finance_ui_running_balance(), width: 150, size: 150, readonly: true, align: "end", cellClass: "font-mono font-extrabold text-foreground" },
+  { id: "currency", prop: "currency", header: m.finance_ui_currency(), name: m.finance_ui_currency(), width: 80, size: 80, readonly: true, align: "center" },
 ];
 
 function exportCsv() {
@@ -229,7 +229,7 @@ function exportCsv() {
     r.currency,
   ]);
   const csv = [
-    ["Date", "Reference", "Description", "Debit", "Credit", "Balance", "Currency"],
+    [m.finance_ui_date(), m.finance_ui_reference(), m.finance_ui_description(), m.finance_ui_debit(), m.finance_ui_credit(), m.finance_ui_balance(), m.finance_ui_currency()],
     ...rows,
   ]
     .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))
@@ -252,7 +252,7 @@ function exportCsv() {
         <AccountSearchInput
           bind:value={selectedAccountId}
           {accounts}
-          placeholder="اختر الحساب لعرض كشف الحساب..."
+          placeholder={m.finance_ui_account_statement_account_placeholder()}
         />
       </div>
 
@@ -262,7 +262,7 @@ function exportCsv() {
           bind:value={startDate}
           class="h-8 w-36 text-xs bg-card border-border/60 font-mono"
         />
-        <span class="text-xs text-muted-foreground">إلى</span>
+        <span class="text-xs text-muted-foreground">{m.finance_ui_to_date()}</span>
         <Input
           type="date"
           bind:value={endDate}
@@ -283,7 +283,7 @@ function exportCsv() {
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 shrink-0">
       <Card class="p-4 shadow-sm border-border/40 bg-card flex flex-col justify-between">
         <div class="flex items-center justify-between text-muted-foreground text-xs font-semibold">
-          <span>إجمالي الحركات المدينة</span>
+          <span>{m.finance_ui_total_debit_movements()}</span>
           <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-emerald-600 dark:text-emerald-400">
@@ -293,7 +293,7 @@ function exportCsv() {
 
       <Card class="p-4 shadow-sm border-border/40 bg-card flex flex-col justify-between">
         <div class="flex items-center justify-between text-muted-foreground text-xs font-semibold">
-          <span>إجمالي الحركات الدائنة</span>
+          <span>{m.finance_ui_total_credit_movements()}</span>
           <span class="h-2 w-2 rounded-full bg-rose-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-rose-600 dark:text-rose-400">
@@ -303,7 +303,7 @@ function exportCsv() {
 
       <Card class="p-4 shadow-sm border-border/40 bg-card flex flex-col justify-between">
         <div class="flex items-center justify-between text-muted-foreground text-xs font-semibold">
-          <span>الرصيد الصافي النهائي</span>
+          <span>{m.finance_ui_final_net_balance()}</span>
           <span class="h-2 w-2 rounded-full bg-primary"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-foreground">
@@ -322,7 +322,7 @@ function exportCsv() {
         search={searchQuery}
         rtl={isAr()}
         readonly
-        emptyTitle="لا توجد حركات مالية مسجلة لهذا الحساب"
+        emptyTitle={m.finance_ui_no_account_movements()}
       />
     </div>
   </div>

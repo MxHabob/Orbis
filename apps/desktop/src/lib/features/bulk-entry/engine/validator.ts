@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 import type { BulkImportProfile, BulkReferenceData, BulkRowState } from "../types";
 
 export interface ValidationSummary {
@@ -60,16 +61,16 @@ export function validateAllRows<T = Record<string, unknown>>(
 
     if (rowErrors.size > 0) {
       row.status = "error";
-      row.data.status = `🔴 خطأ (${rowErrors.size})`;
+      row.data.status = m.bulk_entry_status_error({ count: rowErrors.size });
       errorCount++;
     } else if (rowWarnings.size > 0) {
       row.status = "warning";
-      row.data.status = `🟡 تنبيه (${rowWarnings.size})`;
+      row.data.status = m.bulk_entry_status_warning({ count: rowWarnings.size });
       warningCount++;
       validCount++;
     } else {
       row.status = "valid";
-      row.data.status = "🟢 صالح";
+      row.data.status = m.bulk_entry_status_valid();
       validCount++;
     }
   }

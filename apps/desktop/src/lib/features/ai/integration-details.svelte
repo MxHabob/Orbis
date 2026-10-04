@@ -163,7 +163,7 @@ const activeFeatures = $derived(
   <div class="h-full overflow-y-auto">
     <div class="max-w-5xl mx-auto px-6 py-8">
       <!-- Breadcrumb -->
-      <nav aria-label="Breadcrumb" class="mb-8">
+      <nav aria-label={m.ai_ui_breadcrumb()} class="mb-8">
         <ol class="flex items-center gap-2 text-xs">
           <li>
             <a

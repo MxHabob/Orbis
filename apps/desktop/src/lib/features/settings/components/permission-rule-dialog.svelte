@@ -20,12 +20,13 @@ import {
   DialogFooter,
 } from "@orbis/ui/dialog";
 import { Check, Plus, UserBadgeCheck } from "@orbis/icons";
-import { l } from "$lib/core/i18n";
 import {
   IAM_DOMAINS,
   getActionsForResource,
   getResourceLabel,
   getActionBadgeVariant,
+  translateIamMessage,
+  type IamMessageKey,
 } from "$lib/core/iam";
 
 let {
@@ -50,15 +51,12 @@ let {
 
 // All resources flattened with domain label
 const allResources = $derived.by(() => {
-  const list: Array<{ key: string; labelAr: string; labelEn: string; domainAr: string; domainEn: string }> = [];
+  const list: Array<{ key: string; labelKey: IamMessageKey }> = [];
   for (const domain of IAM_DOMAINS) {
     for (const res of domain.resources) {
       list.push({
         key: res.key,
-        labelAr: res.labelAr,
-        labelEn: res.labelEn,
-        domainAr: domain.nameAr,
-        domainEn: domain.nameEn,
+        labelKey: res.labelKey,
       });
     }
   }
@@ -154,7 +152,7 @@ function clearActions() {
               {#each allResources as res}
                 <SelectItem value={res.key} class="text-xs">
                   <div class="flex items-center justify-between gap-3 w-full">
-                    <span>{l(res.labelAr, res.labelEn)}</span>
+                    <span>{translateIamMessage(res.labelKey)}</span>
                     <span class="text-[10px] text-muted-foreground font-mono">({res.key})</span>
                   </div>
                 </SelectItem>
@@ -240,7 +238,7 @@ function clearActions() {
                     <Check class="w-2.5 h-2.5" />
                   {/if}
                 </div>
-                <span class="truncate">{l(act.labelAr, act.labelEn)}</span>
+                <span class="truncate">{translateIamMessage(act.labelKey)}</span>
               </div>
 
               <Badge variant={badgeVariant} class="text-[9px] font-mono px-1 py-0 uppercase shrink-0">

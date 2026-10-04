@@ -1,10 +1,24 @@
 import { readFile, readdir, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { join } from "node:path";
+
+type SvelteNode = {
+  type?: string;
+  start?: number;
+  data?: string;
+  [key: string]: unknown;
+};
 
 const root = process.cwd();
 const appRoot = join(root, "apps", "desktop");
 const sourceRoot = join(appRoot, "src");
 const messagesRoot = join(appRoot, "messages");
+const requireFromDesktop = createRequire(join(appRoot, "package.json"));
+const { parse } = requireFromDesktop("svelte/compiler") as {
+  parse: (source: string, options?: { filename?: string }) => {
+    html: SvelteNode;
+  };
+};
 const sourceExtensions = new Set([".svelte", ".ts", ".js", ".tsx", ".jsx"]);
 const ignoredDirectories = new Set([
   "node_modules",
@@ -63,6 +77,7 @@ async function main() {
     .filter((key) => !englishKeys.has(key))
     .sort();
   const hardcodedArabic: string[] = [];
+  const hardcodedArabicMarkup: string[] = [];
   const literalPattern = /(['"`])[^'"`\n]*[\u0600-\u06ff][^'"`\n]*\1/g;
 
   for (const { file, text } of sourceText) {
@@ -72,6 +87,37 @@ async function main() {
         continue;
       for (const match of line.matchAll(literalPattern)) {
         hardcodedArabic.push(`${relativePath(file)}:${index + 1} ${match[0]}`);
+      }
+    }
+
+    if (file.endsWith(".svelte")) {
+      const ast = parse(text, { filename: file });
+      visitMarkup(ast.html, text, file);
+    }
+  }
+
+  function visitMarkup(node: SvelteNode, source: string, file: string) {
+    if (node.type === "Comment") return;
+    if (
+      node.type === "Text" &&
+      typeof node.data === "string" &&
+      /[\u0600-\u06ff]/.test(node.data)
+    ) {
+      const line = source.slice(0, node.start ?? 0).split(/\r?\n/).length;
+      hardcodedArabicMarkup.push(
+        `${relativePath(file)}:${line} ${JSON.stringify(node.data.trim())}`,
+      );
+    }
+
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) {
+        for (const child of value) {
+          if (child && typeof child === "object") {
+            visitMarkup(child as SvelteNode, source, file);
+          }
+        }
+      } else if (value && typeof value === "object") {
+        visitMarkup(value as SvelteNode, source, file);
       }
     }
   }
@@ -92,6 +138,7 @@ async function main() {
   printList("Missing Arabic translations", missingInArabic);
   printList("Missing English translations", missingInEnglish);
   printList("Hardcoded Arabic literals", hardcodedArabic);
+  printList("Hardcoded Arabic Svelte markup", hardcodedArabicMarkup);
 
   if (process.argv.includes("--prune")) {
     const unused = new Set(unusedKeys);
@@ -112,7 +159,8 @@ async function main() {
   if (
     missingInArabic.length ||
     missingInEnglish.length ||
-    hardcodedArabic.length
+    hardcodedArabic.length ||
+    hardcodedArabicMarkup.length
   ) {
     process.exitCode = 1;
   }

@@ -197,7 +197,7 @@ async function handlePaymentSubmit(e: SubmitEvent) {
 
 async function handlePrintReceipt(payment: PaymentDto) {
   try {
-    toast.info("جاري تجهيز سند القبض للطباعة...");
+    toast.info(m.finance_ui_receipt_print_preparing());
     const pdfUrl = await api.renderReport("doc_payment_receipt", {
       payment_id: payment.id,
       receipt_number: payment.receipt_number || payment.id.slice(0, 8),
@@ -213,7 +213,7 @@ async function handlePrintReceipt(payment: PaymentDto) {
     }
   } catch (e) {
     console.warn("DocForge direct preview failed:", e);
-    toast.info(`تم إصدار سند القبض برقم ${payment.receipt_number || payment.id.slice(0, 8)}`);
+    toast.info(m.finance_ui_receipt_printed({ number: payment.receipt_number || payment.id.slice(0, 8) }));
   }
 }
 
@@ -270,7 +270,7 @@ const rtl = $derived(getLocale() === "ar");
           {m.finance_pos_quick_pos_payment_register()}
         </h1>
         <p class="text-[10px] text-muted-foreground mt-0.5">
-          سندات قبض مباشرة مع ترحيل محاسبي فوري للقيود اليومية
+          {m.finance_ui_pos_subtitle()}
         </p>
       </div>
     </div>
@@ -279,7 +279,7 @@ const rtl = $derived(getLocale() === "ar");
     <div class="flex items-center gap-2">
       <div class="flex items-center gap-1.5 bg-background border border-border/80 rounded-md px-2.5 py-1 text-[11px]">
         <BuildingLibrary size={13} class="text-muted-foreground" />
-        <span class="text-muted-foreground">الخزينة المستلمة:</span>
+        <span class="text-muted-foreground">{m.finance_ui_receiving_treasury_label()}</span>
         <select
           bind:value={formAccountId}
           class="bg-transparent font-medium text-foreground outline-none cursor-pointer text-[11px]"
@@ -292,7 +292,7 @@ const rtl = $derived(getLocale() === "ar");
 
       <div class="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/40 border border-border/40 rounded px-2 py-1">
         <Keyboard size={12} />
-        <span>Ctrl+K للبحث السريع</span>
+        <span>{m.finance_ui_pos_search_shortcut()}</span>
       </div>
     </div>
   </header>
@@ -315,7 +315,7 @@ const rtl = $derived(getLocale() === "ar");
             oninput={(e) => handleSearchInput((e.target as HTMLInputElement).value)}
             onfocus={() => (isSearchFocused = true)}
             onblur={() => setTimeout(() => (isSearchFocused = false), 200)}
-            placeholder="ابحث بالاسم، الرقم الأكاديمي، أو رقم الهوية... (اضغط Enter للاختيار)"
+            placeholder={m.finance_ui_pos_student_search_placeholder()}
             class="w-full bg-background border border-border/80 rounded-lg ps-9 pe-9 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono"
           />
           {#if searchQuery}
@@ -344,7 +344,7 @@ const rtl = $derived(getLocale() === "ar");
                 >
                   <div class="flex items-center gap-2">
                     <div class="h-6 w-6 rounded-full bg-muted flex items-center justify-center font-bold text-[10px] text-foreground shrink-0">
-                      {student.first_name?.[0] || "ط"}
+                      {student.first_name?.[0] || m.finance_ui_student_initial()}
                     </div>
                     <div>
                       <div class="font-medium text-foreground">{student.first_name} {student.last_name}</div>
@@ -368,22 +368,22 @@ const rtl = $derived(getLocale() === "ar");
           <div class="bg-muted/30 border border-border/80 rounded-lg p-3 flex items-center justify-between shrink-0">
             <div class="flex items-center gap-3">
               <div class="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
-                {selectedStudent.first_name?.[0] || "ط"}
+                {selectedStudent.first_name?.[0] || m.finance_ui_student_initial()}
               </div>
               <div>
                 <div class="text-sm font-bold text-foreground">
                   {selectedStudent.first_name} {selectedStudent.last_name}
                 </div>
                 <div class="text-[11px] text-muted-foreground flex items-center gap-3 mt-0.5 font-mono">
-                  <span>الرقم: #{selectedStudent.student_number || selectedStudent.id.slice(0, 8)}</span>
-                  <span>الهوية: {selectedStudent.national_id || "—"}</span>
+                  <span>{m.finance_ui_student_number_label()} #{selectedStudent.student_number || selectedStudent.id.slice(0, 8)}</span>
+                  <span>{m.finance_ui_national_id_label()} {selectedStudent.national_id || "—"}</span>
                 </div>
               </div>
             </div>
 
             <Button variant="ghost" size="sm" onclick={deselectStudent} class="h-7 text-xs text-muted-foreground hover:text-destructive">
               <XMark size={13} class="me-1" />
-              تغيير الطالب (Esc)
+              {m.finance_ui_change_student_escape()}
             </Button>
           </div>
 
@@ -392,9 +392,9 @@ const rtl = $derived(getLocale() === "ar");
             <div class="flex items-center justify-between">
               <h2 class="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <DocumentPage size={14} class="text-primary" />
-                الرسوم والمطالبات المستحقة ({activeStudentFees.length})
+                {m.finance_ui_due_fees_claims({ count: activeStudentFees.length })}
               </h2>
-              <span class="text-[11px] text-muted-foreground">اختر الرسم المستحق للتحصيل</span>
+              <span class="text-[11px] text-muted-foreground">{m.finance_ui_select_fee_to_collect()}</span>
             </div>
 
             {#if studentFeesQuery.isLoading}
@@ -405,8 +405,8 @@ const rtl = $derived(getLocale() === "ar");
             {:else if activeStudentFees.length === 0}
               <div class="bg-muted/20 border border-dashed border-border rounded-lg p-6 text-center text-muted-foreground">
                 <CheckCircle size={24} class="mx-auto mb-1.5 text-emerald-500 opacity-80" />
-                <p class="font-medium text-foreground">لا توجد رسوم مستحقة على هذا الطالب</p>
-                <p class="text-[10px] mt-0.5">تم سداد جميع الرسوم والمطالبات بالكامل</p>
+                <p class="font-medium text-foreground">{m.finance_ui_no_fees_due_for_student()}</p>
+                <p class="text-[10px] mt-0.5">{m.finance_ui_all_student_fees_paid()}</p>
               </div>
             {:else}
               <div class="space-y-1.5">
@@ -423,11 +423,11 @@ const rtl = $derived(getLocale() === "ar");
                         {/if}
                       </div>
                       <div>
-                        <div class="font-semibold text-foreground text-xs">{fee.notes || "رسوم دراسية"}</div>
+                        <div class="font-semibold text-foreground text-xs">{fee.notes || m.finance_ui_tuition_fees()}</div>
                         <div class="text-[10px] text-muted-foreground font-mono mt-0.5">
-                          تاريخ الاستحقاق: {formatDate(fee.due_date) || "—"}
+                          {m.finance_ui_due_date_label()} {formatDate(fee.due_date) || "—"}
                           {#if fee.installment_number}
-                            • القسط {fee.installment_number}
+                            • {m.finance_ui_installment_number({ number: fee.installment_number })}
                           {/if}
                         </div>
                       </div>
@@ -438,7 +438,7 @@ const rtl = $derived(getLocale() === "ar");
                         {formatCurrency(Number(fee.balance_due || fee.net_amount || 0))}
                       </div>
                       <div class="text-[10px] text-muted-foreground font-mono">
-                        المسدد: {formatCurrency(Number(fee.paid_amount || 0))}
+                        {m.finance_ui_paid_amount_label()} {formatCurrency(Number(fee.paid_amount || 0))}
                       </div>
                     </div>
                   </button>
@@ -451,17 +451,17 @@ const rtl = $derived(getLocale() === "ar");
           {#if activeStudentPayments.length > 0}
             <div class="mt-2 border-t border-border/50 pt-3 flex flex-col gap-2">
               <h2 class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                سندات القبض السابقة للطالب
+                {m.finance_ui_student_previous_receipts()}
               </h2>
               <div class="border border-border/60 rounded-md overflow-hidden bg-background">
                 <table class="w-full text-start text-[11px]">
                   <thead class="bg-muted/40 border-b border-border/60 text-muted-foreground">
                     <tr>
-                      <th class="py-1.5 px-3 font-semibold text-start">رقم السند</th>
-                      <th class="py-1.5 px-3 font-semibold text-start">الطريقة</th>
-                      <th class="py-1.5 px-3 font-semibold text-start">التاريخ</th>
-                      <th class="py-1.5 px-3 font-semibold text-end">المبلغ</th>
-                      <th class="py-1.5 px-2 font-semibold text-center w-10">طباعة</th>
+                      <th class="py-1.5 px-3 font-semibold text-start">{m.finance_ui_voucher_number()}</th>
+                      <th class="py-1.5 px-3 font-semibold text-start">{m.finance_ui_payment_method()}</th>
+                      <th class="py-1.5 px-3 font-semibold text-start">{m.finance_ui_date()}</th>
+                      <th class="py-1.5 px-3 font-semibold text-end">{m.finance_ui_amount()}</th>
+                      <th class="py-1.5 px-2 font-semibold text-center w-10">{m.finance_ui_print()}</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-border/40">
@@ -480,7 +480,7 @@ const rtl = $derived(getLocale() === "ar");
                             type="button"
                             onclick={() => handlePrintReceipt(payment)}
                             class="p-1 text-muted-foreground hover:text-primary transition-colors"
-                            title="طباعة السند"
+                            title={m.finance_ui_print_receipt()}
                           >
                             <Printer size={13} />
                           </button>
@@ -499,9 +499,9 @@ const rtl = $derived(getLocale() === "ar");
             <div class="h-14 w-14 rounded-full bg-muted/40 flex items-center justify-center text-muted-foreground/60 mb-3">
               <MagnifyingGlass size={28} />
             </div>
-            <h3 class="text-sm font-bold text-foreground">اختر طالباً لبدء التحصيل</h3>
+            <h3 class="text-sm font-bold text-foreground">{m.finance_ui_select_student_to_collect()}</h3>
             <p class="text-[11px] text-muted-foreground max-w-sm mt-1">
-              استخدم شريط البحث أعلاه بالاسم أو الرقم الأكاديمي لعرض المستحقات وتوليد سند القبض فورياً
+              {m.finance_ui_pos_select_student_instructions()}
             </p>
           </div>
         {/if}
@@ -515,10 +515,10 @@ const rtl = $derived(getLocale() === "ar");
         <div class="border-b border-border/60 pb-2">
           <h2 class="text-xs font-bold text-foreground flex items-center gap-1.5">
             <Banknotes size={15} class="text-emerald-600" />
-            بيانات سند القبض والتحصيل
+            {m.finance_ui_receipt_and_payment_details()}
           </h2>
           <p class="text-[10px] text-muted-foreground mt-0.5">
-            يتم إنشاء القيد المحاسبي المزدوج وتحديث رصيد الطالب فور النقر
+            {m.finance_ui_pos_payment_accounting_note()}
           </p>
         </div>
 
@@ -528,7 +528,7 @@ const rtl = $derived(getLocale() === "ar");
             <p class="text-[11px] font-semibold text-foreground">{m.finance_pos_payment_method_integrations()}</p>
             {#if selectedPaymentMethodObj?.is_digital_gateway}
               <span class="text-[9px] bg-primary/10 text-primary border border-primary/20 rounded px-1.5 py-0.5 font-medium">
-                بوابة {selectedPaymentMethodObj.provider_name}
+                {m.finance_ui_gateway_provider({ provider: selectedPaymentMethodObj.provider_name ?? "" })}
               </span>
             {/if}
           </div>
@@ -558,9 +558,9 @@ const rtl = $derived(getLocale() === "ar");
 
           {#if availablePaymentMethods.filter((m) => m.is_digital_gateway).length === 0}
             <div class="text-[10px] text-muted-foreground bg-muted/20 border border-border/40 rounded p-1.5 mt-1 flex items-center justify-between">
-              <span>طرق الدفع الإلكترونية (مدى / بطاقات) تتطلب تفعيل بوابة دفع.</span>
+              <span>{m.finance_ui_payment_gateway_activation_required()}</span>
               <a href="/{orgId}/settings/integrations" class="text-primary hover:underline font-medium">
-                متجر التكاملات
+                {m.finance_ui_integrations_store()}
               </a>
             </div>
           {/if}
@@ -569,7 +569,7 @@ const rtl = $derived(getLocale() === "ar");
         <!-- Amount Entry Field -->
         <div class="flex flex-col gap-1.5">
           <div class="flex items-center justify-between">
-            <label for="pos_amount" class="text-[11px] font-semibold text-foreground">المبلغ المستلم للتحصيل</label>
+            <label for="pos_amount" class="text-[11px] font-semibold text-foreground">{m.finance_ui_amount_received_to_collect()}</label>
             {#if formFeeId}
               {@const selectedFee = activeStudentFees.find(f => f.id === formFeeId)}
               {#if selectedFee}
@@ -578,7 +578,7 @@ const rtl = $derived(getLocale() === "ar");
                   onclick={() => (formAmount = Number(selectedFee.balance_due || 0))}
                   class="text-[10px] text-primary hover:underline font-mono"
                 >
-                  كامل الرصيد ({formatCurrency(Number(selectedFee.balance_due || 0))})
+                  {m.finance_ui_full_balance()} ({formatCurrency(Number(selectedFee.balance_due || 0))})
                 </button>
               {/if}
             {/if}
@@ -601,14 +601,14 @@ const rtl = $derived(getLocale() === "ar");
         {#if selectedPaymentMethodObj?.requires_source_token}
           <div class="flex flex-col gap-1.5" transition:slide={{ duration: 120 }}>
             <label for="pos_token" class="text-[11px] font-semibold text-foreground flex items-center justify-between">
-              <span>رمز بطاقة / تفويض بوابة الدفع (Token)</span>
+              <span>{m.finance_ui_payment_gateway_token_label()}</span>
               <span class="text-[9px] text-muted-foreground font-mono">Gateway Source Token</span>
             </label>
             <input
               id="pos_token"
               type="text"
               bind:value={sourceToken}
-              placeholder="tok_... أو رقم المعاملة من جهاز الشبكة POS"
+              placeholder={m.finance_ui_pos_payment_token_placeholder()}
               class="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary font-mono"
             />
           </div>
@@ -618,13 +618,13 @@ const rtl = $derived(getLocale() === "ar");
         {#if formMethod !== "cash"}
           <div class="flex flex-col gap-1.5" transition:slide={{ duration: 120 }}>
             <label for="pos_ref" class="text-[11px] font-semibold text-foreground">
-              {formMethod === "check" ? "رقم الشيك والبنك المسحوب عليه" : "رقم الحوالة / العملية / المرجع"}
+              {formMethod === "check" ? m.finance_ui_check_reference_label() : m.finance_ui_transfer_reference_label()}
             </label>
             <input
               id="pos_ref"
               type="text"
               bind:value={referenceNumber}
-              placeholder={formMethod === "check" ? "مثال: شيك رقم 44820 - بنك الرياض" : "مثال: TRF-994021"}
+              placeholder={formMethod === "check" ? m.finance_ui_check_reference_placeholder() : m.finance_ui_transfer_reference_placeholder()}
               class="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary font-mono"
             />
           </div>
@@ -632,12 +632,12 @@ const rtl = $derived(getLocale() === "ar");
 
         <!-- Notes -->
         <div class="flex flex-col gap-1.5">
-          <label for="pos_notes" class="text-[11px] font-semibold text-foreground">ملاحظات السند (اختياري)</label>
+          <label for="pos_notes" class="text-[11px] font-semibold text-foreground">{m.finance_ui_receipt_notes_optional()}</label>
           <input
             id="pos_notes"
             type="text"
             bind:value={notes}
-            placeholder="ملاحظات تظهر في سند القبض..."
+            placeholder={m.finance_ui_receipt_notes_placeholder()}
             class="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary"
           />
         </div>
@@ -651,7 +651,7 @@ const rtl = $derived(getLocale() === "ar");
             class="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5"
           />
           <label for="auto_print" class="text-[11px] text-muted-foreground cursor-pointer select-none">
-            طباعة سند القبض الفوري عبر DocForge بعد الحفظ
+            {m.finance_ui_auto_print_receipt_docforge()}
           </label>
         </div>
 
@@ -664,10 +664,10 @@ const rtl = $derived(getLocale() === "ar");
           >
             {#if processPaymentMutation.isPending}
               <ArrowPath size={14} class="animate-spin" />
-              <span>جاري ترحيل القيد وإصدار السند...</span>
+              <span>{m.finance_ui_posting_entry_and_issuing_receipt()}</span>
             {:else}
               <CheckCircle size={15} />
-              <span>ترحيل سند القبض الآن (Enter)</span>
+              <span>{m.finance_ui_post_receipt_now_enter()}</span>
             {/if}
           </Button>
 
@@ -680,7 +680,7 @@ const rtl = $derived(getLocale() === "ar");
               class="w-full h-8 text-xs text-foreground"
             >
               <Printer size={13} class="me-1.5 text-primary" />
-              إعادة طباعة آخر سند (#{lastReceiptPayment.receipt_number || lastReceiptPayment.id.slice(0, 8)})
+              {m.finance_ui_reprint_last_receipt({ number: lastReceiptPayment.receipt_number || lastReceiptPayment.id.slice(0, 8) })}
             </Button>
           {/if}
         </div>

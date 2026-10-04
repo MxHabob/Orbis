@@ -5,6 +5,7 @@
   keyboard navigation (Up/Down/Enter/Escape), and localized account type badges.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 import { api, type AccountDto } from "$lib/api";
 import { onMount } from "svelte";
@@ -32,8 +33,8 @@ let {
   value = $bindable<string | null>(null),
   accounts = undefined,
   accountTypeFilter = undefined,
-  placeholder = "ابحث برمز أو اسم الحساب (مثال: 120101، الصندوق، البنك)...",
-  emptyText = "لا يوجد حساب مطابق للبحث",
+  placeholder = m.finance_ui_account_search_placeholder(),
+  emptyText = m.finance_ui_account_search_empty(),
   disabled = false,
   size = "default",
   class: className = "",
@@ -107,20 +108,20 @@ const filteredResults = $derived.by(() => {
   }).slice(0, 50);
 });
 
-const accountTypeLabels: Record<string, { ar: string; en: string; variant: "default" | "secondary" | "outline" | "lime" | "destructive" }> = {
-  asset: { ar: "أصول", en: "Asset", variant: "lime" },
-  liability: { ar: "التزامات", en: "Liability", variant: "destructive" },
-  equity: { ar: "حقوق ملكية", en: "Equity", variant: "secondary" },
-  revenue: { ar: "إيرادات", en: "Revenue", variant: "default" },
-  expense: { ar: "مصروفات", en: "Expense", variant: "outline" },
-  cash: { ar: "نقدية / صندوق", en: "Cash", variant: "lime" },
-  bank: { ar: "حساب بنكي", en: "Bank", variant: "secondary" },
+const accountTypeLabels: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "lime" | "destructive" }> = {
+  asset: { label: m.finance_ui_account_type_asset(), variant: "lime" },
+  liability: { label: m.finance_ui_account_type_liability(), variant: "destructive" },
+  equity: { label: m.finance_ui_account_type_equity(), variant: "secondary" },
+  revenue: { label: m.finance_ui_account_type_revenue(), variant: "default" },
+  expense: { label: m.finance_ui_account_type_expense(), variant: "outline" },
+  cash: { label: m.finance_ui_account_type_cash(), variant: "lime" },
+  bank: { label: m.finance_ui_account_type_bank(), variant: "secondary" },
 };
 
 function getAccountTypeBadge(type?: string | null) {
   if (!type) return null;
   const key = type.toLowerCase();
-  return accountTypeLabels[key] || { ar: type, en: type, variant: "outline" as const };
+  return accountTypeLabels[key] || { label: type, variant: "outline" as const };
 }
 
 function handleFocus() {
@@ -221,7 +222,7 @@ function handleClickOutside(e: MouseEvent) {
         class="absolute inset-e-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer p-0.5 rounded-full hover:bg-muted/80 transition-colors"
         onclick={handleClear}
         tabindex="-1"
-        title="مسح الحساب"
+        title={m.finance_ui_account_clear()}
       >
         <XMark size={13} />
       </button>
@@ -264,7 +265,7 @@ function handleClickOutside(e: MouseEvent) {
             <div class="flex items-center gap-2 shrink-0">
               {#if badgeInfo}
                 <Badge variant={badgeInfo.variant} class="text-[9px] py-0 px-1.5 font-normal">
-                  {l(badgeInfo.ar, badgeInfo.en)}
+                  {badgeInfo.label}
                 </Badge>
               {/if}
               {#if isSelected}
@@ -277,7 +278,7 @@ function handleClickOutside(e: MouseEvent) {
         {#if filteredResults.length === 0}
           <div class="py-6 px-3 text-center text-xs text-muted-foreground italic flex flex-col gap-1">
             <span>{emptyText}</span>
-            <span class="text-[10px] opacity-70">جرّب البحث باسم آخر أو رمز محاسبي مختلف</span>
+            <span class="text-[10px] opacity-70">{m.finance_ui_account_search_tip()}</span>
           </div>
         {/if}
       </div>

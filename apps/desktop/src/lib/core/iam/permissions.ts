@@ -1,49 +1,51 @@
 import { Pencil } from "@orbis/icons";
+import * as m from "$lib/paraglide/messages";
 /**
  * Orbis IAM Permissions System (Single Source of Truth)
  * 
  * Maps directly to backend `orbis_domain::iam::permission::Permission`.
- * Provides full bilingual metadata (Arabic/English), domain groupings,
- * resources, actions, system role presets, and utility helpers.
+ * Provides Paraglide-localized metadata, domain groupings, resources,
+ * actions, system role presets, and utility helpers.
  */
 
 export interface IamActionDef {
   key: string;
-  labelEn: string;
-  labelAr: string;
-  descEn?: string;
-  descAr?: string;
+  labelKey: IamMessageKey;
+  descriptionKey?: IamMessageKey;
 }
 
 export interface IamResourceDef {
   key: string;
-  labelEn: string;
-  labelAr: string;
-  descEn: string;
-  descAr: string;
+  labelKey: IamMessageKey;
+  descriptionKey: IamMessageKey;
   actions: IamActionDef[];
 }
 
 export interface IamDomainDef {
   id: string;
-  nameEn: string;
-  nameAr: string;
-  descEn: string;
-  descAr: string;
+  nameKey: IamMessageKey;
+  descriptionKey: IamMessageKey;
   iconName: string;
   resources: IamResourceDef[];
 }
 
 export interface SystemRoleDef {
   id: string;
-  nameEn: string;
-  nameAr: string;
-  descEn: string;
-  descAr: string;
+  nameKey: IamMessageKey;
+  descriptionKey: IamMessageKey;
   iconName: string;
   color: string;
   isSystem: boolean;
   defaultPermissions: Record<string, string[]>;
+}
+
+export type IamMessageKey = `iam_${string}`;
+
+export function translateIamMessage(key: IamMessageKey, locale?: "ar" | "en"): string {
+  const message = m[key as keyof typeof m] as
+    | ((inputs?: Record<string, never>, options?: { locale?: "ar" | "en" }) => string)
+    | undefined;
+  return message?.({}, locale ? { locale } : undefined) ?? key;
 }
 
 // ============================================================================
@@ -210,500 +212,416 @@ export type Permission = typeof Permissions[keyof typeof Permissions];
 export const IAM_DOMAINS: IamDomainDef[] = [
   {
     id: "iam",
-    nameEn: "Identity & Organization",
-    nameAr: "الهوية والهيكل الإداري",
-    descEn: "Organization configuration, user accounts, roles, and administrative branches.",
-    descAr: "تهيئة المنظمة، حسابات المستخدمين، الأدوار، والفروع الإدارية.",
+    nameKey: "iam_domain_iam_name",
+    descriptionKey: "iam_domain_iam_description",
     iconName: "Shield",
     resources: [
       {
         key: "organization",
-        labelEn: "Organization Settings",
-        labelAr: "إعدادات المنظمة",
-        descEn: "Core organization profile, metadata, and branding",
-        descAr: "بيانات المنظمة الأساسية، الهوية، والتهيئة العامة",
+        labelKey: "iam_resource_organization_label",
+        descriptionKey: "iam_resource_organization_description",
         actions: [
-          { key: "read", labelEn: "View Organization", labelAr: "عرض المنظمة" },
-          { key: "write", labelEn: "Update Settings", labelAr: "تعديل الإعدادات" },
+          { key: "read", labelKey: "iam_action_organization_read_label" },
+          { key: "write", labelKey: "iam_action_organization_write_label" },
         ],
       },
       {
         key: "org_unit",
-        labelEn: "Org Units & Branches",
-        labelAr: "الوحدات والفروع",
-        descEn: "Campuses, branches, faculties, and departmental units",
-        descAr: "الفروع، المباني، والكليات والوحدات الإدارية",
+        labelKey: "iam_resource_org_unit_label",
+        descriptionKey: "iam_resource_org_unit_description",
         actions: [
-          { key: "read", labelEn: "View Units", labelAr: "عرض الفروع" },
-          { key: "write", labelEn: "Create / Pencil Units", labelAr: "إنشاء وتعديل الفروع" },
-          { key: "delete", labelEn: "Delete Units", labelAr: "حذف الفروع" },
+          { key: "read", labelKey: "iam_action_org_unit_read_label" },
+          { key: "write", labelKey: "iam_action_org_unit_write_label" },
+          { key: "delete", labelKey: "iam_action_org_unit_delete_label" },
         ],
       },
       {
         key: "user",
-        labelEn: "Users & Staff Accounts",
-        labelAr: "المستخدمين والموظفين",
-        descEn: "Staff, teachers, admins, and student user accounts",
-        descAr: "حسابات الكادر الإداري، المعلمين، والطلاب",
+        labelKey: "iam_resource_user_label",
+        descriptionKey: "iam_resource_user_description",
         actions: [
-          { key: "read", labelEn: "View Users", labelAr: "عرض المستخدمين" },
-          { key: "write", labelEn: "Create / Pencil Users", labelAr: "إنشاء وتعديل الحسابات" },
-          { key: "delete", labelEn: "Suspend / Delete", labelAr: "تعطيل وحذف الحسابات" },
-          { key: "role_write", labelEn: "Assign Roles", labelAr: "تعيين وتعديل الأدوار" },
-          { key: "password_write", labelEn: "Reset Password", labelAr: "إعادة ضبط كلمة المرور" },
+          { key: "read", labelKey: "iam_action_user_read_label" },
+          { key: "write", labelKey: "iam_action_user_write_label" },
+          { key: "delete", labelKey: "iam_action_user_delete_label" },
+          { key: "role_write", labelKey: "iam_action_user_role_write_label" },
+          { key: "password_write", labelKey: "iam_action_user_password_write_label" },
         ],
       },
       {
         key: "group",
-        labelEn: "User Groups & Roles",
-        labelAr: "مجموعات المستخدمين والأدوار",
-        descEn: "User groups, collective permissions, and membership assignments",
-        descAr: "مجموعات المستخدمين، الصلاحيات الجماعية، وتعيين الأعضاء",
+        labelKey: "iam_resource_group_label",
+        descriptionKey: "iam_resource_group_description",
         actions: [
-          { key: "read", labelEn: "View Groups", labelAr: "عرض المجموعات" },
-          { key: "write", labelEn: "Create / Pencil Groups", labelAr: "إنشاء وتعديل المجموعات" },
-          { key: "delete", labelEn: "Delete Groups", labelAr: "حذف المجموعات" },
-          { key: "assign", labelEn: "Assign Members", labelAr: "إسناد الأعضاء للمجموعات" },
+          { key: "read", labelKey: "iam_action_group_read_label" },
+          { key: "write", labelKey: "iam_action_group_write_label" },
+          { key: "delete", labelKey: "iam_action_group_delete_label" },
+          { key: "assign", labelKey: "iam_action_group_assign_label" },
         ],
       },
     ],
   },
   {
     id: "employees",
-    nameEn: "Employee Affairs",
-    nameAr: "شؤون الموظفين والكادر",
-    descEn: "Staff dossiers, employment contracts, job hierarchy, and status management.",
-    descAr: "ملفات الموظفين، عقود العمل، الهيكل الوظيفي، وإدارة حالات العمل.",
+    nameKey: "iam_domain_employees_name",
+    descriptionKey: "iam_domain_employees_description",
     iconName: "UserGroup",
     resources: [
       {
         key: "employee",
-        labelEn: "Employee Dossiers",
-        labelAr: "سجلات الموظفين",
-        descEn: "Personal records, job titles, departments, and account provisioning",
-        descAr: "السجلات الشخصية، المسميات الوظيفية، الأقسام، وربط الحسابات",
+        labelKey: "iam_resource_employee_label",
+        descriptionKey: "iam_resource_employee_description",
         actions: [
-          { key: "read", labelEn: "View Employees", labelAr: "عرض الموظفين" },
-          { key: "write", labelEn: "Create / Pencil Employees", labelAr: "إنشاء وتعديل بيانات الموظفين" },
-          { key: "create", labelEn: "Register New Employee", labelAr: "تسجيل موظف جديد" },
-          { key: "update", labelEn: "Update Employee Dossier", labelAr: "تحديث ملف الموظف" },
-          { key: "delete", labelEn: "Delete Employee Record", labelAr: "حذف سجل الموظف" },
+          { key: "read", labelKey: "iam_action_employee_read_label" },
+          { key: "write", labelKey: "iam_action_employee_write_label" },
+          { key: "create", labelKey: "iam_action_employee_create_label" },
+          { key: "update", labelKey: "iam_action_employee_update_label" },
+          { key: "delete", labelKey: "iam_action_employee_delete_label" },
         ],
       },
     ],
   },
   {
     id: "academic",
-    nameEn: "Academics & Scheduling",
-    nameAr: "الشؤون الأكاديمية والجدول",
-    descEn: "Academic calendars, periods, classes, subjects, and timetables.",
-    descAr: "التقويم الأكاديمي، الفصول، المواد، والشعب والجداول الدراسية.",
+    nameKey: "iam_domain_academic_name",
+    descriptionKey: "iam_domain_academic_description",
     iconName: "GraduationCap",
     resources: [
       {
         key: "period",
-        labelEn: "Academic Periods",
-        labelAr: "الفصول الأكاديمية",
-        descEn: "Semesters, terms, enrollment windows, and period locking",
-        descAr: "الفصول الدراسية، نوافذ القيد، وقفل الفترات",
+        labelKey: "iam_resource_period_label",
+        descriptionKey: "iam_resource_period_description",
         actions: [
-          { key: "read", labelEn: "View Periods", labelAr: "عرض الفصول الأكاديمية" },
-          { key: "write", labelEn: "Create / Pencil Periods", labelAr: "إنشاء وتعديل الفصول" },
-          { key: "activate", labelEn: "Activate / Open Enrollment", labelAr: "تفعيل وفتح القيد" },
-          { key: "lock", labelEn: "Lock Grades & Period", labelAr: "قفل الدرجات والفترة" },
-          { key: "unlock", labelEn: "Unlock Period", labelAr: "إلغاء قفل الفترة" },
+          { key: "read", labelKey: "iam_action_period_read_label" },
+          { key: "write", labelKey: "iam_action_period_write_label" },
+          { key: "activate", labelKey: "iam_action_period_activate_label" },
+          { key: "lock", labelKey: "iam_action_period_lock_label" },
+          { key: "unlock", labelKey: "iam_action_period_unlock_label" },
         ],
       },
       {
         key: "class",
-        labelEn: "Classes & Sections",
-        labelAr: "الفصول والشعب",
-        descEn: "Grade levels, classes, section capacity, and homeroom assignments",
-        descAr: "الصفوف الدراسية، الشعب، السعة، وتعيين رواد الفصول",
+        labelKey: "iam_resource_class_label",
+        descriptionKey: "iam_resource_class_description",
         actions: [
-          { key: "read", labelEn: "View Classes", labelAr: "عرض الصفوف والشعب" },
-          { key: "write", labelEn: "Create / Pencil Classes", labelAr: "إنشاء وتعديل الشعب" },
-          { key: "delete", labelEn: "Delete Classes", labelAr: "حذف الصفوف والشعب" },
+          { key: "read", labelKey: "iam_action_class_read_label" },
+          { key: "write", labelKey: "iam_action_class_write_label" },
+          { key: "delete", labelKey: "iam_action_class_delete_label" },
         ],
       },
       {
         key: "subject",
-        labelEn: "Subjects & Curriculum",
-        labelAr: "المواد والمناهج",
-        descEn: "Courses, subjects, credit weights, and syllabus",
-        descAr: "المواد الدراسية، الأوزان النسبية، والخطط الدراسية",
+        labelKey: "iam_resource_subject_label",
+        descriptionKey: "iam_resource_subject_description",
         actions: [
-          { key: "read", labelEn: "View Subjects", labelAr: "عرض المواد" },
-          { key: "write", labelEn: "Create / Pencil Subjects", labelAr: "إنشاء وتعديل المواد" },
-          { key: "delete", labelEn: "Delete Subjects", labelAr: "حذف المواد" },
+          { key: "read", labelKey: "iam_action_subject_read_label" },
+          { key: "write", labelKey: "iam_action_subject_write_label" },
+          { key: "delete", labelKey: "iam_action_subject_delete_label" },
         ],
       },
       {
         key: "schedule",
-        labelEn: "Timetables & Slots",
-        labelAr: "الجداول والحصص",
-        descEn: "Lesson slots, teacher timetable allocations, and room bookings",
-        descAr: "الحصص اليومية، توزيع جداول المعلمين، والقاعات",
+        labelKey: "iam_resource_schedule_label",
+        descriptionKey: "iam_resource_schedule_description",
         actions: [
-          { key: "read", labelEn: "View Schedules", labelAr: "عرض الجداول الدراسية" },
-          { key: "write", labelEn: "Build / Pencil Schedule", labelAr: "بناء وتعديل الجداول" },
-          { key: "delete", labelEn: "Clear Schedule", labelAr: "مسح وتفريغ الجداول" },
+          { key: "read", labelKey: "iam_action_schedule_read_label" },
+          { key: "write", labelKey: "iam_action_schedule_write_label" },
+          { key: "delete", labelKey: "iam_action_schedule_delete_label" },
         ],
       },
     ],
   },
   {
     id: "students",
-    nameEn: "Students & Admissions",
-    nameAr: "شؤون الطلاب والقبول",
-    descEn: "Student profiles, guardians, enrollment lifecycle, and cohort promotions.",
-    descAr: "سجلات الطلاب، أولياء الأمور، القيد والتسجيل، والترقية والنقل.",
+    nameKey: "iam_domain_students_name",
+    descriptionKey: "iam_domain_students_description",
     iconName: "Users",
     resources: [
       {
         key: "student",
-        labelEn: "Student Profiles",
-        labelAr: "سجلات الطلاب",
-        descEn: "Demographics, personal files, admission records, and identification",
-        descAr: "البيانات الشخصية، الملف الأكاديمي، وسجلات القبول",
+        labelKey: "iam_resource_student_label",
+        descriptionKey: "iam_resource_student_description",
         actions: [
-          { key: "read", labelEn: "View Profiles", labelAr: "عرض ملفات الطلاب" },
-          { key: "create", labelEn: "Admit New Student", labelAr: "تسجيل طالب جديد" },
-          { key: "update", labelEn: "Update Profile", labelAr: "تحديث بيانات الطالب" },
-          { key: "delete", labelEn: "Archive / Remove", labelAr: "أرشفة وحذف الطالب" },
-          { key: "write", labelEn: "Full Student Write", labelAr: "إدارة شاملة لملف الطالب" },
+          { key: "read", labelKey: "iam_action_student_read_label" },
+          { key: "create", labelKey: "iam_action_student_create_label" },
+          { key: "update", labelKey: "iam_action_student_update_label" },
+          { key: "delete", labelKey: "iam_action_student_delete_label" },
+          { key: "write", labelKey: "iam_action_student_write_label" },
         ],
       },
       {
         key: "guardian",
-        labelEn: "Guardians & Contacts",
-        labelAr: "أولياء الأمور",
-        descEn: "Parents, legal guardians, emergency contacts, and portal links",
-        descAr: "أولياء الأمور، جهات الاتصال للطوارئ، والربط بالبوابة",
+        labelKey: "iam_resource_guardian_label",
+        descriptionKey: "iam_resource_guardian_description",
         actions: [
-          { key: "read", labelEn: "View Guardians", labelAr: "عرض أولياء الأمور" },
-          { key: "write", labelEn: "Link / Pencil Guardians", labelAr: "ربط وتعديل أولياء الأمور" },
-          { key: "delete", labelEn: "Unlink Guardian", labelAr: "فك ارتباط ولي الأمر" },
+          { key: "read", labelKey: "iam_action_guardian_read_label" },
+          { key: "write", labelKey: "iam_action_guardian_write_label" },
+          { key: "delete", labelKey: "iam_action_guardian_delete_label" },
         ],
       },
       {
         key: "enrollment",
-        labelEn: "Enrollments & Status",
-        labelAr: "القيد وحالات الدراسة",
-        descEn: "Active enrollments, section transfers, and study status",
-        descAr: "حالات القيد، النقل بين الشعب، وإيقاف القيد",
+        labelKey: "iam_resource_enrollment_label",
+        descriptionKey: "iam_resource_enrollment_description",
         actions: [
-          { key: "read", labelEn: "View Enrollments", labelAr: "عرض قيود الطلاب" },
-          { key: "write", labelEn: "Update Status", labelAr: "تعديل حالة القيد" },
-          { key: "promote", labelEn: "Promote Students", labelAr: "ترقية الطلاب للفصل التالي" },
-          { key: "transfer", labelEn: "Transfer Section", labelAr: "نقل الطالب بين الفصول" },
+          { key: "read", labelKey: "iam_action_enrollment_read_label" },
+          { key: "write", labelKey: "iam_action_enrollment_write_label" },
+          { key: "promote", labelKey: "iam_action_enrollment_promote_label" },
+          { key: "transfer", labelKey: "iam_action_enrollment_transfer_label" },
         ],
       },
       {
         key: "promotion",
-        labelEn: "Year-End Promotions",
-        labelAr: "الترحيل السنوي العام",
-        descEn: "Cohort batch progression, graduation, and retention rules",
-        descAr: "ترحيل الدفعات السنوي، التخرج، وقواعد الإعادة",
+        labelKey: "iam_resource_promotion_label",
+        descriptionKey: "iam_resource_promotion_description",
         actions: [
-          { key: "read", labelEn: "View Progression Plans", labelAr: "عرض خطط الترحيل" },
-          { key: "write", labelEn: "Configure Promotion Rules", labelAr: "ضبط قواعد الترحيل" },
-          { key: "execute", labelEn: "Execute Batch Promotion", labelAr: "تنفيذ الترحيل النهائي" },
+          { key: "read", labelKey: "iam_action_promotion_read_label" },
+          { key: "write", labelKey: "iam_action_promotion_write_label" },
+          { key: "execute", labelKey: "iam_action_promotion_execute_label" },
         ],
       },
     ],
   },
   {
     id: "assessment",
-    nameEn: "Assessments & Attendance",
-    nameAr: "التقييم والدرجات والحضور",
-    descEn: "Gradebook, assessment components, attendance tracking, and behavior notes.",
-    descAr: "دفتر الدرجات، الاختبارات الدورية، تسجيل الحضور، وملاحظات السلوك.",
+    nameKey: "iam_domain_assessment_name",
+    descriptionKey: "iam_domain_assessment_description",
     iconName: "FileCheck",
     resources: [
       {
         key: "assessment",
-        labelEn: "Assessment Schemes",
-        labelAr: "مخططات التقييم",
-        descEn: "Grading scales, rubrics, weightings, and exam schemes",
-        descAr: "سلالم الدرجات، الأوزان النسبية، وأنظمة التقييم",
+        labelKey: "iam_resource_assessment_label",
+        descriptionKey: "iam_resource_assessment_description",
         actions: [
-          { key: "read", labelEn: "View Schemes", labelAr: "عرض مخططات التقييم" },
-          { key: "write", labelEn: "Create / Pencil Schemes", labelAr: "إنشاء وتعديل المخططات" },
-          { key: "delete", labelEn: "Delete Schemes", labelAr: "حذف المخططات" },
+          { key: "read", labelKey: "iam_action_assessment_read_label" },
+          { key: "write", labelKey: "iam_action_assessment_write_label" },
+          { key: "delete", labelKey: "iam_action_assessment_delete_label" },
         ],
       },
       {
         key: "grade",
-        labelEn: "Grades & GPA",
-        labelAr: "رصد الدرجات والمعدلات",
-        descEn: "Gradebook entry, GPA calculations, rankings, and transcripts",
-        descAr: "رصد الدرجات، احتساب المعدلات التراكمية، وكشوف العلامات",
+        labelKey: "iam_resource_grade_label",
+        descriptionKey: "iam_resource_grade_description",
         actions: [
-          { key: "read", labelEn: "View Grades", labelAr: "عرض الدرجات" },
-          { key: "write", labelEn: "Record / Pencil Grades", labelAr: "رصد وتعديل الدرجات" },
-          { key: "entry_manage", labelEn: "Manage Grade Entry Deadlines", labelAr: "إدارة فترات الرصد" },
-          { key: "analytics", labelEn: "Compute GPA & Stats", labelAr: "احتساب المعدلات والتحليلات" },
-          { key: "report", labelEn: "Generate Grade Transcripts", labelAr: "إصدار الشهادات وكشوف الدرجات" },
+          { key: "read", labelKey: "iam_action_grade_read_label" },
+          { key: "write", labelKey: "iam_action_grade_write_label" },
+          { key: "entry_manage", labelKey: "iam_action_grade_entry_manage_label" },
+          { key: "analytics", labelKey: "iam_action_grade_analytics_label" },
+          { key: "report", labelKey: "iam_action_grade_report_label" },
         ],
       },
       {
         key: "attendance",
-        labelEn: "Daily & Lesson Attendance",
-        labelAr: "الحضور والغياب",
-        descEn: "Daily absence tracking, lesson attendance, and absence excuses",
-        descAr: "تسجيل الغياب اليومي، حضور الحصص، وأعذار الغياب",
+        labelKey: "iam_resource_attendance_label",
+        descriptionKey: "iam_resource_attendance_description",
         actions: [
-          { key: "read", labelEn: "View Attendance", labelAr: "عرض سجلات الحضور" },
-          { key: "write", labelEn: "Take Attendance", labelAr: "تسجيل وتعديل الحضور" },
-          { key: "analytics", labelEn: "Attendance Analytics", labelAr: "تحليلات ونسب الحضور" },
-          { key: "report", labelEn: "Attendance Reports", labelAr: "إصدار تقارير الغياب" },
+          { key: "read", labelKey: "iam_action_attendance_read_label" },
+          { key: "write", labelKey: "iam_action_attendance_write_label" },
+          { key: "analytics", labelKey: "iam_action_attendance_analytics_label" },
+          { key: "report", labelKey: "iam_action_attendance_report_label" },
         ],
       },
       {
         key: "behavior",
-        labelEn: "Behavior & Conduct",
-        labelAr: "السلوك والمخالفات",
-        descEn: "Positive merits, disciplinary infractions, and AI conduct insights",
-        descAr: "النقاط الإيجابية، المخالفات السلوكية، وتحليلات السلوك الذكية",
+        labelKey: "iam_resource_behavior_label",
+        descriptionKey: "iam_resource_behavior_description",
         actions: [
-          { key: "read", labelEn: "View Behavior Logs", labelAr: "عرض سجلات السلوك" },
-          { key: "write", labelEn: "Record Incident / Merit", labelAr: "تسجيل مخالفة أو تميز" },
-          { key: "delete", labelEn: "Remove Behavior Entry", labelAr: "حذف قيد سلوكي" },
-          { key: "ai", labelEn: "AI Behavioral Recommendations", labelAr: "تحليلات الذكاء الاصطناعي للسلوك" },
+          { key: "read", labelKey: "iam_action_behavior_read_label" },
+          { key: "write", labelKey: "iam_action_behavior_write_label" },
+          { key: "delete", labelKey: "iam_action_behavior_delete_label" },
+          { key: "ai", labelKey: "iam_action_behavior_ai_label" },
         ],
       },
     ],
   },
   {
     id: "examinations",
-    nameEn: "Examinations & Control",
-    nameAr: "كنترول الامتحانات واللجان",
-    descEn: "Exam sessions, seating arrangements, secret numbering, halls, and proctors.",
-    descAr: "جلسات الامتحانات، أرقام الجلوس، الأرقام السرية، القاعات، والمراقبين.",
+    nameKey: "iam_domain_examinations_name",
+    descriptionKey: "iam_domain_examinations_description",
     iconName: "Lock",
     resources: [
       {
         key: "exam_session",
-        labelEn: "Exam Sessions",
-        labelAr: "جلسات الامتحانات",
-        descEn: "Midterm and final exam period configurations",
-        descAr: "إعدادات فترات وجلسات الامتحانات النصفية والنهائية",
+        labelKey: "iam_resource_exam_session_label",
+        descriptionKey: "iam_resource_exam_session_description",
         actions: [
-          { key: "read", labelEn: "View Exam Sessions", labelAr: "عرض جلسات الامتحانات" },
-          { key: "write", labelEn: "Create / Pencil Session", labelAr: "إنشاء وتعديل الجلسات" },
-          { key: "activate", labelEn: "Activate Session", labelAr: "بدء وتفعيل الجلسة" },
-          { key: "delete", labelEn: "Delete Session", labelAr: "حذف الجلسة" },
+          { key: "read", labelKey: "iam_action_exam_session_read_label" },
+          { key: "write", labelKey: "iam_action_exam_session_write_label" },
+          { key: "activate", labelKey: "iam_action_exam_session_activate_label" },
+          { key: "delete", labelKey: "iam_action_exam_session_delete_label" },
         ],
       },
       {
         key: "seating_number",
-        labelEn: "Seating Numbers",
-        labelAr: "أرقام الجلوس",
-        descEn: "Automated student seating number generation and distribution",
-        descAr: "توليد وتوزيع أرقام جلوس الطلاب آلياً",
+        labelKey: "iam_resource_seating_number_label",
+        descriptionKey: "iam_resource_seating_number_description",
         actions: [
-          { key: "read", labelEn: "View Seating Numbers", labelAr: "عرض أرقام الجلوس" },
-          { key: "generate", labelEn: "Generate Seating Numbers", labelAr: "توليد أرقام الجلوس" },
+          { key: "read", labelKey: "iam_action_seating_number_read_label" },
+          { key: "generate", labelKey: "iam_action_seating_number_generate_label" },
         ],
       },
       {
         key: "secret_number",
-        labelEn: "Secret Numbers",
-        labelAr: "الأرقام السرية (الكنترول)",
-        descEn: "Blind grading anonymous barcode/secret number mapping",
-        descAr: "نظام التصحيح السري وتوليد الأكواد المشفرة",
+        labelKey: "iam_resource_secret_number_label",
+        descriptionKey: "iam_resource_secret_number_description",
         actions: [
-          { key: "read", labelEn: "View Secret Numbers", labelAr: "عرض قائمة الأرقام السرية" },
-          { key: "generate", labelEn: "Generate Control Numbers", labelAr: "توليد الأرقام السرية" },
-          { key: "reveal", labelEn: "Reveal Secret Mappings (Supervisors)", labelAr: "كشف المطابقة السرية (للكنترول)" },
+          { key: "read", labelKey: "iam_action_secret_number_read_label" },
+          { key: "generate", labelKey: "iam_action_secret_number_generate_label" },
+          { key: "reveal", labelKey: "iam_action_secret_number_reveal_label" },
         ],
       },
       {
         key: "exam_hall",
-        labelEn: "Exam Halls & Seating Grid",
-        labelAr: "لجان وقاعات الامتحانات",
-        descEn: "Hall capacities, desk matrix, and seat allocation algorithms",
-        descAr: "سعة القاعات، شبكة المقاعد، وتوزيع الطلاب آلياً",
+        labelKey: "iam_resource_exam_hall_label",
+        descriptionKey: "iam_resource_exam_hall_description",
         actions: [
-          { key: "read", labelEn: "View Exam Halls", labelAr: "عرض لجان الامتحانات" },
-          { key: "write", labelEn: "Configure Halls & Desks", labelAr: "تهيئة القاعات والمقاعد" },
-          { key: "allocate", labelEn: "Run Auto-Allocation", labelAr: "تنفيذ التوزيع الآلي للطلاب" },
+          { key: "read", labelKey: "iam_action_exam_hall_read_label" },
+          { key: "write", labelKey: "iam_action_exam_hall_write_label" },
+          { key: "allocate", labelKey: "iam_action_exam_hall_allocate_label" },
         ],
       },
       {
         key: "proctor",
-        labelEn: "Proctors & Supervisors",
-        labelAr: "المراقبين والمشرفين",
-        descEn: "Invigilator duty rosters, hall supervision, and swap management",
-        descAr: "جداول مراقبة الامتحانات، مشرفي اللجان، وتبديل النوبات",
+        labelKey: "iam_resource_proctor_label",
+        descriptionKey: "iam_resource_proctor_description",
         actions: [
-          { key: "read", labelEn: "View Proctors", labelAr: "عرض جدول المراقبة" },
-          { key: "assign", labelEn: "Assign Proctors to Halls", labelAr: "توزيع المراقبين على اللجان" },
+          { key: "read", labelKey: "iam_action_proctor_read_label" },
+          { key: "assign", labelKey: "iam_action_proctor_assign_label" },
         ],
       },
       {
         key: "student_order",
-        labelEn: "Student Roster Ordering",
-        labelAr: "ترتيب الطلاب وأبجدية الكنترول",
-        descEn: "Alphabetical sorting, seating serialization, and roster freezing",
-        descAr: "الفرز الأبجدي، تسلسل الكنترول، وتجميد القوائم",
+        labelKey: "iam_resource_student_order_label",
+        descriptionKey: "iam_resource_student_order_description",
         actions: [
-          { key: "read", labelEn: "View Ordering", labelAr: "عرض ترتيب الطلاب" },
-          { key: "rebuild", labelEn: "Rebuild Ordering Algorithm", labelAr: "إعادة بناء الترتيب" },
-          { key: "freeze", labelEn: "Freeze Final Roster", labelAr: "تجميد القائمة النهائية" },
+          { key: "read", labelKey: "iam_action_student_order_read_label" },
+          { key: "rebuild", labelKey: "iam_action_student_order_rebuild_label" },
+          { key: "freeze", labelKey: "iam_action_student_order_freeze_label" },
         ],
       },
       {
         key: "exam_schedule",
-        labelEn: "Exam Timetable",
-        labelAr: "جدول مواعيد الامتحانات",
-        descEn: "Exam dates, time slots, and room allocations",
-        descAr: "مواعيد الاختبارات، الفترات الزمنية، وتخصيص القاعات",
+        labelKey: "iam_resource_exam_schedule_label",
+        descriptionKey: "iam_resource_exam_schedule_description",
         actions: [
-          { key: "read", labelEn: "View Exam Timetable", labelAr: "عرض جدول الامتحانات" },
-          { key: "write", labelEn: "Build / Pencil Exam Schedule", labelAr: "إنشاء وتعديل جدول الامتحانات" },
+          { key: "read", labelKey: "iam_action_exam_schedule_read_label" },
+          { key: "write", labelKey: "iam_action_exam_schedule_write_label" },
         ],
       },
     ],
   },
   {
     id: "finance",
-    nameEn: "Finance & Accounts",
-    nameAr: "المالية والرسوم",
-    descEn: "Tuition fee structures, payments, invoices, discounts, and transactions.",
-    descAr: "هياكل الرسوم الدراسية، سندات القبض، الفواتير، الخصومات، والعمليات المالية.",
+    nameKey: "iam_domain_finance_name",
+    descriptionKey: "iam_domain_finance_description",
     iconName: "Wallet",
     resources: [
       {
         key: "finance",
-        labelEn: "Finance & Billing Ledger",
-        labelAr: "النظام المالي والرسوم",
-        descEn: "General ledger, fee templates, student fee balances, and payment processing",
-        descAr: "شجرة الحسابات، قوالب الرسوم، حسابات الطلاب، ومعالجة الدفعات",
+        labelKey: "iam_resource_finance_label",
+        descriptionKey: "iam_resource_finance_description",
         actions: [
-          { key: "read", labelEn: "View Financial Records", labelAr: "عرض السجلات المالية والرسوم" },
-          { key: "write", labelEn: "Create / Pencil Fees & Invoices", labelAr: "إنشاء وتعديل الرسوم والفواتير" },
-          { key: "payment", labelEn: "Process Payments & Receipts", labelAr: "تحصيل الدفعات وإصدار السندات" },
+          { key: "read", labelKey: "iam_action_finance_read_label" },
+          { key: "write", labelKey: "iam_action_finance_write_label" },
+          { key: "payment", labelKey: "iam_action_finance_payment_label" },
         ],
       },
     ],
   },
   {
     id: "documents",
-    nameEn: "Documents & Templates",
-    nameAr: "الوثائق وقوالب التقارير",
-    descEn: "Document generation, certificate templates, assets, and export tools.",
-    descAr: "توليد الشهادات، تصميم قوالب التقارير، رفع الأصول، والتصدير.",
+    nameKey: "iam_domain_documents_name",
+    descriptionKey: "iam_domain_documents_description",
     iconName: "Layers",
     resources: [
       {
         key: "document",
-        labelEn: "Official Documents",
-        labelAr: "الوثائق والشهادات",
-        descEn: "Generated certificates, letters of enrollment, transcripts",
-        descAr: "الشهادات المعتمدة، خطابات القيد، والمستندات الرسمية",
+        labelKey: "iam_resource_document_label",
+        descriptionKey: "iam_resource_document_description",
         actions: [
-          { key: "read", labelEn: "View Documents", labelAr: "عرض الوثائق والشهادات" },
-          { key: "write", labelEn: "Generate / Issue Documents", labelAr: "إصدار وتعديل الوثائق" },
-          { key: "delete", labelEn: "Revoke / Delete Document", labelAr: "إلغاء وحذف الوثائق" },
+          { key: "read", labelKey: "iam_action_document_read_label" },
+          { key: "write", labelKey: "iam_action_document_write_label" },
+          { key: "delete", labelKey: "iam_action_document_delete_label" },
         ],
       },
       {
         key: "template",
-        labelEn: "DocForge Templates",
-        labelAr: "قوالب DocForge",
-        descEn: "Visual template editor, report schemas, component library, and asset store",
-        descAr: "محرر القوالب المرئي، تصاميم الشهادات، المكونات، ومخزن الأصول",
+        labelKey: "iam_resource_template_label",
+        descriptionKey: "iam_resource_template_description",
         actions: [
-          { key: "read", labelEn: "View Templates", labelAr: "عرض القوالب" },
-          { key: "write", labelEn: "Design / Pencil Templates", labelAr: "تصميم وتعديل القوالب" },
-          { key: "publish", labelEn: "Publish Template", labelAr: "نشر واعتماد القالب" },
-          { key: "delete", labelEn: "Delete Template", labelAr: "حذف القالب" },
-          { key: "import", labelEn: "Import Template Schema", labelAr: "استيراد قالب" },
-          { key: "export", labelEn: "Export Template Schema", labelAr: "تصدير قالب" },
-          { key: "generate_single", labelEn: "Generate Single Preview", labelAr: "توليد معاينة فردية" },
-          { key: "generate_batch", labelEn: "Run Batch Generation", labelAr: "توليد دفعات جماعية" },
-          { key: "generate_download", labelEn: "Download Generated PDFs", labelAr: "تحميل ملفات PDF" },
-          { key: "asset_upload", labelEn: "Upload Assets & Logos", labelAr: "رفع الصور والشعارات" },
-          { key: "asset_delete", labelEn: "Delete Assets", labelAr: "حذف الأصول" },
-          { key: "component_write", labelEn: "Create Custom Components", labelAr: "إنشاء وتعديل المكونات" },
-          { key: "component_delete", labelEn: "Delete Custom Components", labelAr: "حذف المكونات" },
+          { key: "read", labelKey: "iam_action_template_read_label" },
+          { key: "write", labelKey: "iam_action_template_write_label" },
+          { key: "publish", labelKey: "iam_action_template_publish_label" },
+          { key: "delete", labelKey: "iam_action_template_delete_label" },
+          { key: "import", labelKey: "iam_action_template_import_label" },
+          { key: "export", labelKey: "iam_action_template_export_label" },
+          { key: "generate_single", labelKey: "iam_action_template_generate_single_label" },
+          { key: "generate_batch", labelKey: "iam_action_template_generate_batch_label" },
+          { key: "generate_download", labelKey: "iam_action_template_generate_download_label" },
+          { key: "asset_upload", labelKey: "iam_action_template_asset_upload_label" },
+          { key: "asset_delete", labelKey: "iam_action_template_asset_delete_label" },
+          { key: "component_write", labelKey: "iam_action_template_component_write_label" },
+          { key: "component_delete", labelKey: "iam_action_template_component_delete_label" },
         ],
       },
     ],
   },
   {
     id: "system",
-    nameEn: "Workflows & Operations",
-    nameAr: "سير العمليات والتشغيل",
-    descEn: "Multi-level approval workflows, audit trails, data import/export, and autopilot.",
-    descAr: "مسارات الاعتماد والموافقات، سجل التدقيق، الاستيراد والتصدير، والأتمتة.",
+    nameKey: "iam_domain_system_name",
+    descriptionKey: "iam_domain_system_description",
     iconName: "Sparkles",
     resources: [
       {
         key: "workflow",
-        labelEn: "Approval Workflows",
-        labelAr: "مسارات الاعتماد والموافقات",
-        descEn: "Multi-stage requests, sign-offs, and administrative routing",
-        descAr: "طلبات الاعتماد متعددة المستويات والتوقيعات الإدارية",
+        labelKey: "iam_resource_workflow_label",
+        descriptionKey: "iam_resource_workflow_description",
         actions: [
-          { key: "read", labelEn: "View Workflows", labelAr: "عرض مسارات الاعتماد" },
-          { key: "write", labelEn: "Configure Workflow Steps", labelAr: "إنشاء وضبط مسار الاعتماد" },
-          { key: "approve", labelEn: "Approve / Reject Requests", labelAr: "الموافقة والاعتماد أو الرفض" },
-          { key: "execute", labelEn: "Trigger / Execute Step", labelAr: "تنفيذ خطوات المسار" },
+          { key: "read", labelKey: "iam_action_workflow_read_label" },
+          { key: "write", labelKey: "iam_action_workflow_write_label" },
+          { key: "approve", labelKey: "iam_action_workflow_approve_label" },
+          { key: "execute", labelKey: "iam_action_workflow_execute_label" },
         ],
       },
       {
         key: "notification",
-        labelEn: "System Notifications",
-        labelAr: "الإشعارات والتنبيهات",
-        descEn: "Broadcast alerts, SMS/Email dispatches, and event triggers",
-        descAr: "إرسال التعاميم، رسائل SMS، وتنبيهات النظام",
+        labelKey: "iam_resource_notification_label",
+        descriptionKey: "iam_resource_notification_description",
         actions: [
-          { key: "read", labelEn: "View Notifications", labelAr: "عرض الإشعارات" },
-          { key: "write", labelEn: "Send / Broadcast Notice", labelAr: "إرسال وبث التعاميم" },
+          { key: "read", labelKey: "iam_action_notification_read_label" },
+          { key: "write", labelKey: "iam_action_notification_write_label" },
         ],
       },
       {
         key: "dashboard",
-        labelEn: "Executive Dashboard",
-        labelAr: "لوحة المؤشرات التنفيذية",
-        descEn: "High-level KPI widgets, live attendance rates, and financial graphs",
-        descAr: "المؤشرات العامة، إحصائيات الحضور، والرسوم البيانية",
+        labelKey: "iam_resource_dashboard_label",
+        descriptionKey: "iam_resource_dashboard_description",
         actions: [
-          { key: "read", labelEn: "Access Executive Dashboard", labelAr: "الاطلاع على لوحة المؤشرات" },
+          { key: "read", labelKey: "iam_action_dashboard_read_label" },
         ],
       },
       {
         key: "audit",
-        labelEn: "Audit Trail & Security Logs",
-        labelAr: "سجل التدقيق والأمان",
-        descEn: "Immutable security event logs, change history, and login records",
-        descAr: "سجل العمليات الإدارية، تاريخ التعديلات، وجلسات الدخول",
+        labelKey: "iam_resource_audit_label",
+        descriptionKey: "iam_resource_audit_description",
         actions: [
-          { key: "read", labelEn: "View Audit Logs", labelAr: "الاطلاع على سجل التدقيق" },
+          { key: "read", labelKey: "iam_action_audit_read_label" },
         ],
       },
       {
         key: "data",
-        labelEn: "Data Migration & Sync",
-        labelAr: "استيراد وتصدير البيانات",
-        descEn: "Bulk Excel/CSV data importing, migration wizards, and backups",
-        descAr: "استيراد وتصدير ملفات Excel/CSV والنسخ الاحتياطي",
+        labelKey: "iam_resource_data_label",
+        descriptionKey: "iam_resource_data_description",
         actions: [
-          { key: "import", labelEn: "Import Bulk Data", labelAr: "استيراد البيانات الشاملة" },
-          { key: "export", labelEn: "Export Full Data", labelAr: "تصدير البيانات الشاملة" },
+          { key: "import", labelKey: "iam_action_data_import_label" },
+          { key: "export", labelKey: "iam_action_data_export_label" },
         ],
       },
       {
         key: "system",
-        labelEn: "System Autopilot Engine",
-        labelAr: "محرك الأتمتة الذكي (Autopilot)",
-        descEn: "Automated background tasks, constraints solver, and system overrides",
-        descAr: "مهام الخلفية المؤتمتة، محرك الجداول، وتجاوز النظام",
+        labelKey: "iam_resource_system_label",
+        descriptionKey: "iam_resource_system_description",
         actions: [
-          { key: "autopilot", labelEn: "Autopilot Bypass / Overrides", labelAr: "تشغيل وصلاحيات Autopilot" },
+          { key: "autopilot", labelKey: "iam_action_system_autopilot_label" },
         ],
       },
     ],
@@ -717,10 +635,8 @@ export const IAM_DOMAINS: IamDomainDef[] = [
 export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDef[] = [
   {
     id: "super_admin",
-    nameEn: "Super Administrator",
-    nameAr: "مدير النظام العام",
-    descEn: "Unrestricted master access across all organizations, settings, security policies, and databases.",
-    descAr: "صلاحيات وتحكم مطلق وشامل بجميع إعدادات المنظمات، والسياسات الأمنية، وقواعد البيانات.",
+    nameKey: "iam_role_super_admin_name",
+    descriptionKey: "iam_role_super_admin_description",
     iconName: "Crown",
     color: "amber",
     isSystem: true,
@@ -730,10 +646,8 @@ export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDef[] = [
   },
   {
     id: "admin",
-    nameEn: "Organization Admin",
-    nameAr: "مدير المنظمة",
-    descEn: "Manages all institutional operations, staff accounts, permissions, academic setups, and billing.",
-    descAr: "إدارة كافة العمليات المؤسسية، حسابات الكادر، الصلاحيات، التهيئة الأكاديمية، والمالية.",
+    nameKey: "iam_role_admin_name",
+    descriptionKey: "iam_role_admin_description",
     iconName: "Shield",
     color: "emerald",
     isSystem: true,
@@ -772,10 +686,8 @@ export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDef[] = [
   },
   {
     id: "principal",
-    nameEn: "School Principal",
-    nameAr: "مدير المدرسة / المنشأة",
-    descEn: "Academic leadership, staff supervision, attendance and grade approvals, workflows, and school reports.",
-    descAr: "القيادة الأكاديمية، الإشراف على المعلمين، اعتماد الدرجات والغياب، الموافقات الإدارية، والتقارير.",
+    nameKey: "iam_role_principal_name",
+    descriptionKey: "iam_role_principal_description",
     iconName: "GraduationCap",
     color: "blue",
     isSystem: true,
@@ -813,10 +725,8 @@ export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDef[] = [
   },
   {
     id: "teacher",
-    nameEn: "Teacher / Faculty",
-    nameAr: "معلم / عضو هيئة تدريس",
-    descEn: "Classroom instruction, daily attendance, gradebook entry, student conduct logging, and schedules.",
-    descAr: "إدارة الحصص، رصد الحضور والغياب، إدخال الدرجات، تسجيل الملاحظات السلوكية، ومتابعة الجدول.",
+    nameKey: "iam_role_teacher_name",
+    descriptionKey: "iam_role_teacher_description",
     iconName: "BookOpen",
     color: "indigo",
     isSystem: true,
@@ -838,10 +748,8 @@ export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDef[] = [
   },
   {
     id: "registrar",
-    nameEn: "Academic Registrar",
-    nameAr: "مسجل شؤون الطلاب",
-    descEn: "Student admissions, document verifications, enrollments, section transfers, and cohort promotions.",
-    descAr: "قبول وتسجيل الطلاب، تدقيق الوثائق، القيد والشعب، وتسكين ونقل الطلاب، وإصدار الشهادات.",
+    nameKey: "iam_role_registrar_name",
+    descriptionKey: "iam_role_registrar_description",
     iconName: "ClipboardCheck",
     color: "cyan",
     isSystem: true,
@@ -861,10 +769,8 @@ export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDef[] = [
   },
   {
     id: "accountant",
-    nameEn: "Financial Accountant",
-    nameAr: "محاسب مالي",
-    descEn: "Tuition billing, receipt vouchers, student ledgers, discount policies, and payment tracking.",
-    descAr: "إدارة الرسوم الدراسية، سندات القبض والصرف، فواتير الطلاب، الخصومات، والتقارير المالية.",
+    nameKey: "iam_role_accountant_name",
+    descriptionKey: "iam_role_accountant_description",
     iconName: "BuildingLibrary",
     color: "emerald",
     isSystem: true,
@@ -880,10 +786,8 @@ export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDef[] = [
   },
   {
     id: "staff",
-    nameEn: "Administrative Staff",
-    nameAr: "كادر إداري",
-    descEn: "Operational support, correspondence, student inquiries, and daily activity coordination.",
-    descAr: "المساندة الإدارية والتشغيلية اليومية، المراسلات، الاستقبال، ومتابعة الأنشطة المدرسية.",
+    nameKey: "iam_role_staff_name",
+    descriptionKey: "iam_role_staff_description",
     iconName: "UserCog",
     color: "slate",
     isSystem: true,
@@ -897,10 +801,8 @@ export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDef[] = [
   },
   {
     id: "student",
-    nameEn: "Student",
-    nameAr: "طالب",
-    descEn: "Access to personal timetable, assessment scores, attendance history, and learning certificates.",
-    descAr: "الاطلاع على الجدول الدراسي، نتائج التقييمات، سجل الحضور والغياب، والشهادات.",
+    nameKey: "iam_role_student_name",
+    descriptionKey: "iam_role_student_description",
     iconName: "User",
     color: "teal",
     isSystem: true,
@@ -914,10 +816,8 @@ export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDef[] = [
   },
   {
     id: "parent",
-    nameEn: "Parent / Guardian",
-    nameAr: "ولي أمر",
-    descEn: "Real-time monitoring of dependent children's academic performance, attendance, fees, and alerts.",
-    descAr: "متابعة أداء الأبناء أكاديمياً، كشوف الدرجات، الحضور والغياب، الرسوم والمستحقات، والإشعارات.",
+    nameKey: "iam_role_parent_name",
+    descriptionKey: "iam_role_parent_description",
     iconName: "Users",
     color: "violet",
     isSystem: true,
@@ -965,8 +865,8 @@ export function getActionsForResource(resourceKey: string): IamActionDef[] {
     }
   }
   return [
-    { key: "read", labelEn: "View", labelAr: "عرض" },
-    { key: "write", labelEn: "Edit", labelAr: "تعديل" },
+    { key: "read", labelKey: "iam_action_default_read_label" },
+    { key: "write", labelKey: "iam_action_default_write_label" },
   ];
 }
 
@@ -997,22 +897,22 @@ export function getDomainByResource(resourceKey: string): IamDomainDef | undefin
 /**
  * Returns a localized label for a resource.
  */
-export function getResourceLabel(resourceKey: string, lang: "ar" | "en" = "ar"): string {
+export function getResourceLabel(resourceKey: string, locale?: "ar" | "en"): string {
   const res = getResourceDef(resourceKey);
   if (!res) return resourceKey;
-  return lang === "ar" ? res.labelAr : res.labelEn;
+  return translateIamMessage(res.labelKey, locale);
 }
 
 /**
  * Returns a localized label for an action within a resource.
  */
-export function getActionLabel(resourceKey: string, actionKey: string, lang: "ar" | "en" = "ar"): string {
+export function getActionLabel(resourceKey: string, actionKey: string, locale?: "ar" | "en"): string {
   const actions = getActionsForResource(resourceKey);
   const action = actions.find((a) => a.key === actionKey);
   if (!action) {
     return actionKey;
   }
-  return lang === "ar" ? action.labelAr : action.labelEn;
+  return translateIamMessage(action.labelKey, locale);
 }
 
 /**

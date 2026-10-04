@@ -49,10 +49,10 @@ const filtered = $derived(
 
 function getTypeLabel(type: string): string {
   const map: Record<string, string> = {
-    final: "نهائي",
-    midterm: "نصفي",
-    quiz: "اختبار قصير",
-    practical: "عملي",
+    final: m.operations_ui_exam_type_final(),
+    midterm: m.operations_ui_exam_type_midterm(),
+    quiz: m.operations_ui_exam_type_quiz(),
+    practical: m.operations_ui_exam_type_practical(),
   };
   return map[type] || type;
 }

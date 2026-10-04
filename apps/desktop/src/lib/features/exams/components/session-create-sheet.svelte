@@ -85,7 +85,7 @@ async function handleSubmit() {
         end_date: payload.end_date,
         period_id: payload.period_id,
       });
-      toast.success("تم تحديث دورة الامتحانات بنجاح");
+      toast.success(m.operations_ui_exam_session_update_success());
     } else {
       await api.createExamSession({
         name: payload.name || payload.name_ar,
@@ -109,7 +109,7 @@ async function handleSubmit() {
   if (!submitted && form.formError) toast.error(form.formError);
   else if (!submitted) {
     const validationMessage = Object.values(form.errors).flat()[0];
-    toast.error(validationMessage || "بيانات الدورة غير صالحة");
+    toast.error(validationMessage || m.operations_ui_exam_session_invalid());
   }
 }
 </script>
@@ -125,7 +125,7 @@ async function handleSubmit() {
     <div class="flex-1 overflow-y-auto py-4 flex flex-col gap-4 px-1">
       
       <!-- Academic Period Selector -->
-      <FormField id="session-period" label="الدورة الأكاديمية" error={form.errors.period_id?.[0]} required>
+      <FormField id="session-period" label={m.operations_ui_academic_session()} error={form.errors.period_id?.[0]} required>
         {#snippet children()}
         <PeriodSelect
           id="session-period"
@@ -139,7 +139,7 @@ async function handleSubmit() {
       <!-- Name Arabic -->
       <FormField id="session-name-ar" label={m.common_exams_create_name_ar()} error={form.errors.name_ar?.[0]}>
         {#snippet children()}
-        <Input id="session-name-ar" bind:value={nameAr} placeholder="مثال: امتحانات نهاية الفصل الأول" class="text-xs h-9" />
+        <Input id="session-name-ar" bind:value={nameAr} placeholder={m.operations_ui_exam_session_name_example()} class="text-xs h-9" />
         {/snippet}
       </FormField>
 
@@ -191,11 +191,11 @@ async function handleSubmit() {
     <!-- Footer Actions -->
     <div class="border-t border-border/40 pt-4 flex items-center justify-end gap-2">
       <Button variant="ghost" class="h-8 px-4 text-xs cursor-pointer" onclick={() => open = false}>
-        إلغاء
+        {m.common_action_cancel()}
       </Button>
       <Button variant="default" class="h-8 px-4 text-xs cursor-pointer" disabled={isSaving} onclick={handleSubmit}>
         {#if isSaving}
-          جاري الحفظ...
+          {m.operations_ui_saving()}
         {:else}
           {m.common_exams_create_submit()}
         {/if}

@@ -200,7 +200,7 @@ function promptDeleteBranch(branch: OrgUnitDto) {
   if (children.length > 0) {
     toast.error(
       l(
-        `لا يمكن حذف الفرع لوجود (${children.length}) وحدات وأقسام تابعة له. يرجى نقلها أو حذفها أولاً.`,
+        m.settings_ui_branch_delete_has_children({ count: children.length }),
         `Cannot delete branch because it contains (${children.length}) child units.`
       )
     );
@@ -210,7 +210,7 @@ function promptDeleteBranch(branch: OrgUnitDto) {
   confirmStore.open({
     title: m.ui_copy_delete_branch_f22fe5e8(),
     message: l(
-      `هل أنت متأكد من رغبتك في حذف فرع "${branch.name_ar || branch.name}" بشكل نهائي؟`,
+      m.settings_ui_branch_delete_confirm({ name: branch.name_ar || branch.name }),
       `Are you sure you want to permanently delete branch "${branch.name_ar || branch.name}"?`
     ),
     confirmLabel: m.settings_currencies_btn_delete_confirm(),

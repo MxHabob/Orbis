@@ -102,11 +102,11 @@ async function handleSubmit() {
 
   if (mode === "create") {
     if (!newSubjectNameAr.trim()) {
-      toast.error("يرجى كتابة اسم المادة بالعربية");
+      toast.error(m.operations_ui_subject_arabic_name_required());
       return;
     }
     if (!newSubjectCode.trim()) {
-      toast.error("يرجى كتابة رمز المادة");
+      toast.error(m.operations_ui_subject_code_required());
       return;
     }
     isSaving = true;
@@ -121,13 +121,13 @@ async function handleSubmit() {
       // Refresh local list
       subjectsList = [...subjectsList, newSub];
     } catch (e: any) {
-      toast.error((e as any)?.message || "فشل إنشاء مادة جديدة في النظام");
+      toast.error((e as any)?.message || m.operations_ui_subject_create_error());
       isSaving = false;
       return;
     }
   } else {
     if (!targetSubjectId) {
-      toast.error("يرجى اختيار مادة من القائمة");
+      toast.error(m.operations_ui_subject_selection_required());
       return;
     }
   }
@@ -141,14 +141,14 @@ async function handleSubmit() {
   };
   const submitted = await form.submit(async (payload) => {
     await api.scheduleExam(payload as any);
-    toast.success("تمت إضافة المادة للدورة بنجاح");
+    toast.success(m.operations_ui_subject_add_success());
   });
   if (submitted) {
     resetForm();
     open = false;
     onSuccess();
   } else if (form.formError) toast.error(form.formError);
-  else toast.error("بيانات المادة غير صالحة");
+  else toast.error(m.operations_ui_subject_invalid());
 }
 </script>
 
@@ -179,24 +179,24 @@ async function handleSubmit() {
             class="flex-1 py-1.5 rounded-md transition-all cursor-pointer {mode === 'select' ? 'bg-card text-foreground font-semibold shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
             onclick={() => mode = "select"}
           >
-            مادة موجودة في المدرسة
+            {m.operations_ui_existing_school_subject()}
           </button>
           <button
             type="button"
             class="flex-1 py-1.5 rounded-md transition-all cursor-pointer {mode === 'create' ? 'bg-card text-foreground font-semibold shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
             onclick={() => mode = "create"}
           >
-            إنشاء مادة جديدة كلياً
+            {m.operations_ui_create_new_subject()}
           </button>
         </div>
 
         {#if mode === "select"}
           <!-- Existing Subjects Selection Dropdown -->
-          <FormField id="subject-select" label="اختر المادة" error={form.errors.subject_id?.[0]} required>
+          <FormField id="subject-select" label={m.operations_ui_select_subject()} error={form.errors.subject_id?.[0]} required>
             {#snippet children()}
             <Select type="single" value={subjectId} onValueChange={(v: string | undefined) => (subjectId = v ?? "")}>
               <SelectTrigger class="h-9 text-xs w-full">
-                {subjectsList.find(s => String(s.id) === subjectId)?.name_ar || subjectsList.find(s => String(s.id) === subjectId)?.name || "اختر مادة دراسية..."}
+                {subjectsList.find(s => String(s.id) === subjectId)?.name_ar || subjectsList.find(s => String(s.id) === subjectId)?.name || m.operations_ui_select_course_subject()}
               </SelectTrigger>
               <SelectContent>
                 {#each subjectsList as s}
@@ -211,21 +211,21 @@ async function handleSubmit() {
           <div class="flex flex-col gap-3 p-3 rounded-lg border border-dashed border-border/60 bg-muted/20">
             <span class="text-[9px] font-bold text-primary uppercase">{m.exams_subject_new_details()}</span>
             
-            <FormField id="new-sub-name-ar" label="اسم المادة (عربي)" error={form.errors.subject_id?.[0]} required>
+            <FormField id="new-sub-name-ar" label={m.operations_ui_subject_name_arabic()} error={form.errors.subject_id?.[0]} required>
               {#snippet children()}
-              <Input id="new-sub-name-ar" bind:value={newSubjectNameAr} placeholder="مثال: الرياضيات" class="text-xs h-8" />
+              <Input id="new-sub-name-ar" bind:value={newSubjectNameAr} placeholder={m.operations_ui_subject_name_example()} class="text-xs h-8" />
               {/snippet}
             </FormField>
 
-            <FormField id="new-sub-name-en" label="اسم المادة (إنجليزي)">
+            <FormField id="new-sub-name-en" label={m.operations_ui_subject_name_english()}>
               {#snippet children()}
               <Input id="new-sub-name-en" bind:value={newSubjectName} placeholder="e.g. Mathematics" class="text-xs h-8" />
               {/snippet}
             </FormField>
 
-            <FormField id="new-sub-code" label="رمز المادة" required>
+            <FormField id="new-sub-code" label={m.operations_ui_subject_code()} required>
               {#snippet children()}
-              <Input id="new-sub-code" bind:value={newSubjectCode} placeholder="مثال: MATH" class="text-xs h-8 uppercase font-mono" />
+              <Input id="new-sub-code" bind:value={newSubjectCode} placeholder={m.operations_ui_subject_code_example()} class="text-xs h-8 uppercase font-mono" />
               {/snippet}
             </FormField>
           </div>
@@ -278,11 +278,11 @@ async function handleSubmit() {
       <!-- Footer -->
       <div class="px-6 py-3 border-t border-border/40 flex items-center justify-end gap-2 shrink-0 bg-background/50">
         <Button variant="ghost" class="h-8 px-4 text-xs cursor-pointer" onclick={() => { resetForm(); open = false; }}>
-          إلغاء
+          {m.common_action_cancel()}
         </Button>
         <Button type="submit" variant="default" class="h-8 px-4 text-xs cursor-pointer" disabled={isSaving}>
           {#if isSaving}
-            جاري الحفظ...
+            {m.operations_ui_saving()}
           {:else}
             {m.common_exams_subjects_add()}
           {/if}

@@ -101,13 +101,20 @@ const approvalCount = $derived(
 );
 
 const domainLabels: Record<string, string> = {
-  iam: "الهوية والحسابات",
-  academic: "الشؤون الأكاديمية",
-  assessment: "التقييم والنتائج",
-  finance: "الشؤون المالية",
-  lifecycle: "دورة العام الأكاديمي",
-  scheduling: "الجدولة والحصص",
-  exam: "الاختبارات",
+  iam: m.ai_ui_domain_identity_accounts(),
+  academic: m.ai_ui_domain_academic_affairs(),
+  assessment: m.ai_ui_domain_assessment_results(),
+  finance: m.ai_ui_domain_finance(),
+  lifecycle: m.ai_ui_domain_academic_year(),
+  scheduling: m.ai_ui_domain_scheduling_classes(),
+  exam: m.ai_ui_domain_exams(),
+};
+
+const riskLabels: Record<string, string> = {
+  low: m.ai_ui_risk_low(),
+  medium: m.ai_ui_risk_medium(),
+  high: m.ai_ui_risk_high(),
+  critical: m.ai_ui_risk_critical(),
 };
 </script>
 
@@ -115,7 +122,7 @@ const domainLabels: Record<string, string> = {
   <div class="w-full space-y-6">
     <!-- Risk Summary Cards (Full Grid Width) -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {#each [{ level: "low", label: "منخفض المخاطر", count: riskSummary.low, icon: UserBadgeCheck }, { level: "medium", label: "متوسط المخاطر", count: riskSummary.medium, icon: UserBadgeCheck }, { level: "high", label: "مرتفع المخاطر", count: riskSummary.high, icon: UserBadgeCheck }, { level: "critical", label: "حرج للغاية", count: riskSummary.critical, icon: UserBadgeCheck }] as card}
+      {#each [{ level: "low", label: m.ai_ui_risk_low(), count: riskSummary.low, icon: UserBadgeCheck }, { level: "medium", label: m.ai_ui_risk_medium(), count: riskSummary.medium, icon: UserBadgeCheck }, { level: "high", label: m.ai_ui_risk_high(), count: riskSummary.high, icon: UserBadgeCheck }, { level: "critical", label: m.ai_ui_risk_critical(), count: riskSummary.critical, icon: UserBadgeCheck }] as card}
         <Card>
           <CardContent class="p-4 flex flex-col justify-between">
             <div class="flex items-center justify-between mb-2">
@@ -143,7 +150,7 @@ const domainLabels: Record<string, string> = {
         </div>
         <CardAction>
           <span class="text-[10px] font-mono text-muted-foreground">
-            {approvalCount} من {actions.length} تتطلب الإذن
+            {m.ai_ui_approval_count({ approvalCount, actionCount: actions.length })}
           </span>
         </CardAction>
       </CardHeader>
@@ -161,7 +168,7 @@ const domainLabels: Record<string, string> = {
           </div>
         {:else}
           <p class="text-xs text-muted-foreground text-start">
-            لا توجد بوابات اعتماد معينة حالياً.
+            {m.ai_ui_no_approval_gates()}
           </p>
         {/if}
       </CardContent>
@@ -172,7 +179,7 @@ const domainLabels: Record<string, string> = {
       <h2
         class="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-0.5 text-start"
       >
-        المجالات التشغيلية وإجراءاتها
+        {m.ai_ui_operational_domains_actions()}
       </h2>
       {#if domains.length > 0}
         {#each domains as domain}
@@ -190,7 +197,7 @@ const domainLabels: Record<string, string> = {
                   >{domainLabels[domain] ?? domain}</span
                 >
                 <span class="text-[10px] text-muted-foreground font-mono"
-                  >({domainActions.length} إجراء)</span
+                  >{m.ai_ui_action_count_parenthetical({ count: domainActions.length })}</span
                 >
               </div>
               <ChevronDown
@@ -209,23 +216,23 @@ const domainLabels: Record<string, string> = {
                     <tr>
                       <th
                         class="text-start px-4 py-2.5 font-semibold text-muted-foreground"
-                        >رمز الإجراء (Action Code)</th
+                        >{m.ai_ui_action_code()}</th
                       >
                       <th
                         class="text-start px-4 py-2.5 font-semibold text-muted-foreground"
-                        >الوصف</th
+                        >{m.ai_ui_description()}</th
                       >
                       <th
                         class="text-center px-4 py-2.5 font-semibold text-muted-foreground"
-                        >المخاطرة</th
+                        >{m.ai_ui_risk()}</th
                       >
                       <th
                         class="text-center px-4 py-2.5 font-semibold text-muted-foreground"
-                        >الموافقة</th
+                        >{m.ai_ui_approval()}</th
                       >
                       <th
                         class="text-center px-4 py-2.5 font-semibold text-muted-foreground"
-                        >القابلية للتراجع</th
+                        >{m.ai_ui_reversibility()}</th
                       >
                     </tr>
                   </thead>
@@ -242,7 +249,7 @@ const domainLabels: Record<string, string> = {
                         <td class="px-4 py-2.5 text-center">
                           <span
                             class="px-2 py-0.5 rounded text-[10px] font-medium uppercase bg-muted text-foreground border border-border"
-                            >{action.risk_level}</span
+                            >{riskLabels[action.risk_level] ?? action.risk_level}</span
                           >
                         </td>
                         <td class="px-4 py-2.5 text-center">
@@ -277,7 +284,7 @@ const domainLabels: Record<string, string> = {
           <div class="flex items-center gap-2">
             <Lock size={14} class="text-amber-500" />
             <CardTitle class="text-amber-500">
-              إجراءات بانتظار الموافقة البشرية ({pendingApprovals.length})
+              {m.ai_ui_pending_human_approvals({ count: pendingApprovals.length })}
             </CardTitle>
           </div>
         </CardHeader>
@@ -291,7 +298,7 @@ const domainLabels: Record<string, string> = {
                   >
                   <span
                     class="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-500/10 text-amber-500 border border-amber-500/20"
-                    >{item.risk_level}</span
+                    >{riskLabels[item.risk_level] ?? item.risk_level}</span
                   >
                 </div>
                 <p class="text-xs text-muted-foreground">{item.reasoning}</p>
@@ -307,7 +314,7 @@ const domainLabels: Record<string, string> = {
                   onclick={() => handleReject(item.id)}
                 >
                   <XMark size={12} class="me-1" />
-                  رفض
+                  {m.ai_ui_reject()}
                 </Button>
                 <Button
                   size="sm"
@@ -315,7 +322,7 @@ const domainLabels: Record<string, string> = {
                   onclick={() => handleApprove(item.id)}
                 >
                   <Check size={12} class="me-1" />
-                  اعتماد وتنفيذ
+                  {m.ai_ui_approve_and_execute()}
                 </Button>
               </div>
             </div>

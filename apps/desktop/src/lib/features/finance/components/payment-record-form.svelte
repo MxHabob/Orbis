@@ -271,15 +271,15 @@ async function handleSubmit(e: SubmitEvent) {
 				class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
 				disabled={isSubmitting}
 			>
-				{#each availablePaymentMethods as m (m.id)}
-					<option value={m.id}>
-						{m.name} {m.is_digital_gateway ? `(عبر ${m.provider_name})` : ""}
+				{#each availablePaymentMethods as method (method.id)}
+					<option value={method.id}>
+						{method.name} {method.is_digital_gateway ? m.finance_ui_gateway_provider({ provider: method.provider_name ?? "" }) : ""}
 					</option>
 				{/each}
 			</select>
 			{#if selectedPaymentMethodObj?.is_digital_gateway}
 				<div class="text-[10px] text-primary flex items-center gap-1 font-medium bg-primary/5 border border-primary/20 rounded px-2 py-1">
-					<span>معالجة إلكترونية موجهة لبوابة: <strong>{selectedPaymentMethodObj.provider_name}</strong></span>
+					<span>{m.finance_ui_payment_electronic_processing()} <strong>{selectedPaymentMethodObj.provider_name}</strong></span>
 				</div>
 			{/if}
 		</div>
@@ -288,13 +288,13 @@ async function handleSubmit(e: SubmitEvent) {
 
 	<!-- Electronic Gateway Source Token -->
 	{#if selectedPaymentMethodObj?.requires_source_token}
-		<FormField id="pay_source_token" label="رمز تفويض / بطاقة بوابة الدفع (Token)">
+		<FormField id="pay_source_token" label={m.finance_ui_payment_gateway_token_label()}>
 			{#snippet children()}
 			<Input
 				id="pay_source_token"
 				type="text"
 				bind:value={sourceToken}
-				placeholder="tok_... أو رمز العملية من جهاز الشبكة"
+				placeholder={m.finance_ui_payment_gateway_token_placeholder()}
 				class="font-mono text-xs"
 				disabled={isSubmitting}
 			/>

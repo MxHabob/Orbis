@@ -43,11 +43,11 @@ function refetchAll() {
 const activeCurrencies = $derived(
   currencies.length > 0
     ? currencies.filter((c) => c.is_active !== false)
-    : [{ code: "YER", name: "ريال يمني", is_base: true, is_active: true }]
+    : [{ code: "YER", name: m.finance_ui_currency_yer(), is_base: true, is_active: true }]
 );
 
 const baseCurrency = $derived(
-  currencies.find((c) => c.is_base) || activeCurrencies[0] || { code: "YER", name: "ريال يمني" }
+  currencies.find((c) => c.is_base) || activeCurrencies[0] || { code: "YER", name: m.finance_ui_currency_yer() }
 );
 
 const leafAccounts = $derived(
@@ -109,8 +109,8 @@ const statementColumns = $derived.by((): OrbisColumnDef[] => [
   {
     id: "section",
     prop: "section",
-    header: "القسم / التبويب",
-    name: "Section",
+    header: m.finance_ui_section_tab(),
+    name: m.finance_ui_section_tab(),
     width: 170,
     size: 170,
     readonly: true,
@@ -119,8 +119,8 @@ const statementColumns = $derived.by((): OrbisColumnDef[] => [
   {
     id: "account_code",
     prop: "account_code",
-    header: "الرمز",
-    name: "Code",
+    header: m.finance_ui_account_code(),
+    name: m.finance_ui_account_code(),
     width: 100,
     size: 100,
     readonly: true,
@@ -129,8 +129,8 @@ const statementColumns = $derived.by((): OrbisColumnDef[] => [
   {
     id: "account_name",
     prop: "account_name",
-    header: "اسم الحساب",
-    name: "Account Name",
+    header: m.finance_ui_account_name(),
+    name: m.finance_ui_account_name(),
     width: 260,
     size: 260,
     readonly: true,
@@ -150,8 +150,8 @@ const statementColumns = $derived.by((): OrbisColumnDef[] => [
 ]);
 
 const incomeStatementGroups: [string, string][] = [
-  ["الإيرادات والمبيعات", "revenue"],
-  ["المصروفات والتكاليف التشغيلية", "expense"],
+  [m.finance_ui_revenue_sales(), "revenue"],
+  [m.finance_ui_operating_expenses_costs(), "expense"],
 ];
 
 const incomeStatementSource = $derived.by(() => {
@@ -177,9 +177,9 @@ const incomeStatementSource = $derived.by(() => {
     // Subtotal Row
     const subtotalRow: Record<string, unknown> = {
       __idx: "∑",
-      section: `إجمالي ${sectionTitle}`,
+      section: m.finance_ui_section_total({ section: sectionTitle }),
       account_code: "—",
-      account_name: `مجموع ${sectionTitle}`,
+      account_name: m.finance_ui_section_sum({ section: sectionTitle }),
     };
     for (const curr of activeCurrencies) {
       const totalAmt = totals[type]?.[curr.code] || 0;
@@ -191,9 +191,9 @@ const incomeStatementSource = $derived.by(() => {
   // Net income row
   const netRow: Record<string, unknown> = {
     __idx: "★",
-    section: "صافي الأرباح / الفائض",
+    section: m.finance_ui_net_profit_surplus(),
     account_code: "—",
-    account_name: "صافي الدخل (الإيرادات - المصروفات)",
+    account_name: m.finance_ui_net_income_description(),
   };
   for (const curr of activeCurrencies) {
     const rev = Math.abs(totals.revenue[curr.code] || 0);
@@ -232,12 +232,12 @@ const rtl = $derived(getLocale() === "ar");
     <!-- Quick Status Badges -->
     <div class="flex items-center gap-2 flex-wrap text-xs">
       <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium">
-        <span class="text-muted-foreground text-[11px]">الإيرادات:</span>
+        <span class="text-muted-foreground text-[11px]">{m.finance_ui_revenue_label()}</span>
         <strong class="font-mono">{formatCurrency(summaryKpis.revenue, summaryKpis.code)}</strong>
       </div>
 
       <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 font-medium">
-        <span class="text-muted-foreground text-[11px]">المصروفات:</span>
+        <span class="text-muted-foreground text-[11px]">{m.finance_ui_expenses_label()}</span>
         <strong class="font-mono">{formatCurrency(summaryKpis.expense, summaryKpis.code)}</strong>
       </div>
 
@@ -246,7 +246,7 @@ const rtl = $derived(getLocale() === "ar");
           ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
           : "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400"
       }`}>
-        <span class="text-muted-foreground text-[11px]">صافي الدخل:</span>
+        <span class="text-muted-foreground text-[11px]">{m.finance_ui_net_income_label()}</span>
         <strong class="font-mono">{formatCurrency(summaryKpis.netIncome, summaryKpis.code)}</strong>
       </div>
     </div>
@@ -257,7 +257,7 @@ const rtl = $derived(getLocale() === "ar");
         <Search size={14} class="absolute start-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
         <Input
           type="search"
-          placeholder="بحث في بنود الدخل..."
+          placeholder={m.finance_ui_income_statement_search_placeholder()}
           bind:value={searchQuery}
           class="h-8 ps-8 text-xs bg-card border-border/60"
         />
@@ -265,10 +265,10 @@ const rtl = $derived(getLocale() === "ar");
 
       <Button variant="outline" size="sm" onclick={exportCurrentReport} class="h-8 text-xs font-bold gap-1.5">
         <Download size={14} />
-        <span>تصدير CSV</span>
+        <span>{m.finance_ui_export_csv()}</span>
       </Button>
 
-      <Button variant="ghost" size="icon-sm" onclick={refetchAll} class="text-muted-foreground h-8 w-8" title="تحديث">
+      <Button variant="ghost" size="icon-sm" onclick={refetchAll} class="text-muted-foreground h-8 w-8" title={m.finance_ui_refresh()}>
         <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
       </Button>
     </div>
@@ -293,8 +293,8 @@ const rtl = $derived(getLocale() === "ar");
           clientQuery
           {rtl}
           readonly
-          emptyTitle="لا توجد بيانات لقائمة الدخل"
-          emptyDescription="لم يتم العثور على إيرادات أو مصروفات مسجلة تطابق البحث"
+          emptyTitle={m.finance_ui_no_income_statement_data()}
+          emptyDescription={m.finance_ui_no_income_statement_matches()}
         />
       </div>
     {/if}

@@ -114,16 +114,16 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 
   async function withdrawStudent() {
     const confirmed = await confirmStore.prompt({
-      title: m.common_action_delete ? `${m.common_action_delete()} (انسحاب الطالب)` : "انسحاب الطالب",
-      description: "هل أنت متأكد من تسجيل انسحاب هذا الطالب؟ سيتم تحديث حالة القيد الأكاديمي إلى منسحب.",
-      confirmText: "تأكيد الانسحاب",
+      title: m.shared_ui_withdraw_student_title(),
+      description: m.shared_ui_withdraw_student_confirmation(),
+      confirmText: m.shared_ui_confirm_withdrawal(),
       variant: "destructive",
     });
     if (!confirmed) return;
     isWithdrawing = true;
     try {
       await api.updateStudentStatus({ student_id: studentId, status: "withdrawn" });
-      toast.success("تم تحديث حالة الطالب بنجاح");
+      toast.success(m.shared_ui_student_status_updated());
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.detail(studentId) });
     } catch (e: any) {
@@ -287,7 +287,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
       <h1
         class="text-lg font-bold tracking-tight text-foreground truncate shrink min-w-0"
       >
-        {studentFullName || "طالب"}
+        {studentFullName || m.shared_ui_student_fallback_name()}
       </h1>
       <Badge
         variant="secondary"
@@ -355,7 +355,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
               onclick={() => (showPrintCertificate = true)}
             >
               <Printer size={12} class="text-muted-foreground shrink-0" />
-              <span>طباعة شهادة قيد / تسجيل</span>
+              <span>{m.shared_ui_print_enrollment_certificate()}</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -363,7 +363,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
               onclick={() => goto(`/${orgId}/finance/payments?studentId=${studentId}`)}
             >
               <Banknotes size={12} class="text-muted-foreground shrink-0" />
-              <span>تسجيل دفعة مالية</span>
+              <span>{m.shared_ui_record_payment()}</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -507,7 +507,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
               <div class="flex items-center justify-between">
                 <span class="text-[10px] text-foreground font-bold tracking-wide flex items-center gap-1.5">
                   <AcademicCap size={13} class="text-primary" />
-                  سجل القيود والفصول
+                  {m.shared_ui_enrollment_history()}
                 </span>
                 <span class="text-[9px] text-muted-foreground font-mono">
                   {enrollmentHistory.length}
@@ -543,7 +543,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
                 </div>
               {:else}
                 <div class="text-[10px] text-muted-foreground py-1 text-center bg-muted/10 rounded-md border border-dashed border-border/60">
-                  لا توجد قيود سابقة
+                  {m.shared_ui_no_previous_enrollments()}
                 </div>
               {/if}
             </div>
@@ -604,20 +604,20 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
         {m.common_student_layout_transfer_class()}
       </DialogTitle>
       <DialogDescription class="text-xs text-muted-foreground">
-        اختر الشعبة أو الفصل الجديد لنقل الطالب وتحديث القيد الأكاديمي.
+        {m.shared_ui_transfer_student_description()}
       </DialogDescription>
     </DialogHeader>
 
     <div class="py-3 flex flex-col gap-2">
       <label for="target-class-select" class="text-[11px] font-semibold text-foreground">
-        الفصل الدراسي المستهدف
+        {m.shared_ui_target_academic_class()}
       </label>
       <select
         id="target-class-select"
         class="w-full border border-border rounded-md px-3 py-2 text-xs bg-background focus:outline-hidden focus:ring-1 focus:ring-ring"
         bind:value={transferTargetClassId}
       >
-        <option value="">— اختر الفصل الجديد —</option>
+        <option value="">{m.shared_ui_select_new_class()}</option>
         {#each (classesQuery.data ?? []) as cls}
           <option value={String(cls.id)}>{cls.name}</option>
         {/each}
@@ -655,5 +655,5 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     enrollment_id: studentId,
     period_id: academicContext.effectivePeriodId,
   }}
-  reportTitle="طباعة شهادة قيد طالب"
+  reportTitle={m.shared_ui_student_enrollment_certificate_title()}
 />

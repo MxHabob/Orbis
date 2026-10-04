@@ -31,13 +31,13 @@ let {
   value = $bindable<string | null>(null),
   orgId,
   placeholder = m.common_metrics_period(),
-  searchPlaceholder = "ابحث عن الفترة أو الفصل الدراسي...",
+  searchPlaceholder = m.shared_ui_search_periods_placeholder(),
   periodType = undefined,
   disabled = false,
   id = undefined,
   showAllOption = false,
   allOptionLabel = m.common_ledger_period_all(),
-  createLabel = "إضافة فترة دراسية جديدة...",
+  createLabel = m.shared_ui_add_academic_period(),
   onCreate = undefined,
   class: className = "",
   onchange = undefined,
@@ -70,7 +70,7 @@ function getPeriodLabel(p: any): string {
 }
 
 function getPeriodSubtitle(p: any): string | undefined {
-  if (p?.is_active || p?.status === "active") return "الفترة الحالية النشطة";
+  if (p?.is_active || p?.status === "active") return m.shared_ui_current_active_period();
   if (p?.start_date && p?.end_date) {
     return `${formatDate(p.start_date, "date")} — ${formatDate(p.end_date, "date")}`;
   }
@@ -84,7 +84,7 @@ function getPeriodSubtitle(p: any): string | undefined {
   items={periods}
   {placeholder}
   {searchPlaceholder}
-  emptyText="لا توجد فترات دراسية مطابقة"
+  emptyText={m.shared_ui_no_matching_periods()}
   {disabled}
   {id}
   {showAllOption}

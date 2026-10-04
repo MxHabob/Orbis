@@ -99,7 +99,7 @@ async function loadData() {
     }
   } catch (e) {
     console.error("Error loading accounts:", e);
-    toast.error("فشل تحميل دليل الحسابات");
+    toast.error(m.finance_ui_accounts_load_failed());
   } finally {
     isLoading = false;
   }
@@ -182,19 +182,19 @@ const parentAccountNode = $derived(
 const closingStatementLabel = $derived.by(() => {
   const type = formAccountType.toLowerCase();
   if (type === "asset" || type === "liability" || type === "equity") {
-    return "الميزانية العمومية (Balance Sheet)";
+    return m.finance_ui_balance_sheet();
   }
-  return "الأرباح والخسائر / قائمة الدخل (Income Statement)";
+  return m.finance_ui_income_statement();
 });
 
 // ── Account Save / Create Action ───────────────────────────────────────
 async function handleSaveAccount() {
   if (!formNameAr.trim() && !formNameEn.trim()) {
-    toast.error("يرجى إدخال اسم الحساب");
+    toast.error(m.finance_ui_account_name_required());
     return;
   }
   if (!formCode.trim()) {
-    toast.error("يرجى إدخال رقم / كود الحساب");
+    toast.error(m.finance_ui_account_code_required());
     return;
   }
 
@@ -213,10 +213,10 @@ async function handleSaveAccount() {
     let result: any;
     if (!isAddingNew && selectedAccount?.id) {
       result = await api.updateAccount(selectedAccount.id, payload);
-      toast.success("تم تحديث بيانات الحساب بنجاح");
+      toast.success(m.finance_ui_account_update_success());
     } else {
       result = await api.createAccount(payload);
-      toast.success("تم حفظ الحساب في دليل الحسابات بنجاح");
+      toast.success(m.finance_ui_account_save_success());
     }
     await loadData();
 
@@ -225,7 +225,7 @@ async function handleSaveAccount() {
     }
   } catch (err: any) {
     console.error("Failed to save account:", err);
-    toast.error(err?.message || "فشل حفظ الحساب");
+    toast.error(err?.message || m.finance_ui_account_save_failed());
   } finally {
     isSubmitting = false;
   }
@@ -235,10 +235,10 @@ async function handleDeleteAccount() {
   if (!selectedAccount?.id) return;
 
   const confirmed = await confirmStore.prompt({
-    title: "حذف الحساب",
-    description: `هل أنت متأكد من رغبتك في حذف الحساب "${selectedAccount.name || selectedAccount.code}"؟ لن يمكن التراجع عن هذا الإجراء إذا كانت هناك قيود مسجلة.`,
-    confirmText: "حذف الحساب",
-    cancelText: "إلغاء",
+    title: m.finance_ui_delete_account(),
+    description: m.finance_ui_delete_account_confirm({ account: selectedAccount.name || selectedAccount.code }),
+    confirmText: m.finance_ui_delete_account(),
+    cancelText: m.finance_ui_cancel(),
     variant: "destructive",
   });
 
@@ -247,12 +247,12 @@ async function handleDeleteAccount() {
   isSubmitting = true;
   try {
     await api.deleteAccount(selectedAccount.id);
-    toast.success("تم حذف الحساب بنجاح");
+    toast.success(m.finance_ui_account_delete_success());
     selectedAccount = null;
     await loadData();
   } catch (err: any) {
     console.error("Failed to delete account:", err);
-    toast.error(err?.message || "فشل حذف الحساب");
+    toast.error(err?.message || m.finance_ui_account_delete_failed());
   } finally {
     isSubmitting = false;
   }
@@ -273,17 +273,18 @@ const treasurySource = $derived(
       balance_formatted: formatCurrency(bal, account.currency || baseCurrency),
       currency_code: account.currency || baseCurrency,
       status: account.is_active === 1 ? "active" : "inactive",
+      status_display: account.is_active === 1 ? m.finance_ui_active() : m.finance_ui_inactive(),
     };
   })
 );
 
 const treasuryCols: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "code", prop: "code", header: "رقم الحساب", name: "رقم الحساب", width: 110, size: 110, readonly: true, cellClass: "font-mono font-bold" },
-  { id: "name_display", prop: "name_display", header: "اسم الحساب", name: "اسم الحساب", width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "balance_formatted", prop: "balance_formatted", header: "الرصيد الحالي", name: "الرصيد الحالي", width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-primary" },
-  { id: "currency_code", prop: "currency_code", header: "العملة", name: "العملة", width: 80, size: 80, readonly: true, align: "center" },
-  { id: "status", prop: "status", header: "الحالة", name: "الحالة", width: 90, size: 90, type: "badge", align: "center", readonly: true },
+  { id: "code", prop: "code", header: m.finance_ui_account_number(), name: m.finance_ui_account_number(), width: 110, size: 110, readonly: true, cellClass: "font-mono font-bold" },
+  { id: "name_display", prop: "name_display", header: m.finance_ui_account_name(), name: m.finance_ui_account_name(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
+  { id: "balance_formatted", prop: "balance_formatted", header: m.finance_ui_current_balance(), name: m.finance_ui_current_balance(), width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-primary" },
+  { id: "currency_code", prop: "currency_code", header: m.finance_ui_currency(), name: m.finance_ui_currency(), width: 80, size: 80, readonly: true, align: "center" },
+  { id: "status_display", prop: "status_display", header: m.finance_ui_status(), name: m.finance_ui_status(), width: 90, size: 90, type: "badge", align: "center", readonly: true },
 ];
 
 function exportAccountsCsv() {
@@ -292,10 +293,10 @@ function exportAccountsCsv() {
     a.name_display,
     a.balance_formatted,
     a.currency_code,
-    a.status,
+    a.status_display,
   ]);
   const csv = [
-    ["Code", "Name", "Balance", "Currency", "Status"],
+    [m.finance_ui_account_code(), m.finance_ui_account_name(), m.finance_ui_balance(), m.finance_ui_currency(), m.finance_ui_status()],
     ...rows,
   ]
     .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))
@@ -323,7 +324,7 @@ function exportAccountsCsv() {
             onclick={() => viewMode = "tree"}
           >
             <BuildingOffice size={13} />
-            <span>شجرة ودليل الحسابات</span>
+            <span>{m.finance_ui_accounts_tree()}</span>
           </Button>
 
           <Button
@@ -333,7 +334,7 @@ function exportAccountsCsv() {
             onclick={() => viewMode = "grid"}
           >
             <Grid size={13} />
-            <span>جدول الحسابات الشامل</span>
+            <span>{m.finance_ui_accounts_table()}</span>
           </Button>
         </div>
 
@@ -344,7 +345,7 @@ function exportAccountsCsv() {
           onclick={() => startAddSubAccount(selectedAccount)}
         >
           <Plus size={13} />
-          <span>إضافة حساب فرعي</span>
+          <span>{m.finance_ui_add_subaccount()}</span>
         </Button>
       </div>
 
@@ -375,7 +376,7 @@ function exportAccountsCsv() {
                   <div class="flex items-center gap-2">
                     <span class="h-2 w-2 rounded-full {isAddingNew ? 'bg-emerald-500 animate-pulse' : 'bg-primary'}"></span>
                     <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                      {isAddingNew ? "إضافة حساب جديد في الدليل" : `بيانات الحساب: ${formNameAr || formCode}`}
+                      {isAddingNew ? m.finance_ui_add_account_heading() : m.finance_ui_account_details_heading({ account: formNameAr || formCode })}
                     </CardTitle>
                   </div>
 
@@ -390,14 +391,14 @@ function exportAccountsCsv() {
               <CardContent class="p-4 flex-1 flex flex-col gap-4 overflow-y-auto">
                 <!-- Row 1: الحساب الأب (Parent Account) -->
                 <div class="flex flex-col gap-1">
-                  <Label class="text-xs font-semibold text-foreground">الحساب الأب (المستوى الأعلى)</Label>
+                  <Label class="text-xs font-semibold text-foreground">{m.finance_ui_parent_account()}</Label>
                   <div class="p-2 rounded-md bg-muted/30 border border-border/50 flex items-center justify-between text-xs">
                     <div class="flex items-center gap-2">
                       <span class="font-mono font-bold text-muted-foreground">
                         {parentAccountNode ? parentAccountNode.code : "—"}
                       </span>
                       <span class="font-medium text-foreground">
-                        {parentAccountNode ? (parentAccountNode.name_ar || parentAccountNode.name) : "حساب جذري رئيسي (بدون أب)"}
+                        {parentAccountNode ? (parentAccountNode.name_ar || parentAccountNode.name) : m.finance_ui_root_account()}
                       </span>
                     </div>
 
@@ -407,7 +408,7 @@ function exportAccountsCsv() {
                       class="h-6 text-[11px] px-2"
                       onclick={() => { formParentId = null; formCode = suggestNextChildCode(null); }}
                     >
-                      تعيين كحساب جذري
+                      {m.finance_ui_set_root_account()}
                     </Button>
                   </div>
                 </div>
@@ -415,21 +416,21 @@ function exportAccountsCsv() {
                 <!-- Row 2: اسم الحساب (عربي + إنجليزي) -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label class="text-xs font-semibold text-foreground mb-1 block">اسم الحساب (بالعربية)</Label>
+                    <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_account_name_arabic()}</Label>
                     <Input
                       type="text"
                       bind:value={formNameAr}
-                      placeholder="مثال: الصندوق الرئيسي / بنك التضامن"
+                      placeholder={m.finance_ui_account_name_ar_placeholder()}
                       class="h-8 text-xs bg-background border-border/60"
                     />
                   </div>
 
                   <div>
-                    <Label class="text-xs font-semibold text-foreground mb-1 block">اسم الحساب (English)</Label>
+                    <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_account_name_english()}</Label>
                     <Input
                       type="text"
                       bind:value={formNameEn}
-                      placeholder="e.g. Main Cash Vault"
+                      placeholder={m.finance_ui_account_name_en_placeholder()}
                       class="h-8 text-xs font-mono bg-background border-border/60"
                     />
                   </div>
@@ -438,7 +439,7 @@ function exportAccountsCsv() {
                 <!-- Row 3: رقم الحساب + نوع المستوى (رئيسي / فرعي) -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label class="text-xs font-semibold text-foreground mb-1 block">رقم / كود الحساب</Label>
+                    <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_account_code()}</Label>
                     <Input
                       type="text"
                       bind:value={formCode}
@@ -448,13 +449,13 @@ function exportAccountsCsv() {
                   </div>
 
                   <div>
-                    <Label class="text-xs font-semibold text-foreground mb-1 block">نوع الحساب</Label>
+                    <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_account_level()}</Label>
                     <select
                       bind:value={formAccountLevel}
                       class="w-full h-8 text-xs rounded-md bg-background border border-border/60 px-2 text-foreground focus:outline-none"
                     >
-                      <option value="primary">حساب رئيسي (مجمع / لا يقبل القيود المباشرة)</option>
-                      <option value="sub">حساب فرعي (تحليلي / يقبل حركات القيود والسندات)</option>
+                      <option value="primary">{m.finance_ui_account_level_primary()}</option>
+                      <option value="sub">{m.finance_ui_account_level_sub()}</option>
                     </select>
                   </div>
                 </div>
@@ -462,40 +463,40 @@ function exportAccountsCsv() {
                 <!-- Row 4: التصنيف المالي + النوع الفرعي + العملة -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <Label class="text-xs font-semibold text-foreground mb-1 block">التصنيف المحاسبي</Label>
+                    <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_account_category()}</Label>
                     <select
                       bind:value={formAccountType}
                       class="w-full h-8 text-xs rounded-md bg-background border border-border/60 px-2 text-foreground focus:outline-none"
                     >
-                      <option value="asset">1 - الأصول (Assets)</option>
-                      <option value="liability">2 - الالتزامات (Liabilities)</option>
-                      <option value="equity">3 - حقوق الملكية (Equity)</option>
-                      <option value="revenue">4 - الإيرادات (Revenue)</option>
-                      <option value="expense">5 - المصروفات (Expenses)</option>
+                      <option value="asset">{m.finance_ui_account_type_asset_numbered()}</option>
+                      <option value="liability">{m.finance_ui_account_type_liability_numbered()}</option>
+                      <option value="equity">{m.finance_ui_account_type_equity_numbered()}</option>
+                      <option value="revenue">{m.finance_ui_account_type_revenue_numbered()}</option>
+                      <option value="expense">{m.finance_ui_account_type_expense_numbered()}</option>
                     </select>
                   </div>
 
                   <div>
-                    <Label class="text-xs font-semibold text-foreground mb-1 block">النوع الفرعي</Label>
+                    <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_account_subtype()}</Label>
                     <select
                       bind:value={formSubType}
                       class="w-full h-8 text-xs rounded-md bg-background border border-border/60 px-2 text-foreground focus:outline-none"
                     >
-                      <option value="general">عام / افتراضي</option>
-                      <option value="cash">خزينة نقدية (صندوق)</option>
-                      <option value="bank">حساب بنكي</option>
-                      <option value="customer">عميل / طالب</option>
-                      <option value="supplier">مورد</option>
-                      <option value="employee">موظف</option>
+                      <option value="general">{m.finance_ui_account_type_general()}</option>
+                      <option value="cash">{m.finance_ui_cash_treasury()}</option>
+                      <option value="bank">{m.finance_ui_account_type_bank()}</option>
+                      <option value="customer">{m.finance_ui_account_type_customer_student()}</option>
+                      <option value="supplier">{m.finance_ui_account_type_supplier()}</option>
+                      <option value="employee">{m.finance_ui_account_type_employee()}</option>
                     </select>
                   </div>
 
                   <div>
-                    <Label class="text-xs font-semibold text-foreground mb-1 block">عملة الحساب</Label>
+                    <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_account_currency()}</Label>
                     <SearchableSelect
                       value={formCurrency}
-                      placeholder="العملة..."
-                      items={currencies.length > 0 ? currencies : [{ code: 'YER', name: 'ريال يمني' }]}
+                      placeholder={m.finance_ui_currency_placeholder()}
+                      items={currencies.length > 0 ? currencies : [{ code: 'YER', name: m.finance_ui_currency_yer() }]}
                       getItemValue={(c) => c.code}
                       getItemLabel={(c) => `${c.name || c.code} (${c.code})`}
                       onchange={(val) => { if (val) formCurrency = val; }}
@@ -506,7 +507,7 @@ function exportAccountsCsv() {
 
                 <!-- Row 5: الحساب الختامي (Closing Statement) -->
                 <div class="p-2.5 rounded-lg border border-border/50 bg-muted/10 flex items-center justify-between text-xs">
-                  <span class="font-semibold text-muted-foreground">الحساب الختامي الموجه له:</span>
+                  <span class="font-semibold text-muted-foreground">{m.finance_ui_closing_statement()}</span>
                   <span class="font-bold text-foreground">{closingStatementLabel}</span>
                 </div>
 
@@ -514,7 +515,7 @@ function exportAccountsCsv() {
                 {#if selectedAccount && !isAddingNew}
                   {@const curBal = Number(selectedAccount.balances?.[formCurrency] || 0)}
                   <div class="p-3 rounded-lg border border-primary/20 bg-primary/5 flex items-center justify-between">
-                    <span class="text-xs font-bold text-foreground">الرصيد المالي الحالي للحساب:</span>
+                    <span class="text-xs font-bold text-foreground">{m.finance_ui_current_account_balance()}</span>
                     <span class="text-sm font-mono font-extrabold text-primary">
                       {formatCurrency(curBal, formCurrency)}
                     </span>
@@ -531,7 +532,7 @@ function exportAccountsCsv() {
                       class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-md border border-border bg-card hover:bg-muted text-foreground"
                     >
                       <DocumentChartBar size={13} />
-                      <span>كشف الحساب</span>
+                      <span>{m.finance_ui_account_statement()}</span>
                     </a>
                   {/if}
                 </div>
@@ -546,7 +547,7 @@ function exportAccountsCsv() {
                       onclick={handleDeleteAccount}
                     >
                       <Trash size={13} />
-                      <span>حذف الحساب</span>
+                      <span>{m.finance_ui_delete_account()}</span>
                     </Button>
                   {/if}
 
@@ -559,7 +560,7 @@ function exportAccountsCsv() {
                       else isAddingNew = false;
                     }}
                   >
-                    إلغاء
+                    {m.finance_ui_cancel()}
                   </Button>
 
                   <Button
@@ -569,7 +570,7 @@ function exportAccountsCsv() {
                     disabled={isSubmitting}
                     onclick={handleSaveAccount}
                   >
-                    {isSubmitting ? "جاري الحفظ..." : (isAddingNew ? "إضافة الحساب" : "حفظ التعديلات")}
+                    {isSubmitting ? m.finance_ui_saving() : (isAddingNew ? m.finance_ui_add_account() : m.finance_ui_save_changes())}
                   </Button>
                 </div>
               </div>
@@ -599,7 +600,7 @@ function exportAccountsCsv() {
               />
               <Input
                 type="text"
-                placeholder="ابحث باسم الحساب أو رقمه..."
+                placeholder={m.finance_ui_account_search_placeholder()}
                 bind:value={searchQuery}
                 class="h-8 ps-8 text-xs bg-card border-border/60"
               />

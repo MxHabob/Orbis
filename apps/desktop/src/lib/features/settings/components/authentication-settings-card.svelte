@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -68,16 +69,16 @@ function setNumber(
 
 function validate(): string | null {
   if (values.max_failed_logins < 1 || values.max_failed_logins > 20)
-    return "عدد محاولات الدخول يجب أن يكون بين 1 و20";
+    return m.settings_ui_auth_max_failed_logins_error();
   if (values.lockout_minutes < 1 || values.lockout_minutes > 1440)
-    return "مدة القفل يجب أن تكون بين دقيقة و1440 دقيقة";
+    return m.settings_ui_auth_lockout_duration_error();
   if (values.session_days < 1 || values.session_days > 365)
-    return "مدة الجلسة يجب أن تكون بين يوم و365 يوماً";
+    return m.settings_ui_auth_session_duration_error();
   if (
     values.refresh_token_days < values.session_days ||
     values.refresh_token_days > 730
   )
-    return "مدة التجديد يجب أن تكون أكبر أو مساوية لمدة الجلسة ولا تتجاوز 730 يوماً";
+    return m.settings_ui_auth_refresh_duration_error();
   return null;
 }
 
@@ -90,7 +91,7 @@ async function save() {
   try {
     await api.updateSettings({ authentication: values });
     savedValues = { ...values };
-    toast.success("تم حفظ إعدادات المصادقة");
+    toast.success(m.settings_ui_auth_settings_saved());
   } catch (error) {
     toast.error(extractErrorMessage(error));
   }
@@ -105,37 +106,37 @@ function reset() {
 <Card>
   <CardHeader>
     <div class="flex flex-col">
-      <CardTitle>أمان الدخول والجلسات</CardTitle>
-      <CardDescription>سياسة محاولات الدخول ومدد الجلسات الخاصة بالمنظمة</CardDescription>
+      <CardTitle>{m.settings_ui_auth_title()}</CardTitle>
+      <CardDescription>{m.settings_ui_auth_description()}</CardDescription>
     </div>
   </CardHeader>
 
   <CardContent class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5 text-start">
     <div class="flex flex-col gap-2">
-      <Label for="auth-max-failed-logins" class="text-xs font-semibold">الحد الأقصى للمحاولات الفاشلة</Label>
+      <Label for="auth-max-failed-logins" class="text-xs font-semibold">{m.settings_ui_auth_max_failed_logins()}</Label>
       <Input id="auth-max-failed-logins" type="number" min="1" max="20" value={values.max_failed_logins} oninput={(event: Event) => setNumber("max_failed_logins", (event.currentTarget as HTMLInputElement).value, 1)} disabled={isSaving} class="h-9 text-xs" />
     </div>
 
     <div class="flex flex-col gap-2">
-      <Label for="auth-lockout-minutes" class="text-xs font-semibold">مدة القفل بالدقائق</Label>
+      <Label for="auth-lockout-minutes" class="text-xs font-semibold">{m.settings_ui_auth_lockout_minutes()}</Label>
       <Input id="auth-lockout-minutes" type="number" min="1" max="1440" value={values.lockout_minutes} oninput={(event: Event) => setNumber("lockout_minutes", (event.currentTarget as HTMLInputElement).value, 1)} disabled={isSaving} class="h-9 text-xs" />
     </div>
 
     <div class="flex flex-col gap-2">
-      <Label for="auth-session-days" class="text-xs font-semibold">مدة الجلسة بالأيام</Label>
+      <Label for="auth-session-days" class="text-xs font-semibold">{m.settings_ui_auth_session_days()}</Label>
       <Input id="auth-session-days" type="number" min="1" max="365" value={values.session_days} oninput={(event: Event) => setNumber("session_days", (event.currentTarget as HTMLInputElement).value, 1)} disabled={isSaving} class="h-9 text-xs" />
     </div>
 
     <div class="flex flex-col gap-2">
-      <Label for="auth-refresh-days" class="text-xs font-semibold">مدة رمز التجديد بالأيام</Label>
+      <Label for="auth-refresh-days" class="text-xs font-semibold">{m.settings_ui_auth_refresh_token_days()}</Label>
       <Input id="auth-refresh-days" type="number" min="1" max="730" value={values.refresh_token_days} oninput={(event: Event) => setNumber("refresh_token_days", (event.currentTarget as HTMLInputElement).value, 1)} disabled={isSaving} class="h-9 text-xs" />
     </div>
   </CardContent>
 
   {#if isDirty}
     <CardFooter class="justify-end gap-2">
-      <Button type="button" variant="outline" size="sm" onclick={reset}>إلغاء</Button>
-      <Button type="button" size="sm" onclick={save} disabled={isSaving}>حفظ إعدادات المصادقة</Button>
+      <Button type="button" variant="outline" size="sm" onclick={reset}>{m.common_action_cancel()}</Button>
+      <Button type="button" size="sm" onclick={save} disabled={isSaving}>{m.settings_ui_auth_save_settings()}</Button>
     </CardFooter>
   {/if}
 </Card>

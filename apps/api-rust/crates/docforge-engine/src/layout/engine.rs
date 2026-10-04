@@ -885,11 +885,11 @@ mod tests {
 
         let font_candidates = [
             ("Tahoma", "C:\\Windows\\Fonts\\tahoma.ttf"),
-            ("DejaVu Sans", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
             (
-                "Arial",
-                "/System/Library/Fonts/Supplemental/Arial.ttf",
+                "DejaVu Sans",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
             ),
+            ("Arial", "/System/Library/Fonts/Supplemental/Arial.ttf"),
         ];
         let (font_family, font_path) = font_candidates
             .iter()

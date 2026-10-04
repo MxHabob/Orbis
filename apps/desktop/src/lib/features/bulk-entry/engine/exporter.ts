@@ -1,6 +1,8 @@
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { openPath } from "@tauri-apps/plugin-opener";
+import * as m from "$lib/paraglide/messages";
+import { getBulkEntryColumnHeader } from "../localization";
 import type { BulkImportProfile, BulkRowState } from "../types";
 
 export interface ExportDatasetOptions {
@@ -14,24 +16,24 @@ export async function exportCorrectedDataset(options: ExportDatasetOptions): Pro
   const XLSX = await import("xlsx");
   const { profile, rows, filenamePrefix = "Orbis_Corrected_Data", format = "xlsx" } = options;
 
-  const headers = profile.columnMetadata.map((col) => col.headerAr);
-  headers.push("حالة التحقق (Validation Status)");
+  const headers = profile.columnMetadata.map((col) => getBulkEntryColumnHeader(profile.id, col.id, col.headerAr));
+  headers.push(m.bulk_entry_export_validation_status());
 
   const aoaData: unknown[][] = [headers];
 
   for (const r of rows) {
     const rowLine = profile.columnMetadata.map((col) => r.data[col.id] ?? "");
-    let statusText = "صالح (Valid)";
+    let statusText = m.bulk_entry_export_status_valid();
     if (r.status === "error") {
       const errMsgs = Array.from(r.errors.entries())
         .map(([k, v]) => `${k}: ${v}`)
         .join("; ");
-      statusText = `خطأ: ${errMsgs}`;
+      statusText = m.bulk_entry_export_status_error({ details: errMsgs });
     } else if (r.status === "warning") {
       const warnMsgs = Array.from(r.warnings.entries())
         .map(([k, v]) => `${k}: ${v}`)
         .join("; ");
-      statusText = `تنبيه: ${warnMsgs}`;
+      statusText = m.bulk_entry_export_status_warning({ details: warnMsgs });
     }
     rowLine.push(statusText);
     aoaData.push(rowLine);
@@ -39,7 +41,7 @@ export async function exportCorrectedDataset(options: ExportDatasetOptions): Pro
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(aoaData);
-  XLSX.utils.book_append_sheet(wb, ws, "البيانات_المصححة");
+  XLSX.utils.book_append_sheet(wb, ws, m.bulk_entry_export_sheet());
 
   const rawBytes = XLSX.write(wb, {
     bookType: format === "xlsx" ? "xlsx" : "csv",
@@ -51,7 +53,7 @@ export async function exportCorrectedDataset(options: ExportDatasetOptions): Pro
   try {
     const savePath = await save({
       defaultPath: defaultFilename,
-      filters: [{ name: format === "xlsx" ? "Excel Spreadsheet" : "CSV Document", extensions: [format] }],
+      filters: [{ name: format === "xlsx" ? m.bulk_entry_file_filter_excel() : m.bulk_entry_file_filter_csv(), extensions: [format] }],
     });
 
     if (savePath) {

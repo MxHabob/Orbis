@@ -3,6 +3,7 @@
 Manages assessment schemes (weighted grade composition structures).
 -->
 <script lang="ts">
+  import * as m from "$lib/paraglide/messages";
   import { api, extractErrorMessage } from "$lib/api";
   import AssessmentComponentDialog from "./components/assessment-component-dialog.svelte";
   import AssessmentSchemeDialog from "./components/assessment-scheme-dialog.svelte";
@@ -90,7 +91,7 @@ Manages assessment schemes (weighted grade composition structures).
           components: [],
         },
       });
-      toast.success("تم إنشاء هيكل التقييم بنجاح");
+      toast.success(m.settings_ui_assessment_scheme_created());
       activeSchemeId = created.id;
       await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
       showCreateDialog = false;
@@ -181,8 +182,8 @@ Manages assessment schemes (weighted grade composition structures).
       await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
       toast.success(
         editingComponentId
-          ? "تم تحديث المكوّن بنجاح"
-          : "تم إضافة المكوّن بنجاح",
+          ? m.settings_ui_assessment_component_updated()
+          : m.settings_ui_assessment_component_added(),
       );
       showComponentDialog = false;
       resetComponentForm();
@@ -197,7 +198,7 @@ Manages assessment schemes (weighted grade composition structures).
   async function handleDeleteScheme(id: string) {
     try {
       await api.deleteAssessmentScheme(id);
-      toast.success("تم حذف هيكل التقييم");
+      toast.success(m.settings_ui_assessment_scheme_deleted());
       if (activeSchemeId === id) activeSchemeId = null;
       await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
     } catch (err: unknown) {
@@ -216,7 +217,7 @@ Manages assessment schemes (weighted grade composition structures).
         },
       });
       await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
-      toast.success("تم حذف المكوّن");
+      toast.success(m.settings_ui_assessment_component_deleted());
     } catch (err: unknown) {
       toast.error(extractErrorMessage(err));
     }
@@ -225,29 +226,29 @@ Manages assessment schemes (weighted grade composition structures).
   function getTypeLabel(t: string) {
     switch (t) {
       case "exam":
-        return "اختبار";
+        return m.settings_ui_assessment_type_exam();
       case "quiz":
-        return "اختبار قصير";
+        return m.settings_ui_assessment_type_quiz();
       case "homework":
-        return "واجبات";
+        return m.settings_ui_assessment_type_homework();
       case "participation":
-        return "مشاركة";
+        return m.settings_ui_assessment_type_participation();
       case "project":
-        return "مشروع";
+        return m.settings_ui_assessment_type_project();
       case "practical":
-        return "عملي";
+        return m.settings_ui_assessment_type_practical();
       default:
         return t;
     }
   }
 
   const componentTypes = [
-    { v: "exam", l: "اختبار" },
-    { v: "quiz", l: "اختبار قصير" },
-    { v: "homework", l: "واجبات" },
-    { v: "participation", l: "مشاركة" },
-    { v: "project", l: "مشروع" },
-    { v: "practical", l: "عملي" },
+    { v: "exam", l: m.settings_ui_assessment_type_exam() },
+    { v: "quiz", l: m.settings_ui_assessment_type_quiz() },
+    { v: "homework", l: m.settings_ui_assessment_type_homework() },
+    { v: "participation", l: m.settings_ui_assessment_type_participation() },
+    { v: "project", l: m.settings_ui_assessment_type_project() },
+    { v: "practical", l: m.settings_ui_assessment_type_practical() },
   ];
 </script>
 
@@ -256,13 +257,13 @@ Manages assessment schemes (weighted grade composition structures).
     <SettingsFormSkeleton />
   {:else if schemesQuery.error}
     <div class="w-full text-center py-12 text-destructive">
-      <p>فشل تحميل هياكل التقييم</p>
+      <p>{m.settings_ui_assessment_schemes_load_error()}</p>
       <Button
         variant="outline"
         class="mt-4 cursor-pointer"
         onclick={() => schemesQuery.refetch()}
       >
-        إعادة المحاولة
+        {m.common_retry()}
       </Button>
     </div>
   {:else}
@@ -271,7 +272,7 @@ Manages assessment schemes (weighted grade composition structures).
       <div class="flex items-center gap-2">
         <Keyframes size={18} class="text-primary" />
         <h1 class="text-sm font-bold text-foreground">
-          هياكل التقييم والأوزان
+          {m.settings_ui_assessment_schemes_title()}
         </h1>
       </div>
       <Button
@@ -280,7 +281,7 @@ Manages assessment schemes (weighted grade composition structures).
         onclick={() => (showCreateDialog = true)}
       >
         <Plus size={14} />
-        إضافة هيكل
+        {m.settings_ui_assessment_scheme_add()}
       </Button>
     </div>
 
@@ -289,7 +290,7 @@ Manages assessment schemes (weighted grade composition structures).
       <Card class="flex flex-col overflow-hidden">
         <CardHeader class="py-3 px-4">
           <CardTitle class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider text-start select-none">
-            الهياكل المتاحة ({schemes.length})
+            {m.settings_ui_assessment_schemes_available({ count: schemes.length })}
           </CardTitle>
         </CardHeader>
         <CardContent class="p-2 flex flex-col gap-1.5">
@@ -321,7 +322,7 @@ Manages assessment schemes (weighted grade composition structures).
                       e.stopPropagation();
                       handleDeleteScheme(scheme.id);
                     }}
-                    title="حذف الهيكل"
+                    title={m.settings_ui_assessment_scheme_delete()}
                   >
                     <Trash size={12} />
                   </button>
@@ -331,7 +332,7 @@ Manages assessment schemes (weighted grade composition structures).
             </div>
           {:else}
             <div class="text-center py-8 text-muted-foreground text-xs">
-              لا توجد هياكل تقييم. أضف هيكل جديد للبدء.
+              {m.settings_ui_assessment_schemes_empty()}
             </div>
           {/each}
         </CardContent>
@@ -354,7 +355,7 @@ Manages assessment schemes (weighted grade composition structures).
                     variant={totalWeight === 100 ? "default" : "destructive"}
                     class="text-[10px] font-mono"
                   >
-                    الوزن الإجمالي: {totalWeight}%
+                    {m.settings_ui_assessment_total_weight({ weight: totalWeight })}
                   </Badge>
                   <Button
                     size="sm"
@@ -363,7 +364,7 @@ Manages assessment schemes (weighted grade composition structures).
                     onclick={openAddComponent}
                   >
                     <Plus size={11} />
-                    إضافة مكوّن
+                    {m.settings_ui_assessment_component_add()}
                   </Button>
                 </div>
               </CardAction>
@@ -395,11 +396,11 @@ Manages assessment schemes (weighted grade composition structures).
                 <table class="w-full text-xs">
                   <thead>
                     <tr class="border-b border-border bg-muted/40 text-muted-foreground select-none">
-                      <th class="text-start py-2.5 px-4 font-semibold">المكوّن</th>
-                      <th class="text-center py-2.5 px-3 font-semibold">النوع</th>
-                      <th class="text-center py-2.5 px-3 font-semibold">الوزن</th>
-                      <th class="text-center py-2.5 px-3 font-semibold">الدرجة القصوى</th>
-                      <th class="text-center py-2.5 px-3 font-semibold">درجة النجاح</th>
+                      <th class="text-start py-2.5 px-4 font-semibold">{m.settings_ui_assessment_component()}</th>
+                      <th class="text-center py-2.5 px-3 font-semibold">{m.settings_ui_assessment_type()}</th>
+                      <th class="text-center py-2.5 px-3 font-semibold">{m.settings_ui_assessment_weight()}</th>
+                      <th class="text-center py-2.5 px-3 font-semibold">{m.settings_ui_assessment_max_score()}</th>
+                      <th class="text-center py-2.5 px-3 font-semibold">{m.settings_ui_assessment_passing_score()}</th>
                       <th class="text-center py-2.5 px-3 font-semibold"></th>
                     </tr>
                   </thead>
@@ -445,14 +446,14 @@ Manages assessment schemes (weighted grade composition structures).
                             <button
                               class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                               onclick={() => openEditComponent(comp)}
-                              title="تعديل المكوّن"
+                              title={m.common_action_edit()}
                             >
                               <Pencil size={12} />
                             </button>
                             <button
                               class="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
                               onclick={() => handleDeleteComponent(comp.id)}
-                              title="حذف المكوّن"
+                              title={m.common_action_delete()}
                             >
                               <Trash size={12} />
                             </button>
@@ -465,7 +466,7 @@ Manages assessment schemes (weighted grade composition structures).
                           colspan="6"
                           class="text-center py-6 text-muted-foreground"
                         >
-                          لا توجد مكوّنات. أضف مكوّن تقييم جديد.
+                          {m.settings_ui_assessment_components_empty()}
                         </td>
                       </tr>
                     {/each}
@@ -478,7 +479,7 @@ Manages assessment schemes (weighted grade composition structures).
           <div
             class="flex items-center justify-center h-full text-muted-foreground text-xs py-16"
           >
-            اختر هيكل تقييم من القائمة لعرض المكوّنات
+            {m.settings_ui_assessment_select_scheme()}
           </div>
         {/if}
       </div>

@@ -114,7 +114,7 @@ const pageLoading = $derived(
 						{totalClassesCount}
 					</div>
 					<p class="text-[10px] text-muted-foreground mt-1">
-						الفصول الدراسية المسجلة
+						{m.shared_ui_registered_classes()}
 					</p>
 				</CardContent>
 			</Card>
@@ -130,7 +130,7 @@ const pageLoading = $derived(
 						{totalStudentsCount}
 					</div>
 					<p class="text-[10px] text-muted-foreground mt-1">
-						إجمالي الطلاب المقيدين
+						{m.shared_ui_enrolled_students_total()}
 					</p>
 				</CardContent>
 			</Card>
@@ -146,7 +146,7 @@ const pageLoading = $derived(
 						{averageClassSize}
 					</div>
 					<p class="text-[10px] text-muted-foreground mt-1">
-						متوسط سعة الفصل الواحد
+						{m.shared_ui_average_class_size()}
 					</p>
 				</CardContent>
 			</Card>
@@ -165,7 +165,7 @@ const pageLoading = $derived(
 						{m.common_card_active_classes()}
 					</CardTitle>
 					<CardDescription class="text-[10px]">
-						دليل الفصول الدراسية وتوزيع الشعب والطلاب
+						{m.shared_ui_classes_directory_description()}
 					</CardDescription>
 				</div>
 			</div>

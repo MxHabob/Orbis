@@ -1,4 +1,5 @@
 import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
+import * as m from "$lib/paraglide/messages";
 import {
   api,
   queryKeys,
@@ -249,7 +250,7 @@ export function createAvailablePaymentMethodsQuery(orgId: () => string) {
       const methods: AvailablePaymentMethod[] = [
         {
           id: "cash",
-          name: "نقداً",
+          name: m.finance_ui_payment_method_cash(),
           name_en: "Cash",
           category: "manual",
           is_digital_gateway: false,
@@ -257,7 +258,7 @@ export function createAvailablePaymentMethodsQuery(orgId: () => string) {
         },
         {
           id: "bank_transfer",
-          name: "تحويل بنكي",
+          name: m.finance_ui_payment_method_bank_transfer(),
           name_en: "Bank Transfer",
           category: "bank",
           is_digital_gateway: false,
@@ -265,7 +266,7 @@ export function createAvailablePaymentMethodsQuery(orgId: () => string) {
         },
         {
           id: "check",
-          name: "شيك مصرفي",
+          name: m.finance_ui_payment_method_bank_check(),
           name_en: "Bank Check",
           category: "bank",
           is_digital_gateway: false,
@@ -281,7 +282,7 @@ export function createAvailablePaymentMethodsQuery(orgId: () => string) {
         if (provider === "mada") {
           methods.push({
             id: "mada",
-            name: "بطاقة مدى (Mada)",
+            name: m.finance_ui_payment_method_mada(),
             name_en: "Mada Debit Card",
             category: "electronic",
             provider_name: "mada",
@@ -291,7 +292,7 @@ export function createAvailablePaymentMethodsQuery(orgId: () => string) {
         } else if (provider === "moyasar") {
           methods.push({
             id: "mada",
-            name: "مدى (عبر Moyasar)",
+            name: m.finance_ui_payment_method_mada_moyasar(),
             name_en: "Mada (Moyasar)",
             category: "electronic",
             provider_name: "moyasar",
@@ -300,7 +301,7 @@ export function createAvailablePaymentMethodsQuery(orgId: () => string) {
           });
           methods.push({
             id: "credit_card",
-            name: "بطاقة ائتمانية (Visa / MasterCard)",
+            name: m.finance_ui_payment_method_credit_card_moyasar(),
             name_en: "Credit Card (Moyasar)",
             category: "electronic",
             provider_name: "moyasar",
@@ -319,7 +320,7 @@ export function createAvailablePaymentMethodsQuery(orgId: () => string) {
         } else if (provider === "stripe") {
           methods.push({
             id: "credit_card",
-            name: "بطاقة ائتمان (Stripe)",
+            name: m.finance_ui_payment_method_credit_card_stripe(),
             name_en: "Credit Card (Stripe)",
             category: "electronic",
             provider_name: "stripe",
@@ -351,7 +352,7 @@ export function createAvailablePaymentMethodsQuery(orgId: () => string) {
           // Generic gateway adapter
           methods.push({
             id: "credit_card",
-            name: `بوابة دفع إلكتروني (${config.provider_name})`,
+            name: m.finance_ui_payment_method_gateway({ provider: config.provider_name ?? "" }),
             name_en: `Payment Gateway (${config.provider_name})`,
             category: "electronic",
             provider_name: config.provider_name,
@@ -661,5 +662,4 @@ export function createDisbursePayrollMutation() {
     },
   }));
 }
-
 

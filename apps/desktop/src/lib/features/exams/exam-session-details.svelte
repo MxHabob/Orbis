@@ -298,7 +298,7 @@ async function handleGenerateSeating() {
     const studentsRes = await api.listStudents({ pageSize: 500 });
     const studentIds = studentsRes.items.map((s: any) => s.student?.id || s.id);
     if (!studentIds.length) {
-      toast.error("لا يوجد طلاب مسجلين لتوليد أرقام جلوس لهم");
+      toast.error(m.operations_ui_seating_no_students());
       return;
     }
     const roomIds = rooms.map((r: any) => r.id);
@@ -312,9 +312,9 @@ async function handleGenerateSeating() {
     });
 
     toast.promise(promise, {
-      loading: "جاري توليد أرقام الجلوس...",
-      success: "تم توليد أرقام الجلوس بنجاح!",
-      error: (err) => (err as any)?.message || "فشل توليد أرقام الجلوس",
+      loading: m.operations_ui_seating_generating(),
+      success: m.operations_ui_seating_generate_success(),
+      error: (err) => (err as any)?.message || m.operations_ui_seating_generate_error(),
     });
 
     await promise;
@@ -327,13 +327,13 @@ async function handleGenerateSeating() {
 async function handleGenerateSecrets() {
   try {
     if (!schedules.length) {
-      toast.error("لا يوجد جداول امتحانات مسجلة لتوليد الأرقام السرية");
+      toast.error(m.operations_ui_secrets_no_schedules());
       return;
     }
     const studentsRes = await api.listStudents({ pageSize: 500 });
     const studentIds = studentsRes.items.map((s: any) => s.student?.id || s.id);
     if (!studentIds.length) {
-      toast.error("لا يوجد طلاب مسجلين لتوليد أرقام سرية لهم");
+      toast.error(m.operations_ui_secrets_no_students());
       return;
     }
 
@@ -346,9 +346,9 @@ async function handleGenerateSecrets() {
 
     const promise = Promise.all(promises);
     toast.promise(promise, {
-      loading: "جاري توليد الأرقام السرية للامتحانات...",
-      success: "تم توليد وتشفير الأرقام السرية لجميع الجداول بنجاح!",
-      error: (err) => (err as any)?.message || "فشل توليد الأرقام السرية",
+      loading: m.operations_ui_secrets_generating(),
+      success: m.operations_ui_secrets_generate_success(),
+      error: (err) => (err as any)?.message || m.operations_ui_secrets_generate_error(),
     });
 
     await promise;
@@ -379,7 +379,7 @@ async function loadSolveJobs() {
 }
 
 async function handleAutoSchedule() {
-  toast.error("الجدولة التلقائية غير متاحة في نسخة سطح المكتب حاليًا");
+  toast.error(m.operations_ui_auto_scheduling_desktop_unavailable());
 }
 
 function stopPolling() {
@@ -394,16 +394,16 @@ function stopPolling() {
 }
 
 async function handleCancelSolve() {
-  toast.error("إلغاء الجدولة التلقائية غير متاح في نسخة سطح المكتب حاليًا");
+  toast.error(m.operations_ui_cancel_scheduling_desktop_unavailable());
 }
 
 async function handleApplySolve() {
-  toast.error("تطبيق الجدولة التلقائية غير متاح في نسخة سطح المكتب حاليًا");
+  toast.error(m.operations_ui_apply_scheduling_desktop_unavailable());
 }
 
 async function handleDeleteSchedule(scheduleId: string) {
   const confirmed = await confirmStore.prompt({
-    title: m.common_action_delete() + "؟",
+    title: m.operations_ui_delete_question_title(),
     description: m.academics_exams_sessions_sessionId_are_you_sure_you_want(),
     confirmText: m.common_action_delete(),
     variant: "destructive",
@@ -413,7 +413,7 @@ async function handleDeleteSchedule(scheduleId: string) {
   toast.promise(promise, {
     loading: m.academics_exams_sessions_sessionId_deleting_scheduled_exam(),
     success: m.academics_exams_sessions_sessionId_deleted_exam_successfully(),
-    error: (err: any) => (err as any)?.message || "Failed to delete",
+    error: (err: any) => (err as any)?.message || m.operations_ui_exam_delete_error(),
   });
   try {
     await promise;
@@ -438,7 +438,7 @@ async function handleToggleScheduleStatus(sched: any) {
   toast.promise(promise, {
     loading: label,
     success: labelSuccess,
-    error: (err: any) => (err as any)?.message || "Failed to update status",
+    error: (err: any) => (err as any)?.message || m.operations_ui_exam_status_update_error(),
   });
   try {
     await promise;
@@ -449,7 +449,7 @@ async function handleToggleScheduleStatus(sched: any) {
 }
 
 async function handleAllocateHalls() {
-  toast.error("توزيع الطلاب على القاعات غير متاح في نسخة سطح المكتب حاليًا");
+  toast.error(m.operations_ui_hall_assignment_desktop_unavailable());
 }
 
 async function handleActivate() {
@@ -458,9 +458,9 @@ async function handleActivate() {
   const promise = api.updateExamSession(sessionId, { status: targetStatus });
 
   toast.promise(promise, {
-    loading: "جاري تحديث حالة دورة الامتحانات...",
-    success: "تم تحديث حالة دورة الامتحانات بنجاح!",
-    error: (err) => (err as any)?.message || "فشل تحديث حالة دورة الامتحانات",
+    loading: m.operations_ui_exam_session_status_updating(),
+    success: m.operations_ui_exam_session_status_updated(),
+    error: (err) => (err as any)?.message || m.operations_ui_exam_session_status_update_error(),
   });
 
   try {
@@ -473,17 +473,17 @@ async function handleActivate() {
 
 async function handleDeleteSeating(seatingId: string) {
   const confirmed = await confirmStore.prompt({
-    title: "حذف رقم الجلوس؟",
-    description: "هل أنت متأكد من رغبتك في حذف رقم الجلوس المحدد؟",
-    confirmText: "حذف",
+    title: m.operations_ui_seating_delete_title(),
+    description: m.operations_ui_seating_delete_confirm(),
+    confirmText: m.common_action_delete(),
     variant: "destructive",
   });
   if (!confirmed) return;
   const promise = api.deleteSeating(seatingId);
   toast.promise(promise, {
-    loading: "جاري حذف رقم الجلوس...",
-    success: "تم حذف رقم الجلوس بنجاح!",
-    error: (err: any) => (err as any)?.message || "فشل حذف رقم الجلوس",
+    loading: m.operations_ui_seating_deleting(),
+    success: m.operations_ui_seating_delete_success(),
+    error: (err: any) => (err as any)?.message || m.operations_ui_seating_delete_error(),
   });
   try {
     await promise;
@@ -495,17 +495,17 @@ async function handleDeleteSeating(seatingId: string) {
 
 async function handleDeleteProctor(proctorId: string) {
   const confirmed = await confirmStore.prompt({
-    title: "إلغاء تكليف المراقب؟",
-    description: "هل أنت متأكد من رغبتك في إلغاء تكليف المراقب من هذه اللجنة؟",
-    confirmText: "إلغاء التكليف",
+    title: m.operations_ui_proctor_assignment_cancel_title(),
+    description: m.operations_ui_proctor_assignment_cancel_confirm(),
+    confirmText: m.operations_ui_proctor_assignment_cancel(),
     variant: "destructive",
   });
   if (!confirmed) return;
   const promise = api.deleteProctor(proctorId);
   toast.promise(promise, {
-    loading: "جاري إلغاء تكليف المراقب...",
-    success: "تم إلغاء التكليف بنجاح!",
-    error: (err: any) => (err as any)?.message || "فشل إلغاء التكليف",
+    loading: m.operations_ui_proctor_assignment_cancelling(),
+    success: m.operations_ui_proctor_assignment_cancel_success(),
+    error: (err: any) => (err as any)?.message || m.operations_ui_proctor_assignment_cancel_error(),
   });
   try {
     await promise;
@@ -519,9 +519,9 @@ async function handleToggleHall(room: any) {
   const promise = Promise.resolve();
 
   toast.promise(promise, {
-    loading: `جاري تفعيل القاعة ${room.room_number || room.name}...`,
-    success: "تم تفعيل القاعة كـ لجنة اختبار بنجاح!",
-    error: (err) => (err as any)?.message || "فشل تفعيل القاعة",
+    loading: m.operations_ui_exam_room_activating({ room: room.room_number || room.name }),
+    success: m.operations_ui_exam_room_activate_success(),
+    error: (err) => (err as any)?.message || m.operations_ui_exam_room_activate_error(),
   });
 
   try {
@@ -533,7 +533,7 @@ async function handleToggleHall(room: any) {
 }
 
 async function handleAssignProctors() {
-  toast.error("تعيين المراقبين غير متاح في نسخة سطح المكتب حاليًا");
+  toast.error(m.operations_ui_proctor_assignment_desktop_unavailable());
 }
 </script>
 
@@ -737,7 +737,7 @@ async function handleAssignProctors() {
 															type="button" 
 															class="text-muted-foreground hover:text-foreground p-1 rounded transition-colors duration-150 cursor-pointer"
 															onclick={() => handleToggleScheduleStatus(sched)}
-															title={sched.status === "cancelled" ? "إعادة تفعيل الامتحان" : "إلغاء تفعيل الامتحان"}
+															title={sched.status === "cancelled" ? m.operations_ui_reactivate_exam() : m.operations_ui_deactivate_exam()}
 														>
 															{#if sched.status === "cancelled"}
 																<CheckCircle size={12} class="text-emerald-500 hover:text-emerald-600" />
@@ -749,7 +749,7 @@ async function handleAssignProctors() {
 															type="button" 
 															class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors duration-150 cursor-pointer"
 															onclick={() => handleDeleteSchedule(sched.id)}
-															title="حذف الامتحان نهائياً"
+															title={m.operations_ui_delete_exam_permanently()}
 														>
 															<Trash size={12} />
 														</button>
@@ -792,7 +792,7 @@ async function handleAssignProctors() {
 															type="button" 
 															class="text-muted-foreground hover:text-foreground p-1 rounded transition-colors duration-150 cursor-pointer"
 															onclick={() => handleToggleScheduleStatus(sched)}
-															title={sched.status === "cancelled" ? "إعادة تفعيل الامتحان" : "إلغاء تفعيل الامتحان"}
+															title={sched.status === "cancelled" ? m.operations_ui_reactivate_exam() : m.operations_ui_deactivate_exam()}
 														>
 															{#if sched.status === "cancelled"}
 																<CheckCircle size={12} class="text-emerald-500 hover:text-emerald-600" />
@@ -804,7 +804,7 @@ async function handleAssignProctors() {
 															type="button" 
 															class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors duration-150 cursor-pointer"
 															onclick={() => handleDeleteSchedule(sched.id)}
-															title="حذف الامتحان نهائياً"
+															title={m.operations_ui_delete_exam_permanently()}
 														>
 															<Trash size={12} />
 														</button>
@@ -886,7 +886,7 @@ async function handleAssignProctors() {
 													type="button"
 													class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer"
 													onclick={() => handleDeleteSeating(sn.id)}
-													title="حذف رقم الجلوس"
+													title={m.operations_ui_delete_seating_number()}
 												>
 													<Trash size={12} />
 												</button>
@@ -906,7 +906,7 @@ async function handleAssignProctors() {
 						<span>{m.academics_exams_activated()}{halls.length}{m.academics_exams_committees_out_of()}{rooms.length}{m.academics_exams_available_classrooms_suffix()}</span>
 						<Button variant="outline" class="h-6 px-2 text-[9px] cursor-pointer" onclick={() => { activeConfigTab = "halls"; isConfigModalOpen = true; }}>
 							<ArrowsRightLeft size={10} class="me-1" />
-							توزيع الطلاب تلقائياً
+							{m.operations_ui_distribute_students_automatically()}
 						</Button>
 					</div>
 
@@ -929,7 +929,7 @@ async function handleAssignProctors() {
 											{/if}
 										</div>
 										<span class="text-[9px] font-mono px-1.5 py-0.5 rounded {isAct ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-muted text-muted-foreground border border-border/40'}">
-											{isAct ? "لجنة نشطة" : "غير مفعلة"}
+											{isAct ? m.operations_ui_active_committee() : m.operations_ui_inactive()}
 										</span>
 									</div>
 
@@ -956,7 +956,7 @@ async function handleAssignProctors() {
 												onclick={() => handleToggleHall(room)}
 											>
 												<Plus size={10} class="me-1" />
-												تفعيل كلجنة
+												{m.operations_ui_activate_as_committee()}
 											</Button>
 										</div>
 									{/if}
@@ -1008,7 +1008,7 @@ async function handleAssignProctors() {
 													type="button"
 													class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer"
 													onclick={() => handleDeleteProctor(p.id)}
-													title="إلغاء تكليف المراقب"
+													title={m.operations_ui_cancel_proctor_assignment()}
 												>
 													<Trash size={12} />
 												</button>
@@ -1041,20 +1041,20 @@ async function handleAssignProctors() {
 					<div>
 						<h4 class="text-xs font-bold flex items-center gap-1.5">
 							{#if activeJob.status === 'running'}
-								جاري تحسين وجدولة الامتحانات تلقائياً...
+								{m.operations_ui_auto_schedule_optimizing()}
 							{:else if activeJob.status === 'completed'}
-								اكتمل التحسين والجدولة التلقائية بنجاح!
+								{m.operations_ui_auto_schedule_success()}
 							{:else if activeJob.status === 'failed'}
-								فشلت عملية التحسين والجدولة.
+								{m.operations_ui_auto_schedule_failure()}
 							{:else}
-								تم إلغاء الجدولة التلقائية.
+								{m.operations_ui_auto_schedule_cancelled()}
 							{/if}
 						</h4>
 						<p class="text-[10px] text-muted-foreground mt-0.5 font-mono">
 							{#if activeJob.status === 'running'}
-								الوقت المنقضي: {timeElapsed} ثانية | النتيجة الحالية: {activeJob.score || '—'}
+								{m.operations_ui_scheduling_elapsed_score({ elapsed: timeElapsed, score: activeJob.score || "—" })}
 							{:else if activeJob.status === 'completed'}
-								النتيجة النهائية: {activeJob.score || '—'}
+								{m.operations_ui_scheduling_final_score({ score: activeJob.score || "—" })}
 							{/if}
 						</p>
 					</div>
@@ -1062,14 +1062,14 @@ async function handleAssignProctors() {
 				<div class="flex items-center gap-2">
 					{#if activeJob.status === 'running'}
 						<Button size="sm" variant="destructive" class="h-8 text-[10px] px-3 font-bold cursor-pointer" onclick={handleCancelSolve}>
-							إلغاء العملية
+							{m.operations_ui_cancel_operation()}
 						</Button>
 					{:else if activeJob.status === 'completed'}
 						<Button size="sm" variant={previewDraft ? "secondary" : "outline"} class="h-8 text-[10px] px-3 font-bold cursor-pointer" onclick={() => previewDraft = !previewDraft}>
-							{previewDraft ? "إلغاء المعاينة" : "معاينة الجدول المقترح"}
+							{previewDraft ? m.operations_ui_cancel_preview() : m.operations_ui_preview_proposed_schedule()}
 						</Button>
 						<Button size="sm" variant="default" class="h-8 text-[10px] px-3 font-bold cursor-pointer" onclick={handleApplySolve}>
-							تطبيق الجدول المقترح
+							{m.operations_ui_apply_proposed_schedule()}
 						</Button>
 					{/if}
 				</div>
@@ -1080,16 +1080,16 @@ async function handleAssignProctors() {
 		<div class="border-t border-border pt-4 flex flex-wrap items-center gap-2" in:fade={{ delay: 150, duration: 200 }}>
 			<span class="text-[9px] text-muted-foreground font-bold uppercase tracking-wider me-2">{m.academics_exams_quick_actions()}</span>
 			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={handleGenerateSeating}>
-				<Hashtag size={10} /> أرقام الجلوس
+				<Hashtag size={10} /> {m.operations_ui_seating_numbers()}
 			</Button>
 			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={handleGenerateSecrets}>
-				<Lock size={10} /> الأرقام السرية
+				<Lock size={10} /> {m.operations_ui_secret_numbers()}
 			</Button>
 			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={() => { activeConfigTab = "schedule"; isConfigModalOpen = true; }}>
-				<Bolt size={10} /> جدولة تلقائية
+				<Bolt size={10} /> {m.operations_ui_automatic_scheduling()}
 			</Button>
 			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={() => { activeConfigTab = "halls"; isConfigModalOpen = true; }}>
-				<ArrowsRightLeft size={10} /> توزيع اللجان
+				<ArrowsRightLeft size={10} /> {m.operations_ui_committee_distribution()}
 			</Button>
 		</div>
 	{/if}
@@ -1127,7 +1127,7 @@ async function handleAssignProctors() {
 						{activeConfigTab === 'schedule' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
 					onclick={() => activeConfigTab = "schedule"}
 				>
-					🗓️ جدولة الفترات
+					🗓️ {m.operations_ui_schedule_periods()}
 				</button>
 				<button 
 					type="button" 
@@ -1135,7 +1135,7 @@ async function handleAssignProctors() {
 						{activeConfigTab === 'halls' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
 					onclick={() => activeConfigTab = "halls"}
 				>
-					🏫 توزيع اللجان والطلاب
+					🏫 {m.operations_ui_distribute_committees_students()}
 				</button>
 				<button 
 					type="button" 
@@ -1143,7 +1143,7 @@ async function handleAssignProctors() {
 						{activeConfigTab === 'proctors' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
 					onclick={() => activeConfigTab = "proctors"}
 				>
-					👮 تعيين المراقبين
+					👮 {m.operations_ui_assign_proctors()}
 				</button>
 			</div>
 
@@ -1190,7 +1190,7 @@ async function handleAssignProctors() {
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
 						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAutoSchedule(); }}>
-							<Bolt size={12} class="me-1" /> بدء الجدولة الذكية
+							<Bolt size={12} class="me-1" /> {m.operations_ui_start_smart_scheduling()}
 						</Button>
 					</div>
 
@@ -1225,7 +1225,7 @@ async function handleAssignProctors() {
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
 						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAllocateHalls(); }}>
-							<ArrowsRightLeft size={12} class="me-1" /> بدء التوزيع التلقائي
+							<ArrowsRightLeft size={12} class="me-1" /> {m.operations_ui_start_automatic_distribution()}
 						</Button>
 					</div>
 
@@ -1267,7 +1267,7 @@ async function handleAssignProctors() {
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
 						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAssignProctors(); }}>
-							<UserBadgeCheck size={12} class="me-1" /> تعيين المراقبين تلقائياً
+							<UserBadgeCheck size={12} class="me-1" /> {m.operations_ui_assign_proctors_automatically()}
 						</Button>
 					</div>
 				{/if}

@@ -189,21 +189,21 @@ async function handlePreview(doc: DocumentDto) {
 // Delete / Trash Document Handler
 async function handleDeleteDoc(id: string) {
   const confirmed = await confirmStore.prompt({
-    title: "نقل إلى سلة المحذوفات",
-    description: "هل تود نقل هذا الملف إلى سلة المحذوفات؟ يمكنك استعادته لاحقاً.",
-    confirmText: "نقل للسلة",
+    title: m.settings_ui_archive_trash_title(),
+    description: m.settings_ui_archive_trash_description(),
+    confirmText: m.settings_ui_archive_move_to_trash(),
     variant: "destructive",
   });
   if (confirmed) {
     try {
       await trashDocMutation.mutateAsync(id);
-      toast.success("تم نقل الملف إلى سلة المحذوفات");
+      toast.success(m.settings_ui_archive_document_trashed());
       selectedIds.delete(id);
       selectedIds = new Set(selectedIds);
       trashDocumentsQuery.refetch();
       if (!isRoot) folderContentsQuery.refetch();
     } catch (e: any) {
-      toast.error(e?.message || "فشل في حذف الملف");
+      toast.error(e?.message || m.settings_ui_archive_delete_file_error());
     }
   }
 }
@@ -212,32 +212,32 @@ async function handleDeleteDoc(id: string) {
 async function handleArchiveDoc(id: string) {
   try {
     await archiveDocMutation.mutateAsync({ id, reason: "أرشفة يدوية من المستكشف" });
-    toast.success("تم أرشفة الملف بنجاح");
+    toast.success(m.settings_ui_archive_document_archived());
     if (!isRoot) folderContentsQuery.refetch();
   } catch (e: any) {
-    toast.error(e?.message || "فشل في أرشفة الملف");
+    toast.error(e?.message || m.settings_ui_archive_archive_file_error());
   }
 }
 
 // Delete Folder Handler
 async function handleDeleteFolder(f: FolderDto) {
   const confirmed = await confirmStore.prompt({
-    title: `حذف المجلد "${f.name}"`,
-    description: "سيتم حذف المجلد وكافة المجلدات الفرعية. هل تود الاستمرار؟",
-    confirmText: "حذف المجلد",
+    title: m.settings_ui_archive_delete_folder_title({ name: f.name }),
+    description: m.settings_ui_archive_delete_folder_description(),
+    confirmText: m.settings_ui_archive_delete_folder(),
     variant: "destructive",
   });
   if (confirmed) {
     try {
       await deleteFolderMutation.mutateAsync(f.id);
-      toast.success(`تم حذف المجلد "${f.name}"`);
+      toast.success(m.settings_ui_archive_folder_deleted({ name: f.name }));
       if (isRoot) {
         rootFoldersQuery.refetch();
       } else {
         folderContentsQuery.refetch();
       }
     } catch (e: any) {
-      toast.error(e?.message || "فشل في حذف المجلد");
+      toast.error(e?.message || m.settings_ui_archive_delete_folder_error());
     }
   }
 }
@@ -264,20 +264,20 @@ async function handleBulkDelete() {
   const count = selectedIds.size;
   if (count === 0) return;
   const confirmed = await confirmStore.prompt({
-    title: `حذف ${count} ملفاً`,
-    description: `سيتم حذف ${count} ملفاً محدداً بشكل دائم. هل تود المتابعة؟`,
-    confirmText: "حذف الكل",
+    title: m.settings_ui_archive_delete_files_title({ count }),
+    description: m.settings_ui_archive_delete_files_description({ count }),
+    confirmText: m.settings_ui_archive_delete_all(),
     variant: "destructive",
   });
   if (!confirmed) return;
 
   try {
     await Promise.all(Array.from(selectedIds).map((id) => deleteDocMutation.mutateAsync(id)));
-    toast.success(`تم حذف ${count} ملفاً بنجاح`);
+    toast.success(m.settings_ui_archive_files_deleted({ count }));
     selectedIds = new Set();
     if (!isRoot) folderContentsQuery.refetch();
   } catch (e: any) {
-    toast.error("حدث خطأ أثناء الحذف الجماعي");
+    toast.error(m.settings_ui_archive_bulk_delete_error());
   }
 }
 
@@ -305,14 +305,14 @@ async function handleFilesUpload(files: FileList | File[]) {
   }
 
   if (successCount > 0) {
-    toast.success(`تم رفع ${successCount} من أصل ${total} ملف بنجاح`);
+    toast.success(m.settings_ui_archive_files_uploaded({ uploaded: successCount, total }));
     if (isRoot) {
       rootDocumentsQuery.refetch();
     } else {
       folderContentsQuery.refetch();
     }
   } else {
-    toast.error("فشل رفع الملفات");
+    toast.error(m.settings_ui_archive_upload_error());
   }
 }
 
@@ -353,7 +353,7 @@ function onContainerDrop(e: DragEvent) {
 <!-- Main File Explorer Container -->
 <div
   role="region"
-  aria-label="مستكشف الملفات والمستندات"
+  aria-label={m.settings_ui_archive_explorer()}
   ondragover={onContainerDragOver}
   ondragleave={onContainerDragLeave}
   ondrop={onContainerDrop}
@@ -377,10 +377,10 @@ function onContainerDrop(e: DragEvent) {
           size="sm"
           onclick={() => goto(`/${orgId}/settings/archive/trash`)}
           class="gap-1.5 text-xs shadow-sm hover:border-rose-500/40 hover:text-rose-600 dark:hover:text-rose-400"
-          title="سلة المحذوفات"
+          title={m.settings_ui_archive_trash_title()}
         >
           <Trash class="w-3.5 h-3.5 text-rose-500" />
-          <span>سلة المحذوفات</span>
+          <span>{m.settings_ui_archive_trash_title()}</span>
           {#if trashedDocsCount > 0}
             <span class="rounded-full bg-rose-500/15 px-1.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
               {trashedDocsCount}
@@ -396,7 +396,7 @@ function onContainerDrop(e: DragEvent) {
           class="gap-1.5 text-xs shadow-sm"
         >
           <NewFolderAlt class="w-3.5 h-3.5 text-amber-500" />
-          <span>مجلد جديد</span>
+          <span>{m.settings_ui_archive_new_folder()}</span>
         </Button>
 
         <!-- Upload Files Button -->
@@ -406,7 +406,7 @@ function onContainerDrop(e: DragEvent) {
           class="gap-1.5 text-xs shadow-sm"
         >
           <ArrowUpTray class="w-3.5 h-3.5" />
-          <span>رفع ملفات</span>
+          <span>{m.settings_ui_archive_upload_files()}</span>
         </Button>
       </div>
     </div>
@@ -418,7 +418,7 @@ function onContainerDrop(e: DragEvent) {
         <Search class="w-4 h-4 absolute right-3 top-2.5 text-muted-foreground pointer-events-none" />
         <Input
           bind:value={searchQuery}
-          placeholder="ابحث في المستندات والمجلدات..."
+          placeholder={m.settings_ui_archive_search_placeholder()}
           class="w-full pr-9 text-xs bg-background/80 h-9"
         />
         {#if searchQuery}
@@ -439,11 +439,11 @@ function onContainerDrop(e: DragEvent) {
           bind:value={selectedAssetType}
           class="h-9 px-2.5 rounded-lg border border-border/60 bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
         >
-          <option value="all">جميع أنواع الملفات</option>
-          <option value="pdf">مستندات PDF</option>
-          <option value="image">الصور</option>
-          <option value="video">الفيديوهات</option>
-          <option value="audio">التسجيلات الصوتية</option>
+          <option value="all">{m.settings_ui_archive_all_file_types()}</option>
+          <option value="pdf">{m.settings_ui_archive_pdf_documents()}</option>
+          <option value="image">{m.settings_ui_archive_images()}</option>
+          <option value="video">{m.settings_ui_archive_videos()}</option>
+          <option value="audio">{m.settings_ui_archive_audio_recordings()}</option>
         </select>
 
         <!-- Category Filter -->
@@ -452,7 +452,7 @@ function onContainerDrop(e: DragEvent) {
             bind:value={selectedCategory}
             class="h-9 px-2.5 rounded-lg border border-border/60 bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
           >
-            <option value="all">كافة التصنيفات</option>
+            <option value="all">{m.settings_ui_archive_all_categories()}</option>
             {#each availableCategories as cat}
               <option value={cat}>{cat}</option>
             {/each}
@@ -465,7 +465,7 @@ function onContainerDrop(e: DragEvent) {
             type="button"
             onclick={() => viewMode = "grid"}
             class="p-1.5 rounded-md transition-all {viewMode === 'grid' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
-            title="عرض الشبكة"
+            title={m.settings_ui_archive_grid_view()}
           >
             <Grid class="w-3.5 h-3.5" />
           </button>
@@ -473,7 +473,7 @@ function onContainerDrop(e: DragEvent) {
             type="button"
             onclick={() => viewMode = "table"}
             class="p-1.5 rounded-md transition-all {viewMode === 'table' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
-            title="عرض القائمة"
+            title={m.settings_ui_archive_list_view()}
           >
             <Bars3BottomLeft class="w-3.5 h-3.5" />
           </button>
@@ -486,20 +486,20 @@ function onContainerDrop(e: DragEvent) {
   {#if selectedIds.size > 0}
     <div class="px-5 py-2.5 bg-primary/10 border-b border-primary/20 flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-2 duration-150">
       <div class="flex items-center gap-2">
-        <span class="font-semibold text-primary">تم تحديد {selectedIds.size} عنصر</span>
+        <span class="font-semibold text-primary">{m.settings_ui_archive_selected_items({ count: selectedIds.size })}</span>
         <button
           type="button"
           onclick={() => selectedIds = new Set()}
           class="text-muted-foreground hover:text-foreground underline text-[11px]"
         >
-          إلغاء التحديد
+          {m.settings_ui_archive_clear_selection()}
         </button>
       </div>
 
       <div class="flex items-center gap-2">
         <Button variant="destructive" size="xs" onclick={handleBulkDelete} class="gap-1.5">
           <Trash class="w-3 h-3" />
-          <span>حذف المحدد</span>
+          <span>{m.settings_ui_archive_delete_selected()}</span>
         </Button>
       </div>
     </div>
@@ -515,18 +515,18 @@ function onContainerDrop(e: DragEvent) {
         <div class="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4 text-muted-foreground/60 shadow-inner">
           <FolderOpen class="w-8 h-8" />
         </div>
-        <h3 class="font-bold text-base text-foreground">المجلد فارغ</h3>
+        <h3 class="font-bold text-base text-foreground">{m.settings_ui_archive_folder_empty()}</h3>
         <p class="text-xs text-muted-foreground max-w-sm mt-1">
-          لم يتم العثور على أي ملفات أو مجلدات هنا. اسحب الملفات وأفلتها هنا أو انقر على "رفع ملفات".
+          {m.settings_ui_archive_empty_description()}
         </p>
         <div class="flex items-center gap-2 mt-5">
           <Button variant="outline" size="sm" onclick={() => isCreateFolderModalOpen = true}>
             <NewFolderAlt class="w-3.5 h-3.5 me-1.5 text-amber-500" />
-            <span>إنشاء مجلد</span>
+            <span>{m.settings_ui_archive_create_folder()}</span>
           </Button>
           <Button size="sm" onclick={() => fileInput?.click()}>
             <ArrowUpTray class="w-3.5 h-3.5 me-1.5" />
-            <span>رفع ملفات</span>
+            <span>{m.settings_ui_archive_upload_files()}</span>
           </Button>
         </div>
       </div>
@@ -537,7 +537,7 @@ function onContainerDrop(e: DragEvent) {
           <div class="flex items-center justify-between">
             <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <Folder class="w-3.5 h-3.5 text-amber-500" />
-              <span>المجلدات ({filteredFolders.length})</span>
+              <span>{m.settings_ui_archive_folders_count({ count: filteredFolders.length })}</span>
             </h4>
           </div>
 
@@ -559,7 +559,7 @@ function onContainerDrop(e: DragEvent) {
           <div class="flex items-center justify-between">
             <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <DocumentPage class="w-3.5 h-3.5 text-primary" />
-              <span>الملفات والمستندات ({filteredDocuments.length})</span>
+              <span>{m.settings_ui_archive_documents_count({ count: filteredDocuments.length })}</span>
             </h4>
 
             {#if viewMode === "table"}
@@ -568,7 +568,7 @@ function onContainerDrop(e: DragEvent) {
                 onclick={selectAllDocuments}
                 class="text-xs text-primary hover:underline font-medium"
               >
-                {selectedIds.size === filteredDocuments.length ? "إلغاء تحديد الكل" : "تحديد الكل"}
+                {selectedIds.size === filteredDocuments.length ? m.settings_ui_archive_deselect_all() : m.settings_ui_archive_select_all()}
               </button>
             {/if}
           </div>
@@ -591,11 +591,11 @@ function onContainerDrop(e: DragEvent) {
             <div class="border border-border/50 rounded-xl overflow-hidden bg-card/60 divide-y divide-border/40">
               <div class="grid grid-cols-[auto_minmax(0,2.5fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(100px,1fr)_auto] items-center gap-3 px-3 py-2 bg-muted/40 text-[11px] font-semibold text-muted-foreground uppercase">
                 <span class="w-4"></span>
-                <span>اسم الملف</span>
-                <span>التصنيف</span>
-                <span>الحجم</span>
-                <span>تاريخ الرفع</span>
-                <span class="text-end">الإجراءات</span>
+                <span>{m.settings_ui_archive_file_name()}</span>
+                <span>{m.settings_ui_archive_category()}</span>
+                <span>{m.settings_ui_archive_size()}</span>
+                <span>{m.settings_ui_archive_upload_date()}</span>
+                <span class="text-end">{m.settings_ui_archive_actions()}</span>
               </div>
               {#each filteredDocuments as doc (doc.id)}
                 <ArchiveDocumentRow

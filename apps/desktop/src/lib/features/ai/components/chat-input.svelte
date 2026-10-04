@@ -2,6 +2,7 @@
 import { Button } from "@orbis/ui/button";
 import { ArrowRight, Plus, Sparkles } from "@orbis/icons";
 import ProviderModelPicker from "./provider-model-picker.svelte";
+import * as m from "$lib/paraglide/messages";
 
 let {
   value = $bindable(""),
@@ -63,26 +64,26 @@ const showCommands = $derived(value === "/");
 const commandOptions = [
   {
     id: "students",
-    label: "إحصائيات وحالة الطلاب",
-    desc: "البحث عن الطلاب ومعلوماتهم الأكاديمية والمالية",
+    label: m.ai_ui_student_stats_label(),
+    desc: m.ai_ui_student_stats_description(),
     prompt: "ما هي إحصائيات الطلاب وحالتهم الأكاديمية والمالية الحالية؟",
   },
   {
     id: "finance",
-    label: "الملخص المالي والرسوم",
-    desc: "عرض الرسوم المحصلة وغير المدفوعة والمطالبات المتأخرة",
+    label: m.ai_ui_financial_summary_label(),
+    desc: m.ai_ui_financial_summary_description(),
     prompt: "قدم تقريراً مالياً شاملاً عن الرسوم المحصلة والمتبقية",
   },
   {
     id: "academic",
-    label: "الفصول والجدول الدراسي",
-    desc: "عرض الفصول والمواد الدراسية النشطة والجدول الأسبوعي",
+    label: m.ai_ui_classes_schedule_label(),
+    desc: m.ai_ui_classes_schedule_description(),
     prompt: "ما هي الفصول والمواد الدراسية النشطة في هذا الفصل؟",
   },
   {
     id: "report",
-    label: "توليد تقرير إداري شامل",
-    desc: "تحليل مؤشرات الأداء، الحضور والغياب، والتقييمات",
+    label: m.ai_ui_admin_report_label(),
+    desc: m.ai_ui_admin_report_description(),
     prompt: "أنشئ تقريراً إحصائياً شاملاً عن أداء المدرسة هذا الفصل",
   },
 ];
@@ -102,7 +103,7 @@ function handleCommandSelect(prompt: string) {
     <div class="absolute bottom-[calc(100%+4px)] inset-x-3.5 p-2 bg-card/95 border border-border/80 shadow-2xl rounded-2xl z-30 flex flex-col gap-1 backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-2 duration-150 ring-1 ring-black/5 dark:ring-white/10">
       <div class="text-[10px] text-muted-foreground px-2 py-1 uppercase font-bold tracking-wider flex items-center gap-1.5 border-b border-border/40 pb-1.5">
         <Sparkles size={11} class="text-primary" />
-        أوامر ذكية مقترحة
+        {m.ai_ui_suggested_smart_commands()}
       </div>
       {#each commandOptions as cmd}
         <button 
@@ -129,7 +130,7 @@ function handleCommandSelect(prompt: string) {
       disabled={isThinking}
       onkeydown={handleKeyDown}
       oninput={handleInput}
-      placeholder="اسأل Orbis عن أي شيء... أو اكتب / للأوامر"
+      placeholder={m.ai_ui_chat_input_placeholder()}
       rows="2"
       class="w-full min-h-[44px] max-h-32 resize-none overflow-y-auto text-[13px] leading-relaxed px-2 py-1 outline-none border-0 bg-transparent text-foreground placeholder:text-muted-foreground/60 scrollbar-thin"
     ></textarea>
@@ -143,7 +144,7 @@ function handleCommandSelect(prompt: string) {
           variant="ghost"
           size="icon-xs"
           class="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 cursor-pointer shrink-0"
-          title="محادثة جديدة"
+          title={m.ai_ui_new_chat()}
           onclick={() => handleNewChat()}
         >
           <Plus class="h-4 w-4" />
@@ -162,7 +163,7 @@ function handleCommandSelect(prompt: string) {
       <div class="flex items-center gap-1.5 shrink-0">
         <Button
           type="submit"
-          aria-label="إرسال"
+          aria-label={m.ai_ui_send()}
           disabled={!value.trim() || isThinking}
           class="h-7.5 w-7.5 rounded-xl shadow-sm bg-primary hover:bg-primary/90 active:scale-95 text-primary-foreground disabled:opacity-30 disabled:bg-muted disabled:text-muted-foreground transition-all cursor-pointer flex items-center justify-center p-0 shrink-0"
           size="icon"

@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import {
@@ -132,7 +133,7 @@ $effect(() => {
 
 // Clean short provider name for compact toolbars
 const shortProviderName = $derived.by(() => {
-  if (!currentApp) return "غير متصل";
+  if (!currentApp) return m.ai_ui_not_connected();
   if (currentApp.id === "openrouter") return "OpenRouter";
   if (currentApp.id === "openai") return "OpenAI";
   if (currentApp.id === "anthropic") return "Claude";
@@ -172,7 +173,7 @@ async function handleSelectProviderAndModel(
         providerName: matched.provider_name,
         isEnabled: true,
       });
-      toast.success(`تم تفعيل ${app.name_ar || app.name}`);
+      toast.success(m.ai_ui_provider_activated({ name: app.name_ar || app.name }));
     } catch (e) {
       toast.error(extractErrorMessage(e));
     }
@@ -187,7 +188,7 @@ async function handleSelectProviderAndModel(
       variant="outline"
       size="sm"
       class="h-7 px-2 rounded-lg border-border/80 bg-background/80 hover:bg-muted/80 hover:border-primary/40 active:scale-[0.98] transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs group shrink-0 max-w-[220px]"
-      title={`${shortProviderName} (${selectedModel || 'الافتراضي'})`}
+      title={m.ai_ui_provider_model({ provider: shortProviderName, model: selectedModel || m.ai_ui_default_model() })}
     >
       <!-- Logo SVG Icon -->
       <div class="w-3.5 h-3.5 shrink-0 flex items-center justify-center">
@@ -224,7 +225,7 @@ async function handleSelectProviderAndModel(
     <div class="flex items-center justify-between px-2.5 py-1.5 border-b border-border/50">
       <span class="text-xs font-bold text-foreground flex items-center gap-1.5">
         <Sparkles size={12} class="text-primary" />
-        مزودات الذكاء الاصطناعي
+        {m.ai_ui_ai_providers()}
       </span>
       {#if connectedAiApps.length > 0}
         <Badge variant="secondary" class="text-[9px] font-mono px-1 py-0 h-4">
@@ -253,7 +254,7 @@ async function handleSelectProviderAndModel(
               </span>
 
               {#if item.integration.is_enabled}
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20 shrink-0" title="نشط"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20 shrink-0" title={m.ai_ui_active()}></span>
               {/if}
 
               {#if isSelectedProvider}
@@ -264,7 +265,7 @@ async function handleSelectProviderAndModel(
             <DropdownMenuPortal>
               <DropdownMenuSubContent class="w-52 p-1 z-50 shadow-xl rounded-xl border border-border bg-popover text-popover-foreground backdrop-blur-xl">
                 <DropdownMenuLabel class="text-[10px] uppercase font-bold text-muted-foreground px-2 py-1">
-                  النماذج المتاحة
+                  {m.ai_ui_available_models()}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator class="bg-border/50" />
 
@@ -286,7 +287,7 @@ async function handleSelectProviderAndModel(
                     class="cursor-pointer px-2.5 py-1.5 text-xs rounded-lg flex items-center justify-between"
                     onclick={() => handleSelectProviderAndModel(item.integration.provider_name, item.app, "default")}
                   >
-                    <span class="truncate text-[11px]">النموذج الافتراضي</span>
+                    <span class="truncate text-[11px]">{m.ai_ui_default_model()}</span>
                     {#if isSelectedProvider}
                       <Check size={12} class="text-primary shrink-0 ms-auto" />
                     {/if}
@@ -298,7 +299,7 @@ async function handleSelectProviderAndModel(
         {/each}
       {:else}
         <div class="px-3 py-3 text-center text-xs text-muted-foreground">
-          لا يوجد أي مزود ذكاء اصطناعي مرتبط حالياً
+          {m.ai_ui_no_ai_providers_linked()}
         </div>
       {/if}
     </div>
@@ -310,7 +311,7 @@ async function handleSelectProviderAndModel(
         onclick={onOpenSettings}
       >
         <SettingsAlt size={13} />
-        <span>إدارة المزودات في App Store</span>
+        <span>{m.ai_ui_manage_providers_app_store()}</span>
       </DropdownMenuItem>
     {/if}
   </DropdownMenuContent>

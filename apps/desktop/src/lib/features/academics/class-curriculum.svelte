@@ -131,7 +131,7 @@ function handleGridAction(event: GridActionEvent) {
             {m.common_search_group_subjects()}
           </CardTitle>
           <CardDescription class="text-[10px]">
-            المواد والمقررات الدراسية المخصصة لهذا الفصل
+            {m.shared_ui_class_curriculum_description()}
           </CardDescription>
         </div>
       </div>

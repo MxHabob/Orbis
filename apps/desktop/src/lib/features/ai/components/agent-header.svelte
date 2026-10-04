@@ -67,7 +67,7 @@
     if (
       headerTitle &&
       headerTitle !== "Orbis" &&
-      headerTitle !== "محادثة جديدة" &&
+      headerTitle !== m.ai_ui_new_chat() &&
       headerTitle !== "New Chat"
     ) {
       return headerTitle;
@@ -94,7 +94,7 @@
         size="icon-xs"
         onclick={onClose}
         class="w-7 h-7 shrink-0 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 active:scale-95 transition-all cursor-pointer"
-        title="إغلاق"
+        title={m.ai_ui_close()}
       >
         <XMark size={14} strokeWidth={2.2} />
       </Button>
@@ -129,7 +129,7 @@
       <!-- Active Connection Pulse Indicator -->
       <span
         class="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20 shrink-0"
-        title="متصل"
+        title={m.ai_ui_connected()}
       ></span>
     </div>
   </div>
@@ -145,7 +145,7 @@
       'cockpit'
         ? 'bg-primary/15 text-primary'
         : ''}"
-      title={viewMode === "cockpit" ? "العودة للمحادثة" : "مركز العمليات والمهام"}
+      title={viewMode === "cockpit" ? m.ai_ui_return_to_chat() : m.ai_ui_operations_center()}
     >
       <ChartBar size={13} />
       {#if pendingActionsCount > 0}
@@ -162,7 +162,7 @@
         size="icon-xs"
         onclick={onOpenStandalone}
         class="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 active:scale-95 transition-all cursor-pointer"
-        title="فتح في نافذة مستقلة"
+        title={m.ai_ui_open_standalone_window()}
       >
         <Expand size={13} />
       </Button>
@@ -183,7 +183,7 @@
       size="icon-xs"
       onclick={onNewChat}
       class="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 active:scale-95 transition-all cursor-pointer"
-      title="محادثة جديدة"
+      title={m.ai_ui_new_chat()}
     >
       <Plus size={14} />
     </Button>

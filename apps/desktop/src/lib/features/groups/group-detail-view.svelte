@@ -35,7 +35,12 @@ import {
   createRemoveGroupMemberMutation,
   createSetGroupPermissionsMutation,
 } from "./queries";
-import { IAM_DOMAINS, type IamDomainDef, type IamResourceDef } from "$lib/core/iam";
+import {
+  IAM_DOMAINS,
+  translateIamMessage,
+  type IamDomainDef,
+  type IamResourceDef,
+} from "$lib/core/iam";
 import BulkAssignDialog from "./bulk-assign-dialog.svelte";
 import UserAvatar from "$lib/shared/components/user-avatar.svelte";
 import { confirmStore } from "$lib/stores";
@@ -149,16 +154,16 @@ const domainMatrixData = $derived.by(() => {
 
       const resMatchesSearch =
         !q ||
-        (res.labelAr && res.labelAr.toLowerCase().includes(q)) ||
-        (res.labelEn && res.labelEn.toLowerCase().includes(q)) ||
+        translateIamMessage(res.labelKey, "ar").toLowerCase().includes(q) ||
+        translateIamMessage(res.labelKey, "en").toLowerCase().includes(q) ||
         res.key.toLowerCase().includes(q);
 
       if (q && !resMatchesSearch) {
         filteredActions = filteredActions.filter(
           (a) =>
             a.key.toLowerCase().includes(q) ||
-            (a.labelAr && a.labelAr.toLowerCase().includes(q)) ||
-            (a.labelEn && a.labelEn.toLowerCase().includes(q))
+            translateIamMessage(a.labelKey, "ar").toLowerCase().includes(q) ||
+            translateIamMessage(a.labelKey, "en").toLowerCase().includes(q)
         );
       }
 
@@ -176,8 +181,8 @@ const domainMatrixData = $derived.by(() => {
 
     const isDomainMatch =
       !q ||
-      (domain.nameAr && domain.nameAr.toLowerCase().includes(q)) ||
-      (domain.nameEn && domain.nameEn.toLowerCase().includes(q)) ||
+      translateIamMessage(domain.nameKey, "ar").toLowerCase().includes(q) ||
+      translateIamMessage(domain.nameKey, "en").toLowerCase().includes(q) ||
       resources.some((r) => r.isMatch);
 
     const filteredResources = resources.filter((r) => (q ? r.isMatch : r.filteredActions.length > 0));
@@ -501,7 +506,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                     class="px-2.5 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap text-xs border flex items-center gap-1.5 {selectedDomainId === d.id ? 'bg-primary/10 border-primary text-primary font-bold' : 'border-border/60 bg-muted/20 text-muted-foreground hover:text-foreground'}"
                     onclick={() => (selectedDomainId = d.id)}
                   >
-                    <span>{d.nameAr || d.nameEn}</span>
+                    <span>{translateIamMessage(d.nameKey)}</span>
                     {#if d.grantedCount > 0}
                       <span class="font-mono text-[10px] px-1 py-0.2 rounded-xs {selectedDomainId === d.id ? 'bg-primary text-primary-foreground' : 'bg-primary/20 text-primary font-semibold'}">
                         {d.grantedCount}
@@ -531,10 +536,10 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                         </div>
                         <div class="flex flex-col">
                           <div class="flex items-center gap-2">
-                            <h3 class="text-xs font-bold text-foreground">{domain.nameAr || domain.nameEn}</h3>
+                            <h3 class="text-xs font-bold text-foreground">{translateIamMessage(domain.nameKey)}</h3>
                             <span class="text-[10px] font-mono text-muted-foreground">({domain.id})</span>
                           </div>
-                          <span class="text-[10px] text-muted-foreground">{domain.descAr || domain.descEn}</span>
+                          <span class="text-[10px] text-muted-foreground">{translateIamMessage(domain.descriptionKey)}</span>
                         </div>
                       </div>
 
@@ -580,7 +585,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                           <!-- Resource Title & Key -->
                           <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
-                              <span class="text-xs font-semibold text-foreground">{res.labelAr || res.labelEn}</span>
+                              <span class="text-xs font-semibold text-foreground">{translateIamMessage(res.labelKey)}</span>
                               <span class="text-[10px] font-mono text-muted-foreground bg-card px-1.5 py-0.5 rounded-xs border border-border/40">
                                 {res.key}
                               </span>
@@ -599,14 +604,14 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                                   ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-950 dark:text-emerald-200 font-semibold shadow-2xs'
                                   : 'border-border/60 bg-card text-muted-foreground hover:border-border'}"
                                 onclick={() => togglePermission(act.permKey)}
-                                title="{res.key}:{act.key} - {act.descAr || act.descEn || ''}"
+                                title="{res.key}:{act.key} - {act.descriptionKey ? translateIamMessage(act.descriptionKey) : ''}"
                               >
                                 <div class="flex size-4 items-center justify-center rounded-xs {act.isGranted ? 'bg-emerald-600 text-white' : 'border border-border'}">
                                   {#if act.isGranted}
                                     <CheckCircle size={11} />
                                   {/if}
                                 </div>
-                                <span>{act.labelAr || act.labelEn}</span>
+                                <span>{translateIamMessage(act.labelKey)}</span>
                                 <span class="text-[9px] font-mono opacity-70">({act.key})</span>
                               </button>
                             {/each}

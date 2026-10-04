@@ -35,7 +35,7 @@ onMount(() => {
 async function handleRunTick() {
   isExecuting = true;
   await loadData();
-  toast.success("تم تشغيل دورة الفحص وتحديث السجلات");
+  toast.success(m.ai_ui_check_cycle_logs_updated());
   isExecuting = false;
 }
 
@@ -59,8 +59,8 @@ const allLogs = $derived.by<LogItem[]>(() => {
     list.push({
       id: t.id || `task-${Math.random()}`,
       source: "autopilot",
-      title: t.task_type || "مهمة أتمتة",
-      description: t.reason || t.task_type || "عملية طيار آلي دورية",
+      title: t.task_type || m.ai_ui_automation_task(),
+      description: t.reason || t.task_type || m.ai_ui_periodic_autopilot_operation(),
       status: t.status || "pending",
       timestamp: t.scheduled_at || t.created_at || new Date().toISOString(),
       target: t.target_id
@@ -75,8 +75,8 @@ const allLogs = $derived.by<LogItem[]>(() => {
     list.push({
       id: s.id || `session-${Math.random()}`,
       source: "agent",
-      title: s.title || "جلسة معالجة ذكية",
-      description: `وكيل: ${s.agent_id || "مساعد الذكاء الاصطناعي"}`,
+      title: s.title || m.ai_ui_smart_processing_session(),
+      description: m.ai_ui_agent_description({ agent: s.agent_id || m.ai_ui_ai_assistant() }),
       status: s.status === "active" ? "completed" : "pending",
       timestamp: s.created_at || s.updated_at || new Date().toISOString(),
       target: s.acting_as_role || undefined,
@@ -88,12 +88,12 @@ const allLogs = $derived.by<LogItem[]>(() => {
 
 // Categories matching design tokens
 const categories = [
-  { id: "all", name_ar: "الكل" },
-  { id: "autopilot", name_ar: "الطيار الآلي" },
-  { id: "agent", name_ar: "الوكلاء" },
-  { id: "completed", name_ar: "ناجح" },
-  { id: "pending", name_ar: "مجدول" },
-  { id: "failed", name_ar: "تعثر" },
+  { id: "all", label: m.ai_ui_all() },
+  { id: "autopilot", label: m.ai_ui_autopilot() },
+  { id: "agent", label: m.ai_ui_agents() },
+  { id: "completed", label: m.ai_ui_successful() },
+  { id: "pending", label: m.ai_ui_scheduled() },
+  { id: "failed", label: m.ai_ui_failed() },
 ];
 
 const filteredLogs = $derived.by(() => {
@@ -151,7 +151,7 @@ function formatTime(dtStr: string): string {
           onclick={() => (activeCategory = cat.id)}
           class="text-xs cursor-pointer"
         >
-          {cat.name_ar}
+          {cat.label}
         </Button>
       {/each}
     </div>
@@ -197,11 +197,11 @@ function formatTime(dtStr: string): string {
                     class="text-[10px] font-semibold px-2 py-0.5"
                   >
                     {#if isCompleted}
-                      ناجح
+                      {m.ai_ui_successful()}
                     {:else if isFailed}
-                      تعثر
+                      {m.ai_ui_failed()}
                     {:else}
-                      مجدول
+                      {m.ai_ui_scheduled()}
                     {/if}
                   </Badge>
 
@@ -234,7 +234,7 @@ function formatTime(dtStr: string): string {
             <!-- Footer: Source & Timestamp Tag -->
             <CardFooter class="py-2.5 px-5 justify-between text-[10px] text-muted-foreground font-mono">
               <Badge variant="outline" class="text-[10px] font-medium text-muted-foreground border-border bg-muted/40">
-                {log.source === "autopilot" ? "الطيار الآلي" : "وكيل ذكي"}
+                {log.source === "autopilot" ? m.ai_ui_autopilot() : m.ai_ui_smart_agent()}
               </Badge>
 
               <span>
@@ -247,9 +247,9 @@ function formatTime(dtStr: string): string {
     {:else}
       <AiEmptyState
         text={searchQuery
-          ? `أهلاً بك! لم أستطع العثور على أي نشاط أو عملية تطابق "${searchQuery}". حاول تغيير كلمات البحث أو اختيار تصنيف مختلف.`
-          : `أهلاً بك! لا توجد سجلات أتمتة أو مهام مسجلة في هذا التصنيف حالياً. النظام يعمل بأمان واستقرار تام وسيقوم بتوثيق العمليات فور حدوثها.`}
-        actionLabel={searchQuery ? "إعادة ضبط الفلاتر والبحث" : "تشغيل فحص الأتمتة الآن"}
+          ? m.ai_ui_logs_search_empty({ query: searchQuery })
+          : m.ai_ui_logs_category_empty()}
+        actionLabel={searchQuery ? m.ai_ui_reset_filters_search() : m.ai_ui_run_automation_scan()}
         onaction={() => {
           if (searchQuery) {
             searchQuery = "";

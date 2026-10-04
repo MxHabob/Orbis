@@ -42,11 +42,11 @@ onMount(() => {
 });
 
 const userInitials = $derived(
-  (authStore.user?.full_name ?? "User").trim().charAt(0).toUpperCase() || "U",
+  (authStore.user?.full_name ?? m.shared_ui_user()).trim().charAt(0).toUpperCase() || "U",
 );
 
 const displayName = $derived(
-  authStore.user?.full_name ?? "User",
+  authStore.user?.full_name ?? m.shared_ui_user(),
 );
 
 const displayEmail = $derived(
@@ -54,13 +54,13 @@ const displayEmail = $derived(
 );
 
 const activeBranchName = $derived.by(() => {
-  if (!effectiveContext.activeOrgUnitId) return "الإدارة العامة / All Branches";
+  if (!effectiveContext.activeOrgUnitId) return m.shared_ui_all_branches();
   const found = branches.find((b) => b.id === effectiveContext.activeOrgUnitId);
-  return found ? (found.name_ar || found.name) : "فرع محدد";
+  return found ? (found.name_ar || found.name) : m.shared_ui_selected_branch();
 });
 
 const userRoleDisplay = $derived(
-  effectiveContext.effectiveRole || "User",
+  effectiveContext.effectiveRole || m.shared_ui_user(),
 );
 
 function handleNavigate(path: string) {
@@ -85,7 +85,7 @@ async function handleLogout() {
             aria-label={m.common_nav_account()}
           >
             <Avatar class="h-full w-full rounded-[10px] bg-transparent">
-              <AvatarImage src={authStore.user?.avatar_url ? String(authStore.user.avatar_url) : undefined} alt={authStore.user?.full_name ?? 'User'} class="object-cover" />
+              <AvatarImage src={authStore.user?.avatar_url ? String(authStore.user.avatar_url) : undefined} alt={authStore.user?.full_name ?? m.shared_ui_user()} class="object-cover" />
               <AvatarFallback class="bg-transparent text-white font-bold text-sm">
                 {userInitials}
               </AvatarFallback>
@@ -106,7 +106,7 @@ async function handleLogout() {
     <DropdownMenuContent align="end" side="right" sideOffset={12} class="w-72 p-1.5 z-50 bg-popover border border-border shadow-md rounded-md select-none overflow-visible">
       <div class="flex items-start gap-3 px-3 py-2.5 border-b border-border/50">
         <Avatar class="h-9 w-9 rounded-full shrink-0">
-          <AvatarImage src={authStore.user?.avatar_url ? String(authStore.user.avatar_url) : undefined} alt={authStore.user?.full_name ?? 'User'} class="object-cover" />
+          <AvatarImage src={authStore.user?.avatar_url ? String(authStore.user.avatar_url) : undefined} alt={authStore.user?.full_name ?? m.shared_ui_user()} class="object-cover" />
           <AvatarFallback class="bg-[#b02a87] text-white font-bold text-xs">
             {userInitials}
           </AvatarFallback>

@@ -4,6 +4,7 @@ A circular progress gauge for exam session readiness score.
 Usage: <ReadinessGauge score={75} />
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 let { score = 0, size = 80 }: { score: number; size?: number } = $props();
 
 const radius = $derived((size - 8) / 2);
@@ -27,7 +28,7 @@ const strokeColor = $derived(
 );
 
 const label = $derived(
-  score >= 80 ? "جاهز" : score >= 50 ? "جزئياً" : "غير جاهز",
+  score >= 80 ? m.operations_ui_readiness_ready() : score >= 50 ? m.operations_ui_readiness_partial() : m.operations_ui_readiness_not_ready(),
 );
 </script>
 

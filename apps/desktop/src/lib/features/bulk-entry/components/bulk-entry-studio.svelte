@@ -18,6 +18,7 @@
   } from "@orbis/icons";
   import * as m from "$lib/paraglide/messages";
   import { orgContext } from "$lib/stores/org-context.svelte";
+  import { getBulkEntryGridColumns, getBulkEntryProfileName } from "../localization";
   import type {
     BulkProfileId,
     BulkRowState,
@@ -157,7 +158,7 @@
     try {
       const text = await navigator.clipboard.readText();
       if (!text || !text.trim()) {
-        toast.warning("الحافظة فارغة أو لا تحتوي على نص قابل للصق");
+        toast.warning(m.bulk_entry_toast_clipboard_empty());
         return;
       }
 
@@ -187,9 +188,9 @@
       warningCount = summary.warningCount;
       validCount = summary.validCount;
 
-      toast.success(`تم لصق ${newRows.length} سجل بنجاح`);
+      toast.success(m.bulk_entry_toast_pasted({ count: newRows.length }));
     } catch (err: any) {
-      toast.error(`تعذر اللصق من الحافظة: ${err.message || String(err)}`);
+      toast.error(m.bulk_entry_toast_paste_failed({ reason: err.message || String(err) }));
     }
   }
 
@@ -229,9 +230,9 @@
         refData,
         orgName: orgContext.displayName,
       });
-      toast.success("تم تنزيل قالب Excel بنجاح");
+      toast.success(m.bulk_entry_toast_template_downloaded());
     } catch (err: any) {
-      toast.error(`تعذر تنزيل القالب: ${err.message || String(err)}`);
+      toast.error(m.bulk_entry_toast_template_download_failed({ reason: err.message || String(err) }));
     }
   }
 
@@ -243,7 +244,7 @@
         processLoadedRows(res.fileName, res.rows);
       }
     } catch (err: any) {
-      toast.error(`تعذر قراءة الملف: ${err.message || String(err)}`);
+      toast.error(m.bulk_entry_toast_file_read_failed({ reason: err.message || String(err) }));
     }
   }
 
@@ -257,7 +258,7 @@
         const res = await parseDroppedFile(file, currentProfile);
         processLoadedRows(res.fileName, res.rows);
       } catch (err: any) {
-        toast.error(`تعذر قراءة الملف: ${err.message || String(err)}`);
+        toast.error(m.bulk_entry_toast_file_read_failed({ reason: err.message || String(err) }));
       }
     }
   }
@@ -273,7 +274,7 @@
     warningCount = summary.warningCount;
     validCount = summary.validCount;
 
-    toast.success(`تم استيراد ${loadedRows.length} سجل بنجاح`);
+    toast.success(m.bulk_entry_toast_imported({ count: loadedRows.length }));
   }
 
   // Live cell edit handler from OrbisGrid
@@ -302,7 +303,7 @@
     if (errIdx !== -1) {
       filterMode = "errors";
     } else {
-      toast.success("لا توجد أخطاء في البيانات");
+      toast.success(m.bulk_entry_toast_no_errors());
     }
   }
 
@@ -317,11 +318,11 @@
       });
 
       if (savedPath) {
-        toast.success("تم تصدير ملف البيانات بنجاح");
+        toast.success(m.bulk_entry_toast_data_exported());
         await openExportedFile(savedPath);
       }
     } catch (err: any) {
-      toast.error(`تعذر تصدير الملف: ${err.message || String(err)}`);
+      toast.error(m.bulk_entry_toast_export_failed({ reason: err.message || String(err) }));
     }
   }
 
@@ -333,7 +334,7 @@
       previewSummary = await currentProfile.generatePreview(plainRows, refData);
       isPreviewModalOpen = true;
     } catch (err: any) {
-      toast.error(`تعذر إنشاء معاينة الأثر: ${err.message || String(err)}`);
+      toast.error(m.bulk_entry_toast_preview_failed({ reason: err.message || String(err) }));
     }
   }
 
@@ -359,13 +360,13 @@
       isProgressModalOpen = false;
 
       if (result.failedCount === 0) {
-        toast.success(`تم الاعتماد بنجاح (${result.committedCount} سجل)`);
+        toast.success(m.bulk_entry_toast_committed({ count: result.committedCount }));
       } else {
-        toast.warning(`اكتمل الاعتماد مع وجود ${result.failedCount} أخطاء`);
+        toast.warning(m.bulk_entry_toast_commit_partial({ count: result.failedCount }));
       }
     } catch (err: any) {
       isProgressModalOpen = false;
-      toast.error(`حدث خطأ أثناء الحفظ: ${err.message || String(err)}`);
+      toast.error(m.bulk_entry_toast_save_failed({ reason: err.message || String(err) }));
     }
   }
 
@@ -401,7 +402,7 @@
               onclick={() => handleProfileChange(id as BulkProfileId)}
               class="px-3 py-1 rounded-md text-xs font-semibold transition-all {selectedProfileId === id ? 'bg-background text-foreground shadow-xs font-bold' : 'text-muted-foreground hover:text-foreground'}"
             >
-              {prof.displayName.ar}
+              {getBulkEntryProfileName(id as BulkProfileId)}
             </button>
           {/each}
         </div>
@@ -424,7 +425,7 @@
         class="h-8 gap-1 text-xs"
       >
         <Plus size={14} />
-        <span>إضافة صف</span>
+        <span>{m.bulk_entry_add_row()}</span>
       </Button>
 
       <Button
@@ -443,10 +444,10 @@
         disabled={isLoadingRefData}
         onclick={handlePasteFromClipboard}
         class="h-8 gap-1 text-xs"
-        title="لصق من الحافظة"
+        title={m.bulk_entry_paste_from_clipboard()}
       >
         <Clipboard size={14} />
-        <span>لصق</span>
+        <span>{m.bulk_entry_paste()}</span>
       </Button>
 
       <Button
@@ -457,7 +458,7 @@
         class="h-8 gap-1 text-xs text-muted-foreground hover:text-foreground"
       >
         <ArrowDownTray size={14} />
-        <span>القالب</span>
+        <span>{m.bulk_entry_template()}</span>
       </Button>
 
       <Button
@@ -468,7 +469,7 @@
         class="h-8 gap-1 text-xs"
       >
         <FolderOpen size={14} />
-        <span>استيراد ملف</span>
+        <span>{m.bulk_entry_import_file()}</span>
       </Button>
     </div>
   </div>
@@ -494,15 +495,15 @@
       ondragleave={() => { isDraggingFile = false; }}
       ondrop={handleDropFile}
       role="region"
-      aria-label="منطقة رفع الملفات"
+      aria-label={m.bulk_entry_file_drop_area()}
     >
       <div class="flex flex-col items-center max-w-sm">
         <div class="h-10 w-10 rounded-xl bg-muted border border-border flex items-center justify-center text-muted-foreground mb-3">
           <FolderOpen size={20} />
         </div>
-        <p class="text-xs font-semibold text-foreground">ابدأ الإدخال المباشر أو اسحب ملف Excel هنا</p>
+        <p class="text-xs font-semibold text-foreground">{m.bulk_entry_empty_title()}</p>
         <p class="text-[11px] text-muted-foreground mt-0.5 mb-4">
-          يمكنك إضافة صفوف للكتابة فوراً أو اختيار ملف للمراجعة والتدقيق
+          {m.bulk_entry_empty_description()}
         </p>
 
         <div class="flex items-center gap-2 flex-wrap justify-center">
@@ -514,7 +515,7 @@
             class="h-8 gap-1 text-xs"
           >
             <Plus size={14} />
-            <span>إضافة 5 صفوف للبدء</span>
+            <span>{m.bulk_entry_add_five_rows()}</span>
           </Button>
 
           <Button
@@ -525,7 +526,7 @@
             class="h-8 gap-1 text-xs"
           >
             <FolderOpen size={14} />
-            <span>اختيار ملف</span>
+            <span>{m.bulk_entry_choose_file()}</span>
           </Button>
 
           <Button
@@ -536,7 +537,7 @@
             class="h-8 gap-1 text-xs text-muted-foreground"
           >
             <ArrowDownTray size={14} />
-            <span>تنزيل القالب</span>
+            <span>{m.bulk_entry_download_template()}</span>
           </Button>
         </div>
       </div>
@@ -550,7 +551,7 @@
           onclick={() => (filterMode = "all")}
           class="px-2 py-0.5 rounded text-[11px] font-semibold transition-all {filterMode === 'all' ? 'bg-foreground text-background font-bold' : 'text-muted-foreground hover:text-foreground'}"
         >
-          الكل ({rawRows.length})
+          {m.bulk_entry_filter_all({ count: rawRows.length })}
         </button>
 
         {#if errorCount > 0}
@@ -559,7 +560,7 @@
             onclick={() => (filterMode = "errors")}
             class="px-2 py-0.5 rounded text-[11px] font-semibold transition-all {filterMode === 'errors' ? 'bg-destructive text-destructive-foreground' : 'bg-destructive/10 text-destructive'}"
           >
-            أخطاء ({errorCount})
+            {m.bulk_entry_filter_errors({ count: errorCount })}
           </button>
         {/if}
 
@@ -569,7 +570,7 @@
             onclick={() => (filterMode = "warnings")}
             class="px-2 py-0.5 rounded text-[11px] font-semibold transition-all {filterMode === 'warnings' ? 'bg-amber-500 text-white' : 'bg-amber-500/10 text-amber-600'}"
           >
-            تنبيهات ({warningCount})
+            {m.bulk_entry_filter_warnings({ count: warningCount })}
           </button>
         {/if}
 
@@ -578,7 +579,7 @@
           onclick={() => (filterMode = "valid")}
           class="px-2 py-0.5 rounded text-[11px] font-semibold transition-all {filterMode === 'valid' ? 'bg-emerald-600 text-white' : 'bg-emerald-500/10 text-emerald-600'}"
         >
-          صالحة ({validCount})
+          {m.bulk_entry_filter_valid({ count: validCount })}
         </button>
       </div>
 
@@ -598,9 +599,9 @@
             size="sm"
             onclick={handleNextError}
             class="h-7 px-2 text-[11px] text-destructive gap-1"
-            title="الانتقال للخطأ التالي (F8)"
+            title={m.bulk_entry_next_error_shortcut()}
           >
-            <span>الخطأ التالي</span>
+            <span>{m.bulk_entry_next_error()}</span>
             <span class="font-mono text-[9px] px-1 rounded bg-muted">F8</span>
           </Button>
         {/if}
@@ -610,10 +611,10 @@
           size="sm"
           onclick={handleClearEmptyRows}
           class="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
-          title="مسح الصفوف الفارغة"
+          title={m.bulk_entry_clear_empty_rows()}
         >
           <Trash size={12} />
-          <span>مسح الفارغ</span>
+          <span>{m.bulk_entry_clear_empty()}</span>
         </Button>
       </div>
     </div>
@@ -621,7 +622,7 @@
     <!-- Central OrbisGrid Workspace -->
     <div class="flex-1 w-full overflow-hidden bg-background relative">
       <OrbisGrid
-        columns={currentProfile.gridColumns}
+        columns={getBulkEntryGridColumns(currentProfile)}
         source={gridSource}
         rtl={true}
         height="100%"
@@ -650,14 +651,14 @@
           class="h-8 text-xs gap-1"
         >
           <ArrowUpTray size={13} />
-          <span>تصدير</span>
+          <span>{m.bulk_entry_export()}</span>
         </Button>
       </div>
 
       <div class="flex items-center gap-2.5">
         {#if errorCount > 0}
           <span class="text-xs text-destructive font-medium">
-            يوجد {errorCount} خطأ
+            {m.bulk_entry_error_count({ count: errorCount })}
           </span>
         {/if}
 
@@ -669,7 +670,7 @@
           class="h-8 text-xs gap-1.5 shadow-xs"
         >
           <CheckCircle size={14} />
-          <span>اعتماد وحفظ ({validCount})</span>
+          <span>{m.bulk_entry_commit_and_save({ count: validCount })}</span>
         </Button>
       </div>
     </div>
