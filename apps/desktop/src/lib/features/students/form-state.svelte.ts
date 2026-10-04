@@ -245,10 +245,10 @@ export class StudentFormState {
           const studentInfo = match.student_number ? ` (${match.student_number})` : "";
           this.duplicateWarnings = {
             ...this.duplicateWarnings,
-            [field]: l(
-              `هذه القيمة مسجلة مسبقاً للشخص "${match.matched_person_name}"${studentInfo}`,
-              `Already registered to "${match.matched_person_name}"${studentInfo}`,
-            ),
+            [field]: m.operations_ui_duplicate_person_value({
+              name: match.matched_person_name,
+              details: studentInfo,
+            }),
           };
         } else {
           this.duplicateWarnings = {
@@ -542,7 +542,10 @@ export class StudentFormState {
             risk_level: "medium",
             entity_type: "student",
             entity_id: targetStudentId,
-            reason: `طلب مراجعة واعتماد قيد الطالب: ${displayName} (${this.selectedClassName})`,
+            reason: m.operations_ui_student_enrollment_review_reason({
+              name: displayName,
+              className: this.selectedClassName,
+            }),
             field_name: "registration_approval",
             new_value: "approved",
             old_value: "pending_review",
@@ -619,7 +622,7 @@ export class StudentFormState {
 
         const link = document.createElement("a");
         link.href = pdfUrl;
-        link.download = `استمارة_${this.personal.nameAr || "طالب"}.pdf`;
+        link.download = `${m.operations_ui_student_form_filename()}_${this.personal.nameAr || m.operations_ui_student_fallback()}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

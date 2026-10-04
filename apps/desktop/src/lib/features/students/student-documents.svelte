@@ -101,7 +101,7 @@ async function handleAddDocument() {
 
 async function handleDelete(docId: string) {
   const confirmed = await confirmStore.prompt({
-    title: m.common_action_delete() + "؟",
+    title: m.operations_ui_delete_question_title(),
     description: m.common_docs_delete_confirm(),
     confirmText: m.common_action_delete(),
     variant: "destructive",

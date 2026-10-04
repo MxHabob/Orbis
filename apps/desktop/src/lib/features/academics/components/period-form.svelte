@@ -221,13 +221,13 @@ async function handleSubmit(e: SubmitEvent) {
           {/snippet}
         </FormField>
       {:else}
-        <FormField id="per_code" label="Code" error={fieldError("code")}>
+        <FormField id="per_code" label={m.shared_ui_code()} error={fieldError("code")}>
           {#snippet children()}
           <Input
             id="per_code"
             type="text"
             bind:value={form.values.code}
-            placeholder="e.g. AY-2026"
+            placeholder={m.shared_ui_example_academic_year_code()}
             disabled={form.isSubmitting || isEdit}
           />
           {/snippet}
@@ -295,7 +295,7 @@ async function handleSubmit(e: SubmitEvent) {
         {/snippet}
       </FormField>
 
-      <FormField id="per_max" label="Max Grade" error={fieldError("max_grade")} required>
+      <FormField id="per_max" label={m.shared_ui_max_grade()} error={fieldError("max_grade")} required>
         {#snippet children()}
         <Input
           id="per_max"

@@ -570,7 +570,7 @@ async function saveStudentDetails(e: Event) {
               <span class="text-[10px] text-muted-foreground">{m.ui_copy_blood_type_for_medical_emergencies_0765ea0d()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
-              <Input type="text" class="text-xs h-9 font-mono" placeholder="مثال: O+, A+, B-, AB+..." bind:value={bloodType} />
+              <Input type="text" class="text-xs h-9 font-mono" placeholder={m.operations_ui_blood_type_example()} bind:value={bloodType} />
             </div>
           </div>
 

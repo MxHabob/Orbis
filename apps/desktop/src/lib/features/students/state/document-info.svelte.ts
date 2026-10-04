@@ -7,6 +7,7 @@ import {
 } from "$lib/api";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
+import * as m from "$lib/paraglide/messages";
 
 export interface StudentDocAttachment {
   requirementCode: string;
@@ -83,12 +84,7 @@ export class DocumentInfoState {
       this.submittedDocs = [...this.submittedDocs, reqCode];
     }
 
-    toast.success(
-      l(
-        `تم إرفاق "${file.name}" (سيتم الرفع والأرشفة عند حفظ الطالب)`,
-        `Attached "${file.name}" (will be uploaded upon saving student)`,
-      ),
-    );
+    toast.success(m.operations_ui_student_document_attached({ fileName: file.name }));
   }
 
   async uploadPendingAttachments(targetStudentId: string) {

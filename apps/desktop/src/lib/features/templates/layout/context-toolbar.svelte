@@ -187,7 +187,7 @@ function handleAlign(
             selectedItem={FONT_FAMILIES.find(f => f.value === (nodeProps.fontFamily || "Rubik")) || { id: "custom", label: nodeProps.fontFamily || "Rubik", value: nodeProps.fontFamily || "Rubik" }}
             onSelect={(item) => updateProp("fontFamily", item.value)}
             class="h-6"
-            placeholder="Font"
+            placeholder={m.shared_ui_font()}
           />
         </div>
         <div class="ctx-number-input">
@@ -315,10 +315,10 @@ function handleAlign(
           onchange={(e) => updateProp("fit", e.currentTarget.value)}
           class="ctx-select"
         >
-          <option value="contain">Contain</option>
-          <option value="cover">Cover</option>
-          <option value="fill">Fill</option>
-          <option value="none">None</option>
+          <option value="contain">{m.shared_ui_fit_contain()}</option>
+          <option value="cover">{m.shared_ui_fit_cover()}</option>
+          <option value="fill">{m.shared_ui_fit_fill()}</option>
+          <option value="none">{m.shared_ui_none()}</option>
         </select>
         <span class="ctx-label">{m.template_color_opacity()}</span>
         <Input

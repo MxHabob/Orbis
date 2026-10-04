@@ -354,7 +354,7 @@ import { resolveDocumentUrl } from "$lib/features/documents/queries";
 
     {:else if node.type === "PageBreak"}
       <line x1="0" y1="0" x2={w} y2="0" stroke="#f59e0b" stroke-width="1" stroke-dasharray="6,3" />
-      <text x="4" y="10" fill="#b45309" font-size="8">Page break</text>
+      <text x="4" y="10" fill="#b45309" font-size="8">{m.shared_ui_element_page_break()}</text>
 
     {:else if node.type === "Watermark"}
       <text

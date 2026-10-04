@@ -79,7 +79,7 @@ function updatePosition(key: string, value: number) {
           value={node.name || ""}
           oninput={(e) => store.updateSelectedProps({ name: e.currentTarget.value })}
           class="h-7 text-xs"
-          placeholder="Element name..."
+          placeholder={m.shared_ui_element_name_placeholder()}
         />
       </div>
 
@@ -225,10 +225,10 @@ function updatePosition(key: string, value: number) {
                     <Select type="single" value={nodeProps.fontWeight || "400"} onValueChange={(v) => { if (v) updateProp("fontWeight", v); }}>
                       <SelectTrigger class="h-6 text-[10px]">{nodeProps.fontWeight || "400"}</SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="300">Light</SelectItem>
-                        <SelectItem value="400">Regular</SelectItem>
-                        <SelectItem value="600">SemiBold</SelectItem>
-                        <SelectItem value="700">Bold</SelectItem>
+                        <SelectItem value="300">{m.shared_ui_font_weight_light()}</SelectItem>
+                        <SelectItem value="400">{m.shared_ui_font_weight_regular()}</SelectItem>
+                        <SelectItem value="600">{m.shared_ui_font_weight_semibold()}</SelectItem>
+                        <SelectItem value="700">{m.shared_ui_font_weight_bold()}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -251,9 +251,9 @@ function updatePosition(key: string, value: number) {
                     <Select type="single" value={nodeProps.textAlign || "start"} onValueChange={(v) => { if (v) updateProp("textAlign", v); }}>
                       <SelectTrigger class="h-6 text-[10px]">{nodeProps.textAlign || "start"}</SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="start">Start</SelectItem>
-                        <SelectItem value="center">Center</SelectItem>
-                        <SelectItem value="end">End</SelectItem>
+                        <SelectItem value="start">{m.shared_ui_align_start()}</SelectItem>
+                        <SelectItem value="center">{m.shared_ui_align_center()}</SelectItem>
+                        <SelectItem value="end">{m.shared_ui_align_end()}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -274,9 +274,9 @@ function updatePosition(key: string, value: number) {
                   <Select type="single" value={nodeProps.shape || "rectangle"} onValueChange={(v) => { if (v) updateProp("shape", v); }}>
                     <SelectTrigger class="h-6 text-[10px]">{nodeProps.shape || "rectangle"}</SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="rectangle">Rectangle</SelectItem>
-                      <SelectItem value="circle">Circle</SelectItem>
-                      <SelectItem value="ellipse">Ellipse</SelectItem>
+                      <SelectItem value="rectangle">{m.shared_ui_rectangle()}</SelectItem>
+                      <SelectItem value="circle">{m.shared_ui_circle()}</SelectItem>
+                      <SelectItem value="ellipse">{m.shared_ui_ellipse()}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
