@@ -11,6 +11,7 @@ import {
 } from "@orbis/sdk";
 import * as sdk from "@orbis/sdk";
 import { OrbisError } from "./index";
+import appPackage from "../../../package.json";
 
 import type {
   OrbisApiClient,
@@ -169,7 +170,7 @@ import type {
   HealthResponse,
   OrganizationReadiness,
   EntitlementResult,
-  MulverseEcosystemInfo,
+  AppInfo,
   ReleaseChangelogItem,
   UpdateCheckResult,
   EnvironmentDetectionResult,
@@ -237,6 +238,19 @@ export class ApiRequestError extends Error {
     );
     this.name = "ApiRequestError";
   }
+}
+
+interface GitHubRelease {
+  tag_name: string;
+  name: string | null;
+  published_at: string | null;
+  body: string | null;
+  html_url: string;
+  prerelease: boolean;
+  assets?: Array<{
+    browser_download_url: string;
+    content_type?: string;
+  }>;
 }
 
 export class RemoteClient implements OrbisApiClient {
@@ -1454,54 +1468,65 @@ export class RemoteClient implements OrbisApiClient {
     };
   }
 
-  async systemGetEcosystemInfo(): Promise<MulverseEcosystemInfo> {
+  async systemGetAppInfo(): Promise<AppInfo> {
     return {
-      ecosystem_name: "Mulverse",
-      brand: "Mulverse Systems",
-      product_name: "Orbis Next-Gen SIS / ERP",
-      product_code: "MULVERSE-ORBIS-REMOTE",
-      version: "0.3.0",
-      build_profile: "Production",
+      name: "Orbis",
+      version: appPackage.version,
+      build_profile: import.meta.env.DEV ? "development" : "production",
       target_os: "web",
-      target_arch: "wasm",
-      github_repo: "MxHabob/Orbis",
-      edition: "Cloud Connected Edition",
-      node_type: "Remote Client Node",
-      node_id: "node-remote",
-      is_local_first: false,
-      database_engine: "PostgreSQL Cloud Core",
-      description_en: "Orbis enterprise institutional operating system by Mulverse.",
-      description_ar: "أوربيس نظام إدارة المؤسسات التعليمية من منظومة Mulverse.",
-      tagline_en: "Institutional Sovereignty & Intelligent Operations",
-      tagline_ar: "السيادة المؤسسية والذكاء التشغيلي",
-      pillars: [],
     };
   }
 
   async systemGetChangelog(): Promise<ReleaseChangelogItem[]> {
-    return [
-      {
-        version: "0.3.0",
-        title_en: "v0.3.0 — Mulverse Autonomous Core & DAG Setup",
-        title_ar: "الإصدار 0.3.0 — عقدة سطح المكتب المستقلة وتهيئة DAG الذكية",
-        release_date: "2026-10-01",
-        is_current: true,
-        is_latest: true,
-        html_url: "https://github.com/MxHabob/Orbis/releases/tag/v0.3.0",
-        highlights_en: ["Sovereign local-first SQLite core", "DAG onboarding engine", "DocForge visual publishing"],
-        highlights_ar: ["نواة محلية فائقة السرعة", "محرك تهيئة DAG الذكي", "محرك DocForge للنشر البصري"],
-      },
-    ];
+    const response = await fetch(
+      "https://api.github.com/repos/MxHabob/Orbis/releases?per_page=50",
+      { headers: { Accept: "application/vnd.github+json" } },
+    );
+    if (!response.ok) {
+      throw new Error(`GitHub releases request failed with status ${response.status}.`);
+    }
+
+    const releases: GitHubRelease[] = await response.json();
+    return releases
+      .filter((release) => !release.prerelease)
+      .map((release, index) => {
+        const version = release.tag_name.replace(/^v/, "");
+        const images = (release.assets ?? [])
+          .flatMap((asset) => {
+            try {
+              const url = new URL(asset.browser_download_url);
+              const extension = url.pathname.toLowerCase().split(".").pop();
+              const isImage =
+                asset.content_type?.startsWith("image/") ||
+                ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(extension ?? "");
+              return url.protocol === "https:" && url.hostname === "github.com" && isImage
+                ? [url.href]
+                : [];
+            } catch {
+              return [];
+            }
+          })
+          .slice(0, 6);
+
+        return {
+          version,
+          title: release.name?.trim() || release.tag_name,
+          published_at: release.published_at ?? undefined,
+          body: release.body ?? undefined,
+          is_current: version === appPackage.version,
+          is_latest: index === 0,
+          html_url: release.html_url,
+          images,
+        };
+      });
   }
 
   async systemCheckForUpdates(): Promise<UpdateCheckResult> {
-    return {
-      current_version: "0.3.0",
-      latest_version: "0.3.0",
-      has_update: false,
-      channel: "stable",
-      status: "up_to_date",
-    };
+    throw new Error("In-app updates are only available in the desktop application.");
+  }
+
+  async systemInstallUpdate(): Promise<void> {
+    throw new Error("In-app updates are only available in the desktop application.");
   }
 
   async openChangelogWindow(): Promise<void> {

@@ -830,48 +830,21 @@ export interface OrganizationReadiness {
 
 export interface ReleaseChangelogItem {
   version: string;
-  title_en: string;
-  title_ar: string;
-  release_date: string;
+  title: string;
+  published_at?: string;
+  body?: string;
   is_current: boolean;
   is_latest: boolean;
   html_url: string;
-  highlights_en: string[];
-  highlights_ar: string[];
-  raw_body?: string;
+  images: string[];
 }
 
-export interface MulversePillar {
-  id: string;
-  title_en: string;
-  title_ar: string;
-  description_en: string;
-  description_ar: string;
-  icon: string;
-  capabilities?: string[];
-}
-
-export interface MulverseEcosystemInfo {
-  ecosystem_name: string;
-  brand: string;
-  product_name: string;
-  product_code: string;
+export interface AppInfo {
+  name: string;
   version: string;
   build_profile: string;
   target_os: string;
-  target_arch: string;
-  github_repo: string;
-  edition: string;
-  node_type: string;
-  node_id: string;
-  is_local_first: boolean;
-  database_engine: string;
-  description_en: string;
-  description_ar: string;
-  tagline_en: string;
-  tagline_ar: string;
-  pillars: MulversePillar[];
-  latest_release?: ReleaseChangelogItem;
+  target_arch?: string;
 }
 
 export interface UpdateCheckResult {
@@ -1570,14 +1543,15 @@ export interface OrbisApiClient {
     offset?: number,
   ): Promise<AuditLogDto[]>;
 
-  // ── System & Ecosystem ──────────────────────────────────────
+  // ── System ──────────────────────────────────────────────────
   systemHealth(): Promise<HealthResponse>;
   systemHasOrganization(): Promise<boolean>;
   systemGetReadiness(): Promise<OrganizationReadiness>;
   systemGetEntitlement(): Promise<EntitlementResult>;
-  systemGetEcosystemInfo(): Promise<MulverseEcosystemInfo>;
+  systemGetAppInfo(): Promise<AppInfo>;
   systemGetChangelog(): Promise<ReleaseChangelogItem[]>;
   systemCheckForUpdates(): Promise<UpdateCheckResult>;
+  systemInstallUpdate(): Promise<void>;
   openChangelogWindow(): Promise<void>;
   openAgentWindow(): Promise<void>;
 
