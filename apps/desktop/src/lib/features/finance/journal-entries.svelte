@@ -134,20 +134,24 @@ async function handleSaveNew() {
       currency_code: selectedCurrency,
       debit_account_id: debitAccountId,
       credit_account_id: creditAccountId,
-      description: notes.trim() || (referenceNumber ? `سند قيد رقم ${referenceNumber}` : "سند قيد محاسبي"),
-      description_ar: notes.trim() || (referenceNumber ? `سند قيد رقم ${referenceNumber}` : "سند قيد محاسبي"),
+      description: notes.trim() || (referenceNumber
+        ? m.finance_ui_journal_entry_numbered_description({ number: referenceNumber })
+        : m.finance_ui_journal_entry_default_description()),
+      description_ar: notes.trim() || (referenceNumber
+        ? m.finance_ui_journal_entry_numbered_description({ number: referenceNumber })
+        : m.finance_ui_journal_entry_default_description()),
       lines: [
         {
           account_id: debitAccountId,
           debit: Number(amount),
           credit: 0,
-          description: notes.trim() || "من حساب",
+          description: notes.trim() || m.finance_ui_journal_from_account_description(),
         },
         {
           account_id: creditAccountId,
           debit: 0,
           credit: Number(amount),
-          description: notes.trim() || "إلى حساب",
+          description: notes.trim() || m.finance_ui_journal_to_account_description(),
         },
       ],
     };
@@ -177,7 +181,7 @@ async function handleReverse(entry: JournalEntryDto) {
   if (!confirmed) return;
 
   try {
-    await api.reverseJournalEntry(entry.id, { reason: "عكس يدوي من واجهة القيود" });
+    await api.reverseJournalEntry(entry.id, { reason: m.finance_ui_journal_manual_reverse_reason() });
     toast.success(m.finance_ui_journal_entry_reversed_success());
     await loadData();
   } catch (err: any) {

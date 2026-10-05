@@ -65,7 +65,7 @@ let activeProvisioningResult = $state<AccountProvisioningResultDto | null>(null)
 async function handleGenerateTempPassword() {
   if (!userId) return;
   const confirmed = await confirmStore.prompt({
-    title: (m.settings_user_detail_btn_reset_pass()) + "؟",
+    title: m.shared_ui_reset_password_confirmation_title(),
     description: m.shared_ui_generate_temp_password_confirmation({
       user: fullName || email,
     }),
@@ -115,7 +115,7 @@ async function handleResetPassword(e: Event) {
 async function handleDeleteUser() {
   if (!userId) return;
   const confirmed = await confirmStore.prompt({
-    title: m.common_action_delete() + "؟",
+    title: m.shared_ui_delete_user_confirmation_title(),
     description: m.settings_user_detail_delete_confirm(),
     confirmText: m.common_action_delete(),
     variant: "destructive",
