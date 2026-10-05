@@ -185,7 +185,7 @@ function handleExport() {
       { header: m.operations_ui_job_title(), accessor: (e) => e.job_title || "—" },
       { header: m.operations_ui_department(), accessor: (e) => e.department || "—" },
       { header: m.operations_ui_employee_category(), accessor: (e) => e.employee_type || "—" },
-      { header: "الحالة", accessor: (e) => e.status || "active" },
+      { header: m.operations_ui_status(), accessor: (e) => e.status || "active" },
       { header: m.operations_ui_user_account(), accessor: (e) => e.username || m.operations_ui_not_linked() },
       { header: m.operations_ui_hire_date(), accessor: (e) => e.hire_date ? formatDate(e.hire_date, "date") : "—" },
       { header: m.operations_ui_phone_number(), accessor: (e) => e.phone || "—" },

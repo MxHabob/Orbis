@@ -160,15 +160,15 @@ const gridSource = $derived(
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 50, size: 50, readonly: true, pin: "left", align: "center" },
-  { id: "displayName", prop: "displayName", header: m.ui_copy_branch_name_954ef523(), name: "Branch Name", width: 220, size: 220, readonly: true, pin: "left", cellClass: "font-semibold text-foreground cursor-pointer hover:underline" },
-  { id: "displayCode", prop: "displayCode", header: m.ui_copy_code_3119a46b(), name: "Code", width: 110, size: 110, readonly: true, cellClass: "font-mono text-xs uppercase" },
-  { id: "managerName", prop: "managerName", header: m.ui_copy_manager_a230935a(), name: "Manager", width: 180, size: 180, readonly: true },
-  { id: "displayCapacity", prop: "displayCapacity", header: m.ui_copy_capacity_6432d6d2(), name: "Capacity", width: 120, size: 120, readonly: true, align: "center", type: "number" },
-  { id: "subUnitsCount", prop: "subUnitsCount", header: m.ui_copy_sub_units_93f58eca(), name: "Sub-units", width: 110, size: 110, readonly: true, align: "center", type: "number" },
-  { id: "isolationLabel", prop: "isolationLabel", header: m.ui_copy_isolation_5fef6f7f(), name: "Isolation", width: 120, size: 120, readonly: true, align: "center" },
-  { id: "statusLabel", prop: "statusLabel", header: m.common_status(), name: "Status", width: 100, size: 100, readonly: true, align: "center", type: "badge" },
-  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: "Created At", width: 140, size: 140, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "actions", prop: "actions", header: m.ui_copy_actions_c48127a5(), name: "Actions", width: 140, size: 140, type: "action", align: "center", readonly: true, meta: { items: gridActions } },
+  { id: "displayName", prop: "displayName", header: m.ui_copy_branch_name_954ef523(), name: m.ui_copy_branch_name_954ef523(), width: 220, size: 220, readonly: true, pin: "left", cellClass: "font-semibold text-foreground cursor-pointer hover:underline" },
+  { id: "displayCode", prop: "displayCode", header: m.ui_copy_code_3119a46b(), name: m.ui_copy_code_3119a46b(), width: 110, size: 110, readonly: true, cellClass: "font-mono text-xs uppercase" },
+  { id: "managerName", prop: "managerName", header: m.ui_copy_manager_a230935a(), name: m.ui_copy_manager_a230935a(), width: 180, size: 180, readonly: true },
+  { id: "displayCapacity", prop: "displayCapacity", header: m.ui_copy_capacity_6432d6d2(), name: m.ui_copy_capacity_6432d6d2(), width: 120, size: 120, readonly: true, align: "center", type: "number" },
+  { id: "subUnitsCount", prop: "subUnitsCount", header: m.ui_copy_sub_units_93f58eca(), name: m.ui_copy_sub_units_93f58eca(), width: 110, size: 110, readonly: true, align: "center", type: "number" },
+  { id: "isolationLabel", prop: "isolationLabel", header: m.ui_copy_isolation_5fef6f7f(), name: m.ui_copy_isolation_5fef6f7f(), width: 120, size: 120, readonly: true, align: "center" },
+  { id: "statusLabel", prop: "statusLabel", header: m.common_status(), name: m.common_status(), width: 100, size: 100, readonly: true, align: "center", type: "badge" },
+  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: m.ui_copy_created_at_01f6ea5f(), width: 140, size: 140, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "actions", prop: "actions", header: m.ui_copy_actions_c48127a5(), name: m.ui_copy_actions_c48127a5(), width: 140, size: 140, type: "action", align: "center", readonly: true, meta: { items: gridActions } },
 ];
 
 function handleGridAction(event: CustomEvent<GridActionEvent>) {
@@ -211,7 +211,7 @@ function promptDeleteBranch(branch: OrgUnitDto) {
     title: m.ui_copy_delete_branch_f22fe5e8(),
     message: l(
       m.settings_ui_branch_delete_confirm({ name: branch.name_ar || branch.name }),
-      `Are you sure you want to permanently delete branch "${branch.name_ar || branch.name}"?`
+      m.settings_ui_branch_delete_confirm({ name: branch.name_ar || branch.name })
     ),
     confirmLabel: m.settings_currencies_btn_delete_confirm(),
     variant: "destructive",

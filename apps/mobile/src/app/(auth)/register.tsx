@@ -6,7 +6,7 @@
  * and bottom pill continue buttons).
  */
 
-import React, { useState } from "react";
+import{ useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -15,7 +15,6 @@ import {
   TextInput,
   Platform,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { api, useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
@@ -27,13 +26,8 @@ import { Radii, Spacing, Typography, Fonts } from "@/constants/theme";
 import {
   ArrowLeft,
   ArrowRight,
-  AcademicCap,
-  User,
-  Users,
-  ShieldCheck,
-  Eye,
-  EyeSlash,
 } from "@orbis/icons/native";
+import { Button } from "@/components/ui/button";
 
 type RoleOption = "teacher" | "student" | "parent" | "admin";
 
@@ -46,7 +40,7 @@ export default function RegisterScreen() {
   const toast = useToast();
   const { login } = useAuth();
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 >(1);
   const [fullName, setFullName] = useState("");
   const [selectedRole, setSelectedRole] = useState<RoleOption>("teacher");
   const [email, setEmail] = useState("");
@@ -55,12 +49,6 @@ export default function RegisterScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const roles: { key: RoleOption; label: string; icon: any }[] = [
-    { key: "teacher", label: t("auth_role_teacher"), icon: AcademicCap },
-    { key: "student", label: t("auth_role_student"), icon: User },
-    { key: "parent", label: t("auth_role_parent"), icon: Users },
-    { key: "admin", label: t("auth_role_admin"), icon: ShieldCheck },
-  ];
 
   const handleNextStep1 = () => {
     setErrorMsg(null);
@@ -71,10 +59,6 @@ export default function RegisterScreen() {
     setStep(2);
   };
 
-  const handleNextStep2 = () => {
-    setErrorMsg(null);
-    setStep(3);
-  };
 
   const handleFinalSubmit = async () => {
     setErrorMsg(null);
@@ -115,12 +99,12 @@ export default function RegisterScreen() {
 
   const handleBack = () => {
     setErrorMsg(null);
-    if (step === 3) setStep(2);
-    else if (step === 2) setStep(1);
+    if (step === 2) setStep(2);
+    else if (step === 1) setStep(1);
     else router.back();
   };
 
-  const BackIcon = isArabic ? ArrowRight : ArrowLeft;
+  const BackIcon = isArabic ? ArrowLeft : ArrowRight;
 
   return (
     <View
@@ -129,18 +113,6 @@ export default function RegisterScreen() {
         { backgroundColor: isDark ? "#09090B" : "#F8FAFC" },
       ]}
     >
-      {/* Radiant Top Glow */}
-      <LinearGradient
-        colors={
-          isDark
-            ? (["#3B0764", "#1E1035", "rgba(9,9,11,0)"] as const)
-            : (["#DDD6FE", "#EDE9FE", "rgba(248,250,252,0)"] as const)
-        }
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 0.5 }}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      />
 
       <KeyboardAwareView
         style={styles.keyboardContainer}
@@ -150,17 +122,6 @@ export default function RegisterScreen() {
         <View style={styles.navHeader}>
           <Pressable
             onPress={handleBack}
-            style={[
-              styles.navIconBtn,
-              {
-                backgroundColor: isDark
-                  ? "rgba(255, 255, 255, 0.08)"
-                  : "rgba(255, 255, 255, 0.8)",
-                borderColor: isDark
-                  ? "rgba(255, 255, 255, 0.12)"
-                  : "rgba(0, 0, 0, 0.06)",
-              },
-            ]}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
             <BackIcon size={18} color={isDark ? "#FFFFFF" : "#0F172A"} />
@@ -211,68 +172,16 @@ export default function RegisterScreen() {
                 <Text
                   style={[
                     styles.stepQuestion,
-                    { color: isDark ? "#FFFFFF" : "#0F172A" },
                   ]}
                 >
                   {t("auth_full_name")}
                 </Text>
-                <Text
-                  style={[
-                    styles.stepHint,
-                    {
-                      color: isDark
-                        ? "rgba(255, 255, 255, 0.6)"
-                        : "#64748B",
-                    },
-                  ]}
-                >
-                  {t("auth_register_subtitle")}
-                </Text>
               </View>
 
-              {errorMsg ? (
-                <View
-                  style={[
-                    styles.errorPill,
-                    {
-                      backgroundColor: isDark
-                        ? "rgba(239, 68, 68, 0.18)"
-                        : "#FEF2F2",
-                      borderColor: theme.error,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.errorPillText, { color: theme.error }]}>
-                    {errorMsg}
-                  </Text>
-                </View>
-              ) : null}
-
-              <View
-                style={[
-                  styles.largePillInputContainer,
-                  {
-                    backgroundColor: isDark
-                      ? "rgba(255, 255, 255, 0.06)"
-                      : "#FFFFFF",
-                    borderColor: isDark
-                      ? "rgba(255, 255, 255, 0.18)"
-                      : "rgba(0, 0, 0, 0.1)",
-                  },
-                ]}
-              >
+              <View>
                 <TextInput
-                  style={[
-                    styles.largePillTextInput,
-                    {
-                      color: isDark ? "#FFFFFF" : "#0F172A",
-                      textAlign: isArabic ? "right" : "left",
-                    },
-                  ]}
+                  style={{ borderRadius: Radii.md, borderWidth: 1, width: 370}}
                   placeholder={t("auth_full_name_ph")}
-                  placeholderTextColor={
-                    isDark ? "rgba(255, 255, 255, 0.4)" : "#94A3B8"
-                  }
                   value={fullName}
                   onChangeText={setFullName}
                   autoFocus
@@ -283,226 +192,40 @@ export default function RegisterScreen() {
             </View>
           )}
 
-          {/* STEP 2: ROLE SELECTION */}
+          {/* STEP 2: CREDENTIALS */}
           {step === 2 && (
             <View style={styles.stepInner}>
               <View style={styles.titleBlock}>
                 <Text
                   style={[
                     styles.stepQuestion,
-                    { color: isDark ? "#FFFFFF" : "#0F172A" },
-                  ]}
-                >
-                  {t("auth_role_label")}
-                </Text>
-                <Text
-                  style={[
-                    styles.stepHint,
-                    {
-                      color: isDark
-                        ? "rgba(255, 255, 255, 0.6)"
-                        : "#64748B",
-                    },
-                  ]}
-                >
-                  {t("auth_register_subtitle")}
-                </Text>
-              </View>
-
-              {/* Chips Grid */}
-              <View style={styles.rolesGrid}>
-                {roles.map((r) => {
-                  const isSelected = selectedRole === r.key;
-                  const IconComp = r.icon;
-                  return (
-                    <Pressable
-                      key={r.key}
-                      onPress={() => setSelectedRole(r.key)}
-                      style={({ pressed }) => [
-                        styles.roleCard,
-                        {
-                          backgroundColor: isSelected
-                            ? isDark
-                              ? "rgba(124, 58, 237, 0.2)"
-                              : "rgba(124, 58, 237, 0.08)"
-                            : isDark
-                              ? "rgba(255, 255, 255, 0.05)"
-                              : "#FFFFFF",
-                          borderColor: isSelected
-                            ? theme.primary
-                            : isDark
-                              ? "rgba(255, 255, 255, 0.1)"
-                              : "rgba(0, 0, 0, 0.08)",
-                          transform: [{ scale: pressed ? 0.98 : 1 }],
-                        },
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.roleIconCircle,
-                          {
-                            backgroundColor: isSelected
-                              ? theme.primary
-                              : isDark
-                                ? "rgba(255, 255, 255, 0.08)"
-                                : "rgba(0, 0, 0, 0.04)",
-                          },
-                        ]}
-                      >
-                        <IconComp
-                          size={20}
-                          color={isSelected ? "#FFFFFF" : isDark ? "#FFFFFF" : "#0F172A"}
-                        />
-                      </View>
-                      <Text
-                        style={[
-                          styles.roleTitle,
-                          {
-                            color: isSelected
-                              ? theme.primary
-                              : isDark
-                                ? "#FFFFFF"
-                                : "#0F172A",
-                            fontWeight: isSelected ? "700" : "500",
-                          },
-                        ]}
-                      >
-                        {r.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          )}
-
-          {/* STEP 3: CREDENTIALS */}
-          {step === 3 && (
-            <View style={styles.stepInner}>
-              <View style={styles.titleBlock}>
-                <Text
-                  style={[
-                    styles.stepQuestion,
-                    { color: isDark ? "#FFFFFF" : "#0F172A" },
                   ]}
                 >
                   {t("auth_email_label")}
                 </Text>
-                <Text
-                  style={[
-                    styles.stepHint,
-                    {
-                      color: isDark
-                        ? "rgba(255, 255, 255, 0.6)"
-                        : "#64748B",
-                    },
-                  ]}
-                >
-                  {t("auth_card_subtitle")}
-                </Text>
               </View>
 
-              {errorMsg ? (
-                <View
-                  style={[
-                    styles.errorPill,
-                    {
-                      backgroundColor: isDark
-                        ? "rgba(239, 68, 68, 0.18)"
-                        : "#FEF2F2",
-                      borderColor: theme.error,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.errorPillText, { color: theme.error }]}>
-                    {errorMsg}
-                  </Text>
-                </View>
-              ) : null}
-
-              <View style={styles.credentialsInputs}>
-                <View
-                  style={[
-                    styles.largePillInputContainer,
-                    {
-                      backgroundColor: isDark
-                        ? "rgba(255, 255, 255, 0.06)"
-                        : "#FFFFFF",
-                      borderColor: isDark
-                        ? "rgba(255, 255, 255, 0.18)"
-                        : "rgba(0, 0, 0, 0.1)",
-                    },
-                  ]}
-                >
+              <View style={{ gap: Spacing.three,}}>
                   <TextInput
-                    style={[
-                      styles.largePillTextInput,
-                      {
-                        color: isDark ? "#FFFFFF" : "#0F172A",
-                        textAlign: isArabic ? "right" : "left",
-                      },
-                    ]}
+                    style={{ borderRadius: Radii.md, borderWidth: 1, width: 370}}
                     placeholder={t("auth_email_placeholder")}
-                    placeholderTextColor={
-                      isDark ? "rgba(255, 255, 255, 0.4)" : "#94A3B8"
-                    }
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoFocus
-                  />
-                </View>
-
-                <View
-                  style={[
-                    styles.largePillInputContainer,
-                    {
-                      backgroundColor: isDark
-                        ? "rgba(255, 255, 255, 0.06)"
-                        : "#FFFFFF",
-                      borderColor: isDark
-                        ? "rgba(255, 255, 255, 0.18)"
-                        : "rgba(0, 0, 0, 0.1)",
-                      marginTop: Spacing.three,
-                    },
-                  ]}
-                >
+                    />
+   
                   <TextInput
-                    style={[
-                      styles.largePillTextInput,
-                      {
-                        color: isDark ? "#FFFFFF" : "#0F172A",
-                        textAlign: isArabic ? "right" : "left",
-                      },
-                    ]}
+                    style={{ borderRadius: Radii.md, borderWidth: 1, width: 370}}
                     placeholder="••••••••"
-                    placeholderTextColor={
-                      isDark ? "rgba(255, 255, 255, 0.4)" : "#94A3B8"
-                    }
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
                     onSubmitEditing={handleFinalSubmit}
                     returnKeyType="go"
                   />
-                  <Pressable
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={{ paddingHorizontal: Spacing.two }}
-                  >
-                    {showPassword ? (
-                      <EyeSlash
-                        size={18}
-                        color={isDark ? "rgba(255,255,255,0.6)" : "#64748B"}
-                      />
-                    ) : (
-                      <Eye
-                        size={18}
-                        color={isDark ? "rgba(255,255,255,0.6)" : "#64748B"}
-                      />
-                    )}
-                  </Pressable>
-                </View>
+
               </View>
             </View>
           )}
@@ -510,35 +233,24 @@ export default function RegisterScreen() {
 
         {/* Bottom Tactile Pill Button */}
         <View style={styles.footer}>
-          <Pressable
+          <Button
             onPress={
               step === 1
                 ? handleNextStep1
-                : step === 2
-                  ? handleNextStep2
                   : handleFinalSubmit
             }
             disabled={isSubmitting}
-            style={({ pressed }) => [
-              styles.continuePillBtn,
-              {
-                backgroundColor: isDark ? "#FFFFFF" : "#0F172A",
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-                opacity: isSubmitting ? 0.7 : 1,
-              },
-            ]}
           >
             <Text
               style={[
                 styles.continuePillBtnText,
-                { color: isDark ? "#0F172A" : "#FFFFFF" },
               ]}
             >
-              {step === 3
+              {step === 2
                 ? t("auth_create_account_btn")
                 : t("admission_next_step")}
             </Text>
-          </Pressable>
+          </Button>
         </View>
       </KeyboardAwareView>
     </View>
@@ -568,8 +280,7 @@ const styles = StyleSheet.create({
   navIconBtn: {
     width: 40,
     height: 40,
-    borderRadius: Radii.full,
-    borderWidth: 1,
+
     alignItems: "center",
     justifyContent: "center",
   },
@@ -592,6 +303,7 @@ const styles = StyleSheet.create({
   },
   stepInner: {
     width: "100%",
+    alignItems: "flex-end",
   },
   titleBlock: {
     marginBottom: Spacing.six,
@@ -604,87 +316,29 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: -0.5,
   },
-  stepHint: {
-    ...Typography.bodyMedium,
-    fontFamily: Fonts.sans,
-    marginTop: Spacing.one,
-  },
-  errorPill: {
-    borderRadius: Radii.lg,
-    borderWidth: 1,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    marginBottom: Spacing.four,
-  },
-  errorPillText: {
-    ...Typography.caption,
-    fontFamily: Fonts.sans,
-    fontWeight: "600",
-  },
   largePillInputContainer: {
-    flexDirection: "row",
+    // flexDirection: "row",
+    width:"auto",
+    height:46,
     alignItems: "center",
-    height: 56,
-    borderRadius: Radii.full,
+    borderRadius: Radii.md,
     borderWidth: 1,
     paddingHorizontal: Spacing.five,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  largePillTextInput: {
-    flex: 1,
-    fontSize: 17,
-    fontFamily: Fonts.sans,
-    fontWeight: "500",
-  },
-  rolesGrid: {
-    gap: Spacing.three,
-  },
-  roleCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.four,
-    paddingHorizontal: Spacing.five,
-    paddingVertical: Spacing.four,
-    borderRadius: Radii.full,
-    borderWidth: 1.5,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  roleIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  roleTitle: {
-    ...Typography.bodyLarge,
-    fontFamily: Fonts.sans,
-    fontSize: 16,
   },
   credentialsInputs: {
+    flex: 1,
     gap: Spacing.two,
+    alignItems: "center",
+    justifyContent: "center",
   },
   footer: {
     marginTop: Spacing.six,
   },
   continuePillBtn: {
     height: 54,
-    borderRadius: Radii.full,
+    borderRadius: Radii.md,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
   },
   continuePillBtnText: {
     ...Typography.bodyBold,

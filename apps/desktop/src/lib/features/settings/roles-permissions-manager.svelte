@@ -102,16 +102,16 @@ const roleActions: ActionItem[] = [
 // Columns Definition
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 50, size: 50, readonly: true, pin: "left", align: "center" },
-  { id: "id", prop: "id", header: m.ui_copy_role_id_efa8c46a(), name: "Role ID", width: 160, size: 160, readonly: true, pin: "left", cellClass: "font-mono font-bold text-foreground text-xs" },
-  { id: "name_ar", prop: "name_ar", header: m.common_org_unit_name_ar(), name: "Arabic Name", width: 200, size: 200, readonly: true, cellClass: "font-semibold text-xs text-foreground" },
-  { id: "name", prop: "name", header: m.common_org_unit_name_en(), name: "English Name", width: 200, size: 200, readonly: true, cellClass: "text-muted-foreground text-xs" },
-  { id: "typeBadge", prop: "typeBadge", header: m.ui_copy_type_0d257656(), name: "Type", width: 110, size: 110, type: "badge", align: "center", readonly: true },
-  { id: "permBadge", prop: "permBadge", header: m.settings_permissions_col_permissions(), name: "Permissions", width: 120, size: 120, align: "center", readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  { id: "id", prop: "id", header: m.ui_copy_role_id_efa8c46a(), name: m.ui_copy_role_id_efa8c46a(), width: 160, size: 160, readonly: true, pin: "left", cellClass: "font-mono font-bold text-foreground text-xs" },
+  { id: "name_ar", prop: "name_ar", header: m.common_org_unit_name_ar(), name: m.common_org_unit_name_ar(), width: 200, size: 200, readonly: true, cellClass: "font-semibold text-xs text-foreground" },
+  { id: "name", prop: "name", header: m.common_org_unit_name_en(), name: m.common_org_unit_name_en(), width: 200, size: 200, readonly: true, cellClass: "text-muted-foreground text-xs" },
+  { id: "typeBadge", prop: "typeBadge", header: m.ui_copy_type_0d257656(), name: m.ui_copy_type_0d257656(), width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  { id: "permBadge", prop: "permBadge", header: m.settings_permissions_col_permissions(), name: m.settings_permissions_col_permissions(), width: 120, size: 120, align: "center", readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
   {
     id: "actions",
     prop: "actions",
     header: m.common_je_col_actions(),
-    name: "Actions",
+    name: m.ui_copy_actions_c48127a5(),
     width: 90,
     size: 90,
     type: "actions",
@@ -162,10 +162,7 @@ async function handleDeleteRole(roleToDelete: RoleDto) {
 
   const confirmed = await confirmStore.prompt({
     title: m.common_action_delete(),
-    description: l(
-      m.settings_ui_role_delete_confirm({ role: roleToDelete.name_ar || roleToDelete.name }),
-      `Are you sure you want to delete role "${roleToDelete.name}"?`
-    ),
+    description: m.settings_ui_role_delete_confirm({ role: roleToDelete.name_ar || roleToDelete.name }),
     confirmText: m.common_action_delete(),
     variant: "destructive",
   });
