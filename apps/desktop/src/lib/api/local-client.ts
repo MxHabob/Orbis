@@ -177,7 +177,7 @@ import type {
   HealthResponse,
   OrganizationReadiness,
   EntitlementResult,
-  MulverseEcosystemInfo,
+  AppInfo,
   ReleaseChangelogItem,
   UpdateCheckResult,
   EnvironmentDetectionResult,
@@ -1231,14 +1231,17 @@ export class LocalClient implements OrbisApiClient {
   async systemGetEntitlement(): Promise<EntitlementResult> {
     return invoke<EntitlementResult>("system_get_entitlement");
   }
-  async systemGetEcosystemInfo(): Promise<MulverseEcosystemInfo> {
-    return invoke<MulverseEcosystemInfo>("system_get_ecosystem_info");
+  async systemGetAppInfo(): Promise<AppInfo> {
+    return invoke<AppInfo>("system_get_app_info");
   }
   async systemGetChangelog(): Promise<ReleaseChangelogItem[]> {
     return invoke<ReleaseChangelogItem[]>("system_get_changelog");
   }
   async systemCheckForUpdates(): Promise<UpdateCheckResult> {
     return invoke<UpdateCheckResult>("system_check_for_updates");
+  }
+  async systemInstallUpdate(): Promise<void> {
+    return invoke<void>("system_install_update");
   }
   async openChangelogWindow(): Promise<void> {
     return invoke<void>("open_changelog_window");
@@ -1631,4 +1634,3 @@ export class LocalClient implements OrbisApiClient {
     await invoke("folder_delete", { id });
   }
 }
-

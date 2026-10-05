@@ -138,6 +138,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         include:
           - platform: windows-latest
@@ -183,15 +184,50 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Validate release tag and app versions
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const tagVersion = process.env.GITHUB_REF_NAME.replace(/^v/, '');
+          const desktopVersion = require('./apps/desktop/package.json').version;
+          const tauriVersion = require('./apps/desktop/src-tauri/tauri.conf.json').version;
+          const cargoVersion = fs.readFileSync('./apps/desktop/src-tauri/Cargo.toml', 'utf8').match(/^version = "([^"]+)"/m)?.[1];
+          const versions = { desktopVersion, tauriVersion, cargoVersion };
+          if (Object.values(versions).some((version) => !version || version !== tagVersion)) {
+            throw new Error(`Release tag v${tagVersion} must match all app versions: ${JSON.stringify(versions)}`);
+          }
+          NODE
+
+      - name: Validate updater signing key
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "::error::Set the TAURI_SIGNING_PRIVATE_KEY repository secret before creating a release."
+            exit 1
+          fi
+
+      - name: Configure signed updater
+        working-directory: apps/desktop
+        env:
+          TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
+        run: |
+          node -e "const fs = require('node:fs'); const pubkey = process.env.TAURI_UPDATER_PUBLIC_KEY; if (!pubkey) throw new Error('Set the TAURI_UPDATER_PUBLIC_KEY repository variable before creating a release.'); const config = { bundle: { createUpdaterArtifacts: true }, plugins: { updater: { pubkey, endpoints: ['https://github.com/MxHabob/Orbis/releases/latest/download/latest.json'] } } }; fs.writeFileSync('src-tauri/tauri.updater.conf.json', JSON.stringify(config));"
+
       - name: Build Tauri App & Bundle Installer
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Orbis Release ${{ github.ref_name }}"
           releaseBody: "Automated release of the Orbis Desktop Client with embedded Zero-Setup Timefold Sidecar."
           releaseDraft: true
           prerelease: false
+          uploadUpdaterJson: true
+          uploadUpdaterSignatures: true
           projectPath: "apps/desktop"
-          args: --target ${{ matrix.target }}
+          args: --config src-tauri/tauri.updater.conf.json --target ${{ matrix.target }}

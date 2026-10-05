@@ -56,7 +56,6 @@
     "updater": {
       "pubkey": "",
       "endpoints": [],
-      "createUpdaterArtifacts": false,
       "dangerousInsecureTransportProtocol": false
     }
   }

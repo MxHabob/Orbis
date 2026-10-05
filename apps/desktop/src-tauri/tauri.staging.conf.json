@@ -16,6 +16,10 @@
       "desktop": {
         "schemes": ["orbis-staging"]
       }
+    },
+    "updater": {
+      "pubkey": "",
+      "endpoints": []
     }
   }
 }

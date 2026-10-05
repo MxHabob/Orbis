@@ -1,0 +1,121 @@
+<script lang="ts">
+  import * as m from "$lib/paraglide/messages";
+  import { onMount } from "svelte";
+  import { api } from "$lib/api/client";
+  import type { AppInfo, ReleaseChangelogItem } from "$lib/api/types";
+  import { Badge } from "@orbis/ui/badge";
+  import { Calendar } from "@orbis/icons";
+
+  let { isRTL = false }: { isRTL?: boolean } = $props();
+
+  let appInfo = $state<AppInfo | null>(null);
+  let latestRelease = $state<ReleaseChangelogItem | null>(null);
+  let isLoading = $state(true);
+  let loadError = $state<string | null>(null);
+
+  function formatDate(value?: string) {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? null
+      : date.toLocaleDateString(isRTL ? "ar" : "en", { dateStyle: "medium" });
+  }
+
+  onMount(async () => {
+    try {
+      const [info, releases] = await Promise.all([
+        api.systemGetAppInfo(),
+        api.systemGetChangelog(),
+      ]);
+      appInfo = info;
+      latestRelease = releases.find((release) => release.is_latest) ?? releases[0] ?? null;
+    } catch (error) {
+      console.error("Failed to load application release information:", error);
+      loadError = error instanceof Error ? error.message : String(error);
+    } finally {
+      isLoading = false;
+    }
+  });
+</script>
+
+<section class="mx-auto w-full max-w-5xl space-y-6 py-2">
+  <div class="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-lg">
+    <div class="space-y-2 border-b border-border/50 p-6 sm:p-8">
+      {#if appInfo}
+        <div class="flex flex-wrap items-center gap-2">
+          <h1 class="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">{appInfo.name}</h1>
+          <Badge variant="outline" class="border-primary/40 bg-primary/5 font-mono text-primary">
+            v{appInfo.version}
+          </Badge>
+        </div>
+      {/if}
+      <p class="max-w-3xl text-sm leading-relaxed text-muted-foreground">
+        {m.ui_onboarding_intro_description()}
+      </p>
+    </div>
+
+    <div class="space-y-5 p-6 sm:p-8">
+      {#if isLoading}
+        <p class="animate-pulse text-sm text-muted-foreground">{m.ui_changelog_fetching_live_release_data_from_github()}</p>
+      {:else if loadError}
+        <p class="text-sm text-destructive" role="alert">{m.ui_onboarding_intro_load_failed()} {loadError}</p>
+      {:else if latestRelease}
+        {@const publishedDate = formatDate(latestRelease.published_at)}
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="space-y-2">
+            <p class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              {m.ui_onboarding_intro_latest_release()}
+            </p>
+            <h2 class="text-xl font-bold tracking-tight text-foreground">{latestRelease.title}</h2>
+            <div class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <Badge variant="secondary" class="font-mono">v{latestRelease.version}</Badge>
+              {#if publishedDate}
+                <span class="flex items-center gap-1">
+                  <Calendar size={12} />{publishedDate}
+                </span>
+              {/if}
+            </div>
+          </div>
+          <a
+            href={latestRelease.html_url}
+            target="_blank"
+            rel="noreferrer"
+            class="text-xs text-primary underline underline-offset-4"
+          >
+            {m.ui_changelog_github_release()}
+          </a>
+        </div>
+
+        {#if latestRelease.images.length > 0}
+          <section class="space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">
+              {m.ui_onboarding_intro_release_images()}
+            </h3>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {#each latestRelease.images as image (image)}
+                <img
+                  src={image}
+                  alt={latestRelease.title}
+                  loading="lazy"
+                  referrerpolicy="no-referrer"
+                  class="max-h-72 w-full rounded-xl border border-border/60 bg-muted/20 object-contain"
+                />
+              {/each}
+            </div>
+          </section>
+        {/if}
+
+        {#if latestRelease.body?.trim()}
+          <section class="space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">
+              {m.ui_onboarding_intro_release_notes()}
+            </h3>
+            <pre class="max-h-72 overflow-y-auto whitespace-pre-wrap break-words rounded-xl border border-border/60 bg-muted/20 p-4 font-sans text-sm leading-relaxed text-foreground">{latestRelease.body}</pre>
+          </section>
+        {/if}
+      {:else}
+        <p class="text-sm text-muted-foreground">{m.ui_onboarding_intro_no_releases()}</p>
+      {/if}
+    </div>
+  </div>
+</section>

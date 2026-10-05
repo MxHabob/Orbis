@@ -24,7 +24,7 @@ import {
 } from "./types";
 import OnboardingHeader from "./components/onboarding-header.svelte";
 import OnboardingFooter from "./components/onboarding-footer.svelte";
-import StepMulverseIntro from "./components/step-mulverse-intro.svelte";
+import StepReleaseIntro from "./components/step-release-intro.svelte";
 import StepBlueprint from "./components/step-blueprint.svelte";
 import StepOrganization from "./components/step-organization.svelte";
 import StepAdmin from "./components/step-admin.svelte";
@@ -32,7 +32,7 @@ import StepMfa from "./components/step-mfa.svelte";
 import StepReview from "./components/step-review.svelte";
 import { SupportDialog } from "../system";
 
-let currentStep = $state<OnboardingStep>("mulverse");
+let currentStep = $state<OnboardingStep>("intro");
 let form = $state<OnboardingFormModel>({ ...INITIAL_ONBOARDING_VALUES });
 let errors = $state<Record<string, string>>({});
 let isSubmitting = $state(false);
@@ -46,7 +46,7 @@ let isSupportOpen = $state(false);
 const isRTL = $derived(getLocale().startsWith("ar"));
 
 const steps: Array<{ id: OnboardingStep }> = [
-  { id: "mulverse" },
+  { id: "intro" },
   { id: "blueprint" },
   { id: "organization" },
   { id: "admin" },
@@ -82,7 +82,7 @@ onMount(() => {
 function validateCurrentStep(): boolean {
   const newErrors: Record<string, string> = {};
 
-  if (currentStep === "mulverse") {
+  if (currentStep === "intro") {
     return true;
   } else if (currentStep === "blueprint") {
     if (!form.institutionType) {
@@ -236,8 +236,8 @@ function enterWorkspace() {
 
   <!-- Main Wizard Content Area with Full Screen Real Estate Utilization -->
   <main class="flex-1 w-full max-w-5xl mx-auto my-auto py-2">
-    {#if currentStep === "mulverse"}
-      <StepMulverseIntro {isRTL} />
+    {#if currentStep === "intro"}
+      <StepReleaseIntro {isRTL} />
     {:else if currentStep === "blueprint"}
       <StepBlueprint bind:selectedType={form.institutionType} {isRTL} />
     {:else if currentStep === "organization"}

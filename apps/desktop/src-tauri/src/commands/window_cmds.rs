@@ -134,55 +134,70 @@ pub async fn check_for_updates<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> R
     use tauri_plugin_updater::UpdaterExt;
     #[cfg(desktop)]
     {
-        if let Ok(updater) = app.updater() {
-            match updater.check().await {
-                Ok(Some(update)) => {
-                    let answer = app
-                        .dialog()
-                        .message(format!(
-                            "A new version {} is available. Would you like to update now?",
-                            update.version
-                        ))
-                        .title("Update Available")
-                        .kind(MessageDialogKind::Info)
-                        .buttons(MessageDialogButtons::OkCancel)
-                        .blocking_show();
-                    if answer {
-                        let _ = update
-                            .download_and_install(
-                                |_chunk_length, _content_length| {},
-                                || {
-                                    println!("Update download finished");
-                                },
-                            )
-                            .await;
+        let updater = match app.updater() {
+            Ok(updater) => updater,
+            Err(error) => {
+                app.dialog()
+                    .message(format!("Failed to initialize updater: {error}"))
+                    .title("Update Check Failed")
+                    .kind(MessageDialogKind::Error)
+                    .buttons(MessageDialogButtons::Ok)
+                    .blocking_show();
+                return Err(error.to_string());
+            }
+        };
+
+        match updater.check().await {
+            Ok(Some(update)) => {
+                let answer = app
+                    .dialog()
+                    .message(format!(
+                        "A new version {} is available. Would you like to update now?",
+                        update.version
+                    ))
+                    .title("Update Available")
+                    .kind(MessageDialogKind::Info)
+                    .buttons(MessageDialogButtons::OkCancel)
+                    .blocking_show();
+                if answer {
+                    match update
+                        .download_and_install(
+                            |_chunk_length, _content_length| {},
+                            || tracing::info!("Update download finished"),
+                        )
+                        .await
+                    {
+                        Ok(()) => app.restart(),
+                        Err(error) => {
+                            app.dialog()
+                                .message(format!("Failed to install update: {error}"))
+                                .title("Update Installation Failed")
+                                .kind(MessageDialogKind::Error)
+                                .buttons(MessageDialogButtons::Ok)
+                                .blocking_show();
+                            return Err(error.to_string());
+                        }
                     }
                 }
-                Ok(None) => {
-                    let version = app.package_info().version.to_string();
-                    app.dialog()
-                        .message(format!("Orbis\nversion {}\n\nYou're up to date!", version))
-                        .title("No Updates Available")
-                        .kind(MessageDialogKind::Info)
-                        .buttons(MessageDialogButtons::Ok)
-                        .blocking_show();
-                }
-                Err(e) => {
-                    app.dialog()
-                        .message(format!("Failed to check for updates: {}", e))
-                        .title("Update Check Failed")
-                        .kind(MessageDialogKind::Error)
-                        .buttons(MessageDialogButtons::Ok)
-                        .blocking_show();
-                }
             }
-        } else {
-            app.dialog()
-                .message("Update checking is not available in this build.")
-                .title("Updates Not Available")
-                .kind(MessageDialogKind::Warning)
-                .buttons(MessageDialogButtons::Ok)
-                .blocking_show();
+            Ok(None) => {
+                let version = app.package_info().version.to_string();
+                app.dialog()
+                    .message(format!("Orbis\nversion {}\n\nYou're up to date!", version))
+                    .title("No Updates Available")
+                    .kind(MessageDialogKind::Info)
+                    .buttons(MessageDialogButtons::Ok)
+                    .blocking_show();
+            }
+            Err(error) => {
+                app.dialog()
+                    .message(format!("Failed to check for updates: {error}"))
+                    .title("Update Check Failed")
+                    .kind(MessageDialogKind::Error)
+                    .buttons(MessageDialogButtons::Ok)
+                    .blocking_show();
+                return Err(error.to_string());
+            }
         }
     }
     #[cfg(not(desktop))]

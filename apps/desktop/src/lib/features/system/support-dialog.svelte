@@ -5,10 +5,8 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
 import { api } from "$lib/api/client";
-import type { MulverseEcosystemInfo } from "$lib/api/types";
-import { getLocale } from "$lib/paraglide/runtime";
+import type { AppInfo } from "$lib/api/types";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +27,6 @@ import {
 } from "@orbis/ui/select";
 import {
   QuestionMarkCircle,
-  ShieldCheck,
   Check,
   ChevronDown,
   ChevronUp,
@@ -41,7 +38,7 @@ let {
   open?: boolean;
 } = $props();
 
-let info = $state<MulverseEcosystemInfo | null>(null);
+let info = $state<AppInfo | null>(null);
 let subject = $state("");
 let category = $state("technical_support");
 let email = $state("");
@@ -49,9 +46,8 @@ let message = $state("");
 let isSubmitting = $state(false);
 let isSubmitted = $state(false);
 let isCopied = $state(false);
+let copyError = $state<string | null>(null);
 let showDiagnosticsPreview = $state(false);
-
-const isRTL = $derived(getLocale().startsWith("ar"));
 
 const categories = [
   { value: "technical_support", label: m.ui_system_support_category_technical },
@@ -65,22 +61,20 @@ const categories = [
 const selectedCat = $derived(categories.find((c) => c.value === category));
 
 const diagnosticPayload = $derived({
-  app_name: info?.product_name || "Orbis Next-Gen SIS / ERP",
-  ecosystem: info?.ecosystem_name || "Mulverse",
-  version: info?.version || "0.3.0",
-  build_profile: info?.build_profile || "Production",
-  os: info?.target_os || "windows",
-  arch: info?.target_arch || "x86_64",
-  node_id: info?.node_id || "node-local",
-  database_engine: info?.database_engine || "Embedded SQLite 3",
-  locale: typeof navigator !== "undefined" ? navigator.language : "ar-SA",
+  application: info?.name,
+  version: info?.version,
+  build_profile: info?.build_profile,
+  target_os: info?.target_os,
+  target_arch: info?.target_arch,
+  locale: typeof navigator !== "undefined" ? navigator.language : undefined,
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "Tauri Desktop",
+  user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
   timestamp: new Date().toISOString(),
 });
 
 async function copyDiagnosticReport() {
-  const fullReport = `=== ORBIS / MULVERSE SUPPORT DIAGNOSTIC REPORT ===
+  copyError = null;
+  const fullReport = `=== ${m.ui_system_support_report_title()} ===
 Category: ${category}
 Subject: ${subject}
 Contact Email: ${email}
@@ -97,8 +91,11 @@ ${JSON.stringify(diagnosticPayload, null, 2)}
     setTimeout(() => {
       isCopied = false;
     }, 2500);
+    return true;
   } catch (err) {
     console.error("Failed to copy diagnostic report:", err);
+    copyError = err instanceof Error ? err.message : String(err);
+    return false;
   }
 }
 
@@ -107,10 +104,9 @@ async function handleSubmit(e: Event) {
   if (!subject.trim() || !message.trim()) return;
 
   isSubmitting = true;
-  // Simulate transmission of diagnostic report to Mulverse Support Node
-  await new Promise((resolve) => setTimeout(resolve, 800));
+  const copied = await copyDiagnosticReport();
   isSubmitting = false;
-  isSubmitted = true;
+  isSubmitted = copied;
 }
 
 function resetForm() {
@@ -121,11 +117,11 @@ function resetForm() {
   isSubmitted = false;
 }
 
-onMount(async () => {
-  try {
-    info = await api.systemGetEcosystemInfo();
-  } catch (err) {
-    console.error("Failed to load ecosystem telemetry for support form:", err);
+$effect(() => {
+  if (open && !info) {
+    void api.systemGetAppInfo()
+      .then((appInfo) => (info = appInfo))
+      .catch((error) => console.error("Failed to load application information for support:", error));
   }
 });
 </script>
@@ -139,7 +135,7 @@ onMount(async () => {
           <QuestionMarkCircle size={14} />
         </div>
         <DialogTitle class="text-base font-semibold text-foreground tracking-tight">
-          {m.ui_system_support_support_diagnostic_assistance_mulverse()}
+          {m.ui_system_support_support_diagnostic_assistance()}
         </DialogTitle>
       </div>
       <DialogDescription class="text-xs text-muted-foreground">
@@ -158,9 +154,7 @@ onMount(async () => {
             {m.ui_system_support_support_request_logged()}
           </h3>
           <p class="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-            {m.ui_system_support_success_details({
-              nodeId: info?.node_id || "node-local",
-            })}
+            {m.ui_system_support_success_details()}
           </p>
         </div>
 
@@ -274,9 +268,11 @@ onMount(async () => {
               <span class="font-medium text-[11px]">
                 {m.ui_system_support_auto_attached_diagnostic_telemetry()}
               </span>
-              <Badge variant="outline" class="text-[9px] font-mono px-1 py-0 h-3.5 border-border">
-                {info?.target_os} • v{info?.version}
-              </Badge>
+              {#if info}
+                <Badge variant="outline" class="text-[9px] font-mono px-1 py-0 h-3.5 border-border">
+                  {info.target_os} • v{info.version}
+                </Badge>
+              {/if}
             </div>
 
             <span>
@@ -284,6 +280,9 @@ onMount(async () => {
                 <ChevronUp size={13} />
               {:else}
                 <ChevronDown size={13} />
+              {/if}
+              {#if copyError}
+                <p class="border-t border-destructive/20 px-3 py-2 text-xs text-destructive" role="alert">{copyError}</p>
               {/if}
             </span>
           </button>

@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 
 type LocalizedText = () => string;
 
-export type OnboardingStep = "mulverse" | "blueprint" | "organization" | "admin" | "mfa" | "review";
+export type OnboardingStep = "intro" | "blueprint" | "organization" | "admin" | "mfa" | "review";
 
 export interface EducationalTrackOption {
   value: string;
@@ -158,13 +158,10 @@ export const COLOR_PRESETS: ColorPreset[] = [
 ];
 
 export interface OnboardingFormModel {
-  // Step 1: Mulverse Ecosystem & Node
-  mulverseNodeId: string;
-
-  // Step 2: Blueprint
+  // Step 1: Application introduction
   institutionType: InstitutionType;
 
-  // Step 3: Enriched Organization
+  // Step 2: Organization
   organizationName: string;
   organizationNameAr: string;
   organizationSlug: string;
@@ -184,7 +181,7 @@ export interface OnboardingFormModel {
   baseCurrencyCode: string;
   primaryColor: string;
 
-  // Step 4: Administrator
+  // Step 3: Administrator
   adminFirstName: string;
   adminLastName: string;
   adminFirstNameAr: string;
@@ -196,7 +193,6 @@ export interface OnboardingFormModel {
 }
 
 export const INITIAL_ONBOARDING_VALUES: OnboardingFormModel = {
-  mulverseNodeId: "",
   institutionType: "k12_school",
   organizationName: "",
   organizationNameAr: "",

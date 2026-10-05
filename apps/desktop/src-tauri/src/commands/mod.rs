@@ -349,14 +349,15 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         database_cmds::database_pick_file,
         database_cmds::database_pick_folder,
         database_cmds::database_pick_save_path,
-        // ── System & Ecosystem ─────────────────────────────────
+        // ── System ──────────────────────────────────────────────
         system_cmds::system_health,
         system_cmds::system_has_organization,
         system_cmds::system_get_readiness,
         system_cmds::system_get_entitlement,
-        system_cmds::system_get_ecosystem_info,
+        system_cmds::system_get_app_info,
         system_cmds::system_get_changelog,
         system_cmds::system_check_for_updates,
+        system_cmds::system_install_update,
         // ── AI Platform ─────────────────────────────────────────
         ai_cmds::ai_chat,
         ai_cmds::ai_list_tools,
