@@ -112,7 +112,10 @@ pub async fn fetch_github_changelog(
                 is_current: version == current_version,
                 is_latest: index == 0,
                 version,
-                title: release.name.filter(|name| !name.is_empty()).unwrap_or(release.tag_name),
+                title: release
+                    .name
+                    .filter(|name| !name.is_empty())
+                    .unwrap_or(release.tag_name),
                 published_at: release.published_at,
                 body: release.body,
                 html_url: release.html_url,
