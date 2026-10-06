@@ -30,12 +30,14 @@ let { primaryColor = $bindable(), isSaving = false }: Props = $props();
             <input
               id="org_color"
               type="color"
+              dir="ltr"
               bind:value={primaryColor}
               class="w-9 h-9 cursor-pointer"
               disabled={isSaving}
             />
             <Input
               type="text"
+              dir="ltr"
               bind:value={primaryColor}
               placeholder="#84cc16"
               class="font-mono uppercase h-9 w-28 text-center shrink-0 bg-background"

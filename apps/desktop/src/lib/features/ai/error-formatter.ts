@@ -1,7 +1,7 @@
 import * as m from "$lib/paraglide/messages";
 
 /**
- * Formats AI and LLM provider errors into clear, informative, and actionable messages in Arabic.
+ * Formats AI and LLM provider errors into clear, natural, and conversational responses from the agent.
  */
 export function formatAiErrorMessage(error: unknown): string {
   if (!error) {
@@ -34,111 +34,115 @@ export function formatAiErrorMessage(error: unknown): string {
   const code = Number(errObj.code || errObj.status_code) || 0;
   const status = String(errObj.status || "").toUpperCase();
   const innerMsg = String(errObj.message || "").trim();
+  const rawLower = raw.toLowerCase();
 
-  // 1. Quota & Rate Limits (HTTP 429 / RESOURCE_EXHAUSTED)
+  // 1. Missing / Unconfigured AI Provider (e.g. "No active AI / LLM integration configured")
+  if (
+    rawLower.includes("no active ai") ||
+    rawLower.includes("llm integration") ||
+    rawLower.includes("app store") ||
+    rawLower.includes("no provider configured") ||
+    rawLower.includes("no active provider")
+  ) {
+    return [
+      m.ai_ui_error_no_provider_description(),
+      "",
+      m.ai_ui_error_no_provider_solution(),
+    ].join("\n");
+  }
+
+  // 2. Quota & Rate Limits (HTTP 429 / RESOURCE_EXHAUSTED)
   if (
     code === 429 ||
     status === "RESOURCE_EXHAUSTED" ||
     raw.includes("RESOURCE_EXHAUSTED") ||
     raw.includes("429") ||
-    raw.toLowerCase().includes("quota exceeded") ||
-    raw.toLowerCase().includes("rate limit")
+    rawLower.includes("quota exceeded") ||
+    rawLower.includes("rate limit")
   ) {
     return [
-      m.ai_ui_error_quota_title(),
-      "",
       m.ai_ui_error_quota_description(),
-      "",
-      m.ai_ui_error_provider_detail({ details: innerMsg || m.ai_ui_error_quota_provider_fallback() }),
       "",
       m.ai_ui_error_quota_solution(),
     ].join("\n");
   }
 
-  // 2. High Demand / Service Unavailable (HTTP 503 / 500 / UNAVAILABLE / Overloaded)
+  // 3. High Demand / Service Unavailable (HTTP 503 / 500 / UNAVAILABLE / Overloaded)
   if (
     code === 503 ||
     status === "UNAVAILABLE" ||
     raw.includes("UNAVAILABLE") ||
     raw.includes("503") ||
-    raw.toLowerCase().includes("high demand") ||
-    raw.toLowerCase().includes("overloaded")
+    rawLower.includes("high demand") ||
+    rawLower.includes("overloaded")
   ) {
     return [
-      m.ai_ui_error_overloaded_title(),
-      "",
       m.ai_ui_error_overloaded_description(),
-      "",
-      m.ai_ui_error_provider_detail({ details: innerMsg || m.ai_ui_error_overloaded_provider_fallback() }),
       "",
       m.ai_ui_error_overloaded_solution(),
     ].join("\n");
   }
 
-  // 3. Invalid API Key / Authentication (HTTP 401 / 403 / API_KEY_INVALID / PERMISSION_DENIED)
+  // 4. Invalid API Key / Authentication (HTTP 401 / 403 / API_KEY_INVALID / PERMISSION_DENIED)
   if (
     code === 401 ||
     code === 403 ||
     status === "PERMISSION_DENIED" ||
     raw.includes("API_KEY_INVALID") ||
-    raw.toLowerCase().includes("api key not valid") ||
-    raw.toLowerCase().includes("unauthorized")
+    rawLower.includes("api key not valid") ||
+    rawLower.includes("unauthorized")
   ) {
     return [
-      m.ai_ui_error_auth_title(),
-      "",
       m.ai_ui_error_auth_description(),
-      "",
-      m.ai_ui_error_detail({ details: innerMsg || m.ai_ui_error_auth_provider_fallback() }),
       "",
       m.ai_ui_error_auth_solution(),
     ].join("\n");
   }
 
-  // 4. Model Not Found / Deprecated (HTTP 404 / MODEL_NOT_FOUND)
+  // 5. Model Not Found / Deprecated (HTTP 404 / MODEL_NOT_FOUND)
   if (
     code === 404 ||
     status === "NOT_FOUND" ||
     raw.includes("404") ||
-    raw.toLowerCase().includes("not found") ||
-    raw.toLowerCase().includes("is not supported")
+    rawLower.includes("not found") ||
+    rawLower.includes("is not supported")
   ) {
     return [
-      m.ai_ui_error_model_not_found_title(),
-      "",
       m.ai_ui_error_model_not_found_description(),
-      "",
-      m.ai_ui_error_detail({ details: innerMsg || raw }),
       "",
       m.ai_ui_error_model_not_found_solution(),
     ].join("\n");
   }
 
-  // 5. Network / Connection Refused / Timeout
+  // 6. Network / Connection Refused / Timeout
   if (
-    raw.toLowerCase().includes("network error") ||
-    raw.toLowerCase().includes("failed to fetch") ||
-    raw.toLowerCase().includes("connection refused") ||
-    raw.toLowerCase().includes("timeout")
+    rawLower.includes("network error") ||
+    rawLower.includes("failed to fetch") ||
+    rawLower.includes("connection refused") ||
+    rawLower.includes("timeout")
   ) {
     return [
-      m.ai_ui_error_network_title(),
-      "",
       m.ai_ui_error_network_description(),
-      "",
-      m.ai_ui_error_detail({ details: innerMsg || raw }),
       "",
       m.ai_ui_error_network_solution(),
     ].join("\n");
   }
 
-  // 6. Generic Formatted Error with Exact Details
-  const cleanDetails = innerMsg || raw.replace(/^Validation failed:\s*/i, "").replace(/^Gemini API Error:\s*/i, "");
-  return [
-    m.ai_ui_error_generic_title(),
-    "",
-    m.ai_ui_error_detail({ details: cleanDetails }),
-    "",
-    m.ai_ui_error_generic_solution(),
-  ].join("\n");
+  // 7. Generic Details / Fallback
+  const cleanDetails = innerMsg || raw
+    .replace(/^Validation failed:\s*/i, "")
+    .replace(/^Gemini API Error:\s*/i, "")
+    .replace(/^DomainError::\w+:\s*/i, "")
+    .trim();
+
+  if (cleanDetails && cleanDetails !== "Error" && cleanDetails !== "[object Object]") {
+    return [
+      cleanDetails,
+      "",
+      m.ai_ui_error_generic_solution(),
+    ].join("\n");
+  }
+
+  return m.ai_ui_error_unknown();
 }
+

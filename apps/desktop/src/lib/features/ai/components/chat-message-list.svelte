@@ -221,7 +221,7 @@ function handleContentClick(e: MouseEvent) {
 
           <!-- Assistant Text Content Card -->
           {#if msg.content}
-            <div class="relative bg-card/65 hover:bg-card/90 border border-border/70 rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all {msg.isError ? 'border-destructive/30 bg-destructive/5 dark:bg-destructive/10 text-destructive' : ''}">
+            <div class="relative bg-card/65 hover:bg-card/90 border border-border/70 rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all">
               <!-- Rendered Markdown Container -->
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -231,14 +231,23 @@ function handleContentClick(e: MouseEvent) {
               >
                 {@html renderMarkdown(msg.content)}
               </div>
+
+              {#if msg.isError && onRetry && !isThinking}
+                <div class="pt-3 mt-3 border-t border-border/40 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onclick={() => onRetry(msg.id)}
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-foreground/80 bg-muted/50 hover:bg-muted border border-border/60 hover:border-border transition-all cursor-pointer select-none"
+                  >
+                    <Refresh size={12} class="shrink-0 text-muted-foreground" />
+                    <span>{m.ai_ui_retry()}</span>
+                  </button>
+                </div>
+              {/if}
             </div>
 
             <!-- Assistant Actions on Hover -->
             <div class="flex items-center gap-1.5 ps-1 select-none opacity-0 group-hover:opacity-100 transition-opacity">
-              {#if msg.isError}
-                <Badge variant="destructive" class="text-[8.5px] h-4 px-1.5 font-semibold">{m.ai_ui_request_error()}</Badge>
-              {/if}
-
               {#if onRetry && !isThinking}
                 <button
                   type="button"
