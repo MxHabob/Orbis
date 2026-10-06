@@ -47,6 +47,7 @@ function main() {
   const files = [
     "apps/desktop/package.json",
     "apps/desktop/src-tauri/Cargo.toml",
+    "apps/solver-service/pom.xml",
     "apps/desktop/src-tauri/tauri.conf.json",
     "apps/desktop/src-tauri/tauri.staging.conf.json",
     "bun.lock",

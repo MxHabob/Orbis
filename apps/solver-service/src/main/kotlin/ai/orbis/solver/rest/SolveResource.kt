@@ -75,6 +75,5 @@ class SolveResource {
 
     @GET
     @Path("/health")
-    fun health(): Response = Response.ok(mapOf("status" to "healthy", "service" to "timetable-solver")).build()
+    fun health(): Response = Response.ok(mapOf("status" to "healthy", "service" to "orbis-solver")).build()
 }
-

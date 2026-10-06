@@ -1,4 +1,4 @@
-# Orbis Timetable & Schedule Solver Service
+# Orbis Solver
 
 High-performance dedicated scheduling and constraint optimization engine powered by Timefold Solver and Quarkus.
 
@@ -31,11 +31,11 @@ cd apps/solver-service
 mvn package -Dnative -DskipTests
 ```
 The output binary will be created at:
-`apps/solver-service/target/solver-service-2.0.0-runner.exe`
+`apps/solver-service/target/orbis-solver-<Orbis-version>-runner.exe`
 
 Double-click or run from command line:
 ```cmd
-.\target\solver-service-2.0.0-runner.exe
+.\target\orbis-solver-<Orbis-version>-runner.exe
 ```
 - **Instant startup**: < 0.05 seconds
 - **Memory footprint**: ~25-35 MB RAM
