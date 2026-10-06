@@ -1,19 +1,16 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
-import { getLocale } from "$lib/paraglide/runtime";
-import { api } from "$lib/api";
-import { systemStore, authStore } from "$lib/stores";
+import * as m from "$lib/paraglide/messages";
+import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Progress } from "@orbis/ui/progress";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
-import { deriveSteps, type OnboardingStep } from "../onboarding-steps";
+import { deriveSteps } from "../onboarding-steps";
 
 let { orgId }: { orgId: string } = $props();
-
-const isArabic = $derived(getLocale().startsWith("ar"));
 
 let isRefreshing = $state(false);
 let isLaunching = $state(false);
@@ -31,20 +28,18 @@ async function refreshDAG() {
     await systemStore.loadReadiness();
   } catch (err: any) {
     console.error("Failed to refresh onboarding DAG state:", err);
-    errorMessage = err?.message || "Failed to calculate readiness";
+    errorMessage = err?.message || m.onboarding_step8_err_readiness();
   } finally {
     isRefreshing = false;
   }
 }
 
-const state = $derived(systemStore.onboardingState);
 const tasks = $derived(systemStore.onboardingTasks);
 const steps = $derived(deriveSteps(tasks));
 const overallProgress = $derived(systemStore.onboardingProgressPercentage);
 const isReady = $derived(systemStore.isInstitutionReady);
 const requiredTasks = $derived(tasks.filter((t) => t.is_required));
 const completedRequiredTasks = $derived(requiredTasks.filter((t) => t.status === "completed"));
-const canLaunch = $derived(completedRequiredTasks.length === requiredTasks.length || isReady);
 
 async function handleCompleteAndLaunch() {
   isLaunching = true;
@@ -60,7 +55,7 @@ async function handleCompleteAndLaunch() {
     }, 1200);
   } catch (err: any) {
     console.error("Failed to complete onboarding:", err);
-    errorMessage = err?.message || "Failed to complete setup";
+    errorMessage = err?.message || m.onboarding_step8_err_launch();
     isLaunching = false;
   }
 }
@@ -69,10 +64,8 @@ async function handleCompleteAndLaunch() {
 <div class="space-y-6">
   <OnboardingStepHeader
     stepNumber={8}
-    title="Final Review & Organization Launch"
-    titleAr="المراجعة الشاملة وإطلاق المنشأة التعليمية"
-    description="Verify that all structural, academic, financial, and operational requirements have been configured."
-    descriptionAr="تحقق من اكتمال كافة المتطلبات الهيكلية والأكاديمية والمالية والتشغيلية لإطلاق النظام."
+    title={m.onboarding_step8_title()}
+    description={m.onboarding_step8_subtitle()}
     isRequired={true}
     status={isReady ? "completed" : "in_progress"}
   />
@@ -80,7 +73,7 @@ async function handleCompleteAndLaunch() {
   {#if errorMessage}
     <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive font-medium flex items-center justify-between">
       <span>{errorMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => errorMessage = null}>✕</Button>
+      <Button variant="ghost" size="sm" onclick={() => (errorMessage = null)}>✕</Button>
     </div>
   {/if}
 
@@ -90,10 +83,10 @@ async function handleCompleteAndLaunch() {
         ✓
       </div>
       <h2 class="text-2xl font-bold text-foreground">
-        {isArabic ? "تهانينا! تم إكمال تهيئة المنشأة بنجاح" : "Congratulations! Setup is Complete"}
+        {m.onboarding_step8_congrats_title()}
       </h2>
       <p class="text-sm text-muted-foreground max-w-md mx-auto">
-        {isArabic ? "جاري نقلك إلى لوحة التحكم الرئيسية لمباشرة العمليات الأكاديمية والمالية..." : "Redirecting to your workspace dashboard to start operations..."}
+        {m.onboarding_step8_congrats_desc()}
       </p>
       <div class="flex justify-center pt-2">
         <span class="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
@@ -105,17 +98,17 @@ async function handleCompleteAndLaunch() {
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {isArabic ? "مستوى الجاهزية التشغيلية" : "Operational Readiness Score"}
+            {m.onboarding_step8_score_title()}
           </span>
           <div class="text-3xl font-extrabold text-foreground mt-1 flex items-center gap-3">
             <span>{overallProgress}%</span>
             {#if isReady}
               <Badge variant="outline" class="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs py-1 px-2.5">
-                {isArabic ? "جاهز للتشغيل الرسمي" : "Production Ready"}
+                {m.onboarding_step8_ready_badge()}
               </Badge>
             {:else}
               <Badge variant="outline" class="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs py-1 px-2.5">
-                {isArabic ? `${completedRequiredTasks.length} من ${requiredTasks.length} مهام إلزامية` : `${completedRequiredTasks.length} of ${requiredTasks.length} Required Tasks`}
+                {m.onboarding_step8_required_tasks_count({ completed: completedRequiredTasks.length, total: requiredTasks.length })}
               </Badge>
             {/if}
           </div>
@@ -128,7 +121,7 @@ async function handleCompleteAndLaunch() {
           onclick={refreshDAG}
           class="text-xs self-start sm:self-auto"
         >
-          {isRefreshing ? (isArabic ? "جاري الفحص..." : "Auditing...") : (isArabic ? "🔄 إعادة الفحص الشامل" : "🔄 Re-evaluate DAG")}
+          {isRefreshing ? m.onboarding_step8_rechecking_btn() : m.onboarding_step8_recheck_btn()}
         </Button>
       </div>
 
@@ -137,10 +130,8 @@ async function handleCompleteAndLaunch() {
 
     <!-- Stage-by-Stage Audit Matrix -->
     <OnboardingSection
-      title="Stage-by-Stage Verification Checklist"
-      titleAr="قائمة التدقيق الشامل لمراحل التهيئة"
-      description="Click on any stage to review or adjust its configuration."
-      descriptionAr="انقر على أي مرحلة لمراجعة تفاصيلها أو تعديل البيانات."
+      title={m.onboarding_step8_checklist_title()}
+      description={m.onboarding_step8_checklist_desc()}
     >
       <div class="divide-y divide-border/40 rounded-lg border border-border/50 bg-card overflow-hidden">
         {#each steps.filter((s) => s.id !== "review") as step (step.id)}
@@ -161,13 +152,13 @@ async function handleCompleteAndLaunch() {
 
               <div>
                 <div class="font-semibold text-foreground flex items-center gap-2">
-                  <span>{isArabic ? step.labelAr : step.label}</span>
+                  <span>{step.label}</span>
                   {#if step.isRequired}
                     <span class="text-[10px] text-amber-500 font-medium">*</span>
                   {/if}
                 </div>
                 <div class="text-[11px] text-muted-foreground">
-                  {isArabic ? step.descriptionAr : step.description}
+                  {step.description}
                 </div>
               </div>
             </div>
@@ -175,7 +166,7 @@ async function handleCompleteAndLaunch() {
             <div class="flex items-center gap-3">
               {#if step.status === "completed"}
                 <Badge variant="outline" class="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px]">
-                  {isArabic ? "مكتمل" : "Ready"}
+                  {m.onboarding_step8_status_ready()}
                 </Badge>
               {:else if step.status === "in_progress"}
                 <Badge variant="outline" class="border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px]">
@@ -183,7 +174,7 @@ async function handleCompleteAndLaunch() {
                 </Badge>
               {:else}
                 <Badge variant="secondary" class="text-[10px]">
-                  {isArabic ? "غير مكتمل" : "Pending"}
+                  {m.onboarding_step8_status_pending()}
                 </Badge>
               {/if}
 
@@ -193,7 +184,7 @@ async function handleCompleteAndLaunch() {
                 onclick={() => goto(`/${orgId}/onboarding/${step.route}`)}
                 class="text-xs font-medium text-primary hover:text-primary hover:bg-primary/10"
               >
-                {isArabic ? "تعديل ←" : "Configure →"}
+                {m.onboarding_step8_configure_btn()}
               </Button>
             </div>
           </div>
@@ -208,7 +199,7 @@ async function handleCompleteAndLaunch() {
         onclick={() => goto(`/${orgId}/onboarding/operations`)}
         class="text-xs w-full sm:w-auto"
       >
-        {isArabic ? "← الخطوة السابقة (العمليات)" : "← Back to Operations"}
+        {m.onboarding_step8_back_btn()}
       </Button>
 
       <div class="flex items-center gap-3 w-full sm:w-auto">
@@ -219,9 +210,7 @@ async function handleCompleteAndLaunch() {
           onclick={handleCompleteAndLaunch}
           class="text-sm font-bold w-full sm:w-auto shadow-md bg-emerald-600 hover:bg-emerald-700 text-white"
         >
-          {isLaunching
-            ? (isArabic ? "جاري إطلاق النظام..." : "Launching System...")
-            : (isArabic ? "🚀 إتمام التهيئة وبدء تشغيل المنشأة" : "🚀 Complete Setup & Launch Workspace")}
+          {isLaunching ? m.onboarding_step8_launching_btn() : m.onboarding_step8_launch_btn()}
         </Button>
       </div>
     </div>

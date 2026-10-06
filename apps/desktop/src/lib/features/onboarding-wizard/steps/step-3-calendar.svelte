@@ -1,26 +1,18 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
-import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 import { api, type AcademicYearDto, type AcademicPeriodDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 
 let { orgId }: { orgId: string } = $props();
-
-const isArabic = $derived(getLocale().startsWith("ar"));
 
 let isLoading = $state(true);
 let isSubmittingYear = $state(false);
@@ -40,20 +32,6 @@ let yearEndDate = $state("2027-06-30");
 
 // Selected Year for Period Creation
 let selectedYearId = $state<string>("");
-
-// Custom Period Form
-let periodName = $state("Semester 1");
-let periodNameAr = $state("الفصل الدراسي الأول");
-let periodType = $state("semester");
-let periodStartDate = $state("2026-09-01");
-let periodEndDate = $state("2027-01-20");
-
-const PERIOD_TYPES = [
-  { value: "semester", label: "Semester (فصل دراسي - نظام فصلي)" },
-  { value: "trimester", label: "Trimester (ثلث دراسي - نظام 3 فصول)" },
-  { value: "quarter", label: "Quarter (ربع دراسي - نظام 4 فترات)" },
-  { value: "term", label: "General Term (فترة دراسية)" },
-];
 
 const stepTasks = $derived(getTasksForStep("calendar", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
@@ -76,7 +54,7 @@ async function loadData() {
     }
   } catch (err: any) {
     console.error("Failed to load calendar data:", err);
-    errorMessage = err?.message || "Failed to load academic calendar";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isLoading = false;
   }
@@ -84,11 +62,11 @@ async function loadData() {
 
 async function handleCreateYear() {
   if (!yearName.trim() && !yearNameAr.trim()) {
-    errorMessage = isArabic ? "يرجى كتابة اسم العام الدراسي" : "Academic year name is required";
+    errorMessage = m.onboarding_step3_year_err_name();
     return;
   }
   if (!yearStartDate || !yearEndDate) {
-    errorMessage = isArabic ? "يرجى تحديد تاريخي البداية والنهاية" : "Start and end dates are required";
+    errorMessage = m.onboarding_step3_year_err_dates();
     return;
   }
 
@@ -107,10 +85,10 @@ async function handleCreateYear() {
     years = [...years, newYear];
     selectedYearId = String(newYear.id);
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? "تم إنشاء العام الدراسي بنجاح" : "Academic year created successfully";
+    successMessage = m.onboarding_step3_year_created_success();
   } catch (err: any) {
     console.error("Failed to create academic year:", err);
-    errorMessage = err?.message || "Failed to create academic year";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isSubmittingYear = false;
   }
@@ -118,7 +96,7 @@ async function handleCreateYear() {
 
 async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | "4_quarters") {
   if (!selectedYearId) {
-    errorMessage = isArabic ? "يرجى إنشاء وتحديد عام دراسي أولاً" : "Please select an academic year first";
+    errorMessage = m.onboarding_step3_period_err_year();
     return;
   }
 
@@ -158,47 +136,10 @@ async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | 
     }
 
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? "تم توليد الفصول الدراسية بنجاح" : "Academic periods generated successfully";
+    successMessage = m.onboarding_step3_periods_generated_success();
   } catch (err: any) {
     console.error("Failed to generate periods:", err);
-    errorMessage = err?.message || "Failed to generate periods";
-  } finally {
-    isSubmittingPeriod = false;
-  }
-}
-
-async function handleCreatePeriod() {
-  if (!selectedYearId) {
-    errorMessage = isArabic ? "يرجى اختيار العام الدراسي" : "Select an academic year first";
-    return;
-  }
-  if (!periodName.trim() && !periodNameAr.trim()) {
-    errorMessage = isArabic ? "يرجى كتابة اسم الفترة الدراسية" : "Period name is required";
-    return;
-  }
-
-  isSubmittingPeriod = true;
-  errorMessage = null;
-  successMessage = null;
-
-  try {
-    const newPeriod = await api.createAcademicPeriod({
-      year_id: selectedYearId,
-      name: periodName.trim() || periodNameAr.trim(),
-      name_ar: periodNameAr.trim() || undefined,
-      period_type: periodType,
-      start_date: new Date(periodStartDate).toISOString(),
-      end_date: new Date(periodEndDate).toISOString(),
-    });
-
-    periods = [...periods, newPeriod];
-    periodName = "";
-    periodNameAr = "";
-    await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? "تمت إضافة الفترة الدراسية بنجاح" : "Period created successfully";
-  } catch (err: any) {
-    console.error("Failed to create period:", err);
-    errorMessage = err?.message || "Failed to create period";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isSubmittingPeriod = false;
   }
@@ -215,10 +156,8 @@ async function handleContinue() {
 <div class="space-y-6">
   <OnboardingStepHeader
     stepNumber={3}
-    title="Academic Calendar & Evaluation Periods"
-    titleAr="التقويم الدراسي والفصول والتقييمات"
-    description="Configure the primary academic operational year, semesters/terms, and grading milestones."
-    descriptionAr="حدد العام الدراسي التشغيلي والفصول الدراسية وفترات التقييم ورصد الدرجات."
+    title={m.onboarding_step3_title()}
+    description={m.onboarding_step3_subtitle()}
     isRequired={true}
     status={isTaskComplete ? "completed" : years.length > 0 ? "in_progress" : "not_started"}
   />
@@ -240,16 +179,14 @@ async function handleContinue() {
   {#if isLoading}
     <div class="flex items-center justify-center p-12 text-muted-foreground text-sm gap-2">
       <span class="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
-      <span>{isArabic ? "جاري تحميل بيانات التقويم..." : "Loading academic calendar..."}</span>
+      <span>{m.common_control_loading()}</span>
     </div>
   {:else}
     <!-- Section 1: Academic Year -->
     <OnboardingSection
-      title="Active Academic Year"
-      titleAr="العام الدراسي النشط"
-      description="Create the primary operational academic year."
-      descriptionAr="أنشئ العام الدراسي النشط الذي سترتبط به جميع الفصول والمواد وسجلات الطلاب."
-      badge={years.length > 0 ? `${years.length} ${isArabic ? "عام دراسي" : "Academic Year(s)"}` : undefined}
+      title={m.onboarding_step3_year_title()}
+      description={m.onboarding_step3_year_desc()}
+      badge={years.length > 0 ? `${years.length}` : undefined}
       isComplete={years.length > 0}
     >
       <div class="space-y-4">
@@ -258,7 +195,7 @@ async function handleContinue() {
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "اسم العام (بالإنجليزية / اللاتينية) *" : "Academic Year Name (English) *"}
+                {m.onboarding_step3_year_name_en()}
               </Label>
               <Input
                 bind:value={yearName}
@@ -268,7 +205,7 @@ async function handleContinue() {
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "اسم العام بالعربية" : "Academic Year Name (Arabic)"}
+                {m.onboarding_step3_year_name_ar()}
               </Label>
               <Input
                 bind:value={yearNameAr}
@@ -278,7 +215,7 @@ async function handleContinue() {
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "تاريخ بدء العام الدراسي *" : "Start Date *"}
+                {m.onboarding_step3_start_date()}
               </Label>
               <Input
                 type="date"
@@ -287,7 +224,7 @@ async function handleContinue() {
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "تاريخ نهاية العام الدراسي *" : "End Date *"}
+                {m.onboarding_step3_end_date()}
               </Label>
               <Input
                 type="date"
@@ -304,7 +241,7 @@ async function handleContinue() {
               onclick={handleCreateYear}
               class="text-xs font-semibold"
             >
-              {isSubmittingYear ? (isArabic ? "جاري الإنشاء..." : "Creating...") : (isArabic ? "+ إنشاء العام الدراسي" : "+ Create Academic Year")}
+              {isSubmittingYear ? m.onboarding_step3_creating_btn() : m.onboarding_step3_create_year_btn()}
             </Button>
           </div>
         </div>
@@ -313,7 +250,7 @@ async function handleContinue() {
         {#if years.length > 0}
           <div class="space-y-2">
             <span class="text-xs font-semibold text-muted-foreground uppercase">
-              {isArabic ? "السنوات الدراسية المسجلة" : "Configured Academic Years"}
+              {m.onboarding_step3_configured_years()}
             </span>
             <div class="divide-y divide-border/40 rounded-lg border border-border/50 bg-card overflow-hidden">
               {#each years as yr (yr.id)}
@@ -324,10 +261,7 @@ async function handleContinue() {
                     </span>
                     <div>
                       <div class="font-medium text-foreground">
-                        {isArabic && yr.name_ar ? yr.name_ar : yr.name}
-                        {#if !isArabic && yr.name_ar}
-                          <span class="text-muted-foreground text-[11px] font-sans ml-1">({yr.name_ar})</span>
-                        {/if}
+                        {yr.name_ar || yr.name}
                       </div>
                       <div class="text-[11px] font-mono text-muted-foreground">
                         {yr.start_date.split('T')[0]} → {yr.end_date.split('T')[0]}
@@ -335,7 +269,7 @@ async function handleContinue() {
                     </div>
                   </div>
                   <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]">
-                    {isArabic ? "نشط" : "Active"}
+                    {m.onboarding_active_badge()}
                   </Badge>
                 </div>
               {/each}
@@ -347,21 +281,19 @@ async function handleContinue() {
 
     <!-- Section 2: Academic Terms / Periods -->
     <OnboardingSection
-      title="Terms & Evaluation Periods"
-      titleAr="الفصول والفترات الدراسية"
-      description="Divide the academic year into semesters, trimesters, or quarters."
-      descriptionAr="قسّم العام الدراسي إلى فصول أو أثلاث دراسية لرصد الدرجات والتقارير الدورية."
-      badge={periods.length > 0 ? `${periods.length} ${isArabic ? "فترة مسجلة" : "Periods"}` : undefined}
+      title={m.onboarding_step3_periods_title()}
+      description={m.onboarding_step3_periods_desc()}
+      badge={periods.length > 0 ? `${periods.length}` : undefined}
       isComplete={periods.length > 0}
     >
       <div class="space-y-4">
         <!-- Quick Preset Generator Buttons -->
         <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
           <div class="text-xs font-semibold text-foreground">
-            ⚡ {isArabic ? "التوليد السريع لنظام الفصول" : "Quick Preset Schemes"}
+            ⚡ {m.onboarding_step3_quick_schemes()}
           </div>
           <p class="text-xs text-muted-foreground">
-            {isArabic ? "اختر نظام الفصول المعتمد لتوليد فترات العام بنقرة واحدة:" : "Choose your institution's system to generate periods automatically:"}
+            {m.onboarding_step3_quick_schemes_desc()}
           </p>
           <div class="flex flex-wrap gap-2">
             <Button
@@ -371,7 +303,7 @@ async function handleContinue() {
               onclick={() => handleGenerateSemesters("2_semesters")}
               class="text-xs bg-background hover:bg-muted"
             >
-              {isArabic ? "نظام الفصلين (Semesters 2)" : "2 Semesters (فصلان)"}
+              {m.onboarding_step3_2_semesters()}
             </Button>
             <Button
               variant="outline"
@@ -380,7 +312,7 @@ async function handleContinue() {
               onclick={() => handleGenerateSemesters("3_trimesters")}
               class="text-xs bg-background hover:bg-muted"
             >
-              {isArabic ? "نظام 3 فصول (Trimesters 3)" : "3 Trimesters (3 فصول)"}
+              {m.onboarding_step3_3_trimesters()}
             </Button>
             <Button
               variant="outline"
@@ -389,7 +321,7 @@ async function handleContinue() {
               onclick={() => handleGenerateSemesters("4_quarters")}
               class="text-xs bg-background hover:bg-muted"
             >
-              {isArabic ? "نظام 4 فترات (Quarters 4)" : "4 Quarters (4 فترات)"}
+              {m.onboarding_step3_4_quarters()}
             </Button>
           </div>
         </div>
@@ -398,7 +330,7 @@ async function handleContinue() {
         {#if periods.length > 0}
           <div class="space-y-2">
             <span class="text-xs font-semibold text-muted-foreground uppercase">
-              {isArabic ? "الفترات والفصول المقيدة" : "Configured Periods"}
+              {m.onboarding_step3_configured_periods()}
             </span>
             <div class="grid gap-2 sm:grid-cols-2">
               {#each periods as p (p.id)}
@@ -409,7 +341,7 @@ async function handleContinue() {
                     </span>
                     <div>
                       <div class="font-medium text-foreground">
-                        {isArabic && p.name_ar ? p.name_ar : p.name}
+                        {p.name_ar || p.name}
                       </div>
                       <div class="text-[10px] text-muted-foreground">
                         {p.start_date.split('T')[0]} → {p.end_date.split('T')[0]}
@@ -434,7 +366,7 @@ async function handleContinue() {
         onclick={() => goto(`/${orgId}/onboarding/structure`)}
         class="text-xs"
       >
-        {isArabic ? "← الخطوة السابقة (الهيكل)" : "← Back to Structure"}
+        {m.onboarding_step3_back_btn()}
       </Button>
 
       <div class="flex items-center gap-3">
@@ -444,7 +376,7 @@ async function handleContinue() {
           onclick={handleContinue}
           class="text-xs font-semibold shadow-xs"
         >
-          {isArabic ? "متابعة إلى البنية الأكاديمية →" : "Continue to Academic Structure →"}
+          {m.onboarding_step3_continue_btn()}
         </Button>
       </div>
     </div>

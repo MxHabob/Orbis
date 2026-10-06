@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
-import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 import { api, type OrgUnitDto, type RoomDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
@@ -19,8 +19,6 @@ import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 
 let { orgId }: { orgId: string } = $props();
-
-const isArabic = $derived(getLocale().startsWith("ar"));
 
 let isLoading = $state(true);
 let isSubmittingUnit = $state(false);
@@ -74,7 +72,7 @@ async function loadData() {
     rooms = roomsRes;
   } catch (err: any) {
     console.error("Failed to load structure data:", err);
-    errorMessage = err?.message || "Failed to load organizational structure";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isLoading = false;
   }
@@ -82,7 +80,7 @@ async function loadData() {
 
 async function handleCreateUnit() {
   if (!unitName.trim() && !unitNameAr.trim()) {
-    errorMessage = isArabic ? "يرجى كتابة اسم الفرع أو المقر" : "Branch/Campus name is required";
+    errorMessage = m.onboarding_step2_branch_err_name();
     return;
   }
 
@@ -105,10 +103,10 @@ async function handleCreateUnit() {
     unitNameAr = "";
     unitCode = `BR-0${orgUnits.length + 1}`;
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? "تمت إضافة الفرع بنجاح" : "Branch created successfully";
+    successMessage = m.onboarding_step2_branch_created_success();
   } catch (err: any) {
     console.error("Failed to create unit:", err);
-    errorMessage = err?.message || "Failed to create organizational unit";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isSubmittingUnit = false;
   }
@@ -116,7 +114,7 @@ async function handleCreateUnit() {
 
 async function handleCreateRoom() {
   if (!roomName.trim() && !roomNameAr.trim() && !roomNumber.trim()) {
-    errorMessage = isArabic ? "يرجى كتابة اسم أو رقم القاعة" : "Room name or number is required";
+    errorMessage = m.onboarding_step2_room_err_name();
     return;
   }
 
@@ -140,17 +138,16 @@ async function handleCreateRoom() {
     roomNameAr = "";
     roomNumber = `R-10${rooms.length + 1}`;
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? "تمت إضافة المرفق التعليمي بنجاح" : "Room created successfully";
+    successMessage = m.onboarding_step2_room_created_success();
   } catch (err: any) {
     console.error("Failed to create room:", err);
-    errorMessage = err?.message || "Failed to create room";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isSubmittingRoom = false;
   }
 }
 
 async function handleContinue() {
-  // If user hasn't added any branch and form has data, submit it first
   if (orgUnits.length === 0 && (unitName.trim() || unitNameAr.trim())) {
     await handleCreateUnit();
   }
@@ -161,10 +158,8 @@ async function handleContinue() {
 <div class="space-y-6">
   <OnboardingStepHeader
     stepNumber={2}
-    title="Organizational Structure & Physical Facilities"
-    titleAr="الهيكل التنظيمي والمرافق التعليمية"
-    description="Establish your primary operational branches, campuses, buildings, and teaching facilities/rooms."
-    descriptionAr="أنشئ الفروع والمقرات الرئيسية وقاعات التدريس والمختبرات والمرافق الملحقة."
+    title={m.onboarding_step2_title()}
+    description={m.onboarding_step2_subtitle()}
     isRequired={true}
     status={isTaskComplete ? "completed" : orgUnits.length > 0 ? "in_progress" : "not_started"}
   />
@@ -186,16 +181,14 @@ async function handleContinue() {
   {#if isLoading}
     <div class="flex items-center justify-center p-12 text-muted-foreground text-sm gap-2">
       <span class="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
-      <span>{isArabic ? "جاري تحميل البيانات..." : "Loading organizational structure..."}</span>
+      <span>{m.common_control_loading()}</span>
     </div>
   {:else}
     <!-- Section 1: Branches & Campuses -->
     <OnboardingSection
-      title="Campuses & Branches"
-      titleAr="الفروع والمقرات الرئيسية"
-      description="Define at least one main branch or campus for this institution."
-      descriptionAr="أضف فرعاً واحداً على الأقل ليكون المقر الرئيسي أو الفرع التعليمي للطلاب."
-      badge={orgUnits.length > 0 ? `${orgUnits.length} ${isArabic ? "فرع مسجل" : "Branches"}` : undefined}
+      title={m.onboarding_step2_branch_title()}
+      description={m.onboarding_step2_branch_desc()}
+      badge={orgUnits.length > 0 ? `${orgUnits.length}` : undefined}
       isComplete={orgUnits.length > 0}
     >
       <div class="space-y-4">
@@ -204,27 +197,27 @@ async function handleContinue() {
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "اسم الفرع (بالإنكليزية / اللاتينية) *" : "Branch Name (English) *"}
+                {m.onboarding_step2_branch_name_en()}
               </Label>
               <Input
                 bind:value={unitName}
-                placeholder="e.g. Main Campus"
+                placeholder={m.onboarding_step2_branch_name_en_placeholder()}
                 dir="ltr"
               />
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "اسم الفرع (بالعربية)" : "Branch Name (Arabic)"}
+                {m.onboarding_step2_branch_name_ar()}
               </Label>
               <Input
                 bind:value={unitNameAr}
-                placeholder="مثال: الفرع الرئيسي - الرياض"
+                placeholder={m.onboarding_step2_branch_name_ar_placeholder()}
                 dir="rtl"
               />
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "رمز الفرع" : "Branch Code"}
+                {m.onboarding_step2_branch_code()}
               </Label>
               <Input
                 bind:value={unitCode}
@@ -235,7 +228,7 @@ async function handleContinue() {
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "الطاقة الاستيعابية التقديرية (طالب)" : "Estimated Student Capacity"}
+                {m.onboarding_step2_branch_capacity()}
               </Label>
               <Input
                 type="number"
@@ -253,7 +246,7 @@ async function handleContinue() {
               onclick={handleCreateUnit}
               class="text-xs font-semibold"
             >
-              {isSubmittingUnit ? (isArabic ? "جاري الإضافة..." : "Adding...") : (isArabic ? "+ إضافة الفرع" : "+ Add Branch")}
+              {isSubmittingUnit ? m.onboarding_step2_adding_btn() : m.onboarding_step2_add_branch_btn()}
             </Button>
           </div>
         </div>
@@ -262,7 +255,7 @@ async function handleContinue() {
         {#if orgUnits.length > 0}
           <div class="space-y-2">
             <span class="text-xs font-semibold text-muted-foreground uppercase">
-              {isArabic ? "الفروع المسجلة" : "Configured Branches"}
+              {m.onboarding_step2_configured_branches()}
             </span>
             <div class="divide-y divide-border/40 rounded-lg border border-border/50 bg-card overflow-hidden">
               {#each orgUnits as unit (unit.id)}
@@ -273,24 +266,21 @@ async function handleContinue() {
                     </span>
                     <div>
                       <div class="font-medium text-foreground">
-                        {isArabic && unit.name_ar ? unit.name_ar : unit.name}
-                        {#if !isArabic && unit.name_ar}
-                          <span class="text-muted-foreground text-[11px] font-sans ml-1">({unit.name_ar})</span>
-                        {/if}
+                        {unit.name_ar || unit.name}
                       </div>
                       <div class="text-[11px] font-mono text-muted-foreground">
-                        Code: {unit.code || "—"} | {unit.unit_type || "branch"}
+                        {unit.code || "—"} | {unit.unit_type || "branch"}
                       </div>
                     </div>
                   </div>
                   <div class="flex items-center gap-2">
                     {#if unit.capacity}
                       <Badge variant="secondary" class="text-[10px]">
-                        {unit.capacity} {isArabic ? "طالب" : "capacity"}
+                        {unit.capacity} {m.onboarding_step2_students_suffix()}
                       </Badge>
                     {/if}
                     <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]">
-                      {isArabic ? "نشط" : "Active"}
+                      {m.onboarding_active_badge()}
                     </Badge>
                   </div>
                 </div>
@@ -303,11 +293,9 @@ async function handleContinue() {
 
     <!-- Section 2: Rooms & Physical Facilities -->
     <OnboardingSection
-      title="Teaching Facilities & Classrooms"
-      titleAr="المرافق والقاعات التعليمية"
-      description="Add the initial classrooms, lecture halls, or computer labs for student scheduling."
-      descriptionAr="أضف الفصول الدراسية وقاعات المحاضرات والمختبرات لإسناد الجداول والحصص الدراسية."
-      badge={rooms.length > 0 ? `${rooms.length} ${isArabic ? "قاعة مسجلة" : "Rooms"}` : undefined}
+      title={m.onboarding_step2_room_title()}
+      description={m.onboarding_step2_room_desc()}
+      badge={rooms.length > 0 ? `${rooms.length}` : undefined}
       isComplete={rooms.length > 0}
     >
       <div class="space-y-4">
@@ -316,16 +304,16 @@ async function handleContinue() {
           <div class="grid gap-3 sm:grid-cols-3">
             <div class="space-y-1.5 sm:col-span-2">
               <Label class="text-xs font-medium">
-                {isArabic ? "اسم القاعة أو الفصل *" : "Room / Classroom Name *"}
+                {m.onboarding_step2_room_name()}
               </Label>
               <Input
                 bind:value={roomName}
-                placeholder="e.g. Classroom 101 / قاعة 101"
+                placeholder={m.onboarding_step2_room_name_placeholder()}
               />
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "رقم القاعة *" : "Room Number *"}
+                {m.onboarding_step2_room_number()}
               </Label>
               <Input
                 bind:value={roomNumber}
@@ -335,7 +323,7 @@ async function handleContinue() {
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "نوع المرفق" : "Facility Type"}
+                {m.onboarding_step2_room_type()}
               </Label>
               <Select type="single" bind:value={roomType}>
                 <SelectTrigger class="w-full">
@@ -350,7 +338,7 @@ async function handleContinue() {
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "سعة القاعة (طالب)" : "Capacity (Seats)"}
+                {m.onboarding_step2_room_capacity()}
               </Label>
               <Input
                 type="number"
@@ -360,11 +348,11 @@ async function handleContinue() {
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "المبنى / الجناح" : "Building / Wing"}
+                {m.onboarding_step2_room_building()}
               </Label>
               <Input
                 bind:value={roomBuilding}
-                placeholder="Building A"
+                placeholder={m.onboarding_step2_room_building_placeholder()}
               />
             </div>
           </div>
@@ -377,7 +365,7 @@ async function handleContinue() {
               onclick={handleCreateRoom}
               class="text-xs font-semibold"
             >
-              {isSubmittingRoom ? (isArabic ? "جاري الإضافة..." : "Adding...") : (isArabic ? "+ إضافة القاعة" : "+ Add Room")}
+              {isSubmittingRoom ? m.onboarding_step2_adding_btn() : m.onboarding_step2_add_room_btn()}
             </Button>
           </div>
         </div>
@@ -386,7 +374,7 @@ async function handleContinue() {
         {#if rooms.length > 0}
           <div class="space-y-2">
             <span class="text-xs font-semibold text-muted-foreground uppercase">
-              {isArabic ? "القاعات المسجلة" : "Configured Facilities"}
+              {m.onboarding_step2_configured_rooms()}
             </span>
             <div class="grid gap-2 sm:grid-cols-2">
               {#each rooms as room (room.id)}
@@ -396,14 +384,14 @@ async function handleContinue() {
                       🚪
                     </span>
                     <div>
-                      <div class="font-medium text-foreground">{room.name || room.room_number}</div>
+                      <div class="font-medium text-foreground">{room.name_ar || room.name || room.room_number}</div>
                       <div class="text-[10px] text-muted-foreground capitalize">
                         {room.room_type || "classroom"} {room.building ? `(${room.building})` : ""}
                       </div>
                     </div>
                   </div>
                   <Badge variant="secondary" class="text-[10px]">
-                    {room.capacity || 30} {isArabic ? "مقعد" : "seats"}
+                    {room.capacity || 30} {m.onboarding_step2_seats_suffix()}
                   </Badge>
                 </div>
               {/each}
@@ -420,7 +408,7 @@ async function handleContinue() {
         onclick={() => goto(`/${orgId}/onboarding/organization`)}
         class="text-xs"
       >
-        {isArabic ? "← الخطوة السابقة (المنشأة)" : "← Back to Organization"}
+        {m.onboarding_step2_back_btn()}
       </Button>
 
       <div class="flex items-center gap-3">
@@ -430,7 +418,7 @@ async function handleContinue() {
           onclick={handleContinue}
           class="text-xs font-semibold shadow-xs"
         >
-          {isArabic ? "متابعة إلى التقويم الدراسي →" : "Continue to Academic Calendar →"}
+          {m.onboarding_step2_continue_btn()}
         </Button>
       </div>
     </div>

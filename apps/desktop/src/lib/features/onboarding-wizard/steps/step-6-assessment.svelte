@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
-import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 import { api, type AssessmentSchemeDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
@@ -20,8 +20,6 @@ import { getTasksForStep } from "../onboarding-steps";
 
 let { orgId }: { orgId: string } = $props();
 
-const isArabic = $derived(getLocale().startsWith("ar"));
-
 let isLoading = $state(true);
 let isSubmitting = $state(false);
 let errorMessage = $state<string | null>(null);
@@ -37,12 +35,12 @@ let scaleType = $state("percentage");
 let maxScore = $state<number>(100);
 let passingScore = $state<number>(50);
 
-const SCALE_TYPES = [
-  { value: "percentage", label: "Percentage 0–100% (نسبة مئوية)" },
-  { value: "gpa_4", label: "4.0 GPA Scale (معدل تراكمي 4.0)" },
-  { value: "gpa_5", label: "5.0 GPA Scale (معدل تراكمي 5.0)" },
-  { value: "letter", label: "Letter Grade A–F (حروف تقديرية)" },
-];
+const scaleTypes = $derived([
+  { value: "percentage", label: m.onboarding_step6_scale_percentage() },
+  { value: "gpa_4", label: m.onboarding_step6_scale_gpa4() },
+  { value: "gpa_5", label: m.onboarding_step6_scale_gpa5() },
+  { value: "letter", label: m.onboarding_step6_scale_letter() },
+]);
 
 const PRESET_SCHEMES = [
   {
@@ -95,7 +93,7 @@ async function loadData() {
     schemes = await api.listAssessmentSchemes().catch(() => []);
   } catch (err: any) {
     console.error("Failed to load assessment schemes:", err);
-    errorMessage = err?.message || "Failed to load assessment settings";
+    errorMessage = err?.message || m.onboarding_step6_err_load();
   } finally {
     isLoading = false;
   }
@@ -103,7 +101,7 @@ async function loadData() {
 
 async function handleCreateScheme() {
   if (!schemeName.trim() && !schemeNameAr.trim()) {
-    errorMessage = isArabic ? "يرجى كتابة اسم خطة التقييم" : "Assessment scheme name is required";
+    errorMessage = m.onboarding_step6_scheme_err_name();
     return;
   }
 
@@ -133,10 +131,10 @@ async function handleCreateScheme() {
     schemeName = "";
     schemeNameAr = "";
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? "تم إنشاء خطة التقييم بنجاح" : "Assessment scheme created successfully";
+    successMessage = m.onboarding_step6_scheme_created_success();
   } catch (err: any) {
     console.error("Failed to create assessment scheme:", err);
-    errorMessage = err?.message || "Failed to create assessment scheme";
+    errorMessage = err?.message || m.onboarding_step6_err_create();
   } finally {
     isSubmitting = false;
   }
@@ -168,10 +166,10 @@ async function handleAddPresetScheme(preset: typeof PRESET_SCHEMES[0]) {
 
     schemes = [...schemes, created];
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? `تم اعتماد ${preset.nameAr}` : `Applied ${preset.name}`;
+    successMessage = m.onboarding_step6_preset_applied({ name: preset.name });
   } catch (err: any) {
     console.error("Failed to add preset scheme:", err);
-    errorMessage = err?.message || "Failed to add assessment scheme";
+    errorMessage = err?.message || m.onboarding_step6_err_create();
   } finally {
     isSubmitting = false;
   }
@@ -188,10 +186,8 @@ async function handleContinue() {
 <div class="space-y-6">
   <OnboardingStepHeader
     stepNumber={6}
-    title="Assessment & Grading Schemes"
-    titleAr="خطط التقييم والدرجات والسياسات الأكاديمية"
-    description="Establish your academic grading scale, passing score thresholds, and exam component weights."
-    descriptionAr="حدد مقياس الدرجات المعتمد، درجات النجاح، وأوزان الاختبارات وأعمال الفصل."
+    title={m.onboarding_step6_title()}
+    description={m.onboarding_step6_subtitle()}
     isRequired={true}
     status={isTaskComplete ? "completed" : schemes.length > 0 ? "in_progress" : "not_started"}
   />
@@ -199,30 +195,28 @@ async function handleContinue() {
   {#if errorMessage}
     <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive font-medium flex items-center justify-between">
       <span>{errorMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => errorMessage = null}>✕</Button>
+      <Button variant="ghost" size="sm" onclick={() => (errorMessage = null)}>✕</Button>
     </div>
   {/if}
 
   {#if successMessage}
     <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center justify-between">
       <span>{successMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => successMessage = null}>✕</Button>
+      <Button variant="ghost" size="sm" onclick={() => (successMessage = null)}>✕</Button>
     </div>
   {/if}
 
   {#if isLoading}
     <div class="flex items-center justify-center p-12 text-muted-foreground text-sm gap-2">
       <span class="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
-      <span>{isArabic ? "جاري تحميل خطط التقييم..." : "Loading assessment schemes..."}</span>
+      <span>{m.onboarding_step6_loading()}</span>
     </div>
   {:else}
     <!-- Section 1: Presets & Custom Scheme -->
     <OnboardingSection
-      title="Grading Systems & Evaluation Standards"
-      titleAr="أنظمة التقييم والدرجات المعتمدة"
-      description="Choose a pre-configured grading scale or create a custom grading scheme."
-      descriptionAr="اختر نظام التقييم المناسب لمنشأتك أو أنشئ خطة درجات مخصصة."
-      badge={schemes.length > 0 ? `${schemes.length} ${isArabic ? "نظام معتمد" : "Schemes"}` : undefined}
+      title={m.onboarding_step6_schemes_title()}
+      description={m.onboarding_step6_schemes_desc()}
+      badge={schemes.length > 0 ? m.onboarding_step6_schemes_count({ count: schemes.length }) : undefined}
       isComplete={schemes.length > 0}
     >
       <div class="space-y-4">
@@ -230,17 +224,17 @@ async function handleContinue() {
         {#if schemes.length === 0}
           <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
             <div class="text-xs font-semibold text-foreground">
-              🎯 {isArabic ? "اعتماد نظام درجات قياسي بنقرة واحدة" : "Adopt Standard Grading Schemes"}
+              🎯 {m.onboarding_step6_quick_schemes()}
             </div>
             <div class="grid gap-2 sm:grid-cols-3">
               {#each PRESET_SCHEMES as preset}
                 <div class="rounded-lg border border-border/60 bg-card p-3 flex flex-col justify-between gap-3 text-xs">
                   <div>
                     <div class="font-semibold text-foreground">
-                      {isArabic ? preset.nameAr : preset.name}
+                      {preset.name}
                     </div>
                     <div class="text-[11px] text-muted-foreground mt-1">
-                      {isArabic ? `الدرجة العظمى: ${preset.max} | النجاح: ${preset.pass}` : `Max: ${preset.max} | Pass: ${preset.pass}`}
+                      {m.onboarding_step6_max_pass_desc({ max: preset.max, pass: preset.pass })}
                     </div>
                   </div>
                   <Button
@@ -250,7 +244,7 @@ async function handleContinue() {
                     onclick={() => handleAddPresetScheme(preset)}
                     class="text-xs font-semibold w-full bg-background"
                   >
-                    {isArabic ? "اعتماد هذا النظام" : "Adopt Scheme"}
+                    {m.onboarding_step6_adopt_scheme_btn()}
                   </Button>
                 </div>
               {/each}
@@ -263,34 +257,34 @@ async function handleContinue() {
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "اسم خطة التقييم (بالإنكليزية) *" : "Scheme Name (English) *"}
+                {m.onboarding_step6_scheme_name_en()}
               </Label>
               <Input
                 bind:value={schemeName}
-                placeholder="e.g. Standard 100-Point Grading Scheme"
+                placeholder={m.onboarding_step6_scheme_name_en_placeholder()}
                 dir="ltr"
               />
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "اسم خطة التقييم بالعربية" : "Scheme Name (Arabic)"}
+                {m.onboarding_step6_scheme_name_ar()}
               </Label>
               <Input
                 bind:value={schemeNameAr}
-                placeholder="مثال: نظام التقييم والدرجات المئوي المعتمد"
+                placeholder={m.onboarding_step6_scheme_name_ar_placeholder()}
                 dir="rtl"
               />
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "نوع المقياس" : "Scale Type"}
+                {m.onboarding_step6_scale_type()}
               </Label>
               <Select type="single" bind:value={scaleType}>
                 <SelectTrigger class="w-full">
-                  {SCALE_TYPES.find((s) => s.value === scaleType)?.label || scaleType}
+                  {scaleTypes.find((s) => s.value === scaleType)?.label || scaleType}
                 </SelectTrigger>
                 <SelectContent>
-                  {#each SCALE_TYPES as s}
+                  {#each scaleTypes as s}
                     <SelectItem value={s.value}>{s.label}</SelectItem>
                   {/each}
                 </SelectContent>
@@ -299,7 +293,7 @@ async function handleContinue() {
             <div class="grid grid-cols-2 gap-2">
               <div class="space-y-1.5">
                 <Label class="text-xs font-medium">
-                  {isArabic ? "الدرجة العظمى" : "Max Score"}
+                  {m.onboarding_step6_max_score()}
                 </Label>
                 <Input
                   type="number"
@@ -309,7 +303,7 @@ async function handleContinue() {
               </div>
               <div class="space-y-1.5">
                 <Label class="text-xs font-medium">
-                  {isArabic ? "درجة النجاح" : "Passing Score"}
+                  {m.onboarding_step6_passing_score()}
                 </Label>
                 <Input
                   type="number"
@@ -328,7 +322,7 @@ async function handleContinue() {
               onclick={handleCreateScheme}
               class="text-xs font-semibold"
             >
-              {isSubmitting ? (isArabic ? "جاري الإنشاء..." : "Creating...") : (isArabic ? "+ إنشاء خطة التقييم" : "+ Create Scheme")}
+              {isSubmitting ? m.onboarding_step6_creating_btn() : m.onboarding_step6_create_scheme_btn()}
             </Button>
           </div>
         </div>
@@ -337,21 +331,21 @@ async function handleContinue() {
         {#if schemes.length > 0}
           <div class="space-y-2">
             <span class="text-xs font-semibold text-muted-foreground uppercase">
-              {isArabic ? "خطط التقييم المعتمدة" : "Configured Assessment Schemes"}
+              {m.onboarding_step6_configured_schemes()}
             </span>
             <div class="grid gap-2 sm:grid-cols-2">
               {#each schemes as sc (sc.id)}
                 <div class="flex items-center justify-between rounded-lg border border-border/50 bg-card p-3 text-xs">
                   <div>
                     <div class="font-medium text-foreground">
-                      {isArabic && sc.name_ar ? sc.name_ar : sc.name}
+                      {sc.name_ar || sc.name}
                     </div>
                     <div class="text-[10px] text-muted-foreground">
-                      {sc.scale_type || "percentage"} | {isArabic ? `النجاح: ${sc.passing_score}` : `Passing: ${sc.passing_score}`}
+                      {sc.scale_type || "percentage"} | {m.onboarding_step6_passing_label({ score: sc.passing_score })}
                     </div>
                   </div>
                   <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]">
-                    {isArabic ? "نشط" : "Active"}
+                    {m.onboarding_step6_active_badge()}
                   </Badge>
                 </div>
               {/each}
@@ -368,7 +362,7 @@ async function handleContinue() {
         onclick={() => goto(`/${orgId}/onboarding/finance`)}
         class="text-xs"
       >
-        {isArabic ? "← الخطوة السابقة (المالية)" : "← Back to Finance"}
+        {m.onboarding_step6_back_btn()}
       </Button>
 
       <div class="flex items-center gap-3">
@@ -378,7 +372,7 @@ async function handleContinue() {
           onclick={handleContinue}
           class="text-xs font-semibold shadow-xs"
         >
-          {isArabic ? "متابعة إلى العمليات والتسجيل →" : "Continue to Operations →"}
+          {m.onboarding_step6_continue_btn()}
         </Button>
       </div>
     </div>
