@@ -107,37 +107,34 @@
   <div class="flex-1 h-full min-w-0" data-tauri-drag-region></div>
 
   <!-- End Side: Header Buttons, Sync Indicator, Theme, Focus Mode, Window Controls -->
-  <div class="flex items-center gap-2 shrink-0" data-tauri-drag-region>
+  <div class="flex items-center gap-1.5 shrink-0" data-tauri-drag-region>
     {#if authStore.isAuthenticated}
-      <!-- Search Button (Original Header Design) -->
       <Button
         variant="outline"
-        size="sm"
+        size="default"
         onclick={() => uiStore.setSearch(true)}
-        class="font-semibold text-xs text-foreground rounded-xl px-3 gap-2 shrink-0"
+        class="shrink-0"
         title={m.common_header_search_title()}
         aria-label={m.shared_ui_search()}
       >
-        <Search size={14} class="text-muted-foreground stroke-[2px]" />
-        <span class="whitespace-nowrap">{m.common_header_search()}</span>
-        <Kbd class="ml-1">{m.common_header_search_shortcut()}</Kbd>
+        <Search size={14} class="text-muted-foreground" />
+        <span>{m.common_header_search()}</span>
+        <Kbd>{m.common_header_search_shortcut()}</Kbd>
       </Button>
 
-      <!-- Ask Orbis Button (Original Header Design) -->
       <Button
         variant="outline"
-        size="sm"
-        class="font-semibold text-xs text-foreground px-3 gap-2 shrink-0 {uiStore.showAskOrbis
-          ? 'bg-zinc-150 dark:bg-zinc-850/80 border-zinc-300 dark:border-zinc-700/80 text-foreground font-bold'
-          : ''}"
+        size="default"
+        class="shrink-0"
         title={m.shared_ui_ask_orbis()}
         aria-label={m.shared_ui_ask_orbis()}
         onclick={() => uiStore.toggleAskOrbis()}
+        aria-pressed={uiStore.showAskOrbis}
       >
         <svg
           width="14"
           height="14"
-          class="text-foreground shrink-0 stroke-[2px]"
+          class="text-muted-foreground shrink-0"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -150,15 +147,15 @@
           <path d="M12 15a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
         </svg>
         <span class="whitespace-nowrap">{m.shared_ui_ask_orbis()}</span>
-        <Kbd class="ml-1">Ctrl /</Kbd>
+        <Kbd>Ctrl /</Kbd>
       </Button>
 
       <!-- Workflow Inbox AppNotification -->
       {#if workflowInbox.hasActions}
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon-sm"
-          class="relative rounded-xl shrink-0"
+          class="relative shrink-0"
           title={m.common_titlebar_inbox()}
           onclick={() => {
             const orgId = authStore.orgId;
@@ -177,7 +174,7 @@
         </Button>
       {:else}
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon-sm"
           title={m.common_titlebar_inbox()}
           onclick={() => {
@@ -201,14 +198,13 @@
       variant="outline"
       size="icon-sm"
       onclick={() => themeStore.toggle()}
-      class="cursor-pointer"
       title={m.common_titlebar_theme_toggle()}
       aria-label={m.common_titlebar_theme_toggle()}
     >
       {#if themeStore.resolved === "dark"}
-        <Sun size={14} class="stroke-[2px] text-amber-400" />
+        <Sun size={14} class="text-muted-foreground" />
       {:else}
-        <Moon size={14} class="stroke-[2px] text-indigo-500" />
+        <Moon size={14} class="text-muted-foreground" />
       {/if}
     </Button>
 
@@ -216,11 +212,11 @@
     {#if authStore.isAuthenticated}
       <Button
         variant={uiStore.focusMode ? "default" : "outline"}
-        size="sm"
+        size="default"
         onclick={() => uiStore.toggleFocusMode()}
         title={m.common_titlebar_focus_mode_tooltip()}
         aria-label={m.common_titlebar_focus_mode_tooltip()}
-        class="cursor-pointer"
+        aria-pressed={uiStore.focusMode}
       >
         <span class="hidden sm:inline">{m.common_titlebar_focus_mode()}</span>
       </Button>
@@ -232,21 +228,21 @@
         class="flex items-center border-s border-border/40 ms-1.5 ps-1.5 h-6 gap-0.5"
       >
         <!-- Minimize -->
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onclick={() => appWindow.minimize()}
-          class="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
           title={m.common_titlebar_minimize()}
           aria-label={m.shared_ui_minimize()}
         >
           <Minus size={13} class="stroke-[2px]" />
-        </button>
+        </Button>
 
         <!-- Expand / Restore -->
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onclick={() => appWindow.toggleMaximize()}
-          class="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
           title={isMaximized
             ? m.common_titlebar_restore()
             : m.common_titlebar_maximize()}
@@ -257,18 +253,19 @@
           {:else}
             <Maximize size={12} class="stroke-[1.6]" />
           {/if}
-        </button>
+        </Button>
 
         <!-- Close -->
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onclick={() => appWindow.close()}
-          class="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors cursor-pointer"
+          class="hover:bg-destructive hover:text-destructive-foreground"
           title={m.common_titlebar_close()}
           aria-label={m.shared_ui_close_window()}
         >
           <XMark size={13} class="stroke-[2px]" />
-        </button>
+        </Button>
       </div>
     {/if}
   </div>
