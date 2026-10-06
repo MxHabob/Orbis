@@ -27,9 +27,9 @@ export interface AdjustmentsHorizontalProps extends SvgProps {
 }
 
 export function AdjustmentsHorizontal({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: AdjustmentsHorizontalProps) {
@@ -38,7 +38,7 @@ export function AdjustmentsHorizontal({
       viewBox="0 0 24 24"
       width={size}
       height={size}
-      fill={color}
+      fill="none"
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
@@ -48,8 +48,11 @@ export function AdjustmentsHorizontal({
       <Path
 		strokeLinecap="round"
 		strokeLinejoin="round"
-		d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75"
+		d="M3.5 6h4m3 0h10M3.5 12h10m3 0h4m-17 6h3m3 0h11"
 	/>
+      <Circle cx="9" cy="6" r="1.5" />
+      <Circle cx="15" cy="12" r="1.5" />
+      <Circle cx="8" cy="18" r="1.5" />
     </Svg>
   );
 }

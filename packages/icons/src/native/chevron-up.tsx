@@ -27,9 +27,9 @@ export interface ChevronUpProps extends SvgProps {
 }
 
 export function ChevronUp({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: ChevronUpProps) {

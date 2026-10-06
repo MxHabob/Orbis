@@ -27,9 +27,9 @@ export interface H2Props extends SvgProps {
 }
 
 export function H2({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: H2Props) {

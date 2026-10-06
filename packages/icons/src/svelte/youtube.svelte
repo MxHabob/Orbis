@@ -23,7 +23,7 @@
 	viewBox="0 0 24 24"
 	fill="none"
 	stroke="currentColor"
-	stroke-width={strokeWidth ?? '1.5'}
+	stroke-width={strokeWidth ?? '1.75'}
 	width={size}
 	height={size}
 	class={cn(className || 'size-4', klass)}

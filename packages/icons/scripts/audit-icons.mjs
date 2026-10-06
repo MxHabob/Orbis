@@ -150,6 +150,13 @@ for (const name of allNames) {
 	if (nativeFile && !nativeFiles.has(nativeFile)) errors.push(`Missing native source for ${name}: ${nativeFile}`);
 }
 
+for (const alias of nativeAliases) {
+	if (!nativeFiles.has(alias.file)) errors.push(`Missing native source for alias ${alias.name}: ${alias.file}`);
+	if (![...nativeExports.values()].includes(alias.file)) {
+		errors.push(`Native alias ${alias.name} has no canonical export for ${alias.file}`);
+	}
+}
+
 const icons = [...allNames]
 	.sort()
 	.map((name) => {
@@ -159,6 +166,13 @@ const icons = [...allNames]
 		const native = nativeFile ? getNativeMetadata(nativeFile) : null;
 
 		if (svelte?.viewBox !== native?.viewBox) errors.push(`ViewBox mismatch for ${name}`);
+		if (name !== 'Logo') {
+			if (svelte?.defaultSize !== 16) errors.push(`Unexpected Svelte default size for ${name}`);
+			if (svelte?.defaultStrokeWidth !== '1.75') errors.push(`Unexpected Svelte default stroke for ${name}`);
+			if (native?.defaultSize !== 16) errors.push(`Unexpected native default size for ${name}`);
+			if (native?.defaultStrokeWidth !== '1.75') errors.push(`Unexpected native default stroke for ${name}`);
+		}
+		if (!svelte?.viewBox || !native?.viewBox) errors.push(`Missing viewBox for ${name}`);
 
 		return {
 			name,

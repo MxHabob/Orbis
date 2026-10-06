@@ -27,9 +27,9 @@ export interface Cog6SolidProps extends SvgProps {
 }
 
 export function Cog6Solid({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: Cog6SolidProps) {

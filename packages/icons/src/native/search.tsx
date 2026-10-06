@@ -27,9 +27,9 @@ export interface SearchProps extends SvgProps {
 }
 
 export function Search({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: SearchProps) {
@@ -45,11 +45,8 @@ export function Search({
       aria-hidden={true}
       {...props}
     >
-      <Path
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-	/>
+      <Circle cx="10.75" cy="10.75" r="6.75" />
+      <Path strokeLinecap="round" strokeLinejoin="round" d="m15.5 15.5 4.25 4.25" />
     </Svg>
   );
 }

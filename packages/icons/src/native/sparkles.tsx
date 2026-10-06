@@ -27,9 +27,9 @@ export interface SparklesProps extends SvgProps {
 }
 
 export function Sparkles({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: SparklesProps) {

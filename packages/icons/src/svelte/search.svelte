@@ -23,16 +23,13 @@
 	viewBox="0 0 24 24"
 	fill="none"
 	stroke="currentColor"
-	stroke-width={strokeWidth ?? '1.5'}
+	stroke-width={strokeWidth ?? '1.75'}
 	width={size}
 	height={size}
 	class={cn(className || 'size-4', klass)}
 	aria-hidden="true"
 	{...restProps}
 >
-	<path
-		stroke-linecap="round"
-		stroke-linejoin="round"
-		d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-	/>
+	<circle cx="10.75" cy="10.75" r="6.75" />
+	<path stroke-linecap="round" stroke-linejoin="round" d="m15.5 15.5 4.25 4.25" />
 </svg>

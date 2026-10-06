@@ -27,9 +27,9 @@ export interface PenAltProps extends SvgProps {
 }
 
 export function PenAlt({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: PenAltProps) {

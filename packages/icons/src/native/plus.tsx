@@ -27,9 +27,9 @@ export interface PlusProps extends SvgProps {
 }
 
 export function Plus({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: PlusProps) {
@@ -45,7 +45,7 @@ export function Plus({
       aria-hidden={true}
       {...props}
     >
-      <Path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+      <Path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
     </Svg>
   );
 }

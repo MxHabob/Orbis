@@ -8,8 +8,8 @@ export interface IconProps extends SvgProps {
 }
 
 export const Bell: React.FC<IconProps> = ({
-	size = 24,
-	strokeWidth = 1.5,
+	size = 16,
+	strokeWidth = 1.75,
 	color = 'currentColor',
 	...props
 }) => (

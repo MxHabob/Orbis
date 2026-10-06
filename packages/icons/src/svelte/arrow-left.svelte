@@ -23,12 +23,12 @@
 	viewBox="0 0 24 24"
 	fill="none"
 	stroke="currentColor"
-	stroke-width={strokeWidth ?? '1.5'}
+	stroke-width={strokeWidth ?? '1.75'}
 	width={size}
 	height={size}
 	class={cn(className || 'size-4', klass)}
 	aria-hidden="true"
 	{...restProps}
 >
-	<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+	<path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5m7 7-7-7 7-7" />
 </svg>

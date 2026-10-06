@@ -1,0 +1,61 @@
+{
+  "viewBox": "0 0 24 24",
+  "reviewSizes": [16, 20, 24],
+  "themes": ["light", "dark"],
+  "icons": [
+    {
+      "name": "ArrowLeft",
+      "family": "navigation",
+      "kind": "canonical",
+      "direction": "logical-navigation",
+      "svelte": "src/svelte/arrow-left.svelte",
+      "native": "src/native/arrow-left.tsx"
+    },
+    {
+      "name": "Plus",
+      "family": "actions",
+      "kind": "canonical",
+      "svelte": "src/svelte/plus.svelte",
+      "native": "src/native/plus.tsx"
+    },
+    {
+      "name": "CheckCircle",
+      "family": "status",
+      "kind": "canonical",
+      "svelte": "src/svelte/check-circle.svelte",
+      "native": "src/native/check-circle.tsx"
+    },
+    {
+      "name": "BookOpen",
+      "family": "education",
+      "kind": "canonical",
+      "svelte": "src/svelte/book-open.svelte",
+      "native": "src/native/book-open.tsx"
+    },
+    {
+      "name": "AdjustmentsHorizontal",
+      "family": "actions",
+      "kind": "canonical",
+      "svelte": "src/svelte/adjustments-horizontal.svelte",
+      "native": "src/native/adjustments-horizontal.tsx"
+    },
+    {
+      "name": "Pencil",
+      "family": "actions",
+      "kind": "intentional-variant",
+      "variant": "outline",
+      "pairedWith": "PencilSolid",
+      "svelte": "src/svelte/pencil.svelte",
+      "native": "src/native/pencil.tsx"
+    },
+    {
+      "name": "PencilSolid",
+      "family": "actions",
+      "kind": "intentional-variant",
+      "variant": "solid",
+      "pairedWith": "Pencil",
+      "svelte": "src/svelte/pencil-solid.svelte",
+      "native": "src/native/pencil-solid.tsx"
+    }
+  ]
+}

@@ -27,9 +27,9 @@ export interface DocumentPageProps extends SvgProps {
 }
 
 export function DocumentPage({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: DocumentPageProps) {
