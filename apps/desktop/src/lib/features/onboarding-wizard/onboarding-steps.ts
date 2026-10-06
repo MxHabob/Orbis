@@ -1,5 +1,6 @@
 import type { SetupTaskDto } from "$lib/api/types";
 import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
 
 // ═══════════════════════════════════════════════════════════════
 // Onboarding Step Model
@@ -103,11 +104,18 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
       "student_registration_policy",
       "document_requirements",
       "system_templates",
-      "integrations_setup",
     ],
     getLabel: () => m.onboarding_step7_label(),
     getDescription: () => m.onboarding_step7_desc(),
     order: 7,
+  },
+  {
+    id: "integrations",
+    route: "integrations",
+    taskIds: ["integrations_setup"],
+    getLabel: () => m.onboarding_step_integrations_label(),
+    getDescription: () => m.onboarding_step_integrations_desc(),
+    order: 8,
   },
   {
     id: "review",
@@ -115,7 +123,7 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
     taskIds: [], // Review uses ALL tasks
     getLabel: () => m.onboarding_step8_label(),
     getDescription: () => m.onboarding_step8_desc(),
-    order: 8,
+    order: 9,
   },
 ];
 

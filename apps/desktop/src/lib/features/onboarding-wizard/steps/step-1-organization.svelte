@@ -1,9 +1,8 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { api } from "$lib/api";
-import { systemStore } from "$lib/stores";
+import { authStore, systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -14,6 +13,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
+import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
+import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
@@ -35,59 +36,24 @@ let timezone = $state("Asia/Riyadh");
 let locale = $state("ar");
 let isHijriEnabled = $state(false);
 
-// Currency options
-const currencyDisplayNames = new Intl.DisplayNames([getLocale()], {
-  type: "currency",
-});
-const CURRENCIES = [
-  "SAR",
-  "AED",
-  "QAR",
-  "KWD",
-  "BHD",
-  "OMR",
-  "EGP",
-  "YER",
-  "USD",
-  "EUR",
-  "GBP",
-].map((code) => ({
-  code,
-  label: `${code} — ${currencyDisplayNames.of(code) ?? code}`,
-}));
-
-// Timezone options
-const TIMEZONES = [
-  { value: "Asia/Riyadh", label: "Riyadh, Saudi Arabia (UTC+3)" },
-  { value: "Asia/Dubai", label: "Dubai, UAE (UTC+4)" },
-  { value: "Asia/Kuwait", label: "Kuwait (UTC+3)" },
-  { value: "Asia/Bahrain", label: "Bahrain (UTC+3)" },
-  { value: "Asia/Qatar", label: "Qatar (UTC+3)" },
-  { value: "Asia/Muscat", label: "Muscat, Oman (UTC+4)" },
-  { value: "Africa/Cairo", label: "Cairo, Egypt (UTC+2)" },
-  { value: "Asia/Amman", label: "Amman, Jordan (UTC+3)" },
-  { value: "Asia/Beirut", label: "Beirut, Lebanon (UTC+3)" },
-  { value: "Asia/Aden", label: "Aden / Sanaa, Yemen (UTC+3)" },
-  { value: "UTC", label: "Coordinated Universal Time (UTC)" },
-  { value: "Europe/London", label: "London, UK (UTC+0 / UTC+1)" },
-  { value: "America/New_York", label: "New York, USA (UTC-5 / UTC-4)" },
-];
-
 const stepTasks = $derived(getTasksForStep("organization", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.every((t) => t.status === "completed"));
 
 onMount(async () => {
   try {
     isLoading = true;
-    const org = await api.getCurrentOrg();
+    const org = (await api.getCurrentOrg().catch(() => null)) || systemStore.onboardingState?.organization || authStore.currentOrg;
     if (org) {
-      name = org.name || "";
-      nameAr = org.name_ar || "";
-      slug = org.slug || "";
-      baseCurrencyCode = org.base_currency_code || org.currency || "SAR";
-      timezone = org.timezone || "Asia/Riyadh";
-      locale = org.locale || "ar";
-      isHijriEnabled = Boolean(org.is_hijri_enabled ?? org.hijri_enabled);
+      name = org.name || name;
+      nameAr = org.name_ar || nameAr;
+      slug = org.slug || slug;
+      baseCurrencyCode = org.base_currency_code || (org as any).currency || baseCurrencyCode;
+      timezone = org.timezone || timezone;
+      locale = org.locale || locale;
+      isHijriEnabled = Boolean(org.is_hijri_enabled ?? (org as any).hijri_enabled ?? isHijriEnabled);
+    }
+    if (!name && authStore.currentOrg?.name) {
+      name = authStore.currentOrg.name;
     }
   } catch (err: any) {
     console.error("Failed to load organization profile:", err);
@@ -220,39 +186,19 @@ async function handleContinue() {
       isComplete={Boolean(baseCurrencyCode && timezone)}
     >
       <div class="grid gap-4 sm:grid-cols-2">
-        <!-- Currency Select -->
-        <div class="space-y-2">
-          <Label class="text-xs font-semibold">
-            {m.onboarding_step1_currency()}
-          </Label>
-          <Select type="single" bind:value={baseCurrencyCode}>
-            <SelectTrigger class="w-full">
-              {CURRENCIES.find((c) => c.code === baseCurrencyCode)?.label || baseCurrencyCode}
-            </SelectTrigger>
-            <SelectContent>
-              {#each CURRENCIES as curr (curr.code)}
-                <SelectItem value={curr.code}>{curr.label}</SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-        </div>
+        <!-- Currency Select (Database-backed) -->
+        <CurrencySelector
+          bind:currentCurrency={baseCurrencyCode}
+          compact={true}
+          title={m.onboarding_step1_currency()}
+        />
 
-        <!-- Timezone Select -->
-        <div class="space-y-2">
-          <Label class="text-xs font-semibold">
-            {m.onboarding_step1_timezone()}
-          </Label>
-          <Select type="single" bind:value={timezone}>
-            <SelectTrigger class="w-full">
-              {TIMEZONES.find((t) => t.value === timezone)?.label || timezone}
-            </SelectTrigger>
-            <SelectContent>
-              {#each TIMEZONES as tz (tz.value)}
-                <SelectItem value={tz.value}>{tz.label}</SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-        </div>
+        <!-- Timezone Select (Location-backed) -->
+        <TimezoneSettings
+          bind:currentTimezone={timezone}
+          compact={true}
+          title={m.onboarding_step1_timezone()}
+        />
 
         <!-- System Locale Select -->
         <div class="space-y-2">

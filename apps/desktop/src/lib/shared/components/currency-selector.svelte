@@ -84,8 +84,8 @@ function handleChange(val: string | null) {
 </script>
 
 {#if compact}
-  <div class="flex flex-col gap-1">
-    <Label class="text-[9px] font-bold text-muted-foreground">
+  <div class="flex flex-col gap-1.5">
+    <Label class="text-xs font-semibold">
       {title}
     </Label>
     {#if description}

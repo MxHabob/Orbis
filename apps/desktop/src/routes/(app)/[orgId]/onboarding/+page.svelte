@@ -152,7 +152,8 @@ function getStepRouteForTask(taskId: string): string {
   if (taskId === "academic_subjects" || taskId === "academic_classes" || taskId === "teaching_assignments") return "academics";
   if (taskId === "chart_of_accounts" || taskId === "fee_templates" || taskId === "discount_templates") return "finance";
   if (taskId === "assessment_schemes" || taskId === "academic_policy") return "assessment";
-  if (taskId === "student_registration_policy" || taskId === "document_requirements" || taskId === "system_templates" || taskId === "integrations_setup") return "operations";
+  if (taskId === "student_registration_policy" || taskId === "document_requirements" || taskId === "system_templates") return "operations";
+  if (taskId === "integrations_setup") return "integrations";
   return "review";
 }
 

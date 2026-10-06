@@ -153,7 +153,7 @@ async function handleAddPresetDoc(preset: typeof PRESET_DOCUMENTS[0]) {
 
 async function handleContinue() {
   await handleSaveRegistrationPolicy();
-  await navigateOnboardingRoute(`/${orgId}/onboarding/review`);
+  await navigateOnboardingRoute(`/${orgId}/onboarding/integrations`);
 }
 </script>
 

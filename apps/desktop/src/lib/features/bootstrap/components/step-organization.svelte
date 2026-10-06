@@ -7,17 +7,12 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
-import { api } from "$lib/api/client";
 import {
   type OnboardingFormModel,
-  TIMEZONE_OPTIONS,
-  CURRENCY_OPTIONS,
   COUNTRIES_LIST,
   EDUCATIONAL_TRACK_OPTIONS,
   ORGANIZATION_SIZE_OPTIONS,
   COLOR_PRESETS,
-  type CurrencyOption,
 } from "../types";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -29,6 +24,8 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import { Check } from "@orbis/icons";
+import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
+import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
 
 let {
   form = $bindable<OnboardingFormModel>(),
@@ -39,30 +36,6 @@ let {
   errors?: Record<string, string>;
   isRTL?: boolean;
 } = $props();
-
-let availableCurrencies = $state<CurrencyOption[]>(CURRENCY_OPTIONS);
-
-onMount(async () => {
-  try {
-    const list = await api.listCurrencies();
-    if (list && list.length > 0) {
-      // Merge system currencies with default flags
-      const mapped: CurrencyOption[] = list.map((c) => {
-        const existing = CURRENCY_OPTIONS.find((opt) => opt.code === c.code);
-        return {
-          code: c.code,
-          symbol: () => c.symbol || c.code,
-          name: () => c.name || c.code,
-          flag: existing?.flag || "🌐",
-        };
-      });
-      availableCurrencies = mapped;
-    }
-  } catch {
-    // Fallback to standard comprehensive ISO currency registry
-    availableCurrencies = CURRENCY_OPTIONS;
-  }
-});
 
 function selectCountry(countryCode: string) {
   form.countryCode = countryCode;
@@ -229,51 +202,19 @@ function selectCountry(countryCode: string) {
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <!-- Base Currency (Dynamic Table / Registry Sync) -->
-        <div class="space-y-1.5">
-          <Label class="text-xs font-medium text-foreground">
-            {m.ui_onboarding_organization_base_currency()}
-          </Label>
-          <Select
-            type="single"
-            value={form.baseCurrencyCode}
-            onValueChange={(v) => (form.baseCurrencyCode = v ?? "SAR")}
-          >
-            <SelectTrigger class="w-full h-9 text-xs font-mono">
-              {form.baseCurrencyCode} ({availableCurrencies.find((c) => c.code === form.baseCurrencyCode)?.symbol() || form.baseCurrencyCode})
-            </SelectTrigger>
-            <SelectContent>
-              {#each availableCurrencies as cur}
-                <SelectItem value={cur.code}>
-                  <span class="text-xs font-mono">{cur.flag} {cur.code} - {cur.name()}</span>
-                </SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-        </div>
+        <!-- Base Currency (Database-backed via CurrencySelector) -->
+        <CurrencySelector
+          bind:currentCurrency={form.baseCurrencyCode}
+          compact={true}
+          title={m.ui_onboarding_organization_base_currency()}
+        />
 
-        <!-- Timezone -->
-        <div class="space-y-1.5">
-          <Label class="text-xs font-medium text-foreground">
-            {m.ui_onboarding_organization_timezone()}
-          </Label>
-          <Select
-            type="single"
-            value={form.timezone}
-            onValueChange={(v) => (form.timezone = v ?? "Asia/Riyadh")}
-          >
-            <SelectTrigger class="w-full h-9 text-xs font-mono">
-              {form.timezone}
-            </SelectTrigger>
-            <SelectContent>
-              {#each TIMEZONE_OPTIONS as tz}
-                <SelectItem value={tz.value}>
-                  <span class="text-xs font-mono">{tz.label()} ({tz.offset})</span>
-                </SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-        </div>
+        <!-- Timezone (Location-backed via TimezoneSettings) -->
+        <TimezoneSettings
+          bind:currentTimezone={form.timezone}
+          compact={true}
+          title={m.ui_onboarding_organization_timezone()}
+        />
       </div>
 
       <!-- Dual Hijri Preference -->
