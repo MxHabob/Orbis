@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
-import { setLocale } from "$lib/paraglide/runtime";
+import { changeAppLocale } from "$lib/core/i18n";
 import {
   createOrganizationQuery,
   createUpdateOrganizationMutation,
@@ -40,7 +40,7 @@ async function handleLanguageChange(newLocale: string, currentValues: any) {
     }
   }
 
-  setLocale(targetLang);
+  await changeAppLocale(targetLang);
   return true;
 }
 

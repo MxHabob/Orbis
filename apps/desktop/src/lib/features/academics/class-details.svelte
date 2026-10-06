@@ -24,7 +24,6 @@ import {
   Share,
   Users,
 } from "@orbis/icons";
-import { fade } from "svelte/transition";
 import { academicContext } from "$lib/stores";
 import { toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
@@ -68,9 +67,7 @@ const classDisplayName = $derived.by(() => {
   return classData.name_ar || classData.name;
 });
 
-const isLoading = $derived(
-  classQuery.isLoading || studentsQuery.isLoading || attendanceQuery.isLoading,
-);
+const isLoading = $derived(classQuery.isLoading);
 const error = $derived(
   classQuery.error || studentsQuery.error || attendanceQuery.error,
 );
@@ -178,7 +175,7 @@ const relatedActionGroups = $derived<ActionGroup[]>(classData ? [
 
 <div class="h-full w-full flex flex-col font-sans gap-4 pb-6 text-start">
   <!-- Top Bar with Primary Query / Share Actions -->
-  <div class="flex flex-wrap items-center justify-between gap-2 animate-fade-in">
+  <div class="flex flex-wrap items-center justify-between gap-2">
     {#if classData}
       <AskOrbisButton
         query={m.academics_class_evaluation_ai_ask_orbis_query({ name: classDisplayName })}
@@ -203,12 +200,21 @@ const relatedActionGroups = $derived<ActionGroup[]>(classData ? [
   </div>
 
   {#if isLoading}
-    <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-      <Skeleton class="h-24 rounded-lg" />
-      <Skeleton class="h-24 rounded-lg" />
-      <Skeleton class="h-24 rounded-lg" />
+    <div class="space-y-4" aria-busy="true">
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <Skeleton class="h-24 rounded-lg" />
+        <Skeleton class="h-24 rounded-lg" />
+        <Skeleton class="h-24 rounded-lg" />
+      </div>
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-10">
+        <Skeleton class="h-80 rounded-lg lg:col-span-7" />
+        <div class="flex flex-col gap-4 lg:col-span-3">
+          <Skeleton class="h-48 rounded-lg" />
+          <Skeleton class="h-48 rounded-lg" />
+        </div>
+      </div>
     </div>
-  {:else if error}
+  {:else if error && !classData}
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2 font-sans">
       <InfoCircle size={24} />
       <h3 class="font-semibold text-xs">{m.academics_class_overview_load_failed()}</h3>
@@ -216,16 +222,31 @@ const relatedActionGroups = $derived<ActionGroup[]>(classData ? [
       <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.common_retry()}</Button>
     </div>
   {:else}
-    <div class="flex flex-col animate-fade-in text-start gap-4" in:fade={{ duration: 150 }}>
+    {#if error}
+      <div class="flex items-center justify-between gap-3 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive" role="alert">
+        <span>{m.academics_class_overview_load_failed()}: {extractErrorMessage(error)}</span>
+        <Button variant="outline" size="xs" onclick={refetchAll}>
+          {m.common_retry()}
+        </Button>
+      </div>
+    {/if}
+
+    <div class="flex flex-col text-start gap-4">
       <!-- Top Metrics Row using official @orbis/ui MetricProgress -->
       <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
         <MetricProgress
           card={true}
           title={m.common_nav_attendance()}
-          subtitle={totalAttendance > 0 
-            ? `${attendanceRate}%`
-            : m.common_attendance_empty_title()}
-          displayValue={totalAttendance > 0 ? `${attendanceRate}%` : "—"}
+          subtitle={attendanceQuery.isPending
+            ? "—"
+            : totalAttendance > 0
+              ? `${attendanceRate}%`
+              : m.common_attendance_empty_title()}
+          displayValue={attendanceQuery.isPending
+            ? "—"
+            : totalAttendance > 0
+              ? `${attendanceRate}%`
+              : "—"}
           icon={Users}
           segments={totalAttendance > 0 ? [
             { label: m.common_attendance_status_present(), value: presentPct, tone: "success" },
@@ -238,8 +259,10 @@ const relatedActionGroups = $derived<ActionGroup[]>(classData ? [
         <MetricProgress
           card={true}
           title={m.common_classes_enrolled_students()}
-          subtitle={`${students.length} ${m.common_word_student()}`}
-          displayValue={String(students.length)}
+          subtitle={studentsQuery.isPending
+            ? "—"
+            : `${students.length} ${m.common_word_student()}`}
+          displayValue={studentsQuery.isPending ? "—" : String(students.length)}
           icon={Users}
           segments={[]}
         />
@@ -248,7 +271,9 @@ const relatedActionGroups = $derived<ActionGroup[]>(classData ? [
           card={true}
           title={m.academics_class_label_capacity()}
           subtitle={classData?.capacity ? `${classData.capacity}` : "—"}
-          displayValue={classData?.capacity ? `${Math.round((students.length / classData.capacity) * 100)}%` : "—"}
+          displayValue={studentsQuery.isPending || !classData?.capacity
+            ? "—"
+            : `${Math.round((students.length / classData.capacity) * 100)}%`}
           icon={CheckCircle}
           segments={[]}
         />

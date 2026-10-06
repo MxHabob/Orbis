@@ -22,6 +22,7 @@ import { createUserQuery } from "$lib/features/settings/queries";
 import { useQueryClient, createQuery } from "@tanstack/svelte-query";
 import RoleSelect from "$lib/shared/components/role-select.svelte";
 import ManageUserGroupsSheet from "./components/manage-user-groups-sheet.svelte";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 
@@ -91,6 +92,18 @@ $effect(() => {
   isActiveState =
     fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
   initializedUserId = userId;
+});
+
+const isDirty = $derived.by(() => {
+  if (!user) return false;
+  return (
+    fullName !== (user.full_name || "") ||
+    nameAr !== (user.full_name_ar || "") ||
+    email !== (user.email || "") ||
+    phone !== ((user.phone as string) || "") ||
+    role !== (user.roles?.[0] || "staff") ||
+    isActiveState !== (user.is_active !== undefined ? Boolean(user.is_active) : true)
+  );
 });
 
 function openManageGroups() {

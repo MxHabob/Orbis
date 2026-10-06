@@ -36,6 +36,7 @@ import TrashDocumentCard from "$lib/features/documents/trash-document-card.svelt
 import TrashDocumentRow from "$lib/features/documents/trash-document-row.svelte";
 import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
 import ArchiveLoading from "$lib/features/documents/archive-loading.svelte";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import type { DocumentDto } from "$lib/api";
 
 let {
@@ -368,46 +369,6 @@ async function handleBatchPurge() {
     </div>
   </header>
 
-  <!-- Multi-Select Floating Toolbar -->
-  {#if selectedIds.size > 0}
-    <div class="shrink-0 bg-primary/10 border-b border-primary/20 px-6 py-2.5 flex items-center justify-between text-xs transition-all">
-      <div class="flex items-center gap-3">
-        <span class="font-medium text-foreground">
-          {m.operations_ui_trash_selection_count({ selected: selectedIds.size, total: filteredDocs.length })}
-        </span>
-        <button
-          type="button"
-          class="text-xs text-muted-foreground hover:text-foreground underline"
-          onclick={() => (selectedIds = new Set())}
-        >
-          {m.operations_ui_clear_selection()}
-        </button>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          class="h-7 text-xs text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
-          onclick={handleBatchRestore}
-        >
-          <Refresh class="w-3.5 h-3.5 me-1.5" />
-          <span>{m.operations_ui_trash_restore_selected()}</span>
-        </Button>
-
-        <Button
-          variant="destructive"
-          size="sm"
-          class="h-7 text-xs"
-          onclick={handleBatchPurge}
-        >
-          <Trash class="w-3.5 h-3.5 me-1.5" />
-          <span>{m.operations_ui_trash_delete_selected()}</span>
-        </Button>
-      </div>
-    </div>
-  {/if}
-
   <!-- Main Content Stage -->
   <main class="flex-1 overflow-y-auto p-6">
     {#if isLoading}
@@ -505,4 +466,45 @@ async function handleBatchPurge() {
   isTrash={true}
   onrestore={handleRestoreDoc}
   onpurge={handlePurgeDoc}
+/>
+
+<!-- Floating Multi-Select Bottom Bar -->
+{#snippet trashActions()}
+  <Button
+    type="button"
+    variant="ghost"
+    size="sm"
+    class="h-8 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+    onclick={() => (selectedIds = new Set())}
+  >
+    {m.operations_ui_clear_selection()}
+  </Button>
+  <Button
+    type="button"
+    variant="outline"
+    size="sm"
+    class="h-8 px-3 text-xs font-semibold text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer"
+    onclick={handleBatchRestore}
+  >
+    <Refresh class="w-3.5 h-3.5 me-1.5" />
+    <span>{m.operations_ui_trash_restore_selected()}</span>
+  </Button>
+  <Button
+    type="button"
+    variant="destructive"
+    size="sm"
+    class="h-8 px-3 text-xs font-semibold cursor-pointer shadow-xs"
+    onclick={handleBatchPurge}
+  >
+    <Trash class="w-3.5 h-3.5 me-1.5" />
+    <span>{m.operations_ui_trash_delete_selected()}</span>
+  </Button>
+{/snippet}
+
+<SettingsBottomBar
+  visible={selectedIds.size > 0}
+  isDirty={selectedIds.size > 0}
+  message={m.operations_ui_trash_selection_count({ selected: selectedIds.size, total: filteredDocs.length })}
+  statusVariant="rose"
+  actions={trashActions}
 />

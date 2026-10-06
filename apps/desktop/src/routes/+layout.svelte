@@ -11,6 +11,7 @@ import { queryClient } from "$lib/api";
 import "./layout.css";
 import favicon from "$lib/assets/favicon.svg";
 import { Toaster } from "@orbis/ui";
+import { localeState } from "$lib/core/i18n";
 
 let { children } = $props();
 
@@ -21,6 +22,7 @@ $effect(() => {
 
 // Apply lang & dir to documentElement
 $effect(() => {
+  localeState.revision;
   const currentLocale = getLocale();
   const dir = getTextDirection(currentLocale);
   if (typeof document !== "undefined") {

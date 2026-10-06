@@ -1,5 +1,6 @@
 <script lang="ts">
   import { isDesktopApp } from "$lib/api";
+  import { goto } from "$app/navigation";
   import * as m from "$lib/paraglide/messages";
   import { localizeHref } from "$lib/paraglide/runtime";
   import { authStore, themeStore, uiStore, workflowInbox } from "$lib/stores";
@@ -160,9 +161,7 @@
           onclick={() => {
             const orgId = authStore.orgId;
             if (orgId)
-              window.location.href = localizeHref(
-                `/${orgId}/settings/approvals`,
-              );
+              void goto(localizeHref(`/${orgId}/settings/approvals`));
           }}
         >
           <Bell size={14} class="stroke-[2px]" />
@@ -180,9 +179,7 @@
           onclick={() => {
             const orgId = authStore.orgId;
             if (orgId)
-              window.location.href = localizeHref(
-                `/${orgId}/settings/approvals`,
-              );
+              void goto(localizeHref(`/${orgId}/settings/approvals`));
           }}
         >
           <Bell size={14} class="stroke-[2px] text-muted-foreground" />

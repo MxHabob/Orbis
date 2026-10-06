@@ -17,14 +17,8 @@ import {
   Search,
   Grid,
   Bars3BottomLeft,
-  Sparkles,
-  AcademicCap,
   Trash,
-  ArchiveBox,
-  Refresh,
   XMark,
-  Check,
-  CheckCircle,
 } from "@orbis/icons";
 import { confirmStore } from "$lib/stores";
 import { toast } from "@orbis/ui";
@@ -49,6 +43,7 @@ import ArchiveDocumentCard from "$lib/features/documents/archive-document-card.s
 import ArchiveDocumentRow from "$lib/features/documents/archive-document-row.svelte";
 import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
 import ArchiveLoading from "$lib/features/documents/archive-loading.svelte";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import type { DocumentDto, FolderDto } from "$lib/api";
 
 let {
@@ -482,29 +477,6 @@ function onContainerDrop(e: DragEvent) {
     </div>
   </header>
 
-  <!-- Multi-Select Bulk Actions Bar (Sticky Float) -->
-  {#if selectedIds.size > 0}
-    <div class="px-5 py-2.5 bg-primary/10 border-b border-primary/20 flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-2 duration-150">
-      <div class="flex items-center gap-2">
-        <span class="font-semibold text-primary">{m.settings_ui_archive_selected_items({ count: selectedIds.size })}</span>
-        <button
-          type="button"
-          onclick={() => selectedIds = new Set()}
-          class="text-muted-foreground hover:text-foreground underline text-[11px]"
-        >
-          {m.settings_ui_archive_clear_selection()}
-        </button>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <Button variant="destructive" size="xs" onclick={handleBulkDelete} class="gap-1.5">
-          <Trash class="w-3 h-3" />
-          <span>{m.settings_ui_archive_delete_selected()}</span>
-        </Button>
-      </div>
-    </div>
-  {/if}
-
   <!-- Main Content Viewport -->
   <main class="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
     {#if isLoading}
@@ -634,4 +606,18 @@ function onContainerDrop(e: DragEvent) {
   url={selectedDocumentUrl}
   ondelete={handleDeleteDoc}
   onarchive={handleArchiveDoc}
+/>
+
+<!-- Floating Selection Bottom Bar -->
+<SettingsBottomBar
+  visible={selectedIds.size > 0}
+  isDirty={selectedIds.size > 0}
+  message={m.settings_ui_archive_selected_items({ count: selectedIds.size })}
+  saveLabel={m.settings_ui_archive_delete_selected()}
+  resetLabel={m.settings_ui_archive_clear_selection()}
+  saveVariant="destructive"
+  statusVariant="rose"
+  showReset={true}
+  onsave={handleBulkDelete}
+  onreset={() => (selectedIds = new Set())}
 />

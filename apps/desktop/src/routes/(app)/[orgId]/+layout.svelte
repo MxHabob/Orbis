@@ -10,6 +10,7 @@ import { page } from "$app/state";
 import { onMount } from "svelte";
 import type { Snippet } from "svelte";
 import type { LayoutData } from "./$types";
+import { localeState } from "$lib/core/i18n";
 
 let { data, children }: { data: LayoutData; children: Snippet } = $props();
 let authReady = $state(false);
@@ -30,13 +31,15 @@ onMount(async () => {
 </script>
 
 {#if authReady}
-  {#if isOnboarding}
-    {@render children()}
-  {:else}
-    <AppChrome orgId={data.orgId}>
+  {#key localeState.revision}
+    {#if isOnboarding}
       {@render children()}
-    </AppChrome>
-  {/if}
+    {:else}
+      <AppChrome orgId={data.orgId}>
+        {@render children()}
+      </AppChrome>
+    {/if}
+  {/key}
 {:else}
   <div class="flex h-full w-full items-center justify-center bg-background">
     <div class="flex items-center gap-3 text-sm text-muted-foreground" role="status">
