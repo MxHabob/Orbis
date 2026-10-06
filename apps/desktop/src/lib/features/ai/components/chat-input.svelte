@@ -66,25 +66,25 @@ const commandOptions = [
     id: "students",
     label: m.ai_ui_student_stats_label(),
     desc: m.ai_ui_student_stats_description(),
-    prompt: "ما هي إحصائيات الطلاب وحالتهم الأكاديمية والمالية الحالية؟",
+    prompt: m.ai_ui_student_stats_prompt(),
   },
   {
     id: "finance",
     label: m.ai_ui_financial_summary_label(),
     desc: m.ai_ui_financial_summary_description(),
-    prompt: "قدم تقريراً مالياً شاملاً عن الرسوم المحصلة والمتبقية",
+    prompt: m.ai_ui_financial_summary_prompt(),
   },
   {
     id: "academic",
     label: m.ai_ui_classes_schedule_label(),
     desc: m.ai_ui_classes_schedule_description(),
-    prompt: "ما هي الفصول والمواد الدراسية النشطة في هذا الفصل؟",
+    prompt: m.ai_ui_classes_schedule_prompt(),
   },
   {
     id: "report",
     label: m.ai_ui_admin_report_label(),
     desc: m.ai_ui_admin_report_description(),
-    prompt: "أنشئ تقريراً إحصائياً شاملاً عن أداء المدرسة هذا الفصل",
+    prompt: m.ai_ui_admin_report_prompt(),
   },
 ];
 
@@ -105,7 +105,7 @@ function handleCommandSelect(prompt: string) {
         <Sparkles size={11} class="text-primary" />
         {m.ai_ui_suggested_smart_commands()}
       </div>
-      {#each commandOptions as cmd}
+      {#each commandOptions as cmd (cmd.id)}
         <button 
           type="button" 
           class="w-full text-start px-2.5 py-2 flex flex-col gap-0.5 hover:bg-muted/80 rounded-xl transition-colors cursor-pointer group"

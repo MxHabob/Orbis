@@ -211,6 +211,7 @@ async function main() {
     missingInArabic.length ||
     missingInEnglish.length ||
     placeholderMismatches.length ||
+    generatedLookingMessages.length ||
     hardcodedArabicMarkup.length
   ) {
     process.exitCode = 1;

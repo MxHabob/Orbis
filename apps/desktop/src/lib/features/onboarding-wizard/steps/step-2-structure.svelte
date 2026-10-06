@@ -1,6 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
+import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { api, type OrgUnitDto, type RoomDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
@@ -46,12 +47,12 @@ let roomCapacity = $state<number>(30);
 let roomBuilding = $state("");
 
 const ROOM_TYPES = [
-  { value: "classroom", label: "Classroom (فصل دراسي)" },
-  { value: "lab", label: "Science / Computer Lab (مختبر)" },
-  { value: "auditorium", label: "Auditorium / Theatre (مسرح / قاعة احتفالات)" },
-  { value: "library", label: "Library (مكتبة)" },
-  { value: "sports_hall", label: "Sports Hall / Gymnasium (صالة رياضية)" },
-  { value: "other", label: "Other Facility (مرفق آخر)" },
+  { value: "classroom", label: m.onboarding_room_type_classroom() },
+  { value: "lab", label: m.onboarding_room_type_lab() },
+  { value: "auditorium", label: m.onboarding_room_type_auditorium() },
+  { value: "library", label: m.onboarding_room_type_library() },
+  { value: "sports_hall", label: m.onboarding_room_type_sports_hall() },
+  { value: "other", label: m.onboarding_room_type_other() },
 ];
 
 const stepTasks = $derived(getTasksForStep("structure", systemStore.onboardingTasks));
@@ -151,7 +152,7 @@ async function handleContinue() {
   if (orgUnits.length === 0 && (unitName.trim() || unitNameAr.trim())) {
     await handleCreateUnit();
   }
-  await goto(`/${orgId}/onboarding/calendar`);
+  await goto(localizeHref(`/${orgId}/onboarding/calendar`));
 }
 </script>
 
@@ -330,7 +331,7 @@ async function handleContinue() {
                   {ROOM_TYPES.find((r) => r.value === roomType)?.label || roomType}
                 </SelectTrigger>
                 <SelectContent>
-                  {#each ROOM_TYPES as r}
+                  {#each ROOM_TYPES as r (r.value)}
                     <SelectItem value={r.value}>{r.label}</SelectItem>
                   {/each}
                 </SelectContent>
@@ -405,7 +406,7 @@ async function handleContinue() {
     <div class="flex items-center justify-between border-t border-border/50 pt-6">
       <Button
         variant="outline"
-        onclick={() => goto(`/${orgId}/onboarding/organization`)}
+        onclick={() => goto(localizeHref(`/${orgId}/onboarding/organization`))}
         class="text-xs"
       >
         {m.onboarding_step2_back_btn()}

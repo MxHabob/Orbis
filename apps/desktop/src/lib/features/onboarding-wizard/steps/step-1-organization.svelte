@@ -1,6 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { api } from "$lib/api";
 import { systemStore } from "$lib/stores";
@@ -35,19 +36,25 @@ let locale = $state("ar");
 let isHijriEnabled = $state(false);
 
 // Currency options
+const currencyDisplayNames = new Intl.DisplayNames([getLocale()], {
+  type: "currency",
+});
 const CURRENCIES = [
-  { code: "SAR", label: "SAR — Saudi Riyal (ريال سعودي)" },
-  { code: "AED", label: "AED — UAE Dirham (درهم إماراتي)" },
-  { code: "QAR", label: "QAR — Qatari Riyal (ريال قطري)" },
-  { code: "KWD", label: "KWD — Kuwaiti Dinar (دينار كويتي)" },
-  { code: "BHD", label: "BHD — Bahraini Dinar (دينار بحريني)" },
-  { code: "OMR", label: "OMR — Omani Rial (ريال عماني)" },
-  { code: "EGP", label: "EGP — Egyptian Pound (جنيه مصري)" },
-  { code: "YER", label: "YER — Yemeni Rial (ريال يمني)" },
-  { code: "USD", label: "USD — US Dollar (دولار أمريكي)" },
-  { code: "EUR", label: "EUR — Euro (يورو)" },
-  { code: "GBP", label: "GBP — British Pound (جنيه إسترليني)" },
-];
+  "SAR",
+  "AED",
+  "QAR",
+  "KWD",
+  "BHD",
+  "OMR",
+  "EGP",
+  "YER",
+  "USD",
+  "EUR",
+  "GBP",
+].map((code) => ({
+  code,
+  label: `${code} — ${currencyDisplayNames.of(code) ?? code}`,
+}));
 
 // Timezone options
 const TIMEZONES = [
@@ -126,7 +133,7 @@ async function handleContinue() {
   if (!isTaskComplete) {
     await saveOrganization();
   }
-  await goto(`/${orgId}/onboarding/structure`);
+  await goto(localizeHref(`/${orgId}/onboarding/structure`));
 }
 </script>
 
@@ -226,7 +233,7 @@ async function handleContinue() {
               {CURRENCIES.find((c) => c.code === baseCurrencyCode)?.label || baseCurrencyCode}
             </SelectTrigger>
             <SelectContent>
-              {#each CURRENCIES as curr}
+              {#each CURRENCIES as curr (curr.code)}
                 <SelectItem value={curr.code}>{curr.label}</SelectItem>
               {/each}
             </SelectContent>
@@ -243,7 +250,7 @@ async function handleContinue() {
               {TIMEZONES.find((t) => t.value === timezone)?.label || timezone}
             </SelectTrigger>
             <SelectContent>
-              {#each TIMEZONES as tz}
+              {#each TIMEZONES as tz (tz.value)}
                 <SelectItem value={tz.value}>{tz.label}</SelectItem>
               {/each}
             </SelectContent>
@@ -285,7 +292,7 @@ async function handleContinue() {
     <div class="flex items-center justify-between border-t border-border/50 pt-6">
       <Button
         variant="outline"
-        onclick={() => goto(`/${orgId}/onboarding`)}
+        onclick={() => goto(localizeHref(`/${orgId}/onboarding`))}
         class="text-xs"
       >
         {m.onboarding_overview_btn()}
