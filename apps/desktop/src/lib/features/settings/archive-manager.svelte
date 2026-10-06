@@ -9,6 +9,12 @@ import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
+import {
   Folder,
   FolderOpen,
   NewFolderAlt,
@@ -22,12 +28,12 @@ import {
 } from "@orbis/icons";
 import { confirmStore } from "$lib/stores";
 import { toast } from "@orbis/ui";
+import { api } from "$lib/api";
 import {
   useFolders,
   useFolderContents,
   useCurriculumFolders,
   useDocuments,
-  useUploadFile,
   useArchiveDocument,
   useDeleteDocument,
   useTrashDocument,
@@ -154,12 +160,26 @@ const availableCategories = $derived.by(() => {
   return Array.from(set);
 });
 
+// Filter Labels for Selects
+const assetTypeLabel = $derived.by(() => {
+  switch (selectedAssetType) {
+    case "pdf": return m.settings_ui_archive_pdf_documents();
+    case "image": return m.settings_ui_archive_images();
+    case "video": return m.settings_ui_archive_videos();
+    case "audio": return m.settings_ui_archive_audio_recordings();
+    default: return m.settings_ui_archive_all_file_types();
+  }
+});
+
+const categoryLabel = $derived(
+  selectedCategory === "all" ? m.settings_ui_archive_all_categories() : selectedCategory
+);
+
 // Trash Query for Badge Counter
 const trashDocumentsQuery = useTrashDocuments();
 const trashedDocsCount = $derived(trashDocumentsQuery.data?.length || 0);
 
 // Mutations
-const uploadFileMutation = useUploadFile();
 const archiveDocMutation = useArchiveDocument();
 const deleteDocMutation = useDeleteDocument();
 const trashDocMutation = useTrashDocument();
@@ -276,17 +296,44 @@ async function handleBulkDelete() {
   }
 }
 
-// Drag and Drop & Upload Files
-async function handleFilesUpload(files: FileList | File[]) {
-  if (!files || files.length === 0) return;
+// Helper for bounded concurrent asynchronous tasks
+async function runWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = [];
+  let index = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (index < items.length) {
+      const currentIndex = index++;
+      results[currentIndex] = await fn(items[currentIndex], currentIndex);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+// Drag and Drop & Upload Files with Live Progress Toast & Concurrency Control
+async function handleFilesUpload(fileList: FileList | File[]) {
+  const files = Array.from(fileList || []);
+  if (files.length === 0) return;
 
   const total = files.length;
+  let completedCount = 0;
   let successCount = 0;
+  let failCount = 0;
 
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
+  const toastHandle = toast(m.settings_ui_archive_upload_files(), {
+    variant: "progress",
+    progress: 0,
+    description: `0 / ${total}`,
+    duration: Number.POSITIVE_INFINITY,
+  });
+
+  async function uploadSingle(file: File) {
     try {
-      await uploadFileMutation.mutateAsync({
+      await api.uploadFile({
         file,
         name: file.name,
         folder_id: folderId ?? undefined,
@@ -296,26 +343,53 @@ async function handleFilesUpload(files: FileList | File[]) {
       successCount++;
     } catch (e) {
       console.error(`Failed to upload ${file.name}:`, e);
+      failCount++;
+    } finally {
+      completedCount++;
+      const progressPercent = Math.round((completedCount / total) * 100);
+      toastHandle.update({
+        title: m.settings_ui_archive_upload_files(),
+        description: `تم رفع ${completedCount} من أصل ${total} (${file.name})`,
+        progress: progressPercent,
+        variant: "progress",
+      });
     }
   }
 
+  // Upload with bounded concurrency (2 parallel uploads) to prevent memory & IPC bottlenecks
+  await runWithConcurrency(files, 2, uploadSingle);
+
   if (successCount > 0) {
-    toast.success(m.settings_ui_archive_files_uploaded({ uploaded: successCount, total }));
+    toastHandle.update({
+      title: m.settings_ui_archive_files_uploaded({ uploaded: successCount, total }),
+      description: failCount > 0 ? `تعذر رفع ${failCount} ملفات` : undefined,
+      progress: 100,
+      variant: "success",
+      duration: 4000,
+    });
+
     if (isRoot) {
       rootDocumentsQuery.refetch();
+      rootFoldersQuery.refetch();
     } else {
       folderContentsQuery.refetch();
     }
   } else {
-    toast.error(m.settings_ui_archive_upload_error());
+    toastHandle.update({
+      title: m.settings_ui_archive_upload_error(),
+      description: undefined,
+      variant: "error",
+      duration: 5000,
+    });
   }
 }
 
 function onFileInputChange(e: Event) {
   const target = e.target as HTMLInputElement;
-  if (target.files) {
-    handleFilesUpload(target.files);
+  if (target.files && target.files.length > 0) {
+    const files = Array.from(target.files);
     target.value = "";
+    handleFilesUpload(files);
   }
 }
 
@@ -331,8 +405,9 @@ function onContainerDragLeave() {
 function onContainerDrop(e: DragEvent) {
   e.preventDefault();
   isDragOverContainer = false;
-  if (e.dataTransfer?.files) {
-    handleFilesUpload(e.dataTransfer.files);
+  if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+    const files = Array.from(e.dataTransfer.files);
+    handleFilesUpload(files);
   }
 }
 </script>
@@ -356,7 +431,7 @@ function onContainerDrop(e: DragEvent) {
     {isDragOverContainer ? 'ring-2 ring-primary ring-inset bg-primary/5' : ''}"
 >
   <!-- Top Navigation & Action Header -->
-  <header class="shrink-0 p-5 border-b border-border/50 bg-card/40 backdrop-blur-sm space-y-4">
+  <header class="shrink-0 p-4 border-b border-border/50 bg-card/40 backdrop-blur-sm space-y-3">
     <!-- Breadcrumbs & Quick Creation Actions -->
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
       <FolderBreadcrumbs
@@ -371,13 +446,13 @@ function onContainerDrop(e: DragEvent) {
           variant="outline"
           size="sm"
           onclick={() => goto(`/${orgId}/settings/archive/trash`)}
-          class="gap-1.5 text-xs shadow-sm hover:border-rose-500/40 hover:text-rose-600 dark:hover:text-rose-400"
+          class="gap-1.5 text-xs shadow-xs hover:border-rose-500/40 hover:text-rose-600 dark:hover:text-rose-400"
           title={m.settings_ui_archive_trash_title()}
         >
           <Trash class="w-3.5 h-3.5 text-rose-500" />
           <span>{m.settings_ui_archive_trash_title()}</span>
           {#if trashedDocsCount > 0}
-            <span class="rounded-full bg-rose-500/15 px-1.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
+            <span class="rounded-full bg-rose-500/15 px-1.5 py-0.2 text-[10px] font-bold text-rose-600 dark:text-rose-400">
               {trashedDocsCount}
             </span>
           {/if}
@@ -388,7 +463,7 @@ function onContainerDrop(e: DragEvent) {
           variant="outline"
           size="sm"
           onclick={() => isCreateFolderModalOpen = true}
-          class="gap-1.5 text-xs shadow-sm"
+          class="gap-1.5 text-xs shadow-xs"
         >
           <NewFolderAlt class="w-3.5 h-3.5 text-amber-500" />
           <span>{m.settings_ui_archive_new_folder()}</span>
@@ -398,7 +473,7 @@ function onContainerDrop(e: DragEvent) {
         <Button
           size="sm"
           onclick={() => fileInput?.click()}
-          class="gap-1.5 text-xs shadow-sm"
+          class="gap-1.5 text-xs shadow-xs"
         >
           <ArrowUpTray class="w-3.5 h-3.5" />
           <span>{m.settings_ui_archive_upload_files()}</span>
@@ -407,20 +482,20 @@ function onContainerDrop(e: DragEvent) {
     </div>
 
     <!-- Search & Filter Toolbar -->
-    <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+    <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 pt-1">
       <!-- Search Input -->
       <div class="relative flex-1 max-w-md">
-        <Search class="w-4 h-4 absolute right-3 top-2.5 text-muted-foreground pointer-events-none" />
+        <Search class="w-4 h-4 absolute inset-s-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
         <Input
           bind:value={searchQuery}
           placeholder={m.settings_ui_archive_search_placeholder()}
-          class="w-full pr-9 text-xs bg-background/80 h-9"
+          class="w-full ps-9 pe-8 text-xs bg-background/80 h-8"
         />
         {#if searchQuery}
           <button
             type="button"
             onclick={() => searchQuery = ""}
-            class="absolute left-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+            class="absolute inset-e-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
             <XMark class="w-3.5 h-3.5" />
           </button>
@@ -430,55 +505,61 @@ function onContainerDrop(e: DragEvent) {
       <!-- Filter Controls & View Switcher -->
       <div class="flex items-center flex-wrap gap-2 text-xs">
         <!-- Asset Type Filter -->
-        <select
-          bind:value={selectedAssetType}
-          class="h-9 px-2.5 rounded-lg border border-border/60 bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-        >
-          <option value="all">{m.settings_ui_archive_all_file_types()}</option>
-          <option value="pdf">{m.settings_ui_archive_pdf_documents()}</option>
-          <option value="image">{m.settings_ui_archive_images()}</option>
-          <option value="video">{m.settings_ui_archive_videos()}</option>
-          <option value="audio">{m.settings_ui_archive_audio_recordings()}</option>
-        </select>
+        <Select type="single" bind:value={selectedAssetType}>
+          <SelectTrigger class="h-8 min-w-32 text-xs">
+            <span class="truncate">{assetTypeLabel}</span>
+          </SelectTrigger>
+          <SelectContent align="end">
+            <SelectItem value="all">{m.settings_ui_archive_all_file_types()}</SelectItem>
+            <SelectItem value="pdf">{m.settings_ui_archive_pdf_documents()}</SelectItem>
+            <SelectItem value="image">{m.settings_ui_archive_images()}</SelectItem>
+            <SelectItem value="video">{m.settings_ui_archive_videos()}</SelectItem>
+            <SelectItem value="audio">{m.settings_ui_archive_audio_recordings()}</SelectItem>
+          </SelectContent>
+        </Select>
 
         <!-- Category Filter -->
         {#if availableCategories.length > 0}
-          <select
-            bind:value={selectedCategory}
-            class="h-9 px-2.5 rounded-lg border border-border/60 bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-          >
-            <option value="all">{m.settings_ui_archive_all_categories()}</option>
-            {#each availableCategories as cat}
-              <option value={cat}>{cat}</option>
-            {/each}
-          </select>
+          <Select type="single" bind:value={selectedCategory}>
+            <SelectTrigger class="h-8 min-w-32 text-xs">
+              <span class="truncate">{categoryLabel}</span>
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="all">{m.settings_ui_archive_all_categories()}</SelectItem>
+              {#each availableCategories as cat}
+                <SelectItem value={cat}>{cat}</SelectItem>
+              {/each}
+            </SelectContent>
+          </Select>
         {/if}
 
         <!-- View Switcher -->
         <div class="flex items-center p-0.5 rounded-lg border border-border/60 bg-muted/40">
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon"
             onclick={() => viewMode = "grid"}
-            class="p-1.5 rounded-md transition-all {viewMode === 'grid' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
+            class="h-7 w-7 rounded-md transition-all {viewMode === 'grid' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
             title={m.settings_ui_archive_grid_view()}
           >
             <Grid class="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onclick={() => viewMode = "table"}
-            class="p-1.5 rounded-md transition-all {viewMode === 'table' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
+            class="h-7 w-7 rounded-md transition-all {viewMode === 'table' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
             title={m.settings_ui_archive_list_view()}
           >
             <Bars3BottomLeft class="w-3.5 h-3.5" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>
   </header>
 
   <!-- Main Content Viewport -->
-  <main class="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
+  <main class="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
     {#if isLoading}
       <ArchiveLoading />
     {:else if filteredFolders.length === 0 && filteredDocuments.length === 0}

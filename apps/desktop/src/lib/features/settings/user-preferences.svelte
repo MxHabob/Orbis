@@ -11,7 +11,7 @@ import {
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
-import { GlobeAlt, Grid } from "@orbis/icons";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 
@@ -19,6 +19,36 @@ let prefTheme = $state("dark");
 let prefLanguage = $state("ar");
 let notifyEmail = $state(true);
 let notifyPush = $state(true);
+
+const initialPrefs = {
+  theme: "dark",
+  language: "ar",
+  notifyEmail: true,
+  notifyPush: true,
+};
+
+let isSaving = $state(false);
+const isDirty = $derived(
+  prefTheme !== initialPrefs.theme ||
+  prefLanguage !== initialPrefs.language ||
+  notifyEmail !== initialPrefs.notifyEmail ||
+  notifyPush !== initialPrefs.notifyPush
+);
+
+function handleReset() {
+  prefTheme = initialPrefs.theme;
+  prefLanguage = initialPrefs.language;
+  notifyEmail = initialPrefs.notifyEmail;
+  notifyPush = initialPrefs.notifyPush;
+}
+
+function handleSave() {
+  isSaving = true;
+  setTimeout(() => {
+    isSaving = false;
+    toast.success(m.settings_user_detail_settings_saved());
+  }, 300);
+}
 </script>
 
 <div in:fade={{ duration: 100 }} class="flex flex-col gap-6 text-start">
@@ -109,16 +139,12 @@ let notifyPush = $state(true);
       </div>
     </div>
   </div>
-
-  <div class="flex justify-end border-t border-border/40 pt-6 mt-4">
-    <Button
-      variant="lime"
-      size="sm"
-      class="font-bold"
-      onclick={() =>
-        toast.success(m.settings_user_detail_settings_saved())}
-    >
-      {m.settings_action_save_changes()}
-    </Button>
-  </div>
 </div>
+
+<SettingsBottomBar
+  visible={isDirty}
+  {isDirty}
+  {isSaving}
+  onsave={handleSave}
+  onreset={handleReset}
+/>

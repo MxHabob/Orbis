@@ -9,6 +9,12 @@ import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
+import {
   Trash,
   Refresh,
   Search,
@@ -56,6 +62,21 @@ let selectedIds = $state<Set<string>>(new Set());
 let isPreviewOpen = $state(false);
 let selectedDocument = $state<DocumentDto | null>(null);
 let selectedDocumentUrl = $state("");
+
+// Filter Labels for Selects
+const assetTypeLabel = $derived.by(() => {
+  switch (selectedAssetType) {
+    case "pdf": return m.operations_ui_pdf_documents();
+    case "image": return m.operations_ui_image();
+    case "video": return m.operations_ui_video();
+    case "audio": return m.operations_ui_audio();
+    default: return m.operations_ui_all_types();
+  }
+});
+
+const categoryLabel = $derived(
+  selectedCategory === "all" ? m.operations_ui_all_categories() : selectedCategory
+);
 
 // Queries & Mutations
 const trashQuery = useTrashDocuments();
@@ -317,34 +338,38 @@ async function handleBatchPurge() {
       </div>
 
       <!-- Filters & View Switcher -->
-      <div class="flex items-center gap-2 flex-wrap">
+      <div class="flex items-center gap-2 flex-wrap text-xs">
         <!-- Asset Type Filter -->
-        <select
-          bind:value={selectedAssetType}
-          class="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-        >
-          <option value="all">{m.operations_ui_all_types()}</option>
-          <option value="image">{m.operations_ui_image()}</option>
-          <option value="pdf">{m.operations_ui_pdf_documents()}</option>
-          <option value="video">{m.operations_ui_video()}</option>
-          <option value="audio">{m.operations_ui_audio()}</option>
-        </select>
+        <Select type="single" bind:value={selectedAssetType}>
+          <SelectTrigger class="h-8 min-w-32 text-xs">
+            <span class="truncate">{assetTypeLabel}</span>
+          </SelectTrigger>
+          <SelectContent align="end">
+            <SelectItem value="all">{m.operations_ui_all_types()}</SelectItem>
+            <SelectItem value="pdf">{m.operations_ui_pdf_documents()}</SelectItem>
+            <SelectItem value="image">{m.operations_ui_image()}</SelectItem>
+            <SelectItem value="video">{m.operations_ui_video()}</SelectItem>
+            <SelectItem value="audio">{m.operations_ui_audio()}</SelectItem>
+          </SelectContent>
+        </Select>
 
         <!-- Category Filter -->
         {#if availableCategories.length > 0}
-          <select
-            bind:value={selectedCategory}
-            class="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary capitalize"
-          >
-            <option value="all">{m.operations_ui_all_categories()}</option>
-            {#each availableCategories as cat}
-              <option value={cat}>{cat}</option>
-            {/each}
-          </select>
+          <Select type="single" bind:value={selectedCategory}>
+            <SelectTrigger class="h-8 min-w-32 text-xs">
+              <span class="truncate">{categoryLabel}</span>
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="all">{m.operations_ui_all_categories()}</SelectItem>
+              {#each availableCategories as cat}
+                <SelectItem value={cat}>{cat}</SelectItem>
+              {/each}
+            </SelectContent>
+          </Select>
         {/if}
 
         <!-- View Switcher (Grid / Table) -->
-        <div class="flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
+        <div class="flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5">
           <Button
             variant="ghost"
             size="icon"
@@ -370,7 +395,7 @@ async function handleBatchPurge() {
   </header>
 
   <!-- Main Content Stage -->
-  <main class="flex-1 overflow-y-auto p-6">
+  <main class="flex-1 overflow-y-auto p-6 scrollbar-hide">
     {#if isLoading}
       <ArchiveLoading />
     {:else if filteredDocs.length === 0}

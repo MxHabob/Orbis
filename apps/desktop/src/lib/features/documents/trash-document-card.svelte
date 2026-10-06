@@ -82,12 +82,12 @@ function formatDate(value?: string | null) {
 </script>
 
 <article
-  class="group relative flex flex-col justify-between rounded-xl border border-border/60 bg-card/70 p-3 hover:border-rose-500/40 hover:shadow-md transition-all duration-200"
+  class="group relative flex flex-col justify-between rounded-xl border border-border/60 bg-card/70 p-2.5 hover:border-rose-500/40 hover:shadow-md transition-all duration-200 overflow-hidden min-w-0 max-w-full"
 >
   <!-- Media / Thumbnail Container -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="relative cursor-pointer overflow-hidden rounded-lg bg-muted/40 aspect-[4/3] flex items-center justify-center border border-border/30"
+    class="relative cursor-pointer overflow-hidden rounded-lg bg-muted/40 aspect-[4/3] flex items-center justify-center border border-border/30 w-full"
     use:loadWhenVisible
     role="button"
     tabindex="0"
@@ -117,10 +117,10 @@ function formatDate(value?: string | null) {
     </div>
 
     <!-- Trashed Warning Banner -->
-    <div class="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-rose-950/80 via-rose-950/40 to-transparent p-1.5 pt-4 text-center">
-      <div class="flex items-center justify-center gap-1 text-[10px] font-medium text-rose-200">
-        <ClockRotateRight class="w-3 h-3 text-rose-400" />
-        <span>{formatDate(document.deleted_at)}</span>
+    <div class="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-rose-950/80 via-rose-950/40 to-transparent p-1 pt-3 text-center">
+      <div class="flex items-center justify-center gap-1 text-[9px] font-medium text-rose-200 truncate px-1">
+        <ClockRotateRight class="w-3 h-3 text-rose-400 shrink-0" />
+        <span class="truncate">{formatDate(document.deleted_at)}</span>
       </div>
     </div>
 
@@ -154,12 +154,12 @@ function formatDate(value?: string | null) {
   </div>
 
   <!-- Document Meta & Controls -->
-  <div class="mt-2.5 flex flex-col gap-1.5">
+  <div class="mt-2 flex flex-col gap-1 min-w-0 w-full overflow-hidden">
     <!-- File Title -->
-    <div class="flex items-start justify-between gap-1">
+    <div class="w-full min-w-0 overflow-hidden">
       <button
         type="button"
-        class="text-xs font-semibold text-foreground/90 truncate hover:text-foreground cursor-pointer"
+        class="text-xs font-semibold text-foreground/90 truncate block w-full text-start hover:text-foreground cursor-pointer"
         title={document.name}
         onclick={() => onpreview(document)}
       >
@@ -168,42 +168,41 @@ function formatDate(value?: string | null) {
     </div>
 
     <!-- Metadata Details -->
-    <div class="flex items-center justify-between text-[11px] text-muted-foreground">
-      <span class="font-mono">{formatSize(document.file_size_bytes)}</span>
-      <span class="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground capitalize">
+    <div class="flex items-center justify-between gap-1 text-[10px] text-muted-foreground min-w-0">
+      <span class="font-mono shrink-0">{formatSize(document.file_size_bytes)}</span>
+      <span class="rounded bg-muted/60 px-1.5 py-0.5 text-[9px] text-muted-foreground capitalize truncate max-w-24">
         {document.category || m.operations_ui_general_category()}
       </span>
     </div>
 
     <!-- Quick Action Buttons -->
-    <div class="mt-1.5 flex items-center justify-between gap-1 pt-1.5 border-t border-border/40">
+    <div class="mt-1 flex items-center justify-between gap-1 pt-1.5 border-t border-border/40 min-w-0">
       <Button
         variant="ghost"
-        size="sm"
-        class="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+        size="icon-xs"
+        class="h-7 w-7 text-muted-foreground hover:text-foreground shrink-0"
         onclick={() => onpreview(document)}
         title={m.operations_ui_preview()}
       >
-        <Eye class="w-3.5 h-3.5 me-1" />
-        <span>{m.operations_ui_preview()}</span>
+        <Eye class="w-3.5 h-3.5" />
       </Button>
 
-      <div class="flex items-center gap-1">
+      <div class="flex items-center gap-1 shrink-0">
         <Button
           variant="outline"
-          size="sm"
-          class="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 border-emerald-500/30"
+          size="xs"
+          class="h-6 px-1.5 text-[10px] font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 border-emerald-500/30 gap-1"
           onclick={() => onrestore(document.id)}
           title={m.operations_ui_restore_file()}
         >
-          <Refresh class="w-3.5 h-3.5 me-1" />
+          <Refresh class="w-3 h-3" />
           <span>{m.operations_ui_restore()}</span>
         </Button>
 
         <Button
           variant="ghost"
-          size="icon"
-          class="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          size="icon-xs"
+          class="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           onclick={() => onpurge(document.id)}
           title={m.operations_ui_trash_permanently_delete()}
         >
