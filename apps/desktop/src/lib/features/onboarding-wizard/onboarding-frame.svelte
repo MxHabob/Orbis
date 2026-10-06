@@ -70,7 +70,7 @@
   }
 </script>
 
-<div class="relative flex h-screen w-screen min-h-0 flex-col overflow-hidden bg-background font-sans text-foreground selection:bg-primary/20">
+<div class="relative flex h-full w-full min-h-0 flex-col overflow-hidden bg-background font-sans text-foreground selection:bg-primary/20">
   <!-- Ambient background glow for high-end feel -->
   <div class="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
     <div class="absolute -top-[20%] left-1/2 -translate-x-1/2 h-[450px] w-[750px] rounded-full bg-primary/5 blur-3xl dark:bg-primary/10"></div>
@@ -78,10 +78,10 @@
 
   <!-- Floating Header (Centered Top, Minimalist, No Titles or Text) -->
   <header
-    class="fixed top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 sm:gap-3 rounded-full border border-border/60 bg-background/85 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/25 px-3 py-1.5 transition-all duration-300 ring-1 ring-white/10"
+    class="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 sm:gap-3 rounded-full border border-border/70 bg-card/90 dark:bg-card/90 backdrop-blur-xl shadow-lg shadow-black/10 dark:shadow-black/30 px-3 py-1.5 transition-all duration-300 ring-1 ring-border/50 max-w-[calc(100vw-2rem)]"
   >
     <!-- Step Navigation Indicator Dots / Pills -->
-    <nav class="flex items-center gap-1.5 px-1" aria-label={m.onboarding_stages_title()}>
+    <nav class="flex items-center gap-1.5 px-1 overflow-x-auto scrollbar-hide" aria-label={m.onboarding_stages_title()}>
       {#each steps as step, index (step.id)}
         {@const isActive = index === currentStepIndex}
         {@const isCompleted = step.status === "completed"}
@@ -106,11 +106,11 @@
     </nav>
 
     <!-- Subtle Divider -->
-    <div class="h-3.5 w-px bg-border/60" aria-hidden="true"></div>
+    <div class="h-3.5 w-px bg-border/60 shrink-0" aria-hidden="true"></div>
 
     <!-- Circular Progress SVG Ring -->
     <div
-      class="relative flex size-5 items-center justify-center"
+      class="relative flex size-5 shrink-0 items-center justify-center"
       title={`${overallProgress}%`}
       aria-label={`${overallProgress}% completed`}
     >
@@ -135,14 +135,14 @@
     </div>
 
     <!-- Subtle Divider -->
-    <div class="h-3.5 w-px bg-border/60" aria-hidden="true"></div>
+    <div class="h-3.5 w-px bg-border/60 shrink-0" aria-hidden="true"></div>
 
     <!-- Close / Exit Button -->
     <Button
       variant="ghost"
       size="icon"
       onclick={exitSetup}
-      class="size-7 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+      class="size-7 shrink-0 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
       title={m.onboarding_exit_dashboard()}
       aria-label={m.onboarding_exit_dashboard()}
     >
@@ -155,14 +155,14 @@
     id="onboarding-viewport"
     class="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide pt-20 pb-24 px-4 sm:px-6 md:px-8"
   >
-    <div class="mx-auto w-full max-w-4xl py-2">
+    <div class="mx-auto w-full max-w-3xl py-2">
       {@render children()}
     </div>
   </main>
 
   <!-- Floating Footer (Centered Bottom, Minimalist, No Titles or Text) -->
   <footer
-    class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1.5 rounded-full border border-border/60 bg-background/85 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/25 px-2 py-1.5 transition-all duration-300 ring-1 ring-white/10"
+    class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 rounded-full border border-border/70 bg-card/90 dark:bg-card/90 backdrop-blur-xl shadow-lg shadow-black/10 dark:shadow-black/30 px-2 py-1.5 transition-all duration-300 ring-1 ring-border/50 max-w-[calc(100vw-2rem)]"
   >
     <!-- Previous Step Button -->
     <Button
