@@ -75,16 +75,21 @@ jobs:
         include:
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
-            exe_source: solver-service-2.0.0-runner.exe
+            exe_extension: .exe
             exe_target: solver-service-x86_64-pc-windows-msvc.exe
           - platform: macos-latest
             target: aarch64-apple-darwin
-            exe_source: solver-service-2.0.0-runner
+            exe_extension: ""
             exe_target: solver-service-aarch64-apple-darwin
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Read Orbis app version
+        id: app_version
+        shell: bash
+        run: node -e "console.log('version=' + require('./apps/desktop/src-tauri/tauri.conf.json').version)" >> "$GITHUB_OUTPUT"
 
       - name: Setup GraalVM Mandrel for Native Compilation
         uses: graalvm/setup-graalvm@v1
@@ -99,13 +104,13 @@ jobs:
         env:
           MAVEN_OPTS: -Xmx6g
         run: |
-          mvn -B package -Dnative -DskipTests -Dquarkus.native.container-build=false
+          mvn -B package -Dnative -DskipTests -Dquarkus.native.container-build=false -Dorbis.version="${{ steps.app_version.outputs.version }}"
 
       - name: Stage Solver Sidecar into Tauri Binaries Directory
         shell: bash
         run: |
           mkdir -p apps/desktop/src-tauri/binaries
-          cp apps/solver-service/target/${{ matrix.exe_source }} apps/desktop/src-tauri/binaries/${{ matrix.exe_target }}
+          cp "apps/solver-service/target/orbis-solver-${{ steps.app_version.outputs.version }}-runner${{ matrix.exe_extension }}" "apps/desktop/src-tauri/binaries/${{ matrix.exe_target }}"
 
       - name: Setup Rust Environment
         uses: dtolnay/rust-toolchain@stable
@@ -147,16 +152,38 @@ jobs:
         include:
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
-            exe_source: solver-service-2.0.0-runner.exe
+            exe_extension: .exe
             exe_target: solver-service-x86_64-pc-windows-msvc.exe
           - platform: macos-latest
             target: aarch64-apple-darwin
-            exe_source: solver-service-2.0.0-runner
+            exe_extension: ""
             exe_target: solver-service-aarch64-apple-darwin
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Validate release tag and app versions
+        id: app_version
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const tagVersion = process.env.GITHUB_REF_NAME.replace(/^v/, '');
+          const desktopVersion = require('./apps/desktop/package.json').version;
+          const tauriVersion = require('./apps/desktop/src-tauri/tauri.conf.json').version;
+          const stagingVersion = require('./apps/desktop/src-tauri/tauri.staging.conf.json').version;
+          const cargoVersion = fs.readFileSync('./apps/desktop/src-tauri/Cargo.toml', 'utf8').match(/^version = "([^"]+)"/m)?.[1];
+          const lockfile = fs.readFileSync('./bun.lock', 'utf8');
+          const lockfileVersion = lockfile.match(/"apps\/desktop":\s*\{\s*"name":\s*"@orbis\/desktop",\s*"version":\s*"([^"]+)"/)?.[1];
+          const solverPom = fs.readFileSync('./apps/solver-service/pom.xml', 'utf8');
+          const solverVersion = solverPom.match(/<orbis\.version>([^<]+)<\/orbis\.version>/)?.[1];
+          const versions = { desktopVersion, tauriVersion, stagingVersion, cargoVersion, lockfileVersion, solverVersion };
+          if (Object.values(versions).some((version) => !version || version !== tagVersion)) {
+            throw new Error(`Release tag v${tagVersion} must match all app and solver versions: ${JSON.stringify(versions)}`);
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${tagVersion}\n`);
+          NODE
 
       - name: Setup GraalVM Mandrel for Native Compilation
         uses: graalvm/setup-graalvm@v1
@@ -171,13 +198,13 @@ jobs:
         env:
           MAVEN_OPTS: -Xmx6g
         run: |
-          mvn -B package -Dnative -DskipTests -Dquarkus.native.container-build=false
+          mvn -B package -Dnative -DskipTests -Dquarkus.native.container-build=false -Dorbis.version="${{ steps.app_version.outputs.version }}"
 
       - name: Stage Solver Sidecar into Tauri Binaries Directory
         shell: bash
         run: |
           mkdir -p apps/desktop/src-tauri/binaries
-          cp apps/solver-service/target/${{ matrix.exe_source }} apps/desktop/src-tauri/binaries/${{ matrix.exe_target }}
+          cp "apps/solver-service/target/orbis-solver-${{ steps.app_version.outputs.version }}-runner${{ matrix.exe_extension }}" "apps/desktop/src-tauri/binaries/${{ matrix.exe_target }}"
 
       - name: Setup Rust Environment
         uses: dtolnay/rust-toolchain@stable
@@ -191,24 +218,6 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
-
-      - name: Validate release tag and app versions
-        shell: bash
-        run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-          const tagVersion = process.env.GITHUB_REF_NAME.replace(/^v/, '');
-          const desktopVersion = require('./apps/desktop/package.json').version;
-          const tauriVersion = require('./apps/desktop/src-tauri/tauri.conf.json').version;
-          const stagingVersion = require('./apps/desktop/src-tauri/tauri.staging.conf.json').version;
-          const cargoVersion = fs.readFileSync('./apps/desktop/src-tauri/Cargo.toml', 'utf8').match(/^version = "([^"]+)"/m)?.[1];
-          const lockfile = fs.readFileSync('./bun.lock', 'utf8');
-          const lockfileVersion = lockfile.match(/"apps\/desktop":\s*\{\s*"name":\s*"@orbis\/desktop",\s*"version":\s*"([^"]+)"/)?.[1];
-          const versions = { desktopVersion, tauriVersion, stagingVersion, cargoVersion, lockfileVersion };
-          if (Object.values(versions).some((version) => !version || version !== tagVersion)) {
-            throw new Error(`Release tag v${tagVersion} must match all app versions: ${JSON.stringify(versions)}`);
-          }
-          NODE
 
       - name: Load and validate release notes
         id: release_notes

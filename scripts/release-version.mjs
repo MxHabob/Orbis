@@ -8,6 +8,7 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const paths = {
   desktopPackage: "apps/desktop/package.json",
   cargo: "apps/desktop/src-tauri/Cargo.toml",
+  solver: "apps/solver-service/pom.xml",
   tauri: "apps/desktop/src-tauri/tauri.conf.json",
   staging: "apps/desktop/src-tauri/tauri.staging.conf.json",
   lockfile: "bun.lock",
@@ -96,6 +97,7 @@ function main() {
   const original = {
     package: read(paths.desktopPackage),
     cargo: read(paths.cargo),
+    solver: read(paths.solver),
     tauri: read(paths.tauri),
     staging: read(paths.staging),
     lockfile: read(paths.lockfile),
@@ -103,6 +105,7 @@ function main() {
   const versions = {
     package: pkg.version,
     cargo: versionFromCargo(original.cargo),
+    solver: original.solver.match(/<orbis\.version>([^<]+)<\/orbis\.version>/)?.[1],
     tauri: JSON.parse(original.tauri).version,
     staging: JSON.parse(original.staging).version,
     lockfile: versionFromLockfile(original.lockfile),
@@ -114,6 +117,7 @@ function main() {
   const updated = {
     package: `${JSON.stringify({ ...pkg, version: nextVersion }, null, 2)}\n`,
     cargo: replaceVersion(original.cargo, /(^\[package\][\s\S]*?^version\s*=\s*")([^"]+)(")/m, nextVersion, "Cargo package"),
+    solver: replaceVersion(original.solver, /(<orbis\.version>)([^<]+)(<\/orbis\.version>)/, nextVersion, "Orbis solver"),
     tauri: `${JSON.stringify({ ...JSON.parse(original.tauri), version: nextVersion }, null, 2)}\n`,
     staging: `${JSON.stringify({ ...JSON.parse(original.staging), version: nextVersion }, null, 2)}\n`,
     lockfile: replaceVersion(
@@ -133,7 +137,7 @@ function main() {
   for (const [key, relativePath] of Object.entries(paths)) {
     fs.writeFileSync(absolute(relativePath), updated[key]);
   }
-  console.log(`Updated the desktop app version to ${nextVersion} in all manifests and the Bun lockfile.`);
+  console.log(`Updated the Orbis release version to ${nextVersion} in all manifests and the Bun lockfile.`);
 }
 
 try {

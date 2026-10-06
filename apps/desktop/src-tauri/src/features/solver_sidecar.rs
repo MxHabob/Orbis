@@ -258,24 +258,25 @@ impl SolverSidecarManager {
         candidates.push(PathBuf::from("binaries").join(&sidecar_name));
 
         // 3. Direct Maven native build output (during dev)
-        candidates.push(PathBuf::from(
-            "../../apps/solver-service/target/solver-service-2.0.0-runner.exe",
-        ));
-        candidates.push(PathBuf::from(
-            "../../apps/solver-service/target/solver-service-2.0.0-runner",
-        ));
-        candidates.push(PathBuf::from(
-            "../solver-service/target/solver-service-2.0.0-runner.exe",
-        ));
-        candidates.push(PathBuf::from(
-            "../solver-service/target/solver-service-2.0.0-runner",
-        ));
-        candidates.push(PathBuf::from(
-            "apps/solver-service/target/solver-service-2.0.0-runner.exe",
-        ));
-        candidates.push(PathBuf::from(
-            "apps/solver-service/target/solver-service-2.0.0-runner",
-        ));
+        let solver_version = env!("CARGO_PKG_VERSION");
+        candidates.push(PathBuf::from(format!(
+            "../../apps/solver-service/target/orbis-solver-{solver_version}-runner.exe"
+        )));
+        candidates.push(PathBuf::from(format!(
+            "../../apps/solver-service/target/orbis-solver-{solver_version}-runner"
+        )));
+        candidates.push(PathBuf::from(format!(
+            "../solver-service/target/orbis-solver-{solver_version}-runner.exe"
+        )));
+        candidates.push(PathBuf::from(format!(
+            "../solver-service/target/orbis-solver-{solver_version}-runner"
+        )));
+        candidates.push(PathBuf::from(format!(
+            "apps/solver-service/target/orbis-solver-{solver_version}-runner.exe"
+        )));
+        candidates.push(PathBuf::from(format!(
+            "apps/solver-service/target/orbis-solver-{solver_version}-runner"
+        )));
 
         for candidate in candidates {
             if candidate.is_file() {

@@ -10,7 +10,7 @@ Start from a clean, up-to-date `main` branch after its changes have passed CI:
 bun run release:prepare patch
 ```
 
-Use `minor`, `major`, or an explicit stable SemVer such as `1.2.3` when appropriate. The command synchronizes the desktop package, Tauri production and staging configs, Cargo package, and Bun lockfile. It then drafts `releases/vX.Y.Z.md` from commits since the latest version tag and creates:
+Use `minor`, `major`, or an explicit stable SemVer such as `1.2.3` when appropriate. The command synchronizes the desktop package, Tauri production and staging configs, desktop Cargo package, solver sidecar Maven project, and Bun lockfile. The sidecar is bundled and released with Orbis, so its product version follows the desktop release version. It then drafts `releases/vX.Y.Z.md` from commits since the latest version tag and creates:
 
 ```text
 release-assets/vX.Y.Z/
@@ -32,7 +32,7 @@ git push origin vX.Y.Z
 
 `release:commit` validates the version and notes, stages only the release manifests, lockfile, notes, and that version's assets, then creates a release commit and annotated tag. It does not push anything. Pushing the tag triggers the production workflow; it will stop if the versioned notes still contain template comments or TODO/TBD markers.
 
-The workflow creates a draft release and attaches the signed updater metadata/installers plus the versioned assets. Review the generated assets, signatures, updater manifest, notes, and platform builds in GitHub before publishing the draft. Publishing the draft is the production rollout gate.
+The workflow validates that the solver Maven version matches the release tag, then builds `orbis-solver-<version>-runner` for each platform and stages it under the target-triple `solver-service` name expected by Tauri. It creates a draft release and attaches the signed updater metadata/installers plus the versioned assets. Review the generated assets, signatures, updater manifest, notes, and platform builds in GitHub before publishing the draft. Publishing the draft is the production rollout gate.
 
 ## Commit message convention
 
