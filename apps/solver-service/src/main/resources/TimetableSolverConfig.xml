@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<solver xmlns="https://timefold.ai/xsd/solver"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://timefold.ai/xsd/solver https://timefold.ai/xsd/solver/solver.xsd">
+    <solutionClass>ai.orbis.solver.domain.Timetable</solutionClass>
+    <entityClass>ai.orbis.solver.domain.LessonAssignment</entityClass>
+    <termination>
+        <spentLimit>PT30S</spentLimit>
+        <bestScoreLimit>0hard/0soft</bestScoreLimit>
+    </termination>
+</solver>

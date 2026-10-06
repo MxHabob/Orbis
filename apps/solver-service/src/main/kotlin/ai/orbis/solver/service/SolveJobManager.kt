@@ -12,6 +12,7 @@ import ai.orbis.solver.mapper.ExamProblemMapper
 import ai.timefold.solver.core.api.solver.SolverManager
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import org.jboss.logging.Logger
 import java.util.concurrent.ConcurrentHashMap
 
@@ -19,9 +20,11 @@ import java.util.concurrent.ConcurrentHashMap
 class SolveJobManager {
 
     @Inject
+    @Named("timetableSolver")
     lateinit var solverManager: SolverManager<Timetable, String>
 
     @Inject
+    @Named("examSolver")
     lateinit var examSolverManager: SolverManager<ExamSchedule, String>
 
     private val log = Logger.getLogger(SolveJobManager::class.java)
@@ -196,4 +199,3 @@ class SolveJobManager {
         var error: String? = null,
     )
 }
-

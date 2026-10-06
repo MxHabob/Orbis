@@ -3031,6 +3031,8 @@
   "ui_changelog_no_releases": "There are no published releases yet.",
   "ui_changelog_release_images": "Release images",
   "ui_changelog_release_notes": "Release notes",
+  "ui_changelog_release_resources": "Release resources",
+  "ui_changelog_no_release_notes": "No release notes were provided for this version.",
   "ui_changelog_install_and_restart": "Install and restart",
   "ui_changelog_installing_update": "Installing update...",
   "common_students_count_suffix": "records",

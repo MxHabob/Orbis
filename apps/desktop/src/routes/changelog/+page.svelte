@@ -7,6 +7,7 @@
   import { Button } from "@orbis/ui/button";
   import { Badge } from "@orbis/ui/badge";
   import { ArrowPath, Calendar, Check, Cube } from "@orbis/icons";
+  import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
 
   let releases = $state<ReleaseChangelogItem[]>([]);
   let appInfo = $state<AppInfo | null>(null);
@@ -83,7 +84,7 @@
 </script>
 
 <svelte:head>
-  <title>{m.ui_changelog_what_s_new_changelog_orbis()}</title>
+  <title>{appInfo ? `${appInfo.name} — ${m.ui_changelog_what_s_new_releases()}` : m.ui_changelog_what_s_new_releases()}</title>
 </svelte:head>
 
 <div class="flex min-h-screen flex-col bg-background font-sans text-foreground">
@@ -257,7 +258,34 @@
         {#if activeRelease.body?.trim()}
           <section class="space-y-3">
             <h2 class="text-xs font-bold uppercase tracking-wider text-foreground">{m.ui_changelog_release_notes()}</h2>
-            <pre class="whitespace-pre-wrap break-words rounded-lg border border-border/50 bg-muted/20 p-4 font-sans text-sm leading-relaxed text-foreground">{activeRelease.body}</pre>
+            <div class="rounded-lg border border-border/50 bg-muted/20 p-4">
+              <ReleaseMarkdown markdown={activeRelease.body} />
+            </div>
+          </section>
+        {:else}
+          <p class="rounded-lg border border-border/50 bg-muted/20 p-4 text-sm text-muted-foreground">
+            {m.ui_changelog_no_release_notes()}
+          </p>
+        {/if}
+
+        {#if activeRelease.resources.length > 0}
+          <section class="space-y-3">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-foreground">{m.ui_changelog_release_resources()}</h2>
+            <ul class="space-y-2">
+              {#each activeRelease.resources as resource (resource.url)}
+                <li>
+                  <a
+                    href={resource.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/20 px-3 py-2 text-sm text-primary underline underline-offset-4"
+                  >
+                    <span class="min-w-0 truncate">{resource.name}</span>
+                    <span class="shrink-0 font-mono text-xs text-muted-foreground">{(resource.size / 1024).toFixed(0)} KB</span>
+                  </a>
+                </li>
+              {/each}
+            </ul>
           </section>
         {/if}
       {:else}

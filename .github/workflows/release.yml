@@ -200,12 +200,19 @@ jobs:
           const tagVersion = process.env.GITHUB_REF_NAME.replace(/^v/, '');
           const desktopVersion = require('./apps/desktop/package.json').version;
           const tauriVersion = require('./apps/desktop/src-tauri/tauri.conf.json').version;
+          const stagingVersion = require('./apps/desktop/src-tauri/tauri.staging.conf.json').version;
           const cargoVersion = fs.readFileSync('./apps/desktop/src-tauri/Cargo.toml', 'utf8').match(/^version = "([^"]+)"/m)?.[1];
-          const versions = { desktopVersion, tauriVersion, cargoVersion };
+          const lockfile = fs.readFileSync('./bun.lock', 'utf8');
+          const lockfileVersion = lockfile.match(/"apps\/desktop":\s*\{\s*"name":\s*"@orbis\/desktop",\s*"version":\s*"([^"]+)"/)?.[1];
+          const versions = { desktopVersion, tauriVersion, stagingVersion, cargoVersion, lockfileVersion };
           if (Object.values(versions).some((version) => !version || version !== tagVersion)) {
             throw new Error(`Release tag v${tagVersion} must match all app versions: ${JSON.stringify(versions)}`);
           }
           NODE
+
+      - name: Load and validate release notes
+        id: release_notes
+        run: node scripts/github-release-body.mjs "${{ github.ref_name }}"
 
       - name: Validate updater signing key
         env:
@@ -232,10 +239,28 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Orbis Release ${{ github.ref_name }}"
-          releaseBody: "Automated release of the Orbis Desktop Client with embedded Zero-Setup Timefold Sidecar."
+          releaseBody: ${{ steps.release_notes.outputs.body }}
           releaseDraft: true
           prerelease: false
           uploadUpdaterJson: true
           uploadUpdaterSignatures: true
           projectPath: "apps/desktop"
           args: --config src-tauri/tauri.updater.conf.json --target ${{ matrix.target }}
+
+  upload-release-assets:
+    name: Upload release images and resources
+    needs: release-desktop
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Upload versioned release assets to the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/upload-release-assets.mjs "${{ github.ref_name }}"

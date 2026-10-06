@@ -14,7 +14,7 @@
         <quarkus.platform.version>3.15.1</quarkus.platform.version>
         <timefold.version>1.17.0</timefold.version>
         <kotlin.version>2.0.21</kotlin.version>
-        <quarkus.package.type>fast-jar</quarkus.package.type>
+        <quarkus.package.jar.type>fast-jar</quarkus.package.jar.type>
         <quarkus.native.container-build>false</quarkus.native.container-build>
         <quarkus.native.native-image-xmx>4g</quarkus.native.native-image-xmx>
         <quarkus.native.additional-build-args>--no-fallback</quarkus.native.additional-build-args>
@@ -132,7 +132,7 @@
                 </property>
             </activation>
             <properties>
-                <quarkus.package.type>native</quarkus.package.type>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
             </properties>
         </profile>
     </profiles>

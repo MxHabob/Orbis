@@ -248,9 +248,39 @@ interface GitHubRelease {
   html_url: string;
   prerelease: boolean;
   assets?: Array<{
+    name: string;
     browser_download_url: string;
     content_type?: string;
+    size?: number;
   }>;
+}
+
+const RELEASE_IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "avif"]);
+const RELEASE_RESOURCE_EXTENSIONS = new Set([
+  "pdf", "md", "txt", "csv", "json", "docx", "xlsx", "pptx", "odt", "ods", "odp",
+]);
+
+function releaseAssetUrl(value: string): string | null {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" &&
+      url.hostname === "github.com" &&
+      url.pathname.startsWith("/MxHabob/Orbis/releases/download/")
+      ? url.href
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function semverParts(tag: string): [number, number, number] | null {
+  const match = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(tag);
+  return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
+}
+
+function isReleaseImage(asset: NonNullable<GitHubRelease["assets"]>[number]): boolean {
+  const ext = asset.name.split(".").pop()?.toLowerCase();
+  return Boolean(asset.content_type?.startsWith("image/") || (ext && RELEASE_IMAGE_EXTENSIONS.has(ext)));
 }
 
 export class RemoteClient implements OrbisApiClient {
@@ -1470,7 +1500,7 @@ export class RemoteClient implements OrbisApiClient {
 
   async systemGetAppInfo(): Promise<AppInfo> {
     return {
-      name: "Orbis",
+      name: appPackage.productName,
       version: appPackage.version,
       build_profile: import.meta.env.DEV ? "development" : "production",
       target_os: "web",
@@ -1488,25 +1518,51 @@ export class RemoteClient implements OrbisApiClient {
 
     const releases: GitHubRelease[] = await response.json();
     return releases
-      .filter((release) => !release.prerelease)
+      .filter((release) => !release.prerelease && semverParts(release.tag_name) !== null)
+      .filter((release) => {
+        try {
+          const url = new URL(release.html_url);
+          return url.protocol === "https:" && url.hostname === "github.com";
+        } catch {
+          return false;
+        }
+      })
+      .sort((left, right) => {
+        const a = semverParts(left.tag_name)!;
+        const b = semverParts(right.tag_name)!;
+        return b[0] - a[0] || b[1] - a[1] || b[2] - a[2];
+      })
       .map((release, index) => {
         const version = release.tag_name.replace(/^v/, "");
-        const images = (release.assets ?? [])
-          .flatMap((asset) => {
-            try {
-              const url = new URL(asset.browser_download_url);
-              const extension = url.pathname.toLowerCase().split(".").pop();
-              const isImage =
-                asset.content_type?.startsWith("image/") ||
-                ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(extension ?? "");
-              return url.protocol === "https:" && url.hostname === "github.com" && isImage
-                ? [url.href]
-                : [];
-            } catch {
-              return [];
-            }
-          })
+        const assets = release.assets ?? [];
+        const images = assets
+          .filter(isReleaseImage)
+          .map((asset) => releaseAssetUrl(asset.browser_download_url))
+          .filter((url): url is string => url !== null)
           .slice(0, 6);
+        const resources = assets
+          .filter((asset) => {
+            if (isReleaseImage(asset)) return false;
+            const name = asset.name.toLowerCase();
+            const ext = name.split(".").pop() ?? "";
+            return RELEASE_RESOURCE_EXTENSIONS.has(ext) &&
+              name !== "latest.json" &&
+              !name.endsWith(".sig") &&
+              !name.endsWith(".nsis.zip") &&
+              !name.endsWith(".app.tar.gz");
+          })
+          .flatMap((asset) => {
+            const url = releaseAssetUrl(asset.browser_download_url);
+            return url
+              ? [{
+                  name: asset.name,
+                  url,
+                  content_type: asset.content_type ?? "application/octet-stream",
+                  size: asset.size ?? 0,
+                }]
+              : [];
+          })
+          .slice(0, 20);
 
         return {
           version,
@@ -1517,6 +1573,7 @@ export class RemoteClient implements OrbisApiClient {
           is_latest: index === 0,
           html_url: release.html_url,
           images,
+          resources,
         };
       });
   }
