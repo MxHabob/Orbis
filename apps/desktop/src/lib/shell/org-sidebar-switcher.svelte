@@ -18,12 +18,10 @@ import {
   TooltipTrigger,
   Avatar,
   AvatarFallback,
-  AvatarImage,
 } from "@orbis/ui";
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { api } from "$lib/api/client";
-
 import { onMount } from "svelte";
 
 let {

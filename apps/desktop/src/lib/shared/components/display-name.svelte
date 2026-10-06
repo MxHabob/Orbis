@@ -15,7 +15,7 @@ import {
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
 import { FormField } from "@orbis/ui";
-import { AdjustmentsHorizontal, ArrowPath, FloppyDisk } from "@orbis/icons";
+import { ArrowPath } from "@orbis/icons";
 
 let {
   title = m.shared_ui_display_name(),

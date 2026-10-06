@@ -10,7 +10,6 @@ import WelcomeSection from "./components/welcome-section.svelte";
 import QuickActions from "./components/quick-actions.svelte";
 import WidgetCards from "./components/widget-cards.svelte";
 import DesktopBanner from "./components/desktop-banner.svelte";
-
 import { DashboardSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
 import { SetupProgress } from "$lib/features/setup-cards";

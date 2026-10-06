@@ -3,11 +3,10 @@
   import * as m from "$lib/paraglide/messages";
   import { localizeHref } from "$lib/paraglide/runtime";
   import { authStore, themeStore, uiStore, workflowInbox } from "$lib/stores";
-  import { Bell, Maximize, Minus, Moon, Restore, Search, Sparkles, Sun, XMark } from "@orbis/icons";
+  import { Bell, Maximize, Minus, Moon, Restore, Search, Sun, XMark } from "@orbis/icons";
   import { Button } from "@orbis/ui/button";
   import { Logo } from "@orbis/icons";
   import { onMount } from "svelte";
-
   import TitleBreadcrumbs from "./title-breadcrumbs.svelte";
   import WhatsNewPopover from "./whats-new-popover.svelte";
 

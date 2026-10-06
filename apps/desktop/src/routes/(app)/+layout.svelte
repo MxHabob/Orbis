@@ -1,7 +1,6 @@
 <script lang="ts">
-import { isDesktopApp } from "$lib/api";
 import TitleBar from "$lib/shell/title-bar.svelte";
-import GlobalConfirmDialog from "$lib/shared/components/global-confirm-dialog.svelte";
+import { isDesktopApp } from "$lib/api";
 import { uiStore } from "$lib/stores";
 import { printState } from "$lib/stores/print.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
@@ -10,9 +9,9 @@ let { children } = $props();
 </script>
 
 <div class="flex flex-col h-screen w-screen overflow-hidden bg-background">
-	<!-- {#if isDesktopApp} -->
+	{#if isDesktopApp}
 		<TitleBar />
-	<!-- {/if} -->
+	{/if}
 	<div class="flex-1 flex flex-col min-h-0 overflow-hidden relative">
 		{@render children()}
 	</div>
@@ -24,8 +23,6 @@ let { children } = $props();
 		<SearchModal />
 	{/await}
 {/if}
-
-<GlobalConfirmDialog />
 
 <PrintDialog
 	bind:open={printState.isOpen}

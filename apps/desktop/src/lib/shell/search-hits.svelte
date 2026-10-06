@@ -1,5 +1,5 @@
 <script lang="ts">
-import { AdjustmentsHorizontal, ArrowUturnLeft } from "@orbis/icons";
+import { ArrowUturnLeft } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 
 let {

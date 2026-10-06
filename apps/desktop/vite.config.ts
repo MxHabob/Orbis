@@ -7,7 +7,6 @@ import { defineConfig, loadEnv } from "vite";
 const host = process.env.TAURI_DEV_HOST;
 const rootDir = import.meta.dirname;
 
-
 export default defineConfig(({ mode }) => {
   return {
     plugins: [

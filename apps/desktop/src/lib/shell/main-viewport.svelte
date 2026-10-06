@@ -26,6 +26,7 @@ import { Button } from "@orbis/ui";
 import Resizer from "./resizer.svelte";
 import SashLayer from "./sash-layer.svelte";
 import type { Snippet } from "svelte";
+    import { m } from "$lib/paraglide/messages";
 
 type PanelSize = {
   default: number;

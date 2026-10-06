@@ -5,10 +5,8 @@ Inspired by dashboard's secondary-menu.tsx — unified across Class Detail,
 Student Detail, and User Detail.
 -->
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
-import type { Component } from "svelte";
 
 type MenuItem = {
   path: string;

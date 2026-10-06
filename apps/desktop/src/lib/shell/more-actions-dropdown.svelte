@@ -15,7 +15,7 @@ import {
 } from "@orbis/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui";
 import { isDesktopApp } from "$lib/api";
-import BackupCliDialog from "./backup-cli-dialog.svelte";
+import BackupCliDialog from "../features/system/backup-cli-dialog.svelte";
 import {
   AppNotification,
   ChatBubbles,
@@ -110,7 +110,7 @@ const iconClass = "text-muted-foreground shrink-0";
             <QuestionMarkCircle size={13} class={iconClass} />
             <span>{m.ui_copy_help_center_5494ae10()}</span>
           </DropdownMenuItem>
-          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/support')}>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://www.mulverse.com/p/orbis/support')}>
             <Headphone size={13} class={iconClass} />
             <span>{m.ui_copy_contact_support_834f3ed7()}</span>
           </DropdownMenuItem>
@@ -152,13 +152,13 @@ const iconClass = "text-muted-foreground shrink-0";
         </div>
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent side="left" align="end" sideOffset={4} class="w-48 text-start">
-          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/terms')}>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://www.mulverse.com/p/orbis/terms')}>
             <DocumentPage size={13} class={iconClass} />
             <span>{m.common_sidebar_help_terms()}</span>
           </DropdownMenuItem>
-          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/privacy')}>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://www.mulverse.com/p/orbis/privacy')}>
             <Lock size={13} class={iconClass} />
-            <span>{m.common_login_privacy_policy ? m.common_login_privacy_policy() : m.common_login_privacy_policy()}</span>
+            <span>{m.common_login_privacy_policy()}</span>
           </DropdownMenuItem>
       </DropdownMenuSubContent>
     </DropdownMenuSub>

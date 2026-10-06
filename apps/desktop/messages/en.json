@@ -2319,6 +2319,7 @@
   "common_whats_new_desc_2": "Synchronise your school databases securely with Mulverse Cloud Services, enabling advanced reporting, multi-branch analytics, and secure data backups.",
   "common_whats_new_header_title": "What's New in Orbis",
   "common_whats_new_read_more": "Read more",
+  "common_whats_new_open_changelog_failed": "Could not open the release history. Please try again.",
   "common_whats_new_title_1": "Orbis Educational Ecosystem",
   "common_whats_new_title_2": "Mulverse Cloud Integration",
   "common_word_academic_number": "Academic Number",
