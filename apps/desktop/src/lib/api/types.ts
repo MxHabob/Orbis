@@ -806,7 +806,7 @@ export interface HealthResponse {
   schema_version: string;
 }
 
-export type OrgLifecycleState = "empty" | "core_ready" | "operational";
+export type OrgLifecycleState = "empty" | "core_ready" | "ready_with_setup" | "operational";
 
 export interface SetupItem {
   key: string;

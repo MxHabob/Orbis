@@ -187,9 +187,7 @@ async function processAuth() {
             if (window.opener) {
               window.close();
             } else {
-              const targetUrl = authStore.needsOnboarding
-                ? "/onboarding"
-                : `/${res.user.org_id}`;
+              const targetUrl = `/${res.user.org_id}`;
               goto(localizeHref(targetUrl), { replaceState: true });
             }
           }, 1000);
@@ -334,9 +332,7 @@ async function handleInitiateOAuth() {
           if (window.opener) {
             window.close();
           } else {
-            const targetUrl = authStore.needsOnboarding
-              ? "/onboarding"
-              : `/${res.user.org_id}`;
+            const targetUrl = `/${res.user.org_id}`;
             goto(localizeHref(targetUrl), { replaceState: true });
           }
         }, 1000);

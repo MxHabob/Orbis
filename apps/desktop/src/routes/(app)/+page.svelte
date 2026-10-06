@@ -2,7 +2,7 @@
   Root page — startup orchestrator.
   Resolves the startup phase and routes to the correct screen:
   - connection_setup → /connection
-  - bootstrap → /onboarding
+  - bootstrap → /bootstrap
   - login / ready → /login or /[orgId]
   - error → /connection
 -->
@@ -30,7 +30,7 @@ onMount(async () => {
 
     case "bootstrap":
       statusText = "Organization setup required";
-      goto(localizeHref("/onboarding"), { replaceState: true });
+      goto(localizeHref("/bootstrap"), { replaceState: true });
       break;
 
     case "login":
@@ -38,11 +38,7 @@ onMount(async () => {
       statusText = "Restoring session...";
       await authStore.restore();
       if (authStore.isAuthenticated && authStore.orgId) {
-        if (authStore.needsOnboarding) {
-          goto(localizeHref("/onboarding"), { replaceState: true });
-        } else {
-          goto(localizeHref(`/${authStore.orgId}`), { replaceState: true });
-        }
+        goto(localizeHref(`/${authStore.orgId}`), { replaceState: true });
       } else {
         goto(localizeHref("/login"), { replaceState: true });
       }

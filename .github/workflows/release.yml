@@ -95,7 +95,15 @@ jobs:
 
       - name: Build Native Solver Sidecar (.exe / binary)
         working-directory: apps/solver-service
-        run: mvn -B package -Dnative -DskipTests
+        env:
+          MAVEN_OPTS: -Xmx6g
+        run: |
+          mvn -B package \
+            -DskipTests \
+            -Dquarkus.package.type=native \
+            -Dquarkus.native.container-build=false \
+            -Dquarkus.native.native-image-xmx=4g \
+            -Dquarkus.native.additional-build-args=--no-fallback
 
       - name: Stage Solver Sidecar into Tauri Binaries Directory
         shell: bash
@@ -163,7 +171,15 @@ jobs:
 
       - name: Build Native Solver Sidecar (.exe / binary)
         working-directory: apps/solver-service
-        run: mvn -B package -Dnative -DskipTests
+        env:
+          MAVEN_OPTS: -Xmx6g
+        run: |
+          mvn -B package \
+            -DskipTests \
+            -Dquarkus.package.type=native \
+            -Dquarkus.native.container-build=false \
+            -Dquarkus.native.native-image-xmx=4g \
+            -Dquarkus.native.additional-build-args=--no-fallback
 
       - name: Stage Solver Sidecar into Tauri Binaries Directory
         shell: bash

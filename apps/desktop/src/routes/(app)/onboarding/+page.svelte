@@ -1,17 +1,19 @@
 <!--
-  @component OnboardingPage
-  Route /onboarding — First-time organization setup and system bootstrap.
+  @component OnboardingRedirect
+  Route /onboarding — Redirects to /bootstrap for backward compatibility.
+  The bootstrap wizard now lives at /bootstrap.
+  Post-bootstrap onboarding (Setup Center) is at /[orgId]/onboarding.
 -->
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
-import { BootstrapWizard } from "$lib/features/onboarding";
-import { getLocale } from "$lib/paraglide/runtime";
+import { goto } from "$app/navigation";
+import { onMount } from "svelte";
+import { localizeHref } from "$lib/paraglide/runtime";
 
-const isRTL = $derived(getLocale().startsWith("ar"));
+onMount(() => {
+  goto(localizeHref("/bootstrap"), { replaceState: true });
+});
 </script>
 
-<svelte:head>
-  <title>{m.ui_onboarding_entry_organization_setup_bootstrap_orbis()}</title>
-</svelte:head>
-
-<BootstrapWizard />
+<div class="fixed inset-0 flex items-center justify-center bg-background text-muted-foreground">
+  <span class="text-sm">Redirecting...</span>
+</div>

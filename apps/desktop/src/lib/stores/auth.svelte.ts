@@ -21,8 +21,8 @@ class AuthStore {
   isSetupComplete = $derived(
     systemStore.orgReadiness ? systemStore.isOperational : null
   );
-  needsOnboarding = $derived(
-    this.isAuthenticated && systemStore.orgLifecycleState === "core_ready"
+  needsSetup = $derived(
+    this.isAuthenticated && !systemStore.isOperational
   );
 
   async login(email: string, password: string) {
