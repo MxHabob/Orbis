@@ -5,6 +5,14 @@
     "topo": {
       "dependsOn": ["^topo"]
     },
+    "generate:api": {
+      "dependsOn": ["^generate:api"],
+      "outputs": ["apps/api-rust/openapi/**", "packages/sdk/**"]
+    },
+    "generate:sdk": {
+      "dependsOn": ["generate:api"],
+      "outputs": ["packages/sdk/**"]
+    },
     "build": {
       "inputs": ["$TURBO_DEFAULT$", ".env"],
       "dependsOn": ["^build"],
