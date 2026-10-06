@@ -3,7 +3,7 @@
   import * as m from "$lib/paraglide/messages";
   import { localizeHref } from "$lib/paraglide/runtime";
   import { authStore, themeStore, uiStore, workflowInbox } from "$lib/stores";
-  import { Bell, Eye, Maximize, Minus, Moon, Restore, Search, Sparkles, Sun, XMark } from "@orbis/icons";
+  import { Bell, Maximize, Minus, Moon, Restore, Search, Sparkles, Sun, XMark } from "@orbis/icons";
   import { Button } from "@orbis/ui/button";
   import { Logo } from "@orbis/icons";
   import { onMount } from "svelte";
@@ -114,7 +114,7 @@
         variant="outline"
         size="sm"
         onclick={() => uiStore.setSearch(true)}
-        class="font-semibold text-xs text-foreground rounded-[8px] px-3 gap-2 shrink-0"
+        class="font-semibold text-xs text-foreground rounded-xl px-3 gap-2 shrink-0"
         title={m.common_header_search_title()}
         aria-label={m.shared_ui_search()}
       >
@@ -164,7 +164,7 @@
         <Button
           variant="ghost"
           size="icon-sm"
-          class="relative rounded-[8px] shrink-0"
+          class="relative rounded-xl shrink-0"
           title={m.common_titlebar_inbox()}
           onclick={() => {
             const orgId = authStore.orgId;
@@ -185,7 +185,7 @@
         <Button
           variant="ghost"
           size="icon-sm"
-          class="rounded-[8px] shrink-0"
+          class="rounded-xl shrink-0"
           title={m.common_titlebar_inbox()}
           onclick={() => {
             const orgId = authStore.orgId;
@@ -208,7 +208,7 @@
       variant="outline"
       size="icon-sm"
       onclick={() => themeStore.toggle()}
-      class="rounded-[8px] shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
+      class="rounded-xl shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
       title={m.common_titlebar_theme_toggle()}
       aria-label={m.common_titlebar_theme_toggle()}
     >
@@ -225,7 +225,7 @@
         variant={"secondary"}
         size="sm"
         onclick={() => uiStore.toggleFocusMode()}
-        class="font-semibold text-xs rounded-[8px] px-3 gap-2 shrink-0 {uiStore.focusMode
+        class="font-semibold text-xs rounded-xl px-3 gap-2 shrink-0 {uiStore.focusMode
           ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/95 hover:text-primary-foreground'
           : 'bg-muted/40 text-foreground border-border/60 hover:bg-muted/70'}"
         title={m.common_titlebar_focus_mode_tooltip()}

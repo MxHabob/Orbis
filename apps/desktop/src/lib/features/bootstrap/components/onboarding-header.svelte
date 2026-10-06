@@ -4,34 +4,18 @@
   brand identity, language switch (EN/AR), and theme toggle.
 -->
 <script lang="ts">
-import { Cube, Sun, Moon } from "@orbis/icons";
-import { Button } from "@orbis/ui/button";
-import { themeStore } from "$lib/stores";
-import { setLocale, getLocale } from "$lib/paraglide/runtime";
 import type { OnboardingStep } from "../types";
 
 let {
   currentStep,
   steps,
-  isRTL = false,
 }: {
   currentStep: OnboardingStep;
   steps: Array<{ id: OnboardingStep }>;
-  isRTL?: boolean;
 } = $props();
 
 const currentStepIndex = $derived(steps.findIndex((s) => s.id === currentStep));
-const isDark = $derived(themeStore.theme === "dark");
 
-function toggleLanguage() {
-  const current = getLocale();
-  const next = current.startsWith("ar") ? "en" : "ar";
-  setLocale(next);
-}
-
-function toggleTheme() {
-  themeStore.toggle();
-}
 </script>
 
 <header class="sticky top-2 z-30 w-full mx-auto flex backdrop-blur-2xl px-2 justify-center transition-all shrink-0">

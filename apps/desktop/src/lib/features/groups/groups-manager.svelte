@@ -302,7 +302,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
           <Label class="text-xs font-medium">{m.groups_name_ar()}</Label>
           <Input
             type="text"
-            placeholder="مثال: هيئة التدريس والمشرفين"
+            placeholder={m.groups_name_ar_placeholder()}
             class="text-xs"
             bind:value={formNameAr}
           />
@@ -321,7 +321,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
         <div class="flex flex-col gap-1.5">
           <Label class="text-xs font-medium">{m.groups_description()}</Label>
           <Textarea
-            placeholder="وصف مهام وصلاحيات هذه المجموعة..."
+            placeholder={m.groups_description_placeholder()}
             class="text-xs min-h-20"
             bind:value={formDesc}
           />

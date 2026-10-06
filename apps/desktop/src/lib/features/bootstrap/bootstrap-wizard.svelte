@@ -232,7 +232,7 @@ function enterWorkspace() {
   class="h-full w-full overflow-y-auto bg-background text-foreground flex flex-col justify-between selection:bg-primary/20 selection:text-primary font-sans relative px-4 sm:px-6 lg:px-8 py-3 space-y-4"
 >
   <!-- Floating Minimal Header Bar -->
-  <OnboardingHeader {currentStep} {steps} {isRTL} />
+  <OnboardingHeader {currentStep} {steps} />
 
   <!-- Main Wizard Content Area with Full Screen Real Estate Utilization -->
   <main class="flex-1 w-full max-w-5xl mx-auto my-auto py-2">

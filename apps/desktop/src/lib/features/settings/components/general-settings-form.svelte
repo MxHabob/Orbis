@@ -24,7 +24,7 @@ let { org, orgId, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
     onsave: (request: any) => void;
     onsaveavatar: (logo: string | null) => void;
     onremove: () => void;
-    onlanguagechange: (newLocale: string, currentValues: any) => void;
+    onlanguagechange: (newLocale: string, currentValues: any) => void | boolean | Promise<void | boolean>;
   }>();
 
 // Org Profile Form state
@@ -167,8 +167,8 @@ async function handleSubmit(e?: Event) {
   }
 }
 
-function handleLanguageChange(newLocale: string) {
-  onlanguagechange(newLocale, {
+async function handleLanguageChange(newLocale: string) {
+  return await onlanguagechange(newLocale, {
     name,
     name_ar: nameAr || null,
     logo: logo || null,

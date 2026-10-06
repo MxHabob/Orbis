@@ -6,7 +6,7 @@ let { data }: { data: { orgId: string } } = $props();
 </script>
 
 <svelte:head>
-  <title>تحضير الفصول اليومي | Orbis</title>
+  <title>{m.ui_page_academics_attendance()} | Orbis</title>
 </svelte:head>
 
 <AttendanceTracker orgId={data.orgId} />

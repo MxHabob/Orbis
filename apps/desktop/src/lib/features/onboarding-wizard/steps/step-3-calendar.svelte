@@ -209,7 +209,7 @@ async function handleContinue() {
               </Label>
               <Input
                 bind:value={yearNameAr}
-                placeholder="1447-1448هـ / 2026-2027م"
+                placeholder={m.onboarding_step3_year_name_ar_placeholder()}
                 dir="rtl"
               />
             </div>

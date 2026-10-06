@@ -6,7 +6,7 @@ let { data }: { data: { orgId: string } } = $props();
 </script>
 
 <svelte:head>
-  <title>كشف الحساب المالي | Orbis</title>
+  <title>{m.ui_page_finance_statement()} | Orbis</title>
 </svelte:head>
 
 <AccountStatement orgId={data.orgId} />

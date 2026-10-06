@@ -70,11 +70,45 @@ async function main() {
   const englishKeys = new Set(Object.keys(englishMessages));
   const allKeys = new Set([...arabicKeys, ...englishKeys]);
   const unusedKeys = [...allKeys].filter((key) => !usedKeys.has(key)).sort();
-  const missingInArabic = [...englishKeys]
-    .filter((key) => !arabicKeys.has(key))
+  const missingInArabic = [...new Set([
+    ...[...usedKeys].filter((key) => !arabicKeys.has(key)),
+    ...[...englishKeys].filter((key) => !arabicKeys.has(key)),
+  ])]
     .sort();
-  const missingInEnglish = [...arabicKeys]
-    .filter((key) => !englishKeys.has(key))
+  const missingInEnglish = [...new Set([
+    ...[...usedKeys].filter((key) => !englishKeys.has(key)),
+    ...[...arabicKeys].filter((key) => !englishKeys.has(key)),
+  ])]
+    .sort();
+  const placeholderPattern = /\{\s*([A-Za-z0-9_]+)\s*\}/g;
+  const placeholderVariables = (message: unknown) =>
+    typeof message === "string"
+      ? [...message.matchAll(placeholderPattern)]
+          .map((match) => match[1])
+          .sort()
+          .join(",")
+      : "";
+  const placeholderMismatches = [...allKeys]
+    .filter(
+      (key) =>
+        arabicKeys.has(key) &&
+        englishKeys.has(key) &&
+        placeholderVariables(arabicMessages[key]) !==
+          placeholderVariables(englishMessages[key]),
+    )
+    .sort()
+    .map(
+      (key) =>
+        `${key} (ar: {${placeholderVariables(arabicMessages[key])}}, en: {${placeholderVariables(englishMessages[key])}})`,
+    );
+  const generatedLookingMessages = [...allKeys]
+    .filter((key) => {
+      const value = englishMessages[key];
+      return (
+        typeof value === "string" &&
+        /^(?:Shared Ui |Common Action |Finance Ui |Settings Ui )/.test(value)
+      );
+    })
     .sort();
   const hardcodedArabic: string[] = [];
   const hardcodedArabicMarkup: string[] = [];
@@ -140,7 +174,10 @@ async function main() {
 
   function printList(title: string, values: string[]) {
     console.log(`\n${title} (${values.length})`);
-    for (const value of values) console.log(`- ${value}`);
+    for (const value of values.slice(0, 20)) console.log(`- ${value}`);
+    if (values.length > 20) {
+      console.log(`... and ${values.length - 20} more`);
+    }
   }
 
   console.log(
@@ -149,6 +186,8 @@ async function main() {
   printList("Unused message keys", unusedKeys);
   printList("Missing Arabic translations", missingInArabic);
   printList("Missing English translations", missingInEnglish);
+  printList("Placeholder mismatches", placeholderMismatches);
+  printList("Generated-looking English messages (manual review)", generatedLookingMessages);
   printList("Hardcoded Arabic literals", hardcodedArabic);
   printList("Hardcoded Arabic Svelte markup", hardcodedArabicMarkup);
 
@@ -171,7 +210,7 @@ async function main() {
   if (
     missingInArabic.length ||
     missingInEnglish.length ||
-    hardcodedArabic.length ||
+    placeholderMismatches.length ||
     hardcodedArabicMarkup.length
   ) {
     process.exitCode = 1;

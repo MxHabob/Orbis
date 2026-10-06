@@ -1,9 +1,10 @@
 <script lang="ts">
+  import * as m from "$lib/paraglide/messages";
   import { BulkEntryStudio } from "$lib/features/bulk-entry";
 </script>
 
 <svelte:head>
-  <title>الإدخال الجماعي للموظفين | Orbis</title>
+  <title>{m.ui_page_bulk_entry_employees()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-hidden">

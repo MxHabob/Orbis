@@ -218,12 +218,7 @@ function openEditBranch(branch: OrgUnitDto) {
 function promptDeleteBranch(branch: OrgUnitDto) {
   const children = allUnits.filter((u) => u.parent_id === branch.id);
   if (children.length > 0) {
-    toast.error(
-      l(
-        `لا يمكن حذف الفرع لوجود (${children.length}) وحدات وأقسام تابعة له. يرجى نقلها أو حذفها أولاً.`,
-        `Cannot delete branch because it contains (${children.length}) child units.`
-      )
-    );
+    toast.error(m.settings_branch_delete_with_children({ count: children.length }));
     return;
   }
 

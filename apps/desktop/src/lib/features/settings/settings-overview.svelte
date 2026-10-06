@@ -23,7 +23,6 @@ async function handleLanguageChange(newLocale: string, currentValues: any) {
   const lang = newLocale.split("-")[0]?.toLowerCase() || "ar";
   const targetLang = lang === "ar" ? "ar" : "en";
 
-  // Auto-save form to database before reloading to avoid losing unsaved input
   if (orgId) {
     try {
       await updateOrgMutation.mutateAsync({
@@ -31,16 +30,18 @@ async function handleLanguageChange(newLocale: string, currentValues: any) {
         request: {
           name: currentValues.name,
           slug: currentValues.slug,
-          locale: targetLang,
+          locale: newLocale,
           timezone: currentValues.timezone,
         },
       });
-    } catch {
-      // ignore save error, proceed with language switch
+    } catch (error) {
+      toast.error(extractErrorMessage(error));
+      return false;
     }
   }
 
   setLocale(targetLang);
+  return true;
 }
 
 async function handleSave(data: any) {

@@ -15,7 +15,7 @@ interface Props {
   dateFormat: string;
   hijriEnabled: boolean;
   isSaving?: boolean;
-  onLanguageChange: (newLocale: string) => void;
+  onLanguageChange: (newLocale: string) => void | boolean | Promise<void | boolean>;
 }
 
 let {
@@ -61,6 +61,7 @@ const dateFormats = [
       title={m.settings_general_locale()}
       description={m.settings_general_locale_desc()}
       bind:currentLocale={locale}
+      selectionMode="regional"
       disabled={isSaving}
       onchange={onLanguageChange}
     />

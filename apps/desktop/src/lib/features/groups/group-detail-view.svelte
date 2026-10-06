@@ -317,7 +317,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
           onclick={() => (activeTab = "members")}
         >
           <Users size={13} />
-          <span>{m.groups_tab_members?.({ count: formatNumber(members.length) }) || `الأعضاء (${members.length})`}</span>
+          <span>{m.groups_tab_members({ count: formatNumber(members.length) })}</span>
         </button>
 
         <button
