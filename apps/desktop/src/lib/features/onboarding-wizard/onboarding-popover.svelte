@@ -1,7 +1,7 @@
 <!--
   @component OnboardingPopover
-  Sidebar & Global Popover presenting the complete 8-stage Onboarding & Organization Setup matrix.
-  Follows the same sleek sidebar button and popover pattern as GitIntegrationPopover & AutomationStatusPopover.
+  Sleek, minimalist Getting Started popover matching the Linear/Sentry design pattern.
+  Features a circular progress ring, clean typography, strikethrough completed tasks, and active task indicators.
 -->
 <script lang="ts">
 import { goto } from "$app/navigation";
@@ -11,11 +11,9 @@ import { systemStore, authStore } from "$lib/stores";
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
-import { Badge } from "@orbis/ui/badge";
-import { Progress } from "@orbis/ui/progress";
-import { TaskList } from "@orbis/icons";
+import { TaskList, Check, ChevronRight } from "@orbis/icons";
 import { deriveSteps } from "./onboarding-steps";
-import { type Snippet } from "svelte";
+import { onMount, type Snippet } from "svelte";
 
 let {
   orgId = authStore.orgId ?? "",
@@ -35,12 +33,17 @@ const tasks = $derived(systemStore.onboardingTasks);
 const steps = $derived(deriveSteps(tasks));
 const progress = $derived(systemStore.onboardingProgressPercentage);
 const isReady = $derived(systemStore.isInstitutionReady);
-const requiredTasks = $derived(tasks.filter((t) => t.is_required));
-const completedRequiredTasks = $derived(requiredTasks.filter((t) => t.status === "completed"));
+const completedStepsCount = $derived(steps.filter((s) => s.status === "completed").length);
 
 const nextStep = $derived(
   steps.find((s) => s.status !== "completed") ?? steps[0]
 );
+
+onMount(() => {
+  if (orgId) {
+    systemStore.loadOnboardingState(orgId);
+  }
+});
 
 async function handleOpenChange(open: boolean) {
   isOpen = open;
@@ -66,10 +69,10 @@ function handleOpenHub() {
 
 <Popover bind:open={isOpen} onOpenChange={handleOpenChange}>
   <PopoverTrigger>
-    {#if trigger}
-      {@render trigger()}
-    {:else}
-      {#snippet child({ props }: { props: any })}
+    {#snippet child({ props }: { props: any })}
+      {#if trigger}
+        {@render trigger()}
+      {:else}
         <Tooltip>
           <TooltipTrigger>
             <Button
@@ -91,121 +94,125 @@ function handleOpenHub() {
             {m.onboarding_popover_title()} ({progress}%)
           </TooltipContent>
         </Tooltip>
-      {/snippet}
-    {/if}
+      {/if}
+    {/snippet}
   </PopoverTrigger>
 
   <PopoverContent
     {side}
     {align}
     sideOffset={12}
-    class="w-84 sm:w-96 p-0 overflow-hidden z-50 rounded-2xl border border-border/80 bg-popover text-popover-foreground shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 select-none"
+    class="w-88 sm:w-[420px] p-5 overflow-hidden z-50 rounded-2xl border border-border/80 bg-popover text-popover-foreground shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 select-none flex flex-col gap-4"
   >
-    <!-- Header -->
-    <div class="p-4 border-b border-border/50 bg-muted/20 space-y-2.5">
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2 min-w-0">
-          <div class="size-7 shrink-0 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-            🎯
-          </div>
-          <div class="truncate">
-            <h4 class="text-xs font-bold text-foreground truncate">
-              {m.onboarding_popover_title()}
-            </h4>
-            <p class="text-[11px] text-muted-foreground truncate">
-              {m.onboarding_popover_subtitle()}
-            </p>
-          </div>
-        </div>
-
+    <!-- Header with Circular Progress Ring -->
+    <div class="flex items-start gap-3.5 pb-3.5 border-b border-border/40">
+      <!-- Circular Progress Ring SVG -->
+      <div class="relative size-8 shrink-0 flex items-center justify-center mt-0.5">
+        <svg class="size-8 -rotate-90 transform" viewBox="0 0 28 28">
+          <!-- Track Circle -->
+          <circle
+            cx="14"
+            cy="14"
+            r="11"
+            fill="transparent"
+            stroke="currentColor"
+            stroke-width="2.5"
+            class="text-muted/40"
+          />
+          <!-- Progress Arc Circle -->
+          <circle
+            cx="14"
+            cy="14"
+            r="11"
+            fill="transparent"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-dasharray="69.115"
+            stroke-dashoffset={69.115 - (69.115 * Math.min(Math.max(progress, 0), 100)) / 100}
+            stroke-linecap="round"
+            class="text-primary transition-all duration-500 ease-out"
+          />
+        </svg>
         {#if isReady}
-          <Badge variant="outline" class="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] shrink-0">
-            {m.onboarding_step8_ready_badge()}
-          </Badge>
-        {:else}
-          <Badge variant="outline" class="border-primary/30 bg-primary/10 text-primary font-mono text-[10px] shrink-0">
-            {progress}%
-          </Badge>
+          <Check class="absolute size-3.5 text-emerald-500" strokeWidth={2.5} />
         {/if}
       </div>
 
-      <!-- Linear Progress Bar -->
-      <div class="space-y-1">
-        <Progress value={progress} max={100} class="h-1.5 bg-muted" />
-        <div class="flex items-center justify-between text-[10px] text-muted-foreground">
-          <span>
-            {m.onboarding_step8_required_tasks_count({
-              completed: completedRequiredTasks.length,
-              total: requiredTasks.length,
-            })}
-          </span>
-          <span class="font-mono font-medium">{progress}%</span>
-        </div>
+      <!-- Header Title & Subtitle -->
+      <div class="flex flex-col gap-0.5 min-w-0">
+        <h4 class="text-sm font-bold text-foreground truncate">
+          {m.onboarding_popover_title()}
+        </h4>
+        <p class="text-xs font-medium text-primary truncate">
+          {m.common_onboarding_popover_tasks_completed({
+            completed: completedStepsCount,
+            total: steps.length,
+          })}
+        </p>
       </div>
     </div>
 
     <!-- Steps List -->
-    <div class="max-h-72 overflow-y-auto divide-y divide-border/30 p-1">
+    <div class="max-h-80 overflow-y-auto scrollbar-hide space-y-1 -mx-2 px-2">
       {#each steps as step (step.id)}
+        {@const isCompleted = step.status === "completed"}
+        {@const isActive = step.id === nextStep?.id && !isReady}
+
         <button
           type="button"
           onclick={() => handleNavigate(step.route)}
-          class="w-full flex items-center justify-between p-2.5 rounded-lg text-start transition-colors hover:bg-muted/40 cursor-pointer group"
+          class="w-full flex items-start gap-3 p-2.5 rounded-xl text-start transition-colors hover:bg-muted/40 cursor-pointer group"
         >
-          <div class="flex items-center gap-2.5 min-w-0">
-            <!-- Step Badge Number / Check -->
-            <div
-              class="size-6 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold transition-transform group-hover:scale-105 {step.status ===
-              'completed'
-                ? 'bg-emerald-500 text-white shadow-xs'
-                : step.status === 'in_progress'
-                ? 'bg-blue-500 text-white ring-2 ring-blue-500/20'
-                : 'bg-muted text-muted-foreground border border-border'}"
-            >
-              {#if step.status === "completed"}
-                ✓
-              {:else}
-                {step.order}
+          <!-- Status Icon / Check Indicator -->
+          <div class="size-5 shrink-0 flex items-center justify-center mt-0.5">
+            {#if isCompleted}
+              <Check size={15} strokeWidth={2.2} class="text-muted-foreground/60 group-hover:text-primary transition-colors" />
+            {:else if isActive}
+              <span class="size-2 rounded-full bg-primary ring-4 ring-primary/20 animate-pulse"></span>
+            {:else}
+              <span class="size-2 rounded-full bg-muted-foreground/30"></span>
+            {/if}
+          </div>
+
+          <!-- Step Info -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <span
+                class="text-xs truncate {isCompleted
+                  ? 'line-through text-muted-foreground/60 font-medium'
+                  : isActive
+                  ? 'text-foreground font-bold'
+                  : 'text-muted-foreground/90 font-semibold'}"
+              >
+                {step.label}
+              </span>
+
+              {#if isActive}
+                <ChevronRight
+                  size={14}
+                  class="text-muted-foreground group-hover:text-foreground shrink-0 transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+                />
               {/if}
             </div>
 
-            <div class="min-w-0">
-              <div class="text-xs font-semibold text-foreground truncate flex items-center gap-1.5">
-                <span class="truncate">{step.label}</span>
-                {#if step.isRequired}
-                  <span class="text-[10px] text-amber-500 font-bold">*</span>
-                {/if}
-              </div>
-              <p class="text-[10px] text-muted-foreground truncate">
+            {#if step.description}
+              <p
+                class="text-[11px] leading-relaxed mt-0.5 {isCompleted
+                  ? 'text-muted-foreground/40'
+                  : isActive
+                  ? 'text-muted-foreground'
+                  : 'text-muted-foreground/60'}"
+              >
                 {step.description}
               </p>
-            </div>
-          </div>
-
-          <div class="shrink-0 flex items-center gap-1.5 ms-2">
-            {#if step.status === "completed"}
-              <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                {m.onboarding_step8_status_ready()}
-              </span>
-            {:else if step.status === "in_progress"}
-              <span class="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">
-                {step.progress}%
-              </span>
-            {:else}
-              <span class="text-[10px] text-muted-foreground">
-                {m.onboarding_step8_status_pending()}
-              </span>
             {/if}
-            <span class="text-muted-foreground group-hover:text-foreground text-xs transition-transform group-hover:translate-x-0.5">
-              ›
-            </span>
           </div>
         </button>
       {/each}
     </div>
 
     <!-- Footer Actions -->
-    <div class="p-3 border-t border-border/50 bg-muted/20 flex items-center justify-between gap-2">
+    <div class="pt-3 border-t border-border/40 flex items-center justify-between gap-2">
       <Button
         variant="ghost"
         size="sm"

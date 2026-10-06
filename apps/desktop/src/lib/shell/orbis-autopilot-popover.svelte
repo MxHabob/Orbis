@@ -10,9 +10,8 @@ import {
   TooltipProvider,
 } from "@orbis/ui/tooltip";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { AdjustmentsHorizontal, ArrowRight, ChartBar, CheckCircle, ChevronRight, InfoCircle, Refresh, Settings, Sparkles } from "@orbis/icons";
+import { ChartBar, ChevronRight, InfoCircle, Refresh, Settings, Sparkles } from "@orbis/icons";
 import { systemStore } from "$lib/stores";
-import { Avatar } from "@orbis/avatar-engine";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 
@@ -135,7 +134,7 @@ async function handleRunTick() {
 }
 
 function handleGoToOnboarding() {
-  goto(localizeHref("/onboarding"));
+  goto(localizeHref(orgId ? `/${orgId}/onboarding` : "/onboarding"));
 }
 </script>
 
@@ -177,26 +176,28 @@ function handleGoToOnboarding() {
     side="right"
     align="end"
     sideOffset={12}
-    class="w-88 rounded-2xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start border border-border/70 bg-popover text-popover-foreground shadow-xl animate-in fade-in slide-in-from-left-2 duration-200"
+    class="w-88 rounded-2xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start border border-border/80 bg-popover text-popover-foreground shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 select-none"
   >
     <!-- Header -->
-    <div class="flex items-center justify-between gap-3 border-b border-border/70 bg-card px-4 py-3">
-      <div class="flex min-w-0 items-center gap-1.5">
-        <Avatar hat="pilot" width="30px" height="30px" class="shrink-0" />
-        <span class="truncate text-xs font-semibold text-foreground">{m.common_autopilot_popover_title()}</span>
+    <div class="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/20 px-4 py-3">
+      <div class="flex min-w-0 items-center gap-2">
+        <div class="size-7 shrink-0 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+          <Sparkles size={16} />
+        </div>
+        <span class="truncate text-xs font-bold text-foreground">{m.common_autopilot_popover_title()}</span>
         
         {#if !isOperational}
-          <Badge variant="outline" class="text-[8px] h-3.5 px-1 font-bold uppercase border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10">
+          <Badge variant="outline" class="text-[9px] h-4 px-1.5 font-bold uppercase border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10 shrink-0">
             {m.ui_autopilot_setup_needed()}
           </Badge>
         {:else if !config}
-          <Skeleton class="h-3.5 w-10 rounded" />
+          <Skeleton class="h-4 w-12 rounded" />
         {:else if !config.enabled}
-          <Badge variant="outline" class="text-[8px] h-3.5 px-1 font-bold uppercase text-muted-foreground">
+          <Badge variant="outline" class="text-[9px] h-4 px-1.5 font-bold uppercase text-muted-foreground shrink-0">
             {m.common_status_disabled()}
           </Badge>
         {:else}
-          <Badge variant="lime" class="text-[8px] h-3.5 px-1 font-bold uppercase tracking-wider">
+          <Badge variant="lime" class="text-[9px] h-4 px-1.5 font-bold uppercase tracking-wider shrink-0">
             {getModeLabel(config.mode)}
           </Badge>
         {/if}
@@ -224,24 +225,26 @@ function handleGoToOnboarding() {
 
     <!-- Onboarding Incomplete Notice -->
     {#if !isOperational}
-      <div class="p-3.5 border-b border-amber-500/20 bg-amber-500/5 flex flex-col gap-2 text-start">
-        <div class="flex items-start gap-2">
-          <Sparkles size={14} class="text-amber-500 shrink-0 mt-0.5" />
-          <div class="flex flex-col gap-0.5">
-            <span class="text-[11px] font-bold text-amber-700 dark:text-amber-400">
-              {m.common_autopilot_popover_onboarding_title?.() || (m.common_autopilot_popover_onboarding_title())}
+      <div class="p-3.5 border-b border-amber-500/20 bg-amber-500/5 dark:bg-amber-500/10 flex flex-col gap-2.5 text-start">
+        <div class="flex items-start gap-2.5">
+          <div class="size-6 shrink-0 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center mt-0.5">
+            <InfoCircle size={14} />
+          </div>
+          <div class="flex flex-col gap-0.5 min-w-0">
+            <span class="text-xs font-bold text-amber-700 dark:text-amber-400">
+              {m.common_autopilot_popover_onboarding_title()}
             </span>
-            <p class="text-[9.5px] leading-relaxed text-muted-foreground">
-              {m.common_autopilot_popover_onboarding_desc?.() || (m.common_autopilot_popover_onboarding_desc())}
+            <p class="text-[11px] leading-relaxed text-muted-foreground">
+              {m.common_autopilot_popover_onboarding_desc()}
             </p>
           </div>
         </div>
 
         {#if pendingSetupItems.length > 0}
-          <div class="flex flex-wrap gap-1.5 mt-1">
+          <div class="flex flex-wrap gap-1.5 mt-0.5">
             {#each pendingSetupItems as item}
-              <span class="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-md bg-background/80 border border-border text-foreground font-medium">
-                <span class="size-1 rounded-full bg-amber-500"></span>
+              <span class="inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-md bg-background/80 border border-border/80 text-foreground font-medium shadow-2xs">
+                <span class="size-1.5 rounded-full bg-amber-500"></span>
                 {isArabic && item.label_ar ? item.label_ar : item.label}
               </span>
             {/each}
@@ -252,10 +255,10 @@ function handleGoToOnboarding() {
           size="sm"
           variant="outline"
           onclick={handleGoToOnboarding}
-          class="mt-1.5 h-7 w-full text-[10px] font-bold border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 flex items-center justify-center gap-1.5"
+          class="mt-1 h-7.5 w-full text-[11px] font-semibold border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 flex items-center justify-center gap-1.5 shadow-xs"
         >
-          <span>{m.common_autopilot_popover_onboarding_btn?.() || (m.common_autopilot_popover_onboarding_btn())}</span>
-          <ChevronRight size={11} class="rtl:rotate-180" />
+          <span>{m.common_autopilot_popover_onboarding_btn()}</span>
+          <ChevronRight size={13} class="rtl:rotate-180" />
         </Button>
       </div>
     {/if}
@@ -278,13 +281,13 @@ function handleGoToOnboarding() {
     />
 
     <!-- Manual Execution Actions -->
-    <div class="border-t border-border/50 bg-card px-4 py-3">
+    <div class="border-t border-border/50 bg-muted/20 px-4 py-3">
       <Button
-        class="h-9 w-full cursor-pointer rounded-lg text-[10px] font-semibold shadow-sm flex items-center justify-center gap-1.5"
+        class="h-8.5 w-full cursor-pointer rounded-lg text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5"
         onclick={handleRunTick}
         disabled={runTickMutation.isPending || !isOperational}
       >
-        <Refresh size={12} class={runTickMutation.isPending ? "animate-spin" : ""} />
+        <Refresh size={13} class={runTickMutation.isPending ? "animate-spin" : ""} />
         {#if runTickMutation.isPending}
           {m.common_autopilot_popover_tick_running()}
         {:else}

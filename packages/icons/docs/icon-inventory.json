@@ -1,0 +1,6188 @@
+{
+  "iconCount": 206,
+  "platformExports": {
+    "svelte": 206,
+    "native": 206
+  },
+  "nativeDefaultAliases": [
+    {
+      "name": "BellIcon",
+      "file": "bell"
+    },
+    {
+      "name": "SunIcon",
+      "file": "sun"
+    },
+    {
+      "name": "MoonIcon",
+      "file": "moon"
+    },
+    {
+      "name": "MaximizeIcon",
+      "file": "maximize"
+    },
+    {
+      "name": "RestoreIcon",
+      "file": "restore"
+    },
+    {
+      "name": "LogoIcon",
+      "file": "logo"
+    }
+  ],
+  "platformSourceFiles": {
+    "svelte": 206,
+    "native": 206
+  },
+  "usage": {
+    "desktop": {
+      "distinctIcons": 127,
+      "importedIcons": [
+        {
+          "name": "Plus",
+          "count": 51,
+          "files": 51
+        },
+        {
+          "name": "Refresh",
+          "count": 48,
+          "files": 48
+        },
+        {
+          "name": "AdjustmentsHorizontal",
+          "count": 45,
+          "files": 45
+        },
+        {
+          "name": "Search",
+          "count": 43,
+          "files": 43
+        },
+        {
+          "name": "InfoCircle",
+          "count": 42,
+          "files": 42
+        },
+        {
+          "name": "ArrowPath",
+          "count": 41,
+          "files": 41
+        },
+        {
+          "name": "CheckCircle",
+          "count": 41,
+          "files": 41
+        },
+        {
+          "name": "Sparkles",
+          "count": 37,
+          "files": 37
+        },
+        {
+          "name": "Trash",
+          "count": 36,
+          "files": 36
+        },
+        {
+          "name": "UserBadgeCheck",
+          "count": 33,
+          "files": 33
+        },
+        {
+          "name": "XMark",
+          "count": 32,
+          "files": 32
+        },
+        {
+          "name": "BookOpen",
+          "count": 31,
+          "files": 31
+        },
+        {
+          "name": "Users",
+          "count": 31,
+          "files": 31
+        },
+        {
+          "name": "DocumentPage",
+          "count": 30,
+          "files": 30
+        },
+        {
+          "name": "ClockRotateRight",
+          "count": 26,
+          "files": 26
+        },
+        {
+          "name": "Check",
+          "count": 25,
+          "files": 25
+        },
+        {
+          "name": "ChartBar",
+          "count": 24,
+          "files": 24
+        },
+        {
+          "name": "ArrowRight",
+          "count": 22,
+          "files": 22
+        },
+        {
+          "name": "Calendar",
+          "count": 21,
+          "files": 21
+        },
+        {
+          "name": "Lock",
+          "count": 21,
+          "files": 21
+        },
+        {
+          "name": "Download",
+          "count": 19,
+          "files": 19
+        },
+        {
+          "name": "User",
+          "count": 19,
+          "files": 19
+        },
+        {
+          "name": "Pencil",
+          "count": 18,
+          "files": 18
+        },
+        {
+          "name": "Grid",
+          "count": 17,
+          "files": 17
+        },
+        {
+          "name": "Eye",
+          "count": 16,
+          "files": 16
+        },
+        {
+          "name": "ChevronRight",
+          "count": 14,
+          "files": 14
+        },
+        {
+          "name": "Printer",
+          "count": 14,
+          "files": 14
+        },
+        {
+          "name": "Clipboard",
+          "count": 13,
+          "files": 13
+        },
+        {
+          "name": "ShieldCheck",
+          "count": 13,
+          "files": 13
+        },
+        {
+          "name": "ArrowLeft",
+          "count": 12,
+          "files": 12
+        },
+        {
+          "name": "BuildingOffice",
+          "count": 12,
+          "files": 12
+        },
+        {
+          "name": "ChevronDown",
+          "count": 11,
+          "files": 11
+        },
+        {
+          "name": "DocumentChartBar",
+          "count": 11,
+          "files": 11
+        },
+        {
+          "name": "GlobeAlt",
+          "count": 11,
+          "files": 11
+        },
+        {
+          "name": "Keyframes",
+          "count": 11,
+          "files": 11
+        },
+        {
+          "name": "AcademicCap",
+          "count": 10,
+          "files": 10
+        },
+        {
+          "name": "Bolt",
+          "count": 10,
+          "files": 10
+        },
+        {
+          "name": "BuildingLibrary",
+          "count": 10,
+          "files": 10
+        },
+        {
+          "name": "Document",
+          "count": 10,
+          "files": 10
+        },
+        {
+          "name": "FloppyDisk",
+          "count": 10,
+          "files": 10
+        },
+        {
+          "name": "UserGroup",
+          "count": 10,
+          "files": 10
+        },
+        {
+          "name": "ArrowUpTray",
+          "count": 9,
+          "files": 9
+        },
+        {
+          "name": "DocumentCheck",
+          "count": 9,
+          "files": 9
+        },
+        {
+          "name": "Pin",
+          "count": 9,
+          "files": 9
+        },
+        {
+          "name": "FolderOpen",
+          "count": 8,
+          "files": 8
+        },
+        {
+          "name": "Home",
+          "count": 8,
+          "files": 8
+        },
+        {
+          "name": "Play",
+          "count": 8,
+          "files": 8
+        },
+        {
+          "name": "ArrowForward",
+          "count": 7,
+          "files": 7
+        },
+        {
+          "name": "Banknotes",
+          "count": 7,
+          "files": 7
+        },
+        {
+          "name": "Expand",
+          "count": 7,
+          "files": 7
+        },
+        {
+          "name": "Info",
+          "count": 7,
+          "files": 7
+        },
+        {
+          "name": "Settings",
+          "count": 7,
+          "files": 7
+        },
+        {
+          "name": "TaskList",
+          "count": 7,
+          "files": 7
+        },
+        {
+          "name": "AppNotification",
+          "count": 6,
+          "files": 6
+        },
+        {
+          "name": "ArchiveBox",
+          "count": 6,
+          "files": 6
+        },
+        {
+          "name": "Folder",
+          "count": 6,
+          "files": 6
+        },
+        {
+          "name": "Hashtag",
+          "count": 6,
+          "files": 6
+        },
+        {
+          "name": "LockClosed",
+          "count": 6,
+          "files": 6
+        },
+        {
+          "name": "Photo",
+          "count": 6,
+          "files": 6
+        },
+        {
+          "name": "Scale",
+          "count": 6,
+          "files": 6
+        },
+        {
+          "name": "Bold",
+          "count": 5,
+          "files": 5
+        },
+        {
+          "name": "CheckSquare",
+          "count": 5,
+          "files": 5
+        },
+        {
+          "name": "Clock",
+          "count": 5,
+          "files": 5
+        },
+        {
+          "name": "Collapse",
+          "count": 5,
+          "files": 5
+        },
+        {
+          "name": "CreditCard",
+          "count": 5,
+          "files": 5
+        },
+        {
+          "name": "Cube",
+          "count": 5,
+          "files": 5
+        },
+        {
+          "name": "EyeSlash",
+          "count": 5,
+          "files": 5
+        },
+        {
+          "name": "Minus",
+          "count": 5,
+          "files": 5
+        },
+        {
+          "name": "ReceiptPercent",
+          "count": 5,
+          "files": 5
+        },
+        {
+          "name": "Wrench",
+          "count": 5,
+          "files": 5
+        },
+        {
+          "name": "ArrowDownTray",
+          "count": 4,
+          "files": 4
+        },
+        {
+          "name": "Bars3BottomLeft",
+          "count": 4,
+          "files": 4
+        },
+        {
+          "name": "BarsArrowUp",
+          "count": 4,
+          "files": 4
+        },
+        {
+          "name": "CheckBox",
+          "count": 4,
+          "files": 4
+        },
+        {
+          "name": "ChevronLeft",
+          "count": 4,
+          "files": 4
+        },
+        {
+          "name": "Computer",
+          "count": 4,
+          "files": 4
+        },
+        {
+          "name": "Database",
+          "count": 4,
+          "files": 4
+        },
+        {
+          "name": "EllipsisHorizontal",
+          "count": 4,
+          "files": 4
+        },
+        {
+          "name": "H1",
+          "count": 4,
+          "files": 4
+        },
+        {
+          "name": "QuestionMarkCircle",
+          "count": 4,
+          "files": 4
+        },
+        {
+          "name": "SettingsAlt",
+          "count": 4,
+          "files": 4
+        },
+        {
+          "name": "Tag",
+          "count": 4,
+          "files": 4
+        },
+        {
+          "name": "UndoAction",
+          "count": 4,
+          "files": 4
+        },
+        {
+          "name": "AlignVertical",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "Component",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "Knobs",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "Logo",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "UserPlus",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "AlignHorizontal",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "ArrowsRightLeft",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "ArrowUturnLeft",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "Camera",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "ChatBubble",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "ChevronUp",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "Clip",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "ClipboardCheck",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "Code",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "EllipsisVertical",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "Funnel",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "Merge",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "Phone",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "Sidebar",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "SoundHigh",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "UserMinus",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "ArrowRightTag",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "ArrowUpCircle",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Bell",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "ChatBubbles",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Cloud",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "CodeBracket",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "CursorArrowRays",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Github",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Headphone",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Heart",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Italic",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Keyboard",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Label",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "LinkSlash",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Maximize",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Moon",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "NewFolderAlt",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "QueueList",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Restore",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Share",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Star",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Sun",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Underline",
+          "count": 1,
+          "files": 1
+        }
+      ],
+      "renderedIconSizes": {
+        "renderedIcons": 1165,
+        "explicitSize": 885,
+        "unspecifiedSize": 280
+      }
+    },
+    "mobile": {
+      "distinctIcons": 25,
+      "importedIcons": [
+        {
+          "name": "CheckCircle",
+          "count": 4,
+          "files": 4
+        },
+        {
+          "name": "ArrowLeft",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "ArrowRight",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "ChevronRight",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "ChartBar",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "ChevronLeft",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "Eye",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "EyeSlash",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "InfoCircle",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "XMark",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "AcademicCap",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "AppNotification",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "ArchiveBox",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Bolt",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "BuildingLibrary",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Check",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "ChevronDown",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "ChevronUp",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Document",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Grid",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "KeyframePlus",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Search",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "ShieldCheck",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Sparkles",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "User",
+          "count": 1,
+          "files": 1
+        }
+      ],
+      "renderedIconSizes": {
+        "renderedIcons": 27,
+        "explicitSize": 27,
+        "unspecifiedSize": 0
+      }
+    }
+  },
+  "icons": [
+    {
+      "name": "AcademicCap",
+      "files": {
+        "svelte": "academic-cap",
+        "native": "academic-cap"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "AdjustmentsHorizontal",
+      "files": {
+        "svelte": "adjustments-horizontal",
+        "native": "adjustments-horizontal"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "AdjustmentsHorizontalOutline",
+      "files": {
+        "svelte": "adjustments-horizontal-outline",
+        "native": "adjustments-horizontal-outline"
+      },
+      "variant": "variant",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Agile",
+      "files": {
+        "svelte": "agile",
+        "native": "agile"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      }
+    },
+    {
+      "name": "AlignHorizontal",
+      "files": {
+        "svelte": "align-horizontal",
+        "native": "align-horizontal"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "AlignVertical",
+      "files": {
+        "svelte": "align-vertical",
+        "native": "align-vertical"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "AppNotification",
+      "files": {
+        "svelte": "app-notification",
+        "native": "app-notification"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 24,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "ArchiveBox",
+      "files": {
+        "svelte": "archive-box",
+        "native": "archive-box"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ArrowDownTray",
+      "files": {
+        "svelte": "arrow-down-tray",
+        "native": "arrow-down-tray"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ArrowForward",
+      "files": {
+        "svelte": "arrow-forward",
+        "native": "arrow-forward"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "ArrowLeft",
+      "files": {
+        "svelte": "arrow-left",
+        "native": "arrow-left"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ArrowLeftTag",
+      "files": {
+        "svelte": "arrow-left-tag",
+        "native": "arrow-left-tag"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "ArrowPath",
+      "files": {
+        "svelte": "arrow-path",
+        "native": "arrow-path"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ArrowRight",
+      "files": {
+        "svelte": "arrow-right",
+        "native": "arrow-right"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ArrowRightCircle",
+      "files": {
+        "svelte": "arrow-right-circle",
+        "native": "arrow-right-circle"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ArrowRightTag",
+      "files": {
+        "svelte": "arrow-right-tag",
+        "native": "arrow-right-tag"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "ArrowTurnDownRight",
+      "files": {
+        "svelte": "arrow-turn-down-right",
+        "native": "arrow-turn-down-right"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 16 16",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 16 16",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ArrowUpCircle",
+      "files": {
+        "svelte": "arrow-up-circle",
+        "native": "arrow-up-circle"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ArrowUpLeft",
+      "files": {
+        "svelte": "arrow-up-left",
+        "native": "arrow-up-left"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ArrowUpLeftAlt",
+      "files": {
+        "svelte": "arrow-up-left-alt",
+        "native": "arrow-up-left-alt"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "ArrowUpTray",
+      "files": {
+        "svelte": "arrow-up-tray",
+        "native": "arrow-up-tray"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ArrowUturnLeft",
+      "files": {
+        "svelte": "arrow-uturn-left",
+        "native": "arrow-uturn-left"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ArrowUturnRight",
+      "files": {
+        "svelte": "arrow-uturn-right",
+        "native": "arrow-uturn-right"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ArrowsPointingOut",
+      "files": {
+        "svelte": "arrows-pointing-out",
+        "native": "arrows-pointing-out"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ArrowsRightLeft",
+      "files": {
+        "svelte": "arrows-right-left",
+        "native": "arrows-right-left"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Banknotes",
+      "files": {
+        "svelte": "banknotes",
+        "native": "banknotes"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Bars3BottomLeft",
+      "files": {
+        "svelte": "bars3-bottom-left",
+        "native": "bars3-bottom-left"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 16 16",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 16 16",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "BarsArrowUp",
+      "files": {
+        "svelte": "bars-arrow-up",
+        "native": "bars-arrow-up"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Bell",
+      "files": {
+        "svelte": "bell",
+        "native": "bell"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 24,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "Bold",
+      "files": {
+        "svelte": "bold",
+        "native": "bold"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Bolt",
+      "files": {
+        "svelte": "bolt",
+        "native": "bolt"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "BookOpen",
+      "files": {
+        "svelte": "book-open",
+        "native": "book-open"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Bookmark",
+      "files": {
+        "svelte": "bookmark",
+        "native": "bookmark"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "BookmarkSlash",
+      "files": {
+        "svelte": "bookmark-slash",
+        "native": "bookmark-slash"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "BuildingLibrary",
+      "files": {
+        "svelte": "building-library",
+        "native": "building-library"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "BuildingOffice",
+      "files": {
+        "svelte": "building-office",
+        "native": "building-office"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Calculator",
+      "files": {
+        "svelte": "calculator",
+        "native": "calculator"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Calendar",
+      "files": {
+        "svelte": "calendar",
+        "native": "calendar"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "CalendarSolid",
+      "files": {
+        "svelte": "calendar-solid",
+        "native": "calendar-solid"
+      },
+      "variant": "variant",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Camera",
+      "files": {
+        "svelte": "camera",
+        "native": "camera"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "CameraSolid",
+      "files": {
+        "svelte": "camera-solid",
+        "native": "camera-solid"
+      },
+      "variant": "variant",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "ChartBar",
+      "files": {
+        "svelte": "chart-bar",
+        "native": "chart-bar"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ChatBubble",
+      "files": {
+        "svelte": "chat-bubble",
+        "native": "chat-bubble"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ChatBubbleDotted",
+      "files": {
+        "svelte": "chat-bubble-dotted",
+        "native": "chat-bubble-dotted"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ChatBubbleDottedChecked",
+      "files": {
+        "svelte": "chat-bubble-dotted-checked",
+        "native": "chat-bubble-dotted-checked"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "ChatBubbleOval",
+      "files": {
+        "svelte": "chat-bubble-oval",
+        "native": "chat-bubble-oval"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ChatBubbles",
+      "files": {
+        "svelte": "chat-bubbles",
+        "native": "chat-bubbles"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ChatCheck",
+      "files": {
+        "svelte": "chat-check",
+        "native": "chat-check"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "ChatPlus",
+      "files": {
+        "svelte": "chat-plus",
+        "native": "chat-plus"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "Check",
+      "files": {
+        "svelte": "check",
+        "native": "check"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "CheckBox",
+      "files": {
+        "svelte": "check-box",
+        "native": "check-box"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "CheckCircle",
+      "files": {
+        "svelte": "check-circle",
+        "native": "check-circle"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "CheckSquare",
+      "files": {
+        "svelte": "check-square",
+        "native": "check-square"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "ChevronDown",
+      "files": {
+        "svelte": "chevron-down",
+        "native": "chevron-down"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ChevronLeft",
+      "files": {
+        "svelte": "chevron-left",
+        "native": "chevron-left"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ChevronRight",
+      "files": {
+        "svelte": "chevron-right",
+        "native": "chevron-right"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ChevronUp",
+      "files": {
+        "svelte": "chevron-up",
+        "native": "chevron-up"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ChevronUpDown",
+      "files": {
+        "svelte": "chevron-up-down",
+        "native": "chevron-up-down"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Clip",
+      "files": {
+        "svelte": "clip",
+        "native": "clip"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Clipboard",
+      "files": {
+        "svelte": "clipboard",
+        "native": "clipboard"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ClipboardCheck",
+      "files": {
+        "svelte": "clipboard-check",
+        "native": "clipboard-check"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "Clock",
+      "files": {
+        "svelte": "clock",
+        "native": "clock"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ClockRotateRight",
+      "files": {
+        "svelte": "clock-rotate-right",
+        "native": "clock-rotate-right"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "Cloud",
+      "files": {
+        "svelte": "cloud",
+        "native": "cloud"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "CloudArrowUp",
+      "files": {
+        "svelte": "cloud-arrow-up",
+        "native": "cloud-arrow-up"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Code",
+      "files": {
+        "svelte": "code",
+        "native": "code"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "CodeBracket",
+      "files": {
+        "svelte": "code-bracket",
+        "native": "code-bracket"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Cog6",
+      "files": {
+        "svelte": "cog6",
+        "native": "cog6"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "Cog6Solid",
+      "files": {
+        "svelte": "cog6-solid",
+        "native": "cog6-solid"
+      },
+      "variant": "variant",
+      "svelte": {
+        "viewBox": "0 0 16 16",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 16 16",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Collapse",
+      "files": {
+        "svelte": "collapse",
+        "native": "collapse"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      }
+    },
+    {
+      "name": "CommandLine",
+      "files": {
+        "svelte": "command-line",
+        "native": "command-line"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "CommandLineSolid",
+      "files": {
+        "svelte": "command-line-solid",
+        "native": "command-line-solid"
+      },
+      "variant": "variant",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Component",
+      "files": {
+        "svelte": "component",
+        "native": "component"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      }
+    },
+    {
+      "name": "Computer",
+      "files": {
+        "svelte": "computer",
+        "native": "computer"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "CreditCard",
+      "files": {
+        "svelte": "credit-card",
+        "native": "credit-card"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Cube",
+      "files": {
+        "svelte": "cube",
+        "native": "cube"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "CursorArrowRays",
+      "files": {
+        "svelte": "cursor-arrow-rays",
+        "native": "cursor-arrow-rays"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Database",
+      "files": {
+        "svelte": "database",
+        "native": "database"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "DatabaseSettings",
+      "files": {
+        "svelte": "database-settings",
+        "native": "database-settings"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 5
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 5
+        }
+      }
+    },
+    {
+      "name": "Document",
+      "files": {
+        "svelte": "document",
+        "native": "document"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "DocumentArrowDown",
+      "files": {
+        "svelte": "document-arrow-down",
+        "native": "document-arrow-down"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "DocumentArrowUp",
+      "files": {
+        "svelte": "document-arrow-up",
+        "native": "document-arrow-up"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "DocumentArrowUpSolid",
+      "files": {
+        "svelte": "document-arrow-up-solid",
+        "native": "document-arrow-up-solid"
+      },
+      "variant": "variant",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "DocumentChartBar",
+      "files": {
+        "svelte": "document-chart-bar",
+        "native": "document-chart-bar"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "DocumentCheck",
+      "files": {
+        "svelte": "document-check",
+        "native": "document-check"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "DocumentDuplicate",
+      "files": {
+        "svelte": "document-duplicate",
+        "native": "document-duplicate"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "DocumentPage",
+      "files": {
+        "svelte": "document-page",
+        "native": "document-page"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 5
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 5
+        }
+      }
+    },
+    {
+      "name": "Download",
+      "files": {
+        "svelte": "download",
+        "native": "download"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "EditPencil",
+      "files": {
+        "svelte": "edit-pencil",
+        "native": "edit-pencil"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "EllipsisHorizontal",
+      "files": {
+        "svelte": "ellipsis-horizontal",
+        "native": "ellipsis-horizontal"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "EllipsisVertical",
+      "files": {
+        "svelte": "ellipsis-vertical",
+        "native": "ellipsis-vertical"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Expand",
+      "files": {
+        "svelte": "expand",
+        "native": "expand"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      }
+    },
+    {
+      "name": "Eye",
+      "files": {
+        "svelte": "eye",
+        "native": "eye"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "EyeSlash",
+      "files": {
+        "svelte": "eye-slash",
+        "native": "eye-slash"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Face",
+      "files": {
+        "svelte": "face",
+        "native": "face"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 5
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 5
+        }
+      }
+    },
+    {
+      "name": "FaceId",
+      "files": {
+        "svelte": "face-id",
+        "native": "face-id"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 8
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 8
+        }
+      }
+    },
+    {
+      "name": "FaceSmile",
+      "files": {
+        "svelte": "face-smile",
+        "native": "face-smile"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "FilePlusAlt",
+      "files": {
+        "svelte": "file-plus-alt",
+        "native": "file-plus-alt"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "FloppyDisk",
+      "files": {
+        "svelte": "floppy-disk",
+        "native": "floppy-disk"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Folder",
+      "files": {
+        "svelte": "folder",
+        "native": "folder"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "FolderOpen",
+      "files": {
+        "svelte": "folder-open",
+        "native": "folder-open"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Funnel",
+      "files": {
+        "svelte": "funnel",
+        "native": "funnel"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "GarbageBin",
+      "files": {
+        "svelte": "garbage-bin",
+        "native": "garbage-bin"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Github",
+      "files": {
+        "svelte": "github",
+        "native": "github"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Glasses",
+      "files": {
+        "svelte": "glasses",
+        "native": "glasses"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 5
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 5
+        }
+      }
+    },
+    {
+      "name": "GlobeAlt",
+      "files": {
+        "svelte": "globe-alt",
+        "native": "globe-alt"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "GlobeAltSolid",
+      "files": {
+        "svelte": "globe-alt-solid",
+        "native": "globe-alt-solid"
+      },
+      "variant": "variant",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Grid",
+      "files": {
+        "svelte": "grid",
+        "native": "grid"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      }
+    },
+    {
+      "name": "H1",
+      "files": {
+        "svelte": "h1",
+        "native": "h1"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "H2",
+      "files": {
+        "svelte": "h2",
+        "native": "h2"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "H3",
+      "files": {
+        "svelte": "h3",
+        "native": "h3"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Hashtag",
+      "files": {
+        "svelte": "hashtag",
+        "native": "hashtag"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      }
+    },
+    {
+      "name": "Headphone",
+      "files": {
+        "svelte": "headphone",
+        "native": "headphone"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Heart",
+      "files": {
+        "svelte": "heart",
+        "native": "heart"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Home",
+      "files": {
+        "svelte": "home",
+        "native": "home"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 22 22",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 22 22",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Info",
+      "files": {
+        "svelte": "info",
+        "native": "info"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "InfoCircle",
+      "files": {
+        "svelte": "info-circle",
+        "native": "info-circle"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "Italic",
+      "files": {
+        "svelte": "italic",
+        "native": "italic"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Keyboard",
+      "files": {
+        "svelte": "keyboard",
+        "native": "keyboard"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "KeyframePlus",
+      "files": {
+        "svelte": "keyframe-plus",
+        "native": "keyframe-plus"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "Keyframes",
+      "files": {
+        "svelte": "keyframes",
+        "native": "keyframes"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "Knobs",
+      "files": {
+        "svelte": "knobs",
+        "native": "knobs"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Label",
+      "files": {
+        "svelte": "label",
+        "native": "label"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Lifebuoy",
+      "files": {
+        "svelte": "lifebuoy",
+        "native": "lifebuoy"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "LightBulb",
+      "files": {
+        "svelte": "light-bulb",
+        "native": "light-bulb"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "LineSpace",
+      "files": {
+        "svelte": "line-space",
+        "native": "line-space"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      }
+    },
+    {
+      "name": "LineSpaceSmaller",
+      "files": {
+        "svelte": "line-space-smaller",
+        "native": "line-space-smaller"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      }
+    },
+    {
+      "name": "Link",
+      "files": {
+        "svelte": "link",
+        "native": "link"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "LinkSlash",
+      "files": {
+        "svelte": "link-slash",
+        "native": "link-slash"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      }
+    },
+    {
+      "name": "ListBullet",
+      "files": {
+        "svelte": "list-bullet",
+        "native": "list-bullet"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Lock",
+      "files": {
+        "svelte": "lock",
+        "native": "lock"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "LockClosed",
+      "files": {
+        "svelte": "lock-closed",
+        "native": "lock-closed"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Logo",
+      "files": {
+        "svelte": "logo",
+        "native": "logo"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 642 660",
+        "defaultSize": 16,
+        "defaultColor": null,
+        "defaultStrokeWidth": null,
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 642 660",
+        "defaultSize": 24,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": null,
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "Map",
+      "files": {
+        "svelte": "map",
+        "native": "map"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Maximize",
+      "files": {
+        "svelte": "maximize",
+        "native": "maximize"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "rect": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 24,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "rect": 1
+        }
+      }
+    },
+    {
+      "name": "MenuLines",
+      "files": {
+        "svelte": "menu-lines",
+        "native": "menu-lines"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Merge",
+      "files": {
+        "svelte": "merge",
+        "native": "merge"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Mic",
+      "files": {
+        "svelte": "mic",
+        "native": "mic"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "rect": 1,
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "rect": 1,
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "MicSolid",
+      "files": {
+        "svelte": "mic-solid",
+        "native": "mic-solid"
+      },
+      "variant": "variant",
+      "svelte": {
+        "viewBox": "0 0 20 20",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 20 20",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "Minus",
+      "files": {
+        "svelte": "minus",
+        "native": "minus"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Moon",
+      "files": {
+        "svelte": "moon",
+        "native": "moon"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 24,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "NewFolderAlt",
+      "files": {
+        "svelte": "new-folder-alt",
+        "native": "new-folder-alt"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "Note",
+      "files": {
+        "svelte": "note",
+        "native": "note"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "NumberedList",
+      "files": {
+        "svelte": "numbered-list",
+        "native": "numbered-list"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "PageEdit",
+      "files": {
+        "svelte": "page-edit",
+        "native": "page-edit"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      }
+    },
+    {
+      "name": "PagePlus",
+      "files": {
+        "svelte": "page-plus",
+        "native": "page-plus"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "PenAlt",
+      "files": {
+        "svelte": "pen-alt",
+        "native": "pen-alt"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Pencil",
+      "files": {
+        "svelte": "pencil",
+        "native": "pencil"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "PencilSolid",
+      "files": {
+        "svelte": "pencil-solid",
+        "native": "pencil-solid"
+      },
+      "variant": "variant",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "PencilSquare",
+      "files": {
+        "svelte": "pencil-square",
+        "native": "pencil-square"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "PeopleTag",
+      "files": {
+        "svelte": "people-tag",
+        "native": "people-tag"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      }
+    },
+    {
+      "name": "Phone",
+      "files": {
+        "svelte": "phone",
+        "native": "phone"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Photo",
+      "files": {
+        "svelte": "photo",
+        "native": "photo"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      }
+    },
+    {
+      "name": "PhotoSolid",
+      "files": {
+        "svelte": "photo-solid",
+        "native": "photo-solid"
+      },
+      "variant": "variant",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Pin",
+      "files": {
+        "svelte": "pin",
+        "native": "pin"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "PinSlash",
+      "files": {
+        "svelte": "pin-slash",
+        "native": "pin-slash"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "Play",
+      "files": {
+        "svelte": "play",
+        "native": "play"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Plus",
+      "files": {
+        "svelte": "plus",
+        "native": "plus"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "PlusAlt",
+      "files": {
+        "svelte": "plus-alt",
+        "native": "plus-alt"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Printer",
+      "files": {
+        "svelte": "printer",
+        "native": "printer"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "QuestionMarkCircle",
+      "files": {
+        "svelte": "question-mark-circle",
+        "native": "question-mark-circle"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "QueueList",
+      "files": {
+        "svelte": "queue-list",
+        "native": "queue-list"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ReceiptPercent",
+      "files": {
+        "svelte": "receipt-percent",
+        "native": "receipt-percent"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Refresh",
+      "files": {
+        "svelte": "refresh",
+        "native": "refresh"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "Reset",
+      "files": {
+        "svelte": "reset",
+        "native": "reset"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Restore",
+      "files": {
+        "svelte": "restore",
+        "native": "restore"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "rect": 1,
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 24,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "rect": 1,
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Scale",
+      "files": {
+        "svelte": "scale",
+        "native": "scale"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Search",
+      "files": {
+        "svelte": "search",
+        "native": "search"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Settings",
+      "files": {
+        "svelte": "settings",
+        "native": "settings"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "SettingsAlt",
+      "files": {
+        "svelte": "settings-alt",
+        "native": "settings-alt"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "Share",
+      "files": {
+        "svelte": "share",
+        "native": "share"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "ShieldCheck",
+      "files": {
+        "svelte": "shield-check",
+        "native": "shield-check"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Sidebar",
+      "files": {
+        "svelte": "sidebar",
+        "native": "sidebar"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "SignOut",
+      "files": {
+        "svelte": "sign-out",
+        "native": "sign-out"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 20 20",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 20 20",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "SoundHigh",
+      "files": {
+        "svelte": "sound-high",
+        "native": "sound-high"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "Sparkles",
+      "files": {
+        "svelte": "sparkles",
+        "native": "sparkles"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "SparklesSolid",
+      "files": {
+        "svelte": "sparkles-solid",
+        "native": "sparkles-solid"
+      },
+      "variant": "variant",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Star",
+      "files": {
+        "svelte": "star",
+        "native": "star"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Strikethrough",
+      "files": {
+        "svelte": "strikethrough",
+        "native": "strikethrough"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Sun",
+      "files": {
+        "svelte": "sun",
+        "native": "sun"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "circle": 1,
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 24,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "circle": 1,
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Tag",
+      "files": {
+        "svelte": "tag",
+        "native": "tag"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1,
+          "circle": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1,
+          "circle": 1
+        }
+      }
+    },
+    {
+      "name": "TaskList",
+      "files": {
+        "svelte": "task-list",
+        "native": "task-list"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 6
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 6
+        }
+      }
+    },
+    {
+      "name": "Terminal",
+      "files": {
+        "svelte": "terminal",
+        "native": "terminal"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "Trash",
+      "files": {
+        "svelte": "trash",
+        "native": "trash"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "Underline",
+      "files": {
+        "svelte": "underline",
+        "native": "underline"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "UndoAction",
+      "files": {
+        "svelte": "undo-action",
+        "native": "undo-action"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "Union",
+      "files": {
+        "svelte": "union",
+        "native": "union"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "UsageIcon",
+      "files": {
+        "svelte": "usage-icon",
+        "native": "usage-icon"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "User",
+      "files": {
+        "svelte": "user",
+        "native": "user"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "UserAlt",
+      "files": {
+        "svelte": "user-alt",
+        "native": "user-alt"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "UserBadgeCheck",
+      "files": {
+        "svelte": "user-badge-check",
+        "native": "user-badge-check"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 4
+        }
+      }
+    },
+    {
+      "name": "UserCircle",
+      "files": {
+        "svelte": "user-circle",
+        "native": "user-circle"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
+      "name": "UserCircleSolid",
+      "files": {
+        "svelte": "user-circle-solid",
+        "native": "user-circle-solid"
+      },
+      "variant": "variant",
+      "svelte": {
+        "viewBox": "0 0 16 16",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 16 16",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "UserGroup",
+      "files": {
+        "svelte": "user-group",
+        "native": "user-group"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "UserMinus",
+      "files": {
+        "svelte": "user-minus",
+        "native": "user-minus"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "UserPlus",
+      "files": {
+        "svelte": "user-plus",
+        "native": "user-plus"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "UserPlusSolid",
+      "files": {
+        "svelte": "user-plus-solid",
+        "native": "user-plus-solid"
+      },
+      "variant": "variant",
+      "svelte": {
+        "viewBox": "0 0 20 20",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 20 20",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Users",
+      "files": {
+        "svelte": "users",
+        "native": "users"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "UsersSolid",
+      "files": {
+        "svelte": "users-solid",
+        "native": "users-solid"
+      },
+      "variant": "variant",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Voice",
+      "files": {
+        "svelte": "voice",
+        "native": "voice"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 5
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 5
+        }
+      }
+    },
+    {
+      "name": "Wrench",
+      "files": {
+        "svelte": "wrench",
+        "native": "wrench"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "WrenchAlt",
+      "files": {
+        "svelte": "wrench-alt",
+        "native": "wrench-alt"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "WrenchSolid",
+      "files": {
+        "svelte": "wrench-solid",
+        "native": "wrench-solid"
+      },
+      "variant": "variant",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "XMark",
+      "files": {
+        "svelte": "x-mark",
+        "native": "x-mark"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 20 20",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 20 20",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Youtube",
+      "files": {
+        "svelte": "youtube",
+        "native": "youtube"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
+      "name": "ZoomReset",
+      "files": {
+        "svelte": "zoom-reset",
+        "native": "zoom-reset"
+      },
+      "variant": "default",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "rect": 1,
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 20,
+        "defaultColor": "currentColor",
+        "defaultStrokeWidth": "1.5",
+        "primitives": {
+          "rect": 1,
+          "path": 3
+        }
+      }
+    }
+  ],
+  "errors": []
+}
