@@ -40,9 +40,10 @@ pub(crate) async fn do_open_changelog_window<R: tauri::Runtime>(
         return Ok(());
     }
     let main_window = app.get_webview_window("main");
+    let app_name = app.package_info().name.clone();
     let mut builder =
         WebviewWindowBuilder::new(app, "orbis-changelog", WebviewUrl::App("changelog".into()))
-            .title("Orbis — What's New & Changelog")
+            .title(format!("{app_name} — What's New & Changelog"))
             .inner_size(860.0, 680.0)
             .min_inner_size(580.0, 460.0)
             .resizable(true)

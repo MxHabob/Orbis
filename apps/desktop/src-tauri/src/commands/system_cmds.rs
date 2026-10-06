@@ -29,6 +29,15 @@ pub struct ReleaseChangelogItem {
     pub is_latest: bool,
     pub html_url: String,
     pub images: Vec<String>,
+    pub resources: Vec<ReleaseResource>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReleaseResource {
+    pub name: String,
+    pub url: String,
+    pub content_type: String,
+    pub size: u64,
 }
 
 /// Structured update check result with GitHub Releases comparison.
@@ -64,8 +73,66 @@ struct GitHubReleaseDto {
 
 #[derive(Debug, Deserialize)]
 struct GitHubReleaseAssetDto {
+    name: String,
     browser_download_url: String,
     content_type: String,
+    size: u64,
+}
+
+fn stable_version(tag: &str) -> Option<(u64, u64, u64)> {
+    let version = tag.strip_prefix('v').unwrap_or(tag);
+    let mut parts = version.split('.');
+    let major = parts.next()?.parse().ok()?;
+    let minor = parts.next()?.parse().ok()?;
+    let patch = parts.next()?.parse().ok()?;
+    if parts.next().is_some() {
+        return None;
+    }
+    Some((major, minor, patch))
+}
+
+fn release_asset_url(value: &str) -> Option<String> {
+    let url = reqwest::Url::parse(value).ok()?;
+    (url.scheme() == "https"
+        && url.host_str() == Some("github.com")
+        && url.path().starts_with("/MxHabob/Orbis/releases/download/"))
+    .then(|| url.to_string())
+}
+
+fn image_asset(asset: &GitHubReleaseAssetDto) -> bool {
+    let extension = asset
+        .name
+        .rsplit_once('.')
+        .map(|(_, extension)| extension.to_ascii_lowercase());
+    asset.content_type.starts_with("image/")
+        || matches!(
+            extension.as_deref(),
+            Some("png" | "jpg" | "jpeg" | "gif" | "webp" | "avif")
+        )
+}
+
+fn resource_asset(asset: &GitHubReleaseAssetDto) -> bool {
+    let name = asset.name.to_ascii_lowercase();
+    let extension = name.rsplit_once('.').map(|(_, extension)| extension);
+    matches!(
+        extension,
+        Some(
+            "pdf"
+                | "md"
+                | "txt"
+                | "csv"
+                | "json"
+                | "docx"
+                | "xlsx"
+                | "pptx"
+                | "odt"
+                | "ods"
+                | "odp"
+        )
+    ) && name != "latest.json"
+        && !name.ends_with(".sig")
+        && !name.ends_with(".nsis.zip")
+        && !name.ends_with(".app.tar.gz")
 }
 
 /// Fetch published stable releases from GitHub.
@@ -90,22 +157,47 @@ pub async fn fetch_github_changelog(
         .await
         .map_err(|error| format!("Failed to parse GitHub releases: {error}"))?;
 
+    let mut releases = releases
+        .into_iter()
+        .filter_map(|release| {
+            let version = stable_version(&release.tag_name)?;
+            if release.prerelease {
+                return None;
+            }
+            let url = reqwest::Url::parse(&release.html_url).ok()?;
+            if url.scheme() != "https" || url.host_str() != Some("github.com") {
+                return None;
+            }
+            Some((version, release))
+        })
+        .collect::<Vec<_>>();
+    releases.sort_by(|left, right| right.0.cmp(&left.0));
+
     Ok(releases
         .into_iter()
-        .filter(|release| !release.prerelease)
         .enumerate()
-        .map(|(index, release)| {
+        .map(|(index, (_, release))| {
             let version = release.tag_name.trim_start_matches('v').to_string();
             let images = release
                 .assets
-                .into_iter()
-                .filter(|asset| asset.content_type.starts_with("image/"))
-                .filter_map(|asset| {
-                    let url = reqwest::Url::parse(&asset.browser_download_url).ok()?;
-                    (url.scheme() == "https" && url.host_str() == Some("github.com"))
-                        .then(|| url.to_string())
-                })
+                .iter()
+                .filter(|asset| image_asset(asset))
+                .filter_map(|asset| release_asset_url(&asset.browser_download_url))
                 .take(6)
+                .collect();
+            let resources = release
+                .assets
+                .iter()
+                .filter(|asset| !image_asset(asset) && resource_asset(asset))
+                .filter_map(|asset| {
+                    Some(ReleaseResource {
+                        name: asset.name.clone(),
+                        url: release_asset_url(&asset.browser_download_url)?,
+                        content_type: asset.content_type.clone(),
+                        size: asset.size,
+                    })
+                })
+                .take(20)
                 .collect();
 
             ReleaseChangelogItem {
@@ -120,6 +212,7 @@ pub async fn fetch_github_changelog(
                 body: release.body,
                 html_url: release.html_url,
                 images,
+                resources,
             }
         })
         .collect())

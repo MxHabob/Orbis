@@ -5,6 +5,7 @@
   import type { AppInfo, ReleaseChangelogItem } from "$lib/api/types";
   import { Badge } from "@orbis/ui/badge";
   import { Calendar } from "@orbis/icons";
+  import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
 
   let { isRTL = false }: { isRTL?: boolean } = $props();
 
@@ -110,7 +111,36 @@
             <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">
               {m.ui_onboarding_intro_release_notes()}
             </h3>
-            <pre class="max-h-72 overflow-y-auto whitespace-pre-wrap break-words rounded-xl border border-border/60 bg-muted/20 p-4 font-sans text-sm leading-relaxed text-foreground">{latestRelease.body}</pre>
+            <div class="max-h-[32rem] overflow-y-auto rounded-xl border border-border/60 bg-muted/20 p-4">
+              <ReleaseMarkdown markdown={latestRelease.body} />
+            </div>
+          </section>
+        {:else}
+          <p class="rounded-xl border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
+            {m.ui_changelog_no_release_notes()}
+          </p>
+        {/if}
+
+        {#if latestRelease.resources.length > 0}
+          <section class="space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">
+              {m.ui_changelog_release_resources()}
+            </h3>
+            <ul class="space-y-2">
+              {#each latestRelease.resources as resource (resource.url)}
+                <li>
+                  <a
+                    href={resource.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-sm text-primary underline underline-offset-4"
+                  >
+                    <span class="min-w-0 truncate">{resource.name}</span>
+                    <span class="shrink-0 font-mono text-xs text-muted-foreground">{(resource.size / 1024).toFixed(0)} KB</span>
+                  </a>
+                </li>
+              {/each}
+            </ul>
           </section>
         {/if}
       {:else}

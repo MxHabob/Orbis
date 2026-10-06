@@ -837,6 +837,14 @@ export interface ReleaseChangelogItem {
   is_latest: boolean;
   html_url: string;
   images: string[];
+  resources: ReleaseResource[];
+}
+
+export interface ReleaseResource {
+  name: string;
+  url: string;
+  content_type: string;
+  size: number;
 }
 
 export interface AppInfo {

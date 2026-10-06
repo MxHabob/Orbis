@@ -3032,6 +3032,8 @@
   "ui_changelog_no_releases": "لا توجد إصدارات منشورة بعد.",
   "ui_changelog_release_images": "صور الإصدار",
   "ui_changelog_release_notes": "ملاحظات الإصدار",
+  "ui_changelog_release_resources": "موارد الإصدار",
+  "ui_changelog_no_release_notes": "لا توجد ملاحظات إصدار لهذا الإصدار.",
   "ui_changelog_install_and_restart": "تثبيت وإعادة التشغيل",
   "ui_changelog_installing_update": "جارٍ تثبيت التحديث...",
   "common_students_count_suffix": "سجل",
