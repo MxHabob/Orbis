@@ -56,6 +56,24 @@
       "pairedWith": "Pencil",
       "svelte": "src/svelte/pencil-solid.svelte",
       "native": "src/native/pencil-solid.tsx"
+    },
+    {
+      "name": "Sparkles",
+      "family": "status",
+      "kind": "intentional-variant",
+      "variant": "outline",
+      "pairedWith": "SparklesSolid",
+      "svelte": "src/svelte/sparkles.svelte",
+      "native": "src/native/sparkles.tsx"
+    },
+    {
+      "name": "SparklesSolid",
+      "family": "status",
+      "kind": "intentional-variant",
+      "variant": "solid",
+      "pairedWith": "Sparkles",
+      "svelte": "src/svelte/sparkles-solid.svelte",
+      "native": "src/native/sparkles-solid.tsx"
     }
   ]
 }

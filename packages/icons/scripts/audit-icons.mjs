@@ -88,6 +88,29 @@ function walkSourceFiles(directory) {
 	return listFiles(directory).filter((file) => /\.(svelte|tsx?|jsx?)$/i.test(file));
 }
 
+function classifyIcon(name) {
+	const normalized = name.toLowerCase();
+	const familyRules = [
+		['brand', /\b(logo|github|youtube)\b/],
+		['navigation', /(arrow|chevron|bars|menu|sidebar|home|grid|collapse|expand|maximize|restore)/],
+		['status', /(check|info|question|shield|bell|notification|warning|error|sparkle|star|heart|bolt)/],
+		['people', /(user|users|people|face|glasses)/],
+		['education', /(academic|book|calculator|calendar|clipboard|clock|document|list|note|numbered|page|schedule|task|chart)/],
+		['data', /(database|banknote|credit|receipt|scale|tag|label|usage|union)/],
+		['communication', /(chat|bubble|phone|mic|voice|headphone|sound|link|share)/],
+		['media', /(camera|photo|image|play)/],
+		['security', /(lock|key|face-id|sign-out)/],
+		['actions', /(plus|minus|x-mark|check|edit|pencil|pen|trash|garbage|refresh|reset|undo|download|upload|arrow-path|search|funnel|adjustment|setting|cog|wrench)/],
+	];
+	const family = familyRules.find(([, pattern]) => pattern.test(normalized))?.[0] ?? 'utility';
+	const variant = /solid/i.test(name) ? 'solid' : /outline/i.test(name) ? 'outline' : 'default';
+	return {
+		family,
+		variant,
+		kind: family === 'brand' ? 'brand-asset' : variant === 'default' ? 'canonical' : 'intentional-variant',
+	};
+}
+
 function readImportUsage(app, importPattern, exports) {
 	const directory = path.join(workspaceRoot, `apps/${app}/src`);
 	const counts = new Map();
@@ -177,7 +200,7 @@ const icons = [...allNames]
 		return {
 			name,
 			files: { svelte: svelteFile, native: nativeFile },
-			variant: /solid|outline/i.test(name) ? 'variant' : 'default',
+			...classifyIcon(name),
 			svelte,
 			native,
 		};
@@ -229,6 +252,37 @@ if (outputFlag >= 0) {
 	const outputPath = path.resolve(process.cwd(), process.argv[outputFlag + 1]);
 	fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 	fs.writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`);
+}
+
+const manifestFlag = process.argv.indexOf('--manifest-output');
+if (manifestFlag >= 0) {
+	const manifestPath = path.resolve(process.cwd(), process.argv[manifestFlag + 1]);
+	fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
+	fs.writeFileSync(
+		manifestPath,
+		`${JSON.stringify(
+			{
+				version: 1,
+				viewBox: '0 0 24 24',
+				defaultSize: 16,
+				defaultStrokeWidth: 1.75,
+				icons: report.icons.map(({ name, files, family, variant, kind }) => ({
+					name,
+					files,
+					family,
+					variant,
+					kind,
+				})),
+				nativeAliases: nativeAliases.map(({ name, file }) => ({
+					name,
+					file,
+					kind: 'compatibility-alias',
+				})),
+			},
+			null,
+			2,
+		)}\n`,
+	);
 }
 
 console.log(

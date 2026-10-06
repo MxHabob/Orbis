@@ -75,8 +75,8 @@
         },
         {
           "name": "Sparkles",
-          "count": 37,
-          "files": 37
+          "count": 38,
+          "files": 38
         },
         {
           "name": "Trash",
@@ -90,8 +90,8 @@
         },
         {
           "name": "XMark",
-          "count": 32,
-          "files": 32
+          "count": 33,
+          "files": 33
         },
         {
           "name": "BookOpen",
@@ -109,14 +109,14 @@
           "files": 30
         },
         {
+          "name": "Check",
+          "count": 27,
+          "files": 27
+        },
+        {
           "name": "ClockRotateRight",
           "count": 26,
           "files": 26
-        },
-        {
-          "name": "Check",
-          "count": 25,
-          "files": 25
         },
         {
           "name": "ChartBar",
@@ -159,14 +159,14 @@
           "files": 17
         },
         {
-          "name": "Eye",
+          "name": "ChevronRight",
           "count": 16,
           "files": 16
         },
         {
-          "name": "ChevronRight",
-          "count": 14,
-          "files": 14
+          "name": "Eye",
+          "count": 16,
+          "files": 16
         },
         {
           "name": "Printer",
@@ -274,6 +274,11 @@
           "files": 8
         },
         {
+          "name": "TaskList",
+          "count": 8,
+          "files": 8
+        },
+        {
           "name": "ArrowForward",
           "count": 7,
           "files": 7
@@ -295,11 +300,6 @@
         },
         {
           "name": "Settings",
-          "count": 7,
-          "files": 7
-        },
-        {
-          "name": "TaskList",
           "count": 7,
           "files": 7
         },
@@ -345,6 +345,11 @@
         },
         {
           "name": "CheckSquare",
+          "count": 5,
+          "files": 5
+        },
+        {
+          "name": "ChevronLeft",
           "count": 5,
           "files": 5
         },
@@ -405,11 +410,6 @@
         },
         {
           "name": "CheckBox",
-          "count": 4,
-          "files": 4
-        },
-        {
-          "name": "ChevronLeft",
           "count": 4,
           "files": 4
         },
@@ -675,9 +675,9 @@
         }
       ],
       "renderedIconSizes": {
-        "renderedIcons": 1165,
-        "explicitSize": 885,
-        "unspecifiedSize": 280
+        "renderedIcons": 1178,
+        "explicitSize": 889,
+        "unspecifiedSize": 289
       }
     },
     "mobile": {
@@ -823,21 +823,23 @@
         "svelte": "academic-cap",
         "native": "academic-cap"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -849,23 +851,27 @@
         "svelte": "adjustments-horizontal",
         "native": "adjustments-horizontal"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
-          "path": 1
+          "path": 1,
+          "circle": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
-          "path": 1
+          "path": 1,
+          "circle": 3
         }
       }
     },
@@ -875,21 +881,23 @@
         "svelte": "adjustments-horizontal-outline",
         "native": "adjustments-horizontal-outline"
       },
-      "variant": "variant",
+      "family": "actions",
+      "variant": "outline",
+      "kind": "intentional-variant",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -901,21 +909,23 @@
         "svelte": "agile",
         "native": "agile"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
@@ -927,21 +937,23 @@
         "svelte": "align-horizontal",
         "native": "align-horizontal"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -953,21 +965,23 @@
         "svelte": "align-vertical",
         "native": "align-vertical"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -979,21 +993,23 @@
         "svelte": "app-notification",
         "native": "app-notification"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 24,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -1005,21 +1021,23 @@
         "svelte": "archive-box",
         "native": "archive-box"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1031,21 +1049,23 @@
         "svelte": "arrow-down-tray",
         "native": "arrow-down-tray"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1057,21 +1077,23 @@
         "svelte": "arrow-forward",
         "native": "arrow-forward"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -1083,21 +1105,23 @@
         "svelte": "arrow-left",
         "native": "arrow-left"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1109,21 +1133,23 @@
         "svelte": "arrow-left-tag",
         "native": "arrow-left-tag"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -1135,21 +1161,23 @@
         "svelte": "arrow-path",
         "native": "arrow-path"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1161,21 +1189,23 @@
         "svelte": "arrow-right",
         "native": "arrow-right"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1187,21 +1217,23 @@
         "svelte": "arrow-right-circle",
         "native": "arrow-right-circle"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1213,21 +1245,23 @@
         "svelte": "arrow-right-tag",
         "native": "arrow-right-tag"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -1239,21 +1273,23 @@
         "svelte": "arrow-turn-down-right",
         "native": "arrow-turn-down-right"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 16 16",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 16 16",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1265,21 +1301,23 @@
         "svelte": "arrow-up-circle",
         "native": "arrow-up-circle"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1291,21 +1329,23 @@
         "svelte": "arrow-up-left",
         "native": "arrow-up-left"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1317,21 +1357,23 @@
         "svelte": "arrow-up-left-alt",
         "native": "arrow-up-left-alt"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -1343,21 +1385,23 @@
         "svelte": "arrow-up-tray",
         "native": "arrow-up-tray"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1369,21 +1413,23 @@
         "svelte": "arrow-uturn-left",
         "native": "arrow-uturn-left"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1395,21 +1441,23 @@
         "svelte": "arrow-uturn-right",
         "native": "arrow-uturn-right"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1421,21 +1469,23 @@
         "svelte": "arrows-pointing-out",
         "native": "arrows-pointing-out"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1447,21 +1497,23 @@
         "svelte": "arrows-right-left",
         "native": "arrows-right-left"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1473,21 +1525,23 @@
         "svelte": "banknotes",
         "native": "banknotes"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1499,21 +1553,23 @@
         "svelte": "bars3-bottom-left",
         "native": "bars3-bottom-left"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 16 16",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 16 16",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1525,21 +1581,23 @@
         "svelte": "bars-arrow-up",
         "native": "bars-arrow-up"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1551,21 +1609,23 @@
         "svelte": "bell",
         "native": "bell"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 24,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -1577,21 +1637,23 @@
         "svelte": "bold",
         "native": "bold"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1603,21 +1665,23 @@
         "svelte": "bolt",
         "native": "bolt"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1629,21 +1693,23 @@
         "svelte": "book-open",
         "native": "book-open"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1655,21 +1721,23 @@
         "svelte": "bookmark",
         "native": "bookmark"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1681,21 +1749,23 @@
         "svelte": "bookmark-slash",
         "native": "bookmark-slash"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1707,21 +1777,23 @@
         "svelte": "building-library",
         "native": "building-library"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1733,21 +1805,23 @@
         "svelte": "building-office",
         "native": "building-office"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1759,21 +1833,23 @@
         "svelte": "calculator",
         "native": "calculator"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1785,21 +1861,23 @@
         "svelte": "calendar",
         "native": "calendar"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1811,21 +1889,23 @@
         "svelte": "calendar-solid",
         "native": "calendar-solid"
       },
-      "variant": "variant",
+      "family": "education",
+      "variant": "solid",
+      "kind": "intentional-variant",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1837,21 +1917,23 @@
         "svelte": "camera",
         "native": "camera"
       },
+      "family": "media",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -1863,21 +1945,23 @@
         "svelte": "camera-solid",
         "native": "camera-solid"
       },
-      "variant": "variant",
+      "family": "media",
+      "variant": "solid",
+      "kind": "intentional-variant",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -1889,21 +1973,23 @@
         "svelte": "chart-bar",
         "native": "chart-bar"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1915,21 +2001,23 @@
         "svelte": "chat-bubble",
         "native": "chat-bubble"
       },
+      "family": "communication",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1941,21 +2029,23 @@
         "svelte": "chat-bubble-dotted",
         "native": "chat-bubble-dotted"
       },
+      "family": "communication",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -1967,21 +2057,23 @@
         "svelte": "chat-bubble-dotted-checked",
         "native": "chat-bubble-dotted-checked"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -1993,21 +2085,23 @@
         "svelte": "chat-bubble-oval",
         "native": "chat-bubble-oval"
       },
+      "family": "communication",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2019,21 +2113,23 @@
         "svelte": "chat-bubbles",
         "native": "chat-bubbles"
       },
+      "family": "communication",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2045,21 +2141,23 @@
         "svelte": "chat-check",
         "native": "chat-check"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -2071,21 +2169,23 @@
         "svelte": "chat-plus",
         "native": "chat-plus"
       },
+      "family": "communication",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -2097,21 +2197,23 @@
         "svelte": "check",
         "native": "check"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2123,21 +2225,23 @@
         "svelte": "check-box",
         "native": "check-box"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -2149,21 +2253,23 @@
         "svelte": "check-circle",
         "native": "check-circle"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2175,21 +2281,23 @@
         "svelte": "check-square",
         "native": "check-square"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -2201,21 +2309,23 @@
         "svelte": "chevron-down",
         "native": "chevron-down"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2227,21 +2337,23 @@
         "svelte": "chevron-left",
         "native": "chevron-left"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2253,21 +2365,23 @@
         "svelte": "chevron-right",
         "native": "chevron-right"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2279,21 +2393,23 @@
         "svelte": "chevron-up",
         "native": "chevron-up"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2305,21 +2421,23 @@
         "svelte": "chevron-up-down",
         "native": "chevron-up-down"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2331,21 +2449,23 @@
         "svelte": "clip",
         "native": "clip"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2357,21 +2477,23 @@
         "svelte": "clipboard",
         "native": "clipboard"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2383,21 +2505,23 @@
         "svelte": "clipboard-check",
         "native": "clipboard-check"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -2409,21 +2533,23 @@
         "svelte": "clock",
         "native": "clock"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2435,21 +2561,23 @@
         "svelte": "clock-rotate-right",
         "native": "clock-rotate-right"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -2461,21 +2589,23 @@
         "svelte": "cloud",
         "native": "cloud"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2487,21 +2617,23 @@
         "svelte": "cloud-arrow-up",
         "native": "cloud-arrow-up"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2513,21 +2645,23 @@
         "svelte": "code",
         "native": "code"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2539,21 +2673,23 @@
         "svelte": "code-bracket",
         "native": "code-bracket"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2565,21 +2701,23 @@
         "svelte": "cog6",
         "native": "cog6"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -2591,21 +2729,23 @@
         "svelte": "cog6-solid",
         "native": "cog6-solid"
       },
-      "variant": "variant",
+      "family": "actions",
+      "variant": "solid",
+      "kind": "intentional-variant",
       "svelte": {
         "viewBox": "0 0 16 16",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 16 16",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2617,21 +2757,23 @@
         "svelte": "collapse",
         "native": "collapse"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
@@ -2643,21 +2785,23 @@
         "svelte": "command-line",
         "native": "command-line"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2669,21 +2813,23 @@
         "svelte": "command-line-solid",
         "native": "command-line-solid"
       },
-      "variant": "variant",
+      "family": "utility",
+      "variant": "solid",
+      "kind": "intentional-variant",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2695,21 +2841,23 @@
         "svelte": "component",
         "native": "component"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
@@ -2721,21 +2869,23 @@
         "svelte": "computer",
         "native": "computer"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -2747,21 +2897,23 @@
         "svelte": "credit-card",
         "native": "credit-card"
       },
+      "family": "data",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2773,21 +2925,23 @@
         "svelte": "cube",
         "native": "cube"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2799,21 +2953,23 @@
         "svelte": "cursor-arrow-rays",
         "native": "cursor-arrow-rays"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2825,21 +2981,23 @@
         "svelte": "database",
         "native": "database"
       },
+      "family": "data",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -2851,21 +3009,23 @@
         "svelte": "database-settings",
         "native": "database-settings"
       },
+      "family": "data",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 5
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 5
         }
@@ -2877,21 +3037,23 @@
         "svelte": "document",
         "native": "document"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2903,21 +3065,23 @@
         "svelte": "document-arrow-down",
         "native": "document-arrow-down"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2929,21 +3093,23 @@
         "svelte": "document-arrow-up",
         "native": "document-arrow-up"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -2955,21 +3121,23 @@
         "svelte": "document-arrow-up-solid",
         "native": "document-arrow-up-solid"
       },
-      "variant": "variant",
+      "family": "navigation",
+      "variant": "solid",
+      "kind": "intentional-variant",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -2981,21 +3149,23 @@
         "svelte": "document-chart-bar",
         "native": "document-chart-bar"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -3007,21 +3177,23 @@
         "svelte": "document-check",
         "native": "document-check"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3033,21 +3205,23 @@
         "svelte": "document-duplicate",
         "native": "document-duplicate"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3059,21 +3233,23 @@
         "svelte": "document-page",
         "native": "document-page"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 5
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 5
         }
@@ -3085,21 +3261,23 @@
         "svelte": "download",
         "native": "download"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -3111,21 +3289,23 @@
         "svelte": "edit-pencil",
         "native": "edit-pencil"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3137,21 +3317,23 @@
         "svelte": "ellipsis-horizontal",
         "native": "ellipsis-horizontal"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3163,21 +3345,23 @@
         "svelte": "ellipsis-vertical",
         "native": "ellipsis-vertical"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3189,21 +3373,23 @@
         "svelte": "expand",
         "native": "expand"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
@@ -3215,21 +3401,23 @@
         "svelte": "eye",
         "native": "eye"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -3241,21 +3429,23 @@
         "svelte": "eye-slash",
         "native": "eye-slash"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3267,21 +3457,23 @@
         "svelte": "face",
         "native": "face"
       },
+      "family": "people",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 5
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 5
         }
@@ -3293,21 +3485,23 @@
         "svelte": "face-id",
         "native": "face-id"
       },
+      "family": "people",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 8
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 8
         }
@@ -3319,21 +3513,23 @@
         "svelte": "face-smile",
         "native": "face-smile"
       },
+      "family": "people",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3345,21 +3541,23 @@
         "svelte": "file-plus-alt",
         "native": "file-plus-alt"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -3371,21 +3569,23 @@
         "svelte": "floppy-disk",
         "native": "floppy-disk"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3397,21 +3597,23 @@
         "svelte": "folder",
         "native": "folder"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3423,21 +3625,23 @@
         "svelte": "folder-open",
         "native": "folder-open"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3449,21 +3653,23 @@
         "svelte": "funnel",
         "native": "funnel"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3475,21 +3681,23 @@
         "svelte": "garbage-bin",
         "native": "garbage-bin"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3501,21 +3709,23 @@
         "svelte": "github",
         "native": "github"
       },
+      "family": "brand",
       "variant": "default",
+      "kind": "brand-asset",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3527,21 +3737,23 @@
         "svelte": "glasses",
         "native": "glasses"
       },
+      "family": "people",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 5
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 5
         }
@@ -3553,21 +3765,23 @@
         "svelte": "globe-alt",
         "native": "globe-alt"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3579,21 +3793,23 @@
         "svelte": "globe-alt-solid",
         "native": "globe-alt-solid"
       },
-      "variant": "variant",
+      "family": "utility",
+      "variant": "solid",
+      "kind": "intentional-variant",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3605,21 +3821,23 @@
         "svelte": "grid",
         "native": "grid"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
@@ -3631,21 +3849,23 @@
         "svelte": "h1",
         "native": "h1"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3657,21 +3877,23 @@
         "svelte": "h2",
         "native": "h2"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3683,21 +3905,23 @@
         "svelte": "h3",
         "native": "h3"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3709,21 +3933,23 @@
         "svelte": "hashtag",
         "native": "hashtag"
       },
+      "family": "data",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
@@ -3735,21 +3961,23 @@
         "svelte": "headphone",
         "native": "headphone"
       },
+      "family": "communication",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3761,21 +3989,23 @@
         "svelte": "heart",
         "native": "heart"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3787,21 +4017,23 @@
         "svelte": "home",
         "native": "home"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 22 22",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 22 22",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3813,21 +4045,23 @@
         "svelte": "info",
         "native": "info"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3839,21 +4073,23 @@
         "svelte": "info-circle",
         "native": "info-circle"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -3865,21 +4101,23 @@
         "svelte": "italic",
         "native": "italic"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3891,21 +4129,23 @@
         "svelte": "keyboard",
         "native": "keyboard"
       },
+      "family": "security",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -3917,21 +4157,23 @@
         "svelte": "keyframe-plus",
         "native": "keyframe-plus"
       },
+      "family": "security",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -3943,21 +4185,23 @@
         "svelte": "keyframes",
         "native": "keyframes"
       },
+      "family": "security",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -3969,21 +4213,23 @@
         "svelte": "knobs",
         "native": "knobs"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -3995,21 +4241,23 @@
         "svelte": "label",
         "native": "label"
       },
+      "family": "data",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4021,21 +4269,23 @@
         "svelte": "lifebuoy",
         "native": "lifebuoy"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4047,21 +4297,23 @@
         "svelte": "light-bulb",
         "native": "light-bulb"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4073,21 +4325,23 @@
         "svelte": "line-space",
         "native": "line-space"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
@@ -4099,21 +4353,23 @@
         "svelte": "line-space-smaller",
         "native": "line-space-smaller"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
@@ -4125,21 +4381,23 @@
         "svelte": "link",
         "native": "link"
       },
+      "family": "communication",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -4151,21 +4409,23 @@
         "svelte": "link-slash",
         "native": "link-slash"
       },
+      "family": "communication",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
@@ -4177,21 +4437,23 @@
         "svelte": "list-bullet",
         "native": "list-bullet"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4203,21 +4465,23 @@
         "svelte": "lock",
         "native": "lock"
       },
+      "family": "security",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4229,21 +4493,23 @@
         "svelte": "lock-closed",
         "native": "lock-closed"
       },
+      "family": "security",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4255,7 +4521,9 @@
         "svelte": "logo",
         "native": "logo"
       },
+      "family": "brand",
       "variant": "default",
+      "kind": "brand-asset",
       "svelte": {
         "viewBox": "0 0 642 660",
         "defaultSize": 16,
@@ -4281,21 +4549,23 @@
         "svelte": "map",
         "native": "map"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4307,21 +4577,23 @@
         "svelte": "maximize",
         "native": "maximize"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "rect": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 24,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "rect": 1
         }
@@ -4333,21 +4605,23 @@
         "svelte": "menu-lines",
         "native": "menu-lines"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4359,21 +4633,23 @@
         "svelte": "merge",
         "native": "merge"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4385,12 +4661,14 @@
         "svelte": "mic",
         "native": "mic"
       },
+      "family": "communication",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "rect": 1,
           "path": 1
@@ -4398,9 +4676,9 @@
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "rect": 1,
           "path": 1
@@ -4413,21 +4691,23 @@
         "svelte": "mic-solid",
         "native": "mic-solid"
       },
-      "variant": "variant",
+      "family": "communication",
+      "variant": "solid",
+      "kind": "intentional-variant",
       "svelte": {
         "viewBox": "0 0 20 20",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 20 20",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -4439,21 +4719,23 @@
         "svelte": "minus",
         "native": "minus"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4465,21 +4747,23 @@
         "svelte": "moon",
         "native": "moon"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 24,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4491,21 +4775,23 @@
         "svelte": "new-folder-alt",
         "native": "new-folder-alt"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -4517,21 +4803,23 @@
         "svelte": "note",
         "native": "note"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4543,21 +4831,23 @@
         "svelte": "numbered-list",
         "native": "numbered-list"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4569,21 +4859,23 @@
         "svelte": "page-edit",
         "native": "page-edit"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
@@ -4595,21 +4887,23 @@
         "svelte": "page-plus",
         "native": "page-plus"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -4621,21 +4915,23 @@
         "svelte": "pen-alt",
         "native": "pen-alt"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4647,21 +4943,23 @@
         "svelte": "pencil",
         "native": "pencil"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4673,21 +4971,23 @@
         "svelte": "pencil-solid",
         "native": "pencil-solid"
       },
-      "variant": "variant",
+      "family": "actions",
+      "variant": "solid",
+      "kind": "intentional-variant",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4699,21 +4999,23 @@
         "svelte": "pencil-square",
         "native": "pencil-square"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4725,21 +5027,23 @@
         "svelte": "people-tag",
         "native": "people-tag"
       },
+      "family": "people",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
@@ -4751,21 +5055,23 @@
         "svelte": "phone",
         "native": "phone"
       },
+      "family": "communication",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4777,21 +5083,23 @@
         "svelte": "photo",
         "native": "photo"
       },
+      "family": "media",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 4
         }
@@ -4803,21 +5111,23 @@
         "svelte": "photo-solid",
         "native": "photo-solid"
       },
-      "variant": "variant",
+      "family": "media",
+      "variant": "solid",
+      "kind": "intentional-variant",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4829,21 +5139,23 @@
         "svelte": "pin",
         "native": "pin"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -4855,21 +5167,23 @@
         "svelte": "pin-slash",
         "native": "pin-slash"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -4881,21 +5195,23 @@
         "svelte": "play",
         "native": "play"
       },
+      "family": "media",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4907,21 +5223,23 @@
         "svelte": "plus",
         "native": "plus"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4933,21 +5251,23 @@
         "svelte": "plus-alt",
         "native": "plus-alt"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4959,21 +5279,23 @@
         "svelte": "printer",
         "native": "printer"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -4985,21 +5307,23 @@
         "svelte": "question-mark-circle",
         "native": "question-mark-circle"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5011,21 +5335,23 @@
         "svelte": "queue-list",
         "native": "queue-list"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5037,21 +5363,23 @@
         "svelte": "receipt-percent",
         "native": "receipt-percent"
       },
+      "family": "data",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5063,21 +5391,23 @@
         "svelte": "refresh",
         "native": "refresh"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -5089,21 +5419,23 @@
         "svelte": "reset",
         "native": "reset"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5115,12 +5447,14 @@
         "svelte": "restore",
         "native": "restore"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "rect": 1,
           "path": 1
@@ -5128,9 +5462,9 @@
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 24,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "rect": 1,
           "path": 1
@@ -5143,21 +5477,23 @@
         "svelte": "scale",
         "native": "scale"
       },
+      "family": "data",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5169,22 +5505,26 @@
         "svelte": "search",
         "native": "search"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
+          "circle": 1,
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
+          "circle": 1,
           "path": 1
         }
       }
@@ -5195,21 +5535,23 @@
         "svelte": "settings",
         "native": "settings"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -5221,21 +5563,23 @@
         "svelte": "settings-alt",
         "native": "settings-alt"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -5247,21 +5591,23 @@
         "svelte": "share",
         "native": "share"
       },
+      "family": "communication",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -5273,21 +5619,23 @@
         "svelte": "shield-check",
         "native": "shield-check"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5299,21 +5647,23 @@
         "svelte": "sidebar",
         "native": "sidebar"
       },
+      "family": "navigation",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -5325,21 +5675,23 @@
         "svelte": "sign-out",
         "native": "sign-out"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 20 20",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 20 20",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -5351,21 +5703,23 @@
         "svelte": "sound-high",
         "native": "sound-high"
       },
+      "family": "communication",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -5377,21 +5731,23 @@
         "svelte": "sparkles",
         "native": "sparkles"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5403,21 +5759,23 @@
         "svelte": "sparkles-solid",
         "native": "sparkles-solid"
       },
-      "variant": "variant",
+      "family": "status",
+      "variant": "solid",
+      "kind": "intentional-variant",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5429,21 +5787,23 @@
         "svelte": "star",
         "native": "star"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5455,21 +5815,23 @@
         "svelte": "strikethrough",
         "native": "strikethrough"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5481,12 +5843,14 @@
         "svelte": "sun",
         "native": "sun"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "circle": 1,
           "path": 1
@@ -5494,9 +5858,9 @@
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 24,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "circle": 1,
           "path": 1
@@ -5509,12 +5873,14 @@
         "svelte": "tag",
         "native": "tag"
       },
+      "family": "data",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1,
           "circle": 1
@@ -5522,9 +5888,9 @@
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1,
           "circle": 1
@@ -5537,21 +5903,23 @@
         "svelte": "task-list",
         "native": "task-list"
       },
+      "family": "education",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 6
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 6
         }
@@ -5563,21 +5931,23 @@
         "svelte": "terminal",
         "native": "terminal"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -5589,21 +5959,23 @@
         "svelte": "trash",
         "native": "trash"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -5615,21 +5987,23 @@
         "svelte": "underline",
         "native": "underline"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5641,21 +6015,23 @@
         "svelte": "undo-action",
         "native": "undo-action"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -5667,21 +6043,23 @@
         "svelte": "union",
         "native": "union"
       },
+      "family": "data",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -5693,21 +6071,23 @@
         "svelte": "usage-icon",
         "native": "usage-icon"
       },
+      "family": "data",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -5719,21 +6099,23 @@
         "svelte": "user",
         "native": "user"
       },
+      "family": "people",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5745,21 +6127,23 @@
         "svelte": "user-alt",
         "native": "user-alt"
       },
+      "family": "people",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -5771,23 +6155,27 @@
         "svelte": "user-badge-check",
         "native": "user-badge-check"
       },
+      "family": "status",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
-          "path": 4
+          "circle": 2,
+          "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
-          "path": 4
+          "circle": 2,
+          "path": 2
         }
       }
     },
@@ -5797,21 +6185,23 @@
         "svelte": "user-circle",
         "native": "user-circle"
       },
+      "family": "people",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 3
         }
@@ -5823,21 +6213,23 @@
         "svelte": "user-circle-solid",
         "native": "user-circle-solid"
       },
-      "variant": "variant",
+      "family": "people",
+      "variant": "solid",
+      "kind": "intentional-variant",
       "svelte": {
         "viewBox": "0 0 16 16",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 16 16",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5849,21 +6241,23 @@
         "svelte": "user-group",
         "native": "user-group"
       },
+      "family": "people",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5875,21 +6269,23 @@
         "svelte": "user-minus",
         "native": "user-minus"
       },
+      "family": "people",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5901,21 +6297,23 @@
         "svelte": "user-plus",
         "native": "user-plus"
       },
+      "family": "people",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5927,21 +6325,23 @@
         "svelte": "user-plus-solid",
         "native": "user-plus-solid"
       },
-      "variant": "variant",
+      "family": "people",
+      "variant": "solid",
+      "kind": "intentional-variant",
       "svelte": {
         "viewBox": "0 0 20 20",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 20 20",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5953,21 +6353,23 @@
         "svelte": "users",
         "native": "users"
       },
+      "family": "people",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -5979,21 +6381,23 @@
         "svelte": "users-solid",
         "native": "users-solid"
       },
-      "variant": "variant",
+      "family": "people",
+      "variant": "solid",
+      "kind": "intentional-variant",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -6005,21 +6409,23 @@
         "svelte": "voice",
         "native": "voice"
       },
+      "family": "communication",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 5
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 5
         }
@@ -6031,21 +6437,23 @@
         "svelte": "wrench",
         "native": "wrench"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -6057,21 +6465,23 @@
         "svelte": "wrench-alt",
         "native": "wrench-alt"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -6083,21 +6493,23 @@
         "svelte": "wrench-solid",
         "native": "wrench-solid"
       },
-      "variant": "variant",
+      "family": "actions",
+      "variant": "solid",
+      "kind": "intentional-variant",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -6109,21 +6521,23 @@
         "svelte": "x-mark",
         "native": "x-mark"
       },
+      "family": "utility",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 20 20",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
       },
       "native": {
         "viewBox": "0 0 20 20",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
         }
@@ -6135,21 +6549,23 @@
         "svelte": "youtube",
         "native": "youtube"
       },
+      "family": "brand",
       "variant": "default",
+      "kind": "brand-asset",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 2
         }
@@ -6161,12 +6577,14 @@
         "svelte": "zoom-reset",
         "native": "zoom-reset"
       },
+      "family": "actions",
       "variant": "default",
+      "kind": "canonical",
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "rect": 1,
           "path": 3
@@ -6174,9 +6592,9 @@
       },
       "native": {
         "viewBox": "0 0 24 24",
-        "defaultSize": 20,
+        "defaultSize": 16,
         "defaultColor": "currentColor",
-        "defaultStrokeWidth": "1.5",
+        "defaultStrokeWidth": "1.75",
         "primitives": {
           "rect": 1,
           "path": 3

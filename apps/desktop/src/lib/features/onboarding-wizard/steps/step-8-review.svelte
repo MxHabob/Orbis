@@ -192,27 +192,17 @@ async function handleCompleteAndLaunch() {
       </div>
     </OnboardingSection>
 
-    <!-- Bottom Action & Final Launch Bar -->
-    <div class="sticky bottom-0 z-10 -mx-4 flex flex-col items-center justify-between gap-4 border-t border-border/60 bg-background/95 px-4 py-4 backdrop-blur sm:-mx-8 sm:flex-row sm:px-8 lg:-mx-12 lg:px-12">
+    <!-- Inline Action & Final Launch Bar -->
+    <div class="mt-8 flex items-center justify-end gap-3 pb-8 pt-4 border-t border-border/40">
       <Button
-        variant="outline"
-        onclick={() => navigateOnboardingRoute(`/${orgId}/onboarding/operations`)}
-        class="text-xs w-full sm:w-auto"
+        variant="default"
+        size="lg"
+        disabled={isLaunching}
+        onclick={handleCompleteAndLaunch}
+        class="text-sm font-bold shadow-md bg-emerald-600 hover:bg-emerald-700 text-white px-6"
       >
-        {m.onboarding_step8_back_btn()}
+        {isLaunching ? m.onboarding_step8_launching_btn() : m.onboarding_step8_launch_btn()}
       </Button>
-
-      <div class="flex items-center gap-3 w-full sm:w-auto">
-        <Button
-          variant="default"
-          size="lg"
-          disabled={isLaunching}
-          onclick={handleCompleteAndLaunch}
-          class="text-sm font-bold w-full sm:w-auto shadow-md bg-emerald-600 hover:bg-emerald-700 text-white"
-        >
-          {isLaunching ? m.onboarding_step8_launching_btn() : m.onboarding_step8_launch_btn()}
-        </Button>
-      </div>
     </div>
   {/if}
 </div>

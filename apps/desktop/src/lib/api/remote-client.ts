@@ -1627,7 +1627,7 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async bootstrapGetStatus(): Promise<BootstrapStatusResponse> {
-    return this.call(sdk.getBootstrapStatus({ client: this.client }));
+    return this.call(sdk.getBootstrapStatus({ client: this.client })) as Promise<BootstrapStatusResponse>;
   }
 
   async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
@@ -1662,7 +1662,7 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async onboardingGetState(_orgId?: string): Promise<OnboardingStateDto> {
-    return this.call(sdk.getOnboardingState({ client: this.client }));
+    return this.call(sdk.getOnboardingState({ client: this.client })) as Promise<OnboardingStateDto>;
   }
 
   async onboardingProvisionDefaults(
@@ -1671,7 +1671,7 @@ export class RemoteClient implements OrbisApiClient {
   ): Promise<ProvisionDefaultsResultDto> {
     return this.call(
       sdk.provisionBlueprintDefaults({ client: this.client, body: req }),
-    );
+    ) as Promise<ProvisionDefaultsResultDto>;
   }
 
 

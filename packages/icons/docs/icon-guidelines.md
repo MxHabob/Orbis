@@ -20,9 +20,18 @@
 - Prefer one clear, familiar metaphor over ornamental or redundant detail.
 - Keep silhouettes distinct within related families; simplify dense symbols
   rather than shrinking their details.
-- Filled symbols are intentional variants, not a way to add visual emphasis to
-  an otherwise unrelated glyph. A paired outline and filled icon must depict
-  the same object and preserve its meaning.
+- Filled symbols are intentionally designed Orbis glyphs, not unrelated
+  symbols or outline paths with `fill="currentColor"` applied mechanically.
+  Draw the outer silhouette and counters specifically for the filled treatment;
+  preserve clean negative space and a recognizable concept at 16px.
+- A paired outline and filled icon must depict the same object and preserve its
+  meaning, but may use different paths and optical corrections to balance their
+  visual weight.
+- For example, `Sparkles` uses three open, rounded rays while `SparklesSolid`
+  uses the same three-ray hierarchy as filled silhouettes. The filled paths
+  are drawn independently so their narrow joins remain open at 16px.
+- Make glyph geometry genuinely Orbis-specific. Use external references for
+  general qualities such as clarity, never as artwork to trace or copy.
 - Use consumer-selected color (`currentColor` on web) rather than embedding
   interface colors. The Orbis logo and other brand assets are exceptions to
   interface-grid and stroke rules.
@@ -51,3 +60,11 @@
    symbol is not mirrored.
 5. Keep the Svelte and native paths equivalent and run the inventory,
    typechecks, and relevant application checks before approval.
+
+## Approved examples and exceptions
+
+- `Sparkles` / `SparklesSolid` demonstrate an intentional outline/solid pair.
+  Keep the shared three-ray arrangement recognizable while tuning each path
+  for its stroke or fill treatment.
+- `Logo` is a brand asset and does not follow the generic 24-unit optical area,
+  16-unit default-size, or 1.75-stroke rules.

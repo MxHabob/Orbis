@@ -398,26 +398,16 @@ async function handleContinue() {
       </div>
     </OnboardingSection>
 
-    <!-- Bottom Actions Bar -->
-    <div class="sticky bottom-0 z-10 -mx-4 flex items-center justify-between border-t border-border/60 bg-background/95 px-4 py-4 backdrop-blur sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12">
+    <!-- Inline Actions Bar -->
+    <div class="mt-8 flex items-center justify-end gap-3 pb-8 pt-4 border-t border-border/40">
       <Button
-        variant="outline"
-        onclick={() => navigateOnboardingRoute(`/${orgId}/onboarding/organization`)}
-        class="text-xs"
+        variant="default"
+        disabled={orgUnits.length === 0 && !unitName.trim()}
+        onclick={handleContinue}
+        class="text-xs font-semibold shadow-xs"
       >
-        {m.onboarding_step2_back_btn()}
+        {m.onboarding_step2_continue_btn()}
       </Button>
-
-      <div class="flex items-center gap-3">
-        <Button
-          variant="default"
-          disabled={orgUnits.length === 0 && !unitName.trim()}
-          onclick={handleContinue}
-          class="text-xs font-semibold shadow-xs"
-        >
-          {m.onboarding_step2_continue_btn()}
-        </Button>
-      </div>
     </div>
   {/if}
 </div>

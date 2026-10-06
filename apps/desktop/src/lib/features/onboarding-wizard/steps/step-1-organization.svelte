@@ -285,35 +285,25 @@ async function handleContinue() {
       </div>
     </OnboardingSection>
 
-    <!-- Bottom Actions Bar -->
-    <div class="sticky bottom-0 z-10 -mx-4 flex items-center justify-between border-t border-border/60 bg-background/95 px-4 py-4 backdrop-blur sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12">
+    <!-- Inline Actions Bar -->
+    <div class="mt-8 flex items-center justify-end gap-3 pb-8 pt-4 border-t border-border/40">
       <Button
-        variant="outline"
-        onclick={() => navigateOnboardingRoute(`/${orgId}/onboarding`)}
+        variant="secondary"
+        disabled={isSaving}
+        onclick={saveOrganization}
         class="text-xs"
       >
-        {m.onboarding_overview_btn()}
+        {isSaving ? m.onboarding_saving_btn() : m.onboarding_save_btn()}
       </Button>
 
-      <div class="flex items-center gap-3">
-        <Button
-          variant="secondary"
-          disabled={isSaving}
-          onclick={saveOrganization}
-          class="text-xs"
-        >
-          {isSaving ? m.onboarding_saving_btn() : m.onboarding_save_btn()}
-        </Button>
-
-        <Button
-          variant="default"
-          disabled={isSaving || !name.trim()}
-          onclick={handleContinue}
-          class="text-xs font-semibold shadow-xs"
-        >
-          {m.onboarding_step1_continue_btn()}
-        </Button>
-      </div>
+      <Button
+        variant="default"
+        disabled={isSaving || !name.trim()}
+        onclick={handleContinue}
+        class="text-xs font-semibold shadow-xs"
+      >
+        {m.onboarding_step1_continue_btn()}
+      </Button>
     </div>
   {/if}
 </div>

@@ -2,21 +2,21 @@
 
 ## 1. Catalog and Baseline
 
-- [ ] 1.1 Inventory every Svelte and React Native icon, export name, viewBox, default size/color/stroke, SVG primitives, and existing variant; verify the report accounts for all package exports and both platform directories.
+- [x] 1.1 Inventory every Svelte and React Native icon, export name, viewBox, default size/color/stroke, SVG primitives, and existing variant; verify the report accounts for all package exports and both platform directories.
 - [ ] 1.2 Measure icon import frequency across `apps/desktop` and `apps/mobile`, identify icon-only interactive controls, and rank redesign batches; verify the report names the most-used symbols and representative accessibility risks.
 - [ ] 1.3 Capture current package typecheck/build results, representative desktop/mobile screenshots, and bundle-size baselines; verify the baseline can be reproduced before icon files change.
-- [ ] 1.4 Document the inventory findings, usage ranking, API differences, and baseline results in the icon-package documentation; verify the report links each finding to a reproducible check or artifact.
+- [x] 1.4 Document the inventory findings, usage ranking, API differences, and baseline results in the icon-package documentation; verify the report links each finding to a reproducible check or artifact.
 
 ## 2. Visual Language and Pilot
 
-- [ ] 2.1 Write the Orbis icon guidelines covering 24-unit canvas, 16/20/24 previews, common 16-unit default, nominal 1.75 stroke, optical alignment, line/corner treatment, detail limits, color inheritance, familiar metaphors, RTL direction classes, intentional solid variants, and logo exceptions; verify each rule is illustrated with examples and exceptions.
-- [ ] 2.2 Select a high-frequency pilot spanning navigation, action, status, education, a dense symbol, and an intentional solid/outline pair; verify every selected glyph has both Svelte and native implementations listed in the pilot manifest.
-- [ ] 2.3 Redraw the pilot icons in both platform directories and align the documented component defaults; verify imports still resolve and pilot previews are materially equivalent at 16, 20, and 24 in light and dark themes.
+- [x] 2.1 Write the Orbis icon guidelines covering 24-unit canvas, 16/20/24 previews, common 16-unit default, nominal 1.75 stroke, optical alignment, line/corner treatment, detail limits, color inheritance, familiar metaphors, RTL direction classes, original filled silhouettes/counters, intentional variants, and logo exceptions; verify each rule is illustrated with examples and exceptions.
+- [x] 2.2 Select a high-frequency pilot spanning navigation, action, status, education, a dense symbol, and an intentional solid/outline pair; verify every selected glyph has both Svelte and native implementations listed in the pilot manifest.
+- [ ] 2.3 Redraw the pilot glyphs as original Orbis artwork in both platform directories, including a deliberately shaped filled/outline pair, and align documented component defaults; verify imports still resolve and previews are materially equivalent at 16, 20, and 24 in light and dark themes.
 - [ ] 2.4 Review the pilot in realistic desktop and mobile controls with representative users or a documented task-based usability method; verify recognition issues, 16-pixel legibility, accessible names, and accepted visual exceptions are recorded before approving full-catalog rollout.
 
 ## 3. Catalog and Regression Tooling
 
-- [ ] 3.1 Add a maintained icon manifest classifying every symbol as canonical, intentional variant, brand asset, or compatibility alias with its semantic family; verify manifest entries reconcile exactly with public exports.
+- [x] 3.1 Add a maintained icon manifest classifying every symbol as canonical, intentional variant, brand asset, or compatibility alias with its semantic family; verify manifest entries reconcile exactly with public exports.
 - [ ] 3.2 Add a Svelte icon gallery showing every icon's public name, family, variant, and 16/20/24 previews in light and dark themes; verify all manifest entries render without runtime or console errors.
 - [ ] 3.3 Add a native review surface or reproducible Expo screenshot procedure for the same manifest and sizes; verify the pilot's Svelte/native gallery entries can be compared side by side.
 - [ ] 3.4 Add automated package checks for paired platform coverage, manifest/export drift, alias targets, standard component defaults, and invalid icon source; verify the checks fail on deliberate missing-pair, missing-export, and broken-alias fixtures.
@@ -51,7 +51,7 @@
 
 - [ ] 8.1 Review the Orbis logo and other brand assets separately from interface-icon geometry; verify brand colors, proportions, and special properties render consistently across platforms and remain covered by focused fixtures.
 - [ ] 8.2 Consolidate visually duplicate icons into canonical designs and redirect legacy public exports through compatibility aliases; verify all old imports still resolve and each alias has a documented target and reason.
-- [ ] 8.3 Normalize intentional outline/solid pairs and remove unintentional duplicate variants from internal use without deleting public exports; verify naming, silhouette, and meaning are consistent in both galleries.
+- [ ] 8.3 Redraw intentional outline/solid pairs as related but optically tuned original forms, preserving clear counters and negative space in filled variants; verify naming, silhouette, and meaning are consistent at 16/20/24 in both galleries without deleting public exports.
 
 ## 9. API, Accessibility, and Performance
 

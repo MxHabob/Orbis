@@ -41,11 +41,11 @@ Retain the root, `./svelte`, and `./native` package entry points and all current
 
 **Alternative considered:** Rename the catalog to a new naming scheme and migrate every consumer immediately. Rejected because it introduces breaking imports and broad unrelated churn without improving the visual result.
 
-### 4. Use one outline-first Orbis language with deliberate semantic variants
+### 4. Use an original, minimal Orbis language with deliberately crafted filled variants
 
-Design a restrained geometric outline family with consistent negative space and low detail at small sizes. Use filled silhouettes only for deliberate state/brand or established solid variants; a suffix such as `Solid` is reserved for an intentional, documented pair. Consolidate duplicate files through compatibility aliases rather than maintaining visibly divergent copies. Apply semantic families (navigation, actions, status, education, records/data, people, settings, and brand) as review batches. Sentry is a quality reference for clarity and sidebar consistency only; each Orbis glyph must be independently authored.
+Design a restrained, original Orbis family with simple silhouettes, intentional negative space, and low detail at small sizes. Redraws must be visibly authored for Orbis rather than merely restyled or mechanically normalized copies of stock glyphs. Filled variants receive equal design attention: use a clear outer silhouette, deliberate negative-space cutouts, balanced optical weight, and small-size legibility instead of applying a solid fill to an outline path. Use filled silhouettes for deliberate semantic hierarchy or state, not indiscriminately; a suffix such as `Solid` is reserved for an intentional, documented pair whose filled form remains recognizable as the same concept. Consolidate duplicate files through compatibility aliases rather than maintaining visibly divergent copies. Apply semantic families (navigation, actions, status, education, records/data, people, settings, and brand) as review batches. Sentry is a quality reference for clarity and sidebar consistency only; each Orbis glyph must be independently authored.
 
-**Alternative considered:** Make every symbol outline-only or filled-only. Rejected because the catalog contains meaningful state and brand cases that benefit from intentional variation.
+**Alternative considered:** Use one treatment everywhere or make each solid variant by filling its outline counterpart. Rejected because some meanings need a filled silhouette, while simple fill conversion often closes essential counters and makes the symbol heavy or unclear at small sizes.
 
 ### 5. Add a complete visual catalog and lightweight quality gates
 

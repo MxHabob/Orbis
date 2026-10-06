@@ -18,7 +18,7 @@ Icons in the library MUST follow a documented Orbis visual language for canvas, 
 - **THEN** the detail is simplified or the icon is assigned a simpler approved variant
 
 ### Requirement: Clear outline and filled variant semantics
-Icons MUST use outline or filled construction consistently, and paired variants MUST remain recognizable as the same semantic symbol.
+Icons MUST use outline or filled construction intentionally, and paired variants MUST remain recognizable as the same semantic symbol while each construction receives optical adjustment for its own visual weight.
 
 #### Scenario: Filled variant is available
 - **WHEN** an icon has both outline and filled variants
@@ -27,6 +27,21 @@ Icons MUST use outline or filled construction consistently, and paired variants 
 #### Scenario: Existing icon has no paired variant
 - **WHEN** an icon has no intentional alternate construction
 - **THEN** consumers receive one canonical component rather than visually inconsistent duplicates
+
+#### Scenario: Filled icon is reviewed at small size
+- **WHEN** a filled icon is displayed at 16 CSS pixels or points
+- **THEN** its silhouette and negative-space details remain open, balanced, and recognizable without relying on a stroke-only counterpart
+
+### Requirement: Orbis glyphs are independently designed
+Redesigned glyphs MUST use original Orbis-specific drawing decisions and MUST NOT be simple copies, fill conversions, or cosmetic restylings of another icon set.
+
+#### Scenario: Filled variant is redesigned
+- **WHEN** a filled variant is introduced or substantially redesigned
+- **THEN** its silhouette, counters, and visual weight are deliberately drawn for Orbis and reviewed beside its paired outline form
+
+#### Scenario: Reference products inform quality
+- **WHEN** a reference product is used to evaluate icon quality
+- **THEN** the review applies general qualities such as clarity and consistency without reproducing the reference's distinctive glyph artwork
 
 ### Requirement: Cross-platform icon equivalence
 An icon with the same public name MUST convey the same symbol, silhouette, and default visual weight in Svelte and React Native.

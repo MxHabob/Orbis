@@ -6,9 +6,11 @@ implementations together.
 
 ## Current catalog
 
-The baseline inventory covers 206 public icon names and 206 components per
-platform. It records the source files, viewBox, default properties, primitives,
-and desktop/mobile import frequency.
+The inventory and maintained manifest cover 206 public icon names and 206
+components per platform. The inventory records source files, viewBox, default
+properties, primitives, and desktop/mobile import frequency. The manifest
+classifies each name by semantic family, variant, and compatibility kind, and
+records the six native default aliases separately.
 
 The most-used desktop imports in the baseline were `Plus` (51), `Refresh` (48),
 `AdjustmentsHorizontal` (45), `Search` (43), and `InfoCircle` (42). The mobile
@@ -31,6 +33,7 @@ following checks passed:
 
 ```sh
 bun packages/icons/scripts/audit-icons.mjs --output packages/icons/docs/icon-inventory.json
+bun packages/icons/scripts/audit-icons.mjs --output packages/icons/docs/icon-inventory.json --manifest-output packages/icons/docs/icon-manifest.json
 bunx tsc --noEmit -p packages/icons/tsconfig.json
 bun run --cwd apps/mobile typecheck
 bun run --cwd apps/desktop build
@@ -48,3 +51,7 @@ against light and dark surfaces, then review them in the real control that uses
 them. Directional icons should only be mirrored by consumers when they express
 logical navigation; physical directions and fixed spatial relationships remain
 unchanged.
+
+The first redraw batch focuses on the high-frequency `Sparkles` outline/solid
+pair and the `UserBadgeCheck` account-status symbol. Both platforms use matching
+geometry; the 16/20/24 light/dark and in-context visual review is still pending.
