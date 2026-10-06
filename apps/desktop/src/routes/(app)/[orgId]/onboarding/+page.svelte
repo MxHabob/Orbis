@@ -11,6 +11,7 @@ import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { systemStore } from "$lib/stores/system.svelte";
 import type { SetupTaskDto, OnboardingTaskCategory, OnboardingTaskStatus } from "$lib/api/types";
 import { onMount } from "svelte";
+import { deriveSteps, findNextIncompleteStep } from "$lib/features/onboarding-wizard/onboarding-steps";
 
 // @orbis/ui components
 import { Button } from "@orbis/ui/button";
@@ -140,22 +141,32 @@ const filteredTasks = $derived.by(() => {
       return false;
     }
 
-    if (selectedStatus !== "all") {
-      if (selectedStatus === "required" && !t.is_required) return false;
-      if (selectedStatus === "pending" && t.status === "completed") return false;
-      if (selectedStatus === "completed" && t.status !== "completed") return false;
-      if (selectedStatus === "blocked" && t.status !== "blocked") return false;
-    }
-
     return true;
   });
 });
 
+function getStepRouteForTask(taskId: string): string {
+  if (taskId === "org_profile") return "organization";
+  if (taskId === "org_units" || taskId === "facilities_rooms") return "structure";
+  if (taskId === "academic_year" || taskId === "academic_periods") return "calendar";
+  if (taskId === "academic_subjects" || taskId === "academic_classes" || taskId === "teaching_assignments") return "academics";
+  if (taskId === "chart_of_accounts" || taskId === "fee_templates" || taskId === "discount_templates") return "finance";
+  if (taskId === "assessment_schemes" || taskId === "academic_policy") return "assessment";
+  if (taskId === "student_registration_policy" || taskId === "document_requirements" || taskId === "system_templates" || taskId === "integrations_setup") return "operations";
+  return "review";
+}
+
 async function handleNavigate(task: SetupTaskDto) {
   if (task.status === "blocked") return;
-  const route = task.route.startsWith("/") ? task.route : `/${task.route}`;
-  const target = localizeHref(`/${orgId}${route}`);
-  await goto(target);
+  const stepRoute = getStepRouteForTask(task.id);
+  await goto(`/${orgId}/onboarding/${stepRoute}`);
+}
+
+async function startGuidedSetup() {
+  const steps = deriveSteps(tasks);
+  const next = findNextIncompleteStep(steps);
+  const targetRoute = next ? next.route : "organization";
+  await goto(`/${orgId}/onboarding/${targetRoute}`);
 }
 
 async function handleProvisionDefaults() {
@@ -201,6 +212,15 @@ async function handleProvisionDefaults() {
     <div class="flex items-center gap-2">
       <Button
         variant="default"
+        size="sm"
+        onclick={startGuidedSetup}
+        class="h-9 text-xs font-semibold bg-primary text-primary-foreground shadow-xs"
+      >
+        <span>{isArabic ? "🚀 بدء دليل التهيئة الموجهة (8 خطوات)" : "🚀 Launch Guided Setup Wizard (8 Steps)"}</span>
+      </Button>
+
+      <Button
+        variant="outline"
         size="sm"
         onclick={() => (isProvisionModalOpen = true)}
         class="h-9 text-xs"
