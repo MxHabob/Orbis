@@ -25,14 +25,21 @@ pub struct HealthResponse {
 }
 
 /// Organization lifecycle state — derived from what data exists.
+///
+/// Lifecycle progression:
+/// `Empty` → `CoreReady` (after Bootstrap) → `ReadyWithSetup` (after Bootstrap,
+/// onboarding incomplete) → `Operational` (all required onboarding tasks done).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum OrgLifecycleState {
     /// No organization exists in the database.
     Empty,
-    /// Organization + admin exist, but no academic configuration.
+    /// Organization + admin exist — Bootstrap completed, onboarding not yet queried.
     CoreReady,
-    /// Academic year, classes, and subjects exist — fully operational.
+    /// Bootstrap completed, onboarding tasks remain incomplete.
+    /// The normal application is accessible; the Setup Center is available.
+    ReadyWithSetup,
+    /// All required onboarding tasks completed — fully operational institution.
     Operational,
 }
 
@@ -119,10 +126,14 @@ impl SystemService {
         };
 
         // Determine lifecycle state
+        //
+        // ReadyWithSetup vs Operational: the simplified check uses
+        // academic_year + classes + subjects as a fast proxy.
+        // The authoritative task graph lives in OnboardingService.
         let state = if has_academic_year && has_classes && has_subjects {
             OrgLifecycleState::Operational
         } else if has_org && has_admin {
-            OrgLifecycleState::CoreReady
+            OrgLifecycleState::ReadyWithSetup
         } else {
             OrgLifecycleState::Empty
         };
