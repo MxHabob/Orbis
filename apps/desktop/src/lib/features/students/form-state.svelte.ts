@@ -11,7 +11,7 @@ import {
 } from "$lib/api";
 import { toast } from "@orbis/ui";
 
-import { l, formatDate, formatCurrency } from "$lib/core/i18n";
+import { formatDate, formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { studentRegistrationSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";

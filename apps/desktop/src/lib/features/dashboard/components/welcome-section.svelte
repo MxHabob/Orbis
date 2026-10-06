@@ -12,7 +12,6 @@
     AvatarController,
     type AvatarHat,
   } from "@orbis/avatar-engine";
-
   import type { DashboardCountsDto } from "$lib/api/types";
 
   let {

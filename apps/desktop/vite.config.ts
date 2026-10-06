@@ -1,11 +1,10 @@
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
-import tailwindcss from "@tailwindcss/vite";
 import adapter from "@sveltejs/adapter-static";
 import { sveltekit } from "@sveltejs/kit/vite";
-import { defineConfig, loadEnv } from "vite";
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite";
 
 const host = process.env.TAURI_DEV_HOST;
-const rootDir = import.meta.dirname;
 
 export default defineConfig(({ mode }) => {
   return {
