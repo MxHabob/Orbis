@@ -1,6 +1,5 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { goto } from "$app/navigation";
 import * as m from "$lib/paraglide/messages";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
@@ -9,6 +8,7 @@ import { Progress } from "@orbis/ui/progress";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { deriveSteps } from "../onboarding-steps";
+import { navigateOnboardingRoute } from "../navigation";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -51,7 +51,7 @@ async function handleCompleteAndLaunch() {
 
     // Wait a brief moment to show celebration state, then navigate to dashboard
     setTimeout(async () => {
-      await goto(`/${orgId}`);
+      await navigateOnboardingRoute(`/${orgId}`);
     }, 1200);
   } catch (err: any) {
     console.error("Failed to complete onboarding:", err);
@@ -181,7 +181,7 @@ async function handleCompleteAndLaunch() {
               <Button
                 variant="ghost"
                 size="sm"
-                onclick={() => goto(`/${orgId}/onboarding/${step.route}`)}
+                onclick={() => navigateOnboardingRoute(`/${orgId}/onboarding/${step.route}`)}
                 class="text-xs font-medium text-primary hover:text-primary hover:bg-primary/10"
               >
                 {m.onboarding_step8_configure_btn()}
@@ -193,10 +193,10 @@ async function handleCompleteAndLaunch() {
     </OnboardingSection>
 
     <!-- Bottom Action & Final Launch Bar -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border/50 pt-6">
+    <div class="sticky bottom-0 z-10 -mx-4 flex flex-col items-center justify-between gap-4 border-t border-border/60 bg-background/95 px-4 py-4 backdrop-blur sm:-mx-8 sm:flex-row sm:px-8 lg:-mx-12 lg:px-12">
       <Button
         variant="outline"
-        onclick={() => goto(`/${orgId}/onboarding/operations`)}
+        onclick={() => navigateOnboardingRoute(`/${orgId}/onboarding/operations`)}
         class="text-xs w-full sm:w-auto"
       >
         {m.onboarding_step8_back_btn()}

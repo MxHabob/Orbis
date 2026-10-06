@@ -6281,5 +6281,20 @@
   "ui_system_support_support_diagnostic_assistance": "Support & Diagnostics",
   "ui_system_support_support_request_logged": "Email draft opened",
   "ui_template_not_found": "Template '{templateId}' not found in the database",
-  "ui_update_user_groups": "Update user groups for {userName}"
+  "ui_update_user_groups": "Update user groups for {userName}",
+  "onboarding_popover_title": "Organization Setup & Onboarding",
+  "onboarding_popover_subtitle": "Track and configure all mandatory institutional stages",
+  "onboarding_popover_view_hub": "Open Setup Center",
+  "onboarding_popover_resume_wizard": "Continue Setup Wizard",
+  "onboarding_popover_trigger_tooltip": "Organization Onboarding Progress",
+  "onboarding_popover_ready_title": "Setup Complete & Ready",
+  "onboarding_popover_ready_desc": "All structural, academic, financial, and operational requirements have been configured.",
+  "onboarding_dashboard_card_title": "Institutional Onboarding Progress",
+  "onboarding_dashboard_card_desc": "Your organization is {percentage}% configured. Complete all 8 stages to unlock full institutional features.",
+  "onboarding_dashboard_card_continue": "Continue Setup",
+  "onboarding_dashboard_card_all_steps": "View All 8 Steps",
+  "onboarding_dashboard_card_complete": "Setup Complete",
+  "onboarding_dashboard_card_dismiss": "Hide Setup Card",
+  "onboarding_dashboard_card_steps_summary": "{completed} of {total} Stages Complete",
+  "onboarding_dashboard_card_ready_desc": "Your institution is fully configured and ready for live academic & financial operations."
 }

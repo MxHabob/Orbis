@@ -21,6 +21,7 @@ import UpgradeButton from "./upgrade-button.svelte";
 import GitIntegrationPopover from "./mulverse-integration-popover.svelte";
 import AutomationStatusPopover from "./orbis-autopilot-popover.svelte";
 import MoreActionsDropdown from "./more-actions-dropdown.svelte";
+import OnboardingPopover from "$lib/features/onboarding-wizard/onboarding-popover.svelte";
 
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 import { createOrganizationQuery } from "$lib/features/settings/queries";
@@ -146,6 +147,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 
 		<div class="flex flex-col gap-2 items-center w-full relative">
 			<div class="flex flex-col items-center w-8 gap-1.5">
+				<OnboardingPopover {orgId} />
 				<GitIntegrationPopover />
 				<UpgradeButton />
 				<AutomationStatusPopover {orgId} />

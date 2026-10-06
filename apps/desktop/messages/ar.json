@@ -6281,5 +6281,20 @@
   "ui_system_support_support_diagnostic_assistance": "الدعم والتشخيص",
   "ui_system_support_support_request_logged": "تم فتح مسودة البريد",
   "ui_template_not_found": "القالب '{templateId}' غير موجود في قاعدة البيانات",
-  "ui_update_user_groups": "تحديث المجموعات والصلاحيات للمستخدم ({userName})"
+  "ui_update_user_groups": "تحديث المجموعات والصلاحيات للمستخدم ({userName})",
+  "onboarding_popover_title": "تهيئة وإعداد المنشأة التعليمية",
+  "onboarding_popover_subtitle": "متابعة وإكمال المراحل الإلزامية لتشغيل النظام",
+  "onboarding_popover_view_hub": "فتح مركز التهيئة الشامل",
+  "onboarding_popover_resume_wizard": "متابعة دليل التهيئة",
+  "onboarding_popover_trigger_tooltip": "مستوى تقدم تهيئة المنشأة",
+  "onboarding_popover_ready_title": "المنشأة مهيأة وجاهزة بالكامل",
+  "onboarding_popover_ready_desc": "تم استكمال كافة المتطلبات الهيكلية والأكاديمية والمالية والتشغيلية.",
+  "onboarding_dashboard_card_title": "مستوى تقدم تهيئة المنشأة",
+  "onboarding_dashboard_card_desc": "تمت تهيئة {percentage}% من إعدادات المنشأة. أكمل المراحل الـ 8 لتفعيل كافة ميزات النظام.",
+  "onboarding_dashboard_card_continue": "متابعة التهيئة",
+  "onboarding_dashboard_card_all_steps": "عرض المراحل الـ 8",
+  "onboarding_dashboard_card_complete": "اكتملت التهيئة",
+  "onboarding_dashboard_card_dismiss": "إخفاء بطاقة التهيئة",
+  "onboarding_dashboard_card_steps_summary": "تم إنجاز {completed} من أصل {total} مراحل",
+  "onboarding_dashboard_card_ready_desc": "المنشأة مهيأة بالكامل وجاهزة لمباشرة العمليات الأكاديمية والمالية الرسمية."
 }

@@ -1,7 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { goto } from "$app/navigation";
-import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { api } from "$lib/api";
 import { systemStore } from "$lib/stores";
@@ -18,6 +17,7 @@ import {
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
+import { navigateOnboardingRoute } from "../navigation";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -133,7 +133,7 @@ async function handleContinue() {
   if (!isTaskComplete) {
     await saveOrganization();
   }
-  await goto(localizeHref(`/${orgId}/onboarding/structure`));
+  await navigateOnboardingRoute(`/${orgId}/onboarding/structure`);
 }
 </script>
 
@@ -289,10 +289,10 @@ async function handleContinue() {
     </OnboardingSection>
 
     <!-- Bottom Actions Bar -->
-    <div class="flex items-center justify-between border-t border-border/50 pt-6">
+    <div class="sticky bottom-0 z-10 -mx-4 flex items-center justify-between border-t border-border/60 bg-background/95 px-4 py-4 backdrop-blur sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12">
       <Button
         variant="outline"
-        onclick={() => goto(localizeHref(`/${orgId}/onboarding`))}
+        onclick={() => navigateOnboardingRoute(`/${orgId}/onboarding`)}
         class="text-xs"
       >
         {m.onboarding_overview_btn()}
