@@ -4,6 +4,9 @@
         xsi:schemaLocation="https://timefold.ai/xsd/solver https://timefold.ai/xsd/solver/solver.xsd">
     <solutionClass>ai.orbis.solver.domain.Timetable</solutionClass>
     <entityClass>ai.orbis.solver.domain.LessonAssignment</entityClass>
+    <scoreDirectorFactory>
+        <constraintProviderClass>ai.orbis.solver.constraints.TimetableConstraintProvider</constraintProviderClass>
+    </scoreDirectorFactory>
     <termination>
         <spentLimit>PT30S</spentLimit>
         <bestScoreLimit>0hard/0soft</bestScoreLimit>
