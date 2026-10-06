@@ -5,6 +5,7 @@
   import { authStore, themeStore, uiStore, workflowInbox } from "$lib/stores";
   import { Bell, Maximize, Minus, Moon, Restore, Search, Sun, XMark } from "@orbis/icons";
   import { Button } from "@orbis/ui/button";
+  import { Kbd } from "@orbis/ui/kbd";
   import { Logo } from "@orbis/icons";
   import { onMount } from "svelte";
   import TitleBreadcrumbs from "./title-breadcrumbs.svelte";
@@ -119,10 +120,7 @@
       >
         <Search size={14} class="text-muted-foreground stroke-[2px]" />
         <span class="whitespace-nowrap">{m.common_header_search()}</span>
-        <kbd
-          class="ml-1 rounded px-1 py-0.5 font-mono text-[9px] font-medium text-zinc-400"
-          >{m.common_header_search_shortcut()}</kbd
-        >
+        <Kbd class="ml-1">{m.common_header_search_shortcut()}</Kbd>
       </Button>
 
       <!-- Ask Orbis Button (Original Header Design) -->
@@ -152,10 +150,7 @@
           <path d="M12 15a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
         </svg>
         <span class="whitespace-nowrap">{m.shared_ui_ask_orbis()}</span>
-        <kbd
-          class="ml-1 rounded px-1 py-0.5 font-mono text-[9px] font-medium text-zinc-400"
-          >Ctrl /</kbd
-        >
+        <Kbd class="ml-1">Ctrl /</Kbd>
       </Button>
 
       <!-- Workflow Inbox AppNotification -->
@@ -184,7 +179,6 @@
         <Button
           variant="ghost"
           size="icon-sm"
-          class="rounded-xl shrink-0"
           title={m.common_titlebar_inbox()}
           onclick={() => {
             const orgId = authStore.orgId;
@@ -207,7 +201,7 @@
       variant="outline"
       size="icon-sm"
       onclick={() => themeStore.toggle()}
-      class="rounded-xl shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
+      class="cursor-pointer"
       title={m.common_titlebar_theme_toggle()}
       aria-label={m.common_titlebar_theme_toggle()}
     >
@@ -221,13 +215,12 @@
     <!-- Focus Mode Toggle -->
     {#if authStore.isAuthenticated}
       <Button
-        variant={"secondary"}
+        variant={uiStore.focusMode ? "default" : "outline"}
         size="sm"
         onclick={() => uiStore.toggleFocusMode()}
-        class="font-semibold text-xs rounded-xl px-3 gap-2 shrink-0 {uiStore.focusMode
-          ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/95 hover:text-primary-foreground'
-          : 'bg-muted/40 text-foreground border-border/60 hover:bg-muted/70'}"
         title={m.common_titlebar_focus_mode_tooltip()}
+        aria-label={m.common_titlebar_focus_mode_tooltip()}
+        class="cursor-pointer"
       >
         <span class="hidden sm:inline">{m.common_titlebar_focus_mode()}</span>
       </Button>

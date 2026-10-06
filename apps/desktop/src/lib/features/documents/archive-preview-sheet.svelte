@@ -134,7 +134,7 @@ function endPan() {
 </script>
 
 <Sheet bind:open>
-  <SheetContent side="left" class="w-full sm:max-w-2xl p-0 flex flex-col h-full bg-background">
+  <SheetContent class="flex flex-col h-full sm:max-w-xl md:max-w-2xl overflow-hidden p-0 gap-0">
     {#if document}
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-border/40 px-6 py-4">

@@ -200,7 +200,6 @@ async function handleContinue() {
               <Input
                 bind:value={yearName}
                 placeholder="2026/2027"
-                dir="ltr"
               />
             </div>
             <div class="space-y-1.5">
@@ -210,7 +209,6 @@ async function handleContinue() {
               <Input
                 bind:value={yearNameAr}
                 placeholder={m.onboarding_step3_year_name_ar_placeholder()}
-                dir="rtl"
               />
             </div>
             <div class="space-y-1.5">

@@ -106,7 +106,6 @@ function selectCountry(countryCode: string) {
         <Input
           id="org-name-ar"
           type="text"
-          dir="rtl"
           placeholder={m.operations_ui_organization_name_arabic_example()}
           bind:value={form.organizationNameAr}
           class="h-9 text-xs"

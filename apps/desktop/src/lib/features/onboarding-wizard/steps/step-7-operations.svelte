@@ -201,7 +201,6 @@ async function handleContinue() {
             <Input
               bind:value={studentNumberPattern}
               placeholder={'\\{YEAR\\}-\\{SEQ:5\\}'}
-              dir="ltr"
               class="font-mono text-xs"
             />
             <p class="text-[11px] text-muted-foreground">
@@ -279,7 +278,6 @@ async function handleContinue() {
               <Input
                 bind:value={docNameEn}
                 placeholder={m.onboarding_step7_doc_name_en_placeholder()}
-                dir="ltr"
               />
             </div>
             <div class="space-y-1.5">
@@ -289,7 +287,6 @@ async function handleContinue() {
               <Input
                 bind:value={docNameAr}
                 placeholder={m.onboarding_step7_doc_name_ar_placeholder()}
-                dir="rtl"
               />
             </div>
             <div class="space-y-1.5">
@@ -299,7 +296,6 @@ async function handleContinue() {
               <Input
                 bind:value={docCode}
                 placeholder="DOC_BIRTH_CERT"
-                dir="ltr"
                 class="font-mono text-xs"
               />
             </div>

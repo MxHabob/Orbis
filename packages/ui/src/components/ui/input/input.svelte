@@ -52,3 +52,9 @@ let {
 		{...restProps}
 	/>
 {/if}
+
+<style>
+  input {
+    unicode-bidi: plaintext;
+  }
+</style>

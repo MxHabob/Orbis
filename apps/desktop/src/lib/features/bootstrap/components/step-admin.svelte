@@ -102,7 +102,6 @@ const strengthLabel = $derived.by(() => {
           <Input
             id="admin-fn-ar"
             type="text"
-            dir="rtl"
             placeholder={m.operations_ui_admin_first_name_arabic_example()}
             bind:value={form.adminFirstNameAr}
             class="h-9 text-xs"
@@ -116,7 +115,6 @@ const strengthLabel = $derived.by(() => {
           <Input
             id="admin-ln-ar"
             type="text"
-            dir="rtl"
             placeholder={m.operations_ui_admin_last_name_arabic_example()}
             bind:value={form.adminLastNameAr}
             class="h-9 text-xs"

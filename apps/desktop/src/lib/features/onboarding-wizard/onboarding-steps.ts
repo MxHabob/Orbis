@@ -22,6 +22,10 @@ export interface OnboardingStep {
   getLabel: () => string;
   /** Localized description function / accessor */
   getDescription: () => string;
+  /** Localized step label getter */
+  label: string;
+  /** Localized step description getter */
+  description: string;
   /** Step number (1-based) */
   order: number;
   /** Whether any task in this step is required */
@@ -143,6 +147,12 @@ export function deriveSteps(tasks: SetupTaskDto[]): OnboardingStep[] {
       taskIds: def.taskIds,
       getLabel: def.getLabel,
       getDescription: def.getDescription,
+      get label() {
+        return def.getLabel();
+      },
+      get description() {
+        return def.getDescription();
+      },
       order: def.order,
       isRequired,
       status,

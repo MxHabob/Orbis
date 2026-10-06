@@ -3,6 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { Dialog, DialogContent } from "@orbis/ui/dialog";
+import { Kbd } from "@orbis/ui/kbd";
 import { uiStore, authStore } from "$lib/stores";
 import { api, queryKeys, type EnrollmentDto, type ClassDto, type SubjectDto } from "$lib/api";
 import { queryClient } from "$lib/api";
@@ -422,15 +423,15 @@ function handleKeydown(e: KeyboardEvent) {
       </div>
       <div class="flex items-center gap-3 font-medium">
         <div class="flex items-center gap-1">
-          <kbd class="border border-border bg-background px-1.5 py-0.5 rounded text-[9px] font-mono text-muted-foreground shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(0,0,0,0.04)]">↑↓</kbd>
+          <Kbd>↑↓</Kbd>
           <span>{m.common_search_footer_navigate()}</span>
         </div>
         <div class="flex items-center gap-1">
-          <kbd class="border border-border bg-background px-1.5 py-0.5 rounded text-[9px] font-mono text-muted-foreground shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(0,0,0,0.04)]">Enter</kbd>
+          <Kbd>Enter</Kbd>
           <span>{m.common_search_footer_select()}</span>
         </div>
         <div class="flex items-center gap-1">
-          <kbd class="border border-border bg-background px-1.5 py-0.5 rounded text-[9px] font-mono text-muted-foreground shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(0,0,0,0.04)]">Esc</kbd>
+          <Kbd>Esc</Kbd>
           <span>{m.common_titlebar_close()}</span>
         </div>
       </div>

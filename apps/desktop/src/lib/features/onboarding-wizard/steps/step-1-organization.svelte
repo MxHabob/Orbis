@@ -181,7 +181,6 @@ async function handleContinue() {
             id="org-name"
             bind:value={name}
             placeholder={m.onboarding_step1_name_en_placeholder()}
-            dir="ltr"
             required
           />
         </div>
@@ -194,7 +193,6 @@ async function handleContinue() {
             id="org-name-ar"
             bind:value={nameAr}
             placeholder={m.onboarding_step1_name_ar_placeholder()}
-            dir="rtl"
           />
         </div>
 
@@ -206,7 +204,6 @@ async function handleContinue() {
             id="org-slug"
             bind:value={slug}
             placeholder={m.onboarding_step1_slug_placeholder()}
-            dir="ltr"
             class="font-mono text-xs"
           />
           <p class="text-[11px] text-muted-foreground">

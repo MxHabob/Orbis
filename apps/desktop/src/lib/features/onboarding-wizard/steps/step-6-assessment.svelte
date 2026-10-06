@@ -262,7 +262,6 @@ async function handleContinue() {
               <Input
                 bind:value={schemeName}
                 placeholder={m.onboarding_step6_scheme_name_en_placeholder()}
-                dir="ltr"
               />
             </div>
             <div class="space-y-1.5">
@@ -272,7 +271,6 @@ async function handleContinue() {
               <Input
                 bind:value={schemeNameAr}
                 placeholder={m.onboarding_step6_scheme_name_ar_placeholder()}
-                dir="rtl"
               />
             </div>
             <div class="space-y-1.5">

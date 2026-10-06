@@ -705,7 +705,6 @@ const advisorInsights = $derived.by(() => {
                         type="text"
                         bind:value={connDbFilename}
                         class="h-8 text-xs font-mono bg-background border-input"
-                        style="direction: ltr;"
                       />
                     {/snippet}
                   </FormField>
@@ -719,7 +718,6 @@ const advisorInsights = $derived.by(() => {
                           bind:value={connCustomPath}
                           placeholder={m.ui_copy_leave_blank_for_default_appdata_path_a40f6b20()}
                           class="h-8 text-xs font-mono bg-background border-input flex-1"
-                          style="direction: ltr;"
                         />
                         <Button
                           type="button"
@@ -754,7 +752,6 @@ const advisorInsights = $derived.by(() => {
                           bind:value={connServerUrl}
                           placeholder="http://localhost:3000"
                           class="h-8 text-xs font-mono bg-background border-input flex-1"
-                          style="direction: ltr;"
                         />
                         <Button
                           type="button"
@@ -778,32 +775,32 @@ const advisorInsights = $derived.by(() => {
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <FormField id="connHost" label={m.ui_copy_database_host_218c7a89()}>
                       {#snippet children()}
-                        <Input id="connHost" type="text" bind:value={connHost} class="h-8 text-xs font-mono bg-background border-input" style="direction: ltr;" />
+                        <Input id="connHost" type="text" bind:value={connHost} class="h-8 text-xs font-mono bg-background border-input" />
                       {/snippet}
                     </FormField>
 
                     <FormField id="connPort" label={m.ui_copy_port_966ae516()}>
                       {#snippet children()}
-                        <Input id="connPort" type="number" bind:value={connPort} class="h-8 text-xs font-mono bg-background border-input" style="direction: ltr;" />
+                        <Input id="connPort" type="number" bind:value={connPort} class="h-8 text-xs font-mono bg-background border-input" />
                       {/snippet}
                     </FormField>
 
                     <FormField id="connDatabaseName" label={m.ui_copy_database_name_72beaf93()}>
                       {#snippet children()}
-                        <Input id="connDatabaseName" type="text" bind:value={connDatabaseName} class="h-8 text-xs font-mono bg-background border-input" style="direction: ltr;" />
+                        <Input id="connDatabaseName" type="text" bind:value={connDatabaseName} class="h-8 text-xs font-mono bg-background border-input" />
                       {/snippet}
                     </FormField>
 
                     <FormField id="connUsername" label={m.ui_copy_username_f733f5b3()}>
                       {#snippet children()}
-                        <Input id="connUsername" type="text" bind:value={connUsername} class="h-8 text-xs font-mono bg-background border-input" style="direction: ltr;" />
+                        <Input id="connUsername" type="text" bind:value={connUsername} class="h-8 text-xs font-mono bg-background border-input" />
                       {/snippet}
                     </FormField>
                   </div>
 
                   <FormField id="connPassword" label={m.common_user_form_password()}>
                     {#snippet children()}
-                      <Input id="connPassword" type="password" bind:value={connPassword} placeholder="••••••••" class="h-8 text-xs font-mono bg-background border-input" style="direction: ltr;" />
+                      <Input id="connPassword" type="password" bind:value={connPassword} placeholder="••••••••" class="h-8 text-xs font-mono bg-background border-input" />
                     {/snippet}
                   </FormField>
                 </div>
@@ -872,7 +869,6 @@ const advisorInsights = $derived.by(() => {
                         bind:value={customBackupPath}
                         placeholder={m.database_backup_custom_dest_hint?.() || m.ui_copy_leave_blank_for_default_backups_folder_aa0c2051()}
                         class="h-8 text-xs font-mono bg-background border-input flex-1"
-                        style="direction: ltr;"
                       />
                       <Button
                         type="button"
@@ -978,7 +974,6 @@ const advisorInsights = $derived.by(() => {
                     bind:value={restoreFilePath}
                     placeholder={m.ui_copy_select_backup_file_db_f97eaf03()}
                     class="h-8 text-xs font-mono bg-background border-input flex-1"
-                    style="direction: ltr;"
                     readonly
                   />
                   <Button

@@ -101,7 +101,6 @@ async function handleCreate() {
               bind:value={customDir}
               placeholder={m.ui_copy_default_application_data_folder_cc5cf159()}
               class="h-9 text-xs font-mono bg-background border-input flex-1"
-              style="direction: ltr;"
             />
             <Button
               type="button"
@@ -126,7 +125,6 @@ async function handleCreate() {
             bind:value={filename}
             placeholder="orbis.db"
             class="h-9 text-xs font-mono bg-background border-input"
-            style="direction: ltr;"
           />
         {/snippet}
       </FormField>

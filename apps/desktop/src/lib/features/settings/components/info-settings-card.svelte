@@ -50,7 +50,7 @@ let {
       labelFor="org_name_ar"
     >
       {#snippet children()}
-        <Input id="org_name_ar" type="text" dir="rtl" bind:value={nameAr} disabled={isSaving} class="h-9 w-full bg-background text-end" />
+        <Input id="org_name_ar" type="text" bind:value={nameAr} disabled={isSaving} class="h-9 w-full bg-background text-end" />
       {/snippet}
     </SettingsRow>
 
@@ -62,7 +62,7 @@ let {
       required
     >
       {#snippet children()}
-        <Input id="org_name" type="text" dir="ltr" bind:value={name} placeholder={m.settings_general_name_placeholder()} required disabled={isSaving} class="h-9 w-full bg-background text-start" />
+        <Input id="org_name" type="text" bind:value={name} placeholder={m.settings_general_name_placeholder()} required disabled={isSaving} class="h-9 w-full bg-background text-start" />
       {/snippet}
     </SettingsRow>
 

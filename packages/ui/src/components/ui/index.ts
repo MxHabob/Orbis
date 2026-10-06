@@ -57,6 +57,7 @@ export {
   DropdownMenuRadioGroup,
 } from "./dropdown-menu/index.js";
 export { Input } from "./input/index.js";
+export { Kbd } from "./kbd/index.js";
 export { Label } from "./label/index.js";
 export { Popover, PopoverTrigger, PopoverContent } from "./popover/index.js";
 export { Progress } from "./progress/index.js";

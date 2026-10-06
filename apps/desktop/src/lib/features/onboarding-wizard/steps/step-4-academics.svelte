@@ -292,7 +292,6 @@ async function handleContinue() {
               <Input
                 bind:value={subjectName}
                 placeholder={m.onboarding_step4_subject_name_en_placeholder()}
-                dir="ltr"
               />
             </div>
             <div class="space-y-1.5">
@@ -302,7 +301,6 @@ async function handleContinue() {
               <Input
                 bind:value={subjectNameAr}
                 placeholder={m.onboarding_step4_subject_name_ar_placeholder()}
-                dir="rtl"
               />
             </div>
             <div class="space-y-1.5">
@@ -312,7 +310,6 @@ async function handleContinue() {
               <Input
                 bind:value={subjectCode}
                 placeholder="MATH-101"
-                dir="ltr"
                 class="font-mono text-xs"
               />
             </div>
@@ -410,7 +407,6 @@ async function handleContinue() {
               <Input
                 bind:value={className}
                 placeholder={m.onboarding_step4_class_name_en_placeholder()}
-                dir="ltr"
               />
             </div>
             <div class="space-y-1.5">
@@ -420,7 +416,6 @@ async function handleContinue() {
               <Input
                 bind:value={classNameAr}
                 placeholder={m.onboarding_step4_class_name_ar_placeholder()}
-                dir="rtl"
               />
             </div>
             <div class="space-y-1.5">

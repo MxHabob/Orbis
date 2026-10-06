@@ -24,7 +24,6 @@ import {
   Scale,
   Settings,
   ShieldCheck,
-  Trash,
   UserGroup,
   Users,
 } from "@orbis/icons";
@@ -156,11 +155,6 @@ const navGroups = $derived([
         path: "archive",
         label: m.settings_nav_archive(),
         icon: ArchiveBox,
-      },
-      {
-        path: "archive/trash",
-        label: m.settings_sidebar_trash(),
-        icon: Trash,
       },
       {
         path: "database",

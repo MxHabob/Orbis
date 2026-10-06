@@ -202,7 +202,6 @@ async function handleContinue() {
               <Input
                 bind:value={unitName}
                 placeholder={m.onboarding_step2_branch_name_en_placeholder()}
-                dir="ltr"
               />
             </div>
             <div class="space-y-1.5">
@@ -212,7 +211,6 @@ async function handleContinue() {
               <Input
                 bind:value={unitNameAr}
                 placeholder={m.onboarding_step2_branch_name_ar_placeholder()}
-                dir="rtl"
               />
             </div>
             <div class="space-y-1.5">
@@ -222,7 +220,6 @@ async function handleContinue() {
               <Input
                 bind:value={unitCode}
                 placeholder="BR-01"
-                dir="ltr"
                 class="font-mono text-xs"
               />
             </div>

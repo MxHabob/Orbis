@@ -265,7 +265,6 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
                       disabled={form.isSubmitting}
                       class="h-9 text-xs font-mono font-medium bg-background border-input"
                       placeholder="orbis.db"
-                      style="direction: ltr;"
                     />
                   {/snippet}
                 </FormField>
@@ -290,7 +289,6 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
                           disabled={form.isSubmitting}
                           class="h-9 text-xs font-mono bg-background border-input flex-1"
                           placeholder="http://localhost:3000"
-                          style="direction: ltr;"
                         />
                         <Button
                           type="button"

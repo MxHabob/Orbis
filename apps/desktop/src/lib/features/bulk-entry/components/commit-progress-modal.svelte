@@ -17,7 +17,7 @@
 </script>
 
 {#if open && progress}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-150" dir="rtl">
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-150">
     <div class="w-full max-w-md rounded-2xl bg-card border border-border shadow-2xl p-6 flex flex-col items-center text-center space-y-5">
       <!-- Animated Spinner / Icon -->
       <div class="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary relative">

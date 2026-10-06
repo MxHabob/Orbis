@@ -389,7 +389,7 @@
   }}
 />
 
-<div class="h-full flex flex-col bg-background text-foreground" dir="rtl">
+<div class="h-full flex flex-col bg-background text-foreground">
   <!-- Minimal Settings-Style Top Bar -->
   <div class="px-4 py-2.5 border-b border-border flex items-center justify-between gap-3 flex-wrap">
     <!-- Profile Selection / Mode Tabs -->
