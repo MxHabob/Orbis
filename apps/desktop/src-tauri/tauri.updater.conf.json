@@ -4,8 +4,9 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "validation-only-public-key",
-      "endpoints": ["https://example.com/latest.json"]
+      "pubkey": "",
+      "endpoints": [],
+      "dangerousInsecureTransportProtocol": false
     }
   }
 }

@@ -15,7 +15,9 @@
     "date-fns": "^4.4.0"
   },
   "scripts": {
-    "generate": "cargo run --manifest-path apps/api-rust/Cargo.toml -p orbis-server --bin export_openapi && bun run --cwd packages/sdk generate",
+    "generate:api": "cargo run --manifest-path apps/api-rust/Cargo.toml -p orbis-server --bin export_openapi",
+    "generate:sdk": "bun run --cwd packages/sdk generate",
+    "generate": "bun run generate:api && bun run generate:sdk",
     "i18n:audit": "bun run scripts/i18n-audit.ts",
     "build": "turbo run build",
     "dev": "turbo run dev --continue",
