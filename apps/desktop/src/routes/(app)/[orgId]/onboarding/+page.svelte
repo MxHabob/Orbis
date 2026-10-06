@@ -216,7 +216,7 @@ async function handleProvisionDefaults() {
         onclick={startGuidedSetup}
         class="h-9 text-xs font-semibold bg-primary text-primary-foreground shadow-xs"
       >
-        <span>{isArabic ? "🚀 بدء دليل التهيئة الموجهة (8 خطوات)" : "🚀 Launch Guided Setup Wizard (8 Steps)"}</span>
+        <span>{m.onboarding_hub_launch_wizard()}</span>
       </Button>
 
       <Button

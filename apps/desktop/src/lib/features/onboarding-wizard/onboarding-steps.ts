@@ -1,5 +1,5 @@
-import type { SetupTaskDto, OnboardingTaskCategory } from "$lib/api/types";
-import type { Component } from "svelte";
+import type { SetupTaskDto } from "$lib/api/types";
+import * as m from "$lib/paraglide/messages";
 
 // ═══════════════════════════════════════════════════════════════
 // Onboarding Step Model
@@ -18,14 +18,10 @@ export interface OnboardingStep {
   route: string;
   /** Backend task IDs grouped into this step */
   taskIds: string[];
-  /** English label */
-  label: string;
-  /** Arabic label */
-  labelAr: string;
-  /** Short description */
-  description: string;
-  /** Arabic description */
-  descriptionAr: string;
+  /** Localized label function / accessor */
+  getLabel: () => string;
+  /** Localized description function / accessor */
+  getDescription: () => string;
   /** Step number (1-based) */
   order: number;
   /** Whether any task in this step is required */
@@ -38,18 +34,12 @@ export interface OnboardingStep {
   isAccessible: boolean;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// Step Definitions (Static — maps backend tasks to UX steps)
-// ═══════════════════════════════════════════════════════════════
-
 export interface StepDefinition {
   id: string;
   route: string;
   taskIds: string[];
-  label: string;
-  labelAr: string;
-  description: string;
-  descriptionAr: string;
+  getLabel: () => string;
+  getDescription: () => string;
   order: number;
 }
 
@@ -58,60 +48,48 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
     id: "organization",
     route: "organization",
     taskIds: ["org_profile"],
-    label: "Organization",
-    labelAr: "المنشأة",
-    description: "Profile, branding, timezone, and locale",
-    descriptionAr: "الملف التعريفي والهوية والإعدادات الإقليمية",
+    getLabel: () => m.onboarding_step1_label(),
+    getDescription: () => m.onboarding_step1_desc(),
     order: 1,
   },
   {
     id: "structure",
     route: "structure",
     taskIds: ["org_units", "facilities_rooms"],
-    label: "Structure",
-    labelAr: "الهيكل التنظيمي",
-    description: "Branches, campuses, and facilities",
-    descriptionAr: "الفروع والمقرات والمرافق التعليمية",
+    getLabel: () => m.onboarding_step2_label(),
+    getDescription: () => m.onboarding_step2_desc(),
     order: 2,
   },
   {
     id: "calendar",
     route: "calendar",
     taskIds: ["academic_year", "academic_periods"],
-    label: "Academic Calendar",
-    labelAr: "التقويم الدراسي",
-    description: "Academic year, terms, and evaluation periods",
-    descriptionAr: "العام الدراسي والفصول والفترات التقويمية",
+    getLabel: () => m.onboarding_step3_label(),
+    getDescription: () => m.onboarding_step3_desc(),
     order: 3,
   },
   {
     id: "academics",
     route: "academics",
     taskIds: ["academic_subjects", "academic_classes", "teaching_assignments"],
-    label: "Academic Structure",
-    labelAr: "البنية الأكاديمية",
-    description: "Subjects, classes, and teaching assignments",
-    descriptionAr: "المواد والفصول وإسناد المعلمين",
+    getLabel: () => m.onboarding_step4_label(),
+    getDescription: () => m.onboarding_step4_desc(),
     order: 4,
   },
   {
     id: "finance",
     route: "finance",
     taskIds: ["chart_of_accounts", "fee_templates", "discount_templates"],
-    label: "Finance & Fees",
-    labelAr: "المالية والرسوم",
-    description: "Chart of accounts, fee templates, and discounts",
-    descriptionAr: "دليل الحسابات وقوالب الرسوم والخصومات",
+    getLabel: () => m.onboarding_step5_label(),
+    getDescription: () => m.onboarding_step5_desc(),
     order: 5,
   },
   {
     id: "assessment",
     route: "assessment",
     taskIds: ["assessment_schemes", "academic_policy"],
-    label: "Assessment & Grading",
-    labelAr: "التقييم والدرجات",
-    description: "Grading schemes, policies, and pass/fail criteria",
-    descriptionAr: "خطط التقييم وسياسات النجاح والرسوب",
+    getLabel: () => m.onboarding_step6_label(),
+    getDescription: () => m.onboarding_step6_desc(),
     order: 6,
   },
   {
@@ -123,20 +101,16 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
       "system_templates",
       "integrations_setup",
     ],
-    label: "Operations",
-    labelAr: "العمليات",
-    description: "Registration, documents, templates, and integrations",
-    descriptionAr: "التسجيل والوثائق والنماذج وبوابات الربط",
+    getLabel: () => m.onboarding_step7_label(),
+    getDescription: () => m.onboarding_step7_desc(),
     order: 7,
   },
   {
     id: "review",
     route: "review",
     taskIds: [], // Review uses ALL tasks
-    label: "Review",
-    labelAr: "المراجعة النهائية",
-    description: "Review configuration and complete setup",
-    descriptionAr: "مراجعة الإعدادات وإكمال التهيئة",
+    getLabel: () => m.onboarding_step8_label(),
+    getDescription: () => m.onboarding_step8_desc(),
     order: 8,
   },
 ];
@@ -161,18 +135,14 @@ export function deriveSteps(tasks: SetupTaskDto[]): OnboardingStep[] {
     // OR if it's the review step
     const isAccessible =
       def.id === "review" ||
-      stepTasks.some(
-        (t) => t.status !== "blocked"
-      );
+      stepTasks.some((t) => t.status !== "blocked");
 
     return {
       id: def.id,
       route: def.route,
       taskIds: def.taskIds,
-      label: def.label,
-      labelAr: def.labelAr,
-      description: def.description,
-      descriptionAr: def.descriptionAr,
+      getLabel: def.getLabel,
+      getDescription: def.getDescription,
       order: def.order,
       isRequired,
       status,
@@ -189,7 +159,6 @@ function deriveStepStatus(
   if (tasks.length === 0) return "not_started";
 
   if (isReview) {
-    // Review is "completed" only when all required tasks are done
     const requiredTasks = tasks.filter((t) => t.is_required);
     if (requiredTasks.every((t) => t.status === "completed")) return "completed";
     if (requiredTasks.some((t) => t.status === "completed")) return "in_progress";

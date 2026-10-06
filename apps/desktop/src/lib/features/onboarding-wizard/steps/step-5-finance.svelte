@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
-import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 import { api, type FeeTemplateDto, type DiscountTemplateDto, type AccountDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
@@ -19,8 +19,6 @@ import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 
 let { orgId }: { orgId: string } = $props();
-
-const isArabic = $derived(getLocale().startsWith("ar"));
 
 let isLoading = $state(true);
 let isSubmittingFee = $state(false);
@@ -40,12 +38,6 @@ let feeAmount = $state<number>(15000);
 let feeCurrency = $state("SAR");
 let feeCategory = $state("tuition");
 let feeFrequency = $state("yearly");
-
-// Discount Form
-let discountName = $state("Sibling Discount");
-let discountNameAr = $state("خصم الأخوة والأشقاء");
-let discountType = $state("percentage");
-let discountValue = $state<number>(15);
 
 const FEE_CATEGORIES = [
   { value: "tuition", label: "Tuition Fee (رسوم دراسية)" },
@@ -100,7 +92,7 @@ async function loadData() {
     }
   } catch (err: any) {
     console.error("Failed to load finance data:", err);
-    errorMessage = err?.message || "Failed to load financial settings";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isLoading = false;
   }
@@ -108,7 +100,7 @@ async function loadData() {
 
 async function handleCreateFeeTemplate() {
   if (!feeName.trim() && !feeNameAr.trim()) {
-    errorMessage = isArabic ? "يرجى كتابة اسم قالب الرسوم" : "Fee template name is required";
+    errorMessage = m.onboarding_step5_fee_err_name();
     return;
   }
 
@@ -131,10 +123,10 @@ async function handleCreateFeeTemplate() {
     feeName = "";
     feeNameAr = "";
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? "تم إنشاء قالب الرسوم بنجاح" : "Fee template created successfully";
+    successMessage = m.onboarding_step5_fee_created_success();
   } catch (err: any) {
     console.error("Failed to create fee template:", err);
-    errorMessage = err?.message || "Failed to create fee template";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isSubmittingFee = false;
   }
@@ -158,44 +150,12 @@ async function handleAddPresetFee(preset: typeof PRESET_FEES[0]) {
 
     feeTemplates = [...feeTemplates, created];
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? `تمت إضافة ${preset.nameAr}` : `Added ${preset.name}`;
+    successMessage = m.onboarding_step5_fee_created_success();
   } catch (err: any) {
     console.error("Failed to add preset fee:", err);
-    errorMessage = err?.message || "Failed to add preset fee";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isSubmittingFee = false;
-  }
-}
-
-async function handleCreateDiscount() {
-  if (!discountName.trim() && !discountNameAr.trim()) {
-    errorMessage = isArabic ? "يرجى كتابة اسم الخصم" : "Discount name is required";
-    return;
-  }
-
-  isSubmittingDiscount = true;
-  errorMessage = null;
-  successMessage = null;
-
-  try {
-    const created = await api.createDiscountTemplate({
-      name: discountName.trim() || discountNameAr.trim(),
-      name_ar: discountNameAr.trim() || undefined,
-      discount_type: discountType,
-      value: Number(discountValue) || 0,
-      is_active: true,
-    });
-
-    discountTemplates = [...discountTemplates, created];
-    discountName = "";
-    discountNameAr = "";
-    await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? "تم إنشاء قالب الخصم بنجاح" : "Discount template created successfully";
-  } catch (err: any) {
-    console.error("Failed to create discount:", err);
-    errorMessage = err?.message || "Failed to create discount";
-  } finally {
-    isSubmittingDiscount = false;
   }
 }
 
@@ -215,10 +175,10 @@ async function handleAddPresetDiscount(preset: typeof PRESET_DISCOUNTS[0]) {
 
     discountTemplates = [...discountTemplates, created];
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? `تمت إضافة ${preset.nameAr}` : `Added ${preset.name}`;
+    successMessage = m.onboarding_step5_discount_created_success();
   } catch (err: any) {
     console.error("Failed to add preset discount:", err);
-    errorMessage = err?.message || "Failed to add preset discount";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isSubmittingDiscount = false;
   }
@@ -235,10 +195,8 @@ async function handleContinue() {
 <div class="space-y-6">
   <OnboardingStepHeader
     stepNumber={5}
-    title="Finance, Chart of Accounts & Fee Templates"
-    titleAr="المالية ودليل الحسابات وقوالب الرسوم"
-    description="Configure institutional chart of accounts, tuition fee structures, and scholarship discount policies."
-    descriptionAr="أنشئ شجرة الحسابات المالية وهياكل الرسوم الدراسية وقواعد الخصومات والمنح."
+    title={m.onboarding_step5_title()}
+    description={m.onboarding_step5_subtitle()}
     isRequired={true}
     status={isTaskComplete ? "completed" : feeTemplates.length > 0 ? "in_progress" : "not_started"}
   />
@@ -260,17 +218,15 @@ async function handleContinue() {
   {#if isLoading}
     <div class="flex items-center justify-center p-12 text-muted-foreground text-sm gap-2">
       <span class="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
-      <span>{isArabic ? "جاري تحميل البيانات المالية..." : "Loading finance settings..."}</span>
+      <span>{m.common_control_loading()}</span>
     </div>
   {:else}
     <!-- Section 1: Chart of Accounts Status -->
     <OnboardingSection
-      title="Standard Chart of Accounts (COA)"
-      titleAr="شجرة الحسابات المحاسبية المعتمدة"
-      description="Standard multi-tier chart of accounts (Assets, Liabilities, Equity, Revenues, Expenses)."
-      descriptionAr="دليل الحسابات المحاسبي الموحد للمنشأة (أصول، خصوم، حقوق ملكية، إيرادات، مصروفات)."
-      badge={accounts.length > 0 ? `${accounts.length} ${isArabic ? "حساب مالي" : "Accounts"}` : isArabic ? "جاهز للتفعيل" : "Standard Ready"}
-      isComplete={accounts.length > 0 || true}
+      title={m.onboarding_step5_coa_title()}
+      description={m.onboarding_step5_coa_desc()}
+      badge={accounts.length > 0 ? `${accounts.length}` : undefined}
+      isComplete={true}
     >
       <div class="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -279,26 +235,24 @@ async function handleContinue() {
           </span>
           <div>
             <div class="text-xs font-semibold text-foreground">
-              {isArabic ? "دليل الحسابات الموحد مفعل تلقائياً" : "Standard Educational Chart of Accounts is Active"}
+              {m.onboarding_step5_coa_active_title()}
             </div>
             <div class="text-[11px] text-muted-foreground">
-              {isArabic ? "يتضمن حسابات الإيرادات الدراسية وحسابات الرسوم والذمم المدينة للطلاب." : "Includes Student Receivables, Tuition Revenues, Cash & Bank Accounts."}
+              {m.onboarding_step5_coa_active_desc()}
             </div>
           </div>
         </div>
         <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs">
-          {isArabic ? "مفعل" : "Configured"}
+          {m.onboarding_step5_coa_configured_badge()}
         </Badge>
       </div>
     </OnboardingSection>
 
     <!-- Section 2: Fee Templates -->
     <OnboardingSection
-      title="Tuition & Service Fee Templates"
-      titleAr="قوالب الرسوم الدراسية والخدمات"
-      description="Create reusable fee items that can be assigned to student invoices and batches."
-      descriptionAr="أنشئ بنود الرسوم الدراسية والأنشطة والكتب ليتم إصدار مطالبات الطلاب بناءً عليها."
-      badge={feeTemplates.length > 0 ? `${feeTemplates.length} ${isArabic ? "بند رسوم" : "Templates"}` : undefined}
+      title={m.onboarding_step5_fees_title()}
+      description={m.onboarding_step5_fees_desc()}
+      badge={feeTemplates.length > 0 ? `${feeTemplates.length}` : undefined}
       isComplete={feeTemplates.length > 0}
     >
       <div class="space-y-4">
@@ -306,7 +260,7 @@ async function handleContinue() {
         {#if feeTemplates.length === 0}
           <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
             <div class="text-xs font-semibold text-foreground">
-              💳 {isArabic ? "إضافة قوالب الرسوم الشائعة بنقرة واحدة" : "Quick Add Common Fee Templates"}
+              💳 {m.onboarding_step5_quick_fees()}
             </div>
             <div class="flex flex-wrap gap-2">
               {#each PRESET_FEES as preset}
@@ -317,7 +271,7 @@ async function handleContinue() {
                   onclick={() => handleAddPresetFee(preset)}
                   class="text-xs bg-background hover:bg-muted"
                 >
-                  + {isArabic ? preset.nameAr : preset.name} ({preset.amount.toLocaleString()} {feeCurrency})
+                  + {preset.name_ar || preset.name} ({preset.amount.toLocaleString()} {feeCurrency})
                 </Button>
               {/each}
             </div>
@@ -329,27 +283,27 @@ async function handleContinue() {
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "اسم بند الرسوم (بالإنكليزية) *" : "Fee Name (English) *"}
+                {m.onboarding_step5_fee_name_en()}
               </Label>
               <Input
                 bind:value={feeName}
-                placeholder="e.g. Annual Tuition Fee"
+                placeholder={m.onboarding_step5_fee_name_en_placeholder()}
                 dir="ltr"
               />
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "اسم بند الرسوم بالعربية" : "Fee Name (Arabic)"}
+                {m.onboarding_step5_fee_name_ar()}
               </Label>
               <Input
                 bind:value={feeNameAr}
-                placeholder="مثال: الرسوم الدراسية السنوية"
+                placeholder={m.onboarding_step5_fee_name_ar_placeholder()}
                 dir="rtl"
               />
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "المبلغ الافتراضي *" : "Default Amount *"}
+                {m.onboarding_step5_fee_amount()}
               </Label>
               <Input
                 type="number"
@@ -359,7 +313,7 @@ async function handleContinue() {
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "نوع الرسوم" : "Fee Category"}
+                {m.onboarding_step5_fee_category()}
               </Label>
               <Select type="single" bind:value={feeCategory}>
                 <SelectTrigger class="w-full">
@@ -374,7 +328,7 @@ async function handleContinue() {
             </div>
             <div class="space-y-1.5 sm:col-span-2">
               <Label class="text-xs font-medium">
-                {isArabic ? "دورية التحصيل" : "Billing Frequency"}
+                {m.onboarding_step5_fee_frequency()}
               </Label>
               <Select type="single" bind:value={feeFrequency}>
                 <SelectTrigger class="w-full">
@@ -397,7 +351,7 @@ async function handleContinue() {
               onclick={handleCreateFeeTemplate}
               class="text-xs font-semibold"
             >
-              {isSubmittingFee ? (isArabic ? "جاري الحفظ..." : "Creating...") : (isArabic ? "+ إضافة بند الرسوم" : "+ Create Fee Template")}
+              {isSubmittingFee ? m.common_control_loading() : m.onboarding_step5_add_fee_btn()}
             </Button>
           </div>
         </div>
@@ -406,14 +360,14 @@ async function handleContinue() {
         {#if feeTemplates.length > 0}
           <div class="space-y-2">
             <span class="text-xs font-semibold text-muted-foreground uppercase">
-              {isArabic ? "قوالب الرسوم المعتمدة" : "Configured Fee Templates"}
+              {m.onboarding_step5_configured_fees()}
             </span>
             <div class="grid gap-2 sm:grid-cols-2">
               {#each feeTemplates as ft (ft.id)}
                 <div class="flex items-center justify-between rounded-lg border border-border/50 bg-card p-3 text-xs">
                   <div>
                     <div class="font-medium text-foreground">
-                      {isArabic && ft.name_ar ? ft.name_ar : ft.name}
+                      {ft.name_ar || ft.name}
                     </div>
                     <div class="text-[10px] text-muted-foreground capitalize">
                       {ft.category || "tuition"} | {ft.frequency || "yearly"}
@@ -432,11 +386,9 @@ async function handleContinue() {
 
     <!-- Section 3: Discounts & Scholarships -->
     <OnboardingSection
-      title="Discounts & Scholarships"
-      titleAr="قواعد الخصومات والمنح الدراسية"
-      description="Define policies for sibling discounts, staff benefits, or merit-based scholarships."
-      descriptionAr="حدد نسب الخصم المعتمدة للأشقاء وأبناء العاملين والمنح الدراسية."
-      badge={discountTemplates.length > 0 ? `${discountTemplates.length} ${isArabic ? "خصم" : "Discounts"}` : undefined}
+      title={m.onboarding_step5_discounts_title()}
+      description={m.onboarding_step5_discounts_desc()}
+      badge={discountTemplates.length > 0 ? `${discountTemplates.length}` : undefined}
       isComplete={discountTemplates.length > 0}
     >
       <div class="space-y-4">
@@ -444,7 +396,7 @@ async function handleContinue() {
         {#if discountTemplates.length === 0}
           <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
             <div class="text-xs font-semibold text-foreground">
-              🎁 {isArabic ? "إضافة قواعد الخصم الشائعة بنقرة واحدة" : "Quick Add Common Discount Policies"}
+              🎁 {m.onboarding_step5_quick_discounts()}
             </div>
             <div class="flex flex-wrap gap-2">
               {#each PRESET_DISCOUNTS as preset}
@@ -455,7 +407,7 @@ async function handleContinue() {
                   onclick={() => handleAddPresetDiscount(preset)}
                   class="text-xs bg-background hover:bg-muted"
                 >
-                  + {isArabic ? preset.nameAr : preset.name}
+                  + {preset.name_ar || preset.name}
                 </Button>
               {/each}
             </div>
@@ -469,7 +421,7 @@ async function handleContinue() {
               <div class="flex items-center justify-between rounded-lg border border-border/50 bg-card p-3 text-xs">
                 <div>
                   <div class="font-medium text-foreground">
-                    {isArabic && dt.name_ar ? dt.name_ar : dt.name}
+                    {dt.name_ar || dt.name}
                   </div>
                   <div class="text-[10px] text-muted-foreground capitalize">
                     {dt.discount_type || "percentage"}
@@ -492,7 +444,7 @@ async function handleContinue() {
         onclick={() => goto(`/${orgId}/onboarding/academics`)}
         class="text-xs"
       >
-        {isArabic ? "← الخطوة السابقة (الأكاديمية)" : "← Back to Academics"}
+        {m.onboarding_step5_back_btn()}
       </Button>
 
       <div class="flex items-center gap-3">
@@ -502,7 +454,7 @@ async function handleContinue() {
           onclick={handleContinue}
           class="text-xs font-semibold shadow-xs"
         >
-          {isArabic ? "متابعة إلى التقييم والدرجات →" : "Continue to Assessment & Grading →"}
+          {m.onboarding_step5_continue_btn()}
         </Button>
       </div>
     </div>

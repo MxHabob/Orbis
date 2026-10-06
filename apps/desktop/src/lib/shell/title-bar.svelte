@@ -210,7 +210,7 @@
       onclick={() => themeStore.toggle()}
       class="rounded-[8px] shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
       title={m.common_titlebar_theme_toggle()}
-      aria-label={m.shared_ui_toggle_theme()}
+      aria-label={m.common_titlebar_theme_toggle()}
     >
       {#if themeStore.resolved === "dark"}
         <Sun size={14} class="stroke-[2px] text-amber-400" />

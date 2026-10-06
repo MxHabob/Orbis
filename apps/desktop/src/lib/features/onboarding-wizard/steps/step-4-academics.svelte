@@ -1,26 +1,18 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
-import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 import { api, type SubjectDto, type ClassDto, type AcademicPeriodDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 
 let { orgId }: { orgId: string } = $props();
-
-const isArabic = $derived(getLocale().startsWith("ar"));
 
 let isLoading = $state(true);
 let isSubmittingSubject = $state(false);
@@ -91,7 +83,7 @@ async function loadData() {
     }
   } catch (err: any) {
     console.error("Failed to load academic data:", err);
-    errorMessage = err?.message || "Failed to load academic structure";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isLoading = false;
   }
@@ -99,7 +91,7 @@ async function loadData() {
 
 async function handleCreateSubject() {
   if (!subjectName.trim() && !subjectNameAr.trim()) {
-    errorMessage = isArabic ? "يرجى كتابة اسم المادة" : "Subject name is required";
+    errorMessage = m.onboarding_step4_subject_err_name();
     return;
   }
 
@@ -121,10 +113,10 @@ async function handleCreateSubject() {
     subjectNameAr = "";
     subjectCode = `SUB-0${subjects.length + 1}`;
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? "تمت إضافة المادة الدراسية بنجاح" : "Subject created successfully";
+    successMessage = m.onboarding_step4_subject_created_success();
   } catch (err: any) {
     console.error("Failed to create subject:", err);
-    errorMessage = err?.message || "Failed to create subject";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isSubmittingSubject = false;
   }
@@ -148,10 +140,10 @@ async function handleBatchImportSubjects() {
     }
 
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? "تمت إضافة باقة المواد الأساسية بنجاح" : "Standard subjects imported successfully";
+    successMessage = m.onboarding_step4_subjects_imported_success();
   } catch (err: any) {
     console.error("Failed to import subjects:", err);
-    errorMessage = err?.message || "Failed to import standard subjects";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isSubmittingSubject = false;
   }
@@ -159,7 +151,7 @@ async function handleBatchImportSubjects() {
 
 async function handleCreateClass() {
   if (!className.trim() && !classNameAr.trim()) {
-    errorMessage = isArabic ? "يرجى كتابة اسم الفصل" : "Class name is required";
+    errorMessage = m.onboarding_step4_class_err_name();
     return;
   }
 
@@ -182,10 +174,10 @@ async function handleCreateClass() {
     classNameAr = "";
     classCode = `CLS-0${classes.length + 1}`;
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? "تمت إضافة الفصل الدراسي بنجاح" : "Class created successfully";
+    successMessage = m.onboarding_step4_class_created_success();
   } catch (err: any) {
     console.error("Failed to create class:", err);
-    errorMessage = err?.message || "Failed to create class";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isSubmittingClass = false;
   }
@@ -210,10 +202,10 @@ async function handleBatchImportClasses() {
     }
 
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? "تمت إضافة الصفوف الأساسية بنجاح" : "Standard classes created successfully";
+    successMessage = m.onboarding_step4_classes_imported_success();
   } catch (err: any) {
     console.error("Failed to import classes:", err);
-    errorMessage = err?.message || "Failed to create classes";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isSubmittingClass = false;
   }
@@ -233,10 +225,8 @@ async function handleContinue() {
 <div class="space-y-6">
   <OnboardingStepHeader
     stepNumber={4}
-    title="Academic Structure: Subjects & Classes"
-    titleAr="البنية الأكاديمية: المواد الدراسية والفصول"
-    description="Establish your academic curriculum subjects, credit weights, and student class cohorts/sections."
-    descriptionAr="أنشئ خطة المواد الدراسية وساعات الاعتماد والفصول والشعب الطلابية."
+    title={m.onboarding_step4_title()}
+    description={m.onboarding_step4_subtitle()}
     isRequired={true}
     status={isTaskComplete ? "completed" : subjects.length > 0 || classes.length > 0 ? "in_progress" : "not_started"}
   />
@@ -258,16 +248,14 @@ async function handleContinue() {
   {#if isLoading}
     <div class="flex items-center justify-center p-12 text-muted-foreground text-sm gap-2">
       <span class="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
-      <span>{isArabic ? "جاري تحميل البنية الأكاديمية..." : "Loading academic structure..."}</span>
+      <span>{m.common_control_loading()}</span>
     </div>
   {:else}
     <!-- Section 1: Subjects & Courses -->
     <OnboardingSection
-      title="Curriculum Subjects & Courses"
-      titleAr="المواد والمقررات الدراسية"
-      description="Add teaching subjects with assigned codes and credit weights."
-      descriptionAr="أضف المواد المقررة مع تحديد رموزها وساعاتها الأكاديمية."
-      badge={subjects.length > 0 ? `${subjects.length} ${isArabic ? "مادة" : "Subjects"}` : undefined}
+      title={m.onboarding_step4_subjects_title()}
+      description={m.onboarding_step4_subjects_desc()}
+      badge={subjects.length > 0 ? `${subjects.length}` : undefined}
       isComplete={subjects.length > 0}
     >
       <div class="space-y-4">
@@ -276,10 +264,10 @@ async function handleContinue() {
           <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <div class="text-xs font-semibold text-foreground">
-                📚 {isArabic ? "إضافة باقة المواد المعتمدة تلقائياً" : "Quick Add Standard School Subjects"}
+                📚 {m.onboarding_step4_quick_subjects()}
               </div>
               <p class="text-xs text-muted-foreground">
-                {isArabic ? "إضافة 9 مواد أساسية (رياضيات، علوم، لغات، إسلامية، حاسب...)" : "Pre-fills 9 standard curriculum subjects (Math, Science, Languages, IT, etc.)"}
+                {m.onboarding_step4_quick_subjects_desc()}
               </p>
             </div>
             <Button
@@ -289,7 +277,7 @@ async function handleContinue() {
               onclick={handleBatchImportSubjects}
               class="text-xs bg-background shrink-0 font-semibold"
             >
-              {isArabic ? "+ إضافة الباقة القياسية" : "+ Import Standard Subjects"}
+              {m.onboarding_step4_import_subjects_btn()}
             </Button>
           </div>
         {/if}
@@ -299,27 +287,27 @@ async function handleContinue() {
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "اسم المادة (بالإنكليزية / اللاتينية) *" : "Subject Name (English) *"}
+                {m.onboarding_step4_subject_name_en()}
               </Label>
               <Input
                 bind:value={subjectName}
-                placeholder="e.g. Mathematics"
+                placeholder={m.onboarding_step4_subject_name_en_placeholder()}
                 dir="ltr"
               />
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "اسم المادة بالعربية" : "Subject Name (Arabic)"}
+                {m.onboarding_step4_subject_name_ar()}
               </Label>
               <Input
                 bind:value={subjectNameAr}
-                placeholder="مثال: الرياضيات"
+                placeholder={m.onboarding_step4_subject_name_ar_placeholder()}
                 dir="rtl"
               />
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "رمز المادة" : "Subject Code"}
+                {m.onboarding_step4_subject_code()}
               </Label>
               <Input
                 bind:value={subjectCode}
@@ -330,7 +318,7 @@ async function handleContinue() {
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "الساعات المعتمدة / الحصص أسبوعياً" : "Credit Hours / Weekly Periods"}
+                {m.onboarding_step4_subject_credits()}
               </Label>
               <Input
                 type="number"
@@ -348,7 +336,7 @@ async function handleContinue() {
               onclick={handleCreateSubject}
               class="text-xs font-semibold"
             >
-              {isSubmittingSubject ? (isArabic ? "جاري الإضافة..." : "Adding...") : (isArabic ? "+ إضافة المادة" : "+ Add Subject")}
+              {isSubmittingSubject ? m.common_control_loading() : m.onboarding_step4_add_subject_btn()}
             </Button>
           </div>
         </div>
@@ -357,21 +345,21 @@ async function handleContinue() {
         {#if subjects.length > 0}
           <div class="space-y-2">
             <span class="text-xs font-semibold text-muted-foreground uppercase">
-              {isArabic ? "المواد المسجلة" : "Configured Subjects"}
+              {m.onboarding_step4_configured_subjects()}
             </span>
             <div class="grid gap-2 sm:grid-cols-3">
               {#each subjects as sub (sub.id)}
                 <div class="flex items-center justify-between rounded-lg border border-border/50 bg-card p-2.5 text-xs">
                   <div class="min-w-0 flex-1">
                     <div class="font-medium text-foreground truncate">
-                      {isArabic && sub.name_ar ? sub.name_ar : sub.name}
+                      {sub.name_ar || sub.name}
                     </div>
                     <div class="text-[10px] font-mono text-muted-foreground">
                       {sub.code} | {sub.credit_hours || 3}h
                     </div>
                   </div>
                   <Badge variant="secondary" class="text-[10px]">
-                    {isArabic ? "أساسي" : "Core"}
+                    {m.onboarding_step4_subject_core_badge()}
                   </Badge>
                 </div>
               {/each}
@@ -383,11 +371,9 @@ async function handleContinue() {
 
     <!-- Section 2: Classes & Sections -->
     <OnboardingSection
-      title="Classes & Cohort Sections"
-      titleAr="الفصول والشعب الدراسية"
-      description="Create classes and cohorts for assigning students and teachers."
-      descriptionAr="أنشئ الفصول والشعب لإسناد الطلاب والمعلمين والجداول الدراسية."
-      badge={classes.length > 0 ? `${classes.length} ${isArabic ? "فصل" : "Classes"}` : undefined}
+      title={m.onboarding_step4_classes_title()}
+      description={m.onboarding_step4_classes_desc()}
+      badge={classes.length > 0 ? `${classes.length}` : undefined}
       isComplete={classes.length > 0}
     >
       <div class="space-y-4">
@@ -396,10 +382,10 @@ async function handleContinue() {
           <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <div class="text-xs font-semibold text-foreground">
-                👥 {isArabic ? "إنشاء الفصول الأساسية تلقائياً (الصفوف 1-6)" : "Generate Standard Elementary Classes (Grades 1-6)"}
+                👥 {m.onboarding_step4_quick_classes()}
               </div>
               <p class="text-xs text-muted-foreground">
-                {isArabic ? "إنشاء 6 فصول للمرحلة الابتدائية بسعة 30 طالباً لكل شعبة." : "Creates 6 grade sections (Grade 1 through 6) with 30-student capacity."}
+                {m.onboarding_step4_quick_classes_desc()}
               </p>
             </div>
             <Button
@@ -409,7 +395,7 @@ async function handleContinue() {
               onclick={handleBatchImportClasses}
               class="text-xs bg-background shrink-0 font-semibold"
             >
-              {isArabic ? "+ إنشاء الصفوف القياسية" : "+ Generate Classes"}
+              {m.onboarding_step4_import_classes_btn()}
             </Button>
           </div>
         {/if}
@@ -419,27 +405,27 @@ async function handleContinue() {
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "اسم الفصل (بالإنكليزية) *" : "Class Name (English) *"}
+                {m.onboarding_step4_class_name_en()}
               </Label>
               <Input
                 bind:value={className}
-                placeholder="Grade 1 - Section A"
+                placeholder={m.onboarding_step4_class_name_en_placeholder()}
                 dir="ltr"
               />
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "اسم الفصل بالعربية" : "Class Name (Arabic)"}
+                {m.onboarding_step4_class_name_ar()}
               </Label>
               <Input
                 bind:value={classNameAr}
-                placeholder="الصف الأول - شعبة (أ)"
+                placeholder={m.onboarding_step4_class_name_ar_placeholder()}
                 dir="rtl"
               />
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "المرحلة / الصف الدراسي" : "Grade Level / Stage"}
+                {m.onboarding_step4_class_grade()}
               </Label>
               <Input
                 bind:value={classGrade}
@@ -448,7 +434,7 @@ async function handleContinue() {
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "الطاقة الاستيعابية للفصل (طالب)" : "Classroom Capacity"}
+                {m.onboarding_step4_class_capacity()}
               </Label>
               <Input
                 type="number"
@@ -466,7 +452,7 @@ async function handleContinue() {
               onclick={handleCreateClass}
               class="text-xs font-semibold"
             >
-              {isSubmittingClass ? (isArabic ? "جاري الإنشاء..." : "Creating...") : (isArabic ? "+ إنشاء الفصل" : "+ Create Class")}
+              {isSubmittingClass ? m.common_control_loading() : m.onboarding_step4_add_class_btn()}
             </Button>
           </div>
         </div>
@@ -475,21 +461,21 @@ async function handleContinue() {
         {#if classes.length > 0}
           <div class="space-y-2">
             <span class="text-xs font-semibold text-muted-foreground uppercase">
-              {isArabic ? "الفصول المقيدة" : "Configured Classes"}
+              {m.onboarding_step4_configured_classes()}
             </span>
             <div class="grid gap-2 sm:grid-cols-3">
               {#each classes as cls (cls.id)}
                 <div class="flex items-center justify-between rounded-lg border border-border/50 bg-card p-2.5 text-xs">
                   <div>
                     <div class="font-medium text-foreground">
-                      {isArabic && cls.name_ar ? cls.name_ar : cls.name}
+                      {cls.name_ar || cls.name}
                     </div>
                     <div class="text-[10px] text-muted-foreground">
-                      {cls.grade_level || "Grade"} | {cls.capacity || 30} {isArabic ? "طالب" : "students"}
+                      {cls.grade_level || "Grade"} | {cls.capacity || 30}
                     </div>
                   </div>
                   <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]">
-                    {isArabic ? "نشط" : "Active"}
+                    {m.onboarding_active_badge()}
                   </Badge>
                 </div>
               {/each}
@@ -506,7 +492,7 @@ async function handleContinue() {
         onclick={() => goto(`/${orgId}/onboarding/calendar`)}
         class="text-xs"
       >
-        {isArabic ? "← الخطوة السابقة (التقويم)" : "← Back to Calendar"}
+        {m.onboarding_step4_back_btn()}
       </Button>
 
       <div class="flex items-center gap-3">
@@ -516,7 +502,7 @@ async function handleContinue() {
           onclick={handleContinue}
           class="text-xs font-semibold shadow-xs"
         >
-          {isArabic ? "متابعة إلى المالية والرسوم →" : "Continue to Finance & Fees →"}
+          {m.onboarding_step4_continue_btn()}
         </Button>
       </div>
     </div>

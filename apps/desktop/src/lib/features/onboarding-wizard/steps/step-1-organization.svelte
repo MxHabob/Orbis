@@ -1,8 +1,8 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
-import { getLocale } from "$lib/paraglide/runtime";
-import { api, type OrgDto, type OrganizationSettingsDto } from "$lib/api";
+import * as m from "$lib/paraglide/messages";
+import { api } from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -20,8 +20,6 @@ import { getTasksForStep } from "../onboarding-steps";
 
 let { orgId }: { orgId: string } = $props();
 
-const isArabic = $derived(getLocale().startsWith("ar"));
-
 let isLoading = $state(true);
 let isSaving = $state(false);
 let errorMessage = $state<string | null>(null);
@@ -35,23 +33,20 @@ let baseCurrencyCode = $state("SAR");
 let timezone = $state("Asia/Riyadh");
 let locale = $state("ar");
 let isHijriEnabled = $state(false);
-let email = $state("");
-let phone = $state("");
-let address = $state("");
 
 // Currency options
 const CURRENCIES = [
-  { code: "SAR", name: "Saudi Riyal (ر.س)", nameAr: "ريال سعودي" },
-  { code: "AED", name: "UAE Dirham (د.إ)", nameAr: "درهم إماراتي" },
-  { code: "QAR", name: "Qatari Riyal (ر.ق)", nameAr: "ريال قطري" },
-  { code: "KWD", name: "Kuwaiti Dinar (د.ك)", nameAr: "دينار كويتي" },
-  { code: "BHD", name: "Bahraini Dinar (د.ب)", nameAr: "دينار بحريني" },
-  { code: "OMR", name: "Omani Rial (ر.ع)", nameAr: "ريال عماني" },
-  { code: "EGP", name: "Egyptian Pound (ج.م)", nameAr: "جنيه مصري" },
-  { code: "YER", name: "Yemeni Rial (ر.ي)", nameAr: "ريال يمني" },
-  { code: "USD", name: "US Dollar ($)", nameAr: "دولار أمريكي" },
-  { code: "EUR", name: "Euro (€)", nameAr: "يورو" },
-  { code: "GBP", name: "British Pound (£)", nameAr: "جنيه إسترليني" },
+  { code: "SAR", label: "SAR — Saudi Riyal (ريال سعودي)" },
+  { code: "AED", label: "AED — UAE Dirham (درهم إماراتي)" },
+  { code: "QAR", label: "QAR — Qatari Riyal (ريال قطري)" },
+  { code: "KWD", label: "KWD — Kuwaiti Dinar (دينار كويتي)" },
+  { code: "BHD", label: "BHD — Bahraini Dinar (دينار بحريني)" },
+  { code: "OMR", label: "OMR — Omani Rial (ريال عماني)" },
+  { code: "EGP", label: "EGP — Egyptian Pound (جنيه مصري)" },
+  { code: "YER", label: "YER — Yemeni Rial (ريال يمني)" },
+  { code: "USD", label: "USD — US Dollar (دولار أمريكي)" },
+  { code: "EUR", label: "EUR — Euro (يورو)" },
+  { code: "GBP", label: "GBP — British Pound (جنيه إسترليني)" },
 ];
 
 // Timezone options
@@ -89,7 +84,7 @@ onMount(async () => {
     }
   } catch (err: any) {
     console.error("Failed to load organization profile:", err);
-    errorMessage = err?.message || "Failed to load organization settings";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isLoading = false;
   }
@@ -97,7 +92,7 @@ onMount(async () => {
 
 async function saveOrganization() {
   if (!name.trim()) {
-    errorMessage = isArabic ? "يرجى كتابة اسم المنشأة" : "Organization name is required";
+    errorMessage = m.onboarding_step1_err_name();
     return;
   }
 
@@ -118,10 +113,10 @@ async function saveOrganization() {
 
     // Refresh onboarding DAG state
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? "تم حفظ بيانات المنشأة بنجاح" : "Organization profile saved successfully";
+    successMessage = m.onboarding_step1_saved_success();
   } catch (err: any) {
     console.error("Failed to save organization profile:", err);
-    errorMessage = err?.message || "Failed to save profile";
+    errorMessage = err?.message || m.common_action_failed();
   } finally {
     isSaving = false;
   }
@@ -138,10 +133,8 @@ async function handleContinue() {
 <div class="space-y-6">
   <OnboardingStepHeader
     stepNumber={1}
-    title="Organization Profile & Regional Settings"
-    titleAr="الملف التعريفي والإعدادات الإقليمية للمنشأة"
-    description="Set up your institution's formal identity, primary currency, operational timezone, and regional calendar preferences."
-    descriptionAr="حدد الهوية الرسمية للمنشأة والعملة الأساسية للنظام والنطاق الزمني والتقويم المعتمد."
+    title={m.onboarding_step1_title()}
+    description={m.onboarding_step1_subtitle()}
     isRequired={true}
     status={isTaskComplete ? "completed" : "in_progress"}
   />
@@ -163,26 +156,24 @@ async function handleContinue() {
   {#if isLoading}
     <div class="flex items-center justify-center p-12 text-muted-foreground text-sm gap-2">
       <span class="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
-      <span>{isArabic ? "جاري تحميل البيانات..." : "Loading organization profile..."}</span>
+      <span>{m.common_control_loading()}</span>
     </div>
   {:else}
     <!-- Basic Identity Section -->
     <OnboardingSection
-      title="Institution Identity"
-      titleAr="هوية المنشأة التعليمية"
-      description="The primary name displayed across certificates, reports, portals, and student documents."
-      descriptionAr="الاسم المعتمد الذي يظهر في الشهادات والتقارير وبوابات الطلاب والموظفين."
+      title={m.onboarding_step1_identity_title()}
+      description={m.onboarding_step1_identity_desc()}
       isComplete={Boolean(name.trim())}
     >
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
           <Label for="org-name" class="text-xs font-semibold">
-            {isArabic ? "اسم المنشأة (بالإنجليزية / اللاتينية) *" : "Institution Name (English / Latin) *"}
+            {m.onboarding_step1_name_en()}
           </Label>
           <Input
             id="org-name"
             bind:value={name}
-            placeholder="e.g. Al-Noor Academy"
+            placeholder={m.onboarding_step1_name_en_placeholder()}
             dir="ltr"
             required
           />
@@ -190,29 +181,29 @@ async function handleContinue() {
 
         <div class="space-y-2">
           <Label for="org-name-ar" class="text-xs font-semibold">
-            {isArabic ? "اسم المنشأة بالعربية" : "Institution Name (Arabic)"}
+            {m.onboarding_step1_name_ar()}
           </Label>
           <Input
             id="org-name-ar"
             bind:value={nameAr}
-            placeholder="مثال: أكاديمية النور الأهلية"
+            placeholder={m.onboarding_step1_name_ar_placeholder()}
             dir="rtl"
           />
         </div>
 
         <div class="space-y-2 sm:col-span-2">
           <Label for="org-slug" class="text-xs font-semibold">
-            {isArabic ? "المعرف الفريد / النطاق الداخلي" : "Organization Code / Subdomain Identifier"}
+            {m.onboarding_step1_slug()}
           </Label>
           <Input
             id="org-slug"
             bind:value={slug}
-            placeholder="alnoor-academy"
+            placeholder={m.onboarding_step1_slug_placeholder()}
             dir="ltr"
             class="font-mono text-xs"
           />
           <p class="text-[11px] text-muted-foreground">
-            {isArabic ? "يُستخدم كرمز تعريفي في تقارير النظام وقواعد البيانات." : "Used as a system identifier in reports and data exports."}
+            {m.onboarding_step1_slug_desc()}
           </p>
         </div>
       </div>
@@ -220,27 +211,23 @@ async function handleContinue() {
 
     <!-- Regional & Financial Preferences -->
     <OnboardingSection
-      title="Regional & Financial Defaults"
-      titleAr="الإعدادات الإقليمية والمالية الأساسية"
-      description="Define the base accounting currency and operational timezone for accurate scheduling and accounting."
-      descriptionAr="حدد العملة الأساسية للحسابات والتقويم الزمني لجداول الحصص والعمليات المالية."
+      title={m.onboarding_step1_regional_title()}
+      description={m.onboarding_step1_regional_desc()}
       isComplete={Boolean(baseCurrencyCode && timezone)}
     >
       <div class="grid gap-4 sm:grid-cols-2">
         <!-- Currency Select -->
         <div class="space-y-2">
           <Label class="text-xs font-semibold">
-            {isArabic ? "العملة الأساسية للحسابات والرسوم *" : "Base Operational Currency *"}
+            {m.onboarding_step1_currency()}
           </Label>
           <Select type="single" bind:value={baseCurrencyCode}>
             <SelectTrigger class="w-full">
-              {CURRENCIES.find((c) => c.code === baseCurrencyCode)?.[isArabic ? "nameAr" : "name"] || baseCurrencyCode}
+              {CURRENCIES.find((c) => c.code === baseCurrencyCode)?.label || baseCurrencyCode}
             </SelectTrigger>
             <SelectContent>
               {#each CURRENCIES as curr}
-                <SelectItem value={curr.code}>
-                  {isArabic ? `${curr.nameAr} (${curr.code})` : curr.name}
-                </SelectItem>
+                <SelectItem value={curr.code}>{curr.label}</SelectItem>
               {/each}
             </SelectContent>
           </Select>
@@ -249,7 +236,7 @@ async function handleContinue() {
         <!-- Timezone Select -->
         <div class="space-y-2">
           <Label class="text-xs font-semibold">
-            {isArabic ? "المنطقة الزمنية *" : "Operational Timezone *"}
+            {m.onboarding_step1_timezone()}
           </Label>
           <Select type="single" bind:value={timezone}>
             <SelectTrigger class="w-full">
@@ -266,15 +253,15 @@ async function handleContinue() {
         <!-- System Locale Select -->
         <div class="space-y-2">
           <Label class="text-xs font-semibold">
-            {isArabic ? "اللغة الافتراضية للنظام" : "Default Interface Language"}
+            {m.onboarding_step1_locale()}
           </Label>
           <Select type="single" bind:value={locale}>
             <SelectTrigger class="w-full">
-              {locale === "ar" ? "العربية (Arabic)" : "English"}
+              {locale === "ar" ? m.onboarding_step1_locale_ar() : m.onboarding_step1_locale_en()}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ar">العربية (Arabic)</SelectItem>
-              <SelectItem value="en">English</SelectItem>
+              <SelectItem value="ar">{m.onboarding_step1_locale_ar()}</SelectItem>
+              <SelectItem value="en">{m.onboarding_step1_locale_en()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -284,10 +271,10 @@ async function handleContinue() {
           <Checkbox id="hijri-toggle" bind:checked={isHijriEnabled} />
           <div class="space-y-0.5">
             <Label for="hijri-toggle" class="text-xs font-medium cursor-pointer">
-              {isArabic ? "تفعيل التقويم الهجري بالتوازي" : "Enable Dual Hijri Calendar"}
+              {m.onboarding_step1_hijri_toggle()}
             </Label>
             <p class="text-[11px] text-muted-foreground">
-              {isArabic ? "عرض التواريخ الهجرية بجانب الميلادية" : "Display Islamic Hijri dates alongside Gregorian dates"}
+              {m.onboarding_step1_hijri_desc()}
             </p>
           </div>
         </div>
@@ -301,7 +288,7 @@ async function handleContinue() {
         onclick={() => goto(`/${orgId}/onboarding`)}
         class="text-xs"
       >
-        {isArabic ? "← الرجوع للمركز" : "← Setup Overview"}
+        {m.onboarding_overview_btn()}
       </Button>
 
       <div class="flex items-center gap-3">
@@ -311,7 +298,7 @@ async function handleContinue() {
           onclick={saveOrganization}
           class="text-xs"
         >
-          {isSaving ? (isArabic ? "جاري الحفظ..." : "Saving...") : (isArabic ? "حفظ التغييرات" : "Save Changes")}
+          {isSaving ? m.onboarding_saving_btn() : m.onboarding_save_btn()}
         </Button>
 
         <Button
@@ -320,7 +307,7 @@ async function handleContinue() {
           onclick={handleContinue}
           class="text-xs font-semibold shadow-xs"
         >
-          {isArabic ? "حفظ ومتابعة إلى الهيكل التنظيمي →" : "Save & Continue to Structure →"}
+          {m.onboarding_step1_continue_btn()}
         </Button>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import { onMount } from "svelte";
 import type { Snippet } from "svelte";
-import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 import { authStore, systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
@@ -16,7 +16,6 @@ import {
 
 let { orgId, children }: { orgId: string; children: Snippet } = $props();
 
-const isArabic = $derived(getLocale().startsWith("ar"));
 const currentPath = $derived(page.url.pathname);
 
 // Load onboarding DAG state from backend on mount
@@ -45,16 +44,6 @@ const currentStep = $derived(
   currentStepIndex >= 0 ? steps[currentStepIndex] : null
 );
 
-const prevStep = $derived(
-  currentStepIndex > 0 ? steps[currentStepIndex - 1] : null
-);
-
-const nextStep = $derived(
-  currentStepIndex >= 0 && currentStepIndex < steps.length - 1
-    ? steps[currentStepIndex + 1]
-    : null
-);
-
 async function navigateToStep(step: OnboardingStep) {
   if (!step.isAccessible) return;
   await goto(`/${orgId}/onboarding/${step.route}`);
@@ -65,7 +54,7 @@ async function exitSetup() {
 }
 </script>
 
-<div class="flex min-h-screen flex-col bg-background text-foreground font-sans selection:bg-primary/20" dir={isArabic ? "rtl" : "ltr"}>
+<div class="flex min-h-screen flex-col bg-background text-foreground font-sans selection:bg-primary/20">
   <!-- Top Navigation Bar -->
   <header class="sticky top-0 z-40 flex h-14 w-full items-center justify-between border-b border-border/60 bg-background/90 px-4 backdrop-blur-md sm:px-6">
     <!-- Left: Brand & Institution Info -->
@@ -79,12 +68,12 @@ async function exitSetup() {
             {onboardingState?.organization?.name || authStore.currentOrg?.name || "Orbis"}
           </span>
           <span class="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary uppercase">
-            {isArabic ? "دليل التهيئة" : "Setup Wizard"}
+            {m.onboarding_wizard_title()}
           </span>
         </div>
         {#if onboardingState?.institution_type}
           <span class="text-[11px] text-muted-foreground capitalize">
-            {onboardingState.institution_type} {isArabic ? "— بيئة العمل" : "Workspace"}
+            {onboardingState.institution_type} — {m.onboarding_workspace_badge()}
           </span>
         {/if}
       </div>
@@ -96,11 +85,11 @@ async function exitSetup() {
         <Progress value={overallProgress} class="h-2 bg-muted" />
       </div>
       <span class="text-xs font-medium text-muted-foreground">
-        {overallProgress}% {isArabic ? "مكتمل" : "Complete"}
+        {m.onboarding_complete_percent({ percent: overallProgress })}
       </span>
       {#if isReady}
         <Badge variant="outline" class="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs">
-          {isArabic ? "جاهز للتشغيل" : "Ready"}
+          {m.onboarding_ready_badge()}
         </Badge>
       {/if}
     </div>
@@ -113,7 +102,7 @@ async function exitSetup() {
         onclick={exitSetup}
         class="text-xs text-muted-foreground hover:text-foreground"
       >
-        {isArabic ? "الخروج إلى لوحة التحكم ←" : "Exit to Dashboard →"}
+        {m.onboarding_exit_dashboard()}
       </Button>
     </div>
   </header>
@@ -125,10 +114,10 @@ async function exitSetup() {
       <div class="sticky top-20 space-y-6">
         <div>
           <h2 class="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-            {isArabic ? "مراحل التهيئة" : "Setup Stages"}
+            {m.onboarding_stages_title()}
           </h2>
           <p class="mt-1 text-xs text-muted-foreground">
-            {isArabic ? "أكمل الخطوات المطلوبة لتفعيل النظام بالكامل" : "Complete the required stages to activate your workspace"}
+            {m.onboarding_stages_desc()}
           </p>
         </div>
 
@@ -168,14 +157,14 @@ async function exitSetup() {
               <div class="min-w-0 flex-1">
                 <div class="flex items-center justify-between gap-1">
                   <span class="truncate text-xs font-medium sm:text-sm">
-                    {isArabic ? step.labelAr : step.label}
+                    {step.getLabel()}
                   </span>
                   {#if step.isRequired && step.status !== 'completed'}
                     <span class="text-[10px] text-amber-500 font-medium">*</span>
                   {/if}
                 </div>
                 <p class="truncate text-[11px] text-muted-foreground/70 {isActive ? 'text-primary/70' : ''}">
-                  {isArabic ? step.descriptionAr : step.description}
+                  {step.getDescription()}
                 </p>
               </div>
 
@@ -192,7 +181,7 @@ async function exitSetup() {
         <!-- Sidebar Summary Box -->
         <div class="rounded-lg border border-border/50 bg-card p-3 shadow-2xs">
           <div class="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{isArabic ? "المهام المكتملة" : "Tasks Completed"}</span>
+            <span>{m.onboarding_tasks_completed_count()}</span>
             <span class="font-mono font-medium text-foreground">
               {systemStore.completedOnboardingTasks.length} / {tasks.length}
             </span>

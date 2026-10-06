@@ -1,8 +1,8 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
-import { getLocale } from "$lib/paraglide/runtime";
-import { api, type DocumentRequirementDto, type OrganizationSettingsDto } from "$lib/api";
+import * as m from "$lib/paraglide/messages";
+import { api, type DocumentRequirementDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -15,8 +15,6 @@ import { getTasksForStep } from "../onboarding-steps";
 
 let { orgId }: { orgId: string } = $props();
 
-const isArabic = $derived(getLocale().startsWith("ar"));
-
 let isLoading = $state(true);
 let isSaving = $state(false);
 let isSubmittingDoc = $state(false);
@@ -27,8 +25,6 @@ let successMessage = $state<string | null>(null);
 let studentNumberPattern = $state("{YEAR}-{SEQ:5}");
 let autoGenerateStudentId = $state(true);
 let preventDuplicateNationalId = $state(true);
-let preventDuplicatePhone = $state(false);
-let requireGuardianApproval = $state(true);
 
 // Document Requirements Data
 let docRequirements = $state<DocumentRequirementDto[]>([]);
@@ -67,7 +63,7 @@ async function loadData() {
     }
   } catch (err: any) {
     console.error("Failed to load operations data:", err);
-    errorMessage = err?.message || "Failed to load operations settings";
+    errorMessage = err?.message || m.onboarding_step7_err_load();
   } finally {
     isLoading = false;
   }
@@ -86,10 +82,10 @@ async function handleSaveRegistrationPolicy() {
     });
 
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? "تم حفظ سياسات التسجيل والقبول بنجاح" : "Registration policies saved successfully";
+    successMessage = m.onboarding_step7_policy_saved_success();
   } catch (err: any) {
     console.error("Failed to save registration policies:", err);
-    errorMessage = err?.message || "Failed to save registration policies";
+    errorMessage = err?.message || m.onboarding_step7_policy_err();
   } finally {
     isSaving = false;
   }
@@ -97,7 +93,7 @@ async function handleSaveRegistrationPolicy() {
 
 async function handleCreateDocRequirement() {
   if (!docNameEn.trim() && !docNameAr.trim()) {
-    errorMessage = isArabic ? "يرجى كتابة اسم الوثيقة" : "Document name is required";
+    errorMessage = m.onboarding_step7_doc_err_name();
     return;
   }
 
@@ -120,10 +116,10 @@ async function handleCreateDocRequirement() {
     docNameAr = "";
     docCode = `DOC_${docRequirements.length + 1}`;
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? "تمت إضافة متطلب الوثيقة بنجاح" : "Document requirement created successfully";
+    successMessage = m.onboarding_step7_doc_created_success();
   } catch (err: any) {
     console.error("Failed to create document requirement:", err);
-    errorMessage = err?.message || "Failed to create document requirement";
+    errorMessage = err?.message || m.onboarding_step7_err_create_doc();
   } finally {
     isSubmittingDoc = false;
   }
@@ -146,10 +142,10 @@ async function handleAddPresetDoc(preset: typeof PRESET_DOCUMENTS[0]) {
 
     docRequirements = [...docRequirements, created];
     await systemStore.loadOnboardingState(orgId);
-    successMessage = isArabic ? `تمت إضافة ${preset.nameAr}` : `Added ${preset.nameEn}`;
+    successMessage = m.onboarding_step7_preset_added({ name: preset.nameEn });
   } catch (err: any) {
     console.error("Failed to add preset document:", err);
-    errorMessage = err?.message || "Failed to add preset document";
+    errorMessage = err?.message || m.onboarding_step7_err_create_doc();
   } finally {
     isSubmittingDoc = false;
   }
@@ -164,10 +160,8 @@ async function handleContinue() {
 <div class="space-y-6">
   <OnboardingStepHeader
     stepNumber={7}
-    title="Operations, Admissions & Document Requirements"
-    titleAr="العمليات التشغيلية وسياسات القبول والوثائق"
-    description="Configure student numbering formats, mandatory admission document requirements, and verification rules."
-    descriptionAr="حدد قواعد الترقيم الأكاديمي للطلاب، الوثائق الإلزامية للتسجيل، وضوابط التحقق."
+    title={m.onboarding_step7_title()}
+    description={m.onboarding_step7_subtitle()}
     isRequired={true}
     status={isTaskComplete ? "completed" : docRequirements.length > 0 ? "in_progress" : "not_started"}
   />
@@ -175,45 +169,43 @@ async function handleContinue() {
   {#if errorMessage}
     <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive font-medium flex items-center justify-between">
       <span>{errorMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => errorMessage = null}>✕</Button>
+      <Button variant="ghost" size="sm" onclick={() => (errorMessage = null)}>✕</Button>
     </div>
   {/if}
 
   {#if successMessage}
     <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center justify-between">
       <span>{successMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => successMessage = null}>✕</Button>
+      <Button variant="ghost" size="sm" onclick={() => (successMessage = null)}>✕</Button>
     </div>
   {/if}
 
   {#if isLoading}
     <div class="flex items-center justify-center p-12 text-muted-foreground text-sm gap-2">
       <span class="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
-      <span>{isArabic ? "جاري تحميل إعدادات العمليات..." : "Loading operations settings..."}</span>
+      <span>{m.onboarding_step7_loading()}</span>
     </div>
   {:else}
     <!-- Section 1: Student Numbering & Registration Policy -->
     <OnboardingSection
-      title="Student Numbering & ID Generation"
-      titleAr="الترقيم الأكاديمي والرقم التعريفي للطالب"
-      description="Define the automated sequence formula for generating new student IDs."
-      descriptionAr="حدد صيغة الترقيم الآلي التي تولد الأرقام الأكاديمية للطلاب عند قبولهم."
+      title={m.onboarding_step7_numbering_title()}
+      description={m.onboarding_step7_numbering_desc()}
       isComplete={Boolean(studentNumberPattern.trim())}
     >
       <div class="space-y-4">
         <div class="grid gap-3 sm:grid-cols-2">
           <div class="space-y-1.5 sm:col-span-2">
             <Label class="text-xs font-medium">
-              {isArabic ? "صيغة الترقيم الأكاديمي (Student Number Pattern) *" : "Student ID Numbering Pattern *"}
+              {m.onboarding_step7_pattern_label()}
             </Label>
             <Input
               bind:value={studentNumberPattern}
-              placeholder={'\{YEAR\}-\{SEQ:5\}'}
+              placeholder={'\\{YEAR\\}-\\{SEQ:5\\}'}
               dir="ltr"
               class="font-mono text-xs"
             />
             <p class="text-[11px] text-muted-foreground">
-              {isArabic ? "أمثلة: {YEAR}-{SEQ:5} (مثل 2026-00001) أو {STAGE}-{YEAR}-{SEQ:4}" : "Templates: {YEAR}-{SEQ:5} (e.g. 2026-00001) or {STAGE}-{YEAR}-{SEQ:4}"}
+              {m.onboarding_step7_pattern_hint()}
             </p>
           </div>
         </div>
@@ -222,13 +214,13 @@ async function handleContinue() {
           <div class="flex items-center space-x-2 space-x-reverse">
             <Checkbox id="auto-gen" bind:checked={autoGenerateStudentId} />
             <Label for="auto-gen" class="text-xs font-medium cursor-pointer">
-              {isArabic ? "توليد الرقم الأكاديمي تلقائياً فور حفظ استمارة التسجيل" : "Automatically generate student ID upon admission form submission"}
+              {m.onboarding_step7_auto_gen()}
             </Label>
           </div>
           <div class="flex items-center space-x-2 space-x-reverse">
             <Checkbox id="prevent-dup" bind:checked={preventDuplicateNationalId} />
             <Label for="prevent-dup" class="text-xs font-medium cursor-pointer">
-              {isArabic ? "منع تكرار رقم الهوية الوطنية / الإقامة على مستوى المنشأة" : "Strictly prevent duplicate National ID / Resident Iqama across institution"}
+              {m.onboarding_step7_prevent_dup()}
             </Label>
           </div>
         </div>
@@ -241,7 +233,7 @@ async function handleContinue() {
             onclick={handleSaveRegistrationPolicy}
             class="text-xs font-semibold"
           >
-            {isSaving ? (isArabic ? "جاري الحفظ..." : "Saving...") : (isArabic ? "حفظ سياسة التسجيل" : "Save Registration Policy")}
+            {isSaving ? m.onboarding_step7_saving_btn() : m.onboarding_step7_save_policy_btn()}
           </Button>
         </div>
       </div>
@@ -249,11 +241,9 @@ async function handleContinue() {
 
     <!-- Section 2: Required Admission Documents -->
     <OnboardingSection
-      title="Mandatory Admission Documents"
-      titleAr="الوثائق والمستندات المطلوبة للقبول"
-      description="Define the checklist of documents guardians must provide during student registration."
-      descriptionAr="حدد قائمة المستندات التي يجب على ولي الأمر إرفاقها لإنهاء القبول."
-      badge={docRequirements.length > 0 ? `${docRequirements.length} ${isArabic ? "وثائق محددة" : "Documents"}` : undefined}
+      title={m.onboarding_step7_docs_title()}
+      description={m.onboarding_step7_docs_desc()}
+      badge={docRequirements.length > 0 ? m.onboarding_step7_docs_count({ count: docRequirements.length }) : undefined}
       isComplete={docRequirements.length > 0}
     >
       <div class="space-y-4">
@@ -261,7 +251,7 @@ async function handleContinue() {
         {#if docRequirements.length === 0}
           <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
             <div class="text-xs font-semibold text-foreground">
-              📄 {isArabic ? "إضافة الوثائق الرسمية الشائعة بنقرة واحدة" : "Quick Add Official Required Documents"}
+              📄 {m.onboarding_step7_quick_docs()}
             </div>
             <div class="flex flex-wrap gap-2">
               {#each PRESET_DOCUMENTS as preset}
@@ -272,7 +262,7 @@ async function handleContinue() {
                   onclick={() => handleAddPresetDoc(preset)}
                   class="text-xs bg-background hover:bg-muted"
                 >
-                  + {isArabic ? preset.nameAr : preset.nameEn}
+                  + {preset.nameEn}
                 </Button>
               {/each}
             </div>
@@ -284,27 +274,27 @@ async function handleContinue() {
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "اسم الوثيقة (بالإنكليزية) *" : "Document Name (English) *"}
+                {m.onboarding_step7_doc_name_en()}
               </Label>
               <Input
                 bind:value={docNameEn}
-                placeholder="e.g. Birth Certificate"
+                placeholder={m.onboarding_step7_doc_name_en_placeholder()}
                 dir="ltr"
               />
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "اسم الوثيقة بالعربية" : "Document Name (Arabic)"}
+                {m.onboarding_step7_doc_name_ar()}
               </Label>
               <Input
                 bind:value={docNameAr}
-                placeholder="مثال: شهادة الميلاد الرسمية"
+                placeholder={m.onboarding_step7_doc_name_ar_placeholder()}
                 dir="rtl"
               />
             </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {isArabic ? "رمز الوثيقة" : "Document Code"}
+                {m.onboarding_step7_doc_code()}
               </Label>
               <Input
                 bind:value={docCode}
@@ -317,13 +307,13 @@ async function handleContinue() {
               <div class="flex items-center space-x-2 space-x-reverse">
                 <Checkbox id="doc-mand" bind:checked={docMandatory} />
                 <Label for="doc-mand" class="text-xs font-medium cursor-pointer">
-                  {isArabic ? "إلزامية" : "Mandatory"}
+                  {m.onboarding_step7_doc_mandatory()}
                 </Label>
               </div>
               <div class="flex items-center space-x-2 space-x-reverse">
                 <Checkbox id="doc-block" bind:checked={docBlocksEnrollment} />
                 <Label for="doc-block" class="text-xs font-medium cursor-pointer">
-                  {isArabic ? "حظر القبول حتى التسليم" : "Blocks Enrollment"}
+                  {m.onboarding_step7_doc_blocking()}
                 </Label>
               </div>
             </div>
@@ -337,7 +327,7 @@ async function handleContinue() {
               onclick={handleCreateDocRequirement}
               class="text-xs font-semibold"
             >
-              {isSubmittingDoc ? (isArabic ? "جاري الإضافة..." : "Adding...") : (isArabic ? "+ إضافة متطلب الوثيقة" : "+ Add Requirement")}
+              {isSubmittingDoc ? m.onboarding_step7_adding_btn() : m.onboarding_step7_add_doc_btn()}
             </Button>
           </div>
         </div>
@@ -346,14 +336,14 @@ async function handleContinue() {
         {#if docRequirements.length > 0}
           <div class="space-y-2">
             <span class="text-xs font-semibold text-muted-foreground uppercase">
-              {isArabic ? "الوثائق المعتمدة للتسجيل" : "Configured Admission Documents"}
+              {m.onboarding_step7_configured_docs()}
             </span>
             <div class="grid gap-2 sm:grid-cols-2">
               {#each docRequirements as doc (doc.id)}
                 <div class="flex items-center justify-between rounded-lg border border-border/50 bg-card p-3 text-xs">
                   <div>
                     <div class="font-medium text-foreground">
-                      {isArabic && doc.name_ar ? doc.name_ar : doc.name_en || doc.code}
+                      {doc.name_ar || doc.name_en || doc.code}
                     </div>
                     <div class="text-[10px] font-mono text-muted-foreground">
                       {doc.code}
@@ -362,12 +352,12 @@ async function handleContinue() {
                   <div class="flex items-center gap-1.5">
                     {#if doc.is_mandatory}
                       <Badge variant="outline" class="border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px]">
-                        {isArabic ? "إلزامي" : "Required"}
+                        {m.onboarding_step7_required_badge()}
                       </Badge>
                     {/if}
                     {#if doc.blocks_enrollment}
                       <Badge variant="destructive" class="text-[10px]">
-                        {isArabic ? "شرط قبول" : "Blocking"}
+                        {m.onboarding_step7_blocking_badge()}
                       </Badge>
                     {/if}
                   </div>
@@ -386,7 +376,7 @@ async function handleContinue() {
         onclick={() => goto(`/${orgId}/onboarding/assessment`)}
         class="text-xs"
       >
-        {isArabic ? "← الخطوة السابقة (التقييم)" : "← Back to Assessment"}
+        {m.onboarding_step7_back_btn()}
       </Button>
 
       <div class="flex items-center gap-3">
@@ -395,7 +385,7 @@ async function handleContinue() {
           onclick={handleContinue}
           class="text-xs font-semibold shadow-xs"
         >
-          {isArabic ? "متابعة إلى المراجعة النهائية والإكمال →" : "Continue to Review & Launch →"}
+          {m.onboarding_step7_continue_btn()}
         </Button>
       </div>
     </div>

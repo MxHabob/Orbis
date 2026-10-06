@@ -94,16 +94,12 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Build Native Solver Sidecar (.exe / binary)
+        shell: bash
         working-directory: apps/solver-service
         env:
           MAVEN_OPTS: -Xmx6g
         run: |
-          mvn -B package \
-            -DskipTests \
-            -Dquarkus.package.type=native \
-            -Dquarkus.native.container-build=false \
-            -Dquarkus.native.native-image-xmx=4g \
-            -Dquarkus.native.additional-build-args='--no-fallback'
+          mvn -B package -Dnative -DskipTests -Dquarkus.native.container-build=false
 
       - name: Stage Solver Sidecar into Tauri Binaries Directory
         shell: bash
@@ -170,16 +166,12 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Native Solver Sidecar (.exe / binary)
+        shell: bash
         working-directory: apps/solver-service
         env:
           MAVEN_OPTS: -Xmx6g
         run: |
-          mvn -B package \
-            -DskipTests \
-            -Dquarkus.package.type=native \
-            -Dquarkus.native.container-build=false \
-            -Dquarkus.native.native-image-xmx=4g \
-            -Dquarkus.native.additional-build-args='--no-fallback'
+          mvn -B package -Dnative -DskipTests -Dquarkus.native.container-build=false
 
       - name: Stage Solver Sidecar into Tauri Binaries Directory
         shell: bash
