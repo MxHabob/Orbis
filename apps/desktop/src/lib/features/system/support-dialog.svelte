@@ -1,11 +1,11 @@
 <!--
   @component SupportDialog
-  Support & Help Form that automatically collects and attaches authentic system diagnostics,
-  OS build metadata, node telemetry, and allows seamless submission or copying of support payloads.
+  Builds a prefilled support email with user-provided details and reviewable device diagnostics.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { api } from "$lib/api/client";
+import { isDesktopApp } from "$lib/api";
 import type { AppInfo } from "$lib/api/types";
 import {
   Dialog,
@@ -44,10 +44,13 @@ let category = $state("technical_support");
 let email = $state("");
 let message = $state("");
 let isSubmitting = $state(false);
-let isSubmitted = $state(false);
+let isComposeOpened = $state(false);
 let isCopied = $state(false);
-let copyError = $state<string | null>(null);
+let submitError = $state<string | null>(null);
+let composeUrl = $state<string | null>(null);
 let showDiagnosticsPreview = $state(false);
+let isLoadingInfo = $state(false);
+let infoError = $state<string | null>(null);
 
 const categories = [
   { value: "technical_support", label: m.ui_system_support_category_technical },
@@ -66,47 +69,66 @@ const diagnosticPayload = $derived({
   build_profile: info?.build_profile,
   target_os: info?.target_os,
   target_arch: info?.target_arch,
+  platform: typeof navigator !== "undefined" ? navigator.platform : undefined,
   locale: typeof navigator !== "undefined" ? navigator.language : undefined,
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-  timestamp: new Date().toISOString(),
 });
 
+function createSupportReport() {
+  return `${m.ui_system_support_report_title()}
+${m.ui_system_support_category()}: ${selectedCat?.label() ?? category}
+${m.ui_system_support_subject_title()}: ${subject.trim()}
+${m.ui_system_support_contact_email_optional()}: ${email.trim() || "-"}
+
+${m.ui_system_support_description_details()}:
+${message.trim()}
+
+${m.ui_system_support_auto_attached_diagnostic_telemetry()}:
+${JSON.stringify({ ...diagnosticPayload, timestamp: new Date().toISOString() }, null, 2)}`;
+}
+
 async function copyDiagnosticReport() {
-  copyError = null;
-  const fullReport = `=== ${m.ui_system_support_report_title()} ===
-Category: ${category}
-Subject: ${subject}
-Contact Email: ${email}
-Details:
-${message}
-
---- TELEMETRY DUMP ---
-${JSON.stringify(diagnosticPayload, null, 2)}
-===================================================`;
-
+  submitError = null;
   try {
-    await navigator.clipboard.writeText(fullReport);
+    await navigator.clipboard.writeText(createSupportReport());
     isCopied = true;
     setTimeout(() => {
       isCopied = false;
     }, 2500);
-    return true;
   } catch (err) {
     console.error("Failed to copy diagnostic report:", err);
-    copyError = err instanceof Error ? err.message : String(err);
-    return false;
+    submitError = err instanceof Error ? err.message : String(err);
   }
 }
 
 async function handleSubmit(e: Event) {
   e.preventDefault();
-  if (!subject.trim() || !message.trim()) return;
+  if (!info || !subject.trim() || !message.trim()) return;
 
   isSubmitting = true;
-  const copied = await copyDiagnosticReport();
-  isSubmitting = false;
-  isSubmitted = copied;
+  submitError = null;
+  isComposeOpened = false;
+
+  try {
+    const mailto = new URL("mailto:support@mulverse.com");
+    mailto.searchParams.set("subject", `[Orbis] ${subject.trim()}`);
+    mailto.searchParams.set("body", createSupportReport());
+    composeUrl = mailto.toString();
+
+    if (isDesktopApp) {
+      const { openUrl } = await import("@tauri-apps/plugin-opener");
+      await openUrl(composeUrl);
+    } else {
+      window.location.href = composeUrl;
+    }
+    isComposeOpened = true;
+  } catch (error) {
+    console.error("Failed to open the support email composer:", error);
+    submitError = error instanceof Error ? error.message : String(error);
+  } finally {
+    isSubmitting = false;
+  }
 }
 
 function resetForm() {
@@ -114,14 +136,22 @@ function resetForm() {
   category = "technical_support";
   email = "";
   message = "";
-  isSubmitted = false;
+  isComposeOpened = false;
+  composeUrl = null;
+  submitError = null;
 }
 
 $effect(() => {
-  if (open && !info) {
+  if (open && !info && !isLoadingInfo) {
+    isLoadingInfo = true;
+    infoError = null;
     void api.systemGetAppInfo()
       .then((appInfo) => (info = appInfo))
-      .catch((error) => console.error("Failed to load application information for support:", error));
+      .catch((error) => {
+        console.error("Failed to load application information for support:", error);
+        infoError = error instanceof Error ? error.message : String(error);
+      })
+      .finally(() => (isLoadingInfo = false));
   }
 });
 </script>
@@ -143,18 +173,17 @@ $effect(() => {
       </DialogDescription>
     </DialogHeader>
 
-    {#if isSubmitted}
-      <!-- Success Confirmation State -->
+    {#if isComposeOpened}
       <div class="p-8 text-center space-y-4 my-auto">
         <div class="size-12 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20">
           <Check size={24} strokeWidth={2.5} />
         </div>
         <div class="space-y-1.5">
           <h3 class="text-base font-bold text-foreground">
-            {m.ui_system_support_support_request_logged()}
+            {m.ui_system_support_compose_ready()}
           </h3>
           <p class="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-            {m.ui_system_support_success_details()}
+            {m.ui_system_support_compose_instructions()}
           </p>
         </div>
 
@@ -237,6 +266,7 @@ $effect(() => {
             type="text"
             required
             placeholder={m.ui_system_support_e_g_issue_with_double_entry_journal_balance()}
+            maxlength={160}
             bind:value={subject}
             class="h-9 text-xs"
           />
@@ -250,6 +280,7 @@ $effect(() => {
           <Textarea
             id="support-msg"
             rows={4}
+            maxlength={4000}
             required
             placeholder={m.ui_system_support_describe_the_steps_taken_and_what_you_expected_to_happen()}
             bind:value={message}
@@ -281,9 +312,6 @@ $effect(() => {
               {:else}
                 <ChevronDown size={13} />
               {/if}
-              {#if copyError}
-                <p class="border-t border-destructive/20 px-3 py-2 text-xs text-destructive" role="alert">{copyError}</p>
-              {/if}
             </span>
           </button>
 
@@ -292,7 +320,24 @@ $effect(() => {
               <pre>{JSON.stringify(diagnosticPayload, null, 2)}</pre>
             </div>
           {/if}
+          {#if isLoadingInfo}
+            <p class="px-3 pb-3 text-xs text-muted-foreground">{m.ui_system_support_loading_diagnostics()}</p>
+          {:else if infoError}
+            <p class="px-3 pb-3 text-xs text-destructive" role="alert">
+              {m.ui_system_support_diagnostics_unavailable()} {infoError}
+            </p>
+          {/if}
         </div>
+        {#if submitError}
+          <div class="space-y-2 rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-xs text-destructive" role="alert">
+            <p>{m.ui_system_support_compose_failed()} {submitError}</p>
+            {#if composeUrl}
+              <a href={composeUrl} target="_blank" rel="noreferrer" class="font-medium underline underline-offset-4">
+                {m.ui_system_support_open_email_composer()}
+              </a>
+            {/if}
+          </div>
+        {/if}
       </form>
 
       <!-- Footer Action Bar -->
@@ -329,7 +374,7 @@ $effect(() => {
             type="button"
             variant="default"
             size="sm"
-            disabled={isSubmitting || !subject.trim() || !message.trim()}
+            disabled={isSubmitting || isLoadingInfo || !info || !subject.trim() || !message.trim()}
             onclick={handleSubmit}
             class="h-8 px-4 text-xs font-medium gap-1.5"
           >
