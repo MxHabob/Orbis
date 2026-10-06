@@ -103,7 +103,7 @@ jobs:
             -Dquarkus.package.type=native \
             -Dquarkus.native.container-build=false \
             -Dquarkus.native.native-image-xmx=4g \
-            -Dquarkus.native.additional-build-args=--no-fallback
+            -Dquarkus.native.additional-build-args='--no-fallback'
 
       - name: Stage Solver Sidecar into Tauri Binaries Directory
         shell: bash
@@ -179,7 +179,7 @@ jobs:
             -Dquarkus.package.type=native \
             -Dquarkus.native.container-build=false \
             -Dquarkus.native.native-image-xmx=4g \
-            -Dquarkus.native.additional-build-args=--no-fallback
+            -Dquarkus.native.additional-build-args='--no-fallback'
 
       - name: Stage Solver Sidecar into Tauri Binaries Directory
         shell: bash
