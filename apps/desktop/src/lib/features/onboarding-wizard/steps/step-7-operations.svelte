@@ -208,7 +208,7 @@ async function handleContinue() {
             </Label>
             <Input
               bind:value={studentNumberPattern}
-              placeholder="{YEAR}-{SEQ:5}"
+              placeholder={'\{YEAR\}-\{SEQ:5\}'}
               dir="ltr"
               class="font-mono text-xs"
             />
