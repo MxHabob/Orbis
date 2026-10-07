@@ -42,11 +42,10 @@ export function GlobeAltSolid({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Path
 		fillRule="evenodd"
 		stroke="none"

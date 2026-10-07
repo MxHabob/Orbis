@@ -148,6 +148,14 @@ impl ReportDefinitionRepository for ReportDefinitionRepoImpl {
             .map_err(db_err)?;
         Ok(())
     }
+
+    async fn provision_catalog(&self, org_id: Uuid) -> Result<u32, DomainError> {
+        let now = chrono::Utc::now().to_rfc3339();
+        let catalog = super::report_catalog::get_master_report_catalog();
+        let count = catalog.len() as u32;
+        super::report_catalog::provision_master_report_definitions(&self.db, org_id, &now).await?;
+        Ok(count)
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -454,6 +462,19 @@ impl ReportTemplateRepository for ReportTemplateRepoImpl {
                 created_at: m.created_at.into(),
             })
             .collect())
+    }
+
+    async fn provision_system_templates(
+        &self,
+        org_id: Uuid,
+        admin_id: Uuid,
+    ) -> Result<u32, DomainError> {
+        let now = chrono::Utc::now().to_rfc3339();
+        let templates = super::template_catalog::get_master_template_definitions();
+        let count = templates.len() as u32;
+        super::template_catalog::provision_master_templates(&self.db, org_id, admin_id, &now)
+            .await?;
+        Ok(count)
     }
 }
 

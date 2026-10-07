@@ -20,10 +20,9 @@ export const Moon: React.FC<IconProps> = ({
 		fill="none"
 		stroke={color}
 		strokeWidth={strokeWidth}
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		{...props}
-	>
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}>
 		<Path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
 	</Svg>
 );

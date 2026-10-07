@@ -42,11 +42,10 @@ export function FaceId({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Path d="M7 3H5C3.89543 3 3 3.89543 3 5V7" strokeLinecap="round" strokeLinejoin="round"
 	></Path><Path
 		d="M17 3H19C20.1046 3 21 3.89543 21 5V7"

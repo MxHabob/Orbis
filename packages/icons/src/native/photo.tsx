@@ -42,11 +42,10 @@ export function Photo({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Path
 		d="M21 7.6V20.4C21 20.7314 20.7314 21 20.4 21H7.6C7.26863 21 7 20.7314 7 20.4V7.6C7 7.26863 7.26863 7 7.6 7H20.4C20.7314 7 21 7.26863 21 7.6Z"
 		strokeLinecap="round"

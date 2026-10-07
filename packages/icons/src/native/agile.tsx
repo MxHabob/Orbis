@@ -42,11 +42,10 @@ export function Agile({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Path
 		d="M17.5 19H22M22 19L19.5 16.5M22 19L19.5 21.5"
 		strokeLinecap="round"

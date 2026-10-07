@@ -42,11 +42,10 @@ export function Refresh({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Path
 		d="M21.8883 13.5C21.1645 18.3113 17.013 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C16.1006 2 19.6248 4.46819 21.1679 8"
 		strokeLinecap="round"

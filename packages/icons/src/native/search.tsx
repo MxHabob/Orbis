@@ -42,11 +42,10 @@ export function Search({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Circle cx="10.75" cy="10.75" r="6.75" />
       <Path strokeLinecap="round" strokeLinejoin="round" d="m15.5 15.5 4.25 4.25" />
     </Svg>

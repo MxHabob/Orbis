@@ -29,7 +29,12 @@ pub trait ReportDefinitionRepository: Send + Sync {
     ) -> Result<Vec<ReportDefinition>, DomainError>;
     async fn save(&self, definition: &ReportDefinition) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
+
+    /// Idempotently provision the master report catalog for a new organization.
+    /// Implementations should insert all system report definitions where they don't already exist.
+    async fn provision_catalog(&self, org_id: Uuid) -> Result<u32, DomainError>;
 }
+
 
 #[async_trait]
 pub trait ReportTemplateRepository: Send + Sync {
@@ -74,6 +79,14 @@ pub trait ReportTemplateRepository: Send + Sync {
         &self,
         definition_id: Uuid,
     ) -> Result<Vec<ReportTemplateBinding>, DomainError>;
+
+    /// Idempotently provision master visual document templates for a new organization.
+    /// Implementations should insert all system templates where they don't already exist.
+    async fn provision_system_templates(
+        &self,
+        org_id: Uuid,
+        admin_id: Uuid,
+    ) -> Result<u32, DomainError>;
 }
 
 #[async_trait]

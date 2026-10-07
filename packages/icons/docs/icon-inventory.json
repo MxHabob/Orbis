@@ -677,7 +677,43 @@
       "renderedIconSizes": {
         "renderedIcons": 1187,
         "explicitSize": 889,
-        "unspecifiedSize": 298
+        "unspecifiedSize": 298,
+        "explicitSizeValues": {
+          "9": 3,
+          "10": 60,
+          "11": 49,
+          "12": 171,
+          "13": 193,
+          "14": 225,
+          "15": 40,
+          "16": 39,
+          "18": 32,
+          "20": 19,
+          "22": 2,
+          "24": 26,
+          "28": 8,
+          "32": 7,
+          "36": 1,
+          "40": 2,
+          "48": 5,
+          "compact ? 11 : 13": 1,
+          "compact ? 13 : 15": 1,
+          "Math.max(16, size / 3.5)": 1,
+          "Math.max(16, size / 2)": 1,
+          "Math.max(16, size / 3)": 3
+        },
+        "classSizeValues": {
+          "3": 21,
+          "4": 95,
+          "5": 20,
+          "6": 8,
+          "8": 9,
+          "10": 10,
+          "12": 3,
+          "4.5": 5,
+          "3.5": 119,
+          "2.5": 4
+        }
       }
     },
     "mobile": {
@@ -812,7 +848,19 @@
       "renderedIconSizes": {
         "renderedIcons": 27,
         "explicitSize": 27,
-        "unspecifiedSize": 0
+        "unspecifiedSize": 0,
+        "explicitSizeValues": {
+          "12": 2,
+          "16": 1,
+          "18": 9,
+          "20": 5,
+          "21": 6,
+          "22": 1,
+          "36": 1,
+          "40": 1,
+          "44": 1
+        },
+        "classSizeValues": {}
       }
     }
   },
@@ -4550,7 +4598,8 @@
         "defaultLineJoin": "round",
         "defaultStrokeWidth": "1.75",
         "primitives": {
-          "path": 3
+          "circle": 1,
+          "path": 1
         }
       },
       "native": {
@@ -4561,7 +4610,8 @@
         "defaultLineJoin": "round",
         "defaultStrokeWidth": "1.75",
         "primitives": {
-          "path": 3
+          "circle": 1,
+          "path": 1
         }
       }
     },

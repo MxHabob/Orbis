@@ -417,6 +417,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         finance_repo.clone(),
         scheduling_repo.clone(),
         doc_req_repo.clone(),
+        report_definition_repo.clone(),
         report_template_repo.clone(),
         integration_repo.clone(),
         permission_checker.clone(),

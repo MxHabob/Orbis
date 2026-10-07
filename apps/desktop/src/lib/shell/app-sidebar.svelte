@@ -136,7 +136,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 									prefetchRouteData(segment, orgId);
 								}}
 							>
-								<item.icon size={20} strokeWidth={1.8} />
+								<item.icon size={24} />
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="right" sideOffset={12}>{item.label}</TooltipContent>
@@ -153,7 +153,6 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 				<AutomationStatusPopover {orgId} />
         <MoreActionsDropdown orgName={orgNameDisplay} />
 			</div>
-
 			<UserSidebarMenu {orgId} />
 		</div>
 	</div>

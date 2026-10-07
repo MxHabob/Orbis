@@ -1,5 +1,5 @@
 //! Complete Enterprise Report Catalog for Orbis ERP
-//! Contains 200+ production-grade educational report definitions
+//! Contains ~75 production-grade educational report definitions
 //! covering all academic, financial, administrative, examination, and HR domains.
 
 use orbis_domain::errors::DomainError;
@@ -706,7 +706,7 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             category: "staff",
             description: "Comprehensive employee roster, job titles, qualifications, and departments",
             description_ar: "دليل الكادر الوظيفي متضمناً المسميات الوظيفية والمؤهلات والأقسام",
-            provider_key: "students.student_list",
+            provider_key: "hr.faculty_list",
         },
         ReportDefEntry {
             code: "rep.hr.teaching-load",
@@ -726,7 +726,7 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             category: "payroll",
             description: "Monthly salary payroll register, basic pay, allowances, and deductions",
             description_ar: "مسير الرواتب والبدلات والاستقطاعات وصافي المستحقات الشهرية للموظفين",
-            provider_key: "finance.fee_collection",
+            provider_key: "hr.payroll",
         },
         ReportDefEntry {
             code: "rep.hr.contracts-expiration",
@@ -736,7 +736,7 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             category: "contracts",
             description: "Upcoming contract renewals, probation expirations, and work permit dates",
             description_ar: "كشف بمواعيد انتهاء عقود العمل والإقامات وفترات التجربة للمتابعة",
-            provider_key: "students.student_list",
+            provider_key: "hr.contracts",
         },
         ReportDefEntry {
             code: "rep.hr.leaves-balance-ledger",
@@ -746,7 +746,7 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             category: "leaves",
             description: "Cumulative leave balances, taken days, and remaining entitlement",
             description_ar: "بيان بأرصدة الإجازات السنوية والمستهلك والمتبقي لكل موظف",
-            provider_key: "students.student_list",
+            provider_key: "hr.leave_balance",
         },
         ReportDefEntry {
             code: "rep.hr.teacher-substitutions-log",
@@ -769,7 +769,7 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             category: "facilities",
             description: "Inventory of buildings, floors, classrooms, and laboratory equipment",
             description_ar: "بيان شامل بالمباني والمختبرات والمرافق التدريسية ومساحاتها وسعاتها",
-            provider_key: "students.student_list",
+            provider_key: "admin.facilities",
         },
         ReportDefEntry {
             code: "rep.admin.audit-trail-log",
@@ -779,7 +779,7 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             category: "security",
             description: "Audit trail of critical user actions, permission checks, and data changes",
             description_ar: "سجل العمليات الحساسة وتعديلات البيانات وحركات الدخول للنظام",
-            provider_key: "students.student_list",
+            provider_key: "system.audit_trail",
         },
         ReportDefEntry {
             code: "rep.admin.user-permission-matrix",
@@ -789,7 +789,7 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             category: "security",
             description: "Effective permissions and role assignments across all system operators",
             description_ar: "بيان الصلاحيات الممنوحة للمستخدمين والأدوار الوظيفية المسندة إليهم",
-            provider_key: "students.student_list",
+            provider_key: "system.permissions",
         },
         ReportDefEntry {
             code: "rep.admin.autopilot-execution-log",
@@ -799,7 +799,7 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             category: "autopilot",
             description: "Log of automated tasks, background schedules, and risk detections",
             description_ar: "سجل المهام التلقائية والفحوصات الدورية المنفذة عبر محرك الأتمتة",
-            provider_key: "students.student_list",
+            provider_key: "system.autopilot_log",
         },
     ]
 }

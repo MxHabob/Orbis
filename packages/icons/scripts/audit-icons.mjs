@@ -90,6 +90,149 @@ function getNativeMetadata(file) {
 	};
 }
 
+function validateManifest(manifest, icons, aliases) {
+	const manifestErrors = [];
+	const entries = new Map();
+	const families = new Set([
+		'actions',
+		'brand',
+		'communication',
+		'data',
+		'education',
+		'media',
+		'navigation',
+		'people',
+		'security',
+		'status',
+		'utility',
+	]);
+	const kinds = new Set(['canonical', 'intentional-variant', 'brand-asset', 'compatibility-alias']);
+
+	for (const entry of manifest.icons ?? []) {
+		if (entries.has(entry.name)) manifestErrors.push(`Duplicate manifest entry for ${entry.name}`);
+		entries.set(entry.name, entry);
+	}
+
+	for (const icon of icons) {
+		const entry = entries.get(icon.name);
+		if (!entry) {
+			manifestErrors.push(`Missing manifest entry for ${icon.name}`);
+			continue;
+		}
+		if (entry.files?.svelte !== icon.files.svelte || entry.files?.native !== icon.files.native) {
+			manifestErrors.push(`Manifest source mismatch for ${icon.name}`);
+		}
+		if (!families.has(entry.family)) manifestErrors.push(`Invalid manifest family for ${icon.name}`);
+		if (!kinds.has(entry.kind)) manifestErrors.push(`Invalid manifest kind for ${icon.name}`);
+	}
+
+	for (const name of entries.keys()) {
+		if (!icons.some((icon) => icon.name === name)) manifestErrors.push(`Unknown manifest icon ${name}`);
+	}
+
+	const manifestAliases = new Map((manifest.nativeAliases ?? []).map((alias) => [alias.name, alias]));
+	for (const alias of aliases) {
+		const entry = manifestAliases.get(alias.name);
+		if (!entry || entry.file !== alias.file || entry.kind !== 'compatibility-alias') {
+			manifestErrors.push(`Missing or invalid manifest alias ${alias.name}`);
+		}
+	}
+	for (const name of manifestAliases.keys()) {
+		if (!aliases.some((alias) => alias.name === name)) manifestErrors.push(`Unknown manifest alias ${name}`);
+	}
+
+	return manifestErrors;
+}
+
+function validateExports(svelteExports, nativeExports, svelteFiles, nativeFiles) {
+	const exportErrors = [];
+	const allNames = new Set([...svelteExports.keys(), ...nativeExports.keys()]);
+
+	for (const name of allNames) {
+		const svelteFile = svelteExports.get(name);
+		const nativeFile = nativeExports.get(name);
+		if (!svelteFile) exportErrors.push(`Missing Svelte export for ${name}`);
+		if (!nativeFile) exportErrors.push(`Missing native export for ${name}`);
+		if (svelteFile && !svelteFiles.has(svelteFile)) {
+			exportErrors.push(`Missing Svelte source for ${name}: ${svelteFile}`);
+		}
+		if (nativeFile && !nativeFiles.has(nativeFile)) {
+			exportErrors.push(`Missing native source for ${name}: ${nativeFile}`);
+		}
+	}
+	return exportErrors;
+}
+
+function validateAliases(aliases, nativeExports, nativeFiles) {
+	const aliasErrors = [];
+	for (const alias of aliases) {
+		if (!nativeFiles.has(alias.file)) aliasErrors.push(`Missing native source for alias ${alias.name}: ${alias.file}`);
+		if (![...nativeExports.values()].includes(alias.file)) {
+			aliasErrors.push(`Native alias ${alias.name} has no canonical export for ${alias.file}`);
+		}
+	}
+	return aliasErrors;
+}
+
+function validateFixtures() {
+	const validFixture = {
+		icons: [
+			{
+				name: 'FixtureIcon',
+				files: { svelte: 'fixture-icon', native: 'fixture-icon' },
+				family: 'actions',
+				kind: 'canonical',
+			},
+		],
+		nativeAliases: [{ name: 'FixtureIconAlias', file: 'fixture-icon', kind: 'compatibility-alias' }],
+	};
+	const validErrors = validateManifest(
+		validFixture,
+		[validFixture.icons[0]],
+		[{ name: 'FixtureIconAlias', file: 'fixture-icon' }],
+	);
+	if (validErrors.length) throw new Error(`Valid manifest fixture failed: ${validErrors.join('; ')}`);
+
+	const pairedExports = validateExports(
+		new Map([['FixtureIcon', 'fixture-icon']]),
+		new Map([['FixtureIcon', 'fixture-icon']]),
+		new Set(['fixture-icon']),
+		new Set(['fixture-icon']),
+	);
+	if (pairedExports.length) throw new Error(`Valid export fixture failed: ${pairedExports.join('; ')}`);
+
+	const missingExportErrors = validateExports(
+		new Map([['FixtureIcon', 'fixture-icon']]),
+		new Map(),
+		new Set(['fixture-icon']),
+		new Set(),
+	);
+	if (!missingExportErrors.some((error) => error.includes('Missing native export'))) {
+		throw new Error('Missing-pair fixture was not rejected');
+	}
+
+	const missingEntryErrors = validateManifest({ icons: [], nativeAliases: [] }, [validFixture.icons[0]], []);
+	if (!missingEntryErrors.some((error) => error.includes('Missing manifest entry'))) {
+		throw new Error('Missing-export fixture was not rejected');
+	}
+
+	const brokenAliasErrors = validateManifest(
+		{ ...validFixture, nativeAliases: [{ name: 'FixtureIconAlias', file: 'missing-icon', kind: 'compatibility-alias' }] },
+		[validFixture.icons[0]],
+		[{ name: 'FixtureIconAlias', file: 'fixture-icon' }],
+	);
+	if (!brokenAliasErrors.some((error) => error.includes('Missing or invalid manifest alias'))) {
+		throw new Error('Broken-alias fixture was not rejected');
+	}
+
+	const invalidAliasErrors = validateAliases(
+		[{ name: 'FixtureIconAlias', file: 'missing-icon' }],
+		new Map([['FixtureIcon', 'fixture-icon']]),
+		new Set(['fixture-icon']),
+	);
+	if (invalidAliasErrors.length !== 2) throw new Error('Broken native alias fixture was not rejected');
+}
+
 function walkSourceFiles(directory) {
 	return listFiles(directory).filter((file) => /\.(svelte|tsx?|jsx?)$/i.test(file));
 }
@@ -120,7 +263,7 @@ function classifyIcon(name) {
 function readImportUsage(app, importPattern, exports) {
 	const directory = path.join(workspaceRoot, `apps/${app}/src`);
 	const counts = new Map();
-	const sizes = { renderedIcons: 0, explicitSize: 0, unspecifiedSize: 0 };
+	const sizes = { renderedIcons: 0, explicitSize: 0, unspecifiedSize: 0, explicitSizeValues: {}, classSizeValues: {} };
 	const importingFiles = new Map();
 
 	for (const filePath of walkSourceFiles(directory)) {
@@ -140,8 +283,18 @@ function readImportUsage(app, importPattern, exports) {
 				const instances = [...source.matchAll(new RegExp(`<${localName}\\b([^>]*)>`, 'g'))];
 				for (const [, attributes] of instances) {
 					sizes.renderedIcons += 1;
-					if (/\bsize\s*=/.test(attributes)) sizes.explicitSize += 1;
-					else sizes.unspecifiedSize += 1;
+					const sizeValue = attributes.match(/\bsize\s*=\s*(?:\{([^}]+)\}|['"]([^'"]+)['"])/);
+					if (sizeValue) {
+						sizes.explicitSize += 1;
+						const value = (sizeValue[1] ?? sizeValue[2]).trim();
+						sizes.explicitSizeValues[value] = (sizes.explicitSizeValues[value] ?? 0) + 1;
+					} else {
+						sizes.unspecifiedSize += 1;
+					}
+					const classValue = attributes.match(/\bclass\s*=\s*['"]([^'"]+)['"]/);
+					for (const [, value] of classValue?.[1].matchAll(/(?:^|\s)(?:size|w|h)-(\d+(?:\.\d+)?)(?:\s|$)/g) ?? []) {
+						sizes.classSizeValues[value] = (sizes.classSizeValues[value] ?? 0) + 1;
+					}
 				}
 			}
 		}
@@ -157,6 +310,11 @@ function readImportUsage(app, importPattern, exports) {
 
 const { exports: svelteExports } = parseExports(svelteIndex, 'svelte');
 const { exports: nativeExports, aliases: nativeAliases } = parseExports(nativeIndex, 'native');
+if (process.argv.includes('--self-test')) {
+	validateFixtures();
+	console.log('Icon audit fixtures passed');
+	process.exit(0);
+}
 const svelteFiles = new Set(
 	listFiles(svelteRoot)
 		.filter((file) => file.endsWith('.svelte'))
@@ -168,23 +326,8 @@ const nativeFiles = new Set(
 		.map((file) => path.basename(file, '.tsx')),
 );
 const allNames = new Set([...svelteExports.keys(), ...nativeExports.keys()]);
-
-for (const name of allNames) {
-	const svelteFile = svelteExports.get(name);
-	const nativeFile = nativeExports.get(name);
-
-	if (!svelteFile) errors.push(`Missing Svelte export for ${name}`);
-	if (!nativeFile) errors.push(`Missing native export for ${name}`);
-	if (svelteFile && !svelteFiles.has(svelteFile)) errors.push(`Missing Svelte source for ${name}: ${svelteFile}`);
-	if (nativeFile && !nativeFiles.has(nativeFile)) errors.push(`Missing native source for ${name}: ${nativeFile}`);
-}
-
-for (const alias of nativeAliases) {
-	if (!nativeFiles.has(alias.file)) errors.push(`Missing native source for alias ${alias.name}: ${alias.file}`);
-	if (![...nativeExports.values()].includes(alias.file)) {
-		errors.push(`Native alias ${alias.name} has no canonical export for ${alias.file}`);
-	}
-}
+errors.push(...validateExports(svelteExports, nativeExports, svelteFiles, nativeFiles));
+errors.push(...validateAliases(nativeAliases, nativeExports, nativeFiles));
 
 const icons = [...allNames]
 	.sort()
@@ -259,13 +402,6 @@ const report = {
 	errors,
 };
 
-const outputFlag = process.argv.indexOf('--output');
-if (outputFlag >= 0) {
-	const outputPath = path.resolve(process.cwd(), process.argv[outputFlag + 1]);
-	fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-	fs.writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`);
-}
-
 const manifestFlag = process.argv.indexOf('--manifest-output');
 if (manifestFlag >= 0) {
 	const manifestPath = path.resolve(process.cwd(), process.argv[manifestFlag + 1]);
@@ -295,6 +431,19 @@ if (manifestFlag >= 0) {
 			2,
 		)}\n`,
 	);
+}
+
+const manifestPath = path.join(packageRoot, 'docs/icon-manifest.json');
+if (fs.existsSync(manifestPath)) {
+	const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+	errors.push(...validateManifest(manifest, icons, nativeAliases));
+}
+
+const outputFlag = process.argv.indexOf('--output');
+if (outputFlag >= 0) {
+	const outputPath = path.resolve(process.cwd(), process.argv[outputFlag + 1]);
+	fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+	fs.writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`);
 }
 
 console.log(

@@ -42,11 +42,10 @@ export function AlignHorizontal({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Path d="M3 22L3 2" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M21 22V2"
 		strokeLinecap="round"

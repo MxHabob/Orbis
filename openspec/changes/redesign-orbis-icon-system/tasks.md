@@ -17,7 +17,7 @@
 ## 3. Catalog and Regression Tooling
 
 - [x] 3.1 Add a maintained icon manifest classifying every symbol as canonical, intentional variant, brand asset, or compatibility alias with its semantic family; verify manifest entries reconcile exactly with public exports.
-- [ ] 3.2 Add a Svelte icon gallery showing every icon's public name, family, variant, and 16/20/24 previews in light and dark themes; verify all manifest entries render without runtime or console errors.
+- [x] 3.2 Add a Svelte icon gallery showing every icon's public name, family, variant, and 16/20/24 previews in light and dark themes; verify all manifest entries render without runtime or console errors.
 - [ ] 3.3 Add a native review surface or reproducible Expo screenshot procedure for the same manifest and sizes; verify the pilot's Svelte/native gallery entries can be compared side by side.
 - [ ] 3.4 Add automated package checks for paired platform coverage, manifest/export drift, alias targets, standard component defaults, and invalid icon source; verify the checks fail on deliberate missing-pair, missing-export, and broken-alias fixtures.
 - [ ] 3.5 Document how to add, classify, review, and test an icon, including familiar metaphor selection, RTL direction classification, when a solid variant or compatibility alias is allowed, and how to validate in-context recognition; verify a maintainer can follow the guide to add a test icon without undocumented steps.

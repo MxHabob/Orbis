@@ -8,6 +8,10 @@
 - Use `16`, `20`, and `24` as review sizes. The component default is `16` in
   both Svelte and React Native; a control may request a larger size when its
   hierarchy calls for it.
+- Keep glyph size separate from the interactive target: use `12–14` only for
+  dense inline metadata when it remains legible, `16` for standard controls,
+  `18–20` for primary navigation or toolbars, and `24` for prominent states.
+  Do not enlarge a glyph to compensate for an undersized hit target.
 - Use a nominal `1.75` stroke at 24 units. Adjustments are allowed only when
   needed for a dense form or a deliberate filled/brand shape.
 - Use rounded caps and joins as the default for open strokes. Individual paths
@@ -37,6 +41,9 @@
   diagonally opposed panels are taller, with four separated rounded corners.
 - Make glyph geometry genuinely Orbis-specific. Use external references for
   general qualities such as clarity, never as artwork to trace or copy.
+- Common actions use distinct, concise silhouettes: `ArrowPath` is a paired
+  refresh cycle, `Trash` has a clear lid/body/separator hierarchy, and
+  `XMark` uses two rounded strokes rather than a filled block.
 - Use consumer-selected color (`currentColor` on web) rather than embedding
   interface colors. The Orbis logo and other brand assets are exceptions to
   interface-grid and stroke rules.

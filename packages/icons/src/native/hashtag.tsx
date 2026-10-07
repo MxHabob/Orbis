@@ -42,11 +42,10 @@ export function Hashtag({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Path d="M10 3L6 21" strokeLinecap="round"></Path><Path d="M20.5 16H2.5" strokeLinecap="round"
 	></Path><Path d="M22 7H4" strokeLinecap="round"></Path><Path
 		d="M18 3L14 21"

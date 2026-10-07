@@ -27,11 +27,10 @@
 	width={size}
 	height={size}
 	class={cn(className || 'size-4', klass)}
-	aria-hidden="true"
-	{...restProps}
-
 	stroke-linecap="round"
-	stroke-linejoin="round">
+	stroke-linejoin="round"
+	aria-hidden="true"
+	{...restProps}>
 	<rect x="3" y="7" width="14" height="14" rx="2" stroke-linecap="round" stroke-linejoin="round"></rect>
 	<path d="M7 4h12a2 2 0 0 1 2 2v12" stroke-linecap="round" stroke-linejoin="round"></path>
 </svg>

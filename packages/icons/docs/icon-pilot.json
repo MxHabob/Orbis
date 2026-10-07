@@ -97,6 +97,34 @@
       "kind": "canonical",
       "svelte": "src/svelte/grid.svelte",
       "native": "src/native/grid.tsx"
+    },
+    {
+      "name": "ArrowPath",
+      "family": "navigation",
+      "kind": "canonical",
+      "svelte": "src/svelte/arrow-path.svelte",
+      "native": "src/native/arrow-path.tsx"
+    },
+    {
+      "name": "Trash",
+      "family": "actions",
+      "kind": "canonical",
+      "svelte": "src/svelte/trash.svelte",
+      "native": "src/native/trash.tsx"
+    },
+    {
+      "name": "InfoCircle",
+      "family": "status",
+      "kind": "canonical",
+      "svelte": "src/svelte/info-circle.svelte",
+      "native": "src/native/info-circle.tsx"
+    },
+    {
+      "name": "XMark",
+      "family": "utility",
+      "kind": "canonical",
+      "svelte": "src/svelte/x-mark.svelte",
+      "native": "src/native/x-mark.tsx"
     }
   ]
 }

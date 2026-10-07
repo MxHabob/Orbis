@@ -20,10 +20,9 @@ export const Maximize: React.FC<IconProps> = ({
 		fill="none"
 		stroke={color}
 		strokeWidth={strokeWidth}
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		{...props}
-	>
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}>
 		<Rect x="4" y="4" width="16" height="16" rx="2" />
 	</Svg>
 );

@@ -42,11 +42,10 @@ export function AlignVertical({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Path d="M22 3L2 3" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M22 21L2 21"
 		strokeLinecap="round"

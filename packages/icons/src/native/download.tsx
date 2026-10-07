@@ -42,11 +42,10 @@ export function Download({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Path d="M6 20L18 20" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M12 4V16M12 16L15.5 12.5M12 16L8.5 12.5"
 		strokeLinecap="round"

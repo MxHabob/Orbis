@@ -42,11 +42,10 @@ export function Computer({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Path d="M2 21L17 21" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M21 21L22 21"
 		strokeLinecap="round"

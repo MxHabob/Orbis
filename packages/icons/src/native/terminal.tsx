@@ -42,11 +42,10 @@ export function Terminal({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Path d="M13 16H18" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M6 8L10 12L6 16"
 		strokeLinecap="round"

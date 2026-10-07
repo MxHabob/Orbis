@@ -27,11 +27,10 @@
 	width={size}
 	height={size}
 	class={cn(className || 'size-4', klass)}
-	aria-hidden="true"
-	{...restProps}
-
 	stroke-linecap="round"
-	stroke-linejoin="round">
+	stroke-linejoin="round"
+	aria-hidden="true"
+	{...restProps}>
 	<!-- Tag body with pointed end -->
 	<path d="M4 12 L8 7 H21 V17 H8 L4 12 Z" stroke="currentColor" fill="none" />
 

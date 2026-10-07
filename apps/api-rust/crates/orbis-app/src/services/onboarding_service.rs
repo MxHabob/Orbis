@@ -40,7 +40,7 @@ use orbis_domain::queries::filters::{ClassFilter, ClassSubjectFilter, SubjectFil
 
 use crate::context::RequestContext;
 use crate::ports::iam::PermissionCheckerPort;
-use crate::ports::reporting::ReportTemplateRepository;
+use crate::ports::reporting::{ReportDefinitionRepository, ReportTemplateRepository};
 use crate::ports::repositories::{
     AcademicPeriodRepository, AcademicYearRepository, AccountRepository,
     AssessmentSchemeRepository, ClassRepository, ClassSubjectRepository,
@@ -196,6 +196,7 @@ pub struct OnboardingService {
     pub discount_template_repo: Arc<dyn DiscountTemplateRepository>,
     pub room_repo: Arc<dyn RoomRepository>,
     pub doc_req_repo: Arc<dyn DocumentRequirementRepository>,
+    pub definition_repo: Arc<dyn ReportDefinitionRepository>,
     pub template_repo: Arc<dyn ReportTemplateRepository>,
     pub integration_repo: Arc<dyn IntegrationRepository>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
@@ -217,6 +218,7 @@ impl OnboardingService {
         discount_template_repo: Arc<dyn DiscountTemplateRepository>,
         room_repo: Arc<dyn RoomRepository>,
         doc_req_repo: Arc<dyn DocumentRequirementRepository>,
+        definition_repo: Arc<dyn ReportDefinitionRepository>,
         template_repo: Arc<dyn ReportTemplateRepository>,
         integration_repo: Arc<dyn IntegrationRepository>,
         permission_checker: Arc<dyn PermissionCheckerPort>,
@@ -236,6 +238,7 @@ impl OnboardingService {
             discount_template_repo,
             room_repo,
             doc_req_repo,
+            definition_repo,
             template_repo,
             integration_repo,
             permission_checker,
@@ -1668,6 +1671,27 @@ impl OnboardingService {
             };
             self.discount_template_repo.save(&merit_disc).await?;
             created_items.push("Standard Discount Templates (Sibling, Merit)".to_string());
+        }
+
+        // 8. Provision Master Report Definitions if empty
+        let existing_reports = self.definition_repo.list_by_org(org_id, None, None).await?;
+        if existing_reports.is_empty() {
+            let count = self.definition_repo.provision_catalog(org_id).await?;
+            created_items.push(format!("Report Definitions ({} reports)", count));
+        }
+
+        // 9. Provision Master Report Templates if empty
+        let existing_templates = self
+            .template_repo
+            .list_by_org(org_id, None, None, None)
+            .await?;
+        if existing_templates.is_empty() {
+            let admin_id = ctx.user_id;
+            let count = self
+                .template_repo
+                .provision_system_templates(org_id, admin_id)
+                .await?;
+            created_items.push(format!("Document Templates ({} templates)", count));
         }
 
         let updated_state = self.get_state(org_id).await?;

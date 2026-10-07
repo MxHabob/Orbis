@@ -42,11 +42,10 @@ export function Mic({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Rect x="9" y="2" width="6" height="12" rx="3" />
 	<Path
 		strokeLinecap="round"

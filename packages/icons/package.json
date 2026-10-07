@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "audit": "node scripts/audit-icons.mjs --output docs/icon-inventory.json --manifest-output docs/icon-manifest.json",
-    "gallery": "node scripts/build-gallery.mjs"
+    "gallery": "node scripts/build-gallery.mjs",
+    "test": "node scripts/audit-icons.mjs --self-test"
   },
   "svelte": "./src/svelte/index.ts",
   "main": "./src/index.ts",

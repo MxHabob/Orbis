@@ -42,11 +42,10 @@ export function CheckCircle({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Circle cx={12} cy={12} r={9} />
       <Path strokeLinecap="round" strokeLinejoin="round" d="m7.75 12.25 2.9 2.9 5.75-6.25" />
     </Svg>

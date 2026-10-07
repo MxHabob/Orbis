@@ -42,11 +42,10 @@ export function Grid({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Rect x={3.5} y={3.5} width={7} height={8.5} rx={1.25} />
       <Rect x={13.5} y={3.5} width={7} height={5.5} rx={1.25} />
       <Rect x={3.5} y={15} width={7} height={5.5} rx={1.25} />

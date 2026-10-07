@@ -40,6 +40,14 @@ React-Native-SVG props and `style`, with `size`, `color`, and `strokeWidth`;
 the old default was 20pt (with a small set of 24pt exceptions). Both platforms
 default to `currentColor` and decorative accessibility behavior.
 
+Use size by visual hierarchy rather than applying one size globally: 12–14px
+is reserved for dense inline metadata, 16px is the standard control glyph,
+18–20px is for prominent navigation/toolbars, and 24px is for prominent
+states. The desktop inventory has 1,187 rendered icon instances: 889 specify a
+size and 298 rely on the component default. Its many 12–14px instances must be
+reviewed in context; they should not be bulk-enlarged without checking row
+height, alignment, and legibility.
+
 ## Baseline checks
 
 Before the drawing/default changes, the inventory found 206 exports and source
@@ -51,6 +59,7 @@ bun packages/icons/scripts/audit-icons.mjs --output packages/icons/docs/icon-inv
 bun packages/icons/scripts/audit-icons.mjs --output packages/icons/docs/icon-inventory.json --manifest-output packages/icons/docs/icon-manifest.json
 bun run --cwd packages/icons audit
 bun run --cwd packages/icons gallery
+bun run --cwd packages/icons test
 bunx tsc --noEmit -p packages/icons/tsconfig.json
 bun run --cwd apps/mobile typecheck
 bun run --cwd apps/desktop build
@@ -63,9 +72,15 @@ either visual or bundle-size comparison.
 The generated [icon gallery](./icon-gallery.html) renders all 206 exported
 symbols at 16, 20, and 24px on light and dark surfaces. Rebuild it with
 `bun run --cwd packages/icons gallery`; use the family filter and name search to
-review related concepts together. For React Native, compare the same names in
-the existing Expo app and its rendered consumer controls; the static gallery
-does not claim to replace a native-device rendering review.
+review related concepts together. The catalog was checked in-browser at 206
+cards (six previews per symbol) and family filtering was verified. For React
+Native, compare the same names in the existing Expo app and its rendered
+consumer controls; the static gallery does not claim to replace a native-device
+rendering review.
+
+The inherited cap/join defaults now use rounded joins on all 203 non-brand icon
+components per platform. Individual paths may override these defaults where
+their depicted form requires a different finish.
 
 ## Design and review
 
@@ -85,5 +100,9 @@ in-context visual review is still pending.
 The current focused redesign also updates `GlobeAltSolid`,
 `DocumentArrowUpSolid`, and `Grid` in both implementations. The two `Solid`
 icons preserve filled semantics with negative-space details; `Grid` uses four
-independent rounded cells. All three retain the 16px default and 1.75 nominal
-stroke contract.
+rounded cells, with diagonally opposed taller panels matching the dashboard
+reference. All three retain the 16px default and 1.75 nominal stroke contract.
+
+The next common-action batch redraws `ArrowPath`, `Trash`, `InfoCircle`, and
+`XMark` in both implementations. Their consumer size overrides remain intact;
+the paired paths, rather than a blanket size change, carry the visual update.

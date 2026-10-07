@@ -42,11 +42,10 @@ export function LineSpaceSmaller({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Path d="M11 6H21" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M11 12H21"
 		strokeLinecap="round"

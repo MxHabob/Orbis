@@ -42,11 +42,10 @@ export function Collapse({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Path
 		d="M20 20L15 15M15 15V19M15 15H19"
 		stroke="currentColor"

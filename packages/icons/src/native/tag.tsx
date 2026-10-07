@@ -42,11 +42,10 @@ export function Tag({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       
 	<Path d="M4 12 L8 7 H21 V17 H8 L4 12 Z" stroke="currentColor" fill="none" />
 

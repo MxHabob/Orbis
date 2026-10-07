@@ -42,11 +42,10 @@ export function ArrowRightTag({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Path
 		d="M6.75 12H16.75M16.75 12L14 14.75M16.75 12L14 9.25"
 		strokeLinecap="round"

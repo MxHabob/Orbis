@@ -27,14 +27,11 @@
 	width={size}
 	height={size}
 	class={cn(className || 'size-4', klass)}
-	aria-hidden="true"
-	{...restProps}
-
 	stroke-linecap="round"
-	stroke-linejoin="round">
+	stroke-linejoin="round"
+	aria-hidden="true"
+	{...restProps}>
 	<path
-		stroke-linecap="round"
-		stroke-linejoin="round"
-		d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+		d="M20 11a8 8 0 0 0-13.66-5.66L4 7.68M4 4.5v3.18h3.18M4 13a8 8 0 0 0 13.66 5.66L20 16.32M20 19.5v-3.18h-3.18"
 	/>
 </svg>

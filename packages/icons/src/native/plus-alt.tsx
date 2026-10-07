@@ -42,11 +42,10 @@ export function PlusAlt({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
-      aria-hidden={true}
-      {...props}
-    
       strokeLinecap="round"
-      strokeLinejoin="round">
+      strokeLinejoin="round"
+      aria-hidden={true}
+      {...props}>
       <Path d="M6 12H12M18 12H12M12 12V6M12 12V18" strokeLinecap="round" strokeLinejoin="round"
 	></Path>
     </Svg>
