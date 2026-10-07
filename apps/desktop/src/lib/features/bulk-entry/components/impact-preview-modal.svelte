@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as m from "$lib/paraglide/messages";
+  import { formatNumber } from "$lib/core/i18n";
   import type { BulkPreviewSummary, StudentPreviewDetails, EmployeePreviewDetails, GradePreviewDetails } from "../types";
 
   interface Props {
@@ -83,7 +84,7 @@
 
               <div class="p-3 rounded-lg bg-muted/40 border border-border/80">
                 <span class="text-xs text-muted-foreground block">{m.bulk_entry_preview_estimated_receivables()}</span>
-                <span class="text-base font-bold text-primary mt-1 block">{studentDetails.totalEstimatedMandatoryFees.toLocaleString()} {studentDetails.currency}</span>
+                <span class="text-base font-bold text-primary mt-1 block">{formatNumber(studentDetails.totalEstimatedMandatoryFees)} {studentDetails.currency}</span>
               </div>
             </div>
 

@@ -5,16 +5,15 @@ import { authStore } from "$lib/stores";
 import { createOrganizationQuery } from "$lib/features/settings/queries";
 import { formatDate } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
-import { Clock, Pin, PinSlash, XMark } from "@orbis/icons";
+import { Clock } from "@orbis/icons";
 
 const organizationQuery = createOrganizationQuery(() => authStore.orgId);
 let now = $state(new Date());
 let isOpen = $state(false);
-let isPinned = $state(false);
 
 const timeZone = $derived(organizationQuery.data?.timezone || "UTC");
 const hijriEnabled = $derived(organizationQuery.data?.is_hijri_enabled ?? false);
-const timeLabel = $derived(formatDate(now, "time"));
+const timeLabel = $derived(formatDate(now, "time", { timeZone }));
 const gregorianDate = $derived(
   formatDate(now, "date", {
     calendar: "gregory",
@@ -68,7 +67,7 @@ onMount(() => {
 
 {#if isOpen}
   <section
-    class={"fixed bg-card/60 backdrop-blur-md z-100 transition-[inset,width,border-radius] duration-200 bottom-3 inset-s-14 w-72"}
+    class={"fixed backdrop-blur-md z-100 transition-[inset,width,border-radius] duration-200 bottom-3 inset-s-14 w-54"}
     aria-label={m.ui_shell_clock_panel_title()}
   >
     <div class="flex flex-col gap-4 p-5">

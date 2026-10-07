@@ -28,7 +28,7 @@ import {
   Plus,
 } from "@orbis/icons";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
-import { isAr, formatDate } from "$lib/core/i18n";
+import { isAr, formatDate, formatNumber } from "$lib/core/i18n";
 import OrgUnitSheet from "$lib/features/academics/components/org-unit-sheet.svelte";
 import RoomCreateSheet from "$lib/features/academics/components/room-create-sheet.svelte";
 
@@ -301,7 +301,7 @@ const staffGridSource = $derived(
       <CardContent class="p-4">
         <span class="text-xs text-muted-foreground">{m.ui_copy_enrollment_capacity_1496075d()}</span>
         <div class="text-xl font-bold tabular-nums mt-0.5 text-foreground">
-          {totalStudentsCount} <span class="text-xs font-normal text-muted-foreground">/ {branch.capacity ? branch.capacity.toLocaleString() : "∞"}</span>
+          {formatNumber(totalStudentsCount)} <span class="text-xs font-normal text-muted-foreground">/ {branch.capacity ? formatNumber(branch.capacity) : "∞"}</span>
         </div>
         <span class="text-[11px] text-muted-foreground mt-0.5 block">
           {branch.capacity ? `${Math.min(100, Math.round((totalStudentsCount / branch.capacity) * 100))}% ${m.ui_copy_occupancy_4b03a14e()}` : m.ui_copy_uncapped_capacity_169a4e4e()}

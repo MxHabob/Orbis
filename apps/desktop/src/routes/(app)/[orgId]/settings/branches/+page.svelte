@@ -32,7 +32,7 @@ import {
   Eye,
 } from "@orbis/icons";
 import { OrbisGrid, type OrbisColumnDef, type ActionItem, type GridActionEvent } from "@orbis/svelte-grid";
-import { l, isAr, formatDate } from "$lib/core/i18n";
+import { l, isAr, formatDate, formatNumber } from "$lib/core/i18n";
 import { confirmStore } from "$lib/stores";
 import BranchSheet from "$lib/features/settings/components/branch-sheet.svelte";
 
@@ -170,7 +170,7 @@ const gridSource = $derived(
       displayName: b.name_ar || b.name,
       displayCode: b.code || "—",
       managerName: mgr ? formatEmployeeName(mgr) : m.common_unassigned(),
-      displayCapacity: b.capacity ? b.capacity.toLocaleString() : m.ui_copy_uncapped_eb8a96f3(),
+      displayCapacity: b.capacity ? formatNumber(b.capacity) : m.ui_copy_uncapped_eb8a96f3(),
       subUnitsCount: b.children_count || 0,
       isolationLabel: b.data_isolation === "isolated" ? m.ui_copy_isolated_09d34bff() : b.data_isolation === "read_only" ? m.ui_copy_read_only_05cda70d() : m.ui_copy_shared_cdf39825(),
       statusLabel: b.is_active ? m.common_phase_active() : m.common_status_disabled(),
@@ -296,7 +296,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
       <CardContent class="p-4 flex items-center justify-between">
         <div class="space-y-1">
           <span class="text-xs font-medium text-muted-foreground">{m.ui_copy_total_capacity_31f26962()}</span>
-          <div class="text-2xl font-bold tabular-nums text-foreground">{totalCapacity.toLocaleString()}</div>
+          <div class="text-2xl font-bold tabular-nums text-foreground">{formatNumber(totalCapacity)}</div>
           <span class="text-[11px] text-muted-foreground">{m.ui_copy_available_seats_1a55ae77()}</span>
         </div>
       </CardContent>

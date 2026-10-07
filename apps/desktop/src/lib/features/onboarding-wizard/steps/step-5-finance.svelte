@@ -2,6 +2,7 @@
 import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
+import { formatNumber } from "$lib/core/i18n";
 import { api, type FeeTemplateDto, type DiscountTemplateDto, type AccountDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
@@ -274,7 +275,7 @@ async function handleContinue() {
                   onclick={() => handleAddPresetFee(preset)}
                   class="text-xs bg-background hover:bg-muted"
                 >
-                  + {preset.name_ar || preset.name} ({preset.amount.toLocaleString()} {feeCurrency})
+                  + {preset.name_ar || preset.name} ({formatNumber(preset.amount)} {feeCurrency})
                 </Button>
               {/each}
             </div>
@@ -375,7 +376,7 @@ async function handleContinue() {
                     </div>
                   </div>
                   <Badge variant="secondary" class="font-mono text-xs font-semibold">
-                    {Number(ft.amount).toLocaleString()} {ft.currency || feeCurrency}
+                    {formatNumber(Number(ft.amount))} {ft.currency || feeCurrency}
                   </Badge>
                 </div>
               {/each}

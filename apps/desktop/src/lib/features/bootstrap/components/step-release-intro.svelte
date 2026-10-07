@@ -6,6 +6,7 @@
   import { Badge } from "@orbis/ui/badge";
   import { Calendar } from "@orbis/icons";
   import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
+  import { formatDate as formatOrgDate } from "$lib/core/i18n";
 
   let { isRTL = false }: { isRTL?: boolean } = $props();
 
@@ -19,7 +20,7 @@
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? null
-      : date.toLocaleDateString(isRTL ? "ar" : "en", { dateStyle: "medium" });
+      : formatOrgDate(date, "date");
   }
 
   onMount(async () => {

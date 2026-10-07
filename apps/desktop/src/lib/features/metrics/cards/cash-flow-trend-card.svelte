@@ -13,8 +13,8 @@ import { onMount } from "svelte";
 import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
-import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-import { formatCurrency } from "$lib/core/i18n";
+import { localizeHref } from "$lib/paraglide/runtime";
+import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { ArrowRight } from "@orbis/icons";
 
 let {
@@ -86,9 +86,10 @@ async function loadData() {
         const year = Number(mon.split("-")[0]);
         const monthIndex = Number(mon.split("-")[1]) - 1;
         const dateObj = new Date(year, monthIndex, 1);
-        const formattedMonth = new Intl.DateTimeFormat(getLocale(), {
+        const formattedMonth = formatDate(dateObj, "date", {
           month: "short",
-        }).format(dateObj);
+          timeZone: "UTC",
+        });
 
         return {
           label: formattedMonth,

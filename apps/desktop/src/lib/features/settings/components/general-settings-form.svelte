@@ -21,7 +21,7 @@ let { org, orgId, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
     org: any;
     orgId: string;
     isSaving: boolean;
-    onsave: (request: any) => void;
+    onsave: (request: any) => void | Promise<void>;
     onsaveavatar: (logo: string | null) => void;
     onremove: () => void;
     onlanguagechange: (newLocale: string, currentValues: any) => void | boolean | Promise<void | boolean>;
@@ -134,7 +134,7 @@ async function handleSubmit(e?: Event) {
   e?.preventDefault();
   settingsForm.values = { name, currency, timezone, locale, dateFormat, formatLocale, timeFormat };
   const submitted = await settingsForm.submit(async (result) => {
-    onsave({
+    await onsave({
       name: result.name,
       name_ar: nameAr || null,
       logo: logo || null,

@@ -4,7 +4,7 @@ import { Skeleton } from "@orbis/ui";
 import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
-import { getLocale } from "$lib/paraglide/runtime";
+import { formatDate } from "$lib/core/i18n";
 
 let {
   orgId,
@@ -41,9 +41,7 @@ async function loadData() {
     // Generate the last 12 months, e.g. Mar to Feb (or similar depending on current date)
     for (let i = 11; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const label = new Intl.DateTimeFormat(getLocale(), {
-        month: "short",
-      }).format(d);
+      const label = formatDate(d, "date", { month: "short", timeZone: "UTC" });
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       months.push({ label, key, dateObj: d });
     }
