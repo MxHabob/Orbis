@@ -3,6 +3,7 @@
 A reusable card component for editing and saving a user's or organization's display name.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import {
   Card,
@@ -95,7 +96,7 @@ function handleSave(event: Event) {
         class="min-w-20 h-8 text-xs cursor-pointer transition-transform active:scale-95"
       >
         {#if isSubmitting}
-          <ArrowPath class="animate-spin mr-1.5 shrink-0" size={13} />
+          <LoadingIndicator class="mr-1.5 shrink-0"  size={13} />
           {m.shared_ui_saving()}
         {:else}
           {m.common_action_save()}

@@ -4,6 +4,7 @@ Clean, comprehensive Multi-Branch Management & Institutional Governance Center.
 Matches the Orbis Settings system design, with inner sub-pages for each branch (classes, rooms, sub-units, staff, stats).
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { api, type OrgUnitDto, type UserDto, extractErrorMessage } from "$lib/api";
@@ -284,7 +285,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
           disabled={isRefreshing || isLoading}
           class="h-9 px-3 text-xs gap-1.5 cursor-pointer"
         >
-          <Refresh size={13} class={isRefreshing ? "animate-spin" : ""} />
+          {#if isRefreshing}<LoadingIndicator  size={13} />{:else}<Refresh size={13}   />{/if}
           <span>{m.common_refresh()}</span>
         </Button>
 

@@ -5,6 +5,7 @@
   6-digit code verification, emergency recovery codes, and skip support.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import QRCode from "qrcode";
@@ -180,7 +181,7 @@ async function handleVerify() {
         <div class="p-2.5 bg-white rounded-2xl border border-border/80 shadow-xs shrink-0 flex items-center justify-center">
           {#if isLoading}
             <div class="size-40 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-              <div class="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+              <LoadingIndicator size={24} class="size-6 text-primary" />
               <span class="text-[10px] font-mono text-zinc-500">
                 {m.ui_onboarding_mfa_generating_qr()}
               </span>

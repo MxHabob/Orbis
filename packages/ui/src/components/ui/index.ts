@@ -139,7 +139,13 @@ export {
   BreadcrumbEllipsis,
 } from "./breadcrumb/index.js";
 export { Calendar } from "./calendar/index.js";
+export { LoadingIndicator } from "./loading-indicator/index.js";
+export type {
+  LoadingIndicatorProps,
+  LoadingIndicatorSize,
+} from "./loading-indicator/index.js";
 export { Toaster } from "./sonner/index.js";
+/** @deprecated Use LoadingIndicator instead. */
 export { default as Spinner } from "./spinner.svelte";
 export { toast, toastStore } from "./sonner/index.js";
 export type {

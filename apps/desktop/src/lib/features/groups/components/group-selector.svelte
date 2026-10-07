@@ -4,6 +4,7 @@
   Integrates seamlessly with TanStack Query and Orbis IAM design tokens.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { Badge } from "@orbis/ui/badge";
 import { Input } from "@orbis/ui/input";
@@ -107,7 +108,7 @@ function clearAll() {
   <div class="border border-border/70 rounded-lg overflow-y-auto {maxHeight} p-1.5 bg-muted/10 grid grid-cols-2 gap-2">
     {#if groupsQuery.isLoading}
       <div class="col-span-2 p-6 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
-        <ArrowPath size={14} class="animate-spin text-primary" />
+        <LoadingIndicator class="text-primary"  size={14} />
         <span>{m.ui_copy_loading_groups_a0b56ad6()}</span>
       </div>
     {:else if groups.length === 0}

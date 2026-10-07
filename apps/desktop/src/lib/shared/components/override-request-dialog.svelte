@@ -18,6 +18,7 @@ Usage:
   />
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 
 import { api, extractErrorMessage } from "$lib/api";
@@ -235,7 +236,7 @@ async function submit() {
       </Button>
       <Button onclick={submit} disabled={isSubmitting || !reason.trim()}>
         {#if isSubmitting}
-          <ArrowPath class="size-4 animate-spin me-2" />
+          <LoadingIndicator class="size-4 me-2"  size={16} />
         {/if}
         {m.common_override_submit()}
       </Button>

@@ -4,6 +4,7 @@
   Provides live status testing, dynamic settings form, encryption vault info, and backend sync.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 import { api, extractErrorMessage } from "$lib/api";
@@ -551,7 +552,7 @@ async function handleDisconnect() {
             class="text-xs font-medium cursor-pointer"
           >
             {#if isTesting}
-              <span class="size-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent me-1.5"></span>
+              <LoadingIndicator size={14} class="size-3.5 me-1.5 text-primary" />
               <span>{m.onboarding_step_integrations_ai_testing()}</span>
             {:else}
               <Refresh class="w-3.5 h-3.5 me-1.5" />
@@ -570,7 +571,7 @@ async function handleDisconnect() {
               class="text-xs text-destructive hover:bg-destructive/10 border-destructive/30 cursor-pointer"
             >
               {#if isDisconnecting}
-                <span class="size-3.5 animate-spin rounded-full border-2 border-destructive border-t-transparent me-1.5"></span>
+                <LoadingIndicator size={14} class="size-3.5 me-1.5 text-destructive" />
               {/if}
               <span>{m.ui_copy_disconnect_c584faa5()}</span>
             </Button>
@@ -584,7 +585,7 @@ async function handleDisconnect() {
             class="text-xs font-semibold shadow-xs cursor-pointer"
           >
             {#if isConnecting}
-              <span class="size-3.5 animate-spin rounded-full border-2 border-white border-t-transparent me-1.5"></span>
+              <LoadingIndicator size={14} class="size-3.5 me-1.5 text-white" />
               <span>{m.setup_connection_connecting()}</span>
             {:else}
               <Check class="w-3.5 h-3.5 me-1.5" />

@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { authStore } from "$lib/stores";
@@ -113,7 +114,7 @@ function handleForgotPassword() {
 			disabled={form.isSubmitting}
 		>
 			{#if form.isSubmitting}
-				<ArrowPath size={13} strokeWidth={2} class="mr-1.5 animate-spin" />
+				<LoadingIndicator class="mr-1.5"  size={13} />
 				{m.auth_login_submitting()}
 			{:else}
 				{m.auth_login_continue()}

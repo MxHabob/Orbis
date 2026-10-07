@@ -5,6 +5,7 @@ Matches the FinanceOverview layout and design aesthetic with top KPI cards,
 toolbar controls, and an advanced OrbisGrid / cards directory.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import { onMount } from "svelte";
@@ -364,7 +365,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
         disabled={isRefreshing || isLoading}
         class="h-9 px-3 text-xs gap-1.5 cursor-pointer"
       >
-        <Refresh size={13} class={isRefreshing ? "animate-spin" : ""} />
+        {#if isRefreshing}<LoadingIndicator  size={13} />{:else}<Refresh size={13}   />{/if}
         <span>{m.common_refresh()}</span>
       </Button>
 

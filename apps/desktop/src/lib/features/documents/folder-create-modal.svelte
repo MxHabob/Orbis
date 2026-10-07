@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -302,7 +303,7 @@ async function handleCreate() {
           class="gap-1.5"
         >
           {#if isSubmitting}
-            <span class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+            <LoadingIndicator size={14} class="w-3.5 h-3.5" />
             <span>{m.operations_ui_processing()}</span>
           {:else}
             <Plus class="w-4 h-4" />

@@ -4,6 +4,7 @@
   Sleek, headerless layout matching FinanceOverview.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import {
   createAccountsQuery,
@@ -273,7 +274,7 @@ const filterOptions = [
       </Button>
 
       <Button variant="ghost" size="icon-sm" onclick={refetchAll} class="text-muted-foreground h-8 w-8" title={m.finance_ui_refresh()}>
-        <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
+        {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
       </Button>
     </div>
   </div>

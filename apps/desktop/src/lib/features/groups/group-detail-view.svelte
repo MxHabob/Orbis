@@ -3,6 +3,7 @@
   Group detail inspection, member management, and 2D IAM Permission Matrix editor.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
@@ -265,7 +266,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
 <div class="h-full w-full flex flex-col overflow-hidden bg-background">
   {#if groupQuery.isLoading}
     <div class="h-full w-full flex flex-col items-center justify-center gap-3 text-muted-foreground">
-      <ArrowPath size={24} class="animate-spin text-primary" />
+      <LoadingIndicator class="text-primary"  size={24} />
       <span class="text-xs">{m.ui_copy_loading_group_e09b26dc()}</span>
     </div>
   {:else if groupQuery.error || !group}
@@ -360,7 +361,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
 
             {#if membersQuery.isLoading}
               <div class="p-8 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
-                <ArrowPath size={14} class="animate-spin text-primary" />
+                <LoadingIndicator class="text-primary"  size={14} />
                 <span>{m.ui_copy_loading_members_a59e1afa()}</span>
               </div>
             {:else if members.length === 0}

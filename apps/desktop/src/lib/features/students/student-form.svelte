@@ -4,6 +4,7 @@
   Unified single-scroll command canvas with sticky live ledger, identity sidebar, and SettingsBottomBar.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount, untrack } from "svelte";
 import { goto } from "$app/navigation";
@@ -456,7 +457,7 @@ function handleReset() {
           disabled={state.isSaving}
         >
           {#if state.isSaving}
-            <FloppyDisk class="w-3.5 h-3.5 animate-spin" />
+            <LoadingIndicator class="w-3.5 h-3.5"  size={14} />
             <span>{m.common_state_saving()}</span>
           {:else}
             <CheckCircle class="w-3.5 h-3.5" />

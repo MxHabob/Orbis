@@ -9,6 +9,7 @@
   - Real backend fee calculation and invoice tracking
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api, queryClient } from "$lib/api";
@@ -414,7 +415,7 @@ function exportCsv() {
         </select>
 
         <Button variant="ghost" size="icon-sm" onclick={loadData} class="text-muted-foreground">
-          <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
+          {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
         </Button>
 
         <Button variant="ghost" size="icon-sm" onclick={exportCsv} class="text-muted-foreground">

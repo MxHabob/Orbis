@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import {
   Dialog,
   DialogContent,
@@ -88,7 +89,7 @@ async function handleExport() {
       </Button>
       <Button onclick={handleExport} disabled={isExporting}>
         {#if isExporting}
-          <ArrowPath class="mr-2 h-4 w-4 animate-spin" />
+          <LoadingIndicator class="mr-2 h-4 w-4"  size={16} />
         {:else}
           <Download class="mr-2 h-4 w-4" />
         {/if}

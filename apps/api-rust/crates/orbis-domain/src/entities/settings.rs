@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use rust_decimal::Decimal;
+use super::academic_policy::{AcademicPolicy, RankingScope, RoundingMode, TiePolicy};
 use super::admission::AdmissionConfiguration;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -23,12 +25,72 @@ pub struct OrganizationSettings {
 #[serde(default)]
 pub struct AcademicSettings {
     pub default_grading_system: String, // e.g., "percentage", "letter", "gpa"
+    pub default_passing_score: Decimal,
+    pub default_max_score: Decimal,
+    pub passing_threshold_percentage: Decimal,
+    pub honors_threshold_percentage: Decimal,
+    pub minimum_final_exam_score: Option<Decimal>,
+    pub max_failed_subjects_for_conditional_pass: usize,
+    pub min_attendance_rate: Decimal,
+    pub ranking_enabled: bool,
+    pub max_displayed_rank: Option<u32>,
+    pub ranking_scope: RankingScope,
+    pub tie_policy: TiePolicy,
+    pub rounding_mode: RoundingMode,
+    pub decimal_places: u32,
+    pub enrollment_auto_close: bool,
+    pub allow_late_enrollment: bool,
+    pub late_enrollment_approval: bool,
+    pub grade_entry_auto_close: bool,
+    pub allow_grade_edit_after_close: bool,
+    pub grade_edit_approval: bool,
+    pub auto_graduate_final_level: bool,
+    pub exclude_withdrawn: bool,
 }
 
 impl Default for AcademicSettings {
     fn default() -> Self {
         Self {
             default_grading_system: "percentage".to_string(),
+            default_passing_score: Decimal::from(50),
+            default_max_score: Decimal::from(100),
+            passing_threshold_percentage: Decimal::from(50),
+            honors_threshold_percentage: Decimal::from(85),
+            minimum_final_exam_score: Some(Decimal::from(10)),
+            max_failed_subjects_for_conditional_pass: 2,
+            min_attendance_rate: Decimal::from(75),
+            ranking_enabled: true,
+            max_displayed_rank: None,
+            ranking_scope: RankingScope::Class,
+            tie_policy: TiePolicy::StandardCompetition,
+            rounding_mode: RoundingMode::RoundHalfUp,
+            decimal_places: 2,
+            enrollment_auto_close: true,
+            allow_late_enrollment: false,
+            late_enrollment_approval: true,
+            grade_entry_auto_close: true,
+            allow_grade_edit_after_close: false,
+            grade_edit_approval: true,
+            auto_graduate_final_level: false,
+            exclude_withdrawn: true,
+        }
+    }
+}
+
+impl AcademicSettings {
+    pub fn to_academic_policy(&self, org_id: Uuid) -> AcademicPolicy {
+        AcademicPolicy {
+            org_id,
+            passing_threshold_percentage: self.passing_threshold_percentage,
+            honors_threshold_percentage: self.honors_threshold_percentage,
+            minimum_final_exam_score: self.minimum_final_exam_score,
+            max_failed_subjects_for_conditional_pass: self.max_failed_subjects_for_conditional_pass,
+            rounding_mode: self.rounding_mode,
+            decimal_places: self.decimal_places,
+            ranking_scope: self.ranking_scope,
+            tie_policy: self.tie_policy,
+            ranking_enabled: self.ranking_enabled,
+            max_displayed_rank: self.max_displayed_rank,
         }
     }
 }

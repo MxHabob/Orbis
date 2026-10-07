@@ -5,6 +5,7 @@
   Performance-optimized with static module-level Intl instance caching and O(1) preset lookups.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { api } from "$lib/api";
 import { toast } from "@orbis/ui";
@@ -439,7 +440,7 @@ async function handleSubmit(e: Event) {
           class="text-xs cursor-pointer gap-1.5 font-bold"
         >
           {#if isSubmitting}
-            <ArrowPath size={12} class="animate-spin" />
+            <LoadingIndicator   size={12} />
           {:else}
             <Check size={12} />
           {/if}

@@ -4,6 +4,7 @@
   Reusable across AI Center Settings, General Settings, Academic Policies, and other configuration hubs.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { fly } from "svelte/transition";
 import { quintOut } from "svelte/easing";
@@ -113,7 +114,7 @@ const displayMessage = $derived(message || m.settings_unsaved_changes());
               onclick={onsave}
             >
               {#if isSaving}
-                <ArrowPath size={13} class="animate-spin me-1.5" />
+                <LoadingIndicator class="me-1.5"  size={13} />
                 <span>{displaySavingLabel}</span>
               {:else}
                 <span>{displaySaveLabel}</span>

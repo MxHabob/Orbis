@@ -6,6 +6,7 @@
   import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
   import { Button } from "@orbis/ui/button";
   import { Badge } from "@orbis/ui/badge";
+  import { LoadingIndicator } from "@orbis/ui";
   import { ArrowPath, Calendar, Sparkles } from "@orbis/icons";
   import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
 
@@ -92,7 +93,11 @@
         disabled={isLoading}
         onclick={() => void loadChangelog()}
       >
-        <span class={isLoading ? "animate-spin" : ""}><ArrowPath size={14} /></span>
+        {#if isLoading}
+          <LoadingIndicator size={14} />
+        {:else}
+          <ArrowPath size={14} />
+        {/if}
       </Button>
     </div>
 

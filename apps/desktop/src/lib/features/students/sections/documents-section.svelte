@@ -4,6 +4,7 @@
   Allows uploading scans and PDF documents directly into the student's digital archive.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Label } from "@orbis/ui/label";
@@ -235,7 +236,7 @@ function formatBytes(bytes?: number) {
                 disabled={isUploading}
               >
                 {#if isUploading}
-                  <ArrowPath class="w-3 h-3 animate-spin text-primary" />
+                  <LoadingIndicator class="w-3 h-3 text-primary"  size={12} />
                   <span>{m.ui_copy_uploading_da33f1fa()}</span>
                 {:else}
                   <ArrowUpTray class="w-3 h-3 text-primary" />

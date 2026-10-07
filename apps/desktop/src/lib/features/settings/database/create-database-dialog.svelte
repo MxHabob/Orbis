@@ -3,6 +3,7 @@
   Interactive modal wizard for creating a brand new SQLite database with schema migrations.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 
 import { Button } from "@orbis/ui/button";
@@ -163,7 +164,7 @@ async function handleCreate() {
         disabled={isSubmitting}
       >
         {#if isSubmitting}
-          <ArrowPath size={14} class="animate-spin" />
+          <LoadingIndicator   size={14} />
           <span>{m.ui_copy_creating_initializing_cbf4c4bf()}</span>
         {:else}
           <Database size={14} />

@@ -3,6 +3,7 @@
   Student subject grades report card and GPA analytics with standardized Cards.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { api, type GradeRecordDto, type CumulativeGpaRecordDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
@@ -106,7 +107,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
             onclick={loadGrades}
             title={m.academics_grades_refresh()}
           >
-            <Refresh size={13} class={isLoading ? 'animate-spin' : ''} />
+            {#if isLoading}<LoadingIndicator  size={13} />{:else}<Refresh size={13}   />{/if}
           </Button>
         </div>
       </CardAction>

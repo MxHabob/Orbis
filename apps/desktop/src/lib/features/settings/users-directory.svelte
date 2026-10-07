@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
 import { api } from "$lib/api";
@@ -206,7 +207,7 @@ async function handleAction(event: GridActionEvent) {
         fields={userFilterFields}
       />
       <Button variant="ghost" size="icon-sm" onclick={loadUsers} class="text-muted-foreground">
-        <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
+        {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
       </Button>
       <Button
         variant="outline"

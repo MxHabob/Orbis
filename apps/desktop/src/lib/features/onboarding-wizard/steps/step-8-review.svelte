@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { systemStore } from "$lib/stores";
@@ -90,7 +91,7 @@ async function handleCompleteAndLaunch() {
         {m.onboarding_step8_congrats_desc()}
       </p>
       <div class="flex justify-center pt-2">
-        <span class="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+        <LoadingIndicator size={24} class="size-6 text-primary" />
       </div>
     </div>
   {:else}

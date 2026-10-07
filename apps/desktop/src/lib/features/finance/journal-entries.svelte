@@ -8,6 +8,7 @@
   - Real backend double-entry posting and reversals
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
@@ -316,7 +317,7 @@ function exportCsv() {
         />
 
         <Button variant="ghost" size="icon-sm" onclick={loadData} class="text-muted-foreground">
-          <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
+          {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
         </Button>
 
         <Button variant="ghost" size="icon-sm" onclick={exportCsv} class="text-muted-foreground">

@@ -4,6 +4,7 @@
   Built with Svelte 5 runes, batch operations, restoration, and permanent purge.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
@@ -287,7 +288,7 @@ async function handleBatchPurge() {
           title={m.operations_ui_refresh_data()}
           class="h-9"
         >
-          <Refresh class="w-4 h-4 {trashQuery.isFetching ? 'animate-spin' : ''}" />
+          <LoadingIndicator class="w-4 h-4 {trashQuery.isFetching ? '' : ''}"  size={16} />
           <span class="hidden sm:inline ms-1.5">{m.operations_ui_refresh()}</span>
         </Button>
 

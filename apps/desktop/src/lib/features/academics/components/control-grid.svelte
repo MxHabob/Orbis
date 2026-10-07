@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
@@ -67,7 +68,7 @@ let {
           onclick={onRefresh}
           disabled={isMatrixLoading}
         >
-          <Refresh size={11} class={isMatrixLoading ? "animate-spin" : ""} />
+          {#if isMatrixLoading}<LoadingIndicator  size={11} />{:else}<Refresh size={11}   />{/if}
           {m.common_control_refresh()}
         </Button>
         <Button
@@ -78,7 +79,7 @@ let {
           disabled={isSaving || !isDirty}
         >
           {#if isSaving}
-            <ArrowPath size={11} class="animate-spin" />
+            <LoadingIndicator   size={11} />
           {:else}
             <FloppyDisk size={11} />
           {/if}

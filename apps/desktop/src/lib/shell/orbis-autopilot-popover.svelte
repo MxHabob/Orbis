@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
@@ -287,7 +288,7 @@ function handleGoToOnboarding() {
         onclick={handleRunTick}
         disabled={runTickMutation.isPending || !isOperational}
       >
-        <Refresh size={13} class={runTickMutation.isPending ? "animate-spin" : ""} />
+        {#if runTickMutation.isPending}<LoadingIndicator  size={13} />{:else}<Refresh size={13}   />{/if}
         {#if runTickMutation.isPending}
           {m.common_autopilot_popover_tick_running()}
         {:else}

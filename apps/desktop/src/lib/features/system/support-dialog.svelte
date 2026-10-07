@@ -3,6 +3,7 @@
   Builds a prefilled support email with user-provided details and reviewable device diagnostics.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { api } from "$lib/api/client";
 import { isDesktopApp } from "$lib/api";
@@ -379,7 +380,7 @@ $effect(() => {
             class="h-8 px-4 text-xs font-medium gap-1.5"
           >
             {#if isSubmitting}
-              <span class="animate-spin text-xs">⏳</span>
+              <LoadingIndicator class="text-xs" />
               <span>{m.ui_system_support_sending()}</span>
             {:else}
               <span>{m.ui_system_support_send_report()}</span>

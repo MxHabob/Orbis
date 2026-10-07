@@ -11,6 +11,7 @@
   } from "@orbis/ui/dialog";
   import { Button } from "@orbis/ui/button";
   import { Badge } from "@orbis/ui/badge";
+  import { LoadingIndicator } from "@orbis/ui";
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
@@ -89,7 +90,10 @@
 
     <div class="flex-1 space-y-4 overflow-y-auto p-6">
       {#if isLoading}
-        <p class="animate-pulse text-sm text-muted-foreground">{m.ui_system_about_loading()}</p>
+        <p class="flex items-center gap-2 text-sm text-muted-foreground">
+          <LoadingIndicator size="sm" label={m.ui_system_about_loading()} />
+          <span aria-hidden="true">{m.ui_system_about_loading()}</span>
+        </p>
       {:else if loadError}
         <p class="text-sm text-destructive" role="alert">{m.ui_system_about_load_failed()} {loadError}</p>
       {:else if info}

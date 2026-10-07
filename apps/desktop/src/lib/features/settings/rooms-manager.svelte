@@ -3,6 +3,7 @@
 Lists all rooms and venues with OrbisGrid, CRUD via RoomCreateSheet.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api, extractErrorMessage, type RoomDto } from "$lib/api";
@@ -148,7 +149,7 @@ function handleGridAction(event: GridActionEvent) {
         fields={roomFilterFields}
       />
       <Button variant="ghost" size="icon-sm" onclick={loadRooms} class="text-muted-foreground">
-        <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
+        {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
       </Button>
       <Button variant="lime" class="text-xs h-8 px-4 font-semibold shrink-0" onclick={openCreateSheet}>
         <Plus size={14} class="me-1.5" />

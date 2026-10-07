@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
@@ -151,7 +152,7 @@ async function handleContinue() {
   <!-- Apps Grid matching IntegrationsGallery -->
   {#if isLoading}
     <div class="flex items-center justify-center p-12 text-muted-foreground text-sm gap-2">
-      <span class="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+      <LoadingIndicator size={16} class="size-4 text-primary" />
       <span>{m.common_control_loading()}</span>
     </div>
   {:else if filteredApps.length > 0}
@@ -262,7 +263,7 @@ async function handleContinue() {
       class="text-xs font-semibold shadow-xs cursor-pointer"
     >
       {#if isSaving}
-        <span class="size-3.5 animate-spin rounded-full border-2 border-white border-t-transparent me-1.5"></span>
+        <LoadingIndicator size={14} class="size-3.5 me-1.5 text-white" />
       {/if}
       <span>{m.onboarding_step_integrations_continue_btn()}</span>
     </Button>

@@ -4,6 +4,7 @@
   matching canonical Orbis Sheet styling.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 import { api } from "$lib/api";
@@ -119,7 +120,7 @@ async function handleSubmit(e: SubmitEvent) {
           disabled={isSaving}
         >
           {#if isSaving}
-            <ArrowPath size={13} class="animate-spin me-1.5" />
+            <LoadingIndicator class="me-1.5"  size={13} />
           {/if}
           {m.ui_copy_save_groups_f4b6f340()}
         </Button>

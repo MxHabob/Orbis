@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import type { ReportDefinition, ReportDataset, ColumnDef } from "@orbis/sdk";
@@ -95,7 +96,7 @@ onMount(() => {
         {#if definition}
           {definition.name}
         {:else if isLoading}
-          <ArrowPath class="h-4 w-4 animate-spin text-muted-foreground" />
+          <LoadingIndicator class="h-4 w-4 text-muted-foreground"  size={16} />
         {:else}
           {m.operations_ui_unknown_report()}
         {/if}
@@ -107,7 +108,7 @@ onMount(() => {
     
     <div class="flex items-center gap-2">
       <Button variant="outline" size="sm" onclick={queryData} disabled={isLoading || !definition}>
-        <Refresh class="mr-2 h-4 w-4 {isLoading ? 'animate-spin' : ''}" />
+        <LoadingIndicator class="mr-2 h-4 w-4 {isLoading ? '' : ''}"  size={16} />
         {m.common_refresh()}
       </Button>
       <Button size="sm" onclick={() => isExportDialogOpen = true} disabled={!dataset}>
@@ -181,7 +182,7 @@ onMount(() => {
         </div>
       {:else if isLoading && !dataset}
         <div class="absolute inset-0 flex items-center justify-center">
-          <ArrowPath class="h-8 w-8 animate-spin text-muted-foreground/30" />
+          <LoadingIndicator class="h-8 w-8 text-muted-foreground/30"  size={32} />
         </div>
       {/if}
     </div>

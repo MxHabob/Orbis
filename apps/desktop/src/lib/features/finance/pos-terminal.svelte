@@ -5,6 +5,7 @@
   canonical multi-channel payment method handling, and atomic General Ledger posting.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import { slide } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
@@ -663,7 +664,7 @@ const rtl = $derived(getLocale() === "ar");
             class="w-full h-10 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-2 shadow-sm"
           >
             {#if processPaymentMutation.isPending}
-              <ArrowPath size={14} class="animate-spin" />
+              <LoadingIndicator   size={14} />
               <span>{m.finance_ui_posting_entry_and_issuing_receipt()}</span>
             {:else}
               <CheckCircle size={15} />

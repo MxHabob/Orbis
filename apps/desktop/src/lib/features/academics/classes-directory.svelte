@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { api, extractErrorMessage, type ClassDto, type AcademicPeriodDto, type EnrollmentDto } from "$lib/api";
@@ -178,7 +179,7 @@ const pageLoading = $derived(
 						onclick={refetchAll}
 						class="text-muted-foreground"
 					>
-						<Refresh size={14} class={pageLoading ? "animate-spin" : ""} />
+						{#if pageLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
 					</Button>
 
 					<Button

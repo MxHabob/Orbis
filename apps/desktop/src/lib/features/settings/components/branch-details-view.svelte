@@ -4,6 +4,7 @@ Comprehensive inner view for an organizational branch / campus.
 Shows live telemetry, classes, rooms, child sub-units, staff directory, and operational details.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import {
@@ -250,7 +251,7 @@ const staffGridSource = $derived(
         disabled={isRefreshing || isLoading}
         class="h-8 px-3 text-xs gap-1.5 cursor-pointer"
       >
-        <Refresh size={13} class={isRefreshing ? "animate-spin" : ""} />
+        {#if isRefreshing}<LoadingIndicator  size={13} />{:else}<Refresh size={13}   />{/if}
         <span>{m.common_refresh()}</span>
       </Button>
 

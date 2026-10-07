@@ -3,6 +3,7 @@
   Student official documents and certificate attachments.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
@@ -181,7 +182,7 @@ async function handleUploadFile() {
         onclick={() => documentsQuery.refetch()}
         title={m.academics_grades_refresh()}
       >
-        <Refresh size={13} class={isLoading ? 'animate-spin' : ''} />
+        {#if isLoading}<LoadingIndicator  size={13} />{:else}<Refresh size={13}   />{/if}
       </Button>
       <Button 
         variant="lime"

@@ -12,7 +12,7 @@ import { authStore } from "$lib/stores";
 import { onMount } from "svelte";
 import { resolveStartupPhase, type StartupState } from "$lib/core/startup";
 import { localizeHref } from "$lib/paraglide/runtime";
-import { ArrowPath } from "@orbis/icons";
+import { LoadingIndicator } from "@orbis/ui";
 
 let startupState: StartupState | null = $state(null);
 let statusText = $state("Initializing...");
@@ -62,10 +62,7 @@ onMount(async () => {
 
 <div class="loading-root">
 	<div class="loading-content">
-		<span class="loading-icon" aria-hidden="true">
-			<ArrowPath size={20} strokeWidth={2} class="animate-spin text-primary" />
-		</span>
-		<span class="loading-text">{statusText}</span>
+		<LoadingIndicator size="lg" label={statusText} />
 	</div>
 </div>
 
@@ -76,29 +73,14 @@ onMount(async () => {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: hsl(var(--muted-foreground));
-		background-color: hsl(var(--muted));
+		color: var(--color-muted-foreground);
+		background-color: var(--color-muted);
 	}
 
 	.loading-content {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 12px;
-	}
-
-	.loading-icon {
-		animation: loading-spin 0.9s linear infinite;
-	}
-
-	.loading-text {
-		font-size: 0.8rem;
-		opacity: 0.7;
-	}
-
-	@keyframes loading-spin {
-		to {
-			transform: rotate(360deg);
-		}
+		gap: 16px;
 	}
 </style>

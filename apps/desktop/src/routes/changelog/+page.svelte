@@ -6,6 +6,7 @@
   import { getLocale } from "$lib/paraglide/runtime";
   import { Button } from "@orbis/ui/button";
   import { Badge } from "@orbis/ui/badge";
+  import { LoadingIndicator } from "@orbis/ui";
   import { ArrowPath, Calendar, Check, Cube } from "@orbis/icons";
   import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
 
@@ -116,7 +117,11 @@
       onclick={handleCheckForUpdates}
       class="h-8 gap-1.5 border-border/60 px-3 text-xs font-normal"
     >
-      <span class={isCheckingUpdate ? "animate-spin" : ""}><ArrowPath size={13} /></span>
+      {#if isCheckingUpdate}
+        <LoadingIndicator size={13} />
+      {:else}
+        <ArrowPath size={13} />
+      {/if}
       <span>{isCheckingUpdate ? m.ui_changelog_checking() : m.ui_changelog_check_for_updates()}</span>
     </Button>
   </header>
@@ -164,8 +169,12 @@
       </div>
 
       {#if isLoading}
-        <div class="animate-pulse p-6 text-center text-xs text-muted-foreground">
-          {m.ui_changelog_fetching_live_release_data_from_github()}
+        <div class="flex items-center justify-center gap-2 p-6 text-center text-xs text-muted-foreground">
+          <LoadingIndicator
+            size="sm"
+            label={m.ui_changelog_fetching_live_release_data_from_github()}
+          />
+          <span aria-hidden="true">{m.ui_changelog_fetching_live_release_data_from_github()}</span>
         </div>
       {:else if loadError}
         <p class="p-3 text-xs text-destructive" role="alert">{m.ui_changelog_load_failed()}</p>

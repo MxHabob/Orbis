@@ -4,6 +4,7 @@
   Uses @orbis/svelte-grid inside a standardized Card container.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { createQuery } from "@tanstack/svelte-query";
 import { api, extractErrorMessage } from "$lib/api";
 import type { GradeDto } from "$lib/api/types";
@@ -145,7 +146,7 @@ const gridSource = $derived(
             onclick={() => termResultsQuery.refetch()} 
             disabled={isLoading}
           >
-            <Refresh size={12} class={isLoading ? "animate-spin" : ""} />
+            {#if isLoading}<LoadingIndicator  size={12} />{:else}<Refresh size={12}   />{/if}
             <span>{m.common_retry()}</span>
           </Button>
         </div>

@@ -4,6 +4,7 @@
   Spacious overview dossier of all parameters + authentic 5-phase initialization execution pipeline.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import {
   type OnboardingFormModel,
@@ -115,7 +116,7 @@ const tasks = $derived([
           </div>
         </div>
 
-        <div class="size-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+        <LoadingIndicator size={24} class="size-6 text-primary" />
       </div>
 
       <div class="space-y-3">

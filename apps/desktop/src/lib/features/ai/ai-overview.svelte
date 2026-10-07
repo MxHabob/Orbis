@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
@@ -92,7 +93,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
   {#if isLoading}
     <div class="h-64 flex items-center justify-center">
       <div class="flex items-center gap-3 text-muted-foreground text-sm font-medium">
-        <Sparkles size={18} class="animate-spin text-primary" />
+        <LoadingIndicator class="text-primary"  size={18} />
         <span>{m.ai_ui_loading_ai_center()}</span>
       </div>
     </div>

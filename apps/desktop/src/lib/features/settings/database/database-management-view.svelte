@@ -8,6 +8,7 @@
   - High-performance Svelte 5 Runes architecture with dual-transport parity & zero guessed defaults
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 import { onMount } from "svelte";
@@ -403,7 +404,7 @@ const advisorInsights = $derived.by(() => {
         onclick={() => controller.refresh()}
         disabled={controller.isLoading || controller.isOperating}
       >
-        <ArrowPath size={12} class={controller.isLoading ? "animate-spin text-primary" : ""} />
+        {#if controller.isLoading}<LoadingIndicator  size={12} class="text-primary" />{:else}<ArrowPath size={12}   />{/if}
         <span>{m.common_refresh()}</span>
       </Button>
 
@@ -762,7 +763,7 @@ const advisorInsights = $derived.by(() => {
                           disabled={controller.isCheckingHealth}
                         >
                           {#if controller.isCheckingHealth}
-                            <ArrowPath size={13} class="animate-spin text-primary" />
+                            <LoadingIndicator class="text-primary"  size={13} />
                           {:else}
                             <Bolt size={13} class="text-primary" />
                           {/if}
@@ -828,7 +829,7 @@ const advisorInsights = $derived.by(() => {
                   disabled={controller.isOperating}
                 >
                   {#if controller.isOperating && controller.operationName === "save_connection"}
-                    <ArrowPath size={12} class="animate-spin" />
+                    <LoadingIndicator   size={12} />
                     <span>{m.common_state_saving()}</span>
                   {:else}
                     <CheckCircle size={13} />
@@ -892,7 +893,7 @@ const advisorInsights = $derived.by(() => {
                   disabled={controller.isOperating}
                 >
                   {#if controller.isOperating && controller.operationName === "backup"}
-                    <ArrowPath size={13} class="animate-spin" />
+                    <LoadingIndicator   size={13} />
                     <span>{m.ui_copy_creating_verifying_backup_47acb457()}</span>
                   {:else}
                     <ArrowDownTray size={14} />
@@ -993,7 +994,7 @@ const advisorInsights = $derived.by(() => {
               <!-- Step 2: Inspection Card -->
               {#if controller.isInspectingBackup}
                 <div class="p-3.5 rounded-lg bg-card/40 border border-border/40 text-xs flex items-center gap-2.5 text-muted-foreground">
-                  <ArrowPath size={13} class="animate-spin text-primary" />
+                  <LoadingIndicator class="text-primary"  size={13} />
                   <span>{m.ui_copy_inspecting_and_validating_backup_file_8f710a33()}</span>
                 </div>
               {:else if controller.inspectedBackup}
@@ -1039,7 +1040,7 @@ const advisorInsights = $derived.by(() => {
                 disabled={!controller.inspectedBackup?.is_valid || controller.isOperating}
               >
                 {#if controller.isOperating && controller.operationName === "restore"}
-                  <ArrowPath size={13} class="animate-spin" />
+                  <LoadingIndicator   size={13} />
                   <span>{m.ui_copy_restoring_upgrading_30e27930()}</span>
                 {:else}
                   <ArrowUpTray size={14} />

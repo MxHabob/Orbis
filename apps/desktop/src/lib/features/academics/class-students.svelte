@@ -4,6 +4,7 @@
   Uses @orbis/svelte-grid inside a standardized Card container.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import {
@@ -154,7 +155,7 @@ function refetch() {
             class="h-8 gap-1.5 text-xs font-semibold"
             onclick={refetch}
           >
-            <Refresh size={12} class={isLoading ? "animate-spin" : ""} />
+            {#if isLoading}<LoadingIndicator  size={12} />{:else}<Refresh size={12}   />{/if}
             {m.common_retry()}
           </Button>
         </div>

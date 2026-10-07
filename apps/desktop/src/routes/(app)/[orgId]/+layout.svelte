@@ -11,6 +11,7 @@ import { onMount } from "svelte";
 import type { Snippet } from "svelte";
 import type { LayoutData } from "./$types";
 import { localeState } from "$lib/core/i18n";
+import { LoadingIndicator } from "@orbis/ui";
 
 let { data, children }: { data: LayoutData; children: Snippet } = $props();
 let authReady = $state(false);
@@ -42,9 +43,9 @@ onMount(async () => {
   {/key}
 {:else}
   <div class="flex h-full w-full items-center justify-center bg-background">
-    <div class="flex items-center gap-3 text-sm text-muted-foreground" role="status">
-      <span class="size-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary"></span>
-      <span>Loading workspace...</span>
+    <div class="flex items-center gap-3 text-sm text-muted-foreground">
+      <LoadingIndicator size="lg" label="Loading workspace" />
+      <span aria-hidden="true">Loading workspace...</span>
     </div>
   </div>
 {/if}

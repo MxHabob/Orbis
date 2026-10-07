@@ -5,6 +5,7 @@ and inspect role assignments according to the Orbis IAM Domain model.
 Powered by OrbisGrid and Design System Card primitives.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
@@ -235,7 +236,7 @@ async function handleRoleSaved() {
         class="h-9 w-9 cursor-pointer"
         title={m.common_control_refresh()}
       >
-        <Refresh size={13} class={isLoading ? "animate-spin" : ""} />
+        {#if isLoading}<LoadingIndicator  size={13} />{:else}<Refresh size={13}   />{/if}
       </Button>
 
       <Button

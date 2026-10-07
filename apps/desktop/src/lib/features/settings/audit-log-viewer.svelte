@@ -4,6 +4,7 @@
   Uses TanStack Query and OrbisGrid for high-performance virtualized audit inspection.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { createQuery } from "@tanstack/svelte-query";
 import { api, type AuditLogDto, type UserDto } from "$lib/api";
@@ -207,7 +208,7 @@ const columns = $derived<OrbisColumnDef[]>([
         class="text-muted-foreground hover:text-foreground"
         title={m.ui_copy_refresh_9d82f148()}
       >
-        <Refresh size={14} class={isFetching ? "animate-spin" : ""} />
+        {#if isFetching}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
       </Button>
     </div>
   </div>
