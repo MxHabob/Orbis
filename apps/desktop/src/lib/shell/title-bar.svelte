@@ -104,7 +104,6 @@
     {/if}
   </div>
 
-  <!-- Center Side: Draggable spacer -->
   <div class="flex-1 h-full min-w-0" data-tauri-drag-region></div>
 
   <!-- End Side: Header Buttons, Sync Indicator, Theme, Focus Mode, Window Controls -->

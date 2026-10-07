@@ -13,6 +13,8 @@ interface Props {
   timezone: string;
   locale: string;
   dateFormat: string;
+  formatLocale: string;
+  timeFormat: string;
   hijriEnabled: boolean;
   isSaving?: boolean;
   onLanguageChange: (newLocale: string) => void | boolean | Promise<void | boolean>;
@@ -23,15 +25,36 @@ let {
   timezone = $bindable(),
   locale = $bindable(),
   dateFormat = $bindable(),
+  formatLocale = $bindable(),
+  timeFormat = $bindable(),
   hijriEnabled = $bindable(),
   isSaving = false,
   onLanguageChange,
 }: Props = $props();
 
 const dateFormats = [
-  { value: "YYYY-MM-DD", label: "YYYY-MM-DD (2026-06-24)", example: "ISO Standard" },
-  { value: "DD/MM/YYYY", label: "DD/MM/YYYY (24/06/2026)", example: "British / Arabic Standard" },
-  { value: "MM/DD/YYYY", label: "MM/DD/YYYY (06/24/2026)", example: "US Standard" },
+  { value: "YYYY-MM-DD", label: m.settings_general_date_iso(), example: "2026-06-24" },
+  { value: "DD/MM/YYYY", label: m.settings_general_date_numeric_dmy(), example: "24/06/2026" },
+  { value: "MM/DD/YYYY", label: m.settings_general_date_numeric_mdy(), example: "06/24/2026" },
+  { value: "DD MMM YYYY", label: m.settings_general_date_short_dmy(), example: "24 Jun 2026" },
+  { value: "MMM DD, YYYY", label: m.settings_general_date_short_mdy(), example: "Jun 24, 2026" },
+  { value: "DD MMMM YYYY", label: m.settings_general_date_long_dmy(), example: "24 June 2026" },
+  { value: "MMMM DD, YYYY", label: m.settings_general_date_long_mdy(), example: "June 24, 2026" },
+  { value: "EEEE, DD MMMM YYYY", label: m.settings_general_date_full_dmy(), example: "Wednesday, 24 June 2026" },
+];
+
+const formatLocales = [
+  { value: "auto", label: m.settings_general_format_locale_auto() },
+  { value: "ar-SA", label: m.settings_general_format_locale_arabic() },
+  { value: "ar-SA-u-nu-latn", label: m.settings_general_format_locale_arabic_latin_digits() },
+  { value: "en-US", label: m.settings_general_format_locale_english_us() },
+  { value: "en-GB", label: m.settings_general_format_locale_english_uk() },
+];
+
+const timeFormats = [
+  { value: "locale", label: m.settings_general_time_format_locale() },
+  { value: "12-hour", label: m.settings_general_time_format_12_hour() },
+  { value: "24-hour", label: m.settings_general_time_format_24_hour() },
 ];
 </script>
 
@@ -82,6 +105,40 @@ const dateFormats = [
           getItemLabel={(df) => df.label}
           getItemSubtitle={(df) => df.example}
           getItemBadge={(df) => df.value}
+          class="w-full"
+        />
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
+      title={m.settings_general_format_locale()}
+      description={m.settings_general_format_locale_desc()}
+    >
+      {#snippet children()}
+        <SearchableSelect
+          bind:value={formatLocale}
+          items={formatLocales}
+          placeholder={m.settings_general_format_locale()}
+          disabled={isSaving}
+          getItemValue={(item) => item.value}
+          getItemLabel={(item) => item.label}
+          class="w-full"
+        />
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
+      title={m.settings_general_time_format()}
+      description={m.settings_general_time_format_desc()}
+    >
+      {#snippet children()}
+        <SearchableSelect
+          bind:value={timeFormat}
+          items={timeFormats}
+          placeholder={m.settings_general_time_format()}
+          disabled={isSaving}
+          getItemValue={(item) => item.value}
+          getItemLabel={(item) => item.label}
           class="w-full"
         />
       {/snippet}

@@ -37,6 +37,8 @@ let currency = $state("YER");
 let timezone = $state("Asia/Aden");
 let locale = $state("ar");
 let dateFormat = $state("YYYY-MM-DD");
+let formatLocale = $state("auto");
+let timeFormat = $state("locale");
 let hijriEnabled = $state(false);
 
 // Institutional Policy Settings State
@@ -50,6 +52,8 @@ const settingsForm = new FormController({
     timezone: "Asia/Aden",
     locale: "ar",
     dateFormat: "YYYY-MM-DD",
+    formatLocale: "auto",
+    timeFormat: "locale",
   },
   schema: generalSettingsInputSchema,
 });
@@ -74,6 +78,8 @@ $effect(() => {
     timezone = org.timezone || "Asia/Aden";
     locale = org.locale || "ar";
     dateFormat = org.date_format || "YYYY-MM-DD";
+    formatLocale = org.format_locale || "auto";
+    timeFormat = org.time_format || "locale";
     hijriEnabled = org.is_hijri_enabled !== undefined ? Boolean(org.is_hijri_enabled) : (org.hijri_enabled === true || org.hijri_enabled === 1);
 
     loadSettings().finally(() => {
@@ -85,6 +91,8 @@ $effect(() => {
         timezone,
         locale,
         dateFormat,
+        formatLocale,
+        timeFormat,
         hijriEnabled,
       };
     });
@@ -102,6 +110,8 @@ const isDirty = $derived.by(() => {
     timezone !== initialValues.timezone ||
     locale !== initialValues.locale ||
     dateFormat !== initialValues.dateFormat ||
+    formatLocale !== initialValues.formatLocale ||
+    timeFormat !== initialValues.timeFormat ||
     hijriEnabled !== initialValues.hijriEnabled
   );
 });
@@ -115,12 +125,14 @@ function handleReset() {
   timezone = initialValues.timezone;
   locale = initialValues.locale;
   dateFormat = initialValues.dateFormat;
+  formatLocale = initialValues.formatLocale;
+  timeFormat = initialValues.timeFormat;
   hijriEnabled = initialValues.hijriEnabled;
 }
 
 async function handleSubmit(e?: Event) {
   e?.preventDefault();
-  settingsForm.values = { name, currency, timezone, locale, dateFormat };
+  settingsForm.values = { name, currency, timezone, locale, dateFormat, formatLocale, timeFormat };
   const submitted = await settingsForm.submit(async (result) => {
     onsave({
       name: result.name,
@@ -131,6 +143,8 @@ async function handleSubmit(e?: Event) {
       timezone: result.timezone,
       locale: result.locale,
       date_format: result.dateFormat,
+      format_locale: result.formatLocale,
+      time_format: result.timeFormat,
       is_hijri_enabled: hijriEnabled,
     });
 
@@ -158,6 +172,8 @@ async function handleSubmit(e?: Event) {
       timezone,
       locale,
       dateFormat,
+      formatLocale,
+      timeFormat,
       hijriEnabled,
     };
   } else {
@@ -177,6 +193,8 @@ async function handleLanguageChange(newLocale: string) {
     timezone,
     locale: newLocale,
     date_format: dateFormat,
+    format_locale: formatLocale,
+    time_format: timeFormat,
     hijri_enabled: hijriEnabled,
   });
 }
@@ -208,6 +226,8 @@ function handleSaveAvatar(e: Event) {
         bind:timezone
         bind:locale
         bind:dateFormat
+        bind:formatLocale
+        bind:timeFormat
         bind:hijriEnabled
         {isSaving}
         onLanguageChange={handleLanguageChange}

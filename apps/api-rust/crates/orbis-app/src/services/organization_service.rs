@@ -24,6 +24,8 @@ pub struct UpdateOrgRequest {
     pub timezone: Option<String>,
     pub locale: Option<String>,
     pub date_format: Option<String>,
+    pub format_locale: Option<String>,
+    pub time_format: Option<String>,
     pub is_hijri_enabled: Option<bool>,
     pub base_currency_code: Option<String>,
     pub primary_color: Option<String>,
@@ -155,6 +157,12 @@ impl OrganizationService {
         }
         if let Some(df) = req.date_format {
             org.date_format = Some(df);
+        }
+        if let Some(fl) = req.format_locale {
+            org.format_locale = Some(fl);
+        }
+        if let Some(tf) = req.time_format {
+            org.time_format = Some(tf);
         }
         if let Some(h) = req.is_hijri_enabled {
             org.is_hijri_enabled = h;

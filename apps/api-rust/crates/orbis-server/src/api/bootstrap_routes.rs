@@ -60,6 +60,10 @@ pub struct BootstrapRequest {
     pub locale: String,
     /// Date format pattern
     pub date_format: Option<String>,
+    /// BCP-47 locale used only for formatting dates, numbers, and currency
+    pub format_locale: Option<String>,
+    /// Time display preference: locale, 12-hour, or 24-hour
+    pub time_format: Option<String>,
     /// Enable Hijri calendar support
     pub is_hijri_enabled: Option<bool>,
     /// Base currency ISO code
@@ -177,6 +181,8 @@ pub async fn execute_bootstrap(
         timezone: req.timezone,
         locale: req.locale,
         date_format: req.date_format,
+        format_locale: req.format_locale,
+        time_format: req.time_format,
         is_hijri_enabled: req.is_hijri_enabled,
         base_currency_code: req.base_currency_code,
         primary_color: req.primary_color,

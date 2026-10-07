@@ -4,9 +4,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
   DropdownMenuPortal,
 } from "@orbis/ui/dropdown-menu";
@@ -72,12 +69,6 @@ async function handleLogout() {
   goto(localizeHref("/login"));
 }
 
-async function handleBranchSelect(id: string | null) {
-  await api.selectOrgUnit(id ?? undefined);
-  effectiveContext.setOrgUnit(id);
-  effectiveContext.setClass(null);
-  await goto(localizeHref(`/${orgId}`));
-}
 </script>
 
 <DropdownMenu>
@@ -141,27 +132,8 @@ async function handleBranchSelect(id: string | null) {
 
       <!-- Items -->
       <div class="py-1">
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger class="cursor-pointer px-3 py-1.5 text-xs rounded">
-            <span>{m.common_header_switch_branch()}</span>
-            <span class="ms-auto max-w-28 truncate text-[10px] text-muted-foreground">{activeBranchName}</span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent class="w-52 p-1">
-            <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleBranchSelect(null)}>
-              {m.shared_ui_all_branches()}
-            </DropdownMenuItem>
-            {#each branches as branch (branch.id)}
-              <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleBranchSelect(branch.id)}>
-                {l(branch.name_ar, branch.name)}
-              </DropdownMenuItem>
-            {/each}
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
         <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={() => handleNavigate(`/${orgId}/account`)}>
           {m.common_account_settings_title()}
-        </DropdownMenuItem>
-        <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={() => api.connectionOpenWindow()}>
-          {m.settings_connection_settings()}
         </DropdownMenuItem>
         <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded text-destructive" onclick={handleLogout}>
           {m.common_sign_out()}

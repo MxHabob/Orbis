@@ -6,6 +6,7 @@ import { Skeleton } from "@orbis/ui/skeleton";
 import { TimetableGrid } from "@orbis/ui";
 import { ArrowForward, Calendar, ClockRotateRight } from "@orbis/icons";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { formatDate } from "$lib/core/i18n";
 import WorkspaceCard from "./workspace-card.svelte";
 import { page } from "$app/state";
 
@@ -86,9 +87,10 @@ const weekdays = $derived.by(() => {
     .sort((a, b) => weekOrder.indexOf(a) - weekOrder.indexOf(b))
     .map((day) => ({
       value: day,
-      label: new Intl.DateTimeFormat(getLocale(), { weekday: "short" }).format(
-        new Date(Date.UTC(2023, 0, day)),
-      ),
+      label: formatDate(new Date(Date.UTC(2023, 0, day)), "date", {
+        weekday: "short",
+        timeZone: "UTC",
+      }),
       isToday: false,
     }));
 });

@@ -5,29 +5,27 @@
   import {
     Dialog,
     DialogContent,
-    DialogHeader,
     DialogTitle,
     DialogDescription,
   } from "@orbis/ui/dialog";
   import { Button } from "@orbis/ui/button";
-  import { Badge } from "@orbis/ui/badge";
-  import { LoadingIndicator } from "@orbis/ui";
+  import { Check, Clipboard, GlobeAlt } from "@orbis/icons";
+  import mulverseOrbisImg from "$lib/assets/mulverse-orbis.png";
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
   let info = $state<AppInfo | null>(null);
   let isLoading = $state(false);
-  let loadError = $state<string | null>(null);
   let isCopied = $state(false);
+
+  const OFFICIAL_WEBSITE = "https://www.mulverse.com/";
 
   async function loadAppInfo() {
     isLoading = true;
-    loadError = null;
     try {
       info = await api.systemGetAppInfo();
     } catch (error) {
       console.error("Failed to load application information:", error);
-      loadError = error instanceof Error ? error.message : String(error);
     } finally {
       isLoading = false;
     }
@@ -38,12 +36,14 @@
     const diagnostics = JSON.stringify(
       {
         application: info.name,
+        company: "Mulverse Inc.",
+        headquarters: "Sana'a, Al-Jaraf, Yemen",
+        website: OFFICIAL_WEBSITE,
         version: info.version,
         build_profile: info.build_profile,
         target_os: info.target_os,
         target_arch: info.target_arch,
         timestamp: new Date().toISOString(),
-        user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
       },
       null,
       2,
@@ -58,76 +58,100 @@
     }
   }
 
+  function openWebsite() {
+    window.open(OFFICIAL_WEBSITE, "_blank", "noopener,noreferrer");
+  }
+
   $effect(() => {
     if (open && !info && !isLoading) void loadAppInfo();
   });
 </script>
 
 <Dialog bind:open>
-  <DialogContent class="flex max-h-[85vh] max-w-2xl flex-col gap-0 overflow-hidden border-border/60 bg-background/95 p-0 shadow-2xl backdrop-blur-md">
-    <DialogHeader class="space-y-2 border-b border-border/40 bg-gradient-to-b from-primary/10 via-primary/5 to-transparent px-6 py-5 text-start">
-      <div class="flex items-center gap-2.5">
-        <div class="flex size-9 items-center justify-center rounded-xl border border-primary/30 bg-primary/15 text-primary">
-          <span class="text-xs font-bold">A</span>
-        </div>
-        <div class="min-w-0">
-          <DialogTitle class="flex flex-wrap items-center gap-2 text-lg font-bold tracking-tight text-foreground">
-            {#if info}
-              <span>{info.name}</span>
-              <Badge variant="outline" class="h-4 border-primary/40 bg-primary/10 px-1.5 font-mono text-[10px] text-primary">
-                v{info.version}
-              </Badge>
-            {:else}
-              <span>{m.ui_system_about_build_runtime_telemetry()}</span>
-            {/if}
-          </DialogTitle>
-        </div>
-      </div>
-      <DialogDescription class="pt-1 text-xs leading-relaxed text-muted-foreground">
-        {m.ui_system_about_description()}
-      </DialogDescription>
-    </DialogHeader>
+  <DialogContent class="w-full max-w-lg sm:max-w-[560px] p-5 gap-0 rounded-3xl border border-border/60 bg-card/98 shadow-2xl backdrop-blur-xl overflow-hidden font-sans">
+    <DialogTitle class="sr-only">About {info?.name ?? "Orbis"}</DialogTitle>
+    <DialogDescription class="sr-only">Orbis and Mulverse Information</DialogDescription>
 
-    <div class="flex-1 space-y-4 overflow-y-auto p-6">
-      {#if isLoading}
-        <p class="flex items-center gap-2 text-sm text-muted-foreground">
-          <LoadingIndicator size="sm" label={m.ui_system_about_loading()} />
-          <span aria-hidden="true">{m.ui_system_about_loading()}</span>
-        </p>
-      {:else if loadError}
-        <p class="text-sm text-destructive" role="alert">{m.ui_system_about_load_failed()} {loadError}</p>
-      {:else if info}
-        <div class="space-y-2">
-          <h3 class="text-xs font-semibold uppercase tracking-wider text-foreground">
-            {m.ui_system_about_build_runtime_telemetry()}
-          </h3>
-          <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            <div class="space-y-0.5 rounded-lg border border-border/50 bg-muted/20 p-3">
-              <span class="block font-mono text-[10px] uppercase text-muted-foreground">{m.ui_system_about_version()}</span>
-              <span class="font-mono text-xs font-semibold text-foreground">v{info.version}</span>
-            </div>
-            <div class="space-y-0.5 rounded-lg border border-border/50 bg-muted/20 p-3">
-              <span class="block font-mono text-[10px] uppercase text-muted-foreground">{m.ui_system_about_build_profile()}</span>
-              <span class="text-xs font-semibold text-foreground">{info.build_profile}</span>
-            </div>
-            <div class="space-y-0.5 rounded-lg border border-border/50 bg-muted/20 p-3 sm:col-span-2">
-              <span class="block font-mono text-[10px] uppercase text-muted-foreground">{m.ui_system_about_target_os_arch()}</span>
-              <span class="font-mono text-xs font-semibold uppercase text-foreground">
-                {info.target_os}{info.target_arch ? ` / ${info.target_arch}` : ""}
-              </span>
-            </div>
-          </div>
-        </div>
-      {/if}
+    <!-- Top Visual Showcase Banner (Exact match with reference layout) -->
+    <div class="relative w-full h-52 sm:h-56 overflow-hidden rounded-2xl border border-border/40 bg-muted/40 shadow-xs flex items-center justify-center">
+      <img
+        src={mulverseOrbisImg}
+        alt="Mulverse Orbis"
+        class="w-full h-full object-cover"
+      />
     </div>
 
-    <div class="flex items-center justify-between border-t border-border/40 bg-muted/20 px-6 py-3">
-      <Button variant="outline" size="sm" disabled={!info} onclick={copyDiagnostics} class="h-8 px-3 text-xs font-normal">
-        {isCopied ? m.ui_system_about_copied_diagnostics() : m.ui_system_about_copy_diagnostics()}
-      </Button>
-      <Button variant="default" size="sm" onclick={() => (open = false)} class="h-8 px-5 text-xs font-medium">
-        {m.ui_system_about_close()}
-      </Button>
+    <!-- Bottom Content Area -->
+    <div class="pt-4 px-1 pb-1 flex flex-col gap-1.5 text-start">
+      <!-- Eyebrow text -->
+      <span class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+        {m.ui_system_about_company_name()}
+      </span>
+
+      <!-- Bold Main Title -->
+      <div class="flex items-center gap-2">
+        <h2 class="text-xl sm:text-2xl font-black tracking-tight text-foreground capitalize">
+          {info?.name ?? "Orbis"}
+        </h2>
+        {#if info}
+          <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+            v{info.version}
+          </span>
+        {/if}
+      </div>
+
+      <!-- Clean Description Body -->
+      <p class="text-xs leading-relaxed text-muted-foreground max-w-lg pt-0.5">
+        {m.ui_system_about_company_desc()}
+      </p>
+
+      <!-- Minimal System Info Row (Dynamic - No hardcoded or fabricated metrics) -->
+      {#if info}
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10.5px] text-muted-foreground/70 font-mono pt-1">
+          <span class="capitalize">{info.build_profile}</span>
+          <span>•</span>
+          <span>{info.target_os}{info.target_arch ? `/${info.target_arch}` : ""}</span>
+          <span>•</span>
+          <span class="font-sans">{m.ui_system_about_hq_location()}</span>
+        </div>
+      {/if}
+
+      <!-- Bottom Action Buttons (Matching reference image: secondary text + primary accent button) -->
+      <div class="flex items-center justify-between gap-2 pt-3 mt-1">
+        <button
+          type="button"
+          onclick={openWebsite}
+          class="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer select-none"
+        >
+          <GlobeAlt size={13} />
+          <span>{m.ui_system_about_website()}</span>
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            onclick={copyDiagnostics}
+            class="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer select-none"
+          >
+            {#if isCopied}
+              <Check size={13} class="text-emerald-500" />
+              <span>{m.ui_system_about_copied_diagnostics()}</span>
+            {:else}
+              <Clipboard size={13} />
+              <span>{m.ui_system_about_copy_diagnostics()}</span>
+            {/if}
+          </button>
+
+          <Button
+            variant="default"
+            size="sm"
+            onclick={() => (open = false)}
+            class="text-xs h-9 px-5 rounded-xl font-semibold cursor-pointer shadow-xs bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {m.ui_system_about_close()}
+          </Button>
+        </div>
+      </div>
     </div>
   </DialogContent>
 </Dialog>

@@ -914,6 +914,8 @@ export interface BootstrapRequest {
   timezone: string;
   locale: string;
   date_format?: string;
+  format_locale?: string;
+  time_format?: "locale" | "12-hour" | "24-hour";
   is_hijri_enabled?: boolean;
   base_currency_code?: string;
   primary_color?: string;

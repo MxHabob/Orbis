@@ -20,6 +20,7 @@ import AppIcon from "$lib/features/ai/components/integrations/app-icon.svelte";
 import CategoryFilter from "$lib/features/ai/components/integrations/category-filter.svelte";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
+import AppDetailSheet from "$lib/features/ai/components/integrations/app-detail-sheet.svelte";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 import { navigateOnboardingRoute } from "../navigation";
@@ -33,7 +34,7 @@ let activeCategory = $state("all");
 let searchQuery = $state("");
 let connectedIntegrations = $state<IntegrationDto[]>([]);
 let selectedApp = $state<OrbisApp | null>(null);
-let sheetOpen = $state(false);
+let detailSheetOpen = $state(false);
 
 const stepTasks = $derived(getTasksForStep("integrations", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.every((t) => t.status === "completed"));
@@ -88,17 +89,7 @@ const connectedCount = $derived(
 
 function openConnectSheet(app: OrbisApp) {
   selectedApp = app;
-  sheetOpen = true;
-}
-
-async function handleAppConnected(providerName: string) {
-  await loadData();
-  await systemStore.loadOnboardingState(orgId);
-}
-
-async function handleAppDisconnected(providerName: string) {
-  await loadData();
-  await systemStore.loadOnboardingState(orgId);
+  detailSheetOpen = true;
 }
 
 async function handleContinue() {
@@ -260,3 +251,17 @@ async function handleContinue() {
     </Button>
   </div>
 </div>
+
+{#if selectedApp}
+  <AppDetailSheet
+    bind:open={detailSheetOpen}
+    {orgId}
+    app={selectedApp}
+    onclose={() => {
+      detailSheetOpen = false;
+      selectedApp = null;
+      void loadData();
+      void systemStore.loadOnboardingState(orgId);
+    }}
+  />
+{/if}

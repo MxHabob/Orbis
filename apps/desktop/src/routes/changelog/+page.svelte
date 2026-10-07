@@ -3,7 +3,7 @@
   import { onMount } from "svelte";
   import { api } from "$lib/api/client";
   import type { AppInfo, ReleaseChangelogItem, UpdateCheckResult } from "$lib/api/types";
-  import { getLocale } from "$lib/paraglide/runtime";
+  import { formatDate as formatOrgDate } from "$lib/core/i18n";
   import { Button } from "@orbis/ui/button";
   import { Badge } from "@orbis/ui/badge";
   import { LoadingIndicator } from "@orbis/ui";
@@ -20,7 +20,6 @@
   let updateResult = $state<UpdateCheckResult | null>(null);
   let updateError = $state<string | null>(null);
 
-  const isRTL = $derived(getLocale().startsWith("ar"));
   const activeRelease = $derived(
     releases.find((release) => release.version === selectedVersion) ?? releases[0] ?? null,
   );
@@ -30,7 +29,7 @@
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? null
-      : date.toLocaleDateString(isRTL ? "ar" : "en", { dateStyle: "medium" });
+      : formatOrgDate(date, "date");
   }
 
   async function loadData() {

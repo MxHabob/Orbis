@@ -29,6 +29,8 @@ pub struct OrgDto {
     pub timezone: String,
     pub locale: String,
     pub date_format: Option<String>,
+    pub format_locale: Option<String>,
+    pub time_format: Option<String>,
     pub is_hijri_enabled: bool,
     pub base_currency_code: Option<String>,
     pub primary_color: Option<String>,
@@ -56,6 +58,8 @@ fn org_to_dto(org: orbis_domain::entities::organization::Organization) -> OrgDto
         timezone: org.timezone,
         locale: org.locale,
         date_format: org.date_format,
+        format_locale: org.format_locale,
+        time_format: org.time_format,
         is_hijri_enabled: org.is_hijri_enabled,
         base_currency_code: org.base_currency_code,
         primary_color: org.primary_color,
@@ -126,6 +130,16 @@ pub async fn org_update_current(
         .or_else(|| request.get("dateFormat"))
         .and_then(|v| v.as_str())
         .map(|s| s.to_string());
+    let format_locale = request
+        .get("format_locale")
+        .or_else(|| request.get("formatLocale"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+    let time_format = request
+        .get("time_format")
+        .or_else(|| request.get("timeFormat"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
     let is_hijri_enabled = request
         .get("is_hijri_enabled")
         .or_else(|| request.get("isHijriEnabled"))
@@ -158,6 +172,8 @@ pub async fn org_update_current(
         timezone: tz,
         locale,
         date_format,
+        format_locale,
+        time_format,
         is_hijri_enabled,
         base_currency_code,
         primary_color: color,

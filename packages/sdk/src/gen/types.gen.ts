@@ -501,6 +501,10 @@ export type BootstrapRequest = {
      */
     date_format?: string | null;
     /**
+     * Locale used for formatting dates, numbers, and currency independently from the UI language
+     */
+    format_locale?: string | null;
+    /**
      * Educational curriculum track
      */
     educational_track?: string | null;
@@ -560,6 +564,10 @@ export type BootstrapRequest = {
      * IANA timezone
      */
     timezone: string;
+    /**
+     * Time display preference: locale, 12-hour, or 24-hour
+     */
+    time_format?: string | null;
     /**
      * Official website URL
      */
@@ -1582,6 +1590,7 @@ export type OrgDto = {
     current_period_id?: string | null;
     date_format?: string | null;
     favicon?: string | null;
+    format_locale?: string | null;
     features?: unknown;
     id: string;
     is_active: boolean;
@@ -1595,6 +1604,7 @@ export type OrgDto = {
     settings?: unknown;
     slug: string;
     timezone: string;
+    time_format?: string | null;
     updated_at: string;
     updated_by?: string | null;
     version: number;
@@ -2443,6 +2453,7 @@ export type UpdateOrgRequest = {
     code?: string | null;
     date_format?: string | null;
     favicon?: string | null;
+    format_locale?: string | null;
     is_hijri_enabled?: boolean | null;
     locale?: string | null;
     logo?: string | null;
@@ -2450,6 +2461,7 @@ export type UpdateOrgRequest = {
     name_ar?: string | null;
     primary_color?: string | null;
     timezone?: string | null;
+    time_format?: string | null;
 };
 
 export type UpdateOrgUnitRequest = {

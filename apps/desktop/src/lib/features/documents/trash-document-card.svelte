@@ -19,6 +19,7 @@ import {
   ClockRotateRight,
 } from "@orbis/icons";
 import type { DocumentDto } from "$lib/api";
+import { formatDate as formatOrgDate } from "$lib/core/i18n";
 
 let {
   document,
@@ -68,16 +69,7 @@ function formatSize(bytes?: number | null) {
 
 function formatDate(value?: string | null) {
   if (!value) return "";
-  try {
-    return new Intl.DateTimeFormat(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(value));
-  } catch {
-    return value;
-  }
+  return formatOrgDate(value, "datetime");
 }
 </script>
 

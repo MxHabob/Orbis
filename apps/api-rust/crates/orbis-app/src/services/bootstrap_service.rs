@@ -75,6 +75,8 @@ pub struct BootstrapRequest {
     pub timezone: String,
     pub locale: String,
     pub date_format: Option<String>,
+    pub format_locale: Option<String>,
+    pub time_format: Option<String>,
     pub is_hijri_enabled: Option<bool>,
     pub base_currency_code: Option<String>,
 
@@ -431,6 +433,8 @@ impl BootstrapService {
             });
         org.code = Some(auto_code);
         org.date_format = req.date_format.clone().or(Some("YYYY-MM-DD".to_string()));
+        org.format_locale = req.format_locale.clone();
+        org.time_format = req.time_format.clone();
         org.is_hijri_enabled = req.is_hijri_enabled.unwrap_or(false);
         org.base_currency_code = req.base_currency_code.clone();
         org.primary_color = req.primary_color.clone().or(Some("#4f46e5".to_string()));

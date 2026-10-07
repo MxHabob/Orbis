@@ -2,7 +2,7 @@
   import * as m from "$lib/paraglide/messages";
   import { api } from "$lib/api/client";
   import type { ReleaseChangelogItem } from "$lib/api/types";
-  import { getLocale } from "$lib/paraglide/runtime";
+  import { formatDate } from "$lib/core/i18n";
   import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
   import { Button } from "@orbis/ui/button";
   import { Badge } from "@orbis/ui/badge";
@@ -17,7 +17,6 @@
   let loadError = $state(false);
   let openError = $state(false);
 
-  const locale = $derived(getLocale());
   const releaseDate = $derived.by(() => {
     const value = latestRelease?.published_at;
     if (!value) return null;
@@ -25,7 +24,7 @@
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? null
-      : new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
+      : formatDate(date, "date");
   });
 
   async function loadChangelog() {

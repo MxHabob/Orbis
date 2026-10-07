@@ -36,6 +36,8 @@ pub struct BootstrapRequest {
     pub timezone: String,
     pub locale: String,
     pub date_format: Option<String>,
+    pub format_locale: Option<String>,
+    pub time_format: Option<String>,
     pub is_hijri_enabled: Option<bool>,
     pub base_currency_code: Option<String>,
 
@@ -691,6 +693,8 @@ pub async fn bootstrap_execute(
         timezone: request.timezone,
         locale: request.locale,
         date_format: request.date_format,
+        format_locale: request.format_locale,
+        time_format: request.time_format,
         is_hijri_enabled: request.is_hijri_enabled,
         base_currency_code: request.base_currency_code,
         primary_color: request.primary_color,

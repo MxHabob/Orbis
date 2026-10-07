@@ -20,6 +20,7 @@ import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { extractErrorMessage } from "$lib/api";
 import { createClassStudentsQuery } from "$lib/features/academics";
+import { formatDate } from "$lib/core/i18n";
 import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
 import { goto } from "$app/navigation";
 
@@ -108,7 +109,7 @@ const gridSource = $derived(
     gender: student.gender || "—",
     status: student.status || "active",
     enrolled_date: student.created_at
-      ? new Date(student.created_at).toLocaleDateString()
+      ? formatDate(student.created_at, "date")
       : "—",
   })),
 );

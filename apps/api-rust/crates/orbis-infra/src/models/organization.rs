@@ -15,6 +15,8 @@ pub struct Model {
     pub timezone: String,
     pub locale: String,
     pub date_format: Option<String>,
+    pub format_locale: Option<String>,
+    pub time_format: Option<String>,
     pub is_hijri_enabled: bool,
     pub base_currency_code: Option<String>,
     pub settings: Option<serde_json::Value>,

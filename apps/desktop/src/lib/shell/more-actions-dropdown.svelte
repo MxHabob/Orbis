@@ -62,9 +62,9 @@ async function openUrl(url: string) {
 }
 
 const menuItemClass =
-  "flex items-center gap-2.5 px-2.5 py-2 text-xs cursor-pointer hover:bg-accent rounded-sm";
+  "flex items-center gap-2.5 px-2.5 py-2 text-xs cursor-pointer hover:bg-accent";
 const subTriggerClass =
-  "flex items-center justify-between text-xs cursor-pointer px-2.5 py-2 hover:bg-accent rounded-sm";
+  "flex items-center justify-between text-xs cursor-pointer px-2.5 py-2 hover:bg-accent";
 const iconClass = "text-muted-foreground shrink-0";
 </script>
 
@@ -90,7 +90,7 @@ const iconClass = "text-muted-foreground shrink-0";
     {/snippet}
   </DropdownMenuTrigger>
     <DropdownMenuPortal>
-    <DropdownMenuContent align="end" side="inline-end" sideOffset={12} class="w-64 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none overflow-visible">
+    <DropdownMenuContent align="end" side="inline-end" sideOffset={12} class="w-64 p-1 z-50 select-none overflow-visible">
     <!-- Resources Submenu -->
     <DropdownMenuSub>
       <DropdownMenuSubTrigger class={subTriggerClass}>

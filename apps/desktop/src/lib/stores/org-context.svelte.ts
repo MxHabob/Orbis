@@ -23,6 +23,8 @@ export interface OrgConfig {
   timezone: string;
   locale: string;
   dateFormat: string | null;
+  formatLocale: string | null;
+  timeFormat: string | null;
   isHijriEnabled: boolean;
   baseCurrencyCode: string | null;
   primaryColor: string | null;
@@ -89,11 +91,20 @@ class OrganizationContextStore {
   /** Organization locale (e.g., "ar", "en", "ar-SA") */
   locale = $derived(this._config?.locale ?? "ar");
 
-  /** Intl-compatible locale tag for formatting APIs */
-  intlLocale = $derived(resolveIntlLocale(this._config?.locale ?? "ar"));
+  /** Locale for rendered data, independent from the application UI language. */
+  intlLocale = $derived(
+    resolveIntlLocale(
+      this._config?.formatLocale && this._config.formatLocale !== "auto"
+        ? this._config.formatLocale
+        : this._config?.locale ?? "ar",
+    ),
+  );
 
   /** Organization date format string (e.g., "DD/MM/YYYY") */
   dateFormat = $derived(this._config?.dateFormat ?? "DD/MM/YYYY");
+
+  /** Time display preference: locale, 12-hour, or 24-hour. */
+  timeFormat = $derived(this._config?.timeFormat ?? "locale");
 
   /** Whether Hijri calendar display is enabled */
   isHijriEnabled = $derived(this._config?.isHijriEnabled ?? false);
@@ -135,6 +146,8 @@ class OrganizationContextStore {
         timezone: org.timezone,
         locale: org.locale,
         dateFormat: org.date_format ?? null,
+        formatLocale: org.format_locale ?? null,
+        timeFormat: org.time_format ?? null,
         isHijriEnabled: org.is_hijri_enabled ?? false,
         baseCurrencyCode: org.base_currency_code ?? null,
         primaryColor: org.primary_color ?? null,

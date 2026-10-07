@@ -4,7 +4,7 @@
  * Centralized, organization-aware formatting for dates, numbers, currency, and percentages.
  *
  * ALL formatting in the Desktop app MUST go through these functions.
- * They read locale, timezone, and currency from the OrganizationContextStore,
+ * They read locale, timezone, date format, and currency from the OrganizationContextStore,
  * NOT from hard-coded locale strings.
  *
  * RULES:
@@ -47,6 +47,21 @@ function getFormattingTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
+const dateFormatterCache = new Map<string, Intl.DateTimeFormat>();
+
+function getDateFormatter(
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+  const key = `${locale}:${JSON.stringify(options)}`;
+  let formatter = dateFormatterCache.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, options);
+    dateFormatterCache.set(key, formatter);
+  }
+  return formatter;
+}
+
 // ── Public API ───────────────────────────────────────────────────
 
 /**
@@ -86,7 +101,8 @@ export function formatCurrency(
 }
 
 /**
- * Formats a date/datetime value using organization timezone and locale.
+ * Formats a date/datetime value using organization formatting language,
+ * date pattern, time preference, and timezone.
  *
  * Distinguishes between semantic date types:
  * - "date": Date only (e.g., birth_date, academic dates) — timezone-independent
@@ -111,6 +127,9 @@ export function formatDate(
   } else if (typeof value === "number") {
     const normalized = Number.isFinite(value) && value < 1e12 ? value * 1000 : value;
     d = new Date(normalized);
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split("-").map(Number);
+    d = new Date(year, month - 1, day);
   } else {
     d = new Date(value);
   }
@@ -124,6 +143,24 @@ export function formatDate(
     return formatRelativeTime(d, locale);
   }
 
+  if (type === "date" && supportsOrganizationDateFormat(options)) {
+    return formatWithOrganizationDateFormat(
+      d,
+      locale,
+      orgContext.dateFormat ?? "DD/MM/YYYY",
+      options,
+    );
+  }
+
+  if (type === "datetime" && !options) {
+    return `${formatDate(d, "date", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    })} ${formatDate(d, "time")}`;
+  }
+
   const hasGranularFields = Boolean(
     options &&
       ("year" in options ||
@@ -135,6 +172,12 @@ export function formatDate(
         "weekday" in options),
   );
 
+  const hourCycle =
+    orgContext.timeFormat === "12-hour"
+      ? "h12"
+      : orgContext.timeFormat === "24-hour"
+        ? "h23"
+        : undefined;
   const baseOptions: Intl.DateTimeFormatOptions = {
     ...(!hasGranularFields && type === "date" && { dateStyle: "medium" as const }),
     ...(!hasGranularFields && type === "datetime" && {
@@ -143,14 +186,102 @@ export function formatDate(
       timeZone: timezone,
     }),
     ...(!hasGranularFields && type === "time" && {
-      timeStyle: "short" as const,
+      hour: "numeric" as const,
+      minute: "2-digit" as const,
       timeZone: timezone,
+      ...(hourCycle && { hourCycle }),
     }),
     ...(hasGranularFields && { timeZone: timezone }),
     ...options,
   };
 
-  return new Intl.DateTimeFormat(locale, baseOptions).format(d);
+  return getDateFormatter(locale, baseOptions).format(d);
+}
+
+const dateFormatToken = /YYYY|MMMM|MMM|MM|DD|D|EEEE/g;
+
+function supportsOrganizationDateFormat(
+  options?: Intl.DateTimeFormatOptions,
+): boolean {
+  if (!options) return true;
+  const formatFields = new Set([
+    "year",
+    "month",
+    "day",
+    "weekday",
+    "calendar",
+    "timeZone",
+    "numberingSystem",
+  ]);
+  return (
+    Object.keys(options).every((key) => formatFields.has(key)) &&
+    options.year === "numeric" &&
+    options.month === "2-digit" &&
+    options.day === "2-digit"
+  );
+}
+
+function formatWithOrganizationDateFormat(
+  date: Date,
+  locale: string,
+  dateFormat: string,
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  dateFormatToken.lastIndex = 0;
+  if (!dateFormatToken.test(dateFormat)) {
+    return getDateFormatter(locale, {
+      ...options,
+      ...(!options?.year && { dateStyle: "medium" }),
+    }).format(date);
+  }
+  dateFormatToken.lastIndex = 0;
+
+  const parts = getDateFormatter(locale, {
+    calendar: options?.calendar,
+    numberingSystem: options?.numberingSystem,
+    timeZone: options?.timeZone,
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+    weekday: "long",
+  }).formatToParts(date);
+  const values: Record<string, string> = {};
+  for (const part of parts) {
+    if (part.type === "day" || part.type === "month" || part.type === "year" || part.type === "weekday") {
+      values[part.type] = part.value;
+    }
+  }
+  values.monthShort = getDateFormatter(locale, {
+    calendar: options?.calendar,
+    numberingSystem: options?.numberingSystem,
+    timeZone: options?.timeZone,
+    month: "short",
+  }).format(date);
+  values.monthNumeric = getDateFormatter(locale, {
+    calendar: options?.calendar,
+    numberingSystem: options?.numberingSystem,
+    timeZone: options?.timeZone,
+    month: "2-digit",
+  }).format(date);
+  values.dayNumeric = getDateFormatter(locale, {
+    calendar: options?.calendar,
+    numberingSystem: options?.numberingSystem,
+    timeZone: options?.timeZone,
+    day: "numeric",
+  }).format(date);
+
+  return dateFormat.replace(dateFormatToken, (token) => {
+    switch (token) {
+      case "YYYY": return values.year ?? "";
+      case "MMMM": return values.month ?? "";
+      case "MMM": return values.monthShort ?? "";
+      case "MM": return values.monthNumeric ?? "";
+      case "DD": return values.day ?? "";
+      case "D": return values.dayNumeric ?? "";
+      case "EEEE": return values.weekday ?? "";
+      default: return token;
+    }
+  });
 }
 
 /**

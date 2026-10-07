@@ -126,7 +126,10 @@ async function handleAllBranchesSelect() {
             aria-label={orgNameDisplay}
           >
             <Avatar class="h-full w-full rounded-md">
-              <AvatarFallback class="font-bold text-lg text-white">
+              <AvatarFallback
+                class="font-bold text-lg text-white"
+                style="background-color: {primaryColor};"
+              >
                 {orgInitials}
               </AvatarFallback>
             </Avatar>

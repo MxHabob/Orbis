@@ -13,6 +13,7 @@ import {
   Refresh,
 } from "@orbis/icons";
 import type { DocumentDto } from "$lib/api";
+import { formatDate as formatOrgDate } from "$lib/core/i18n";
 
 let {
   open = $bindable(false),
@@ -63,10 +64,7 @@ $effect(() => {
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+  return formatOrgDate(value, "datetime");
 }
 
 function formatSize(bytes?: number | null) {
