@@ -41,19 +41,19 @@ let feeCategory = $state("tuition");
 let feeFrequency = $state("yearly");
 
 const FEE_CATEGORIES = [
-  { value: "tuition", label: "Tuition Fee (رسوم دراسية)" },
-  { value: "registration", label: "Registration / Admission (رسوم تسجيل وقبول)" },
-  { value: "transport", label: "Transportation / Bus (رسوم النقل المدرسي)" },
-  { value: "books", label: "Books & Study Materials (الكتب والمقررات)" },
-  { value: "uniform", label: "School Uniform (الزي المدرسي)" },
-  { value: "activity", label: "Extracurricular Activities (أنشطة لا منهجية)" },
+  { value: "tuition", label: m.onboarding_fee_category_tuition() },
+  { value: "registration", label: m.onboarding_fee_category_registration() },
+  { value: "transport", label: m.onboarding_fee_category_transport() },
+  { value: "books", label: m.onboarding_fee_category_books() },
+  { value: "uniform", label: m.onboarding_fee_category_uniform() },
+  { value: "activity", label: m.onboarding_fee_category_activity() },
 ];
 
 const FREQUENCIES = [
-  { value: "yearly", label: "Annual (سنوي)" },
-  { value: "termly", label: "Per Term / Semester (فصلي)" },
-  { value: "monthly", label: "Monthly (شهري)" },
-  { value: "once", label: "One-Time (مرة واحدة)" },
+  { value: "yearly", label: m.onboarding_fee_frequency_yearly() },
+  { value: "termly", label: m.onboarding_fee_frequency_termly() },
+  { value: "monthly", label: m.onboarding_fee_frequency_monthly() },
+  { value: "once", label: m.onboarding_fee_frequency_once() },
 ];
 
 const PRESET_FEES = [

@@ -86,7 +86,6 @@ async function handleSubmit(e: SubmitEvent) {
       disabled={form.isSubmitting}
       loadingMessage={m.bilingual_entry_loading()}
       failureMessage={m.bilingual_entry_failure()}
-      generatedMessage={m.bilingual_entry_generated()}
     >
       {#snippet arControl({ id, placeholder, required, disabled, ariaInvalid, ariaDescribedBy, onInput, onBlur })}
         <InputColor

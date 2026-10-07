@@ -314,7 +314,6 @@ function handleCancelClick() {
             disabled={isSaving}
             loadingMessage={m.bilingual_entry_loading()}
             failureMessage={m.bilingual_entry_failure()}
-            generatedMessage={m.bilingual_entry_generated()}
           />
           <BilingualNameFields
             arId="employee-middle-name-ar"
@@ -330,7 +329,6 @@ function handleCancelClick() {
             disabled={isSaving}
             loadingMessage={m.bilingual_entry_loading()}
             failureMessage={m.bilingual_entry_failure()}
-            generatedMessage={m.bilingual_entry_generated()}
           />
           <BilingualNameFields
             arId="employee-last-name-ar"
@@ -346,7 +344,6 @@ function handleCancelClick() {
             disabled={isSaving}
             loadingMessage={m.bilingual_entry_loading()}
             failureMessage={m.bilingual_entry_failure()}
-            generatedMessage={m.bilingual_entry_generated()}
           />
 
           <!-- ID & Demographic Grid -->

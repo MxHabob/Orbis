@@ -20,4 +20,19 @@ export const createPeriodInputSchema = z
     message: "End date must be after start date",
   });
 
+export const createYearInputSchema = z
+  .object({
+    name: z.string().trim().min(1),
+    name_ar: optionalText,
+    start_date: z.string().min(1),
+    end_date: z.string().min(1),
+    notes: optionalText,
+  })
+  .refine((value) => value.end_date >= value.start_date, {
+    path: ["end_date"],
+    message: "End date must be after start date",
+  });
+
+export type CreateYearInput = z.infer<typeof createYearInputSchema>;
 export type CreatePeriodInput = z.infer<typeof createPeriodInputSchema>;
+

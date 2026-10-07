@@ -257,7 +257,9 @@ close completed years, archive historical years, and view period structure.
       <SearchableMultiFilter
         groups={filterGroups}
         bind:selectedValues={selectedFilters}
-        placeholder={m.common_filter()}
+        placeholder={m.academic_years_filter_placeholder()}
+        searchPlaceholder={m.academic_years_filter_search()}
+        emptyText={m.academic_years_no_matching_filters()}
       />
       <Button
         variant="ghost"

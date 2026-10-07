@@ -28,7 +28,6 @@ import {
   CardContent,
 } from "@orbis/ui/card";
 import { toast } from "@orbis/ui";
-import { l } from "$lib/core/i18n";
 import { AcademicCap, BookOpen, Calculator, ChartBar, Lock, Scale } from "@orbis/icons";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
@@ -153,7 +152,7 @@ async function handleSave(e?: Event) {
 
     initialSnapshot = JSON.stringify(form);
     toast.success(
-      l("تم حفظ السياسات الأكاديمية بنجاح", "Academic policies saved successfully"),
+      m.ui_academic_policies_saved_successf_560bbb(),
     );
   } catch (err: unknown) {
     toast.error(extractErrorMessage(err));
@@ -173,7 +172,7 @@ async function handleSave(e?: Event) {
   {:else if policyQuery.error}
     <div class="w-full text-center py-12 text-destructive">
       <p>
-        {l("فشل في تحميل السياسات الأكاديمية", "Failed to load academic policies")}
+        {m.ui_failed_to_load_academic_policies_838a32()}
       </p>
       <Button
         variant="outline"
@@ -189,10 +188,10 @@ async function handleSave(e?: Event) {
       <div class="flex items-center justify-between gap-3 w-full select-none pb-2 border-b border-border">
         <div class="flex flex-col text-start">
           <h1 class="text-sm font-semibold text-foreground">
-            {l("السياسات الأكاديمية ونظام التقييم", "Academic Policies & Evaluation Engine")}
+            {m.ui_academic_policies_evaluation_eng_e18364()}
           </h1>
           <p class="text-xs text-muted-foreground mt-0.5">
-            {l("تحديد مقاييس الدرجات، عتبات النجاح، ضوابط الترتيب، والدقة الحسابية للمؤسسة التعليمية", "Configure grading scales, pass thresholds, ranking policies, and calculation precision")}
+            {m.ui_configure_grading_scales_pass_th_23486d()}
           </p>
         </div>
       </div>
@@ -204,29 +203,29 @@ async function handleSave(e?: Event) {
           <CardHeader>
             <div class="flex items-center gap-2">
               <Scale size={14} class="text-primary" />
-              <CardTitle>{l("نظام ومقاييس التقييم والنجاح", "Grading & Passing Criteria")}</CardTitle>
+              <CardTitle>{m.ui_grading_passing_criteria_74787f()}</CardTitle>
             </div>
             <CardDescription class="text-xs">
-              {l("معايير حساب المعدل وعتبات اجتياز المقررات الدراسية", "Grading scale and subject passing requirements")}
+              {m.ui_grading_scale_and_subject_passin_563452()}
             </CardDescription>
           </CardHeader>
 
           <CardContent class="p-6 flex flex-col gap-5 text-start">
             <!-- Grading System -->
             <div class="flex flex-col gap-1.5 text-start">
-              <Label class="text-xs font-semibold">{l("نظام التقييم الأساسي", "Default Grading System")}</Label>
+              <Label class="text-xs font-semibold">{m.ui_default_grading_system_ec7f85()}</Label>
               <Select
                 type="single"
                 value={form.default_grading_system}
                 onValueChange={(v) => { if (v) form.default_grading_system = v; }}
               >
                 <SelectTrigger class="text-xs h-9 w-full">
-                  {form.default_grading_system === "percentage" ? l("النسبة المئوية (100 نقطة)", "Percentage (100 Points)") : form.default_grading_system === "gpa_4_0" ? l("المعدل التراكمي (GPA 4.0)", "GPA (4.0 Scale)") : l("ناجح / راسب", "Pass / Fail")}
+                  {form.default_grading_system === "percentage" ? m.ui_percentage_100_points_772039() : form.default_grading_system === "gpa_4_0" ? m.ui_gpa_4_0_scale_29e27a() : m.ui_pass_fail_24ce15()}
                 </SelectTrigger>
                 <SelectContent class="text-xs">
-                  <SelectItem value="percentage">{l("النسبة المئوية (100 نقطة)", "Percentage (100 Points)")}</SelectItem>
-                  <SelectItem value="gpa_4_0">{l("المعدل التراكمي (GPA 4.0)", "GPA (4.0 Scale)")}</SelectItem>
-                  <SelectItem value="pass_fail">{l("ناجح / راسب", "Pass / Fail")}</SelectItem>
+                  <SelectItem value="percentage">{m.ui_percentage_100_points_772039()}</SelectItem>
+                  <SelectItem value="gpa_4_0">{m.ui_gpa_4_0_scale_29e27a()}</SelectItem>
+                  <SelectItem value="pass_fail">{m.ui_pass_fail_24ce15()}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -234,7 +233,7 @@ async function handleSave(e?: Event) {
             <!-- Scores Grid -->
             <div class="grid grid-cols-2 gap-4">
               <div class="flex flex-col gap-1.5 text-start">
-                <Label class="text-xs font-semibold">{l("درجة النجاح الدنيا (%)", "Passing Threshold (%)")}</Label>
+                <Label class="text-xs font-semibold">{m.ui_passing_threshold_a74bf1()}</Label>
                 <Input
                   type="number"
                   step="0.5"
@@ -244,11 +243,11 @@ async function handleSave(e?: Event) {
                   class="text-xs font-mono h-9"
                   disabled={isSaving}
                 />
-                <span class="text-[10px] text-muted-foreground">{l("النسبة المئوية المطلوبة للنجاح بالمادة (افتراضياً 50%)", "Minimum score required to pass")}</span>
+                <span class="text-[10px] text-muted-foreground">{m.ui_minimum_score_required_to_pass_03e49e()}</span>
               </div>
 
               <div class="flex flex-col gap-1.5 text-start">
-                <Label class="text-xs font-semibold">{l("نسبة مرتبة الشرف / التفوق (%)", "Honors Threshold (%)")}</Label>
+                <Label class="text-xs font-semibold">{m.ui_honors_threshold_3d4b7c()}</Label>
                 <Input
                   type="number"
                   step="0.5"
@@ -258,14 +257,14 @@ async function handleSave(e?: Event) {
                   class="text-xs font-mono h-9"
                   disabled={isSaving}
                 />
-                <span class="text-[10px] text-muted-foreground">{l("النسبة المستحقة للشهادات التقديرية (افتراضياً 85%)", "Percentage for honor standing")}</span>
+                <span class="text-[10px] text-muted-foreground">{m.ui_percentage_for_honor_standing_6f3da2()}</span>
               </div>
             </div>
 
             <!-- Minimum final exam score & conditional pass -->
             <div class="grid grid-cols-2 gap-4 pt-1">
               <div class="flex flex-col gap-1.5 text-start">
-                <Label class="text-xs font-semibold">{l("الحد الأدنى للاختبار النهائي", "Min Final Exam Score")}</Label>
+                <Label class="text-xs font-semibold">{m.ui_min_final_exam_score_a29aea()}</Label>
                 <Input
                   type="number"
                   step="0.5"
@@ -275,11 +274,11 @@ async function handleSave(e?: Event) {
                   class="text-xs font-mono h-9"
                   disabled={isSaving}
                 />
-                <span class="text-[10px] text-muted-foreground">{l("درجة النجاح الشرطية في ورقة الاختبار النهائي (مثلاً 10 من 30)", "Min final exam points to pass")}</span>
+                <span class="text-[10px] text-muted-foreground">{m.ui_min_final_exam_points_to_pass_daba47()}</span>
               </div>
 
               <div class="flex flex-col gap-1.5 text-start">
-                <Label class="text-xs font-semibold">{l("أقصى مواد متعثرة للترفيع المشروط", "Max Failed for Conditional")}</Label>
+                <Label class="text-xs font-semibold">{m.ui_max_failed_for_conditional_4276ee()}</Label>
                 <Input
                   type="number"
                   step="1"
@@ -289,13 +288,13 @@ async function handleSave(e?: Event) {
                   class="text-xs font-mono h-9"
                   disabled={isSaving}
                 />
-                <span class="text-[10px] text-muted-foreground">{l("عدد المواد المتعثرة المسموح بها للانتقال للمستوى التالي", "Max failed subjects for conditional pass")}</span>
+                <span class="text-[10px] text-muted-foreground">{m.ui_max_failed_subjects_for_conditio_0d1f8e()}</span>
               </div>
             </div>
 
             <!-- Min Attendance Rate -->
             <div class="flex flex-col gap-1.5 text-start pt-1">
-              <Label class="text-xs font-semibold">{l("الحد الأدنى لنسبة الحضور (%)", "Minimum Attendance Rate (%)")}</Label>
+              <Label class="text-xs font-semibold">{m.ui_minimum_attendance_rate_47d8e4()}</Label>
               <Input
                 type="number"
                 min="0"
@@ -304,7 +303,7 @@ async function handleSave(e?: Event) {
                 class="text-xs font-mono h-9"
                 disabled={isSaving}
               />
-              <span class="text-[10px] text-muted-foreground">{l("نسبة الحضور المطلوبة لدخول الاختبارات والترقية (افتراضياً 75%)", "Required attendance rate to sit for final exams")}</span>
+              <span class="text-[10px] text-muted-foreground">{m.ui_required_attendance_rate_to_sit__6afed1()}</span>
             </div>
           </CardContent>
         </Card>
@@ -314,10 +313,10 @@ async function handleSave(e?: Event) {
           <CardHeader>
             <div class="flex items-center gap-2">
               <ChartBar size={14} class="text-primary" />
-              <CardTitle>{l("سياسة الترتيب وقوائم الأوائل", "Ranking & Classification Policy")}</CardTitle>
+              <CardTitle>{m.ui_ranking_classification_policy_40c8cf()}</CardTitle>
             </div>
             <CardDescription class="text-xs">
-              {l("قواعد ترتيب الطلاب والتفوق وحسم حالات التساوي", "Rules for calculating student ranks and handling ties")}
+              {m.ui_rules_for_calculating_student_ra_15624e()}
             </CardDescription>
           </CardHeader>
 
@@ -325,9 +324,9 @@ async function handleSave(e?: Event) {
             <!-- Ranking Enabled Switch -->
             <div class="flex items-center justify-between py-2 border-b border-border">
               <div class="flex flex-col text-start gap-0.5 pe-4">
-                <span class="text-xs font-semibold text-foreground">{l("تفعيل احتساب الترتيب", "Enable Student Ranking")}</span>
+                <span class="text-xs font-semibold text-foreground">{m.ui_enable_student_ranking_f47315()}</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
-                  {l("حساب مراتب الطلاب على مستوى الشعبة والصف وعرضها في كشوف النتائج", "Calculate student ranks across classes and periods")}
+                  {m.ui_calculate_student_ranks_across_c_088d03()}
                 </span>
               </div>
               <Switch
@@ -340,7 +339,7 @@ async function handleSave(e?: Event) {
             <!-- Scope & Tie Policy Grid -->
             <div class="grid grid-cols-2 gap-4">
               <div class="flex flex-col gap-1.5 text-start">
-                <Label class="text-xs font-semibold">{l("نطاق الترتيب", "Ranking Scope")}</Label>
+                <Label class="text-xs font-semibold">{m.ui_ranking_scope_b26087()}</Label>
                 <Select
                   type="single"
                   value={form.ranking_scope}
@@ -348,19 +347,19 @@ async function handleSave(e?: Event) {
                   disabled={isSaving || !form.ranking_enabled}
                 >
                   <SelectTrigger class="text-xs h-9 w-full">
-                    {form.ranking_scope === "class" ? l("على مستوى الشعبة", "Class Level") : form.ranking_scope === "grade_level" ? l("على مستوى الصف الدراسي", "Grade Level") : l("على مستوى الدفعة", "Cohort / General")}
+                    {form.ranking_scope === "class" ? m.ui_class_level_037b4e() : form.ranking_scope === "grade_level" ? m.ui_grade_level_b93e8d() : m.ui_cohort_general_1d2289()}
                   </SelectTrigger>
                   <SelectContent class="text-xs">
-                    <SelectItem value="class">{l("على مستوى الشعبة", "Class Level")}</SelectItem>
-                    <SelectItem value="grade_level">{l("على مستوى الصف الدراسي", "Grade Level")}</SelectItem>
-                    <SelectItem value="cohort">{l("على مستوى الدفعة", "Cohort / General")}</SelectItem>
+                    <SelectItem value="class">{m.ui_class_level_037b4e()}</SelectItem>
+                    <SelectItem value="grade_level">{m.ui_grade_level_b93e8d()}</SelectItem>
+                    <SelectItem value="cohort">{m.ui_cohort_general_1d2289()}</SelectItem>
                   </SelectContent>
                 </Select>
-                <span class="text-[10px] text-muted-foreground">{l("المجموعة المرجعية للمقارنة", "Reference comparison group")}</span>
+                <span class="text-[10px] text-muted-foreground">{m.ui_reference_comparison_group_e37b0a()}</span>
               </div>
 
               <div class="flex flex-col gap-1.5 text-start">
-                <Label class="text-xs font-semibold">{l("معالجة التساوي (Tie Policy)", "Tie Policy")}</Label>
+                <Label class="text-xs font-semibold">{m.ui_tie_policy_b9970e()}</Label>
                 <Select
                   type="single"
                   value={form.tie_policy}
@@ -368,21 +367,21 @@ async function handleSave(e?: Event) {
                   disabled={isSaving || !form.ranking_enabled}
                 >
                   <SelectTrigger class="text-xs h-9 w-full">
-                    {form.tie_policy === "standard" ? l("قياسي (1, 2, 2, 4)", "Standard (1, 2, 2, 4)") : form.tie_policy === "dense" ? l("متتابع (1, 2, 2, 3)", "Dense (1, 2, 2, 3)") : l("كسري (1, 2.5, 2.5, 4)", "Fractional (1, 2.5, 2.5, 4)")}
+                    {form.tie_policy === "standard" ? m.ui_standard_1_2_2_4_7eca5d() : form.tie_policy === "dense" ? m.ui_dense_1_2_2_3_a59dc6() : m.ui_fractional_1_2_5_2_5_4_efa744()}
                   </SelectTrigger>
                   <SelectContent class="text-xs">
-                    <SelectItem value="standard">{l("قياسي (1, 2, 2, 4)", "Standard (1, 2, 2, 4)")}</SelectItem>
-                    <SelectItem value="dense">{l("متتابع (1, 2, 2, 3)", "Dense (1, 2, 2, 3)")}</SelectItem>
-                    <SelectItem value="fractional">{l("كسري (1, 2.5, 2.5, 4)", "Fractional (1, 2.5, 2.5, 4)")}</SelectItem>
+                    <SelectItem value="standard">{m.ui_standard_1_2_2_4_7eca5d()}</SelectItem>
+                    <SelectItem value="dense">{m.ui_dense_1_2_2_3_a59dc6()}</SelectItem>
+                    <SelectItem value="fractional">{m.ui_fractional_1_2_5_2_5_4_efa744()}</SelectItem>
                   </SelectContent>
                 </Select>
-                <span class="text-[10px] text-muted-foreground">{l("آلية التعامل مع تعادل المجموع", "How equal scores are handled")}</span>
+                <span class="text-[10px] text-muted-foreground">{m.ui_how_equal_scores_are_handled_b7f263()}</span>
               </div>
             </div>
 
             <!-- Max Displayed Rank -->
             <div class="flex flex-col gap-1.5 text-start pt-1">
-              <Label class="text-xs font-semibold">{l("أقصى رتبة معروضة في الشهادات", "Max Displayed Rank on Cards")}</Label>
+              <Label class="text-xs font-semibold">{m.ui_max_displayed_rank_on_cards_f5b6fd()}</Label>
               <Input
                 type="number"
                 min="0"
@@ -391,7 +390,7 @@ async function handleSave(e?: Event) {
                 class="text-xs font-mono h-9"
                 disabled={isSaving || !form.ranking_enabled}
               />
-              <span class="text-[10px] text-muted-foreground">{l("مثلاً أول 10 طلاب متميزين فقط، أو ضع 0 لعرض رتبة جميع الطلاب", "e.g., top 10 honors only, or 0 to display all")}</span>
+              <span class="text-[10px] text-muted-foreground">{m.ui_e_g_top_10_honors_only_or_0_to_d_a0e17f()}</span>
             </div>
           </CardContent>
         </Card>
@@ -401,17 +400,17 @@ async function handleSave(e?: Event) {
           <CardHeader>
             <div class="flex items-center gap-2">
               <Calculator size={14} class="text-primary" />
-              <CardTitle>{l("قواعد التقريب والدقة الحسابية", "Rounding & Precision Rules")}</CardTitle>
+              <CardTitle>{m.ui_rounding_precision_rules_db7196()}</CardTitle>
             </div>
             <CardDescription class="text-xs">
-              {l("طريقة تقريب الكسور العشرية وعدد الخانات المعتمدة للمعدلات", "Decimal rounding modes and precision for averages")}
+              {m.ui_decimal_rounding_modes_and_preci_9c871e()}
             </CardDescription>
           </CardHeader>
 
           <CardContent class="p-6 flex flex-col gap-5 text-start">
             <div class="grid grid-cols-2 gap-4">
               <div class="flex flex-col gap-1.5 text-start">
-                <Label class="text-xs font-semibold">{l("طريقة التقريب", "Rounding Mode")}</Label>
+                <Label class="text-xs font-semibold">{m.ui_rounding_mode_27bf92()}</Label>
                 <Select
                   type="single"
                   value={form.rounding_mode}
@@ -419,20 +418,20 @@ async function handleSave(e?: Event) {
                   disabled={isSaving}
                 >
                   <SelectTrigger class="text-xs h-9 w-full">
-                    {form.rounding_mode === "half_up" ? l("اعتيادي (نصف لأعلى)", "Half Up (Standard)") : form.rounding_mode === "floor" ? l("اقتصار للأدنى (Floor)", "Floor (Truncate)") : form.rounding_mode === "ceil" ? l("تقريب للأعلى (Ceil)", "Ceiling") : l("بدون تقريب", "None")}
+                    {form.rounding_mode === "half_up" ? m.ui_half_up_standard_0d80cf() : form.rounding_mode === "floor" ? m.ui_floor_truncate_c3299b() : form.rounding_mode === "ceil" ? m.ui_ceiling_dffa17() : m.ui_none_30ca52()}
                   </SelectTrigger>
                   <SelectContent class="text-xs">
-                    <SelectItem value="half_up">{l("اعتيادي (نصف لأعلى)", "Half Up (Standard)")}</SelectItem>
-                    <SelectItem value="floor">{l("اقتصار للأدنى (Floor)", "Floor (Truncate)")}</SelectItem>
-                    <SelectItem value="ceil">{l("تقريب للأعلى (Ceil)", "Ceiling")}</SelectItem>
-                    <SelectItem value="none">{l("بدون تقريب", "None")}</SelectItem>
+                    <SelectItem value="half_up">{m.ui_half_up_standard_0d80cf()}</SelectItem>
+                    <SelectItem value="floor">{m.ui_floor_truncate_c3299b()}</SelectItem>
+                    <SelectItem value="ceil">{m.ui_ceiling_dffa17()}</SelectItem>
+                    <SelectItem value="none">{m.ui_none_30ca52()}</SelectItem>
                   </SelectContent>
                 </Select>
-                <span class="text-[10px] text-muted-foreground">{l("القاعدة الرياضية لحسم الكسور", "Mathematical rounding rule")}</span>
+                <span class="text-[10px] text-muted-foreground">{m.ui_mathematical_rounding_rule_a4dfc8()}</span>
               </div>
 
               <div class="flex flex-col gap-1.5 text-start">
-                <Label class="text-xs font-semibold">{l("عدد المنازل العشرية", "Decimal Places")}</Label>
+                <Label class="text-xs font-semibold">{m.ui_decimal_places_989019()}</Label>
                 <Input
                   type="number"
                   min="0"
@@ -441,7 +440,7 @@ async function handleSave(e?: Event) {
                   disabled={isSaving}
                   class="text-xs font-mono h-9"
                 />
-                <span class="text-[10px] text-muted-foreground">{l("دقة إظهار المعدلات (مثلاً 2 = 98.75)", "Precision in grade reports (e.g. 2)")}</span>
+                <span class="text-[10px] text-muted-foreground">{m.ui_precision_in_grade_reports_e_g_2_1febb3()}</span>
               </div>
             </div>
           </CardContent>
@@ -452,10 +451,10 @@ async function handleSave(e?: Event) {
           <CardHeader>
             <div class="flex items-center gap-2">
               <Lock size={14} class="text-primary" />
-              <CardTitle>{l("ضوابط الرصد والترقية", "Grade Entry & Promotion Rules")}</CardTitle>
+              <CardTitle>{m.ui_grade_entry_promotion_rules_f83c8c()}</CardTitle>
             </div>
             <CardDescription class="text-xs">
-              {l("قواعد إغلاق فترات الرصد وتعديل الدرجات والترقية", "Grade book locking, edit approvals, and cohort graduation")}
+              {m.ui_grade_book_locking_edit_approval_666867()}
             </CardDescription>
           </CardHeader>
 
@@ -463,9 +462,9 @@ async function handleSave(e?: Event) {
             <!-- Grade Entry Auto Close -->
             <div class="flex items-center justify-between py-2 border-b border-border">
               <div class="flex flex-col text-start gap-0.5 pe-4">
-                <span class="text-xs font-semibold text-foreground">{l("الإغلاق التلقائي لفترات الرصد", "Auto-Close Grade Entry")}</span>
+                <span class="text-xs font-semibold text-foreground">{m.ui_auto_close_grade_entry_bfd566()}</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
-                  {l("إغلاق دفتر الدرجات تلقائياً عند انتهاء المدة الزمنية المحددة للفترة", "Automatically close grade entry upon period deadline")}
+                  {m.ui_automatically_close_grade_entry__ece9b5()}
                 </span>
               </div>
               <Switch
@@ -478,9 +477,9 @@ async function handleSave(e?: Event) {
             <!-- Allow Grade Edit After Close -->
             <div class="flex items-center justify-between py-2 border-b border-border">
               <div class="flex flex-col text-start gap-0.5 pe-4">
-                <span class="text-xs font-semibold text-foreground">{l("السماح بالتعديل بعد الإغلاق", "Allow Grade Edits After Close")}</span>
+                <span class="text-xs font-semibold text-foreground">{m.ui_allow_grade_edits_after_close_4c5d1a()}</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
-                  {l("إتاحة طلب تعديل درجات رصدت في فترات مغلقة", "Allow edit requests for locked periods")}
+                  {m.ui_allow_edit_requests_for_locked_p_037712()}
                 </span>
               </div>
               <Switch
@@ -493,9 +492,9 @@ async function handleSave(e?: Event) {
             <!-- Grade Edit Requires Approval -->
             <div class="flex items-center justify-between py-2 border-b border-border">
               <div class="flex flex-col text-start gap-0.5 pe-4">
-                <span class="text-xs font-semibold text-foreground">{l("اشتراط الموافقة الإدارية لتعديل الدرجات", "Grade Edits Require Approval")}</span>
+                <span class="text-xs font-semibold text-foreground">{m.ui_grade_edits_require_approval_09b902()}</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
-                  {l("يتطلب أي تعديل بعد الإغلاق اعتماد وكيل الشؤون التعليمية أو الكنترول", "Requires managerial approval before unfreezing grades")}
+                  {m.ui_requires_managerial_approval_bef_152354()}
                 </span>
               </div>
               <Switch
@@ -508,9 +507,9 @@ async function handleSave(e?: Event) {
             <!-- Auto Graduate Final Level -->
             <div class="flex items-center justify-between py-2 border-b border-border">
               <div class="flex flex-col text-start gap-0.5 pe-4">
-                <span class="text-xs font-semibold text-foreground">{l("تخريج تلقائي للمستوى النهائي", "Auto-Graduate Final Level")}</span>
+                <span class="text-xs font-semibold text-foreground">{m.ui_auto_graduate_final_level_764dc2()}</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
-                  {l("ترقية طلاب الصف الأخير مباشرة إلى حالة (متخرج) عند اجتياز كافة المقررات", "Mark final grade students as graduated upon passing all requirements")}
+                  {m.ui_mark_final_grade_students_as_gra_1743d8()}
                 </span>
               </div>
               <Switch
@@ -523,9 +522,9 @@ async function handleSave(e?: Event) {
             <!-- Exclude Withdrawn -->
             <div class="flex items-center justify-between py-2">
               <div class="flex flex-col text-start gap-0.5 pe-4">
-                <span class="text-xs font-semibold text-foreground">{l("استبعاد المنسحبين من التقارير", "Exclude Withdrawn Students")}</span>
+                <span class="text-xs font-semibold text-foreground">{m.ui_exclude_withdrawn_students_78d08c()}</span>
                 <span class="text-[10px] text-muted-foreground leading-relaxed">
-                  {l("استبعاد الطلاب المنسحبين والمطوي قيدهم من حساب النسب والترتيب والإحصائيات", "Exclude withdrawn students from ranking and statistics")}
+                  {m.ui_exclude_withdrawn_students_from__569a88()}
                 </span>
               </div>
               <Switch

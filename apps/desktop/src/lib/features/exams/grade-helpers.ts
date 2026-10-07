@@ -132,9 +132,9 @@ export function buildGradeColumns(
     const max = sample?.max_score || (type === "final" ? 30 : 20);
     const typeLabel =
       type === "monthly"
-        ? (locale === "ar" ? `المحصلة (${max})` : `Work (${max})`)
+        ? m.exams_grade_work_label({ max })
         : type === "final"
-          ? (locale === "ar" ? `الاختبار (${max})` : `Exam (${max})`)
+          ? m.exams_grade_exam_label({ max })
           : `${type} (${max})`;
 
     cols.push({

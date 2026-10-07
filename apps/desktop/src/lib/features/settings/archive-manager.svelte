@@ -390,7 +390,7 @@ async function handleDeleteDoc(id: string) {
 // Archive Document Handler
 async function handleArchiveDoc(id: string) {
   try {
-    await archiveDocMutation.mutateAsync({ id, reason: "أرشفة يدوية من المستكشف" });
+    await archiveDocMutation.mutateAsync({ id, reason: m.settings_ui_archive_manual_reason() });
     toast.success(m.settings_ui_archive_document_archived());
     if (!isRoot) folderContentsQuery.refetch();
   } catch (e: any) {
@@ -513,7 +513,11 @@ async function handleFilesUpload(fileList: FileList | File[]) {
       const progressPercent = Math.round((completedCount / total) * 100);
       toastHandle.update({
         title: m.settings_ui_archive_upload_files(),
-        description: `تم رفع ${completedCount} من أصل ${total} (${file.name})`,
+        description: m.settings_ui_archive_upload_progress({
+          completed: completedCount,
+          total,
+          filename: file.name,
+        }),
         progress: progressPercent,
         variant: "progress",
       });
@@ -526,7 +530,9 @@ async function handleFilesUpload(fileList: FileList | File[]) {
   if (successCount > 0) {
     toastHandle.update({
       title: m.settings_ui_archive_files_uploaded({ uploaded: successCount, total }),
-      description: failCount > 0 ? `تعذر رفع ${failCount} ملفات` : undefined,
+      description: failCount > 0
+        ? m.settings_ui_archive_upload_fail_count({ count: failCount })
+        : undefined,
       progress: 100,
       variant: "success",
       duration: 4000,

@@ -223,7 +223,7 @@ async function handleContinue() {
                   <span>{m.settings_connection_settings()}</span>
                 {:else}
                   <Bolt class="size-3" />
-                  <span>{m.ui_integration_connect({ name: "" }).replace(/\s*$/, "") || "ربط"}</span>
+                  <span>{m.common_action_connect()}</span>
                 {/if}
               </span>
             </CardFooter>

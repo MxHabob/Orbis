@@ -32,7 +32,7 @@ import {
 } from "@orbis/icons";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatDate, l } from "$lib/core/i18n";
+import { formatDate } from "$lib/core/i18n";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import { academicContext } from "$lib/stores";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
@@ -126,15 +126,15 @@ function getStatusBadgeVariant(status?: string): "default" | "secondary" | "dest
 function getStatusLabel(status?: string): string {
   switch (status) {
     case "honors":
-      return l("ناجح بمرتبة الشرف", "Passed with Honors");
+      return m.ui_passed_with_honors_1ba26b();
     case "passed":
-      return l("ناجح", "Passed");
+      return m.ui_passed_93d5f7();
     case "conditional_pass":
-      return l("ترفيع مشروط", "Conditional Pass");
+      return m.ui_conditional_pass_b47e36();
     case "failed":
-      return l("راسب / دور ثان", "Failed / Re-exam");
+      return m.ui_failed_re_exam_e4d5f6();
     case "withdrawn":
-      return l("منسحب", "Withdrawn");
+      return m.ui_withdrawn_ef2e04();
     default:
       return status || "—";
   }
@@ -181,7 +181,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
         class="h-7 text-xs px-3"
         onclick={() => { viewMode = "term"; loadData(); }}
       >
-        {l("شهادة الفصل (50 درجة)", "Term Report Card (50 pts)")}
+        {m.ui_term_report_card_50_pts_b8158a()}
       </Button>
       <Button
         variant={viewMode === "annual" ? "default" : "ghost"}
@@ -189,7 +189,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
         class="h-7 text-xs px-3"
         onclick={() => { viewMode = "annual"; loadData(); }}
       >
-        {l("الشهادة السنوية (100 درجة)", "Annual Certificate (100 pts)")}
+        {m.ui_annual_certificate_100_pts_0f5015()}
       </Button>
       <Button
         variant={viewMode === "raw" ? "default" : "ghost"}
@@ -197,7 +197,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
         class="h-7 text-xs px-3"
         onclick={() => { viewMode = "raw"; loadData(); }}
       >
-        {l("سجل الرصد التفصيلي", "Detailed Entries")}
+        {m.ui_detailed_entries_1c131e()}
       </Button>
     </div>
 
@@ -209,7 +209,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
           onValueChange={(val) => { if (val) { selectedPeriodId = val; loadData(); } }}
         >
           <SelectTrigger class="h-8 text-xs min-w-[160px]">
-            {academicContext.allPeriods.find((p) => p.id === selectedPeriodId)?.name || l("اختر الفصل الدراسي", "Select Term")}
+            {academicContext.allPeriods.find((p) => p.id === selectedPeriodId)?.name || m.ui_select_term_e8d1a7()}
           </SelectTrigger>
           <SelectContent class="text-xs">
             {#each academicContext.allPeriods as period}
@@ -224,7 +224,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
           onValueChange={(val) => { if (val) { selectedYearId = val; loadData(); } }}
         >
           <SelectTrigger class="h-8 text-xs min-w-[160px]">
-            {academicContext.allYears.find((y) => y.id === selectedYearId)?.name || l("اختر العام الدراسي", "Select Year")}
+            {academicContext.allYears.find((y) => y.id === selectedYearId)?.name || m.ui_select_year_c61be2()}
           </SelectTrigger>
           <SelectContent class="text-xs">
             {#each academicContext.allYears as yr}
@@ -241,7 +241,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
         onclick={handlePrint}
       >
         <span>🖨️</span>
-        {l("طباعة الشهادة", "Print Card")}
+        {m.ui_print_card_e8f9cc()}
       </Button>
 
       <Button
@@ -259,7 +259,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   {#if isLoading}
     <div class="py-16 flex flex-col items-center justify-center gap-3">
       <LoadingIndicator size={24} />
-      <span class="text-xs text-muted-foreground">{l("جارٍ تحميل بيانات الكشف والنتائج...", "Loading assessment data...")}</span>
+      <span class="text-xs text-muted-foreground">{m.ui_loading_assessment_data_6e49c7()}</span>
     </div>
   {:else if viewMode === "term"}
     <!-- TERM REPORT CARD VIEW -->
@@ -267,7 +267,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
       <!-- High-Level KPI Summary -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 print:grid-cols-4">
         <Card class="p-4 flex flex-col gap-1 border-border/80">
-          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{l("المجموع الكلي", "Total Score")}</span>
+          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{m.ui_total_score_502e35()}</span>
           <div class="flex items-baseline gap-1">
             <span class="text-xl font-bold font-mono text-primary">{termReport.total_score}</span>
             <span class="text-xs text-muted-foreground font-mono">/ {termReport.max_possible_score}</span>
@@ -275,12 +275,12 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
         </Card>
 
         <Card class="p-4 flex flex-col gap-1 border-border/80">
-          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{l("النسبة المئوية", "Percentage")}</span>
+          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{m.ui_percentage_0c2a56()}</span>
           <span class="text-xl font-bold font-mono text-foreground">{termReport.overall_percentage.toFixed(1)}%</span>
         </Card>
 
         <Card class="p-4 flex flex-col gap-1 border-border/80">
-          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{l("الترتيب في الشعبة", "Rank in Class")}</span>
+          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{m.ui_rank_in_class_d68b49()}</span>
           <div class="flex items-baseline gap-1">
             <span class="text-xl font-bold font-mono text-primary">
               {termReport.rank_in_class ? `#${termReport.rank_in_class}` : "—"}
@@ -290,7 +290,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
         </Card>
 
         <Card class="p-4 flex flex-col gap-1 border-border/80">
-          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{l("الحالة والنتيجة", "Status")}</span>
+          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{m.ui_status_89fb2f()}</span>
           <div class="mt-1">
             <Badge variant={getStatusBadgeVariant(termReport.status)}>
               {getStatusLabel(termReport.status)}
@@ -306,7 +306,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
             <div class="flex items-center gap-2">
               <AcademicCap size={16} class="text-primary" />
               <CardTitle class="text-xs font-bold text-foreground">
-                {l("كشف درجات الفصل الدراسي — المعيار الوطني الموحد (50 نقطة)", "Term Grade Sheet — Standard 50-Point Model")}
+                {m.ui_term_grade_sheet_standard_50_poi_7b9407()}
               </CardTitle>
             </div>
             <span class="text-[11px] font-mono text-muted-foreground">
@@ -320,13 +320,13 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
             <thead>
               <tr class="bg-muted/40 text-muted-foreground border-b border-border text-[11px] font-semibold">
                 <th class="py-2.5 px-3 text-start w-10">#</th>
-                <th class="py-2.5 px-3 text-start min-w-[180px]">{l("المادة الدراسية", "Subject")}</th>
-                <th class="py-2.5 px-3 text-center">{l("المحصلة الشهرية (20)", "Monthly Work (20)")}</th>
-                <th class="py-2.5 px-3 text-center">{l("اختبار الفصل (30)", "Term Exam (30)")}</th>
-                <th class="py-2.5 px-3 text-center">{l("المجموع (50)", "Term Total (50)")}</th>
-                <th class="py-2.5 px-3 text-center">{l("النسبة %", "Percentage")}</th>
-                <th class="py-2.5 px-3 text-center">{l("التقدير", "Grade")}</th>
-                <th class="py-2.5 px-3 text-center">{l("الحالة", "Status")}</th>
+                <th class="py-2.5 px-3 text-start min-w-[180px]">{m.ui_subject_0949f5()}</th>
+                <th class="py-2.5 px-3 text-center">{m.ui_monthly_work_20_e3e4cb()}</th>
+                <th class="py-2.5 px-3 text-center">{m.ui_term_exam_30_27e258()}</th>
+                <th class="py-2.5 px-3 text-center">{m.ui_term_total_50_5a76ed()}</th>
+                <th class="py-2.5 px-3 text-center">{m.ui_percentage_ae5fd2()}</th>
+                <th class="py-2.5 px-3 text-center">{m.ui_grade_709612()}</th>
+                <th class="py-2.5 px-3 text-center">{m.ui_status_9492be()}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-border/60">
@@ -364,7 +364,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
             <tfoot>
               <tr class="bg-muted/30 font-bold border-t-2 border-border">
                 <td colspan="2" class="py-3 px-3 text-start">
-                  {l("المجموع العام والمعدل النهائي", "Overall Grand Total & Average")}
+                  {m.ui_overall_grand_total_average_a199a7()}
                 </td>
                 <td colspan="2" class="py-3 px-3 text-center text-muted-foreground font-mono">
                   {termReport.total_score} / {termReport.max_possible_score}
@@ -387,7 +387,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
       </Card>
     {:else}
       <div class="py-12 text-center text-muted-foreground border border-dashed border-border rounded-xl">
-        <p>{l("لا توجد نتائج مسجلة لهذا الفصل الدراسي حتى الآن.", "No term results recorded for this period yet.")}</p>
+        <p>{m.ui_no_term_results_recorded_for_thi_c18ffe()}</p>
       </div>
     {/if}
 
@@ -397,7 +397,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
       <!-- High-Level KPI Summary -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 print:grid-cols-4">
         <Card class="p-4 flex flex-col gap-1 border-border/80">
-          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{l("المجموع السنوي", "Annual Total")}</span>
+          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{m.ui_annual_total_c48419()}</span>
           <div class="flex items-baseline gap-1">
             <span class="text-xl font-bold font-mono text-primary">{annualReport.total_score}</span>
             <span class="text-xs text-muted-foreground font-mono">/ {annualReport.max_possible_score}</span>
@@ -405,12 +405,12 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
         </Card>
 
         <Card class="p-4 flex flex-col gap-1 border-border/80">
-          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{l("النسبة العامة", "Overall Percentage")}</span>
+          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{m.ui_overall_percentage_d8caae()}</span>
           <span class="text-xl font-bold font-mono text-foreground">{annualReport.overall_percentage.toFixed(1)}%</span>
         </Card>
 
         <Card class="p-4 flex flex-col gap-1 border-border/80">
-          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{l("الترتيب السنوي في الشعبة", "Annual Rank in Class")}</span>
+          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{m.ui_annual_rank_in_class_e940d7()}</span>
           <div class="flex items-baseline gap-1">
             <span class="text-xl font-bold font-mono text-primary">
               {annualReport.rank_in_class ? `#${annualReport.rank_in_class}` : "—"}
@@ -420,7 +420,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
         </Card>
 
         <Card class="p-4 flex flex-col gap-1 border-border/80">
-          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{l("النتيجة والقرار النهائي", "Final Decision")}</span>
+          <span class="text-[10px] text-muted-foreground font-semibold uppercase">{m.ui_final_decision_4f00d8()}</span>
           <div class="mt-1">
             <Badge variant={getStatusBadgeVariant(annualReport.status)}>
               {getStatusLabel(annualReport.status)}
@@ -436,7 +436,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
             <div class="flex items-center gap-2">
               <AcademicCap size={16} class="text-primary" />
               <CardTitle class="text-xs font-bold text-foreground">
-                {l("الشهادة السنوية العامة — كشف الدرجات الختامي (100 نقطة)", "Annual Final Certificate — 100-Point Grand Total")}
+                {m.ui_annual_final_certificate_100_poi_9badb5()}
               </CardTitle>
             </div>
             <span class="text-[11px] font-mono text-muted-foreground">
@@ -450,13 +450,13 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
             <thead>
               <tr class="bg-muted/40 text-muted-foreground border-b border-border text-[11px] font-semibold">
                 <th class="py-2.5 px-3 text-start w-10">#</th>
-                <th class="py-2.5 px-3 text-start min-w-[180px]">{l("المادة الدراسية", "Subject")}</th>
-                <th class="py-2.5 px-3 text-center">{l("الفصل الأول (50)", "Term 1 (50)")}</th>
-                <th class="py-2.5 px-3 text-center">{l("الفصل الثاني (50)", "Term 2 (50)")}</th>
-                <th class="py-2.5 px-3 text-center">{l("المجموع السنوي (100)", "Annual Total (100)")}</th>
-                <th class="py-2.5 px-3 text-center">{l("النسبة %", "Percentage")}</th>
-                <th class="py-2.5 px-3 text-center">{l("التقدير", "Grade")}</th>
-                <th class="py-2.5 px-3 text-center">{l("الحالة", "Status")}</th>
+                <th class="py-2.5 px-3 text-start min-w-[180px]">{m.ui_subject_0949f5()}</th>
+                <th class="py-2.5 px-3 text-center">{m.ui_term_1_50_adf4b5()}</th>
+                <th class="py-2.5 px-3 text-center">{m.ui_term_2_50_43e373()}</th>
+                <th class="py-2.5 px-3 text-center">{m.ui_annual_total_100_620c37()}</th>
+                <th class="py-2.5 px-3 text-center">{m.ui_percentage_ae5fd2()}</th>
+                <th class="py-2.5 px-3 text-center">{m.ui_grade_709612()}</th>
+                <th class="py-2.5 px-3 text-center">{m.ui_status_9492be()}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-border/60">
@@ -494,7 +494,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
             <tfoot>
               <tr class="bg-muted/30 font-bold border-t-2 border-border">
                 <td colspan="2" class="py-3 px-3 text-start">
-                  {l("المجموع السنوي العام", "Annual Grand Total")}
+                  {m.ui_annual_grand_total_1be9f0()}
                 </td>
                 <td colspan="2" class="py-3 px-3 text-center text-muted-foreground font-mono">
                   {annualReport.total_score} / {annualReport.max_possible_score}
@@ -517,7 +517,7 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
       </Card>
     {:else}
       <div class="py-12 text-center text-muted-foreground border border-dashed border-border rounded-xl">
-        <p>{l("لا توجد نتيجة سنوية مكتملة لهذا الطالب حتى الآن.", "No completed annual results for this student yet.")}</p>
+        <p>{m.ui_no_completed_annual_results_for__bd2e81()}</p>
       </div>
     {/if}
 

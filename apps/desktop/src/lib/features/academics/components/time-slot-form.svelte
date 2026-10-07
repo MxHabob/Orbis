@@ -137,7 +137,6 @@ async function handleSubmit(event: SubmitEvent) {
               disabled={form.isSubmitting}
               loadingMessage={m.bilingual_entry_loading()}
               failureMessage={m.bilingual_entry_failure()}
-              generatedMessage={m.bilingual_entry_generated()}
             />
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -74,7 +74,7 @@ let {
             disabled={isCalculating}
           >
             {#if isCalculating}<LoadingIndicator size={11} />{:else}<ChartBar size={11} />{/if}
-            <span>احتساب الترتيب</span>
+            <span>{m.common_control_calculate_ranking()}</span>
           </Button>
         {/if}
         <Button

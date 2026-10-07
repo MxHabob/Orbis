@@ -182,10 +182,7 @@ async function main() {
 
   function printList(title: string, values: string[]) {
     console.log(`\n${title} (${values.length})`);
-    for (const value of values.slice(0, 20)) console.log(`- ${value}`);
-    if (values.length > 20) {
-      console.log(`... and ${values.length - 20} more`);
-    }
+    for (const value of values) console.log(`- ${value}`);
   }
 
   console.log(

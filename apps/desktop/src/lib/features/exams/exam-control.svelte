@@ -253,11 +253,7 @@ async function handleCalculateRankings() {
       period_id: selectedPeriodId,
       class_id: selectedClassId || undefined,
     });
-    toast.success(
-      getLocale() === "ar"
-        ? "تم احتساب كشوف النتائج وتحديث مراتب الطلاب بنجاح"
-        : "Student rankings and report cards calculated successfully",
-    );
+    toast.success(m.exams_control_rankings_calculated());
     await loadGradeMatrix();
   } catch (err: unknown) {
     toast.error(extractErrorMessage(err));

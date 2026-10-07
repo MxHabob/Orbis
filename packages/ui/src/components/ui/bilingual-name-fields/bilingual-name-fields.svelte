@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onDestroy, tick } from "svelte";
+import { onDestroy } from "svelte";
 import type { Snippet } from "svelte";
 import type {
   SuggestionRequest,
@@ -45,7 +45,6 @@ type Props = {
   debounceMs?: number;
   loadingMessage: string;
   failureMessage: string;
-  generatedMessage: string;
 };
 
 let {
@@ -72,7 +71,6 @@ let {
   debounceMs = 350,
   loadingMessage,
   failureMessage,
-  generatedMessage,
 }: Props = $props();
 
 let isLoading = $state(false);
@@ -129,19 +127,6 @@ function scheduleSuggestion(text: string, sourceLanguage: TranslationLanguage) {
       else enValue = result.text;
       generatedLanguage = targetLanguage;
       generatedValue = result.text;
-
-      await tick();
-      const input = document.getElementById(
-        targetLanguage === "ar" ? arId : enId,
-      );
-      if (
-        sequence === requestSequence &&
-        isGenerated(targetLanguage) &&
-        input instanceof HTMLInputElement
-      ) {
-        input.focus();
-        input.setSelectionRange(0, result.text.length);
-      }
     } catch {
       if (sequence === requestSequence) requestFailed = true;
     } finally {
@@ -197,16 +182,7 @@ onDestroy(() => {
           required={arRequired}
           {disabled}
           autocomplete="off"
-          class="pe-9"
         />
-      {/if}
-      {#if isGenerated("ar")}
-        <span
-          class="absolute end-2 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-[10px] font-semibold text-muted-foreground"
-          title={generatedMessage}
-          aria-label={generatedMessage}
-          role="img"
-        >↔</span>
       {/if}
     </div>
     {#if arError}
@@ -240,16 +216,7 @@ onDestroy(() => {
         required={enRequired}
         {disabled}
         autocomplete="off"
-        class="pe-9"
       />
-      {#if isGenerated("en")}
-        <span
-          class="absolute end-2 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-[10px] font-semibold text-muted-foreground"
-          title={generatedMessage}
-          aria-label={generatedMessage}
-          role="img"
-        >↔</span>
-      {/if}
     </div>
     {#if enError}
       <p id={`${enId}-error`} class="text-xs text-destructive">{enError}</p>

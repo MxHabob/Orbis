@@ -21,7 +21,6 @@ import { DocumentCheck, InfoCircle, Refresh } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
-import { l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 
 let { orgId, classId, classSubjectId }: { orgId: string; classId: string; classSubjectId: string } = $props();
@@ -91,7 +90,7 @@ const rows = $derived.by<EnrichedRow[]>(() => {
   // Fallback to raw grades if calculation not run yet
   return (grades || []).map((g: any, i: number) => ({
     student_id: g.student_id || `student-${i}`,
-    student_name: g.student_name_ar || g.student_name || g.student_number || `طالب #${i + 1}`,
+    student_name: g.student_name_ar || g.student_name || g.student_number || m.academics_grade_sheet_student_fallback({ number: i + 1 }),
     student_number: g.student_number || "—",
     monthly_score: Number(g.score || 0),
     monthly_max: 20,
@@ -110,8 +109,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "rank_in_class",
     prop: "rank_in_class",
-    header: l("الترتيب", "Rank"),
-    name: l("الترتيب", "Rank"),
+    header: m.ui_rank_18c8bf(),
+    name: m.ui_rank_18c8bf(),
     width: 65,
     size: 65,
     align: "center",
@@ -131,8 +130,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "monthly_score",
     prop: "monthly_score",
-    header: l("المحصلة (20)", "Work (20)"),
-    name: l("المحصلة (20)", "Work (20)"),
+    header: m.ui_work_20_d82c4d(),
+    name: m.ui_work_20_d82c4d(),
     width: 110,
     size: 110,
     align: "center",
@@ -142,8 +141,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "exam_score",
     prop: "exam_score",
-    header: l("الاختبار (30)", "Exam (30)"),
-    name: l("الاختبار (30)", "Exam (30)"),
+    header: m.ui_exam_30_af237e(),
+    name: m.ui_exam_30_af237e(),
     width: 110,
     size: 110,
     align: "center",
@@ -153,8 +152,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "term_total",
     prop: "term_total",
-    header: l("المجموع (50)", "Total (50)"),
-    name: l("المجموع (50)", "Total (50)"),
+    header: m.ui_total_50_e12994(),
+    name: m.ui_total_50_e12994(),
     width: 115,
     size: 115,
     align: "center",
@@ -164,8 +163,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "percentage",
     prop: "percentage",
-    header: l("النسبة %", "Percentage"),
-    name: l("النسبة %", "Percentage"),
+    header: m.ui_percentage_ae5fd2(),
+    name: m.ui_percentage_ae5fd2(),
     width: 100,
     size: 100,
     align: "center",
@@ -209,7 +208,7 @@ function handlePrint() {
         </div>
         <div class="flex flex-col text-start">
           <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-            {l("كشف درجات المادة (المحصلة 20 + الاختبار 30 = المجموع 50)", "Subject Term Grade Sheet (20 Work + 30 Exam = 50)")}
+            {m.ui_subject_term_grade_sheet_20_work_cdbe0f()}
           </CardTitle>
           <CardDescription class="text-[10px]">
             {rows.length} {m.common_term_results_recorded()}
@@ -226,7 +225,7 @@ function handlePrint() {
             onclick={handlePrint}
           >
             <span>🖨️</span>
-            <span>{l("طباعة الكشف", "Print Sheet")}</span>
+            <span>{m.ui_print_sheet_a421b0()}</span>
           </Button>
 
           <Button 
@@ -263,8 +262,8 @@ function handlePrint() {
           {columns}
           source={rows}
           rtl={getLocale() === "ar"}
-          emptyTitle={l("لا توجد نتائج مسجلة للمقرر", "No grades recorded for this subject")}
-          emptyDescription={l("قم برصد الدرجات الشهرية أو نتائج اختبار نهاية الفصل لتحديث الكشف.", "Record monthly work or final exam scores to populate.")}
+          emptyTitle={m.ui_no_grades_recorded_for_this_subj_c8326d()}
+          emptyDescription={m.ui_record_monthly_work_or_final_exa_fb0db7()}
           readonly
         />
       {/if}
