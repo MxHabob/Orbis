@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use rust_decimal::Decimal;
 use super::academic_policy::{AcademicPolicy, RankingScope, RoundingMode, TiePolicy};
 use super::admission::AdmissionConfiguration;
+use rust_decimal::Decimal;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct OrganizationSettings {

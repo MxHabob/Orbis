@@ -528,14 +528,15 @@ impl CalendarService {
             .check(ctx, Permission::PeriodWrite)
             .await?;
 
-        let mut year = self
-            .year_repo
-            .find_by_id(year_id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound(format!("Academic year {} not found", year_id)))?;
+        let mut year =
+            self.year_repo.find_by_id(year_id).await?.ok_or_else(|| {
+                DomainError::NotFound(format!("Academic year {} not found", year_id))
+            })?;
 
         if year.is_locked {
-            return Err(DomainError::Validation("Cannot update a locked academic year".into()));
+            return Err(DomainError::Validation(
+                "Cannot update a locked academic year".into(),
+            ));
         }
 
         if let Some(n) = name {
@@ -569,11 +570,10 @@ impl CalendarService {
             .check(ctx, Permission::PeriodWrite)
             .await?;
 
-        let mut year = self
-            .year_repo
-            .find_by_id(year_id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound(format!("Academic year {} not found", year_id)))?;
+        let mut year =
+            self.year_repo.find_by_id(year_id).await?.ok_or_else(|| {
+                DomainError::NotFound(format!("Academic year {} not found", year_id))
+            })?;
 
         let now = Utc::now();
         year.status = "archived".to_string();
@@ -608,10 +608,14 @@ impl CalendarService {
             .period_repo
             .find_by_id(period_id)
             .await?
-            .ok_or_else(|| DomainError::NotFound(format!("Academic period {} not found", period_id)))?;
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Academic period {} not found", period_id))
+            })?;
 
         if period.is_locked {
-            return Err(DomainError::Validation("Cannot update a locked period".into()));
+            return Err(DomainError::Validation(
+                "Cannot update a locked period".into(),
+            ));
         }
 
         if let Some(n) = name {
@@ -652,17 +656,22 @@ impl CalendarService {
             .period_repo
             .find_by_id(period_id)
             .await?
-            .ok_or_else(|| DomainError::NotFound(format!("Academic period {} not found", period_id)))?;
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Academic period {} not found", period_id))
+            })?;
 
         if period.is_locked {
-            return Err(DomainError::Validation("Cannot delete a locked period".into()));
+            return Err(DomainError::Validation(
+                "Cannot delete a locked period".into(),
+            ));
         }
 
         // Check no child periods exist
         let children = self.period_repo.find_by_year(period.year_id).await?;
         if children.iter().any(|c| c.parent_id == Some(period_id)) {
             return Err(DomainError::Validation(
-                "Cannot delete a period with child periods. Please delete child periods first.".into(),
+                "Cannot delete a period with child periods. Please delete child periods first."
+                    .into(),
             ));
         }
 

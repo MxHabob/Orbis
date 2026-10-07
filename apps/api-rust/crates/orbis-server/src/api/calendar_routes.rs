@@ -467,14 +467,19 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/academic-years/:id", get(get_year).put(update_year))
         .route("/api/v1/academic-years/:id/activate", post(activate_year))
         .route("/api/v1/academic-years/:id/close", post(close_year_handler))
-        .route("/api/v1/academic-years/:id/archive", post(archive_year_handler))
+        .route(
+            "/api/v1/academic-years/:id/archive",
+            post(archive_year_handler),
+        )
         .route(
             "/api/v1/academic-periods",
             post(create_period).get(list_periods),
         )
         .route(
             "/api/v1/academic-periods/:id",
-            get(get_period).put(update_period).delete(delete_period_handler),
+            get(get_period)
+                .put(update_period)
+                .delete(delete_period_handler),
         )
         .route("/api/v1/academic-periods/:id/lock", post(lock_period))
         .route("/api/v1/academic-periods/:id/unlock", post(unlock_period))

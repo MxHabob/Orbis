@@ -510,7 +510,9 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                 passing_threshold_percentage: s.academic.passing_threshold_percentage,
                 honors_threshold_percentage: s.academic.honors_threshold_percentage,
                 minimum_final_exam_score: s.academic.minimum_final_exam_score,
-                max_failed_subjects_for_conditional_pass: s.academic.max_failed_subjects_for_conditional_pass,
+                max_failed_subjects_for_conditional_pass: s
+                    .academic
+                    .max_failed_subjects_for_conditional_pass,
                 min_attendance_rate: s.academic.min_attendance_rate,
                 ranking_enabled: s.academic.ranking_enabled,
                 max_displayed_rank: s.academic.max_displayed_rank,
@@ -623,7 +625,9 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 passing_threshold_percentage: s.academic.passing_threshold_percentage,
                 honors_threshold_percentage: s.academic.honors_threshold_percentage,
                 minimum_final_exam_score: s.academic.minimum_final_exam_score,
-                max_failed_subjects_for_conditional_pass: s.academic.max_failed_subjects_for_conditional_pass,
+                max_failed_subjects_for_conditional_pass: s
+                    .academic
+                    .max_failed_subjects_for_conditional_pass,
                 min_attendance_rate: s.academic.min_attendance_rate,
                 ranking_enabled: s.academic.ranking_enabled,
                 max_displayed_rank: s.academic.max_displayed_rank,
