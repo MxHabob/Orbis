@@ -90,10 +90,10 @@
     <!-- Close Button (if docked sidebar) -->
     {#if !isStandalone}
       <Button
-        variant="ghost"
+        variant="secondary"
         size="icon-xs"
         onclick={onClose}
-        class="w-7 h-7 shrink-0 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 active:scale-95 transition-all cursor-pointer"
+        class="w-7 h-7 shrink-0 flex items-center justify-center active:scale-95 transition-all cursor-pointer"
         title={m.ai_ui_close()}
       >
         <XMark size={14} strokeWidth={2.2} />
@@ -126,11 +126,6 @@
         </Badge>
       {/if}
 
-      <!-- Active Connection Pulse Indicator -->
-      <span
-        class="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20 shrink-0"
-        title={m.ai_ui_connected()}
-      ></span>
     </div>
   </div>
 

@@ -3,7 +3,7 @@
 use axum::{
     Json, Router,
     extract::{Path, State},
-    routing::{delete, get, post, put},
+    routing::{get, post},
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
