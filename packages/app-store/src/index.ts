@@ -44,6 +44,7 @@ import tamara from "./tamara/config";
 import hyperpay from "./hyperpay/config";
 import stripe from "./stripe/config";
 import sadad from "./sadad/config";
+import jaib from "./jaib/config";
 
 // ── Exported App Collection ─────────────────────────────────────
 
@@ -68,6 +69,7 @@ export const apps: OrbisApp[] = [
   hyperpay,
   stripe,
   sadad,
+  jaib,
   // Surveillance
   hikvisionCamera,
   // Communication
