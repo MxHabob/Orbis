@@ -8,8 +8,18 @@ import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
+import { api } from "$lib/api";
+import {
+  getHijriSchoolMonthLengths,
+  getNextHijriSchoolCalendar,
+} from "$lib/core/i18n/hijri";
 import { systemStore } from "$lib/stores/system.svelte";
-import type { SetupTaskDto, OnboardingTaskCategory, OnboardingTaskStatus } from "$lib/api/types";
+import type {
+  OnboardingTaskCategory,
+  OnboardingTaskStatus,
+  ProvisionDefaultsReqDto,
+  SetupTaskDto,
+} from "$lib/api/types";
 import { onMount } from "svelte";
 import { deriveSteps, findNextIncompleteStep } from "$lib/features/onboarding-wizard/onboarding-steps";
 
@@ -150,6 +160,7 @@ function getStepRouteForTask(taskId: string): string {
   if (taskId === "org_units" || taskId === "facilities_rooms") return "structure";
   if (taskId === "academic_year" || taskId === "academic_periods") return "calendar";
   if (taskId === "academic_subjects" || taskId === "academic_classes" || taskId === "teaching_assignments") return "academics";
+  if (taskId === "scheduling_setup") return "scheduling";
   if (taskId === "chart_of_accounts" || taskId === "fee_templates" || taskId === "discount_templates") return "finance";
   if (taskId === "assessment_schemes" || taskId === "academic_policy") return "assessment";
   if (taskId === "student_registration_policy" || taskId === "document_requirements" || taskId === "system_templates") return "operations";
@@ -174,15 +185,59 @@ async function handleProvisionDefaults() {
   isProvisioning = true;
   provisioningError = null;
   try {
+    const request: ProvisionDefaultsReqDto = {
+      academic_year_name: provYearName || undefined,
+      academic_year_name_ar: provYearNameAr || undefined,
+      provision_stages_and_grades: provStagesAndGrades,
+      provision_subjects: provSubjects,
+      provision_assessment_scheme: provAssessmentScheme,
+      provision_tuition_fee_template: provTuitionFee,
+    };
+    if (state?.institution_type === "school") {
+      const years = await api.listAcademicYears();
+      const academicYear =
+        years.find((year) => year.status === "active") ?? years[0];
+      const calendar = academicYear
+        ? getHijriSchoolMonthLengths(academicYear.start_date)
+        : getNextHijriSchoolCalendar();
+      if (!calendar) {
+        throw new Error(m.onboarding_step_scheduling_invalid_hijri_start());
+      }
+      const toDateValue = (date: Date) =>
+        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      const startDate = toDateValue(
+        academicYear?.start_date
+          ? new Date(academicYear.start_date)
+          : calendar.startDate,
+      );
+      const endDate = toDateValue(
+        academicYear?.end_date
+          ? new Date(academicYear.end_date)
+          : calendar.endDate,
+      );
+      Object.assign(request, {
+        academic_year_id: academicYear ? String(academicYear.id) : undefined,
+        academic_year_name:
+          academicYear?.name ||
+          provYearName ||
+          `${calendar.hijriYear}/${calendar.hijriYear + 1}`,
+        academic_year_name_ar:
+          academicYear?.name_ar ||
+          provYearNameAr ||
+          `العام الدراسي ${calendar.hijriYear}-${calendar.hijriYear + 1}هـ`,
+        start_date: academicYear?.start_date || new Date(startDate).toISOString(),
+        end_date:
+          academicYear?.end_date ||
+          new Date(`${endDate}T23:59:59.000Z`).toISOString(),
+        provision_hijri_school_calendar: true,
+        hijri_start_year: calendar.hijriYear,
+        hijri_month_lengths: calendar.monthLengths,
+        provision_time_slots: true,
+        enable_period_autopilot: true,
+      });
+    }
     await systemStore.provisionBlueprintDefaults(
-      {
-        academic_year_name: provYearName || undefined,
-        academic_year_name_ar: provYearNameAr || undefined,
-        provision_stages_and_grades: provStagesAndGrades,
-        provision_subjects: provSubjects,
-        provision_assessment_scheme: provAssessmentScheme,
-        provision_tuition_fee_template: provTuitionFee,
-      },
+      request,
       orgId,
     );
     isProvisionModalOpen = false;

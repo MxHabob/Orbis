@@ -1,10 +1,11 @@
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// Rounding mode used by the academic calculation engine.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum RoundingMode {
     RoundHalfUp,
@@ -20,7 +21,7 @@ impl Default for RoundingMode {
 }
 
 /// Scope used for ranking students.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum RankingScope {
     Class,
@@ -36,7 +37,7 @@ impl Default for RankingScope {
 }
 
 /// Tie handling policy for ranking calculations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum TiePolicy {
     /// Standard competition ranking: 1, 2, 2, 4
@@ -54,7 +55,7 @@ impl Default for TiePolicy {
 }
 
 /// Academic outcome status for a student result.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AcademicStatus {
     Passed,
@@ -82,55 +83,102 @@ impl std::fmt::Display for AcademicStatus {
     }
 }
 
-/// Detailed breakdown of a monthly period assessment.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct MonthlyAssessmentBreakdown {
-    pub assignments: Decimal,
-    pub assignments_max: Decimal,
-    pub oral: Decimal,
-    pub oral_max: Decimal,
-    pub attendance: Decimal,
-    pub attendance_max: Decimal,
-    pub written_test: Decimal,
-    pub written_test_max: Decimal,
+/// A single component score within a period assessment.
+/// Driven by `AssessmentScheme.components` — not hardcoded.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, ToSchema)]
+pub struct ComponentScore {
+    /// Component code (e.g. "HW", "ORAL", "ATT", "EXAM_M")
+    pub code: String,
+    /// Human-readable name
+    pub name: String,
+    /// Arabic name
+    pub name_ar: Option<String>,
+    /// Actual score achieved
+    pub score: Decimal,
+    /// Maximum possible score for this component
+    pub max_score: Decimal,
+}
+
+/// Detailed breakdown of a period assessment using generic component scores.
+/// Replaces the old hardcoded 4-field `MonthlyAssessmentBreakdown`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, ToSchema)]
+pub struct PeriodComponentScores {
+    /// Individual component scores driven by the active AssessmentScheme
+    pub components: Vec<ComponentScore>,
+    /// Computed total (sum of component scores, each capped at its max)
     pub total: Decimal,
+    /// Computed maximum (sum of component max_scores)
     pub total_max: Decimal,
 }
 
-impl Default for MonthlyAssessmentBreakdown {
-    fn default() -> Self {
+impl PeriodComponentScores {
+    /// Create a new empty breakdown from component definitions.
+    pub fn empty_from_components(components: &[(String, String, Option<String>, Decimal)]) -> Self {
+        let mut total_max = Decimal::ZERO;
+        let scores = components
+            .iter()
+            .map(|(code, name, name_ar, max_score)| {
+                total_max += *max_score;
+                ComponentScore {
+                    code: code.clone(),
+                    name: name.clone(),
+                    name_ar: name_ar.clone(),
+                    score: Decimal::ZERO,
+                    max_score: *max_score,
+                }
+            })
+            .collect();
         Self {
-            assignments: Decimal::ZERO,
-            assignments_max: Decimal::from(20),
-            oral: Decimal::ZERO,
-            oral_max: Decimal::from(20),
-            attendance: Decimal::ZERO,
-            attendance_max: Decimal::from(20),
-            written_test: Decimal::ZERO,
-            written_test_max: Decimal::from(40),
+            components: scores,
             total: Decimal::ZERO,
-            total_max: Decimal::from(100),
+            total_max,
         }
+    }
+
+    /// Compute total from individual component scores (each capped at max).
+    pub fn compute_total(&mut self) {
+        self.total = self
+            .components
+            .iter()
+            .map(|c| c.score.min(c.max_score))
+            .sum();
+    }
+
+    /// Get a component score by code, if it exists.
+    pub fn get_component(&self, code: &str) -> Option<&ComponentScore> {
+        self.components.iter().find(|c| c.code == code)
     }
 }
 
-impl MonthlyAssessmentBreakdown {
-    pub fn compute_total(&mut self) {
-        self.total = self.assignments + self.oral + self.attendance + self.written_test;
-    }
+/// Backward-compatible type alias. Callers that previously used
+/// `MonthlyAssessmentBreakdown` can migrate incrementally.
+pub type MonthlyAssessmentBreakdown = PeriodComponentScores;
+
+/// A single monthly (or sub-period) assessment result with period metadata.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct PeriodAssessmentResult {
+    /// The academic period ID this result belongs to
+    pub period_id: Uuid,
+    /// Period code (e.g. "M1", "M2", "M3")
+    pub period_code: String,
+    /// Period name
+    pub period_name: String,
+    /// Arabic period name
+    pub period_name_ar: Option<String>,
+    /// Component breakdown for this period
+    pub breakdown: PeriodComponentScores,
 }
 
 /// Result of evaluating a subject for a term.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct SubjectTermResult {
     pub subject_id: Uuid,
     pub subject_code: String,
     pub subject_name: String,
     pub subject_name_ar: Option<String>,
     pub credit_hours: Decimal,
-    pub month_1: Option<MonthlyAssessmentBreakdown>,
-    pub month_2: Option<MonthlyAssessmentBreakdown>,
-    pub month_3: Option<MonthlyAssessmentBreakdown>,
+    /// Dynamic list of monthly/sub-period results (replaces fixed month_1/month_2/month_3)
+    pub monthly_results: Vec<PeriodAssessmentResult>,
     pub monthly_average: Decimal,
     pub monthly_contribution: Decimal,
     pub monthly_contribution_max: Decimal,
@@ -144,7 +192,7 @@ pub struct SubjectTermResult {
 }
 
 /// Result of evaluating a subject for an entire academic year.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct SubjectAnnualResult {
     pub subject_id: Uuid,
     pub subject_code: String,
@@ -161,7 +209,7 @@ pub struct SubjectAnnualResult {
 }
 
 /// Comprehensive student academic report card / result for a term.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct StudentTermReportCard {
     pub student_id: Uuid,
     pub student_name: String,
@@ -184,7 +232,7 @@ pub struct StudentTermReportCard {
 }
 
 /// Comprehensive student academic report card / result for an academic year.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct StudentAnnualReportCard {
     pub student_id: Uuid,
     pub student_name: String,
@@ -207,7 +255,7 @@ pub struct StudentAnnualReportCard {
 }
 
 /// Organization-wide or class-level Academic Policy.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AcademicPolicy {
     pub org_id: Uuid,
     pub passing_threshold_percentage: Decimal,
@@ -218,6 +266,16 @@ pub struct AcademicPolicy {
     pub decimal_places: u32,
     pub ranking_scope: RankingScope,
     pub tie_policy: TiePolicy,
+    /// Whether ranking is enabled for reports and certificates.
+    #[serde(default = "default_true")]
+    pub ranking_enabled: bool,
+    /// Maximum rank to display on reports/certificates (None = show all).
+    #[serde(default)]
+    pub max_displayed_rank: Option<u32>,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl Default for AcademicPolicy {
@@ -232,6 +290,8 @@ impl Default for AcademicPolicy {
             decimal_places: 2,
             ranking_scope: RankingScope::Class,
             tie_policy: TiePolicy::StandardCompetition,
+            ranking_enabled: true,
+            max_displayed_rank: None,
         }
     }
 }

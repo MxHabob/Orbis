@@ -193,6 +193,10 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         assessment_cmds::assessment_delete_behavior,
         assessment_cmds::assessment_list_student_behavior_records,
         assessment_cmds::assessment_list_all_behavior,
+        assessment_cmds::assessment_get_student_term_results,
+        assessment_cmds::assessment_get_student_annual_results,
+        assessment_cmds::assessment_get_class_term_results,
+        assessment_cmds::assessment_get_class_annual_results,
         // ── Exam ────────────────────────────────────────────────
         exam_cmds::exam_create_session,
         exam_cmds::exam_list_sessions,

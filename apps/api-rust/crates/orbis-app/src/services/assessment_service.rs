@@ -2,16 +2,25 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository,
-    ClassSubjectRepository, GpaRecordRepository, GradeRepository, SubjectRepository,
+    AcademicPeriodRepository, AcademicYearRepository, AssessmentSchemeRepository,
+    AttendanceRepository, BehaviorRecordRepository, ClassRepository, ClassSubjectRepository,
+    EnrollmentRepository, GpaRecordRepository, GradeRepository, StudentRepository, SubjectRepository,
 };
-use crate::services::calculation_engine::{AstNode, CalcEngine};
+use crate::services::calculation_engine::{
+    apply_rounding, AcademicCalculationEngine, AstNode, CalcEngine,
+};
 use chrono::{NaiveDate, Utc};
+use orbis_domain::entities::academic_period::PeriodKind;
+use orbis_domain::entities::academic_policy::{
+    AcademicPolicy, AcademicStatus, ComponentScore, PeriodAssessmentResult, PeriodComponentScores,
+    StudentAnnualReportCard, StudentTermReportCard, SubjectTermResult,
+};
 use orbis_domain::entities::assessment_scheme::{
     AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
 };
 use orbis_domain::entities::attendance::Attendance;
 use orbis_domain::entities::behavior_record::BehaviorRecord;
+use orbis_domain::entities::enrollment::EnrollmentStatus;
 use orbis_domain::entities::gpa_record::CumulativeGpaRecord;
 use orbis_domain::entities::grade::Grade;
 use orbis_domain::entities::student::AcademicStanding;
@@ -52,6 +61,11 @@ pub struct AssessmentService {
     pub gpa_repo: Arc<dyn GpaRecordRepository>,
     pub class_subject_repo: Arc<dyn ClassSubjectRepository>,
     pub subject_repo: Arc<dyn SubjectRepository>,
+    pub period_repo: Option<Arc<dyn AcademicPeriodRepository>>,
+    pub class_repo: Option<Arc<dyn ClassRepository>>,
+    pub student_repo: Option<Arc<dyn StudentRepository>>,
+    pub year_repo: Option<Arc<dyn AcademicYearRepository>>,
+    pub enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
 }
@@ -76,9 +90,31 @@ impl AssessmentService {
             gpa_repo,
             class_subject_repo,
             subject_repo,
+            period_repo: None,
+            class_repo: None,
+            student_repo: None,
+            year_repo: None,
+            enrollment_repo: None,
             event_bus,
             permission_checker,
         }
+    }
+
+    /// Builder method to supply additional repositories needed for calculated results & report cards
+    pub fn with_academic_repos(
+        mut self,
+        period_repo: Option<Arc<dyn AcademicPeriodRepository>>,
+        class_repo: Option<Arc<dyn ClassRepository>>,
+        student_repo: Option<Arc<dyn StudentRepository>>,
+        year_repo: Option<Arc<dyn AcademicYearRepository>>,
+        enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
+    ) -> Self {
+        self.period_repo = period_repo;
+        self.class_repo = class_repo;
+        self.student_repo = student_repo;
+        self.year_repo = year_repo;
+        self.enrollment_repo = enrollment_repo;
+        self
     }
 
     /// Record or update a student grade
@@ -877,5 +913,577 @@ impl AssessmentService {
             .check(ctx, Permission::BehaviorRead)
             .await?;
         self.behavior_repo.find_by_org(org_id).await
+    }
+
+    /// Calculate comprehensive student term report card
+    pub async fn calculate_student_term_report_card(
+        &self,
+        ctx: &RequestContext,
+        _org_id: Uuid,
+        student_id: Uuid,
+        period_id: Uuid,
+        class_id: Option<Uuid>,
+        policy: Option<AcademicPolicy>,
+    ) -> Result<StudentTermReportCard, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::GradeRead)
+            .await?;
+
+        let policy = policy.unwrap_or_default();
+
+        // 1. Resolve student details
+        let (student_name, student_number) = if let Some(sr) = &self.student_repo {
+            if let Some(detail) = sr.find_detail_by_id(student_id).await? {
+                (detail.person.full_name(), Some(detail.student.student_number))
+            } else if let Some(st) = sr.find_by_id(student_id).await? {
+                (
+                    format!("Student {}", &st.id.to_string()[..8]),
+                    Some(st.student_number),
+                )
+            } else {
+                ("Student".to_string(), None)
+            }
+        } else {
+            ("Student".to_string(), None)
+        };
+
+        // 2. Resolve period details and child periods
+        let (period_name, child_periods) = if let Some(pr) = &self.period_repo {
+            let p = pr.find_by_id(period_id).await?.ok_or_else(|| {
+                DomainError::NotFound(format!("Academic period {} not found", period_id))
+            })?;
+            let all_year_periods = pr.find_by_year(p.year_id).await?;
+            let mut children: Vec<_> = all_year_periods
+                .into_iter()
+                .filter(|cp| cp.parent_id == Some(period_id))
+                .collect();
+            children.sort_by_key(|cp| cp.sort_order);
+            (p.name, children)
+        } else {
+            ("Term Period".to_string(), vec![])
+        };
+
+        // 3. Resolve class
+        let resolved_class_id = if let Some(cid) = class_id {
+            cid
+        } else if let Some(er) = &self.enrollment_repo {
+            let enrollments = er.find_by_student(student_id).await?;
+            enrollments
+                .into_iter()
+                .find(|e| {
+                    e.period_id == period_id || e.status == EnrollmentStatus::Active
+                })
+                .and_then(|e| e.class_id)
+                .unwrap_or_else(Uuid::nil)
+        } else {
+            Uuid::nil()
+        };
+
+        let class_name = if let Some(cr) = &self.class_repo {
+            if let Some(cls) = cr.find_by_id(resolved_class_id).await? {
+                cls.name
+            } else {
+                "Class".to_string()
+            }
+        } else {
+            "Class".to_string()
+        };
+
+        // 4. Resolve class subjects
+        let class_subjects = if resolved_class_id != Uuid::nil() {
+            let cs_list = self
+                .class_subject_repo
+                .find_by_class_and_period(resolved_class_id, period_id)
+                .await?;
+            if cs_list.is_empty() {
+                self.class_subject_repo
+                    .find_by_class(resolved_class_id)
+                    .await?
+            } else {
+                cs_list
+            }
+        } else {
+            vec![]
+        };
+
+        // 5. Calculate subject term results
+        let mut subject_results = Vec::with_capacity(class_subjects.len());
+
+        for cs in &class_subjects {
+            let subject = self.subject_repo.find_by_id(cs.subject_id).await?;
+            let (subject_code, subject_name, subject_name_ar, credit_hours) = match &subject {
+                Some(s) => (
+                    s.code.clone(),
+                    s.name.clone(),
+                    s.name_ar.clone(),
+                    s.credit_hours.unwrap_or(Decimal::ONE),
+                ),
+                None => (
+                    "SUBJ".to_string(),
+                    "Subject".to_string(),
+                    None,
+                    Decimal::ONE,
+                ),
+            };
+
+            let all_grades = self
+                .grade_repo
+                .find_by_student_and_subject(student_id, cs.id)
+                .await?;
+
+            let mut monthly_results = Vec::new();
+            let mut term_final_exam = None;
+
+            if !child_periods.is_empty() {
+                for cp in &child_periods {
+                    let is_exam = cp.period_kind == PeriodKind::Examination
+                        || cp
+                            .code
+                            .as_deref()
+                            .unwrap_or("")
+                            .to_uppercase()
+                            .contains("EXAM");
+
+                    let period_grades: Vec<&Grade> = all_grades
+                        .iter()
+                        .filter(|g| g.period_id == cp.id)
+                        .collect();
+
+                    if is_exam {
+                        if let Some(first_grade) = period_grades.first() {
+                            term_final_exam = Some(first_grade.score);
+                        }
+                    } else {
+                        // Monthly period
+                        let components: Vec<ComponentScore> = if period_grades.is_empty() {
+                            vec![]
+                        } else {
+                            period_grades
+                                .iter()
+                                .map(|g| ComponentScore {
+                                    code: g
+                                        .component_id
+                                        .map(|cid| cid.to_string())
+                                        .unwrap_or_else(|| "TOTAL".into()),
+                                    name: g
+                                        .notes
+                                        .clone()
+                                        .unwrap_or_else(|| "Score".into()),
+                                    name_ar: None,
+                                    score: g.score,
+                                    max_score: g.max_score,
+                                })
+                                .collect()
+                        };
+
+                        let mut breakdown = PeriodComponentScores {
+                            components,
+                            total: Decimal::ZERO,
+                            total_max: Decimal::from(100),
+                        };
+                        breakdown.compute_total();
+
+                        monthly_results.push(PeriodAssessmentResult {
+                            period_id: cp.id,
+                            period_code: cp.code.clone().unwrap_or_default(),
+                            period_name: cp.name.clone(),
+                            period_name_ar: cp.name_ar.clone(),
+                            breakdown,
+                        });
+                    }
+                }
+            } else {
+                // Flat/direct grades
+                let mut direct_components = Vec::new();
+                for g in &all_grades {
+                    if g.is_final {
+                        term_final_exam = Some(g.score);
+                    } else {
+                        direct_components.push(ComponentScore {
+                            code: g
+                                .component_id
+                                .map(|cid| cid.to_string())
+                                .unwrap_or_else(|| "TOTAL".into()),
+                            name: g.notes.clone().unwrap_or_else(|| "Score".into()),
+                            name_ar: None,
+                            score: g.score,
+                            max_score: g.max_score,
+                        });
+                    }
+                }
+                if !direct_components.is_empty() {
+                    let mut breakdown = PeriodComponentScores {
+                        components: direct_components,
+                        total: Decimal::ZERO,
+                        total_max: Decimal::from(100),
+                    };
+                    breakdown.compute_total();
+                    monthly_results.push(PeriodAssessmentResult {
+                        period_id,
+                        period_code: "TERM".into(),
+                        period_name: period_name.clone(),
+                        period_name_ar: None,
+                        breakdown,
+                    });
+                }
+            }
+
+            let res = AcademicCalculationEngine::calculate_subject_term_result(
+                cs.subject_id,
+                subject_code,
+                subject_name,
+                subject_name_ar,
+                credit_hours,
+                monthly_results,
+                term_final_exam,
+                &policy,
+            );
+            subject_results.push(res);
+        }
+
+        // 6. Aggregate student term report card
+        let total_score: Decimal = subject_results.iter().map(|s| s.term_total).sum();
+        let max_possible_score = Decimal::from(subject_results.len() * 50);
+        let raw_pct = if max_possible_score > Decimal::ZERO {
+            (total_score / max_possible_score) * Decimal::from(100)
+        } else {
+            Decimal::ZERO
+        };
+        let overall_percentage =
+            apply_rounding(raw_pct, policy.rounding_mode, policy.decimal_places);
+
+        let status = if overall_percentage >= policy.honors_threshold_percentage {
+            AcademicStatus::PassedWithHonors
+        } else if overall_percentage >= policy.passing_threshold_percentage {
+            AcademicStatus::Passed
+        } else {
+            AcademicStatus::Failed
+        };
+
+        Ok(StudentTermReportCard {
+            student_id,
+            student_name,
+            student_number,
+            class_id: resolved_class_id,
+            class_name,
+            period_id,
+            period_name,
+            subjects: subject_results,
+            total_score,
+            max_possible_score,
+            overall_percentage,
+            gpa: None,
+            rank_in_class: None,
+            rank_in_grade: None,
+            total_students_in_class: 0,
+            total_students_in_grade: 0,
+            status,
+            calculated_at: Utc::now(),
+        })
+    }
+
+    /// Calculate comprehensive student annual report card
+    pub async fn calculate_student_annual_report_card(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        student_id: Uuid,
+        academic_year_id: Uuid,
+        class_id: Option<Uuid>,
+        policy: Option<AcademicPolicy>,
+    ) -> Result<StudentAnnualReportCard, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::GradeRead)
+            .await?;
+
+        let policy = policy.unwrap_or_default();
+
+        let (year_name, term_periods) = if let Some(pr) = &self.period_repo {
+            let all_periods = pr.find_by_year(academic_year_id).await?;
+            let mut terms: Vec<_> = all_periods
+                .into_iter()
+                .filter(|p| p.parent_id.is_none())
+                .collect();
+            terms.sort_by_key(|p| p.sort_order);
+
+            let yr_name = if let Some(yr) = &self.year_repo {
+                yr.find_by_id(academic_year_id)
+                    .await?
+                    .map(|y| y.name)
+                    .unwrap_or_else(|| "Academic Year".into())
+            } else {
+                "Academic Year".into()
+            };
+            (yr_name, terms)
+        } else {
+            ("Academic Year".into(), vec![])
+        };
+
+        let term_1_card = if let Some(t1) = term_periods.first() {
+            Some(
+                self.calculate_student_term_report_card(
+                    ctx,
+                    org_id,
+                    student_id,
+                    t1.id,
+                    class_id,
+                    Some(policy.clone()),
+                )
+                .await?,
+            )
+        } else {
+            None
+        };
+
+        let term_2_card = if term_periods.len() > 1 {
+            let t2 = &term_periods[1];
+            Some(
+                self.calculate_student_term_report_card(
+                    ctx,
+                    org_id,
+                    student_id,
+                    t2.id,
+                    class_id,
+                    Some(policy.clone()),
+                )
+                .await?,
+            )
+        } else {
+            None
+        };
+
+        let student_name = term_1_card
+            .as_ref()
+            .map(|c| c.student_name.clone())
+            .or_else(|| term_2_card.as_ref().map(|c| c.student_name.clone()))
+            .unwrap_or_else(|| "Student".into());
+
+        let student_number = term_1_card
+            .as_ref()
+            .and_then(|c| c.student_number.clone())
+            .or_else(|| term_2_card.as_ref().and_then(|c| c.student_number.clone()));
+
+        let resolved_class_id = class_id.unwrap_or_else(|| {
+            term_1_card
+                .as_ref()
+                .map(|c| c.class_id)
+                .or_else(|| term_2_card.as_ref().map(|c| c.class_id))
+                .unwrap_or_else(Uuid::nil)
+        });
+
+        let class_name = term_1_card
+            .as_ref()
+            .map(|c| c.class_name.clone())
+            .or_else(|| term_2_card.as_ref().map(|c| c.class_name.clone()))
+            .unwrap_or_else(|| "Class".into());
+
+        // Match subjects
+        let mut subject_map: std::collections::BTreeMap<
+            Uuid,
+            (Option<SubjectTermResult>, Option<SubjectTermResult>),
+        > = std::collections::BTreeMap::new();
+
+        if let Some(t1) = &term_1_card {
+            for s in &t1.subjects {
+                subject_map.entry(s.subject_id).or_insert((None, None)).0 = Some(s.clone());
+            }
+        }
+        if let Some(t2) = &term_2_card {
+            for s in &t2.subjects {
+                subject_map.entry(s.subject_id).or_insert((None, None)).1 = Some(s.clone());
+            }
+        }
+
+        let mut annual_subjects = Vec::with_capacity(subject_map.len());
+        for (subject_id, (t1_res, t2_res)) in subject_map {
+            let (code, name, name_ar, credit) = if let Some(r) = t1_res.as_ref().or(t2_res.as_ref())
+            {
+                (
+                    r.subject_code.clone(),
+                    r.subject_name.clone(),
+                    r.subject_name_ar.clone(),
+                    r.credit_hours,
+                )
+            } else {
+                ("SUBJ".into(), "Subject".into(), None, Decimal::ONE)
+            };
+
+            let annual_res = AcademicCalculationEngine::calculate_subject_annual_result(
+                subject_id,
+                code,
+                name,
+                name_ar,
+                credit,
+                t1_res,
+                t2_res,
+                &policy,
+            );
+            annual_subjects.push(annual_res);
+        }
+
+        let total_score: Decimal = annual_subjects.iter().map(|s| s.annual_total).sum();
+        let max_possible_score = Decimal::from(annual_subjects.len() * 100);
+        let raw_pct = if max_possible_score > Decimal::ZERO {
+            (total_score / max_possible_score) * Decimal::from(100)
+        } else {
+            Decimal::ZERO
+        };
+        let overall_percentage =
+            apply_rounding(raw_pct, policy.rounding_mode, policy.decimal_places);
+
+        let status = if overall_percentage >= policy.honors_threshold_percentage {
+            AcademicStatus::PassedWithHonors
+        } else if overall_percentage >= policy.passing_threshold_percentage {
+            AcademicStatus::Passed
+        } else {
+            AcademicStatus::Failed
+        };
+
+        Ok(StudentAnnualReportCard {
+            student_id,
+            student_name,
+            student_number,
+            class_id: resolved_class_id,
+            class_name,
+            academic_year_id,
+            academic_year_name: year_name,
+            subjects: annual_subjects,
+            total_score,
+            max_possible_score,
+            overall_percentage,
+            cumulative_gpa: None,
+            rank_in_class: None,
+            rank_in_grade: None,
+            total_students_in_class: 0,
+            total_students_in_grade: 0,
+            status,
+            calculated_at: Utc::now(),
+        })
+    }
+
+    /// Calculate class term results with rankings
+    pub async fn calculate_class_term_report_cards(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        class_id: Uuid,
+        period_id: Uuid,
+        policy: Option<AcademicPolicy>,
+    ) -> Result<Vec<StudentTermReportCard>, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::GradeRead)
+            .await?;
+
+        let policy = policy.unwrap_or_default();
+
+        let enrollments = if let Some(er) = &self.enrollment_repo {
+            er.find_by_class(class_id).await?
+        } else {
+            vec![]
+        };
+
+        let mut cards = Vec::with_capacity(enrollments.len());
+        for en in &enrollments {
+            let card = self
+                .calculate_student_term_report_card(
+                    ctx,
+                    org_id,
+                    en.student_id,
+                    period_id,
+                    Some(class_id),
+                    Some(policy.clone()),
+                )
+                .await?;
+            cards.push(card);
+        }
+
+        let total_students = cards.len();
+        if policy.ranking_enabled && !cards.is_empty() {
+            let scores: Vec<(Uuid, Decimal)> = cards
+                .iter()
+                .map(|c| (c.student_id, c.overall_percentage))
+                .collect();
+            let rankings = AcademicCalculationEngine::compute_rankings(&scores, policy.tie_policy);
+            let rank_map: std::collections::HashMap<Uuid, u32> =
+                rankings.into_iter().collect();
+
+            for c in &mut cards {
+                if let Some(r) = rank_map.get(&c.student_id) {
+                    if let Some(max_r) = policy.max_displayed_rank {
+                        if *r <= max_r {
+                            c.rank_in_class = Some(*r);
+                        }
+                    } else {
+                        c.rank_in_class = Some(*r);
+                    }
+                }
+                c.total_students_in_class = total_students;
+            }
+        }
+
+        Ok(cards)
+    }
+
+    /// Calculate class annual results with rankings
+    pub async fn calculate_class_annual_report_cards(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        class_id: Uuid,
+        academic_year_id: Uuid,
+        policy: Option<AcademicPolicy>,
+    ) -> Result<Vec<StudentAnnualReportCard>, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::GradeRead)
+            .await?;
+
+        let policy = policy.unwrap_or_default();
+
+        let enrollments = if let Some(er) = &self.enrollment_repo {
+            er.find_by_class(class_id).await?
+        } else {
+            vec![]
+        };
+
+        let mut cards = Vec::with_capacity(enrollments.len());
+        for en in &enrollments {
+            let card = self
+                .calculate_student_annual_report_card(
+                    ctx,
+                    org_id,
+                    en.student_id,
+                    academic_year_id,
+                    Some(class_id),
+                    Some(policy.clone()),
+                )
+                .await?;
+            cards.push(card);
+        }
+
+        let total_students = cards.len();
+        if policy.ranking_enabled && !cards.is_empty() {
+            let scores: Vec<(Uuid, Decimal)> = cards
+                .iter()
+                .map(|c| (c.student_id, c.overall_percentage))
+                .collect();
+            let rankings = AcademicCalculationEngine::compute_rankings(&scores, policy.tie_policy);
+            let rank_map: std::collections::HashMap<Uuid, u32> =
+                rankings.into_iter().collect();
+
+            for c in &mut cards {
+                if let Some(r) = rank_map.get(&c.student_id) {
+                    if let Some(max_r) = policy.max_displayed_rank {
+                        if *r <= max_r {
+                            c.rank_in_class = Some(*r);
+                        }
+                    } else {
+                        c.rank_in_class = Some(*r);
+                    }
+                }
+                c.total_students_in_class = total_students;
+            }
+        }
+
+        Ok(cards)
     }
 }

@@ -1165,6 +1165,7 @@ export interface OnboardingStateDto {
 }
 
 export interface ProvisionDefaultsReqDto {
+  academic_year_id?: string;
   academic_year_name?: string;
   academic_year_name_ar?: string;
   start_date?: string;
@@ -1173,6 +1174,12 @@ export interface ProvisionDefaultsReqDto {
   provision_subjects?: boolean;
   provision_assessment_scheme?: boolean;
   provision_tuition_fee_template?: boolean;
+  provision_discount_templates?: boolean;
+  provision_hijri_school_calendar?: boolean;
+  hijri_start_year?: number;
+  hijri_month_lengths?: number[];
+  provision_time_slots?: boolean;
+  enable_period_autopilot?: boolean;
 }
 
 export interface ProvisionDefaultsResultDto {

@@ -8,6 +8,7 @@ use crate::ports::repositories::{
     StudentFeeRepository,
 };
 use orbis_domain::autopilot::task::{AutopilotTask, RiskLevel, TaskType};
+use orbis_domain::entities::academic_period::PeriodKind;
 use orbis_domain::entities::settings::OrganizationSettings;
 use orbis_domain::errors::DomainError;
 use orbis_domain::queries::filters::StudentFeeFilter;
@@ -113,7 +114,11 @@ impl AutopilotEvaluator {
             let period_state_str = period.state.to_string();
 
             // Period Activation
-            if period_state_str == "planning" && period.start_date <= now {
+            if period.period_kind == PeriodKind::Teaching
+                && period_state_str == "planning"
+                && period.start_date <= now
+                && now <= period.end_date
+            {
                 tasks.push(AutopilotTask::new(
                     org_id,
                     TaskType::PeriodActivate,

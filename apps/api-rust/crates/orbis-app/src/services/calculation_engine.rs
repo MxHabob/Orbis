@@ -1,6 +1,7 @@
+#[allow(unused_imports)] // ComponentScore used by tests via super::*
 use orbis_domain::entities::academic_policy::{
-    AcademicPolicy, AcademicStatus, MonthlyAssessmentBreakdown, RoundingMode, SubjectAnnualResult,
-    SubjectTermResult, TiePolicy,
+    AcademicPolicy, AcademicStatus, ComponentScore, PeriodAssessmentResult,
+    PeriodComponentScores, RoundingMode, SubjectAnnualResult, SubjectTermResult, TiePolicy,
 };
 use orbis_domain::errors::DomainError;
 use rust_decimal::Decimal;
@@ -208,22 +209,24 @@ pub fn apply_rounding(value: Decimal, mode: RoundingMode, dp: u32) -> Decimal {
 pub struct AcademicCalculationEngine;
 
 impl AcademicCalculationEngine {
-    /// Calculate monthly total from component breakdown (Assignments 20 + Oral 20 + Attendance 20 + Written 40 = 100).
+    /// Calculate period total from generic component scores.
+    /// Each component score is capped at its max before summing.
     pub fn calculate_monthly_total(
-        breakdown: &MonthlyAssessmentBreakdown,
+        breakdown: &PeriodComponentScores,
         policy: &AcademicPolicy,
     ) -> Decimal {
-        let raw_total = breakdown.assignments.min(breakdown.assignments_max)
-            + breakdown.oral.min(breakdown.oral_max)
-            + breakdown.attendance.min(breakdown.attendance_max)
-            + breakdown.written_test.min(breakdown.written_test_max);
+        let raw_total: Decimal = breakdown
+            .components
+            .iter()
+            .map(|c| c.score.min(c.max_score))
+            .sum();
 
         apply_rounding(raw_total, policy.rounding_mode, policy.decimal_places)
     }
 
     /// Calculate term subject result:
-    /// 1. Average of available monthly periods (out of 100).
-    /// 2. Normalized monthly contribution out of 20: `(Monthly Avg / 100) * 20` (or `Monthly Avg / 5`).
+    /// 1. Average of available monthly periods (out of total_max).
+    /// 2. Normalized monthly contribution out of 20: `(Monthly Avg / total_max) * 20`.
     /// 3. Term Final Exam score (out of 30).
     /// 4. Term Total (out of 50) = Monthly Contribution (20) + Term Final Exam (30).
     pub fn calculate_subject_term_result(
@@ -232,22 +235,17 @@ impl AcademicCalculationEngine {
         subject_name: String,
         subject_name_ar: Option<String>,
         credit_hours: Decimal,
-        month_1: Option<MonthlyAssessmentBreakdown>,
-        month_2: Option<MonthlyAssessmentBreakdown>,
-        month_3: Option<MonthlyAssessmentBreakdown>,
+        monthly_results: Vec<PeriodAssessmentResult>,
         term_final_exam: Option<Decimal>,
         policy: &AcademicPolicy,
     ) -> SubjectTermResult {
         let mut monthly_totals = Vec::new();
+        let mut monthly_total_max = Decimal::from(100); // Default, overridden by actual breakdown
 
-        if let Some(ref m1) = month_1 {
-            monthly_totals.push(Self::calculate_monthly_total(m1, policy));
-        }
-        if let Some(ref m2) = month_2 {
-            monthly_totals.push(Self::calculate_monthly_total(m2, policy));
-        }
-        if let Some(ref m3) = month_3 {
-            monthly_totals.push(Self::calculate_monthly_total(m3, policy));
+        for par in &monthly_results {
+            let total = Self::calculate_monthly_total(&par.breakdown, policy);
+            monthly_totals.push(total);
+            monthly_total_max = par.breakdown.total_max;
         }
 
         let count = monthly_totals.len();
@@ -258,8 +256,12 @@ impl AcademicCalculationEngine {
             Decimal::ZERO
         };
 
-        // Normalize month avg (0..100) to 20 points
-        let monthly_contribution = (monthly_avg / Decimal::from(100)) * Decimal::from(20);
+        // Normalize month avg (0..total_max) to 20 points
+        let monthly_contribution = if monthly_total_max > Decimal::ZERO {
+            (monthly_avg / monthly_total_max) * Decimal::from(20)
+        } else {
+            Decimal::ZERO
+        };
         let final_exam_score = term_final_exam
             .unwrap_or(Decimal::ZERO)
             .min(Decimal::from(30));
@@ -289,9 +291,7 @@ impl AcademicCalculationEngine {
             subject_name,
             subject_name_ar,
             credit_hours,
-            month_1,
-            month_2,
-            month_3,
+            monthly_results,
             monthly_average: apply_rounding(
                 monthly_avg,
                 policy.rounding_mode,
@@ -435,21 +435,37 @@ mod tests {
         Decimal::from_str_exact(s).unwrap()
     }
 
+    /// Helper to create a standard school monthly breakdown.
+    fn school_breakdown(hw: &str, oral: &str, att: &str, written: &str) -> PeriodComponentScores {
+        let mut b = PeriodComponentScores {
+            components: vec![
+                ComponentScore { code: "HW".into(), name: "Homework".into(), name_ar: None, score: d(hw), max_score: d("20") },
+                ComponentScore { code: "ORAL".into(), name: "Oral".into(), name_ar: None, score: d(oral), max_score: d("20") },
+                ComponentScore { code: "ATT".into(), name: "Attendance".into(), name_ar: None, score: d(att), max_score: d("20") },
+                ComponentScore { code: "EXAM_M".into(), name: "Written".into(), name_ar: None, score: d(written), max_score: d("40") },
+            ],
+            total: Decimal::ZERO,
+            total_max: d("100"),
+        };
+        b.compute_total();
+        b
+    }
+
+    /// Helper to wrap a breakdown into a PeriodAssessmentResult.
+    fn month_result(code: &str, name: &str, breakdown: PeriodComponentScores) -> PeriodAssessmentResult {
+        PeriodAssessmentResult {
+            period_id: Uuid::new_v4(),
+            period_code: code.into(),
+            period_name: name.into(),
+            period_name_ar: None,
+            breakdown,
+        }
+    }
+
     #[test]
     fn test_monthly_assessment_calculation() {
         let policy = AcademicPolicy::default();
-        let breakdown = MonthlyAssessmentBreakdown {
-            assignments: d("18"),
-            assignments_max: d("20"),
-            oral: d("17"),
-            oral_max: d("20"),
-            attendance: d("19"),
-            attendance_max: d("20"),
-            written_test: d("35"),
-            written_test_max: d("40"),
-            total: d("0"),
-            total_max: d("100"),
-        };
+        let breakdown = school_breakdown("18", "17", "19", "35");
 
         let total = AcademicCalculationEngine::calculate_monthly_total(&breakdown, &policy);
         assert_eq!(total, d("89.00"));
@@ -463,47 +479,12 @@ mod tests {
             ..Default::default()
         };
 
-        // Month 1 = 82
-        let m1 = MonthlyAssessmentBreakdown {
-            assignments: d("20"),
-            assignments_max: d("20"),
-            oral: d("20"),
-            oral_max: d("20"),
-            attendance: d("20"),
-            attendance_max: d("20"),
-            written_test: d("22"),
-            written_test_max: d("40"),
-            total: d("82"),
-            total_max: d("100"),
-        };
-
-        // Month 2 = 91
-        let m2 = MonthlyAssessmentBreakdown {
-            assignments: d("20"),
-            assignments_max: d("20"),
-            oral: d("20"),
-            oral_max: d("20"),
-            attendance: d("20"),
-            attendance_max: d("20"),
-            written_test: d("31"),
-            written_test_max: d("40"),
-            total: d("91"),
-            total_max: d("100"),
-        };
-
-        // Month 3 = 87
-        let m3 = MonthlyAssessmentBreakdown {
-            assignments: d("20"),
-            assignments_max: d("20"),
-            oral: d("20"),
-            oral_max: d("20"),
-            attendance: d("20"),
-            attendance_max: d("20"),
-            written_test: d("27"),
-            written_test_max: d("40"),
-            total: d("87"),
-            total_max: d("100"),
-        };
+        // Month 1 = 82 (20+20+20+22)
+        let m1 = month_result("M1", "Month 1", school_breakdown("20", "20", "20", "22"));
+        // Month 2 = 91 (20+20+20+31)
+        let m2 = month_result("M2", "Month 2", school_breakdown("20", "20", "20", "31"));
+        // Month 3 = 87 (20+20+20+27)
+        let m3 = month_result("M3", "Month 3", school_breakdown("20", "20", "20", "27"));
 
         let final_exam = Some(d("24")); // 24 / 30
 
@@ -513,9 +494,7 @@ mod tests {
             "Mathematics".into(),
             Some("الرياضيات".into()),
             d("3"),
-            Some(m1),
-            Some(m2),
-            Some(m3),
+            vec![m1, m2, m3],
             final_exam,
             &policy,
         );
@@ -543,9 +522,7 @@ mod tests {
             "Mathematics".into(),
             None,
             d("3"),
-            None,
-            None,
-            None,
+            vec![],
             None,
             &policy,
         );

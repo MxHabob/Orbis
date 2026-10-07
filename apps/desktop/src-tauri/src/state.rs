@@ -338,17 +338,26 @@ impl AppState {
             permission_checker.clone(),
         ));
 
-        let assessment_service = Arc::new(orbis_app::services::AssessmentService::new(
-            assessment_repo.clone(),
-            assessment_repo.clone(),
-            assessment_repo.clone(),
-            assessment_repo.clone(),
-            assessment_repo.clone(),
-            academic_repo.clone(),
-            academic_repo.clone(),
-            event_bus.clone(),
-            permission_checker.clone(),
-        ));
+        let assessment_service = Arc::new(
+            orbis_app::services::AssessmentService::new(
+                assessment_repo.clone(),
+                assessment_repo.clone(),
+                assessment_repo.clone(),
+                assessment_repo.clone(),
+                assessment_repo.clone(),
+                academic_repo.clone(),
+                academic_repo.clone(),
+                event_bus.clone(),
+                permission_checker.clone(),
+            )
+            .with_academic_repos(
+                Some(calendar_repo.clone()),
+                Some(academic_repo.clone()),
+                Some(student_repo.clone()),
+                Some(calendar_repo.clone()),
+                Some(student_repo.clone()),
+            ),
+        );
 
         let auth_service = Arc::new(
             orbis_app::services::AuthService::new(
@@ -575,7 +584,9 @@ impl AppState {
             finance_repo.clone(),
             finance_repo.clone(),
             scheduling_repo.clone(),
+            scheduling_repo.clone(),
             doc_req_repo.clone(),
+            report_definition_repo.clone(),
             report_template_repo.clone(),
             integration_repo.clone(),
             permission_checker.clone(),

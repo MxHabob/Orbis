@@ -115,7 +115,7 @@ async function handleContinue() {
 <div class="space-y-6">
   <!-- Onboarding Step Indicator & Title -->
   <OnboardingStepHeader
-    stepNumber={8}
+    stepNumber={9}
     title={m.onboarding_step_integrations_title()}
     description={m.onboarding_step_integrations_subtitle()}
     isRequired={false}

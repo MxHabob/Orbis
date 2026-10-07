@@ -218,7 +218,7 @@ async function handleContinue() {
   if (classes.length === 0 && className.trim()) {
     await handleCreateClass();
   }
-  await navigateOnboardingRoute(`/${orgId}/onboarding/finance`);
+  await navigateOnboardingRoute(`/${orgId}/onboarding/scheduling`);
 }
 </script>
 

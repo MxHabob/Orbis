@@ -82,12 +82,20 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
     order: 4,
   },
   {
+    id: "scheduling",
+    route: "scheduling",
+    taskIds: ["scheduling_setup"],
+    getLabel: () => m.onboarding_step_scheduling_label(),
+    getDescription: () => m.onboarding_step_scheduling_desc(),
+    order: 5,
+  },
+  {
     id: "finance",
     route: "finance",
     taskIds: ["chart_of_accounts", "fee_templates", "discount_templates"],
     getLabel: () => m.onboarding_step5_label(),
     getDescription: () => m.onboarding_step5_desc(),
-    order: 5,
+    order: 6,
   },
   {
     id: "assessment",
@@ -95,7 +103,7 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
     taskIds: ["assessment_schemes", "academic_policy"],
     getLabel: () => m.onboarding_step6_label(),
     getDescription: () => m.onboarding_step6_desc(),
-    order: 6,
+    order: 7,
   },
   {
     id: "operations",
@@ -107,7 +115,7 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
     ],
     getLabel: () => m.onboarding_step7_label(),
     getDescription: () => m.onboarding_step7_desc(),
-    order: 7,
+    order: 8,
   },
   {
     id: "integrations",
@@ -115,7 +123,7 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
     taskIds: ["integrations_setup"],
     getLabel: () => m.onboarding_step_integrations_label(),
     getDescription: () => m.onboarding_step_integrations_desc(),
-    order: 8,
+    order: 9,
   },
   {
     id: "review",
@@ -123,7 +131,7 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
     taskIds: [], // Review uses ALL tasks
     getLabel: () => m.onboarding_step8_label(),
     getDescription: () => m.onboarding_step8_desc(),
-    order: 9,
+    order: 10,
   },
 ];
 

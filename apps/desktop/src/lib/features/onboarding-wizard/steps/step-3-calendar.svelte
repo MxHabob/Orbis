@@ -2,6 +2,10 @@
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { api, type AcademicYearDto, type AcademicPeriodDto } from "$lib/api";
+import {
+  getHijriSchoolMonthLengths,
+  getNextHijriSchoolCalendar,
+} from "$lib/core/i18n/hijri";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -24,17 +28,31 @@ let successMessage = $state<string | null>(null);
 let years = $state<AcademicYearDto[]>([]);
 let periods = $state<AcademicPeriodDto[]>([]);
 
+function dateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+const defaultSchoolCalendar = getNextHijriSchoolCalendar();
+const defaultHijriYear =
+  defaultSchoolCalendar?.hijriYear ?? new Date().getFullYear() - 579;
+const defaultYearStart = defaultSchoolCalendar?.startDate ?? new Date();
+const defaultYearEnd = defaultSchoolCalendar?.endDate ?? new Date();
+
 // Academic Year Form
-let yearName = $state("2026/2027");
-let yearNameAr = $state("العام الدراسي 1447-1448هـ / 2026-2027م");
-let yearStartDate = $state("2026-09-01");
-let yearEndDate = $state("2027-06-30");
+let yearName = $state(`${defaultHijriYear}/${defaultHijriYear + 1}`);
+let yearNameAr = $state(`العام الدراسي ${defaultHijriYear}-${defaultHijriYear + 1}هـ`);
+let yearStartDate = $state(dateInputValue(defaultYearStart));
+let yearEndDate = $state(dateInputValue(defaultYearEnd));
 
 // Selected Year for Period Creation
 let selectedYearId = $state<string>("");
 
 const stepTasks = $derived(getTasksForStep("calendar", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
+const isSchool = $derived(systemStore.onboardingState?.institution_type === "school");
 
 onMount(async () => {
   await loadData();
@@ -105,7 +123,35 @@ async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | 
   successMessage = null;
 
   try {
-    const currentYear = years.find((y) => String(y.id) === String(selectedYearId));
+    const currentYear = years.find((year) => String(year.id) === String(selectedYearId));
+    if (scheme === "2_semesters") {
+      const calendar = getHijriSchoolMonthLengths(
+        currentYear?.start_date ?? `${yearStartDate}T00:00:00Z`,
+      );
+      if (!calendar) {
+        errorMessage = m.onboarding_step_scheduling_invalid_hijri_start();
+        return;
+      }
+      await api.onboardingProvisionDefaults(
+        {
+          academic_year_id: selectedYearId,
+          academic_year_name: currentYear?.name ?? yearName,
+          academic_year_name_ar: currentYear?.name_ar ?? yearNameAr,
+          start_date: currentYear?.start_date ?? new Date(yearStartDate).toISOString(),
+          end_date: currentYear?.end_date ?? new Date(yearEndDate).toISOString(),
+          provision_hijri_school_calendar: true,
+          hijri_start_year: calendar.hijriYear,
+          hijri_month_lengths: calendar.monthLengths,
+          enable_period_autopilot: true,
+        },
+        orgId,
+      );
+      periods = await api.listAcademicPeriods();
+      await systemStore.loadOnboardingState(orgId);
+      successMessage = m.onboarding_step3_periods_generated_success();
+      return;
+    }
+
     const startYear = currentYear ? new Date(currentYear.start_date).getFullYear() : 2026;
     const endYear = currentYear ? new Date(currentYear.end_date).getFullYear() : 2027;
 
@@ -301,26 +347,30 @@ async function handleContinue() {
               onclick={() => handleGenerateSemesters("2_semesters")}
               class="text-xs bg-background hover:bg-muted"
             >
-              {m.onboarding_step3_2_semesters()}
+              {isSchool
+                ? m.onboarding_step3_hijri_school_calendar()
+                : m.onboarding_step3_2_semesters()}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isSubmittingPeriod || years.length === 0}
-              onclick={() => handleGenerateSemesters("3_trimesters")}
-              class="text-xs bg-background hover:bg-muted"
-            >
-              {m.onboarding_step3_3_trimesters()}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isSubmittingPeriod || years.length === 0}
-              onclick={() => handleGenerateSemesters("4_quarters")}
-              class="text-xs bg-background hover:bg-muted"
-            >
-              {m.onboarding_step3_4_quarters()}
-            </Button>
+            {#if !isSchool}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isSubmittingPeriod || years.length === 0}
+                onclick={() => handleGenerateSemesters("3_trimesters")}
+                class="text-xs bg-background hover:bg-muted"
+              >
+                {m.onboarding_step3_3_trimesters()}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isSubmittingPeriod || years.length === 0}
+                onclick={() => handleGenerateSemesters("4_quarters")}
+                class="text-xs bg-background hover:bg-muted"
+              >
+                {m.onboarding_step3_4_quarters()}
+              </Button>
+            {/if}
           </div>
         </div>
 

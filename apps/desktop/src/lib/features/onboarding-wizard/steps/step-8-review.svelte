@@ -63,8 +63,8 @@ async function handleCompleteAndLaunch() {
 
 <div class="space-y-6">
   <OnboardingStepHeader
-    stepNumber={9}
-    totalSteps={9}
+    stepNumber={10}
+    totalSteps={10}
     title={m.onboarding_step8_title()}
     description={m.onboarding_step8_subtitle()}
     isRequired={true}

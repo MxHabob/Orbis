@@ -67,6 +67,7 @@ pub struct OnboardingStateDto {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ProvisionDefaultsReqDto {
+    pub academic_year_id: Option<Uuid>,
     pub academic_year_name: Option<String>,
     pub academic_year_name_ar: Option<String>,
     pub start_date: Option<DateTime<Utc>>,
@@ -75,6 +76,12 @@ pub struct ProvisionDefaultsReqDto {
     pub provision_subjects: Option<bool>,
     pub provision_assessment_scheme: Option<bool>,
     pub provision_tuition_fee_template: Option<bool>,
+    pub provision_discount_templates: Option<bool>,
+    pub provision_hijri_school_calendar: Option<bool>,
+    pub hijri_start_year: Option<i32>,
+    pub hijri_month_lengths: Option<Vec<u8>>,
+    pub provision_time_slots: Option<bool>,
+    pub enable_period_autopilot: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -227,6 +234,7 @@ pub async fn onboarding_provision_defaults(
     };
 
     let service_req = orbis_app::services::ProvisionDefaultsRequest {
+        academic_year_id: request.academic_year_id,
         academic_year_name: request.academic_year_name,
         academic_year_name_ar: request.academic_year_name_ar,
         start_date: request.start_date,
@@ -235,6 +243,12 @@ pub async fn onboarding_provision_defaults(
         provision_subjects: request.provision_subjects,
         provision_assessment_scheme: request.provision_assessment_scheme,
         provision_tuition_fee_template: request.provision_tuition_fee_template,
+        provision_discount_templates: request.provision_discount_templates,
+        provision_hijri_school_calendar: request.provision_hijri_school_calendar,
+        hijri_start_year: request.hijri_start_year,
+        hijri_month_lengths: request.hijri_month_lengths,
+        provision_time_slots: request.provision_time_slots,
+        enable_period_autopilot: request.enable_period_autopilot,
     };
 
     let result = state

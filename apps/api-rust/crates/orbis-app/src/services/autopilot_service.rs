@@ -80,7 +80,19 @@ impl AutopilotService {
                 }
             }
 
-            if dry_run
+            let auto_period_lifecycle = settings.autopilot.enabled
+                && ((settings.autopilot.auto_advance_periods
+                    && task.task_type == orbis_domain::autopilot::task::TaskType::PeriodActivate)
+                    || (settings.autopilot.auto_period_lock
+                        && task.task_type == orbis_domain::autopilot::task::TaskType::PeriodLock));
+
+            if !dry_run && auto_period_lifecycle {
+                self.task_repo.save_task(&task).await?;
+                match self.engine.process_task(ctx, task.clone()).await {
+                    Ok(completed) => output_tasks.push(completed),
+                    Err(_) => output_tasks.push(task),
+                }
+            } else if dry_run
                 || settings.autopilot.mode == "suggested"
                 || settings.autopilot.mode == "manual"
             {
@@ -107,7 +119,14 @@ impl AutopilotService {
         // Also process any pending scheduled tasks due for execution
         let pending_tasks = self.task_repo.find_pending_tasks(Some(org_id)).await?;
         for task in pending_tasks {
-            if !dry_run && settings.autopilot.enabled && settings.autopilot.mode == "automatic" {
+            let is_enabled_period_lifecycle = (settings.autopilot.auto_advance_periods
+                && task.task_type == orbis_domain::autopilot::task::TaskType::PeriodActivate)
+                || (settings.autopilot.auto_period_lock
+                    && task.task_type == orbis_domain::autopilot::task::TaskType::PeriodLock);
+            if !dry_run
+                && settings.autopilot.enabled
+                && (settings.autopilot.mode == "automatic" || is_enabled_period_lifecycle)
+            {
                 let _ = self.engine.process_task(ctx, task).await;
             }
         }

@@ -64,7 +64,14 @@ impl AutopilotEngine {
             return Ok(task);
         }
 
-        if settings.autopilot.mode == "manual" && task.status != TaskStatus::Executing {
+        let explicitly_automated_period = (settings.autopilot.auto_advance_periods
+            && task.task_type == orbis_domain::autopilot::task::TaskType::PeriodActivate)
+            || (settings.autopilot.auto_period_lock
+                && task.task_type == orbis_domain::autopilot::task::TaskType::PeriodLock);
+        if settings.autopilot.mode == "manual"
+            && !explicitly_automated_period
+            && task.status != TaskStatus::Executing
+        {
             info!(
                 "Autopilot is in manual mode for org {}, marking task {} as Suggested",
                 task.org_id, task.id

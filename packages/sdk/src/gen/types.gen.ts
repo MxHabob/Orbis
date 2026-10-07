@@ -1771,13 +1771,20 @@ export type ProviderSchemaResponse = {
 };
 
 export type ProvisionDefaultsReqDto = {
+    academic_year_id?: string | null;
     academic_year_name?: string | null;
     academic_year_name_ar?: string | null;
+    enable_period_autopilot?: boolean | null;
     end_date?: string | null;
+    hijri_month_lengths?: Array<number> | null;
+    hijri_start_year?: number | null;
     provision_assessment_scheme?: boolean | null;
+    provision_discount_templates?: boolean | null;
+    provision_hijri_school_calendar?: boolean | null;
     provision_stages_and_grades?: boolean | null;
     provision_subjects?: boolean | null;
     provision_tuition_fee_template?: boolean | null;
+    provision_time_slots?: boolean | null;
     start_date?: string | null;
 };
 
