@@ -587,6 +587,7 @@
         <div class="relative">
           <input
             type="text"
+            dir="auto"
             placeholder={m.common_search_placeholder()}
             bind:value={searchQuery}
             class="h-7 w-36 px-2.5 text-xs rounded bg-background border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary"

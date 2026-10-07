@@ -142,14 +142,14 @@ async function handleBranchSelect(id: string) {
             </Avatar>
           </button>
         </TooltipTrigger>
-        <TooltipContent side="right" sideOffset={12}>
+        <TooltipContent side="inline-end" sideOffset={12}>
           {orgNameDisplay}
         </TooltipContent>
       </Tooltip>
     </div>
   </DropdownMenuTrigger>
 
-  <DropdownMenuContent align="start" side="right" sideOffset={12} class="w-56 p-1 z-50">
+  <DropdownMenuContent align="start" side="inline-end" sideOffset={12} class="w-56 p-1 z-50">
     <!-- Header info -->
     <div class="flex items-center gap-3 px-3 py-2.5 border-b border-border/50">
       <Avatar

@@ -165,7 +165,7 @@ function handleGoToOnboarding() {
               {/if}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right" sideOffset={12}>
+          <TooltipContent side="inline-end" sideOffset={12}>
             {m.common_autopilot_popover_title()}
           </TooltipContent>
         </Tooltip>
@@ -174,7 +174,7 @@ function handleGoToOnboarding() {
   </PopoverTrigger>
   
   <PopoverContent
-    side="right"
+    side="inline-end"
     align="end"
     sideOffset={12}
     class="w-88 rounded-2xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start border border-border/80 bg-popover text-popover-foreground shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 select-none"

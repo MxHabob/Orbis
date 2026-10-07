@@ -28,7 +28,7 @@ function handleSuccess() {
 </script>
 
 <Sheet.Root bind:open>
-  <Sheet.Content side="right" class="flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
+  <Sheet.Content side="end" class="flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
     <ClassSubjectForm
       {orgId}
       fixedClassId={classId}

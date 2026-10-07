@@ -472,7 +472,7 @@ interactive tool inspections, and consequential action approvals.
   {#if !isStandalone}
     <Resizer
       viewport={sidebarDiv}
-      direction="start"
+      edge="start"
       {minWidth}
       {maxWidth}
       defaultValue={pxToRem(400)}

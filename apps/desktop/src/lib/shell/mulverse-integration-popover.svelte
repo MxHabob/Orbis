@@ -22,13 +22,13 @@ import { Merge } from "@orbis/icons";
 						<span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
 					</Button>
 				</TooltipTrigger>
-				<TooltipContent side="right" sideOffset={12}>
+				<TooltipContent side="inline-end" sideOffset={12}>
 					{m.common_sidebar_mulverse_connect_title()}
 				</TooltipContent>
 			</Tooltip>
 		{/snippet}
 	</PopoverTrigger>
-	<PopoverContent side="right" sideOffset={12} class="w-64 p-4 rounded-xl space-y-3">
+	<PopoverContent side="inline-end" sideOffset={12} class="w-64 p-4 rounded-xl space-y-3">
 		<div class="space-y-1">
 			<h4 class="text-xs font-bold text-foreground">
 				{m.common_sidebar_mulverse_connect_title()}

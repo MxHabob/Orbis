@@ -229,6 +229,7 @@ const rtl = $derived(getLocale() === "ar");
         <label for="new-desc-input" class="text-[10px] font-semibold text-muted-foreground">{m.academics_behavior_col_details()}</label>
         <textarea
           id="new-desc-input"
+          dir="auto"
           class="w-full border border-border rounded-md px-3 py-2 text-xs bg-background h-20 resize-none"
           placeholder="Enter details about the behavioral incident..."
           bind:value={newDescription}

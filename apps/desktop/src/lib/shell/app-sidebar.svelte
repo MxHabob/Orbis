@@ -149,7 +149,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 								<item.icon size={20} />
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent side="right" sideOffset={12}>{item.label}</TooltipContent>
+						<TooltipContent side="inline-end" sideOffset={12}>{item.label}</TooltipContent>
 					</Tooltip>
 				</div>
 			{/each}

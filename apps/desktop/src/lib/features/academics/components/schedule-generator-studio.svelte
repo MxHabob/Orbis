@@ -416,7 +416,7 @@ function getSubjectColor(subjectId: string): string {
     >
       <Resizer
         viewport={navRailDiv}
-        direction="end"
+        edge="end"
         minWidth={minNavWidth}
         maxWidth={maxNavWidth}
         defaultValue={pxToRem(240)}
@@ -890,4 +890,3 @@ function getSubjectColor(subjectId: string): string {
     onsave={activeJob?.status === "completed" && solutionAssignments.length > 0 ? handleApplySolution : handleLaunchSolver}
   />
 </div>
-

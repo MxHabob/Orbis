@@ -22,7 +22,7 @@ import { uiStore } from "$lib/stores";
 					</Button>
 		{/snippet}
 	</TooltipTrigger>
-	<TooltipContent side="right" sideOffset={12}>
+	<TooltipContent side="inline-end" sideOffset={12}>
 		{m.common_upgrade_title()}
 	</TooltipContent>
 </Tooltip>

@@ -92,7 +92,7 @@ async function handleLogout() {
             </Avatar>
           </button>
         </TooltipTrigger>
-        <TooltipContent side="right" sideOffset={10} class="flex flex-col gap-0.5 text-xs">
+        <TooltipContent side="inline-end" sideOffset={10} class="flex flex-col gap-0.5 text-xs">
           <div class="font-bold">{displayName}</div>
           <div class="text-[10px] text-muted-foreground flex items-center gap-1">
             <span class="opacity-80">🏢</span> {activeBranchName}
@@ -103,7 +103,7 @@ async function handleLogout() {
   </DropdownMenuTrigger>
  
   <DropdownMenuPortal>
-    <DropdownMenuContent align="end" side="right" sideOffset={12} class="w-72 p-1.5 z-50 bg-popover border border-border shadow-md rounded-md select-none overflow-visible">
+    <DropdownMenuContent align="end" side="inline-end" sideOffset={12} class="w-72 p-1.5 z-50 bg-popover border border-border shadow-md rounded-md select-none overflow-visible">
       <div class="flex items-start gap-3 px-3 py-2.5 border-b border-border/50">
         <Avatar class="h-9 w-9 rounded-full shrink-0">
           <AvatarImage src={authStore.user?.avatar_url ? String(authStore.user.avatar_url) : undefined} alt={authStore.user?.full_name ?? m.shared_ui_user()} class="object-cover" />

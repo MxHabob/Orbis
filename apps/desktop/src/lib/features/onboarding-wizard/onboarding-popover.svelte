@@ -90,7 +90,7 @@ function handleOpenHub() {
               {/if}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right" sideOffset={12}>
+          <TooltipContent side="inline-end" sideOffset={12}>
             {m.onboarding_popover_title()} ({progress}%)
           </TooltipContent>
         </Tooltip>

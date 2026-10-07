@@ -138,7 +138,7 @@ const studyModes = [
             id="nameEn"
             type="text" 
             placeholder={m.common_form_full_name_en_placeholder()} 
-            class="h-9 w-full bg-background font-mono text-left" 
+            class="h-9 w-full bg-background font-mono"
             bind:value={state.personal.nameEn}
             autocomplete="off"
           />
@@ -188,7 +188,7 @@ const studyModes = [
               id="nationalId"
               type="text" 
               placeholder="1000234900" 
-              class="h-9 w-full bg-background font-mono text-start {state.duplicateWarnings.national_id ? 'border-destructive focus-visible:ring-destructive' : ''}" 
+              class="h-9 w-full bg-background font-mono {state.duplicateWarnings.national_id ? 'border-destructive focus-visible:ring-destructive' : ''}"
               bind:value={state.personal.nationalId}
               oninput={() => state.triggerDuplicateCheck("national_id", state.personal.nationalId)}
             />
@@ -331,7 +331,7 @@ const studyModes = [
               id="phone"
               type="tel" 
               placeholder={m.common_form_student_phone_placeholder()} 
-              class="h-9 w-full bg-background font-mono text-left {state.duplicateWarnings.phone ? 'border-destructive focus-visible:ring-destructive' : ''}" 
+              class="h-9 w-full bg-background font-mono {state.duplicateWarnings.phone ? 'border-destructive focus-visible:ring-destructive' : ''}"
               bind:value={state.personal.phone}
               oninput={() => state.triggerDuplicateCheck("phone", state.personal.phone)}
             />
@@ -359,7 +359,7 @@ const studyModes = [
               id="email"
               type="email" 
               placeholder="student@example.com" 
-              class="h-9 w-full bg-background font-mono text-left {state.duplicateWarnings.email ? 'border-destructive focus-visible:ring-destructive' : ''}" 
+              class="h-9 w-full bg-background font-mono {state.duplicateWarnings.email ? 'border-destructive focus-visible:ring-destructive' : ''}"
               bind:value={state.personal.email}
               oninput={() => state.triggerDuplicateCheck("email", state.personal.email)}
             />

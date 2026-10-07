@@ -77,14 +77,14 @@ const iconClass = "text-muted-foreground shrink-0";
             <EllipsisHorizontal size={16} strokeWidth={1.8} class="text-foreground" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="right" sideOffset={12}>
+        <TooltipContent side="inline-end" sideOffset={12}>
           {m.ui_copy_more_options_2179e961()}
         </TooltipContent>
       </Tooltip>
     {/snippet}
   </DropdownMenuTrigger>
     <DropdownMenuPortal>
-    <DropdownMenuContent align="end" side="right" sideOffset={12} class="w-64 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none overflow-visible">
+    <DropdownMenuContent align="end" side="inline-end" sideOffset={12} class="w-64 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none overflow-visible">
     <!-- Resources Submenu -->
     <DropdownMenuSub>
       <DropdownMenuSubTrigger class={subTriggerClass}>
@@ -93,7 +93,7 @@ const iconClass = "text-muted-foreground shrink-0";
           <span>{m.ui_copy_resources_8bacd643()}</span>
         </div>
       </DropdownMenuSubTrigger>
-      <DropdownMenuSubContent side="left" align="end" sideOffset={4} class="w-48 text-start">
+      <DropdownMenuSubContent side="inline-start" align="end" sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://www.mulverse.com')}>
             <GlobeAlt size={13} class={iconClass} />
             <span>{m.ui_copy_welcome_page_e980d673()}</span>
@@ -125,7 +125,7 @@ const iconClass = "text-muted-foreground shrink-0";
           <span>{m.common_sidebar_help_community()}</span>
         </div>
       </DropdownMenuSubTrigger>
-      <DropdownMenuSubContent side="left" align="end" sideOffset={4} class="w-48 text-start">
+      <DropdownMenuSubContent side="inline-start" align="end" sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://discord.gg/e64gRQZhP')}>
             <ChatBubbles size={13} class={iconClass} />
             <span>Discord</span>
@@ -151,7 +151,7 @@ const iconClass = "text-muted-foreground shrink-0";
           <span>{m.ui_copy_legal_4ddb3d47()}</span>
         </div>
       </DropdownMenuSubTrigger>
-      <DropdownMenuSubContent side="left" align="end" sideOffset={4} class="w-48 text-start">
+      <DropdownMenuSubContent side="inline-start" align="end" sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://www.mulverse.com/p/orbis/terms')}>
             <DocumentPage size={13} class={iconClass} />
             <span>{m.common_sidebar_help_terms()}</span>

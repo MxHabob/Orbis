@@ -465,7 +465,11 @@ async function handleSubmit() {
 </script>
 
 <Sheet.Root bind:open>
-  <Sheet.Content side="right" class="w-105 sm:w-125 md:w-140 h-full p-0 flex flex-col overflow-hidden">
+  <Sheet.Content
+    side="end"
+    contentClass="data-[side=end]:w-[min(35rem,calc(100vw-1rem))] data-[side=end]:sm:max-w-[min(35rem,calc(100vw-1rem))]"
+    class="h-full w-full p-0 flex flex-col overflow-hidden"
+  >
     <form
       onsubmit={(e) => {
         e.preventDefault();

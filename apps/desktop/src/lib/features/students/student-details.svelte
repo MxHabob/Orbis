@@ -468,7 +468,7 @@ async function saveStudentDetails(e: Event) {
               <span class="text-[10px] text-muted-foreground">{m.students_student_detail_row_name_en_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
-              <Input type="text" class="text-xs font-semibold h-9 font-mono text-left" bind:value={nameEn} />
+              <Input type="text" class="text-xs font-semibold h-9 font-mono" bind:value={nameEn} />
             </div>
           </div>
 
@@ -626,7 +626,7 @@ async function saveStudentDetails(e: Event) {
               <span class="text-[10px] text-muted-foreground">{m.students_student_detail_row_phone_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
-              <Input type="text" class="text-xs h-9 font-mono text-left" bind:value={phone} />
+              <Input type="tel" class="text-xs h-9 font-mono" bind:value={phone} />
             </div>
           </div>
 
@@ -637,7 +637,7 @@ async function saveStudentDetails(e: Event) {
               <span class="text-[10px] text-muted-foreground">{m.students_student_detail_row_email_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
-              <Input type="email" class="text-xs h-9 font-mono text-left" bind:value={email} />
+              <Input type="email" class="text-xs h-9 font-mono" bind:value={email} />
             </div>
           </div>
 

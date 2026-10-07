@@ -312,6 +312,7 @@ const rtl = $derived(getLocale() === "ar");
           <input
             bind:this={searchInputEl}
             type="text"
+            dir="auto"
             value={searchQuery}
             oninput={(e) => handleSearchInput((e.target as HTMLInputElement).value)}
             onfocus={() => (isSearchFocused = true)}
@@ -608,6 +609,7 @@ const rtl = $derived(getLocale() === "ar");
             <input
               id="pos_token"
               type="text"
+              dir="auto"
               bind:value={sourceToken}
               placeholder={m.finance_ui_pos_payment_token_placeholder()}
               class="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary font-mono"
@@ -624,6 +626,7 @@ const rtl = $derived(getLocale() === "ar");
             <input
               id="pos_ref"
               type="text"
+              dir="auto"
               bind:value={referenceNumber}
               placeholder={formMethod === "check" ? m.finance_ui_check_reference_placeholder() : m.finance_ui_transfer_reference_placeholder()}
               class="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary font-mono"
@@ -637,6 +640,7 @@ const rtl = $derived(getLocale() === "ar");
           <input
             id="pos_notes"
             type="text"
+            dir="auto"
             bind:value={notes}
             placeholder={m.finance_ui_receipt_notes_placeholder()}
             class="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary"

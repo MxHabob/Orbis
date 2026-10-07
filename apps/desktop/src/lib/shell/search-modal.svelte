@@ -369,6 +369,7 @@ function handleKeydown(e: KeyboardEvent) {
         <input
           bind:this={inputEl}
           type="text"
+          dir="auto"
           placeholder={m.common_header_search()}
           bind:value={searchQuery}
           class="input-sunken ps-10 w-full"

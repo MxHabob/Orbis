@@ -9,7 +9,7 @@ Inspired by GitButler's Resizer component.
 ```svelte
 <Resizer
   viewport={panelEl}
-  direction="end"
+  edge="end"
   minWidth={16}
   maxWidth={40}
   defaultValue={24}
@@ -21,7 +21,7 @@ Inspired by GitButler's Resizer component.
 <script lang="ts">
 let {
   viewport,
-  direction,
+  edge,
   minWidth,
   maxWidth,
   defaultValue,
@@ -31,7 +31,7 @@ let {
   collapsedWidth = 3,
 }: {
   viewport: HTMLElement | undefined;
-  direction: "start" | "end";
+  edge: "start" | "end";
   minWidth: number;
   maxWidth: number;
   defaultValue: number;
@@ -84,9 +84,8 @@ function onPointerDown(e: PointerEvent) {
 function onPointerMove(e: PointerEvent) {
   if (!isDragging || !viewport) return;
 
-  const pageDirection = getComputedStyle(viewport).direction;
-  const isStartEdge = direction === "start";
-  const growsTowardRight = pageDirection === "rtl" ? !isStartEdge : isStartEdge;
+  const isRtl = getComputedStyle(viewport).direction === "rtl";
+  const growsTowardRight = edge === "end" ? !isRtl : isRtl;
   const delta = growsTowardRight ? e.clientX - startX : startX - e.clientX;
   const newWidthPx = startWidth + delta;
   const newWidthRem = pxToRem(newWidthPx);
@@ -143,8 +142,8 @@ function onDoubleClick() {
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	class="resizer"
-  class:start={direction === 'start'}
-  class:end={direction === 'end'}
+  class:start={edge === 'start'}
+  class:end={edge === 'end'}
 	class:dragging={isDragging}
 	class:cursor-col-resize={isDragging}
 	onpointerdown={onPointerDown}

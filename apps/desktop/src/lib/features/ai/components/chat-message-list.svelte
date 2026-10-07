@@ -108,6 +108,7 @@ function handleContentClick(e: MouseEvent) {
             <!-- Inline Edit Form -->
             <div class="w-full max-w-[95%] flex flex-col gap-2 bg-card border border-primary/40 rounded-2xl p-3 shadow-md">
               <textarea
+                dir="auto"
                 bind:value={editingText}
                 rows={3}
                 class="w-full p-2.5 text-[13px] bg-background border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary resize-none text-foreground font-sans leading-relaxed"

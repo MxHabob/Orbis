@@ -403,7 +403,7 @@ function handleDownloadCurrent() {
 <!-- Parameter Drawer Sheet -->
 {#if selectedDefinition}
   <Sheet bind:open={isSheetOpen}>
-    <SheetContent side="right" class="w-full sm:max-w-md flex flex-col justify-between p-6 text-start">
+    <SheetContent side="end" class="w-full sm:max-w-md flex flex-col justify-between p-6 text-start">
       <div class="space-y-6 overflow-y-auto pr-1">
         <SheetHeader class="space-y-1">
           <div class="flex items-center gap-2">

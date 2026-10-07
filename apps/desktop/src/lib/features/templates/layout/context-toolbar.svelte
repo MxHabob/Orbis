@@ -156,6 +156,7 @@ function handleAlign(
         <span class="ctx-title-hidden" aria-hidden="true">{editingName || "..."}</span>
         <input
           type="text"
+          dir="auto"
           class="ctx-title-input"
           bind:value={editingName}
           maxlength="50"

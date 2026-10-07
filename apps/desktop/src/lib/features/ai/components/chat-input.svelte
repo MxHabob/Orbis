@@ -126,6 +126,7 @@ function handleCommandSelect(prompt: string) {
     <!-- Textarea Input Area -->
     <textarea
       bind:this={inputEl}
+      dir="auto"
       value={value}
       disabled={isThinking}
       onkeydown={handleKeyDown}
